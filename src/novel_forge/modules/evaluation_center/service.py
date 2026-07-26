@@ -1,16 +1,20 @@
 from __future__ import annotations
 
-import os
 import time
 from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
 from novel_forge.core.ids import make_id, utc_now
-from novel_forge.model_adapters import GuardedModelAdapter, ModelAdapter, model_from_env, validate_model_output
+from novel_forge.model_adapters.output_validation import validate_model_output
 from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.modules.common import resolve_path
 from novel_forge.modules.production_context import filter_project_safe_references, project_scope_from_asset
+from novel_forge.modules.production_execution import (
+    CandidateKind,
+    DomainExecutionPort,
+    execute_domain_candidate,
+)
 from novel_forge.modules.runtime_policy import provider_hard_stop_evidence_report
 from novel_forge.schemas import (
     BaseAsset,
@@ -231,7 +235,9 @@ def run_model_benchmark(
     *,
     provider: str = "mock",
     model_name: str = "mock-model",
-    model: ModelAdapter | None = None,
+    model: object | None = None,
+    execution_port: DomainExecutionPort | None = None,
+    environment: str = "development",
 ) -> dict[str, Any]:
     path = resolve_path(storage.root, task_path)
     task = storage.read_asset(path)
@@ -251,13 +257,34 @@ def run_model_benchmark(
     ) as run:
         run.guard("read_asset")
         task_type = str(task.content.get("task_type", "generate"))
-        adapter = GuardedModelAdapter(model or _model_for_benchmark(task_type, provider=provider, model_name=model_name), storage, run.path)
         started = time.perf_counter()
         status = "succeeded"
         error = ""
         raw_output: dict[str, Any] = {}
         try:
-            raw_output = _run_adapter(adapter, task)
+            operation = _benchmark_operation(task_type)
+            candidate = execute_domain_candidate(
+                capability="quality.intrinsic.judge",
+                operation=operation,
+                candidate_kind=CandidateKind.JUDGE,
+                prompt=str(task.content.get("prompt_template", "")),
+                context={
+                    "benchmark_task": task.content,
+                    "input_assets": task.content.get("input_assets", []),
+                    "judge_profile_version": f"{provider}:{model_name}",
+                    "target_asset_version": task.id,
+                },
+                review={} if operation == "revise" else None,
+                execution_port=execution_port,
+                legacy_model=model,
+                legacy_model_role=task_type,
+                legacy_provider=provider,
+                legacy_model_name=model_name,
+                environment=environment,
+                storage=storage,
+                agent_run_path=run.path,
+            )
+            raw_output = dict(candidate.raw_output)
             validated = _validate_expected(task.content.get("expected_output_type", "generate"), raw_output)
         except Exception as exc:
             status = "failed"
@@ -284,6 +311,11 @@ def run_model_benchmark(
                 "status": status,
                 "error": error,
                 "raw_output": raw_output,
+                "production_execution": (
+                    candidate.evidence.to_dict()
+                    if status == "succeeded"
+                    else {}
+                ),
                 "validated_output": validated,
                 "created_at": utc_now(),
             },
@@ -1122,17 +1154,14 @@ def evaluation_dashboard(storage: LocalStorage, *, project_id: str = "") -> dict
     return create_evaluation_dashboard_snapshot(storage, project_id=project_id)["asset"]["content"]
 
 
-def _run_adapter(adapter: ModelAdapter, task: Any) -> dict[str, Any]:
-    task_type = str(task.content.get("task_type", "generate"))
-    context = {"benchmark_task": task.content, "input_assets": task.content.get("input_assets", [])}
-    prompt = str(task.content.get("prompt_template", ""))
+def _benchmark_operation(task_type: str) -> str:
     if task_type in {"review", "quality_review", "chapter_review"}:
-        return adapter.review(prompt, context)
+        return "review"
     if task_type in {"analysis", "decomposition"}:
-        return adapter.analyze(prompt, context)
+        return "analyze"
     if task_type in {"revision", "revise"}:
-        return adapter.revise(prompt, {}, context)
-    return adapter.generate(prompt, context)
+        return "revise"
+    return "generate"
 
 
 def _score_asset(asset: dict[str, Any]) -> dict[str, float]:
@@ -1241,6 +1270,14 @@ def _normalize_model_judge(value: dict[str, Any] | None) -> dict[str, Any]:
         "provider": str(payload.get("provider") or "local"),
         "model": str(payload.get("model") or "deterministic-judge"),
         "score": score,
+        "score_semantics": str(payload.get("score_semantics") or "Raw Score"),
+        "calibration_status": str(
+            payload.get("calibration_status") or "uncalibrated"
+        ),
+        "probability_claim_allowed": bool(
+            payload.get("calibration_status") == "calibrated"
+            and payload.get("probability_claim_allowed")
+        ),
         "confidence": _score_0_1(payload.get("confidence", 1.0)),
         "recommendation": str(payload.get("recommendation") or ""),
         "status": str(payload.get("status") or ("provided_score" if score is not None else "not_provided")),
@@ -1266,36 +1303,55 @@ def _resolve_model_judge(storage: LocalStorage, target: dict[str, Any], target_p
     if str(target.get("type", "")) in {"source_document", "source_chunk", "cleaned_text"}:
         raise PermissionError("external model judge cannot evaluate raw source assets")
     provider = str(payload.get("provider") or "mock")
-    env = dict(os.environ)
-    env["NOVEL_FORGE_MODEL_PROVIDER"] = provider
-    adapter = model_from_env("review", env=env)
-    from novel_forge.modules.model_router import call_model_via_router
-
     text = _evaluation_judge_text(target)
-    trace = payload.get("trace") if isinstance(payload.get("trace"), dict) else {}
-    if not trace and isinstance(payload.get("os_envelope"), dict):
-        trace = {"trace_id": str(payload["os_envelope"].get("trace_id") or "")}
-    result = call_model_via_router(
-        storage,
-        adapter=adapter,
+    execution_port = payload.get("execution_port")
+    if execution_port is not None and not callable(
+        getattr(execution_port, "execute", None)
+    ):
+        raise ValueError("model judge execution_port does not implement execute")
+    candidate = execute_domain_candidate(
+        capability="quality.intrinsic.judge",
         operation="review",
-        payload=text,
-        context={"evaluation_judge": True, "target_asset_type": target.get("type", ""), "source_policy": source_policy},
-        task_type="evaluation_judge",
-        project_id=project_id,
-        input_assets=[_display_path(storage.root, target_path)],
-        trace=trace if isinstance(trace, dict) else {},
+        candidate_kind=CandidateKind.JUDGE,
+        prompt=text,
+        context={
+            "evaluation_judge": True,
+            "target_asset_type": target.get("type", ""),
+            "target_asset_version": target.get("id", ""),
+            "target_asset_path": _display_path(storage.root, target_path),
+            "source_policy": source_policy,
+            "judge_profile_version": str(
+                payload.get("judge_profile_version") or "evaluation-center:v1"
+            ),
+        },
+        execution_port=execution_port,
+        legacy_model_role="review",
+        legacy_provider=provider,
+        legacy_model_name=str(payload.get("model") or ""),
+        environment=str(
+            payload.get("environment")
+            or (
+                (payload.get("os_envelope") or {}).get("environment")
+                if isinstance(payload.get("os_envelope"), dict)
+                else ""
+            )
+            or "development"
+        ),
+        storage=storage,
     )
+    result = dict(candidate.raw_output)
     score = _score_0_1(result.get("score", payload.get("score", 0)) if isinstance(result, dict) else 0)
     return {
         **payload,
         "score": score,
+        "score_semantics": "Raw Score",
+        "calibration_status": str(payload.get("calibration_status") or "uncalibrated"),
         "recommendation": str((result or {}).get("next_action") or payload.get("recommendation") or ""),
-        "status": "external_provider_called",
-        "external_provider_called": True,
+        "status": "execution_candidate_received",
+        "external_provider_called": candidate.evidence.real_model_call,
         "provider": provider,
         "model": str((result or {}).get("model") or payload.get("model") or ""),
-        "model_gateway_call": (result or {}).get("model_gateway_call", {}) if isinstance(result, dict) else {},
+        "model_gateway_call": candidate.evidence.to_dict(),
     }
 
 
@@ -1515,22 +1571,6 @@ def _read_json_safe(storage: LocalStorage, path: Path) -> dict[str, Any]:
     except Exception:
         return {}
     return data if isinstance(data, dict) else {}
-
-
-def _model_for_benchmark(task_type: str, *, provider: str, model_name: str) -> ModelAdapter:
-    normalized_provider = (provider or "mock").strip()
-    normalized_model = (model_name or "").strip()
-    if normalized_provider in {"mock", "local", "local-rules", "offline"}:
-        return model_from_env(task_type, env={**os.environ, "NOVEL_FORGE_MODEL_PROVIDER": "mock"})
-    env = dict(os.environ)
-    env["NOVEL_FORGE_MODEL_PROVIDER"] = normalized_provider
-    if normalized_model:
-        env["NOVEL_FORGE_MODEL_NAME"] = normalized_model
-    operation_key = task_type.upper().replace("-", "_")
-    env[f"NOVEL_FORGE_MODEL_PROVIDER_{operation_key}"] = normalized_provider
-    if normalized_model:
-        env[f"NOVEL_FORGE_MODEL_NAME_{operation_key}"] = normalized_model
-    return model_from_env(task_type, env=env)
 
 
 def _validate_expected(expected_output_type: Any, raw_output: dict[str, Any]) -> dict[str, Any]:

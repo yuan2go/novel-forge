@@ -34,6 +34,7 @@ class CandidateKind(StrEnum):
 
 class DomainModelOperation(StrEnum):
     GENERATE = "generate"
+    ANALYZE = "analyze"
     REVIEW = "review"
     REVISE = "revise"
 
@@ -192,9 +193,12 @@ def execute_domain_candidate(
     execution_port: DomainExecutionPort | None = None,
     legacy_model: object | None = None,
     legacy_model_role: str = "",
+    legacy_provider: str = "",
+    legacy_model_name: str = "",
     environment: str = "",
     storage: object | None = None,
     agent_run_path: str = "",
+    legacy_validation_operation: DomainModelOperation | str | None = None,
 ) -> DomainExecutionCandidate:
     """Execute through PEP, or an explicitly non-controlled compatibility seam."""
 
@@ -212,14 +216,21 @@ def execute_domain_candidate(
     normalized_environment = environment.strip().lower() or "development"
     if normalized_environment in CONTROLLED_ENVIRONMENTS:
         raise RuntimeError(
-            "controlled domain execution requires GatewayDomainExecutionPort"
+            "legacy direct model adapters are disabled; controlled domain execution "
+            "requires GatewayDomainExecutionPort"
         )
     if legacy_model is None:
         if not legacy_model_role:
             raise ValueError("development compatibility execution requires a model role")
         from novel_forge.model_adapters import model_from_env
+        import os
 
-        legacy_model = model_from_env(legacy_model_role)
+        legacy_environment = dict(os.environ)
+        if legacy_provider:
+            legacy_environment["NOVEL_FORGE_MODEL_PROVIDER"] = legacy_provider
+        if legacy_model_name:
+            legacy_environment["NOVEL_FORGE_MODEL_NAME"] = legacy_model_name
+        legacy_model = model_from_env(legacy_model_role, env=legacy_environment)
     model = legacy_model
     if storage is not None and agent_run_path:
         from novel_forge.model_adapters import GuardedModelAdapter
@@ -227,6 +238,8 @@ def execute_domain_candidate(
         model = GuardedModelAdapter(legacy_model, storage, agent_run_path)
     if command.operation is DomainModelOperation.GENERATE:
         raw = model.generate(command.prompt, dict(command.context))  # type: ignore[attr-defined]
+    elif command.operation is DomainModelOperation.ANALYZE:
+        raw = model.analyze(command.prompt, dict(command.context))  # type: ignore[attr-defined]
     elif command.operation is DomainModelOperation.REVIEW:
         raw = model.review(command.prompt, dict(command.context))  # type: ignore[attr-defined]
     else:
@@ -237,7 +250,12 @@ def execute_domain_candidate(
         )
     from novel_forge.model_adapters import validate_model_output
 
-    output = validate_model_output(command.operation.value, raw)
+    validation_operation = (
+        DomainModelOperation(legacy_validation_operation).value
+        if legacy_validation_operation is not None
+        else command.operation.value
+    )
+    output = validate_model_output(validation_operation, raw)
     model_name = str(getattr(legacy_model, "name", "development-model"))
     return DomainExecutionCandidate(
         candidate_kind=command.candidate_kind,

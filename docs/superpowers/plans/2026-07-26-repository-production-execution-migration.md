@@ -203,11 +203,11 @@
 - Produces `JudgeExecutionEvidence` binding JudgeProfile version, target AssetVersion, manifests, route, raw score/evidence, calibration status, disagreement, usage/cost.
 - Deterministic aggregation, thresholds, blocking, and approval remain in Quality/Eval.
 
-- [ ] Test intrinsic/originality/platform/style/semantic/reader/pairwise/mutation/OOD capability routing and uncalibrated naming.
-- [ ] Replace direct adapter/router calls.
-- [ ] Prohibit uncalibrated probability claims.
-- [ ] Run quality/evaluation/review suites.
-- [ ] Commit `refactor: migrate quality review and evaluation execution to PEP`.
+- [x] Test intrinsic/originality/platform/style/semantic/reader/pairwise/mutation/OOD capability routing and uncalibrated naming.
+- [x] Replace direct adapter/router calls.
+- [x] Prohibit uncalibrated probability claims.
+- [x] Run quality/evaluation/review suites.
+- [x] Commit `refactor: migrate quality review and evaluation execution to PEP`.
 
 ### Task 10: MKAOS and retrieval migration
 

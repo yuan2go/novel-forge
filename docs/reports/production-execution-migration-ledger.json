@@ -1,5 +1,5 @@
 {
-  "artifact_hash": "sha256:c7360b5a158cbe934767ff4c06708859a450a1dcac6fd8122148190442e1f37b",
+  "artifact_hash": "sha256:367fc068cb18e2e4c0eba1fbec24d0eb25c53195074e427e364cb0f1e86c998f",
   "blocking_owner_ids": [],
   "entries": [
     {
@@ -9488,260 +9488,6 @@
       "budget_bound": false,
       "callback_supported": false,
       "cancel_supported": false,
-      "current_adapter": "adapter.analyze",
-      "current_entrypoint": "adapter.analyze",
-      "current_route": "DIRECT_MODEL_ADAPTER",
-      "current_state_store": "UNKNOWN",
-      "domain": "evaluation_center",
-      "execution_owner_id": "execution-owner:62feff95441a08bce7f1",
-      "external_effect_bound": false,
-      "known_risks": [
-        "production execution bypasses the governed gateway",
-        "no Authority Attempt and fence binding detected",
-        "no ExternalEffect binding detected"
-      ],
-      "legacy_removal_gate": "all callers gateway-bound; fixture and PostgreSQL recovery proven; architecture guard active",
-      "migration_status": "DISCOVERED",
-      "production_reachable": true,
-      "query_supported": false,
-      "side_effect_type": "MODEL_INFERENCE",
-      "source_file": "src/novel_forge/modules/evaluation_center/service.py",
-      "source_symbol": "_run_adapter",
-      "target_backend": "remote-provider",
-      "target_capability": "mkaos.knowledge.extract",
-      "tests": [
-        "tests/architecture/test_production_execution_gateway_boundaries.py",
-        "tests/integration/test_chapter_authority_runtime_postgres.py",
-        "tests/integration/test_command_kernel_admission_atomic_postgres.py",
-        "tests/integration/test_command_kernel_admission_idempotency_postgres.py",
-        "tests/integration/test_command_kernel_admission_rollback_postgres.py",
-        "tests/integration/test_command_kernel_admission_validation_postgres.py",
-        "tests/integration/test_command_kernel_cancellation_postgres.py",
-        "tests/integration/test_novel_os_12_chapter_industrial_pressure.py",
-        "tests/integration/test_novel_os_acceptance.py",
-        "tests/integration/test_novel_os_long_chain_pressure.py",
-        "tests/integration/test_novel_os_long_chain_smoke.py",
-        "tests/integration/test_online_backends_e2e.py"
-      ]
-    },
-    {
-      "authority_attempt_bound": false,
-      "authority_operation_bound": false,
-      "budget_bound": false,
-      "callback_supported": false,
-      "cancel_supported": false,
-      "current_adapter": "adapter.generate",
-      "current_entrypoint": "adapter.generate",
-      "current_route": "DIRECT_MODEL_ADAPTER",
-      "current_state_store": "UNKNOWN",
-      "domain": "evaluation_center",
-      "execution_owner_id": "execution-owner:2a2b03efb2e625173328",
-      "external_effect_bound": false,
-      "known_risks": [
-        "production execution bypasses the governed gateway",
-        "no Authority Attempt and fence binding detected",
-        "no ExternalEffect binding detected"
-      ],
-      "legacy_removal_gate": "all callers gateway-bound; fixture and PostgreSQL recovery proven; architecture guard active",
-      "migration_status": "DISCOVERED",
-      "production_reachable": true,
-      "query_supported": false,
-      "side_effect_type": "MODEL_INFERENCE",
-      "source_file": "src/novel_forge/modules/evaluation_center/service.py",
-      "source_symbol": "_run_adapter",
-      "target_backend": "remote-provider",
-      "target_capability": "capability-registry:operation-dispatch",
-      "tests": [
-        "tests/architecture/test_production_execution_gateway_boundaries.py",
-        "tests/integration/test_chapter_authority_runtime_postgres.py",
-        "tests/integration/test_command_kernel_admission_atomic_postgres.py",
-        "tests/integration/test_command_kernel_admission_idempotency_postgres.py",
-        "tests/integration/test_command_kernel_admission_rollback_postgres.py",
-        "tests/integration/test_command_kernel_admission_validation_postgres.py",
-        "tests/integration/test_command_kernel_cancellation_postgres.py",
-        "tests/integration/test_novel_os_12_chapter_industrial_pressure.py",
-        "tests/integration/test_novel_os_acceptance.py",
-        "tests/integration/test_novel_os_long_chain_pressure.py",
-        "tests/integration/test_novel_os_long_chain_smoke.py",
-        "tests/integration/test_online_backends_e2e.py"
-      ]
-    },
-    {
-      "authority_attempt_bound": false,
-      "authority_operation_bound": false,
-      "budget_bound": false,
-      "callback_supported": false,
-      "cancel_supported": false,
-      "current_adapter": "adapter.review",
-      "current_entrypoint": "adapter.review",
-      "current_route": "DIRECT_MODEL_ADAPTER",
-      "current_state_store": "UNKNOWN",
-      "domain": "evaluation_center",
-      "execution_owner_id": "execution-owner:3186801b18c010a26d5b",
-      "external_effect_bound": false,
-      "known_risks": [
-        "production execution bypasses the governed gateway",
-        "no Authority Attempt and fence binding detected",
-        "no ExternalEffect binding detected"
-      ],
-      "legacy_removal_gate": "all callers gateway-bound; fixture and PostgreSQL recovery proven; architecture guard active",
-      "migration_status": "DISCOVERED",
-      "production_reachable": true,
-      "query_supported": false,
-      "side_effect_type": "MODEL_INFERENCE",
-      "source_file": "src/novel_forge/modules/evaluation_center/service.py",
-      "source_symbol": "_run_adapter",
-      "target_backend": "remote-provider",
-      "target_capability": "review.chapter.evaluate",
-      "tests": [
-        "tests/architecture/test_production_execution_gateway_boundaries.py",
-        "tests/integration/test_chapter_authority_runtime_postgres.py",
-        "tests/integration/test_command_kernel_admission_atomic_postgres.py",
-        "tests/integration/test_command_kernel_admission_idempotency_postgres.py",
-        "tests/integration/test_command_kernel_admission_rollback_postgres.py",
-        "tests/integration/test_command_kernel_admission_validation_postgres.py",
-        "tests/integration/test_command_kernel_cancellation_postgres.py",
-        "tests/integration/test_novel_os_12_chapter_industrial_pressure.py",
-        "tests/integration/test_novel_os_acceptance.py",
-        "tests/integration/test_novel_os_long_chain_pressure.py",
-        "tests/integration/test_novel_os_long_chain_smoke.py",
-        "tests/integration/test_online_backends_e2e.py"
-      ]
-    },
-    {
-      "authority_attempt_bound": false,
-      "authority_operation_bound": false,
-      "budget_bound": false,
-      "callback_supported": false,
-      "cancel_supported": false,
-      "current_adapter": "adapter.revise",
-      "current_entrypoint": "adapter.revise",
-      "current_route": "DIRECT_MODEL_ADAPTER",
-      "current_state_store": "UNKNOWN",
-      "domain": "evaluation_center",
-      "execution_owner_id": "execution-owner:a124d8b530ea97d36789",
-      "external_effect_bound": false,
-      "known_risks": [
-        "production execution bypasses the governed gateway",
-        "no Authority Attempt and fence binding detected",
-        "no ExternalEffect binding detected"
-      ],
-      "legacy_removal_gate": "all callers gateway-bound; fixture and PostgreSQL recovery proven; architecture guard active",
-      "migration_status": "DISCOVERED",
-      "production_reachable": true,
-      "query_supported": false,
-      "side_effect_type": "MODEL_INFERENCE",
-      "source_file": "src/novel_forge/modules/evaluation_center/service.py",
-      "source_symbol": "_run_adapter",
-      "target_backend": "remote-provider",
-      "target_capability": "revision.chapter.revise",
-      "tests": [
-        "tests/architecture/test_production_execution_gateway_boundaries.py",
-        "tests/integration/test_chapter_authority_runtime_postgres.py",
-        "tests/integration/test_command_kernel_admission_atomic_postgres.py",
-        "tests/integration/test_command_kernel_admission_idempotency_postgres.py",
-        "tests/integration/test_command_kernel_admission_rollback_postgres.py",
-        "tests/integration/test_command_kernel_admission_validation_postgres.py",
-        "tests/integration/test_command_kernel_cancellation_postgres.py",
-        "tests/integration/test_novel_os_12_chapter_industrial_pressure.py",
-        "tests/integration/test_novel_os_acceptance.py",
-        "tests/integration/test_novel_os_long_chain_pressure.py",
-        "tests/integration/test_novel_os_long_chain_smoke.py",
-        "tests/integration/test_online_backends_e2e.py"
-      ]
-    },
-    {
-      "authority_attempt_bound": false,
-      "authority_operation_bound": false,
-      "budget_bound": false,
-      "callback_supported": false,
-      "cancel_supported": false,
-      "current_adapter": "novel_forge.modules.evaluation_center.service._run_adapter",
-      "current_entrypoint": "_run_adapter",
-      "current_route": "DIRECT_MODEL_ADAPTER",
-      "current_state_store": "LEGACY_LOCAL_STORAGE",
-      "domain": "evaluation_center",
-      "execution_owner_id": "execution-owner:49b4f306b5466984a2ec",
-      "external_effect_bound": false,
-      "known_risks": [
-        "indirect wrapper",
-        "production execution bypasses the governed gateway",
-        "no Authority Attempt and fence binding detected",
-        "no ExternalEffect binding detected"
-      ],
-      "legacy_removal_gate": "all callers gateway-bound; fixture and PostgreSQL recovery proven; architecture guard active",
-      "migration_status": "DISCOVERED",
-      "production_reachable": true,
-      "query_supported": false,
-      "side_effect_type": "MODEL_INFERENCE",
-      "source_file": "src/novel_forge/modules/evaluation_center/service.py",
-      "source_symbol": "run_model_benchmark",
-      "target_backend": "remote-provider",
-      "target_capability": "capability-registry:operation-dispatch",
-      "tests": [
-        "tests/architecture/test_production_execution_gateway_boundaries.py",
-        "tests/integration/test_chapter_authority_runtime_postgres.py",
-        "tests/integration/test_command_kernel_admission_atomic_postgres.py",
-        "tests/integration/test_command_kernel_admission_idempotency_postgres.py",
-        "tests/integration/test_command_kernel_admission_rollback_postgres.py",
-        "tests/integration/test_command_kernel_admission_validation_postgres.py",
-        "tests/integration/test_command_kernel_cancellation_postgres.py",
-        "tests/integration/test_novel_os_12_chapter_industrial_pressure.py",
-        "tests/integration/test_novel_os_acceptance.py",
-        "tests/integration/test_novel_os_long_chain_pressure.py",
-        "tests/integration/test_novel_os_long_chain_smoke.py",
-        "tests/integration/test_online_backends_e2e.py"
-      ]
-    },
-    {
-      "authority_attempt_bound": false,
-      "authority_operation_bound": false,
-      "budget_bound": false,
-      "callback_supported": false,
-      "cancel_supported": false,
-      "current_adapter": "novel_forge.modules.evaluation_center.service.run_model_benchmark",
-      "current_entrypoint": "run_model_benchmark",
-      "current_route": "DIRECT_MODEL_ADAPTER",
-      "current_state_store": "LEGACY_LOCAL_STORAGE",
-      "domain": "evaluation_center",
-      "execution_owner_id": "execution-owner:5d809899cc51e16728fc",
-      "external_effect_bound": false,
-      "known_risks": [
-        "indirect wrapper",
-        "production execution bypasses the governed gateway",
-        "no Authority Attempt and fence binding detected",
-        "no ExternalEffect binding detected"
-      ],
-      "legacy_removal_gate": "all callers gateway-bound; fixture and PostgreSQL recovery proven; architecture guard active",
-      "migration_status": "DISCOVERED",
-      "production_reachable": true,
-      "query_supported": false,
-      "side_effect_type": "MODEL_INFERENCE",
-      "source_file": "src/novel_forge/modules/evaluation_center/service.py",
-      "source_symbol": "run_model_benchmark_batch",
-      "target_backend": "remote-provider",
-      "target_capability": "capability-registry:operation-dispatch",
-      "tests": [
-        "tests/architecture/test_production_execution_gateway_boundaries.py",
-        "tests/integration/test_chapter_authority_runtime_postgres.py",
-        "tests/integration/test_command_kernel_admission_atomic_postgres.py",
-        "tests/integration/test_command_kernel_admission_idempotency_postgres.py",
-        "tests/integration/test_command_kernel_admission_rollback_postgres.py",
-        "tests/integration/test_command_kernel_admission_validation_postgres.py",
-        "tests/integration/test_command_kernel_cancellation_postgres.py",
-        "tests/integration/test_novel_os_12_chapter_industrial_pressure.py",
-        "tests/integration/test_novel_os_acceptance.py",
-        "tests/integration/test_novel_os_long_chain_pressure.py",
-        "tests/integration/test_novel_os_long_chain_smoke.py",
-        "tests/integration/test_online_backends_e2e.py"
-      ]
-    },
-    {
-      "authority_attempt_bound": false,
-      "authority_operation_bound": false,
-      "budget_bound": false,
-      "callback_supported": false,
-      "cancel_supported": false,
       "current_adapter": "novel_forge.modules.loop_kernel.service._loop_re_review",
       "current_entrypoint": "_loop_re_review",
       "current_route": "DIRECT_MODEL_ADAPTER",
@@ -11065,6 +10811,35 @@
       "budget_bound": false,
       "callback_supported": false,
       "cancel_supported": false,
+      "current_adapter": "model.analyze",
+      "current_entrypoint": "model.analyze",
+      "current_route": "PRODUCTION_EXECUTION_GATEWAY",
+      "current_state_store": "UNKNOWN",
+      "domain": "production_execution",
+      "execution_owner_id": "execution-owner:cb124b2a25883d816e02",
+      "external_effect_bound": false,
+      "known_risks": [
+        "no ExternalEffect binding detected"
+      ],
+      "legacy_removal_gate": "all callers gateway-bound; fixture and PostgreSQL recovery proven; architecture guard active",
+      "migration_status": "DISCOVERED",
+      "production_reachable": true,
+      "query_supported": false,
+      "side_effect_type": "MODEL_INFERENCE",
+      "source_file": "src/novel_forge/modules/production_execution/domain_execution.py",
+      "source_symbol": "execute_domain_candidate",
+      "target_backend": "remote-provider",
+      "target_capability": "capability-registry:execution-request",
+      "tests": [
+        "tests/unit/test_domain_execution_port.py"
+      ]
+    },
+    {
+      "authority_attempt_bound": true,
+      "authority_operation_bound": false,
+      "budget_bound": false,
+      "callback_supported": false,
+      "cancel_supported": false,
       "current_adapter": "model.generate",
       "current_entrypoint": "model.generate",
       "current_route": "PRODUCTION_EXECUTION_GATEWAY",
@@ -12140,7 +11915,7 @@
         "tests/unit/test_production_execution_gateway.py",
         "tests/unit/test_production_execution_inventory.py",
         "tests/unit/test_provider_adapter_v2.py",
-        "tests/unit/test_review_issue.py"
+        "tests/unit/test_quality_eval_v2.py"
       ]
     },
     {
@@ -12178,7 +11953,7 @@
         "tests/unit/test_production_execution_gateway.py",
         "tests/unit/test_production_execution_inventory.py",
         "tests/unit/test_provider_adapter_v2.py",
-        "tests/unit/test_review_issue.py"
+        "tests/unit/test_quality_eval_v2.py"
       ]
     },
     {
@@ -12216,7 +11991,7 @@
         "tests/unit/test_production_execution_gateway.py",
         "tests/unit/test_production_execution_inventory.py",
         "tests/unit/test_provider_adapter_v2.py",
-        "tests/unit/test_review_issue.py"
+        "tests/unit/test_quality_eval_v2.py"
       ]
     },
     {
@@ -12254,7 +12029,7 @@
         "tests/unit/test_production_execution_gateway.py",
         "tests/unit/test_production_execution_inventory.py",
         "tests/unit/test_provider_adapter_v2.py",
-        "tests/unit/test_review_issue.py"
+        "tests/unit/test_quality_eval_v2.py"
       ]
     },
     {
@@ -12292,7 +12067,7 @@
         "tests/unit/test_production_execution_gateway.py",
         "tests/unit/test_production_execution_inventory.py",
         "tests/unit/test_provider_adapter_v2.py",
-        "tests/unit/test_review_issue.py"
+        "tests/unit/test_quality_eval_v2.py"
       ]
     },
     {
@@ -12330,7 +12105,7 @@
         "tests/unit/test_production_execution_gateway.py",
         "tests/unit/test_production_execution_inventory.py",
         "tests/unit/test_provider_adapter_v2.py",
-        "tests/unit/test_review_issue.py"
+        "tests/unit/test_quality_eval_v2.py"
       ]
     },
     {
@@ -12368,7 +12143,7 @@
         "tests/unit/test_production_execution_gateway.py",
         "tests/unit/test_production_execution_inventory.py",
         "tests/unit/test_provider_adapter_v2.py",
-        "tests/unit/test_review_issue.py"
+        "tests/unit/test_quality_eval_v2.py"
       ]
     },
     {
@@ -12406,7 +12181,7 @@
         "tests/unit/test_production_execution_gateway.py",
         "tests/unit/test_production_execution_inventory.py",
         "tests/unit/test_provider_adapter_v2.py",
-        "tests/unit/test_review_issue.py"
+        "tests/unit/test_quality_eval_v2.py"
       ]
     },
     {
@@ -12444,7 +12219,7 @@
         "tests/unit/test_production_execution_gateway.py",
         "tests/unit/test_production_execution_inventory.py",
         "tests/unit/test_provider_adapter_v2.py",
-        "tests/unit/test_review_issue.py"
+        "tests/unit/test_quality_eval_v2.py"
       ]
     },
     {
@@ -12482,7 +12257,7 @@
         "tests/unit/test_production_execution_gateway.py",
         "tests/unit/test_production_execution_inventory.py",
         "tests/unit/test_provider_adapter_v2.py",
-        "tests/unit/test_review_issue.py"
+        "tests/unit/test_quality_eval_v2.py"
       ]
     },
     {
@@ -12522,7 +12297,7 @@
         "tests/unit/test_production_execution_gateway.py",
         "tests/unit/test_production_execution_inventory.py",
         "tests/unit/test_provider_adapter_v2.py",
-        "tests/unit/test_review_issue.py"
+        "tests/unit/test_quality_eval_v2.py"
       ]
     },
     {
@@ -12560,7 +12335,7 @@
         "tests/unit/test_production_execution_gateway.py",
         "tests/unit/test_production_execution_inventory.py",
         "tests/unit/test_provider_adapter_v2.py",
-        "tests/unit/test_review_issue.py"
+        "tests/unit/test_quality_eval_v2.py"
       ]
     },
     {
@@ -12598,7 +12373,7 @@
         "tests/unit/test_production_execution_gateway.py",
         "tests/unit/test_production_execution_inventory.py",
         "tests/unit/test_provider_adapter_v2.py",
-        "tests/unit/test_review_issue.py"
+        "tests/unit/test_quality_eval_v2.py"
       ]
     },
     {
@@ -12636,7 +12411,7 @@
         "tests/unit/test_production_execution_gateway.py",
         "tests/unit/test_production_execution_inventory.py",
         "tests/unit/test_provider_adapter_v2.py",
-        "tests/unit/test_review_issue.py"
+        "tests/unit/test_quality_eval_v2.py"
       ]
     },
     {
@@ -12674,7 +12449,7 @@
         "tests/unit/test_production_execution_gateway.py",
         "tests/unit/test_production_execution_inventory.py",
         "tests/unit/test_provider_adapter_v2.py",
-        "tests/unit/test_review_issue.py"
+        "tests/unit/test_quality_eval_v2.py"
       ]
     },
     {
@@ -12712,7 +12487,7 @@
         "tests/unit/test_production_execution_gateway.py",
         "tests/unit/test_production_execution_inventory.py",
         "tests/unit/test_provider_adapter_v2.py",
-        "tests/unit/test_review_issue.py"
+        "tests/unit/test_quality_eval_v2.py"
       ]
     },
     {
@@ -21284,7 +21059,7 @@
       ]
     }
   ],
-  "entry_count": 645,
+  "entry_count": 640,
   "evidence_flags": {
     "production_verified": false,
     "real_provider_proven": false,
@@ -21293,21 +21068,21 @@
   "generator_version": "1.0.0",
   "migration_summary": {
     "CLASSIFIED": 417,
-    "DISCOVERED": 200,
+    "DISCOVERED": 195,
     "FIXTURE_PROVEN": 27,
     "GATEWAY_BOUND": 1
   },
   "parse_errors": [],
-  "scanned_file_count": 566,
+  "scanned_file_count": 567,
   "schema_version": "production-execution-migration-ledger.v1",
-  "source_tree_hash": "sha256:129cb12404cad5a373d4ae8f39536c2f3bdaf7cd79415d4bdfa11e97c53daa4b",
+  "source_tree_hash": "sha256:366e42d70ad3b2d86f7fbbb7d4e8f7aa0618d48735b8be0c0770dc8c2f727f5c",
   "summary": {
     "AGENT_WORKSPACE_TRANSACTION": 0,
     "DATABASE_AUTHORITY": 417,
     "DETERMINISTIC_LOCAL": 0,
     "LEGACY_UNKNOWN": 29,
     "LOCAL_PROCESS_REMOTE_INFERENCE": 12,
-    "MODEL_INFERENCE": 128,
+    "MODEL_INFERENCE": 123,
     "REMOTE_EXTERNAL_ACTION": 14,
     "REMOTE_RETRIEVAL": 18,
     "SCRIPTED_FIXTURE": 27

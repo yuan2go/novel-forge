@@ -9,6 +9,11 @@ from novel_forge.core.constants import DATA_DIRS
 from novel_forge.core.ids import make_id, utc_now
 from novel_forge.modules.common import resolve_path
 from novel_forge.modules.os_envelope import enforce_os_envelope, envelope_asset_metadata, is_production_environment
+from novel_forge.modules.production_execution import (
+    CandidateKind,
+    DomainExecutionPort,
+    execute_domain_candidate,
+)
 from novel_forge.modules.review_issue import persist_issue_candidates
 from novel_forge.modules.runtime_ledger import record_gate_result
 from novel_forge.schemas import (
@@ -215,6 +220,7 @@ def run_provider_quality_judge(
     target_paths: list[str | Path],
     rubric_path: str | Path,
     adapter: Any | None = None,
+    execution_port: DomainExecutionPort | None = None,
     genre_strategy_pack_path: str = "",
     style_profile_path: str = "",
     platform_id: str = "local",
@@ -226,7 +232,7 @@ def run_provider_quality_judge(
     require_calibrated_thresholds: bool = False,
     persist_issues: bool = True,
 ) -> dict[str, Any]:
-    from novel_forge.modules.model_router import call_model_via_router, record_external_provider_proof
+    from novel_forge.modules.model_router import record_external_provider_proof
 
     if suite_type not in QUALITY_SUITE_REPORTS:
         raise ValueError(f"unsupported quality suite type: {suite_type}")
@@ -235,10 +241,8 @@ def run_provider_quality_judge(
     if not rubric_path:
         raise ValueError("rubric_path is required for provider quality judge")
     production = is_production_environment(environment or (envelope or {}).get("environment"))
-    if production and adapter is None:
-        raise ValueError("provider quality judge requires a provider adapter in production")
-    if adapter is None:
-        raise ValueError("provider quality judge requires an adapter")
+    if execution_port is None and adapter is None:
+        raise ValueError("provider quality judge requires an execution port")
     rubric = _load_rubric(storage, rubric_path)
     rubric_content = rubric.get("content", {}) if isinstance(rubric.get("content", {}), dict) else {}
     calibration_ref = str(rubric_content.get("calibration_ref") or "")
@@ -265,22 +269,47 @@ def run_provider_quality_judge(
     )
     target_assets = [_load_target(storage, path) for path in target_paths]
     prompt_payload = _provider_judge_payload(rubric=rubric, targets=target_assets, suite_type=suite_type, platform_id=platform_id)
-    routed = call_model_via_router(
-        storage,
-        adapter=adapter,
+    candidate = execute_domain_candidate(
+        capability="quality.intrinsic.judge",
         operation="review",
-        payload=json.dumps(prompt_payload, ensure_ascii=False, sort_keys=True),
-        context={"environment": env.get("environment"), "quality_suite": suite_type, "source_policy": env.get("source_policy", {})},
-        task_type="quality_judge",
-        project_id=str(env.get("project_id") or ""),
-        input_assets=_dedupe([str(rubric_path), *[row["path"] for row in target_assets], genre_strategy_pack_path, style_profile_path]),
-        prompt_id="quality-eval-v2-provider-judge",
-        prompt_version="v7",
-        trace={"trace_id": str(env.get("trace_id") or "")},
+        candidate_kind=CandidateKind.JUDGE,
+        prompt=json.dumps(prompt_payload, ensure_ascii=False, sort_keys=True),
+        context={
+            "environment": env.get("environment"),
+            "quality_suite": suite_type,
+            "source_policy": env.get("source_policy", {}),
+            "judge_profile_version": "quality-eval-v2-provider-judge:v7",
+            "target_asset_versions": [
+                row["asset"].get("id", "") for row in target_assets
+            ],
+        },
+        execution_port=execution_port,
+        legacy_model=adapter,
+        legacy_model_role="review",
         environment=str(env.get("environment") or environment or ""),
-        allow_mock_fixture=allow_mock_fixture,
-        provider_runtime_guard=provider_runtime_guard or {},
+        storage=storage,
+        legacy_validation_operation="generate",
     )
+    routed = dict(candidate.raw_output)
+    routed["production_execution"] = candidate.evidence.to_dict()
+    routed["fixture_protocol_only"] = candidate.evidence.fixture_protocol_only
+    routed["real_model_call"] = candidate.evidence.real_model_call
+    routed["production_verified"] = False
+    routed["model_gateway_call"] = {
+        "provider": candidate.evidence.provider_id,
+        "model": candidate.evidence.model_id,
+        "model_call_log_path": candidate.evidence.validation_manifest_ref,
+        "runtime_policy_path": candidate.evidence.input_manifest_ref,
+        "cost_ledger_path": candidate.evidence.cost_receipt_ref,
+        "provider_policy": {
+            "status": "qualified_execution_route",
+            "production_execution_gateway_backed": execution_port is not None,
+        },
+        "approval_evidence": {
+            "route_snapshot_id": candidate.evidence.route_snapshot_id,
+        },
+    }
+    routed["model_route_resolution_path"] = candidate.evidence.route_snapshot_id
     judge_payload = _parse_provider_judge_response(routed)
     dimension_scores = _normalized_provider_scores(judge_payload.get("scores", {}))
     overall = _weighted_overall(dimension_scores, rubric.get("content", {}))

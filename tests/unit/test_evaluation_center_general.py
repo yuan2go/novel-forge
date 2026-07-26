@@ -160,7 +160,13 @@ class EvaluationCenterGeneralTests(unittest.TestCase):
             )
             judge = result["asset"]["content"]["evaluator_inputs"]["model_judge"]
 
-            self.assertEqual(result["asset"]["content"]["evaluation_mode"], "local_heuristic_with_external_model_judge")
-            self.assertTrue(judge["external_provider_called"])
+            self.assertEqual(
+                result["asset"]["content"]["evaluation_mode"],
+                "local_heuristic_with_model_judge",
+            )
+            self.assertFalse(judge["external_provider_called"])
             self.assertEqual(judge["provider"], "mock")
-            self.assertTrue(judge["model_gateway_call"]["model_call_log_path"])
+            self.assertTrue(judge["model_gateway_call"]["fixture_protocol_only"])
+            self.assertEqual(judge["score_semantics"], "Raw Score")
+            self.assertEqual(judge["calibration_status"], "uncalibrated")
+            self.assertFalse(judge["probability_claim_allowed"])

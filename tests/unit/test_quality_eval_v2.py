@@ -6,6 +6,10 @@ import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from novel_forge.modules.model_router import create_model_route
+from novel_forge.modules.production_execution import (
+    DomainExecutionCandidate,
+    DomainExecutionEvidence,
+)
 from novel_forge.modules.evaluation_center import (
     build_golden_set,
     calibrate_provider_judge,
@@ -50,6 +54,33 @@ class ExternalProviderJudgeAdapter:
             "cost": {"amount": 0.012, "currency": "USD", "source": "external_provider"},
             "external_provider_evidence": self.external_provider_evidence,
         }
+
+
+class QualityJudgeFixturePort:
+    def execute(self, command):  # type: ignore[no-untyped-def]
+        return DomainExecutionCandidate(
+            command.candidate_kind,
+            ProviderJudgeAdapter().review(command.prompt, dict(command.context)),
+            DomainExecutionEvidence(
+                execution_id="quality-fixture-execution",
+                operation_id="quality-fixture-operation",
+                attempt_id="quality-fixture-attempt",
+                fencing_token=1,
+                capability=command.capability,
+                backend_id="scripted-fixture",
+                route_snapshot_id="quality-fixture-route",
+                input_manifest_ref="quality-fixture-input",
+                output_manifest_ref="quality-fixture-output",
+                validation_manifest_ref="quality-fixture-validation",
+                usage_receipt_ref="quality-fixture-usage",
+                cost_receipt_ref="quality-fixture-cost",
+                fixture_protocol_only=True,
+                real_model_call=False,
+                production_verified=False,
+                provider_id="unit-provider",
+                model_id="unit-model",
+            ),
+        )
 
 
 class QualityEvalV2Tests(unittest.TestCase):
@@ -140,7 +171,7 @@ class QualityEvalV2Tests(unittest.TestCase):
                 suite_type="opening_3",
                 target_paths=[str(draft_path)],
                 rubric_path=rubric["path"],
-                adapter=ProviderJudgeAdapter(),
+                execution_port=QualityJudgeFixturePort(),
                 environment="development",
                 envelope={
                     "project_id": "p1",
@@ -180,7 +211,10 @@ class QualityEvalV2Tests(unittest.TestCase):
             self.assertTrue(evidence["model_call_log_path"])
             self.assertTrue(evidence["runtime_policy_path"])
             self.assertTrue(evidence["cost_ledger_path"])
-            self.assertEqual(evidence["provider_policy"]["status"], "skipped")
+            self.assertEqual(
+                evidence["provider_policy"]["status"],
+                "qualified_execution_route",
+            )
             self.assertEqual(gate["asset"]["content"]["status"], "passed")
 
     def test_provider_quality_judge_external_proof_blocks_fixture_adapter(self):

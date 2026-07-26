@@ -51,6 +51,16 @@ Current deterministic World, Character, ChapterGroup, Theme, and Ending paths we
 left in their domain modules. This is intentional classification, not an attempt to
 route every pure function through the Gateway.
 
+## 2026-07-26 WP-09 — Quality, Review, And Evaluation
+
+Provider Quality Judge and Evaluation Center uncertain execution no longer call the
+Model Router or ModelAdapter directly. They request Judge candidates through the
+domain execution port, while deterministic weighting, aggregation, thresholds,
+blocking, calibration, and approval stay in Quality/Evaluation modules. A typed
+Judge evidence contract covers all requested judge families and rejects uncalibrated
+probability semantics. Mock external-judge fixtures are now correctly recorded as
+fixture model judgment rather than external Provider proof.
+
 ## Gate-00 — Pre-Migration Real Provider Chapter Baseline
 
 ### Verdict

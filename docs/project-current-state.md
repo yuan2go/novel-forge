@@ -53,6 +53,14 @@ found in this slice are deterministic materializers and remain in their domains.
 Fixture compatibility evidence always records `real_model_call=false` and
 `production_verified=false`.
 
+Quality Eval v2 and Evaluation Center Provider judges now use the same candidate
+port. Typed Judge execution evidence binds JudgeProfile version, target AssetVersion,
+InputManifest, RouteSnapshot, evidence spans, disagreement, usage, cost, and
+calibration status. Intrinsic, originality, platform, style, semantic, reader
+outcome, pairwise, mutation, and OOD families resolve only to governed
+Capabilities. Uncalibrated values are named Raw Score, Ordinal Band, or Pairwise
+Preference; the contract rejects probability claims without calibration.
+
 ## 2026-07-22 Next Authority Implementation Baseline
 
 WP-00 has audited the execution, Chapter, Book, Context, Evaluation, and storage

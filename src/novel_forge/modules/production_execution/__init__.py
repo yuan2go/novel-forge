@@ -122,6 +122,12 @@ from .domain_execution import (
     execute_domain_candidate,
     execution_model_name,
 )
+from .judge_execution import (
+    EvidenceSpan,
+    JudgeExecutionEvidence,
+    JudgeKind,
+    capability_for_judge,
+)
 
 __all__ = [
     "AdmissionController",
@@ -182,6 +188,10 @@ __all__ = [
     "GatewayDomainExecutionPort",
     "execute_domain_candidate",
     "execution_model_name",
+    "EvidenceSpan",
+    "JudgeExecutionEvidence",
+    "JudgeKind",
+    "capability_for_judge",
     "LegacyRequestMapper",
     "LegacyResultMapper",
     "ModelProfile",
