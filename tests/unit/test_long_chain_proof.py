@@ -7,6 +7,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from novel_forge.modules.long_chain_proof import run_long_chain_proof
 from novel_forge.modules.model_router import create_model_route
+from novel_forge.modules.production_execution import (
+    DomainExecutionCandidate,
+    DomainExecutionEvidence,
+)
 from novel_forge.storage.local import LocalStorage
 
 
@@ -39,6 +43,35 @@ class ExternalChapterProviderAdapter:
         }
 
 
+class LongChainFixtureExecutionPort:
+    def __init__(self):
+        self.calls = 0
+
+    def execute(self, command):
+        self.calls += 1
+        return DomainExecutionCandidate(
+            command.candidate_kind,
+            {"text": f"Fixture chapter {self.calls}: conflict and hook."},
+            DomainExecutionEvidence(
+                execution_id=f"fixture-execution-{self.calls}",
+                operation_id="fixture-operation",
+                attempt_id=f"fixture-attempt-{self.calls}",
+                fencing_token=1,
+                capability=command.capability,
+                backend_id="scripted-fixture",
+                route_snapshot_id=f"fixture-route-{self.calls}",
+                input_manifest_ref=f"fixture-input-{self.calls}",
+                output_manifest_ref=f"fixture-output-{self.calls}",
+                validation_manifest_ref=f"fixture-validation-{self.calls}",
+                usage_receipt_ref=f"fixture-usage-{self.calls}",
+                cost_receipt_ref=f"fixture-cost-{self.calls}",
+                fixture_protocol_only=True,
+                real_model_call=False,
+                production_verified=False,
+            ),
+        )
+
+
 class LongChainProofTests(unittest.TestCase):
     def test_deterministic_50_chapter_run_writes_acceptance_evidence(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -62,6 +95,29 @@ class LongChainProofTests(unittest.TestCase):
             storage = LocalStorage(tmp)
             with self.assertRaises(ValueError):
                 run_long_chain_proof(storage, project_id="p1", mode="provider_30_slow")
+
+    def test_provider_mode_routes_fixture_candidates_through_execution_port(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            port = LongChainFixtureExecutionPort()
+            result = run_long_chain_proof(
+                storage,
+                project_id="p1",
+                mode="provider_50_proof",
+                target_chapter_count=50,
+                opt_in_slow_provider=True,
+                execution_port=port,
+            )
+
+            evidence = result["asset"]["content"]["provider_generation_evidence"]
+            self.assertEqual(port.calls, 50)
+            self.assertEqual(len(evidence["execution_evidence"]), 50)
+            self.assertTrue(
+                all(item["fixture_protocol_only"] for item in evidence["execution_evidence"])
+            )
+            self.assertTrue(
+                all(not item["real_model_call"] for item in evidence["execution_evidence"])
+            )
 
     def test_provider_50_proof_blocks_legacy_generation_adapter(self):
         with tempfile.TemporaryDirectory() as tmp:

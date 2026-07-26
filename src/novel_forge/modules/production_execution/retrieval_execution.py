@@ -1,8 +1,12 @@
 """Retrieval execution contracts; index governance remains in retrieval storage."""
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from typing import Any, Mapping, Protocol
+
+from novel_forge.modules.production_execution.capability_registry import (
+    CONTROLLED_ENVIRONMENTS,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -31,6 +35,9 @@ class EmbeddingExecutionEvidence:
             )
         ) or self.embedding_dimension <= 0:
             raise ValueError("embedding execution evidence is incomplete")
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
 
 
 @dataclass(frozen=True, slots=True)
@@ -104,10 +111,56 @@ class RetrievalExecutionPort(Protocol):
     ) -> RerankCandidate: ...
 
 
+def execute_similarity_embedding_pair(
+    current_text: str,
+    previous_text: str,
+    *,
+    execution_port: RetrievalExecutionPort | None,
+    legacy_provider: object | None,
+    environment: str,
+    evidence_context: Mapping[str, Any],
+) -> tuple[list[float], list[float], dict[str, Any]]:
+    """Execute pair embeddings while keeping remote invocation inside PEP."""
+
+    if execution_port is not None:
+        candidate = execution_port.embed_batch(
+            [current_text, previous_text],
+            evidence_context=evidence_context,
+        )
+        if candidate.evidence.partial_failure or candidate.evidence.dirty_index:
+            raise RuntimeError(
+                "semantic similarity embedding returned partial or dirty evidence"
+            )
+        return (
+            list(candidate.vectors[0]),
+            list(candidate.vectors[1]),
+            candidate.evidence.to_dict(),
+        )
+    if legacy_provider is None:
+        raise RuntimeError("similarity embedding provider is missing")
+    health = legacy_provider.health_check()  # type: ignore[attr-defined]
+    controlled = environment.strip().lower() in CONTROLLED_ENVIRONMENTS
+    if controlled and bool(health.get("external_api", False)):
+        raise RuntimeError(
+            "controlled semantic similarity requires RetrievalExecutionPort"
+        )
+    return (
+        list(legacy_provider.embed_text(current_text)),  # type: ignore[attr-defined]
+        list(legacy_provider.embed_text(previous_text)),  # type: ignore[attr-defined]
+        {
+            "fixture_protocol_only": True,
+            "real_model_call": False,
+            "production_verified": False,
+            "legacy_compatibility_only": True,
+        },
+    )
+
+
 __all__ = [
     "EmbeddingCandidate",
     "EmbeddingExecutionEvidence",
     "RerankCandidate",
     "RerankExecutionEvidence",
     "RetrievalExecutionPort",
+    "execute_similarity_embedding_pair",
 ]

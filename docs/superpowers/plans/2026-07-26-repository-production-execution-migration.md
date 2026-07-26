@@ -234,10 +234,10 @@
 - PEP produces analysis or `PlanChangeProposal` candidates only.
 - Deterministic reducers produce Story State; semantic diff, impact analysis, approval, new AssetVersion, activation, and supersession remain domain-owned.
 
-- [ ] Test recap/drift/closure/reachability/forecast/extraction capabilities and reducer import isolation.
-- [ ] Remove direct model execution and direct future-plan overwrite.
-- [ ] Run longform/reducer/canon tests without real 10/30 chapter runs.
-- [ ] Commit `refactor: migrate longform analysis and preserve deterministic reducers`.
+- [x] Test recap/drift/closure/reachability/forecast/extraction capability routing and deterministic semantic-domain isolation.
+- [x] Remove direct model/remote embedding execution and direct future-plan overwrite.
+- [x] Run longform/reducer/canon fixture tests without a real Provider or real 10/30 chapter run.
+- [x] Commit `refactor: migrate longform analysis and preserve deterministic reducers`.
 
 ### Task 12: Agent and Loop execution migration
 

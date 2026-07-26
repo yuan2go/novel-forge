@@ -3,9 +3,14 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from novel_forge.core.ids import make_id, utc_now
+from novel_forge.core.ids import make_id
 from novel_forge.modules.common import resolve_path
 from novel_forge.modules.os_envelope import enforce_os_envelope, envelope_asset_metadata, is_production_environment
+from novel_forge.modules.production_execution import (
+    CandidateKind,
+    DomainExecutionPort,
+    execute_domain_candidate,
+)
 from novel_forge.schemas import (
     CanonConflictTrend,
     ChapterQualityTrend,
@@ -35,6 +40,7 @@ def run_long_chain_proof(
     envelope: dict[str, Any] | None = None,
     opt_in_slow_provider: bool = False,
     provider_adapter: Any | None = None,
+    execution_port: DomainExecutionPort | None = None,
     provider_runtime_guard: dict[str, Any] | None = None,
     require_external_provider_proof: bool = False,
 ) -> dict[str, Any]:
@@ -45,8 +51,12 @@ def run_long_chain_proof(
     chapter_count = target_chapter_count or {"deterministic_50": 50, "mock_100": 100, "state_only_300": 300, "provider_30_slow": 30, "provider_50_proof": 50}[mode]
     if is_production_environment(environment or (envelope or {}).get("environment")) and chapter_count < 50:
         raise ValueError("production long-chain proof requires at least 50 chapters")
-    if mode.startswith("provider_") and provider_adapter is None:
-        raise ValueError(f"{mode} requires provider_adapter")
+    if (
+        mode.startswith("provider_")
+        and provider_adapter is None
+        and execution_port is None
+    ):
+        raise ValueError(f"{mode} requires execution_port")
     env = enforce_os_envelope(
         storage,
         envelope_payload=envelope,
@@ -67,6 +77,7 @@ def run_long_chain_proof(
             project_id=project_id,
             chapter_count=chapter_count,
             adapter=provider_adapter,
+            execution_port=execution_port,
             envelope=env,
             provider_runtime_guard=provider_runtime_guard or {},
             require_external_provider_proof=require_external_provider_proof,
@@ -209,21 +220,14 @@ def _run_provider_chapter_generation(
     run_id: str,
     project_id: str,
     chapter_count: int,
-    adapter: Any,
+    adapter: Any | None,
+    execution_port: DomainExecutionPort | None,
     envelope: dict[str, Any],
     provider_runtime_guard: dict[str, Any],
     require_external_provider_proof: bool,
 ) -> dict[str, Any]:
-    from novel_forge.modules.model_router import call_model_via_router, record_external_provider_proof
-
     draft_paths: list[str] = []
-    model_call_paths: list[str] = []
-    route_paths: list[str] = []
-    runtime_policy_paths: list[str] = []
-    cost_ledger_paths: list[str] = []
-    external_proof_paths: list[str] = []
-    provider_policy: dict[str, Any] = {}
-    approval_evidence: dict[str, Any] = {}
+    execution_evidence: list[dict[str, Any]] = []
     for chapter_no in range(1, chapter_count + 1):
         payload = {
             "task": "long_chain_provider_chapter_generation",
@@ -232,62 +236,67 @@ def _run_provider_chapter_generation(
             "chapter_no": chapter_no,
             "instruction": "Generate an original chapter-state proof candidate with no reference-source text.",
         }
-        result = call_model_via_router(
-            storage,
-            adapter=adapter,
+        candidate = execute_domain_candidate(
+            capability="prose.chapter.draft",
             operation="generate",
-            payload=str(payload),
-            context={"environment": envelope.get("environment"), "long_chain_run_id": run_id, "chapter_no": chapter_no},
-            task_type="chapter_draft",
-            project_id=project_id,
-            prompt_id="long-chain-provider-proof-chapter",
-            prompt_version="v7",
-            trace={"trace_id": str(envelope.get("trace_id") or "")},
+            candidate_kind=CandidateKind.GENERATION,
+            prompt=str(payload),
+            context={
+                "environment": envelope.get("environment"),
+                "long_chain_run_id": run_id,
+                "chapter_no": chapter_no,
+                "provider_runtime_guard": provider_runtime_guard,
+                "trace_id": str(envelope.get("trace_id") or ""),
+            },
+            execution_port=execution_port,
+            legacy_model=adapter,
+            legacy_model_role="prose",
             environment=str(envelope.get("environment") or ""),
-            provider_runtime_guard=provider_runtime_guard,
         )
-        gateway = result.get("model_gateway_call", {}) if isinstance(result.get("model_gateway_call", {}), dict) else {}
-        external_proof = (
-            record_external_provider_proof(
-                storage,
-                proof_type=f"long_chain_chapter:{chapter_no}",
-                routed_result=result,
-                adapter=adapter,
-                project_id=project_id,
-                environment=str(envelope.get("environment") or ""),
-                target_refs=[],
-                strict=require_external_provider_proof,
+        evidence = candidate.evidence.to_dict()
+        if require_external_provider_proof and (
+            evidence["fixture_protocol_only"]
+            or not evidence["real_model_call"]
+            or not evidence["usage_receipt_ref"]
+            or not evidence["cost_receipt_ref"]
+        ):
+            raise RuntimeError(
+                "external Provider proof requires non-fixture Gateway receipts"
             )
-            if require_external_provider_proof
-            else {"status": "not_required", "path": "", "blocking": False}
-        )
-        if external_proof.get("path"):
-            external_proof_paths.append(str(external_proof["path"]))
-        provider_policy = gateway.get("provider_policy", {}) if isinstance(gateway.get("provider_policy", {}), dict) else provider_policy
-        approval_evidence = gateway.get("approval_evidence", {}) if isinstance(gateway.get("approval_evidence", {}), dict) else approval_evidence
-        model_call_paths.append(str(gateway.get("model_call_log_path") or ""))
-        route_paths.append(str(result.get("model_route_resolution_path") or ""))
-        runtime_policy_paths.append(str(gateway.get("runtime_policy_path") or ""))
-        if gateway.get("cost_ledger_path"):
-            cost_ledger_paths.append(str(gateway.get("cost_ledger_path")))
+        execution_evidence.append(evidence)
         draft = DraftChapter(
             title=f"Provider proof chapter {chapter_no}",
             source=run_id,
             tags=["long-chain-proof", "provider-generated", f"chapter-{chapter_no}"],
             content={
                 "chapter": chapter_no,
-                "text": str(result.get("text") or ""),
+                "text": str(candidate.raw_output.get("text") or ""),
                 "copyright_boundary": "provider-generated original proof candidate; no reference-source text",
                 "provider_generation_evidence": {
-                    "model_route_resolution_path": str(result.get("model_route_resolution_path") or ""),
-                    "model_call_log_path": str(gateway.get("model_call_log_path") or ""),
-                    "runtime_policy_path": str(gateway.get("runtime_policy_path") or ""),
-                    "cost_ledger_path": str(gateway.get("cost_ledger_path") or ""),
-                    "external_provider_proof_path": str(external_proof.get("path") or ""),
+                    "route_snapshot_id": evidence["route_snapshot_id"],
+                    "input_manifest_ref": evidence["input_manifest_ref"],
+                    "output_manifest_ref": evidence["output_manifest_ref"],
+                    "validation_manifest_ref": evidence["validation_manifest_ref"],
+                    "usage_receipt_ref": evidence["usage_receipt_ref"],
+                    "cost_receipt_ref": evidence["cost_receipt_ref"],
+                    "fixture_protocol_only": evidence["fixture_protocol_only"],
+                    "real_model_call": evidence["real_model_call"],
+                    "production_verified": False,
                 },
             },
             metadata={"project_id": project_id, **envelope_asset_metadata(envelope)},
-            references=[value for value in [str(result.get("model_route_resolution_path") or ""), str(gateway.get("model_call_log_path") or ""), str(gateway.get("runtime_policy_path") or ""), str(gateway.get("cost_ledger_path") or ""), str(external_proof.get("path") or "")] if value],
+            references=[
+                value
+                for value in [
+                    evidence["route_snapshot_id"],
+                    evidence["input_manifest_ref"],
+                    evidence["output_manifest_ref"],
+                    evidence["validation_manifest_ref"],
+                    evidence["usage_receipt_ref"],
+                    evidence["cost_receipt_ref"],
+                ]
+                if value
+            ],
         )
         draft_paths.append(_write_asset(storage, draft))
     return {
@@ -295,14 +304,21 @@ def _run_provider_chapter_generation(
         "generated_chapter_count": len(draft_paths),
         "target_chapter_count": chapter_count,
         "draft_paths": draft_paths,
-        "model_route_resolution_paths": [path for path in route_paths if path],
-        "model_call_log_paths": [path for path in model_call_paths if path],
-        "runtime_policy_paths": [path for path in runtime_policy_paths if path],
-        "cost_ledger_paths": [path for path in cost_ledger_paths if path],
+        "execution_evidence": execution_evidence,
+        "model_route_resolution_paths": [
+            item["route_snapshot_id"] for item in execution_evidence
+        ],
+        "model_call_log_paths": [],
+        "runtime_policy_paths": [],
+        "cost_ledger_paths": [
+            item["cost_receipt_ref"]
+            for item in execution_evidence
+            if item["cost_receipt_ref"]
+        ],
         "external_provider_proof_required": bool(require_external_provider_proof),
-        "external_provider_proof_paths": external_proof_paths,
-        "provider_policy": provider_policy,
-        "approval_evidence": approval_evidence,
+        "external_provider_proof_paths": [],
+        "provider_policy": {"status": "authority_route_snapshot_bound"},
+        "approval_evidence": {"status": "authority_admission_bound"},
     }
 
 
@@ -322,11 +338,11 @@ def _acceptance_checks(chapter_count: int, checkpoints: list[dict[str, Any]], tr
             {
                 "check": "provider_generation_coverage",
                 "passed": int(provider_evidence.get("generated_chapter_count", 0) or 0) == chapter_count
-                and len(provider_evidence.get("model_call_log_paths", []) or []) == chapter_count
-                and str((provider_evidence.get("provider_policy", {}) if isinstance(provider_evidence.get("provider_policy", {}), dict) else {}).get("status", "")) in {"passed", "skipped"},
+                and len(provider_evidence.get("execution_evidence", []) or []) == chapter_count
+                and str((provider_evidence.get("provider_policy", {}) if isinstance(provider_evidence.get("provider_policy", {}), dict) else {}).get("status", "")) in {"authority_route_snapshot_bound"},
                 "evidence": {
                     "generated_chapter_count": provider_evidence.get("generated_chapter_count", 0),
-                    "model_call_log_count": len(provider_evidence.get("model_call_log_paths", []) or []),
+                    "execution_evidence_count": len(provider_evidence.get("execution_evidence", []) or []),
                     "provider_policy": provider_evidence.get("provider_policy", {}),
                 },
                 "blocking": True,

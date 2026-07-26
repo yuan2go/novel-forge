@@ -20,6 +20,12 @@ class LongformRecapAgentTests(unittest.TestCase):
             storage = LocalStorage(tmp)
             storage.ensure_layout()
             latest_path = _longform_fixture(storage)
+            arc_path = next(
+                path
+                for path in storage.list_json("continuity")
+                if storage.read_json(path).get("type") == "arc_plan"
+            )
+            arc_before = storage.read_json(arc_path)
             latest = storage.read_asset(latest_path)
             create_review_issue(
                 storage,
@@ -45,16 +51,23 @@ class LongformRecapAgentTests(unittest.TestCase):
             self.assertEqual(report["type"], "longform_recap_report")
             self.assertEqual(report["content"]["trigger"]["recap_level"], "formal")
             self.assertEqual(report["content"]["chapter_range"]["end"], 12)
-            self.assertEqual(writeback["status"], "applied")
+            self.assertEqual(writeback["status"], "proposals_created")
             self.assertTrue(writeback["canon_patch_path"])
             self.assertTrue(writeback["character_state_ledger_path"])
-            self.assertTrue(writeback["arc_plan_path"])
+            self.assertFalse(writeback["arc_plan_path"])
+            self.assertTrue(writeback["arc_plan_proposal_path"])
+            self.assertTrue(writeback["arc_plan_approval_request_path"])
             self.assertTrue(writeback["foreshadowing_graph_path"])
             self.assertTrue(writeback["review_issue_paths"])
             self.assertTrue(writeback["revision_task_path"])
             self.assertGreater(writeback["mkaos_usage_event_count"], 0)
             self.assertTrue(writeback["mkaos_feedback_paths"])
             self.assertEqual(result["loop"]["status"], "succeeded")
+            proposal = storage.read_json(writeback["arc_plan_proposal_path"])
+            self.assertEqual(proposal["type"], "plan_adjustment_proposal")
+            self.assertEqual(proposal["content"]["status"], "waiting_human")
+            self.assertFalse(proposal["metadata"]["active"])
+            self.assertEqual(storage.read_json(arc_path), arc_before)
             _assert_no_raw_text_payload(self, report["content"])
 
             issues = list_review_issues(storage, project_id="recap-p", limit=50)

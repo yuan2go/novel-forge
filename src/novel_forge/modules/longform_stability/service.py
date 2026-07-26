@@ -14,6 +14,7 @@ from novel_forge.modules.common import resolve_path
 from novel_forge.modules.mobile_reading import create_mobile_reading_report
 from novel_forge.modules.os_envelope import is_production_environment
 from novel_forge.modules.production_governance import record_fallback_decision
+from novel_forge.modules.production_execution import RetrievalExecutionPort
 from novel_forge.modules.production_context import filter_project_safe_references, project_scope_from_asset
 from novel_forge.modules.reader_promise import build_reader_promise_ledger_for_draft
 from novel_forge.modules.runtime_ledger import record_gate_result
@@ -566,6 +567,7 @@ def create_chapter_pattern_report(
     *,
     workspace_path: str | None = None,
     semantic_adapter: Any | None = None,
+    semantic_execution_port: RetrievalExecutionPort | None = None,
     semantic_environment: str = "",
 ) -> dict[str, Any]:
     path = resolve_path(storage.root, draft_path)
@@ -582,6 +584,7 @@ def create_chapter_pattern_report(
         current_text=_asset_text(draft),
         limit=10,
         semantic_adapter=semantic_adapter,
+        semantic_execution_port=semantic_execution_port,
         semantic_environment=semantic_environment,
     )
     checks = [*_pattern_checks(history, fingerprint), *_semantic_similarity_issues(semantic_checks)]
@@ -2244,6 +2247,7 @@ def _cross_chapter_semantic_checks(
     current_text: str,
     limit: int,
     semantic_adapter: Any | None = None,
+    semantic_execution_port: RetrievalExecutionPort | None = None,
     semantic_environment: str = "",
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """Compare a chapter only with bounded, earlier drafts in the same project.
@@ -2287,11 +2291,26 @@ def _cross_chapter_semantic_checks(
     candidates = sorted(candidates, key=lambda row: (int(row["chapter_no"]), str(row["path"])), reverse=True)[: max(1, int(limit))]
     provider, provider_info = resolve_similarity_provider(
         adapter=semantic_adapter,
+        execution_port=semantic_execution_port,
         environment=semantic_environment,
     )
     checks: list[dict[str, Any]] = []
     for candidate in candidates:
-        scored = score_similarity(normalized_current, candidate["text"], provider=provider)
+        scored = score_similarity(
+            normalized_current,
+            candidate["text"],
+            provider=provider,
+            execution_port=semantic_execution_port,
+            environment=semantic_environment,
+            evidence_context={
+                "capability": "retrieval.embed",
+                "project_id": project_id,
+                "current_draft_id": current_draft_id,
+                "previous_asset_id": candidate["asset_id"],
+                "candidate_set_version": f"{project_id}:chapter:{current_chapter}:window:{limit}",
+                "source_eligibility": "PROJECT_OWNED_DRAFT",
+            },
+        )
         checks.append(
             {
                 "dimension": "semantic_similarity",

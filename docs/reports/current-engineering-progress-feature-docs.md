@@ -83,6 +83,13 @@ has not started and `real_provider_proven`, `longform_proven`, and
 - MKAOS 的模型分析、知识/规则/模板抽取已改为通过统一执行端口返回候选；Rights、Source Eligibility、Source Isolation、Schema、Lineage、Review、Approval、Weight Governance 仍归 MKAOS。
 - 受控 Qdrant 远程 Embedding 必须通过 Retrieval Execution Port，证据冻结模型、维度、源块 Hash、批次、索引版本、Usage/Cost 与 partial/dirty 状态；Rerank 冻结候选集版本和排序证据。
 - 本轮仅完成 Fixture/本地集成证明，未执行真实 Embedding、Rerank 或付费 Provider 请求。
+
+2026-07-26 Production Execution WP-11 更新：
+
+- Longform Recap、Plan-vs-Actual、Drift、Arc Closure、Ending Reachability、PlanChange、关系抽取和 Forecast 已有统一候选执行合同；长链 Provider 章节候选不再直接调用 Model Router。
+- 远程语义相似度必须通过 Retrieval Execution Port；本地 Hash 只作为确定性回归信号。
+- Recap 不再原地修改 ArcPlan，而是生成含 Semantic Diff、Impact Analysis、Approval 和版本迁移约束的 `plan_adjustment_proposal`。
+- 12/50 章测试均为确定性 Fixture 回归，`longform_proven=false`，未执行真实长篇 Provider 验证。
 - Web Admin 新增 `/mkaos/model-extraction/*`、`/mkaos/production-gate/*`、`/mkaos/knowledge-graph`、`/mkaos/lineage`、`/mkaos/impact`、`/mkaos/feedback-attribution` first-slice 页面。
 
 最终验证：

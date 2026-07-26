@@ -128,12 +128,14 @@ from .judge_execution import (
     JudgeKind,
     capability_for_judge,
 )
+from .longform_execution import LongformAnalysisKind, execute_longform_analysis
 from .retrieval_execution import (
     EmbeddingCandidate,
     EmbeddingExecutionEvidence,
     RerankCandidate,
     RerankExecutionEvidence,
     RetrievalExecutionPort,
+    execute_similarity_embedding_pair,
 )
 
 __all__ = [
@@ -199,11 +201,14 @@ __all__ = [
     "JudgeExecutionEvidence",
     "JudgeKind",
     "capability_for_judge",
+    "LongformAnalysisKind",
+    "execute_longform_analysis",
     "EmbeddingCandidate",
     "EmbeddingExecutionEvidence",
     "RerankCandidate",
     "RerankExecutionEvidence",
     "RetrievalExecutionPort",
+    "execute_similarity_embedding_pair",
     "LegacyRequestMapper",
     "LegacyResultMapper",
     "ModelProfile",

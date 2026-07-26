@@ -1,5 +1,5 @@
 {
-  "artifact_hash": "sha256:9798d9489d3bcb7da4eab72eab60b87311b9bcda1fde7f4ca4365a0e0d8014c3",
+  "artifact_hash": "sha256:5fe6825e87ac1eee18519f7d6c4c17b954044efbbe4e2b64a537f3eb5afbcd48",
   "blocking_owner_ids": [],
   "entries": [
     {
@@ -10544,6 +10544,37 @@
       ]
     },
     {
+      "authority_attempt_bound": false,
+      "authority_operation_bound": false,
+      "budget_bound": false,
+      "callback_supported": false,
+      "cancel_supported": false,
+      "current_adapter": "novel_forge.modules.production_execution.domain_execution.execute_domain_candidate",
+      "current_entrypoint": "execute_domain_candidate",
+      "current_route": "PRODUCTION_EXECUTION_GATEWAY",
+      "current_state_store": "UNKNOWN",
+      "domain": "production_execution",
+      "execution_owner_id": "execution-owner:427ea27efbd18f774663",
+      "external_effect_bound": false,
+      "known_risks": [
+        "indirect wrapper",
+        "no Authority Attempt and fence binding detected",
+        "no ExternalEffect binding detected"
+      ],
+      "legacy_removal_gate": "all callers gateway-bound; fixture and PostgreSQL recovery proven; architecture guard active",
+      "migration_status": "DISCOVERED",
+      "production_reachable": true,
+      "query_supported": false,
+      "side_effect_type": "MODEL_INFERENCE",
+      "source_file": "src/novel_forge/modules/production_execution/longform_execution.py",
+      "source_symbol": "execute_longform_analysis",
+      "target_backend": "remote-provider",
+      "target_capability": "longform.recap.analyze",
+      "tests": [
+        "tests/unit/test_longform_execution_migration.py"
+      ]
+    },
+    {
       "authority_attempt_bound": true,
       "authority_operation_bound": true,
       "budget_bound": false,
@@ -10682,6 +10713,36 @@
         "tests/unit/test_process_supervisor.py",
         "tests/unit/test_production_execution_gateway.py",
         "tests/unit/test_production_execution_inventory.py"
+      ]
+    },
+    {
+      "authority_attempt_bound": false,
+      "authority_operation_bound": false,
+      "budget_bound": false,
+      "callback_supported": false,
+      "cancel_supported": false,
+      "current_adapter": "execution_port.embed_batch",
+      "current_entrypoint": "execution_port.embed_batch",
+      "current_route": "PRODUCTION_EXECUTION_GATEWAY",
+      "current_state_store": "UNKNOWN",
+      "domain": "production_execution",
+      "execution_owner_id": "execution-owner:74f9fc29ca8e463568ca",
+      "external_effect_bound": false,
+      "known_risks": [
+        "no Authority Attempt and fence binding detected",
+        "no ExternalEffect binding detected"
+      ],
+      "legacy_removal_gate": "all callers gateway-bound; fixture and PostgreSQL recovery proven; architecture guard active",
+      "migration_status": "DISCOVERED",
+      "production_reachable": true,
+      "query_supported": false,
+      "side_effect_type": "REMOTE_RETRIEVAL",
+      "source_file": "src/novel_forge/modules/production_execution/retrieval_execution.py",
+      "source_symbol": "execute_similarity_embedding_pair",
+      "target_backend": "remote-external-action",
+      "target_capability": "retrieval.embed",
+      "tests": [
+        "tests/unit/test_mkaos_retrieval_execution_migration.py"
       ]
     },
     {
@@ -10974,6 +11035,7 @@
       "tests": [
         "tests/unit/test_chapter_plan_fidelity.py",
         "tests/unit/test_domain_execution_port.py",
+        "tests/unit/test_longform_stability.py",
         "tests/unit/test_production_entrypoint_contract.py",
         "tests/unit/test_v1_chapter_sequence_acceptance_script.py"
       ]
@@ -11293,12 +11355,12 @@
         "tests/integration/test_production_execution_gateway_postgres.py",
         "tests/unit/test_domain_execution_port.py",
         "tests/unit/test_execution_backend_conformance.py",
+        "tests/unit/test_long_chain_proof.py",
+        "tests/unit/test_longform_execution_migration.py",
         "tests/unit/test_mkaos_provider_semantic_governance.py",
         "tests/unit/test_mkaos_retrieval_execution_migration.py",
         "tests/unit/test_model_operation_governance.py",
-        "tests/unit/test_production_execution_capabilities.py",
-        "tests/unit/test_production_execution_gateway.py",
-        "tests/unit/test_production_execution_inventory.py"
+        "tests/unit/test_production_execution_capabilities.py"
       ]
     },
     {
@@ -11331,12 +11393,12 @@
         "tests/integration/test_production_execution_gateway_postgres.py",
         "tests/unit/test_domain_execution_port.py",
         "tests/unit/test_execution_backend_conformance.py",
+        "tests/unit/test_long_chain_proof.py",
+        "tests/unit/test_longform_execution_migration.py",
         "tests/unit/test_mkaos_provider_semantic_governance.py",
         "tests/unit/test_mkaos_retrieval_execution_migration.py",
         "tests/unit/test_model_operation_governance.py",
-        "tests/unit/test_production_execution_capabilities.py",
-        "tests/unit/test_production_execution_gateway.py",
-        "tests/unit/test_production_execution_inventory.py"
+        "tests/unit/test_production_execution_capabilities.py"
       ]
     },
     {
@@ -11369,12 +11431,12 @@
         "tests/integration/test_production_execution_gateway_postgres.py",
         "tests/unit/test_domain_execution_port.py",
         "tests/unit/test_execution_backend_conformance.py",
+        "tests/unit/test_long_chain_proof.py",
+        "tests/unit/test_longform_execution_migration.py",
         "tests/unit/test_mkaos_provider_semantic_governance.py",
         "tests/unit/test_mkaos_retrieval_execution_migration.py",
         "tests/unit/test_model_operation_governance.py",
-        "tests/unit/test_production_execution_capabilities.py",
-        "tests/unit/test_production_execution_gateway.py",
-        "tests/unit/test_production_execution_inventory.py"
+        "tests/unit/test_production_execution_capabilities.py"
       ]
     },
     {
@@ -11407,12 +11469,12 @@
         "tests/integration/test_production_execution_gateway_postgres.py",
         "tests/unit/test_domain_execution_port.py",
         "tests/unit/test_execution_backend_conformance.py",
+        "tests/unit/test_long_chain_proof.py",
+        "tests/unit/test_longform_execution_migration.py",
         "tests/unit/test_mkaos_provider_semantic_governance.py",
         "tests/unit/test_mkaos_retrieval_execution_migration.py",
         "tests/unit/test_model_operation_governance.py",
-        "tests/unit/test_production_execution_capabilities.py",
-        "tests/unit/test_production_execution_gateway.py",
-        "tests/unit/test_production_execution_inventory.py"
+        "tests/unit/test_production_execution_capabilities.py"
       ]
     },
     {
@@ -11445,12 +11507,12 @@
         "tests/integration/test_production_execution_gateway_postgres.py",
         "tests/unit/test_domain_execution_port.py",
         "tests/unit/test_execution_backend_conformance.py",
+        "tests/unit/test_long_chain_proof.py",
+        "tests/unit/test_longform_execution_migration.py",
         "tests/unit/test_mkaos_provider_semantic_governance.py",
         "tests/unit/test_mkaos_retrieval_execution_migration.py",
         "tests/unit/test_model_operation_governance.py",
-        "tests/unit/test_production_execution_capabilities.py",
-        "tests/unit/test_production_execution_gateway.py",
-        "tests/unit/test_production_execution_inventory.py"
+        "tests/unit/test_production_execution_capabilities.py"
       ]
     },
     {
@@ -11483,12 +11545,12 @@
         "tests/integration/test_production_execution_gateway_postgres.py",
         "tests/unit/test_domain_execution_port.py",
         "tests/unit/test_execution_backend_conformance.py",
+        "tests/unit/test_long_chain_proof.py",
+        "tests/unit/test_longform_execution_migration.py",
         "tests/unit/test_mkaos_provider_semantic_governance.py",
         "tests/unit/test_mkaos_retrieval_execution_migration.py",
         "tests/unit/test_model_operation_governance.py",
-        "tests/unit/test_production_execution_capabilities.py",
-        "tests/unit/test_production_execution_gateway.py",
-        "tests/unit/test_production_execution_inventory.py"
+        "tests/unit/test_production_execution_capabilities.py"
       ]
     },
     {
@@ -11521,12 +11583,12 @@
         "tests/integration/test_production_execution_gateway_postgres.py",
         "tests/unit/test_domain_execution_port.py",
         "tests/unit/test_execution_backend_conformance.py",
+        "tests/unit/test_long_chain_proof.py",
+        "tests/unit/test_longform_execution_migration.py",
         "tests/unit/test_mkaos_provider_semantic_governance.py",
         "tests/unit/test_mkaos_retrieval_execution_migration.py",
         "tests/unit/test_model_operation_governance.py",
-        "tests/unit/test_production_execution_capabilities.py",
-        "tests/unit/test_production_execution_gateway.py",
-        "tests/unit/test_production_execution_inventory.py"
+        "tests/unit/test_production_execution_capabilities.py"
       ]
     },
     {
@@ -11559,12 +11621,12 @@
         "tests/integration/test_production_execution_gateway_postgres.py",
         "tests/unit/test_domain_execution_port.py",
         "tests/unit/test_execution_backend_conformance.py",
+        "tests/unit/test_long_chain_proof.py",
+        "tests/unit/test_longform_execution_migration.py",
         "tests/unit/test_mkaos_provider_semantic_governance.py",
         "tests/unit/test_mkaos_retrieval_execution_migration.py",
         "tests/unit/test_model_operation_governance.py",
-        "tests/unit/test_production_execution_capabilities.py",
-        "tests/unit/test_production_execution_gateway.py",
-        "tests/unit/test_production_execution_inventory.py"
+        "tests/unit/test_production_execution_capabilities.py"
       ]
     },
     {
@@ -11597,12 +11659,12 @@
         "tests/integration/test_production_execution_gateway_postgres.py",
         "tests/unit/test_domain_execution_port.py",
         "tests/unit/test_execution_backend_conformance.py",
+        "tests/unit/test_long_chain_proof.py",
+        "tests/unit/test_longform_execution_migration.py",
         "tests/unit/test_mkaos_provider_semantic_governance.py",
         "tests/unit/test_mkaos_retrieval_execution_migration.py",
         "tests/unit/test_model_operation_governance.py",
-        "tests/unit/test_production_execution_capabilities.py",
-        "tests/unit/test_production_execution_gateway.py",
-        "tests/unit/test_production_execution_inventory.py"
+        "tests/unit/test_production_execution_capabilities.py"
       ]
     },
     {
@@ -11635,12 +11697,12 @@
         "tests/integration/test_production_execution_gateway_postgres.py",
         "tests/unit/test_domain_execution_port.py",
         "tests/unit/test_execution_backend_conformance.py",
+        "tests/unit/test_long_chain_proof.py",
+        "tests/unit/test_longform_execution_migration.py",
         "tests/unit/test_mkaos_provider_semantic_governance.py",
         "tests/unit/test_mkaos_retrieval_execution_migration.py",
         "tests/unit/test_model_operation_governance.py",
-        "tests/unit/test_production_execution_capabilities.py",
-        "tests/unit/test_production_execution_gateway.py",
-        "tests/unit/test_production_execution_inventory.py"
+        "tests/unit/test_production_execution_capabilities.py"
       ]
     },
     {
@@ -11675,12 +11737,12 @@
         "tests/integration/test_production_execution_gateway_postgres.py",
         "tests/unit/test_domain_execution_port.py",
         "tests/unit/test_execution_backend_conformance.py",
+        "tests/unit/test_long_chain_proof.py",
+        "tests/unit/test_longform_execution_migration.py",
         "tests/unit/test_mkaos_provider_semantic_governance.py",
         "tests/unit/test_mkaos_retrieval_execution_migration.py",
         "tests/unit/test_model_operation_governance.py",
-        "tests/unit/test_production_execution_capabilities.py",
-        "tests/unit/test_production_execution_gateway.py",
-        "tests/unit/test_production_execution_inventory.py"
+        "tests/unit/test_production_execution_capabilities.py"
       ]
     },
     {
@@ -11713,12 +11775,12 @@
         "tests/integration/test_production_execution_gateway_postgres.py",
         "tests/unit/test_domain_execution_port.py",
         "tests/unit/test_execution_backend_conformance.py",
+        "tests/unit/test_long_chain_proof.py",
+        "tests/unit/test_longform_execution_migration.py",
         "tests/unit/test_mkaos_provider_semantic_governance.py",
         "tests/unit/test_mkaos_retrieval_execution_migration.py",
         "tests/unit/test_model_operation_governance.py",
-        "tests/unit/test_production_execution_capabilities.py",
-        "tests/unit/test_production_execution_gateway.py",
-        "tests/unit/test_production_execution_inventory.py"
+        "tests/unit/test_production_execution_capabilities.py"
       ]
     },
     {
@@ -11751,12 +11813,12 @@
         "tests/integration/test_production_execution_gateway_postgres.py",
         "tests/unit/test_domain_execution_port.py",
         "tests/unit/test_execution_backend_conformance.py",
+        "tests/unit/test_long_chain_proof.py",
+        "tests/unit/test_longform_execution_migration.py",
         "tests/unit/test_mkaos_provider_semantic_governance.py",
         "tests/unit/test_mkaos_retrieval_execution_migration.py",
         "tests/unit/test_model_operation_governance.py",
-        "tests/unit/test_production_execution_capabilities.py",
-        "tests/unit/test_production_execution_gateway.py",
-        "tests/unit/test_production_execution_inventory.py"
+        "tests/unit/test_production_execution_capabilities.py"
       ]
     },
     {
@@ -11789,12 +11851,12 @@
         "tests/integration/test_production_execution_gateway_postgres.py",
         "tests/unit/test_domain_execution_port.py",
         "tests/unit/test_execution_backend_conformance.py",
+        "tests/unit/test_long_chain_proof.py",
+        "tests/unit/test_longform_execution_migration.py",
         "tests/unit/test_mkaos_provider_semantic_governance.py",
         "tests/unit/test_mkaos_retrieval_execution_migration.py",
         "tests/unit/test_model_operation_governance.py",
-        "tests/unit/test_production_execution_capabilities.py",
-        "tests/unit/test_production_execution_gateway.py",
-        "tests/unit/test_production_execution_inventory.py"
+        "tests/unit/test_production_execution_capabilities.py"
       ]
     },
     {
@@ -11827,12 +11889,12 @@
         "tests/integration/test_production_execution_gateway_postgres.py",
         "tests/unit/test_domain_execution_port.py",
         "tests/unit/test_execution_backend_conformance.py",
+        "tests/unit/test_long_chain_proof.py",
+        "tests/unit/test_longform_execution_migration.py",
         "tests/unit/test_mkaos_provider_semantic_governance.py",
         "tests/unit/test_mkaos_retrieval_execution_migration.py",
         "tests/unit/test_model_operation_governance.py",
-        "tests/unit/test_production_execution_capabilities.py",
-        "tests/unit/test_production_execution_gateway.py",
-        "tests/unit/test_production_execution_inventory.py"
+        "tests/unit/test_production_execution_capabilities.py"
       ]
     },
     {
@@ -11865,12 +11927,12 @@
         "tests/integration/test_production_execution_gateway_postgres.py",
         "tests/unit/test_domain_execution_port.py",
         "tests/unit/test_execution_backend_conformance.py",
+        "tests/unit/test_long_chain_proof.py",
+        "tests/unit/test_longform_execution_migration.py",
         "tests/unit/test_mkaos_provider_semantic_governance.py",
         "tests/unit/test_mkaos_retrieval_execution_migration.py",
         "tests/unit/test_model_operation_governance.py",
-        "tests/unit/test_production_execution_capabilities.py",
-        "tests/unit/test_production_execution_gateway.py",
-        "tests/unit/test_production_execution_inventory.py"
+        "tests/unit/test_production_execution_capabilities.py"
       ]
     },
     {
@@ -20544,7 +20606,7 @@
       ]
     }
   ],
-  "entry_count": 628,
+  "entry_count": 630,
   "evidence_flags": {
     "production_verified": false,
     "real_provider_proven": false,
@@ -20553,23 +20615,23 @@
   "generator_version": "1.0.0",
   "migration_summary": {
     "CLASSIFIED": 417,
-    "DISCOVERED": 183,
+    "DISCOVERED": 185,
     "FIXTURE_PROVEN": 27,
     "GATEWAY_BOUND": 1
   },
   "parse_errors": [],
-  "scanned_file_count": 568,
+  "scanned_file_count": 569,
   "schema_version": "production-execution-migration-ledger.v1",
-  "source_tree_hash": "sha256:47b5026aee59ba7b5b2766853e6363402ab3dcf5fb169a5926e6d5c918019959",
+  "source_tree_hash": "sha256:3ad9f4326741860e4eec6f6a9f9804cfcda4660a3c5793164298a2982ba7c197",
   "summary": {
     "AGENT_WORKSPACE_TRANSACTION": 0,
     "DATABASE_AUTHORITY": 417,
     "DETERMINISTIC_LOCAL": 0,
     "LEGACY_UNKNOWN": 29,
     "LOCAL_PROCESS_REMOTE_INFERENCE": 12,
-    "MODEL_INFERENCE": 103,
+    "MODEL_INFERENCE": 104,
     "REMOTE_EXTERNAL_ACTION": 14,
-    "REMOTE_RETRIEVAL": 26,
+    "REMOTE_RETRIEVAL": 27,
     "SCRIPTED_FIXTURE": 27
   }
 }

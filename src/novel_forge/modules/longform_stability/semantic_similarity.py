@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 """Provider-aware cross-chapter similarity evidence.
 
 The local hash adapter is intentionally retained as an offline regression
@@ -7,11 +5,18 @@ signal.  It is never labelled as a semantic model and its evidence cannot be
 used to claim premium prose quality.  A configured embedding provider can be
 injected without changing the chapter-pattern contract.
 """
+from __future__ import annotations
 
+import hashlib
+import math
 import os
+from dataclasses import dataclass
 from typing import Any, Mapping, Protocol
 
-from novel_forge.model_adapters import HashEmbeddingAdapter, cosine_similarity, embedding_adapter_from_env
+from novel_forge.modules.production_execution import (
+    RetrievalExecutionPort,
+    execute_similarity_embedding_pair,
+)
 
 
 class SimilarityEmbeddingProvider(Protocol):
@@ -23,65 +28,115 @@ class SimilarityEmbeddingProvider(Protocol):
     def health_check(self) -> dict[str, Any]: ...
 
 
+@dataclass(frozen=True, slots=True)
+class LocalHashSimilarityProvider:
+    """Deterministic local regression signal; never semantic Provider evidence."""
+
+    dimensions: int = 128
+    name: str = "longform-local-hash"
+
+    def embed_text(self, text: str) -> list[float]:
+        vector = [0.0] * self.dimensions
+        for token in _tokens(text):
+            digest = hashlib.sha256(token.encode("utf-8")).digest()
+            index = int.from_bytes(digest[:4], "big") % self.dimensions
+            vector[index] += 1.0 if digest[4] % 2 == 0 else -1.0
+        norm = math.sqrt(sum(value * value for value in vector))
+        return [value / norm for value in vector] if norm else vector
+
+    def health_check(self) -> dict[str, Any]:
+        return {
+            "ok": True,
+            "model": self.name,
+            "dimensions": self.dimensions,
+            "semantic_model": False,
+            "external_api": False,
+        }
+
+
 def resolve_similarity_provider(
     *,
     adapter: SimilarityEmbeddingProvider | None = None,
+    execution_port: RetrievalExecutionPort | None = None,
     environment: str = "",
     env: Mapping[str, str] | None = None,
     strict: bool = False,
-) -> tuple[SimilarityEmbeddingProvider, dict[str, Any]]:
+) -> tuple[SimilarityEmbeddingProvider | None, dict[str, Any]]:
     """Resolve a semantic provider and describe whether evidence is verified.
 
-    Local/offline runs deliberately use HashEmbedding.  When an external
-    provider is configured but unavailable, local fallback is explicit and
-    marked ``regression_only``; strict callers can fail closed instead.
+    Local/offline runs deliberately use a deterministic hash. Remote embeddings
+    are never resolved from environment variables inside the domain module.
     """
 
     values = os.environ if env is None else env
     requested = str(values.get("NOVEL_FORGE_EMBEDDING_PROVIDER") or "").strip().lower()
-    production = str(environment or values.get("NOVEL_FORGE_ENV") or "").strip().lower() in {"production", "prod"}
+    if execution_port is not None:
+        return None, {
+            "kind": "production_execution",
+            "name": execution_port.embedding_model,
+            "dimensions": execution_port.embedding_dimension,
+            "semantic_model": True,
+            "external_api": True,
+            "health": {"ok": True, "authority_bound": True},
+            "fallback_used": False,
+            "status": "execution_port_bound",
+            "fallback_reason": "",
+            "quality_claim_boundary": "semantic_similarity_is_regression_evidence_not_a_premium_quality_judgment",
+        }
     if adapter is not None:
         info = _provider_info(adapter, fallback_used=False)
+        if str(environment).strip().lower() in {
+            "production",
+            "validation",
+            "provider-validation",
+        } and info["external_api"]:
+            raise RuntimeError(
+                "controlled semantic similarity requires RetrievalExecutionPort"
+            )
+        info["status"] = "fixture_compatibility"
         if strict and not info["semantic_model"]:
             raise RuntimeError("strict semantic similarity requires a semantic embedding provider")
         return adapter, info
 
-    # Keep deterministic local behavior when no provider has been configured.
-    if not requested and not production:
-        local = HashEmbeddingAdapter(dimensions=int(values.get("NOVEL_FORGE_HASH_EMBEDDING_DIMENSIONS", "128")))
-        return local, _provider_info(local, fallback_used=False, status="regression_only")
-
-    try:
-        candidate = embedding_adapter_from_env(env=values, require_semantic=True)
-        info = _provider_info(candidate, fallback_used=False)
-        if strict and not info["semantic_model"]:
-            raise RuntimeError("configured embedding provider is not semantic")
-        return candidate, info
-    except Exception as exc:
-        if strict:
-            raise RuntimeError(f"semantic embedding provider unavailable: {exc}") from exc
-        local = HashEmbeddingAdapter(dimensions=int(values.get("NOVEL_FORGE_HASH_EMBEDDING_DIMENSIONS", "128")))
-        return local, _provider_info(
-            local,
-            fallback_used=True,
-            status="regression_only",
-            fallback_reason=str(exc),
+    if requested:
+        raise RuntimeError(
+            "configured remote semantic embedding requires RetrievalExecutionPort"
         )
+    if strict:
+        raise RuntimeError("strict semantic similarity requires RetrievalExecutionPort")
+    local = LocalHashSimilarityProvider(
+        dimensions=int(values.get("NOVEL_FORGE_HASH_EMBEDDING_DIMENSIONS", "128"))
+    )
+    return local, _provider_info(local, fallback_used=False, status="regression_only")
 
 
 def score_similarity(
     current_text: str,
     previous_text: str,
     *,
-    provider: SimilarityEmbeddingProvider,
+    provider: SimilarityEmbeddingProvider | None,
+    execution_port: RetrievalExecutionPort | None = None,
+    environment: str = "",
+    evidence_context: Mapping[str, Any] | None = None,
     thresholds: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Return explainable lexical, embedding, and composite similarity scores."""
 
-    current_embedding = provider.embed_text(current_text)
-    previous_embedding = provider.embed_text(previous_text)
+    current_embedding, previous_embedding, execution_evidence = (
+        execute_similarity_embedding_pair(
+            current_text,
+            previous_text,
+            execution_port=execution_port,
+            legacy_provider=provider,
+            environment=environment,
+            evidence_context=evidence_context or {},
+        )
+    )
     lexical = _jaccard(_tokens(current_text), _tokens(previous_text))
-    embedding = max(-1.0, min(1.0, cosine_similarity(current_embedding, previous_embedding)))
+    embedding = max(
+        -1.0,
+        min(1.0, _cosine_similarity(current_embedding, previous_embedding)),
+    )
     # Cosine can be negative for unrelated text; normalize to a risk score.
     normalized_embedding = (embedding + 1.0) / 2.0
     score = (normalized_embedding * 0.65) + (lexical * 0.35)
@@ -95,6 +150,7 @@ def score_similarity(
         "lexical_similarity": round(lexical, 4),
         "risk": risk,
         "thresholds": {"medium": medium, "high": high},
+        "production_execution": execution_evidence,
     }
 
 
@@ -131,3 +187,9 @@ def _tokens(text: str) -> set[str]:
 def _jaccard(left: set[str], right: set[str]) -> float:
     union = left | right
     return len(left & right) / len(union) if union else 0.0
+
+
+def _cosine_similarity(left: list[float], right: list[float]) -> float:
+    if len(left) != len(right):
+        raise ValueError("vectors must have the same dimensions")
+    return sum(a * b for a, b in zip(left, right))

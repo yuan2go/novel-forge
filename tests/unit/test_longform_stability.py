@@ -60,7 +60,7 @@ class LongformStabilityTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             storage = LocalStorage(tmp)
             storage.ensure_layout()
-            previous = storage.write_asset(
+            storage.write_asset(
                 "drafts",
                 DraftChapter(
                     title="Previous",
@@ -80,9 +80,14 @@ class LongformStabilityTests(unittest.TestCase):
             report = create_chapter_pattern_report(storage, current, semantic_adapter=FakeSemanticProvider())
             content = storage.read_json(storage.root / report["path"])["content"]
             self.assertEqual(content["semantic_scan"]["provider"]["kind"], "external_semantic")
-            self.assertEqual(content["semantic_scan"]["semantic_similarity_status"], "verified")
+            self.assertEqual(content["semantic_scan"]["semantic_similarity_status"], "fixture_compatibility")
             self.assertFalse(content["semantic_scan"]["fallback_used"])
             self.assertEqual(len(content["semantic_similarity_checks"]), 1)
+            self.assertTrue(
+                content["semantic_similarity_checks"][0]["production_execution"][
+                    "fixture_protocol_only"
+                ]
+            )
 
     def test_output_sanitizer_blocks_json_notes_and_extracts_text(self):
         result = sanitize_chapter_text('{"text":"第一章 正文。","notes":["策略"],"copyright_boundary":"meta"}')

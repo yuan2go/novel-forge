@@ -4,9 +4,9 @@ AST-derived inventory of uncertain execution, external effects, database Authori
 
 ## Summary
 
-- Source tree: `sha256:47b5026aee59ba7b5b2766853e6363402ab3dcf5fb169a5926e6d5c918019959`
-- Scanned Python files: 568
-- Execution entries: 628
+- Source tree: `sha256:3ad9f4326741860e4eec6f6a9f9804cfcda4660a3c5793164298a2982ba7c197`
+- Scanned Python files: 569
+- Execution entries: 630
 - Production `LEGACY_UNKNOWN` blockers: 0
 - `real_provider_proven=false`
 - `production_verified=false`
@@ -15,11 +15,11 @@ AST-derived inventory of uncertain execution, external effects, database Authori
 |---|---:|
 | `DETERMINISTIC_LOCAL` | 0 |
 | `DATABASE_AUTHORITY` | 417 |
-| `MODEL_INFERENCE` | 103 |
+| `MODEL_INFERENCE` | 104 |
 | `LOCAL_PROCESS_REMOTE_INFERENCE` | 12 |
 | `AGENT_WORKSPACE_TRANSACTION` | 0 |
 | `REMOTE_EXTERNAL_ACTION` | 14 |
-| `REMOTE_RETRIEVAL` | 26 |
+| `REMOTE_RETRIEVAL` | 27 |
 | `SCRIPTED_FIXTURE` | 27 |
 | `LEGACY_UNKNOWN` | 29 |
 
@@ -339,10 +339,12 @@ No production-reachable `LEGACY_UNKNOWN` entry was detected.
 | `execution-owner:38aa928f234a2a9263bb` | `production_execution` | `src/novel_forge/modules/production_execution/legacy.py` | `MODEL_INFERENCE` | `PRODUCTION_EXECUTION_GATEWAY` | `capability-registry:execution-request` | `remote-provider` | False/False/False | `DISCOVERED` |
 | `execution-owner:9232f39e7346eec2470f` | `production_execution` | `src/novel_forge/modules/production_execution/legacy.py` | `MODEL_INFERENCE` | `PRODUCTION_EXECUTION_GATEWAY` | `review.chapter.evaluate` | `remote-provider` | False/False/False | `DISCOVERED` |
 | `execution-owner:36e66412a1a0e0608bc2` | `production_execution` | `src/novel_forge/modules/production_execution/legacy.py` | `MODEL_INFERENCE` | `PRODUCTION_EXECUTION_GATEWAY` | `revision.chapter.revise` | `remote-provider` | False/False/False | `DISCOVERED` |
+| `execution-owner:427ea27efbd18f774663` | `production_execution` | `src/novel_forge/modules/production_execution/longform_execution.py` | `MODEL_INFERENCE` | `PRODUCTION_EXECUTION_GATEWAY` | `longform.recap.analyze` | `remote-provider` | False/False/False | `DISCOVERED` |
 | `execution-owner:afdd382cb21e7a2a46ec` | `production_execution` | `src/novel_forge/modules/production_execution/postgres.py` | `DATABASE_AUTHORITY` | `POSTGRESQL_AUTHORITY` | `` | `` | True/True/False | `CLASSIFIED` |
 | `execution-owner:9dd2948e5e248f38673f` | `production_execution` | `src/novel_forge/modules/production_execution/postgres.py` | `DATABASE_AUTHORITY` | `POSTGRESQL_AUTHORITY` | `` | `` | True/True/False | `CLASSIFIED` |
 | `execution-owner:1a9602458a4fe4653199` | `production_execution` | `src/novel_forge/modules/production_execution/process_supervisor.py` | `LOCAL_PROCESS_REMOTE_INFERENCE` | `PRODUCTION_EXECUTION_GATEWAY` | `capability-registry:execution-request` | `codex-cli` | False/True/False | `DISCOVERED` |
 | `execution-owner:28850742f222b965fc65` | `production_execution` | `src/novel_forge/modules/production_execution/process_supervisor.py` | `LOCAL_PROCESS_REMOTE_INFERENCE` | `PRODUCTION_EXECUTION_GATEWAY` | `capability-registry:execution-request` | `codex-cli` | False/False/False | `DISCOVERED` |
+| `execution-owner:74f9fc29ca8e463568ca` | `production_execution` | `src/novel_forge/modules/production_execution/retrieval_execution.py` | `REMOTE_RETRIEVAL` | `PRODUCTION_EXECUTION_GATEWAY` | `retrieval.embed` | `remote-external-action` | False/False/False | `DISCOVERED` |
 | `execution-owner:6af40f474d2f841c7a88` | `production_preparation` | `src/novel_forge/modules/production_preparation/resolver.py` | `DATABASE_AUTHORITY` | `POSTGRESQL_AUTHORITY` | `` | `` | True/False/False | `CLASSIFIED` |
 | `execution-owner:f33618aebc8f87a5ea3b` | `production_preparation` | `src/novel_forge/modules/production_preparation/resolver.py` | `DATABASE_AUTHORITY` | `POSTGRESQL_AUTHORITY` | `` | `` | True/False/False | `CLASSIFIED` |
 | `execution-owner:861134aa39530ce102bc` | `production_preparation` | `src/novel_forge/modules/production_preparation/resolver.py` | `DATABASE_AUTHORITY` | `POSTGRESQL_AUTHORITY` | `` | `` | True/False/False | `CLASSIFIED` |

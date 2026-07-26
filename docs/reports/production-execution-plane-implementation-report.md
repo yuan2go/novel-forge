@@ -79,6 +79,33 @@ Verification: 156 MKAOS unit tests, 2 MKAOS acceptance tests, 11 MKAOS integrati
 tests, and focused retrieval/fixture tests passed. No embedding Provider, paid model,
 or remote retrieval request was made.
 
+## 2026-07-26 WP-11 — Longform Analysis And Plan Governance
+
+Long-chain Provider chapter candidates and all typed longform analysis kinds now
+resolve through Production Execution candidate ports. Cross-chapter remote semantic
+embedding requires a Retrieval Execution Port; deterministic local hash similarity
+remains a domain-local regression signal and cannot claim semantic Provider quality.
+There is no environment-driven remote Adapter construction or silent fallback in the
+longform domain.
+
+Recap no longer mutates an existing ArcPlan or creates an inferred active ArcPlan.
+It emits a schema-backed `plan_adjustment_proposal` containing a semantic diff,
+impact analysis, future AssetVersion transition, rollback instruction, and blocking
+story-mutation approval request. Existing plan content remains byte-for-byte
+unchanged until a separate approved activation path creates a new version and
+supersedes the old one.
+
+The deterministic 12/50 chapter fixtures were run only as local regression tests;
+they are not real longform Provider evidence. No real 10/30/50 chapter generation,
+Provider request, or paid call was made.
+
+```text
+longform_execution_fixture_proven=true
+longform_proven=false
+real_provider_proven=false
+production_verified=false
+```
+
 ## Gate-00 — Pre-Migration Real Provider Chapter Baseline
 
 ### Verdict

@@ -4,20 +4,24 @@ from pathlib import Path
 from typing import Any
 
 from novel_forge.core.ids import make_id, utc_now
-from novel_forge.modules.common import resolve_path
 from novel_forge.modules.context_builder import build_flow_context_bundle, knowledge_context_contract_from_result, knowledge_context_contract_metadata
-from novel_forge.modules.longform_stability import create_arc_plan, create_canon_database
 from novel_forge.modules.longform_stability.semantic_domain import build_enhanced_recap
+from novel_forge.modules.permission_center import create_approval_request
 from novel_forge.modules.production_kernel import dispatch_production_operation
+from novel_forge.modules.production_execution import (
+    DomainExecutionPort,
+    LongformAnalysisKind,
+    execute_longform_analysis,
+)
 from novel_forge.modules.mkaos import record_review_feedback, record_usage_event
 from novel_forge.modules.production_context import filter_project_safe_references
 from novel_forge.modules.review_issue import create_review_issue, list_review_issues
 from novel_forge.schemas import (
-    ArcPlan,
     CanonPatch,
     CharacterStateLedger,
     ForeshadowingGraph,
     LongformRecapReport,
+    PlanAdjustmentProposal,
     RevisionTask,
     validate_common_fields,
 )
@@ -183,6 +187,34 @@ def run_longform_recap(storage: LocalStorage, payload: dict[str, Any]) -> dict[s
         loop=loop,
     )
     content["knowledge_context_contract"] = knowledge_contract
+    analysis_execution_port: DomainExecutionPort | None = payload.get(
+        "analysis_execution_port"
+    )
+    if analysis_execution_port is not None:
+        candidate = execute_longform_analysis(
+            LongformAnalysisKind.RECAP,
+            prompt=(
+                "Analyze the frozen deterministic longform recap and return only "
+                "a structured analysis candidate. Do not activate or overwrite plans."
+            ),
+            context={
+                "project_id": project_id,
+                "target_scope": content["chapter_range"],
+                "context_bundle_path": context["path"],
+                "deterministic_reports": {
+                    "continuity_risks": content["continuity_risks"],
+                    "character_drift_report": content["character_drift_report"],
+                    "foreshadowing_report": content["foreshadowing_report"],
+                    "pacing_report": content["pacing_report"],
+                    "commercial_rhythm_report": content[
+                        "commercial_rhythm_report"
+                    ],
+                },
+            },
+            execution_port=analysis_execution_port,
+        )
+        content["longform_analysis_candidate"] = dict(candidate.raw_output)
+        content["longform_analysis_execution"] = candidate.evidence.to_dict()
     semantic_reports = payload.get("semantic_reports")
     if isinstance(semantic_reports, dict) and semantic_reports:
         content["semantic_stability"] = build_enhanced_recap(
@@ -376,6 +408,8 @@ def _recap_content(
             "canon_patch_path": "",
             "character_state_ledger_path": "",
             "arc_plan_path": "",
+            "arc_plan_proposal_path": "",
+            "arc_plan_approval_request_path": "",
             "foreshadowing_graph_path": "",
             "review_issue_paths": [],
             "revision_task_path": "",
@@ -399,16 +433,18 @@ def _apply_writeback(
 ) -> dict[str, Any]:
     canon_patch = _write_canon_patch(storage, report_path=report_path, report_id=report_id, content=content, project_id=project_id, workspace_path=workspace_path, latest=latest)
     character = _write_character_ledger(storage, report_path=report_path, report_id=report_id, content=content, project_id=project_id, workspace_path=workspace_path)
-    arc = _write_arc_recap(storage, report_path=report_path, report_id=report_id, content=content, project_id=project_id, workspace_path=workspace_path)
+    arc = _write_arc_recap_proposal(storage, report_path=report_path, report_id=report_id, content=content, project_id=project_id, workspace_path=workspace_path)
     foreshadowing = _write_foreshadowing_graph(storage, report_path=report_path, report_id=report_id, content=content, project_id=project_id, workspace_path=workspace_path)
     review_issues = _write_review_issues(storage, report_path=report_path, report_id=report_id, content=content, project_id=project_id, latest=latest)
     revision_task = _write_revision_task(storage, report_path=report_path, report_id=report_id, content=content, project_id=project_id, workspace_path=workspace_path, latest=latest, review_issue_paths=review_issues)
     mkaos = _write_mkaos_feedback(storage, report_id=report_id, project_id=project_id, workspace_path=workspace_path, context=context)
     return {
-        "status": "applied",
+        "status": "proposals_created",
         "canon_patch_path": canon_patch.get("path", ""),
         "character_state_ledger_path": character.get("path", ""),
-        "arc_plan_path": arc.get("path", ""),
+        "arc_plan_path": "",
+        "arc_plan_proposal_path": arc.get("path", ""),
+        "arc_plan_approval_request_path": arc.get("approval_request_path", ""),
         "foreshadowing_graph_path": foreshadowing.get("path", ""),
         "review_issue_paths": review_issues,
         "revision_task_path": revision_task.get("path", ""),
@@ -466,36 +502,109 @@ def _write_character_ledger(storage: LocalStorage, *, report_path: str, report_i
     return _write(storage, asset)
 
 
-def _write_arc_recap(storage: LocalStorage, *, report_path: str, report_id: str, content: dict[str, Any], project_id: str, workspace_path: str) -> dict[str, Any]:
+def _write_arc_recap_proposal(storage: LocalStorage, *, report_path: str, report_id: str, content: dict[str, Any], project_id: str, workspace_path: str) -> dict[str, Any]:
     latest = _latest_asset(storage, "continuity", "arc_plan", project_id=project_id)
-    if latest:
-        path, data = latest
-        payload = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
-        history = payload.get("recap_history", []) if isinstance(payload.get("recap_history", []), list) else []
-        history.append({"recap_report_id": report_id, "recap_report_path": report_path, "chapter_range": content["chapter_range"], "suggestions": content["revision_suggestions"][:4], "created_at": utc_now()})
-        payload["recap_history"] = history[-20:]
-        payload["last_recap_report_id"] = report_id
-        data["content"] = payload
-        metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
-        metadata["last_recap_report_path"] = report_path
-        data["metadata"] = metadata
-        data["updated_at"] = utc_now()
-        _ensure_valid(data)
-        storage.write_json(path, data)
-        return {"path": _display_path(storage.root, path), "asset": storage.read_json(path)}
-    return create_arc_plan(
-        storage,
-        arc_id=make_id("arc", report_id),
-        title="Recap inferred active arc",
-        chapter_range=f"{content['chapter_range']['start']}-{content['chapter_range']['end']}",
-        arc_question="Recap requires operator to confirm active longform arc.",
-        protagonist_goal="Stabilize next chapter continuity after recap.",
-        villain_goal="Maintain coherent pressure and payoff chain.",
-        required_payoffs=content["revision_suggestions"][:3],
-        forbidden_expansion=["do not expand new arc before resolving recap risks"],
-        project_id=project_id,
-        workspace_path=workspace_path,
+    latest_path = _display_path(storage.root, latest[0]) if latest else ""
+    latest_data = latest[1] if latest else {}
+    latest_content = (
+        latest_data.get("content", {})
+        if isinstance(latest_data.get("content", {}), dict)
+        else {}
     )
+    proposal_id = make_id("longform_plan_change_proposal", report_id)
+    approval = create_approval_request(
+        storage,
+        {
+            "project_id": project_id,
+            "workspace_path": workspace_path,
+            "scope": "story_mutation",
+            "action": "approve_longform_plan_change",
+            "target_type": "plan_adjustment_proposal",
+            "target_id": proposal_id,
+            "risk_level": "high",
+            "reason": "Longform recap may propose a new future plan version but cannot activate it.",
+            "evidence_refs": [report_path, latest_path],
+            "required_before": [
+                "semantic_diff_acceptance",
+                "impact_analysis_acceptance",
+                "new_arc_plan_asset_version",
+                "future_plan_activation",
+                "previous_plan_supersession",
+            ],
+            "rollback_plan": {
+                "mode": "version_reactivation",
+                "reactivate_asset_path": latest_path,
+            },
+        },
+    )
+    approval_path = str(approval.get("path") or "")
+    proposal = PlanAdjustmentProposal(
+        id=proposal_id,
+        title=f"Longform plan change proposal for recap {content['chapter_range']['start']}-{content['chapter_range']['end']}",
+        source=report_id,
+        tags=["longform", "plan-change-proposal", "needs-approval"],
+        content={
+            "proposal_id": proposal_id,
+            "cluster_id": report_id,
+            "target_scope": {
+                "scope": "future_arc_plan",
+                "project_id": project_id,
+                "current_arc_plan_id": str(latest_data.get("id") or ""),
+                "current_arc_plan_path": latest_path,
+                "chapter_range": content["chapter_range"],
+            },
+            "proposed_changes": [
+                {
+                    "operation": "create_new_asset_version",
+                    "target": "arc_plan",
+                    "suggestions": content["revision_suggestions"][:6],
+                    "recap_update_package": content["memory_update_package"]["arc_updates"],
+                }
+            ],
+            "semantic_diff": {
+                "base_content_hash_input": latest_content,
+                "changed_fields": ["recap_history", "future_plan_constraints"],
+                "source_recap_report_id": report_id,
+            },
+            "impact_analysis": {
+                "requires_downstream_invalidation": True,
+                "affected_scopes": [
+                    "future_chapter_plan",
+                    "context_bundle",
+                    "foreshadowing_schedule",
+                    "publish_release_gate",
+                ],
+                "activation_before_approval_forbidden": True,
+            },
+            "human_gate": {
+                "required": True,
+                "status": "waiting",
+                "approval_request_path": approval_path,
+            },
+            "version_transition": {
+                "candidate_status": "proposed",
+                "next_status_after_approval": "qualified",
+                "activation_required": True,
+                "previous_version_after_activation": "superseded",
+            },
+            "status": "waiting_human",
+            "created_at": utc_now(),
+        },
+        metadata={
+            "project_id": project_id,
+            "workspace_path": workspace_path,
+            "workflow": "longform-recap-agent",
+            "asset_status": "needs_approval",
+            "active": False,
+        },
+        references=filter_project_safe_references(
+            storage,
+            project_id,
+            [report_id, report_path, latest_path, approval_path],
+        ),
+    )
+    written = _write(storage, proposal)
+    return {**written, "approval_request_path": approval_path}
 
 
 def _write_foreshadowing_graph(storage: LocalStorage, *, report_path: str, report_id: str, content: dict[str, Any], project_id: str, workspace_path: str) -> dict[str, Any]:
