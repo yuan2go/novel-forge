@@ -16,12 +16,11 @@ from typing import Any, Mapping, Protocol
 
 from .backends import (
     ExecutionPayloadResolver,
-    ExecutionRecord,
-    ExecutionRecordStore,
     ExecutionReconciler,
     ResultValidator,
     _utc_now,
 )
+from .evidence import ExecutionRecord, ExecutionRecordStore
 from .contracts import (
     CancellationOutcome,
     CapabilityAvailability,

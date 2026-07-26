@@ -6,7 +6,7 @@ Attempt lifecycle, approval, budget, or asset activation state.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from decimal import Decimal, InvalidOperation
 import hashlib
@@ -42,6 +42,7 @@ from .contracts import (
     ValidationManifest,
 )
 from .gateway import AdmissionController, ExecutionAdmission
+from .evidence import ExecutionRecord, ExecutionRecordStore
 from .process_supervisor import (
     CodexProcessSupervisor,
     ProcessLaunchRequest,
@@ -157,36 +158,6 @@ class StaticExecutionPayloadResolver:
             raise ValueError(
                 f"resolved execution payload is not available: {request.execution_id}"
             ) from exc
-
-
-@dataclass(slots=True)
-class ExecutionRecord:
-    request: ExecutionRequest
-    handle: ExecutionHandle
-    started_at: str
-    raw_evidence: dict[str, Any]
-    provider_result: ProviderInvocationResult | None = None
-    external_result: Any | None = None
-    process_receipt: ProcessReceipt | None = None
-    result: ExecutionResult | None = None
-    callback_receipts: dict[str, tuple[str, str]] = field(default_factory=dict)
-    cancellation: ExecutionCancellationResult | None = None
-
-
-class ExecutionRecordStore(Protocol):
-    def put_record(self, record: ExecutionRecord) -> None: ...
-
-    def save_record(self, record: ExecutionRecord) -> None: ...
-
-    def get_record(self, execution_id: str) -> ExecutionRecord: ...
-
-    def find_record(self, execution_id: str) -> ExecutionRecord | None: ...
-
-    def put_evidence(
-        self, kind: str, execution_id: str, payload: Mapping[str, Any]
-    ) -> str: ...
-
-    def read_evidence(self, ref: str) -> dict[str, Any]: ...
 
 
 class InMemoryExecutionRecordStore:

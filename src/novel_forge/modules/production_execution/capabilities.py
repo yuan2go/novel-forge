@@ -41,6 +41,8 @@ class CapabilityId(StrEnum):
     MKAOS_TEMPLATE_EXTRACT = "mkaos.template.extract"
     RETRIEVAL_EMBED = "retrieval.embed"
     RETRIEVAL_RERANK = "retrieval.rerank"
+    RETRIEVAL_INDEX_UPSERT = "retrieval.index.upsert"
+    RETRIEVAL_INDEX_QUERY = "retrieval.index.query"
     LONGFORM_RECAP_ANALYZE = "longform.recap.analyze"
     LONGFORM_PLAN_VS_ACTUAL_JUDGE = "longform.plan_vs_actual.judge"
     LONGFORM_ARC_CLOSURE_JUDGE = "longform.arc_closure.judge"
@@ -54,6 +56,7 @@ class CapabilityId(StrEnum):
     NOTIFICATION_SEND = "notification.send"
     STORAGE_OBJECT_PUT = "storage.object.put"
     TOOL_REMOTE_INVOKE = "tool.remote.invoke"
+    ANALYTICS_QUERY_EXECUTE = "analytics.query.execute"
 
 
 class ExecutionDomain(StrEnum):
@@ -78,6 +81,7 @@ class ExecutionDomain(StrEnum):
     NOTIFICATION = "notification"
     STORAGE = "storage"
     TOOL = "tool"
+    ANALYTICS = "analytics"
 
 
 class RiskClass(StrEnum):

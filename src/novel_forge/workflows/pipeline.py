@@ -6,7 +6,6 @@ from pathlib import Path
 
 from novel_forge.core.constants import DATA_DIRS, DOC_FILES, SKILL_NAMES, SKILL_REQUIRED_SECTIONS
 from novel_forge.core.ids import make_id, utc_now
-from novel_forge.model_adapters import ModelAdapter
 from novel_forge.modules.analysis.service import run_analysis as run_analysis_service
 from novel_forge.modules.chapter_plan.service import generate_chapter_plan as generate_chapter_plan_service
 from novel_forge.modules.characters.service import generate_characters as generate_characters_service
@@ -142,7 +141,7 @@ def clean(root: str | Path, input_path: str | None = None) -> Path:
     return clean_service(storage, input_path)
 
 
-def decompose(root: str | Path, input_path: str | None = None, model: ModelAdapter | None = None) -> Path:
+def decompose(root: str | Path, input_path: str | None = None, model: object | None = None) -> Path:
     storage = ensure_project(root)
     return decompose_service(storage, input_path, model)
 
@@ -174,12 +173,12 @@ def analyze_reference(
     return resolve_path(storage.root, result["path"])
 
 
-def generate_topic(root: str | Path, input_path: str | None = None, model: ModelAdapter | None = None) -> Path:
+def generate_topic(root: str | Path, input_path: str | None = None, model: object | None = None) -> Path:
     storage = ensure_project(root)
     return generate_topic_service(storage, input_path, model)
 
 
-def develop_topic(root: str | Path, input_path: str | None = None, model: ModelAdapter | None = None) -> Path:
+def develop_topic(root: str | Path, input_path: str | None = None, model: object | None = None) -> Path:
     storage = ensure_project(root)
     return develop_topic_service(storage, input_path, model)
 
@@ -209,12 +208,12 @@ def generate_chapter_plan(root: str | Path, input_path: str | None = None) -> Pa
     return generate_chapter_plan_service(storage, input_path)
 
 
-def draft(root: str | Path, input_path: str | None = None, model: ModelAdapter | None = None) -> Path:
+def draft(root: str | Path, input_path: str | None = None, model: object | None = None) -> Path:
     storage = ensure_project(root)
     return draft_service(storage, input_path, model)
 
 
-def review(root: str | Path, input_path: str | None = None, model: ModelAdapter | None = None) -> Path:
+def review(root: str | Path, input_path: str | None = None, model: object | None = None) -> Path:
     storage = ensure_project(root)
     return review_service(storage, input_path, model)
 
@@ -224,7 +223,7 @@ def compare_reviews(root: str | Path, input_path: str | None = None) -> Path:
     return compare_reviews_service(storage, input_path)
 
 
-def revise(root: str | Path, input_path: str | None = None, model: ModelAdapter | None = None) -> Path:
+def revise(root: str | Path, input_path: str | None = None, model: object | None = None) -> Path:
     storage = ensure_project(root)
     return revise_service(storage, input_path, model)
 

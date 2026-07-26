@@ -26,7 +26,7 @@ from novel_forge.storage.authority_asset_store import (
     AuthorityAssetWriter,
 )
 
-from .backends import ExecutionRecord
+from .evidence import ExecutionRecord
 from .contracts import (
     ExecutionCancellationResult,
     ExecutionHandle,

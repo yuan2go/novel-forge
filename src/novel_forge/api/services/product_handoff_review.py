@@ -5,8 +5,12 @@ from pathlib import Path
 from typing import Any
 
 from novel_forge.core.ids import utc_now
-from novel_forge.model_adapters import estimate_usage_from_text, model_from_env, validate_model_output
-from novel_forge.modules.model_router import call_model_via_router
+from novel_forge.modules.production_execution import (
+    CandidateKind,
+    DomainExecutionPort,
+    DomainModelOperation,
+    execute_domain_candidate,
+)
 from novel_forge.storage.local import LocalStorage
 
 
@@ -18,6 +22,8 @@ def review_handoff_output_quality_with_model(
     output: dict[str, Any],
     rubric: list[str],
     minimum_score: int,
+    execution_port: DomainExecutionPort | None = None,
+    environment: str = "",
 ) -> dict[str, Any]:
     handoff_content = handoff.get("content", {}) if isinstance(handoff.get("content", {}), dict) else {}
     output_content = output.get("content", {}) if isinstance(output.get("content", {}), dict) else {}
@@ -41,40 +47,32 @@ def review_handoff_output_quality_with_model(
         "minimum_score": minimum_score,
     }
     try:
-        adapter = model_from_env("review")
         prompt = json.dumps(payload, ensure_ascii=False, sort_keys=True)
-        trace = {
-            "trace_id": str(handoff.get("id", "")) or "handoff-review",
-            "parent_span_id": str(handoff.get("id", "")) or "handoff-review",
-        }
-        review = validate_model_output(
-            "review",
-            call_model_via_router(
-                storage,
-                adapter=adapter,
-                operation="handoff_review",
-                payload=prompt,
-                context=payload,
-                task_type="review",
-                input_assets=[handoff_path],
-                trace=trace,
-            ),
+        candidate = execute_domain_candidate(
+            capability="quality.intrinsic.judge",
+            operation=DomainModelOperation.REVIEW,
+            candidate_kind=CandidateKind.JUDGE,
+            prompt=prompt,
+            context={
+                **payload,
+                "handoff_ref": str(handoff_path),
+            },
+            execution_port=execution_port,
+            legacy_model_role="review",
+            environment=environment,
         )
-        usage = review.get("usage") if isinstance(review.get("usage"), dict) else estimate_usage_from_text(
-            prompt,
-            json.dumps(review, ensure_ascii=False),
-            usage_source="handoff_review_estimated",
-        )
-        review.setdefault("usage", usage)
-        review.setdefault("cost", {"amount": 0.0, "currency": "USD", "source": "handoff_review"})
+        review = dict(candidate.raw_output)
+        review["execution_evidence"] = candidate.evidence.to_dict()
         score = float(review.get("score", 0))
         issues = review.get("issues", []) if isinstance(review.get("issues", []), list) else []
         return {
             "ok": score >= minimum_score,
             "score": score,
             "minimum_score": minimum_score,
-            "provider": review.get("provider", getattr(adapter, "name", "")),
-            "model": review.get("model", getattr(adapter, "name", "")),
+            "provider": review.get(
+                "provider", candidate.evidence.backend_id
+            ),
+            "model": review.get("model", candidate.evidence.backend_id),
             "summary": str(review.get("summary", "")),
             "issues": issues,
             "suggestions": review.get("revision_suggestions", []),

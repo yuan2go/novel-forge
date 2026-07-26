@@ -11,7 +11,6 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any, Mapping, Protocol
 
-from novel_forge.modules.production_execution.backends import ExecutionRecordStore
 from novel_forge.modules.production_execution.capability_registry import (
     CONTROLLED_ENVIRONMENTS,
     default_capability_registry,
@@ -19,8 +18,11 @@ from novel_forge.modules.production_execution.capability_registry import (
 from novel_forge.modules.production_execution.contracts import (
     ExecutionOutcome,
     ExecutionRequest,
+    ExecutionRuntimeClass,
 )
 from novel_forge.modules.production_execution.gateway import ProductionExecutionGateway
+from novel_forge.modules.production_execution.evidence import ExecutionRecordStore
+from novel_forge.modules.production_execution.security import execution_environment
 
 
 class CandidateKind(StrEnum):
@@ -76,6 +78,8 @@ class DomainExecutionEvidence:
     legacy_compatibility_only: bool = False
     provider_id: str = ""
     model_id: str = ""
+    provider_request_id: str = ""
+    external_receipt_ref: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -97,6 +101,8 @@ class DomainExecutionEvidence:
             "legacy_compatibility_only": self.legacy_compatibility_only,
             "provider_id": self.provider_id,
             "model_id": self.model_id,
+            "provider_request_id": self.provider_request_id,
+            "external_receipt_ref": self.external_receipt_ref,
         }
 
 
@@ -174,10 +180,18 @@ class GatewayDomainExecutionPort:
                 validation_manifest_ref=str(result.validation_report_ref),
                 usage_receipt_ref=str(result.usage_receipt_ref),
                 cost_receipt_ref=str(result.cost_receipt_ref),
-                fixture_protocol_only=handle.transport.value == "SCRIPTED_FIXTURE",
-                real_model_call=handle.transport.value
-                in {"REMOTE_PROVIDER", "LOCAL_CLI_REMOTE_INFERENCE"},
+                fixture_protocol_only=(
+                    handle.transport
+                    is ExecutionRuntimeClass.SCRIPTED_FIXTURE
+                ),
+                real_model_call=handle.transport
+                in {
+                    ExecutionRuntimeClass.REMOTE_PROVIDER_API,
+                    ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE,
+                },
                 production_verified=False,
+                provider_request_id=str(handle.provider_request_id or ""),
+                external_receipt_ref=str(result.external_receipt_ref or ""),
             ),
         )
 
@@ -213,7 +227,7 @@ def execute_domain_candidate(
     if execution_port is not None:
         return execution_port.execute(command)
 
-    normalized_environment = environment.strip().lower() or "development"
+    normalized_environment = execution_environment(environment)
     if normalized_environment in CONTROLLED_ENVIRONMENTS:
         raise RuntimeError(
             "legacy direct model adapters are disabled; controlled domain execution "

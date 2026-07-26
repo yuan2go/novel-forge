@@ -278,6 +278,21 @@ def default_capability_registry() -> CapabilityRegistry:
             ExecutionDomain.TOOL,
             RiskClass.CRITICAL,
         ),
+        (
+            CapabilityId.ANALYTICS_QUERY_EXECUTE,
+            ExecutionDomain.ANALYTICS,
+            RiskClass.HIGH,
+        ),
+        (
+            CapabilityId.RETRIEVAL_INDEX_UPSERT,
+            ExecutionDomain.RETRIEVAL,
+            RiskClass.HIGH,
+        ),
+        (
+            CapabilityId.RETRIEVAL_INDEX_QUERY,
+            ExecutionDomain.RETRIEVAL,
+            RiskClass.HIGH,
+        ),
     ):
         definitions.append(
             _definition(
@@ -292,6 +307,7 @@ def default_capability_registry() -> CapabilityRegistry:
                     CapabilityId.PUBLISHING_RELEASE_QUERY,
                     CapabilityId.FEEDBACK_PLATFORM_FETCH,
                     CapabilityId.SOURCE_REMOTE_FETCH,
+                    CapabilityId.RETRIEVAL_INDEX_QUERY,
                 },
                 risk=risk,
             )

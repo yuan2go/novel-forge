@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import Any
 
 from novel_forge.agents import runtime_profile_for_skill
-from novel_forge.model_adapters import ClaudeCodeAdapter
 from novel_forge.modules.common import resolve_path
 from novel_forge.modules.agent_runs import ensure_agent_contract, record_agent_event, start_agent_run
 from novel_forge.schemas import BaseAsset, ClaudeCodeHandoff
@@ -240,7 +239,6 @@ def _write_handoff(
     instructions: list[str],
     acceptance_checks: list[str],
 ) -> Path:
-    adapter = ClaudeCodeAdapter()
     agent_runtime = runtime_profile_for_skill(skill)
     contract = ensure_agent_contract(
         storage,
@@ -292,7 +290,9 @@ def _write_handoff(
         "expected_output_dir": expected_output_dir,
         "validation_command": "make validate",
     }
-    handoff_packet = adapter.create_handoff_packet(operation, payload, context)
+    handoff_packet = _manual_claude_code_handoff_packet(
+        operation, payload, context
+    )
     asset = ClaudeCodeHandoff(
         title=title,
         source=source_asset.id,
@@ -336,7 +336,7 @@ def _write_handoff(
             },
         },
         metadata={
-            "model": adapter.name,
+            "model": "claude-code-manual-handoff",
             "runtime_model": "codex",
             "agent_role": agent_runtime["agent"],
             "permission_profile": agent_runtime["permission_profile"],
@@ -371,6 +371,35 @@ def _write_handoff(
         payload={"handoff_path": _relative_path(storage, path), "expected_output_type": expected_output_type},
     )
     return path
+
+
+def _manual_claude_code_handoff_packet(
+    operation: str,
+    payload: dict[str, Any],
+    context: dict[str, Any],
+) -> dict[str, Any]:
+    """Build a deterministic packet; this function launches no Agent process."""
+
+    return {
+        "provider": "claude-code",
+        "model": "manual-claude-code-runtime",
+        "operation": operation,
+        "status": "manual_handoff_required",
+        "external_api": False,
+        "automated_model_call": False,
+        "payload": payload,
+        "context": context,
+        "instructions": [
+            "Read the referenced project files before producing output.",
+            "Write results as schema-backed JSON assets through Novel Forge CLI or storage rules.",
+            "Do not treat this packet as permission to call external APIs or bypass validation.",
+            "Run relevant validation after writing outputs.",
+        ],
+        "expected_return": {
+            "asset_path": "path to a schema-backed JSON asset",
+            "validation_command": "make validate or a narrower relevant check",
+        },
+    }
 
 
 def _resolve_input(storage: LocalStorage, input_path: str | None, fallback_categories: list[str]) -> Path:

@@ -27,6 +27,9 @@ from novel_forge.modules.provider_control.contracts import (
     ProviderControlLevel,
     capability_profile_from_dict,
 )
+from novel_forge.modules.production_execution.security import (
+    assert_legacy_execution_allowed,
+)
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 
@@ -213,6 +216,12 @@ def dispatch_external_effect(
     lease_seconds: int,
     adapter: ExternalEffectAdapter,
 ) -> dict[str, Any]:
+    assert_legacy_execution_allowed(
+        component="ExternalEffect adapter",
+        gateway_backed=bool(
+            getattr(adapter, "production_execution_gateway_backed", False)
+        ),
+    )
     effect = _read_effect(database_url, effect_id, context.project_id)
     if adapter.provider != effect["provider"]:
         raise KernelError(

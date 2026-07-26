@@ -92,6 +92,24 @@ class MockModelTests(unittest.TestCase):
                     "must not call network", {"environment": "production"}
                 )
 
+    def test_legacy_provider_adapter_inherits_controlled_process_environment(self):
+        with patch.dict(
+            "os.environ",
+            {
+                "OPENAI_API_KEY": "unit-key",
+                "NOVEL_FORGE_ENVIRONMENT": "production",
+            },
+            clear=False,
+        ), patch(
+            "novel_forge.model_adapters.providers.urllib.request.urlopen"
+        ) as urlopen:
+            with self.assertRaisesRegex(
+                AdapterNotConfiguredError,
+                "ProductionExecutionGateway",
+            ):
+                ChatGPTAdapter().generate("must not call network")
+        urlopen.assert_not_called()
+
     def test_openai_compatible_adapter_can_use_sdk_streaming_guard(self):
         fake_openai = _fake_openai_sdk_module(
             [

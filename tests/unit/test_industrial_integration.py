@@ -8,10 +8,16 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from novel_forge.infrastructure.settings import IndustrialSettings, optional_dependency_status
+from novel_forge.modules.production_execution import (
+    EmbeddingCandidate,
+    EmbeddingExecutionEvidence,
+    ExternalActionCandidate,
+    ExternalActionExecutionEvidence,
+)
 from novel_forge.storage.graph import neo4j_status
 from novel_forge.storage.object_store import object_name_for_path
 from novel_forge.storage.postgres import POSTGRES_SCHEMA_STATEMENTS, PostgresAssetStore
-from novel_forge.storage.qdrant_index import build_qdrant_index
+from novel_forge.storage.qdrant_index import build_qdrant_index, qdrant_search_assets
 from novel_forge.storage.local import LocalStorage
 from novel_forge.schemas import SourceDocument
 from novel_forge.workers.runtime import list_dead_letters, sync_postgres_after_task, write_dead_letter
@@ -199,6 +205,77 @@ class IndustrialIntegrationTests(unittest.TestCase):
 
             self.assertTrue(migrated["collection_status"]["recreated"])
 
+    def test_controlled_qdrant_uses_retrieval_and_external_execution_ports(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            storage.write_asset(
+                "raw",
+                SourceDocument(
+                    title="Qdrant governed",
+                    source="governed.txt",
+                    content={"text": "authority execution"},
+                ),
+            )
+            settings = IndustrialSettings(
+                root=Path(tmp).resolve(),
+                qdrant_collection="governed-fixture",
+            )
+            retrieval_port = FakeRetrievalExecutionPort()
+            external_port = FakeExternalActionExecutionPort()
+
+            with patch(
+                "novel_forge.storage.qdrant_index._qdrant_client"
+            ) as qdrant_client:
+                manifest = build_qdrant_index(
+                    storage,
+                    settings,
+                    execution_port=retrieval_port,
+                    external_action_execution_port=external_port,
+                    environment="production",
+                )
+                results = qdrant_search_assets(
+                    storage,
+                    settings,
+                    query="authority",
+                    execution_port=retrieval_port,
+                    external_action_execution_port=external_port,
+                    environment="production",
+                )
+
+            qdrant_client.assert_not_called()
+            self.assertEqual(
+                external_port.capabilities,
+                ["retrieval.index.upsert", "retrieval.index.query"],
+            )
+            self.assertEqual(manifest["backend"], "production-execution")
+            self.assertTrue(manifest["execution_evidence"]["fixture_protocol_only"])
+            self.assertEqual(results[0]["path"], "data/raw/governed.json")
+            self.assertTrue(results[0]["execution_evidence"]["fixture_protocol_only"])
+
+    def test_controlled_qdrant_blocks_legacy_clients_before_network(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalStorage(tmp)
+            storage.ensure_layout()
+            settings = IndustrialSettings(
+                root=Path(tmp).resolve(),
+                qdrant_collection="blocked-fixture",
+            )
+            with patch(
+                "novel_forge.storage.qdrant_index._qdrant_client"
+            ) as qdrant_client:
+                with self.assertRaisesRegex(
+                    RuntimeError,
+                    "Authority-bound ExternalActionExecutionPort",
+                ):
+                    build_qdrant_index(
+                        storage,
+                        settings,
+                        execution_port=FakeRetrievalExecutionPort(),
+                        environment="production",
+                    )
+            qdrant_client.assert_not_called()
+
     def test_object_name_for_path_preserves_project_relative_location(self):
         with tempfile.TemporaryDirectory() as tmp:
             storage = LocalStorage(tmp)
@@ -218,6 +295,99 @@ class IndustrialIntegrationTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class FakeRetrievalExecutionPort:
+    embedding_model = "fixture-embedding-v1"
+    embedding_dimension = 3
+
+    def embed_batch(self, texts, *, evidence_context):
+        return EmbeddingCandidate(
+            vectors=tuple((1.0, 0.0, 0.0) for _ in texts),
+            evidence=EmbeddingExecutionEvidence(
+                embedding_model=self.embedding_model,
+                embedding_dimension=self.embedding_dimension,
+                source_chunk_hashes=tuple(
+                    str(value)
+                    for value in evidence_context.get(
+                        "source_chunk_hashes",
+                        ("sha256:query-fixture",),
+                    )
+                ),
+                source_eligibility=str(
+                    evidence_context.get(
+                        "source_eligibility",
+                        "NOT_SOURCE_DERIVED",
+                    )
+                ),
+                batch_identity="sha256:fixture-batch",
+                index_version=str(
+                    evidence_context.get("index_version", "fixture-index")
+                ),
+                usage_receipt_ref="usage:retrieval:fixture",
+                cost_receipt_ref="cost:retrieval:fixture",
+                partial_failure=False,
+                dirty_index=False,
+            ),
+        )
+
+    def rerank(self, query, candidate_ids, *, evidence_context):
+        raise AssertionError(
+            f"rerank is outside this fixture: {query}, {candidate_ids}, "
+            f"{evidence_context}"
+        )
+
+
+class FakeExternalActionExecutionPort:
+    def __init__(self) -> None:
+        self.capabilities: list[str] = []
+
+    def execute(self, command):
+        self.capabilities.append(command.capability)
+        result = (
+            {
+                "status": "upserted",
+                "fixture_protocol_only": True,
+                "real_model_call": False,
+                "production_verified": False,
+            }
+            if command.capability == "retrieval.index.upsert"
+            else {
+                "hits": [
+                    {
+                        "path": "data/raw/governed.json",
+                        "score": 0.9,
+                        "ranker": "qdrant-vector",
+                    }
+                ],
+                "fixture_protocol_only": True,
+                "real_model_call": False,
+                "production_verified": False,
+            }
+        )
+        return ExternalActionCandidate(
+            raw_output={"result": result},
+            evidence=ExternalActionExecutionEvidence(
+                execution_id=f"execution:{command.capability}",
+                operation_id=f"operation:{command.capability}",
+                attempt_id=f"attempt:{command.capability}",
+                fencing_token=1,
+                capability=command.capability,
+                backend_id="scripted-external-action",
+                route_snapshot_id=f"route:{command.capability}",
+                input_manifest_ref=f"input:{command.capability}",
+                output_manifest_ref=f"output:{command.capability}",
+                validation_manifest_ref=f"validation:{command.capability}",
+                external_receipt_ref=f"receipt:{command.capability}",
+                usage_receipt_ref=f"usage:{command.capability}",
+                cost_receipt_ref=f"cost:{command.capability}",
+                external_request_id=f"external:{command.capability}",
+                query_supported=True,
+                cancel_supported=True,
+                callback_supported=True,
+                fixture_protocol_only=True,
+            ),
+        )
 
 
 class FakeEmbeddingAdapter:

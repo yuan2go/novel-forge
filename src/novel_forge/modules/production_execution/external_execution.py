@@ -12,7 +12,6 @@ import hashlib
 import json
 from typing import Any, Mapping, Protocol
 
-from novel_forge.modules.production_execution.backends import ExecutionRecordStore
 from novel_forge.modules.production_execution.capability_registry import (
     default_capability_registry,
 )
@@ -22,6 +21,7 @@ from novel_forge.modules.production_execution.contracts import (
     ExecutionRuntimeClass,
 )
 from novel_forge.modules.production_execution.gateway import ProductionExecutionGateway
+from novel_forge.modules.production_execution.evidence import ExecutionRecordStore
 from novel_forge.modules.production_execution.security import assert_no_inline_secrets
 
 
@@ -32,6 +32,11 @@ class ExternalActionKind(StrEnum):
     FEEDBACK_FETCH = "feedback.platform.fetch"
     SOURCE_FETCH = "source.remote.fetch"
     NOTIFICATION_SEND = "notification.send"
+    STORAGE_OBJECT_PUT = "storage.object.put"
+    TOOL_REMOTE_INVOKE = "tool.remote.invoke"
+    ANALYTICS_QUERY_EXECUTE = "analytics.query.execute"
+    RETRIEVAL_INDEX_UPSERT = "retrieval.index.upsert"
+    RETRIEVAL_INDEX_QUERY = "retrieval.index.query"
 
 
 @dataclass(frozen=True, slots=True)

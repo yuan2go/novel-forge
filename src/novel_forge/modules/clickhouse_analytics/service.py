@@ -1,16 +1,24 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import os
-import urllib.error
-import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 from novel_forge.core.ids import make_id, utc_now
+from novel_forge.infrastructure.legacy_http import (
+    LegacyHttpRequestError,
+    development_only_http_request,
+)
 from novel_forge.modules.common import resolve_path
 from novel_forge.modules.production_context import filter_project_safe_references
+from novel_forge.modules.production_execution import (
+    ExternalActionExecutionPort,
+    ExternalActionKind,
+    execute_external_action,
+)
 from novel_forge.schemas import BaseAsset, validate_common_fields
 from novel_forge.storage.local import LocalStorage
 
@@ -99,7 +107,13 @@ def clickhouse_schema_plan(storage: LocalStorage, *, persist: bool = True) -> di
     return _write(storage, asset)
 
 
-def migrate_clickhouse(storage: LocalStorage, *, dry_run: bool = True) -> dict[str, Any]:
+def migrate_clickhouse(
+    storage: LocalStorage,
+    *,
+    dry_run: bool = True,
+    external_action_execution_port: ExternalActionExecutionPort | None = None,
+    environment: str = "",
+) -> dict[str, Any]:
     plan = clickhouse_schema_plan(storage, persist=False)
     if dry_run or not _online_enabled():
         if _strict() and not dry_run and not _online_enabled():
@@ -113,7 +127,13 @@ def migrate_clickhouse(storage: LocalStorage, *, dry_run: bool = True) -> dict[s
         }
     responses = []
     for statement in plan["content"]["statements"]:
-        responses.append(_clickhouse_execute(statement))
+        responses.append(
+            _clickhouse_execute(
+                statement,
+                external_action_execution_port=external_action_execution_port,
+                environment=environment,
+            )
+        )
     return {"status": "migrated", "dry_run": False, "responses": responses, "capabilities": analytics_capabilities(storage)}
 
 
@@ -138,7 +158,15 @@ def project_analytics_events(storage: LocalStorage, *, project_id: str = "", lim
     return rows
 
 
-def sync_analytics(storage: LocalStorage, *, project_id: str = "", online: bool | None = None, limit: int = 2000) -> dict[str, Any]:
+def sync_analytics(
+    storage: LocalStorage,
+    *,
+    project_id: str = "",
+    online: bool | None = None,
+    limit: int = 2000,
+    external_action_execution_port: ExternalActionExecutionPort | None = None,
+    environment: str = "",
+) -> dict[str, Any]:
     events = project_analytics_events(storage, project_id=project_id, limit=limit, persist=True)
     requested_online = _online_enabled() if online is None else bool(online)
     online_status = {"status": "disabled"}
@@ -148,7 +176,11 @@ def sync_analytics(storage: LocalStorage, *, project_id: str = "", online: bool 
                 raise RuntimeError("ClickHouse online sync requested but NOVEL_FORGE_CLICKHOUSE_ONLINE is not enabled")
             online_status = {"status": "skipped", "reason": "online not enabled"}
         else:
-            online_status = _sync_online(events)
+            online_status = _sync_online(
+                events,
+                external_action_execution_port=external_action_execution_port,
+                environment=environment,
+            )
     status = "completed" if online_status.get("status") in {"disabled", "skipped", "inserted"} else "completed_with_online_error"
     asset = BaseAsset(
         type="analytics_sync_job",
@@ -169,7 +201,14 @@ def sync_analytics(storage: LocalStorage, *, project_id: str = "", online: bool 
     return {**written, "event_count": len(events), "online_clickhouse": online_status}
 
 
-def clickhouse_online_e2e_smoke(storage: LocalStorage, *, project_id: str = "", require_online: bool = False) -> dict[str, Any]:
+def clickhouse_online_e2e_smoke(
+    storage: LocalStorage,
+    *,
+    project_id: str = "",
+    require_online: bool = False,
+    external_action_execution_port: ExternalActionExecutionPort | None = None,
+    environment: str = "",
+) -> dict[str, Any]:
     capabilities = analytics_capabilities(storage, project_id=project_id)
     results: list[dict[str, Any]] = [{"scenario": "capabilities", "status": capabilities["status"], "online_enabled": capabilities["online_enabled"]}]
     status = "passed"
@@ -177,9 +216,21 @@ def clickhouse_online_e2e_smoke(storage: LocalStorage, *, project_id: str = "", 
         status = "failed"
         results.append({"scenario": "online_required", "status": "failed", "message": "NOVEL_FORGE_CLICKHOUSE_ONLINE is not enabled"})
     try:
-        migration = migrate_clickhouse(storage, dry_run=not capabilities["online_enabled"])
+        migration = migrate_clickhouse(
+            storage,
+            dry_run=not capabilities["online_enabled"],
+            external_action_execution_port=external_action_execution_port,
+            environment=environment,
+        )
         results.append({"scenario": "migrate", "status": migration["status"], "dry_run": migration["dry_run"]})
-        sync = sync_analytics(storage, project_id=project_id, online=capabilities["online_enabled"], limit=200)
+        sync = sync_analytics(
+            storage,
+            project_id=project_id,
+            online=capabilities["online_enabled"],
+            limit=200,
+            external_action_execution_port=external_action_execution_port,
+            environment=environment,
+        )
         results.append({"scenario": "sync", "status": sync["asset"]["content"]["status"], "event_count": sync["event_count"], "online_clickhouse": sync["online_clickhouse"]})
         if capabilities["online_enabled"] and sync["online_clickhouse"].get("status") != "inserted":
             status = "failed" if require_online else "warning"
@@ -401,12 +452,21 @@ def _source_paths(storage: LocalStorage) -> list[Path]:
     return sorted(paths, key=lambda path: path.stat().st_mtime)
 
 
-def _sync_online(events: list[dict[str, Any]]) -> dict[str, Any]:
+def _sync_online(
+    events: list[dict[str, Any]],
+    *,
+    external_action_execution_port: ExternalActionExecutionPort | None = None,
+    environment: str = "",
+) -> dict[str, Any]:
     if not events:
         return {"status": "inserted", "row_count": 0}
     try:
         rows = "\n".join(json.dumps(_clickhouse_event_row(event), ensure_ascii=False) for event in events)
-        _clickhouse_execute("insert into analytics_events format JSONEachRow\n" + rows)
+        _clickhouse_execute(
+            "insert into analytics_events format JSONEachRow\n" + rows,
+            external_action_execution_port=external_action_execution_port,
+            environment=environment,
+        )
         return {"status": "inserted", "row_count": len(events)}
     except Exception as exc:
         if _strict():
@@ -429,26 +489,63 @@ def _clickhouse_event_row(event: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _clickhouse_execute(query: str) -> dict[str, Any]:
+def _clickhouse_execute(
+    query: str,
+    *,
+    external_action_execution_port: ExternalActionExecutionPort | None = None,
+    environment: str = "",
+) -> dict[str, Any]:
+    database = os.environ.get("NOVEL_FORGE_CLICKHOUSE_DATABASE", "novel_forge")
+    if external_action_execution_port is not None:
+        query_hash = hashlib.sha256(query.encode("utf-8")).hexdigest()
+        candidate = execute_external_action(
+            capability=ExternalActionKind.ANALYTICS_QUERY_EXECUTE,
+            request_payload={
+                "database": database,
+                "query": query,
+                "query_hash": "sha256:" + query_hash,
+            },
+            stable_idempotency_key=f"analytics.query.execute:{query_hash}",
+            data_classification="INTERNAL_ANALYTICS",
+            privacy_policy_ref="privacy-policy:analytics:v1",
+            rate_limit_policy_ref="rate-limit-policy:clickhouse:v1",
+            quota_policy_ref="quota-policy:clickhouse:v1",
+            execution_port=external_action_execution_port,
+        )
+        return {
+            **dict(candidate.raw_output),
+            "production_execution": candidate.evidence.to_dict(),
+        }
     url = os.environ.get("NOVEL_FORGE_CLICKHOUSE_URL", "").rstrip("/")
     if not url:
         raise RuntimeError("NOVEL_FORGE_CLICKHOUSE_URL is required for ClickHouse online mode")
-    database = os.environ.get("NOVEL_FORGE_CLICKHOUSE_DATABASE", "novel_forge")
     user = os.environ.get("NOVEL_FORGE_CLICKHOUSE_USER", "default")
     password = os.environ.get("NOVEL_FORGE_CLICKHOUSE_PASSWORD", "")
-    request = urllib.request.Request(
-        f"{url}/?database={database}",
-        data=query.encode("utf-8"),
-        method="POST",
-        headers={"X-ClickHouse-User": user, "X-ClickHouse-Key": password},
-    )
     try:
-        with urllib.request.urlopen(request, timeout=2) as response:
-            return {"status": "ok", "code": response.status, "body": response.read().decode("utf-8")[:500]}
-    except urllib.error.HTTPError as exc:
-        body = exc.read().decode("utf-8", errors="replace")[:500]
-        raise RuntimeError(f"ClickHouse request failed: HTTP {exc.code}: {body}") from exc
-    except urllib.error.URLError as exc:
+        response = development_only_http_request(
+            component="ClickHouse HTTP",
+            url=f"{url}/?database={database}",
+            method="POST",
+            body=query.encode("utf-8"),
+            headers={
+                "X-ClickHouse-User": user,
+                "X-ClickHouse-Key": password,
+            },
+            timeout_seconds=2,
+            environment=environment,
+        )
+        return {
+            "status": "ok",
+            "code": response.status,
+            "body": response.body.decode("utf-8")[:500],
+            "legacy_development_only": True,
+        }
+    except LegacyHttpRequestError as exc:
+        body = exc.body.decode("utf-8", errors="replace")[:500]
+        if exc.status:
+            raise RuntimeError(
+                f"ClickHouse request failed: HTTP {exc.status}: {body}"
+            ) from exc
         raise RuntimeError(f"ClickHouse request failed: {exc}") from exc
 
 

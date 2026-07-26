@@ -33,6 +33,9 @@ from novel_forge.modules.production_execution import (
     ProcessReceiptStatus,
     ProcessTimeout,
 )
+from novel_forge.modules.production_execution.security import (
+    assert_legacy_execution_allowed,
+)
 
 
 _CODEX_EXEC_HELP_CACHE: dict[tuple[str, ...], str] = {}
@@ -94,16 +97,18 @@ class ProviderAdapter:
         self, context: dict[str, Any] | None
     ) -> None:
         values = context or {}
-        environment = str(
-            values.get("environment")
-            or values.get("runtime_environment")
-            or "development"
-        ).strip().lower()
-        if environment in {"production", "validation", "provider-validation"}:
-            raise AdapterNotConfiguredError(
-                f"{self.config.provider} legacy adapter is disabled in {environment}; "
-                "use ProductionExecutionGateway"
+        try:
+            assert_legacy_execution_allowed(
+                component=f"{self.config.provider} model adapter",
+                gateway_backed=False,
+                environment=str(
+                    values.get("environment")
+                    or values.get("runtime_environment")
+                    or ""
+                ),
             )
+        except RuntimeError as exc:
+            raise AdapterNotConfiguredError(str(exc)) from exc
 
 
 class LocalCodexCliWorkerMixin:

@@ -411,7 +411,7 @@ def call_model_via_router(
             or str(
                 (context or {}).get("environment")
                 or (context or {}).get("runtime_environment")
-                or "development"
+                or ""
             )
         ),
     }

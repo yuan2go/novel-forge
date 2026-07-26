@@ -11,9 +11,10 @@ import hashlib
 import json
 from typing import Any, Mapping
 
-from .backends import ExecutionRecordStore
 from .contracts import ExecutionOutcome, ExecutionRequest
+from .evidence import ExecutionRecordStore
 from .gateway import ProductionExecutionGateway
+from .security import assert_legacy_execution_allowed
 
 
 class LegacyRequestMapper:
@@ -192,18 +193,17 @@ def execute_legacy_model_operation(
     and cannot be mistaken for production execution evidence.
     """
 
-    environment = str(
-        context.get("environment") or context.get("runtime_environment") or "development"
-    ).strip().lower()
-    if (
-        environment in {"production", "validation", "provider-validation"}
-        and not bool(
+    assert_legacy_execution_allowed(
+        component="legacy direct model adapters",
+        gateway_backed=bool(
             getattr(adapter, "production_execution_gateway_backed", False)
-        )
-    ):
-        raise RuntimeError(
-            "legacy direct model adapters are disabled; use LegacyGatewayModelAdapter"
-        )
+        ),
+        environment=str(
+            context.get("environment")
+            or context.get("runtime_environment")
+            or ""
+        ),
+    )
     review = context.get("review") if isinstance(context.get("review"), Mapping) else {}
     execute = getattr(adapter, "execute_operation", None)
     if callable(execute):
@@ -224,9 +224,43 @@ def execute_legacy_model_operation(
     raise ValueError(f"unsupported routed model operation: {operation}")
 
 
+def create_legacy_development_model_adapter(
+    *,
+    provider: str,
+    model_name: str = "",
+    environment: str = "",
+) -> Any:
+    """Construct a compatibility adapter only outside controlled environments."""
+
+    assert_legacy_execution_allowed(
+        component=f"{provider or 'model'} adapter factory",
+        gateway_backed=False,
+        environment=environment,
+    )
+    from novel_forge.model_adapters import ModelAdapterConfig, PROVIDER_ADAPTERS
+
+    normalized_provider = provider.strip().lower()
+    adapter_cls = PROVIDER_ADAPTERS.get(normalized_provider)
+    if adapter_cls is None:
+        raise ValueError(f"unsupported provider adapter: {normalized_provider}")
+    if not model_name:
+        return adapter_cls()
+    base = adapter_cls.config
+    return adapter_cls(
+        ModelAdapterConfig(
+            provider=base.provider,
+            role=base.role,
+            default_model=model_name,
+            required_env_vars=list(base.required_env_vars),
+            external_api=base.external_api,
+        )
+    )
+
+
 __all__ = [
     "LegacyGatewayModelAdapter",
     "LegacyRequestMapper",
     "LegacyResultMapper",
+    "create_legacy_development_model_adapter",
     "execute_legacy_model_operation",
 ]

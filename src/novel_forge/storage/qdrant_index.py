@@ -11,7 +11,16 @@ from novel_forge.core.constants import DATA_DIRS
 from novel_forge.core.ids import utc_now
 from novel_forge.infrastructure.settings import IndustrialSettings
 from novel_forge.model_adapters.embeddings import EmbeddingAdapter, embedding_adapter_from_env
-from novel_forge.modules.production_execution import RetrievalExecutionPort
+from novel_forge.modules.production_execution import (
+    ExternalActionExecutionPort,
+    ExternalActionKind,
+    RetrievalExecutionPort,
+    execute_external_action,
+)
+from novel_forge.modules.production_execution.security import (
+    assert_legacy_execution_allowed,
+    execution_environment,
+)
 from novel_forge.storage.local import LocalStorage
 
 QDRANT_INDEX_VERSION = "0.2.0"
@@ -29,14 +38,31 @@ def build_qdrant_index(
     force_reembed: bool = False,
     max_retries: int = 3,
     execution_port: RetrievalExecutionPort | None = None,
-    environment: str = "development",
+    external_action_execution_port: ExternalActionExecutionPort | None = None,
+    environment: str = "",
 ) -> dict[str, Any]:
-    _require_controlled_retrieval_port(environment, execution_port)
+    _require_controlled_retrieval_port(
+        environment,
+        execution_port,
+        external_action_execution_port,
+    )
     if execution_port is None:
         adapter = adapter or embedding_adapter_from_env(require_semantic=True)
         _require_semantic_embedding(adapter)
     if batch_size < 1:
         raise ValueError("batch_size must be greater than zero")
+    if external_action_execution_port is not None:
+        return _build_qdrant_index_via_execution(
+            storage,
+            settings,
+            adapter=adapter,
+            batch_size=batch_size,
+            resume=resume,
+            force_reembed=force_reembed,
+            max_retries=max_retries,
+            execution_port=execution_port,
+            external_action_execution_port=external_action_execution_port,
+        )
     client, models = _qdrant_client(settings)
     embedding = (
         _retrieval_execution_metadata(execution_port)
@@ -126,17 +152,21 @@ def qdrant_search_assets(
     limit: int = 50,
     adapter: EmbeddingAdapter | None = None,
     execution_port: RetrievalExecutionPort | None = None,
-    environment: str = "development",
+    external_action_execution_port: ExternalActionExecutionPort | None = None,
+    environment: str = "",
 ) -> list[dict[str, Any]]:
     if not query.strip():
         raise ValueError("query must not be empty")
     if limit < 1:
         raise ValueError("limit must be greater than zero")
-    _require_controlled_retrieval_port(environment, execution_port)
+    _require_controlled_retrieval_port(
+        environment,
+        execution_port,
+        external_action_execution_port,
+    )
     if execution_port is None:
         adapter = adapter or embedding_adapter_from_env(require_semantic=True)
         _require_semantic_embedding(adapter)
-    client, models = _qdrant_client(settings)
     query_vector = (
         list(
             execution_port.embed_batch(
@@ -152,6 +182,19 @@ def qdrant_search_assets(
         if execution_port is not None
         else adapter.embed_text(query)  # type: ignore[union-attr]
     )
+    if external_action_execution_port is not None:
+        return _query_qdrant_via_execution(
+            settings,
+            query_vector=query_vector,
+            category=category,
+            asset_type=asset_type,
+            tags=tags or [],
+            project_id=project_id,
+            workspace_path=workspace_path,
+            limit=limit,
+            external_action_execution_port=external_action_execution_port,
+        )
+    client, models = _qdrant_client(settings)
     query_filter = _build_filter(models, category, asset_type, tags or [], project_id=project_id, workspace_path=workspace_path)
     hits = _search(client, settings.qdrant_collection, query_vector, query_filter, limit)
     results: list[dict[str, Any]] = []
@@ -356,6 +399,10 @@ def _embed_batch_with_retries(
         return [list(vector) for vector in candidate.vectors]
     if adapter is None:
         raise RuntimeError("embedding adapter is required for legacy development execution")
+    assert_legacy_execution_allowed(
+        component="Qdrant embedding adapter",
+        gateway_backed=False,
+    )
     sleep_seconds = float(os.environ.get("NOVEL_FORGE_EMBEDDING_BATCH_SLEEP_SECONDS", "0"))
     last_error: Exception | None = None
     for attempt in range(max(1, max_retries)):
@@ -375,15 +422,204 @@ def _embed_batch_with_retries(
 def _require_controlled_retrieval_port(
     environment: str,
     execution_port: RetrievalExecutionPort | None,
+    external_action_execution_port: ExternalActionExecutionPort | None,
 ) -> None:
-    if (
-        environment.strip().lower()
-        in {"production", "validation", "provider-validation"}
-        and execution_port is None
+    if execution_environment(environment) in {
+        "production",
+        "validation",
+        "provider-validation",
+    } and (
+        execution_port is None or external_action_execution_port is None
     ):
         raise RuntimeError(
-            "controlled remote embedding requires RetrievalExecutionPort"
+            "controlled Qdrant retrieval requires RetrievalExecutionPort and "
+            "Authority-bound ExternalActionExecutionPort"
         )
+
+
+def _build_qdrant_index_via_execution(
+    storage: LocalStorage,
+    settings: IndustrialSettings,
+    *,
+    adapter: EmbeddingAdapter | None,
+    batch_size: int,
+    resume: bool,
+    force_reembed: bool,
+    max_retries: int,
+    execution_port: RetrievalExecutionPort | None,
+    external_action_execution_port: ExternalActionExecutionPort,
+) -> dict[str, Any]:
+    embedding = (
+        _retrieval_execution_metadata(execution_port)
+        if execution_port is not None
+        else _embedding_metadata(adapter)  # type: ignore[arg-type]
+    )
+    cache = (
+        _load_vector_cache(storage)
+        if resume and not force_reembed
+        else _empty_vector_cache(embedding)
+    )
+    records = _asset_records(storage)
+    cache_records = cache.setdefault("vectors", {})
+    embedded = 0
+    for offset in range(0, len(records), batch_size):
+        batch = records[offset : offset + batch_size]
+        missing = []
+        for record in batch:
+            cache_row = (
+                cache_records.get(record["path"], {})
+                if isinstance(cache_records, dict)
+                else {}
+            )
+            if _cache_row_valid(cache_row, record, embedding):
+                record["vector"] = [
+                    float(value) for value in cache_row.get("vector", [])
+                ]
+            else:
+                missing.append(record)
+        if missing:
+            vectors = _embed_batch_with_retries(
+                adapter,
+                [record["search_text"] for record in missing],
+                max_retries=max_retries,
+                execution_port=execution_port,
+                evidence_context={
+                    "capability": "retrieval.embed",
+                    "index_version": QDRANT_INDEX_VERSION,
+                    "source_eligibility": "PRODUCTION_ELIGIBLE",
+                    "source_chunk_hashes": [
+                        record["fingerprint"]["sha256"]
+                        for record in missing
+                    ],
+                },
+            )
+            embedded += len(vectors)
+            for record, vector in zip(missing, vectors):
+                record["vector"] = vector
+                cache.setdefault("vectors", {})[record["path"]] = {
+                    "fingerprint": record["fingerprint"],
+                    "embedding": embedding,
+                    "vector": vector,
+                    "updated_at": utc_now(),
+                }
+    points = [
+        {
+            "id": _point_id(Path(record["path"])),
+            "vector": record["vector"],
+            "payload": _payload(
+                storage,
+                record["category"],
+                record["absolute_path"],
+                record["data"],
+                record["search_text"],
+                embedding,
+            ),
+        }
+        for record in records
+    ]
+    identity = hashlib.sha256(
+        json.dumps(
+            [
+                {
+                    "id": point["id"],
+                    "source_hash": record["fingerprint"]["sha256"],
+                }
+                for point, record in zip(points, records)
+            ],
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    ).hexdigest()
+    candidate = execute_external_action(
+        capability=ExternalActionKind.RETRIEVAL_INDEX_UPSERT,
+        request_payload={
+            "collection": settings.qdrant_collection,
+            "index_version": QDRANT_INDEX_VERSION,
+            "embedding": embedding,
+            "points": points,
+            "batch_identity": "sha256:" + identity,
+        },
+        stable_idempotency_key=f"retrieval.index.upsert:{identity}",
+        data_classification="INTERNAL_CONTENT_INDEX",
+        privacy_policy_ref="privacy-policy:retrieval-index:v1",
+        rate_limit_policy_ref="rate-limit-policy:qdrant:v1",
+        quota_policy_ref="quota-policy:qdrant:v1",
+        execution_port=external_action_execution_port,
+    )
+    _write_vector_cache(storage, cache)
+    manifest = {
+        "version": QDRANT_INDEX_VERSION,
+        "collection": settings.qdrant_collection,
+        "built_at": utc_now(),
+        "indexed": len(points),
+        "embedded": embedded,
+        "cache_hits": len(points) - embedded,
+        "asset_count": len(records),
+        "embedding": embedding,
+        "collection_status": dict(candidate.raw_output),
+        "backend": "production-execution",
+        "execution_evidence": candidate.evidence.to_dict(),
+    }
+    storage.write_json(QDRANT_MANIFEST_RELATIVE_PATH, manifest)
+    return manifest
+
+
+def _query_qdrant_via_execution(
+    settings: IndustrialSettings,
+    *,
+    query_vector: list[float],
+    category: str | None,
+    asset_type: str | None,
+    tags: list[str],
+    project_id: str | None,
+    workspace_path: str | None,
+    limit: int,
+    external_action_execution_port: ExternalActionExecutionPort,
+) -> list[dict[str, Any]]:
+    request_payload = {
+        "collection": settings.qdrant_collection,
+        "query_vector": query_vector,
+        "filter": {
+            "category": category or "",
+            "asset_type": asset_type or "",
+            "tags": tags,
+            "project_id": project_id or "",
+            "workspace_path": workspace_path or "",
+        },
+        "limit": limit,
+        "index_version": QDRANT_INDEX_VERSION,
+    }
+    identity = hashlib.sha256(
+        json.dumps(
+            request_payload,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    ).hexdigest()
+    candidate = execute_external_action(
+        capability=ExternalActionKind.RETRIEVAL_INDEX_QUERY,
+        request_payload=request_payload,
+        stable_idempotency_key=f"retrieval.index.query:{identity}",
+        data_classification="INTERNAL_CONTENT_INDEX",
+        privacy_policy_ref="privacy-policy:retrieval-index:v1",
+        rate_limit_policy_ref="rate-limit-policy:qdrant:v1",
+        quota_policy_ref="quota-policy:qdrant:v1",
+        execution_port=external_action_execution_port,
+    )
+    raw = candidate.raw_output
+    result = raw.get("result") if isinstance(raw.get("result"), dict) else raw
+    hits = result.get("hits", []) if isinstance(result, dict) else []
+    if not isinstance(hits, list):
+        raise RuntimeError("Qdrant execution result hits must be a list")
+    evidence = candidate.evidence.to_dict()
+    return [
+        {
+            **dict(hit),
+            "execution_evidence": evidence,
+        }
+        for hit in hits
+        if isinstance(hit, dict)
+    ]
 
 
 def _upsert_with_retries(client: Any, collection: str, points: list[Any], max_retries: int) -> None:

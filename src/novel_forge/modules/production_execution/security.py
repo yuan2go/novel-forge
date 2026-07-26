@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from enum import Enum
+import os
 import re
 from typing import Any
 
@@ -19,6 +20,9 @@ _ALLOWED_CREDENTIAL_REFERENCE_KEYS = frozenset(
         "credential_scope",
         "secret_version_ref",
     }
+)
+CONTROLLED_EXECUTION_ENVIRONMENTS = frozenset(
+    {"validation", "provider-validation", "production"}
 )
 _ALLOWED_TOKEN_EVIDENCE_KEYS = frozenset(
     {
@@ -136,4 +140,31 @@ def assert_no_inline_secrets(
     visit(payload, "$")
 
 
-__all__ = ["assert_no_inline_secrets"]
+def execution_environment(value: str = "") -> str:
+    return str(
+        value or os.environ.get("NOVEL_FORGE_ENVIRONMENT") or "development"
+    ).strip().lower()
+
+
+def assert_legacy_execution_allowed(
+    *,
+    component: str,
+    gateway_backed: bool,
+    environment: str = "",
+) -> None:
+    """Block compatibility execution before a network/process call in control mode."""
+
+    normalized = execution_environment(environment)
+    if normalized in CONTROLLED_EXECUTION_ENVIRONMENTS and not gateway_backed:
+        raise RuntimeError(
+            f"{component} legacy execution is blocked and disabled in {normalized}; "
+            "use ProductionExecutionGateway through an Authority-bound request"
+        )
+
+
+__all__ = [
+    "CONTROLLED_EXECUTION_ENVIRONMENTS",
+    "assert_legacy_execution_allowed",
+    "assert_no_inline_secrets",
+    "execution_environment",
+]

@@ -2953,24 +2953,20 @@ def _adapter_from_agent_evidence(evidence: dict[str, Any], *, fixture_response: 
         raise ValueError(f"{default_operation} fixture mode requires fixture response evidence")
     if not provider:
         return None
-    from novel_forge.model_adapters import ModelAdapterConfig, PROVIDER_ADAPTERS
+    from novel_forge.modules.production_execution import (
+        create_legacy_development_model_adapter,
+    )
 
-    adapter_cls = PROVIDER_ADAPTERS.get(provider)
-    if adapter_cls is None:
-        raise ValueError(f"unsupported provider adapter: {provider}")
     model_name = str(provider_config.get("model_name") or provider_config.get("model") or "").strip()
-    if model_name:
-        base = adapter_cls.config
-        return adapter_cls(
-            ModelAdapterConfig(
-                provider=base.provider,
-                role=base.role,
-                default_model=model_name,
-                required_env_vars=list(base.required_env_vars),
-                external_api=base.external_api,
-            )
-        )
-    return adapter_cls()
+    return create_legacy_development_model_adapter(
+        provider=provider,
+        model_name=model_name,
+        environment=str(
+            evidence.get("environment")
+            or provider_config.get("environment")
+            or ""
+        ),
+    )
 
 
 def _run_long_chain_proof_operation(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:

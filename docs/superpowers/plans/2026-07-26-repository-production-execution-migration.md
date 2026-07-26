@@ -293,11 +293,11 @@
 **Interfaces:**
 - AST guard reports exact file/symbol/import/call for forbidden SDK, subprocess, backend, legacy, reducer, activation, and fixture-proof boundaries.
 
-- [ ] Add red characterization tests from every remaining ledger violation.
-- [ ] Make controlled legacy/model/local-storage paths fail before execution.
-- [ ] Enforce domain→Gateway protocol imports only, Gateway→no-domain, Backend→no-activation, Reducer→no-Gateway.
-- [ ] Run architecture and inventory suites.
-- [ ] Commit `test: enforce repository-wide production execution architecture boundaries`.
+- [x] Add red characterization tests from every remaining ledger violation.
+- [x] Make controlled legacy/model/local-storage paths fail before execution.
+- [x] Enforce domain→Gateway protocol imports only, Gateway→no-domain, Backend→no-activation, Reducer→no-Gateway.
+- [x] Run architecture and inventory suites.
+- [x] Commit `test: enforce repository-wide production execution architecture boundaries`.
 
 ### Task 16: Strangler completion, documentation, and verification
 

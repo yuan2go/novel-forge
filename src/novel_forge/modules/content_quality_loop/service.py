@@ -13,6 +13,7 @@ from novel_forge.modules.genre_os import run_genre_risk_gate
 from novel_forge.modules.mobile_reading import create_mobile_reading_report
 from novel_forge.modules.os_envelope import enforce_os_envelope, envelope_asset_metadata, is_production_environment
 from novel_forge.modules.production_context import project_scope_from_asset
+from novel_forge.modules.production_execution import DomainExecutionPort
 from novel_forge.modules.quality_eval import build_quality_rubric_pack, run_provider_quality_judge, run_quality_gate, run_quality_suite
 from novel_forge.modules.review_issue import create_review_issue
 from novel_forge.modules.style_os import run_style_drift_gate
@@ -42,6 +43,7 @@ def run_content_quality_loop(
     platform_id: str = "local",
     canon_plugin: str = "",
     provider_adapter: Any | None = None,
+    execution_port: DomainExecutionPort | None = None,
     provider_runtime_guard: dict[str, Any] | None = None,
     allow_mock_fixture: bool = False,
     require_provider_judge: bool | None = None,
@@ -248,13 +250,14 @@ def run_content_quality_loop(
         revision_task_paths.append(str(suite["revision_task_path"]))
 
     quality_report_path = str(suite["path"])
-    if provider_adapter is not None:
+    if provider_adapter is not None or execution_port is not None:
         provider = run_provider_quality_judge(
             storage,
             suite_type=suite_type,
             target_paths=[_display_path(storage.root, target_file)],
             rubric_path=resolved_rubric_path,
             adapter=provider_adapter,
+            execution_port=execution_port,
             genre_strategy_pack_path=genre_path,
             style_profile_path=style_path,
             platform_id=platform_id,

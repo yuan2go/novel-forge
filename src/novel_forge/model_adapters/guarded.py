@@ -15,6 +15,9 @@ from novel_forge.model_adapters.runtime import (
 from novel_forge.modules.agent_runs import create_agent_failure_report, guard_agent_action, record_agent_gate
 from novel_forge.modules.common import resolve_path
 from novel_forge.modules.operation_checkpoint import checkpoint_idempotency_key, record_operation_stage_checkpoint, record_raw_output_segment
+from novel_forge.modules.production_execution.security import (
+    assert_legacy_execution_allowed,
+)
 from novel_forge.modules.runtime_ledger import record_gate_result, record_model_call_log
 from novel_forge.storage.local import LocalStorage
 
@@ -60,8 +63,23 @@ class GuardedModelAdapter:
         )
 
     def _call(self, operation: str, context: dict[str, Any] | None, thunk: Any, *, prompt_payload: Any = "") -> Any:
-        self._guard()
         context_payload = context or {}
+        assert_legacy_execution_allowed(
+            component="GuardedModelAdapter",
+            gateway_backed=bool(
+                getattr(
+                    self.adapter,
+                    "production_execution_gateway_backed",
+                    False,
+                )
+            ),
+            environment=str(
+                context_payload.get("environment")
+                or context_payload.get("runtime_environment")
+                or ""
+            ),
+        )
+        self._guard()
         run_info = self._agent_run_info()
         runtime_operation = _runtime_operation(operation, context_payload, run_info)
         model_route = self._resolve_model_route(runtime_operation, context_payload, run_info)

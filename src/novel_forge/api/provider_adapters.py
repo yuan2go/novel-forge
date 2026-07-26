@@ -2,8 +2,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from novel_forge.model_adapters import ModelAdapterConfig, PROVIDER_ADAPTERS
 from novel_forge.modules.model_router import create_model_route
+from novel_forge.modules.production_execution import (
+    create_legacy_development_model_adapter,
+)
 from novel_forge.storage.local import LocalStorage
 
 
@@ -78,19 +80,13 @@ def adapter_from_provider_payload(payload: dict[str, Any], *, default_operation:
         raise ValueError("fixture mode requires fixture_response")
     if not provider:
         return None
-    adapter_cls = PROVIDER_ADAPTERS.get(provider)
-    if adapter_cls is None:
-        raise ValueError(f"unsupported provider adapter for {default_operation}: {provider}")
     model_name = str(provider_config.get("model_name") or provider_config.get("model") or "").strip()
-    if model_name:
-        base = adapter_cls.config
-        return adapter_cls(
-            ModelAdapterConfig(
-                provider=base.provider,
-                role=base.role,
-                default_model=model_name,
-                required_env_vars=list(base.required_env_vars),
-                external_api=base.external_api,
-            )
-        )
-    return adapter_cls()
+    return create_legacy_development_model_adapter(
+        provider=provider,
+        model_name=model_name,
+        environment=str(
+            payload.get("environment")
+            or provider_config.get("environment")
+            or ""
+        ),
+    )

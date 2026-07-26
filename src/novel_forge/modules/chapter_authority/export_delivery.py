@@ -27,6 +27,9 @@ from novel_forge.modules.command_kernel.external_effect_runtime import (
     reconcile_external_effect,
     submit_effect_dispatch_result,
 )
+from novel_forge.modules.production_execution.security import (
+    assert_legacy_execution_allowed,
+)
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 
@@ -185,6 +188,12 @@ def _exercise_unknown_delivery(
     expected_hash: str,
     expected_size: int,
 ) -> ExportDeliveryEvidence:
+    assert_legacy_execution_allowed(
+        component="Chapter export adapter",
+        gateway_backed=bool(
+            getattr(adapter, "production_execution_gateway_backed", False)
+        ),
+    )
     dispatch = prepare_effect_dispatch(database_url, effect_context, effect_id=effect_id)
     lease = acquire_effect_dispatch(
         database_url,

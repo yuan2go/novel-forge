@@ -124,7 +124,12 @@ from .routing import (
     RouteResolver,
     RouteSnapshotRegistry,
 )
-from .legacy import LegacyGatewayModelAdapter, LegacyRequestMapper, LegacyResultMapper
+from .legacy import (
+    LegacyGatewayModelAdapter,
+    LegacyRequestMapper,
+    LegacyResultMapper,
+    create_legacy_development_model_adapter,
+)
 from .domain_execution import (
     CandidateKind,
     DomainExecutionCandidate,
@@ -233,6 +238,7 @@ __all__ = [
     "RetrievalExecutionPort",
     "execute_similarity_embedding_pair",
     "execute_agent_workspace_candidate",
+    "create_legacy_development_model_adapter",
     "LegacyRequestMapper",
     "LegacyResultMapper",
     "ModelProfile",

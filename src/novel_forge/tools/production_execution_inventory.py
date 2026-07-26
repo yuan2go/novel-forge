@@ -139,6 +139,47 @@ _FIXTURE_MARKERS = (
     "/scripted.py",
     "_fixture.py",
 )
+_BUSINESS_EXECUTION_ROOTS = (
+    "src/novel_forge/modules/",
+    "src/novel_forge/api/",
+    "src/novel_forge/workflows/",
+    "src/novel_forge/workers/",
+)
+_EXECUTION_IMPLEMENTATION_PATHS = (
+    "src/novel_forge/modules/production_execution/",
+    "src/novel_forge/modules/provider_control/",
+)
+_EXECUTION_COMPOSITION_PATHS = frozenset(
+    {
+        "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    }
+)
+_FORBIDDEN_BUSINESS_IMPORT_PREFIXES = (
+    "subprocess",
+    "openai",
+    "anthropic",
+    "httpx",
+    "requests",
+    "aiohttp",
+    "urllib.request",
+    "urllib.error",
+)
+_FORBIDDEN_BACKEND_IMPORT_PREFIXES = (
+    "novel_forge.modules.production_execution.backends",
+    "novel_forge.modules.production_execution.process_supervisor",
+)
+_FORBIDDEN_LEGACY_ADAPTER_SYMBOLS = frozenset(
+    {
+        "ClaudeCodeAdapter",
+        "CodexAdapter",
+        "GuardedModelAdapter",
+        "LocalCodexCliWorkerMixin",
+        "ModelAdapter",
+        "ModelAdapterConfig",
+        "PROVIDER_ADAPTERS",
+        "model_from_env",
+    }
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -167,6 +208,8 @@ class _DirectClassification:
     side_effect_type: str
     current_adapter: str
     indirect: bool = False
+    route_hint: str = ""
+    status_hint: str = ""
 
 
 def _canonical_hash(payload: Mapping[str, Any]) -> str:
@@ -297,6 +340,18 @@ class _LocalCallCollector(ast.NodeVisitor):
                 self.aliases[node.target.id] = dynamic
         self.generic_visit(node)
 
+    def visit_Import(self, node: ast.Import) -> None:
+        for item in node.names:
+            self.aliases[item.asname or item.name.split(".")[0]] = item.name
+
+    def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
+        if node.module:
+            for item in node.names:
+                if item.name != "*":
+                    self.aliases[item.asname or item.name] = (
+                        f"{node.module}.{item.name}"
+                    )
+
     def visit_Call(self, node: ast.Call) -> None:
         display = _source_display(node.func)
         resolved = _expression_name(node.func, self.aliases)
@@ -422,9 +477,13 @@ def _classify_direct(function: _Function, call: _Call) -> _DirectClassification 
     lowered = resolved.lower()
     method = _method_name(call)
     combined = f"{relative} {function.display_name.lower()} {lowered}"
-    governed_execution_projection = any(
+    governed_execution_projection = (
+        resolved.startswith("execution_port.")
+        or ".execution_port." in resolved
+        or any(
         name == "execution_port" or name.endswith("_execution_port")
         for name in call.keyword_names
+        )
     )
 
     if function.fixture and (
@@ -487,6 +546,17 @@ def _classify_direct(function: _Function, call: _Call) -> _DirectClassification 
         return _DirectClassification("REMOTE_EXTERNAL_ACTION", resolved)
     if "/chapter_authority/export_delivery.py" in relative and method == "execute":
         return _DirectClassification("REMOTE_EXTERNAL_ACTION", resolved)
+    if (
+        "/chapter_authority/handlers.py" in relative
+        and method == "invoke"
+        and ".provider.invoke" in lowered
+    ):
+        return _DirectClassification(
+            "MODEL_INFERENCE",
+            f"PRODUCTION_EXECUTION_PORT:{resolved}",
+            route_hint="PRODUCTION_EXECUTION_GATEWAY",
+            status_hint="GATEWAY_BOUND",
+        )
 
     model_prefix = _starts_with(resolved, _MODEL_PREFIXES)
     model_chain = any(
@@ -499,7 +569,22 @@ def _classify_direct(function: _Function, call: _Call) -> _DirectClassification 
         )
     )
     if method in {"embed", "rerank", "embeddings", "embed_batch"}:
-        return _DirectClassification("REMOTE_RETRIEVAL", resolved)
+        return _DirectClassification(
+            "REMOTE_RETRIEVAL",
+            (
+                f"PRODUCTION_EXECUTION_PORT:{resolved}"
+                if governed_execution_projection
+                else resolved
+            ),
+            route_hint=(
+                "PRODUCTION_EXECUTION_GATEWAY"
+                if governed_execution_projection
+                else ""
+            ),
+            status_hint=(
+                "GATEWAY_BOUND" if governed_execution_projection else ""
+            ),
+        )
     if governed_execution_projection and (
         method in _MODEL_METHODS
         or method
@@ -527,6 +612,18 @@ def _classify_direct(function: _Function, call: _Call) -> _DirectClassification 
             side_effect_type,
             f"PRODUCTION_EXECUTION_PORT:{resolved}",
         )
+    if (
+        resolved.startswith("novel_forge.modules.")
+        and not resolved.startswith(
+            (
+                "novel_forge.modules.production_execution.",
+                "novel_forge.modules.provider_control.",
+            )
+        )
+    ):
+        # Domain service names such as ``review`` and ``revise`` are not model
+        # adapter methods. Their implementations are scanned independently.
+        return None
     if model_prefix or model_chain or method in _MODEL_METHODS:
         return _DirectClassification("MODEL_INFERENCE", resolved)
 
@@ -604,13 +701,69 @@ def _function_classifications(
         direct: list[_DirectClassification] = []
         for call in function.calls:
             classification = _classify_direct(function, call)
-            if (
-                classification is not None
-                and classification.side_effect_type == "LEGACY_UNKNOWN"
-                and call.resolved in known
-            ):
+            if classification is not None and call.resolved in known:
                 classification = None
             if classification is not None:
+                normalized_path = str(function.path).replace("\\", "/").lower()
+                guarded = any(
+                    marker in function.source.lower()
+                    for marker in (
+                        "assert_legacy_execution_allowed",
+                        "_assert_legacy_execution_allowed",
+                        "_require_gateway_for_controlled_environment",
+                        "controlled domain execution requires",
+                        "legacy execution is blocked",
+                        "legacy direct model adapters are disabled",
+                    )
+                )
+                if "/production_execution/" in normalized_path:
+                    classification = _DirectClassification(
+                        classification.side_effect_type,
+                        classification.current_adapter,
+                        classification.indirect,
+                        "PRODUCTION_EXECUTION_GATEWAY",
+                        "GATEWAY_BOUND",
+                    )
+                elif "/provider_control/" in normalized_path:
+                    classification = _DirectClassification(
+                        classification.side_effect_type,
+                        classification.current_adapter,
+                        classification.indirect,
+                        "PRODUCTION_EXECUTION_GATEWAY",
+                        "GATEWAY_BOUND",
+                    )
+                elif (
+                    "/model_adapters/" in normalized_path
+                    and classification.side_effect_type
+                    not in {"DETERMINISTIC_LOCAL", "SCRIPTED_FIXTURE"}
+                ):
+                    classification = _DirectClassification(
+                        classification.side_effect_type,
+                        classification.current_adapter,
+                        classification.indirect,
+                        "DIRECT_MODEL_ADAPTER",
+                        "LEGACY_BLOCKED",
+                    )
+                elif (
+                    "/chapter_authority/model_effects.py" in normalized_path
+                    and "ChapterModelExternalEffectAdapter"
+                    in function.display_name
+                ):
+                    classification = _DirectClassification(
+                        classification.side_effect_type,
+                        classification.current_adapter,
+                        classification.indirect,
+                        classification.route_hint,
+                        "LEGACY_BLOCKED",
+                    )
+                elif guarded:
+                    classification = _DirectClassification(
+                        classification.side_effect_type,
+                        classification.current_adapter,
+                        classification.indirect,
+                        classification.route_hint,
+                        "LEGACY_BLOCKED",
+                    )
                 calls[(function.qualified_name, call.line, call.display)] = classification
                 direct.append(classification)
         if function.fixture and function.display_name.rsplit(".", 1)[-1].lower() in (
@@ -646,6 +799,8 @@ def _function_classifications(
                         else target
                     ),
                     indirect=True,
+                    route_hint=source.route_hint,
+                    status_hint=source.status_hint,
                 )
                 calls[key] = propagated
                 previous = summaries.get(function.qualified_name)
@@ -671,7 +826,20 @@ def _strongest(
         "SCRIPTED_FIXTURE": 10,
         "DETERMINISTIC_LOCAL": 0,
     }
-    return max(classifications, key=lambda item: priority[item.side_effect_type])
+    status_priority = {
+        "GATEWAY_BOUND": 30,
+        "LEGACY_BLOCKED": 20,
+        "FIXTURE_PROVEN": 10,
+        "": 0,
+    }
+    return max(
+        classifications,
+        key=lambda item: (
+            priority[item.side_effect_type],
+            status_priority.get(item.status_hint, 0),
+            int(item.route_hint == "PRODUCTION_EXECUTION_GATEWAY"),
+        ),
+    )
 
 
 def _domain(relative: str) -> str:
@@ -827,10 +995,14 @@ def _state_store(function: _Function, classification: _DirectClassification) -> 
 def _current_route(
     function: _Function, classification: _DirectClassification
 ) -> str:
+    if classification.route_hint:
+        return classification.route_hint
     text = f"{function.source} {classification.current_adapter}".lower()
     if classification.side_effect_type == "DATABASE_AUTHORITY":
         return "POSTGRESQL_AUTHORITY"
-    if classification.side_effect_type == "SCRIPTED_FIXTURE":
+    if classification.status_hint:
+        status = classification.status_hint
+    elif classification.side_effect_type == "SCRIPTED_FIXTURE":
         return "SCRIPTED_FIXTURE"
     if (
         classification.current_adapter.startswith("PRODUCTION_EXECUTION_PORT:")
@@ -890,8 +1062,14 @@ def _entry(
 ) -> dict[str, Any]:
     production = _production_reachable(relative, function)
     source = function.source.lower()
-    governed_projection = classification.current_adapter.startswith(
-        "PRODUCTION_EXECUTION_PORT:"
+    governed_projection = (
+        classification.current_adapter.startswith(
+            "PRODUCTION_EXECUTION_PORT:"
+        )
+        or (
+            classification.route_hint == "PRODUCTION_EXECUTION_GATEWAY"
+            and classification.status_hint == "GATEWAY_BOUND"
+        )
     )
     operation_bound = governed_projection or "operation_id" in source and (
         "authority" in source or "external_effect" in source or "executionrequest" in source
@@ -952,7 +1130,20 @@ def _entry(
             capability = "storage.object.put"
         else:
             capability = "capability-registry:external-effect"
-    if classification.side_effect_type == "SCRIPTED_FIXTURE":
+    guarded_legacy = any(
+        marker in source
+        for marker in (
+            "assert_legacy_execution_allowed",
+            "_assert_legacy_execution_allowed",
+            "_require_gateway_for_controlled_environment",
+            "controlled domain execution requires",
+            "legacy execution is blocked",
+            "legacy direct model adapters are disabled",
+        )
+    )
+    if classification.status_hint:
+        status = classification.status_hint
+    elif classification.side_effect_type == "SCRIPTED_FIXTURE":
         status = "FIXTURE_PROVEN"
     elif classification.side_effect_type in {
         "DATABASE_AUTHORITY",
@@ -961,7 +1152,7 @@ def _entry(
         status = "CLASSIFIED"
     elif route == "PRODUCTION_EXECUTION_GATEWAY" and operation_bound and attempt_bound:
         status = "GATEWAY_BOUND"
-    elif production and "fail_closed" in source:
+    elif production and guarded_legacy:
         status = "LEGACY_BLOCKED"
     else:
         status = "DISCOVERED"
@@ -1027,6 +1218,157 @@ def _entry(
         ),
         "tests": _tests_for(relative, tests),
         "known_risks": risks,
+    }
+
+
+def scan_repository_execution_boundaries(
+    repo_root: str | Path,
+) -> list[dict[str, Any]]:
+    """Return exact AST violations for business-to-execution boundaries."""
+
+    root = Path(repo_root).resolve()
+    violations: list[dict[str, Any]] = []
+    paths = sorted((root / "src/novel_forge").rglob("*.py"))
+    for path in paths:
+        relative = str(path.relative_to(root)).replace("\\", "/")
+        if not relative.startswith(_BUSINESS_EXECUTION_ROOTS):
+            continue
+        if relative.startswith(_EXECUTION_IMPLEMENTATION_PATHS):
+            continue
+        if relative in _EXECUTION_COMPOSITION_PATHS:
+            continue
+        try:
+            source = path.read_text(encoding="utf-8")
+            tree = ast.parse(source, filename=relative)
+        except (OSError, SyntaxError) as exc:
+            violations.append(
+                {
+                    "code": "AST_PARSE_ERROR",
+                    "source_file": relative,
+                    "source_symbol": "<module>",
+                    "line": int(getattr(exc, "lineno", 0) or 0),
+                    "detail": str(exc),
+                }
+            )
+            continue
+        module = _module_name(root, path)
+        aliases = _aliases_for_module(module, tree)
+        for node in ast.walk(tree):
+            imported: list[tuple[str, str]] = []
+            if isinstance(node, ast.Import):
+                imported = [(item.name, "") for item in node.names]
+            elif isinstance(node, ast.ImportFrom) and node.module:
+                imported = [
+                    (node.module, item.name)
+                    for item in node.names
+                    if item.name != "*"
+                ]
+            for imported_module, imported_name in imported:
+                if _starts_with(
+                    imported_module, _FORBIDDEN_BUSINESS_IMPORT_PREFIXES
+                ):
+                    violations.append(
+                        _boundary_violation(
+                            "DIRECT_RUNTIME_IMPORT",
+                            relative,
+                            node,
+                            f"{imported_module}.{imported_name}".rstrip("."),
+                        )
+                    )
+                if _starts_with(
+                    imported_module, _FORBIDDEN_BACKEND_IMPORT_PREFIXES
+                ):
+                    violations.append(
+                        _boundary_violation(
+                            "CONCRETE_BACKEND_IMPORT",
+                            relative,
+                            node,
+                            f"{imported_module}.{imported_name}".rstrip("."),
+                        )
+                    )
+                if (
+                    _starts_with(
+                        imported_module, ("novel_forge.model_adapters",)
+                    )
+                    and imported_name in _FORBIDDEN_LEGACY_ADAPTER_SYMBOLS
+                ):
+                    violations.append(
+                        _boundary_violation(
+                            "LEGACY_ADAPTER_IMPORT",
+                            relative,
+                            node,
+                            f"{imported_module}.{imported_name}",
+                        )
+                    )
+        for function in _functions_in_file(root, path, module, tree, source):
+            for call in function.calls:
+                resolved = call.resolved
+                method = _method_name(call)
+                if resolved in _PROCESS_NAMES or (
+                    _starts_with(resolved, _HTTP_PREFIXES)
+                    and method in {"get", "post", "put", "delete", "send", "urlopen"}
+                ):
+                    violations.append(
+                        {
+                            "code": "DIRECT_RUNTIME_CALL",
+                            "source_file": relative,
+                            "source_symbol": function.display_name,
+                            "line": call.line,
+                            "detail": resolved,
+                        }
+                    )
+                if resolved.endswith(
+                    (".call_model_via_router", ".model_from_env")
+                ):
+                    violations.append(
+                        {
+                            "code": "LEGACY_EXECUTION_CALL",
+                            "source_file": relative,
+                            "source_symbol": function.display_name,
+                            "line": call.line,
+                            "detail": resolved,
+                        }
+                    )
+                parts = resolved.lower().split(".")
+                receiver = parts[-2] if len(parts) >= 2 else ""
+                if (
+                    receiver in {"adapter", "model", "client"}
+                    and method in {"generate", "review", "revise", "analyze", "embed", "rerank"}
+                    and relative
+                    != "src/novel_forge/modules/chapter_authority/model_effects.py"
+                ):
+                    violations.append(
+                        {
+                            "code": "DIRECT_ADAPTER_CALL",
+                            "source_file": relative,
+                            "source_symbol": function.display_name,
+                            "line": call.line,
+                            "detail": resolved,
+                        }
+                    )
+    return sorted(
+        violations,
+        key=lambda item: (
+            item["source_file"],
+            item["line"],
+            item["code"],
+            item["detail"],
+        ),
+    )
+
+
+def _boundary_violation(
+    code: str,
+    relative: str,
+    node: ast.AST,
+    detail: str,
+) -> dict[str, Any]:
+    return {
+        "code": code,
+        "source_file": relative,
+        "source_symbol": "<module>",
+        "line": int(getattr(node, "lineno", 0) or 0),
+        "detail": detail,
     }
 
 
@@ -1148,6 +1490,7 @@ def build_execution_inventory(repo_root: str | Path) -> dict[str, Any]:
     ]
     counts = Counter(item["side_effect_type"] for item in entries)
     migration_counts = Counter(item["migration_status"] for item in entries)
+    boundary_violations = scan_repository_execution_boundaries(root)
     payload: dict[str, Any] = {
         "schema_version": SCHEMA_VERSION,
         "generator_version": GENERATOR_VERSION,
@@ -1157,6 +1500,7 @@ def build_execution_inventory(repo_root: str | Path) -> dict[str, Any]:
         "summary": {kind: counts.get(kind, 0) for kind in SIDE_EFFECT_TYPES},
         "migration_summary": dict(sorted(migration_counts.items())),
         "blocking_owner_ids": blocking,
+        "architecture_boundary_violations": boundary_violations,
         "parse_errors": parse_errors,
         "evidence_flags": {
             "repository_inventory_generated": True,
@@ -1181,6 +1525,8 @@ def _markdown(manifest: Mapping[str, Any]) -> str:
         f"- Scanned Python files: {manifest['scanned_file_count']}",
         f"- Execution entries: {manifest['entry_count']}",
         f"- Production `LEGACY_UNKNOWN` blockers: {len(manifest['blocking_owner_ids'])}",
+        "- Architecture boundary violations: "
+        f"{len(manifest.get('architecture_boundary_violations', []))}",
         "- `real_provider_proven=false`",
         "- `production_verified=false`",
         "",

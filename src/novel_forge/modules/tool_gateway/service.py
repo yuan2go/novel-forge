@@ -1,15 +1,23 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 from pathlib import Path
 from typing import Any, Callable
-import urllib.error
-import urllib.request
 
 from novel_forge.core.ids import make_id, utc_now
+from novel_forge.infrastructure.legacy_http import (
+    LegacyHttpRequestError,
+    development_only_http_request,
+)
 from novel_forge.modules.audit_log import record_audit_event
 from novel_forge.modules.production_context import filter_project_safe_references
+from novel_forge.modules.production_execution import (
+    ExternalActionExecutionPort,
+    ExternalActionKind,
+    execute_external_action,
+)
 from novel_forge.modules.runtime_ledger import record_trace_span
 from novel_forge.schemas import MCPServerRegistry, ToolDefinition, ToolInvocation, ToolPermissionPolicy, validate_common_fields
 from novel_forge.storage.local import LocalStorage
@@ -160,6 +168,8 @@ def invoke_tool(
     workspace_path: str = "",
     trace: dict[str, Any] | None = None,
     enforce_permissions: bool = True,
+    external_action_execution_port: ExternalActionExecutionPort | None = None,
+    environment: str = "",
 ) -> dict[str, Any]:
     payload = input_payload or {}
     tool = _find_tool(storage, tool_name) or _builtin_tool_definition(tool_name)
@@ -191,7 +201,16 @@ def invoke_tool(
             trace=trace,
         )
     try:
-        output = _dispatch_tool(storage, tool, tool_name, payload, project_id=project_id, workspace_path=workspace_path)
+        output = _dispatch_tool(
+            storage,
+            tool,
+            tool_name,
+            payload,
+            project_id=project_id,
+            workspace_path=workspace_path,
+            external_action_execution_port=external_action_execution_port,
+            environment=environment,
+        )
         status = "succeeded"
     except Exception as exc:
         output = {"error": f"{type(exc).__name__}: {exc}"}
@@ -258,19 +277,60 @@ def _create_mcp_tool_definition(
     return {"path": created["path"], "id": created["id"], "asset": data, "validation": created["validation"]}
 
 
-def _dispatch_tool(storage: LocalStorage, tool: dict[str, Any], tool_name: str, payload: dict[str, Any], *, project_id: str, workspace_path: str) -> dict[str, Any]:
+def _dispatch_tool(
+    storage: LocalStorage,
+    tool: dict[str, Any],
+    tool_name: str,
+    payload: dict[str, Any],
+    *,
+    project_id: str,
+    workspace_path: str,
+    external_action_execution_port: ExternalActionExecutionPort | None,
+    environment: str,
+) -> dict[str, Any]:
     content = tool.get("content", {}) if isinstance(tool.get("content", {}), dict) else {}
     if str(content.get("tool_kind", "")) == "mcp":
-        return _dispatch_mcp_tool(storage, tool, tool_name, payload)
-    return _dispatch_internal_tool(storage, tool_name, payload, project_id=project_id, workspace_path=workspace_path)
+        return _dispatch_mcp_tool(
+            storage,
+            tool,
+            tool_name,
+            payload,
+            external_action_execution_port=external_action_execution_port,
+            environment=environment,
+        )
+    return _dispatch_internal_tool(
+        storage,
+        tool_name,
+        payload,
+        project_id=project_id,
+        workspace_path=workspace_path,
+        external_action_execution_port=external_action_execution_port,
+        environment=environment,
+    )
 
 
-def _dispatch_internal_tool(storage: LocalStorage, tool_name: str, payload: dict[str, Any], *, project_id: str, workspace_path: str) -> dict[str, Any]:
+def _dispatch_internal_tool(
+    storage: LocalStorage,
+    tool_name: str,
+    payload: dict[str, Any],
+    *,
+    project_id: str,
+    workspace_path: str,
+    external_action_execution_port: ExternalActionExecutionPort | None,
+    environment: str,
+) -> dict[str, Any]:
     if tool_name == "mcp.discover_tools":
         server = _find_mcp_server(storage, str(payload.get("server_name") or payload.get("server_id") or ""))
         if not server:
             raise ValueError("mcp.discover_tools requires server_name or server_id for a registered MCP server")
-        result = _mcp_json_rpc(server, "tools/list", {})
+        result = _mcp_json_rpc(
+            server,
+            "tools/list",
+            {},
+            external_action_execution_port=external_action_execution_port,
+            project_id=project_id,
+            environment=environment,
+        )
         tools = _mcp_tools_from_result(result)
         created = [
             _create_mcp_tool_definition(storage, server=server, tool=item, project_id=project_id, workspace_path=workspace_path)
@@ -348,14 +408,37 @@ def _dispatch_internal_tool(storage: LocalStorage, tool_name: str, payload: dict
     return {"status": "unsupported", "message": f"tool {tool_name} is registered but has no local dispatcher"}
 
 
-def _dispatch_mcp_tool(storage: LocalStorage, tool: dict[str, Any], tool_name: str, payload: dict[str, Any]) -> dict[str, Any]:
+def _dispatch_mcp_tool(
+    storage: LocalStorage,
+    tool: dict[str, Any],
+    tool_name: str,
+    payload: dict[str, Any],
+    *,
+    external_action_execution_port: ExternalActionExecutionPort | None,
+    environment: str,
+) -> dict[str, Any]:
     content = tool.get("content", {}) if isinstance(tool.get("content", {}), dict) else {}
+    metadata = (
+        tool.get("metadata", {})
+        if isinstance(tool.get("metadata", {}), dict)
+        else {}
+    )
     server = _find_mcp_server(storage, str(content.get("mcp_server_id") or content.get("mcp_server_name") or content.get("server_name") or ""))
     if not server:
         server = _find_mcp_server_for_tool(storage, tool_name)
     if not server:
         raise ValueError(f"no registered MCP server found for tool: {tool_name}")
-    result = _mcp_json_rpc(server, "tools/call", {"name": str(content.get("remote_name") or tool_name), "arguments": payload})
+    result = _mcp_json_rpc(
+        server,
+        "tools/call",
+        {
+            "name": str(content.get("remote_name") or tool_name),
+            "arguments": payload,
+        },
+        external_action_execution_port=external_action_execution_port,
+        project_id=str(metadata.get("project_id") or ""),
+        environment=environment,
+    )
     if "error" in result:
         raise RuntimeError(str(result["error"]))
     return {"status": "succeeded", "server": _mcp_server_summary(server), "tool_name": tool_name, "result": result.get("result", result), "raw": result}
@@ -385,7 +468,15 @@ def _find_mcp_server_for_tool(storage: LocalStorage, tool_name: str) -> dict[str
     return None
 
 
-def _mcp_json_rpc(server: dict[str, Any], method: str, params: dict[str, Any]) -> dict[str, Any]:
+def _mcp_json_rpc(
+    server: dict[str, Any],
+    method: str,
+    params: dict[str, Any],
+    *,
+    external_action_execution_port: ExternalActionExecutionPort | None,
+    project_id: str,
+    environment: str,
+) -> dict[str, Any]:
     content = server.get("content", {}) if isinstance(server.get("content", {}), dict) else {}
     transport = str(content.get("transport", "")).strip().lower()
     endpoint = str(content.get("endpoint", "")).strip()
@@ -399,19 +490,60 @@ def _mcp_json_rpc(server: dict[str, Any], method: str, params: dict[str, Any]) -
         "method": method,
         "params": params,
     }
-    request = urllib.request.Request(
-        endpoint,
-        data=json.dumps(body, ensure_ascii=False).encode("utf-8"),
-        headers={"Content-Type": "application/json", "Accept": "application/json"},
-        method="POST",
-    )
+    if external_action_execution_port is not None:
+        frozen_request = {
+            "server_registry_ref": str(
+                content.get("server_id") or server.get("id") or ""
+            ),
+            "transport": transport,
+            "jsonrpc_method": method,
+            "jsonrpc_params": params,
+            "project_id": project_id,
+        }
+        encoded = json.dumps(
+            frozen_request,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+        candidate = execute_external_action(
+            capability=ExternalActionKind.TOOL_REMOTE_INVOKE,
+            request_payload=frozen_request,
+            stable_idempotency_key=(
+                "tool.remote.invoke:"
+                + hashlib.sha256(encoded).hexdigest()
+            ),
+            data_classification="INTERNAL",
+            privacy_policy_ref="privacy-policy:tool-gateway:v1",
+            rate_limit_policy_ref="rate-limit-policy:mcp:v1",
+            quota_policy_ref="quota-policy:mcp:v1",
+            execution_port=external_action_execution_port,
+        )
+        result = dict(candidate.raw_output)
+        result["production_execution"] = candidate.evidence.to_dict()
+        return result
     timeout = _mcp_timeout_seconds()
     try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:
-            payload = json.loads(response.read().decode("utf-8"))
-    except urllib.error.HTTPError as exc:
-        detail = exc.read().decode("utf-8", errors="replace")
-        raise RuntimeError(f"MCP server returned HTTP {exc.code}: {detail[:500]}") from exc
+        response = development_only_http_request(
+            component="MCP JSON-RPC",
+            url=endpoint,
+            method="POST",
+            body=json.dumps(body, ensure_ascii=False).encode("utf-8"),
+            headers={
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+            },
+            timeout_seconds=timeout,
+            environment=environment,
+        )
+        payload = json.loads(response.body.decode("utf-8"))
+    except LegacyHttpRequestError as exc:
+        detail = exc.body.decode("utf-8", errors="replace")
+        raise RuntimeError(
+            f"MCP server returned HTTP {exc.status}: {detail[:500]}"
+        ) from exc
+    except RuntimeError:
+        raise
     except Exception as exc:
         raise RuntimeError(f"MCP JSON-RPC call failed: {exc}") from exc
     if not isinstance(payload, dict):

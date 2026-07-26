@@ -8,9 +8,19 @@ from novel_forge.core.ids import make_id, utc_now
 from novel_forge.modules.common import resolve_path
 from novel_forge.modules.content_quality_loop import run_content_quality_loop
 from novel_forge.modules.long_chain_proof import run_long_chain_proof
-from novel_forge.modules.model_router import call_model_via_router, record_external_provider_proof
+from novel_forge.modules.model_router import record_external_provider_proof
 from novel_forge.modules.os_envelope import enforce_os_envelope, envelope_asset_metadata
 from novel_forge.modules.production_context import project_scope_from_asset
+from novel_forge.modules.production_execution import (
+    CandidateKind,
+    DomainExecutionPort,
+    DomainModelOperation,
+    execute_domain_candidate,
+)
+from novel_forge.modules.production_execution.security import (
+    CONTROLLED_EXECUTION_ENVIRONMENTS,
+    execution_environment,
+)
 from novel_forge.modules.quality_eval import build_quality_rubric_pack, run_provider_quality_judge, run_quality_gate
 from novel_forge.schemas import DraftChapter, ProjectMetricSnapshot, validate_common_fields
 from novel_forge.storage.local import LocalStorage
@@ -20,6 +30,7 @@ def run_v7_provider_proof(
     storage: LocalStorage,
     *,
     provider_adapter: Any,
+    execution_port: DomainExecutionPort | None = None,
     project_id: str,
     draft_path: str | Path | None = None,
     genre_strategy_pack_path: str | Path | None = None,
@@ -38,8 +49,18 @@ def run_v7_provider_proof(
     quality loop, and a provider-backed 50-chapter long-chain proof.
     """
 
-    if provider_adapter is None:
-        raise ValueError("provider_adapter is required")
+    if provider_adapter is None and execution_port is None:
+        raise ValueError("V7 Provider proof requires an execution port")
+    if (
+        execution_environment(environment)
+        in CONTROLLED_EXECUTION_ENVIRONMENTS
+        and execution_port is None
+    ):
+        raise RuntimeError(
+            "legacy direct model adapters are disabled; controlled V7 Provider "
+            "proof requires an Authority-bound "
+            "ProductionExecutionGateway port"
+        )
     env = enforce_os_envelope(
         storage,
         envelope_payload=envelope,
@@ -57,6 +78,7 @@ def run_v7_provider_proof(
         single = _run_provider_single_chapter_draft(
             storage,
             adapter=provider_adapter,
+            execution_port=execution_port,
             project_id=project_id,
             envelope=env,
             provider_runtime_guard=provider_runtime_guard or {},
@@ -83,6 +105,7 @@ def run_v7_provider_proof(
         target_paths=[resolved_draft_path],
         rubric_path=rubric["path"],
         adapter=provider_adapter,
+        execution_port=execution_port,
         genre_strategy_pack_path=str(genre_strategy_pack_path or ""),
         style_profile_path=str(style_profile_path or ""),
         platform_id=platform_id,
@@ -107,6 +130,7 @@ def run_v7_provider_proof(
         style_profile_path=style_profile_path,
         platform_id=platform_id,
         provider_adapter=provider_adapter,
+        execution_port=execution_port,
         provider_runtime_guard=provider_runtime_guard or {},
         allow_mock_fixture=False,
         require_provider_judge=True,
@@ -124,6 +148,7 @@ def run_v7_provider_proof(
         envelope={**env, "task_type": "long_chain_proof", "asset_type": "long_chain_run"},
         opt_in_slow_provider=True,
         provider_adapter=provider_adapter,
+        execution_port=execution_port,
         provider_runtime_guard=provider_runtime_guard or {},
         require_external_provider_proof=require_external_provider_proof,
     )
@@ -299,6 +324,7 @@ def _run_provider_single_chapter_draft(
     storage: LocalStorage,
     *,
     adapter: Any,
+    execution_port: DomainExecutionPort | None,
     project_id: str,
     envelope: dict[str, Any],
     provider_runtime_guard: dict[str, Any],
@@ -309,20 +335,59 @@ def _run_provider_single_chapter_draft(
         "project_id": project_id,
         "instruction": "Generate an original single chapter proof candidate with visible genre promise, style controllability, conflict, and hook.",
     }
-    routed = call_model_via_router(
-        storage,
-        adapter=adapter,
-        operation="generate",
-        payload=json.dumps(payload, ensure_ascii=False, sort_keys=True),
-        context={"environment": envelope.get("environment"), "proof": "v7_provider_single_chapter"},
-        task_type="chapter_draft",
-        project_id=project_id,
-        prompt_id="v7-provider-proof-single-chapter",
-        prompt_version="v7",
-        trace={"trace_id": str(envelope.get("trace_id") or "")},
+    candidate = execute_domain_candidate(
+        capability="prose.chapter.draft",
+        operation=DomainModelOperation.GENERATE,
+        candidate_kind=CandidateKind.GENERATION,
+        prompt=json.dumps(payload, ensure_ascii=False, sort_keys=True),
+        context={
+            "environment": envelope.get("environment"),
+            "proof": "v7_provider_single_chapter",
+            "project_id": project_id,
+            "prompt_id": "v7-provider-proof-single-chapter",
+            "prompt_version": "v7",
+        },
+        execution_port=execution_port,
+        legacy_model=adapter,
+        legacy_model_role="draft",
         environment=str(envelope.get("environment") or ""),
-        provider_runtime_guard=provider_runtime_guard,
     )
+    routed = {
+        **dict(candidate.raw_output),
+        "production_execution": candidate.evidence.to_dict(),
+        "model_route_resolution_path": candidate.evidence.route_snapshot_id,
+        "model_gateway_call": {
+            "provider": (
+                candidate.evidence.provider_id
+                or candidate.evidence.backend_id
+            ),
+            "model": candidate.evidence.model_id,
+            "model_call_log_path": candidate.evidence.validation_manifest_ref,
+            "runtime_policy_path": candidate.evidence.input_manifest_ref,
+            "cost_ledger_path": candidate.evidence.cost_receipt_ref,
+            "provider_policy": {
+                "status": "passed"
+                if execution_port is not None
+                else "legacy_development_only",
+                "production_execution_gateway_backed": (
+                    execution_port is not None
+                ),
+            },
+            "approval_evidence": {
+                "approved": execution_port is not None,
+                "route_snapshot_id": candidate.evidence.route_snapshot_id,
+            },
+        },
+        "external_provider_evidence": {
+            "external_call": candidate.evidence.real_model_call,
+            "fixture": candidate.evidence.fixture_protocol_only,
+            "provider_response_id": candidate.evidence.provider_request_id,
+            "endpoint_host": "",
+            "rate_limit_policy": "route-snapshot-bound",
+            "credential_ref": "route-snapshot:"
+            + candidate.evidence.route_snapshot_id,
+        },
+    }
     external_proof = (
         record_external_provider_proof(
             storage,

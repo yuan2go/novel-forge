@@ -11,6 +11,9 @@ import urllib.error
 import urllib.request
 
 from novel_forge.model_adapters.base import AdapterNotConfiguredError
+from novel_forge.modules.production_execution.security import (
+    assert_legacy_execution_allowed,
+)
 
 TOKEN_PATTERN = re.compile(r"[A-Za-z0-9_]+|[\u4e00-\u9fff]+", re.UNICODE)
 CJK_PATTERN = re.compile(r"^[\u4e00-\u9fff]+$")
@@ -84,6 +87,11 @@ class OpenAICompatibleEmbeddingAdapter:
         return self.embed_batch([text])[0]
 
     def embed_batch(self, texts: list[str]) -> list[list[float]]:
+        assert_legacy_execution_allowed(
+            component="OpenAI-compatible embedding adapter",
+            gateway_backed=False,
+            environment=str(self.env.get("NOVEL_FORGE_ENVIRONMENT") or ""),
+        )
         api_key = self._api_key()
         if not api_key:
             raise AdapterNotConfiguredError(f"embedding adapter cannot run: missing {self.api_key_env}")

@@ -8,7 +8,6 @@ from typing import Any, Protocol
 from novel_forge.modules.chapter_authority.contracts import ChapterHandlerRequest
 from novel_forge.modules.command_kernel.asset_commands import AuthorityAssetWriteCommand
 from novel_forge.modules.command_kernel.errors import KernelError
-from novel_forge.model_adapters.base import ModelAdapter
 from novel_forge.modules.command_kernel.external_effect_adapters import (
     ExternalEffectAdapter,
     ExternalEffectAdapterError,
@@ -30,6 +29,29 @@ from novel_forge.modules.provider_control.contracts import (
     ProviderCapabilityProfile,
     ProviderControlLevel,
 )
+
+
+class LegacyChapterModelAdapter(Protocol):
+    name: str
+
+    def generate(
+        self, prompt: str, context: dict[str, Any] | None = None
+    ) -> dict[str, Any]: ...
+
+    def analyze(
+        self, text: str, context: dict[str, Any] | None = None
+    ) -> dict[str, Any]: ...
+
+    def review(
+        self, content: str, context: dict[str, Any] | None = None
+    ) -> dict[str, Any]: ...
+
+    def revise(
+        self,
+        content: str,
+        review: dict[str, Any],
+        context: dict[str, Any] | None = None,
+    ) -> dict[str, Any]: ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -127,7 +149,7 @@ class ChapterModelPort(Protocol):
 
 @dataclass(frozen=True, slots=True)
 class ChapterModelRoute:
-    adapter: ModelAdapter
+    adapter: LegacyChapterModelAdapter
     provider_id: str
     model_id: str
     prompt_version: str
@@ -336,7 +358,11 @@ class ChapterModelExternalEffectAdapter:
             )
 
     @staticmethod
-    def _call(adapter: ModelAdapter, stage: str, inputs: dict[str, Any]) -> dict[str, Any]:
+    def _call(
+        adapter: LegacyChapterModelAdapter,
+        stage: str,
+        inputs: dict[str, Any],
+    ) -> dict[str, Any]:
         if stage == "draft":
             plan = _object(inputs, "plan")
             context = _object(inputs, "context")
