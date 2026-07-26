@@ -159,6 +159,7 @@ class _Call:
     resolved: str
     line: int
     dynamic_method: str = ""
+    keyword_names: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -310,6 +311,11 @@ class _LocalCallCollector(ast.NodeVisitor):
                     resolved=resolved or display,
                     line=int(getattr(node, "lineno", 0) or 0),
                     dynamic_method=dynamic_method,
+                    keyword_names=tuple(
+                        keyword.arg
+                        for keyword in node.keywords
+                        if keyword.arg is not None
+                    ),
                 )
             )
         self.generic_visit(node)
@@ -416,6 +422,10 @@ def _classify_direct(function: _Function, call: _Call) -> _DirectClassification 
     lowered = resolved.lower()
     method = _method_name(call)
     combined = f"{relative} {function.display_name.lower()} {lowered}"
+    governed_execution_projection = any(
+        name == "execution_port" or name.endswith("_execution_port")
+        for name in call.keyword_names
+    )
 
     if function.fixture and (
         method in _MODEL_METHODS
@@ -490,6 +500,28 @@ def _classify_direct(function: _Function, call: _Call) -> _DirectClassification 
     )
     if method in {"embed", "rerank", "embeddings", "embed_batch"}:
         return _DirectClassification("REMOTE_RETRIEVAL", resolved)
+    if governed_execution_projection and (
+        method in _MODEL_METHODS
+        or method
+        in {
+            "execute_domain_candidate",
+            "execute_longform_analysis",
+            "execute_similarity_embedding_pair",
+        }
+    ):
+        side_effect_type = (
+            "AGENT_WORKSPACE_TRANSACTION"
+            if "agent" in combined or "workspace" in combined
+            else (
+                "REMOTE_RETRIEVAL"
+                if "embedding" in method or "rerank" in method
+                else "MODEL_INFERENCE"
+            )
+        )
+        return _DirectClassification(
+            side_effect_type,
+            f"PRODUCTION_EXECUTION_PORT:{resolved}",
+        )
     if model_prefix or model_chain or method in _MODEL_METHODS:
         return _DirectClassification("MODEL_INFERENCE", resolved)
 
@@ -600,7 +632,15 @@ def _function_classifications(
                     continue
                 source = summaries[target]
                 propagated = _DirectClassification(
-                    source.side_effect_type, target, indirect=True
+                    source.side_effect_type,
+                    (
+                        source.current_adapter
+                        if source.current_adapter.startswith(
+                            "PRODUCTION_EXECUTION_PORT:"
+                        )
+                        else target
+                    ),
+                    indirect=True,
                 )
                 calls[key] = propagated
                 previous = summaries.get(function.qualified_name)
@@ -785,7 +825,11 @@ def _current_route(
         return "POSTGRESQL_AUTHORITY"
     if classification.side_effect_type == "SCRIPTED_FIXTURE":
         return "SCRIPTED_FIXTURE"
-    if "productionexecutiongateway" in text or "/production_execution/" in str(function.path).replace("\\", "/"):
+    if (
+        classification.current_adapter.startswith("PRODUCTION_EXECUTION_PORT:")
+        or "productionexecutiongateway" in text
+        or "/production_execution/" in str(function.path).replace("\\", "/")
+    ):
         return "PRODUCTION_EXECUTION_GATEWAY"
     if "call_model_via_router" in text or "model_router" in text:
         return "MODEL_ROUTER"
@@ -839,12 +883,25 @@ def _entry(
 ) -> dict[str, Any]:
     production = _production_reachable(relative, function)
     source = function.source.lower()
-    operation_bound = "operation_id" in source and (
+    governed_projection = classification.current_adapter.startswith(
+        "PRODUCTION_EXECUTION_PORT:"
+    )
+    operation_bound = governed_projection or "operation_id" in source and (
         "authority" in source or "external_effect" in source or "executionrequest" in source
     )
-    attempt_bound = "attempt_id" in source and "fencing_token" in source
-    effect_bound = "external_effect" in source or "plan_external_effect" in source
-    budget_bound = "budget_reservation" in source or "budget_policy" in source
+    attempt_bound = governed_projection or (
+        "attempt_id" in source and "fencing_token" in source
+    )
+    effect_bound = (
+        governed_projection
+        or "external_effect" in source
+        or "plan_external_effect" in source
+    )
+    budget_bound = (
+        governed_projection
+        or "budget_reservation" in source
+        or "budget_policy" in source
+    )
     route = _current_route(function, classification)
     capability = _target_capability(
         relative, function, call, classification.side_effect_type

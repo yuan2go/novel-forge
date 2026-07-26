@@ -67,7 +67,7 @@ class AgentEditorContinuityEvaluationTests(unittest.TestCase):
             result = execute_agent_run_once(
                 storage,
                 run["path"],
-                tool_name="call_model_adapter",
+                tool_name="request_production_execution",
                 output_type="draft_chapter",
                 token_used=9,
                 evidence={"unit_test": True},
@@ -78,7 +78,7 @@ class AgentEditorContinuityEvaluationTests(unittest.TestCase):
             blocked = execute_agent_run_once(
                 storage,
                 over["path"],
-                tool_name="call_model_adapter",
+                tool_name="request_production_execution",
                 output_type="draft_chapter",
                 token_used=6,
             )

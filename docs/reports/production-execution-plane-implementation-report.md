@@ -106,6 +106,40 @@ real_provider_proven=false
 production_verified=false
 ```
 
+## 2026-07-26 WP-12 — Agent Workspace And Loop Execution
+
+Agent runtime profiles no longer grant a direct model-adapter tool. Model-using
+roles can request `agent.workspace.execute` through the Production Execution Plane,
+but cannot select a Provider, model, backend, route, or reasoning effort. The Agent
+workspace contract freezes the workspace snapshot, read/write sets, tool and command
+allowlists, network policy, Git base SHA, output contract, hop/file/cost limits, and
+approval policy before execution.
+
+Agent execution returns only a patch candidate, structured decision, analysis
+report, proposed AssetVersion, or proposed-only workspace manifest. Both the
+domain-facing candidate boundary and the backend reject Provider/route selection,
+Git/domain commit, and asset-activation claims. Runner evidence is checked against
+the frozen tool, command, network, and cost limits. Workspace mutation alone is
+therefore not accepted as an Authority or Git commit.
+
+The review/revision/re-review Loop Kernel rejects injected ModelAdapters and accepts
+governed execution ports. Deterministic Loop coordination and domain commits remain
+local. Claude Code/Codex-style agent processes are optional qualified backends, not
+an Agent Center dependency. The scripted runner is protocol-only and records
+`real_model_call=false` and `production_verified=false`.
+
+Verification: 51 Agent Scheduler/Loop/permission/runtime-profile regressions and 7
+focused Agent workspace/backend tests passed. No real agent process, Provider
+request, paid call, or workspace commit was executed.
+
+```text
+agent_workspace_execution_contract_complete=true
+agent_workspace_fixture_proven=true
+agent_center_autonomous_complete=false
+real_provider_proven=false
+production_verified=false
+```
+
 ## Gate-00 — Pre-Migration Real Provider Chapter Baseline
 
 ### Verdict

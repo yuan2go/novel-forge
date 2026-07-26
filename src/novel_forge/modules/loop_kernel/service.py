@@ -9,6 +9,7 @@ from novel_forge.modules.common import resolve_path
 from novel_forge.modules.context_builder import build_flow_context_bundle
 from novel_forge.modules.os_envelope import enforce_os_envelope, envelope_asset_metadata
 from novel_forge.modules.production_context import filter_project_safe_references, project_scope_from_asset
+from novel_forge.modules.production_execution import DomainExecutionPort
 from novel_forge.modules.review_issue import blocking_review_issues, review_issues_to_gate_issues
 from novel_forge.modules.runtime_ledger import record_trace_span
 from novel_forge.schemas import DraftChapter, EditorPatch, LoopCheckpoint, LoopReport, LoopRun, LoopStep, ReviewReport, RevisionPlan, validate_common_fields
@@ -734,9 +735,26 @@ def _loop_revision_plan(
     task_data = storage.read_json(resolve_path(storage.root, revision_task_path))
     task_content = task_data.get("content", {}) if isinstance(task_data.get("content", {}), dict) else {}
     issue_indexes = [int(item) for item in task_content.get("issue_indexes", []) if str(item).strip()] if isinstance(task_content.get("issue_indexes", []), list) else []
-    revision_model = payload.get("revision_model")
-    if revision_model is not None:
-        revision_file = revise(storage, review_path, model=revision_model)
+    if payload.get("revision_model") is not None:
+        raise RuntimeError(
+            "Loop Kernel cannot invoke a revision ModelAdapter directly; "
+            "use revision_execution_port"
+        )
+    revision_execution_port: DomainExecutionPort | None = (
+        payload.get("revision_execution_port") or payload.get("execution_port")
+    )
+    if revision_execution_port is not None:
+        revision_file = revise(
+            storage,
+            review_path,
+            execution_port=revision_execution_port,
+            environment=str(payload.get("environment") or ""),
+            os_envelope=payload.get("envelope")
+            if isinstance(payload.get("envelope"), dict)
+            else None,
+            auto_execute_revision_plan=False,
+            post_review=False,
+        )
         revision_ref = _display_path(storage.root, revision_file)
         _link_loop_revision_plan(storage, revision_ref, revision_task_path=revision_task_path, issue_indexes=issue_indexes, envelope=envelope)
         outputs = {"revision_task_path": revision_task_path, "revision_plan_path": revision_ref}
@@ -803,8 +821,15 @@ def _loop_revision_apply(
     review_path = str(loop_outputs.get("review_report_path") or payload.get("review_path") or "").strip()
     revision_plan_path = str(loop_outputs.get("revision_plan_path") or payload.get("revision_plan_path") or "").strip()
     revision_task_path = str(loop_outputs.get("revision_task_path") or payload.get("revision_task_path") or "").strip()
-    editor_model = payload.get("editor_model")
-    if editor_model is not None:
+    if payload.get("editor_model") is not None:
+        raise RuntimeError(
+            "Loop Kernel cannot invoke an editor ModelAdapter directly; "
+            "use editor_execution_port"
+        )
+    editor_execution_port: DomainExecutionPort | None = (
+        payload.get("editor_execution_port") or payload.get("execution_port")
+    )
+    if editor_execution_port is not None:
         from novel_forge.modules.editor import execute_revision_plan
 
         execution = execute_revision_plan(
@@ -813,8 +838,12 @@ def _loop_revision_apply(
             review_path=review_path,
             revision_path=revision_plan_path,
             context_bundle_path=context_result.get("path", ""),
-            model=editor_model,
+            execution_port=editor_execution_port,
             workspace_path=workspace_path or None,
+            environment=str(payload.get("environment") or ""),
+            os_envelope=payload.get("envelope")
+            if isinstance(payload.get("envelope"), dict)
+            else None,
         )
         outputs = {
             "editor_patch_path": execution.get("forward_patch_path", ""),
@@ -926,11 +955,26 @@ def _loop_re_review(
     revision_task_content = _revision_task_content(storage, str(loop_outputs.get("revision_task_path") or ""))
     re_review_focus = revision_task_content.get("re_review_focus", []) if isinstance(revision_task_content.get("re_review_focus", []), list) else []
     revision_strategy_plan = revision_task_content.get("revision_strategy_plan", {}) if isinstance(revision_task_content.get("revision_strategy_plan", {}), dict) else {}
-    review_model = payload.get("review_model")
-    if review_model is not None:
+    if payload.get("review_model") is not None:
+        raise RuntimeError(
+            "Loop Kernel cannot invoke a review ModelAdapter directly; "
+            "use review_execution_port"
+        )
+    review_execution_port: DomainExecutionPort | None = (
+        payload.get("review_execution_port") or payload.get("execution_port")
+    )
+    if review_execution_port is not None:
         from novel_forge.modules.review import service as review_service
 
-        review_file = review_service.review(storage, draft_path, model=review_model)
+        review_file = review_service.review(
+            storage,
+            draft_path,
+            execution_port=review_execution_port,
+            environment=str(payload.get("environment") or ""),
+            os_envelope=payload.get("envelope")
+            if isinstance(payload.get("envelope"), dict)
+            else None,
+        )
         review_ref = _display_path(storage.root, review_file)
         _link_loop_rework_metadata(
             storage,

@@ -255,6 +255,59 @@ class ProductionExecutionInventoryTests(unittest.TestCase):
         )
         self.assertEqual(database["side_effect_type"], "DATABASE_AUTHORITY")
 
+    def test_inventory_recognizes_governed_execution_port_projection(self) -> None:
+        self._write(
+            "src/novel_forge/modules/loop_kernel/service.py",
+            """
+            from novel_forge.modules.review import review
+
+            def governed(port):
+                return review("draft", execution_port=port)
+
+            def legacy(model):
+                return review("draft", model=model)
+            """,
+        )
+        self._write(
+            "src/novel_forge/modules/review/__init__.py",
+            """
+            def review(path, *, execution_port=None, model=None):
+                if execution_port is not None:
+                    return execution_port.execute(path)
+                return model.review(path, {})
+            """,
+        )
+
+        manifest = build_execution_inventory(self.root)
+        governed = self._find(
+            manifest,
+            source_file="src/novel_forge/modules/loop_kernel/service.py",
+            current_entrypoint="review",
+        )
+        self.assertEqual(
+            governed["current_route"],
+            "PRODUCTION_EXECUTION_GATEWAY",
+        )
+        self.assertTrue(governed["authority_operation_bound"])
+        self.assertTrue(governed["authority_attempt_bound"])
+        self.assertTrue(governed["external_effect_bound"])
+        self.assertTrue(governed["budget_bound"])
+        self.assertEqual(governed["migration_status"], "GATEWAY_BOUND")
+
+        legacy_entries = [
+            entry
+            for entry in manifest["entries"]
+            if entry["source_file"]
+            == "src/novel_forge/modules/loop_kernel/service.py"
+            and entry["source_symbol"] == "legacy"
+        ]
+        self.assertEqual(len(legacy_entries), 1)
+        self.assertEqual(
+            legacy_entries[0]["current_route"],
+            "DIRECT_MODEL_ADAPTER",
+        )
+        self.assertEqual(legacy_entries[0]["migration_status"], "DISCOVERED")
+
     def test_writer_emits_stable_complete_json_and_markdown(self) -> None:
         self._write(
             "src/novel_forge/modules/drafting/service.py",

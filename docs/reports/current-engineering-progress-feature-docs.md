@@ -90,6 +90,13 @@ has not started and `real_provider_proven`, `longform_proven`, and
 - 远程语义相似度必须通过 Retrieval Execution Port；本地 Hash 只作为确定性回归信号。
 - Recap 不再原地修改 ArcPlan，而是生成含 Semantic Diff、Impact Analysis、Approval 和版本迁移约束的 `plan_adjustment_proposal`。
 - 12/50 章测试均为确定性 Fixture 回归，`longform_proven=false`，未执行真实长篇 Provider 验证。
+
+2026-07-26 Production Execution WP-12 更新：
+
+- Agent Runtime 不再授予 `call_model_adapter`，模型型角色只能请求 `agent.workspace.execute`，且不得自行选择 Provider、模型、Backend、Route 或 reasoning effort。
+- Agent Workspace 合同冻结 Snapshot、Read/Write Set、工具/命令白名单、网络、Git Base、输出合同、Hop/文件/成本上限及审批策略；结果只能是候选或 `proposed_only` Manifest。
+- Review/Revision/Re-review Loop 拒绝直接 ModelAdapter payload，改为接收受控 ExecutionPort；确定性编排、领域校验和提交仍留在原模块。
+- 51 项 Agent Scheduler/Loop/权限回归与 7 项 Agent Workspace/Backend 定向测试通过；未运行真实 Agent 进程、Provider 或工作区提交。
 - Web Admin 新增 `/mkaos/model-extraction/*`、`/mkaos/production-gate/*`、`/mkaos/knowledge-graph`、`/mkaos/lineage`、`/mkaos/impact`、`/mkaos/feedback-attribution` first-slice 页面。
 
 最终验证：
@@ -100,6 +107,8 @@ has not started and `real_provider_proven`, `longform_proven`, and
 | `PYTHONPATH=src python3 -m unittest discover -s tests -p 'test_*.py'` | 477 tests OK, skipped=2, 383.986s |
 | `PYTHONPATH=src python3 -m unittest tests.integration.test_pipeline` | 1 test OK; sample pipeline second-run idempotency preserved |
 | `python3 -m unittest tests.unit.test_longform_recap_agent tests.unit.test_loop_kernel tests.unit.test_publish_feedback_loop tests.unit.test_provider_hard_stop_proof tests.integration.test_novel_os_12_chapter_industrial_pressure` | 13 tests OK |
+| `NOVEL_FORGE_MODEL_PROVIDER=mock python3 -m unittest tests.unit.test_agent_scheduler tests.unit.test_loop_kernel tests.unit.test_permission_center tests.unit.test_agent_runtime_profiles` | 51 tests OK |
+| `python3 -m unittest tests.unit.test_agent_workspace_execution_migration tests.unit.test_execution_backend_conformance`（Agent workspace 定向用例） | 7 tests OK |
 | `npm --prefix web/admin test` | 10 pass, 1 Playwright smoke skipped |
 | `npm --prefix web/admin run build` | OK, 67 routes generated |
 | `PYTHONPATH=src python3 -m unittest tests.unit.test_agent_registry tests.unit.test_agent_registry_scheduler_integration tests.unit.test_audit_log tests.unit.test_pgvector_source_isolation tests.unit.test_clickhouse_analytics tests.unit.test_evaluation_center_general tests.integration.test_novel_os_governance_loop tests.unit.test_schemas tests.unit.test_product_api_routes` | 32 tests OK |
@@ -135,8 +144,8 @@ has not started and `real_provider_proven`, `longform_proven`, and
 | 领域 | 当前缺口 | 优先级 |
 | -- | -- | -- |
 | Canon Graph | Canon / Character / Arc / Foreshadowing / WorldRule 仍需完整图谱级语义推理 | P1 |
-| Agent Center | operation coverage、硬停止 UI、rollback depth 仍不足 | P1 |
-| Loop Kernel | review -> revision -> re-review -> publish gate 主链已默认进入 LoopRun；非主链 operation 分批迁移 | P2 |
+| Agent Center | Workspace 不确定执行已具备 PEP 候选合同；真实 Agent runner、operation coverage、硬停止 UI、rollback depth 仍不足 | P1 |
+| Loop Kernel | review -> revision -> re-review 的模型步骤拒绝直连 Adapter 并接收 ExecutionPort；确定性提交仍在 Loop/领域，非主链 operation 分批迁移 | P2 |
 | UI 领域表单 | 当前是最小可编辑控制台，专用表单、批量治理、血缘图仍不足 | P1/P2 |
 | Provider fallback | hard-stop 后 fail closed 已证明，但显式 fallback 策略尚未治理化 | P1 |
 | Publishing adapters | Platform Strategy OS 已有平台发布适配契约；外部真实平台 API 和回执 schema 仍需深化 | P2 |

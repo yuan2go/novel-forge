@@ -249,10 +249,10 @@
 - Agent/Loop output is one of Patch Candidate, Structured Decision, Analysis Report, Proposed AssetVersion, Workspace Manifest.
 - Domain Authority accepts or rejects structured output; workspace changes alone never imply commit success.
 
-- [ ] Test Provider/process selection prohibition, structured-result validation, tool/command/network/write-set limits, and explicit commit rejection.
-- [ ] Route side effects through `agent.workspace.execute`; keep Claude Code optional.
-- [ ] Run Agent Scheduler/Loop/permission tests.
-- [ ] Commit `refactor: route agent and loop side effects through production execution`.
+- [x] Test Provider/process selection prohibition, structured-result validation, tool/command/network/write-set limits, and explicit commit rejection.
+- [x] Route side effects through `agent.workspace.execute`; keep Claude Code optional.
+- [x] Run Agent Scheduler/Loop/permission tests.
+- [x] Commit `refactor: route agent and loop side effects through production execution`.
 
 ### Task 13: Publishing, feedback, and remote fetch migration
 

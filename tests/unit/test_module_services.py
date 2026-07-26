@@ -20,6 +20,11 @@ from novel_forge.modules.outline import service as outline_service
 from novel_forge.modules.review import service as review_service
 from novel_forge.modules.revision import service as revision_service
 from novel_forge.model_adapters.mock import MockModelAdapter
+from novel_forge.modules.production_execution import (
+    DomainExecutionCandidate,
+    DomainExecutionEvidence,
+    DomainModelOperation,
+)
 from novel_forge.modules.topics import service as topics_service
 from novel_forge.modules.training import service as training_service
 from novel_forge.modules.workspace import service as workspace_service
@@ -28,6 +33,50 @@ from novel_forge.schemas import DraftChapter
 from novel_forge.workflows import pipeline
 
 ROOT = Path(__file__).resolve().parents[2]
+
+
+class _ModuleFixtureExecutionPort:
+    def __init__(self):
+        self.model = MockModelAdapter()
+        self.calls = 0
+
+    def execute(self, command):
+        self.calls += 1
+        if command.operation is DomainModelOperation.REVIEW:
+            output = self.model.review(command.prompt, dict(command.context))
+        elif command.operation is DomainModelOperation.REVISE:
+            output = self.model.revise(
+                command.prompt,
+                dict(command.review or {}),
+                dict(command.context),
+            )
+        elif command.operation is DomainModelOperation.ANALYZE:
+            output = self.model.analyze(command.prompt, dict(command.context))
+        else:
+            output = self.model.generate(command.prompt, dict(command.context))
+        return DomainExecutionCandidate(
+            command.candidate_kind,
+            output,
+            DomainExecutionEvidence(
+                execution_id=f"module-fixture-execution-{self.calls}",
+                operation_id="module-fixture-operation",
+                attempt_id=f"module-fixture-attempt-{self.calls}",
+                fencing_token=1,
+                capability=command.capability,
+                backend_id="scripted-fixture",
+                route_snapshot_id=f"module-fixture-route-{self.calls}",
+                input_manifest_ref=f"module-fixture-input-{self.calls}",
+                output_manifest_ref=f"module-fixture-output-{self.calls}",
+                validation_manifest_ref=f"module-fixture-validation-{self.calls}",
+                usage_receipt_ref=f"module-fixture-usage-{self.calls}",
+                cost_receipt_ref=f"module-fixture-cost-{self.calls}",
+                fixture_protocol_only=True,
+                real_model_call=False,
+                production_verified=False,
+                provider_id="mock",
+                model_id="mock-model",
+            ),
+        )
 
 
 class ModuleServiceTests(unittest.TestCase):
@@ -260,20 +309,25 @@ class ModuleServiceTests(unittest.TestCase):
             review_asset = storage.read_asset(review)
             self.assertTrue(review_asset.issues)
             self.assertIn("issue_id", review_asset.issues[0])
+            execution_port = _ModuleFixtureExecutionPort()
 
             result = revision_service.run_review_rework_loop(
                 storage,
                 review,
                 draft_path=draft,
                 issue_indexes=[0],
-                revision_model=model,
-                editor_model=model,
-                review_model=model,
+                revision_execution_port=execution_port,
+                editor_execution_port=execution_port,
+                review_execution_port=execution_port,
                 human_override=True,
             )
 
             task = storage.read_asset(result["revision_task_path"])
             revision_plan = storage.read_asset(result["revision_plan_path"])
+            self.assertTrue(
+                result["editor_patch_path"],
+                storage.read_asset(result["loop_report_path"]).content,
+            )
             editor_patch = storage.read_asset(result["editor_patch_path"])
             draft_version = storage.read_asset(result["draft_version_path"])
             re_review = storage.read_asset(result["re_review_path"])

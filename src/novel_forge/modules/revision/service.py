@@ -395,6 +395,9 @@ def run_review_rework_loop(
     revision_model: object | None = None,
     editor_model: object | None = None,
     review_model: object | None = None,
+    revision_execution_port: DomainExecutionPort | None = None,
+    editor_execution_port: DomainExecutionPort | None = None,
+    review_execution_port: DomainExecutionPort | None = None,
     human_override: bool = False,
 ) -> dict[str, Any]:
     """Run the production review rework loop end to end.
@@ -403,6 +406,13 @@ def run_review_rework_loop(
     draft_version -> re-review -> publish gate
     """
 
+    if any(
+        model is not None for model in (revision_model, editor_model, review_model)
+    ):
+        raise RuntimeError(
+            "review rework Loop cannot select ModelAdapters directly; "
+            "use governed execution ports"
+        )
     storage.ensure_layout()
     review_file = resolve_path(storage.root, review_path)
     review_data = storage.read_json(review_file)
@@ -428,9 +438,9 @@ def run_review_rework_loop(
             "context_bundle_path": str(context_bundle_path or ""),
             "workspace_path": resolved_workspace_path,
             "project_id": project_id,
-            "revision_model": revision_model,
-            "editor_model": editor_model,
-            "review_model": review_model,
+            "revision_execution_port": revision_execution_port,
+            "editor_execution_port": editor_execution_port,
+            "review_execution_port": review_execution_port,
             "human_override": human_override,
             "bypass_reason": "review rework compatibility facade routed through Loop Kernel",
         },

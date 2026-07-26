@@ -58,6 +58,11 @@ from .agent_workspace_backend import (
     ScriptedAgentWorkspaceRunner,
     StaticAgentWorkspaceContractSource,
 )
+from .agent_execution import (
+    AgentResultKind,
+    AgentWorkspaceResultCandidate,
+    execute_agent_workspace_candidate,
+)
 from .external_action_backend import (
     ExternalActionAdapter,
     ExternalActionAdapterProfile,
@@ -144,6 +149,8 @@ __all__ = [
     "AgentWorkspaceExecutionContract",
     "AgentWorkspaceRunner",
     "AgentWorkspaceRunnerProfile",
+    "AgentResultKind",
+    "AgentWorkspaceResultCandidate",
     "ArtifactPointer",
     "AuthorityExecutionRecoveryStore",
     "BackendConformanceReport",
@@ -209,6 +216,7 @@ __all__ = [
     "RerankExecutionEvidence",
     "RetrievalExecutionPort",
     "execute_similarity_embedding_pair",
+    "execute_agent_workspace_candidate",
     "LegacyRequestMapper",
     "LegacyResultMapper",
     "ModelProfile",

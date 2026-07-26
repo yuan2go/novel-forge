@@ -12,6 +12,10 @@ from novel_forge.modules.genre_os import build_genre_strategy_pack, run_genre_ri
 from novel_forge.modules.platform_strategy import build_platform_strategy_pack
 from novel_forge.modules.publishing import create_publish_gate_report
 from novel_forge.modules.model_router import create_model_route
+from novel_forge.modules.production_execution import (
+    DomainExecutionCandidate,
+    DomainExecutionEvidence,
+)
 from novel_forge.modules.quality_eval import build_quality_rubric_pack, run_provider_quality_judge, run_quality_gate
 from novel_forge.modules.runtime_ledger import record_gate_result, record_model_call_log
 from novel_forge.modules.style_os import build_style_profile, extract_style_fingerprint, ingest_style_sample, run_style_drift_gate
@@ -27,6 +31,35 @@ class ProviderJudgeAdapter:
             "usage": {"input_tokens": 1200, "output_tokens": 240, "total_tokens": 1440, "usage_source": "provider_fixture"},
             "cost": {"amount": 0.012, "currency": "USD", "source": "provider_fixture"},
         }
+
+
+class PublishingQualityFixturePort:
+    """Explicit PEP protocol fixture; it is never evidence of a real model call."""
+
+    def execute(self, command: Any) -> DomainExecutionCandidate:
+        return DomainExecutionCandidate(
+            command.candidate_kind,
+            ProviderJudgeAdapter().review(command.prompt, dict(command.context)),
+            DomainExecutionEvidence(
+                execution_id="publishing-quality-fixture-execution",
+                operation_id="publishing-quality-fixture-operation",
+                attempt_id="publishing-quality-fixture-attempt",
+                fencing_token=1,
+                capability=command.capability,
+                backend_id="scripted-fixture",
+                route_snapshot_id="publishing-quality-fixture-route",
+                input_manifest_ref="publishing-quality-fixture-input",
+                output_manifest_ref="publishing-quality-fixture-output",
+                validation_manifest_ref="publishing-quality-fixture-validation",
+                usage_receipt_ref="publishing-quality-fixture-usage",
+                cost_receipt_ref="publishing-quality-fixture-cost",
+                fixture_protocol_only=True,
+                real_model_call=False,
+                production_verified=False,
+                provider_id="unit-provider",
+                model_id="premium-judge-v1",
+            ),
+        )
 
 
 def production_envelope(project_id: str, asset_type: str, *, trace_id: str, source_policy: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -187,7 +220,7 @@ def _v7_content_intelligence_evidence(storage: LocalStorage, draft_path: Path, *
         suite_type="opening_3",
         target_paths=[str(draft_path)],
         rubric_path=rubric["path"],
-        adapter=ProviderJudgeAdapter(),
+        execution_port=PublishingQualityFixturePort(),
         genre_strategy_pack_path=genre["genre_strategy_pack_path"],
         style_profile_path=style["style_profile_path"],
         platform_id="local_serial",

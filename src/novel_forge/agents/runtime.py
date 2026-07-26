@@ -38,7 +38,7 @@ AGENT_RUNTIME_PROFILES: dict[str, dict[str, Any]] = {
         "allowed_tools": [
             "read_asset",
             "read_skill",
-            "call_model_adapter",
+            "request_production_execution",
             "write_knowledge_card",
             "write_decomposition_report",
             "run_validation",
@@ -57,7 +57,7 @@ AGENT_RUNTIME_PROFILES: dict[str, dict[str, Any]] = {
     "topic": {
         "agent": "Planner Agent",
         "permission_profile": "topic_generation_from_abstract_materials_only",
-        "allowed_tools": ["read_asset", "call_model_adapter", "write_topic_seed", "run_validation"],
+        "allowed_tools": ["read_asset", "request_production_execution", "write_topic_seed", "run_validation"],
         "allowed_write_types": ["topic_seed", "task_status", "workflow_run"],
         "forbidden": ["copy_protected_premise", "write_draft_prose", "use_unapproved_raw_source"],
     },
@@ -78,14 +78,14 @@ AGENT_RUNTIME_PROFILES: dict[str, dict[str, Any]] = {
     "outline": {
         "agent": "Outline Agent",
         "permission_profile": "outline_generation_from_project_character_only",
-        "allowed_tools": ["read_asset", "call_model_adapter", "write_outline", "write_outline_version", "run_validation"],
+        "allowed_tools": ["read_asset", "request_production_execution", "write_outline", "write_outline_version", "run_validation"],
         "allowed_write_types": ["outline", "outline_version", "long_form_macro_plan", "task_status", "workflow_run"],
         "forbidden": ["copy_plot_sequence", "write_draft_prose", "ignore_long_form_constraints"],
     },
     "chapter_plan": {
         "agent": "Chapter Plan Agent",
         "permission_profile": "chapter_plan_generation_from_project_outline_only",
-        "allowed_tools": ["read_asset", "call_model_adapter", "write_chapter_plan", "write_chapter_plan_version", "run_validation"],
+        "allowed_tools": ["read_asset", "request_production_execution", "write_chapter_plan", "write_chapter_plan_version", "run_validation"],
         "allowed_write_types": ["chapter_plan", "chapter_plan_version", "task_status", "workflow_run"],
         "forbidden": ["skip_project_profiles", "ignore_continuity_feedback_or_quality_standard", "write_draft_prose"],
     },
@@ -126,7 +126,7 @@ AGENT_RUNTIME_PROFILES: dict[str, dict[str, Any]] = {
         "allowed_tools": [
             "read_asset",
             "read_skill",
-            "call_model_adapter",
+            "request_production_execution",
             "write_analysis_report",
             "write_converted_creative_asset",
             "run_validation",
@@ -151,7 +151,7 @@ AGENT_RUNTIME_PROFILES: dict[str, dict[str, Any]] = {
     "draft": {
         "agent": "Draft Agent",
         "permission_profile": "draft_generation_from_approved_context",
-        "allowed_tools": ["read_asset", "call_model_adapter", "write_draft_chapter", "write_draft_version", "write_generation_run", "run_validation"],
+        "allowed_tools": ["read_asset", "request_production_execution", "write_draft_chapter", "write_draft_version", "write_generation_run", "run_validation"],
         "allowed_write_types": ["draft_chapter", "draft_version", "generation_run", "task_status", "workflow_run"],
         "forbidden": ["copy_protected_text", "read_unapproved_raw_sources", "overwrite_existing_draft"],
     },
@@ -160,7 +160,7 @@ AGENT_RUNTIME_PROFILES: dict[str, dict[str, Any]] = {
         "permission_profile": "critique_without_overwrite",
         "allowed_tools": [
             "read_asset",
-            "call_model_adapter",
+            "request_production_execution",
             "write_review_report",
             "write_revision_plan",
             "write_quality_score_report",
@@ -243,7 +243,7 @@ AGENT_RUNTIME_PROFILES: dict[str, dict[str, Any]] = {
         "permission_profile": "patch_based_editing_with_diff_and_rollback",
         "allowed_tools": [
             "read_asset",
-            "call_model_adapter",
+            "request_production_execution",
             "write_editor_patch",
             "write_draft_chapter",
             "write_draft_diff_report",
@@ -288,7 +288,7 @@ AGENT_RUNTIME_PROFILES: dict[str, dict[str, Any]] = {
         "permission_profile": "benchmark_models_without_story_mutation",
         "allowed_tools": [
             "read_asset",
-            "call_model_adapter",
+            "request_production_execution",
             "write_model_profile",
             "write_model_benchmark_task",
             "write_model_benchmark_run",

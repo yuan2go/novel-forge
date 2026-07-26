@@ -79,6 +79,31 @@ class AgentWorkspaceExecutionContract:
     maximum_cost: str
     approval_policy: str
 
+    @classmethod
+    def from_mapping(
+        cls,
+        payload: Mapping[str, Any],
+    ) -> AgentWorkspaceExecutionContract:
+        return cls(
+            workspace_snapshot_ref=str(payload.get("workspace_snapshot_ref") or ""),
+            read_set=tuple(str(item) for item in payload.get("read_set") or ()),
+            write_set=tuple(str(item) for item in payload.get("write_set") or ()),
+            allowed_tools=tuple(str(item) for item in payload.get("allowed_tools") or ()),
+            allowed_commands=tuple(
+                tuple(str(token) for token in command)
+                for command in payload.get("allowed_commands") or ()
+            ),
+            network_policy=str(payload.get("network_policy") or ""),
+            git_base_sha=str(payload.get("git_base_sha") or ""),
+            expected_output_contract=str(
+                payload.get("expected_output_contract") or ""
+            ),
+            maximum_agent_hops=int(payload.get("maximum_agent_hops") or 0),
+            maximum_files_changed=int(payload.get("maximum_files_changed") or 0),
+            maximum_cost=str(payload.get("maximum_cost") or ""),
+            approval_policy=str(payload.get("approval_policy") or ""),
+        )
+
     def __post_init__(self) -> None:
         if not all(
             (
@@ -240,6 +265,10 @@ class ScriptedAgentWorkspaceRunner:
             "fixture_protocol_only": True,
             "real_model_call": False,
             "production_verified": False,
+            "tools_used": [],
+            "commands_run": [],
+            "network_accesses": [],
+            "cost_amount": "0",
         }
 
 
@@ -348,6 +377,7 @@ class AgentWorkspaceExecutionBackend:
             raise
         result = runner_evidence.get("result")
         self._validate_candidate(result, contract)
+        self._validate_runner_evidence(runner_evidence, contract)
         qualified_evidence = dict(runner_evidence)
         if self.runner.capability_profile.fixture_protocol_only:
             qualified_evidence["fixture_protocol_only"] = True
@@ -372,8 +402,30 @@ class AgentWorkspaceExecutionBackend:
         result_kind = str(result.get("result_kind") or "")
         if result_kind not in _ALLOWED_RESULT_KINDS:
             raise ValueError("agent workspace result is not an allowed candidate kind")
+        if any(
+            key in result
+            for key in {
+                "committed",
+                "commit_succeeded",
+                "active_asset_version_id",
+                "activation_succeeded",
+                "git_commit_accepted",
+                "provider",
+                "provider_id",
+                "model",
+                "model_id",
+                "backend_id",
+                "route_id",
+                "reasoning_effort",
+            }
+        ):
+            raise ValueError(
+                "agent workspace result contains a forbidden commit or route claim"
+            )
         manifest = result.get("workspace_manifest")
         if isinstance(manifest, Mapping):
+            if manifest.get("proposed_only") is not True:
+                raise ValueError("agent workspace manifest must remain proposed_only")
             files = manifest.get("files_changed") or []
             if not isinstance(files, (list, tuple)):
                 raise ValueError("agent workspace files_changed must be a list")
@@ -387,6 +439,31 @@ class AgentWorkspaceExecutionBackend:
                     for allowed in contract.write_set
                 ):
                     raise ValueError("agent workspace result escaped write_set")
+
+    @staticmethod
+    def _validate_runner_evidence(
+        evidence: Mapping[str, Any],
+        contract: AgentWorkspaceExecutionContract,
+    ) -> None:
+        tools_used = tuple(str(item) for item in evidence.get("tools_used") or ())
+        if any(tool not in contract.allowed_tools for tool in tools_used):
+            raise ValueError("agent workspace runner used a tool outside allowlist")
+        commands_run = tuple(
+            tuple(str(token) for token in command)
+            for command in evidence.get("commands_run") or ()
+        )
+        if any(command not in contract.allowed_commands for command in commands_run):
+            raise ValueError("agent workspace runner used a command outside allowlist")
+        network_accesses = tuple(evidence.get("network_accesses") or ())
+        if contract.network_policy == "DENY" and network_accesses:
+            raise ValueError("agent workspace runner violated network DENY policy")
+        try:
+            actual_cost = Decimal(str(evidence.get("cost_amount") or "0"))
+            maximum_cost = Decimal(contract.maximum_cost)
+        except InvalidOperation as exc:
+            raise ValueError("agent workspace runner cost evidence is invalid") from exc
+        if actual_cost > maximum_cost:
+            raise ValueError("agent workspace runner exceeded maximum cost")
 
     def reconcile(self, handle: ExecutionHandle) -> ExecutionResult:
         record = self.record_store.get_record(handle.execution_id)

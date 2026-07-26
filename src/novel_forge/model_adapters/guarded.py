@@ -53,7 +53,11 @@ class GuardedModelAdapter:
         return {"ok": True, "provider": self.name, "model": self.name}
 
     def _guard(self) -> None:
-        guard_agent_action(self.storage, self.agent_run_path, tool_name="call_model_adapter")
+        guard_agent_action(
+            self.storage,
+            self.agent_run_path,
+            tool_name="request_production_execution",
+        )
 
     def _call(self, operation: str, context: dict[str, Any] | None, thunk: Any, *, prompt_payload: Any = "") -> Any:
         self._guard()

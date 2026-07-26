@@ -61,6 +61,16 @@ outcome, pairwise, mutation, and OOD families resolve only to governed
 Capabilities. Uncalibrated values are named Raw Score, Ordinal Band, or Pairwise
 Preference; the contract rejects probability claims without calibration.
 
+Agent runtime profiles now request Production Execution instead of calling a model
+adapter. `agent.workspace.execute` freezes workspace, read/write, tool, command,
+network, Git-base, output, hop/file/cost, and approval constraints. Agent output is
+candidate-only: route selection, commit/activation claims, and manifests not marked
+`proposed_only` are rejected. Review/revision Loop steps reject direct ModelAdapter
+payloads and accept governed execution ports while deterministic coordination and
+domain acceptance stay in their modules. This is fixture protocol evidence, not a
+claim that a complete autonomous Agent Center or real Claude/Codex runtime has been
+proven.
+
 ## 2026-07-22 Next Authority Implementation Baseline
 
 WP-00 has audited the execution, Chapter, Book, Context, Evaluation, and storage
@@ -260,7 +270,7 @@ The current branch has implemented the first V7 content intelligence foundation 
 | Context Builder | Partially implemented with stage profile contract | `modules/context_builder/service.py`, `api/routers/context_builder.py`, `web/admin/app/context/page.tsx`, `tests/unit/test_context_builder_stage_profiles.py` | Selected/rejected/compressed summaries now carry source eligibility in production; manual controls, KG-backed context, invalidation warnings, and final full-loop profile assertions still need depth | Yes | High |
 | RAG / memory | Partially implemented; controlled remote embedding PEP-bound | `storage/retrieval_index.py`, `storage/qdrant_index.py`, `modules/production_execution/retrieval_execution.py`, `modules/pgvector_store/service.py`, `modules/long_memory/service.py` | Deterministic local retrieval remains local; controlled remote embedding requires an execution port with frozen evidence. Real Provider retrieval quality and external service coverage remain unverified | Yes | High |
 | OS Envelope | Partially implemented | `modules/os_envelope/service.py`, `modules/production_kernel/`, `api/routers/runtime.py`, `schemas/assets.py`, `tests/unit/test_production_entrypoint_contract.py` | v2 canonical envelope is persisted inside `ProductionOperation` parent records for registered Kernel dispatches with idempotency replay/conflict, child failure evidence, bounded lifecycle control, alias-aware static bypass scanning, and a non-mutating runtime coverage report that distinguishes legacy child runs from new missing-parent/missing-envelope runs; legacy control migration, universal enforcement and industrial transaction authority remain incomplete | Yes | High |
-| Agent Center | Partially implemented | `modules/agent_registry/`, `modules/agent_scheduler/`, `modules/production_kernel/`, `web/admin/app/agent-*`, tests | Registered Agent dispatch can be parented by `ProductionOperation`; operation coverage, direct-caller migration, lifecycle commands, production UI depth and industrial recovery remain partial | Yes | High |
+| Agent Center | Partially implemented; workspace execution contract fixture-proven | `modules/agent_registry/`, `modules/agent_scheduler/`, `modules/production_execution/agent_execution.py`, `modules/production_execution/agent_workspace_backend.py`, `modules/loop_kernel/`, tests | Registered dispatch can be parented by `ProductionOperation`; uncertain workspace work is candidate-only and policy-bounded. Real Agent runner validation, broader operation coverage, lifecycle UI depth, business rollback, and end-to-end OS acceptance remain partial | Yes | High |
 | Approval / permission gates | Implemented foundation | `modules/permission_center/service.py`, `/product/permission-center/*`, `tests/unit/test_permission_center.py` | High-risk callers still need staged migration to `approval_request` refs | Yes | High |
 | Feedback loop | Partially implemented | `modules/feedback/`, `modules/feedback_backflow/`, `web/admin/app/feedback*`, tests | Real reader cohort analytics and plan mutation governance need depth | Yes | Medium |
 | Publishing/feedback adapters | Implemented manual plus generic HTTP adapter, Fanqie/Qidian parser/status/gate/rule-snapshot slices, and feedback mutation apply chain | `modules/publishing_feedback_adapters/service.py`, API router, `tests/unit/test_publishing_feedback_adapters.py` | Specific platform SDKs, callbacks, real platform rate limits, and automatic feedback-task dispatch are not integrated | Yes | Medium |
