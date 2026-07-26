@@ -1,7 +1,7 @@
 {
-  "artifact_hash": "sha256:cb24bd381883ab7909851f8853fd6dd4f743a128080b9e404addea41883ac75f",
+  "artifact_hash": "sha256:27e527c8056e981c830c65582eaf6764b8504442e4fca1faa8bee181bd41349e",
   "binding_semantics": "latest-commit-affecting-src/novel_forge-plus-working-tree-hash-v1",
-  "commit_sha": "4aecfa1f839a3e278622d528a1c9b359e7454be7",
+  "commit_sha": "76f885c9dacaacb598f5138d310bb529a4ef1428",
   "definitions": [
     {
       "alias_of": "",
@@ -2003,16 +2003,14 @@
         "novel_forge.model_adapters.guarded.GuardedModelAdapter.review",
         "novel_forge.modules.agent_scheduler.service._create_revision_task_from_review_issue",
         "novel_forge.modules.agent_scheduler.service._run_preview_provider_fallback",
-        "novel_forge.modules.chapter_authority.model_effects.ChapterModelExternalEffectAdapter._call",
-        "novel_forge.modules.evaluation_center.service._run_adapter",
         "novel_forge.modules.loop_kernel.service._loop_re_review",
         "novel_forge.modules.loop_kernel.service._loop_review_run",
         "novel_forge.modules.loop_kernel.service._mark_loop_review_issues",
         "novel_forge.modules.mkaos.service.run_semantic_conflict_review",
         "novel_forge.modules.mkaos_model_extraction.service._update_reviews_for_candidate",
+        "novel_forge.modules.production_execution.domain_execution.execute_domain_candidate",
         "novel_forge.modules.provider_fallback.service.approve_provider_fallback",
         "novel_forge.modules.provider_fallback.service.preview_provider_fallback",
-        "novel_forge.modules.review.service._checked_model_review",
         "novel_forge.modules.review.service.compare_reviews",
         "novel_forge.modules.review.service.review",
         "novel_forge.modules.review_issue.service._attach_issue_summary_to_review",
@@ -2025,7 +2023,6 @@
       "current_handlers": [
         "fallbacks.append",
         "novel_forge.model_adapters.GuardedModelAdapter.review",
-        "novel_forge.model_adapters.ModelAdapter.review",
         "novel_forge.model_adapters.base.ModelAdapter.review",
         "novel_forge.modules.provider_fallback.preview_provider_fallback",
         "novel_forge.storage.local.LocalStorage.write_asset",
@@ -2069,16 +2066,14 @@
         "novel_forge.model_adapters.guarded.GuardedModelAdapter.review",
         "novel_forge.modules.agent_scheduler.service._create_revision_task_from_review_issue",
         "novel_forge.modules.agent_scheduler.service._run_preview_provider_fallback",
-        "novel_forge.modules.chapter_authority.model_effects.ChapterModelExternalEffectAdapter._call",
-        "novel_forge.modules.evaluation_center.service._run_adapter",
         "novel_forge.modules.loop_kernel.service._loop_re_review",
         "novel_forge.modules.loop_kernel.service._loop_review_run",
         "novel_forge.modules.loop_kernel.service._mark_loop_review_issues",
         "novel_forge.modules.mkaos.service.run_semantic_conflict_review",
         "novel_forge.modules.mkaos_model_extraction.service._update_reviews_for_candidate",
+        "novel_forge.modules.production_execution.domain_execution.execute_domain_candidate",
         "novel_forge.modules.provider_fallback.service.approve_provider_fallback",
         "novel_forge.modules.provider_fallback.service.preview_provider_fallback",
-        "novel_forge.modules.review.service._checked_model_review",
         "novel_forge.modules.review.service.compare_reviews",
         "novel_forge.modules.review.service.review",
         "novel_forge.modules.review_issue.service._attach_issue_summary_to_review",
@@ -2330,7 +2325,6 @@
       "current_entrypoints": [
         "novel_forge.api.services.product.apply_revision_plan",
         "novel_forge.model_adapters.guarded.GuardedModelAdapter.revise",
-        "novel_forge.modules.chapter_authority.model_effects.ChapterModelExternalEffectAdapter._call",
         "novel_forge.modules.editor.service._annotate_apply_editor_patch_metadata",
         "novel_forge.modules.editor.service._fallback_revision_execution_packet",
         "novel_forge.modules.editor.service._fallback_revision_operations",
@@ -2339,12 +2333,12 @@
         "novel_forge.modules.editor.service._write",
         "novel_forge.modules.editor.service.apply_editor_patch",
         "novel_forge.modules.editor.service.execute_revision_plan",
-        "novel_forge.modules.evaluation_center.service._run_adapter",
         "novel_forge.modules.loop_kernel.service._link_loop_revision_plan",
         "novel_forge.modules.loop_kernel.service._loop_revision_apply",
         "novel_forge.modules.loop_kernel.service._loop_revision_plan",
         "novel_forge.modules.loop_kernel.service._update_loop_revision_task",
         "novel_forge.modules.mkaos.service.create_revision_task_from_mkaos_issue",
+        "novel_forge.modules.production_execution.domain_execution.execute_domain_candidate",
         "novel_forge.modules.revision.service._attach_revision_execution",
         "novel_forge.modules.revision.service._create_rework_context_bundle",
         "novel_forge.modules.revision.service._link_revision_plan",
@@ -2357,9 +2351,7 @@
         "_fallback_revision_execution_packet",
         "_fallback_revision_note",
         "_fallback_revision_operations",
-        "novel_forge.model_adapters.GuardedModelAdapter.generate",
         "novel_forge.model_adapters.GuardedModelAdapter.revise",
-        "novel_forge.model_adapters.ModelAdapter.revise",
         "novel_forge.model_adapters.base.ModelAdapter.revise",
         "novel_forge.storage.local.LocalStorage.write_asset",
         "novel_forge.storage.local.LocalStorage.write_asset_auto",
@@ -2396,7 +2388,6 @@
       "legacy_entrypoints": [
         "novel_forge.api.services.product.apply_revision_plan",
         "novel_forge.model_adapters.guarded.GuardedModelAdapter.revise",
-        "novel_forge.modules.chapter_authority.model_effects.ChapterModelExternalEffectAdapter._call",
         "novel_forge.modules.editor.service._annotate_apply_editor_patch_metadata",
         "novel_forge.modules.editor.service._fallback_revision_execution_packet",
         "novel_forge.modules.editor.service._fallback_revision_operations",
@@ -2405,12 +2396,12 @@
         "novel_forge.modules.editor.service._write",
         "novel_forge.modules.editor.service.apply_editor_patch",
         "novel_forge.modules.editor.service.execute_revision_plan",
-        "novel_forge.modules.evaluation_center.service._run_adapter",
         "novel_forge.modules.loop_kernel.service._link_loop_revision_plan",
         "novel_forge.modules.loop_kernel.service._loop_revision_apply",
         "novel_forge.modules.loop_kernel.service._loop_revision_plan",
         "novel_forge.modules.loop_kernel.service._update_loop_revision_task",
         "novel_forge.modules.mkaos.service.create_revision_task_from_mkaos_issue",
+        "novel_forge.modules.production_execution.domain_execution.execute_domain_candidate",
         "novel_forge.modules.revision.service._attach_revision_execution",
         "novel_forge.modules.revision.service._create_rework_context_bundle",
         "novel_forge.modules.revision.service._link_revision_plan",
@@ -2679,14 +2670,12 @@
       "concurrency_key_template": "project:{project_id}:release:{release_id}:publishing.submit",
       "current_entrypoints": [
         "novel_forge.api.services.product.create_publish_record",
-        "novel_forge.modules.publishing.adapters._call_external_webhook",
         "novel_forge.modules.publishing.adapters.prepare_platform_release",
         "novel_forge.modules.publishing.publish_gate.create_publish_gate_report",
         "novel_forge.modules.publishing.release_package.create_release_package",
         "novel_forge.modules.publishing.service._write",
         "novel_forge.modules.publishing_feedback_adapters.fallbacks._write_platform_failure_status",
         "novel_forge.modules.publishing_feedback_adapters.fallbacks.record_platform_publish_failure",
-        "novel_forge.modules.publishing_feedback_adapters.service.HttpPlatformClient.publish_upload_package",
         "novel_forge.modules.publishing_feedback_adapters.service._attach_auto_application_result",
         "novel_forge.modules.publishing_feedback_adapters.service._write_asset",
         "novel_forge.modules.publishing_feedback_adapters.service.create_feedback_mutation_proposal",
@@ -2698,8 +2687,7 @@
         "novel_forge.modules.publishing_feedback_adapters.fallbacks.record_platform_publish_failure",
         "novel_forge.storage.local.LocalStorage.write_asset",
         "novel_forge.storage.local.LocalStorage.write_asset_auto",
-        "novel_forge.storage.local.LocalStorage.write_json",
-        "urllib.request.urlopen"
+        "novel_forge.storage.local.LocalStorage.write_json"
       ],
       "definition_status": "mapped",
       "definition_version": "1.0.0-candidate.1",
@@ -2733,14 +2721,12 @@
       },
       "legacy_entrypoints": [
         "novel_forge.api.services.product.create_publish_record",
-        "novel_forge.modules.publishing.adapters._call_external_webhook",
         "novel_forge.modules.publishing.adapters.prepare_platform_release",
         "novel_forge.modules.publishing.publish_gate.create_publish_gate_report",
         "novel_forge.modules.publishing.release_package.create_release_package",
         "novel_forge.modules.publishing.service._write",
         "novel_forge.modules.publishing_feedback_adapters.fallbacks._write_platform_failure_status",
         "novel_forge.modules.publishing_feedback_adapters.fallbacks.record_platform_publish_failure",
-        "novel_forge.modules.publishing_feedback_adapters.service.HttpPlatformClient.publish_upload_package",
         "novel_forge.modules.publishing_feedback_adapters.service._attach_auto_application_result",
         "novel_forge.modules.publishing_feedback_adapters.service._write_asset",
         "novel_forge.modules.publishing_feedback_adapters.service.create_feedback_mutation_proposal",
@@ -4414,18 +4400,18 @@
       },
       "concurrency_key_template": "project:{project_id}:project:{project_id}:quality.run_completion_gate",
       "current_entrypoints": [
+        "novel_forge.modules.chapter_authority.execution_gateway.PostgresChapterExecutionContractBinder.bind",
         "novel_forge.modules.content_quality_loop.service._run_golden_opening_gate",
         "novel_forge.modules.content_quality_loop.service._run_readable_prose_gate",
         "novel_forge.modules.portfolio_os.service.run_book_lifecycle_gate",
         "novel_forge.modules.style_os.service.run_style_drift_gate",
         "novel_forge.modules.tool_gateway.service._create_mcp_tool_definition",
-        "novel_forge.modules.tool_gateway.service._mcp_json_rpc",
         "novel_forge.modules.tool_gateway.service._write"
       ],
       "current_handlers": [
+        "dict.fallback_policy.to_dict",
         "novel_forge.storage.local.LocalStorage.write_asset_auto",
-        "novel_forge.storage.local.LocalStorage.write_json",
-        "urllib.request.urlopen"
+        "novel_forge.storage.local.LocalStorage.write_json"
       ],
       "definition_status": "mapped",
       "definition_version": "1.0.0-candidate.1",
@@ -4456,12 +4442,12 @@
         "requires_receipt": false
       },
       "legacy_entrypoints": [
+        "novel_forge.modules.chapter_authority.execution_gateway.PostgresChapterExecutionContractBinder.bind",
         "novel_forge.modules.content_quality_loop.service._run_golden_opening_gate",
         "novel_forge.modules.content_quality_loop.service._run_readable_prose_gate",
         "novel_forge.modules.portfolio_os.service.run_book_lifecycle_gate",
         "novel_forge.modules.style_os.service.run_style_drift_gate",
         "novel_forge.modules.tool_gateway.service._create_mcp_tool_definition",
-        "novel_forge.modules.tool_gateway.service._mcp_json_rpc",
         "novel_forge.modules.tool_gateway.service._write"
       ],
       "merged_into": [],
@@ -5372,7 +5358,6 @@
         "novel_forge.modules.mkaos.service.validate_extraction_provider_quality",
         "novel_forge.modules.mkaos_converters.service._write",
         "novel_forge.modules.mkaos_converters.service._write_conversion_relation",
-        "novel_forge.modules.mkaos_ingestion.provider_extractor.provider_extract_candidates",
         "novel_forge.modules.mkaos_ingestion.service._complete_job",
         "novel_forge.modules.mkaos_ingestion.service._write",
         "novel_forge.modules.mkaos_ingestion.service.cancel_ingestion_job",
@@ -5382,7 +5367,6 @@
         "novel_forge.modules.mkaos_ingestion.service.scan_repository",
         "novel_forge.modules.mkaos_lineage.service._write_asset",
         "novel_forge.modules.mkaos_model_extraction.extraction_prompt_registry.create_prompt_version",
-        "novel_forge.modules.mkaos_model_extraction.provider_runner.run_provider",
         "novel_forge.modules.mkaos_model_extraction.service._update_job",
         "novel_forge.modules.mkaos_model_extraction.service._write",
         "novel_forge.modules.mkaos_model_extraction.service.approve_candidate",
@@ -5393,8 +5377,6 @@
         "novel_forge.modules.mkaos_quality.service._write"
       ],
       "current_handlers": [
-        "_adapter.analyze",
-        "adapter.analyze",
         "novel_forge.storage.local.LocalStorage.write_asset",
         "novel_forge.storage.local.LocalStorage.write_asset_auto",
         "novel_forge.storage.local.LocalStorage.write_json",
@@ -5498,7 +5480,6 @@
         "novel_forge.modules.mkaos.service.validate_extraction_provider_quality",
         "novel_forge.modules.mkaos_converters.service._write",
         "novel_forge.modules.mkaos_converters.service._write_conversion_relation",
-        "novel_forge.modules.mkaos_ingestion.provider_extractor.provider_extract_candidates",
         "novel_forge.modules.mkaos_ingestion.service._complete_job",
         "novel_forge.modules.mkaos_ingestion.service._write",
         "novel_forge.modules.mkaos_ingestion.service.cancel_ingestion_job",
@@ -5508,7 +5489,6 @@
         "novel_forge.modules.mkaos_ingestion.service.scan_repository",
         "novel_forge.modules.mkaos_lineage.service._write_asset",
         "novel_forge.modules.mkaos_model_extraction.extraction_prompt_registry.create_prompt_version",
-        "novel_forge.modules.mkaos_model_extraction.provider_runner.run_provider",
         "novel_forge.modules.mkaos_model_extraction.service._update_job",
         "novel_forge.modules.mkaos_model_extraction.service._write",
         "novel_forge.modules.mkaos_model_extraction.service.approve_candidate",
@@ -6803,6 +6783,7 @@
       },
       "concurrency_key_template": "project:{project_id}:project:{project_id}:project_lifecycle.create",
       "current_entrypoints": [
+        "novel_forge.api.authority_dependencies.build_chapter_authority_application",
         "novel_forge.api.legacy_app.create_app.assets",
         "novel_forge.api.routers.__init__.product_routers",
         "novel_forge.api.routers.provider_fallback.create_router.provider_fallback_approve",
@@ -6833,6 +6814,7 @@
         "novel_forge.api.services.product.update_asset_metadata",
         "novel_forge.api.services.product.update_project_config",
         "novel_forge.api.services.product.update_typed_asset_fields",
+        "novel_forge.infrastructure.legacy_http.development_only_http_request",
         "novel_forge.model_adapters.embeddings.OpenAICompatibleEmbeddingAdapter.embed_batch",
         "novel_forge.model_adapters.guarded.GuardedModelAdapter.analyze",
         "novel_forge.model_adapters.guarded.GuardedModelAdapter.batch",
@@ -6843,7 +6825,6 @@
         "novel_forge.model_adapters.providers.OpenAICompatibleChatAdapter.batch",
         "novel_forge.model_adapters.providers._codex_exec_option_supported",
         "novel_forge.model_adapters.selection._policy_route",
-        "novel_forge.modules.analysis.service._semantic_depth_assessment",
         "novel_forge.modules.analysis.service.convert_analysis_report",
         "novel_forge.modules.analysis.service.run_analysis",
         "novel_forge.modules.audit.service.create_chapter_audit_report",
@@ -6857,7 +6838,6 @@
         "novel_forge.modules.chapter_authority.handlers._ReReviewHandler.execute",
         "novel_forge.modules.chapter_authority.handlers._ReviewHandler.execute",
         "novel_forge.modules.chapter_authority.handlers._RevisionHandler.execute",
-        "novel_forge.modules.chapter_authority.model_effects.ChapterModelExternalEffectAdapter._call",
         "novel_forge.modules.chapter_economy.service._write",
         "novel_forge.modules.chapter_economy.service.create_chapter_economy_report",
         "novel_forge.modules.chapter_plan.service._chapter_plan_packet",
@@ -6877,15 +6857,12 @@
         "novel_forge.modules.character_pressure.service._write",
         "novel_forge.modules.characters.service.generate_characters",
         "novel_forge.modules.cleaning.service.clean",
-        "novel_forge.modules.clickhouse_analytics.service._clickhouse_execute",
         "novel_forge.modules.clickhouse_analytics.service._write",
         "novel_forge.modules.continuity_graph.service._apply_patch_to_continuity_bibles",
         "novel_forge.modules.continuity_graph.service._write",
         "novel_forge.modules.creative_assets.service.create_creative_asset",
         "novel_forge.modules.decomposition.service.decompose",
-        "novel_forge.modules.drafting.service._checked_model_generate",
         "novel_forge.modules.drafting.service.draft",
-        "novel_forge.modules.evaluation_center.service._run_adapter",
         "novel_forge.modules.evaluation_center.service._write",
         "novel_forge.modules.evaluation_center.service.create_benchmark_task_from_generation_run",
         "novel_forge.modules.genre_os.service._write_asset",
@@ -6895,7 +6872,6 @@
         "novel_forge.modules.long_planning.service._write",
         "novel_forge.modules.longform_recap.service._attach_writeback",
         "novel_forge.modules.longform_recap.service._write",
-        "novel_forge.modules.longform_recap.service._write_arc_recap",
         "novel_forge.modules.longform_recap.service.run_longform_recap",
         "novel_forge.modules.longform_stability.service._link_draft_longform_artifacts",
         "novel_forge.modules.longform_stability.service._write",
@@ -6940,8 +6916,15 @@
         "novel_forge.modules.production_chain.service._write_version_asset",
         "novel_forge.modules.production_execution.backends.CodexCliExecutionBackend.submit",
         "novel_forge.modules.production_execution.backends.RemoteProviderExecutionBackend.submit",
+        "novel_forge.modules.production_execution.contracts.FallbackPolicy.__post_init__",
+        "novel_forge.modules.production_execution.contracts.FallbackPolicy.from_dict",
+        "novel_forge.modules.production_execution.domain_execution.execute_domain_candidate",
         "novel_forge.modules.production_execution.process_supervisor.CodexProcessSupervisor.run",
         "novel_forge.modules.production_execution.process_supervisor.PosixProcessIdentityProbe.process_start_token",
+        "novel_forge.modules.production_execution.routing.RoutePolicyRegistry.fallback_for",
+        "novel_forge.modules.production_execution.routing.RoutePolicyRegistry.register",
+        "novel_forge.modules.production_execution.routing.RouteResolver.freeze",
+        "novel_forge.modules.production_execution.routing.RouteResolver.reroute",
         "novel_forge.modules.production_governance.service.build_production_governance_evidence_drift_report",
         "novel_forge.modules.production_governance.service.build_production_governance_report",
         "novel_forge.modules.production_governance.service.record_fallback_decision",
@@ -6971,7 +6954,6 @@
         "novel_forge.modules.style.service._write",
         "novel_forge.modules.style_os.service._write_asset",
         "novel_forge.modules.topics.service._write_topic",
-        "novel_forge.modules.topics.service.develop_topic",
         "novel_forge.modules.training.service.generate_training_exercise",
         "novel_forge.modules.v7_provider_proof.service._write_asset",
         "novel_forge.modules.workspace.service.init_workspace",
@@ -6986,6 +6968,7 @@
         "novel_forge.storage.provider_callback_repositories.ProviderCallbackRepository.effect_binding_for_update",
         "novel_forge.storage.provider_callback_repositories.ProviderCallbackRepository.finish_attempt",
         "novel_forge.storage.provider_callback_repositories.ProviderCallbackRepository.record_receipt",
+        "novel_forge.storage.qdrant_index._build_qdrant_index_via_execution",
         "novel_forge.storage.qdrant_index._write_vector_cache",
         "novel_forge.storage.qdrant_index.build_qdrant_index",
         "novel_forge.storage.retrieval_index.build_retrieval_index",
@@ -6995,8 +6978,11 @@
         "novel_forge.workers.runtime.write_dead_letter"
       ],
       "current_handlers": [
+        "FallbackMode",
+        "FallbackPolicyRegistry.resolve",
         "OpenAITransportV2.execute",
         "PostgresAssetStore.from_settings.sync_from_local",
+        "RoutePolicyRegistry.fallback_for",
         "_fallback_chapter_plan_packet",
         "_fallback_outline_packet",
         "_fallback_rollback_plan",
@@ -7013,13 +6999,12 @@
         "novel_forge.api.services.postgres_fallback_policy.handle_postgres_asset_read_fallback",
         "novel_forge.model_adapters.GuardedModelAdapter.analyze",
         "novel_forge.model_adapters.GuardedModelAdapter.generate",
-        "novel_forge.model_adapters.ModelAdapter.analyze",
-        "novel_forge.model_adapters.ModelAdapter.generate",
         "novel_forge.model_adapters.base.ModelAdapter.analyze",
         "novel_forge.model_adapters.base.ModelAdapter.batch",
         "novel_forge.model_adapters.base.ModelAdapter.generate",
         "novel_forge.modules.loop_kernel.run_loop",
         "novel_forge.modules.production_execution.CodexProcessSupervisor.run",
+        "novel_forge.modules.production_execution.FallbackPolicy.fail_closed",
         "novel_forge.modules.production_governance.record_fallback_decision",
         "novel_forge.modules.production_governance.record_fallback_decision.get",
         "novel_forge.modules.provider_control.registry.ProviderAdapterV2.invoke",
@@ -7076,6 +7061,7 @@
         "requires_receipt": false
       },
       "legacy_entrypoints": [
+        "novel_forge.api.authority_dependencies.build_chapter_authority_application",
         "novel_forge.api.legacy_app.create_app.assets",
         "novel_forge.api.routers.__init__.product_routers",
         "novel_forge.api.routers.provider_fallback.create_router.provider_fallback_approve",
@@ -7106,6 +7092,7 @@
         "novel_forge.api.services.product.update_asset_metadata",
         "novel_forge.api.services.product.update_project_config",
         "novel_forge.api.services.product.update_typed_asset_fields",
+        "novel_forge.infrastructure.legacy_http.development_only_http_request",
         "novel_forge.model_adapters.embeddings.OpenAICompatibleEmbeddingAdapter.embed_batch",
         "novel_forge.model_adapters.guarded.GuardedModelAdapter.analyze",
         "novel_forge.model_adapters.guarded.GuardedModelAdapter.batch",
@@ -7116,7 +7103,6 @@
         "novel_forge.model_adapters.providers.OpenAICompatibleChatAdapter.batch",
         "novel_forge.model_adapters.providers._codex_exec_option_supported",
         "novel_forge.model_adapters.selection._policy_route",
-        "novel_forge.modules.analysis.service._semantic_depth_assessment",
         "novel_forge.modules.analysis.service.convert_analysis_report",
         "novel_forge.modules.analysis.service.run_analysis",
         "novel_forge.modules.audit.service.create_chapter_audit_report",
@@ -7130,7 +7116,6 @@
         "novel_forge.modules.chapter_authority.handlers._ReReviewHandler.execute",
         "novel_forge.modules.chapter_authority.handlers._ReviewHandler.execute",
         "novel_forge.modules.chapter_authority.handlers._RevisionHandler.execute",
-        "novel_forge.modules.chapter_authority.model_effects.ChapterModelExternalEffectAdapter._call",
         "novel_forge.modules.chapter_economy.service._write",
         "novel_forge.modules.chapter_economy.service.create_chapter_economy_report",
         "novel_forge.modules.chapter_plan.service._chapter_plan_packet",
@@ -7150,15 +7135,12 @@
         "novel_forge.modules.character_pressure.service._write",
         "novel_forge.modules.characters.service.generate_characters",
         "novel_forge.modules.cleaning.service.clean",
-        "novel_forge.modules.clickhouse_analytics.service._clickhouse_execute",
         "novel_forge.modules.clickhouse_analytics.service._write",
         "novel_forge.modules.continuity_graph.service._apply_patch_to_continuity_bibles",
         "novel_forge.modules.continuity_graph.service._write",
         "novel_forge.modules.creative_assets.service.create_creative_asset",
         "novel_forge.modules.decomposition.service.decompose",
-        "novel_forge.modules.drafting.service._checked_model_generate",
         "novel_forge.modules.drafting.service.draft",
-        "novel_forge.modules.evaluation_center.service._run_adapter",
         "novel_forge.modules.evaluation_center.service._write",
         "novel_forge.modules.evaluation_center.service.create_benchmark_task_from_generation_run",
         "novel_forge.modules.genre_os.service._write_asset",
@@ -7168,7 +7150,6 @@
         "novel_forge.modules.long_planning.service._write",
         "novel_forge.modules.longform_recap.service._attach_writeback",
         "novel_forge.modules.longform_recap.service._write",
-        "novel_forge.modules.longform_recap.service._write_arc_recap",
         "novel_forge.modules.longform_recap.service.run_longform_recap",
         "novel_forge.modules.longform_stability.service._link_draft_longform_artifacts",
         "novel_forge.modules.longform_stability.service._write",
@@ -7213,8 +7194,15 @@
         "novel_forge.modules.production_chain.service._write_version_asset",
         "novel_forge.modules.production_execution.backends.CodexCliExecutionBackend.submit",
         "novel_forge.modules.production_execution.backends.RemoteProviderExecutionBackend.submit",
+        "novel_forge.modules.production_execution.contracts.FallbackPolicy.__post_init__",
+        "novel_forge.modules.production_execution.contracts.FallbackPolicy.from_dict",
+        "novel_forge.modules.production_execution.domain_execution.execute_domain_candidate",
         "novel_forge.modules.production_execution.process_supervisor.CodexProcessSupervisor.run",
         "novel_forge.modules.production_execution.process_supervisor.PosixProcessIdentityProbe.process_start_token",
+        "novel_forge.modules.production_execution.routing.RoutePolicyRegistry.fallback_for",
+        "novel_forge.modules.production_execution.routing.RoutePolicyRegistry.register",
+        "novel_forge.modules.production_execution.routing.RouteResolver.freeze",
+        "novel_forge.modules.production_execution.routing.RouteResolver.reroute",
         "novel_forge.modules.production_governance.service.build_production_governance_evidence_drift_report",
         "novel_forge.modules.production_governance.service.build_production_governance_report",
         "novel_forge.modules.production_governance.service.record_fallback_decision",
@@ -7244,7 +7232,6 @@
         "novel_forge.modules.style.service._write",
         "novel_forge.modules.style_os.service._write_asset",
         "novel_forge.modules.topics.service._write_topic",
-        "novel_forge.modules.topics.service.develop_topic",
         "novel_forge.modules.training.service.generate_training_exercise",
         "novel_forge.modules.v7_provider_proof.service._write_asset",
         "novel_forge.modules.workspace.service.init_workspace",
@@ -7259,6 +7246,7 @@
         "novel_forge.storage.provider_callback_repositories.ProviderCallbackRepository.effect_binding_for_update",
         "novel_forge.storage.provider_callback_repositories.ProviderCallbackRepository.finish_attempt",
         "novel_forge.storage.provider_callback_repositories.ProviderCallbackRepository.record_receipt",
+        "novel_forge.storage.qdrant_index._build_qdrant_index_via_execution",
         "novel_forge.storage.qdrant_index._write_vector_cache",
         "novel_forge.storage.qdrant_index.build_qdrant_index",
         "novel_forge.storage.retrieval_index.build_retrieval_index",
@@ -12268,7 +12256,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.slice.run.command.v1",
-      "commit_sha": "4aecfa1f839a3e278622d528a1c9b359e7454be7",
+      "commit_sha": "76f885c9dacaacb598f5138d310bb529a4ef1428",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_evidence",
@@ -12399,7 +12387,7 @@
         "novel_forge.chapter_authority.root"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.12",
+      "definition_version": "2.2.0",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -12576,7 +12564,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.plan.materialize.command.v1",
-      "commit_sha": "4aecfa1f839a3e278622d528a1c9b359e7454be7",
+      "commit_sha": "76f885c9dacaacb598f5138d310bb529a4ef1428",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_evidence",
@@ -12630,7 +12618,7 @@
         "novel_forge.chapter_authority.plan"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.12",
+      "definition_version": "2.2.0",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -12643,7 +12631,7 @@
       "execution_mode": "worker",
       "external_capabilities": [],
       "family": "chapter_authority",
-      "handler_contract_version": "2.1.0",
+      "handler_contract_version": "2.2.0",
       "handler_key": "novel_forge.chapter_authority.plan",
       "idempotency_scope": "project:chapter-slice",
       "input_contract": {
@@ -12830,7 +12818,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.context.build.command.v1",
-      "commit_sha": "4aecfa1f839a3e278622d528a1c9b359e7454be7",
+      "commit_sha": "76f885c9dacaacb598f5138d310bb529a4ef1428",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_evidence",
@@ -12876,7 +12864,7 @@
         "novel_forge.chapter_authority.context"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.12",
+      "definition_version": "2.2.0",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -12889,7 +12877,7 @@
       "execution_mode": "worker",
       "external_capabilities": [],
       "family": "chapter_authority",
-      "handler_contract_version": "2.1.0",
+      "handler_contract_version": "2.2.0",
       "handler_key": "novel_forge.chapter_authority.context",
       "idempotency_scope": "project:chapter-slice",
       "input_contract": {
@@ -13076,7 +13064,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.draft.generate.command.v1",
-      "commit_sha": "4aecfa1f839a3e278622d528a1c9b359e7454be7",
+      "commit_sha": "76f885c9dacaacb598f5138d310bb529a4ef1428",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_evidence",
@@ -13122,7 +13110,7 @@
         "novel_forge.chapter_authority.draft"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.12",
+      "definition_version": "2.2.0",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -13137,7 +13125,7 @@
         "model.draft"
       ],
       "family": "chapter_authority",
-      "handler_contract_version": "2.1.0",
+      "handler_contract_version": "2.2.0",
       "handler_key": "novel_forge.chapter_authority.draft",
       "idempotency_scope": "project:chapter-slice",
       "input_contract": {
@@ -13324,7 +13312,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.review.evaluate.command.v1",
-      "commit_sha": "4aecfa1f839a3e278622d528a1c9b359e7454be7",
+      "commit_sha": "76f885c9dacaacb598f5138d310bb529a4ef1428",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_evidence",
@@ -13370,7 +13358,7 @@
         "novel_forge.chapter_authority.review"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.12",
+      "definition_version": "2.2.0",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -13385,7 +13373,7 @@
         "model.review"
       ],
       "family": "chapter_authority",
-      "handler_contract_version": "2.1.0",
+      "handler_contract_version": "2.2.0",
       "handler_key": "novel_forge.chapter_authority.review",
       "idempotency_scope": "project:chapter-slice",
       "input_contract": {
@@ -13572,7 +13560,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.revision.apply.command.v1",
-      "commit_sha": "4aecfa1f839a3e278622d528a1c9b359e7454be7",
+      "commit_sha": "76f885c9dacaacb598f5138d310bb529a4ef1428",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_evidence",
@@ -13618,7 +13606,7 @@
         "novel_forge.chapter_authority.revision"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.12",
+      "definition_version": "2.2.0",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -13633,7 +13621,7 @@
         "model.revision"
       ],
       "family": "chapter_authority",
-      "handler_contract_version": "2.1.0",
+      "handler_contract_version": "2.2.0",
       "handler_key": "novel_forge.chapter_authority.revision",
       "idempotency_scope": "project:chapter-slice",
       "input_contract": {
@@ -13820,7 +13808,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.revision.review.command.v1",
-      "commit_sha": "4aecfa1f839a3e278622d528a1c9b359e7454be7",
+      "commit_sha": "76f885c9dacaacb598f5138d310bb529a4ef1428",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_evidence",
@@ -13849,7 +13837,7 @@
             "allowed_states": [
               "SUCCEEDED"
             ],
-            "capability": "model.review"
+            "capability": "model.rereview"
           }
         ],
         "required_outbox_events": [
@@ -13866,7 +13854,7 @@
         "novel_forge.chapter_authority.rereview"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.12",
+      "definition_version": "2.2.0",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -13878,10 +13866,10 @@
       },
       "execution_mode": "worker",
       "external_capabilities": [
-        "model.review"
+        "model.rereview"
       ],
       "family": "chapter_authority",
-      "handler_contract_version": "2.1.0",
+      "handler_contract_version": "2.2.0",
       "handler_key": "novel_forge.chapter_authority.rereview",
       "idempotency_scope": "project:chapter-slice",
       "input_contract": {
@@ -14068,7 +14056,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.canon.extract.command.v1",
-      "commit_sha": "4aecfa1f839a3e278622d528a1c9b359e7454be7",
+      "commit_sha": "76f885c9dacaacb598f5138d310bb529a4ef1428",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_evidence",
@@ -14114,7 +14102,7 @@
         "novel_forge.chapter_authority.canon_extraction"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.12",
+      "definition_version": "2.2.0",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -14129,7 +14117,7 @@
         "model.canon_extraction"
       ],
       "family": "chapter_authority",
-      "handler_contract_version": "2.1.0",
+      "handler_contract_version": "2.2.0",
       "handler_key": "novel_forge.chapter_authority.canon_extraction",
       "idempotency_scope": "project:chapter-slice",
       "input_contract": {
@@ -14316,7 +14304,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.canon.propose_changes.command.v1",
-      "commit_sha": "4aecfa1f839a3e278622d528a1c9b359e7454be7",
+      "commit_sha": "76f885c9dacaacb598f5138d310bb529a4ef1428",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_evidence",
@@ -14354,7 +14342,7 @@
         "novel_forge.chapter_authority.canon_proposal"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.12",
+      "definition_version": "2.2.0",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -14367,7 +14355,7 @@
       "execution_mode": "worker",
       "external_capabilities": [],
       "family": "chapter_authority",
-      "handler_contract_version": "2.1.0",
+      "handler_contract_version": "2.2.0",
       "handler_key": "novel_forge.chapter_authority.canon_proposal",
       "idempotency_scope": "project:chapter-slice",
       "input_contract": {
@@ -14554,7 +14542,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.canon.update.command.v1",
-      "commit_sha": "4aecfa1f839a3e278622d528a1c9b359e7454be7",
+      "commit_sha": "76f885c9dacaacb598f5138d310bb529a4ef1428",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_evidence",
@@ -14664,7 +14652,7 @@
         "novel_forge.chapter_authority.canon"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.12",
+      "definition_version": "2.2.0",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -14677,7 +14665,7 @@
       "execution_mode": "worker",
       "external_capabilities": [],
       "family": "chapter_authority",
-      "handler_contract_version": "2.1.0",
+      "handler_contract_version": "2.2.0",
       "handler_key": "novel_forge.chapter_authority.canon",
       "idempotency_scope": "project:chapter-slice",
       "input_contract": {
@@ -14864,7 +14852,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.quality.structural.evaluate.command.v1",
-      "commit_sha": "4aecfa1f839a3e278622d528a1c9b359e7454be7",
+      "commit_sha": "76f885c9dacaacb598f5138d310bb529a4ef1428",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_evidence",
@@ -14910,7 +14898,7 @@
         "novel_forge.chapter_authority.quality_structural"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.12",
+      "definition_version": "2.2.0",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -14925,7 +14913,7 @@
         "model.quality_structural"
       ],
       "family": "chapter_authority",
-      "handler_contract_version": "2.1.0",
+      "handler_contract_version": "2.2.0",
       "handler_key": "novel_forge.chapter_authority.quality_structural",
       "idempotency_scope": "project:chapter-slice",
       "input_contract": {
@@ -15112,7 +15100,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.quality.commercial.evaluate.command.v1",
-      "commit_sha": "4aecfa1f839a3e278622d528a1c9b359e7454be7",
+      "commit_sha": "76f885c9dacaacb598f5138d310bb529a4ef1428",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_evidence",
@@ -15158,7 +15146,7 @@
         "novel_forge.chapter_authority.quality_commercial"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.12",
+      "definition_version": "2.2.0",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -15173,7 +15161,7 @@
         "model.quality_commercial"
       ],
       "family": "chapter_authority",
-      "handler_contract_version": "2.1.0",
+      "handler_contract_version": "2.2.0",
       "handler_key": "novel_forge.chapter_authority.quality_commercial",
       "idempotency_scope": "project:chapter-slice",
       "input_contract": {
@@ -15360,7 +15348,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.quality.source_originality.evaluate.command.v1",
-      "commit_sha": "4aecfa1f839a3e278622d528a1c9b359e7454be7",
+      "commit_sha": "76f885c9dacaacb598f5138d310bb529a4ef1428",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_evidence",
@@ -15406,7 +15394,7 @@
         "novel_forge.chapter_authority.quality_source_originality"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.12",
+      "definition_version": "2.2.0",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -15421,7 +15409,7 @@
         "model.quality_source_originality"
       ],
       "family": "chapter_authority",
-      "handler_contract_version": "2.1.0",
+      "handler_contract_version": "2.2.0",
       "handler_key": "novel_forge.chapter_authority.quality_source_originality",
       "idempotency_scope": "project:chapter-slice",
       "input_contract": {
@@ -15608,7 +15596,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.quality.longform.evaluate.command.v1",
-      "commit_sha": "4aecfa1f839a3e278622d528a1c9b359e7454be7",
+      "commit_sha": "76f885c9dacaacb598f5138d310bb529a4ef1428",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_evidence",
@@ -15654,7 +15642,7 @@
         "novel_forge.chapter_authority.quality_longform"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.12",
+      "definition_version": "2.2.0",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -15669,7 +15657,7 @@
         "model.quality_longform"
       ],
       "family": "chapter_authority",
-      "handler_contract_version": "2.1.0",
+      "handler_contract_version": "2.2.0",
       "handler_key": "novel_forge.chapter_authority.quality_longform",
       "idempotency_scope": "project:chapter-slice",
       "input_contract": {
@@ -15856,7 +15844,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.quality.platform.evaluate.command.v1",
-      "commit_sha": "4aecfa1f839a3e278622d528a1c9b359e7454be7",
+      "commit_sha": "76f885c9dacaacb598f5138d310bb529a4ef1428",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_evidence",
@@ -15902,7 +15890,7 @@
         "novel_forge.chapter_authority.quality_platform"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.12",
+      "definition_version": "2.2.0",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -15917,7 +15905,7 @@
         "model.quality_platform"
       ],
       "family": "chapter_authority",
-      "handler_contract_version": "2.1.0",
+      "handler_contract_version": "2.2.0",
       "handler_key": "novel_forge.chapter_authority.quality_platform",
       "idempotency_scope": "project:chapter-slice",
       "input_contract": {
@@ -16104,7 +16092,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.quality.evaluate.command.v1",
-      "commit_sha": "4aecfa1f839a3e278622d528a1c9b359e7454be7",
+      "commit_sha": "76f885c9dacaacb598f5138d310bb529a4ef1428",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_evidence",
@@ -16470,7 +16458,7 @@
         "novel_forge.chapter_authority.quality"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.12",
+      "definition_version": "2.2.0",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -16483,7 +16471,7 @@
       "execution_mode": "worker",
       "external_capabilities": [],
       "family": "chapter_authority",
-      "handler_contract_version": "2.1.0",
+      "handler_contract_version": "2.2.0",
       "handler_key": "novel_forge.chapter_authority.quality",
       "idempotency_scope": "project:chapter-slice",
       "input_contract": {
@@ -16670,7 +16658,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.publishing.prepare_release.command.v1",
-      "commit_sha": "4aecfa1f839a3e278622d528a1c9b359e7454be7",
+      "commit_sha": "76f885c9dacaacb598f5138d310bb529a4ef1428",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_evidence",
@@ -16708,7 +16696,7 @@
         "novel_forge.chapter_authority.publish_gate"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.12",
+      "definition_version": "2.2.0",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -16721,7 +16709,7 @@
       "execution_mode": "worker",
       "external_capabilities": [],
       "family": "chapter_authority",
-      "handler_contract_version": "2.1.0",
+      "handler_contract_version": "2.2.0",
       "handler_key": "novel_forge.chapter_authority.publish_gate",
       "idempotency_scope": "project:chapter-slice",
       "input_contract": {
@@ -16908,7 +16896,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.export.render.command.v1",
-      "commit_sha": "4aecfa1f839a3e278622d528a1c9b359e7454be7",
+      "commit_sha": "76f885c9dacaacb598f5138d310bb529a4ef1428",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_evidence",
@@ -16961,7 +16949,7 @@
         "novel_forge.chapter_authority.export"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.12",
+      "definition_version": "2.2.0",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -16976,7 +16964,7 @@
         "object_store.put"
       ],
       "family": "chapter_authority",
-      "handler_contract_version": "2.1.0",
+      "handler_contract_version": "2.2.0",
       "handler_key": "novel_forge.chapter_authority.export",
       "idempotency_scope": "project:chapter-slice",
       "input_contract": {
@@ -17163,7 +17151,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.publishing.finalize_release.command.v1",
-      "commit_sha": "4aecfa1f839a3e278622d528a1c9b359e7454be7",
+      "commit_sha": "76f885c9dacaacb598f5138d310bb529a4ef1428",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_evidence",
@@ -17201,7 +17189,7 @@
         "novel_forge.chapter_authority.final_release_gate"
       ],
       "definition_status": "integration_proven",
-      "definition_version": "2.1.12",
+      "definition_version": "2.2.0",
       "enabled": true,
       "evidence_status": {
         "documented": true,
@@ -17214,7 +17202,7 @@
       "execution_mode": "worker",
       "external_capabilities": [],
       "family": "chapter_authority",
-      "handler_contract_version": "2.1.0",
+      "handler_contract_version": "2.2.0",
       "handler_key": "novel_forge.chapter_authority.final_release_gate",
       "idempotency_scope": "project:chapter-slice",
       "input_contract": {
@@ -17380,7 +17368,7 @@
         "type": "object"
       },
       "command_schema_version": "canon.change.approve.command.v1",
-      "commit_sha": "4aecfa1f839a3e278622d528a1c9b359e7454be7",
+      "commit_sha": "76f885c9dacaacb598f5138d310bb529a4ef1428",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_decision",
@@ -17541,7 +17529,7 @@
         "type": "object"
       },
       "command_schema_version": "creative.brief.create.command.v2",
-      "commit_sha": "4aecfa1f839a3e278622d528a1c9b359e7454be7",
+      "commit_sha": "76f885c9dacaacb598f5138d310bb529a4ef1428",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -17731,7 +17719,7 @@
         "type": "object"
       },
       "command_schema_version": "creative.candidates.evaluate.command.v2",
-      "commit_sha": "4aecfa1f839a3e278622d528a1c9b359e7454be7",
+      "commit_sha": "76f885c9dacaacb598f5138d310bb529a4ef1428",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -17921,7 +17909,7 @@
         "type": "object"
       },
       "command_schema_version": "creative.candidates.cluster.command.v2",
-      "commit_sha": "4aecfa1f839a3e278622d528a1c9b359e7454be7",
+      "commit_sha": "76f885c9dacaacb598f5138d310bb529a4ef1428",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -18111,7 +18099,7 @@
         "type": "object"
       },
       "command_schema_version": "creative.project.approve.command.v2",
-      "commit_sha": "4aecfa1f839a3e278622d528a1c9b359e7454be7",
+      "commit_sha": "76f885c9dacaacb598f5138d310bb529a4ef1428",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -18301,7 +18289,7 @@
         "type": "object"
       },
       "command_schema_version": "production.world.generate.command.v2",
-      "commit_sha": "4aecfa1f839a3e278622d528a1c9b359e7454be7",
+      "commit_sha": "76f885c9dacaacb598f5138d310bb529a4ef1428",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -18491,7 +18479,7 @@
         "type": "object"
       },
       "command_schema_version": "world.validate.command.v2",
-      "commit_sha": "4aecfa1f839a3e278622d528a1c9b359e7454be7",
+      "commit_sha": "76f885c9dacaacb598f5138d310bb529a4ef1428",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -18681,7 +18669,7 @@
         "type": "object"
       },
       "command_schema_version": "production.character.generate.command.v2",
-      "commit_sha": "4aecfa1f839a3e278622d528a1c9b359e7454be7",
+      "commit_sha": "76f885c9dacaacb598f5138d310bb529a4ef1428",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -18871,7 +18859,7 @@
         "type": "object"
       },
       "command_schema_version": "character.relationships.generate.command.v2",
-      "commit_sha": "4aecfa1f839a3e278622d528a1c9b359e7454be7",
+      "commit_sha": "76f885c9dacaacb598f5138d310bb529a4ef1428",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -19061,7 +19049,7 @@
         "type": "object"
       },
       "command_schema_version": "theme.question.create.command.v2",
-      "commit_sha": "4aecfa1f839a3e278622d528a1c9b359e7454be7",
+      "commit_sha": "76f885c9dacaacb598f5138d310bb529a4ef1428",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -19251,7 +19239,7 @@
         "type": "object"
       },
       "command_schema_version": "theme.arc.build.command.v2",
-      "commit_sha": "4aecfa1f839a3e278622d528a1c9b359e7454be7",
+      "commit_sha": "76f885c9dacaacb598f5138d310bb529a4ef1428",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -19441,7 +19429,7 @@
         "type": "object"
       },
       "command_schema_version": "theme.anti_preaching.evaluate.command.v2",
-      "commit_sha": "4aecfa1f839a3e278622d528a1c9b359e7454be7",
+      "commit_sha": "76f885c9dacaacb598f5138d310bb529a4ef1428",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -19631,7 +19619,7 @@
         "type": "object"
       },
       "command_schema_version": "ending.closure.plan.command.v2",
-      "commit_sha": "4aecfa1f839a3e278622d528a1c9b359e7454be7",
+      "commit_sha": "76f885c9dacaacb598f5138d310bb529a4ef1428",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -19821,7 +19809,7 @@
         "type": "object"
       },
       "command_schema_version": "ending.payoff_matrix.build.command.v2",
-      "commit_sha": "4aecfa1f839a3e278622d528a1c9b359e7454be7",
+      "commit_sha": "76f885c9dacaacb598f5138d310bb529a4ef1428",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -20011,7 +19999,7 @@
         "type": "object"
       },
       "command_schema_version": "ending.quality.evaluate.command.v2",
-      "commit_sha": "4aecfa1f839a3e278622d528a1c9b359e7454be7",
+      "commit_sha": "76f885c9dacaacb598f5138d310bb529a4ef1428",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -20201,7 +20189,7 @@
         "type": "object"
       },
       "command_schema_version": "longform.motivation.evaluate.command.v2",
-      "commit_sha": "4aecfa1f839a3e278622d528a1c9b359e7454be7",
+      "commit_sha": "76f885c9dacaacb598f5138d310bb529a4ef1428",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -20391,7 +20379,7 @@
         "type": "object"
       },
       "command_schema_version": "longform.entity_merge.propose.command.v2",
-      "commit_sha": "4aecfa1f839a3e278622d528a1c9b359e7454be7",
+      "commit_sha": "76f885c9dacaacb598f5138d310bb529a4ef1428",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -20581,7 +20569,7 @@
         "type": "object"
       },
       "command_schema_version": "longform.foreshadow_payoff.evaluate.command.v2",
-      "commit_sha": "4aecfa1f839a3e278622d528a1c9b359e7454be7",
+      "commit_sha": "76f885c9dacaacb598f5138d310bb529a4ef1428",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -20771,7 +20759,7 @@
         "type": "object"
       },
       "command_schema_version": "longform.world_rule.evaluate.command.v2",
-      "commit_sha": "4aecfa1f839a3e278622d528a1c9b359e7454be7",
+      "commit_sha": "76f885c9dacaacb598f5138d310bb529a4ef1428",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -20961,7 +20949,7 @@
         "type": "object"
       },
       "command_schema_version": "longform.power.evaluate.command.v2",
-      "commit_sha": "4aecfa1f839a3e278622d528a1c9b359e7454be7",
+      "commit_sha": "76f885c9dacaacb598f5138d310bb529a4ef1428",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -21151,7 +21139,7 @@
         "type": "object"
       },
       "command_schema_version": "longform.pattern.evaluate.command.v2",
-      "commit_sha": "4aecfa1f839a3e278622d528a1c9b359e7454be7",
+      "commit_sha": "76f885c9dacaacb598f5138d310bb529a4ef1428",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -21341,7 +21329,7 @@
         "type": "object"
       },
       "command_schema_version": "longform.narrative_debt.evaluate.command.v2",
-      "commit_sha": "4aecfa1f839a3e278622d528a1c9b359e7454be7",
+      "commit_sha": "76f885c9dacaacb598f5138d310bb529a4ef1428",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -21531,7 +21519,7 @@
         "type": "object"
       },
       "command_schema_version": "longform.recap.enhance.command.v2",
-      "commit_sha": "4aecfa1f839a3e278622d528a1c9b359e7454be7",
+      "commit_sha": "76f885c9dacaacb598f5138d310bb529a4ef1428",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -21721,7 +21709,7 @@
         "type": "object"
       },
       "command_schema_version": "quality.golden_sample.create.command.v2",
-      "commit_sha": "4aecfa1f839a3e278622d528a1c9b359e7454be7",
+      "commit_sha": "76f885c9dacaacb598f5138d310bb529a4ef1428",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -21911,7 +21899,7 @@
         "type": "object"
       },
       "command_schema_version": "quality.human_decision.record.command.v2",
-      "commit_sha": "4aecfa1f839a3e278622d528a1c9b359e7454be7",
+      "commit_sha": "76f885c9dacaacb598f5138d310bb529a4ef1428",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -22101,7 +22089,7 @@
         "type": "object"
       },
       "command_schema_version": "quality.calibration.run.command.v2",
-      "commit_sha": "4aecfa1f839a3e278622d528a1c9b359e7454be7",
+      "commit_sha": "76f885c9dacaacb598f5138d310bb529a4ef1428",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -22291,7 +22279,7 @@
         "type": "object"
       },
       "command_schema_version": "quality.calibration.profile.promote.command.v2",
-      "commit_sha": "4aecfa1f839a3e278622d528a1c9b359e7454be7",
+      "commit_sha": "76f885c9dacaacb598f5138d310bb529a4ef1428",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -22481,7 +22469,7 @@
         "type": "object"
       },
       "command_schema_version": "quality.calibration.profile.revoke.command.v2",
-      "commit_sha": "4aecfa1f839a3e278622d528a1c9b359e7454be7",
+      "commit_sha": "76f885c9dacaacb598f5138d310bb529a4ef1428",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -22671,7 +22659,7 @@
         "type": "object"
       },
       "command_schema_version": "chapter.state.initialize_empty.command.v2",
-      "commit_sha": "4aecfa1f839a3e278622d528a1c9b359e7454be7",
+      "commit_sha": "76f885c9dacaacb598f5138d310bb529a4ef1428",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -22861,7 +22849,7 @@
         "type": "object"
       },
       "command_schema_version": "creative.candidates.generate.command.v2",
-      "commit_sha": "4aecfa1f839a3e278622d528a1c9b359e7454be7",
+      "commit_sha": "76f885c9dacaacb598f5138d310bb529a4ef1428",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_asset_versions",
@@ -23042,7 +23030,7 @@
         "type": "object"
       },
       "command_schema_version": "book.production.run.command.v1",
-      "commit_sha": "4aecfa1f839a3e278622d528a1c9b359e7454be7",
+      "commit_sha": "76f885c9dacaacb598f5138d310bb529a4ef1428",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_assets",
@@ -23194,7 +23182,7 @@
         "type": "object"
       },
       "command_schema_version": "book.production.prepare.command.v1",
-      "commit_sha": "4aecfa1f839a3e278622d528a1c9b359e7454be7",
+      "commit_sha": "76f885c9dacaacb598f5138d310bb529a4ef1428",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_assets",
@@ -23334,7 +23322,7 @@
         "type": "object"
       },
       "command_schema_version": "book.chapter.dispatch.command.v1",
-      "commit_sha": "4aecfa1f839a3e278622d528a1c9b359e7454be7",
+      "commit_sha": "76f885c9dacaacb598f5138d310bb529a4ef1428",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_assets",
@@ -23474,7 +23462,7 @@
         "type": "object"
       },
       "command_schema_version": "book.recap.light.command.v1",
-      "commit_sha": "4aecfa1f839a3e278622d528a1c9b359e7454be7",
+      "commit_sha": "76f885c9dacaacb598f5138d310bb529a4ef1428",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_assets",
@@ -23614,7 +23602,7 @@
         "type": "object"
       },
       "command_schema_version": "book.recap.formal.command.v1",
-      "commit_sha": "4aecfa1f839a3e278622d528a1c9b359e7454be7",
+      "commit_sha": "76f885c9dacaacb598f5138d310bb529a4ef1428",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_assets",
@@ -23754,7 +23742,7 @@
         "type": "object"
       },
       "command_schema_version": "book.plan_adjustment.propose.command.v1",
-      "commit_sha": "4aecfa1f839a3e278622d528a1c9b359e7454be7",
+      "commit_sha": "76f885c9dacaacb598f5138d310bb529a4ef1428",
       "compatibility_until": "",
       "compensation_policy": {
         "reason": "append_only_assets",
@@ -23866,7 +23854,7 @@
     }
   ],
   "generator_version": "2.1.0",
-  "repository_head_at_generation": "4aecfa1f839a3e278622d528a1c9b359e7454be7",
+  "repository_head_at_generation": "76f885c9dacaacb598f5138d310bb529a4ef1428",
   "schema_version": "2.0.0",
-  "source_tree_sha": "06bbd7e636c365a233c3958f256a083a9fdcbfa9"
+  "source_tree_sha": "aec906fb7aae9b1c580c809a75ede828a9ce335d"
 }
