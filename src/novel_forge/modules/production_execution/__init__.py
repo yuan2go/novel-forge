@@ -1,5 +1,12 @@
 """Attempt-bound contracts for the Novel Forge Production Execution Plane."""
 
+from .capabilities import (
+    CapabilityDefinition,
+    CapabilityId,
+    ExecutionDomain,
+    RiskClass,
+)
+from .capability_registry import CapabilityRegistry, default_capability_registry
 from .contracts import (
     ArtifactPointer,
     CapabilityAvailability,
@@ -75,6 +82,9 @@ __all__ = [
     "AdmissionController",
     "ArtifactPointer",
     "CapabilityAvailability",
+    "CapabilityDefinition",
+    "CapabilityId",
+    "CapabilityRegistry",
     "CapabilityProbe",
     "CancellationOutcome",
     "CodexCliExecutionBackend",
@@ -91,6 +101,7 @@ __all__ = [
     "ExecutionReconciler",
     "ExecutionResult",
     "ExecutionRuntimeClass",
+    "ExecutionDomain",
     "InputManifest",
     "InMemoryExecutionRecordStore",
     "LocalTerminationOutcome",
@@ -112,6 +123,7 @@ __all__ = [
     "RouteRecommendationReadModel",
     "RouteResolver",
     "RouteSnapshot",
+    "RiskClass",
     "UpstreamCancellationOutcome",
     "ValidationCheck",
     "ValidationManifest",
@@ -135,4 +147,5 @@ __all__ = [
     "StaticAttemptFenceVerifier",
     "StaticExecutionContractSource",
     "StaticExecutionPayloadResolver",
+    "default_capability_registry",
 ]

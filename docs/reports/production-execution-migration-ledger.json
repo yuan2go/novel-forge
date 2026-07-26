@@ -1,5 +1,5 @@
 {
-  "artifact_hash": "sha256:76c119286dad77c7c9202e3ed2874e84f7f895064f36465946fa9572628d1dfc",
+  "artifact_hash": "sha256:3c97edd365c11030f43a36932371695989a744ede5180ea306571885ced9622a",
   "blocking_owner_ids": [],
   "entries": [
     {
@@ -12813,6 +12813,7 @@
         "tests/integration/test_content_authority_runtime_postgres.py",
         "tests/integration/test_external_effect_runtime_postgres.py",
         "tests/integration/test_production_execution_gateway_postgres.py",
+        "tests/unit/test_production_execution_capabilities.py",
         "tests/unit/test_production_execution_gateway.py",
         "tests/unit/test_production_execution_inventory.py",
         "tests/unit/test_provider_adapter_v2.py"
@@ -12846,6 +12847,7 @@
         "tests/integration/test_content_authority_runtime_postgres.py",
         "tests/integration/test_external_effect_runtime_postgres.py",
         "tests/integration/test_production_execution_gateway_postgres.py",
+        "tests/unit/test_production_execution_capabilities.py",
         "tests/unit/test_production_execution_gateway.py",
         "tests/unit/test_production_execution_inventory.py",
         "tests/unit/test_provider_adapter_v2.py"
@@ -12879,6 +12881,7 @@
         "tests/integration/test_content_authority_runtime_postgres.py",
         "tests/integration/test_external_effect_runtime_postgres.py",
         "tests/integration/test_production_execution_gateway_postgres.py",
+        "tests/unit/test_production_execution_capabilities.py",
         "tests/unit/test_production_execution_gateway.py",
         "tests/unit/test_production_execution_inventory.py",
         "tests/unit/test_provider_adapter_v2.py"
@@ -12912,6 +12915,7 @@
         "tests/integration/test_content_authority_runtime_postgres.py",
         "tests/integration/test_external_effect_runtime_postgres.py",
         "tests/integration/test_production_execution_gateway_postgres.py",
+        "tests/unit/test_production_execution_capabilities.py",
         "tests/unit/test_production_execution_gateway.py",
         "tests/unit/test_production_execution_inventory.py",
         "tests/unit/test_provider_adapter_v2.py"
@@ -12945,6 +12949,7 @@
         "tests/integration/test_content_authority_runtime_postgres.py",
         "tests/integration/test_external_effect_runtime_postgres.py",
         "tests/integration/test_production_execution_gateway_postgres.py",
+        "tests/unit/test_production_execution_capabilities.py",
         "tests/unit/test_production_execution_gateway.py",
         "tests/unit/test_production_execution_inventory.py",
         "tests/unit/test_provider_adapter_v2.py"
@@ -12978,6 +12983,7 @@
         "tests/integration/test_content_authority_runtime_postgres.py",
         "tests/integration/test_external_effect_runtime_postgres.py",
         "tests/integration/test_production_execution_gateway_postgres.py",
+        "tests/unit/test_production_execution_capabilities.py",
         "tests/unit/test_production_execution_gateway.py",
         "tests/unit/test_production_execution_inventory.py",
         "tests/unit/test_provider_adapter_v2.py"
@@ -13011,6 +13017,7 @@
         "tests/integration/test_content_authority_runtime_postgres.py",
         "tests/integration/test_external_effect_runtime_postgres.py",
         "tests/integration/test_production_execution_gateway_postgres.py",
+        "tests/unit/test_production_execution_capabilities.py",
         "tests/unit/test_production_execution_gateway.py",
         "tests/unit/test_production_execution_inventory.py",
         "tests/unit/test_provider_adapter_v2.py"
@@ -13044,6 +13051,7 @@
         "tests/integration/test_content_authority_runtime_postgres.py",
         "tests/integration/test_external_effect_runtime_postgres.py",
         "tests/integration/test_production_execution_gateway_postgres.py",
+        "tests/unit/test_production_execution_capabilities.py",
         "tests/unit/test_production_execution_gateway.py",
         "tests/unit/test_production_execution_inventory.py",
         "tests/unit/test_provider_adapter_v2.py"
@@ -13077,6 +13085,7 @@
         "tests/integration/test_content_authority_runtime_postgres.py",
         "tests/integration/test_external_effect_runtime_postgres.py",
         "tests/integration/test_production_execution_gateway_postgres.py",
+        "tests/unit/test_production_execution_capabilities.py",
         "tests/unit/test_production_execution_gateway.py",
         "tests/unit/test_production_execution_inventory.py",
         "tests/unit/test_provider_adapter_v2.py"
@@ -13110,6 +13119,7 @@
         "tests/integration/test_content_authority_runtime_postgres.py",
         "tests/integration/test_external_effect_runtime_postgres.py",
         "tests/integration/test_production_execution_gateway_postgres.py",
+        "tests/unit/test_production_execution_capabilities.py",
         "tests/unit/test_production_execution_gateway.py",
         "tests/unit/test_production_execution_inventory.py",
         "tests/unit/test_provider_adapter_v2.py"
@@ -13145,6 +13155,7 @@
         "tests/integration/test_content_authority_runtime_postgres.py",
         "tests/integration/test_external_effect_runtime_postgres.py",
         "tests/integration/test_production_execution_gateway_postgres.py",
+        "tests/unit/test_production_execution_capabilities.py",
         "tests/unit/test_production_execution_gateway.py",
         "tests/unit/test_production_execution_inventory.py",
         "tests/unit/test_provider_adapter_v2.py"
@@ -13178,6 +13189,7 @@
         "tests/integration/test_content_authority_runtime_postgres.py",
         "tests/integration/test_external_effect_runtime_postgres.py",
         "tests/integration/test_production_execution_gateway_postgres.py",
+        "tests/unit/test_production_execution_capabilities.py",
         "tests/unit/test_production_execution_gateway.py",
         "tests/unit/test_production_execution_inventory.py",
         "tests/unit/test_provider_adapter_v2.py"
@@ -13211,6 +13223,7 @@
         "tests/integration/test_content_authority_runtime_postgres.py",
         "tests/integration/test_external_effect_runtime_postgres.py",
         "tests/integration/test_production_execution_gateway_postgres.py",
+        "tests/unit/test_production_execution_capabilities.py",
         "tests/unit/test_production_execution_gateway.py",
         "tests/unit/test_production_execution_inventory.py",
         "tests/unit/test_provider_adapter_v2.py"
@@ -13244,6 +13257,7 @@
         "tests/integration/test_content_authority_runtime_postgres.py",
         "tests/integration/test_external_effect_runtime_postgres.py",
         "tests/integration/test_production_execution_gateway_postgres.py",
+        "tests/unit/test_production_execution_capabilities.py",
         "tests/unit/test_production_execution_gateway.py",
         "tests/unit/test_production_execution_inventory.py",
         "tests/unit/test_provider_adapter_v2.py"
@@ -13277,6 +13291,7 @@
         "tests/integration/test_content_authority_runtime_postgres.py",
         "tests/integration/test_external_effect_runtime_postgres.py",
         "tests/integration/test_production_execution_gateway_postgres.py",
+        "tests/unit/test_production_execution_capabilities.py",
         "tests/unit/test_production_execution_gateway.py",
         "tests/unit/test_production_execution_inventory.py",
         "tests/unit/test_provider_adapter_v2.py"
@@ -13310,6 +13325,7 @@
         "tests/integration/test_content_authority_runtime_postgres.py",
         "tests/integration/test_external_effect_runtime_postgres.py",
         "tests/integration/test_production_execution_gateway_postgres.py",
+        "tests/unit/test_production_execution_capabilities.py",
         "tests/unit/test_production_execution_gateway.py",
         "tests/unit/test_production_execution_inventory.py",
         "tests/unit/test_provider_adapter_v2.py"
@@ -22590,9 +22606,9 @@
     "GATEWAY_BOUND": 1
   },
   "parse_errors": [],
-  "scanned_file_count": 557,
+  "scanned_file_count": 559,
   "schema_version": "production-execution-migration-ledger.v1",
-  "source_tree_hash": "sha256:9eb578f5eff3e153b31cca11145857cf9508d43218ad5d69f276a20e7ebf6c94",
+  "source_tree_hash": "sha256:23475cf50721d013edb420088f6ede79b5c02b98d1bb1e3f91da6dfb6e9860d4",
   "summary": {
     "AGENT_WORKSPACE_TRANSACTION": 0,
     "DATABASE_AUTHORITY": 417,

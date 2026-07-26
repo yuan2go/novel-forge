@@ -54,11 +54,11 @@
 - Produces: `CapabilityRegistry.register(definition)`, `resolve(capability_id)`, `require_route(capability_id, backend_profile, environment)`
 - Produces: `default_capability_registry()`
 
-- [ ] Test the complete required capability list, unique IDs, schema/policy refs, backend/runtime allowlists, fixture/production rules, and duplicate conflict behavior.
-- [ ] Implement immutable serializable definitions and a fail-closed registry; constants are the only business-facing capability identifiers.
-- [ ] Export the registry and bind Admission capability checks without importing domain modules.
-- [ ] Run capability/gateway/architecture tests.
-- [ ] Commit `feat: add governed production execution capability registry`.
+- [x] Test the complete required capability list, unique IDs, schema/policy refs, backend/runtime allowlists, fixture/production rules, and duplicate conflict behavior.
+- [x] Implement immutable serializable definitions and a fail-closed registry; constants are the only business-facing capability identifiers.
+- [x] Export the registry; Admission binding follows in Task 2 when `ExecutionRequest.capability` exists, without importing domain modules.
+- [x] Run capability/gateway/architecture tests.
+- [x] Commit `feat: add governed production execution capability registry`.
 
 ### Task 2: Cross-domain execution contracts
 
