@@ -14,6 +14,7 @@ from novel_forge.modules.chapter_authority.execution_gateway import (
     ExternalEffectExecutionSessionStore,
     PostgresChapterExecutionPayloadResolver,
     ProductionExecutionGatewayExternalEffectAdapter,
+    chapter_stage_capability,
     default_chapter_fixture_response,
 )
 from novel_forge.modules.chapter_authority.queries import ChapterAuthorityQuery
@@ -49,6 +50,7 @@ from novel_forge.modules.production_execution import (
     RemoteProviderExecutionBackend,
     RoutePolicy,
     ScriptedFixtureExecutionBackend,
+    default_capability_registry,
 )
 
 
@@ -114,6 +116,9 @@ def build_chapter_authority_application(
         ("quality_longform", "NOVEL_FORGE_QUALITY_PROVIDER", "NOVEL_FORGE_QUALITY_MODEL"),
         ("quality_platform", "NOVEL_FORGE_QUALITY_PROVIDER", "NOVEL_FORGE_QUALITY_MODEL"),
     ):
+        capability_definition = default_capability_registry().resolve(
+            chapter_stage_capability(stage)
+        )
         provider = str(
             values.get(provider_key)
             or (
@@ -218,7 +223,7 @@ def build_chapter_authority_application(
                 or values.get("NOVEL_FORGE_REASONING_EFFORT")
                 or "high"
             ),
-            timeout_policy_ref=f"timeout:chapter:{stage}:v1",
+            timeout_policy_ref=capability_definition.timeout_policy_ref,
             workspace_policy_ref="workspace:chapter-authority:v1",
             output_policy_ref=f"output:chapter:{stage}:json:v1",
             fallback_policy="FAIL_CLOSED",
@@ -299,6 +304,7 @@ def build_chapter_authority_application(
         admission = AdmissionController(
             contracts,
             PostgresAttemptFenceVerifier(settings.database_url),
+            environment=environment,
         )
         store = ExternalEffectExecutionSessionStore()
         backends = ExecutionBackendRegistry()

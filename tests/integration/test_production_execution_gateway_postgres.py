@@ -7,6 +7,7 @@ from novel_forge.modules.command_kernel.asset_commands import AuthorityAssetWrit
 from novel_forge.modules.production_execution import (
     AdmissionController,
     ArtifactPointer,
+    CapabilityId,
     CompletionMode,
     ExecutionBackendRegistry,
     ExecutionCapabilityProfile,
@@ -25,6 +26,7 @@ from novel_forge.modules.production_execution import (
     RouteSnapshot,
     ScriptedFixtureExecutionBackend,
     StaticExecutionPayloadResolver,
+    default_capability_registry,
 )
 from novel_forge.storage.authority_asset_store import AuthorityAssetWriter
 from tests.integration.authority_postgres_support import (
@@ -43,6 +45,9 @@ class ProductionExecutionGatewayPostgresTests(unittest.TestCase):
         ensure_migrated()
 
     def test_postgres_contracts_and_authority_fence_admit_fixture_backend(self) -> None:
+        definition = default_capability_registry().resolve(
+            CapabilityId.PROSE_CHAPTER_DRAFT
+        )
         project_id = identifier("execution-project")
         operation_id = identifier("execution-operation")
         attempt_id = identifier("execution-attempt")
@@ -77,7 +82,7 @@ class ProductionExecutionGatewayPostgresTests(unittest.TestCase):
             model_provider="fixture",
             model_id="scripted-model",
             reasoning_effort="xhigh",
-            timeout_policy_ref="timeout:default",
+            timeout_policy_ref=definition.timeout_policy_ref,
             workspace_policy_ref="workspace:default",
             output_policy_ref="output:json",
             fallback_policy="FAIL_CLOSED",
@@ -231,23 +236,33 @@ class ProductionExecutionGatewayPostgresTests(unittest.TestCase):
         request = ExecutionRequest(
             execution_id=identifier("execution"),
             operation_id=operation_id,
+            root_operation_id=operation_id,
             saga_id=identifier("saga"),
             attempt_id=attempt_id,
             fencing_token=1,
             project_id=project_id,
+            workspace_id="workspace:1",
             book_id="book:1",
-            target_scope={"scope_kind": "chapter", "chapter": 1},
+            target_scope={
+                "scope_kind": "chapter",
+                "scope_id": "chapter-number:1",
+                "chapter_number": 1,
+            },
+            domain=definition.domain.value,
             task_kind="chapter.slice.run",
             stage="draft",
+            capability=definition.capability_id.value,
             importance_class="HIGH",
-            risk_class="NORMAL",
+            risk_class=definition.risk_class.value,
             route_snapshot_id=route_ref,
-            workspace_snapshot_id="workspace:1",
+            workspace_snapshot_ref="workspace:1",
             input_manifest_ref=input_ref,
             resource_claims=("fixture:request",),
-            timeout_policy_ref="timeout:default",
-            budget_policy_ref="budget:chapter",
-            permission_policy_ref="permission:chapter",
+            timeout_policy_ref=definition.timeout_policy_ref,
+            budget_policy_ref=definition.budget_policy_ref,
+            permission_policy_ref=definition.permission_policy_ref,
+            validation_policy_ref=definition.validation_policy_ref,
+            commit_policy_ref=definition.commit_policy_ref,
             stable_idempotency_key=f"{operation_id}:draft",
             trace_id="trace:integration",
             correlation_id="correlation:integration",

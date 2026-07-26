@@ -24,6 +24,7 @@ from novel_forge.modules.command_kernel.external_effect_adapters import (
 )
 from novel_forge.modules.production_execution import (
     ArtifactPointer,
+    CapabilityId,
     CancellationOutcome,
     ExecutionHandle,
     ExecutionOutcome,
@@ -34,6 +35,7 @@ from novel_forge.modules.production_execution import (
     ResolvedExecutionPayload,
     RoutePolicy,
     RouteSnapshot,
+    default_capability_registry,
 )
 from novel_forge.modules.production_execution.backends import ExecutionRecordStore
 from novel_forge.modules.production_execution.backends import ExecutionRecord
@@ -58,6 +60,26 @@ _STAGES = frozenset(
         "quality_platform",
     }
 )
+
+_STAGE_CAPABILITIES = {
+    "draft": CapabilityId.PROSE_CHAPTER_DRAFT,
+    "review": CapabilityId.REVIEW_CHAPTER_EVALUATE,
+    "revision": CapabilityId.REVISION_CHAPTER_REVISE,
+    "rereview": CapabilityId.REVIEW_CHAPTER_EVALUATE,
+    "canon_extraction": CapabilityId.CANON_EXTRACT,
+    "quality_structural": CapabilityId.QUALITY_INTRINSIC_JUDGE,
+    "quality_commercial": CapabilityId.QUALITY_INTRINSIC_JUDGE,
+    "quality_source_originality": CapabilityId.QUALITY_ORIGINALITY_JUDGE,
+    "quality_longform": CapabilityId.QUALITY_INTRINSIC_JUDGE,
+    "quality_platform": CapabilityId.QUALITY_PLATFORM_JUDGE,
+}
+
+
+def chapter_stage_capability(stage: str) -> CapabilityId:
+    try:
+        return _STAGE_CAPABILITIES[stage]
+    except KeyError as exc:
+        raise ValueError(f"unsupported Chapter execution stage: {stage}") from exc
 
 
 def _canonical(payload: Mapping[str, Any]) -> str:
@@ -100,6 +122,13 @@ class ChapterExecutionRoute:
             raise ValueError("Chapter execution route is incomplete")
         if len(self.release_sha) != 40:
             raise ValueError("Chapter execution route requires a full release SHA")
+        definition = default_capability_registry().resolve(
+            chapter_stage_capability(self.stage)
+        )
+        if self.model_profile.timeout_policy_ref != definition.timeout_policy_ref:
+            raise ValueError(
+                "Chapter ModelProfile timeout differs from its governed capability"
+            )
 
 
 @dataclass(frozen=True, slots=True)
@@ -156,7 +185,16 @@ class PostgresChapterExecutionContractBinder:
             )
         graph = self._operation_graph(operation_id, project_id)
         route = self.routes[stage]
-        target_scope = {"scope_kind": "chapter", "chapter": chapter, "stage": stage}
+        definition = default_capability_registry().resolve(
+            chapter_stage_capability(stage)
+        )
+        target_scope = {
+            "scope_kind": "chapter",
+            "scope_id": f"{book_id}:chapter:{chapter}",
+            "project_id": project_id,
+            "book_id": book_id,
+            "chapter_number": chapter,
+        }
         artifacts = self._artifacts(metadata)
         context_ref = next(
             (
@@ -258,23 +296,29 @@ class PostgresChapterExecutionContractBinder:
         request = ExecutionRequest(
             execution_id=f"chapter-execution:{external_effect_id}",
             operation_id=operation_id,
+            root_operation_id=graph["root_operation_id"],
             saga_id=graph["saga_id"],
             attempt_id=attempt_id,
             fencing_token=fencing_token,
             project_id=project_id,
+            workspace_id=workspace_id,
             book_id=book_id,
             target_scope=target_scope,
+            domain=definition.domain.value,
             task_kind=graph["definition_name"],
             stage=stage,
+            capability=definition.capability_id.value,
             importance_class="HIGH",
-            risk_class=("HIGH" if stage == "canon_extraction" else "NORMAL"),
+            risk_class=definition.risk_class.value,
             route_snapshot_id=route_ref,
-            workspace_snapshot_id=workspace_id,
+            workspace_snapshot_ref=workspace_id,
             input_manifest_ref=input_ref,
             resource_claims=(f"chapter:{chapter}", f"stage:{stage}"),
-            timeout_policy_ref=route.model_profile.timeout_policy_ref,
-            budget_policy_ref="chapter-model-budget-v1",
-            permission_policy_ref="chapter.authority.execute",
+            timeout_policy_ref=definition.timeout_policy_ref,
+            budget_policy_ref=definition.budget_policy_ref,
+            permission_policy_ref=definition.permission_policy_ref,
+            validation_policy_ref=definition.validation_policy_ref,
+            commit_policy_ref=definition.commit_policy_ref,
             stable_idempotency_key=stable_idempotency_key,
             origin_chain=("chapter.slice.run", graph["definition_name"]),
             trace_id=str(request_payload.get("trace_id") or ""),
@@ -889,5 +933,6 @@ __all__ = [
     "PostgresChapterExecutionContractBinder",
     "PostgresChapterExecutionPayloadResolver",
     "ProductionExecutionGatewayExternalEffectAdapter",
+    "chapter_stage_capability",
     "default_chapter_fixture_response",
 ]

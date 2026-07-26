@@ -21,7 +21,12 @@ _MODEL_RUNTIMES = (
     ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE,
     ExecutionRuntimeClass.SCRIPTED_FIXTURE,
 )
-_MODEL_BACKENDS = ("remote-provider-*", "codex-cli", "scripted-fixture")
+_MODEL_BACKENDS = (
+    "remote-provider",
+    "remote-provider-*",
+    "codex-cli",
+    "scripted-fixture",
+)
 _EXTERNAL_RUNTIMES = (
     ExecutionRuntimeClass.REMOTE_EXTERNAL_ACTION,
     ExecutionRuntimeClass.SCRIPTED_FIXTURE,

@@ -74,11 +74,11 @@
 - Defines `TargetScope` with project/book/volume/arc/chapter-group/chapter/asset/reader/experiment identifiers.
 - Preserves `ExecutionBackend.submit/reconcile/cancel` signatures.
 
-- [ ] Add red tests for round-trip serialization, stable hash, same-ID contract conflict, scope validation, route freeze, and explicit re-route identity.
-- [ ] Implement the minimal contract changes and update all request factories.
-- [ ] Make Admission resolve the capability definition and enforce matching domain/risk/backend/fixture rules.
-- [ ] Run contract, gateway, Chapter, and architecture tests.
-- [ ] Commit `refactor: generalize production execution contracts across domains`.
+- [x] Add red tests for round-trip serialization, stable hash, same-ID contract conflict, scope validation, route freeze, and explicit re-route identity.
+- [x] Implement the minimal contract changes and update all request factories.
+- [x] Make Admission resolve the capability definition and enforce matching domain/risk/backend/fixture rules.
+- [x] Run contract, gateway, Chapter, and architecture tests.
+- [x] Commit `refactor: generalize production execution contracts across domains`.
 
 ### Task 3: Versioned prompt, skill, and input manifests
 

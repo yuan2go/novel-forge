@@ -45,7 +45,8 @@ class ProviderCallbackRepository:
             return None
         fields = (
             "external_effect_id", "operation_id", "project_id", "status",
-            "dispatch_id", "generation", "provider", "stable_idempotency_key",
+            "dispatch_id", "generation", "effect_provider",
+            "stable_idempotency_key",
         )
         return dict(zip(fields, row, strict=True))
 

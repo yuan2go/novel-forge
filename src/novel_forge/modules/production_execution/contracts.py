@@ -13,7 +13,7 @@ import re
 from dataclasses import dataclass, fields
 from enum import StrEnum
 from types import MappingProxyType
-from typing import Any, Mapping, Protocol, runtime_checkable
+from typing import Any, Iterator, Mapping, Protocol, runtime_checkable
 
 
 _STABLE_ALIAS = re.compile(r"^[a-z0-9][a-z0-9._-]*$")
@@ -195,6 +195,108 @@ def _string_tuple(value: Any) -> tuple[str, ...]:
     if not value:
         return ()
     return tuple(str(item) for item in value)
+
+
+@dataclass(frozen=True, slots=True)
+class TargetScope(_Contract, Mapping[str, Any]):
+    scope_kind: str
+    scope_id: str
+    project_id: str = ""
+    book_id: str = ""
+    volume_id: str = ""
+    arc_id: str = ""
+    chapter_group_id: str = ""
+    chapter_id: str = ""
+    chapter_number: int | None = None
+    asset_version_id: str = ""
+    reader_segment_id: str = ""
+    experiment_id: str = ""
+
+    def __post_init__(self) -> None:
+        _required("TargetScope", self.scope_kind, self.scope_id)
+        if not _STABLE_ALIAS.fullmatch(self.scope_kind):
+            raise ValueError("TargetScope scope_kind is invalid")
+        if self.chapter_number is not None and self.chapter_number <= 0:
+            raise ValueError("TargetScope chapter_number must be positive")
+
+    def to_dict(self) -> dict[str, Any]:
+        payload: dict[str, Any] = {
+            "scope_kind": self.scope_kind,
+            "scope_id": self.scope_id,
+        }
+        for name in (
+            "project_id",
+            "book_id",
+            "volume_id",
+            "arc_id",
+            "chapter_group_id",
+            "chapter_id",
+            "asset_version_id",
+            "reader_segment_id",
+            "experiment_id",
+        ):
+            value = getattr(self, name)
+            if value:
+                payload[name] = value
+        if self.chapter_number is not None:
+            payload["chapter_number"] = self.chapter_number
+        return payload
+
+    def __getitem__(self, key: str) -> Any:
+        return self.to_dict()[key]
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self.to_dict())
+
+    def __len__(self) -> int:
+        return len(self.to_dict())
+
+    @classmethod
+    def from_dict(
+        cls,
+        payload: Mapping[str, Any],
+        *,
+        project_id: str = "",
+        book_id: str = "",
+    ) -> "TargetScope":
+        values = dict(payload)
+        chapter_number_value = values.get("chapter_number", values.get("chapter"))
+        chapter_number = (
+            _strict_int(chapter_number_value, "chapter_number")
+            if chapter_number_value not in {None, ""}
+            else None
+        )
+        resolved_project = str(values.get("project_id") or project_id)
+        resolved_book = str(values.get("book_id") or book_id)
+        scope_kind = str(values.get("scope_kind") or "")
+        identity_by_kind = {
+            "project": resolved_project,
+            "book": resolved_book,
+            "volume": str(values.get("volume_id") or ""),
+            "arc": str(values.get("arc_id") or ""),
+            "chapter_group": str(values.get("chapter_group_id") or ""),
+            "chapter": str(values.get("chapter_id") or ""),
+            "asset_version": str(values.get("asset_version_id") or ""),
+            "reader_segment": str(values.get("reader_segment_id") or ""),
+            "experiment": str(values.get("experiment_id") or ""),
+        }
+        scope_id = str(values.get("scope_id") or identity_by_kind.get(scope_kind) or "")
+        if not scope_id and scope_kind == "chapter" and chapter_number is not None:
+            scope_id = f"chapter-number:{chapter_number}"
+        return cls(
+            scope_kind=scope_kind,
+            scope_id=scope_id,
+            project_id=resolved_project,
+            book_id=resolved_book,
+            volume_id=str(values.get("volume_id") or ""),
+            arc_id=str(values.get("arc_id") or ""),
+            chapter_group_id=str(values.get("chapter_group_id") or ""),
+            chapter_id=str(values.get("chapter_id") or ""),
+            chapter_number=chapter_number,
+            asset_version_id=str(values.get("asset_version_id") or ""),
+            reader_segment_id=str(values.get("reader_segment_id") or ""),
+            experiment_id=str(values.get("experiment_id") or ""),
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -561,23 +663,29 @@ class RouteSnapshot(_HashedContract):
 class ExecutionRequest(_Contract):
     execution_id: str
     operation_id: str
+    root_operation_id: str
     saga_id: str
     attempt_id: str
     fencing_token: int
     project_id: str
+    workspace_id: str
     book_id: str
-    target_scope: Mapping[str, Any]
+    target_scope: TargetScope
+    domain: str
     task_kind: str
     stage: str
+    capability: str
     importance_class: str
     risk_class: str
     route_snapshot_id: str
-    workspace_snapshot_id: str
+    workspace_snapshot_ref: str
     input_manifest_ref: str
     resource_claims: tuple[str, ...]
     timeout_policy_ref: str
     budget_policy_ref: str
     permission_policy_ref: str
+    validation_policy_ref: str
+    commit_policy_ref: str
     stable_idempotency_key: str
     origin_chain: tuple[str, ...] = ()
     agent_hop_count: int = 0
@@ -588,40 +696,72 @@ class ExecutionRequest(_Contract):
 
     def __post_init__(self) -> None:
         _validate_attempt(self.operation_id, self.attempt_id, self.fencing_token)
-        object.__setattr__(self, "target_scope", _freeze(self.target_scope))
+        scope = (
+            self.target_scope
+            if isinstance(self.target_scope, TargetScope)
+            else TargetScope.from_dict(
+                self.target_scope,
+                project_id=self.project_id,
+                book_id=self.book_id,
+            )
+        )
+        object.__setattr__(self, "target_scope", scope)
         object.__setattr__(self, "resource_claims", _string_tuple(self.resource_claims))
         object.__setattr__(self, "origin_chain", _string_tuple(self.origin_chain))
         _required(
             "ExecutionRequest",
             self.execution_id,
+            self.root_operation_id,
             self.saga_id,
             self.project_id,
+            self.workspace_id,
             self.book_id,
+            self.domain,
             self.task_kind,
             self.stage,
+            self.capability,
             self.importance_class,
             self.risk_class,
             self.route_snapshot_id,
-            self.workspace_snapshot_id,
+            self.workspace_snapshot_ref,
             self.input_manifest_ref,
             self.timeout_policy_ref,
             self.budget_policy_ref,
             self.permission_policy_ref,
+            self.validation_policy_ref,
+            self.commit_policy_ref,
             self.stable_idempotency_key,
         )
-        if not self.target_scope:
-            raise ValueError("ExecutionRequest target scope is required")
+        if not _STABLE_ALIAS.fullmatch(self.domain):
+            raise ValueError("ExecutionRequest domain is invalid")
+        if not _STABLE_ALIAS.fullmatch(self.capability):
+            raise ValueError("ExecutionRequest capability is invalid")
+        if scope.project_id and scope.project_id != self.project_id:
+            raise ValueError("ExecutionRequest target scope belongs to another project")
+        if scope.book_id and scope.book_id != self.book_id:
+            raise ValueError("ExecutionRequest target scope belongs to another book")
         if self.agent_hop_count < 0:
             raise ValueError("ExecutionRequest agent hop count cannot be negative")
 
     @classmethod
     def from_dict(cls, payload: Mapping[str, Any]) -> ExecutionRequest:
         values = dict(payload)
+        if "workspace_snapshot_ref" not in values and "workspace_snapshot_id" in values:
+            values["workspace_snapshot_ref"] = values.pop("workspace_snapshot_id")
         values["fencing_token"] = int(values.get("fencing_token") or 0)
         values["agent_hop_count"] = int(values.get("agent_hop_count") or 0)
         values["resource_claims"] = _string_tuple(values.get("resource_claims"))
         values["origin_chain"] = _string_tuple(values.get("origin_chain"))
-        values["target_scope"] = dict(values.get("target_scope") or {})
+        target = values.get("target_scope")
+        values["target_scope"] = (
+            target
+            if isinstance(target, TargetScope)
+            else TargetScope.from_dict(
+                dict(target or {}),
+                project_id=str(values.get("project_id") or ""),
+                book_id=str(values.get("book_id") or ""),
+            )
+        )
         return cls(**{item.name: values.get(item.name) for item in fields(cls)})
 
 
@@ -819,7 +959,7 @@ class InputManifest(_HashedContract):
     fencing_token: int
     project_id: str
     book_id: str
-    target_scope: Mapping[str, Any]
+    target_scope: TargetScope
     context_bundle_ref: str
     prompt_bundle_ref: str
     skill_bundle_ref: str
@@ -834,7 +974,16 @@ class InputManifest(_HashedContract):
         object.__setattr__(self, "arc_version_refs", _string_tuple(self.arc_version_refs))
         object.__setattr__(self, "input_artifacts", tuple(self.input_artifacts))
         object.__setattr__(self, "read_set", _string_tuple(self.read_set))
-        object.__setattr__(self, "target_scope", _freeze(self.target_scope))
+        scope = (
+            self.target_scope
+            if isinstance(self.target_scope, TargetScope)
+            else TargetScope.from_dict(
+                self.target_scope,
+                project_id=self.project_id,
+                book_id=self.book_id,
+            )
+        )
+        object.__setattr__(self, "target_scope", scope)
         _required(
             "InputManifest",
             self.manifest_id,
@@ -846,8 +995,10 @@ class InputManifest(_HashedContract):
         )
         if not self.input_artifacts or not self.read_set:
             raise ValueError("InputManifest requires artifacts and an explicit read set")
-        if not self.target_scope or not str(self.target_scope.get("scope_kind") or ""):
-            raise ValueError("InputManifest requires a typed target scope")
+        if scope.project_id and scope.project_id != self.project_id:
+            raise ValueError("InputManifest target scope belongs to another project")
+        if scope.book_id and scope.book_id != self.book_id:
+            raise ValueError("InputManifest target scope belongs to another book")
         artifact_refs = {item.artifact_ref for item in self.input_artifacts}
         if not artifact_refs.issubset(set(self.read_set)):
             raise ValueError("InputManifest read set must contain every input artifact")
@@ -856,7 +1007,16 @@ class InputManifest(_HashedContract):
     def from_dict(cls, payload: Mapping[str, Any]) -> InputManifest:
         values = dict(payload)
         values["fencing_token"] = int(values.get("fencing_token") or 0)
-        values["target_scope"] = dict(values.get("target_scope") or {})
+        target = values.get("target_scope")
+        values["target_scope"] = (
+            target
+            if isinstance(target, TargetScope)
+            else TargetScope.from_dict(
+                dict(target or {}),
+                project_id=str(values.get("project_id") or ""),
+                book_id=str(values.get("book_id") or ""),
+            )
+        )
         values["canon_version_refs"] = _string_tuple(values.get("canon_version_refs"))
         values["arc_version_refs"] = _string_tuple(values.get("arc_version_refs"))
         values["input_artifacts"] = tuple(

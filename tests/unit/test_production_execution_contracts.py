@@ -24,6 +24,7 @@ from novel_forge.modules.production_execution import (
     OutputManifest,
     RoutePolicy,
     RouteSnapshot,
+    TargetScope,
     UpstreamCancellationOutcome,
     ValidationCheck,
     ValidationManifest,
@@ -99,27 +100,59 @@ def route_snapshot(*, snapshot_id: str = "route-snapshot:1", effort: str = "xhig
 
 
 class ProductionExecutionContractTests(unittest.TestCase):
+    def test_target_scope_round_trips_every_cross_domain_identifier(self) -> None:
+        scope = TargetScope(
+            scope_kind="chapter",
+            scope_id="chapter:9",
+            project_id="project:1",
+            book_id="book:1",
+            volume_id="volume:2",
+            arc_id="arc:3",
+            chapter_group_id="chapter-group:4",
+            chapter_id="chapter:9",
+            chapter_number=9,
+            asset_version_id="asset-version:plan:9",
+            reader_segment_id="reader-segment:new",
+            experiment_id="experiment:control",
+        )
+
+        payload = scope.to_dict()
+        self.assertEqual(TargetScope.from_dict(payload), scope)
+        self.assertEqual(dict(scope), payload)
+        with self.assertRaises(TypeError):
+            scope["scope_kind"] = "book"  # type: ignore[index]
+
     def test_execution_request_is_bound_to_authority_attempt_and_fence(self) -> None:
         request = ExecutionRequest(
             execution_id="execution:1",
             operation_id="operation:1",
+            root_operation_id="operation:root",
             saga_id="saga:chapter-1",
             attempt_id="attempt:1",
             fencing_token=7,
             project_id="project:1",
+            workspace_id="workspace:1",
             book_id="book:1",
-            target_scope={"chapter_id": "chapter:1"},
+            target_scope={
+                "scope_kind": "chapter",
+                "scope_id": "chapter:1",
+                "chapter_id": "chapter:1",
+            },
+            domain="prose",
             task_kind="chapter.draft.generate",
             stage="draft",
+            capability="prose.chapter.draft",
             importance_class="critical",
             risk_class="high",
             route_snapshot_id="route-snapshot:1",
-            workspace_snapshot_id="workspace-snapshot:1",
+            workspace_snapshot_ref="workspace-snapshot:1",
             input_manifest_ref="input-manifest:1",
             resource_claims=("book:1:chapter:1:write",),
             timeout_policy_ref="timeout:chapter-draft:v1",
             budget_policy_ref="budget:chapter:v1",
             permission_policy_ref="permission:chapter-worker:v1",
+            validation_policy_ref="validation:chapter-draft:v1",
+            commit_policy_ref="commit:chapter-draft:v1",
             stable_idempotency_key="chapter-1:draft:attempt-1",
             origin_chain=("book.production.run", "chapter.slice.run"),
             agent_hop_count=0,
@@ -128,26 +161,42 @@ class ProductionExecutionContractTests(unittest.TestCase):
         self.assertEqual(request.attempt_id, "attempt:1")
         self.assertEqual(request.fencing_token, 7)
         self.assertEqual(request.to_dict()["target_scope"]["chapter_id"], "chapter:1")
+        self.assertEqual(request.root_operation_id, "operation:root")
+        self.assertEqual(request.capability, "prose.chapter.draft")
+        self.assertEqual(
+            ExecutionRequest.from_dict(request.to_dict()).contract_hash,
+            request.contract_hash,
+        )
 
     def test_execution_request_rejects_missing_attempt_or_non_positive_fence(self) -> None:
         common = dict(
             execution_id="execution:1",
             operation_id="operation:1",
+            root_operation_id="operation:root",
             saga_id="saga:1",
             project_id="project:1",
+            workspace_id="workspace:1",
             book_id="book:1",
-            target_scope={"chapter_id": "chapter:1"},
+            target_scope={
+                "scope_kind": "chapter",
+                "scope_id": "chapter:1",
+                "chapter_id": "chapter:1",
+            },
+            domain="prose",
             task_kind="draft",
             stage="draft",
+            capability="prose.chapter.draft",
             importance_class="critical",
             risk_class="high",
             route_snapshot_id="route:1",
-            workspace_snapshot_id="workspace:1",
+            workspace_snapshot_ref="workspace:1",
             input_manifest_ref="input:1",
             resource_claims=(),
             timeout_policy_ref="timeout:1",
             budget_policy_ref="budget:1",
             permission_policy_ref="permission:1",
+            validation_policy_ref="validation:1",
+            commit_policy_ref="commit:1",
             stable_idempotency_key="stable:1",
         )
         with self.assertRaisesRegex(ValueError, "Authority Attempt"):
@@ -497,28 +546,38 @@ class ProductionExecutionContractTests(unittest.TestCase):
         request = ExecutionRequest(
             execution_id="execution:1",
             operation_id="operation:1",
+            root_operation_id="operation:1",
             saga_id="saga:1",
             attempt_id="attempt:1",
             fencing_token=1,
             project_id="project:1",
+            workspace_id="workspace:1",
             book_id="book:1",
-            target_scope={"scope_kind": "book", "ids": ["book:1"]},
+            target_scope={
+                "scope_kind": "book",
+                "scope_id": "book:1",
+                "book_id": "book:1",
+            },
+            domain="planning",
             task_kind="book.plan.generate",
             stage="planning",
+            capability="planning.book.generate",
             importance_class="high",
             risk_class="high",
             route_snapshot_id="route:1",
-            workspace_snapshot_id="workspace:1",
+            workspace_snapshot_ref="workspace:1",
             input_manifest_ref="input:1",
             resource_claims=(),
             timeout_policy_ref="timeout:1",
             budget_policy_ref="budget:1",
             permission_policy_ref="permission:1",
+            validation_policy_ref="validation:1",
+            commit_policy_ref="commit:1",
             stable_idempotency_key="stable:1",
         )
         with self.assertRaises(TypeError):
             request.target_scope["scope_kind"] = "chapter"  # type: ignore[index]
-        self.assertIsInstance(request.target_scope["ids"], tuple)
+        self.assertEqual(request.target_scope["book_id"], "book:1")
 
     def test_commit_manifest_rejects_commit_without_asset_or_authority_receipt(self) -> None:
         common = dict(

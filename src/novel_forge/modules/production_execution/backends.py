@@ -503,7 +503,7 @@ class RemoteProviderExecutionBackend:
         provider_request = ProviderInvocationRequest(
             provider=admission.route_snapshot.model_provider,
             model=admission.route_snapshot.model_id,
-            capability=f"model.{request.stage}",
+            capability=request.capability,
             stage=request.stage,
             stable_idempotency_key=request.stable_idempotency_key,
             request_payload=dict(payload.request_payload),

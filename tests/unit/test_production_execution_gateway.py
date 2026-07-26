@@ -9,6 +9,7 @@ from pathlib import Path
 
 from novel_forge.modules.production_execution import (
     ArtifactPointer,
+    CapabilityId,
     CompletionMode,
     CancellationOutcome,
     ExecutionCapabilityProfile,
@@ -20,6 +21,7 @@ from novel_forge.modules.production_execution import (
     ModelProfileStatus,
     RoutePolicy,
     RouteSnapshot,
+    default_capability_registry,
 )
 from novel_forge.modules.production_execution.gateway import (
     AdmissionController,
@@ -126,6 +128,9 @@ def _remote_adapter(scenario: str):
 
 
 def contracts(*, backend_id: str, runtime: ExecutionRuntimeClass):
+    definition = default_capability_registry().resolve(
+        CapabilityId.PROSE_CHAPTER_DRAFT
+    )
     completion_modes = (
         (CompletionMode.PROCESS_EXIT,)
         if runtime is ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE
@@ -169,7 +174,7 @@ def contracts(*, backend_id: str, runtime: ExecutionRuntimeClass):
             else "scripted-model"
         ),
         reasoning_effort="xhigh",
-        timeout_policy_ref="timeout:default",
+        timeout_policy_ref=definition.timeout_policy_ref,
         workspace_policy_ref="workspace:default",
         output_policy_ref="output:json",
         fallback_policy="FAIL_CLOSED",
@@ -235,23 +240,33 @@ def contracts(*, backend_id: str, runtime: ExecutionRuntimeClass):
     request = ExecutionRequest(
         execution_id="execution:1",
         operation_id="operation:1",
+        root_operation_id="operation:1",
         saga_id="saga:1",
         attempt_id="attempt:1",
         fencing_token=7,
         project_id="project:1",
+        workspace_id="workspace:1",
         book_id="book:1",
-        target_scope={"scope_kind": "chapter", "chapter": 1},
+        target_scope={
+            "scope_kind": "chapter",
+            "scope_id": "chapter-number:1",
+            "chapter_number": 1,
+        },
+        domain=definition.domain.value,
         task_kind="chapter.slice.run",
         stage="draft",
+        capability=definition.capability_id.value,
         importance_class="HIGH",
-        risk_class="NORMAL",
+        risk_class=definition.risk_class.value,
         route_snapshot_id=route.route_snapshot_id,
-        workspace_snapshot_id="workspace:1",
+        workspace_snapshot_ref="workspace:1",
         input_manifest_ref=manifest.manifest_id,
         resource_claims=("provider:request",),
-        timeout_policy_ref="timeout:default",
-        budget_policy_ref="budget:chapter",
-        permission_policy_ref="permission:chapter",
+        timeout_policy_ref=definition.timeout_policy_ref,
+        budget_policy_ref=definition.budget_policy_ref,
+        permission_policy_ref=definition.permission_policy_ref,
+        validation_policy_ref=definition.validation_policy_ref,
+        commit_policy_ref=definition.commit_policy_ref,
         stable_idempotency_key="chapter:1:draft:attempt:1",
         trace_id="trace:1",
         correlation_id="correlation:1",
@@ -424,6 +439,46 @@ class ProductionExecutionGatewayTests(unittest.TestCase):
         duplicate = gateway.submit(request)
         self.assertEqual(duplicate.contract_hash, handle.contract_hash)
         self.assertEqual(transport.execute_calls, 1)
+        with self.assertRaisesRegex(ValueError, "different request"):
+            gateway.submit(
+                replace(request, stable_idempotency_key="chapter:1:draft:conflict")
+            )
+
+    def test_admission_rejects_capability_domain_or_policy_drift(self) -> None:
+        contract_set = contracts(
+            backend_id="scripted-fixture",
+            runtime=ExecutionRuntimeClass.SCRIPTED_FIXTURE,
+        )
+        capability, profile, policy, route, manifest, request = contract_set
+        source = StaticExecutionContractSource(
+            route_snapshots=(route,),
+            model_profiles=(profile,),
+            route_policies=(policy,),
+            input_manifests=(manifest,),
+        )
+        admission = AdmissionController(
+            source,
+            StaticAttemptFenceVerifier({("operation:1", "attempt:1"): 7}),
+        )
+
+        with self.assertRaisesRegex(ValueError, "domain"):
+            admission.admit(
+                replace(
+                    request,
+                    capability=CapabilityId.REVISION_CHAPTER_REVISE.value,
+                ),
+                capability,
+            )
+        with self.assertRaisesRegex(ValueError, "validation policy"):
+            admission.admit(
+                replace(request, validation_policy_ref="validation:drift:v9"),
+                capability,
+            )
+        with self.assertRaisesRegex(ValueError, "risk class"):
+            admission.admit(
+                replace(request, risk_class="CRITICAL"),
+                capability,
+            )
 
     def test_registry_rejects_duplicate_backend_identity(self) -> None:
         contract_set = contracts(

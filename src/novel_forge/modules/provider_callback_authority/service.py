@@ -115,7 +115,7 @@ class ProviderCallbackAuthorityService:
                 self.database_url,
                 context,
                 dispatch_id=str(binding["dispatch_id"]),
-                provider=str(binding["provider"]),
+                provider=str(binding["effect_provider"]),
                 receipt_id=receipt.receipt_id,
                 message_id=receipt.message_id,
                 payload_hash=receipt.payload_hash,

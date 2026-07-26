@@ -10,6 +10,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Iterable, Protocol
 
+from .capabilities import CapabilityDefinition
+from .capability_registry import CapabilityRegistry, default_capability_registry
 from .contracts import (
     ExecutionBackend,
     ExecutionCancellationResult,
@@ -50,6 +52,7 @@ class ExecutionAdmission:
     route_policy: RoutePolicy
     input_manifest: InputManifest
     capability_profile: ExecutionCapabilityProfile
+    capability_definition: CapabilityDefinition
 
 
 class StaticAttemptFenceVerifier:
@@ -144,10 +147,16 @@ class AdmissionController:
         attempt_fence: AttemptFenceVerifier,
         *,
         require_external_effect: bool = True,
+        capability_registry: CapabilityRegistry | None = None,
+        environment: str = "test",
     ) -> None:
         self.contracts = contracts
         self.attempt_fence = attempt_fence
         self.require_external_effect = require_external_effect
+        self.capability_registry = (
+            capability_registry or default_capability_registry()
+        )
+        self.environment = environment.strip().lower()
 
     def resolve_route(self, request: ExecutionRequest) -> RouteSnapshot:
         route = self.contracts.route_snapshot(request.route_snapshot_id)
@@ -170,6 +179,55 @@ class AdmissionController:
             (request.trace_id, request.correlation_id, request.external_effect_id)
         ):
             raise ValueError("production execution requires trace and ExternalEffect binding")
+        definition = self.capability_registry.require_backend(
+            request.capability,
+            capability,
+            environment=self.environment,
+        )
+        if request.domain != definition.domain.value:
+            raise ValueError("ExecutionRequest domain differs from governed capability")
+        if request.risk_class.lower() != definition.risk_class.value:
+            raise ValueError(
+                "ExecutionRequest risk class differs from governed capability"
+            )
+        policy_bindings = (
+            (
+                request.timeout_policy_ref,
+                definition.timeout_policy_ref,
+                "timeout",
+            ),
+            (
+                request.budget_policy_ref,
+                definition.budget_policy_ref,
+                "budget",
+            ),
+            (
+                request.permission_policy_ref,
+                definition.permission_policy_ref,
+                "permission",
+            ),
+            (
+                request.validation_policy_ref,
+                definition.validation_policy_ref,
+                "validation",
+            ),
+            (
+                request.commit_policy_ref,
+                definition.commit_policy_ref,
+                "commit",
+            ),
+        )
+        mismatched_policies = [
+            label
+            for actual, expected, label in policy_bindings
+            if actual != expected
+        ]
+        if mismatched_policies:
+            raise ValueError(
+                "ExecutionRequest differs from governed "
+                + ", ".join(mismatched_policies)
+                + " policy"
+            )
         route = self.resolve_route(request)
         profile = self.contracts.model_profile(
             route.model_profile_id, route.model_profile_version
@@ -215,7 +273,15 @@ class AdmissionController:
             raise ValueError("InputManifest does not match the frozen RouteSnapshot")
         if request.timeout_policy_ref != profile.timeout_policy_ref:
             raise ValueError("ExecutionRequest timeout policy differs from ModelProfile")
-        return ExecutionAdmission(request, route, profile, policy, manifest, capability)
+        return ExecutionAdmission(
+            request,
+            route,
+            profile,
+            policy,
+            manifest,
+            capability,
+            definition,
+        )
 
     def assert_handle_current(self, handle: ExecutionHandle) -> None:
         self.attempt_fence.assert_current(
