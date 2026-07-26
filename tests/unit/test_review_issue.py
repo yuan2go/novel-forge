@@ -9,6 +9,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 from novel_forge.model_adapters.mock import MockModelAdapter
 from novel_forge.modules.publishing import create_publish_gate_report, create_release_package
 from novel_forge.modules.editor import execute_revision_plan
+from novel_forge.modules.production_execution import (
+    DomainExecutionCandidate,
+    DomainExecutionEvidence,
+)
 from novel_forge.modules.mkaos import check_canon_conflict
 from novel_forge.modules.review import service as review_service
 from novel_forge.modules.review_issue import (
@@ -42,6 +46,38 @@ class StructuredRevisionModel:
             ),
             "copyright_boundary": "project-owned fixture output",
         }
+
+
+class StructuredRevisionGatewayPort:
+    def __init__(self):
+        self.calls = 0
+
+    def execute(self, command):  # type: ignore[no-untyped-def]
+        self.calls += 1
+        output = StructuredRevisionModel().generate(command.prompt, dict(command.context))
+        return DomainExecutionCandidate(
+            command.candidate_kind,
+            output,
+            DomainExecutionEvidence(
+                execution_id="fixture-execution",
+                operation_id="fixture-operation",
+                attempt_id="fixture-attempt",
+                fencing_token=1,
+                capability=command.capability,
+                backend_id="scripted-fixture",
+                route_snapshot_id="fixture-route",
+                input_manifest_ref="fixture-input",
+                output_manifest_ref="fixture-output",
+                validation_manifest_ref="fixture-validation",
+                usage_receipt_ref="fixture-usage",
+                cost_receipt_ref="fixture-cost",
+                fixture_protocol_only=True,
+                real_model_call=False,
+                production_verified=False,
+                model_id="structured-revision-model",
+                provider_id="fixture-provider",
+            ),
+        )
 
 
 class ReviewIssueTests(unittest.TestCase):
@@ -301,6 +337,7 @@ class ReviewIssueTests(unittest.TestCase):
             storage = LocalStorage(tmp)
             storage.ensure_layout()
             draft_path, review_path, revision_path, bundle_path = _write_revision_executor_fixture(storage, project_id="final-prod-p")
+            execution_port = StructuredRevisionGatewayPort()
 
             result = execute_revision_plan(
                 storage,
@@ -308,7 +345,7 @@ class ReviewIssueTests(unittest.TestCase):
                 review_path=review_path,
                 revision_path=revision_path,
                 context_bundle_path=bundle_path,
-                model=StructuredRevisionModel(),
+                execution_port=execution_port,
                 environment="production",
                 os_envelope=_production_envelope("final-prod-p"),
                 source_policy={"source_isolation_required": True},
@@ -323,6 +360,7 @@ class ReviewIssueTests(unittest.TestCase):
             self.assertEqual(governance_asset["type"], "production_governance_report")
             self.assertEqual(governance_asset["content"]["operation"], "editor.execute_revision_plan.final_draft")
             self.assertIn(result["production_governance_path"], result["output_paths"])
+            self.assertEqual(execution_port.calls, 1)
 
 
 def _write_revision_executor_fixture(storage: LocalStorage, *, project_id: str):

@@ -187,11 +187,11 @@
 - Produces `GenerationCandidate`, `RawStructuredOutput`, `ExecutionEvidence`.
 - Domain services call an injected Authority execution port, then materialize/validate/approve/activate through their existing domain stores.
 
-- [ ] Add vertical-slice tests in order: ChapterPlan, ChapterGroup, World, Character, Book/Volume/Arc, Creative/Theme/Ending, Draft/Revision.
-- [ ] Replace direct ModelAdapter/Router calls with capability-bound execution ports.
-- [ ] Keep activation and bounded repair in domain modules and prove Gateway cannot activate assets.
-- [ ] Run each domain test group and update the ledger.
-- [ ] Commit each independently reviewable domain slice; finish with `refactor: migrate content generation execution to PEP`.
+- [x] Add vertical-slice tests in order: ChapterPlan, ChapterGroup, World, Character, Book/Volume/Arc, Creative/Theme/Ending, Draft/Revision.
+- [x] Replace direct ModelAdapter/Router calls with capability-bound execution ports.
+- [x] Keep activation and bounded repair in domain modules and prove Gateway cannot activate assets.
+- [x] Run each domain test group and update the ledger.
+- [x] Commit each independently reviewable domain slice; finish with `refactor: migrate content generation execution to PEP`.
 
 ### Task 9: Quality, review, and evaluation migration
 

@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import Any
 
 from novel_forge.agents import agent_runtime_profile, enforce_agent_action
-from novel_forge.model_adapters import GuardedModelAdapter, ModelAdapter, model_from_env, validate_model_output
 from novel_forge.modules.common import resolve_path, run_metadata
 from novel_forge.modules.content_quality_loop import run_content_quality_loop
 from novel_forge.modules.content_intelligence_governance import content_intelligence_preflight_gate
@@ -25,6 +24,12 @@ from novel_forge.modules.model_operation_governance import (
 from novel_forge.modules.os_envelope import is_production_environment
 from novel_forge.modules.production_chain import create_draft_version, create_generation_run
 from novel_forge.modules.production_context import build_production_context, filter_project_safe_references
+from novel_forge.modules.production_execution import (
+    CandidateKind,
+    DomainExecutionPort,
+    execute_domain_candidate,
+    execution_model_name,
+)
 from novel_forge.schemas import DraftChapter
 from novel_forge.storage.local import LocalStorage
 from novel_forge.storage.rag_context import retrieval_metadata, retrieval_reference_ids
@@ -33,8 +38,9 @@ from novel_forge.storage.rag_context import retrieval_metadata, retrieval_refere
 def draft(
     storage: LocalStorage,
     input_path: str | None = None,
-    model: ModelAdapter | None = None,
+    model: object | None = None,
     *,
+    execution_port: DomainExecutionPort | None = None,
     context_bundle_path: str | Path | None = None,
     stability_preflight_path: str | Path | None = None,
     workspace_path: str | None = None,
@@ -47,7 +53,9 @@ def draft(
     require_external_provider_proof: bool = False,
 ) -> Path:
     agent_profile = agent_runtime_profile("draft")
-    model = model or model_from_env("draft")
+    model_name = execution_model_name(
+        execution_port, model, legacy_model_role="draft"
+    )
     plan_path = _resolve_chapter_plan_path(storage, input_path)
     plan = storage.read_asset(plan_path)
     plan_ref = _display_path(storage.root, plan_path)
@@ -148,8 +156,8 @@ def draft(
         operation="draft",
         input_assets=[plan_path, stability_preflight["path"], context_plan_asset.get("path", "") or context_plan_asset.get("id", ""), context_bundle.get("path", "")],
         output_types=["draft_chapter", "draft_version", "generation_run"],
-        model_provider=getattr(model, "name", "local"),
-        model_name=getattr(model, "name", "local"),
+        model_provider=model_name,
+        model_name=model_name,
         prompt_version="prompt-v1",
         token_budget=6000,
         sla_seconds=1200,
@@ -157,10 +165,12 @@ def draft(
         knowledge_context_contract=knowledge_contract,
     ) as agent_run:
         agent_run.guard("read_asset")
-        guarded_model = GuardedModelAdapter(model, storage, agent_run.path)
-        generated = validate_model_output(
-            "generate",
-            guarded_model.generate("Draft an original Chinese web-novel chapter from the chapter plan.", {
+        candidate = execute_domain_candidate(
+            capability="prose.chapter.draft",
+            operation="generate",
+            candidate_kind=CandidateKind.GENERATION,
+            prompt="Draft an original Chinese web-novel chapter from the chapter plan.",
+            context={
                 "plan": plan.content,
                 "source_asset_id": plan.id,
                 "retrieved_context": retrieved_context,
@@ -172,13 +182,21 @@ def draft(
                 "actual_context": context_bundle_asset.get("content", {}).get("actual_context", ""),
                 "production_context": production_context,
                 "mkaos_knowledge_pack": _pack_content(mkaos_pack),
-            }),
+            },
+            execution_port=execution_port,
+            legacy_model=model,
+            legacy_model_role="draft",
+            environment=environment,
+            storage=storage,
+            agent_run_path=agent_run.path,
         )
+        generated = dict(candidate.raw_output)
+        model_name = candidate.evidence.model_id or model_name
         enforce_agent_action(agent_profile, "write_draft_chapter", "draft_chapter")
         agent_run.guard("write_draft_chapter", "draft_chapter")
         draft_text = (
             generated["text"]
-            if model.name != "mock-model"
+            if model_name != "mock-model"
             else (
                 "雨水把广场的钟声压得很低。林乔抬头时，停用三年的钟楼忽然响了一下。"
                 "档案表显示维护员早已离职，但新登记的巡检号正贴在门缝里。"
@@ -192,7 +210,7 @@ def draft(
         asset = DraftChapter(
             title=f"Chapter {chapter_number} draft v0",
             source=plan.id,
-            tags=["draft", "v0", model.name],
+            tags=["draft", "v0", model_name],
             content={
                 "chapter": chapter_number,
                 "text": draft_text,
@@ -201,6 +219,7 @@ def draft(
                 "chapter_blueprint_contract": plan.content.get("chapter_blueprint_contract", {}),
                 "chapter_blueprint_gate": plan.content.get("blueprint_quality_gate", {}),
                 "model_output": generated,
+                "production_execution": candidate.evidence.to_dict(),
                 "retrieved_context": retrieved_context,
                 "stability_preflight": stability_preflight["content"],
                 "previous_chapter_state": previous_chapter_state,
@@ -227,8 +246,8 @@ def draft(
                 or "original draft generated from chapter plan; no reference expression copied",
             },
             metadata={
-                "model": model.name,
-                "provider": generated.get("provider", model.name),
+                "model": model_name,
+                "provider": generated.get("provider", model_name),
                 "agent_runtime": agent_profile,
                 "agent_run_path": agent_run.path,
                 "project_id": production_context["project"].get("project_id", ""),
@@ -266,8 +285,8 @@ def draft(
                 "run_metadata": run_metadata(
                     "draft",
                     plan,
-                    provider=generated.get("provider", model.name),
-                    model=generated.get("model", model.name),
+                    provider=generated.get("provider", model_name),
+                    model=generated.get("model", model_name),
                 ),
             },
             references=filter_project_safe_references(
@@ -331,8 +350,8 @@ def draft(
             plan_path,
             str(context_bundle.get("path", "")),
             output_path=path,
-            provider=str(generated.get("provider", model.name)),
-            model=str(generated.get("model", model.name)),
+            provider=str(generated.get("provider", model_name)),
+            model=str(generated.get("model", model_name)),
             prompt_version="prompt-v1",
             status="succeeded",
         )
@@ -414,11 +433,6 @@ def _mark_draft_quality_loop_deferred(storage: LocalStorage, path: Path, *, reas
     data["content"] = content
     data["metadata"] = metadata
     storage.write_json(path, data)
-
-
-def _checked_model_generate(agent_profile: dict, model: ModelAdapter, prompt: str, context: dict) -> dict:
-    enforce_agent_action(agent_profile, "call_model_adapter")
-    return model.generate(prompt, context)
 
 
 def _resolve_chapter_plan_path(storage: LocalStorage, input_path: str | Path | None) -> Path:

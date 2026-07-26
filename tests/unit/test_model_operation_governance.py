@@ -12,6 +12,10 @@ from novel_forge.modules.chapter_plan import service as chapter_plan_service
 from novel_forge.modules.genre_os.service import build_genre_strategy_pack
 from novel_forge.modules.model_operation_governance import enforce_model_operation_preflight
 from novel_forge.modules.outline import service as outline_service
+from novel_forge.modules.production_execution import (
+    DomainExecutionCandidate,
+    DomainExecutionEvidence,
+)
 from novel_forge.modules.style_os.service import build_style_profile, extract_style_fingerprint, ingest_style_sample
 from novel_forge.modules.topics import service as topics_service
 from novel_forge.schemas import CharacterCard, MaterialCard, Outline
@@ -33,6 +37,40 @@ class CountingTopicModel:
             "text": "A governed topic seed with enough detail for validation.",
             "copyright_boundary": "fixture output uses abstract material patterns only",
         }
+
+
+class CountingTopicGatewayPort:
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def execute(self, command):  # type: ignore[no-untyped-def]
+        self.calls += 1
+        return DomainExecutionCandidate(
+            command.candidate_kind,
+            {
+                "provider": "fixture-provider",
+                "model": "fixture-topic-model",
+                "text": "A governed topic seed with enough detail for validation.",
+                "copyright_boundary": "fixture output uses abstract material patterns only",
+            },
+            DomainExecutionEvidence(
+                execution_id="fixture-execution",
+                operation_id="fixture-operation",
+                attempt_id="fixture-attempt",
+                fencing_token=1,
+                capability=command.capability,
+                backend_id="scripted-fixture",
+                route_snapshot_id="fixture-route",
+                input_manifest_ref="fixture-input",
+                output_manifest_ref="fixture-output",
+                validation_manifest_ref="fixture-validation",
+                usage_receipt_ref="fixture-usage",
+                cost_receipt_ref="fixture-cost",
+                fixture_protocol_only=True,
+                real_model_call=False,
+                production_verified=False,
+            ),
+        )
 
 
 class ModelOperationGovernanceTests(unittest.TestCase):
@@ -66,11 +104,12 @@ class ModelOperationGovernanceTests(unittest.TestCase):
             material_path = _material(storage, project_id="topic-prod")
             _genre_and_style_evidence(storage, project_id="topic-prod")
             model = CountingTopicModel()
+            execution_port = CountingTopicGatewayPort()
 
             topic_path = topics_service.develop_topic(
                 storage,
                 str(material_path),
-                model=model,
+                execution_port=execution_port,
                 environment="production",
                 os_envelope=_envelope("topic-prod", "develop-topic", "topic_seed"),
                 source_policy={"source_isolation_required": True, "raw_source_text_allowed": False},
@@ -82,7 +121,8 @@ class ModelOperationGovernanceTests(unittest.TestCase):
                 },
             )
 
-            self.assertEqual(model.calls, 1)
+            self.assertEqual(model.calls, 0)
+            self.assertEqual(execution_port.calls, 1)
             topic = storage.read_json(topic_path)
             governance = topic["content"]["production_governance"]
             self.assertEqual(governance["status"], "passed")

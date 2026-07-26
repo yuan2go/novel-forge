@@ -36,6 +36,23 @@ real_provider_proven=false
 production_verified=false
 ```
 
+## 2026-07-26 Domain Candidate Execution Boundary
+
+Topic, Outline/Book planning, ChapterPlan, Draft, Review, RevisionPlan, and Editor
+revision execution now request candidates through `DomainExecutionPort`. The
+Gateway-backed implementation accepts only pre-bound Authority `ExecutionRequest`
+contracts and returns structured candidate output plus Route/Input/Output/Validation,
+usage, and cost evidence. It has no Authority Asset writer and cannot approve or
+activate domain assets. Existing domain services still own parsing, bounded repair,
+semantic checks, version creation, governance, approval, and activation.
+
+Development/test model compatibility is centralized inside the execution plane. In a
+controlled environment, a missing Gateway port fails before `model_from_env` or a
+wrapped model is called. World, Character, ChapterGroup, Theme, and Ending code paths
+found in this slice are deterministic materializers and remain in their domains.
+Fixture compatibility evidence always records `real_model_call=false` and
+`production_verified=false`.
+
 ## 2026-07-22 Next Authority Implementation Baseline
 
 WP-00 has audited the execution, Chapter, Book, Context, Evaluation, and storage

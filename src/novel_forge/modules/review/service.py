@@ -7,8 +7,6 @@ from typing import Any
 from novel_forge.agents import agent_runtime_profile, enforce_agent_action
 from novel_forge.evaluation.quality import QUALITY_DIMENSIONS
 from novel_forge.evaluation.creative_gate import evaluate_draft_quality, gate_issues
-from novel_forge.model_adapters import GuardedModelAdapter, ModelAdapter, model_from_env, validate_model_output
-from novel_forge.model_adapters.mock import MockModelAdapter
 from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.modules.common import read_previous, run_metadata
 from novel_forge.modules.audit import create_chapter_audit_report, create_originality_report
@@ -20,6 +18,12 @@ from novel_forge.modules.model_operation_governance import (
     record_model_operation_final_governance,
 )
 from novel_forge.modules.production_context import build_production_context, filter_project_safe_references, quality_dimensions_from_context
+from novel_forge.modules.production_execution import (
+    CandidateKind,
+    DomainExecutionPort,
+    execute_domain_candidate,
+    execution_model_name,
+)
 from novel_forge.modules.review_issue import persist_review_issues_for_report
 from novel_forge.modules.standards import create_quality_score_report, evaluate_quality_standard
 from novel_forge.modules.style import create_style_review_report
@@ -31,15 +35,18 @@ from novel_forge.storage.rag_context import retrieval_metadata, retrieval_refere
 def review(
     storage: LocalStorage,
     input_path: str | None = None,
-    model: ModelAdapter | None = None,
+    model: object | None = None,
     *,
+    execution_port: DomainExecutionPort | None = None,
     environment: str = "",
     os_envelope: dict[str, Any] | None = None,
     source_policy: dict[str, Any] | None = None,
     provider_runtime_gate: dict[str, Any] | None = None,
 ) -> Path:
     agent_profile = agent_runtime_profile("review")
-    model = model or model_from_env("review")
+    model_name = execution_model_name(
+        execution_port, model, legacy_model_role="review"
+    )
     draft_asset = read_previous(storage, "drafts", input_path)
     production_context = build_production_context(storage, draft_asset, input_path=input_path)
     quality_dimensions = quality_dimensions_from_context(production_context) or QUALITY_DIMENSIONS
@@ -89,8 +96,8 @@ def review(
         operation="review",
         input_assets=[draft_path_for_reports, mkaos_pack.get("context_bundle_path", "")],
         output_types=["review_report", "quality_score_report", "style_review_report", "originality_report", "chapter_audit_report"],
-        model_provider=getattr(model, "name", "local"),
-        model_name=getattr(model, "name", "local"),
+        model_provider=model_name,
+        model_name=model_name,
         prompt_version="prompt-v1",
         token_budget=3000,
         sla_seconds=900,
@@ -98,12 +105,12 @@ def review(
         knowledge_context_contract=knowledge_contract,
     ) as agent_run:
         agent_run.guard("read_asset")
-        guarded_model = GuardedModelAdapter(model, storage, agent_run.path)
-        result = validate_model_output(
-            "review",
-            guarded_model.review(
-                draft_asset.content.get("text", ""),
-                {
+        candidate = execute_domain_candidate(
+            capability="review.chapter.evaluate",
+            operation="review",
+            candidate_kind=CandidateKind.JUDGE,
+            prompt=str(draft_asset.content.get("text", "")),
+            context={
                     "rubric": quality_dimensions,
                     "draft_asset_id": draft_asset.id,
                     "copyright_boundary": draft_asset.content.get("copyright_boundary", ""),
@@ -112,9 +119,16 @@ def review(
                     "context_bundle": context_bundle_content,
                     "production_context": production_context,
                     "mkaos_knowledge_pack": _pack_content(mkaos_pack),
-                },
-            ),
+            },
+            execution_port=execution_port,
+            legacy_model=model,
+            legacy_model_role="review",
+            environment=environment,
+            storage=storage,
+            agent_run_path=agent_run.path,
         )
+        result = dict(candidate.raw_output)
+        model_name = candidate.evidence.model_id or model_name
         enforce_agent_action(agent_profile, "write_review_report", "review_report")
         agent_run.guard("write_review_report", "review_report")
         quality_gate = evaluate_draft_quality(draft_asset.content.get("text", ""))
@@ -139,7 +153,7 @@ def review(
             tags=["review", "quality"],
             content={
                 "rubric": quality_dimensions,
-                "summary": f"{model.name} review completed",
+                "summary": f"{model_name} review completed",
                 "quality_gates": quality_gate,
                 "quality_standard_evaluation": standard_evaluation,
                 "feedback_rubric_constraints": feedback_rubric_constraints,
@@ -157,10 +171,11 @@ def review(
                 "mkaos_validation": mkaos_validation,
                 "agent_run_path": agent_run.path,
                 "model_output": result,
+                "production_execution": candidate.evidence.to_dict(),
             },
             metadata={
-                "model": model.name,
-                "provider": result.get("provider", model.name),
+                "model": model_name,
+                "provider": result.get("provider", model_name),
                 "agent_runtime": agent_profile,
                 "agent_run_path": agent_run.path,
                 "project_id": production_context["project"].get("project_id", ""),
@@ -185,8 +200,8 @@ def review(
                 "run_metadata": run_metadata(
                     "review",
                     draft_asset,
-                    provider=result.get("provider", model.name),
-                    model=result.get("model", model.name),
+                    provider=result.get("provider", model_name),
+                    model=result.get("model", model_name),
                 ),
             },
             score=float(result["score"]),
@@ -299,11 +314,6 @@ def review(
             storage.write_json(review_path, review_data)
         agent_run.succeed(output_assets=[review_path, quality_path, style_path, originality_path, chapter_audit_path], token_used=len(str(result)))
         return review_path
-
-
-def _checked_model_review(agent_profile: dict, model: ModelAdapter, content: str, context: dict[str, Any]) -> dict[str, Any]:
-    enforce_agent_action(agent_profile, "call_model_adapter")
-    return model.review(content, context)
 
 
 def _profile_id(context: dict, asset_type: str) -> str:
@@ -438,7 +448,7 @@ def compare_reviews(storage: LocalStorage, input_path: str | None = None) -> Pat
 
 
 def _run_profile_review(profile: MockReviewProfile, content: str) -> dict[str, Any]:
-    base = MockModelAdapter().review(content, {"rubric": QUALITY_DIMENSIONS, "role": profile.role})
+    base = _deterministic_fixture_review(content)
     score = max(0, min(100, int(base["score"]) + profile.score_delta))
     strengths = _dedupe([*base["strengths"], *profile.strengths])
     weaknesses = _dedupe([*base["weaknesses"], *profile.weaknesses])
@@ -454,6 +464,29 @@ def _run_profile_review(profile: MockReviewProfile, content: str) -> dict[str, A
         "issues": issues,
         "revision_suggestions": suggestions,
         "next_action": base["next_action"],
+    }
+
+
+def _deterministic_fixture_review(content: str) -> dict[str, Any]:
+    """Non-production comparison fixture; it performs no uncertain execution."""
+
+    return {
+        "score": 72 if len(content.strip()) > 80 else 58,
+        "strengths": ["clear forward motion", "visible chapter hook"],
+        "weaknesses": ["fixture draft needs richer sensory detail"],
+        "issues": [
+            {
+                "dimension": "originality_boundary",
+                "severity": "medium",
+                "message": "Confirm that all reference-derived patterns stay abstract.",
+            }
+        ],
+        "risk_level": "medium",
+        "revision_suggestions": [
+            "increase causal links between decision and consequence",
+            "add one concrete sensory beat before the hook",
+        ],
+        "next_action": "revise",
     }
 
 

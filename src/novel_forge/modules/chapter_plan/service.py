@@ -5,12 +5,8 @@ from pathlib import Path
 from typing import Any
 
 from novel_forge.model_adapters import (
-    GuardedModelAdapter,
-    ModelAdapter,
     ModelOutputValidationError,
-    model_from_env,
     parse_json_object,
-    validate_model_output,
 )
 from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.modules.common import resolve_path, run_metadata
@@ -26,6 +22,12 @@ from novel_forge.modules.os_envelope import is_production_environment
 from novel_forge.modules.planning_context import build_planning_context, planning_context_metadata
 from novel_forge.modules.production_chain import create_chapter_plan_version
 from novel_forge.modules.production_context import filter_project_safe_references
+from novel_forge.modules.production_execution import (
+    CandidateKind,
+    DomainExecutionPort,
+    execute_domain_candidate,
+    execution_model_name,
+)
 from novel_forge.schemas import ChapterPlan
 from novel_forge.storage.local import LocalStorage
 
@@ -36,8 +38,9 @@ CHAPTER_BLUEPRINT_CONTRACT_VERSION = "chapter-blueprint-contract-v1"
 def generate_chapter_plan(
     storage: LocalStorage,
     input_path: str | None = None,
-    model: ModelAdapter | None = None,
+    model: object | None = None,
     *,
+    execution_port: DomainExecutionPort | None = None,
     workspace_path: str | None = None,
     chapter: int | None = None,
     carry_forward: dict[str, Any] | None = None,
@@ -46,7 +49,9 @@ def generate_chapter_plan(
     source_policy: dict[str, Any] | None = None,
     provider_runtime_gate: dict[str, Any] | None = None,
 ) -> Path:
-    model = model or model_from_env("chapter_plan")
+    model_name = execution_model_name(
+        execution_port, model, legacy_model_role="chapter_plan"
+    )
     outline_path = resolve_path(storage.root, input_path) if input_path else storage.latest("outlines")
     outline = storage.read_asset(outline_path)
     outline_ref = _display_path(storage.root, outline_path)
@@ -104,8 +109,8 @@ def generate_chapter_plan(
         operation="generate-chapter-plan",
         input_assets=_dedupe([outline_ref, *planning_context.get("references", []), str(carry.get("previous_draft_path", "")), str(carry.get("previous_plan_path", ""))]),
         output_types=["chapter_plan", "chapter_plan_version"],
-        model_provider=getattr(model, "name", "local"),
-        model_name=getattr(model, "name", "local"),
+        model_provider=model_name,
+        model_name=model_name,
         prompt_version=PROMPT_VERSION,
         token_budget=2600,
         sla_seconds=600,
@@ -113,12 +118,12 @@ def generate_chapter_plan(
         knowledge_context_contract=knowledge_contract,
     ) as run:
         run.guard("read_asset")
-        guarded_model = GuardedModelAdapter(model, storage, run.path)
-        generated = validate_model_output(
-            "generate",
-            guarded_model.generate(
-                "Generate a chapter plan for the target chapter. Return JSON only.",
-                {
+        candidate = execute_domain_candidate(
+            capability="planning.chapter.generate",
+            operation="generate",
+            candidate_kind=CandidateKind.GENERATION,
+            prompt="Generate a chapter plan for the target chapter. Return JSON only.",
+            context={
                     "required_output": {
                         "chapter": target_chapter,
                         "objective": "string",
@@ -179,16 +184,23 @@ def generate_chapter_plan(
                     "context_bundle": _context_bundle_content(mkaos_pack),
                     "mkaos_knowledge_pack": _pack_content(mkaos_pack),
                     "copyright_boundary": "Use references as abstract constraints only. Do not copy protected scenes, names, settings, or prose.",
-                },
-            ),
+            },
+            execution_port=execution_port,
+            legacy_model=model,
+            legacy_model_role="chapter_plan",
+            environment=environment,
+            storage=storage,
+            agent_run_path=run.path,
         )
+        generated = dict(candidate.raw_output)
+        model_name = candidate.evidence.model_id or model_name
         packet = _chapter_plan_packet(
             generated,
             outline.to_dict(),
             planning_context,
             target_chapter=target_chapter,
             carry_forward=carry,
-            model_name=getattr(model, "name", ""),
+            model_name=model_name,
         )
         asset = ChapterPlan(
             title=str(packet.get("title") or f"Chapter {target_chapter} plan"),
@@ -232,6 +244,7 @@ def generate_chapter_plan(
                 "mkaos_pack_policy": mkaos_pack_metadata(mkaos_pack)["mkaos_pack_policy"],
                 "mkaos_runtime_policy_warning_path": mkaos_pack_metadata(mkaos_pack)["mkaos_runtime_policy_warning_path"],
                 "model_output": generated,
+                "production_execution": candidate.evidence.to_dict(),
                 "agent_run_path": run.path,
                 "copyright_boundary": generated.get("copyright_boundary")
                 or "chapter plan generated from project profiles and abstract references; no protected expression copied",
@@ -239,8 +252,8 @@ def generate_chapter_plan(
             metadata={
                 "project_id": project_id,
                 "workspace_path": workspace,
-                "model": getattr(model, "name", "local"),
-                "provider": str(generated.get("provider", getattr(model, "name", "local"))),
+                "model": model_name,
+                "provider": str(generated.get("provider", model_name)),
                 "agent_run_path": run.path,
                 "prompt_version": PROMPT_VERSION,
                 "source_asset_path": outline_ref,
@@ -259,8 +272,8 @@ def generate_chapter_plan(
                 "run_metadata": run_metadata(
                     "generate-chapter-plan",
                     outline,
-                    provider=str(generated.get("provider", getattr(model, "name", "local"))),
-                    model=str(generated.get("model", getattr(model, "name", "local"))),
+                    provider=str(generated.get("provider", model_name)),
+                    model=str(generated.get("model", model_name)),
                     prompt_version=PROMPT_VERSION,
                 ),
             },

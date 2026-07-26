@@ -111,6 +111,17 @@ from .routing import (
     RouteSnapshotRegistry,
 )
 from .legacy import LegacyGatewayModelAdapter, LegacyRequestMapper, LegacyResultMapper
+from .domain_execution import (
+    CandidateKind,
+    DomainExecutionCandidate,
+    DomainExecutionCommand,
+    DomainExecutionEvidence,
+    DomainExecutionPort,
+    DomainModelOperation,
+    GatewayDomainExecutionPort,
+    execute_domain_candidate,
+    execution_model_name,
+)
 
 __all__ = [
     "AdmissionController",
@@ -162,6 +173,15 @@ __all__ = [
     "LocalTerminationOutcome",
     "LocalProcessExecutionPolicy",
     "LegacyGatewayModelAdapter",
+    "CandidateKind",
+    "DomainExecutionCandidate",
+    "DomainExecutionCommand",
+    "DomainExecutionEvidence",
+    "DomainExecutionPort",
+    "DomainModelOperation",
+    "GatewayDomainExecutionPort",
+    "execute_domain_candidate",
+    "execution_model_name",
     "LegacyRequestMapper",
     "LegacyResultMapper",
     "ModelProfile",

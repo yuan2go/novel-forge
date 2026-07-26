@@ -6,12 +6,8 @@ from typing import Any
 
 from novel_forge.core.ids import make_id, utc_now
 from novel_forge.model_adapters import (
-    GuardedModelAdapter,
-    ModelAdapter,
     ModelOutputValidationError,
-    model_from_env,
     parse_json_object,
-    validate_model_output,
 )
 from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.modules.common import resolve_path, run_metadata
@@ -20,6 +16,12 @@ from novel_forge.modules.os_envelope import enforce_os_envelope, envelope_asset_
 from novel_forge.modules.production_governance import build_production_governance_report
 from novel_forge.modules.production_chain import create_draft_version, create_generation_run
 from novel_forge.modules.production_context import build_production_context, filter_project_safe_references, project_scope_from_asset
+from novel_forge.modules.production_execution import (
+    CandidateKind,
+    DomainExecutionPort,
+    execute_domain_candidate,
+    execution_model_name,
+)
 from novel_forge.modules.review_issue import assert_no_blocking_review_issues
 from novel_forge.schemas import DraftChapter, DraftDiffReport, EditorPatch, validate_common_fields
 from novel_forge.storage.local import LocalStorage
@@ -283,7 +285,8 @@ def execute_revision_plan(
     review_path: str | Path,
     revision_path: str | Path,
     context_bundle_path: str | Path,
-    model: ModelAdapter | None = None,
+    model: object | None = None,
+    execution_port: DomainExecutionPort | None = None,
     workspace_path: str | None = None,
     chapter_production_run_id: str = "",
     chapter_production_run_path: str = "",
@@ -299,7 +302,9 @@ def execute_revision_plan(
     diff report, a draft version, and a generation run.
     """
 
-    model = model or model_from_env("revision_executor")
+    model_name = execution_model_name(
+        execution_port, model, legacy_model_role="revision_executor"
+    )
     draft_file = resolve_path(storage.root, draft_path)
     review_file = resolve_path(storage.root, review_path)
     revision_file = resolve_path(storage.root, revision_path)
@@ -341,8 +346,8 @@ def execute_revision_plan(
             actor_type="editor_service",
             source="editor.execute_revision_plan",
             context_bundle_id=str(knowledge_contract.get("context_bundle_id") or bundle.id),
-            provider=str((provider_runtime_gate or {}).get("provider") or getattr(model, "name", "local")),
-            model=str((provider_runtime_gate or {}).get("model") or getattr(model, "name", "local")),
+            provider=str((provider_runtime_gate or {}).get("provider") or model_name),
+            model=str((provider_runtime_gate or {}).get("model") or model_name),
             source_policy=source_policy,
             environment=environment,
             require_for_production=True,
@@ -377,8 +382,8 @@ def execute_revision_plan(
         operation="execute-revision-plan",
         input_assets=[draft_file, review_file, revision_file, bundle_file],
         output_types=["editor_patch", "draft_chapter", "draft_version", "draft_diff_report", "generation_run"],
-        model_provider=getattr(model, "name", "local"),
-        model_name=getattr(model, "name", "local"),
+        model_provider=model_name,
+        model_name=model_name,
         prompt_version=REVISION_EXECUTOR_PROMPT_VERSION,
         token_budget=5000,
         sla_seconds=1200,
@@ -386,12 +391,12 @@ def execute_revision_plan(
         knowledge_context_contract=knowledge_contract,
     ) as run:
         run.guard("read_asset")
-        guarded_model = GuardedModelAdapter(model, storage, run.path)
-        generated = validate_model_output(
-            "generate",
-            guarded_model.generate(
-                "Execute the revision plan as paragraph-level patch operations. Return JSON only.",
-                {
+        candidate = execute_domain_candidate(
+            capability="revision.chapter.revise",
+            operation="generate",
+            candidate_kind=CandidateKind.GENERATION,
+            prompt="Execute the revision plan as paragraph-level patch operations. Return JSON only.",
+            context={
                     "required_output": {
                         "operations": [
                             {
@@ -415,16 +420,23 @@ def execute_revision_plan(
                     "context_bundle": bundle.to_dict(),
                     "production_context": production_context,
                     "copyright_boundary": "Rewrite only project-owned draft text. Do not copy protected reference expression.",
-                },
-            ),
+            },
+            execution_port=execution_port,
+            legacy_model=model,
+            legacy_model_role="revision_executor",
+            environment=environment,
+            storage=storage,
+            agent_run_path=run.path,
         )
+        generated = dict(candidate.raw_output)
+        model_name = candidate.evidence.model_id or model_name
         packet = _revision_execution_packet(
             generated,
             before_text=before_text,
             draft=draft.to_dict(),
             review=review.to_dict(),
             revision=revision.to_dict(),
-            model_name=getattr(model, "name", ""),
+            model_name=model_name,
         )
         operations = _normalize_operations(packet["operations"], instructions=packet["revision_summary"], draft_text=before_text)
         after_text = _apply_operations(before_text, operations)
@@ -449,9 +461,10 @@ def execute_revision_plan(
                 "applied_at": now,
                 "executor": {
                     "agent_run_path": run.path,
-                    "provider": str(generated.get("provider", getattr(model, "name", "local"))),
-                    "model": str(generated.get("model", getattr(model, "name", "local"))),
+                    "provider": str(generated.get("provider", model_name)),
+                    "model": str(generated.get("model", model_name)),
                     "prompt_version": REVISION_EXECUTOR_PROMPT_VERSION,
+                    "production_execution": candidate.evidence.to_dict(),
                 },
                 "quality_notes": packet.get("quality_notes", []),
                 "risk_controls": packet.get("risk_controls", []),
@@ -526,16 +539,16 @@ def execute_revision_plan(
                 "forward_patch_path": forward_patch_result["path"],
                 "agent_run_path": run.path,
                 **knowledge_context_contract_metadata(knowledge_contract),
-                "provider": str(generated.get("provider", getattr(model, "name", "local"))),
-                "model": str(generated.get("model", getattr(model, "name", "local"))),
+                "provider": str(generated.get("provider", model_name)),
+                "model": str(generated.get("model", model_name)),
                 "prompt_version": REVISION_EXECUTOR_PROMPT_VERSION,
                 "chapter_production_run_id": chapter_production_run_id,
                 "finalized_at": now,
                 "run_metadata": run_metadata(
                     "execute-revision-plan",
                     draft,
-                    provider=str(generated.get("provider", getattr(model, "name", "local"))),
-                    model=str(generated.get("model", getattr(model, "name", "local"))),
+                    provider=str(generated.get("provider", model_name)),
+                    model=str(generated.get("model", model_name)),
                     prompt_version=REVISION_EXECUTOR_PROMPT_VERSION,
                 ),
             },
@@ -674,8 +687,8 @@ def execute_revision_plan(
             revision_file,
             bundle_file,
             output_path=final_path,
-            provider=str(generated.get("provider", getattr(model, "name", "local"))),
-            model=str(generated.get("model", getattr(model, "name", "local"))),
+            provider=str(generated.get("provider", model_name)),
+            model=str(generated.get("model", model_name)),
             prompt_version=REVISION_EXECUTOR_PROMPT_VERSION,
             status="succeeded",
             metrics={

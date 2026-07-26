@@ -5,12 +5,8 @@ from pathlib import Path
 from typing import Any
 
 from novel_forge.model_adapters import (
-    GuardedModelAdapter,
-    ModelAdapter,
     ModelOutputValidationError,
-    model_from_env,
     parse_json_object,
-    validate_model_output,
 )
 from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.modules.common import resolve_path, run_metadata
@@ -26,6 +22,12 @@ from novel_forge.modules.os_envelope import is_production_environment
 from novel_forge.modules.planning_context import build_planning_context, planning_context_metadata
 from novel_forge.modules.production_chain import create_outline_version
 from novel_forge.modules.production_context import filter_project_safe_references
+from novel_forge.modules.production_execution import (
+    CandidateKind,
+    DomainExecutionPort,
+    execute_domain_candidate,
+    execution_model_name,
+)
 from novel_forge.schemas import Outline
 from novel_forge.storage.local import LocalStorage
 
@@ -35,15 +37,18 @@ PROMPT_VERSION = "outline-v2-project-context"
 def generate_outline(
     storage: LocalStorage,
     input_path: str | None = None,
-    model: ModelAdapter | None = None,
+    model: object | None = None,
     *,
+    execution_port: DomainExecutionPort | None = None,
     workspace_path: str | None = None,
     environment: str = "",
     os_envelope: dict[str, Any] | None = None,
     source_policy: dict[str, Any] | None = None,
     provider_runtime_gate: dict[str, Any] | None = None,
 ) -> Path:
-    model = model or model_from_env("outline")
+    model_name = execution_model_name(
+        execution_port, model, legacy_model_role="outline"
+    )
     source_path = resolve_path(storage.root, input_path) if input_path else storage.latest("characters")
     character = storage.read_asset(source_path)
     source_ref = _display_path(storage.root, source_path)
@@ -98,8 +103,8 @@ def generate_outline(
         operation="generate-outline",
         input_assets=_dedupe([source_ref, *planning_context.get("references", [])]),
         output_types=["outline", "outline_version"],
-        model_provider=getattr(model, "name", "local"),
-        model_name=getattr(model, "name", "local"),
+        model_provider=model_name,
+        model_name=model_name,
         prompt_version=PROMPT_VERSION,
         token_budget=3500,
         sla_seconds=600,
@@ -107,12 +112,12 @@ def generate_outline(
         knowledge_context_contract=knowledge_contract,
     ) as run:
         run.guard("read_asset")
-        guarded_model = GuardedModelAdapter(model, storage, run.path)
-        generated = validate_model_output(
-            "generate",
-            guarded_model.generate(
-                "Generate a project-specific long-form novel outline. Return JSON only.",
-                {
+        candidate = execute_domain_candidate(
+            capability="planning.book.generate",
+            operation="generate",
+            candidate_kind=CandidateKind.GENERATION,
+            prompt="Generate a project-specific long-form novel outline. Return JSON only.",
+            context={
                     "required_output": {
                         "title": "string",
                         "reader_promise": "string",
@@ -139,10 +144,22 @@ def generate_outline(
                     "context_bundle": _context_bundle_content(mkaos_pack),
                     "mkaos_knowledge_pack": _pack_content(mkaos_pack),
                     "copyright_boundary": "Use reference assets for abstract structure only. Do not copy protected scenes, names, settings, or prose.",
-                },
-            ),
+            },
+            execution_port=execution_port,
+            legacy_model=model,
+            legacy_model_role="outline",
+            environment=environment,
+            storage=storage,
+            agent_run_path=run.path,
         )
-        packet = _outline_packet(generated, character.to_dict(), planning_context, model_name=getattr(model, "name", ""))
+        generated = dict(candidate.raw_output)
+        model_name = candidate.evidence.model_id or model_name
+        packet = _outline_packet(
+            generated,
+            character.to_dict(),
+            planning_context,
+            model_name=model_name,
+        )
         asset = Outline(
             title=str(packet.get("title") or f"{character.title or 'Project'} outline"),
             source=character.id,
@@ -170,13 +187,14 @@ def generate_outline(
                 "mkaos_pack_policy": mkaos_pack_metadata(mkaos_pack)["mkaos_pack_policy"],
                 "mkaos_runtime_policy_warning_path": mkaos_pack_metadata(mkaos_pack)["mkaos_runtime_policy_warning_path"],
                 "model_output": generated,
+                "production_execution": candidate.evidence.to_dict(),
                 "agent_run_path": run.path,
                 "copyright_boundary": generated.get("copyright_boundary")
                 or "outline generated from project profiles and abstract references; no protected expression copied",
             },
             metadata={
-                "model": getattr(model, "name", "local"),
-                "provider": str(generated.get("provider", getattr(model, "name", "local"))),
+                "model": model_name,
+                "provider": str(generated.get("provider", model_name)),
                 "agent_run_path": run.path,
                 "prompt_version": PROMPT_VERSION,
                 "source_asset_path": source_ref,
@@ -192,8 +210,8 @@ def generate_outline(
                 "run_metadata": run_metadata(
                     "generate-outline",
                     character,
-                    provider=str(generated.get("provider", getattr(model, "name", "local"))),
-                    model=str(generated.get("model", getattr(model, "name", "local"))),
+                    provider=str(generated.get("provider", model_name)),
+                    model=str(generated.get("model", model_name)),
                     prompt_version=PROMPT_VERSION,
                 ),
             },

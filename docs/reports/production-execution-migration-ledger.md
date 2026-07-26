@@ -4,9 +4,9 @@ AST-derived inventory of uncertain execution, external effects, database Authori
 
 ## Summary
 
-- Source tree: `sha256:9b34e37bc9c520127ae626afe794c6b101301ee1bad17f97d851ea7f61750a57`
-- Scanned Python files: 565
-- Execution entries: 680
+- Source tree: `sha256:129cb12404cad5a373d4ae8f39536c2f3bdaf7cd79415d4bdfa11e97c53daa4b`
+- Scanned Python files: 566
+- Execution entries: 645
 - Production `LEGACY_UNKNOWN` blockers: 0
 - `real_provider_proven=false`
 - `production_verified=false`
@@ -15,7 +15,7 @@ AST-derived inventory of uncertain execution, external effects, database Authori
 |---|---:|
 | `DETERMINISTIC_LOCAL` | 0 |
 | `DATABASE_AUTHORITY` | 417 |
-| `MODEL_INFERENCE` | 163 |
+| `MODEL_INFERENCE` | 128 |
 | `LOCAL_PROCESS_REMOTE_INFERENCE` | 12 |
 | `AGENT_WORKSPACE_TRANSACTION` | 0 |
 | `REMOTE_EXTERNAL_ACTION` | 14 |
@@ -59,12 +59,7 @@ No production-reachable `LEGACY_UNKNOWN` entry was detected.
 | `execution-owner:3e21d566d30a953723a5` | `scripts` | `scripts/run_runtime_growth_regression.py` | `LEGACY_UNKNOWN` | `LEGACY_UNKNOWN` | `` | `` | False/False/False | `DISCOVERED` |
 | `execution-owner:a79ae29b5c4fa40eb809` | `scripts` | `scripts/run_source_governance_regression.py` | `LEGACY_UNKNOWN` | `LEGACY_UNKNOWN` | `` | `` | False/False/False | `DISCOVERED` |
 | `execution-owner:dcfc7f2aeb9e3baf5b32` | `scripts` | `scripts/run_source_governance_regression.py` | `LEGACY_UNKNOWN` | `LEGACY_UNKNOWN` | `` | `` | False/False/False | `DISCOVERED` |
-| `execution-owner:8245a200e6e326919e2a` | `services` | `src/novel_forge/api/services/product.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `review.chapter.evaluate` | `remote-provider` | False/False/False | `DISCOVERED` |
 | `execution-owner:02a2a26435f92687b4c6` | `services` | `src/novel_forge/api/services/product.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `mkaos.knowledge.extract` | `remote-provider` | False/False/False | `DISCOVERED` |
-| `execution-owner:e7b81631bb70381f6066` | `services` | `src/novel_forge/api/services/product.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `prose.chapter.draft` | `remote-provider` | False/False/False | `DISCOVERED` |
-| `execution-owner:cfb61cd26fcd1b636930` | `services` | `src/novel_forge/api/services/product.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `planning.chapter.generate` | `remote-provider` | False/False/False | `DISCOVERED` |
-| `execution-owner:d3e135ee53e5cba24529` | `services` | `src/novel_forge/api/services/product.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `planning.book.generate` | `remote-provider` | False/False/False | `DISCOVERED` |
-| `execution-owner:50d895c9ac4e139c83c0` | `services` | `src/novel_forge/api/services/product.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `creative.topic.generate` | `remote-provider` | False/False/False | `DISCOVERED` |
 | `execution-owner:5b1fd6caf804d2baedc3` | `services` | `src/novel_forge/api/services/product.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `review.chapter.evaluate` | `remote-provider` | False/False/False | `DISCOVERED` |
 | `execution-owner:93657c88530fcef0d4ab` | `services` | `src/novel_forge/api/services/product.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `revision.chapter.revise` | `remote-provider` | False/False/False | `DISCOVERED` |
 | `execution-owner:d97f902124f43d9560a5` | `services` | `src/novel_forge/api/services/product.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `source.remote.fetch` | `remote-provider` | False/False/False | `DISCOVERED` |
@@ -79,13 +74,7 @@ No production-reachable `LEGACY_UNKNOWN` entry was detected.
 | `execution-owner:560996b452080ce15497` | `cli` | `src/novel_forge/cli/legacy.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `mkaos.knowledge.extract` | `remote-provider` | False/False/False | `DISCOVERED` |
 | `execution-owner:157343a48750a085035a` | `cli` | `src/novel_forge/cli/legacy.py` | `DATABASE_AUTHORITY` | `POSTGRESQL_AUTHORITY` | `` | `` | False/False/False | `CLASSIFIED` |
 | `execution-owner:a14a46ad428f6051c51c` | `cli` | `src/novel_forge/cli/legacy.py` | `DATABASE_AUTHORITY` | `POSTGRESQL_AUTHORITY` | `` | `` | False/False/False | `CLASSIFIED` |
-| `execution-owner:62bc67ac9c19ed94fef8` | `cli` | `src/novel_forge/cli/legacy.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `review.chapter.evaluate` | `remote-provider` | False/False/False | `DISCOVERED` |
 | `execution-owner:c4aaab1c1cba62917758` | `cli` | `src/novel_forge/cli/legacy.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `mkaos.knowledge.extract` | `remote-provider` | False/False/False | `DISCOVERED` |
-| `execution-owner:b7501521529e3942db2d` | `cli` | `src/novel_forge/cli/legacy.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `creative.topic.generate` | `remote-provider` | False/False/False | `DISCOVERED` |
-| `execution-owner:0a22513afbd653418a46` | `cli` | `src/novel_forge/cli/legacy.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `prose.chapter.draft` | `remote-provider` | False/False/False | `DISCOVERED` |
-| `execution-owner:7dd36ffb1c4a8f1d1308` | `cli` | `src/novel_forge/cli/legacy.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `planning.chapter.generate` | `remote-provider` | False/False/False | `DISCOVERED` |
-| `execution-owner:05c9822a6a9d0e208c38` | `cli` | `src/novel_forge/cli/legacy.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `planning.book.generate` | `remote-provider` | False/False/False | `DISCOVERED` |
-| `execution-owner:4c4009fc44c07b869c62` | `cli` | `src/novel_forge/cli/legacy.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `creative.topic.generate` | `remote-provider` | False/False/False | `DISCOVERED` |
 | `execution-owner:1e6808100a8fe79a65cf` | `cli` | `src/novel_forge/cli/legacy.py` | `DATABASE_AUTHORITY` | `POSTGRESQL_AUTHORITY` | `` | `` | False/False/False | `CLASSIFIED` |
 | `execution-owner:c58bc64dcc498875d269` | `cli` | `src/novel_forge/cli/legacy.py` | `REMOTE_RETRIEVAL` | `DIRECT_EXTERNAL_CLIENT` | `source.remote.fetch` | `remote-external-action` | False/False/False | `DISCOVERED` |
 | `execution-owner:825bc19782aec13b44c8` | `cli` | `src/novel_forge/cli/legacy.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `review.chapter.evaluate` | `remote-provider` | False/False/False | `DISCOVERED` |
@@ -237,12 +226,6 @@ No production-reachable `LEGACY_UNKNOWN` entry was detected.
 | `execution-owner:408fc0799809d88f0f42` | `chapter_authority` | `src/novel_forge/modules/chapter_authority/scheduler.py` | `REMOTE_EXTERNAL_ACTION` | `DIRECT_EXTERNAL_CLIENT` | `storage.object.put` | `remote-external-action` | False/False/False | `DISCOVERED` |
 | `execution-owner:a966e072379b9d26e5fb` | `chapter_authority` | `src/novel_forge/modules/chapter_authority/scheduler.py` | `DATABASE_AUTHORITY` | `POSTGRESQL_AUTHORITY` | `` | `` | False/False/False | `CLASSIFIED` |
 | `execution-owner:ee7c5c627e485fdd5ebd` | `chapter_authority` | `src/novel_forge/modules/chapter_authority/scheduler.py` | `DATABASE_AUTHORITY` | `POSTGRESQL_AUTHORITY` | `` | `` | False/False/False | `CLASSIFIED` |
-| `execution-owner:4e853559f239245bd661` | `chapter_plan` | `src/novel_forge/modules/chapter_plan/service.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `planning.chapter.generate` | `remote-provider` | False/False/False | `DISCOVERED` |
-| `execution-owner:a71a182017c74f8b074c` | `chapter_production_bus` | `src/novel_forge/modules/chapter_production_bus/service.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `planning.chapter.generate` | `remote-provider` | False/False/False | `DISCOVERED` |
-| `execution-owner:c2f0aea05e41f74d4fea` | `chapter_production_bus` | `src/novel_forge/modules/chapter_production_bus/service.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `planning.chapter.generate` | `remote-provider` | False/False/False | `DISCOVERED` |
-| `execution-owner:a12ee357977d235e35f5` | `chapter_production_bus` | `src/novel_forge/modules/chapter_production_bus/service.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `planning.chapter.generate` | `remote-provider` | False/False/False | `DISCOVERED` |
-| `execution-owner:059abd7df2b8939d9b50` | `chapter_production_bus` | `src/novel_forge/modules/chapter_production_bus/service.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `planning.chapter.generate` | `remote-provider` | False/False/False | `DISCOVERED` |
-| `execution-owner:61a71f7ed19bf5853832` | `chapter_production_bus` | `src/novel_forge/modules/chapter_production_bus/service.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `prose.chapter.draft` | `remote-provider` | False/False/False | `DISCOVERED` |
 | `execution-owner:a373bf0a397eac718ef2` | `chapter_production_bus` | `src/novel_forge/modules/chapter_production_bus/service.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `review.chapter.evaluate` | `remote-provider` | False/False/False | `DISCOVERED` |
 | `execution-owner:1cb50e8f5c6c99c42e62` | `chapter_production_bus` | `src/novel_forge/modules/chapter_production_bus/service.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `revision.chapter.revise` | `remote-provider` | False/False/False | `DISCOVERED` |
 | `execution-owner:e59de13f56ce8fbccb6b` | `clickhouse_analytics` | `src/novel_forge/modules/clickhouse_analytics/service.py` | `REMOTE_RETRIEVAL` | `DIRECT_EXTERNAL_CLIENT` | `source.remote.fetch` | `remote-external-action` | False/False/False | `DISCOVERED` |
@@ -326,9 +309,6 @@ No production-reachable `LEGACY_UNKNOWN` entry was detected.
 | `execution-owner:0b09b91a1e80eb241899` | `content_authority` | `src/novel_forge/modules/content_authority/scheduler.py` | `DATABASE_AUTHORITY` | `POSTGRESQL_AUTHORITY` | `` | `` | True/True/False | `CLASSIFIED` |
 | `execution-owner:82de4759af1076d6d0dc` | `creative` | `src/novel_forge/modules/creative/generator_boundary.py` | `SCRIPTED_FIXTURE` | `SCRIPTED_FIXTURE` | `creative.proposal.generate` | `scripted-fixture` | False/False/False | `FIXTURE_PROVEN` |
 | `execution-owner:cfffd815fdd9fd608d2d` | `decomposition` | `src/novel_forge/modules/decomposition/service.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `mkaos.knowledge.extract` | `remote-provider` | False/False/False | `DISCOVERED` |
-| `execution-owner:25c8ac5095dffee59fca` | `drafting` | `src/novel_forge/modules/drafting/service.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `prose.chapter.draft` | `remote-provider` | False/False/False | `DISCOVERED` |
-| `execution-owner:b5402f8eaefb777c79a7` | `drafting` | `src/novel_forge/modules/drafting/service.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `prose.chapter.draft` | `remote-provider` | False/False/False | `DISCOVERED` |
-| `execution-owner:cc4460dfba643251ebc0` | `editor` | `src/novel_forge/modules/editor/service.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `revision.chapter.revise` | `remote-provider` | False/False/False | `DISCOVERED` |
 | `execution-owner:62feff95441a08bce7f1` | `evaluation_center` | `src/novel_forge/modules/evaluation_center/service.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `mkaos.knowledge.extract` | `remote-provider` | False/False/False | `DISCOVERED` |
 | `execution-owner:2a2b03efb2e625173328` | `evaluation_center` | `src/novel_forge/modules/evaluation_center/service.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `capability-registry:operation-dispatch` | `remote-provider` | False/False/False | `DISCOVERED` |
 | `execution-owner:3186801b18c010a26d5b` | `evaluation_center` | `src/novel_forge/modules/evaluation_center/service.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `review.chapter.evaluate` | `remote-provider` | False/False/False | `DISCOVERED` |
@@ -345,7 +325,6 @@ No production-reachable `LEGACY_UNKNOWN` entry was detected.
 | `execution-owner:c88be17eee7c1e6c683a` | `mkaos_model_extraction` | `src/novel_forge/modules/mkaos_model_extraction/service.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `mkaos.knowledge.extract` | `remote-provider` | False/False/False | `DISCOVERED` |
 | `execution-owner:63eee23460901f84f5c9` | `mkaos_model_extraction` | `src/novel_forge/modules/mkaos_model_extraction/service.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `mkaos.knowledge.extract` | `remote-provider` | False/False/False | `DISCOVERED` |
 | `execution-owner:9a0dd3d7144f97e5cb9b` | `mkaos_model_extraction` | `src/novel_forge/modules/mkaos_model_extraction/service.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `mkaos.knowledge.extract` | `remote-provider` | False/False/False | `DISCOVERED` |
-| `execution-owner:f48ae8aa42192a53b88b` | `outline` | `src/novel_forge/modules/outline/service.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `planning.book.generate` | `remote-provider` | False/False/False | `DISCOVERED` |
 | `execution-owner:97e4439cd89e96ab3003` | `pgvector_store` | `src/novel_forge/modules/pgvector_store/service.py` | `DATABASE_AUTHORITY` | `POSTGRESQL_AUTHORITY` | `` | `` | False/False/False | `CLASSIFIED` |
 | `execution-owner:b797216fd8230f974dfe` | `pgvector_store` | `src/novel_forge/modules/pgvector_store/service.py` | `DATABASE_AUTHORITY` | `POSTGRESQL_AUTHORITY` | `` | `` | False/False/False | `CLASSIFIED` |
 | `execution-owner:974cb649a29bce70b847` | `pgvector_store` | `src/novel_forge/modules/pgvector_store/service.py` | `DATABASE_AUTHORITY` | `POSTGRESQL_AUTHORITY` | `` | `` | False/False/False | `CLASSIFIED` |
@@ -370,6 +349,9 @@ No production-reachable `LEGACY_UNKNOWN` entry was detected.
 | `execution-owner:1996550788d31fc0c4c9` | `production_execution` | `src/novel_forge/modules/production_execution/agent_workspace_backend.py` | `SCRIPTED_FIXTURE` | `SCRIPTED_FIXTURE` | `agent.workspace.execute` | `scripted-fixture` | True/False/False | `FIXTURE_PROVEN` |
 | `execution-owner:148c72021e0655b0c743` | `production_execution` | `src/novel_forge/modules/production_execution/backends.py` | `MODEL_INFERENCE` | `PRODUCTION_EXECUTION_GATEWAY` | `capability-registry:execution-request` | `remote-provider` | True/True/True | `GATEWAY_BOUND` |
 | `execution-owner:14c9dc5348f59c85c1cd` | `production_execution` | `src/novel_forge/modules/production_execution/backends.py` | `SCRIPTED_FIXTURE` | `SCRIPTED_FIXTURE` | `` | `scripted-fixture` | True/True/False | `FIXTURE_PROVEN` |
+| `execution-owner:9c5aff652f81db644ef3` | `production_execution` | `src/novel_forge/modules/production_execution/domain_execution.py` | `MODEL_INFERENCE` | `PRODUCTION_EXECUTION_GATEWAY` | `capability-registry:execution-request` | `remote-provider` | False/True/False | `DISCOVERED` |
+| `execution-owner:ccf5334de41bf259b86e` | `production_execution` | `src/novel_forge/modules/production_execution/domain_execution.py` | `MODEL_INFERENCE` | `PRODUCTION_EXECUTION_GATEWAY` | `review.chapter.evaluate` | `remote-provider` | False/True/False | `DISCOVERED` |
+| `execution-owner:e8cc5b7863345f5b906d` | `production_execution` | `src/novel_forge/modules/production_execution/domain_execution.py` | `MODEL_INFERENCE` | `PRODUCTION_EXECUTION_GATEWAY` | `revision.chapter.revise` | `remote-provider` | False/True/False | `DISCOVERED` |
 | `execution-owner:e0add1287301d69109a9` | `production_execution` | `src/novel_forge/modules/production_execution/external_action_backend.py` | `SCRIPTED_FIXTURE` | `SCRIPTED_FIXTURE` | `` | `scripted-fixture` | False/False/False | `FIXTURE_PROVEN` |
 | `execution-owner:d0198345f8a5422a635d` | `production_execution` | `src/novel_forge/modules/production_execution/external_action_backend.py` | `SCRIPTED_FIXTURE` | `SCRIPTED_FIXTURE` | `` | `scripted-fixture` | False/False/False | `FIXTURE_PROVEN` |
 | `execution-owner:c85a6fe21a7c0165f8e0` | `production_execution` | `src/novel_forge/modules/production_execution/external_action_backend.py` | `SCRIPTED_FIXTURE` | `SCRIPTED_FIXTURE` | `` | `scripted-fixture` | False/False/False | `FIXTURE_PROVEN` |
@@ -415,11 +397,6 @@ No production-reachable `LEGACY_UNKNOWN` entry was detected.
 | `execution-owner:4cf810671931872a1ab0` | `provider_control` | `src/novel_forge/modules/provider_control/scripted.py` | `SCRIPTED_FIXTURE` | `SCRIPTED_FIXTURE` | `` | `scripted-fixture` | False/False/False | `FIXTURE_PROVEN` |
 | `execution-owner:0219ec4da32d0d599fcd` | `publishing` | `src/novel_forge/modules/publishing/adapters.py` | `REMOTE_EXTERNAL_ACTION` | `DIRECT_EXTERNAL_CLIENT` | `publishing.release.submit` | `remote-external-action` | False/False/False | `DISCOVERED` |
 | `execution-owner:955f04a67c7fbf67f950` | `publishing_feedback_adapters` | `src/novel_forge/modules/publishing_feedback_adapters/service.py` | `REMOTE_EXTERNAL_ACTION` | `DIRECT_EXTERNAL_CLIENT` | `publishing.release.submit` | `remote-external-action` | False/False/False | `DISCOVERED` |
-| `execution-owner:b42f8e45f4614ae042b2` | `review` | `src/novel_forge/modules/review/service.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `review.chapter.evaluate` | `remote-provider` | False/False/False | `DISCOVERED` |
-| `execution-owner:64790737043d1f7fa415` | `review` | `src/novel_forge/modules/review/service.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `review.chapter.evaluate` | `remote-provider` | False/False/False | `DISCOVERED` |
-| `execution-owner:5a1527da9feaf769460f` | `review` | `src/novel_forge/modules/review/service.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `review.chapter.evaluate` | `remote-provider` | False/False/False | `DISCOVERED` |
-| `execution-owner:536ae747ab07bc074eae` | `review` | `src/novel_forge/modules/review/service.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `review.chapter.evaluate` | `remote-provider` | False/False/False | `DISCOVERED` |
-| `execution-owner:565f76a061de49ca13fb` | `revision` | `src/novel_forge/modules/revision/service.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `revision.chapter.revise` | `remote-provider` | False/False/False | `DISCOVERED` |
 | `execution-owner:e05dea68c0e0e095a235` | `revision` | `src/novel_forge/modules/revision/service.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `revision.chapter.revise` | `remote-provider` | False/False/False | `DISCOVERED` |
 | `execution-owner:970bbe7b187a6f68d22e` | `tool_gateway` | `src/novel_forge/modules/tool_gateway/service.py` | `REMOTE_EXTERNAL_ACTION` | `DIRECT_EXTERNAL_CLIENT` | `tool.remote.invoke` | `remote-external-action` | False/False/False | `DISCOVERED` |
 | `execution-owner:cbb5efd36b8719a8b89f` | `tool_gateway` | `src/novel_forge/modules/tool_gateway/service.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `review.chapter.evaluate` | `remote-provider` | False/False/False | `DISCOVERED` |
@@ -428,8 +405,6 @@ No production-reachable `LEGACY_UNKNOWN` entry was detected.
 | `execution-owner:50e603fc5d574fc12499` | `tool_gateway` | `src/novel_forge/modules/tool_gateway/service.py` | `REMOTE_EXTERNAL_ACTION` | `DIRECT_EXTERNAL_CLIENT` | `tool.remote.invoke` | `remote-external-action` | False/False/False | `DISCOVERED` |
 | `execution-owner:091d49ce75b2e526b94b` | `tool_gateway` | `src/novel_forge/modules/tool_gateway/service.py` | `REMOTE_EXTERNAL_ACTION` | `DIRECT_EXTERNAL_CLIENT` | `tool.remote.invoke` | `remote-external-action` | False/False/False | `DISCOVERED` |
 | `execution-owner:1f11b168a763eece0263` | `tool_gateway` | `src/novel_forge/modules/tool_gateway/service.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `capability-registry:operation-dispatch` | `remote-provider` | False/False/False | `DISCOVERED` |
-| `execution-owner:095d8c9da70f8b9d39e6` | `topics` | `src/novel_forge/modules/topics/service.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `creative.topic.generate` | `remote-provider` | False/False/False | `DISCOVERED` |
-| `execution-owner:51fbb1f817f8184d9018` | `topics` | `src/novel_forge/modules/topics/service.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `creative.topic.generate` | `remote-provider` | False/False/False | `DISCOVERED` |
 | `execution-owner:f95124b062aff953f398` | `workflow_nodes` | `src/novel_forge/modules/workflow_nodes/service.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `capability-registry:operation-dispatch` | `remote-provider` | False/False/False | `DISCOVERED` |
 | `execution-owner:d3968b987c9f6a4673db` | `workflow_nodes` | `src/novel_forge/modules/workflow_nodes/service.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `agent.workspace.execute` | `remote-provider` | False/False/False | `DISCOVERED` |
 | `execution-owner:c85be00976d463b02868` | `workflow_nodes` | `src/novel_forge/modules/workflow_nodes/service.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `capability-registry:operation-dispatch` | `remote-provider` | False/False/False | `DISCOVERED` |
@@ -693,22 +668,12 @@ No production-reachable `LEGACY_UNKNOWN` entry was detected.
 | `execution-owner:6f4a37c1150feafad999` | `workflows` | `src/novel_forge/workflows/pipeline.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `capability-registry:operation-dispatch` | `remote-provider` | False/False/False | `DISCOVERED` |
 | `execution-owner:b890e2e94e54c297860a` | `workflows` | `src/novel_forge/workflows/pipeline.py` | `DATABASE_AUTHORITY` | `POSTGRESQL_AUTHORITY` | `` | `` | False/False/False | `CLASSIFIED` |
 | `execution-owner:db720566cf9b7b3dd75d` | `workflows` | `src/novel_forge/workflows/pipeline.py` | `DATABASE_AUTHORITY` | `POSTGRESQL_AUTHORITY` | `` | `` | False/False/False | `CLASSIFIED` |
-| `execution-owner:2c7954127a3b6b1dcccc` | `workflows` | `src/novel_forge/workflows/pipeline.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `review.chapter.evaluate` | `remote-provider` | False/False/False | `DISCOVERED` |
 | `execution-owner:7837a764f2745eb0d111` | `workflows` | `src/novel_forge/workflows/pipeline.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `mkaos.knowledge.extract` | `remote-provider` | False/False/False | `DISCOVERED` |
-| `execution-owner:32ab60c8cabdf226f714` | `workflows` | `src/novel_forge/workflows/pipeline.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `creative.topic.generate` | `remote-provider` | False/False/False | `DISCOVERED` |
-| `execution-owner:b0c7febcf89d0826d2d4` | `workflows` | `src/novel_forge/workflows/pipeline.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `prose.chapter.draft` | `remote-provider` | False/False/False | `DISCOVERED` |
-| `execution-owner:014af720e597c33f14f5` | `workflows` | `src/novel_forge/workflows/pipeline.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `planning.chapter.generate` | `remote-provider` | False/False/False | `DISCOVERED` |
-| `execution-owner:d61f92823aaeee7f742f` | `workflows` | `src/novel_forge/workflows/pipeline.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `planning.book.generate` | `remote-provider` | False/False/False | `DISCOVERED` |
-| `execution-owner:77dca5911f2a54f03a63` | `workflows` | `src/novel_forge/workflows/pipeline.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `creative.topic.generate` | `remote-provider` | False/False/False | `DISCOVERED` |
 | `execution-owner:44d3278ceea8a48337c6` | `workflows` | `src/novel_forge/workflows/pipeline.py` | `DATABASE_AUTHORITY` | `POSTGRESQL_AUTHORITY` | `` | `` | False/False/False | `CLASSIFIED` |
 | `execution-owner:e6a46faab34a12da25c5` | `workflows` | `src/novel_forge/workflows/pipeline.py` | `REMOTE_RETRIEVAL` | `DIRECT_EXTERNAL_CLIENT` | `source.remote.fetch` | `remote-external-action` | False/False/False | `DISCOVERED` |
 | `execution-owner:84e73e8285ad654f9f06` | `workflows` | `src/novel_forge/workflows/pipeline.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `review.chapter.evaluate` | `remote-provider` | False/False/False | `DISCOVERED` |
 | `execution-owner:9686c28c1ceaeb6c54df` | `workflows` | `src/novel_forge/workflows/pipeline.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `revision.chapter.revise` | `remote-provider` | False/False/False | `DISCOVERED` |
 | `execution-owner:499d728ddb63bfc4694e` | `workflows` | `src/novel_forge/workflows/pipeline.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `capability-registry:operation-dispatch` | `remote-provider` | False/False/False | `DISCOVERED` |
-| `execution-owner:b51ea3a46d9fd9bfebe9` | `workflows` | `src/novel_forge/workflows/pipeline.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `prose.chapter.draft` | `remote-provider` | False/False/False | `DISCOVERED` |
-| `execution-owner:d136c79297113e2005b0` | `workflows` | `src/novel_forge/workflows/pipeline.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `planning.chapter.generate` | `remote-provider` | False/False/False | `DISCOVERED` |
-| `execution-owner:04437636a10bbc2d8600` | `workflows` | `src/novel_forge/workflows/pipeline.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `planning.book.generate` | `remote-provider` | False/False/False | `DISCOVERED` |
-| `execution-owner:561661ba8eace4209e2f` | `workflows` | `src/novel_forge/workflows/pipeline.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `creative.topic.generate` | `remote-provider` | False/False/False | `DISCOVERED` |
 | `execution-owner:41c350c297ac8324ab61` | `workflows` | `src/novel_forge/workflows/pipeline.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `review.chapter.evaluate` | `remote-provider` | False/False/False | `DISCOVERED` |
 | `execution-owner:ec37cc9933c70188c038` | `workflows` | `src/novel_forge/workflows/pipeline.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `revision.chapter.revise` | `remote-provider` | False/False/False | `DISCOVERED` |
 

@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import Any
 
 from novel_forge.core.ids import make_id, utc_now
-from novel_forge.model_adapters import GuardedModelAdapter, ModelAdapter, model_from_env, validate_model_output
 from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.modules.common import read_previous, resolve_path
 from novel_forge.modules.content_quality_loop import run_content_quality_loop
@@ -16,9 +15,14 @@ from novel_forge.modules.model_operation_governance import (
     enforce_model_operation_preflight,
     record_model_operation_final_governance,
 )
-from novel_forge.modules.publishing import create_publish_gate_report
 from novel_forge.modules.os_envelope import is_production_environment
 from novel_forge.modules.production_context import filter_project_safe_references, project_scope_from_asset
+from novel_forge.modules.production_execution import (
+    CandidateKind,
+    DomainExecutionPort,
+    execute_domain_candidate,
+    execution_model_name,
+)
 from novel_forge.modules.review import service as review_service
 from novel_forge.modules.review_issue import review_issue_to_revision_task_candidate
 from novel_forge.schemas import ContextBundle, RevisionPlan, RevisionTask, validate_common_fields
@@ -28,8 +32,11 @@ from novel_forge.storage.local import LocalStorage
 def revise(
     storage: LocalStorage,
     input_path: str | None = None,
-    model: ModelAdapter | None = None,
+    model: object | None = None,
     *,
+    execution_port: DomainExecutionPort | None = None,
+    editor_execution_port: DomainExecutionPort | None = None,
+    post_review_execution_port: DomainExecutionPort | None = None,
     environment: str = "",
     os_envelope: dict[str, Any] | None = None,
     source_policy: dict[str, Any] | None = None,
@@ -39,9 +46,11 @@ def revise(
     require_external_provider_proof: bool = False,
     auto_execute_revision_plan: bool = True,
     post_review: bool = True,
-    post_review_model: ModelAdapter | None = None,
+    post_review_model: object | None = None,
 ) -> Path:
-    model = model or model_from_env("revise")
+    model_name = execution_model_name(
+        execution_port, model, legacy_model_role="revise"
+    )
     review_asset = read_previous(storage, "reviews", input_path)
     review_path = input_path or str(storage.root / "data" / "reviews" / f"{review_asset.id}.json")
     project = project_scope_from_asset(storage, review_asset, input_path=review_path)
@@ -90,8 +99,8 @@ def revise(
         operation="revise",
         input_assets=[review_path],
         output_types=["revision_plan"],
-        model_provider=getattr(model, "name", "local"),
-        model_name=getattr(model, "name", "local"),
+        model_provider=model_name,
+        model_name=model_name,
         prompt_version="prompt-v1",
         token_budget=1500,
         sla_seconds=600,
@@ -99,8 +108,25 @@ def revise(
         knowledge_context_contract=knowledge_contract,
     ) as agent_run:
         agent_run.guard("read_asset")
-        guarded_model = GuardedModelAdapter(model, storage, agent_run.path)
-        result = validate_model_output("revise", guarded_model.revise("", review_asset.to_dict()))
+        candidate = execute_domain_candidate(
+            capability="revision.chapter.revise",
+            operation="revise",
+            candidate_kind=CandidateKind.GENERATION,
+            prompt="Produce a bounded revision plan for the reviewed chapter.",
+            context={
+                "knowledge_context_contract": knowledge_contract,
+                "context_bundle_ref": str(context.get("path") or ""),
+            },
+            review=review_asset.to_dict(),
+            execution_port=execution_port,
+            legacy_model=model,
+            legacy_model_role="revise",
+            environment=environment,
+            storage=storage,
+            agent_run_path=agent_run.path,
+        )
+        result = dict(candidate.raw_output)
+        model_name = candidate.evidence.model_id or model_name
         target_score = result.get("target_score")
         if target_score is None:
             target_score = max(80, int(review_asset.score) + 8 if hasattr(review_asset, "score") else 80)
@@ -124,10 +150,11 @@ def revise(
                 "knowledge_context_contract": knowledge_contract,
                 "agent_run_path": agent_run.path,
                 "model_output": result,
+                "production_execution": candidate.evidence.to_dict(),
             },
             metadata={
-                "model": model.name,
-                "provider": result.get("provider", model.name),
+                "model": model_name,
+                "provider": result.get("provider", model_name),
                 "agent_run_path": agent_run.path,
                 "revision_strategy_ids": strategy_plan["strategy_ids"],
                 "re_review_required": strategy_plan["re_review_required"],
@@ -175,6 +202,7 @@ def revise(
                     revision_path=path,
                     context_bundle_path=context_bundle_path,
                     model=model,
+                    execution_port=editor_execution_port,
                     workspace_path=str(project.get("workspace_path", "")),
                     environment=environment,
                     os_envelope=os_envelope,
@@ -189,6 +217,7 @@ def revise(
                             storage,
                             quality_target_path,
                             model=post_review_model or model,
+                            execution_port=post_review_execution_port,
                             environment=environment,
                             os_envelope=os_envelope,
                             source_policy=source_policy,
@@ -363,9 +392,9 @@ def run_review_rework_loop(
     issue_indexes: list[int] | None = None,
     context_bundle_path: str | Path | None = None,
     workspace_path: str | None = None,
-    revision_model: ModelAdapter | None = None,
-    editor_model: ModelAdapter | None = None,
-    review_model: ModelAdapter | None = None,
+    revision_model: object | None = None,
+    editor_model: object | None = None,
+    review_model: object | None = None,
     human_override: bool = False,
 ) -> dict[str, Any]:
     """Run the production review rework loop end to end.

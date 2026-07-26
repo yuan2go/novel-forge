@@ -38,6 +38,19 @@ real_provider_proven=false
 production_verified=false
 ```
 
+## 2026-07-26 WP-08 — Content Candidate Migration
+
+The shared `DomainExecutionPort` separates execution from domain materialization.
+Gateway execution returns only a candidate and immutable execution evidence; it
+cannot write or activate Topic, Outline, ChapterPlan, Draft, Review, RevisionPlan, or
+Editor Patch assets. Controlled execution without a Gateway-bound port fails before
+legacy model construction. Development/test compatibility remains available from the
+execution-plane package and cannot establish real Provider or production proof.
+
+Current deterministic World, Character, ChapterGroup, Theme, and Ending paths were
+left in their domain modules. This is intentional classification, not an attempt to
+route every pure function through the Gateway.
+
 ## Gate-00 — Pre-Migration Real Provider Chapter Baseline
 
 ### Verdict

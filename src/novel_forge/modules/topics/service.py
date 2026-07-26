@@ -3,7 +3,6 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from novel_forge.model_adapters import GuardedModelAdapter, ModelAdapter, model_from_env, validate_model_output
 from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.modules.common import read_previous, resolve_path
 from novel_forge.modules.content_intelligence_governance import content_intelligence_preflight_gate
@@ -13,6 +12,12 @@ from novel_forge.modules.model_operation_governance import (
     record_model_operation_final_governance,
 )
 from novel_forge.modules.os_envelope import is_production_environment
+from novel_forge.modules.production_execution import (
+    CandidateKind,
+    DomainExecutionPort,
+    execute_domain_candidate,
+    execution_model_name,
+)
 from novel_forge.schemas import TopicSeed
 from novel_forge.storage.local import LocalStorage
 
@@ -20,8 +25,9 @@ from novel_forge.storage.local import LocalStorage
 def develop_topic(
     storage: LocalStorage,
     input_path: str | None = None,
-    model: ModelAdapter | None = None,
+    model: object | None = None,
     *,
+    execution_port: DomainExecutionPort | None = None,
     environment: str = "",
     os_envelope: dict[str, Any] | None = None,
     source_policy: dict[str, Any] | None = None,
@@ -31,7 +37,9 @@ def develop_topic(
     material_path = resolve_path(storage.root, input_path) if input_path else storage.latest("materials")
     project_id = str(material.metadata.get("project_id") or "")
     workspace_path = str(material.metadata.get("workspace_path") or "")
-    model = model or model_from_env("topic")
+    model_name = execution_model_name(
+        execution_port, model, legacy_model_role="topic"
+    )
     content_intelligence = content_intelligence_preflight_gate(
         storage,
         target_asset_id=material.id,
@@ -62,25 +70,38 @@ def develop_topic(
         operation="develop-topic",
         input_assets=[input_path or material.id],
         output_types=["topic_seed"],
-        model_provider=model.name,
-        model_name=model.name,
+        model_provider=model_name,
+        model_name=model_name,
         sla_seconds=600,
     ) as run:
         run.guard("read_asset")
-        guarded_model = GuardedModelAdapter(model, storage, run.path)
-        generated = validate_model_output(
-            "generate",
-            guarded_model.generate(
-                "Develop a differentiated suspense topic seed.",
-                {
-                    "material": material.content,
-                    "runtime_operation": "develop_topic",
-                    "copyright_boundary": "Use materials as abstract reusable mechanisms only. Do not copy protected expression, scenes, names, or plot combinations.",
-                },
-            ),
+        candidate = execute_domain_candidate(
+            capability="creative.topic.generate",
+            operation="generate",
+            candidate_kind=CandidateKind.GENERATION,
+            prompt="Develop a differentiated suspense topic seed.",
+            context={
+                "material": material.content,
+                "runtime_operation": "develop_topic",
+                "copyright_boundary": "Use materials as abstract reusable mechanisms only. Do not copy protected expression, scenes, names, or plot combinations.",
+            },
+            execution_port=execution_port,
+            legacy_model=model,
+            legacy_model_role="topic",
+            environment=environment,
+            storage=storage,
+            agent_run_path=run.path,
         )
+        generated = dict(candidate.raw_output)
+        model_name = candidate.evidence.model_id or model_name
         run.guard("write_topic_seed", "topic_seed")
-        path = _write_topic(storage, material, generated, model)
+        path = _write_topic(
+            storage,
+            material,
+            generated,
+            model_name=model_name,
+            execution_evidence=candidate.evidence.to_dict(),
+        )
         final_governance = record_model_operation_final_governance(
             storage,
             operation="develop-topic",
@@ -101,7 +122,14 @@ def develop_topic(
         return path
 
 
-def _write_topic(storage: LocalStorage, material: Any, generated: dict[str, Any], model: ModelAdapter) -> Path:
+def _write_topic(
+    storage: LocalStorage,
+    material: Any,
+    generated: dict[str, Any],
+    *,
+    model_name: str,
+    execution_evidence: dict[str, Any],
+) -> Path:
     material_tags = _string_list(material.tags)
     material_content = material.content if isinstance(material.content, dict) else {}
     patterns = _string_list(material_content.get("usable_patterns"))
@@ -132,8 +160,9 @@ def _write_topic(storage: LocalStorage, material: Any, generated: dict[str, Any]
         metadata={
             "workflow": "topic-development",
             "skill": "topic-development",
-            "model": model.name,
-            "provider": generated.get("provider", model.name),
+            "model": model_name,
+            "provider": generated.get("provider", model_name),
+            "production_execution": execution_evidence,
             "project_id": project_id,
             "workspace_path": workspace_path,
             "originality_boundary": "new premise generated from abstract materials; do not copy source expression",
@@ -146,7 +175,7 @@ def _write_topic(storage: LocalStorage, material: Any, generated: dict[str, Any]
 def generate_topic(
     storage: LocalStorage,
     input_path: str | None = None,
-    model: ModelAdapter | None = None,
+    model: object | None = None,
     **kwargs: Any,
 ) -> Path:
     return develop_topic(storage, input_path, model, **kwargs)
