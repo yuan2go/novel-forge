@@ -12,7 +12,6 @@ from novel_forge.modules.chapter_authority.application import ChapterAuthorityAp
 from novel_forge.modules.chapter_authority.execution_gateway import (
     ChapterExecutionGatewaySession,
     ChapterExecutionRoute,
-    ExternalEffectExecutionSessionStore,
     PostgresChapterExecutionPayloadResolver,
     ProductionExecutionGatewayExternalEffectAdapter,
     chapter_stage_capability,
@@ -39,6 +38,7 @@ from novel_forge.modules.provider_control import (
 from novel_forge.modules.provider_control.contracts import ProviderControlLevel
 from novel_forge.modules.production_execution import (
     AdmissionController,
+    AuthorityExecutionRecoveryStore,
     CompletionMode,
     ExecutionBackendRegistry,
     ExecutionCapabilityProfile,
@@ -367,7 +367,10 @@ def build_chapter_authority_application(
             PostgresAttemptFenceVerifier(settings.database_url),
             environment=environment,
         )
-        store = ExternalEffectExecutionSessionStore()
+        store = AuthorityExecutionRecoveryStore(
+            settings.database_url,
+            project_id=project_id,
+        )
         backends = ExecutionBackendRegistry()
         if any(
             route.model_profile.runtime_class

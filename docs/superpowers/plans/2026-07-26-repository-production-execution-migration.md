@@ -112,11 +112,11 @@
 - Produces: `AuthorityExecutionRecoveryStore.put_request/put_handle/put_receipt/put_manifest/load_session`
 - Stores evidence in existing ExternalEffect dispatch/receipt and Authority AssetVersion/object-store records; projections cannot own terminal state.
 
-- [ ] Test crash points before send, after send, before receipt, before commit, after CommitManifest, duplicate/conflict/late callback, PID reuse, corrupt result, and object-store partial failure.
-- [ ] Replace production use of `InMemoryExecutionRecordStore`/worker-local session state with an Authority-backed store; retain in-memory stores only in fixtures.
-- [ ] Ensure UNKNOWN is reconciled and never blindly resubmitted.
-- [ ] Run recovery, ExternalEffect, callback, migrations, and restart tests.
-- [ ] Commit `feat: make production execution recovery durable and authority-backed`.
+- [x] Test crash points before send, after send, before receipt, before commit, after CommitManifest, duplicate/conflict/late callback, PID reuse, corrupt result, and object-store partial failure.
+- [x] Replace production use of `InMemoryExecutionRecordStore`/worker-local session state with an Authority-backed store; retain in-memory stores only in fixtures.
+- [x] Ensure UNKNOWN is reconciled and never blindly resubmitted.
+- [x] Run recovery, ExternalEffect, callback, migrations, and restart tests.
+- [x] Commit `feat: make production execution recovery durable and authority-backed`.
 
 ### Task 5: Backend lifecycle conformance
 

@@ -72,6 +72,8 @@ class _RemoteTransport:
     def execute(self, request):
         self.last_request = request
         self.execute_calls += 1
+        if self.scenario == "raise_after_send":
+            raise ConnectionError("connection lost after request submission")
         return {
             "outcome": "success" if self.scenario == "success" else "unknown",
             "request_sent": True,
@@ -452,6 +454,56 @@ class ProductionExecutionGatewayTests(unittest.TestCase):
             gateway.submit(
                 replace(request, stable_idempotency_key="chapter:1:draft:conflict")
             )
+
+    def test_remote_unknown_submission_checkpoint_prevents_blind_resubmit(self) -> None:
+        contract_set = contracts(
+            backend_id="remote-provider",
+            runtime=ExecutionRuntimeClass.REMOTE_PROVIDER_API,
+        )
+        capability, profile, policy, route, manifest, request = contract_set
+        source = StaticExecutionContractSource(
+            route_snapshots=(route,),
+            model_profiles=(profile,),
+            route_policies=(policy,),
+            input_manifests=(manifest,),
+        )
+        admission = AdmissionController(
+            source,
+            StaticAttemptFenceVerifier({("operation:1", "attempt:1"): 7}),
+        )
+        adapter, transport = _remote_adapter("raise_after_send")
+        store = InMemoryExecutionRecordStore()
+        backend = RemoteProviderExecutionBackend(
+            backend_id="remote-provider",
+            capability_profile=capability,
+            provider_adapter=adapter,
+            admission=admission,
+            payload_resolver=StaticExecutionPayloadResolver(
+                {
+                    request.execution_id: ResolvedExecutionPayload(
+                        request_payload={"input": {"chapter": 1}},
+                        input_text="provider payload",
+                        working_directory=".",
+                        timeout_seconds=30,
+                        output_schema_version="chapter-draft.v1",
+                    )
+                }
+            ),
+            record_store=store,
+        )
+
+        with self.assertRaises(ConnectionError):
+            backend.submit(request)
+        restarted_handle = backend.submit(request)
+
+        self.assertEqual(transport.execute_calls, 1)
+        self.assertIsNone(restarted_handle.provider_request_id)
+        self.assertEqual(
+            store.get_record(request.execution_id).raw_evidence["submission_phase"],
+            "PROVIDER_OUTCOME_UNKNOWN",
+        )
+        with self.assertRaisesRegex(ValueError, "no Provider v2 result"):
+            backend.reconcile(restarted_handle)
 
     def test_admission_rejects_capability_domain_or_policy_drift(self) -> None:
         contract_set = contracts(

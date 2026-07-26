@@ -15,6 +15,7 @@ CHAPTER_EXECUTION = (
     ROOT / "src/novel_forge/modules/chapter_authority/execution_gateway.py"
 )
 AUTHORITY_DEPENDENCIES = ROOT / "src/novel_forge/api/authority_dependencies.py"
+RECOVERY = ROOT / "src/novel_forge/modules/production_execution/recovery.py"
 
 
 class ProductionExecutionPlaneBoundaryTests(unittest.TestCase):
@@ -107,8 +108,22 @@ class ProductionExecutionPlaneBoundaryTests(unittest.TestCase):
     def test_chapter_authority_composes_only_the_unified_execution_gateway(self) -> None:
         dependencies = AUTHORITY_DEPENDENCIES.read_text(encoding="utf-8")
         self.assertIn("ProductionExecutionGatewayExternalEffectAdapter", dependencies)
+        self.assertIn("AuthorityExecutionRecoveryStore", dependencies)
+        self.assertNotIn("ExternalEffectExecutionSessionStore", dependencies)
+        self.assertNotIn("InMemoryExecutionRecordStore", dependencies)
         self.assertNotIn("ChapterProviderV2Gateway", dependencies)
         self.assertNotIn("ChapterModelExternalEffectAdapter", dependencies)
+
+    def test_recovery_projection_cannot_own_attempt_or_effect_terminal_state(self) -> None:
+        recovery = RECOVERY.read_text(encoding="utf-8").lower()
+        self.assertNotIn("create table", recovery)
+        self.assertNotIn("update authority_attempt", recovery)
+        self.assertNotIn("update authority_external_effect", recovery)
+        self.assertIn('"authority_status_owner": "authority_attempt"', recovery)
+        self.assertIn(
+            '"external_outcome_owner": "authority_external_effect"',
+            recovery,
+        )
 
     def test_chapter_execution_bridge_does_not_write_business_tables_directly(self) -> None:
         tree = ast.parse(CHAPTER_EXECUTION.read_text(encoding="utf-8"))

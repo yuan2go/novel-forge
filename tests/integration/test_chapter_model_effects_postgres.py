@@ -25,6 +25,10 @@ from novel_forge.modules.command_kernel.external_effect_adapters import (
     ProviderResult,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.production_execution import (
+    AuthorityExecutionRecoveryStore,
+    ExecutionOutcome,
+)
 from tests.integration.authority_postgres_support import (
     DATABASE_URL,
     ensure_migrated,
@@ -465,6 +469,7 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
 
     def test_full_chapter_slice_uses_unified_execution_gateway_and_commit_manifests(self) -> None:
         project_id = identifier("gateway-model-slice-project")
+        recovery_execution_id = ""
         with tempfile.TemporaryDirectory() as directory:
             application = build_chapter_authority_application(
                 IndustrialSettings(root=Path(directory), database_url=DATABASE_URL),
@@ -550,6 +555,44 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
             self.assertEqual(counts["execution_source_policy"], 7)
             self.assertEqual(counts["execution_validation_policy"], 7)
             self.assertEqual(counts["execution_commit_policy"], 7)
+            cursor.execute(
+                """
+                SELECT BOOL_AND(
+                    version.content ->> 'validation_manifest_ref'
+                    LIKE 'authority-asset-version:%%'
+                )
+                FROM authority_asset AS asset
+                JOIN authority_asset_version AS version
+                  ON version.asset_id = asset.asset_id
+                WHERE asset.project_id = %s
+                  AND asset.asset_type = 'execution_commit_manifest'
+                  AND version.lifecycle = 'ACTIVE'
+                """,
+                [project_id],
+            )
+            self.assertTrue(cursor.fetchone()[0])
+            cursor.execute(
+                """
+                SELECT version.content ->> 'execution_id'
+                FROM authority_asset AS asset
+                JOIN authority_asset_version AS version
+                  ON version.asset_id = asset.asset_id
+                WHERE asset.project_id = %s
+                  AND asset.asset_type = 'execution_recovery_session'
+                  AND version.lifecycle = 'ACTIVE'
+                ORDER BY version.created_at
+                LIMIT 1
+                """,
+                [project_id],
+            )
+            recovery_execution_id = str(cursor.fetchone()[0])
+
+        recovered = AuthorityExecutionRecoveryStore(
+            DATABASE_URL,
+            project_id=project_id,
+        ).load_session(recovery_execution_id)
+        self.assertEqual(recovered.result.outcome, ExecutionOutcome.SUCCEEDED)
+        self.assertEqual(recovered.request.project_id, project_id)
 
 
 if __name__ == "__main__":

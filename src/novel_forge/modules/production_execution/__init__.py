@@ -47,6 +47,7 @@ from .backends import (
     ScriptedFixtureExecutionBackend,
     StaticExecutionPayloadResolver,
 )
+from .recovery import AuthorityExecutionRecoveryStore
 from .gateway import (
     AdmissionController,
     CapabilityProbe,
@@ -84,6 +85,7 @@ from .legacy import LegacyGatewayModelAdapter, LegacyRequestMapper, LegacyResult
 __all__ = [
     "AdmissionController",
     "ArtifactPointer",
+    "AuthorityExecutionRecoveryStore",
     "CapabilityAvailability",
     "CapabilityDefinition",
     "CapabilityId",

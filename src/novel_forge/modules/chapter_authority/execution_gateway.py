@@ -684,6 +684,16 @@ class ExternalEffectExecutionSessionStore:
                 return
             self._records[record.request.execution_id] = record
 
+    def save_record(self, record: ExecutionRecord) -> None:
+        with self._lock:
+            existing = self._records.get(record.request.execution_id)
+            if (
+                existing is not None
+                and existing.request.contract_hash != record.request.contract_hash
+            ):
+                raise ValueError("duplicate execution ID has a different request")
+            self._records[record.request.execution_id] = record
+
     def get_record(self, execution_id: str) -> ExecutionRecord:
         try:
             return self._records[execution_id]
@@ -1008,6 +1018,19 @@ class ProductionExecutionGatewayExternalEffectAdapter:
         except ExternalEffectAdapterError:
             raise
         except Exception as exc:
+            recovered = session.evidence_store.find_record(
+                binding.request.execution_id
+            )
+            submission_phase = (
+                str(recovered.raw_evidence.get("submission_phase") or "")
+                if recovered is not None
+                else ""
+            )
+            request_sent = request_sent or submission_phase in {
+                "PROVIDER_INVOKING",
+                "PROVIDER_OUTCOME_UNKNOWN",
+                "PROVIDER_RESULT_RECORDED",
+            }
             raise ExternalEffectAdapterError(
                 f"gateway execution failed: {type(exc).__name__}: {exc}",
                 request_sent=request_sent,
@@ -1104,10 +1127,7 @@ class ProductionExecutionGatewayExternalEffectAdapter:
                 "execution_result": result.to_dict(),
                 "route_snapshot": binding.route_snapshot.to_dict(),
                 "input_manifest": binding.input_manifest.to_dict(),
-                "validation_manifest_ref": (
-                    f"authority-external-effect:{binding.request.external_effect_id}:"
-                    "validation-manifest"
-                ),
+                "validation_manifest_ref": result.validation_report_ref or "",
                 "commit_manifest_required": True,
             },
         }

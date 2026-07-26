@@ -124,6 +124,8 @@ class ExecutionRecord:
 class ExecutionRecordStore(Protocol):
     def put_record(self, record: ExecutionRecord) -> None: ...
 
+    def save_record(self, record: ExecutionRecord) -> None: ...
+
     def get_record(self, execution_id: str) -> ExecutionRecord: ...
 
     def find_record(self, execution_id: str) -> ExecutionRecord | None: ...
@@ -150,6 +152,16 @@ class InMemoryExecutionRecordStore:
                 if existing.request.contract_hash != record.request.contract_hash:
                     raise ValueError("duplicate execution ID has a different request")
                 return
+            self._records[record.request.execution_id] = record
+
+    def save_record(self, record: ExecutionRecord) -> None:
+        with self._lock:
+            existing = self._records.get(record.request.execution_id)
+            if (
+                existing is not None
+                and existing.request.contract_hash != record.request.contract_hash
+            ):
+                raise ValueError("duplicate execution ID has a different request")
             self._records[record.request.execution_id] = record
 
     def get_record(self, execution_id: str) -> ExecutionRecord:
@@ -244,7 +256,7 @@ class ResultValidator:
             attempt_id=request.attempt_id,
             fencing_token=request.fencing_token,
             output_manifest_ref=output_manifest_ref,
-            validation_policy_ref="production-execution-structural-v1",
+            validation_policy_ref=request.validation_policy_ref,
             required_check_kinds=("structured_object", "fencing", "route_snapshot"),
             checks=checks,
             decision="ACCEPTED",
@@ -415,6 +427,7 @@ class ScriptedFixtureExecutionBackend:
         record = self.record_store.get_record(handle.execution_id)
         if record.result is None:
             record.result = ResultValidator(self.record_store).successful_result(record)
+            self.record_store.save_record(record)
         return record.result
 
     def cancel(
@@ -515,7 +528,56 @@ class RemoteProviderExecutionBackend:
             external_effect_id=request.external_effect_id,
             budget_reservation_id=request.budget_reservation_id,
         )
-        provider_result = self.provider_adapter.invoke(provider_request)
+        provisional_handle = ExecutionHandle(
+            execution_id=request.execution_id,
+            operation_id=request.operation_id,
+            attempt_id=request.attempt_id,
+            fencing_token=request.fencing_token,
+            backend_execution_id=f"provider-invoking:{request.execution_id}",
+            backend_id=self.backend_id,
+            transport=ExecutionRuntimeClass.REMOTE_PROVIDER_API,
+            local_execution_receipt_id=None,
+            local_process_id=None,
+            local_process_group_id=None,
+            local_process_start_time=None,
+            provider_request_id=None,
+            completion_mode=CompletionMode.POLL,
+            query_capability=(
+                CapabilityAvailability.SUPPORTED
+                if self.capability_profile.supports_query
+                else CapabilityAvailability.UNSUPPORTED
+            ),
+            cancel_capability=(
+                CapabilityAvailability.SUPPORTED
+                if self.capability_profile.supports_cancel
+                else CapabilityAvailability.UNSUPPORTED
+            ),
+            callback_capability=(
+                CapabilityAvailability.SUPPORTED
+                if self.capability_profile.supports_callback
+                else CapabilityAvailability.UNSUPPORTED
+            ),
+        )
+        record = ExecutionRecord(
+            request=request,
+            handle=provisional_handle,
+            started_at=_utc_now(),
+            raw_evidence={
+                "submission_phase": "PROVIDER_INVOKING",
+                "manual_resolution_required_on_restart": True,
+                "output_schema_version": payload.output_schema_version,
+            },
+        )
+        self.record_store.put_record(record)
+        try:
+            provider_result = self.provider_adapter.invoke(provider_request)
+        except Exception:
+            record.raw_evidence = {
+                **record.raw_evidence,
+                "submission_phase": "PROVIDER_OUTCOME_UNKNOWN",
+            }
+            self.record_store.save_record(record)
+            raise
         provider_handle = provider_result.handle
         completion_mode = CompletionMode.SYNCHRONOUS
         if provider_handle and provider_handle.completion_mode not in {"synchronous", "sync"}:
@@ -556,11 +618,11 @@ class RemoteProviderExecutionBackend:
         )
         evidence = dict(provider_result.evidence)
         evidence.setdefault("output_schema_version", payload.output_schema_version)
-        self.record_store.put_record(
-            ExecutionRecord(
-                request, handle, _utc_now(), evidence, provider_result=provider_result
-            )
-        )
+        evidence["submission_phase"] = "PROVIDER_RESULT_RECORDED"
+        record.handle = handle
+        record.raw_evidence = evidence
+        record.provider_result = provider_result
+        self.record_store.save_record(record)
         return handle
 
     def reconcile(self, handle: ExecutionHandle) -> ExecutionResult:
@@ -576,6 +638,7 @@ class RemoteProviderExecutionBackend:
                 ExecutionOutcome.CANCELLED,
                 provider_receipt_ref=record.cancellation.provider_cancellation_receipt_ref,
             )
+            self.record_store.save_record(record)
             return record.result
         provider_result = record.provider_result
         if provider_result is None:
@@ -611,6 +674,7 @@ class RemoteProviderExecutionBackend:
             record.result = ExecutionReconciler.non_success(
                 record, outcome, provider_receipt_ref=provider_ref
             )
+        self.record_store.save_record(record)
         return record.result
 
     def cancel(
@@ -683,6 +747,7 @@ class RemoteProviderExecutionBackend:
             } else None,
         )
         record.cancellation = cancellation
+        self.record_store.save_record(record)
         return cancellation
 
     def accept_callback(
@@ -729,6 +794,7 @@ class RemoteProviderExecutionBackend:
         )
         record.raw_evidence = dict(accepted.evidence)
         record.result = None
+        self.record_store.save_record(record)
         return self.reconcile(handle)
 
 
@@ -851,6 +917,7 @@ class CodexCliExecutionBackend:
             record.result = ExecutionReconciler.non_success(
                 record, outcome, process_receipt_ref=receipt_ref
             )
+        self.record_store.save_record(record)
         return record.result
 
     def cancel(

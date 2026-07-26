@@ -1,5 +1,5 @@
 {
-  "artifact_hash": "sha256:8d5bad8150a0f4a60914a82abd6f6be924e2ca714830ffdf5a546b347ca90f7b",
+  "artifact_hash": "sha256:4e1fa03c6e9049640d5fa1a98df7d1e825725d15e009a1c54c0e796f011e07a6",
   "blocking_owner_ids": [],
   "entries": [
     {
@@ -9541,18 +9541,18 @@
       "target_backend": "",
       "target_capability": "",
       "tests": [
+        "tests/architecture/test_production_execution_plane_boundaries.py",
         "tests/integration/test_authority_migrations_postgres.py",
         "tests/integration/test_chapter_authority_scheduler_postgres.py",
+        "tests/integration/test_chapter_model_effects_postgres.py",
         "tests/integration/test_content_authority_scheduler_recovery_postgres.py",
         "tests/integration/test_operation_graph_saga_postgres.py",
         "tests/integration/test_pipeline.py",
         "tests/integration/test_postgresql_only_chapter_slice.py",
+        "tests/integration/test_production_execution_recovery_postgres.py",
         "tests/unit/test_agent_scheduler.py",
         "tests/unit/test_novel_os_cockpit.py",
-        "tests/unit/test_process_supervisor.py",
-        "tests/unit/test_product_api.py",
-        "tests/unit/test_product_api_routes.py",
-        "tests/unit/test_production_entrypoint_contract.py"
+        "tests/unit/test_process_supervisor.py"
       ]
     },
     {
@@ -9579,18 +9579,18 @@
       "target_backend": "",
       "target_capability": "",
       "tests": [
+        "tests/architecture/test_production_execution_plane_boundaries.py",
         "tests/integration/test_authority_migrations_postgres.py",
         "tests/integration/test_chapter_authority_scheduler_postgres.py",
+        "tests/integration/test_chapter_model_effects_postgres.py",
         "tests/integration/test_content_authority_scheduler_recovery_postgres.py",
         "tests/integration/test_operation_graph_saga_postgres.py",
         "tests/integration/test_pipeline.py",
         "tests/integration/test_postgresql_only_chapter_slice.py",
+        "tests/integration/test_production_execution_recovery_postgres.py",
         "tests/unit/test_agent_scheduler.py",
         "tests/unit/test_novel_os_cockpit.py",
-        "tests/unit/test_process_supervisor.py",
-        "tests/unit/test_product_api.py",
-        "tests/unit/test_product_api_routes.py",
-        "tests/unit/test_production_entrypoint_contract.py"
+        "tests/unit/test_process_supervisor.py"
       ]
     },
     {
@@ -9619,18 +9619,18 @@
       "target_backend": "",
       "target_capability": "",
       "tests": [
+        "tests/architecture/test_production_execution_plane_boundaries.py",
         "tests/integration/test_authority_migrations_postgres.py",
         "tests/integration/test_chapter_authority_scheduler_postgres.py",
+        "tests/integration/test_chapter_model_effects_postgres.py",
         "tests/integration/test_content_authority_scheduler_recovery_postgres.py",
         "tests/integration/test_operation_graph_saga_postgres.py",
         "tests/integration/test_pipeline.py",
         "tests/integration/test_postgresql_only_chapter_slice.py",
+        "tests/integration/test_production_execution_recovery_postgres.py",
         "tests/unit/test_agent_scheduler.py",
         "tests/unit/test_novel_os_cockpit.py",
-        "tests/unit/test_process_supervisor.py",
-        "tests/unit/test_product_api.py",
-        "tests/unit/test_product_api_routes.py",
-        "tests/unit/test_production_entrypoint_contract.py"
+        "tests/unit/test_process_supervisor.py"
       ]
     },
     {
@@ -9657,18 +9657,18 @@
       "target_backend": "",
       "target_capability": "",
       "tests": [
+        "tests/architecture/test_production_execution_plane_boundaries.py",
         "tests/integration/test_authority_migrations_postgres.py",
         "tests/integration/test_chapter_authority_scheduler_postgres.py",
+        "tests/integration/test_chapter_model_effects_postgres.py",
         "tests/integration/test_content_authority_scheduler_recovery_postgres.py",
         "tests/integration/test_operation_graph_saga_postgres.py",
         "tests/integration/test_pipeline.py",
         "tests/integration/test_postgresql_only_chapter_slice.py",
+        "tests/integration/test_production_execution_recovery_postgres.py",
         "tests/unit/test_agent_scheduler.py",
         "tests/unit/test_novel_os_cockpit.py",
-        "tests/unit/test_process_supervisor.py",
-        "tests/unit/test_product_api.py",
-        "tests/unit/test_product_api_routes.py",
-        "tests/unit/test_production_entrypoint_contract.py"
+        "tests/unit/test_process_supervisor.py"
       ]
     },
     {
@@ -11876,6 +11876,7 @@
       "tests": [
         "tests/architecture/test_production_execution_gateway_boundaries.py",
         "tests/integration/test_online_backends_e2e.py",
+        "tests/integration/test_production_execution_recovery_postgres.py",
         "tests/unit/test_production_execution_gateway.py"
       ]
     },
@@ -11905,6 +11906,7 @@
       "tests": [
         "tests/architecture/test_production_execution_gateway_boundaries.py",
         "tests/integration/test_online_backends_e2e.py",
+        "tests/integration/test_production_execution_recovery_postgres.py",
         "tests/unit/test_production_execution_gateway.py"
       ]
     },
@@ -22606,9 +22608,9 @@
     "GATEWAY_BOUND": 1
   },
   "parse_errors": [],
-  "scanned_file_count": 561,
+  "scanned_file_count": 562,
   "schema_version": "production-execution-migration-ledger.v1",
-  "source_tree_hash": "sha256:06b63b2d36623da2573d1906d201379ff9b1a5bb043a381d6712e22b99a459e3",
+  "source_tree_hash": "sha256:64dcb34844a8b40822522642e7a59a517f8443d8453bde0f892ae06a62c0f3e5",
   "summary": {
     "AGENT_WORKSPACE_TRANSACTION": 0,
     "DATABASE_AUTHORITY": 417,
