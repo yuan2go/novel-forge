@@ -5375,16 +5375,10 @@ def _execute_registered_service_processor_impl(
         )
         return _service_success(storage, operation, result)
     if operation in {"platform_api_publish", "publish-platform-upload-package", "publish_platform_upload_package"}:
-        from novel_forge.modules.publishing_feedback_adapters import publish_platform_upload_package
-
-        result = publish_platform_upload_package(
-            storage,
-            upload_package_path=_processor_path(processor, input_assets, "upload_package_path"),
-            platform_config=processor.get("platform_config") if isinstance(processor.get("platform_config"), dict) else None,
-            environment=str(processor.get("environment") or ""),
-            envelope=processor.get("envelope") if isinstance(processor.get("envelope"), dict) else None,
+        raise RuntimeError(
+            "platform API publish cannot run as a local Workflow service; "
+            "dispatch publishing.release.submit through PostgreSQL Authority and PEP"
         )
-        return _service_success(storage, operation, result)
     if operation in {"platform_publish_receipt", "record-platform-receipt", "record_platform_receipt"}:
         from novel_forge.modules.publishing_feedback_adapters import record_platform_receipt
 

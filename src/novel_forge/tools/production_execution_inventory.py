@@ -505,17 +505,22 @@ def _classify_direct(function: _Function, call: _Call) -> _DirectClassification 
         or method
         in {
             "execute_domain_candidate",
+            "execute_external_action",
             "execute_longform_analysis",
             "execute_similarity_embedding_pair",
         }
     ):
         side_effect_type = (
-            "AGENT_WORKSPACE_TRANSACTION"
-            if "agent" in combined or "workspace" in combined
+            "REMOTE_EXTERNAL_ACTION"
+            if method == "execute_external_action"
             else (
-                "REMOTE_RETRIEVAL"
-                if "embedding" in method or "rerank" in method
-                else "MODEL_INFERENCE"
+                "AGENT_WORKSPACE_TRANSACTION"
+                if "agent" in combined or "workspace" in combined
+                else (
+                    "REMOTE_RETRIEVAL"
+                    if "embedding" in method or "rerank" in method
+                    else "MODEL_INFERENCE"
+                )
             )
         )
         return _DirectClassification(
@@ -766,6 +771,8 @@ def _target_capability(
         return "longform.recap.analyze"
     if "agent" in text or "workspace" in text:
         return "agent.workspace.execute"
+    if "fetch_platform_feedback" in text or "feedback_fetch" in text:
+        return "feedback.platform.fetch"
     if "publishing" in text or "publish" in text:
         if any(marker in text for marker in ("withdraw", "retract")):
             return "publishing.release.withdraw"

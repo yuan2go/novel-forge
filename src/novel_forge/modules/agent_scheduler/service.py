@@ -2030,7 +2030,7 @@ def _operation_specs() -> list[AgentOperationSpec]:
             agent_key="publishing",
             input_types=("platform_upload_package",),
             output_types=("platform_publish_receipt", "platform_review_status"),
-            required_tool="network_publish",
+            required_tool="request_production_execution",
             sla_seconds=600,
         ),
         AgentOperationSpec(
@@ -3083,15 +3083,10 @@ def _run_platform_adapter_gate(storage: LocalStorage, queue_item: dict[str, Any]
 
 
 def _run_publish_platform_upload_package(storage: LocalStorage, queue_item: dict[str, Any], agent_run: dict[str, Any]) -> dict[str, Any]:
-    from novel_forge.modules.publishing_feedback_adapters import publish_platform_upload_package
-
-    evidence = _evidence(agent_run)
-    return publish_platform_upload_package(
-        storage,
-        upload_package_path=str(evidence.get("upload_package_path") or _primary_input_path(agent_run)),
-        platform_config=evidence.get("platform_config") if isinstance(evidence.get("platform_config"), dict) else None,
-        environment=str(evidence.get("environment") or ""),
-        envelope=_envelope_from_evidence(evidence),
+    del storage, queue_item, agent_run
+    raise RuntimeError(
+        "platform API publish cannot run as a local Agent operation; "
+        "dispatch publishing.release.submit through PostgreSQL Authority and PEP"
     )
 
 

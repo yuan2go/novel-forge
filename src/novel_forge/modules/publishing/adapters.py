@@ -1,11 +1,8 @@
 from __future__ import annotations
 
-import json
-import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
-from urllib import request
 
 from novel_forge.core.ids import make_id, utc_now
 from novel_forge.modules.agent_runs import AgentExecutionContext
@@ -53,14 +50,12 @@ ADAPTERS = {
         external=True,
         requires_endpoint=True,
         can_execute=False,
-        description="Dry-run by default. Real webhook calls require explicit NOVEL_FORGE_ALLOW_EXTERNAL_PUBLISH=true.",
+        description="Dry-run only here. External submission requires an Authority-bound Production Execution route.",
     ),
 }
 
 
 def publishing_adapter_status() -> list[dict[str, Any]]:
-    endpoint = os.environ.get("NOVEL_FORGE_PUBLISH_WEBHOOK_URL", "")
-    allow_external = _external_publish_allowed()
     return [
         {
             "key": adapter.key,
@@ -68,9 +63,14 @@ def publishing_adapter_status() -> list[dict[str, Any]]:
             "mode": adapter.mode,
             "external": adapter.external,
             "requires_endpoint": adapter.requires_endpoint,
-            "configured": (bool(endpoint) if adapter.requires_endpoint else True),
-            "can_execute": adapter.can_execute or (adapter.key == "external_webhook" and bool(endpoint) and allow_external),
+            "configured": not adapter.requires_endpoint,
+            "can_execute": adapter.can_execute,
             "dry_run_default": adapter.external,
+            "execution_boundary": (
+                "production_execution_gateway"
+                if adapter.external
+                else "deterministic_local"
+            ),
             "description": adapter.description,
         }
         for adapter in ADAPTERS.values()
@@ -94,7 +94,6 @@ def prepare_platform_release(
     package = storage.read_asset(package_file)
     if package.type != "release_package":
         raise ValueError("release_package_path must point to a release_package asset")
-    content = package.content if isinstance(package.content, dict) else {}
     project = project_scope_from_asset(storage, package, input_path=package_file)
     plan_ref = _display_path(storage.root, resolve_path(storage.root, publishing_plan_path)) if publishing_plan_path else ""
     payload = _platform_payload(package, package_file, adapter, plan_ref=plan_ref)
@@ -275,22 +274,6 @@ def _platform_payload(package: Any, package_file: Path, adapter: PlatformAdapter
             "record external URL after publishing",
         ],
     }
-
-
-def _call_external_webhook(payload: dict[str, Any]) -> dict[str, Any]:
-    endpoint = os.environ.get("NOVEL_FORGE_PUBLISH_WEBHOOK_URL", "")
-    if not endpoint:
-        raise ValueError("NOVEL_FORGE_PUBLISH_WEBHOOK_URL is required for external_webhook execution")
-    if not _external_publish_allowed():
-        raise ValueError("external publishing is disabled; set NOVEL_FORGE_ALLOW_EXTERNAL_PUBLISH=true to execute")
-    body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
-    req = request.Request(endpoint, data=body, headers={"Content-Type": "application/json"}, method="POST")
-    with request.urlopen(req, timeout=10) as response:  # nosec - endpoint is explicit local operator config.
-        return {"status": "sent", "status_code": response.status, "message": response.read(512).decode("utf-8", errors="replace")}
-
-
-def _external_publish_allowed() -> bool:
-    return os.environ.get("NOVEL_FORGE_ALLOW_EXTERNAL_PUBLISH", "").lower() in {"1", "true", "yes"}
 
 
 def _display_path(root: Path, path: Path) -> str:

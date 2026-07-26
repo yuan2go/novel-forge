@@ -72,6 +72,15 @@ from .external_action_backend import (
     RemoteExternalActionBackend,
     ScriptedExternalActionAdapter,
 )
+from .external_execution import (
+    ExternalActionCandidate,
+    ExternalActionCommand,
+    ExternalActionExecutionEvidence,
+    ExternalActionExecutionPort,
+    ExternalActionKind,
+    GatewayExternalActionExecutionPort,
+    execute_external_action,
+)
 from .conformance import (
     BackendConformanceReport,
     BackendConformanceScenario,
@@ -178,6 +187,11 @@ __all__ = [
     "ExecutionReconciler",
     "ExecutionResult",
     "ExecutionRuntimeClass",
+    "ExternalActionCandidate",
+    "ExternalActionCommand",
+    "ExternalActionExecutionEvidence",
+    "ExternalActionExecutionPort",
+    "ExternalActionKind",
     "FallbackMode",
     "FallbackPolicy",
     "FallbackPolicyRegistry",
@@ -202,7 +216,9 @@ __all__ = [
     "DomainExecutionPort",
     "DomainModelOperation",
     "GatewayDomainExecutionPort",
+    "GatewayExternalActionExecutionPort",
     "execute_domain_candidate",
+    "execute_external_action",
     "execution_model_name",
     "EvidenceSpan",
     "JudgeExecutionEvidence",

@@ -24,7 +24,10 @@ class ControlledSourceConnectorTests(unittest.TestCase):
                 self.assertEqual(result["status"], "READY_FOR_APPROVED_ADAPTER")
                 self.assertFalse(result["plan"]["network_enabled"])
                 self.assertFalse(result["network_execution_performed"])
-                self.assertEqual(result["external_effect_intent"]["capability"], f"source.fetch.{kind}")
+                self.assertEqual(
+                    result["external_effect_intent"]["capability"],
+                    "source.remote.fetch",
+                )
                 self.assertGreater(result["plan"]["timeout_seconds"], 0)
                 self.assertGreater(result["plan"]["max_requests_per_minute"], 0)
 
@@ -69,6 +72,9 @@ class ControlledSourceConnectorTests(unittest.TestCase):
         self.assertTrue(result["source_diff"]["changed"])
         self.assertEqual(result["downstream_invalidation_recommendation"], "PLAN_REGENERATION")
         self.assertTrue(result["receipt"]["fixture_adapter"])
+        self.assertTrue(result["receipt"]["fixture_protocol_only"])
+        self.assertFalse(result["receipt"]["real_model_call"])
+        self.assertFalse(result["receipt"]["production_verified"])
         self.assertFalse(result["snapshot"]["raw_content_persisted"])
 
 

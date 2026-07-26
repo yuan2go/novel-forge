@@ -140,6 +140,42 @@ real_provider_proven=false
 production_verified=false
 ```
 
+## 2026-07-26 WP-13 — Publishing, Feedback, And Remote Fetch
+
+Publishing, feedback retrieval, source retrieval, notification, and webhook-like
+actions now share a non-model external-action contract. The Gateway port accepts
+only a frozen Authority `ExecutionRequest`, requires the command idempotency key to
+match that request, and projects the external request identity, query/cancel/callback
+support, External Receipt, Output/Validation Manifests, and unavailable usage/cost
+receipts. It creates no publish decision, source eligibility decision, feedback
+import, or reader-outcome claim.
+
+The publishing domain no longer constructs `urllib` requests, reads platform tokens,
+or invokes a platform Client. Platform endpoint, timeout, and credentials are Route
+policy concerns; persisted domain evidence contains only `auth_profile_ref` and
+`credential_scope`. The old HTTP API, local Agent runner, and local Workflow runner
+fail closed and direct operators to an Authority
+`publishing.release.submit` operation.
+
+Platform query/withdraw, feedback fetch, and remote source fetch return candidates
+only. Existing metric/comment import, source eligibility/licensing/isolation,
+publish gates, approval, activation, and feedback mutation policy remain
+deterministic domain work. RSS/Git/public-domain source fixtures use the registered
+`source.remote.fetch` capability and carry the mandatory non-production proof flags.
+
+Verification: 10 shared Backend conformance tests, 22 focused external
+action/publishing lifecycle tests, and 42 publishing/source/feedback regressions
+passed. No external HTTP request, platform publish/withdraw, feedback fetch, source
+fetch, notification, webhook, or real Callback was executed.
+
+```text
+remote_external_action_contract_complete=true
+remote_external_action_fixture_proven=true
+real_external_action_proven=false
+reader_outcome_behavior_calibrated=false
+production_verified=false
+```
+
 ## Gate-00 — Pre-Migration Real Provider Chapter Baseline
 
 ### Verdict

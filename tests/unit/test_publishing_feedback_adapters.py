@@ -20,23 +20,56 @@ from novel_forge.modules.publishing_feedback_adapters import (
     resolve_feedback_mutation_proposal,
 )
 from novel_forge.modules.publishing import create_release_package
+from novel_forge.modules.production_execution import (
+    ExternalActionCandidate,
+    ExternalActionExecutionEvidence,
+)
 from novel_forge.schemas import ReleasePackage
 from novel_forge.storage.local import LocalStorage
 from tests.unit.publishing_fixtures import create_production_ready_release_inputs, production_envelope
 
 
-class PlatformClient:
-    def publish_upload_package(self, payload: dict, context: dict) -> dict:
-        return {
-            "platform_book_id": "book-api-1",
-            "platform_chapter_id": "chapter-api-1",
-            "review_status": "submitted",
-            "receipt_raw": {"remote_receipt_id": "receipt-api-1", "token": "must-not-be-persisted"},
-        }
+class PlatformExecutionFixturePort:
+    def execute(self, command):
+        return ExternalActionCandidate(
+            raw_output={
+                "platform_book_id": "book-api-1",
+                "platform_chapter_id": "chapter-api-1",
+                "review_status": "submitted",
+                "receipt_raw": {
+                    "remote_receipt_id": "receipt-api-1",
+                    "token": "must-not-be-persisted",
+                },
+                "fixture_protocol_only": True,
+                "real_model_call": False,
+                "production_verified": False,
+            },
+            evidence=ExternalActionExecutionEvidence(
+                execution_id="publishing-fixture-execution",
+                operation_id="publishing-fixture-operation",
+                attempt_id="publishing-fixture-attempt",
+                fencing_token=1,
+                capability=command.capability,
+                backend_id="remote-external-action",
+                route_snapshot_id="publishing-fixture-route",
+                input_manifest_ref="publishing-fixture-input",
+                output_manifest_ref="publishing-fixture-output",
+                validation_manifest_ref="publishing-fixture-validation",
+                external_receipt_ref="publishing-fixture-external-receipt",
+                usage_receipt_ref="publishing-fixture-usage-unavailable",
+                cost_receipt_ref="publishing-fixture-cost-unavailable",
+                external_request_id="publishing-fixture-request",
+                query_supported=True,
+                cancel_supported=True,
+                callback_supported=True,
+                fixture_protocol_only=True,
+            ),
+        )
 
 
-class FailingPlatformClient:
-    def publish_upload_package(self, payload: dict, context: dict) -> dict:
+class FailingPlatformExecutionPort:
+    def execute(self, command):
+        del command
         raise RuntimeError("remote timeout with token=secret")
 
 
@@ -380,8 +413,12 @@ class PublishingFeedbackAdapterTests(unittest.TestCase):
             result = publish_platform_upload_package(
                 storage,
                 upload_package_path=upload["path"],
-                platform_client=PlatformClient(),
-                platform_config={"platform_id": "api-platform", "endpoint": "https://platform.example/upload", "token_env": "PLATFORM_TOKEN"},
+                external_action_execution_port=PlatformExecutionFixturePort(),
+                platform_config={
+                    "platform_id": "api-platform",
+                    "auth_profile_ref": "auth-profile:platform-test",
+                    "credential_scope": "publishing.submit",
+                },
                 environment="production",
                 envelope={
                     "project_id": fixture["project_id"],
@@ -399,7 +436,15 @@ class PublishingFeedbackAdapterTests(unittest.TestCase):
             self.assertEqual(receipt["type"], "platform_publish_receipt")
             self.assertEqual(receipt["content"]["platform_book_id"], "book-api-1")
             self.assertEqual(receipt["content"]["receipt_raw"]["token"], "[redacted]")
-            self.assertEqual(receipt["content"]["platform_api_evidence"]["mode"], "api_adapter")
+            self.assertEqual(
+                receipt["content"]["platform_api_evidence"]["mode"],
+                "production_execution_gateway",
+            )
+            self.assertTrue(
+                receipt["content"]["platform_api_evidence"]["execution"][
+                    "fixture_protocol_only"
+                ]
+            )
             self.assertEqual(receipt["content"]["platform_api_evidence"]["production_governance"]["status"], "passed")
             self.assertEqual(result["status_asset"]["content"]["review_status"], "submitted")
 
@@ -422,8 +467,8 @@ class PublishingFeedbackAdapterTests(unittest.TestCase):
                 publish_platform_upload_package(
                     storage,
                     upload_package_path=upload["path"],
-                    platform_client=FailingPlatformClient(),
-                    platform_config={"platform_id": "api-platform", "endpoint": "https://platform.example/upload", "token_env": "PLATFORM_TOKEN"},
+                    external_action_execution_port=FailingPlatformExecutionPort(),
+                    platform_config={"platform_id": "api-platform"},
                     environment="production",
                     envelope={
                         "project_id": fixture["project_id"],
@@ -479,8 +524,8 @@ class PublishingFeedbackAdapterTests(unittest.TestCase):
                 publish_platform_upload_package(
                     storage,
                     upload_package_path=upload["path"],
-                    platform_client=PlatformClient(),
-                    platform_config={"platform_id": "api-platform", "endpoint": "https://platform.example/upload", "token_env": "PLATFORM_TOKEN"},
+                    external_action_execution_port=PlatformExecutionFixturePort(),
+                    platform_config={"platform_id": "api-platform"},
                     environment="production",
                     envelope={
                         "project_id": "p1",
@@ -494,7 +539,7 @@ class PublishingFeedbackAdapterTests(unittest.TestCase):
                     },
                 )
 
-    def test_production_platform_publish_fails_closed_without_client_or_endpoint(self):
+    def test_production_platform_publish_fails_closed_without_execution_port(self):
         with tempfile.TemporaryDirectory() as tmp:
             storage = LocalStorage(tmp)
             release = ReleasePackage(
@@ -505,7 +550,10 @@ class PublishingFeedbackAdapterTests(unittest.TestCase):
             release_path = storage.write_asset_auto(release)
             upload = build_platform_upload_package(storage, release_package_path=release_path, platform_id="api-platform")
 
-            with self.assertRaises(ValueError):
+            with self.assertRaisesRegex(
+                RuntimeError,
+                "Authority-bound ExternalActionExecutionPort",
+            ):
                 publish_platform_upload_package(
                     storage,
                     upload_package_path=upload["path"],

@@ -58,7 +58,18 @@ class AgentWorkspaceExecutionMigrationTests(unittest.TestCase):
     def test_agent_profiles_request_execution_without_selecting_model_adapter(
         self,
     ) -> None:
-        for key in ("analysis", "topic", "outline", "chapter_plan", "draft", "review", "ai_editor", "model_evaluation"):
+        for key in (
+            "analysis",
+            "topic",
+            "outline",
+            "chapter_plan",
+            "draft",
+            "review",
+            "ai_editor",
+            "model_evaluation",
+            "publishing",
+            "feedback",
+        ):
             tools = agent_runtime_profile(key)["allowed_tools"]
             self.assertIn("request_production_execution", tools)
             self.assertNotIn("call_model_adapter", tools)

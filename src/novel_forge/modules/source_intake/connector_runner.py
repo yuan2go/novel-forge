@@ -12,7 +12,6 @@ from novel_forge.modules.source_intake.service import (
     SOURCE_CONNECTOR_ALLOWLIST,
     _asset_ref,
     _connector_execution_receipt,
-    _content_value,
     _dedupe,
     _display_path,
     _latest_related_asset,

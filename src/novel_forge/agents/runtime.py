@@ -190,6 +190,7 @@ AGENT_RUNTIME_PROFILES: dict[str, dict[str, Any]] = {
             "write_release_package",
             "write_publishing_plan",
             "write_publishing_log",
+            "request_production_execution",
             "run_validation",
         ],
         "allowed_write_types": ["publish_gate_report", "release_package", "publishing_plan", "publishing_log", "task_status", "workflow_run"],
@@ -317,6 +318,7 @@ AGENT_RUNTIME_PROFILES: dict[str, dict[str, Any]] = {
         "allowed_tools": [
             "read_asset",
             "read_draft_or_explicit_text",
+            "request_production_execution",
             "normalize_platform_metrics",
             "import_feedback_file",
             "analyze_feedback",

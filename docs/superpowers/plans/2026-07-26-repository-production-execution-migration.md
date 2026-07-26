@@ -263,10 +263,10 @@
 **Interfaces:**
 - Uses `RemoteExternalActionBackend` with stable key, request identity, query/reconcile, cancel/withdraw, callback verification, rate/quota, partial success, receipt, classification, and privacy refs.
 
-- [ ] Add no-network fixtures for publish/query/withdraw/callback, feedback, source fetch, RSS/Git/HTTP, notification, and webhook.
-- [ ] Replace direct external calls and preserve domain publish decisions/source/feedback policies.
-- [ ] Run external-action, source, publishing, feedback, and callback tests.
-- [ ] Commit `refactor: govern publishing feedback and remote fetch external effects`.
+- [x] Add no-network fixtures for publish/query/withdraw/callback, feedback, source fetch, RSS/Git/HTTP, notification, and webhook.
+- [x] Replace direct external calls and preserve domain publish decisions/source/feedback policies.
+- [x] Run external-action, source, publishing, feedback, and callback tests.
+- [x] Commit `refactor: govern publishing feedback and remote fetch external effects`.
 
 ### Task 14: Credential, environment, and workspace security
 

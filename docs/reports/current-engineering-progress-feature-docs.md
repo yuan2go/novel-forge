@@ -97,6 +97,13 @@ has not started and `real_provider_proven`, `longform_proven`, and
 - Agent Workspace 合同冻结 Snapshot、Read/Write Set、工具/命令白名单、网络、Git Base、输出合同、Hop/文件/成本上限及审批策略；结果只能是候选或 `proposed_only` Manifest。
 - Review/Revision/Re-review Loop 拒绝直接 ModelAdapter payload，改为接收受控 ExecutionPort；确定性编排、领域校验和提交仍留在原模块。
 - 51 项 Agent Scheduler/Loop/权限回归与 7 项 Agent Workspace/Backend 定向测试通过；未运行真实 Agent 进程、Provider 或工作区提交。
+
+2026-07-26 Production Execution WP-13 更新：
+
+- 发布提交/查询/撤稿、反馈抓取、远程源抓取、通知/Webhook 类行为统一为非模型 External Action 合同，绑定稳定幂等键、外部请求身份、Query/Cancel/Callback、外部回执、数据分类和隐私/限流/配额策略。
+- Publishing 领域不再构造 HTTP 请求或读取平台 Token；Endpoint、超时和凭据归 RouteSnapshot/Backend，领域只接收候选和执行证据。
+- 旧 API、Agent 本地 Runner 和 Workflow 本地 Runner 均 fail closed；平台 Gate、审批、发布决定、反馈导入、Source Eligibility/License/Isolation 仍留在领域模块。
+- Backend Conformance 10 项、External/Publishing 定向 22 项、Publishing/Source/Feedback 回归 42 项通过；未发送任何真实外部请求。
 - Web Admin 新增 `/mkaos/model-extraction/*`、`/mkaos/production-gate/*`、`/mkaos/knowledge-graph`、`/mkaos/lineage`、`/mkaos/impact`、`/mkaos/feedback-attribution` first-slice 页面。
 
 最终验证：

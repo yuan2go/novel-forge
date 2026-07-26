@@ -18,12 +18,15 @@ from novel_forge.modules.production_execution import (
     CodexProcessSupervisor,
     CompletionMode,
     ExecutionCapabilityProfile,
+    ExecutionBackendRegistry,
     ExecutionOutcome,
     ExecutionRequest,
     ExecutionRuntimeClass,
     ExternalActionCallbackReceipt,
+    ExternalActionCommand,
     FailureInjectionPoint,
     FailureInjector,
+    GatewayExternalActionExecutionPort,
     InMemoryExecutionRecordStore,
     InputManifest,
     InjectedExecutionFailure,
@@ -31,6 +34,7 @@ from novel_forge.modules.production_execution import (
     ModelProfile,
     ModelProfileStatus,
     PersistentExecutionDirectory,
+    ProductionExecutionGateway,
     RemoteProviderExecutionBackend,
     RemoteExternalActionBackend,
     ResolvedExecutionPayload,
@@ -467,6 +471,45 @@ class QualifiedBackendConformanceTests(unittest.TestCase):
         self.assertTrue(raw["fixture_protocol_only"])
         self.assertFalse(raw["real_model_call"])
         self.assertFalse(raw["production_verified"])
+
+    def test_external_action_gateway_port_projects_authority_bound_candidate(
+        self,
+    ) -> None:
+        backend, _adapter, store, request = self._external_backend()
+        registry = ExecutionBackendRegistry()
+        registry.register(backend)
+        port = GatewayExternalActionExecutionPort(
+            gateway=ProductionExecutionGateway(registry, backend.admission),
+            evidence_store=store,
+            requests={request.capability: request},
+        )
+
+        candidate = port.execute(
+            ExternalActionCommand(
+                capability=request.capability,
+                request_payload={
+                    "release_package_ref": "asset-version:release:1"
+                },
+                stable_idempotency_key=request.stable_idempotency_key,
+                data_classification="CONFIDENTIAL_MANUSCRIPT",
+                privacy_policy_ref="privacy-policy:publishing:v1",
+                rate_limit_policy_ref="rate-limit-policy:publishing:v1",
+                quota_policy_ref="quota-policy:publishing:v1",
+            )
+        )
+
+        self.assertEqual(
+            candidate.evidence.attempt_id,
+            request.attempt_id,
+        )
+        self.assertEqual(
+            candidate.evidence.external_request_id,
+            f"fixture-external:{request.stable_idempotency_key}",
+        )
+        self.assertTrue(candidate.evidence.fixture_protocol_only)
+        self.assertFalse(candidate.evidence.real_external_action)
+        self.assertFalse(candidate.evidence.production_verified)
+        self.assertEqual(candidate.raw_output["external_action"], "fixture")
 
     def test_external_action_unknown_is_queried_and_callbacks_are_deduplicated(self) -> None:
         backend, _adapter, _store, request = self._external_backend("unknown")

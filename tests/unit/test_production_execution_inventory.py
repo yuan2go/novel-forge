@@ -260,9 +260,22 @@ class ProductionExecutionInventoryTests(unittest.TestCase):
             "src/novel_forge/modules/loop_kernel/service.py",
             """
             from novel_forge.modules.review import review
+            from novel_forge.modules.production_execution import execute_external_action
 
             def governed(port):
                 return review("draft", execution_port=port)
+
+            def governed_external(port):
+                return execute_external_action(
+                    capability="publishing.release.submit",
+                    request_payload={"target_ref": "release:1"},
+                    stable_idempotency_key="publish:1",
+                    data_classification="INTERNAL",
+                    privacy_policy_ref="privacy:1",
+                    rate_limit_policy_ref="rate-limit:1",
+                    quota_policy_ref="quota:1",
+                    execution_port=port,
+                )
 
             def legacy(model):
                 return review("draft", model=model)
@@ -293,6 +306,20 @@ class ProductionExecutionInventoryTests(unittest.TestCase):
         self.assertTrue(governed["external_effect_bound"])
         self.assertTrue(governed["budget_bound"])
         self.assertEqual(governed["migration_status"], "GATEWAY_BOUND")
+        governed_external = self._find(
+            manifest,
+            source_file="src/novel_forge/modules/loop_kernel/service.py",
+            current_entrypoint="execute_external_action",
+        )
+        self.assertEqual(
+            governed_external["side_effect_type"],
+            "REMOTE_EXTERNAL_ACTION",
+        )
+        self.assertEqual(
+            governed_external["current_route"],
+            "PRODUCTION_EXECUTION_GATEWAY",
+        )
+        self.assertTrue(governed_external["external_effect_bound"])
 
         legacy_entries = [
             entry

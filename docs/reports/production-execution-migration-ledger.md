@@ -4,9 +4,9 @@ AST-derived inventory of uncertain execution, external effects, database Authori
 
 ## Summary
 
-- Source tree: `sha256:8d1c419350d40bf6d84fcb878feef6ffc1933732060ef769ff20d541005bf034`
-- Scanned Python files: 570
-- Execution entries: 700
+- Source tree: `sha256:9800c6a98894bb22bfffac405915594f31b60032fff2889358e44126a4f84300`
+- Scanned Python files: 571
+- Execution entries: 703
 - Production `LEGACY_UNKNOWN` blockers: 0
 - `real_provider_proven=false`
 - `production_verified=false`
@@ -18,7 +18,7 @@ AST-derived inventory of uncertain execution, external effects, database Authori
 | `MODEL_INFERENCE` | 165 |
 | `LOCAL_PROCESS_REMOTE_INFERENCE` | 12 |
 | `AGENT_WORKSPACE_TRANSACTION` | 1 |
-| `REMOTE_EXTERNAL_ACTION` | 14 |
+| `REMOTE_EXTERNAL_ACTION` | 17 |
 | `REMOTE_RETRIEVAL` | 35 |
 | `SCRIPTED_FIXTURE` | 27 |
 | `LEGACY_UNKNOWN` | 29 |
@@ -430,12 +430,15 @@ No production-reachable `LEGACY_UNKNOWN` entry was detected.
 | `execution-owner:ed9d5ae7d369a8a82c60` | `provider_control` | `src/novel_forge/modules/provider_control/scripted.py` | `SCRIPTED_FIXTURE` | `SCRIPTED_FIXTURE` | `` | `scripted-fixture` | False/False/False | `FIXTURE_PROVEN` |
 | `execution-owner:debbfc551bb1bf58a292` | `provider_control` | `src/novel_forge/modules/provider_control/scripted.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `capability-registry:execution-request` | `remote-provider` | False/False/False | `DISCOVERED` |
 | `execution-owner:4cf810671931872a1ab0` | `provider_control` | `src/novel_forge/modules/provider_control/scripted.py` | `SCRIPTED_FIXTURE` | `SCRIPTED_FIXTURE` | `` | `scripted-fixture` | False/False/False | `FIXTURE_PROVEN` |
-| `execution-owner:0219ec4da32d0d599fcd` | `publishing` | `src/novel_forge/modules/publishing/adapters.py` | `REMOTE_EXTERNAL_ACTION` | `DIRECT_EXTERNAL_CLIENT` | `publishing.release.submit` | `remote-external-action` | False/False/False | `DISCOVERED` |
-| `execution-owner:955f04a67c7fbf67f950` | `publishing_feedback_adapters` | `src/novel_forge/modules/publishing_feedback_adapters/service.py` | `REMOTE_EXTERNAL_ACTION` | `DIRECT_EXTERNAL_CLIENT` | `publishing.release.submit` | `remote-external-action` | False/False/False | `DISCOVERED` |
+| `execution-owner:2a5d9b8e549bd22b4636` | `publishing_feedback_adapters` | `src/novel_forge/modules/publishing_feedback_adapters/service.py` | `REMOTE_EXTERNAL_ACTION` | `PRODUCTION_EXECUTION_GATEWAY` | `feedback.platform.fetch` | `remote-external-action` | True/True/True | `GATEWAY_BOUND` |
+| `execution-owner:7212b017db30e57658d3` | `publishing_feedback_adapters` | `src/novel_forge/modules/publishing_feedback_adapters/service.py` | `REMOTE_EXTERNAL_ACTION` | `PRODUCTION_EXECUTION_GATEWAY` | `publishing.release.submit` | `remote-external-action` | True/True/True | `GATEWAY_BOUND` |
+| `execution-owner:e0276233469c0adde48d` | `publishing_feedback_adapters` | `src/novel_forge/modules/publishing_feedback_adapters/service.py` | `REMOTE_EXTERNAL_ACTION` | `PRODUCTION_EXECUTION_GATEWAY` | `publishing.release.query` | `remote-external-action` | True/True/True | `GATEWAY_BOUND` |
+| `execution-owner:5ee468accffb1bb39de4` | `publishing_feedback_adapters` | `src/novel_forge/modules/publishing_feedback_adapters/service.py` | `REMOTE_EXTERNAL_ACTION` | `PRODUCTION_EXECUTION_GATEWAY` | `publishing.release.withdraw` | `remote-external-action` | True/True/True | `GATEWAY_BOUND` |
 | `execution-owner:94e02290a58a163e1489` | `quality_eval` | `src/novel_forge/modules/quality_eval/service.py` | `MODEL_INFERENCE` | `PRODUCTION_EXECUTION_GATEWAY` | `quality.intrinsic.judge` | `remote-provider` | True/True/True | `GATEWAY_BOUND` |
 | `execution-owner:abf1e3fd08c4a85d05ff` | `review` | `src/novel_forge/modules/review/service.py` | `MODEL_INFERENCE` | `PRODUCTION_EXECUTION_GATEWAY` | `review.chapter.evaluate` | `remote-provider` | True/True/True | `GATEWAY_BOUND` |
 | `execution-owner:0b9368e8a079550ae8f8` | `revision` | `src/novel_forge/modules/revision/service.py` | `MODEL_INFERENCE` | `PRODUCTION_EXECUTION_GATEWAY` | `revision.chapter.revise` | `remote-provider` | True/True/True | `GATEWAY_BOUND` |
 | `execution-owner:e05dea68c0e0e095a235` | `revision` | `src/novel_forge/modules/revision/service.py` | `MODEL_INFERENCE` | `PRODUCTION_EXECUTION_GATEWAY` | `revision.chapter.revise` | `remote-provider` | True/True/True | `GATEWAY_BOUND` |
+| `execution-owner:02e599c5d7b7c9d5c721` | `source_intake` | `src/novel_forge/modules/source_intake/connector_adapters.py` | `REMOTE_EXTERNAL_ACTION` | `PRODUCTION_EXECUTION_GATEWAY` | `source.remote.fetch` | `remote-external-action` | True/True/True | `GATEWAY_BOUND` |
 | `execution-owner:970bbe7b187a6f68d22e` | `tool_gateway` | `src/novel_forge/modules/tool_gateway/service.py` | `REMOTE_EXTERNAL_ACTION` | `DIRECT_EXTERNAL_CLIENT` | `tool.remote.invoke` | `remote-external-action` | False/False/False | `DISCOVERED` |
 | `execution-owner:cbb5efd36b8719a8b89f` | `tool_gateway` | `src/novel_forge/modules/tool_gateway/service.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `review.chapter.evaluate` | `remote-provider` | False/False/False | `DISCOVERED` |
 | `execution-owner:45a48602db5c075302c1` | `tool_gateway` | `src/novel_forge/modules/tool_gateway/service.py` | `REMOTE_EXTERNAL_ACTION` | `DIRECT_EXTERNAL_CLIENT` | `tool.remote.invoke` | `remote-external-action` | False/False/False | `DISCOVERED` |
@@ -456,7 +459,7 @@ No production-reachable `LEGACY_UNKNOWN` entry was detected.
 | `execution-owner:d699bc7cae72649628bb` | `workflow_nodes` | `src/novel_forge/modules/workflow_nodes/service.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `capability-registry:operation-dispatch` | `remote-provider` | False/False/False | `DISCOVERED` |
 | `execution-owner:ca7191e5bb2f3a3737de` | `workflow_nodes` | `src/novel_forge/modules/workflow_nodes/service.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `capability-registry:operation-dispatch` | `remote-provider` | False/False/False | `DISCOVERED` |
 | `execution-owner:e095b1487ce6666270c4` | `workflow_nodes` | `src/novel_forge/modules/workflow_nodes/service.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `capability-registry:operation-dispatch` | `remote-provider` | False/False/False | `DISCOVERED` |
-| `execution-owner:10169dcee3c757e67ed2` | `workflow_nodes` | `src/novel_forge/modules/workflow_nodes/service.py` | `MODEL_INFERENCE` | `MODEL_ROUTER` | `review.chapter.evaluate` | `remote-provider` | False/False/False | `DISCOVERED` |
+| `execution-owner:10169dcee3c757e67ed2` | `workflow_nodes` | `src/novel_forge/modules/workflow_nodes/service.py` | `MODEL_INFERENCE` | `MODEL_ROUTER` | `review.chapter.evaluate` | `remote-provider` | True/False/False | `DISCOVERED` |
 | `execution-owner:aa2ab488727169d382c7` | `workflow_nodes` | `src/novel_forge/modules/workflow_nodes/service.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `capability-registry:operation-dispatch` | `remote-provider` | False/False/False | `DISCOVERED` |
 | `execution-owner:d335dfc3821b5f8c8850` | `workflow_nodes` | `src/novel_forge/modules/workflow_nodes/service.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `capability-registry:operation-dispatch` | `remote-provider` | False/False/False | `DISCOVERED` |
 | `execution-owner:981a2aa78fe2e2012282` | `workflow_nodes` | `src/novel_forge/modules/workflow_nodes/service.py` | `MODEL_INFERENCE` | `DIRECT_MODEL_ADAPTER` | `capability-registry:operation-dispatch` | `remote-provider` | False/False/False | `DISCOVERED` |

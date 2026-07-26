@@ -8,12 +8,16 @@ from typing import Any
 from novel_forge.core.ids import make_id, utc_now
 from novel_forge.modules.os_envelope import is_production_environment
 from novel_forge.modules.runtime_ledger import record_cost_ledger, record_trace_span
+from novel_forge.modules.production_execution import (
+    ExternalActionExecutionPort,
+    ExternalActionKind,
+    execute_external_action,
+)
 from novel_forge.modules.source_intake.service import (
     SOURCE_CONNECTOR_ALLOWLIST,
     _approval_status,
     _asset_ref,
     _dedupe,
-    _display_path,
     _latest_related_asset,
     _resolve_governance_asset,
     _short_ref_key,
@@ -91,7 +95,7 @@ def plan_controlled_connector(
         "status": status,
         "plan": asdict(plan),
         "external_effect_intent": {
-            "capability": f"source.fetch.{kind}",
+            "capability": ExternalActionKind.SOURCE_FETCH.value,
             "status": "PLANNED",
             "project_id": project_id,
             "idempotency_key_required": True,
@@ -148,15 +152,50 @@ def execute_controlled_fixture(
             "raw_content_persisted": False,
         },
         "receipt": {
-            "capability": f"source.fetch.{plan['connector_kind']}",
+            "capability": ExternalActionKind.SOURCE_FETCH.value,
             "status": "SUCCEEDED" if not injection_signals else "QUARANTINED",
             "checksum": checksum,
             "network_access_used": False,
             "fixture_adapter": True,
+            "fixture_protocol_only": True,
+            "real_model_call": False,
+            "production_verified": False,
         },
         "source_diff": {"changed": changed, "previous_checksum": previous_checksum, "current_checksum": checksum},
         "downstream_invalidation_recommendation": "PLAN_REGENERATION" if changed else "NO_CHANGE",
         "audit": {"project_id": plan["project_id"], "connector_kind": plan["connector_kind"], "status": status},
+    }
+
+
+def fetch_remote_source_candidate(
+    *,
+    source_ref: str,
+    connector_id: str,
+    source_policy_ref: str,
+    stable_idempotency_key: str,
+    execution_port: ExternalActionExecutionPort,
+) -> dict[str, Any]:
+    """Fetch candidate bytes/metadata through PEP; source eligibility stays local."""
+
+    candidate = execute_external_action(
+        capability=ExternalActionKind.SOURCE_FETCH,
+        request_payload={
+            "source_ref": source_ref,
+            "connector_id": connector_id,
+            "source_policy_ref": source_policy_ref,
+        },
+        stable_idempotency_key=stable_idempotency_key,
+        data_classification="SOURCE_MATERIAL",
+        privacy_policy_ref="privacy-policy:source-intake:v1",
+        rate_limit_policy_ref="rate-limit-policy:source-intake:v1",
+        quota_policy_ref="quota-policy:source-intake:v1",
+        execution_port=execution_port,
+    )
+    return {
+        "candidate": dict(candidate.raw_output),
+        "execution": candidate.evidence.to_dict(),
+        "source_eligibility_decided": False,
+        "asset_committed": False,
     }
 
 

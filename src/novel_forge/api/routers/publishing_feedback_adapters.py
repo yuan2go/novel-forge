@@ -10,7 +10,6 @@ from novel_forge.modules.publishing_feedback_adapters import (
     create_feedback_mutation_proposal,
     import_platform_metrics,
     parse_platform_receipt,
-    publish_platform_upload_package,
     record_platform_receipt,
     resolve_feedback_mutation_proposal,
     run_platform_adapter_gate,
@@ -103,18 +102,14 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
 
     @router.post("/product/publishing-adapters/publish")
     def publish_endpoint(request: PlatformPublishRequest) -> dict:
-        try:
-            return publish_platform_upload_package(
-                LocalStorage(app_settings.root),
-                upload_package_path=request.upload_package_path,
-                platform_config=request.platform_config,
-                environment=request.environment,
-                envelope=request.envelope or None,
-            )
-        except FileNotFoundError as exc:
-            raise HTTPException(status_code=404, detail=str(exc)) from exc
-        except Exception as exc:
-            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        del request
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "direct publishing endpoint is blocked; dispatch an Authority "
+                "Operation with publishing.release.submit"
+            ),
+        )
 
     @router.post("/product/feedback-adapters/metrics")
     def metrics_endpoint(request: PlatformMetricsImportRequest) -> dict:

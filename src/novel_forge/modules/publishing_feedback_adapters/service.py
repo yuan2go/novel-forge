@@ -1,12 +1,8 @@
 from __future__ import annotations
 
-import json
-import os
 import re
 from pathlib import Path
 from typing import Any
-from urllib import request
-from urllib.parse import urlparse
 
 from novel_forge.core.ids import make_id, utc_now
 from novel_forge.modules.change_impact import mark_downstream_assets_stale
@@ -14,6 +10,11 @@ from novel_forge.modules.common import resolve_path
 from novel_forge.modules.os_envelope import enforce_os_envelope, envelope_asset_metadata, is_production_environment
 from novel_forge.modules.review_issue import persist_issue_candidates
 from novel_forge.modules.publishing_feedback_adapters.fallbacks import record_platform_publish_failure
+from novel_forge.modules.production_execution import (
+    ExternalActionExecutionPort,
+    ExternalActionKind,
+    execute_external_action,
+)
 from novel_forge.schemas import (
     AgentTask,
     ChapterDropoffReport,
@@ -120,31 +121,6 @@ PLATFORM_UPLOAD_PROFILES = {
         "review_risk_gate": ["volume_sequence", "chapter_title", "sensitive_terms", "formatting"],
     },
 }
-
-
-class HttpPlatformClient:
-    def __init__(self, *, endpoint: str, token_env: str = "", timeout_seconds: float = 20.0):
-        self.endpoint = endpoint
-        self.token_env = token_env
-        self.timeout_seconds = timeout_seconds
-
-    def publish_upload_package(self, payload: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
-        if not self.endpoint:
-            raise ValueError("platform API endpoint is required")
-        headers = {"Content-Type": "application/json"}
-        if self.token_env:
-            token = os.environ.get(self.token_env, "")
-            if not token:
-                raise ValueError(f"platform API token env var is not set: {self.token_env}")
-            headers["Authorization"] = f"Bearer {token}"
-        body = json.dumps({"upload_package": payload, "context": _redact(context)}, ensure_ascii=False).encode("utf-8")
-        req = request.Request(self.endpoint, data=body, headers=headers, method="POST")
-        with request.urlopen(req, timeout=self.timeout_seconds) as response:
-            data = response.read().decode("utf-8")
-        parsed = json.loads(data) if data.strip() else {}
-        if not isinstance(parsed, dict):
-            raise ValueError("platform API response must be a JSON object")
-        return parsed
 
 
 def build_platform_upload_package(
@@ -467,6 +443,7 @@ def publish_platform_upload_package(
     storage: LocalStorage,
     *,
     upload_package_path: str | Path,
+    external_action_execution_port: ExternalActionExecutionPort | None = None,
     platform_client: Any | None = None,
     platform_config: dict[str, Any] | None = None,
     environment: str = "",
@@ -489,20 +466,54 @@ def publish_platform_upload_package(
         require_for_production=True,
     )
     config = platform_config or {}
-    client = platform_client or _platform_client_from_config(config)
-    if client is None:
-        raise ValueError("platform publish requires platform_client or platform_config.endpoint")
+    if platform_client is not None:
+        raise RuntimeError(
+            "direct platform clients are disabled; use an Authority-bound "
+            "ExternalActionExecutionPort"
+        )
+    if external_action_execution_port is None:
+        raise RuntimeError(
+            "platform publish requires an Authority-bound ExternalActionExecutionPort"
+        )
+    forbidden_config = SENSITIVE_KEYS.intersection(
+        str(key).lower() for key in config
+    )
+    if forbidden_config:
+        raise ValueError("platform configuration cannot contain inline credentials")
+    if any(key in config for key in ("endpoint", "token_env", "timeout_seconds")):
+        raise ValueError(
+            "platform endpoint, credentials, and timeout belong to RouteSnapshot policies"
+        )
     production_governance = _release_governance_from_upload(storage, upload, required=production)
     platform_id = str(config.get("platform_id") or upload.get("content", {}).get("platform_id") or "external")
-    context = {
-        "platform_id": platform_id,
-        "environment": env.get("environment"),
-        "trace_id": env.get("trace_id"),
-        "endpoint": _endpoint_evidence(str(config.get("endpoint") or getattr(client, "endpoint", ""))),
-        "token_env": str(config.get("token_env") or getattr(client, "token_env", "")),
-    }
+    upload_id = str(upload.get("id") or "")
+    stable_idempotency_key = (
+        f"publishing.release.submit:{platform_id}:{upload_id}"
+    )
     try:
-        response = client.publish_upload_package(upload.get("content", {}), context)
+        execution = execute_external_action(
+            capability=ExternalActionKind.PUBLISH_SUBMIT,
+            request_payload={
+                "upload_package_id": upload_id,
+                "upload_package_ref": _display_path(storage.root, upload_path),
+                "platform_id": platform_id,
+                "release_governance_ref": production_governance.get("path", ""),
+            },
+            stable_idempotency_key=stable_idempotency_key,
+            data_classification="CONFIDENTIAL_MANUSCRIPT",
+            privacy_policy_ref=str(
+                config.get("privacy_policy_ref") or "privacy-policy:publishing:v1"
+            ),
+            rate_limit_policy_ref=str(
+                config.get("rate_limit_policy_ref")
+                or "rate-limit-policy:publishing:v1"
+            ),
+            quota_policy_ref=str(
+                config.get("quota_policy_ref") or "quota-policy:publishing:v1"
+            ),
+            execution_port=external_action_execution_port,
+        )
+        response = dict(execution.raw_output)
     except Exception as exc:
         failure = record_platform_publish_failure(
             storage,
@@ -530,13 +541,13 @@ def publish_platform_upload_package(
     receipt_path = receipt["receipt_path"]
     receipt_asset = storage.read_json(resolve_path(storage.root, receipt_path))
     receipt_asset["content"]["platform_api_evidence"] = {
-        "mode": "api_adapter",
-        "client": type(client).__name__,
-        "endpoint": context["endpoint"],
-        "token_env": context["token_env"],
+        "mode": "production_execution_gateway",
         "upload_package_path": _display_path(storage.root, upload_path),
         "response_keys": sorted(str(key) for key in response.keys()) if isinstance(response, dict) else [],
         "production_governance": production_governance,
+        "execution": execution.evidence.to_dict(),
+        "auth_profile_ref": str(config.get("auth_profile_ref") or ""),
+        "credential_scope": str(config.get("credential_scope") or ""),
     }
     storage.write_json(resolve_path(storage.root, receipt_path), receipt_asset)
     status_asset = storage.read_json(resolve_path(storage.root, receipt["status_path"]))
@@ -547,6 +558,89 @@ def publish_platform_upload_package(
         "status_asset": status_asset,
         "platform_api_evidence": receipt_asset["content"]["platform_api_evidence"],
         "envelope": env,
+    }
+
+
+def query_platform_release_candidate(
+    *,
+    platform_id: str,
+    external_release_ref: str,
+    stable_idempotency_key: str,
+    execution_port: ExternalActionExecutionPort,
+) -> dict[str, Any]:
+    candidate = execute_external_action(
+        capability=ExternalActionKind.PUBLISH_QUERY,
+        request_payload={
+            "platform_id": platform_id,
+            "external_release_ref": external_release_ref,
+        },
+        stable_idempotency_key=stable_idempotency_key,
+        data_classification="PUBLISHING_METADATA",
+        privacy_policy_ref="privacy-policy:publishing:v1",
+        rate_limit_policy_ref="rate-limit-policy:publishing:v1",
+        quota_policy_ref="quota-policy:publishing:v1",
+        execution_port=execution_port,
+    )
+    return {
+        "candidate": dict(candidate.raw_output),
+        "execution": candidate.evidence.to_dict(),
+        "domain_status_committed": False,
+    }
+
+
+def withdraw_platform_release_candidate(
+    *,
+    platform_id: str,
+    external_release_ref: str,
+    reason: str,
+    stable_idempotency_key: str,
+    execution_port: ExternalActionExecutionPort,
+) -> dict[str, Any]:
+    if not reason.strip():
+        raise ValueError("platform withdrawal reason is required")
+    candidate = execute_external_action(
+        capability=ExternalActionKind.PUBLISH_WITHDRAW,
+        request_payload={
+            "platform_id": platform_id,
+            "external_release_ref": external_release_ref,
+            "reason": reason,
+        },
+        stable_idempotency_key=stable_idempotency_key,
+        data_classification="PUBLISHING_METADATA",
+        privacy_policy_ref="privacy-policy:publishing:v1",
+        rate_limit_policy_ref="rate-limit-policy:publishing:v1",
+        quota_policy_ref="quota-policy:publishing:v1",
+        execution_port=execution_port,
+    )
+    return {
+        "candidate": dict(candidate.raw_output),
+        "execution": candidate.evidence.to_dict(),
+        "withdrawal_committed": False,
+    }
+
+
+def fetch_platform_feedback_candidate(
+    *,
+    platform_id: str,
+    cursor_ref: str,
+    stable_idempotency_key: str,
+    execution_port: ExternalActionExecutionPort,
+) -> dict[str, Any]:
+    candidate = execute_external_action(
+        capability=ExternalActionKind.FEEDBACK_FETCH,
+        request_payload={"platform_id": platform_id, "cursor_ref": cursor_ref},
+        stable_idempotency_key=stable_idempotency_key,
+        data_classification="READER_FEEDBACK",
+        privacy_policy_ref="privacy-policy:reader-feedback:v1",
+        rate_limit_policy_ref="rate-limit-policy:feedback:v1",
+        quota_policy_ref="quota-policy:feedback:v1",
+        execution_port=execution_port,
+    )
+    return {
+        "candidate": dict(candidate.raw_output),
+        "execution": candidate.evidence.to_dict(),
+        "feedback_imported": False,
+        "reader_outcome_calibrated": False,
     }
 
 
@@ -1907,22 +2001,6 @@ def _dedupe(values: list[str]) -> list[str]:
             seen.add(item)
             result.append(item)
     return result
-
-
-def _platform_client_from_config(config: dict[str, Any]) -> HttpPlatformClient | None:
-    endpoint = str(config.get("endpoint") or "").strip()
-    if not endpoint:
-        return None
-    return HttpPlatformClient(
-        endpoint=endpoint,
-        token_env=str(config.get("token_env") or ""),
-        timeout_seconds=_float(config.get("timeout_seconds") or 20.0),
-    )
-
-
-def _endpoint_evidence(endpoint: str) -> dict[str, str]:
-    parsed = urlparse(endpoint)
-    return {"scheme": parsed.scheme, "host": parsed.netloc, "path": parsed.path}
 
 
 def _redact(value: Any) -> Any:
