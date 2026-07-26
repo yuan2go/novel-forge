@@ -587,6 +587,7 @@ def _classify_direct(function: _Function, call: _Call) -> _DirectClassification 
         )
     if governed_execution_projection and (
         method in _MODEL_METHODS
+        or method == "execute"
         or method
         in {
             "execute_domain_candidate",
@@ -701,8 +702,32 @@ def _function_classifications(
         direct: list[_DirectClassification] = []
         for call in function.calls:
             classification = _classify_direct(function, call)
-            if classification is not None and call.resolved in known:
-                classification = None
+            if call.resolved in known:
+                governed_call = any(
+                    name == "execution_port"
+                    or name.endswith("_execution_port")
+                    for name in call.keyword_names
+                )
+                legacy_call = any(
+                    name in {"model", "adapter", "provider_adapter"}
+                    for name in call.keyword_names
+                )
+                if governed_call and classification is not None:
+                    pass
+                elif governed_call and _method_name(call) in _MODEL_METHODS:
+                    classification = _DirectClassification(
+                            "MODEL_INFERENCE",
+                            f"PRODUCTION_EXECUTION_PORT:{call.resolved}",
+                            route_hint="PRODUCTION_EXECUTION_GATEWAY",
+                            status_hint="GATEWAY_BOUND",
+                        )
+                elif legacy_call and _method_name(call) in _MODEL_METHODS:
+                    classification = _DirectClassification(
+                        "MODEL_INFERENCE",
+                        call.resolved,
+                    )
+                elif classification is not None:
+                    classification = None
             if classification is not None:
                 normalized_path = str(function.path).replace("\\", "/").lower()
                 guarded = any(
@@ -1170,18 +1195,22 @@ def _entry(
         risks.append("indirect wrapper")
     if production and classification.side_effect_type == "LEGACY_UNKNOWN":
         risks.append("production-reachable LEGACY_UNKNOWN blocks migration completion")
-    if production and route != "PRODUCTION_EXECUTION_GATEWAY" and classification.side_effect_type not in {
+    if status == "LEGACY_BLOCKED":
+        risks.append(
+            "development/test compatibility retained; controlled execution fails closed"
+        )
+    elif production and route != "PRODUCTION_EXECUTION_GATEWAY" and classification.side_effect_type not in {
         "DATABASE_AUTHORITY",
         "DETERMINISTIC_LOCAL",
         "SCRIPTED_FIXTURE",
     }:
         risks.append("production execution bypasses the governed gateway")
-    if production and not attempt_bound and classification.side_effect_type not in {
+    if status != "LEGACY_BLOCKED" and production and not attempt_bound and classification.side_effect_type not in {
         "DATABASE_AUTHORITY",
         "DETERMINISTIC_LOCAL",
     }:
         risks.append("no Authority Attempt and fence binding detected")
-    if production and classification.side_effect_type in {
+    if status != "LEGACY_BLOCKED" and production and classification.side_effect_type in {
         "MODEL_INFERENCE",
         "LOCAL_PROCESS_REMOTE_INFERENCE",
         "AGENT_WORKSPACE_TRANSACTION",
@@ -1212,7 +1241,9 @@ def _entry(
         "target_backend": _target_backend(classification.side_effect_type),
         "migration_status": status,
         "legacy_removal_gate": (
-            "all callers gateway-bound; fixture and PostgreSQL recovery proven; architecture guard active"
+            "real-provider validation recorded; zero controlled configuration references; compatibility caller count is zero"
+            if status == "LEGACY_BLOCKED"
+            else "all callers gateway-bound; fixture and PostgreSQL recovery proven; architecture guard active"
             if production
             else "non-production path remains isolated and cannot produce production proof"
         ),
@@ -1486,11 +1517,17 @@ def build_execution_inventory(repo_root: str | Path) -> dict[str, Any]:
         item["execution_owner_id"]
         for item in entries
         if item["production_reachable"]
-        and item["side_effect_type"] == "LEGACY_UNKNOWN"
+        and (
+            item["side_effect_type"] == "LEGACY_UNKNOWN"
+            or item["migration_status"] == "DISCOVERED"
+        )
     ]
     counts = Counter(item["side_effect_type"] for item in entries)
     migration_counts = Counter(item["migration_status"] for item in entries)
     boundary_violations = scan_repository_execution_boundaries(root)
+    repository_migration_complete = not any(
+        (blocking, boundary_violations, parse_errors)
+    )
     payload: dict[str, Any] = {
         "schema_version": SCHEMA_VERSION,
         "generator_version": GENERATOR_VERSION,
@@ -1504,6 +1541,20 @@ def build_execution_inventory(repo_root: str | Path) -> dict[str, Any]:
         "parse_errors": parse_errors,
         "evidence_flags": {
             "repository_inventory_generated": True,
+            "production_execution_repository_inventory_complete": (
+                repository_migration_complete
+            ),
+            "legacy_production_execution_blocked": (
+                repository_migration_complete
+                and any(
+                    item["production_reachable"]
+                    and item["migration_status"] == "LEGACY_BLOCKED"
+                    for item in entries
+                )
+            ),
+            "repository_execution_migration_implemented": (
+                repository_migration_complete
+            ),
             "real_provider_proven": False,
             "production_verified": False,
         },
@@ -1524,7 +1575,7 @@ def _markdown(manifest: Mapping[str, Any]) -> str:
         f"- Source tree: `{manifest['source_tree_hash']}`",
         f"- Scanned Python files: {manifest['scanned_file_count']}",
         f"- Execution entries: {manifest['entry_count']}",
-        f"- Production `LEGACY_UNKNOWN` blockers: {len(manifest['blocking_owner_ids'])}",
+        f"- Production migration blockers (`LEGACY_UNKNOWN` or `DISCOVERED`): {len(manifest['blocking_owner_ids'])}",
         "- Architecture boundary violations: "
         f"{len(manifest.get('architecture_boundary_violations', []))}",
         "- `real_provider_proven=false`",

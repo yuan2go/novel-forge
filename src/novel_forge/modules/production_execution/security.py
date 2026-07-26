@@ -8,10 +8,15 @@ execution contracts so every persistence and transport boundary can reuse it.
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
+from dataclasses import asdict, dataclass
+from datetime import UTC, datetime
 from enum import Enum
+import json
+import logging
 import os
 import re
-from typing import Any
+from typing import Any, Callable
+import uuid
 
 
 _ALLOWED_CREDENTIAL_REFERENCE_KEYS = frozenset(
@@ -75,6 +80,27 @@ _SECRET_VALUE_PATTERNS = (
         re.IGNORECASE,
     ),
 )
+_LEGACY_USAGE_LOGGER = logging.getLogger(
+    "novel_forge.production_execution.legacy_usage"
+)
+
+
+@dataclass(frozen=True, slots=True)
+class LegacyUsageEvent:
+    """Structured evidence for an allowed or blocked compatibility attempt."""
+
+    schema_version: str
+    event_id: str
+    occurred_at: str
+    component: str
+    environment: str
+    decision: str
+    gateway_backed: bool
+    production_proof_eligible: bool = False
+    production_verified: bool = False
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
 
 
 def _normalized_key(value: Any) -> str:
@@ -151,19 +177,46 @@ def assert_legacy_execution_allowed(
     component: str,
     gateway_backed: bool,
     environment: str = "",
-) -> None:
+    recorder: Callable[[LegacyUsageEvent], None] | None = None,
+) -> LegacyUsageEvent:
     """Block compatibility execution before a network/process call in control mode."""
 
     normalized = execution_environment(environment)
-    if normalized in CONTROLLED_EXECUTION_ENVIRONMENTS and not gateway_backed:
+    blocked = (
+        normalized in CONTROLLED_EXECUTION_ENVIRONMENTS
+        and not gateway_backed
+    )
+    event = LegacyUsageEvent(
+        schema_version="legacy-usage-event.v1",
+        event_id=f"legacy-usage:{uuid.uuid4()}",
+        occurred_at=datetime.now(UTC).isoformat(),
+        component=component,
+        environment=normalized,
+        decision=(
+            "GATEWAY_BACKED"
+            if gateway_backed
+            else "BLOCKED_CONTROLLED"
+            if blocked
+            else "ALLOWED_DEVELOPMENT_ONLY"
+        ),
+        gateway_backed=gateway_backed,
+    )
+    if recorder is not None:
+        recorder(event)
+    _LEGACY_USAGE_LOGGER.info(
+        json.dumps(event.to_dict(), sort_keys=True, separators=(",", ":"))
+    )
+    if blocked:
         raise RuntimeError(
             f"{component} legacy execution is blocked and disabled in {normalized}; "
             "use ProductionExecutionGateway through an Authority-bound request"
         )
+    return event
 
 
 __all__ = [
     "CONTROLLED_EXECUTION_ENVIRONMENTS",
+    "LegacyUsageEvent",
     "assert_legacy_execution_allowed",
     "assert_no_inline_secrets",
     "execution_environment",

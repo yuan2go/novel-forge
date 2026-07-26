@@ -156,6 +156,7 @@ from .retrieval_execution import (
     RetrievalExecutionPort,
     execute_similarity_embedding_pair,
 )
+from .security import LegacyUsageEvent, assert_legacy_execution_allowed
 
 __all__ = [
     "AdmissionController",
@@ -214,6 +215,7 @@ __all__ = [
     "LocalTerminationOutcome",
     "LocalProcessExecutionPolicy",
     "LegacyGatewayModelAdapter",
+    "LegacyUsageEvent",
     "CandidateKind",
     "DomainExecutionCandidate",
     "DomainExecutionCommand",
@@ -239,6 +241,7 @@ __all__ = [
     "execute_similarity_embedding_pair",
     "execute_agent_workspace_candidate",
     "create_legacy_development_model_adapter",
+    "assert_legacy_execution_allowed",
     "LegacyRequestMapper",
     "LegacyResultMapper",
     "ModelProfile",

@@ -19,6 +19,8 @@ from novel_forge.modules.production_execution.process_supervisor import (
     ProcessTimeout,
 )
 from novel_forge.modules.production_execution.security import (
+    LegacyUsageEvent,
+    assert_legacy_execution_allowed,
     assert_no_inline_secrets,
 )
 
@@ -144,6 +146,30 @@ class ProductionExecutionSecurityBoundaryTests(unittest.TestCase):
             )
             with self.assertRaisesRegex(ValueError, "size limit"):
                 policy.assert_result(str(result_path))
+
+    def test_legacy_usage_event_records_allowed_and_blocked_attempts(self) -> None:
+        events: list[LegacyUsageEvent] = []
+        allowed = assert_legacy_execution_allowed(
+            component="fixture legacy adapter",
+            gateway_backed=False,
+            environment="development",
+            recorder=events.append,
+        )
+        with self.assertRaisesRegex(RuntimeError, "blocked and disabled"):
+            assert_legacy_execution_allowed(
+                component="fixture legacy adapter",
+                gateway_backed=False,
+                environment="production",
+                recorder=events.append,
+            )
+
+        self.assertEqual(
+            [event.decision for event in events],
+            ["ALLOWED_DEVELOPMENT_ONLY", "BLOCKED_CONTROLLED"],
+        )
+        self.assertEqual(allowed.schema_version, "legacy-usage-event.v1")
+        self.assertFalse(allowed.production_proof_eligible)
+        self.assertFalse(allowed.production_verified)
 
 
 if __name__ == "__main__":
