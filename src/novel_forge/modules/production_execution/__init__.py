@@ -128,6 +128,13 @@ from .judge_execution import (
     JudgeKind,
     capability_for_judge,
 )
+from .retrieval_execution import (
+    EmbeddingCandidate,
+    EmbeddingExecutionEvidence,
+    RerankCandidate,
+    RerankExecutionEvidence,
+    RetrievalExecutionPort,
+)
 
 __all__ = [
     "AdmissionController",
@@ -192,6 +199,11 @@ __all__ = [
     "JudgeExecutionEvidence",
     "JudgeKind",
     "capability_for_judge",
+    "EmbeddingCandidate",
+    "EmbeddingExecutionEvidence",
+    "RerankCandidate",
+    "RerankExecutionEvidence",
+    "RetrievalExecutionPort",
     "LegacyRequestMapper",
     "LegacyResultMapper",
     "ModelProfile",

@@ -6,12 +6,6 @@ from pathlib import Path
 from typing import Any
 
 from novel_forge.core.ids import utc_now
-from novel_forge.model_adapters import (
-    GuardedModelAdapter,
-    ModelOutputValidationError,
-    model_from_env,
-    validate_model_output,
-)
 from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.modules.common import resolve_path, run_metadata
 from novel_forge.modules.context_builder import build_flow_context_bundle, knowledge_context_contract_from_result, knowledge_context_contract_metadata
@@ -19,6 +13,12 @@ from novel_forge.modules.creative_assets import create_creative_asset
 from novel_forge.modules.handoff.service import create_analysis_handoff as _create_analysis_handoff
 from novel_forge.modules.os_envelope import is_production_environment
 from novel_forge.modules.production_context import project_scope_from_asset
+from novel_forge.modules.production_execution import (
+    CandidateKind,
+    DomainExecutionPort,
+    execute_domain_candidate,
+    execution_model_name,
+)
 from novel_forge.schemas import (
     AnalysisConversionReport,
     BaseAsset,
@@ -69,6 +69,8 @@ def run_analysis(
     source_path: str,
     analysis_type: str,
     *,
+    model: object | None = None,
+    execution_port: DomainExecutionPort | None = None,
     workspace_path: str | None = None,
     environment: str = "",
     os_envelope: dict[str, Any] | None = None,
@@ -90,7 +92,9 @@ def run_analysis(
     )
     knowledge_contract = knowledge_context_contract_from_result(context)
     metrics = _source_metrics(source_asset)
-    model = model_from_env("analyze")
+    model_name = execution_model_name(
+        execution_port, model, legacy_model_role="analyze"
+    )
     with AgentExecutionContext(
         storage,
         agent_key="analysis",
@@ -98,16 +102,24 @@ def run_analysis(
         input_assets=[source_path_obj],
         output_types=[report_type],
         workspace_path=str(project.get("workspace_path", "")),
-        model_provider=getattr(model, "name", "local"),
-        model_name=getattr(model, "name", "local"),
+        model_provider=model_name,
+        model_name=model_name,
         prompt_version=f"{report_type}-rubric-v2",
         token_budget=4000,
         sla_seconds=900,
         knowledge_context_contract=knowledge_contract,
     ) as run:
         run.guard("read_asset")
-        run.guard("call_model_adapter")
-        semantic_depth = _semantic_depth_assessment(storage, run.path, report_type, source_asset, metrics, model)
+        semantic_depth = _semantic_depth_assessment(
+            storage,
+            run.path,
+            report_type,
+            source_asset,
+            metrics,
+            model,
+            execution_port=execution_port,
+            environment=environment,
+        )
         content = _report_content(report_type, source_asset, metrics)
         content.update(semantic_depth)
         content["knowledge_context_contract"] = knowledge_contract
@@ -497,6 +509,9 @@ def _semantic_depth_assessment(
     asset: BaseAsset,
     metrics: dict[str, Any],
     model: Any,
+    *,
+    execution_port: DomainExecutionPort | None,
+    environment: str,
 ) -> dict[str, Any]:
     rubric = _mode_rubric(report_type)
     source_text = _asset_text(asset)
@@ -507,10 +522,12 @@ def _semantic_depth_assessment(
     provider_review: dict[str, Any]
     fallback_reason = ""
     try:
-        guarded = GuardedModelAdapter(model, storage, agent_run_path)
-        raw = guarded.analyze(
-            prompt,
-            {
+        candidate = execute_domain_candidate(
+            capability="mkaos.knowledge.extract",
+            operation="analyze",
+            candidate_kind=CandidateKind.RAW_STRUCTURED_OUTPUT,
+            prompt=prompt,
+            context={
                 "analysis_type": report_type,
                 "runtime_operation": "analysis_run",
                 "rubric": rubric,
@@ -518,17 +535,36 @@ def _semantic_depth_assessment(
                 "source_excerpt_for_analysis_only": source_text[:4000],
                 "copyright_boundary": "abstract structures only; no source-specific prose, names, scenes, or event sequence may be reused",
             },
+            execution_port=execution_port,
+            legacy_model=model,
+            legacy_model_role="analyze",
+            environment=environment,
+            storage=storage,
+            agent_run_path=agent_run_path,
         )
-        validated = validate_model_output("analyze", raw)
+        validated = dict(candidate.raw_output)
         provider_review = {
-            "provider": str(raw.get("provider") or raw.get("model") or getattr(model, "name", "local")),
-            "model": str(raw.get("model") or getattr(model, "name", "local")),
-            "status": "provider_validated",
+            "provider": str(
+                validated.get("provider")
+                or candidate.evidence.provider_id
+                or "production-execution"
+            ),
+            "model": str(
+                validated.get("model") or candidate.evidence.model_id
+            ),
+            "status": "execution_candidate_validated",
             "summary": validated.get("summary", ""),
             "patterns": validated.get("patterns", []),
             "word_count": validated.get("word_count", 0),
+            "production_execution": candidate.evidence.to_dict(),
         }
-    except (ModelOutputValidationError, RuntimeError, ValueError) as exc:
+    except (RuntimeError, ValueError) as exc:
+        if environment.strip().lower() in {
+            "production",
+            "validation",
+            "provider-validation",
+        }:
+            raise
         fallback_reason = str(exc)
         provider_review = {
             "provider": "local-rubric",

@@ -11,6 +11,7 @@ from novel_forge.core.constants import DATA_DIRS
 from novel_forge.core.ids import utc_now
 from novel_forge.infrastructure.settings import IndustrialSettings
 from novel_forge.model_adapters.embeddings import EmbeddingAdapter, embedding_adapter_from_env
+from novel_forge.modules.production_execution import RetrievalExecutionPort
 from novel_forge.storage.local import LocalStorage
 
 QDRANT_INDEX_VERSION = "0.2.0"
@@ -27,13 +28,21 @@ def build_qdrant_index(
     resume: bool = True,
     force_reembed: bool = False,
     max_retries: int = 3,
+    execution_port: RetrievalExecutionPort | None = None,
+    environment: str = "development",
 ) -> dict[str, Any]:
-    adapter = adapter or embedding_adapter_from_env(require_semantic=True)
-    _require_semantic_embedding(adapter)
+    _require_controlled_retrieval_port(environment, execution_port)
+    if execution_port is None:
+        adapter = adapter or embedding_adapter_from_env(require_semantic=True)
+        _require_semantic_embedding(adapter)
     if batch_size < 1:
         raise ValueError("batch_size must be greater than zero")
     client, models = _qdrant_client(settings)
-    embedding = _embedding_metadata(adapter)
+    embedding = (
+        _retrieval_execution_metadata(execution_port)
+        if execution_port is not None
+        else _embedding_metadata(adapter)
+    )
     collection = _ensure_collection(
         client,
         models,
@@ -68,6 +77,7 @@ def build_qdrant_index(
                 embedding,
                 cache,
                 max_retries=max_retries,
+                execution_port=execution_port,
             )
             indexed += batch_indexed
             embedded += batch_embedded
@@ -83,6 +93,7 @@ def build_qdrant_index(
             embedding,
             cache,
             max_retries=max_retries,
+            execution_port=execution_port,
         )
         indexed += batch_indexed
         embedded += batch_embedded
@@ -114,15 +125,33 @@ def qdrant_search_assets(
     workspace_path: str | None = None,
     limit: int = 50,
     adapter: EmbeddingAdapter | None = None,
+    execution_port: RetrievalExecutionPort | None = None,
+    environment: str = "development",
 ) -> list[dict[str, Any]]:
     if not query.strip():
         raise ValueError("query must not be empty")
     if limit < 1:
         raise ValueError("limit must be greater than zero")
-    adapter = adapter or embedding_adapter_from_env(require_semantic=True)
-    _require_semantic_embedding(adapter)
+    _require_controlled_retrieval_port(environment, execution_port)
+    if execution_port is None:
+        adapter = adapter or embedding_adapter_from_env(require_semantic=True)
+        _require_semantic_embedding(adapter)
     client, models = _qdrant_client(settings)
-    query_vector = adapter.embed_text(query)
+    query_vector = (
+        list(
+            execution_port.embed_batch(
+                [query],
+                evidence_context={
+                    "capability": "retrieval.embed",
+                    "index_version": QDRANT_INDEX_VERSION,
+                    "source_eligibility": "NOT_SOURCE_DERIVED",
+                    "query": True,
+                },
+            ).vectors[0]
+        )
+        if execution_port is not None
+        else adapter.embed_text(query)  # type: ignore[union-attr]
+    )
     query_filter = _build_filter(models, category, asset_type, tags or [], project_id=project_id, workspace_path=workspace_path)
     hits = _search(client, settings.qdrant_collection, query_vector, query_filter, limit)
     results: list[dict[str, Any]] = []
@@ -261,16 +290,30 @@ def _index_qdrant_batch(
     client: Any,
     models: Any,
     collection: str,
-    adapter: EmbeddingAdapter,
+    adapter: EmbeddingAdapter | None,
     records: list[dict[str, Any]],
     embedding: dict[str, Any],
     cache: dict[str, Any],
     max_retries: int,
+    execution_port: RetrievalExecutionPort | None,
 ) -> tuple[int, int]:
     missing = [record for record in records if "vector" not in record]
     embedded = 0
     if missing:
-        vectors = _embed_batch_with_retries(adapter, [record["search_text"] for record in missing], max_retries=max_retries)
+        vectors = _embed_batch_with_retries(
+            adapter,
+            [record["search_text"] for record in missing],
+            max_retries=max_retries,
+            execution_port=execution_port,
+            evidence_context={
+                "capability": "retrieval.embed",
+                "index_version": QDRANT_INDEX_VERSION,
+                "source_eligibility": "PRODUCTION_ELIGIBLE",
+                "source_chunk_hashes": [
+                    record["fingerprint"]["sha256"] for record in missing
+                ],
+            },
+        )
         embedded = len(vectors)
         for record, vector in zip(missing, vectors):
             record["vector"] = vector
@@ -293,7 +336,26 @@ def _index_qdrant_batch(
     return len(points), embedded
 
 
-def _embed_batch_with_retries(adapter: EmbeddingAdapter, texts: list[str], max_retries: int) -> list[list[float]]:
+def _embed_batch_with_retries(
+    adapter: EmbeddingAdapter | None,
+    texts: list[str],
+    max_retries: int,
+    *,
+    execution_port: RetrievalExecutionPort | None = None,
+    evidence_context: dict[str, Any] | None = None,
+) -> list[list[float]]:
+    if execution_port is not None:
+        candidate = execution_port.embed_batch(
+            texts,
+            evidence_context=evidence_context or {},
+        )
+        if candidate.evidence.partial_failure or candidate.evidence.dirty_index:
+            raise RuntimeError(
+                "embedding execution returned partial or dirty-index evidence"
+            )
+        return [list(vector) for vector in candidate.vectors]
+    if adapter is None:
+        raise RuntimeError("embedding adapter is required for legacy development execution")
     sleep_seconds = float(os.environ.get("NOVEL_FORGE_EMBEDDING_BATCH_SLEEP_SECONDS", "0"))
     last_error: Exception | None = None
     for attempt in range(max(1, max_retries)):
@@ -308,6 +370,20 @@ def _embed_batch_with_retries(adapter: EmbeddingAdapter, texts: list[str], max_r
                 break
             time.sleep(min(2**attempt, 8))
     raise RuntimeError(f"embedding batch failed after {max_retries} attempts: {last_error}") from last_error
+
+
+def _require_controlled_retrieval_port(
+    environment: str,
+    execution_port: RetrievalExecutionPort | None,
+) -> None:
+    if (
+        environment.strip().lower()
+        in {"production", "validation", "provider-validation"}
+        and execution_port is None
+    ):
+        raise RuntimeError(
+            "controlled remote embedding requires RetrievalExecutionPort"
+        )
 
 
 def _upsert_with_retries(client: Any, collection: str, points: list[Any], max_retries: int) -> None:
@@ -418,6 +494,19 @@ def _embedding_metadata(adapter: EmbeddingAdapter) -> dict[str, Any]:
         "dimensions": int(health.get("dimensions", adapter.dimensions)),
         "semantic_model": bool(health.get("semantic_model")),
         "external_api": bool(health.get("external_api")),
+    }
+
+
+def _retrieval_execution_metadata(
+    execution_port: RetrievalExecutionPort,
+) -> dict[str, Any]:
+    return {
+        "model": execution_port.embedding_model,
+        "provider": "production-execution",
+        "dimensions": execution_port.embedding_dimension,
+        "semantic_model": True,
+        "external_api": True,
+        "authority_bound": True,
     }
 
 

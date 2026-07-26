@@ -5,8 +5,10 @@ import json
 import os
 from typing import Any
 
-from novel_forge.model_adapters.mock import MockModelAdapter
-from novel_forge.model_adapters.selection import model_from_env
+from novel_forge.modules.production_execution import (
+    CandidateKind,
+    execute_domain_candidate,
+)
 
 
 def run_provider(payload: dict[str, Any], prompt: dict[str, Any]) -> dict[str, Any]:
@@ -41,7 +43,6 @@ def run_provider(payload: dict[str, Any], prompt: dict[str, Any]) -> dict[str, A
                 "provider": provider,
             },
         }
-    adapter = MockModelAdapter() if mock_route else model_from_env("analyze", env={**os.environ, "NOVEL_FORGE_ANALYZE_PROVIDER": provider})
     input_text = _safe_provider_input(payload)
     context = {
         "prompt_id": prompt.get("prompt_id", ""),
@@ -51,16 +52,36 @@ def run_provider(payload: dict[str, Any], prompt: dict[str, Any]) -> dict[str, A
         "evidence_refs": payload.get("evidence_refs", []),
         "runtime_policy": payload.get("runtime_policy", {}),
     }
-    result = adapter.analyze(input_text, context)
+    execution_port = payload.get("execution_port")
+    extraction_kind = str(payload.get("extraction_kind") or "knowledge").lower()
+    capability = {
+        "knowledge": "mkaos.knowledge.extract",
+        "rule": "mkaos.rule.extract",
+        "template": "mkaos.template.extract",
+    }.get(extraction_kind, "mkaos.knowledge.extract")
+    candidate = execute_domain_candidate(
+        capability=capability,
+        operation="analyze",
+        candidate_kind=CandidateKind.RAW_STRUCTURED_OUTPUT,
+        prompt=input_text or "Extract abstract knowledge candidates.",
+        context=context,
+        execution_port=execution_port,
+        legacy_model_role="analyze",
+        legacy_provider="mock" if mock_route else provider,
+        legacy_model_name=str(payload.get("model_name") or ""),
+        environment=str(payload.get("environment") or "development"),
+    )
+    result = dict(candidate.raw_output)
     output_hash = hashlib.sha256(json.dumps(result, ensure_ascii=False, sort_keys=True, default=str).encode("utf-8")).hexdigest()
     return {
         "provider_mode": provider_mode or provider or "mock",
-        "model": str(result.get("model") or getattr(adapter, "name", "")),
+        "model": str(result.get("model") or candidate.evidence.model_id),
         "output": result,
         "provider_output_hash": output_hash,
         "warnings": [],
         "provider_approval_evidence": approval_evidence,
         "provider_runtime_gate": {"status": "passed", "blocking": False, "provider_mode": provider_mode, "provider": provider},
+        "production_execution": candidate.evidence.to_dict(),
     }
 
 

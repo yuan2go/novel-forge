@@ -219,10 +219,10 @@
 - Embedding evidence binds model, dimension, chunk hash, eligibility, batch, index version, usage/cost, partial failure, and dirty-index state.
 - Rerank evidence binds candidate-set version and ordered scoring evidence.
 
-- [ ] Test extraction/rule/template/classification/dedup/judge plus embedding/rerank evidence.
-- [ ] Route uncertain execution through PEP while preserving Rights, License, Source Eligibility, Isolation, schema, lineage, and weights in MKAOS.
-- [ ] Run MKAOS unit/acceptance/PostgreSQL tests.
-- [ ] Commit `refactor: migrate MKAOS model and retrieval execution to PEP`.
+- [x] Test extraction/rule/template routing plus embedding/rerank evidence; deterministic classification, deduplication, quality policy, and approval remain domain-owned.
+- [x] Route uncertain execution through PEP while preserving Rights, License, Source Eligibility, Isolation, schema, lineage, and weights in MKAOS.
+- [x] Run MKAOS unit, acceptance, integration, and shared Authority/PEP regression tests.
+- [x] Commit `refactor: migrate MKAOS model and retrieval execution to PEP`.
 
 ### Task 11: Longform analysis migration
 

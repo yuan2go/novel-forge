@@ -77,6 +77,12 @@ has not started and `real_provider_proven`, `longform_proven`, and
 - 新增 `mkaos_lineage`：LocalStorage 本地图谱血缘索引，支持 source -> knowledge -> pack -> context -> draft -> review issue -> feedback -> weight governance 的路径查询、影响分析、反馈归因和调权 dry-run。
 - 新增 MKAOS gate coverage、lineage diff/export 和显式 weight governance apply：历史非 ContextBuilder 入口可被 coverage report 标记，LocalStorage lineage 支持安全 diff/export/semantic ranking，权重写回必须显式 `apply_policy`。
 - Editor-in-Chief Console 的 governance loop 已增加 MKAOS Gate Summary，可显示 latest gate status、blocking issue count、weak knowledge card、leakage risk、lineage coverage 和 recommendation。
+
+2026-07-26 Production Execution WP-10 更新：
+
+- MKAOS 的模型分析、知识/规则/模板抽取已改为通过统一执行端口返回候选；Rights、Source Eligibility、Source Isolation、Schema、Lineage、Review、Approval、Weight Governance 仍归 MKAOS。
+- 受控 Qdrant 远程 Embedding 必须通过 Retrieval Execution Port，证据冻结模型、维度、源块 Hash、批次、索引版本、Usage/Cost 与 partial/dirty 状态；Rerank 冻结候选集版本和排序证据。
+- 本轮仅完成 Fixture/本地集成证明，未执行真实 Embedding、Rerank 或付费 Provider 请求。
 - Web Admin 新增 `/mkaos/model-extraction/*`、`/mkaos/production-gate/*`、`/mkaos/knowledge-graph`、`/mkaos/lineage`、`/mkaos/impact`、`/mkaos/feedback-attribution` first-slice 页面。
 
 最终验证：

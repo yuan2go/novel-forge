@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import hashlib
-import json
 from pathlib import Path
 from typing import Any
 
@@ -20,7 +19,7 @@ from novel_forge.storage.local import LocalStorage
 
 from .candidate_validator import validate_candidate_payload
 from .confidence_scoring import score_extraction_candidate
-from .extraction_prompt_registry import create_prompt_version, ensure_default_prompt_versions, list_prompt_versions
+from .extraction_prompt_registry import create_prompt_version, ensure_default_prompt_versions
 from .provider_output_sanitizer import sanitize_provider_output
 from .provider_runner import run_provider
 
@@ -355,6 +354,9 @@ def _write_provider_evidence(storage: LocalStorage, project_id: str, provider: d
         "source_isolation": _source_isolation(),
         "provider_approval_evidence": provider.get("provider_approval_evidence", {}) if isinstance(provider.get("provider_approval_evidence", {}), dict) else {},
         "provider_runtime_gate": provider.get("provider_runtime_gate", {}) if isinstance(provider.get("provider_runtime_gate", {}), dict) else {},
+        "production_execution": provider.get("production_execution", {})
+        if isinstance(provider.get("production_execution", {}), dict)
+        else {},
         "warnings": provider.get("warnings", []) if isinstance(provider.get("warnings"), list) else [],
         "input_evidence": {
             "source_excerpt_hash": str(payload.get("source_excerpt_hash") or (payload.get("runtime_policy", {}) if isinstance(payload.get("runtime_policy"), dict) else {}).get("source_excerpt_hash") or ""),

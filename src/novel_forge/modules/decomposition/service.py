@@ -2,11 +2,16 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from novel_forge.model_adapters import GuardedModelAdapter, ModelAdapter, model_from_env, validate_model_output
 from novel_forge.modules.agent_runs import AgentExecutionContext
 from novel_forge.modules.common import read_previous
 from novel_forge.modules.context_builder import build_flow_context_bundle, knowledge_context_contract_from_result, knowledge_context_contract_metadata
 from novel_forge.modules.production_context import filter_project_safe_references, project_scope_from_asset
+from novel_forge.modules.production_execution import (
+    CandidateKind,
+    DomainExecutionPort,
+    execute_domain_candidate,
+    execution_model_name,
+)
 from novel_forge.schemas import DecompositionReport
 from novel_forge.storage.local import LocalStorage
 
@@ -14,12 +19,15 @@ from novel_forge.storage.local import LocalStorage
 def decompose(
     storage: LocalStorage,
     input_path: str | None = None,
-    model: ModelAdapter | None = None,
+    model: object | None = None,
     *,
+    execution_port: DomainExecutionPort | None = None,
     environment: str = "",
     os_envelope: dict[str, object] | None = None,
 ) -> Path:
-    model = model or model_from_env("decompose")
+    model_name = execution_model_name(
+        execution_port, model, legacy_model_role="decompose"
+    )
     cleaned = read_previous(storage, "cleaned", input_path)
     cleaned_path = input_path or str(storage.root / "data" / "cleaned" / f"{cleaned.id}.json")
     project = project_scope_from_asset(storage, cleaned, input_path=cleaned_path)
@@ -42,8 +50,8 @@ def decompose(
         operation="decompose",
         input_assets=[cleaned_path],
         output_types=["decomposition_report"],
-        model_provider=getattr(model, "name", "local"),
-        model_name=getattr(model, "name", "local"),
+        model_provider=model_name,
+        model_name=model_name,
         prompt_version="prompt-v1",
         token_budget=2500,
         sla_seconds=900,
@@ -51,8 +59,27 @@ def decompose(
         knowledge_context_contract=knowledge_contract,
     ) as agent_run:
         agent_run.guard("read_asset")
-        guarded_model = GuardedModelAdapter(model, storage, agent_run.path)
-        analysis = validate_model_output("analyze", guarded_model.analyze(text, {"source_asset_id": cleaned.id}))
+        candidate = execute_domain_candidate(
+            capability="mkaos.knowledge.extract",
+            operation="analyze",
+            candidate_kind=CandidateKind.RAW_STRUCTURED_OUTPUT,
+            prompt=text,
+            context={
+                "source_asset_id": cleaned.id,
+                "source_eligibility": cleaned.metadata.get(
+                    "source_eligibility", "UNKNOWN"
+                ),
+                "source_isolation": "ABSTRACT_ASSETS_ONLY",
+            },
+            execution_port=execution_port,
+            legacy_model=model,
+            legacy_model_role="decompose",
+            environment=environment,
+            storage=storage,
+            agent_run_path=agent_run.path,
+        )
+        analysis = dict(candidate.raw_output)
+        model_name = candidate.evidence.model_id or model_name
         agent_run.guard("write_decomposition_report", "decomposition_report")
         asset = DecompositionReport(
             title=f"{cleaned.title} decomposition",
@@ -72,9 +99,10 @@ def decompose(
                 "knowledge_context_contract": knowledge_contract,
                 "agent_run_path": agent_run.path,
                 "model_output": analysis,
+                "production_execution": candidate.evidence.to_dict(),
             },
             metadata={
-                "model": model.name,
+                "model": model_name,
                 "agent_run_path": agent_run.path,
                 **knowledge_context_contract_metadata(knowledge_contract),
                 "project_id": project.get("project_id", ""),

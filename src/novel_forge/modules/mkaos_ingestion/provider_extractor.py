@@ -6,8 +6,10 @@ import os
 import re
 from typing import Any
 
-from novel_forge.model_adapters.mock import MockModelAdapter
-from novel_forge.model_adapters.selection import model_from_env
+from novel_forge.modules.production_execution import (
+    CandidateKind,
+    execute_domain_candidate,
+)
 
 
 FORBIDDEN_PROVIDER_FIELDS = {"raw_text", "clean_text", "source_text", "target_text", "quote", "quotation", "excerpt"}
@@ -23,7 +25,6 @@ def provider_extract_candidates(source_type: str, payload: dict[str, Any], deter
     if not provider_extraction_enabled(payload):
         return deterministic_candidates
     text = str(payload.get("text") or payload.get("clean_text") or payload.get("summary") or "")
-    adapter = _adapter(payload)
     context = {
         "task": "mkaos_creative_knowledge_extraction",
         "source_type": source_type,
@@ -31,7 +32,34 @@ def provider_extract_candidates(source_type: str, payload: dict[str, Any], deter
         "forbidden_fields": sorted(FORBIDDEN_PROVIDER_FIELDS),
         "evidence_refs": [str(item) for item in payload.get("evidence_refs") or [] if str(item).strip()],
     }
-    result = adapter.analyze(text, context)
+    provider = str(
+        payload.get("provider")
+        or payload.get("model_provider")
+        or os.environ.get("NOVEL_FORGE_MKAOS_EXTRACTION_PROVIDER", "")
+    ).strip().lower()
+    mock_route = provider in {"", "mock", "local", "offline"}
+    extraction_kind = str(payload.get("extraction_kind") or "knowledge").lower()
+    capability = {
+        "knowledge": "mkaos.knowledge.extract",
+        "rule": "mkaos.rule.extract",
+        "template": "mkaos.template.extract",
+    }.get(extraction_kind, "mkaos.knowledge.extract")
+    candidate = execute_domain_candidate(
+        capability=capability,
+        operation="analyze",
+        candidate_kind=CandidateKind.RAW_STRUCTURED_OUTPUT,
+        prompt=text or "Extract abstract creative mechanisms.",
+        context=context,
+        execution_port=payload.get("execution_port"),
+        legacy_model_role="analyze",
+        legacy_provider="mock" if mock_route else provider,
+        legacy_model_name=str(payload.get("model_name") or ""),
+        environment=str(payload.get("environment") or "development"),
+    )
+    result = {
+        **dict(candidate.raw_output),
+        "production_execution": candidate.evidence.to_dict(),
+    }
     parsed = _parse_provider_candidates(result)
     base = deterministic_candidates or []
     if not parsed:
@@ -42,19 +70,6 @@ def provider_extract_candidates(source_type: str, payload: dict[str, Any], deter
         seed.update(_sanitize_provider_candidate(candidate))
         merged.append(_merge_provider_metadata(seed, result, mode=_provider_mode(payload), parsed_count=len(parsed)))
     return merged
-
-
-def _adapter(payload: dict[str, Any]) -> Any:
-    mode = str(payload.get("provider_mode") or "").strip().lower()
-    provider = str(payload.get("provider") or payload.get("model_provider") or os.environ.get("NOVEL_FORGE_MKAOS_EXTRACTION_PROVIDER", "")).strip().lower()
-    if mode in {"", "mock", "local", "offline"} and not provider:
-        return MockModelAdapter()
-    if provider in {"", "mock", "local", "offline"}:
-        return MockModelAdapter()
-    env = {**os.environ, "NOVEL_FORGE_ANALYZE_PROVIDER": provider}
-    if payload.get("model_name"):
-        env["NOVEL_FORGE_MODEL_NAME"] = str(payload.get("model_name"))
-    return model_from_env("analyze", env=env)
 
 
 def _provider_mode(payload: dict[str, Any]) -> str:

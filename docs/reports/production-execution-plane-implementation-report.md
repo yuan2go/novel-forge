@@ -61,6 +61,24 @@ Judge evidence contract covers all requested judge families and rejects uncalibr
 probability semantics. Mock external-judge fixtures are now correctly recorded as
 fixture model judgment rather than external Provider proof.
 
+## 2026-07-26 WP-10 — MKAOS And Retrieval
+
+MKAOS analysis, decomposition, knowledge/rule/template extraction, and provider
+extraction now request schema-bound candidates through the domain execution port.
+Rights, source eligibility, source isolation, sanitization, confidence scoring,
+lineage, review, approval, and weight governance remain in MKAOS.
+
+The retrieval contract freezes embedding model/dimension, source chunk hashes,
+eligibility, batch identity, index version, usage/cost references, partial-failure
+state, and dirty-index state. Rerank evidence freezes the candidate-set version and
+ordered scores. Controlled Qdrant indexing/search requires a retrieval execution port
+and does not construct or retry a direct remote embedding adapter. Development-only
+adapter compatibility remains outside controlled routes.
+
+Verification: 156 MKAOS unit tests, 2 MKAOS acceptance tests, 11 MKAOS integration
+tests, and focused retrieval/fixture tests passed. No embedding Provider, paid model,
+or remote retrieval request was made.
+
 ## Gate-00 — Pre-Migration Real Provider Chapter Baseline
 
 ### Verdict

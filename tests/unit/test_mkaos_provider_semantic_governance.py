@@ -1,6 +1,35 @@
 from tests.unit.mkaos_p1_helpers import MkaosP1TestCase
 from novel_forge.modules import mkaos
 from novel_forge.modules.mkaos_model_extraction import create_model_extraction_job, run_model_extraction_job
+from novel_forge.modules.production_execution import (
+    DomainExecutionCandidate,
+    DomainExecutionEvidence,
+)
+
+
+class _MkaosFixtureExecutionPort:
+    def execute(self, command):
+        return DomainExecutionCandidate(
+            command.candidate_kind,
+            {"candidates": [], "model": "mkaos-fixture-v1"},
+            DomainExecutionEvidence(
+                execution_id="mkaos-fixture-execution",
+                operation_id="mkaos-fixture-operation",
+                attempt_id="mkaos-fixture-attempt",
+                fencing_token=1,
+                capability=command.capability,
+                backend_id="scripted-fixture",
+                route_snapshot_id="mkaos-fixture-route",
+                input_manifest_ref="mkaos-fixture-input",
+                output_manifest_ref="mkaos-fixture-output",
+                validation_manifest_ref="mkaos-fixture-validation",
+                usage_receipt_ref="mkaos-fixture-usage",
+                cost_receipt_ref="mkaos-fixture-cost",
+                fixture_protocol_only=True,
+                real_model_call=False,
+                production_verified=False,
+            ),
+        )
 
 
 class MkaosProviderSemanticGovernanceTests(MkaosP1TestCase):
@@ -69,6 +98,7 @@ class MkaosProviderSemanticGovernanceTests(MkaosP1TestCase):
                 "environment": "production",
                 "provider_mode": "mock",
                 "allow_mock_provider_fixture": True,
+                "execution_port": _MkaosFixtureExecutionPort(),
                 "input_summary": "制度压力应抽象为行动代价。",
                 "evidence_refs": ["fixture-evidence"],
             },
@@ -78,6 +108,9 @@ class MkaosProviderSemanticGovernanceTests(MkaosP1TestCase):
         evidence = result["provider_evidence"]["asset"]
         self.assertEqual(evidence["content"]["provider_runtime_gate"]["status"], "passed")
         self.assertTrue(evidence["content"]["provider_approval_evidence"]["mock_fixture_allowed"])
+        self.assertTrue(evidence["content"]["production_execution"]["fixture_protocol_only"])
+        self.assertFalse(evidence["content"]["production_execution"]["real_model_call"])
+        self.assertFalse(evidence["content"]["production_execution"]["production_verified"])
 
     def test_provider_e2e_probe_accepts_mock_opt_in_without_network(self):
         seeded = self.seed_knowledge_system()
