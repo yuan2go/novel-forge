@@ -1,6 +1,6 @@
 # Project Current State
 
-Updated: 2026-07-22
+Updated: 2026-07-26
 Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`, source commit `12f3ff7`
 Latest execution-plane source commit: `4aecfa1`
 
@@ -9,6 +9,32 @@ Autonomous Novel OS is the product target: a local-first operating system for lo
 The current code/runtime baseline is Novel Forge v6. The repository/package/CLI name remains `novel-forge`; do not rename code paths without a dedicated migration.
 
 Current priority: v1 single-book production closure before broader multi-book, SaaS, or platform automation.
+
+## 2026-07-26 Chapter Authority Gateway Closure
+
+The existing Chapter Saga is unchanged, but all ten uncertain Chapter stages now
+compose only through `ProductionExecutionGatewayExternalEffectAdapter`:
+draft, review, revision, rereview, Canon extraction, and the five independent
+Quality groups. A PostgreSQL integration slice proves ten Authority Attempts and
+leases, ten ExternalEffects, ten budget reservations, ten external receipts, ten
+RouteSnapshots, ten InputManifests, ten Prompt/Skill bundles, ten normalized outputs
+and ValidationManifests, ten execution CommitManifests, and ten model-call/cost
+ledgers. The same slice reconstructs an execution result from the Authority-backed
+recovery projection after the worker-local session is destroyed.
+
+`ChapterModelExternalEffectAdapter` remains only as an explicit test/development
+compatibility adapter. It is absent from the production composition root and now
+fails closed before an adapter call in `validation`, `provider-validation`, and
+`production`. Callback duplicate/conflict, cancel/late-result, UNKNOWN reconciliation,
+and restart behavior use the shared qualified Backend contract fixtures; no Chapter
+Saga-specific execution state machine was added.
+
+```text
+chapter_authority_gateway_fixture_integrated=true
+single_chapter_real_provider_proven=false
+real_provider_proven=false
+production_verified=false
+```
 
 ## 2026-07-22 Next Authority Implementation Baseline
 

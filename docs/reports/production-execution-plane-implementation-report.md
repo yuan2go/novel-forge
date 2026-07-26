@@ -1,13 +1,42 @@
 # Production Execution Plane Implementation Report
 
-Updated: 2026-07-22  
+Updated: 2026-07-26
 Branch: `feat/v7-content-intelligence-and-longform-proof`
 
 ## Scope
 
-This is the cumulative evidence report for Gate-00 and WP-01 through WP-04. A row is
+This is the cumulative evidence report for the production-execution migration. A row is
 updated only from code, tests, migrations, or a real execution receipt. Design
 documents and fixture output are not production evidence.
+
+## 2026-07-26 WP-07 — Chapter Authority Gateway Closure
+
+The production dependency builder routes all ten Chapter model stages through the
+shared Gateway. The legacy Chapter model adapter is compatibility-only, is not
+composed by production dependencies, and fails closed in controlled environments
+before calling its wrapped adapter.
+
+The PostgreSQL Chapter fixture proves, for each of the ten stages:
+
+- existing Authority Attempt, lease, and fencing ownership;
+- Authority ExternalEffect, dispatch, receipt, and budget reservation;
+- immutable RouteSnapshot, InputManifest, PromptBundle, and SkillBundle;
+- normalized output, OutputManifest, ValidationManifest, usage receipt, and cost
+  receipt;
+- execution CommitManifest plus model-call and cost-ledger Authority assets;
+- recovery of the completed request/handle/result from Authority AssetVersion after
+  worker-local state loss.
+
+Callback replay/conflict, cancel/late callback, Provider UNKNOWN, and process late
+result behavior remain shared Backend conformance fixtures rather than a second
+Chapter lifecycle implementation. No Provider request or paid call was made.
+
+```text
+chapter_authority_gateway_fixture_integrated=true
+single_chapter_real_provider_proven=false
+real_provider_proven=false
+production_verified=false
+```
 
 ## Gate-00 — Pre-Migration Real Provider Chapter Baseline
 

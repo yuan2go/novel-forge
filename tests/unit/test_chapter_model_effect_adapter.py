@@ -167,6 +167,40 @@ class ChapterModelExternalEffectAdapterTests(unittest.TestCase):
             {"readability", "scene_completeness"},
         )
 
+    def test_controlled_environment_blocks_legacy_route_before_adapter_call(self) -> None:
+        class _MustNotRun(_Adapter):
+            def generate(self, prompt, context=None):  # type: ignore[no-untyped-def]
+                raise AssertionError("controlled legacy route launched a model call")
+
+        adapter = ChapterModelExternalEffectAdapter(
+            {
+                "draft": ChapterModelRoute(
+                    adapter=_MustNotRun(),
+                    provider_id="legacy-provider",
+                    model_id="legacy-model",
+                    prompt_version="legacy-prompt-v1",
+                    skill_version="legacy-skill-v1",
+                    real_model_call=True,
+                )
+            },
+            environment="production",
+        )
+
+        with self.assertRaisesRegex(
+            Exception,
+            "legacy Chapter model execution is blocked",
+        ) as caught:
+            adapter.execute(
+                stable_idempotency_key="must-fail-closed",
+                capability="model.draft",
+                request_payload={
+                    "stage": "draft",
+                    "input": {"plan": {}, "context": {}, "style": {}},
+                },
+            )
+
+        self.assertFalse(caught.exception.request_sent)
+
     def test_quality_response_must_cover_the_exact_frozen_dimension_contract(self) -> None:
         class _Partial(_Adapter):
             def generate(self, prompt, context=None):  # type: ignore[no-untyped-def]

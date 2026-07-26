@@ -1,5 +1,5 @@
 {
-  "artifact_hash": "sha256:f53a09efe57a7b523ab89b90395001b781bd14fac30619e80a95c2dbf59f13b1",
+  "artifact_hash": "sha256:fc7efcb0dbd58bdcab8c3d1a18aadf4886ef5f523efb1b85e4516406544cc7df",
   "blocking_owner_ids": [],
   "entries": [
     {
@@ -1529,12 +1529,12 @@
         "tests/unit/test_agent_scheduler.py",
         "tests/unit/test_authority_coverage_operation_mapping.py",
         "tests/unit/test_chapter_authority_definitions.py",
+        "tests/unit/test_chapter_model_effect_adapter.py",
         "tests/unit/test_chapter_plan_fidelity.py",
         "tests/unit/test_context_and_production_chain.py",
         "tests/unit/test_context_governance_runtime_coverage.py",
         "tests/unit/test_creative_assets.py",
-        "tests/unit/test_long_chain_proof.py",
-        "tests/unit/test_mkaos_api_envelope.py"
+        "tests/unit/test_long_chain_proof.py"
       ]
     },
     {
@@ -1569,12 +1569,12 @@
         "tests/unit/test_agent_scheduler.py",
         "tests/unit/test_authority_coverage_operation_mapping.py",
         "tests/unit/test_chapter_authority_definitions.py",
+        "tests/unit/test_chapter_model_effect_adapter.py",
         "tests/unit/test_chapter_plan_fidelity.py",
         "tests/unit/test_context_and_production_chain.py",
         "tests/unit/test_context_governance_runtime_coverage.py",
         "tests/unit/test_creative_assets.py",
-        "tests/unit/test_long_chain_proof.py",
-        "tests/unit/test_mkaos_api_envelope.py"
+        "tests/unit/test_long_chain_proof.py"
       ]
     },
     {
@@ -1609,12 +1609,12 @@
         "tests/unit/test_agent_scheduler.py",
         "tests/unit/test_authority_coverage_operation_mapping.py",
         "tests/unit/test_chapter_authority_definitions.py",
+        "tests/unit/test_chapter_model_effect_adapter.py",
         "tests/unit/test_chapter_plan_fidelity.py",
         "tests/unit/test_context_and_production_chain.py",
         "tests/unit/test_context_governance_runtime_coverage.py",
         "tests/unit/test_creative_assets.py",
-        "tests/unit/test_long_chain_proof.py",
-        "tests/unit/test_mkaos_api_envelope.py"
+        "tests/unit/test_long_chain_proof.py"
       ]
     },
     {
@@ -1652,12 +1652,12 @@
         "tests/unit/test_agent_scheduler.py",
         "tests/unit/test_authority_coverage_operation_mapping.py",
         "tests/unit/test_chapter_authority_definitions.py",
+        "tests/unit/test_chapter_model_effect_adapter.py",
         "tests/unit/test_chapter_plan_fidelity.py",
         "tests/unit/test_context_and_production_chain.py",
         "tests/unit/test_context_governance_runtime_coverage.py",
         "tests/unit/test_creative_assets.py",
-        "tests/unit/test_long_chain_proof.py",
-        "tests/unit/test_mkaos_api_envelope.py"
+        "tests/unit/test_long_chain_proof.py"
       ]
     },
     {
@@ -1695,12 +1695,12 @@
         "tests/unit/test_agent_scheduler.py",
         "tests/unit/test_authority_coverage_operation_mapping.py",
         "tests/unit/test_chapter_authority_definitions.py",
+        "tests/unit/test_chapter_model_effect_adapter.py",
         "tests/unit/test_chapter_plan_fidelity.py",
         "tests/unit/test_context_and_production_chain.py",
         "tests/unit/test_context_governance_runtime_coverage.py",
         "tests/unit/test_creative_assets.py",
-        "tests/unit/test_long_chain_proof.py",
-        "tests/unit/test_mkaos_api_envelope.py"
+        "tests/unit/test_long_chain_proof.py"
       ]
     },
     {
@@ -1738,12 +1738,12 @@
         "tests/unit/test_agent_scheduler.py",
         "tests/unit/test_authority_coverage_operation_mapping.py",
         "tests/unit/test_chapter_authority_definitions.py",
+        "tests/unit/test_chapter_model_effect_adapter.py",
         "tests/unit/test_chapter_plan_fidelity.py",
         "tests/unit/test_context_and_production_chain.py",
         "tests/unit/test_context_governance_runtime_coverage.py",
         "tests/unit/test_creative_assets.py",
-        "tests/unit/test_long_chain_proof.py",
-        "tests/unit/test_mkaos_api_envelope.py"
+        "tests/unit/test_long_chain_proof.py"
       ]
     },
     {
@@ -1781,12 +1781,12 @@
         "tests/unit/test_agent_scheduler.py",
         "tests/unit/test_authority_coverage_operation_mapping.py",
         "tests/unit/test_chapter_authority_definitions.py",
+        "tests/unit/test_chapter_model_effect_adapter.py",
         "tests/unit/test_chapter_plan_fidelity.py",
         "tests/unit/test_context_and_production_chain.py",
         "tests/unit/test_context_governance_runtime_coverage.py",
         "tests/unit/test_creative_assets.py",
-        "tests/unit/test_long_chain_proof.py",
-        "tests/unit/test_mkaos_api_envelope.py"
+        "tests/unit/test_long_chain_proof.py"
       ]
     },
     {
@@ -1824,12 +1824,12 @@
         "tests/unit/test_agent_scheduler.py",
         "tests/unit/test_authority_coverage_operation_mapping.py",
         "tests/unit/test_chapter_authority_definitions.py",
+        "tests/unit/test_chapter_model_effect_adapter.py",
         "tests/unit/test_chapter_plan_fidelity.py",
         "tests/unit/test_context_and_production_chain.py",
         "tests/unit/test_context_governance_runtime_coverage.py",
         "tests/unit/test_creative_assets.py",
-        "tests/unit/test_long_chain_proof.py",
-        "tests/unit/test_mkaos_api_envelope.py"
+        "tests/unit/test_long_chain_proof.py"
       ]
     },
     {
@@ -1867,12 +1867,12 @@
         "tests/unit/test_agent_scheduler.py",
         "tests/unit/test_authority_coverage_operation_mapping.py",
         "tests/unit/test_chapter_authority_definitions.py",
+        "tests/unit/test_chapter_model_effect_adapter.py",
         "tests/unit/test_chapter_plan_fidelity.py",
         "tests/unit/test_context_and_production_chain.py",
         "tests/unit/test_context_governance_runtime_coverage.py",
         "tests/unit/test_creative_assets.py",
-        "tests/unit/test_long_chain_proof.py",
-        "tests/unit/test_mkaos_api_envelope.py"
+        "tests/unit/test_long_chain_proof.py"
       ]
     },
     {
@@ -1910,12 +1910,12 @@
         "tests/unit/test_agent_scheduler.py",
         "tests/unit/test_authority_coverage_operation_mapping.py",
         "tests/unit/test_chapter_authority_definitions.py",
+        "tests/unit/test_chapter_model_effect_adapter.py",
         "tests/unit/test_chapter_plan_fidelity.py",
         "tests/unit/test_context_and_production_chain.py",
         "tests/unit/test_context_governance_runtime_coverage.py",
         "tests/unit/test_creative_assets.py",
-        "tests/unit/test_long_chain_proof.py",
-        "tests/unit/test_mkaos_api_envelope.py"
+        "tests/unit/test_long_chain_proof.py"
       ]
     },
     {
@@ -1950,12 +1950,12 @@
         "tests/unit/test_agent_scheduler.py",
         "tests/unit/test_authority_coverage_operation_mapping.py",
         "tests/unit/test_chapter_authority_definitions.py",
+        "tests/unit/test_chapter_model_effect_adapter.py",
         "tests/unit/test_chapter_plan_fidelity.py",
         "tests/unit/test_context_and_production_chain.py",
         "tests/unit/test_context_governance_runtime_coverage.py",
         "tests/unit/test_creative_assets.py",
-        "tests/unit/test_long_chain_proof.py",
-        "tests/unit/test_mkaos_api_envelope.py"
+        "tests/unit/test_long_chain_proof.py"
       ]
     },
     {
@@ -1993,12 +1993,12 @@
         "tests/unit/test_agent_scheduler.py",
         "tests/unit/test_authority_coverage_operation_mapping.py",
         "tests/unit/test_chapter_authority_definitions.py",
+        "tests/unit/test_chapter_model_effect_adapter.py",
         "tests/unit/test_chapter_plan_fidelity.py",
         "tests/unit/test_context_and_production_chain.py",
         "tests/unit/test_context_governance_runtime_coverage.py",
         "tests/unit/test_creative_assets.py",
-        "tests/unit/test_long_chain_proof.py",
-        "tests/unit/test_mkaos_api_envelope.py"
+        "tests/unit/test_long_chain_proof.py"
       ]
     },
     {
@@ -2035,12 +2035,12 @@
         "tests/unit/test_agent_scheduler.py",
         "tests/unit/test_authority_coverage_operation_mapping.py",
         "tests/unit/test_chapter_authority_definitions.py",
+        "tests/unit/test_chapter_model_effect_adapter.py",
         "tests/unit/test_chapter_plan_fidelity.py",
         "tests/unit/test_context_and_production_chain.py",
         "tests/unit/test_context_governance_runtime_coverage.py",
         "tests/unit/test_creative_assets.py",
-        "tests/unit/test_long_chain_proof.py",
-        "tests/unit/test_mkaos_api_envelope.py"
+        "tests/unit/test_long_chain_proof.py"
       ]
     },
     {
@@ -2077,12 +2077,12 @@
         "tests/unit/test_agent_scheduler.py",
         "tests/unit/test_authority_coverage_operation_mapping.py",
         "tests/unit/test_chapter_authority_definitions.py",
+        "tests/unit/test_chapter_model_effect_adapter.py",
         "tests/unit/test_chapter_plan_fidelity.py",
         "tests/unit/test_context_and_production_chain.py",
         "tests/unit/test_context_governance_runtime_coverage.py",
         "tests/unit/test_creative_assets.py",
-        "tests/unit/test_long_chain_proof.py",
-        "tests/unit/test_mkaos_api_envelope.py"
+        "tests/unit/test_long_chain_proof.py"
       ]
     },
     {
@@ -2120,12 +2120,12 @@
         "tests/unit/test_agent_scheduler.py",
         "tests/unit/test_authority_coverage_operation_mapping.py",
         "tests/unit/test_chapter_authority_definitions.py",
+        "tests/unit/test_chapter_model_effect_adapter.py",
         "tests/unit/test_chapter_plan_fidelity.py",
         "tests/unit/test_context_and_production_chain.py",
         "tests/unit/test_context_governance_runtime_coverage.py",
         "tests/unit/test_creative_assets.py",
-        "tests/unit/test_long_chain_proof.py",
-        "tests/unit/test_mkaos_api_envelope.py"
+        "tests/unit/test_long_chain_proof.py"
       ]
     },
     {
@@ -12065,12 +12065,12 @@
         "tests/unit/test_agent_scheduler.py",
         "tests/unit/test_authority_coverage_operation_mapping.py",
         "tests/unit/test_chapter_authority_definitions.py",
+        "tests/unit/test_chapter_model_effect_adapter.py",
         "tests/unit/test_chapter_plan_fidelity.py",
         "tests/unit/test_context_and_production_chain.py",
         "tests/unit/test_context_governance_runtime_coverage.py",
         "tests/unit/test_creative_assets.py",
-        "tests/unit/test_long_chain_proof.py",
-        "tests/unit/test_mkaos_api_envelope.py"
+        "tests/unit/test_long_chain_proof.py"
       ]
     },
     {
@@ -12106,12 +12106,12 @@
         "tests/unit/test_agent_scheduler.py",
         "tests/unit/test_authority_coverage_operation_mapping.py",
         "tests/unit/test_chapter_authority_definitions.py",
+        "tests/unit/test_chapter_model_effect_adapter.py",
         "tests/unit/test_chapter_plan_fidelity.py",
         "tests/unit/test_context_and_production_chain.py",
         "tests/unit/test_context_governance_runtime_coverage.py",
         "tests/unit/test_creative_assets.py",
-        "tests/unit/test_long_chain_proof.py",
-        "tests/unit/test_mkaos_api_envelope.py"
+        "tests/unit/test_long_chain_proof.py"
       ]
     },
     {
@@ -12147,12 +12147,12 @@
         "tests/unit/test_agent_scheduler.py",
         "tests/unit/test_authority_coverage_operation_mapping.py",
         "tests/unit/test_chapter_authority_definitions.py",
+        "tests/unit/test_chapter_model_effect_adapter.py",
         "tests/unit/test_chapter_plan_fidelity.py",
         "tests/unit/test_context_and_production_chain.py",
         "tests/unit/test_context_governance_runtime_coverage.py",
         "tests/unit/test_creative_assets.py",
-        "tests/unit/test_long_chain_proof.py",
-        "tests/unit/test_mkaos_api_envelope.py"
+        "tests/unit/test_long_chain_proof.py"
       ]
     },
     {
@@ -12188,12 +12188,12 @@
         "tests/unit/test_agent_scheduler.py",
         "tests/unit/test_authority_coverage_operation_mapping.py",
         "tests/unit/test_chapter_authority_definitions.py",
+        "tests/unit/test_chapter_model_effect_adapter.py",
         "tests/unit/test_chapter_plan_fidelity.py",
         "tests/unit/test_context_and_production_chain.py",
         "tests/unit/test_context_governance_runtime_coverage.py",
         "tests/unit/test_creative_assets.py",
-        "tests/unit/test_long_chain_proof.py",
-        "tests/unit/test_mkaos_api_envelope.py"
+        "tests/unit/test_long_chain_proof.py"
       ]
     },
     {
@@ -22768,7 +22768,7 @@
   "parse_errors": [],
   "scanned_file_count": 565,
   "schema_version": "production-execution-migration-ledger.v1",
-  "source_tree_hash": "sha256:90a01bd561c7d04e059354e6c1569f704594fb41ecc51aab9c906aef7d93dd71",
+  "source_tree_hash": "sha256:9b34e37bc9c520127ae626afe794c6b101301ee1bad17f97d851ea7f61750a57",
   "summary": {
     "AGENT_WORKSPACE_TRANSACTION": 0,
     "DATABASE_AUTHORITY": 417,

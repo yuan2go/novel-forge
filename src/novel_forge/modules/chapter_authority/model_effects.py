@@ -147,10 +147,18 @@ class ChapterModelRoute:
 
 
 class ChapterModelExternalEffectAdapter:
-    """Adapts explicit stage routes without consulting filesystem routing state."""
+    """Test/development compatibility adapter for pre-PEP Chapter routes.
+
+    The production composition root does not construct this adapter.  Keeping it
+    available makes old fixtures replayable while the explicit environment guard
+    prevents it from becoming a controlled-environment fallback.
+    """
 
     provider = "novel_forge_model_gateway_v1"
     reconciliation_mode = "unsupported"
+    legacy_compatibility_only = True
+    legacy_independent_execution = True
+    production_execution_gateway_backed = False
     capability_profile = ProviderCapabilityProfile(
         provider=provider,
         control_level=ProviderControlLevel.LEGACY_UNCONTROLLED,
@@ -165,7 +173,12 @@ class ChapterModelExternalEffectAdapter:
         real_provider_validation_eligible=False,
     )
 
-    def __init__(self, routes: dict[str, ChapterModelRoute]) -> None:
+    def __init__(
+        self,
+        routes: dict[str, ChapterModelRoute],
+        *,
+        environment: str = "test",
+    ) -> None:
         unsupported = set(routes) - {
             "draft", "review", "revision", "rereview", "canon_extraction",
             "quality_structural", "quality_commercial",
@@ -174,6 +187,7 @@ class ChapterModelExternalEffectAdapter:
         if not routes or unsupported:
             raise ValueError("chapter model routes contain unsupported stages")
         self.routes = dict(routes)
+        self.environment = environment.strip().lower() or "development"
 
     def execute(
         self,
@@ -182,6 +196,7 @@ class ChapterModelExternalEffectAdapter:
         capability: str,
         request_payload: dict[str, Any],
     ) -> ProviderResult:
+        self._assert_legacy_execution_allowed()
         stage, route, inputs = self._request(capability, request_payload)
         try:
             raw = self._call(route.adapter, stage, inputs)
@@ -249,6 +264,7 @@ class ChapterModelExternalEffectAdapter:
         capability: str,
         request_payload: dict[str, Any],
     ) -> ProviderResult:
+        self._assert_legacy_execution_allowed()
         stage, route, _inputs = self._request(capability, request_payload)
         return ProviderResult(
             "ambiguous",
@@ -269,6 +285,7 @@ class ChapterModelExternalEffectAdapter:
         request_payload: dict[str, Any],
         provider_request_id: str,
     ) -> ProviderResult:
+        self._assert_legacy_execution_allowed()
         stage, route, _inputs = self._request(capability, request_payload)
         return ProviderResult(
             "ambiguous",
@@ -309,6 +326,14 @@ class ChapterModelExternalEffectAdapter:
         if stage == "rereview" and route is None:
             route = self.routes.get("review")
         return "" if route is None else route.model_id
+
+    def _assert_legacy_execution_allowed(self) -> None:
+        if self.environment in {"validation", "provider-validation", "production"}:
+            raise ExternalEffectAdapterError(
+                "legacy Chapter model execution is blocked in controlled environments; "
+                "use ProductionExecutionGatewayExternalEffectAdapter",
+                request_sent=False,
+            )
 
     @staticmethod
     def _call(adapter: ModelAdapter, stage: str, inputs: dict[str, Any]) -> dict[str, Any]:
@@ -671,8 +696,6 @@ class ExternalEffectChapterModelPort:
         stage: str,
         result: ModelProviderResult,
     ) -> None:
-        if Decimal(result.cost_amount) <= 0:
-            return
         logical_ref = _cost_log_ref(request.operation_id, stage)
         try:
             self.query.require(project_id=request.project_id, logical_ref=logical_ref)
@@ -695,6 +718,7 @@ class ExternalEffectChapterModelPort:
                     "operation_id": request.operation_id,
                     "project_id": request.project_id,
                     "stage": stage,
+                    "availability": "AVAILABLE",
                     "amount": result.cost_amount,
                     "currency": result.currency,
                     "provider_id": result.provider_id,

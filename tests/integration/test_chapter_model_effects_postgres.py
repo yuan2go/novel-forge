@@ -573,6 +573,70 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
             self.assertTrue(cursor.fetchone()[0])
             cursor.execute(
                 """
+                SELECT COUNT(DISTINCT attempt.attempt_id),
+                       COUNT(DISTINCT lease.lease_id),
+                       COUNT(DISTINCT effect.external_effect_id),
+                       COUNT(DISTINCT budget.reservation_id),
+                       COUNT(DISTINCT receipt.external_receipt_id)
+                FROM authority_external_effect AS effect
+                JOIN authority_operation AS operation
+                  ON operation.operation_id = effect.operation_id
+                JOIN authority_attempt AS attempt
+                  ON attempt.operation_id = operation.operation_id
+                JOIN authority_lease_acquisition AS lease
+                  ON lease.attempt_id = attempt.attempt_id
+                JOIN authority_budget_reservation AS budget
+                  ON budget.external_effect_id = effect.external_effect_id
+                JOIN authority_external_effect_dispatch AS dispatch
+                  ON dispatch.external_effect_id = effect.external_effect_id
+                JOIN authority_external_receipt AS receipt
+                  ON receipt.dispatch_id = dispatch.dispatch_id
+                WHERE effect.project_id = %s
+                  AND effect.provider = 'production_execution_gateway'
+                """,
+                [project_id],
+            )
+            self.assertEqual(cursor.fetchone(), (10, 10, 10, 10, 10))
+            cursor.execute(
+                """
+                SELECT asset.asset_type, COUNT(DISTINCT version.asset_version_id)
+                FROM authority_operation_output_asset AS binding
+                JOIN authority_operation AS operation
+                  ON operation.operation_id = binding.operation_id
+                JOIN authority_asset AS asset ON asset.asset_id = binding.asset_id
+                JOIN authority_asset_version AS version
+                  ON version.asset_version_id = binding.asset_version_id
+                WHERE operation.root_operation_id = %s
+                  AND asset.asset_type IN ('model_call_log', 'cost_ledger')
+                GROUP BY asset.asset_type
+                """,
+                [result.root_operation_id],
+            )
+            self.assertEqual(
+                dict(cursor.fetchall()),
+                {"cost_ledger": 10, "model_call_log": 10},
+            )
+            cursor.execute(
+                """
+                SELECT COUNT(*),
+                       BOOL_AND(
+                         (version.content -> 'record' -> 'result' ->> 'normalized_output_ref') <> ''
+                         AND (version.content -> 'record' -> 'result' ->> 'validation_report_ref') <> ''
+                         AND (version.content -> 'record' -> 'result' ->> 'usage_receipt_ref') <> ''
+                         AND (version.content -> 'record' -> 'result' ->> 'cost_receipt_ref') <> ''
+                       )
+                FROM authority_asset AS asset
+                JOIN authority_asset_version AS version
+                  ON version.asset_id = asset.asset_id
+                WHERE asset.project_id = %s
+                  AND asset.asset_type = 'execution_recovery_session'
+                  AND version.lifecycle = 'ACTIVE'
+                """,
+                [project_id],
+            )
+            self.assertEqual(cursor.fetchone(), (10, True))
+            cursor.execute(
+                """
                 SELECT version.content ->> 'execution_id'
                 FROM authority_asset AS asset
                 JOIN authority_asset_version AS version

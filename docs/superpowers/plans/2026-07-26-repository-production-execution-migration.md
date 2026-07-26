@@ -170,11 +170,11 @@
 - All ten Chapter model stages use the shared Gateway and Authority recovery store.
 - Legacy `ChapterModelExternalEffectAdapter` is test/development compatibility only and fails closed in controlled environments.
 
-- [ ] Test stage coverage, Attempt/Effect/Budget/Route/Input/Receipt/Output/Validation/Commit evidence, callback, cancel, restart, UNKNOWN, and late result.
-- [ ] Remove remaining production responsibility from the legacy adapter without rewriting the Chapter Saga.
-- [ ] Record `chapter_authority_gateway_fixture_integrated=true` and `single_chapter_real_provider_proven=false`.
-- [ ] Run Chapter Authority and callback PostgreSQL suites.
-- [ ] Commit `refactor: finalize chapter authority execution gateway migration`.
+- [x] Test stage coverage, Attempt/Effect/Budget/Route/Input/Receipt/Output/Validation/Commit evidence, callback, cancel, restart, UNKNOWN, and late result.
+- [x] Remove remaining production responsibility from the legacy adapter without rewriting the Chapter Saga.
+- [x] Record `chapter_authority_gateway_fixture_integrated=true` and `single_chapter_real_provider_proven=false`.
+- [x] Run Chapter Authority and callback PostgreSQL suites.
+- [x] Commit `refactor: finalize chapter authority execution gateway migration`.
 
 ### Task 8: Content generation migration
 
