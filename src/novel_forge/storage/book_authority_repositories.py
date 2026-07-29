@@ -1,7 +1,7 @@
 """Mutation repository for the persistent Book Authority aggregate."""
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Callable
 
 from psycopg.types.json import Jsonb
 
@@ -82,6 +82,11 @@ class BookAuthorityRepository:
         *,
         chapter_request_id: str,
         book_run_id: str,
+        project_id: str,
+        chapter_number: int,
+        chapter_plan_version: str,
+        stable_idempotency_key: str,
+        delegation_id: str,
         root_operation_id: str,
         saga_id: str,
     ) -> None:
@@ -96,12 +101,44 @@ class BookAuthorityRepository:
         )
         self.cursor.execute(
             """
+            INSERT INTO authority_child_delegation(
+                delegation_id, project_id, owner_authority, owner_id,
+                child_authority, chapter_request_id, chapter_number,
+                plan_version_id, child_root_operation_id, child_saga_id,
+                stable_idempotency_key, status
+            ) VALUES (
+                %s, %s, 'BOOK', %s, 'CHAPTER', %s, %s, %s, %s, %s, %s,
+                'DISPATCHED'
+            )
+            ON CONFLICT (project_id, stable_idempotency_key) DO NOTHING
+            """,
+            [
+                delegation_id,
+                project_id,
+                book_run_id,
+                chapter_request_id,
+                chapter_number,
+                chapter_plan_version,
+                root_operation_id,
+                saga_id,
+                stable_idempotency_key,
+            ],
+        )
+        self.cursor.execute(
+            """
             UPDATE authority_book_production
-            SET active_chapter_request_id=%s, state='CHAPTER_SUBMITTED',
-                version=version+1, updated_at=NOW()
+            SET active_chapter_request_id=%s, active_child_delegation_id=%s,
+                active_chapter_number=%s, active_plan_version_id=%s,
+                state='CHAPTER_SUBMITTED', version=version+1, updated_at=NOW()
             WHERE book_run_id=%s
             """,
-            [chapter_request_id, book_run_id],
+            [
+                chapter_request_id,
+                delegation_id,
+                chapter_number,
+                chapter_plan_version,
+                book_run_id,
+            ],
         )
 
     def record_chapter_status(
@@ -128,6 +165,148 @@ class BookAuthorityRepository:
             """,
             [book_state, book_run_id],
         )
+        self.cursor.execute(
+            """
+            UPDATE authority_child_delegation
+            SET status=%s, version=version+1, updated_at=NOW()
+            WHERE chapter_request_id=%s
+              AND status <> 'ACCEPTED'
+            """,
+            [
+                {
+                    "ADMITTED": "DISPATCHED",
+                    "RUNNING": "RUNNING",
+                    "WAITING_RETRY": "WAITING_RETRY",
+                    "SUCCEEDED": "SUCCEEDED",
+                    "FAILED_RETRYABLE": "FAILED_RETRYABLE",
+                    "FAILED_TERMINAL": "FAILED_TERMINAL",
+                    "CANCELLED": "CANCELLED",
+                    "UNKNOWN": "UNKNOWN",
+                }.get(request_status, "UNKNOWN"),
+                chapter_request_id,
+            ],
+        )
+
+    def commit_chapter_acceptance(
+        self,
+        *,
+        acceptance_id: str,
+        project_id: str,
+        book_run_id: str,
+        chapter_request_id: str,
+        delegation_id: str,
+        acceptance_operation_id: str,
+        chapter_number: int,
+        chapter_outcome_asset_version_id: str,
+        story_state_asset_version_id: str,
+        canon_snapshot_asset_version_id: str,
+        evidence: dict[str, Any],
+        before_cursor_advance: Callable[[], None] | None = None,
+    ) -> bool:
+        self.cursor.execute(
+            """
+            INSERT INTO authority_book_chapter_acceptance(
+                acceptance_id, project_id, book_run_id, chapter_request_id,
+                delegation_id, acceptance_operation_id, chapter_number,
+                chapter_outcome_asset_version_id, story_state_asset_version_id,
+                canon_snapshot_asset_version_id, evidence, status
+            ) VALUES (
+                %(acceptance_id)s, %(project_id)s, %(book_run_id)s,
+                %(chapter_request_id)s, %(delegation_id)s,
+                %(acceptance_operation_id)s, %(chapter_number)s,
+                %(chapter_outcome_asset_version_id)s,
+                %(story_state_asset_version_id)s,
+                %(canon_snapshot_asset_version_id)s, %(evidence)s, 'COMMITTED'
+            )
+            ON CONFLICT (chapter_request_id) DO NOTHING
+            """,
+            {
+                "acceptance_id": acceptance_id,
+                "project_id": project_id,
+                "book_run_id": book_run_id,
+                "chapter_request_id": chapter_request_id,
+                "delegation_id": delegation_id,
+                "acceptance_operation_id": acceptance_operation_id,
+                "chapter_number": chapter_number,
+                "chapter_outcome_asset_version_id": chapter_outcome_asset_version_id,
+                "story_state_asset_version_id": story_state_asset_version_id,
+                "canon_snapshot_asset_version_id": canon_snapshot_asset_version_id,
+                "evidence": Jsonb(evidence),
+            },
+        )
+        inserted = self.cursor.rowcount == 1
+        if before_cursor_advance is not None:
+            before_cursor_advance()
+        self.cursor.execute(
+            """
+            UPDATE authority_child_delegation
+            SET status='ACCEPTED', accepted_at=COALESCE(accepted_at, NOW()),
+                version=version+1, updated_at=NOW()
+            WHERE delegation_id=%s
+              AND status IN ('SUCCEEDED', 'ACCEPTED')
+            """,
+            [delegation_id],
+        )
+        self.cursor.execute(
+            """
+            UPDATE authority_book_production
+            SET current_chapter=GREATEST(current_chapter, %s),
+                accepted_through_chapter=GREATEST(accepted_through_chapter, %s),
+                active_chapter_request_id=NULL,
+                active_child_delegation_id=NULL,
+                active_chapter_number=NULL,
+                active_plan_version_id=NULL,
+                active_story_state_version_id=%s,
+                active_canon_snapshot_version_id=%s,
+                last_chapter_outcome_version_id=%s,
+                state=CASE
+                    WHEN %s >= target_chapter_count THEN 'COMPLETED'
+                    ELSE 'READY'
+                END,
+                version=version+1, updated_at=NOW()
+            WHERE book_run_id=%s
+              AND accepted_through_chapter IN (%s, %s)
+            """,
+            [
+                chapter_number,
+                chapter_number,
+                story_state_asset_version_id,
+                canon_snapshot_asset_version_id,
+                chapter_outcome_asset_version_id,
+                chapter_number,
+                book_run_id,
+                chapter_number - 1,
+                chapter_number,
+            ],
+        )
+        if self.cursor.rowcount != 1:
+            raise ValueError("Book cursor cannot accept a non-sequential Chapter")
+        return inserted
+
+    def abort(self, *, book_run_id: str, reason: str) -> None:
+        self.cursor.execute(
+            """
+            UPDATE authority_child_delegation
+            SET status=CASE
+                    WHEN status IN ('DISPATCHED', 'RUNNING', 'WAITING_RETRY',
+                                    'SUCCEEDED', 'UNKNOWN')
+                    THEN 'CANCELLATION_REQUESTED'
+                    ELSE status
+                END,
+                version=version+1, updated_at=NOW()
+            WHERE owner_id=%s AND status <> 'ACCEPTED'
+            """,
+            [book_run_id],
+        )
+        self.cursor.execute(
+            """
+            UPDATE authority_book_production
+            SET state='ABORTED', failure_reason=%s, paused_reason=%s,
+                version=version+1, updated_at=NOW()
+            WHERE book_run_id=%s AND state <> 'COMPLETED'
+            """,
+            [reason, reason, book_run_id],
+        )
 
     def link_followup(
         self,
@@ -139,7 +318,6 @@ class BookAuthorityRepository:
         followup_type: str,
         operation_id: str,
         stable_idempotency_key: str,
-        book_state: str,
     ) -> None:
         self.cursor.execute(
             """
@@ -167,10 +345,10 @@ class BookAuthorityRepository:
         self.cursor.execute(
             f"""
             UPDATE authority_book_production
-            SET state=%s, {column}=%s, version=version+1, updated_at=NOW()
+            SET {column}=%s, version=version+1, updated_at=NOW()
             WHERE book_run_id=%s
             """,
-            [book_state, operation_id, book_run_id],
+            [operation_id, book_run_id],
         )
 
     def advance(

@@ -35,6 +35,9 @@ from . import (
     v20260718_0032_provider_callback_dispatch_index,
     v20260728_0033_agent_collaboration_v1,
     v20260729_0034_unified_business_authority,
+    v20260730_0035_book_child_delegation,
+    v20260730_0036_book_canon_checkpoint,
+    v20260730_0037_story_state_reducer_registry,
 )
 
 VERSION_MODULES = [
@@ -72,6 +75,9 @@ VERSION_MODULES = [
     v20260718_0032_provider_callback_dispatch_index,
     v20260728_0033_agent_collaboration_v1,
     v20260729_0034_unified_business_authority,
+    v20260730_0035_book_child_delegation,
+    v20260730_0036_book_canon_checkpoint,
+    v20260730_0037_story_state_reducer_registry,
 ]
 
 __all__ = ["VERSION_MODULES"]

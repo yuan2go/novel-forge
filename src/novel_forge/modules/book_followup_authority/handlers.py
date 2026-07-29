@@ -36,8 +36,16 @@ class ReaderOutcomeHandler:
             "final_draft_asset_version",
             "chapter_plan_asset_version",
             "book_design_version",
+            "book_plan_version",
+            "parent_plan_versions",
+            "reader_segment_version",
             "reader_contract_version",
+            "platform_profile_version",
             "canon_snapshot_version",
+            "chapter_outcome_version",
+            "story_state_version",
+            "quality_evidence_version",
+            "input_manifest_ref",
             "previous_reader_state_version",
             "evaluation_profile_version",
             "model_strategy_version",
@@ -86,6 +94,17 @@ class ReaderOutcomeHandler:
             "real_model_call": result.real_model_call,
             "execution": dict(result.execution_evidence or {}),
         }
+        execution = dict(result.execution_evidence or {})
+        execution_result = dict(execution.get("execution_result") or {})
+        route_snapshot = dict(execution.get("route_snapshot") or {})
+        continue_intent = float(decision["reader_state"]["continue_intent"])
+        ordinal_band = (
+            "HIGH"
+            if continue_intent >= 0.7
+            else "MEDIUM"
+            if continue_intent >= 0.4
+            else "LOW"
+        )
         report = {
             "type": "ReaderOutcomeReport",
             "contract_version": "reader-outcome-report-v1",
@@ -97,6 +116,42 @@ class ReaderOutcomeHandler:
             "source_asset_versions": list(source_refs),
             "model_evidence": result.to_evidence(),
             "body_mutation_allowed": False,
+            "mode": "SHADOW",
+            "calibration_status": "UNCALIBRATED",
+            "score_semantics": "RAW_SCORE",
+            "publish_blocking": False,
+            "judge_profile_version": str(
+                payload["evaluation_profile_version"]
+            ),
+            "target_asset_version_id": str(
+                payload["final_draft_asset_version"]
+            ),
+            "reader_segment_version": str(
+                payload.get("reader_segment_version") or ""
+            ),
+            "input_manifest_ref": str(
+                payload.get("input_manifest_ref")
+                or (execution.get("input_manifest") or {}).get(
+                    "input_manifest_id"
+                )
+                or ""
+            ),
+            "route_snapshot_id": str(
+                route_snapshot.get("route_snapshot_id") or ""
+            ),
+            "raw_scores": dict(decision["reader_state"]),
+            "ordinal_band": ordinal_band,
+            "evidence_spans": [dict(item) for item in raw_evidence],
+            "disagreement": {"status": "NOT_MEASURED"},
+            "position_sensitivity": {"status": "NOT_MEASURED"},
+            "ood_status": "NOT_EVALUATED",
+            "mutation_stability": {"status": "NOT_MEASURED"},
+            "usage_receipt_ref": str(
+                execution_result.get("usage_receipt_ref") or ""
+            ),
+            "cost_receipt_ref": str(
+                execution_result.get("cost_receipt_ref") or ""
+            ),
         }
         return AuthorityHandlerOutput(
             asset_type="reader_outcome_report",
@@ -119,6 +174,8 @@ class ReaderOutcomeHandler:
                         ),
                         "reader_state": decision["reader_state"],
                         "gate": decision["gate"],
+                        "candidate_status": "SHADOW_CANDIDATE",
+                        "authority_commit_allowed": False,
                     },
                     qualification_policy="reader-outcome-output-v1",
                     reference_asset_version_ids=source_refs,

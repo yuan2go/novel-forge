@@ -1,0 +1,11 @@
+from __future__ import annotations
+
+CHAPTER_OUTCOME_COMMIT_DEFINITION = "book.chapter.accept"
+CHAPTER_OUTCOME_DEFINITION_VERSION = "1.0.0"
+CHAPTER_OUTCOME_HANDLER_KEY = "novel_forge.chapter_outcome.commit"
+
+__all__ = [
+    "CHAPTER_OUTCOME_COMMIT_DEFINITION",
+    "CHAPTER_OUTCOME_DEFINITION_VERSION",
+    "CHAPTER_OUTCOME_HANDLER_KEY",
+]

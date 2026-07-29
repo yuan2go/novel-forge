@@ -1,0 +1,109 @@
+from __future__ import annotations
+
+from novel_forge.modules.authority_handler_runtime import (
+    AuthorityAuxiliaryOutput,
+    AuthorityHandlerOutput,
+    AuthorityHandlerRequest,
+)
+from novel_forge.modules.command_kernel.errors import KernelError
+
+from .domain import build_chapter_outcome, reduce_story_state
+
+
+class ChapterOutcomeCommitHandler:
+    def execute(self, request: AuthorityHandlerRequest) -> AuthorityHandlerOutput:
+        payload = request.command.get("payload")
+        if not isinstance(payload, dict):
+            raise KernelError(
+                "CHAPTER_OUTCOME_INPUT_INVALID", "payload must be an object"
+            )
+        required_types = (
+            "chapter_plan",
+            "draft_version",
+            "re_review_report",
+            "canon_patch",
+            "quality_score_report",
+            "release_package",
+            "final_release_gate_report",
+        )
+        inputs = {asset_type: request.require_input(asset_type) for asset_type in required_types}
+        final_gate = inputs["final_release_gate_report"].content
+        quality = inputs["quality_score_report"].content
+        rereview = inputs["re_review_report"].content
+        release = inputs["release_package"].content
+        canon = inputs["canon_patch"].content
+        if (
+            final_gate.get("gate") != "PASSED"
+            or final_gate.get("release_status") != "INTERNAL_RELEASE_FINALIZED"
+            or quality.get("gate") not in {"PASSED", "PASSED_WITH_UNCALIBRATED"}
+            or rereview.get("decision") != "PASSED"
+            or int(rereview.get("blocking_issue_count", 0)) != 0
+            or release.get("release_status") != "READY_FOR_BLOB_VERIFICATION"
+        ):
+            raise KernelError(
+                "CHAPTER_ACCEPTANCE_EVIDENCE_BLOCKED",
+                "Chapter release, review, or quality evidence is incomplete",
+            )
+        source_refs = tuple(item.asset_version_id for item in request.inputs)
+        outcome = build_chapter_outcome(
+            project_id=request.project_id,
+            book_id=str(payload["book_id"]),
+            chapter_number=int(payload["chapter_number"]),
+            chapter_plan_version_id=inputs["chapter_plan"].asset_version_id,
+            parent_group_version_id=str(payload.get("parent_group_version_id") or ""),
+            accepted_draft_version_id=inputs["draft_version"].asset_version_id,
+            final_release_gate_version_id=inputs[
+                "final_release_gate_report"
+            ].asset_version_id,
+            quality_aggregate_version_id=inputs[
+                "quality_score_report"
+            ].asset_version_id,
+            canon_patch=canon,
+            cost_receipt_refs=tuple(payload.get("cost_receipt_refs") or ()),
+            created_by_operation_id=request.operation_id,
+        )
+        outcome_version_id = (
+            f"authority-output:{request.operation_id}:chapter.outcome:v1"
+        )
+        previous = request.inputs_of_type("story_state_snapshot")
+        if len(previous) > 1:
+            raise KernelError(
+                "CHAPTER_OUTCOME_INPUT_INVALID",
+                "only one previous Story State snapshot is allowed",
+            )
+        state = reduce_story_state(
+            previous=previous[0].content if previous else None,
+            chapter_outcome=outcome,
+            chapter_outcome_asset_version_id=outcome_version_id,
+        )
+        evidence = {
+            "deterministic": True,
+            "model_calls": 0,
+            "acceptance_operation_id": request.operation_id,
+            "final_release_gate_version_id": inputs[
+                "final_release_gate_report"
+            ].asset_version_id,
+        }
+        return AuthorityHandlerOutput(
+            asset_type="chapter_outcome",
+            output_key="chapter.outcome",
+            role="primary",
+            content=outcome,
+            qualification_policy="chapter-outcome-acceptance-v1",
+            reference_asset_version_ids=source_refs,
+            evidence=evidence,
+            auxiliary_outputs=(
+                AuthorityAuxiliaryOutput(
+                    asset_type="story_state_snapshot",
+                    output_key="chapter.story_state",
+                    role="story_state",
+                    content=state,
+                    qualification_policy="deterministic-story-state-v1",
+                    reference_asset_version_ids=source_refs,
+                    evidence=evidence,
+                ),
+            ),
+        )
+
+
+__all__ = ["ChapterOutcomeCommitHandler"]

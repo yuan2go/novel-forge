@@ -11,6 +11,7 @@ from novel_forge.api.authority_dependencies import build_chapter_authority_appli
 from novel_forge.infrastructure.settings import IndustrialSettings
 from novel_forge.modules.authority_security import Principal, PrincipalType
 from novel_forge.modules.book_authority.production import (
+    ChapterAuthorityCommandAdapter,
     PostgresBookAuthority,
     StartBookProductionCommand,
     SubmitBookChapterCommand,
@@ -29,6 +30,7 @@ from novel_forge.modules.chapter_authority.orchestrator import (
     ChapterSagaAdmission,
     SingleChapterRequest,
 )
+from novel_forge.modules.chapter_authority.contracts import ChapterNode
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from tests.integration.authority_postgres_support import (
     DATABASE_URL,
@@ -61,6 +63,13 @@ class _SynchronousCommandPort:
 
     def require_run(self, *, project_id: str, root_operation_id: str):
         return self.application.query.require_run(
+            project_id=project_id, root_operation_id=root_operation_id
+        )
+
+    def require_acceptance_evidence(
+        self, *, project_id: str, root_operation_id: str
+    ):
+        return self.application.query.require_acceptance_evidence(
             project_id=project_id, root_operation_id=root_operation_id
         )
 
@@ -179,15 +188,31 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                 authority, principal=principal
             )
             reader_tick = scheduler.tick(book.book_run_id)
+            reader_complete_tick = scheduler.tick(book.book_run_id)
             recap_tick = scheduler.tick(book.book_run_id)
-            final_tick = scheduler.tick(book.book_run_id)
+            recap_complete_tick = scheduler.tick(book.book_run_id)
             final = authority.require(book.book_run_id)
 
             self.assertEqual(final["state"], "COMPLETED")
             self.assertEqual(final["current_chapter"], 1)
-            self.assertEqual(reader_tick.action, "SUBMIT_READER_OUTCOME")
-            self.assertEqual(recap_tick.action, "SUBMIT_LONGFORM_RECAP")
-            self.assertEqual(final_tick.action, "COMPLETE_LONGFORM_RECAP")
+            self.assertEqual(reader_tick.state, "COMPLETED")
+            self.assertEqual(reader_complete_tick.state, "COMPLETED")
+            self.assertEqual(recap_tick.state, "COMPLETED")
+            self.assertEqual(recap_complete_tick.state, "COMPLETED")
+            self.assertEqual(
+                reader_tick.action,
+                "ACCEPT_CHAPTER_AND_SUBMIT_READER_SHADOW",
+            )
+            self.assertEqual(
+                reader_complete_tick.action, "COMPLETE_READER_SHADOW"
+            )
+            self.assertEqual(
+                recap_tick.action, "SUBMIT_LONGFORM_RECAP_SIDECAR"
+            )
+            self.assertEqual(
+                recap_complete_tick.action,
+                "COMPLETE_LONGFORM_RECAP_SIDECAR",
+            )
             query = BookFollowupProjectionQuery(DATABASE_URL)
             reader_projection = query.reader_outcome(
                 project_id=project_id, operation_id=reader_tick.operation_id
@@ -196,6 +221,18 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                 project_id=project_id, operation_id=recap_tick.operation_id
             )
             self.assertEqual(reader_projection["content"]["gate"], "PASS")
+            self.assertEqual(reader_projection["content"]["mode"], "SHADOW")
+            self.assertEqual(
+                reader_projection["content"]["calibration_status"],
+                "UNCALIBRATED",
+            )
+            self.assertEqual(
+                reader_projection["content"]["score_semantics"], "RAW_SCORE"
+            )
+            self.assertFalse(reader_projection["content"]["publish_blocking"])
+            self.assertNotIn(
+                "completion_probability", reader_projection["content"]
+            )
             self.assertFalse(recap_projection["content"]["plan_mutation_allowed"])
             with AuthorityUnitOfWork(DATABASE_URL) as uow:
                 uow.cursor.execute(
@@ -234,14 +271,32 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                     ],
                 )
                 frozen_input_counts = dict(uow.cursor.fetchall())
+                # Exact hash matching is already enforced by admission. Here the
+                # containment check is performed by version id below because
+                # jsonb array objects also carry project_id.
+                uow.cursor.execute(
+                    """
+                    SELECT COUNT(*)
+                    FROM authority_operation,
+                         jsonb_array_elements(input_asset_snapshot) AS input
+                    WHERE operation_id=%s
+                      AND input->>'asset_version_id'=%s
+                    """,
+                    [
+                        recap_tick.operation_id,
+                        final["last_chapter_outcome_version_id"],
+                    ],
+                )
+                recap_outcome_inputs = int(uow.cursor.fetchone()[0])
             self.assertEqual(terminal, ("SUCCEEDED", "SUCCEEDED"))
             self.assertEqual(reader_effects, 1)
+            self.assertEqual(recap_outcome_inputs, 1)
             self.assertEqual(
                 frozen_input_counts,
                 {
-                    "book.production.coordinate": 9,
-                    "longform.recap": 11,
-                    "reader_outcome.evaluate": 4,
+                    "book.production.coordinate": 12,
+                    "longform.recap": 13,
+                    "reader_outcome.evaluate": 14,
                 },
             )
 
@@ -282,6 +337,550 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                     principal=principal,
                 )
 
+    def test_book_to_chapter_two_chapter_vertical_postgres(self) -> None:
+        project_id = identifier("book-two-chapter-vertical")
+        with tempfile.TemporaryDirectory() as root:
+            settings = IndustrialSettings(
+                root=Path(root),
+                environment="test",
+                storage_authority="postgresql",
+                database_url=DATABASE_URL,
+            )
+            env = {
+                "NOVEL_FORGE_ENVIRONMENT": "test",
+                "NOVEL_FORGE_COMMIT_SHA": "e" * 40,
+                "NOVEL_FORGE_MODEL_PROVIDER": "scripted_provider_v2",
+                "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": str(Path(root) / "objects"),
+                "NOVEL_FORGE_AUTHORITY_WORKER_ID": "two-chapter-pep-worker",
+            }
+            chapter = build_chapter_authority_application(settings, env=env)
+            followup = BookFollowupAuthorityApplication(
+                DATABASE_URL,
+                application_build_id="two-chapter-vertical",
+                commit_sha="e" * 40,
+                model_port=chapter.model_port,
+                worker_id="two-chapter-followup-worker",
+            )
+            authority = PostgresBookAuthority(
+                DATABASE_URL,
+                chapter_port=ChapterAuthorityCommandAdapter(chapter),
+                followup_application=followup,
+                application_build_id="two-chapter-vertical",
+                commit_sha="e" * 40,
+            )
+            principal = self._principal(project_id)
+            worker = Principal(
+                principal_id="two-chapter-worker",
+                principal_type=PrincipalType.WORKER,
+                permissions=frozenset(
+                    {"chapter.authority.execute", "external_effect.execute"}
+                ),
+                project_scope=frozenset({project_id}),
+                authentication_source="integration-test",
+            )
+            candidates = list(
+                chapter_fixture.PostgreSQLOnlyChapterSliceTests.release_evidence(
+                    project_id
+                )
+            )
+            plans = self._seed_two_chapter_plans(project_id, candidates)
+            longform_versions = self._seed_book_inputs(project_id)
+            book = authority.start(
+                StartBookProductionCommand(
+                    project_id=project_id,
+                    workspace_id=f"workspace:{project_id}",
+                    book_id=f"book:{project_id}",
+                    actor_id=principal.principal_id,
+                    trace_id=identifier("trace"),
+                    correlation_id=identifier("correlation"),
+                    stable_idempotency_key=f"{project_id}:book:v1",
+                    book_design_version=longform_versions.pop("book_design_version"),
+                    book_plan_version=longform_versions.pop("book_plan_version"),
+                    production_profile_version="production-profile:v1",
+                    longform_context_versions=longform_versions,
+                    target_chapter_count=2,
+                ),
+                principal=principal,
+            )
+
+            accepted_versions: list[tuple[str, str]] = []
+            for chapter_number in (1, 2):
+                chapter_candidates = tuple(
+                    plans[chapter_number]
+                    if item["asset_type"] == "chapter_plan"
+                    else item
+                    for item in candidates
+                )
+                plan = plans[chapter_number]
+                command = SubmitBookChapterCommand(
+                    book_run_id=book.book_run_id,
+                    chapter_number=chapter_number,
+                    title=f"Chapter {chapter_number}",
+                    premise=f"Chapter {chapter_number} pays a visible cost.",
+                    chapter_plan_asset_version_id=str(plan["asset_version_id"]),
+                    chapter_plan_content_hash=str(plan["content_hash"]),
+                    context_candidates=chapter_candidates,
+                )
+                delegated = authority.submit_chapter(command, principal=principal)
+                replay = authority.submit_chapter(command, principal=principal)
+                self.assertEqual(
+                    delegated["chapter_root_operation_id"],
+                    replay["chapter_root_operation_id"],
+                )
+                with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                    uow.cursor.execute(
+                        """
+                        SELECT COUNT(*) FROM authority_operation
+                        WHERE project_id=%s AND definition_name='chapter.slice.run'
+                        """,
+                        [project_id],
+                    )
+                    self.assertEqual(int(uow.cursor.fetchone()[0]), chapter_number)
+
+                for _ in range(len(ChapterNode) + 2):
+                    scheduler = chapter.scheduler(principal=worker)
+                    tick = scheduler.tick(
+                        project_id=project_id,
+                        root_operation_id=delegated["chapter_root_operation_id"],
+                    )
+                    if tick.saga_status == "SUCCEEDED":
+                        break
+                reconciled = authority.reconcile_chapter(
+                    delegated["chapter_request_id"]
+                )
+                self.assertEqual(reconciled["status_reference"], "SUCCEEDED")
+                accepted = authority.accept_chapter(
+                    delegated["chapter_request_id"], principal=principal
+                )
+                replayed_acceptance = authority.accept_chapter(
+                    delegated["chapter_request_id"], principal=principal
+                )
+                self.assertEqual(
+                    accepted["accepted_through_chapter"], chapter_number
+                )
+                self.assertEqual(
+                    replayed_acceptance["accepted_through_chapter"],
+                    chapter_number,
+                )
+                accepted_versions.append(
+                    (
+                        str(accepted["active_story_state_version_id"]),
+                        str(accepted["last_chapter_outcome_version_id"]),
+                    )
+                )
+
+            final = authority.require(book.book_run_id)
+            self.assertEqual(final["state"], "COMPLETED")
+            self.assertEqual(final["current_chapter"], 2)
+            self.assertEqual(final["accepted_through_chapter"], 2)
+            self.assertEqual(len({item[0] for item in accepted_versions}), 2)
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                uow.cursor.execute(
+                    """
+                    SELECT status, COUNT(*)
+                    FROM authority_child_delegation
+                    WHERE project_id=%s
+                    GROUP BY status
+                    """,
+                    [project_id],
+                )
+                delegation_statuses = dict(uow.cursor.fetchall())
+                uow.cursor.execute(
+                    """
+                    SELECT COUNT(*)
+                    FROM authority_book_chapter_acceptance AS acceptance
+                    JOIN authority_asset_version AS outcome
+                      ON outcome.asset_version_id =
+                         acceptance.chapter_outcome_asset_version_id
+                    JOIN authority_asset_version AS state
+                      ON state.asset_version_id =
+                         acceptance.story_state_asset_version_id
+                    WHERE acceptance.project_id=%s
+                    """,
+                    [project_id],
+                )
+                acceptance_count = int(uow.cursor.fetchone()[0])
+            self.assertEqual(delegation_statuses, {"ACCEPTED": 2})
+            self.assertEqual(acceptance_count, 2)
+
+    def test_book_chapter_dispatch_idempotency(self) -> None:
+        fixture = self._new_book_fixture(target_chapter_count=2)
+        command = self._chapter_command(fixture, chapter_number=1)
+        first = fixture["authority"].submit_chapter(
+            command, principal=fixture["principal"]
+        )
+        second = fixture["authority"].submit_chapter(
+            command, principal=fixture["principal"]
+        )
+        self.assertEqual(
+            first["chapter_root_operation_id"],
+            second["chapter_root_operation_id"],
+        )
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                """
+                SELECT COUNT(*), COUNT(DISTINCT child_root_operation_id)
+                FROM authority_child_delegation
+                WHERE project_id=%s
+                """,
+                [fixture["project_id"]],
+            )
+            self.assertEqual(uow.cursor.fetchone(), (1, 1))
+
+    def test_book_pause_blocks_new_child(self) -> None:
+        fixture = self._new_book_fixture(target_chapter_count=2)
+        fixture["authority"].pause(
+            fixture["book"].book_run_id,
+            reason="operator gate",
+            principal=fixture["principal"],
+        )
+        with self.assertRaisesRegex(
+            KernelError, "BOOK_CHAPTER_SUBMISSION_NOT_READY"
+        ):
+            fixture["authority"].submit_chapter(
+                self._chapter_command(fixture, chapter_number=1),
+                principal=fixture["principal"],
+            )
+
+    def test_book_accept_requires_all_evidence(self) -> None:
+        fixture = self._new_book_fixture(target_chapter_count=1)
+        delegated = fixture["authority"].submit_chapter(
+            self._chapter_command(fixture, chapter_number=1),
+            principal=fixture["principal"],
+        )
+        with self.assertRaisesRegex(
+            KernelError, "BOOK_CHAPTER_ACCEPTANCE_NOT_READY"
+        ):
+            fixture["authority"].accept_chapter(
+                delegated["chapter_request_id"],
+                principal=fixture["principal"],
+            )
+        self.assertEqual(
+            fixture["authority"].require(fixture["book"].book_run_id)[
+                "accepted_through_chapter"
+            ],
+            0,
+        )
+
+    def test_book_resume_reconciles_existing_child(self) -> None:
+        fixture = self._new_book_fixture(target_chapter_count=1)
+        delegated = fixture["authority"].submit_chapter(
+            self._chapter_command(fixture, chapter_number=1),
+            principal=fixture["principal"],
+        )
+        fixture["authority"].pause(
+            fixture["book"].book_run_id,
+            reason="pause while child runs",
+            principal=fixture["principal"],
+        )
+        self._run_child(fixture, delegated["chapter_root_operation_id"])
+        resumed = fixture["authority"].resume(
+            fixture["book"].book_run_id,
+            reason="resume and reconcile",
+            principal=fixture["principal"],
+        )
+        self.assertEqual(resumed["state"], "CHAPTER_COMPLETED")
+
+    def test_book_cancel_propagates_to_child(self) -> None:
+        fixture = self._new_book_fixture(target_chapter_count=2)
+        delegated = fixture["authority"].submit_chapter(
+            self._chapter_command(fixture, chapter_number=1),
+            principal=fixture["principal"],
+        )
+        cancelled = fixture["authority"].cancel(
+            fixture["book"].book_run_id,
+            reason="operator cancelled Book",
+            principal=fixture["principal"],
+        )
+        child = fixture["chapter"].query.require_run(
+            project_id=fixture["project_id"],
+            root_operation_id=delegated["chapter_root_operation_id"],
+        )
+        self.assertEqual(cancelled["state"], "ABORTED")
+        self.assertIn(
+            child["status"], {"CANCELLATION_REQUESTED", "CANCELLED"}
+        )
+
+    def test_book_reconcile_after_worker_restart(self) -> None:
+        failure = {"enabled": True}
+
+        def inject(point: str) -> None:
+            if failure["enabled"] and point == "before_delegation_persist":
+                raise RuntimeError("injected crash before delegation persist")
+
+        fixture = self._new_book_fixture(
+            target_chapter_count=1, failure_injector=inject
+        )
+        with self.assertRaisesRegex(RuntimeError, "injected crash"):
+            fixture["authority"].submit_chapter(
+                self._chapter_command(fixture, chapter_number=1),
+                principal=fixture["principal"],
+            )
+        failure["enabled"] = False
+        request_id = next(
+            item["chapter_request_id"]
+            for item in self._chapter_requests(fixture["project_id"])
+        )
+        recovered = fixture["authority"].recover_chapter_submission(
+            request_id, principal=fixture["principal"]
+        )
+        self.assertTrue(recovered["chapter_root_operation_id"])
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                """
+                SELECT COUNT(*) FROM authority_operation
+                WHERE project_id=%s AND definition_name='chapter.slice.run'
+                """,
+                [fixture["project_id"]],
+            )
+            self.assertEqual(int(uow.cursor.fetchone()[0]), 1)
+
+    def test_book_cursor_advances_once(self) -> None:
+        failure = {"enabled": True}
+
+        def inject(point: str) -> None:
+            if failure["enabled"] and point == "after_acceptance_before_cursor":
+                raise RuntimeError("injected crash inside acceptance transaction")
+
+        fixture = self._new_book_fixture(
+            target_chapter_count=1, failure_injector=inject
+        )
+        delegated = fixture["authority"].submit_chapter(
+            self._chapter_command(fixture, chapter_number=1),
+            principal=fixture["principal"],
+        )
+        self._run_child(fixture, delegated["chapter_root_operation_id"])
+        fixture["authority"].reconcile_chapter(delegated["chapter_request_id"])
+        with self.assertRaisesRegex(RuntimeError, "acceptance transaction"):
+            fixture["authority"].accept_chapter(
+                delegated["chapter_request_id"],
+                principal=fixture["principal"],
+            )
+        self.assertEqual(
+            fixture["authority"].require(fixture["book"].book_run_id)[
+                "accepted_through_chapter"
+            ],
+            0,
+        )
+        failure["enabled"] = False
+        accepted = fixture["authority"].accept_chapter(
+            delegated["chapter_request_id"],
+            principal=fixture["principal"],
+        )
+        replay = fixture["authority"].accept_chapter(
+            delegated["chapter_request_id"],
+            principal=fixture["principal"],
+        )
+        self.assertEqual(accepted["accepted_through_chapter"], 1)
+        self.assertEqual(replay["accepted_through_chapter"], 1)
+
+    def test_book_does_not_precreate_all_chapters(self) -> None:
+        fixture = self._new_book_fixture(target_chapter_count=100)
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                """
+                SELECT COUNT(*) FROM authority_operation
+                WHERE project_id=%s AND definition_name='chapter.slice.run'
+                """,
+                [fixture["project_id"]],
+            )
+            self.assertEqual(int(uow.cursor.fetchone()[0]), 0)
+
+    def _new_book_fixture(
+        self,
+        *,
+        target_chapter_count: int,
+        failure_injector=None,
+    ) -> dict[str, object]:
+        project_id = identifier("book-authority-control")
+        root = tempfile.TemporaryDirectory()
+        self.addCleanup(root.cleanup)
+        settings = IndustrialSettings(
+            root=Path(root.name),
+            environment="test",
+            storage_authority="postgresql",
+            database_url=DATABASE_URL,
+        )
+        env = {
+            "NOVEL_FORGE_ENVIRONMENT": "test",
+            "NOVEL_FORGE_COMMIT_SHA": "e" * 40,
+            "NOVEL_FORGE_MODEL_PROVIDER": "scripted_provider_v2",
+            "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": str(
+                Path(root.name) / "objects"
+            ),
+            "NOVEL_FORGE_AUTHORITY_WORKER_ID": "book-control-pep-worker",
+        }
+        chapter = build_chapter_authority_application(settings, env=env)
+        followup = BookFollowupAuthorityApplication(
+            DATABASE_URL,
+            application_build_id="book-authority-control",
+            commit_sha="e" * 40,
+            model_port=chapter.model_port,
+            worker_id="book-control-followup-worker",
+        )
+        authority = PostgresBookAuthority(
+            DATABASE_URL,
+            chapter_port=ChapterAuthorityCommandAdapter(chapter),
+            followup_application=followup,
+            application_build_id="book-authority-control",
+            commit_sha="e" * 40,
+            failure_injector=failure_injector,
+        )
+        principal = self._principal(project_id)
+        worker = Principal(
+            principal_id="book-control-worker",
+            principal_type=PrincipalType.WORKER,
+            permissions=frozenset(
+                {"chapter.authority.execute", "external_effect.execute"}
+            ),
+            project_scope=frozenset({project_id}),
+            authentication_source="integration-test",
+        )
+        candidates = list(
+            chapter_fixture.PostgreSQLOnlyChapterSliceTests.release_evidence(
+                project_id
+            )
+        )
+        self._seed_two_chapter_plans(project_id, candidates)
+        versions = self._seed_book_inputs(project_id)
+        book = authority.start(
+            StartBookProductionCommand(
+                project_id=project_id,
+                workspace_id=f"workspace:{project_id}",
+                book_id=f"book:{project_id}",
+                actor_id=principal.principal_id,
+                trace_id=identifier("trace"),
+                correlation_id=identifier("correlation"),
+                stable_idempotency_key=f"{project_id}:book:v1",
+                book_design_version=versions.pop("book_design_version"),
+                book_plan_version=versions.pop("book_plan_version"),
+                production_profile_version="production-profile:v1",
+                longform_context_versions=versions,
+                target_chapter_count=target_chapter_count,
+            ),
+            principal=principal,
+        )
+        return {
+            "project_id": project_id,
+            "chapter": chapter,
+            "authority": authority,
+            "principal": principal,
+            "worker": worker,
+            "candidates": candidates,
+            "book": book,
+        }
+
+    def _chapter_command(
+        self, fixture: dict[str, object], *, chapter_number: int
+    ) -> SubmitBookChapterCommand:
+        candidates = fixture["candidates"]
+        plan = next(
+            item for item in candidates if item["asset_type"] == "chapter_plan"
+        )
+        return SubmitBookChapterCommand(
+            book_run_id=fixture["book"].book_run_id,
+            chapter_number=chapter_number,
+            title=f"Chapter {chapter_number}",
+            premise="A decision creates an irreversible cost.",
+            chapter_plan_asset_version_id=str(plan["asset_version_id"]),
+            chapter_plan_content_hash=str(plan["content_hash"]),
+            context_candidates=tuple(candidates),
+        )
+
+    @staticmethod
+    def _run_child(fixture: dict[str, object], root_operation_id: str) -> None:
+        for _ in range(len(ChapterNode) + 2):
+            tick = fixture["chapter"].scheduler(
+                principal=fixture["worker"]
+            ).tick(
+                project_id=fixture["project_id"],
+                root_operation_id=root_operation_id,
+            )
+            if tick.saga_status == "SUCCEEDED":
+                return
+        raise AssertionError("Chapter Saga did not reach SUCCEEDED")
+
+    @staticmethod
+    def _chapter_requests(project_id: str) -> list[dict[str, str]]:
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                """
+                SELECT chapter_request_id
+                FROM authority_book_chapter_request
+                WHERE project_id=%s
+                """,
+                [project_id],
+            )
+            return [
+                {"chapter_request_id": str(row[0])}
+                for row in uow.cursor.fetchall()
+            ]
+
+    @staticmethod
+    def _principal(project_id: str) -> Principal:
+        return Principal(
+            principal_id="book-authority-operator",
+            principal_type=PrincipalType.LOCAL_OPERATOR,
+            permissions=frozenset(
+                {
+                    "book.authority.execute",
+                    "book.followup:*",
+                    "chapter.authority.execute",
+                }
+            ),
+            project_scope=frozenset({project_id}),
+            authentication_source="integration-test",
+        )
+
+    @staticmethod
+    def _seed_two_chapter_plans(
+        project_id: str, candidates: list[dict[str, object]]
+    ) -> dict[int, dict[str, object]]:
+        first = next(
+            dict(item) for item in candidates if item["asset_type"] == "chapter_plan"
+        )
+        second_content = {
+            **dict(first["content"]),
+            "chapter": 2,
+            "title": "The Debt Compounds",
+            "chapter_objective": "Escalate the cost created by chapter one.",
+        }
+        second_hash = "sha256:" + hashlib.sha256(
+            json.dumps(
+                second_content, sort_keys=True, separators=(",", ":")
+            ).encode()
+        ).hexdigest()
+        second = {
+            **first,
+            "asset_version_id": f"{project_id}:chapter-plan-v2",
+            "content_hash": second_hash,
+            "content": second_content,
+        }
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                """
+                INSERT INTO authority_asset(asset_id, project_id, asset_type)
+                VALUES (%s, %s, 'chapter_plan')
+                """,
+                [f"{project_id}:chapter-plan-2", project_id],
+            )
+            uow.cursor.execute(
+                """
+                INSERT INTO authority_asset_version(
+                    asset_version_id, asset_id, version_number, lifecycle,
+                    eligibility, governance, content, content_hash
+                ) VALUES (%s, %s, 1, 'ACTIVE', 'ELIGIBLE', 'CLEAR', %s, %s)
+                """,
+                [
+                    second["asset_version_id"],
+                    f"{project_id}:chapter-plan-2",
+                    json.dumps(second_content),
+                    second_hash,
+                ],
+            )
+            uow.commit()
+        return {1: first, 2: second}
+
     @staticmethod
     def _seed_book_inputs(project_id: str) -> dict[str, str]:
         types = {
@@ -294,6 +893,9 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
             "quality_trend_version": "quality_trend",
             "reward_ledger_version": "reward_ledger",
             "promise_ledger_version": "reader_promise_ledger",
+            "reader_segment_version": "reader_segment_profile",
+            "reader_contract_version": "reader_contract",
+            "platform_profile_version": "platform_profile",
         }
         versions: dict[str, str] = {}
         with AuthorityUnitOfWork(DATABASE_URL) as uow:

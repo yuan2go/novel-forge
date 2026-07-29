@@ -207,5 +207,87 @@ class ChapterAuthorityQuery:
             "model_effects": model_effects,
         }
 
+    def require_acceptance_evidence(
+        self,
+        *,
+        project_id: str,
+        root_operation_id: str,
+    ) -> dict[str, Any]:
+        """Return immutable Chapter outputs and settlement state for Book acceptance."""
+        run = self.require_run(
+            project_id=project_id,
+            root_operation_id=root_operation_id,
+        )
+        operation_ids = [item["operation_id"] for item in run["operations"]]
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT asset.asset_type, binding.output_key, binding.role,
+                       version.asset_version_id, version.content_hash,
+                       version.content, version.lifecycle, version.eligibility,
+                       version.governance
+                FROM authority_operation_output_asset AS binding
+                JOIN authority_asset AS asset
+                  ON asset.asset_id=binding.asset_id
+                 AND asset.project_id=%s
+                JOIN authority_asset_version AS version
+                  ON version.asset_version_id=binding.asset_version_id
+                WHERE binding.operation_id = ANY(%s)
+                ORDER BY binding.created_at, binding.output_key
+                """,
+                [project_id, operation_ids],
+            )
+            outputs = [
+                {
+                    "asset_type": row[0],
+                    "output_key": row[1],
+                    "role": row[2],
+                    "asset_version_id": row[3],
+                    "content_hash": row[4],
+                    "content": row[5],
+                    "lifecycle": row[6],
+                    "eligibility": row[7],
+                    "governance": row[8],
+                }
+                for row in uow.cursor.fetchall()
+            ]
+            uow.cursor.execute(
+                """
+                SELECT reservation_id, status, settled_amount, actual_tokens,
+                       provider, evidence
+                FROM authority_budget_reservation
+                WHERE project_id=%s AND operation_id = ANY(%s)
+                ORDER BY created_at, reservation_id
+                """,
+                [project_id, operation_ids],
+            )
+            budgets = [
+                {
+                    "reservation_id": row[0],
+                    "status": row[1],
+                    "settled_amount": str(row[2]),
+                    "actual_tokens": int(row[3]),
+                    "provider": row[4],
+                    "evidence": row[5],
+                }
+                for row in uow.cursor.fetchall()
+            ]
+            uow.cursor.execute(
+                """
+                SELECT cost_evidence_id
+                FROM authority_operation_cost_evidence
+                WHERE operation_id = ANY(%s)
+                ORDER BY recorded_at, cost_evidence_id
+                """,
+                [operation_ids],
+            )
+            cost_receipt_refs = tuple(str(row[0]) for row in uow.cursor.fetchall())
+        return {
+            **run,
+            "outputs": outputs,
+            "budgets": budgets,
+            "cost_receipt_refs": cost_receipt_refs,
+        }
+
 
 __all__ = ["ChapterAuthorityQuery"]

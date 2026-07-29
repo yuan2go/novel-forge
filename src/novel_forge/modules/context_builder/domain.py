@@ -68,6 +68,7 @@ _COMMON = frozenset({
     "character_state_snapshot", "relationship_state_snapshot", "foreshadow_snapshot",
     "promise_ledger_snapshot", "reward_ledger_snapshot", "world_rule_snapshot",
     "power_state_snapshot",
+    "story_state_snapshot",
     "style_policy", "knowledge_pack", "knowledge_card", "material_asset", "material_card",
     "quality_rubric", "quality_profile", "platform_profile", "context_profile",
     "theme_arc", "theme_beat", "closure_plan", "review_issue", "review_report",

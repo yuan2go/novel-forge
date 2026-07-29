@@ -155,6 +155,34 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
         except (KernelError, ValueError, RuntimeError) as exc:
             raise _http_error(exc) from exc
 
+    @router.post("/chapter-requests/{chapter_request_id}/accept")
+    def accept_chapter(chapter_request_id: str) -> dict[str, Any]:
+        try:
+            request = _application(ctx).require_chapter_request(chapter_request_id)
+            principal = build_trusted_principal_resolver().resolve_api_principal()
+            principal.require("book.authority.execute", request["project_id"])
+            return _application(ctx).accept_chapter(
+                chapter_request_id, principal=principal
+            )
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
+
+    @router.post("/chapter-requests/{chapter_request_id}/recover")
+    def recover_chapter(chapter_request_id: str) -> dict[str, Any]:
+        try:
+            request = _application(ctx).require_chapter_request(chapter_request_id)
+            principal = build_trusted_principal_resolver().resolve_api_principal()
+            principal.require("book.authority.execute", request["project_id"])
+            return _application(ctx).recover_chapter_submission(
+                chapter_request_id, principal=principal
+            )
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
+
     @router.post("/runs/{book_run_id}/tick")
     def tick_book(book_run_id: str) -> dict[str, Any]:
         try:
@@ -214,6 +242,22 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 claimed_actor_id=request.actor_id
             )
             return _application(ctx).resume(
+                book_run_id, reason=request.reason, principal=principal
+            )
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
+
+    @router.post("/runs/{book_run_id}/cancel")
+    def cancel_book(
+        book_run_id: str, request: BookAuthorityControlRequest
+    ) -> dict[str, Any]:
+        try:
+            principal = build_trusted_principal_resolver().resolve_api_principal(
+                claimed_actor_id=request.actor_id
+            )
+            return _application(ctx).cancel(
                 book_run_id, reason=request.reason, principal=principal
             )
         except PermissionError as exc:
