@@ -4,7 +4,7 @@ WEB_DIR ?= web/admin
 LOCAL_WORKSPACE ?= .local/workspace
 DEMO_WORKSPACE ?= .local/demo-workspace
 
-.PHONY: test lint validate demo local-workspace infra-up infra-down postgres-authority-test-up postgres-authority-test-down postgres-authority-test online-backends-up online-backends-smoke local-up local-down local-smoke local-logs failure-drill v1-slow-acceptance governance-dead-letter-regression runtime-growth-regression source-governance-regression api worker web-dev sync-skills sync-skills-dry-run check-skills help
+.PHONY: test lint validate demo local-workspace infra-up infra-down postgres-authority-test-up postgres-authority-test-down postgres-authority-test online-backends-up online-backends-smoke local-up local-down local-smoke local-logs failure-drill v1-slow-acceptance governance-dead-letter-regression runtime-growth-regression source-governance-regression api worker web-dev sync-skills sync-skills-dry-run check-skills authority-parity-check head-integrity-check help
 
 help:
 	@echo "make test      - run stdlib unittest suite"
@@ -32,6 +32,7 @@ help:
 	@echo "make sync-skills-dry-run - preview syncing skills to .claude/skills"
 	@echo "make sync-skills - sync repository skills to .claude/skills"
 	@echo "make check-skills - fail if .claude/skills drifts from repository skills"
+	@echo "make head-integrity-check - fail on untracked or dangling runtime wiring"
 
 test:
 	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m unittest discover -s tests -p 'test_*.py'
@@ -130,5 +131,8 @@ sync-skills:
 check-skills:
 	$(PYTHON) scripts/sync_claude_skills.py --check
 
-authority-parity-check:
+head-integrity-check:
+	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m novel_forge.tools.head_integrity --repo-root .
+
+authority-parity-check: head-integrity-check
 	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m novel_forge.tools.authority_parity_manifest --repo-root .
