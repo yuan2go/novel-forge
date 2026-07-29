@@ -205,6 +205,7 @@ class ChapterModelExternalEffectAdapter:
             "draft", "review", "revision", "rereview", "canon_extraction",
             "quality_structural", "quality_commercial",
             "quality_source_originality", "quality_longform", "quality_platform",
+            "reader_outcome",
         }
         if not routes or unsupported:
             raise ValueError("chapter model routes contain unsupported stages")
@@ -442,6 +443,25 @@ class ChapterModelExternalEffectAdapter:
                     "quality_context": quality_context,
                 },
             )
+        if stage == "reader_outcome":
+            assets = _object(inputs, "assets")
+            prompt = (
+                "Evaluate the frozen chapter from the reader-outcome perspective. "
+                "Return JSON {reader_state:{continue_intent,curiosity,satisfaction,"
+                "confusion,trust,character_attachment,antagonist_pressure,"
+                "promise_expectation,payoff_satisfaction,drop_risk,"
+                "repetition_fatigue},evidence:[{asset_version_id,location,claim}]}. "
+                "All reader-state values must be numbers from zero to one."
+            )
+            return adapter.generate(
+                prompt,
+                {
+                    "contract_version": "reader-outcome-provider-v1",
+                    "chapter": inputs.get("chapter"),
+                    "book_id": inputs.get("book_id"),
+                    "assets": assets,
+                },
+            )
         draft = _object(inputs, "draft")
         review = _object(inputs, "review")
         return adapter.revise(
@@ -491,9 +511,15 @@ class ExternalEffectChapterModelPort:
             "draft", "review", "revision", "rereview", "canon_extraction",
             "quality_structural", "quality_commercial",
             "quality_source_originality", "quality_longform", "quality_platform",
+            "reader_outcome",
         }:
             raise KernelError("MODEL_EFFECT_STAGE_UNSUPPORTED", f"unsupported model stage: {stage}")
         logical_ref = _model_log_ref(request.operation_id, stage)
+        business_payload = (
+            request.command.get("payload")
+            if isinstance(request.command.get("payload"), dict)
+            else request.command
+        )
         existing = self._existing_result(request.project_id, logical_ref)
         if existing is not None:
             self._ensure_cost_evidence(request, stage, existing)
@@ -526,9 +552,13 @@ class ExternalEffectChapterModelPort:
                     "project_id": request.project_id,
                     "workspace_id": request.workspace_id,
                     "worker_id": request.worker_id,
-                    "chapter": int(request.command.get("chapter") or 0),
+                    "chapter": int(
+                        business_payload.get("chapter_number")
+                        or business_payload.get("chapter")
+                        or 0
+                    ),
                     "book_id": str(
-                        request.command.get("book_id")
+                        business_payload.get("book_id")
                         or f"book:{request.project_id}"
                     ),
                     "route_provider": str(
@@ -590,8 +620,15 @@ class ExternalEffectChapterModelPort:
                 provider=self.adapter.provider,
                 currency="USD",
                 estimated_amount=self.max_cost_per_call,
-                estimated_tokens=int(request.command.get("context_token_budget") or 0),
-                chapter=int(request.command.get("chapter") or 0) or None,
+                estimated_tokens=int(
+                    business_payload.get("context_token_budget") or 0
+                ),
+                chapter=int(
+                    business_payload.get("chapter_number")
+                    or business_payload.get("chapter")
+                    or 0
+                )
+                or None,
                 caps=self.budget_caps,
             ),
         )
@@ -865,6 +902,40 @@ def _normalize_model_output(stage: str, raw: dict[str, Any]) -> dict[str, Any]:
                 "revision_strategies": list(item.get("revision_strategies") or []),
             })
         return {"dimensions": normalized_dimensions}
+    if stage == "reader_outcome":
+        state = raw.get("reader_state")
+        evidence = raw.get("evidence")
+        required = (
+            "continue_intent", "curiosity", "satisfaction", "confusion", "trust",
+            "character_attachment", "antagonist_pressure", "promise_expectation",
+            "payoff_satisfaction", "drop_risk", "repetition_fatigue",
+        )
+        if not isinstance(state, dict) or not isinstance(evidence, list) or not evidence:
+            raise KernelError(
+                "MODEL_RESPONSE_INVALID",
+                "Reader Outcome response requires reader_state and evidence",
+            )
+        normalized_state: dict[str, float] = {}
+        for dimension in required:
+            value = state.get(dimension)
+            if (
+                isinstance(value, bool)
+                or not isinstance(value, (int, float))
+                or not 0 <= float(value) <= 1
+            ):
+                raise KernelError(
+                    "MODEL_RESPONSE_INVALID",
+                    f"Reader Outcome dimension {dimension} must be between zero and one",
+                )
+            normalized_state[dimension] = float(value)
+        if any(not isinstance(item, dict) or not item for item in evidence):
+            raise KernelError(
+                "MODEL_RESPONSE_INVALID", "Reader Outcome evidence must contain objects"
+            )
+        return {
+            "reader_state": normalized_state,
+            "evidence": [dict(item) for item in evidence],
+        }
     text = str(raw.get("text") or raw.get("revised_text") or "").strip()
     resolved = [
         str(item).strip()

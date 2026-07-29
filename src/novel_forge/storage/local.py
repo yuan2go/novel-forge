@@ -79,6 +79,12 @@ NOVEL_KG_SOURCE_TYPES = {
 
 
 class LocalStorage:
+    # LocalStorage is a compatibility/fixture store and never a production
+    # authority. These flags are intentionally machine-inspectable.
+    authoritative = False
+    production_writable = False
+    rebuildable = True
+
     def __init__(self, root: str | Path = ".") -> None:
         self.root = Path(root).resolve()
         self.data_root = self.root / "data"
@@ -95,6 +101,7 @@ class LocalStorage:
         return self.data_root / category
 
     def write_json(self, path: str | Path, data: Any) -> Path:
+        self._enforce_production_write_boundary()
         resolved = self.root / path if not Path(path).is_absolute() else Path(path)
         self._enforce_project_scope_write(resolved, data)
         self._record_budget_write(resolved, data, asset=False)
@@ -109,6 +116,7 @@ class LocalStorage:
         return json.loads(resolved.read_text(encoding="utf-8"))
 
     def write_asset(self, category: str, asset: BaseAsset) -> Path:
+        self._enforce_production_write_boundary()
         self.ensure_layout()
         path = self.data_dir(category) / f"{asset.id}.json"
         data = asset.to_dict()
@@ -176,6 +184,15 @@ class LocalStorage:
         tmp_path = path.with_name(f".{path.name}.tmp")
         tmp_path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         tmp_path.replace(path)
+
+    @staticmethod
+    def _enforce_production_write_boundary() -> None:
+        environment = os.environ.get("NOVEL_FORGE_ENVIRONMENT", "").strip().lower()
+        if environment in {"production", "staging", "production_like"}:
+            raise PermissionError(
+                "PRODUCTION_DIRECT_WRITE_FORBIDDEN: "
+                "AUTHORITY_COMMAND_REQUIRED; LocalStorage is non-authoritative"
+            )
 
     def _backup_existing(self, path: Path) -> Path:
         relative = path.relative_to(self.root)

@@ -188,6 +188,9 @@ def _load_request(
         definition_version=operation["definition_version"],
         command=dict(operation["command_payload"]),
         inputs=tuple(AuthorityInputAsset(**item) for item in frozen),
+        attempt_id=command.attempt_id,
+        fencing_token=command.fencing_token,
+        worker_id=command.worker_id,
     )
 
 

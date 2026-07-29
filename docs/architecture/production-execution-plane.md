@@ -101,6 +101,35 @@ Agent / Workflow direct call path
 
 禁止在这些路径之外再新增新的 Codex 调用器。
 
+### 2.2 P0 业务接入闭合
+
+Chapter 之后的生产决策不再以同步报告或 LocalStorage 旁路进入长篇状态：
+
+```text
+PostgresBookAuthority
+→ ChapterAuthorityCommandPort
+→ Chapter Authority root Operation / Saga
+→ terminal query
+→ reader_outcome.evaluate
+→ optional longform.recap
+→ persistent Book checkpoint
+```
+
+Reader Outcome 复用 Chapter 的
+`ProductionExecutionGatewayExternalEffectAdapter`，新增的
+`model.reader_outcome` 仍由 RouteSnapshot、Attempt/Fence、ExternalEffect、预算、
+Receipt 和模型/成本账本治理。Recap V1 是确定性 Handler，因此没有伪造
+ExternalEffect；它仍通过共享 Authority Attempt Runtime 创建不可变资产。
+
+Book 根命令和两个后续 Operation 都冻结 PostgreSQL AssetVersion 输入。
+Book Authority 仅保存 Chapter Authority 引用，不复制 Chapter Attempt 状态。
+详细业务边界见：
+
+- `docs/architecture/unified-production-execution-plane.md`
+- `docs/architecture/book-to-chapter-authority-flow.md`
+- `docs/architecture/reader-outcome-operation.md`
+- `docs/architecture/longform-recap-operation.md`
+
 ### 2.1 Scoped Agent Collaboration V1 接入
 
 Agent Collaboration 现在通过 `DomainExecutionPort` 接入 PEP，领域层不依赖

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
+import os
 from typing import Any
 from uuid import uuid4
 
@@ -59,6 +60,15 @@ class BookProductionAdmission:
 
 
 def admit_book_production(database_url: str, request: BookProductionRequest) -> BookProductionAdmission:
+    if os.environ.get("NOVEL_FORGE_ENVIRONMENT", "development").lower() in {
+        "production",
+        "staging",
+        "production_like",
+    }:
+        raise RuntimeError(
+            "LEGACY_BOOK_AUTHORITY_PRODUCTION_DISABLED: "
+            "use PostgresBookAuthority through the Book command port"
+        )
     request.policy.validate()
     definitions = book_definitions(
         application_build_id=request.application_build_id, commit_sha=request.commit_sha

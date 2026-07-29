@@ -103,6 +103,10 @@ Implemented or substantially implemented:
 - ReviewIssue, revision task, editor patch, publishing gate, release package, and quality gate slices;
 - Agent registry/scheduler first slices with operations, queue lifecycle, runner seams, retry, recovery, rollback, and dead-letter behavior;
 - OS acceptance, long-chain, MKAOS, provider guard, publishing, and scheduler tests.
+- PostgreSQL Book-to-Chapter coordination through the Chapter Authority command
+  port, plus governed Reader Outcome and Long-form Recap operation slices. Their
+  current proof uses scripted Provider/PostgreSQL integration and is not real
+  Provider or sustained production proof.
 
 Partially implemented and must not be overclaimed:
 
@@ -156,6 +160,10 @@ For large work, write a short plan before editing. For uncertain implementation 
 - Do not hide test failures. Record failing commands and the next fix.
 - Do not use mock/fallback behavior as proof of production readiness.
 - Do not scatter durable prompts through unrelated service code; use Skill, prompt registry, module service, or workflow-node boundaries when appropriate.
+- In production-like environments, submit Book/Chapter/Reader Outcome/Long-form
+  changes through PostgreSQL Authority commands. `LocalStorage`, the Legacy
+  Chapter Bus, legacy Recap, and fixture Book Authority are not production
+  mutation paths.
 
 ## Copyright Boundary
 

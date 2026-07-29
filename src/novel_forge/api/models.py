@@ -685,6 +685,40 @@ class ContentAuthorityCommandRequest(BaseModel):
     correlation_id: str = ""
 
 
+class BookAuthorityStartRequest(BaseModel):
+    project_id: str = Field(min_length=1)
+    workspace_id: str = Field(min_length=1)
+    book_id: str = Field(min_length=1)
+    idempotency_key: str = Field(min_length=1)
+    book_design_version: str = Field(min_length=1)
+    book_plan_version: str = Field(min_length=1)
+    production_profile_version: str = Field(min_length=1)
+    longform_context_versions: dict[str, str]
+    target_chapter_count: int = Field(ge=1)
+    light_recap_cadence: int = Field(default=5, ge=1)
+    formal_recap_cadence: int = Field(default=10, ge=1)
+    actor_id: str = ""
+    trace_id: str = ""
+    correlation_id: str = ""
+
+
+class BookAuthorityChapterRequest(BaseModel):
+    chapter_number: int = Field(ge=1)
+    title: str = Field(min_length=1)
+    premise: str = Field(min_length=1)
+    chapter_plan_asset_version_id: str = Field(min_length=1)
+    context_asset_version_ids: list[str] = Field(min_length=1)
+    context_version_refs: dict[str, Any] = Field(default_factory=dict)
+    context_token_budget: int = Field(default=6000, ge=1)
+    preparation_report: dict[str, Any] = Field(default_factory=dict)
+    actor_id: str = ""
+
+
+class BookAuthorityControlRequest(BaseModel):
+    reason: str = Field(min_length=1)
+    actor_id: str = ""
+
+
 class ExternalEffectManualResolutionRequest(BaseModel):
     operation_id: str = Field(min_length=1)
     project_id: str = Field(min_length=1)
@@ -2042,6 +2076,9 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "AuthorityChapterCommandRequest": AuthorityChapterCommandRequest,
         "AuthorityOperationControlRequest": AuthorityOperationControlRequest,
         "ContentAuthorityCommandRequest": ContentAuthorityCommandRequest,
+        "BookAuthorityStartRequest": BookAuthorityStartRequest,
+        "BookAuthorityChapterRequest": BookAuthorityChapterRequest,
+        "BookAuthorityControlRequest": BookAuthorityControlRequest,
         "ExternalEffectManualResolutionRequest": ExternalEffectManualResolutionRequest,
         "ChapterProductionResumeRequest": ChapterProductionResumeRequest,
         "ChapterProductionControlRequest": ChapterProductionControlRequest,

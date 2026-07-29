@@ -18,6 +18,13 @@ from novel_forge.modules.chapter_authority.execution_gateway import (
     default_chapter_fixture_response,
 )
 from novel_forge.modules.chapter_authority.queries import ChapterAuthorityQuery
+from novel_forge.modules.book_authority.production import (
+    ChapterAuthorityCommandAdapter,
+    PostgresBookAuthority,
+)
+from novel_forge.modules.book_followup_authority.application import (
+    BookFollowupAuthorityApplication,
+)
 from novel_forge.modules.authority_security import TrustedPrincipalResolver
 from novel_forge.modules.command_kernel.external_effect_adapters import (
     LocalFileObjectStoreAdapter,
@@ -145,6 +152,11 @@ def build_chapter_authority_application(
         ("quality_source_originality", "NOVEL_FORGE_QUALITY_PROVIDER", "NOVEL_FORGE_QUALITY_MODEL"),
         ("quality_longform", "NOVEL_FORGE_QUALITY_PROVIDER", "NOVEL_FORGE_QUALITY_MODEL"),
         ("quality_platform", "NOVEL_FORGE_QUALITY_PROVIDER", "NOVEL_FORGE_QUALITY_MODEL"),
+        (
+            "reader_outcome",
+            "NOVEL_FORGE_READER_OUTCOME_PROVIDER",
+            "NOVEL_FORGE_READER_OUTCOME_MODEL",
+        ),
     ):
         capability_definition = default_capability_registry().resolve(
             chapter_stage_capability(stage)
@@ -158,7 +170,7 @@ def build_chapter_authority_application(
                 values.get("NOVEL_FORGE_REVISION_PROVIDER")
                 if stage == "canon_extraction"
                 else values.get("NOVEL_FORGE_REVIEW_PROVIDER")
-                if stage.startswith("quality_")
+                if stage.startswith("quality_") or stage == "reader_outcome"
                 else ""
             )
             or values.get("NOVEL_FORGE_MODEL_PROVIDER")
@@ -178,7 +190,7 @@ def build_chapter_authority_application(
                 values.get("NOVEL_FORGE_REVISION_MODEL")
                 if stage == "canon_extraction"
                 else values.get("NOVEL_FORGE_REVIEW_MODEL")
-                if stage.startswith("quality_")
+                if stage.startswith("quality_") or stage == "reader_outcome"
                 else ""
             )
             or ""
@@ -487,6 +499,37 @@ def build_chapter_authority_query(settings: IndustrialSettings) -> ChapterAuthor
     return ChapterAuthorityQuery(settings.database_url)
 
 
+def build_book_authority_application(
+    settings: IndustrialSettings,
+    *,
+    env: Mapping[str, str] | None = None,
+    chapter_application: ChapterAuthorityApplication | None = None,
+) -> PostgresBookAuthority:
+    if not settings.database_url:
+        raise RuntimeError("PostgreSQL database is required for Book Authority")
+    build_id, commit_sha = authority_release_identity(env=env)
+    chapter = chapter_application or build_chapter_authority_application(
+        settings, env=env
+    )
+    followup = BookFollowupAuthorityApplication(
+        settings.database_url,
+        application_build_id=build_id,
+        commit_sha=commit_sha,
+        model_port=chapter.model_port,
+        worker_id=str(
+            (env or os.environ).get("NOVEL_FORGE_BOOK_FOLLOWUP_WORKER_ID")
+            or "book-followup-authority-worker"
+        ),
+    )
+    return PostgresBookAuthority(
+        settings.database_url,
+        chapter_port=ChapterAuthorityCommandAdapter(chapter),
+        followup_application=followup,
+        application_build_id=build_id,
+        commit_sha=commit_sha,
+    )
+
+
 __all__ = [
     "authority_release_identity",
     "build_chapter_authority_application",
@@ -495,4 +538,5 @@ __all__ = [
     "build_trusted_principal_resolver",
     "build_content_authority_application",
     "build_content_authority_query",
+    "build_book_authority_application",
 ]

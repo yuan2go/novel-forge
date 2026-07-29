@@ -67,6 +67,7 @@ _STAGES = frozenset(
         "quality_source_originality",
         "quality_longform",
         "quality_platform",
+        "reader_outcome",
     }
 )
 
@@ -81,6 +82,7 @@ _STAGE_CAPABILITIES = {
     "quality_source_originality": CapabilityId.QUALITY_ORIGINALITY_JUDGE,
     "quality_longform": CapabilityId.QUALITY_INTRINSIC_JUDGE,
     "quality_platform": CapabilityId.QUALITY_PLATFORM_JUDGE,
+    "reader_outcome": CapabilityId.QUALITY_READER_OUTCOME_JUDGE,
 }
 
 
@@ -183,7 +185,7 @@ class PostgresChapterExecutionContractBinder:
 
     def __init__(self, database_url: str, routes: Mapping[str, ChapterExecutionRoute]) -> None:
         if not database_url or set(routes) != _STAGES:
-            raise ValueError("PostgreSQL and all ten Chapter execution routes are required")
+            raise ValueError("PostgreSQL and all governed execution routes are required")
         self.database_url = database_url
         self.routes = dict(routes)
         self.query = AuthorityAssetQuery(database_url)
@@ -266,8 +268,11 @@ class PostgresChapterExecutionContractBinder:
                 "chapter_plan",
                 "context_bundle",
                 "canon_snapshot",
+                "canon_patch",
                 "story_state_snapshot",
                 "quality_profile",
+                "reader_contract",
+                "reader_state",
                 "draft_chapter",
                 "review_report",
                 "revision_patch",
@@ -310,6 +315,8 @@ class PostgresChapterExecutionContractBinder:
                 if stage == "canon_extraction"
                 else "quality_judge_candidate"
                 if stage.startswith("quality_")
+                else "reader_outcome_candidate"
+                if stage == "reader_outcome"
                 else "review_candidate"
             ),
             requires_validation_manifest=True,
@@ -838,6 +845,31 @@ def default_chapter_fixture_response(
                 for dimension in dimensions
             ]
         }
+    if stage == "reader_outcome":
+        assets = inputs.get("assets") if isinstance(inputs.get("assets"), Mapping) else {}
+        source = next(iter(assets), "final_draft")
+        return {
+            "reader_state": {
+                "continue_intent": 0.88,
+                "curiosity": 0.86,
+                "satisfaction": 0.81,
+                "confusion": 0.18,
+                "trust": 0.84,
+                "character_attachment": 0.82,
+                "antagonist_pressure": 0.76,
+                "promise_expectation": 0.79,
+                "payoff_satisfaction": 0.77,
+                "drop_risk": 0.12,
+                "repetition_fatigue": 0.14,
+            },
+            "evidence": [
+                {
+                    "asset_version_id": source,
+                    "location": "chapter",
+                    "claim": "fixture reader outcome evidence",
+                }
+            ],
+        }
     raise ValueError(f"unsupported fixture stage: {stage}")
 
 
@@ -925,7 +957,7 @@ class ProductionExecutionGatewayExternalEffectAdapter:
         provider_adapters: Mapping[str, Any] | None = None,
     ) -> None:
         if set(routes) != _STAGES:
-            raise ValueError("all ten Chapter execution stages must use the gateway")
+            raise ValueError("all governed execution stages must use the gateway")
         self.database_url = database_url
         self.routes = dict(routes)
         self.binder = PostgresChapterExecutionContractBinder(database_url, routes)

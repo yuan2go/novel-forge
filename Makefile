@@ -129,3 +129,6 @@ sync-skills:
 
 check-skills:
 	$(PYTHON) scripts/sync_claude_skills.py --check
+
+authority-parity-check:
+	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m novel_forge.tools.authority_parity_manifest --repo-root .

@@ -33,6 +33,9 @@ class AuthorityHandlerRequest:
     definition_version: str
     command: dict[str, Any]
     inputs: tuple[AuthorityInputAsset, ...]
+    attempt_id: str = ""
+    fencing_token: int = 0
+    worker_id: str = ""
 
     def inputs_of_type(self, asset_type: str) -> tuple[AuthorityInputAsset, ...]:
         return tuple(item for item in self.inputs if item.asset_type == asset_type)

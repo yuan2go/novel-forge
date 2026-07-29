@@ -14,11 +14,13 @@ from novel_forge.api.authority_dependencies import (
     build_chapter_authority_query,
     build_content_authority_application,
     build_content_authority_query,
+    build_book_authority_application,
 )
 from novel_forge.infrastructure.settings import IndustrialSettings
 from novel_forge.modules.chapter_authority.application import ChapterAuthorityApplication
 from novel_forge.modules.chapter_authority.queries import ChapterAuthorityQuery
 from novel_forge.modules.content_authority import ContentAuthorityApplication, ContentAuthorityQuery
+from novel_forge.modules.book_authority.production import PostgresBookAuthority
 from novel_forge.modules.provider_callback_authority import ProviderCallbackAuthorityService
 from novel_forge.modules.provider_control import ProviderAdapterRegistry
 
@@ -30,6 +32,7 @@ class AuthorityApiServices:
     content_authority_application: ContentAuthorityApplication
     content_authority_query: ContentAuthorityQuery
     provider_callback_service: ProviderCallbackAuthorityService
+    book_authority_application: PostgresBookAuthority
 
 
 def create_authority_app(settings: IndustrialSettings):
@@ -59,6 +62,9 @@ def create_authority_app(settings: IndustrialSettings):
         provider_callback_service=ProviderCallbackAuthorityService(
             settings.database_url or "", provider_registry
         ),
+        book_authority_application=build_book_authority_application(
+            settings, chapter_application=application
+        ),
     )
     app = FastAPI(
         title="Novel Forge PostgreSQL Authority API",
@@ -80,6 +86,7 @@ def create_authority_app(settings: IndustrialSettings):
     from novel_forge.api.routers.provider_callback_authority import (
         create_router as create_provider_callback_router,
     )
+    from novel_forge.api.routers.book_authority import create_router as create_book_router
     from novel_forge.api.routers.context import ProductRouterContext
 
     app.include_router(
@@ -93,6 +100,15 @@ def create_authority_app(settings: IndustrialSettings):
     )
     app.include_router(
         create_content_router(
+            ProductRouterContext(
+                app_settings=settings,
+                models=product_model_map(),
+                services=services,
+            )
+        )
+    )
+    app.include_router(
+        create_book_router(
             ProductRouterContext(
                 app_settings=settings,
                 models=product_model_map(),

@@ -255,6 +255,25 @@ def operation_catalog(
     book_names = {item["name"] for item in book}
     catalog = [item for item in catalog if item["name"] not in book_names]
     catalog.extend(book)
+    from novel_forge.modules.book_authority.production import (
+        book_coordinate_definition,
+    )
+    from novel_forge.modules.book_followup_authority.definitions import (
+        book_followup_operation_definitions,
+    )
+    governed_business = (
+        book_coordinate_definition(
+            application_build_id=application_build_id,
+            commit_sha=commit_sha,
+        ),
+        *book_followup_operation_definitions(
+            application_build_id=application_build_id,
+            commit_sha=commit_sha,
+        ),
+    )
+    governed_names = {item["name"] for item in governed_business}
+    catalog = [item for item in catalog if item["name"] not in governed_names]
+    catalog.extend(governed_business)
     return _apply_catalog_relationships(catalog)
 
 

@@ -52,6 +52,15 @@ def _authority_parser() -> argparse.ArgumentParser:
     detail = subparsers.add_parser("authority-chapter-detail", help="query one authoritative chapter run")
     detail.add_argument("--project-id", required=True)
     detail.add_argument("--root-operation-id", required=True)
+    parity = subparsers.add_parser(
+        "authority-parity-check",
+        help="validate machine-readable Legacy-to-Authority parity",
+    )
+    parity.add_argument(
+        "--manifest",
+        default="config/authority/authority-parity-manifest.json",
+    )
+    parity.add_argument("--repo-root", default=".")
     return parser
 
 
@@ -59,6 +68,16 @@ def _authority_main(argv: list[str] | None, settings: IndustrialSettings) -> int
     parser = _authority_parser()
     args = parser.parse_args(argv)
     try:
+        if args.command == "authority-parity-check":
+            from novel_forge.tools.authority_parity_manifest import (
+                validate_authority_parity_manifest,
+            )
+
+            report = validate_authority_parity_manifest(
+                args.manifest, repo_root=args.repo_root
+            )
+            print(json.dumps(report.to_dict(), ensure_ascii=False, indent=2))
+            return 0 if report.passed else 1
         if not settings.database_url:
             raise RuntimeError("PostgreSQL database is required for authority CLI")
         if args.command == "serve-api":
@@ -108,11 +127,13 @@ def _authority_main(argv: list[str] | None, settings: IndustrialSettings) -> int
         query = build_chapter_authority_query(settings)
         if args.command == "authority-chapter-runs":
             result = query.list_runs(project_id=args.project_id, limit=args.limit)
-        else:
+        elif args.command == "authority-chapter-detail":
             result = query.require_run(
                 project_id=args.project_id,
                 root_operation_id=args.root_operation_id,
             )
+        else:
+            raise RuntimeError(f"unsupported authority command: {args.command}")
         print(json.dumps(result, ensure_ascii=False, indent=2))
         return 0
     except Exception as exc:

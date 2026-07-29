@@ -14,15 +14,15 @@ class AgentCollaborationMigrationTests(unittest.TestCase):
         validate_migration_chain()
         self.assertEqual(
             LATEST_MIGRATION_ID,
-            "20260728_0033_agent_collaboration_v1",
+            "20260729_0034_unified_business_authority",
         )
         self.assertEqual(
             MIGRATIONS[-1].down_revision,
-            "20260718_0032_provider_callback_dispatch_index",
+            "20260728_0033_agent_collaboration_v1",
         )
 
     def test_schema_reuses_authority_execution_and_asset_identities(self) -> None:
-        sql = "\n".join(MIGRATIONS[-1].upgrade_statements)
+        sql = self._collaboration_sql()
 
         for table in (
             "authority_agent_definition",
@@ -63,7 +63,7 @@ class AgentCollaborationMigrationTests(unittest.TestCase):
         self.assertNotIn("conversation_execution_attempts", sql.lower())
 
     def test_schema_has_idempotency_queries_and_immutability_guards(self) -> None:
-        sql = "\n".join(MIGRATIONS[-1].upgrade_statements)
+        sql = self._collaboration_sql()
 
         self.assertIn(
             "UNIQUE(session_id, turn_number)",
@@ -99,7 +99,7 @@ class AgentCollaborationMigrationTests(unittest.TestCase):
         )
 
     def test_session_and_decision_statuses_are_database_constrained(self) -> None:
-        sql = "\n".join(MIGRATIONS[-1].upgrade_statements)
+        sql = self._collaboration_sql()
 
         for status in (
             "SCOPE_FROZEN",
@@ -118,6 +118,15 @@ class AgentCollaborationMigrationTests(unittest.TestCase):
             "SCOPE_EXPANSION_REJECTED",
         ):
             self.assertIn(f"'{decision}'", sql)
+
+    @staticmethod
+    def _collaboration_sql() -> str:
+        migration = next(
+            item
+            for item in MIGRATIONS
+            if item.migration_id == "20260728_0033_agent_collaboration_v1"
+        )
+        return "\n".join(migration.upgrade_statements)
 
 
 if __name__ == "__main__":

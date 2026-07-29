@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import os
 
 from novel_forge.modules.command_kernel.operation_graph import GraphCommandContext, coordinate_saga
 from novel_forge.modules.content_authority.scheduler import ContentAuthorityScheduler
@@ -28,6 +29,15 @@ class BookAuthorityScheduler:
         )
 
     def tick(self, *, project_id: str, root_operation_id: str) -> BookSchedulerTick:
+        if os.environ.get("NOVEL_FORGE_ENVIRONMENT", "development").lower() in {
+            "production",
+            "staging",
+            "production_like",
+        }:
+            raise RuntimeError(
+                "LEGACY_BOOK_AUTHORITY_PRODUCTION_DISABLED: "
+                "use PostgresBookAuthorityScheduler"
+            )
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 "SELECT saga_id, status FROM authority_saga WHERE project_id=%s AND root_operation_id=%s",

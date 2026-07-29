@@ -10,6 +10,43 @@ The current code/runtime baseline is Novel Forge v6. The repository/package/CLI 
 
 Current priority: v1 single-book production closure before broader multi-book, SaaS, or platform automation.
 
+## 2026-07-29 Unified Production Execution Business Integration
+
+The current worktree adds the P0 business integration slice over the existing
+Command Kernel; it does not introduce a second Operation, Saga, Attempt, lease,
+fence, effect, or receipt system.
+
+`PostgresBookAuthority` now persists Book scheduling checkpoints and submits
+versioned Chapter commands through `ChapterAuthorityApplication`. It stores only
+Chapter request/Operation/Saga references and reconciles Chapter-owned state by
+query. Book root admission freezes real PostgreSQL AssetVersions for BookDesign,
+BookPlan, Volume/Arc plans and long-form state inputs.
+
+`reader_outcome.evaluate` is an ExternalEffect/PEP-backed business Operation that
+materializes Reader Outcome, Reader State transition, and issue AssetVersions.
+`longform.recap` is a governed deterministic observer Operation that materializes
+Recap, deviations, adjustment proposal, and optional replan request without
+mutating plans. Read-only PostgreSQL views expose both projections.
+
+Legacy Chapter, Long-form Recap, and fixture Book Authority entrypoints fail
+closed in production-like environments. `LocalStorage` is explicitly
+non-authoritative and non-production-writable. The machine-readable twelve-step
+parity contract is validated by `make authority-parity-check`.
+
+Evidence is PostgreSQL integration plus scripted Provider through the real PEP
+seam:
+
+```text
+architecture_defined=true
+fixture_proven=true
+integration_proven=true
+real_provider_proven=false
+longform_proven=false
+production_verified=false
+```
+
+See `docs/reports/p0-unified-execution-plane-implementation-report.md`.
+
 ## 2026-07-29 Scoped Conversational Agent Architecture V1
 
 The repository now contains the first Authority-led, frozen-scope Agent

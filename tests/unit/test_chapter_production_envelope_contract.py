@@ -31,7 +31,9 @@ class ChapterProductionEnvelopeContractTests(unittest.TestCase):
             )
 
             before = _chapter_runs(storage)
-            with self.assertRaisesRegex(ValueError, "OS envelope required"):
+            with self.assertRaisesRegex(
+                ValueError, "LEGACY_CHAPTER_BUS_PRODUCTION_DISABLED"
+            ):
                 start_chapter_production(
                     storage,
                     outline_path=outline_path,

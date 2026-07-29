@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import os
 from typing import Any
 
 from novel_forge.core.ids import make_id, utc_now
@@ -115,6 +116,15 @@ def evaluate_recap_trigger(
 
 
 def run_longform_recap(storage: LocalStorage, payload: dict[str, Any]) -> dict[str, Any]:
+    if os.environ.get("NOVEL_FORGE_ENVIRONMENT", "").strip().lower() in {
+        "production",
+        "staging",
+        "production_like",
+    }:
+        raise RuntimeError(
+            "LEGACY_LONGFORM_RECAP_PRODUCTION_DISABLED: "
+            "submit longform.recap through PostgreSQL Authority"
+        )
     storage.ensure_layout()
     project_id = str(payload.get("project_id") or "local-system")
     workspace_path = str(payload.get("workspace_path") or "")

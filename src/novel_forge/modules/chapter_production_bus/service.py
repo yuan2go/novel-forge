@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import os
 import re
 import time
 from pathlib import Path
@@ -91,6 +92,7 @@ def start_chapter_production(
     source_policy: dict[str, Any] | None = None,
     require_external_provider_proof: bool = False,
 ) -> dict[str, Any]:
+    _forbid_legacy_production(environment)
     storage.ensure_layout()
     _validate_step(run_to)
     outline_file = resolve_path(storage.root, outline_path)
@@ -294,6 +296,7 @@ def run_chapter_production_sequence(
     require_external_provider_proof: bool = False,
     progress_callback: Callable[[dict[str, Any]], None] | None = None,
 ) -> dict[str, Any]:
+    _forbid_legacy_production(environment)
     storage.ensure_layout()
     sequence_started_at = utc_now()
     sequence_started = time.monotonic()
@@ -901,6 +904,23 @@ def _quality_loop_fail_closed(policy: dict[str, Any]) -> bool:
         return False
     envelope = policy.get("os_envelope") if isinstance(policy.get("os_envelope"), dict) else {}
     return is_production_environment(str(policy.get("environment") or envelope.get("environment") or ""))
+
+
+def _forbid_legacy_production(environment: str) -> None:
+    requested = str(environment or "").strip().lower()
+    configured = os.environ.get("NOVEL_FORGE_ENVIRONMENT", "").strip().lower()
+    if (
+        is_production_environment(requested)
+        or requested in {"staging", "production_like"}
+        or configured in {
+            "production", "prod", "operating_system", "strict",
+            "staging", "production_like",
+        }
+    ):
+        raise ValueError(
+            "LEGACY_CHAPTER_BUS_PRODUCTION_DISABLED: "
+            "submit a PostgreSQL Chapter Authority command"
+        )
 
 
 def _truthy(value: Any) -> bool:
