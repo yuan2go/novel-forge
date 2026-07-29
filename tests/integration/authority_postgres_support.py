@@ -12,7 +12,8 @@ from novel_forge.storage.migrations import run_migrations
 
 DATABASE_URL = os.environ.get(
     "NOVEL_FORGE_DATABASE_URL",
-    "postgresql://novel_forge@127.0.0.1:55432/novel_forge_authority_test",
+    "postgresql://novel_forge:novel_forge@127.0.0.1:55432/"
+    "novel_forge_authority_test",
 )
 
 

@@ -132,7 +132,7 @@ class ChapterAuthorityDefinitionTests(unittest.TestCase):
             (ChapterNode.DRAFT, "model.draft"),
             (ChapterNode.REVIEW, "model.review"),
             (ChapterNode.REVISION, "model.revision"),
-            (ChapterNode.REREVIEW, "model.review"),
+            (ChapterNode.REREVIEW, "model.rereview"),
         ):
             definition = definitions[list(ChapterNode).index(node)]
             self.assertIn(capability, definition["external_capabilities"])

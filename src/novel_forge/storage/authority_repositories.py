@@ -1274,6 +1274,9 @@ class AuthorityRepositories:
         from novel_forge.storage.provider_callback_repositories import (
             ProviderCallbackRepository,
         )
+        from novel_forge.storage.agent_collaboration_repositories import (
+            PostgresAgentCollaborationRepository,
+        )
 
         self.definitions = OperationDefinitionRepository(cursor)
         self.operations = OperationRepository(cursor)
@@ -1290,3 +1293,4 @@ class AuthorityRepositories:
         self.operation_graph = OperationGraphRepository(cursor)
         self.completion_contracts = CompletionContractRepository(cursor)
         self.provider_callbacks = ProviderCallbackRepository(cursor)
+        self.agent_collaboration = PostgresAgentCollaborationRepository(cursor)

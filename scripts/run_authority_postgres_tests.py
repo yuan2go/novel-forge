@@ -14,6 +14,7 @@ def main() -> int:
         "test_command_kernel_*_postgres.py",
         "test_external_effect_*_postgres.py",
         "test_production_execution_*_postgres.py",
+        "test_agent_collaboration_postgres.py",
         "test_chapter_authority_*_postgres.py",
         "test_postgresql_only_chapter_slice.py",
     ):

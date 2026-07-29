@@ -1,8 +1,9 @@
 # Novel Forge 统一生产执行平面
 
-> 更新日期：2026-07-22  
+> 更新日期：2026-07-29
 > 适用分支：`feat/v7-content-intelligence-and-longform-proof`  
-> 文档状态：`ACTIVE TARGET ARCHITECTURE`，不代表已经实现或通过生产验证
+> 文档状态：`ACTIVE ARCHITECTURE`；Core 与 Agent Collaboration 有 Fixture /
+> PostgreSQL 集成证据，不代表真实 Runtime 或生产验证
 
 ## 0. 文档定位
 
@@ -99,6 +100,57 @@ Agent / Workflow direct call path
 ```
 
 禁止在这些路径之外再新增新的 Codex 调用器。
+
+### 2.1 Scoped Agent Collaboration V1 接入
+
+Agent Collaboration 现在通过 `DomainExecutionPort` 接入 PEP，领域层不依赖
+Gateway、Backend、Provider SDK、Codex CLI、subprocess 或 HTTP。
+
+```text
+AgentCollaborationSession (PostgreSQL Saga state)
+→ AgentWorkOrder
+→ existing Authority Operation / Attempt / Fence
+→ DomainExecutionPort
+→ ProductionExecutionGateway
+→ qualified Backend
+→ DomainExecutionCandidate + DomainExecutionEvidence
+→ AgentOutputEnvelope
+→ schema / scope / domain acceptance
+→ Message / CandidateVersion / Conflict
+→ Authority Decision / Commit
+```
+
+`AgentWorkOrder.capability` 是版本化业务 AgentCapability；
+`AgentWorkOrder.execution_capability` 是 PEP Capability。当前纵向 Fixture 使用：
+
+```text
+book-design.deliberate@1
+→ agent.workspace.execute
+→ scripted-fixture
+```
+
+生产接受结果前必须验证 Evidence 的 Operation、Attempt、Fence、PEP Capability、
+RouteSnapshot 和 InputManifest 与冻结 WorkOrder 完全一致。生产 Repository 拒绝
+没有 PEP Evidence 的 Output。重复 Turn 在调用 PEP 前返回 PostgreSQL 已存结果，
+避免重复执行、重复扣费和重复推进。
+
+PEP 只报告 Backend/Execution Evidence，不决定 Proposal、Challenge、Revision、
+Conflict、Candidate、Scope Expansion 或 Authority Decision。后端成功不会自动
+完成 Collaboration Turn。
+
+四轮“主角核心优势机制”Scripted Fixture 和“修改结局”越权路径已经通过真实
+Gateway 接口及 PostgreSQL Authority 集成测试。该证据等级是：
+
+```text
+architecture_defined=true
+fixture_proven=true
+integration_proven=true
+real_runtime_proven=false
+production_verified=false
+```
+
+完整业务模型见
+`docs/architecture/scoped-conversational-agent-architecture.md`。
 
 ## 3. 收敛原则
 

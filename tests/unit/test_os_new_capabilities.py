@@ -462,6 +462,7 @@ class _FakePgVectorCursor:
 class _FakeHttpResponse:
     def __init__(self, payload):
         self.payload = payload
+        self.status = 200
 
     def __enter__(self):
         return self

@@ -1,6 +1,6 @@
 # Autonomous Novel OS Documentation
 
-Updated: 2026-07-22
+Updated: 2026-07-29
 Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`
 
 This directory is the current documentation entrypoint for Autonomous Novel OS on the `novel-forge` codebase. The repository/package/CLI remain Novel Forge v6 until an explicit rename migration is approved.
@@ -16,6 +16,7 @@ The active product target is defined by the blueprint files and the current cont
 - [blueprint/autonomous-novel-os-full-blueprint.md](blueprint/autonomous-novel-os-full-blueprint.md) - full functional blueprint.
 - [blueprint/novel-os-project-blueprint.md](blueprint/novel-os-project-blueprint.md) - project blueprint and phase plan.
 - [architecture/production-execution-plane.md](architecture/production-execution-plane.md) - Claude Code orchestration, Codex CLI execution, model profiles, routing, workspace transactions, recovery, evaluation, and multi-book expansion target architecture.
+- [architecture/scoped-conversational-agent-architecture.md](architecture/scoped-conversational-agent-architecture.md) - implemented V1 contract for Authority-led, scope-frozen, PostgreSQL-backed Agent deliberation through the production execution plane.
 - [design/hierarchical-story-planning-and-production-authority.md](design/hierarchical-story-planning-and-production-authority.md) - Book Authority、Volume/Arc/Chapter Group Authority、真实 Chapter Saga 委托、滚动规划与分层重规划目标设计。
 - [design/book-design-authority-and-longform-closed-loop.md](design/book-design-authority-and-longform-closed-loop.md) - active integrated product and architecture specification covering semantic generators, Book Design Authority, hierarchical planning, asset impact, long-form state adaptation, reader feedback, and completion governance.
 - [plans/book-design-authority-implementation-plan.md](plans/book-design-authority-implementation-plan.md) - active Epic and Work Package plan for implementing the integrated Book Design Authority and long-form closed loop.
@@ -60,14 +61,15 @@ Risk closure addendum: [reports/v7-content-intelligence-risk-closure-report.md](
 2. [project-current-state.md](project-current-state.md) - current engineering and product state.
 3. [architecture/overview.md](architecture/overview.md) - system architecture and data flow.
 4. [architecture/production-execution-plane.md](architecture/production-execution-plane.md) - current target production execution architecture and migration plan.
-5. [architecture/module-map.md](architecture/module-map.md) - module boundaries and evidence paths.
-6. [design/hierarchical-story-planning-and-production-authority.md](design/hierarchical-story-planning-and-production-authority.md) - current single-book hierarchical planning and production target.
-7. [design/book-design-authority-and-longform-closed-loop.md](design/book-design-authority-and-longform-closed-loop.md) - integrated semantic Generator, Book Design, state adaptation, impact, feedback, and completion design.
-8. [plans/book-design-authority-implementation-plan.md](plans/book-design-authority-implementation-plan.md) - ordered Epics, Work Packages, migrations, tests, and proof gates.
-9. [product/capability-map.md](product/capability-map.md) - Novel OS capability map and status.
-10. [engineering/extension-guide.md](engineering/extension-guide.md) - how to add a capability without bypassing core contracts.
-11. [quality/regression-tests.md](quality/regression-tests.md) - current test and validation map.
-12. [roadmap/current-roadmap.md](roadmap/current-roadmap.md) - current P0/P1/P2/P3 roadmap.
+5. [architecture/scoped-conversational-agent-architecture.md](architecture/scoped-conversational-agent-architecture.md) - implemented Agent Collaboration V1 boundaries, persistence, PEP integration, and proof limits.
+6. [architecture/module-map.md](architecture/module-map.md) - module boundaries and evidence paths.
+7. [design/hierarchical-story-planning-and-production-authority.md](design/hierarchical-story-planning-and-production-authority.md) - current single-book hierarchical planning and production target.
+8. [design/book-design-authority-and-longform-closed-loop.md](design/book-design-authority-and-longform-closed-loop.md) - integrated semantic Generator, Book Design, state adaptation, impact, feedback, and completion design.
+9. [plans/book-design-authority-implementation-plan.md](plans/book-design-authority-implementation-plan.md) - ordered Epics, Work Packages, migrations, tests, and proof gates.
+10. [product/capability-map.md](product/capability-map.md) - Novel OS capability map and status.
+11. [engineering/extension-guide.md](engineering/extension-guide.md) - how to add a capability without bypassing core contracts.
+12. [quality/regression-tests.md](quality/regression-tests.md) - current test and validation map.
+13. [roadmap/current-roadmap.md](roadmap/current-roadmap.md) - current P0/P1/P2/P3 roadmap.
 
 ## Current Docs
 
@@ -76,6 +78,7 @@ Risk closure addendum: [reports/v7-content-intelligence-risk-closure-report.md](
 | Current state | [project-current-state.md](project-current-state.md) | Fact table for implemented, partial, missing, and risky capabilities |
 | Architecture | [architecture/overview.md](architecture/overview.md) | Layering, runtime flow, Agent/workflow relationship |
 | Production execution | [architecture/production-execution-plane.md](architecture/production-execution-plane.md) | Claude Code orchestration, Codex CLI backend, high/xhigh model profiles, routing, recovery, workspace, evaluation, and phased migration |
+| Scoped Agent collaboration | [architecture/scoped-conversational-agent-architecture.md](architecture/scoped-conversational-agent-architecture.md) | Authority-led deliberation, frozen Scope/participants/inputs, Candidate graph, Conflict, recovery, and PEP Turn semantics |
 | Hierarchical story production | [design/hierarchical-story-planning-and-production-authority.md](design/hierarchical-story-planning-and-production-authority.md) | Book/Volume/Arc/ChapterGroup/Chapter Authority、真实子 Saga 委托、滚动规划、计划影响传播和分阶段验收设计 |
 | Book Design and long-form loop | [design/book-design-authority-and-longform-closed-loop.md](design/book-design-authority-and-longform-closed-loop.md) | Semantic Generator lifecycle, Theme/Ending, World/Character, hierarchical planning, Asset Impact, ChapterOutcome, feedback, completion, APIs, persistence, UI, migration, and acceptance design |
 | Book Design implementation | [plans/book-design-authority-implementation-plan.md](plans/book-design-authority-implementation-plan.md) | Ordered Epics, Work Packages, code locations, OperationDefinitions, migrations, tests, and 3/10/30/100/300-chapter proof gates |

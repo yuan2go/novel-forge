@@ -1,7 +1,7 @@
 # Project Current State
 
-Updated: 2026-07-26
-Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`, source commit `12f3ff7`
+Updated: 2026-07-29
+Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`, initial source commit `8613f743ca039f4ed13513e7eee51478df10487a`
 Latest execution-plane source commit: `4aecfa1`
 
 Autonomous Novel OS is the product target: a local-first operating system for long-term, low-manual-intervention, quality-gated premium web-novel production.
@@ -9,6 +9,73 @@ Autonomous Novel OS is the product target: a local-first operating system for lo
 The current code/runtime baseline is Novel Forge v6. The repository/package/CLI name remains `novel-forge`; do not rename code paths without a dedicated migration.
 
 Current priority: v1 single-book production closure before broader multi-book, SaaS, or platform automation.
+
+## 2026-07-29 Scoped Conversational Agent Architecture V1
+
+The repository now contains the first Authority-led, frozen-scope Agent
+collaboration domain under `modules/agent_collaboration/`. Versioned AgentDefinition
+and AgentCapability contracts are separate from PEP execution capability and
+Runtime. Six-dimensional Scope contracts freeze Narrative, Asset Read, Proposal,
+Authority, Temporal, and Knowledge Visibility boundaries into immutable
+ScopeSnapshots. Participant sets are also immutable snapshots.
+
+Every production collaboration Turn persists an AgentWorkOrder bound to project,
+workspace, book, existing Operation/Attempt/Fence, domain AgentCapability, PEP
+Capability, RouteSnapshot, InputManifest, Scope/Participant Snapshot, input
+AssetVersions, candidate, and policies. Production output without matching PEP
+evidence fails closed. Backend success remains separate from schema validation,
+scope validation, domain acceptance, Message acceptance, Candidate creation,
+Authority Decision, Commit, and Attempt completion.
+
+Migration `20260728_0033_agent_collaboration_v1` adds queryable PostgreSQL Authority
+tables for definitions, capabilities, snapshots, sessions, turns, work orders,
+output envelopes, messages, candidate graph edges, conflicts, scope expansion,
+decisions, and commits. It reuses the current Operation, Saga, Attempt, Lease/Fence,
+and AssetVersion authority; it does not add a second Attempt state machine.
+
+The fixture vertical slice proves:
+
+```text
+Initial Proposal
+→ Candidate v1
+→ structured Challenge + Conflict
+→ Revision / Candidate v2
+→ Evaluation
+→ Authority Decision with retained non-blocking objection
+→ versioned PostgreSQL Authority Asset commit
+```
+
+All four turns use `ProductionExecutionGateway` and a Scripted Fixture Backend.
+Separate tests prove duplicate replay, stale Fence rejection, PostgreSQL restart
+recovery, immutable records, Scope Expansion creating a new Snapshot, transaction
+rollback before Commit, idempotent Commit replay, and a Backend-successful
+`ending.replace` output that cannot enter the Message or Candidate graph.
+
+This is not a complete Book Design Authority or autonomous Agent Center. The
+in-memory repository is test-only; formal state is PostgreSQL-backed.
+
+```text
+agent_definition_contract_proven=true
+agent_scope_contract_proven=true
+agent_conversation_message_proven=true
+agent_collaboration_session_proven=true
+candidate_version_graph_proven=true
+conflict_record_proven=true
+scope_expansion_proven=true
+authority_led_deliberation_proven=true
+agent_turn_pep_integration_proven=true
+collaboration_recovery_proven=true
+book_design_collaboration_fixture_proven=true
+
+real_provider_proven=false
+codex_cli_backend_proven=false
+book_design_authority_proven=false
+longform_proven=false
+production_verified=false
+```
+
+See `docs/architecture/scoped-conversational-agent-architecture.md` and
+`docs/reports/agent-architecture-v1-implementation-report.md`.
 
 ## 2026-07-26 Chapter Authority Gateway Closure
 
