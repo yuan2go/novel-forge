@@ -38,6 +38,8 @@ from . import (
     v20260730_0035_book_child_delegation,
     v20260730_0036_book_canon_checkpoint,
     v20260730_0037_story_state_reducer_registry,
+    v20260730_0038_story_design_authority,
+    v20260730_0039_hierarchical_planning,
 )
 
 VERSION_MODULES = [
@@ -78,6 +80,8 @@ VERSION_MODULES = [
     v20260730_0035_book_child_delegation,
     v20260730_0036_book_canon_checkpoint,
     v20260730_0037_story_state_reducer_registry,
+    v20260730_0038_story_design_authority,
+    v20260730_0039_hierarchical_planning,
 ]
 
 __all__ = ["VERSION_MODULES"]
