@@ -119,6 +119,7 @@ class SubmitBookChapterCommand:
     chapter_plan_asset_version_id: str
     chapter_plan_content_hash: str
     context_candidates: tuple[dict[str, Any], ...]
+    parent_group_version_id: str = ""
     context_version_refs: dict[str, Any] | None = None
     context_token_budget: int = 6000
     preparation_report: dict[str, Any] | None = None
@@ -447,6 +448,7 @@ class PostgresBookAuthority:
                         "chapter_number": command.chapter_number,
                         "chapter_plan_version": command.chapter_plan_asset_version_id,
                         "chapter_plan_content_hash": command.chapter_plan_content_hash,
+                        "parent_group_version_id": command.parent_group_version_id,
                         "production_profile_version": book[
                             "production_profile_version"
                         ],
@@ -589,7 +591,9 @@ class PostgresBookAuthority:
                 payload={
                     "book_id": book["book_id"],
                     "chapter_number": int(request["chapter_number"]),
-                    "parent_group_version_id": "",
+                    "parent_group_version_id": str(
+                        request.get("parent_group_version_id") or ""
+                    ),
                     "cost_receipt_refs": list(
                         evidence.get("cost_receipt_refs") or ()
                     ),
@@ -841,6 +845,9 @@ class PostgresBookAuthority:
                 ),
                 chapter_plan_content_hash=str(payload["chapter_plan_content_hash"]),
                 context_candidates=tuple(payload["context_candidates"]),
+                parent_group_version_id=str(
+                    payload.get("parent_group_version_id") or ""
+                ),
                 context_version_refs=payload.get("context_version_refs"),
                 context_token_budget=int(payload.get("context_token_budget") or 6000),
                 preparation_report=payload.get("preparation_report"),
@@ -1057,6 +1064,7 @@ class PostgresBookAuthority:
                        request.project_id, request.chapter_number,
                        request.chapter_plan_version,
                        request.chapter_plan_content_hash,
+                       request.parent_group_version_id,
                        request.production_profile_version,
                        request.stable_idempotency_key, request.command_payload,
                        request.chapter_root_operation_id,
@@ -1076,7 +1084,8 @@ class PostgresBookAuthority:
         fields = (
             "chapter_request_id", "book_run_id", "project_id",
             "chapter_number", "chapter_plan_version",
-            "chapter_plan_content_hash", "production_profile_version",
+            "chapter_plan_content_hash", "parent_group_version_id",
+            "production_profile_version",
             "stable_idempotency_key", "command_payload",
             "chapter_root_operation_id", "chapter_saga_id",
             "status_reference", "failure_classification",

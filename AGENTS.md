@@ -159,3 +159,17 @@ An Agent task is not complete because text was generated. Completion requires th
 - production content: review report and quality gate result.
 
 Novel Operating System acceptance is not equivalent to generating a full long novel. The P0 acceptance standard is a minimal vertical slice that proves one project/chapter-sized fixture can pass through workflow execution, agent dispatch, context/model boundary, provider hard-stop and trace/cost ledger, KG/canon continuity gate, review rework, publish release gate, invalidation, and resume without bypassing schema-backed artifacts.
+
+## Rolling Authority Rule
+
+Story Design generators create candidates only. Semantic activation belongs to
+Story Design Authority; typed plan activation belongs to Planning and
+PlanChange Authority. ChapterGroup may coordinate Book/Chapter commands but
+must not copy Chapter Attempt, Lease, Fence, ExternalEffect or receipt state.
+Recap, Reader Outcome, human preference and behavior calibration produce
+evidence or proposals and cannot directly mutate Canon, StoryState, executed
+plans or Active future plans.
+
+Fixture preference or behavior records must retain fixture evidence. They
+cannot be reported as human-anchored, behavior-calibrated, causal, long-form,
+real-provider or production proof.

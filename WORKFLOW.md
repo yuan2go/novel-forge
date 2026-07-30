@@ -351,3 +351,24 @@ A workflow change is accepted only when:
 - it has tests or a documented verification path;
 - it does not break `make validate` expectations;
 - it updates docs when behavior or scope changes.
+
+## Rolling Book Workflow
+
+```text
+qualify and approve design candidates
+→ activate exact Book / Volume / Group / Chapter versions
+→ start a frozen 3–8 chapter ChapterGroup
+→ dispatch one Chapter through Book Authority
+→ reconcile and accept through Chapter Authority
+→ commit ChapterOutcome and deterministic StoryState
+→ repeat
+→ Reader Shadow + deterministic boundary Recap
+→ close Group and advance Rolling Horizon
+→ PlanChange semantic diff / impact / approval
+→ activate future version or retain current plan
+```
+
+Pause blocks new children. Resume reconciles the existing child before
+dispatch. Cancel propagates through Book Authority. Stale ChapterPlans cannot
+be dispatched. Retrospective, Reader and Recap outputs are evidence or
+proposals and never mutate an Active Plan directly.

@@ -10,15 +10,15 @@ from novel_forge.storage.migrations.runner import (
 
 
 class AgentCollaborationMigrationTests(unittest.TestCase):
-    def test_collaboration_migration_is_latest_and_chain_is_valid(self) -> None:
+    def test_authority_migration_chain_is_current_and_valid(self) -> None:
         validate_migration_chain()
         self.assertEqual(
             LATEST_MIGRATION_ID,
-            "20260729_0034_unified_business_authority",
+            "20260730_0042_reader_calibration",
         )
         self.assertEqual(
             MIGRATIONS[-1].down_revision,
-            "20260728_0033_agent_collaboration_v1",
+            "20260730_0041_plan_change_authority",
         )
 
     def test_schema_reuses_authority_execution_and_asset_identities(self) -> None:

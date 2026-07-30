@@ -303,3 +303,28 @@ Preferred order:
 5. Documentation/version alignment across product, architecture, testing, operations, API, and UI surfaces.
 
 This order improves production quality first, then expands source methodology and automation.
+
+## PostgreSQL Rolling Authority Extensions
+
+```text
+StoryDesignAssetAuthority
+  → typed plan bindings / hierarchy / dependency edges
+  → ChapterGroup checkpoints
+  → Book child command
+  → Chapter Operation / Saga / Attempt / PEP
+  → ChapterOutcome → deterministic StoryState
+  → Reader Shadow + deterministic Recap
+  → PlanChange decision
+  → recoverable plan activation + Rolling Horizon
+```
+
+Arc is a semantic graph relation, not a containment node. Plan payloads remain
+in `authority_asset_version`; planning tables store typed relations, active
+pointers, freshness and horizons. ChapterGroup and Book store only child
+authority references and never own Chapter Attempt, Lease, Fence,
+ExternalEffect or receipt state.
+
+Preference and behavior calibration also use Authority Operations. Outcomes
+require exposure denominators. Invalid/insufficient calibration or severe
+Drift forces Shadow, and Reader evidence cannot override hard Canon, safety,
+originality, compliance or blocking-quality gates.

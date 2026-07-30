@@ -258,3 +258,17 @@ An Agent task is complete only when the smallest relevant verification exists:
 - production content: review report and quality gate result.
 
 When verification is not possible in the current environment, record the exact blocker and the next command to run.
+
+## Rolling Production Authority
+
+Reuse `StoryDesignAssetAuthority`, typed planning bindings,
+`PostgresChapterGroupAuthority`, `PostgresBookAuthority`, Chapter Authority,
+`ChapterOutcomeAuthorityApplication`, deterministic reducers, Book follow-up
+Operations, `PostgresPlanChangeAuthority` and
+`PostgresReaderCalibrationAuthority`. Do not create parallel execution,
+Provider or asset infrastructure, and do not bypass these services with
+LocalStorage writes.
+
+Fixture preference, behavior or model evidence stays Shadow and cannot upgrade
+real-provider, human-anchored, behavior-calibrated, long-form or
+production-verified maturity flags.

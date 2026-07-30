@@ -172,3 +172,20 @@ rg -n "ARCHITECTURE.md|WORKFLOW.md|TESTING.md|Novel Forge V5|V5 structure" READM
 ```
 
 If docs changed command claims, verify the command exists in `Makefile`, `pyproject.toml`, `src/novel_forge/cli.py`, or `web/admin/package.json`.
+
+## Rolling authority regression families
+
+- `test_story_design_authority_postgres`: lifecycle, PEP evidence, bounded
+  repair, approval and one active version.
+- `test_hierarchical_planning_postgres`: containment, Arc edges and
+  Frozen/Executed replacement.
+- `test_chapter_group_authority_postgres`: three dynamic Chapter Sagas,
+  pause/resume/cancel, Recap and Rolling Horizon.
+- `test_plan_change_authority_postgres`: semantic diff, exact impact,
+  interrupted activation and revalidation.
+- `test_reader_calibration_postgres`: blind preference, exposure denominator,
+  scoped event, insufficient calibration and Drift downgrade.
+
+These are PostgreSQL integration tests with deterministic fixtures. They cannot
+set real-provider, long-form, human-anchored, behavior-calibrated or
+production-verified claims.

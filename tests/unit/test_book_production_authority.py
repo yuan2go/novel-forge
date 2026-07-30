@@ -99,6 +99,9 @@ class BookProductionAuthorityTests(unittest.TestCase):
                 "quality_trend_version",
                 "reward_ledger_version",
                 "promise_ledger_version",
+                "reader_segment_version",
+                "reader_contract_version",
+                "platform_profile_version",
             },
         )
 

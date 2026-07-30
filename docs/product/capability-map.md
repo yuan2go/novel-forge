@@ -85,3 +85,16 @@ Current practical assessment:
 - full long-form autonomous production: partial and not yet proven.
 
 The next maturity step is not adding more isolated features. It is closing the acceptance loop across provider policy, context, KG/Canon, ReviewIssue, publishing gates, Agent scheduling, rollback, tests, and operator UI.
+
+## Rolling production maturity
+
+| Capability | Current evidence | Explicit limit |
+| --- | --- | --- |
+| Dynamic Book→Chapter | PostgreSQL two-chapter integration | Scripted Provider |
+| ChapterGroup | PostgreSQL three-chapter integration | not long-form |
+| StoryState | deterministic reducer replay/recovery | no real-book proof |
+| Reader Outcome | governed Shadow sidecar | uncalibrated raw score |
+| Recap | deterministic group-boundary sidecar | not a scale proof |
+| Plan adjustment | diff, impact, decision and recovery | future plans only |
+| Human preference | blind/reversal/agreement | fixture, not anchored |
+| Behavior calibration | exposure/outcome/profile/Drift | no platform stream |

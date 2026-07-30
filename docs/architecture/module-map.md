@@ -105,3 +105,16 @@ This map lists current implementation areas and evidence paths. Status means cod
 | Claude runtime Skill copy | `.claude/skills/` | Implemented/generated plus external Skills | Do not edit as source |
 | Sync script | `scripts/sync_claude_skills.py` | Implemented | Use `make sync-skills-dry-run`, `make sync-skills`, `make check-skills` |
 | Skill docs | `docs/09-skills/` | Partially current | Use with current code evidence |
+
+## Rolling authority modules
+
+| Module | Authority responsibility | Migration |
+| --- | --- | --- |
+| `story_design_authority` | generator definitions and semantic lifecycle | 0038 |
+| `hierarchical_planning` | typed contracts, hierarchy and dependency edges | 0039 |
+| `chapter_group_authority` | group Saga checkpoints and child references | 0040 |
+| `plan_change_authority` | diff, decision, impact and recoverable activation | 0041 |
+| `reader_calibration` | preference, exposure, outcome, calibration and Drift | 0042 |
+
+All five reuse existing Operation/Saga/Attempt and
+`authority_asset_version`; none is a parallel runtime or asset authority.

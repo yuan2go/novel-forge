@@ -276,3 +276,26 @@ make sync-skills
 v6 keeps the Python standard-library core, dataclass schemas, local JSON storage, deterministic mock adapters, and `unittest` tests. Industrial services and external real model providers are opt-in so local validation remains fast and dependency-light; the default production agent boundary is the local Claude Code Codex worker.
 
 Do not document target platform features as completed until schema, service, API/UI, tests, and validation exist.
+
+## Governed Rolling Production Slice (2026-07-30)
+
+The PostgreSQL Authority path now has an integration-proven, fixture-backed
+rolling slice:
+
+```text
+Approved Story Design
+→ typed Book / Volume / ChapterGroup / Chapter plans
+→ ChapterGroup Authority
+→ dynamic Book → Chapter delegation
+→ ChapterOutcome and deterministic StoryState
+→ Reader Outcome Shadow and deterministic Recap
+→ PlanChange Proposal / Impact / Approval
+→ recoverable future-plan activation
+```
+
+Reader preference and behavior-calibration contracts include blind A/B and B/A
+review, exposure denominators, scoped outcome events, calibration profiles and
+Drift downgrade. Evidence remains bounded: Scripted Provider, three chapters
+and fixture reader data. `real_provider_proven`, `longform_proven`,
+`behavior_calibrated` and `production_verified` remain false. See the
+[independent audit](docs/reports/next-phase-independent-audit.md).

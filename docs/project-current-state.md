@@ -434,3 +434,19 @@ Blob export, and a post-Blob Final Release Gate. See
 ## Next Priorities
 
 See [reports/v1-v7-roadmap.md](reports/v1-v7-roadmap.md), [reports/next-production-slices.md](reports/next-production-slices.md), and [reports/autonomous-novel-os-phase-01-report.md](reports/autonomous-novel-os-phase-01-report.md). The most important next work is to close the v1 single-book production loop, continue Kernel direct-entrypoint migration and lifecycle/status reconciliation, then harden context/KG consistency, provider evidence, release/publish gates, calibrated reader-promise/chapter-economy/character-pressure/mobile-reading detection, and productized UI verification.
+
+## 2026-07-30 rolling-production authority update
+
+| Capability | Implemented | Handler bound | Fixture proven | Integration proven | Real/scale proof |
+| --- | --- | --- | --- | --- | --- |
+| Story Design Asset Authority | yes | yes | yes | yes | no |
+| Typed hierarchical planning | yes | yes | yes | yes | no |
+| Three-chapter ChapterGroup | yes | yes | yes | yes | no |
+| Rolling Horizon | yes | yes | yes | yes | no |
+| PlanChange / impact / approval | yes | yes | yes | yes | no |
+| Human preference flow | yes | yes | yes | yes | not human anchored |
+| Reader exposure/outcome pipeline | yes | yes | yes | yes | not behavior calibrated |
+
+The ChapterGroup proof uses Scripted Provider through the production execution
+protocol. It is not real-provider, Codex, long-form or continuous-production
+evidence. Reader Outcome remains Shadow and raw-score only.

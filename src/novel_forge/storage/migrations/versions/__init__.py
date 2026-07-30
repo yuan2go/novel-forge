@@ -40,6 +40,9 @@ from . import (
     v20260730_0037_story_state_reducer_registry,
     v20260730_0038_story_design_authority,
     v20260730_0039_hierarchical_planning,
+    v20260730_0040_chapter_group_authority,
+    v20260730_0041_plan_change_authority,
+    v20260730_0042_reader_calibration,
 )
 
 VERSION_MODULES = [
@@ -82,6 +85,9 @@ VERSION_MODULES = [
     v20260730_0037_story_state_reducer_registry,
     v20260730_0038_story_design_authority,
     v20260730_0039_hierarchical_planning,
+    v20260730_0040_chapter_group_authority,
+    v20260730_0041_plan_change_authority,
+    v20260730_0042_reader_calibration,
 ]
 
 __all__ = ["VERSION_MODULES"]

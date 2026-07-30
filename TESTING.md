@@ -250,3 +250,22 @@ Verification not run: repository was not available in this environment.
 ```
 
 Do not write "should pass" as if it passed.
+
+## Rolling Authority Verification
+
+```bash
+PYTHONPATH=src .venv/bin/python -m unittest \
+  tests.integration.test_book_to_chapter_authority_vertical_postgres
+PYTHONPATH=src .venv/bin/python -m unittest \
+  tests.integration.test_chapter_group_authority_postgres
+PYTHONPATH=src .venv/bin/python -m unittest \
+  tests.integration.test_plan_change_authority_postgres
+PYTHONPATH=src .venv/bin/python -m unittest \
+  tests.integration.test_reader_calibration_postgres
+```
+
+ChapterGroup runs three independent Chapter Sagas with the Scripted Provider;
+this is integration evidence, not real-provider or long-form proof. PlanChange
+injects an interruption between semantic activation and typed binding. Reader
+Calibration verifies fixture Shadow mode and the no-probability rule for
+insufficient samples.
