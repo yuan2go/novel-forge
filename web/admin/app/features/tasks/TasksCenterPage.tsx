@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { FeatureShell } from "../../shared/feature-shell";
 import type { AgentEventRow, AgentRunRow, DeadLetter, ProjectRow, TaskCenter, TaskControl, TaskRow } from "../../shared/types";
 import { DataTable, Metric, PanelHeader, statusClass } from "../../shared/ui";
-import { loadTaskData, retryDeadLetter, retryTask, type RuntimeCostDashboard, type RuntimeTraceTimeline } from "./api";
+import { loadTaskData, recoverAuthorityOperation, requeueAuthorityOutbox, type RuntimeCostDashboard, type RuntimeTraceTimeline } from "./api";
 
 export function TasksCenterPage() {
   const [projects, setProjects] = useState<ProjectRow[]>([]);
@@ -25,10 +25,11 @@ export function TasksCenterPage() {
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
 
-  const selectedProject = projects.find((project) => project.project_id === projectId);
   const costSummary = costDashboard?.asset?.content?.summary || {};
   const costSnapshots = costDashboard?.asset?.content?.snapshots || {};
   const costRecommendations = costDashboard?.asset?.content?.recommendations || [];
+  const authorityWorkers = control?.scheduler?.workers ?? [];
+  const busyAuthorityWorkers = authorityWorkers.filter((worker) => worker.status === "BUSY").length;
 
   async function refresh(nextOffset = offset) {
     const [projectRows, taskCenter, taskControl, deadLetterRows, runRows, eventRows, runtimeTrace, runtimeCost] = await loadTaskData({ projectId, status, taskType, step, offset: nextOffset });
@@ -59,16 +60,26 @@ export function TasksCenterPage() {
   }
 
   function taskRow(row: TaskRow) {
+    const identity = row.operation_id || row.id || row.run_id;
+    const recoverable = ["FAILED_RETRYABLE", "WAITING_EXTERNAL_RESULT", "RECONCILIATION_REQUIRED"].includes(row.status);
     return [
       row.task_type,
       row.step,
-      <span className={statusClass(row.status)} key={`${row.path}-status`}>{row.status}</span>,
+      <span className={statusClass(row.status)} key={`${identity}-status`}>{row.status}</span>,
       `${Math.round((row.progress ?? 0) * 100)}%`,
       row.updated_at || row.recorded_at || "-",
-      <button className="secondaryButton" key={`${row.path}-retry`} disabled={busy || !["failed", "dead_letter", "cancelled"].includes(row.status)} onClick={() => runAction(() => retryTask(row, selectedProject?.path), "任务已重试")}>
-        <RotateCcw size={16} />
-        重试
-      </button>
+      <span className="pathText" key={`${identity}-authority`}>{identity}</span>,
+      recoverable ? (
+        <button
+          className="secondaryButton"
+          disabled={busy}
+          key={`${identity}-recover`}
+          onClick={() => runAction(
+            () => recoverAuthorityOperation(row),
+            `Authority recovery admitted: ${identity}`
+          )}
+        >恢复</button>
+      ) : <span className="pathText" key={`${identity}-no-recovery`}>—</span>
     ];
   }
 
@@ -83,9 +94,9 @@ export function TasksCenterPage() {
 
       <section className="summaryBand manuscriptSummary">
         <Metric label="任务总数" value={String(center?.summary.task_count ?? 0)} />
-        <Metric label="失败" value={String(center?.summary.by_status?.failed ?? 0)} />
+        <Metric label="失败" value={String((center?.summary.by_status?.FAILED_FINAL ?? 0) + (center?.summary.by_status?.FAILED_RETRYABLE ?? 0))} />
         <Metric label="Dead Letter" value={String(control?.dead_letters?.count ?? deadLetters.length)} />
-        <Metric label="Worker" value={control?.celery.healthy ? "healthy" : "offline"} />
+        <Metric label="Authority Worker" value={control?.scheduler?.readiness ?? "DEGRADED"} />
         <Metric label="Agent Runs" value={String(agentRuns.length)} />
         <Metric label="Trace Spans" value={String(traceTimeline?.summary?.span_count ?? 0)} />
         <Metric label="成本" value={`$${Number(costSummary.total_cost ?? 0).toFixed(4)}`} />
@@ -107,11 +118,11 @@ export function TasksCenterPage() {
         </div>
 
         <div className="panel">
-          <PanelHeader title="Worker / Queue" icon={<Server size={18} />} />
+          <PanelHeader title="Authority Worker / Outbox" icon={<Server size={18} />} />
           <div className="summaryBand">
-            <Metric label="Active" value={String(control?.celery.active_count ?? 0)} />
-            <Metric label="Reserved" value={String(control?.celery.reserved_count ?? 0)} />
-            <Metric label="Scheduled" value={String(control?.celery.scheduled_count ?? 0)} />
+            <Metric label="Workers" value={String(authorityWorkers.length)} />
+            <Metric label="Busy" value={String(busyAuthorityWorkers)} />
+            <Metric label="Outbox Lag" value={String(control?.scheduler?.outbox_lag ?? 0)} />
           </div>
         </div>
       </section>
@@ -120,7 +131,7 @@ export function TasksCenterPage() {
         <PanelHeader title="最新状态" icon={<Activity size={18} />} />
         <DataTable
           emptyText="暂无任务"
-          columns={["任务", "步骤", "状态", "进度", "更新时间", "操作"]}
+          columns={["任务", "步骤", "状态", "进度", "更新时间", "Operation", "恢复"]}
           rows={(center?.latest ?? []).map(taskRow)}
         />
       </section>
@@ -134,12 +145,12 @@ export function TasksCenterPage() {
             rows={agentRuns.slice(0, 40).map((run) => [
               run.agent_type,
               run.operation,
-              <span className={statusClass(run.status)} key={`${run.path}-status`}>{run.status}</span>,
+              <span className={statusClass(run.status)} key={`${run.id}-status`}>{run.status}</span>,
               `${run.model_provider || "-"} / ${run.model_name || "-"}`,
               `${run.token_used ?? 0}/${run.token_budget ?? 0}`,
               compactJson(run.evidence),
               String(run.output_assets?.length ?? 0),
-              <span className="pathText" key={run.path}>{run.path}</span>
+              <span className="pathText" key={run.id}>{run.id}</span>
             ])}
           />
         </div>
@@ -150,10 +161,10 @@ export function TasksCenterPage() {
             columns={["事件", "状态", "消息", "时间", "Run"]}
             rows={agentEvents.slice(0, 60).map((event) => [
               event.event_type,
-              <span className={statusClass(event.status)} key={`${event.path}-status`}>{event.status}</span>,
+              <span className={statusClass(event.status)} key={`${event.id}-status`}>{event.status}</span>,
               event.message || "-",
               event.created_at || "-",
-              <span className="pathText" key={event.path}>{event.agent_run_path}</span>
+              <span className="pathText" key={event.id}>{event.agent_run_id}</span>
             ])}
           />
         </div>
@@ -198,7 +209,7 @@ export function TasksCenterPage() {
           <PanelHeader title="完整 Timeline" icon={<Activity size={18} />} />
           <DataTable
             emptyText="暂无事件"
-            columns={["任务", "步骤", "状态", "进度", "时间", "操作"]}
+            columns={["任务", "步骤", "状态", "进度", "时间", "Operation", "恢复"]}
             rows={(center?.timeline.events ?? []).map(taskRow)}
           />
           <div className="studioActions">
@@ -217,7 +228,19 @@ export function TasksCenterPage() {
               letter.task_id,
               letter.error_message || "-",
               letter.created_at,
-              <button className="secondaryButton" key={letter.path} disabled={busy} onClick={() => runAction(() => retryDeadLetter(letter.path), "Dead-letter 已恢复")}>恢复</button>
+              letter.kind === "outbox" ? (
+                <button
+                  className="secondaryButton"
+                  disabled={busy}
+                  key={letter.id || letter.task_id}
+                  onClick={() => runAction(
+                    () => requeueAuthorityOutbox(letter),
+                    `New outbox generation admitted: ${letter.task_id}`
+                  )}
+                >新建投递 generation</button>
+              ) : (
+                <span className="pathText" key={letter.id || letter.task_id}>需由所属 Authority 创建新 Operation generation</span>
+              )
             ])}
           />
         </div>

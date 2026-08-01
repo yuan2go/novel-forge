@@ -1,7 +1,10 @@
 export type ProjectRow = {
   path: string;
-  id: string;
+  id?: string;
   project_id: string;
+  workspace_id?: string;
+  asset_version_id?: string;
+  content_hash?: string;
   title: string;
   series_title?: string;
   book_number?: number;
@@ -68,6 +71,8 @@ export type ProjectOperatingDashboard = {
 export type AssetRow = {
   path: string;
   id?: string;
+  asset_id?: string;
+  asset_version_id?: string;
   category?: string;
   type: string;
   title: string;
@@ -159,6 +164,8 @@ export type Health = {
 export type FeatureAssetRow = {
   path: string;
   id: string;
+  asset_id?: string;
+  asset_version_id?: string;
   type: string;
   title: string;
   project_id?: string;
@@ -203,8 +210,13 @@ export type ModuleCompletionReport = {
 };
 
 export type TaskRow = {
-  path: string;
+  path?: string;
   id?: string;
+  operation_id?: string;
+  version?: number;
+  root_operation_id?: string;
+  project_id?: string;
+  workspace_id?: string;
   run_id: string;
   task_type: string;
   step: string;
@@ -255,13 +267,25 @@ export type TaskControl = {
   };
   config: Record<string, unknown>;
   queue_trend: Array<Record<string, unknown>>;
-  scheduler?: Record<string, unknown>;
+  scheduler?: {
+    kind?: string;
+    readiness?: string;
+    status?: string;
+    owner?: string;
+    last_tick?: string;
+    outbox_lag?: number;
+    workers?: Array<{ status?: string; worker_id?: string; worker_kind?: string }>;
+  };
   dead_letters?: { count: number };
 };
 
 export type DeadLetter = {
-  path: string;
+  path?: string;
   id?: string;
+  kind?: string;
+  operation_id?: string;
+  project_id?: string;
+  attempt_count?: number;
   task_name: string;
   task_id: string;
   error_type?: string;

@@ -43,6 +43,14 @@ from . import (
     v20260730_0040_chapter_group_authority,
     v20260730_0041_plan_change_authority,
     v20260730_0042_reader_calibration,
+    v20260801_0043_project_workspace_and_legacy_migration_authority,
+    v20260801_0044_project_binding_authority,
+    v20260801_0045_task_recovery_authority,
+    v20260801_0046_source_document_authority,
+    v20260801_0047_candidate_asset_lifecycle,
+    v20260801_0048_source_transform_authority,
+    v20260801_0049_source_transform_fk_indexes,
+    v20260801_0050_mkaos_authority,
 )
 
 VERSION_MODULES = [
@@ -88,6 +96,14 @@ VERSION_MODULES = [
     v20260730_0040_chapter_group_authority,
     v20260730_0041_plan_change_authority,
     v20260730_0042_reader_calibration,
+    v20260801_0043_project_workspace_and_legacy_migration_authority,
+    v20260801_0044_project_binding_authority,
+    v20260801_0045_task_recovery_authority,
+    v20260801_0046_source_document_authority,
+    v20260801_0047_candidate_asset_lifecycle,
+    v20260801_0048_source_transform_authority,
+    v20260801_0049_source_transform_fk_indexes,
+    v20260801_0050_mkaos_authority,
 ]
 
 __all__ = ["VERSION_MODULES"]

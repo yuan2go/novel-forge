@@ -1,4 +1,5 @@
 import { fetchJson, postJson } from "../../shared/api";
+import type { ProjectRow } from "../../shared/types";
 
 function unwrapMkaos<T = any>(payload: T): T {
   if (payload && typeof payload === "object" && (payload as any).success === true && "data" in (payload as any)) {
@@ -19,6 +20,11 @@ export type MkaosRow = {
   metadata: Record<string, any>;
   references?: string[];
   asset?: Record<string, any>;
+  asset_id?: string;
+  asset_version_id?: string;
+  lifecycle?: string;
+  eligibility?: string;
+  governance?: string;
 };
 
 export type MkaosOverview = {
@@ -32,37 +38,115 @@ export type MkaosOverview = {
 };
 
 export function loadMkaosOverview() {
-  return fetchJson<MkaosOverview>("/product/mkaos/overview");
+  return fetchJson<MkaosRow[]>("/product/mkaos/assets?limit=500").then((rows) => {
+    const byType = (types: string[]) => rows.filter((row) => types.includes(row.type));
+    const sources = byType(["source_document", "source_chunk"]);
+    const knowledge = byType(["knowledge_card_candidate", "knowledge_card"]);
+    const bindings = byType(["knowledge_usage_binding"]);
+    const rules = byType(["rule_card_candidate", "rule_card"]);
+    const usageEvents = byType(["knowledge_usage_event"]);
+    const risks = rows.filter((row) => row.risk_level && row.risk_level !== "clear");
+    return {
+      summary: {
+        source_documents: sources.filter((row) => row.type === "source_document").length,
+        knowledge_cards: knowledge.length,
+        usage_bindings: bindings.length,
+        usage_events: usageEvents.length,
+        risk_items: risks.length
+      },
+      sources,
+      knowledge,
+      bindings,
+      rules,
+      usage_events: usageEvents,
+      risks
+    } satisfies MkaosOverview;
+  });
 }
 
-export function importMkaosSource(title: string, text: string) {
-  return postJson("/product/mkaos/sources", {
-    title,
-    text,
-    source_kind: "manual_note",
-    rights: {
-      authorization: "unknown",
-      copyright_boundary: "operator supplied MKAOS source for abstract knowledge extraction",
-      allow_downstream_generation: false
-    }
-  }).then(unwrapMkaos);
+export function loadMkaosProjects() {
+  return fetchJson<ProjectRow[]>("/product/projects");
+}
+
+export function registerMkaosSource(body: {
+  projectId: string;
+  workspaceId: string;
+  blobId: string;
+  title: string;
+  sourceKind: string;
+  rightsAuthorization: "unknown" | "owned" | "licensed";
+  licenseName: string;
+  copyrightBoundary: string;
+}) {
+  return postJson("/product/source-governance/documents", {
+    project_id: body.projectId,
+    workspace_id: body.workspaceId,
+    blob_id: body.blobId,
+    title: body.title,
+    source_kind: body.sourceKind,
+    rights_authorization: body.rightsAuthorization,
+    license_name: body.licenseName,
+    copyright_boundary: body.copyrightBoundary,
+    idempotency_key: `source-register:${body.projectId}:${body.blobId}`
+  });
 }
 
 export function createKnowledgeCard(body: {
+  projectId: string;
+  workspaceId: string;
+  executionAssetVersionId: string;
   conceptName: string;
   coreExplanation: string;
   discipline: string;
-  sourceChunkIds: string[];
+  sourceEvidence: Array<{
+    sourceChunkAssetVersionId: string;
+    chunkByteStart: number;
+    chunkByteEnd: number;
+    evidenceHash: string;
+  }>;
 }) {
-  return postJson("/product/mkaos/knowledge", {
-    concept_name: body.conceptName,
-    core_explanation: body.coreExplanation,
-    discipline: body.discipline || "general",
-    knowledge_type: "conflict_mechanism",
-    source_chunk_ids: body.sourceChunkIds,
-    confidence: 0.75,
-    source_reliability: 0.7
-  }).then(unwrapMkaos);
+  const seed = `${body.projectId}:${body.executionAssetVersionId}:${body.sourceEvidence.map((item) => `${item.sourceChunkAssetVersionId}:${item.chunkByteStart}:${item.chunkByteEnd}:${item.evidenceHash}`).join(",")}`;
+  return postJson("/product/mkaos/knowledge-candidates", {
+    project_id: body.projectId,
+    workspace_id: body.workspaceId,
+    execution_asset_version_id: body.executionAssetVersionId,
+    candidate: {
+      concept_name: body.conceptName,
+      discipline: body.discipline || "general",
+      abstract_principle: body.coreExplanation,
+      constraints: ["Only the abstract mechanism may enter downstream context."],
+      conflict_generators: ["Apply the mechanism through project-specific motives and consequences."],
+      review_checks: ["Reject source-specific names, scenes, sentences and plot combinations."],
+      copyright_boundaries: ["Mechanism and evidence identity only; no protected expression."]
+    },
+    evidence_spans: body.sourceEvidence.map((item) => ({
+      source_chunk_asset_version_id: item.sourceChunkAssetVersionId,
+      chunk_byte_start: item.chunkByteStart,
+      chunk_byte_end: item.chunkByteEnd,
+      evidence_hash: item.evidenceHash
+    })),
+    abstraction_policy_version: "anti-copy-abstraction:v1",
+    idempotency_key: `mkaos-candidate:${seed}`
+  });
+}
+
+export function approveKnowledgeCandidate(body: {
+  projectId: string;
+  workspaceId: string;
+  candidateAssetVersionId: string;
+  rationale: string;
+}) {
+  return postJson(`/product/mkaos/knowledge-candidates/${encodeURIComponent(body.candidateAssetVersionId)}/approve`, {
+    project_id: body.projectId,
+    workspace_id: body.workspaceId,
+    policy_version: "mkaos-governance:v1",
+    rationale: body.rationale,
+    idempotency_key: `mkaos-approve:${body.projectId}:${body.candidateAssetVersionId}`
+  });
+}
+
+export function loadAuthorityKnowledgeCards(projectId: string) {
+  return fetchJson<MkaosRow[]>(`/product/mkaos/knowledge-cards?project_id=${encodeURIComponent(projectId)}`);
 }
 
 export function patchKnowledge(id: string, body: Record<string, unknown>) {
@@ -98,22 +182,42 @@ export function patchUsageBinding(id: string, body: Record<string, unknown>) {
   }).then(unwrapMkaos);
 }
 
-export function buildKnowledgePack(flow: string, goal: string) {
-  return postJson("/product/mkaos/packs/build", {
-    flow,
-    current_goal: goal,
-    genre: "历史",
-    platform: "local",
-    chapter_id: flow === "outline" ? "" : "1"
-  }).then(unwrapMkaos);
+export function buildKnowledgePack(body: {
+  projectId: string;
+  workspaceId: string;
+  targetAssetVersionId: string;
+  knowledgeCardAssetVersionIds: string[];
+}) {
+  return postJson("/product/mkaos/knowledge-packs", {
+    project_id: body.projectId,
+    workspace_id: body.workspaceId,
+    target_asset_version_id: body.targetAssetVersionId,
+    selector_policy_version: "mkaos-explicit-selector:v1",
+    selector_policy_hash: `sha256:${"1".repeat(64)}`,
+    selections: body.knowledgeCardAssetVersionIds.map((assetVersionId) => ({
+      knowledge_card_asset_version_id: assetVersionId,
+      usage_role: "CONSTRAINT",
+      frozen_weight: 1
+    })),
+    idempotency_key: `mkaos-pack:${body.projectId}:${body.targetAssetVersionId}:${body.knowledgeCardAssetVersionIds.join(",")}`
+  });
 }
 
-export function loadPackPreview(packId: string) {
-  return fetchJson<{ preview: string; source_isolation: Record<string, unknown> }>(`/product/mkaos/packs/${encodeURIComponent(packId)}/prompt-preview`);
+export function loadPackPreview(projectId: string, packId: string) {
+  return fetchJson<MkaosRow>(`/product/mkaos/knowledge-packs/${encodeURIComponent(packId)}?project_id=${encodeURIComponent(projectId)}`).then((row) => ({
+    preview: JSON.stringify(row.content, null, 2),
+    source_isolation: row.content?.source_policy ?? {}
+  }));
 }
 
-export function loadPackDebug(packId: string) {
-  return fetchJson<Record<string, any>>(`/product/mkaos/packs/${encodeURIComponent(packId)}/debug`);
+export function loadPackDebug(projectId: string, packId: string) {
+  return fetchJson<MkaosRow>(`/product/mkaos/knowledge-packs/${encodeURIComponent(packId)}?project_id=${encodeURIComponent(projectId)}`).then((row) => ({
+    selected_items: row.content?.items ?? [],
+    rejected_items: [],
+    source_isolation_result: row.content?.source_policy ?? {},
+    budget_usage: { estimated_tokens: 0 },
+    blocking_risks: []
+  }));
 }
 
 export function buildKnowledgeGraph() {

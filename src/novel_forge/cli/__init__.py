@@ -11,7 +11,9 @@ from novel_forge.infrastructure.settings import IndustrialSettings
 
 def main(argv: list[str] | None = None) -> int:
     settings = IndustrialSettings.from_env()
-    if settings.storage_authority != "postgresql":
+    requested = (argv or sys.argv[1:])[:1]
+    authority_requested = bool(requested and requested[0].startswith("authority-"))
+    if settings.storage_authority != "postgresql" and not authority_requested:
         if settings.environment == "production":
             print("error: production CLI requires PostgreSQL authority", file=sys.stderr)
             return 1
@@ -61,6 +63,31 @@ def _authority_parser() -> argparse.ArgumentParser:
         default="config/authority/authority-parity-manifest.json",
     )
     parity.add_argument("--repo-root", default=".")
+
+    legacy_import = subparsers.add_parser(
+        "authority-import-legacy",
+        help="scan or import a frozen Legacy snapshot through Authority Operations",
+    )
+    legacy_import.add_argument("--root", required=True)
+    legacy_import.add_argument("--dry-run", action="store_true")
+    legacy_import.add_argument("--no-resume", action="store_true")
+
+    import_status = subparsers.add_parser(
+        "authority-import-status", help="show a resumable Legacy migration run"
+    )
+    import_status.add_argument("--migration-run-id", required=True)
+
+    verify = subparsers.add_parser(
+        "authority-verify-migration", help="reconcile imported rows and snapshot hash"
+    )
+    verify.add_argument("--migration-run-id", required=True)
+    verify.add_argument("--root", default=None)
+
+    quarantine = subparsers.add_parser(
+        "authority-quarantine-list", help="list unresolved migration quarantine rows"
+    )
+    quarantine.add_argument("--migration-run-id", default=None)
+    quarantine.add_argument("--limit", type=int, default=200)
     return parser
 
 
@@ -78,6 +105,25 @@ def _authority_main(argv: list[str] | None, settings: IndustrialSettings) -> int
             )
             print(json.dumps(report.to_dict(), ensure_ascii=False, indent=2))
             return 0 if report.passed else 1
+        if args.command == "authority-import-legacy" and args.dry_run:
+            from dataclasses import asdict
+            from novel_forge.modules.legacy_migration import scan_legacy_snapshot
+
+            scan = scan_legacy_snapshot(args.root)
+            print(
+                json.dumps(
+                    {
+                        "mode": "DRY_RUN",
+                        "snapshot_hash": scan.snapshot_hash,
+                        "counts": scan.counts,
+                        "records": [asdict(record) for record in scan.records],
+                        "production_mutation_performed": False,
+                    },
+                    ensure_ascii=False,
+                    indent=2,
+                )
+            )
+            return 0
         if not settings.database_url:
             raise RuntimeError("PostgreSQL database is required for authority CLI")
         if args.command == "serve-api":
@@ -92,6 +138,38 @@ def _authority_main(argv: list[str] | None, settings: IndustrialSettings) -> int
                 else run_migrations(settings.database_url)
             )
             print(json.dumps(result, ensure_ascii=False, indent=2))
+            return 0
+        if args.command in {
+            "authority-import-legacy",
+            "authority-import-status",
+            "authority-verify-migration",
+            "authority-quarantine-list",
+        }:
+            from novel_forge.api.authority_dependencies import authority_release_identity
+            from novel_forge.modules.legacy_migration import LegacyMigrationService
+
+            build_id, commit_sha = authority_release_identity()
+            service = LegacyMigrationService(
+                settings.database_url,
+                application_build_id=build_id,
+                commit_sha=commit_sha,
+            )
+            if args.command == "authority-import-legacy":
+                result = service.import_snapshot(
+                    args.root,
+                    dry_run=args.dry_run,
+                    resume=not args.no_resume,
+                    require_read_only=True,
+                )
+            elif args.command == "authority-import-status":
+                result = service.status(args.migration_run_id)
+            elif args.command == "authority-verify-migration":
+                result = service.verify(args.migration_run_id, snapshot_root=args.root)
+            else:
+                result = service.quarantine_list(
+                    migration_run_id=args.migration_run_id, limit=args.limit
+                )
+            print(json.dumps(result, ensure_ascii=False, indent=2, default=str))
             return 0
         if args.command == "authority-chapter-run":
             from novel_forge.api.authority_dependencies import (

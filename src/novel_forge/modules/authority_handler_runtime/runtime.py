@@ -65,6 +65,9 @@ def execute_authority_handler(
                 content=item.content,
                 content_hash=content_hash,
                 qualification_policy=item.qualification_policy,
+                lifecycle=item.lifecycle,
+                eligibility=item.eligibility,
+                governance=item.governance,
                 qualification_evidence={
                     "operation_id": request.operation_id,
                     "project_id": request.project_id,
@@ -228,6 +231,9 @@ def _validate_output(
         or output.output_key != registration.output_key
         or output.role != registration.role
         or not isinstance(output.content, dict)
+        or output.lifecycle not in {"ACTIVE", "CANDIDATE", "IMPORTED"}
+        or output.eligibility not in {"ELIGIBLE", "INELIGIBLE", "REVOKED", "PENDING_EVALUATION"}
+        or output.governance not in {"CLEAR", "QUARANTINED", "REJECTED", "LEGAL_HOLD"}
     ):
         raise KernelError(
             "AUTHORITY_HANDLER_OUTPUT_INVALID",
@@ -247,6 +253,9 @@ def _validate_output(
             or not item.role
             or not isinstance(item.content, dict)
             or identity in identities
+            or item.lifecycle not in {"ACTIVE", "CANDIDATE", "IMPORTED"}
+            or item.eligibility not in {"ELIGIBLE", "INELIGIBLE", "REVOKED", "PENDING_EVALUATION"}
+            or item.governance not in {"CLEAR", "QUARANTINED", "REJECTED", "LEGAL_HOLD"}
         ):
             raise KernelError(
                 "AUTHORITY_HANDLER_OUTPUT_INVALID",

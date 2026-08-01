@@ -3,38 +3,26 @@
 import { Boxes, Copy, RotateCcw, Save, ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 import { FeatureShell } from "../../shared/feature-shell";
-import type { FeatureAssetRow, ProjectHealthReport, ProjectOperatingDashboard, ProjectRow } from "../../shared/types";
+import type { ProjectHealthReport, ProjectOperatingDashboard, ProjectRow } from "../../shared/types";
 import { DataTable, Metric, PanelHeader, statusClass } from "../../shared/ui";
-import { createProject, duplicateProject, loadProjectsData, repairProjectScope, transitionProject, type ProjectWizardLibrary } from "./api";
+import { createProject, duplicateProject, loadProjectsData, repairProjectScope, transitionProject } from "./api";
 
 export function ProjectsPage() {
   const [projects, setProjects] = useState<ProjectRow[]>([]);
   const [health, setHealth] = useState<ProjectHealthReport | null>(null);
-  const [libraries, setLibraries] = useState<ProjectWizardLibrary[]>([]);
   const [operating, setOperating] = useState<ProjectOperatingDashboard | null>(null);
   const [title, setTitle] = useState("");
   const [seriesTitle, setSeriesTitle] = useState("");
   const [bookNumber, setBookNumber] = useState("");
-  const [platformProfilePath, setPlatformProfilePath] = useState("");
-  const [genreMarketProfilePath, setGenreMarketProfilePath] = useState("");
-  const [qualityStandardProfilePath, setQualityStandardProfilePath] = useState("");
-  const [styleProfilePath, setStyleProfilePath] = useState("");
-  const [continuityBiblePath, setContinuityBiblePath] = useState("");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
 
   async function refresh() {
-    const [projectRows, healthReport, libraryRows, operatingRows] = await loadProjectsData();
+    const [projectRows, healthReport, operatingRows] = await loadProjectsData();
     setProjects(projectRows);
     setHealth(healthReport);
-    setLibraries(libraryRows);
     setOperating(operatingRows);
-    setPlatformProfilePath((current) => current || firstAssetPath(libraryRows, "platform_profile"));
-    setGenreMarketProfilePath((current) => current || firstAssetPath(libraryRows, "genre_market_profile"));
-    setQualityStandardProfilePath((current) => current || firstAssetPath(libraryRows, "quality_standard_profile"));
-    setStyleProfilePath((current) => current || firstAssetPath(libraryRows, "style_profile"));
-    setContinuityBiblePath((current) => current || firstAssetPath(libraryRows, "continuity_bible"));
   }
 
   async function runAction(action: () => Promise<unknown>, message: string) {
@@ -73,34 +61,24 @@ export function ProjectsPage() {
           <PanelHeader title="创建项目向导" icon={<Boxes size={18} />} />
           <div className="wizardSteps">
             <span>1. 基本信息</span>
-            <span>2. 平台/题材</span>
-            <span>3. 精品/文风</span>
-            <span>4. 连续性设定</span>
+            <span>2. 创建 Authority 项目</span>
+            <span>3. 生成或导入项目资产</span>
+            <span>4. 绑定合格 AssetVersion</span>
           </div>
           <div className="formGrid wide">
             <input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="项目标题" />
             <input value={seriesTitle} onChange={(event) => setSeriesTitle(event.target.value)} placeholder="系列名" />
             <input value={bookNumber} onChange={(event) => setBookNumber(event.target.value)} placeholder="书号" />
-            <ProfileSelect label="平台画像" value={platformProfilePath} onChange={setPlatformProfilePath} options={assetsByType(libraries, "platform_profile")} />
-            <ProfileSelect label="题材画像" value={genreMarketProfilePath} onChange={setGenreMarketProfilePath} options={assetsByType(libraries, "genre_market_profile")} />
-            <ProfileSelect label="精品标准" value={qualityStandardProfilePath} onChange={setQualityStandardProfilePath} options={assetsByType(libraries, "quality_standard_profile")} />
-            <ProfileSelect label="文风目标" value={styleProfilePath} onChange={setStyleProfilePath} options={assetsByType(libraries, "style_profile")} />
-            <ProfileSelect label="连续性设定" value={continuityBiblePath} onChange={setContinuityBiblePath} options={assetsByType(libraries, "continuity_bible")} />
             <button className="primaryButton" disabled={busy || !title.trim()} onClick={() => runAction(() => createProject({
               title,
               seriesTitle,
-              bookNumber: bookNumber ? Number(bookNumber) : undefined,
-              platformProfilePath,
-              genreMarketProfilePath,
-              qualityStandardProfilePath,
-              styleProfilePath,
-              continuityBiblePath
+              bookNumber: bookNumber ? Number(bookNumber) : undefined
             }), "项目已创建")}>
               <Save size={18} />
               创建
             </button>
           </div>
-          <p className="muted">缺少可选 profile 时，先到创作资产工作台创建平台画像、题材画像、精品标准、文风目标或连续性设定。</p>
+          <p className="muted">项目创建后，通过版本化 Binding 命令绑定同项目且 ACTIVE / ELIGIBLE / CLEAR 的 Profile AssetVersion；文件路径不再作为绑定身份。</p>
         </div>
 
         <div className="panel">
@@ -156,26 +134,4 @@ export function ProjectsPage() {
       </section>
     </FeatureShell>
   );
-}
-
-function ProfileSelect({ label, value, onChange, options }: { label: string; value: string; onChange: (value: string) => void; options: FeatureAssetRow[] }) {
-  return (
-    <label className="selectWrap">
-      <span>{label}</span>
-      <select value={value} onChange={(event) => onChange(event.target.value)}>
-        <option value="">自动创建/稍后绑定</option>
-        {options.map((asset) => (
-          <option value={asset.path} key={asset.path}>{asset.title || asset.id}</option>
-        ))}
-      </select>
-    </label>
-  );
-}
-
-function assetsByType(libraries: ProjectWizardLibrary[], assetType: string): FeatureAssetRow[] {
-  return libraries.flatMap((library) => library.assets).filter((asset) => asset.type === assetType);
-}
-
-function firstAssetPath(libraries: ProjectWizardLibrary[], assetType: string): string {
-  return assetsByType(libraries, assetType)[0]?.path || "";
 }

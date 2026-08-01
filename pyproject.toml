@@ -55,6 +55,8 @@ industrial-graph = [
 
 [project.scripts]
 novel-forge = "novel_forge.cli:main"
+novel-forge-source-authority-worker = "novel_forge.workers.source_authority:cli"
+novel-forge-mkaos-authority-worker = "novel_forge.workers.mkaos_authority:cli"
 
 [tool.setuptools.packages.find]
 where = ["src"]

@@ -36,6 +36,20 @@ def recover_operation(
     with AuthorityUnitOfWork(database_url) as uow:
         uow.cursor.execute(
             """
+            SELECT status, version, definition_name
+            FROM authority_operation
+            WHERE operation_id = %s AND project_id = %s
+            FOR UPDATE
+            """,
+            [command.operation_id, command.project_id],
+        )
+        operation_row = uow.cursor.fetchone()
+        if operation_row is None:
+            raise KernelError(
+                "OPERATION_NOT_FOUND", "operation does not exist in the project"
+            )
+        uow.cursor.execute(
+            """
             SELECT recovery_command_id, request_digest, recovery_action
             FROM authority_recovery_command
             WHERE project_id = %s AND operation_id = %s AND idempotency_key = %s
@@ -55,12 +69,10 @@ def recover_operation(
                 "action": str(existing[2]),
                 "replayed": True,
             }
-        operation = uow.repositories.attempt_runtime.operation_state(
-            command.operation_id, command.project_id
-        )
-        if int(operation["version"]) != command.expected_version:
+        operation_status, operation_version, definition_name = operation_row
+        if int(operation_version) != command.expected_version:
             raise KernelError("OPERATION_VERSION_CONFLICT", "recovery expected version is stale")
-        status = str(operation["status"])
+        status = str(operation_status)
         if status == "FAILED_RETRYABLE":
             action = "READY_FOR_RETRY"
             _cas_operation(
@@ -128,7 +140,7 @@ def recover_operation(
             if gate is None or gate[1:3] != ("ACTIVE", "ELIGIBLE"):
                 raise KernelError("RECOVERY_GATE_EVIDENCE_INVALID", "gate evidence is not current and eligible")
             target_status = "EXECUTING"
-            if gate[3] == "chapter.slice.run":
+            if definition_name == "chapter.slice.run":
                 uow.cursor.execute(
                     "SELECT COUNT(*) FROM authority_canon_approval_request WHERE root_operation_id = %s AND status NOT IN ('APPROVED','REJECTED','EDITED_AND_APPROVED')",
                     [command.operation_id],

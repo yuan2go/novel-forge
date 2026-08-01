@@ -17,6 +17,9 @@ class StepRunRequest(BaseModel):
 
 
 class ProjectCreateRequest(BaseModel):
+    project_id: str | None = None
+    workspace_id: str | None = None
+    idempotency_key: str | None = None
     title: str
     series_title: str | None = None
     book_number: int | None = None
@@ -54,6 +57,21 @@ class ProjectDuplicateRequest(BaseModel):
     series_title: str | None = None
     book_number: int | None = None
     copy_references: bool = True
+
+
+class ProjectBindingAssignRequest(BaseModel):
+    target_asset_version_id: str
+    expected_project_version: int
+    expected_project_asset_version_id: str
+    expected_binding_asset_version_id: str = ""
+    idempotency_key: str | None = None
+
+
+class ProjectBindingRemoveRequest(BaseModel):
+    expected_project_version: int
+    expected_project_asset_version_id: str
+    expected_binding_asset_version_id: str
+    idempotency_key: str | None = None
 
 
 class BatchDeconstructRequest(BaseModel):
@@ -136,6 +154,124 @@ class TaskCancelRequest(BaseModel):
     task_id: str
     terminate: bool = False
     signal: str = "SIGTERM"
+
+
+class AuthorityOperationCancelRequest(BaseModel):
+    operation_id: str
+    project_id: str
+    expected_version: int
+    idempotency_key: str
+    reason: str
+    # Compatibility-only. The route deliberately uses its trusted server principal.
+    actor_id: str = ""
+    trace_id: str
+    correlation_id: str
+
+
+class AuthorityOutboxRecoveryRequest(BaseModel):
+    project_id: str
+    expected_attempt_count: int = Field(ge=0)
+    idempotency_key: str
+    reason: str
+    actor_id: str = ""  # compatibility-only; never trusted
+    trace_id: str = ""
+    correlation_id: str = ""
+
+
+class AuthoritySourceDocumentRegisterRequest(BaseModel):
+    project_id: str = Field(min_length=1)
+    workspace_id: str = Field(min_length=1)
+    blob_id: str = Field(min_length=1)
+    title: str = Field(min_length=1)
+    source_kind: str = Field(min_length=1)
+    source_uri: str = ""
+    rights_authorization: str = Field(min_length=1)
+    license_name: str = ""
+    copyright_boundary: str = ""
+    idempotency_key: str = Field(min_length=1)
+    actor_id: str = ""  # compatibility-only; never trusted
+    trace_id: str = ""
+    correlation_id: str = ""
+
+
+class AuthoritySourceChunkCandidateRequest(BaseModel):
+    chunk_index: int = Field(ge=0)
+    blob_id: str = Field(min_length=1)
+    content_hash: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
+    byte_size: int = Field(gt=0)
+    character_count: int = Field(gt=0)
+    token_count: int = Field(gt=0)
+    source_byte_start: int = Field(ge=0)
+    source_byte_end: int = Field(gt=0)
+
+
+class AuthoritySourceTransformCommitRequest(BaseModel):
+    project_id: str = Field(min_length=1)
+    workspace_id: str = Field(min_length=1)
+    normalization_version: str = Field(min_length=1)
+    chunking_version: str = Field(min_length=1)
+    chunking_policy_hash: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
+    chunks: list[AuthoritySourceChunkCandidateRequest] = Field(
+        min_length=1, max_length=10_000
+    )
+    idempotency_key: str = Field(min_length=1)
+    actor_id: str = ""  # compatibility-only; never trusted
+    trace_id: str = ""
+    correlation_id: str = ""
+
+
+class AuthorityMkaosEvidenceSpanRequest(BaseModel):
+    source_chunk_asset_version_id: str = Field(min_length=1)
+    chunk_byte_start: int = Field(ge=0)
+    chunk_byte_end: int = Field(gt=0)
+    evidence_hash: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
+
+
+class AuthorityMkaosKnowledgeCandidateRequest(BaseModel):
+    project_id: str = Field(min_length=1)
+    workspace_id: str = Field(min_length=1)
+    execution_asset_version_id: str = Field(min_length=1)
+    candidate: dict[str, Any]
+    evidence_spans: list[AuthorityMkaosEvidenceSpanRequest] = Field(
+        min_length=1, max_length=1_000
+    )
+    abstraction_policy_version: str = Field(min_length=1)
+    idempotency_key: str = Field(min_length=1)
+    actor_id: str = ""  # compatibility-only; never trusted
+    trace_id: str = ""
+    correlation_id: str = ""
+
+
+class AuthorityMkaosKnowledgeApprovalRequest(BaseModel):
+    project_id: str = Field(min_length=1)
+    workspace_id: str = Field(min_length=1)
+    policy_version: str = Field(min_length=1)
+    rationale: str = Field(min_length=1, max_length=4_000)
+    idempotency_key: str = Field(min_length=1)
+    actor_id: str = ""  # compatibility-only; never trusted
+    trace_id: str = ""
+    correlation_id: str = ""
+
+
+class AuthorityMkaosPackSelectionRequest(BaseModel):
+    knowledge_card_asset_version_id: str = Field(min_length=1)
+    usage_role: str = Field(min_length=1)
+    frozen_weight: float = Field(gt=0, le=100)
+
+
+class AuthorityMkaosKnowledgePackRequest(BaseModel):
+    project_id: str = Field(min_length=1)
+    workspace_id: str = Field(min_length=1)
+    target_asset_version_id: str = Field(min_length=1)
+    selector_policy_version: str = Field(min_length=1)
+    selector_policy_hash: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
+    selections: list[AuthorityMkaosPackSelectionRequest] = Field(
+        min_length=1, max_length=500
+    )
+    idempotency_key: str = Field(min_length=1)
+    actor_id: str = ""  # compatibility-only; never trusted
+    trace_id: str = ""
+    correlation_id: str = ""
 
 
 class TaskControlRequest(BaseModel):
@@ -2003,6 +2139,8 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "ProjectCreateRequest": ProjectCreateRequest,
         "ProjectConfigRequest": ProjectConfigRequest,
         "ProjectDuplicateRequest": ProjectDuplicateRequest,
+        "ProjectBindingAssignRequest": ProjectBindingAssignRequest,
+        "ProjectBindingRemoveRequest": ProjectBindingRemoveRequest,
         "BatchDeconstructRequest": BatchDeconstructRequest,
         "DraftGenerateRequest": DraftGenerateRequest,
         "LongformExtractionRequest": LongformExtractionRequest,
@@ -2014,6 +2152,13 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "RevisionPlanRequest": RevisionPlanRequest,
         "TaskRetryRequest": TaskRetryRequest,
         "TaskCancelRequest": TaskCancelRequest,
+        "AuthorityOperationCancelRequest": AuthorityOperationCancelRequest,
+        "AuthorityOutboxRecoveryRequest": AuthorityOutboxRecoveryRequest,
+        "AuthoritySourceDocumentRegisterRequest": AuthoritySourceDocumentRegisterRequest,
+        "AuthoritySourceTransformCommitRequest": AuthoritySourceTransformCommitRequest,
+        "AuthorityMkaosKnowledgeCandidateRequest": AuthorityMkaosKnowledgeCandidateRequest,
+        "AuthorityMkaosKnowledgeApprovalRequest": AuthorityMkaosKnowledgeApprovalRequest,
+        "AuthorityMkaosKnowledgePackRequest": AuthorityMkaosKnowledgePackRequest,
         "TaskControlRequest": TaskControlRequest,
         "DeadLetterRetryRequest": DeadLetterRetryRequest,
         "BatchItemRetryRequest": BatchItemRetryRequest,

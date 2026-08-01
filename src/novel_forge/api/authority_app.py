@@ -1,7 +1,7 @@
 """PostgreSQL-only production API surface.
 
-This module deliberately has no dependency on LocalStorage, the legacy product
-service, projection synchronization, or filesystem routing policy.
+This module deliberately has no dependency on the legacy product service,
+projection synchronization, or filesystem routing policy.
 """
 from __future__ import annotations
 
@@ -21,6 +21,19 @@ from novel_forge.modules.chapter_authority.application import ChapterAuthorityAp
 from novel_forge.modules.chapter_authority.queries import ChapterAuthorityQuery
 from novel_forge.modules.content_authority import ContentAuthorityApplication, ContentAuthorityQuery
 from novel_forge.modules.book_authority.production import PostgresBookAuthority
+from novel_forge.modules.project_authority import (
+    ProjectAuthorityApplication,
+    ProjectAuthorityQuery,
+)
+from novel_forge.modules.task_authority import AuthorityTaskQuery
+from novel_forge.modules.source_authority import (
+    SourceAuthorityApplication,
+    SourceAuthorityQuery,
+)
+from novel_forge.modules.mkaos_authority import (
+    MkaosAuthorityApplication,
+    MkaosAuthorityQuery,
+)
 from novel_forge.modules.provider_callback_authority import ProviderCallbackAuthorityService
 from novel_forge.modules.provider_control import ProviderAdapterRegistry
 
@@ -33,6 +46,13 @@ class AuthorityApiServices:
     content_authority_query: ContentAuthorityQuery
     provider_callback_service: ProviderCallbackAuthorityService
     book_authority_application: PostgresBookAuthority
+    project_authority_application: ProjectAuthorityApplication
+    project_authority_query: ProjectAuthorityQuery
+    task_authority_query: AuthorityTaskQuery
+    source_authority_application: SourceAuthorityApplication
+    source_authority_query: SourceAuthorityQuery
+    mkaos_authority_application: MkaosAuthorityApplication
+    mkaos_authority_query: MkaosAuthorityQuery
 
 
 def create_authority_app(settings: IndustrialSettings):
@@ -54,6 +74,7 @@ def create_authority_app(settings: IndustrialSettings):
         if adapter.provider not in registered:
             provider_registry.register(adapter)
             registered.add(adapter.provider)
+    build_id, commit_sha = authority_release_identity()
     services = AuthorityApiServices(
         chapter_application=application,
         chapter_query=build_chapter_authority_query(settings),
@@ -65,6 +86,25 @@ def create_authority_app(settings: IndustrialSettings):
         book_authority_application=build_book_authority_application(
             settings, chapter_application=application
         ),
+        project_authority_application=ProjectAuthorityApplication(
+            settings.database_url,
+            application_build_id=build_id,
+            commit_sha=commit_sha,
+        ),
+        project_authority_query=ProjectAuthorityQuery(settings.database_url),
+        task_authority_query=AuthorityTaskQuery(settings.database_url),
+        source_authority_application=SourceAuthorityApplication(
+            settings.database_url,
+            application_build_id=build_id,
+            commit_sha=commit_sha,
+        ),
+        source_authority_query=SourceAuthorityQuery(settings.database_url),
+        mkaos_authority_application=MkaosAuthorityApplication(
+            settings.database_url,
+            application_build_id=build_id,
+            commit_sha=commit_sha,
+        ),
+        mkaos_authority_query=MkaosAuthorityQuery(settings.database_url),
     )
     app = FastAPI(
         title="Novel Forge PostgreSQL Authority API",
@@ -88,7 +128,67 @@ def create_authority_app(settings: IndustrialSettings):
     )
     from novel_forge.api.routers.book_authority import create_router as create_book_router
     from novel_forge.api.routers.context import ProductRouterContext
+    from novel_forge.api.routers.authority_projects import (
+        create_router as create_project_router,
+    )
+    from novel_forge.api.routers.authority_tasks import (
+        create_router as create_task_router,
+    )
+    from novel_forge.api.routers.authority_assets import (
+        create_router as create_asset_router,
+    )
+    from novel_forge.api.routers.source_authority import (
+        create_router as create_source_router,
+    )
+    from novel_forge.api.routers.mkaos_authority import (
+        create_router as create_mkaos_router,
+    )
 
+    app.include_router(
+        create_project_router(
+            ProductRouterContext(
+                app_settings=settings,
+                models=product_model_map(),
+                services=services,
+            )
+        )
+    )
+    app.include_router(
+        create_task_router(
+            ProductRouterContext(
+                app_settings=settings,
+                models=product_model_map(),
+                services=services,
+            )
+        )
+    )
+    app.include_router(
+        create_asset_router(
+            ProductRouterContext(
+                app_settings=settings,
+                models=product_model_map(),
+                services=services,
+            )
+        )
+    )
+    app.include_router(
+        create_source_router(
+            ProductRouterContext(
+                app_settings=settings,
+                models=product_model_map(),
+                services=services,
+            )
+        )
+    )
+    app.include_router(
+        create_mkaos_router(
+            ProductRouterContext(
+                app_settings=settings,
+                models=product_model_map(),
+                services=services,
+            )
+        )
+    )
     app.include_router(
         create_chapter_router(
             ProductRouterContext(

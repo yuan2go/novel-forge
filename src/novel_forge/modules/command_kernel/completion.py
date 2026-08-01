@@ -118,12 +118,24 @@ def evaluate_completion_in_uow(uow: AuthorityUnitOfWork, operation: dict[str, An
             output_key=str(requirement.get("output_key") or ""),
             role=str(requirement.get("role") or ""),
         )
+        allowed_lifecycles = set(
+            requirement.get("allowed_lifecycles")
+            or [requirement.get("lifecycle", "ACTIVE")]
+        )
+        allowed_eligibility = set(
+            requirement.get("allowed_eligibility")
+            or [requirement.get("eligibility", "ELIGIBLE")]
+        )
+        allowed_governance = set(
+            requirement.get("allowed_governance")
+            or [requirement.get("governance", "CLEAR")]
+        )
         matching = [
             asset
             for asset in assets
-            if asset["lifecycle"] == requirement.get("lifecycle", "ACTIVE")
-            and asset["eligibility"] == requirement.get("eligibility", "ELIGIBLE")
-            and asset["governance"] == requirement.get("governance", "CLEAR")
+            if asset["lifecycle"] in allowed_lifecycles
+            and asset["eligibility"] in allowed_eligibility
+            and asset["governance"] in allowed_governance
         ]
         if len(matching) < int(requirement.get("min_count", 1)):
             missing.append(f"asset:{selector}")

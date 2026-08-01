@@ -59,6 +59,9 @@ class AuthorityAuxiliaryOutput:
     qualification_policy: str
     reference_asset_version_ids: tuple[str, ...] = ()
     evidence: dict[str, Any] = field(default_factory=dict)
+    lifecycle: str = "ACTIVE"
+    eligibility: str = "ELIGIBLE"
+    governance: str = "CLEAR"
 
 
 @dataclass(frozen=True, slots=True)
@@ -71,6 +74,9 @@ class AuthorityHandlerOutput:
     reference_asset_version_ids: tuple[str, ...] = ()
     evidence: dict[str, Any] = field(default_factory=dict)
     auxiliary_outputs: tuple[AuthorityAuxiliaryOutput, ...] = ()
+    lifecycle: str = "ACTIVE"
+    eligibility: str = "ELIGIBLE"
+    governance: str = "CLEAR"
 
 
 class AuthorityHandler(Protocol):

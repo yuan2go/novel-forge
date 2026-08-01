@@ -35,16 +35,32 @@ export function loadTaskData(options: { projectId?: string; status?: string; tas
   ]);
 }
 
-export function retryTask(row: { path?: string; run_id?: string; step?: string }, workspacePath?: string) {
-  return postJson("/product/tasks/retry", {
-    status_path: row.path || null,
-    run_id: row.run_id || null,
-    step: row.step || null,
-    workspace_path: workspacePath || null,
-    async_task: false
+export function recoverAuthorityOperation(row: {
+  operation_id?: string;
+  id?: string;
+  project_id?: string;
+  version?: number;
+}) {
+  const operationId = row.operation_id || row.id;
+  if (!operationId || !row.project_id || row.version === undefined) {
+    throw new Error("Authority recovery requires operation, project, and version");
+  }
+  return postJson(`/product/tasks/${encodeURIComponent(operationId)}/recover`, {
+    project_id: row.project_id,
+    expected_version: row.version,
+    idempotency_key: `task-recovery:${operationId}:${row.version}`,
+    reason: "Task Center operator requested audited recovery"
   });
 }
 
-export function retryDeadLetter(deadLetterPath: string) {
-  return postJson("/product/tasks/dead-letters/retry", { dead_letter_path: deadLetterPath });
+export function requeueAuthorityOutbox(row: DeadLetter) {
+  if (!row.task_id || !row.project_id || row.attempt_count === undefined) {
+    throw new Error("Outbox recovery requires outbox, project, and attempt count");
+  }
+  return postJson(`/product/tasks/outbox/${encodeURIComponent(row.task_id)}/requeue`, {
+    project_id: row.project_id,
+    expected_attempt_count: row.attempt_count,
+    idempotency_key: `outbox-recovery:${row.task_id}:${row.attempt_count}`,
+    reason: "Task Center operator approved a new outbox generation"
+  });
 }

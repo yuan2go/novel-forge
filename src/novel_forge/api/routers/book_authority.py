@@ -23,6 +23,7 @@ from novel_forge.modules.production_preparation import PostgresProductionAssetRe
 
 
 def create_router(ctx: ProductRouterContext) -> APIRouter:
+    globals().update(ctx.models)
     BookAuthorityStartRequest = ctx.models["BookAuthorityStartRequest"]
     BookAuthorityChapterRequest = ctx.models["BookAuthorityChapterRequest"]
     BookAuthorityControlRequest = ctx.models["BookAuthorityControlRequest"]

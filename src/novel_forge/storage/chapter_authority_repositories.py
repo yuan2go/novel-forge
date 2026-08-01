@@ -177,6 +177,9 @@ class AuthorityHandlerRepository:
         content_hash: str,
         qualification_policy: str,
         qualification_evidence: dict[str, Any],
+        lifecycle: str = "ACTIVE",
+        eligibility: str = "ELIGIBLE",
+        governance: str = "CLEAR",
     ) -> bool:
         self.cursor.execute(
             """
@@ -201,11 +204,19 @@ class AuthorityHandlerRepository:
             INSERT INTO authority_asset_version (
                 asset_version_id, asset_id, version_number, lifecycle,
                 eligibility, governance, content, content_hash
-            ) VALUES (%s, %s, 1, 'ACTIVE', 'ELIGIBLE', 'CLEAR', %s, %s)
+            ) VALUES (%s, %s, 1, %s, %s, %s, %s, %s)
             ON CONFLICT (asset_version_id) DO NOTHING
             RETURNING asset_version_id
             """,
-            [asset_version_id, asset_id, Jsonb(content), content_hash],
+            [
+                asset_version_id,
+                asset_id,
+                lifecycle,
+                eligibility,
+                governance,
+                Jsonb(content),
+                content_hash,
+            ],
         )
         created = self.cursor.fetchone() is not None
         self.cursor.execute(
@@ -216,7 +227,7 @@ class AuthorityHandlerRepository:
             [asset_version_id],
         )
         version = self.cursor.fetchone()
-        expected = (asset_id, content_hash, content, "ACTIVE", "ELIGIBLE", "CLEAR")
+        expected = (asset_id, content_hash, content, lifecycle, eligibility, governance)
         if version != expected:
             raise KernelError(
                 "AUTHORITY_OUTPUT_REPLAY_CONFLICT",
@@ -226,13 +237,14 @@ class AuthorityHandlerRepository:
             """
             INSERT INTO authority_asset_qualification (
                 qualification_id, asset_version_id, policy_version, decision, evidence
-            ) VALUES (%s, %s, %s, 'ELIGIBLE', %s)
+            ) VALUES (%s, %s, %s, %s, %s)
             ON CONFLICT (qualification_id) DO NOTHING
             """,
             [
                 qualification_id,
                 asset_version_id,
                 qualification_policy,
+                eligibility,
                 Jsonb(qualification_evidence),
             ],
         )

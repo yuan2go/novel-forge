@@ -14,11 +14,11 @@ class AgentCollaborationMigrationTests(unittest.TestCase):
         validate_migration_chain()
         self.assertEqual(
             LATEST_MIGRATION_ID,
-            "20260730_0042_reader_calibration",
+            "20260801_0050_mkaos_authority",
         )
         self.assertEqual(
             MIGRATIONS[-1].down_revision,
-            "20260730_0041_plan_change_authority",
+            "20260801_0049_source_transform_fk_indexes",
         )
 
     def test_schema_reuses_authority_execution_and_asset_identities(self) -> None:

@@ -213,7 +213,7 @@ describe("Novel Forge admin feature architecture", () => {
     assert.match(feedbackApi, /\/product\/feedback\/real-backflow/);
 
     const mkaosApi = read("app/features/mkaos/api.ts");
-    for (const endpoint of ["/product/mkaos/packs", "/product/mkaos/knowledge-graph/build", "/product/mkaos/evolution/run", "/product/mkaos/lineage/query", "/product/mkaos/lineage/query-path", "/product/mkaos/lineage/diff", "/product/mkaos/lineage/export", "/product/mkaos/lineage/weight-governance", "/product/mkaos/production-gate/run", "/product/mkaos/production-gate/coverage", "/product/mkaos/model-extraction/jobs", "/product/mkaos/mutations", "/product/mkaos/regression/run", "/product/mkaos/acceptance/knowledge-asset-os"]) {
+    for (const endpoint of ["/product/mkaos/knowledge-candidates", "/product/mkaos/knowledge-cards", "/product/mkaos/knowledge-packs", "/product/mkaos/knowledge-graph/build", "/product/mkaos/evolution/run", "/product/mkaos/lineage/query", "/product/mkaos/lineage/query-path", "/product/mkaos/lineage/diff", "/product/mkaos/lineage/export", "/product/mkaos/lineage/weight-governance", "/product/mkaos/production-gate/run", "/product/mkaos/production-gate/coverage", "/product/mkaos/model-extraction/jobs", "/product/mkaos/mutations", "/product/mkaos/regression/run", "/product/mkaos/acceptance/knowledge-asset-os"]) {
       assert.match(mkaosApi, new RegExp(endpoint.replaceAll("/", "\\/")));
     }
     for (const token of ["unwrapMkaos", "applyMkaosWeightGovernance", "diffMkaosLineageIndexes", "exportMkaosLineageGraph", "buildMkaosGateCoverage"]) {

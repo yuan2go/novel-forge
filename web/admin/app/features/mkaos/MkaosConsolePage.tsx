@@ -3,21 +3,21 @@
 import { BookOpenCheck, Bug, Database, FileText, GitBranch, GitPullRequest, ListChecks, ShieldAlert, ShieldCheck, Sparkles, Workflow } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { FeatureShell } from "../../shared/feature-shell";
+import type { ProjectRow } from "../../shared/types";
 import { DataTable, Metric, PanelHeader, statusClass } from "../../shared/ui";
 import {
   buildKnowledgePack,
   buildKnowledgeGraph,
   buildKnowledgeGraphExplorer,
   createKnowledgeCard,
+  approveKnowledgeCandidate,
   createUsageBinding,
-  importMkaosSource,
   loadMkaosOverview,
+  loadMkaosProjects,
   loadMutations,
-  loadPackDebug,
-  loadPackPreview,
-  patchKnowledge,
   patchUsageBinding,
   queryLineage,
+  registerMkaosSource,
   runKnowledgeEvolution,
   runKnowledgeAssetOsAcceptance,
   runMinimalAcceptance,
@@ -30,17 +30,24 @@ const flows = ["outline", "chapter_outline", "prose", "review"];
 
 export function MkaosConsolePage() {
   const [overview, setOverview] = useState<MkaosOverview | null>(null);
+  const [projects, setProjects] = useState<ProjectRow[]>([]);
+  const [sourceProjectId, setSourceProjectId] = useState("");
+  const [sourceBlobId, setSourceBlobId] = useState("");
   const [sourceTitle, setSourceTitle] = useState("土地兼并制度知识");
-  const [sourceText, setSourceText] = useState("王朝末期，土地兼并严重，小农破产，流民增加，地方豪强扩张，中央税源减少。");
-  const [lastChunkIds, setLastChunkIds] = useState<string[]>([]);
+  const [sourceRights, setSourceRights] = useState<"unknown" | "owned" | "licensed">("unknown");
+  const [sourceLicenseName, setSourceLicenseName] = useState("");
+  const [sourceCopyrightBoundary, setSourceCopyrightBoundary] = useState("operator review required before analysis or abstraction");
+  const [sourceChunkVersionId, setSourceChunkVersionId] = useState("");
+  const [executionEvidenceVersionId, setExecutionEvidenceVersionId] = useState("");
+  const [evidenceHash, setEvidenceHash] = useState("");
+  const [evidenceByteEnd, setEvidenceByteEnd] = useState("1");
   const [conceptName, setConceptName] = useState("土地兼并");
   const [discipline, setDiscipline] = useState("历史制度");
   const [coreExplanation, setCoreExplanation] = useState("土地兼并通过田契、税源和佃户关系改变地方利益分配，可转化为豪强获利、小农受损、主角被案卷卷入的主线冲突。");
   const [selectedKnowledgeId, setSelectedKnowledgeId] = useState("");
   const [bindingFlow, setBindingFlow] = useState("outline");
   const [bindingConstraint, setBindingConstraint] = useState("地方土地案作为第一卷主线冲突；制度矛盾必须影响主角利益。");
-  const [packFlow, setPackFlow] = useState("outline");
-  const [packGoal, setPackGoal] = useState("构造 MKAOS P0 知识调用闭环");
+  const [packTargetVersionId, setPackTargetVersionId] = useState("");
   const [packPreview, setPackPreview] = useState("");
   const [packDebug, setPackDebug] = useState<Record<string, any> | null>(null);
   const [graphSummary, setGraphSummary] = useState<Record<string, any> | null>(null);
@@ -60,8 +67,15 @@ export function MkaosConsolePage() {
   }, [overview, selectedKnowledgeId]);
 
   async function refresh() {
-    const next = await loadMkaosOverview();
+    const [next, projectRows] = await Promise.all([
+      loadMkaosOverview(),
+      loadMkaosProjects()
+    ]);
     setOverview(next);
+    setProjects(projectRows);
+    if (!sourceProjectId && projectRows[0]?.project_id) {
+      setSourceProjectId(projectRows[0].project_id);
+    }
     if (!selectedKnowledgeId && next.knowledge[0]?.id) {
       setSelectedKnowledgeId(next.knowledge[0].id);
     }
@@ -127,21 +141,41 @@ export function MkaosConsolePage() {
         <div className="panel">
           <PanelHeader title="来源管理" icon={<FileText size={18} />} />
           <div className="formGrid">
+            <select value={sourceProjectId} onChange={(event) => setSourceProjectId(event.target.value)}>
+              <option value="">选择 Authority Project</option>
+              {projects.map((project) => <option key={project.project_id} value={project.project_id}>{project.title}</option>)}
+            </select>
             <input value={sourceTitle} onChange={(event) => setSourceTitle(event.target.value)} />
+            <input value={sourceBlobId} onChange={(event) => setSourceBlobId(event.target.value)} placeholder="AVAILABLE authority_blob ID" />
+            <select value={sourceRights} onChange={(event) => setSourceRights(event.target.value as "unknown" | "owned" | "licensed")}>
+              <option value="unknown">Rights unknown（隔离）</option>
+              <option value="owned">Owned</option>
+              <option value="licensed">Licensed</option>
+            </select>
+            <input value={sourceLicenseName} onChange={(event) => setSourceLicenseName(event.target.value)} placeholder="License / rights evidence reference" />
+            <input value={sourceCopyrightBoundary} onChange={(event) => setSourceCopyrightBoundary(event.target.value)} placeholder="Copyright boundary" />
             <button
               className="primaryButton"
-              disabled={busy || !sourceText.trim()}
+              disabled={busy || !sourceProjectId || !sourceBlobId.trim() || !sourceCopyrightBoundary.trim() || (sourceRights === "licensed" && !sourceLicenseName.trim())}
               onClick={() => runAction(async () => {
-                const result = await importMkaosSource(sourceTitle, sourceText);
-                const chunks = Array.isArray((result as any).chunks) ? (result as any).chunks : [];
-                setLastChunkIds(chunks.map((chunk: any) => String(chunk.id)).filter(Boolean));
+                const project = projects.find((item) => item.project_id === sourceProjectId);
+                const result = await registerMkaosSource({
+                  projectId: sourceProjectId,
+                  workspaceId: project?.workspace_id ?? "",
+                  blobId: sourceBlobId,
+                  title: sourceTitle,
+                  sourceKind: "manual_source",
+                  rightsAuthorization: sourceRights,
+                  licenseName: sourceLicenseName,
+                  copyrightBoundary: sourceCopyrightBoundary
+                });
                 return result;
-              }, "来源已导入并切片")}
+              }, "SourceDocument Operation 已进入 Authority Worker 队列；分块需由后续 Authority Operation 执行")}
             >
-              导入
+              登记 Blob 来源
             </button>
           </div>
-          <textarea rows={5} value={sourceText} onChange={(event) => setSourceText(event.target.value)} />
+          <p className="mutedText">这里只接受已由 ExternalEffect + Receipt 验证为 AVAILABLE 的 Blob。原文不会写入 Asset JSON，也不会直接进入 Knowledge Pack 或生成上下文。</p>
           <DataTable
             emptyText="暂无 MKAOS 来源"
             columns={["来源", "状态", "Chunks", "路径"]}
@@ -163,16 +197,33 @@ export function MkaosConsolePage() {
           <div className="formGrid">
             <input value={conceptName} onChange={(event) => setConceptName(event.target.value)} />
             <input value={discipline} onChange={(event) => setDiscipline(event.target.value)} />
+            <input value={executionEvidenceVersionId} onChange={(event) => setExecutionEvidenceVersionId(event.target.value)} placeholder="Gateway execution evidence AssetVersion ID" />
+            <input value={sourceChunkVersionId} onChange={(event) => setSourceChunkVersionId(event.target.value)} placeholder="SourceChunk AssetVersion ID" />
+            <input value={evidenceHash} onChange={(event) => setEvidenceHash(event.target.value)} placeholder="sha256 evidence Hash" />
+            <input value={evidenceByteEnd} onChange={(event) => setEvidenceByteEnd(event.target.value)} inputMode="numeric" placeholder="evidence byte end" />
             <button
               className="primaryButton"
-              disabled={busy || !conceptName.trim()}
+              disabled={busy || !sourceProjectId || !conceptName.trim() || !executionEvidenceVersionId.trim() || !sourceChunkVersionId.trim() || !/^sha256:[0-9a-f]{64}$/.test(evidenceHash) || Number(evidenceByteEnd) <= 0}
               onClick={() => runAction(async () => {
-                const result = await createKnowledgeCard({ conceptName, discipline, coreExplanation, sourceChunkIds: lastChunkIds });
-                setSelectedKnowledgeId(String((result as any).asset?.id ?? ""));
+                const project = projects.find((item) => item.project_id === sourceProjectId);
+                const result = await createKnowledgeCard({
+                  projectId: sourceProjectId,
+                  workspaceId: project?.workspace_id ?? "",
+                  executionAssetVersionId: executionEvidenceVersionId,
+                  conceptName,
+                  discipline,
+                  coreExplanation,
+                  sourceEvidence: [{
+                    sourceChunkAssetVersionId: sourceChunkVersionId,
+                    chunkByteStart: 0,
+                    chunkByteEnd: Number(evidenceByteEnd),
+                    evidenceHash
+                  }]
+                });
                 return result;
-              }, "知识卡已创建")}
+              }, "Knowledge Candidate Operation 已进入 Authority Worker；尚未激活为知识卡")}
             >
-              创建
+              提交候选
             </button>
           </div>
           <textarea rows={4} value={coreExplanation} onChange={(event) => setCoreExplanation(event.target.value)} />
@@ -184,10 +235,22 @@ export function MkaosConsolePage() {
               <span className={statusClass(row.status || "active")} key={`${row.id}-status`}>{row.status || "active"}</span>,
               row.risk_level || "-",
               String(row.content.weight ?? row.metadata.weight ?? "-"),
-              <span className="buttonRow" key={`${row.id}-actions`}>
-                <button className="secondaryButton" disabled={busy} onClick={() => runAction(() => patchKnowledge(row.id, { status: "needs_review" }), "知识卡已标记复审")}>复审</button>
-                <button className="secondaryButton" disabled={busy} onClick={() => runAction(() => patchKnowledge(row.id, { status: "active" }), "知识卡已恢复")}>启用</button>
-              </span>
+              row.type === "knowledge_card_candidate" ? (
+                <button
+                  className="secondaryButton"
+                  key={`${row.id}-approve`}
+                  disabled={busy || !row.asset_version_id || !sourceProjectId}
+                  onClick={() => runAction(() => {
+                    const project = projects.find((item) => item.project_id === sourceProjectId);
+                    return approveKnowledgeCandidate({
+                      projectId: sourceProjectId,
+                      workspaceId: project?.workspace_id ?? "",
+                      candidateAssetVersionId: row.asset_version_id ?? "",
+                      rationale: "Operator verified abstraction, lineage and copyright boundary."
+                    });
+                  }, "治理 Decision 已进入 Authority Worker；批准成功后将创建新的 Active KnowledgeCard AssetVersion")}
+                >批准候选</button>
+              ) : <span key={`${row.id}-active`}>不可原地修改</span>
             ])}
           />
         </div>
@@ -236,21 +299,26 @@ export function MkaosConsolePage() {
         <div className="panel">
           <PanelHeader title="Knowledge Pack 预览" icon={<Workflow size={18} />} />
           <div className="formGrid">
-            <select value={packFlow} onChange={(event) => setPackFlow(event.target.value)}>
-              {flows.map((flow) => <option value={flow} key={flow}>{flow}</option>)}
+            <select value={selectedKnowledge?.id ?? ""} onChange={(event) => setSelectedKnowledgeId(event.target.value)}>
+              <option value="">选择 Active KnowledgeCard</option>
+              {knowledgeRows.filter((row) => row.type === "knowledge_card").map((row) => <option value={row.id} key={row.id}>{row.title || row.id}</option>)}
             </select>
-            <input value={packGoal} onChange={(event) => setPackGoal(event.target.value)} />
+            <input value={packTargetVersionId} onChange={(event) => setPackTargetVersionId(event.target.value)} placeholder="Target AssetVersion ID" />
             <button
               className="primaryButton"
-              disabled={busy}
+              disabled={busy || !sourceProjectId || !packTargetVersionId.trim() || selectedKnowledge?.type !== "knowledge_card" || !selectedKnowledge.asset_version_id}
               onClick={() => runAction(async () => {
-                const pack = await buildKnowledgePack(packFlow, packGoal);
-                const preview = await loadPackPreview(String((pack as any).asset?.id ?? ""));
-                const debug = await loadPackDebug(String((pack as any).asset?.id ?? ""));
-                setPackPreview(preview.preview);
-                setPackDebug(debug);
+                const project = projects.find((item) => item.project_id === sourceProjectId);
+                const pack = await buildKnowledgePack({
+                  projectId: sourceProjectId,
+                  workspaceId: project?.workspace_id ?? "",
+                  targetAssetVersionId: packTargetVersionId,
+                  knowledgeCardAssetVersionIds: [selectedKnowledge?.asset_version_id ?? ""]
+                });
+                setPackPreview(JSON.stringify(pack, null, 2));
+                setPackDebug({ selected_items: [selectedKnowledge?.asset_version_id], rejected_items: [], blocking_risks: [], budget_usage: { estimated_tokens: 0 } });
                 return pack;
-              }, "Knowledge Pack 已构造")}
+              }, "KnowledgePack Operation 已进入 Authority Worker；选择集、权重与目标版本已冻结")}
             >
               构造
             </button>
