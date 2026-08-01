@@ -1,191 +1,372 @@
-# Regression Tests
+# Regression And Verification Guide
 
-Updated: 2026-07-11
-Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`
+Updated: 2026-08-01  
+Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`  
+Audited HEAD: `aa991b53039cdf2e4e7911d4483052b9a6a752a1`
 
-Novel Forge keeps a dependency-light test core and optional industrial/browser checks. Run the smallest relevant verification for each change, then broaden when runtime, API, Agent, or publishing behavior changes.
+> Note: the 2026-08-01 remote audit did not execute tests because no authenticated local checkout was available. This guide defines the required verification matrix; it does not claim that the audited HEAD passed it.
 
-## Primary Commands
+## 1. Evidence Rules
+
+Never collapse different proof layers into “all tests passed”.
+
+| Layer | Evidence | What it proves | What it does not prove |
+|---|---|---|---|
+| Static integrity | file inventory, import smoke, compileall, architecture checks | repository completeness and importability | runtime behavior |
+| Unit | deterministic Python/Node tests | local contracts and domain rules | PostgreSQL concurrency or real external behavior |
+| PostgreSQL integration | pgvector PostgreSQL service and Authority tests | SQL invariants, transaction/recovery protocols | real Provider quality or production load |
+| Migration | clean and legacy schema tests | migration chain and schema assumptions | rollback/restore operations unless explicitly rehearsed |
+| Browser E2E | Playwright against running stack | operator interaction and API state transitions | real Provider/platform behavior unless connected |
+| Real Provider | credentialed, budgeted, SHA-bound run | model behavior, usage, latency and recovery | long-form quality from one Chapter |
+| Real platform | approved pilot with receipts | submission/query/withdraw/callback semantics | broad platform production readiness |
+| Long-form acceptance | staged real-provider books | state/quality/cost stability over chapters | multi-book isolation unless parallel |
+| Multi-book acceptance | parallel projects/books | isolation, fairness, capacity and recovery | public SaaS security unless tested separately |
+
+Every verification report must include:
+
+```text
+commit_sha
+branch
+python_version
+node_version
+postgres_image
+command
+start/end time
+test_count
+failure_count
+error_count
+skip_count
+external side effects
+credentials/profile refs
+result classification
+```
+
+## 2. P0 Repository Integrity Gate
+
+Run before installing dependencies or trusting any current-state report:
 
 ```bash
-make test
+git status --short
+git diff --check
+
+git ls-files src/novel_forge/modules/project_authority
+git ls-files src/novel_forge/modules/task_authority
+git ls-files src/novel_forge/modules/source_authority
+git ls-files src/novel_forge/modules/mkaos_authority
+git ls-files src/novel_forge/workers/*authority*.py
+git ls-files src/novel_forge/storage/migrations/versions/v20260801_00*
+git ls-files tests/integration/test_*authority_postgres.py
+
+PYTHONPATH=src python -c "import novel_forge"
+PYTHONPATH=src python -c "import novel_forge.api.app"
+PYTHONPATH=src python -c "import novel_forge.api.authority_app"
+PYTHONPATH=src python -c "import novel_forge.storage.migrations"
+```
+
+Required CI assertions:
+
+- every migration listed in `VERSION_MODULES` exists and imports;
+- every `project.scripts` target imports;
+- every required Authority router/service package exists;
+- every required test module exists;
+- each focused discovery pattern matches at least one test;
+- the tested SHA equals the workflow SHA.
+
+`unittest.discover()` matching zero files is not a valid proof.
+
+## 3. Complete Local Validation
+
+### 3.1 Installation
+
+```bash
+python -m pip install -e '.[test]'
+npm --prefix web/admin ci
+```
+
+Use an isolated virtual environment. Record the lock/resolution output when dependencies are not fully pinned.
+
+### 3.2 Static and architecture
+
+```bash
+python -m compileall -q src tests
+git diff --check
+make head-integrity-check
+make authority-parity-check
+python -m unittest discover -s tests/architecture -p 'test_*.py'
 make lint
 make validate
-make v1-slow-acceptance
+make check-skills
+```
+
+### 3.3 Unit and acceptance
+
+```bash
+python -m unittest discover -s tests/unit -p 'test_*.py'
+python -m unittest discover -s tests/acceptance -p 'test_*.py'
+```
+
+Report optional dependency and browser skips explicitly. A skipped required Authority test is a failure.
+
+## 4. PostgreSQL Authority Validation
+
+Start a clean PostgreSQL 16 + pgvector database.
+
+```bash
+export NOVEL_FORGE_DATABASE_URL='postgresql://novel_forge:novel_forge@localhost:5432/novel_forge_core_os_test'
+
+python -m novel_forge.cli authority-migrate
+python scripts/run_authority_postgres_tests.py
+python -m unittest discover -s tests/integration -p 'test_*.py'
+```
+
+Minimum focused suites:
+
+```bash
+python -m unittest tests.integration.test_postgresql_only_chapter_slice
+python -m unittest tests.integration.test_chapter_authority_scheduler_postgres
+python -m unittest tests.integration.test_content_authority_scheduler_recovery_postgres
+python -m unittest tests.integration.test_external_effect_runtime_postgres
+python -m unittest tests.integration.test_provider_callback_authority_postgres
+python -m unittest tests.integration.test_worker_health_postgres
+python -m unittest tests.integration.test_book_authority_postgres
+python -m unittest tests.integration.test_book_to_chapter_authority_vertical_postgres
+python -m unittest tests.integration.test_book_followup_authority_postgres
+```
+
+Source/MKAOS Authority suites may be added only after the test modules are confirmed present in the current HEAD.
+
+### 4.1 Required PostgreSQL assertions
+
+The integration suite must prove at least:
+
+- idempotency replay and digest conflict;
+- immutable Operation Definition version;
+- status/version CAS conflict;
+- one active Attempt;
+- monotonic Attempt number;
+- one held Lease and monotonic Fence;
+- stale Worker result rejection;
+- retryable and final failure paths;
+- cancellation and late-result races;
+- ExternalEffect UNKNOWN/reconciliation;
+- callback duplicate/conflict handling;
+- Saga dependency readiness and completion;
+- cross-project reference rejection;
+- output AssetVersion and content hash binding;
+- audit, State Event and Outbox evidence;
+- worker restart recovery;
+- Book child delegation and acceptance.
+
+## 5. Migration Validation
+
+Run against both a clean database and a supported legacy snapshot.
+
+```bash
+python -m unittest tests.integration.test_authority_migrations_postgres
+python -m unittest tests.integration.test_authority_schema_postgres
+python -m novel_forge.cli authority-migrate --status
+```
+
+Required checks:
+
+- migration chain has no break or duplicate ID;
+- clean install reaches `LATEST_MIGRATION_ID`;
+- registered migration modules all exist;
+- applying migrations twice is safe where designed;
+- legacy migration records source hash and quarantine;
+- migration verification reconciles row counts and hashes;
+- forward-fix/restore procedure is documented for migrations without downgrade statements.
+
+Do not claim rollback support merely because a downgrade API exists.
+
+## 6. Web Validation
+
+```bash
 npm --prefix web/admin test
 npm --prefix web/admin run lint
-PYTHONPATH=src python3 -m novel_forge.cli --help
-PYTHONPATH=src python3 -m unittest tests.integration.test_novel_os_acceptance
-PYTHONPATH=src python3 -m unittest tests.integration.test_novel_os_long_chain_smoke
+npm --prefix web/admin run build
 ```
 
-## V7 Content Intelligence Focused Commands
+`lint` currently means TypeScript validation unless a separate formatter/linter is configured.
 
-Run these when changing Genre OS, Style OS, Canon Graph 2.0 plugins, Quality Eval 2.0, Long-chain Proof, Publishing/Feedback adapters, or related product routes:
+Browser validation:
 
 ```bash
-python3 -m unittest tests.unit.test_genre_os tests.unit.test_style_os tests.unit.test_canon_graph_plugins tests.unit.test_quality_eval_v2 tests.unit.test_long_chain_proof tests.unit.test_publishing_feedback_adapters
-python3 -m unittest tests.integration.test_content_intelligence_context_builder tests.integration.test_genre_style_quality_to_draft_chain tests.integration.test_feedback_to_mutation_proposal tests.integration.test_long_chain_50_chapter_content_intelligence
-python3 -m unittest tests.unit.test_product_api_routes tests.unit.test_schemas tests.integration.test_novel_os_acceptance
-python3 -m compileall -q src/novel_forge tests
-npm --prefix web/admin run lint
-npm --prefix web/admin test
+NOVEL_FORGE_REQUIRE_PLAYWRIGHT=1 npm --prefix web/admin run smoke:browser
 ```
 
-The historical V7 foundation result was Python 527 tests OK with two skips. It is not the current branch baseline. The 2026-07-11 rebaseline ran 779 Python tests and found 7 failures, 35 errors, and 2 skips; see `docs/reports/novel-os-priority-issues-rebaseline.md`.
+A skipped Playwright smoke must be reported as `not executed`, not passed.
 
-## Test Evidence Layers
+Required E2E journeys after Authority deployment closes:
 
-Do not collapse these layers into one "all tests passed" claim:
+1. create/query an Authority project;
+2. inspect frozen assets and versions;
+3. admit a Chapter command;
+4. observe worker/Saga/Attempt progress;
+5. cancel/recover a failed Operation;
+6. inspect Canon/Quality/Release evidence;
+7. start a Book run and delegate/accept a Chapter;
+8. inspect Reader Outcome/Recap proposals;
+9. verify unauthorized or out-of-scope requests fail.
 
-| Layer | Default evidence | External dependency | What it proves |
-|---|---|---|---|
-| Deterministic local | Python `unittest`, Node tests, compile/type, workspace validation, Skill drift | None | Schema, service, workflow, gate, API and static UI contracts under local/mock inputs |
-| Sandbox integration | Docker services, fake Provider/platform servers, adapter failure injection | Local containers or sandbox endpoints | Storage/queue/adapter contracts, idempotency and recovery without production side effects |
-| Browser E2E | Playwright journeys against a running local stack | Browser binaries and local stack | Real operator interactions and backend state transitions; a skipped smoke is **not** a pass |
-| Real Provider | Explicit budgeted model run with ModelCallLog, CostLedger and ActualSentContext | Provider credentials and paid/approved route | Actual model behavior, cost, latency and content evidence for the selected Provider/model |
-| Real platform | Approved manual or API pilot with receipt and compensation evidence | Platform account/API and operator approval | External submission semantics; manual profiles and fake clients do not prove production publishing |
-
-The deterministic local baseline must be green before architecture migration. Real Provider and real platform checks do not run on every commit and must be reported separately as `passed`, `failed`, or `not executed`.
-
-## Governance Dead-Letter Focused Regression
-
-Run this when changing Agent Scheduler governance drift handling, dead-letter repair, Agent Center repair audit evidence, or related UI/API surfaces. It intentionally excludes chapter production acceptance and provider proof:
+## 7. Docker And Deployment Validation
 
 ```bash
-make governance-dead-letter-regression
-python3 scripts/run_governance_dead_letter_regression.py
-python3 scripts/run_governance_dead_letter_regression.py --skip-ui
-python3 scripts/run_governance_dead_letter_regression.py --list
+docker compose config
+docker compose build
+docker compose up -d
 ```
 
-The command bundle covers scheduler dead-letter failure fixtures, reviewed repair preflight, direct recovery blocking, Agent Center API evidence, repair audit/readiness evidence, compileall, and optional Web Admin static/type checks.
+Before calling the stack Authority-ready, verify the running API reports:
 
-## Runtime Growth Focused Regression
+```text
+storage_authority=postgresql
+environment=production
+release build id and commit SHA
+latest migration applied
+Authority worker healthy
+Provider route registry qualified
+object store reachable
+outbox lag within threshold
+```
 
-Run this when changing chapter production runtime artifact policies, AgentRun/AgentEvent policy, Workflow runtime policy propagation, Agent Center event summary visibility, or related UI/API surfaces. It intentionally excludes chapter sequence acceptance and provider proof:
+The current static `/health` response is not sufficient. Add a dependency-aware readiness endpoint and test it.
+
+Deployment recovery tests:
+
+- terminate a Chapter worker during RUNNING;
+- expire a Lease and let a new worker acquire a higher Fence;
+- restart API and workers with pending External Effects;
+- restart PostgreSQL after committed operations;
+- restore a backup into a fresh environment;
+- verify Outbox replay and duplicate handling;
+- verify no Legacy production write occurs.
+
+## 8. Provider v2 Conformance
+
+Mock protocol tests:
 
 ```bash
-make runtime-growth-regression
-python3 scripts/run_runtime_growth_regression.py
-python3 scripts/run_runtime_growth_regression.py --skip-ui
-python3 scripts/run_runtime_growth_regression.py --list
+python -m unittest tests.unit.test_provider_adapter_v2
+python -m unittest tests.unit.test_chapter_authority_dependencies
+python -m unittest tests.unit.test_creative_generator_boundary
 ```
 
-The command bundle covers compact TaskStatus/NodeRun behavior, failure NodeRun/trace preservation, chapter runtime growth profiler and threshold-gate fixtures, Product API chapter-runtime-growth profile/gate route coverage, deferred acceptance runtime-growth preflight helper fixtures, helper-generated source-leakage preflight gate evidence, unified preflight manifest quality-calibration-gate/source/workflow/approval/source-leakage evidence resolution fixtures, unified preflight rollup gate route fixtures, unified preflight Cockpit/API surface fixtures, AgentRun event growth characterization, success-summary event compaction, failure event preservation, workflow runtime-policy propagation, Agent Scheduler and Workflow Processor chapter production start/resume operation coverage, canonical v1 workflow template service/API fixtures, runtime-console/ready-queue template evidence, workflow governance drift report/gate fixtures, production execute/resume preflight fixtures, scheduler dead-letter handling for workflow governance preflight failures, Project Cockpit service/API workflow-governance missing, blocked, and clean readiness fixtures, ApprovalRequest caller readiness missing/ready/pending-blocking fixtures, Permission Center route coverage, Project Cockpit ApprovalRequest readiness route coverage, Agent Center summary/API evidence, compileall, and optional Web Admin static/type checks.
+These tests prove control contracts only.
 
-## Source Governance Focused Regression
+### 8.1 Real Provider gate
 
-Run this when changing Source Governance refresh, connector plan, diff repair, guarded apply readiness, or source-safety API surfaces. It intentionally excludes connector execution, chapter acceptance, and provider proof:
+A real Provider run requires explicit authorization, budget and secret references. The report must include:
 
-```bash
-make source-governance-regression
-python3 scripts/run_source_governance_regression.py
-python3 scripts/run_source_governance_regression.py --list
+- provider/model/profile version;
+- RouteSnapshot and capability probe;
+- Prompt/Skill content hashes;
+- stable idempotency key;
+- Provider request ID;
+- actual input/output tokens;
+- billed or reproducibly calculated cost;
+- timeout/query/cancel/callback evidence;
+- normalized output and ValidationManifest;
+- CommitManifest and output AssetVersion;
+- real editorial assessment.
+
+Use status values:
+
+```text
+PASSED
+FAILED
+NOT_EXECUTED
+BLOCKED_PRECONDITION
 ```
 
-The command bundle covers audit-only refresh reports, source connector execution planning without connector invocation, source diff repair plans, approval-bound stale marking/rollback, source guarded apply readiness missing/review/applied-stale states, source governance runtime gate positive/negative/local-warning fixtures, source leakage readiness/preflight gate service/API/Cockpit fixtures, guarded-apply and runtime-gate API routes, Project Cockpit source guarded apply/runtime gate service/API surfacing, publish/release/context source-gate caller fixtures, v1 topic/worldbuilding/character/outline/chapter-plan/draft/review/revision source-leakage negative fixtures, scheduler/workflow source-gate propagation fixtures, Agent Center/Workflow Console/Cockpit source-gate runtime evidence visibility, project-scoped source runtime evidence inference from linked assets, compileall, and guardrail assertions that connector execution, chapter acceptance, provider proof, and `make test` stay out of the focused command.
+Never convert `BLOCKED_PRECONDITION` or Fixture success into `real_provider_proven=true`.
 
-## Makefile Targets
+## 9. Chapter Acceptance Matrix
 
-| Command | Purpose | Notes |
-|---|---|---|
-| `make test` | Python unittest discovery plus web admin node tests | Default broad local check |
-| `make lint` | Python compile check | No style formatter implied |
-| `make validate` | Validate local workspace structure/assets | Uses `.local/workspace` by default |
-| `make demo` | Run sample pipeline in `.local/demo-workspace` | Writes ignored runtime outputs |
-| `make sync-skills-dry-run` | Preview root Skill to runtime Skill sync | Use before syncing |
-| `make check-skills` | Fail if runtime Skills drift from source | Required for Skill changes |
-| `make local-up` | Docker local stack and smoke | Requires Docker and free ports |
-| `make local-smoke` | Smoke running local stack | Requires services |
-| `make v1-slow-acceptance` | Run explicit true 10-chapter V1 slow acceptance | Writes `docs/reports/v1-chapter-sequence-slow-acceptance.md`; not part of default `make test` |
-| `make governance-dead-letter-regression` | Run focused governance dead-letter regression | Does not run chapter acceptance or provider proof |
-| `make runtime-growth-regression` | Run focused runtime write-growth regression | Does not run chapter acceptance or provider proof |
-| `make source-governance-regression` | Run focused source governance regression | Does not run connector execution, chapter acceptance, or provider proof |
-| `make web-dev` | Next.js dev console | Requires Node deps |
+### Fixture protocol gate
 
-## Test Coverage Map
+The deterministic Chapter integration should prove:
 
-| Area | Test Evidence | Current Coverage |
-|---|---|---|
-| CLI and local pipeline | `tests/unit/test_cli.py`, `tests/integration/test_pipeline.py`, `tests/integration/test_workflow_steps.py` | Good local coverage |
-| Schemas/storage | `tests/unit/test_schemas.py`, `test_storage.py`, `test_storage_graph.py` | Good core coverage |
-| Product API | `tests/unit/test_product_api.py`, `test_product_api_routes.py` | Good route/service coverage, including runtime-growth profile and threshold-gate build/Cockpit surfacing routes |
-| Agent runtime | `test_agent_scheduler.py`, `test_agent_registry_scheduler_integration.py`, `test_agent_runtime_profiles.py`, `test_agent_center_v2.py` | First-slice coverage |
-| Provider/runtime policy | `test_provider_runtime_guard.py`, `test_provider_hard_stop_proof.py`, `test_runtime_policy.py`, `test_runtime_ledger.py` | Active hardening coverage |
-| Context/RAG | `test_context_builder_stage_profiles.py`, `test_context_builder_mkaos_flow.py`, `test_context_and_production_chain.py`, `test_pgvector_source_isolation.py`, `test_storage.py` | Partial but meaningful; stage profile/source isolation contracts have focused unit coverage, rejected manual high-risk context selections now record ApprovalRequest refs, source eligibility is preserved in selected/rejected/compressed summaries, production context rejects failed source-derived eligibility, and RAG no longer implicitly rebuilds local vector index during context generation |
-| Source Governance | `test_source_intake.py`, `test_mkaos_source_eligibility.py`, `test_analysis_services.py`, `test_context_builder_stage_profiles.py`, `test_mkaos_usage_feedback_governance.py`, `test_schemas.py`, `test_product_api_routes.py`, `test_novel_os_cockpit.py`, `test_publishing_center.py`, `test_workflow_executor.py`, `test_agent_scheduler.py`, `test_source_governance_regression_script.py` | SourcePolicy/LicenseCheckResult/SourceRiskReport/SourceSnapshot/SourceSyncJob lifecycle, audit-only SourceRefreshReport and `/product/sources/refresh-report`, approval-gated `/product/sources/connector-execution-plan`, non-local `/product/sources/connector-adapter-lifecycle`, sandboxed `/product/sources/connector-run`, reviewable `/product/sources/diff-repair-plan`, approval-bound `/product/sources/diff-repair-apply`, source-aware `/product/sources/diff-repair-rollback`, source guarded apply readiness and `/product/sources/guarded-apply-readiness`, source governance runtime gate and `/product/sources/runtime-gate`, source leakage readiness/gate and `/product/sources/source-leakage-*`, Project Cockpit source guarded apply/runtime gate/leakage evidence surfacing, publish/release/context source-gate caller fixtures, v1 source-leakage negative fixtures for every context-producing stage profile, scheduler/workflow source-gate propagation fixtures, Agent Center/Workflow Console/Cockpit source-gate runtime evidence visibility, project-scoped source runtime evidence inference from linked assets, stale/quarantine sweep and `/product/sources/stale-sweep`, retention/expiry sweep and `/product/sources/retention-sweep`, R0-R4 eligibility, high-risk ApprovalRequest hook, quarantine behavior, MKAOS/material/analysis/context caller eligibility refs, context-selected knowledge/material usage feedback, reviewable source-refresh invalidation recommendations, production fail-closed behavior, schema registration, route coverage, and focused no-side-effect source governance regression |
-| Chapter blueprint | `test_chapter_blueprint_contract.py`, `test_context_and_production_chain.py`, `test_module_services.py` | Embedded `chapter-blueprint-contract-v1` is covered across plan, version, and draft handoff |
-| Chapter Production Bus | `test_context_and_production_chain.py`, `test_product_api_routes.py` | Bus run/resume covers draft quality-loop status capture, final/revision content quality-loop execution, bounded `quality_repair` patch/diff/version evidence, re-review content loop, export provenance/checklist evidence, v1 sequence coverage fields, API sync/async runtime policy propagation, worker policy preservation, and production fail-closed helper behavior; chapter acceptance remains deferred |
-| MKAOS | Many `test_mkaos_*.py`, including `test_mkaos_source_eligibility.py`, `test_mkaos_usage_feedback_governance.py`, MKAOS integration and acceptance tests | Broad coverage, including source eligibility contract propagation into knowledge cards, production Knowledge Pack selection, material-card inheritance, context-selected usage feedback, and reviewable usage/source-refresh weight governance; still evolving |
-| Canon/KG/continuity | `test_canon_graph*.py`, `test_novel_kg*.py`, `test_longform_stability.py`, `test_context_and_production_chain.py`, long-chain integration tests | CanonGraph plugin reducer coverage plus v1 accepted-chapter reducer coverage; full long-form proof remains deferred |
-| Reader Promise Ledger | `test_reader_promise_ledger.py`, `test_longform_stability.py`, `test_context_and_production_chain.py`, `test_product_api_routes.py` | Promise creation, normal ledger, broken-promise ReviewIssue/RevisionTask hook, longform reducer evidence, chapter bus output path, and route registration are covered; payoff calibration remains future work |
-| Chapter Economy / Pleasure Points | `test_chapter_economy.py`, `test_content_quality_loop.py`, `test_longform_stability.py`, `test_context_and_production_chain.py`, `test_product_api_routes.py` | High-value chapter pass, water-chapter block, PleasurePoint/ChapterEconomyReport schema, ReviewIssue/RevisionTask hook, content loop step, longform reducer evidence, chapter bus output, and route registration are covered |
-| Character Pressure | `test_character_pressure.py`, `test_content_quality_loop.py`, `test_longform_stability.py`, `test_context_and_production_chain.py`, `test_product_api_routes.py` | Visible-agency/pressure pass, weak-agency/pressure block, ProtagonistCharmReport/AntagonistPressureReport schema, ReviewIssue/RevisionTask hook, content loop step, longform reducer evidence, chapter bus output, and route registration are covered |
-| Mobile Reading Gate | `test_mobile_reading.py`, `test_content_quality_loop.py`, `test_longform_stability.py`, `test_context_and_production_chain.py`, `test_product_api_routes.py`, `test_review_issue.py` | Mobile-friendly pass, dense single-paragraph block, MobileReadingReport schema, mobile_reading_friction ReviewIssue, mobile_paragraph_reflow RevisionTask hook, content loop step, chapter bus output, and route registration are covered |
-| Golden Opening Gate | `test_content_quality_loop.py`, `test_review_issue.py`, `test_context_and_production_chain.py` | Chapters 1-3 `golden-opening-gate-v1` content-loop step, weak opening blocking ReviewIssue, opening rewrite RevisionTask evidence, chapter bus final quality-loop evidence, and bounded repair/re-review path are covered; provider/human calibration remains future work |
-| Longform recap | `test_longform_recap_agent.py`, `test_agent_registry_scheduler_integration.py` | 5-chapter light recap, 10-chapter formal recap, overdue formal recap, forced checkpoints, next-chapter context, and scheduler operation coverage |
-| Review/revision/publishing | `test_review_issue.py`, `test_content_quality_loop.py`, `test_agent_scheduler.py`, `test_publishing_center.py`, `test_publish_feedback_loop.py`, publishing fixtures | Readable prose and golden opening gates create ReviewIssue/RevisionTask evidence; ReviewIssue-to-Revision strategy fixtures cover candidate, task/plan, provider-loop, local-loop, and Agent Scheduler dispatch paths; platform publish adapters record Permission Center approval refs before external/manual publish |
-| Eval/quality | `test_evaluation_center_general.py`, `test_longform_quality_gate_e2e.py`, MKAOS quality tests | Partial production eval coverage |
-| Quality Calibration Readiness And Gate | `test_quality_eval_v2.py`, `test_product_api_routes.py`, `test_novel_os_cockpit.py` | Read-only `quality_calibration_readiness` snapshots and `quality_calibration_readiness_gate` gate results cover missing evidence, local warning, production fail-closed, fixture/mock provider judge not satisfying external proof, passed external/human/golden/calibration evidence, `/product/quality/calibration-readiness`, `/product/quality/calibration-readiness-gate`, and Project Cockpit surfacing; no provider call or chapter acceptance is executed |
-| Provider Proof Harness | `test_v7_provider_proof.py`, `test_quality_eval_v2.py`, `test_provider_hard_stop_proof.py`, `test_product_api_routes.py` | External-provider positive fixture, fixture-denied negative fixture, provider-proof manifest classification, quality judge external proof, provider hard-stop policy, and `/product/provider-proof/v7` route registration are covered |
-| V7 content intelligence | `test_genre_os.py`, `test_style_os.py`, `test_canon_graph_plugins.py`, `test_quality_eval_v2.py`, `test_long_chain_proof.py`, `test_publishing_feedback_adapters.py`, and V7 integration tests | Foundation coverage plus provider quality evidence, opt-in provider 50 proof, platform API adapter, Fanqie/Qidian rule snapshot/parser/gate fixtures, feedback mutation ApprovalRequest refs, feedback mutation patch/AgentTask application fixtures, routes, context, and proof fixtures |
-| Portfolio OS | `test_portfolio_os.py`, `test_schemas.py`, `test_product_api_routes.py` | PortfolioProject, BookPotentialScore, CrossBookSimilarityReport, BookLifecycleGateReport, ResourceAllocationPlan schema/API/service coverage with two-book isolation, cost-quality rollup, contamination guard, non-dispatching allocation plan, blocking ApprovalRequest, planned AgentTask scheduler evidence, and continue/pause/kill recommendations |
-| UI | `npm --prefix web/admin test`, optional Playwright smoke | Node tests exist; browser smoke may be skipped without browsers |
-| Industrial services | `test_industrial_integration.py`, `test_online_backends_e2e.py`, Docker smoke targets | Optional, environment-dependent |
+- all 18 nodes succeed;
+- one injected retry recovers;
+- 41 quality dimensions materialize;
+- 9 state snapshots materialize;
+- Manifest/frozen inputs/Context segments match;
+- stale Fence and duplicate receipt behavior are correct;
+- Export and Final Release evidence are bound.
 
-## When To Add Tests
+### Real single-Chapter gate
 
-Add tests when changing:
+Add:
 
-- schemas or asset validation;
-- CLI/API contracts;
-- workflow node execution or task state;
-- Agent scheduler queue, lease, runner, gate, budget, retry, recovery, rollback, or dead-letter behavior;
-- provider route resolution or model-call policy;
-- Context Builder, RAG, Canon/KG, ReviewIssue, MKAOS, publishing, release package, or eval gates;
-- broad exception handling or fallback policy;
-- UI API contracts or visible operational evidence.
+- Chinese ChapterPlan and prose;
+- real Provider stages;
+- human review;
+- actual usage/cost;
+- no raw source leakage;
+- controlled cancel/recovery drill;
+- release gate negative and positive cases.
 
-For large service splits, add characterization tests before refactoring. Keep tests at the behavior boundary rather than asserting private helper internals unless the helper is an intentional seam.
+## 10. Whole-book And Long-form Gates
 
-## Known Gaps
+Do not use one generic “50 chapter test”. Use staged, named gates:
 
-- Browser route smoke is optional and may be skipped when Playwright browsers are not installed.
-- Production provider tests require explicit fixtures/secrets or safe mock-success fixtures that prove evidence shape without calling external APIs.
-- Full long-novel generation is not a default regression test; current long-chain tests are smoke/pressure slices.
-- True V1 10-chapter slow acceptance passed on 2026-07-07 with 10/10 coverage and 1460.716s runtime. It is intentionally not part of default `make test`; run `make v1-slow-acceptance` when changing chapter bus, context/review/revision loops, or longform/export coverage.
-- V1 local export package hardening is covered by the focused `test_chapter_production_bus_runs_and_resumes_end_to_end` fixture, which checks markdown export, manifest path, provenance evidence, source-isolation handoff, and operator checklist. This is development verification, not a replacement for the deferred unified chapter acceptance phase.
-- ApprovalRequest foundation is covered by `tests.unit.test_permission_center` plus the product router OpenAPI fixture. These tests cover local non-blocking requests, production/high-risk blocking requests, approved/rejected decisions, expiry, snapshot aggregation, and route registration.
-- V1 cockpit artifact coverage is covered by `tests.unit.test_novel_os_cockpit`, which verifies `project_metric_snapshot` includes V1 required-output coverage, reducer/recap/export status, and ApprovalRequest summary. This is operator evidence display, not the deferred chapter acceptance pass.
-- Source Governance foundation is covered by `tests.unit.test_source_intake`, `tests.unit.test_mkaos_source_eligibility`, `tests.unit.test_analysis_services`, `tests.unit.test_context_builder_stage_profiles`, `tests.unit.test_mkaos_usage_feedback_governance`, `tests.unit.test_schemas`, and the product route fixture. It proves schema-backed lifecycle, eligibility behavior, audit-only source refresh reports, approval-gated no-side-effect connector execution plans, non-local connector adapter lifecycle receipts, sandboxed approved local-file connector execution, network connector default-deny receipts, reviewable source diff repair plans, approval-bound source repair stale marking, source-aware rollback execution, stale/quarantine sweep evidence, retention/expiry no-delete cleanup planning, MKAOS/material/analysis/context caller propagation, context-selected knowledge/material usage feedback, reviewable weight/invalidation governance, and production fail-closed behavior; it does not yet prove real network connector execution or automatic weight-governance application.
-- Optional industrial services require Docker and ports; local unit tests should not depend on them.
-- Some UI pages are console/reporting slices and need more end-to-end operator workflow tests.
+| Gate | Minimum validation |
+|---|---|
+| L3 | supervisor generates/submits/accepts three sequential Chapters |
+| L10 | recap, state evolution, retries, cost and operator workflow |
+| L30 | Arc/Volume progression and PlanChange propagation |
+| L100 | continuity, promise/payoff, foreshadowing and repetition trends |
+| L300 | operational throughput, cost, fatigue and recovery |
+| L1M | approximately one million Chinese characters and ending closure |
 
-## Docs-Only Changes
+Every gate must use real Provider output for the claimed chapters and sample human editorial labels. Deterministic/state-only tests remain regression fixtures.
 
-For docs-only updates, run at least:
+## 11. Multi-book Validation
 
-```bash
-git diff --check
-rg -n "ARCHITECTURE.md|WORKFLOW.md|TESTING.md|Novel Forge V5|V5 structure" README.md CLAUDE.md docs Makefile
+Stages: 3, 5 and 10 parallel books.
+
+Verify:
+
+- Context and AssetVersion isolation;
+- no cross-book Canon/knowledge contamination;
+- scheduling fairness;
+- per-project/provider/global cost caps;
+- database connection pressure;
+- outbox lag;
+- worker restart recovery;
+- per-book pause/cancel;
+- portfolio decision audit;
+- operator alert volume.
+
+## 12. Security Validation
+
+Before multi-user exposure, add tests for:
+
+- authentication required;
+- invalid token/API key rejected;
+- project-scoped RBAC;
+- approval-role separation;
+- service/worker identity;
+- callback signature/mTLS;
+- secret redaction and no inline credential persistence;
+- CORS and CSRF policy where applicable;
+- rate limiting and audit trail;
+- cross-project ID enumeration and reference rejection.
+
+Trusted server configuration alone is not a complete web authentication proof.
+
+## 13. Current Verification Flags
+
+Until a new current-SHA report is published:
+
+```text
+head_integrity_verified=false
+current_head_build_verified=false
+real_provider_proven=false
+real_cost_proven=false
+longform_proven=false
+multi_book_proven=false
+platform_publish_proven=false
+production_verified=false
 ```
-
-If docs changed command claims, verify the command exists in `Makefile`, `pyproject.toml`, `src/novel_forge/cli.py`, or `web/admin/package.json`.
-
-## Rolling authority regression families
-
-- `test_story_design_authority_postgres`: lifecycle, PEP evidence, bounded
-  repair, approval and one active version.
-- `test_hierarchical_planning_postgres`: containment, Arc edges and
-  Frozen/Executed replacement.
-- `test_chapter_group_authority_postgres`: three dynamic Chapter Sagas,
-  pause/resume/cancel, Recap and Rolling Horizon.
-- `test_plan_change_authority_postgres`: semantic diff, exact impact,
-  interrupted activation and revalidation.
-- `test_reader_calibration_postgres`: blind preference, exposure denominator,
-  scoped event, insufficient calibration and Drift downgrade.
-
-These are PostgreSQL integration tests with deterministic fixtures. They cannot
-set real-provider, long-form, human-anchored, behavior-calibrated or
-production-verified claims.
