@@ -1,120 +1,218 @@
-# Module Map
+# Architecture And Module Map
 
-Updated: 2026-07-08
-Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`, starting commit `3f68522`
+Updated: 2026-08-01  
+Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`  
+Audited HEAD: `aa991b53039cdf2e4e7911d4483052b9a6a752a1`
 
-This map lists current implementation areas and evidence paths. Status means code was found in the current repository; it does not imply complete product maturity.
+This map describes current code boundaries and evidence limits. A module being present does not mean real-provider, long-form or production proof exists.
 
-## Entrypoints
+## 1. Top-level Runtime Map
 
-| Area | Path | Key Responsibilities | Status | Extension Notes |
-|---|---|---|---|---|
-| Package | `src/novel_forge/__init__.py` | Package identity/version | Implemented | Keep version aligned with `pyproject.toml` and API metadata |
-| CLI | `src/novel_forge/cli.py` | Local commands, pipeline, validation, industrial operations, API/worker launch | Implemented | Add command tests in `tests/unit/test_cli.py` for new commands |
-| API app | `src/novel_forge/api/app.py` | FastAPI app, health, assets, pipeline/task roots, product routers | Implemented | Route additions should go through product router registration |
-| Product routers | `src/novel_forge/api/routers/` | Product API surface | Implemented, depth varies | Keep routers thin; move logic to services/modules |
-| Product services | `src/novel_forge/api/services/` | API use cases, task helpers, fallback policy, asset index | Partially split | Continue moving use cases out of monolithic service methods |
-| Web console | `web/admin/app/` | Next.js route pages and feature components | Implemented shell | New routes need API helpers, tests/smoke, and docs |
-| Tests | `tests/` | Unit, integration, acceptance fixtures | Broad coverage | Add characterization tests before splitting large services |
+```text
+Web Admin / CLI / API
+        │
+        ├── Legacy Local-first Surface
+        │     ├── LocalStorage
+        │     ├── workflows.pipeline compatibility facade
+        │     ├── product service/router facade
+        │     └── Celery worker
+        │
+        └── PostgreSQL Authority Surface
+              ├── Trusted Principal
+              ├── Production Preparation
+              ├── Command Kernel
+              ├── Domain Authority Applications
+              ├── Durable Authority Workers
+              ├── Production Execution Gateway
+              ├── External Effects / Receipts
+              ├── AssetVersion / Blob Authority
+              └── Strong Queries / Projections
+```
 
-## V7 Content Intelligence Modules
+Target dependency direction:
 
-| Module | Path | Responsibility | Status | Tests / Evidence |
-|---|---|---|---|---|
-| Genre OS | `modules/genre_os/service.py` | Genre profiles, subgenre mechanics, platform fit, template binding, strategy packs, risk gates | Implemented foundation | `tests/unit/test_genre_os.py`, `api/routers/genre_os.py`, Web route `genre-console` |
-| Style OS | `modules/style_os/service.py` | Authorized style sample ingestion, abstract fingerprinting, style profile/policy/rule, drift gate | Implemented foundation | `tests/unit/test_style_os.py`, `api/routers/style_os.py`, Web route `style-console` |
-| Canon Graph 2.0 plugins | `modules/canon_graph/service.py` | Genre-specific canon reports, ledger, typed graph reducer snapshot/diff, and ReviewIssue conversion for critical conflicts | Implemented foundation plus reducer | `tests/unit/test_canon_graph_plugins.py`, `/product/canon-graph/plugin`, Web route `canon-graph-v2` |
-| Quality Eval 2.0 / Eval Center | `modules/quality_eval/service.py`, `modules/evaluation_center/service.py` | Rubric packs, Opening 3/Golden 10/Volume 30/Longform 100 reports, provider-backed judge evidence, provider run reports, gates, human annotations, golden sets, provider calibration reports | Implemented provider-evidence and calibration foundation | `tests/unit/test_quality_eval_v2.py`, `api/routers/quality_eval_v2.py`, `api/routers/evaluation.py`, Web route `quality-eval-v2` |
-| Long-chain Proof Center | `modules/long_chain_proof/service.py`, `modules/v7_provider_proof/service.py` | Deterministic/mock/state-only runs, opt-in provider 50 proof, and aggregate V7 provider proof manifest for opening/single/50 evidence | Implemented foundation | `tests/unit/test_long_chain_proof.py`, `tests/unit/test_v7_provider_proof.py`, `/product/provider-proof/v7`, integration 50-chapter fixture, Web route `long-chain-proof` |
-| Publishing/Feedback Adapter 2.0 | `modules/publishing_feedback_adapters/service.py` | Manual upload package, Fanqie/Qidian project-scoped rule snapshots, platform adapter gate, receipt parser confidence/status normalization, generic HTTP platform publish adapter, receipts/status, metrics, comments, clustering, human-gated mutation proposal, patch artifacts, planned AgentTasks, re-review plan, publish-gate rerun plan | Implemented foundation plus hardened platform-specific manual and feedback-apply slices | `tests/unit/test_publishing_feedback_adapters.py`, Web route `publishing-feedback-v2` |
-| V7 Agent operations | `modules/agent_scheduler/service.py` | Scheduler operation specs/runners for new V7 build/run/import/cluster/proposal/provider/platform/provider-proof operations | Implemented foundation | Agent scheduler/registry tests |
-| V7 workflow processors | `modules/workflow_nodes/service.py` | Processor registry entries for V7 service operations, provider quality judge, provider proof, and platform API publish | Implemented foundation | Workflow runtime smoke tests plus focused module tests |
-| V7 shared UI / OS Cockpit | `modules/novel_os_cockpit/service.py`, `web/admin/app/features/content-intelligence/ContentIntelligencePages.tsx`, `web/admin/app/features/os/OperatingSystemConsolePage.tsx` | API-backed consoles, provider judge controls, platform gate controls, Artifact Inspector, V1 artifact coverage, production gate board, workflow governance readiness, source guarded apply/runtime gate readiness, feedback approval queue, multi-book cost/quality dashboard, and parallel schedule view | Implemented foundation plus production control console | `tests/unit/test_novel_os_cockpit.py`, `npm --prefix web/admin run lint`, `npm --prefix web/admin test` |
-| Portfolio OS | `modules/portfolio_os/service.py` | PortfolioProject, BookPotentialScore, CrossBookSimilarityReport, BookLifecycleGateReport, ResourceAllocationPlan, approval-gated scheduler plan, planned AgentTasks, per-book isolation contract, contamination guard, cost-quality rollup, non-dispatching allocation plan | Implemented foundation | `tests/unit/test_portfolio_os.py`, API routes `/product/portfolio/*` |
+```text
+UI/API
+→ Application/Authority facade
+→ Operation/Saga orchestration
+→ Domain handler or Production Execution Gateway
+→ PostgreSQL repositories / controlled external effects
+→ projections and operator queries
+```
 
-## Creative Pipeline Modules
+New production paths must not write directly to LocalStorage or call Provider/platform adapters outside the governed execution plane.
 
-| Module | Path | Responsibility | Status | Tests / Evidence |
-|---|---|---|---|---|
-| Source intake / ingestion | `modules/source_intake/`, `modules/ingestion/` | Import raw/source assets, file handling, source metadata, source policy/license/risk/snapshot/sync-job lifecycle, R0-R4 context eligibility | Implemented foundation | `test_source_intake.py`, ingestion/MKAOS tests, `/product/sources/*` routes |
-| Cleaning | `modules/cleaning/service.py` | Normalize raw text into cleaned assets | Implemented | `test_module_services.py` |
-| Decomposition | `modules/decomposition/service.py` | Abstract deconstruction assets | Implemented | pipeline/module tests |
-| Analysis | `modules/analysis/service.py` | Web/published/classic analysis report creation | Partially implemented | `test_analysis_services.py` |
-| Knowledge | `modules/knowledge/service.py` | Knowledge card extraction/use | Implemented | module tests |
-| Materials | `modules/materials/service.py` | Reusable material cards | Implemented | module tests |
-| Topics | `modules/topics/service.py` | Topic seed and development | Implemented | CLI/module tests |
-| Worldbuilding | `modules/worldbuilding/service.py` | World bible generation | Implemented | module tests |
-| Characters | `modules/characters/service.py` | Character cards | Implemented | module tests |
-| Outline | `modules/outline/service.py`, `modules/long_planning/service.py` | Long outline and planning | Implemented | module tests |
-| Chapter plan | `modules/chapter_plan/service.py` | Chapter-level plan with embedded blueprint contract | Implemented | `test_chapter_blueprint_contract.py` plus module tests |
-| Drafting | `modules/drafting/service.py` | Draft chapter candidate using chapter blueprint evidence | Implemented for local/runtime slices | provider/runtime and blueprint handoff tests |
-| Review / revision / editor | `modules/review/`, `modules/revision/`, `modules/editor/`, `modules/review_issue/`, `modules/content_quality_loop/` | Review report, readable gate, issue strategy contract, revision task, revision plan, editor patch, re-review evidence | Implemented, still deepening | `test_review_issue.py`, `test_content_quality_loop.py`, `test_module_services.py`, `test_loop_kernel.py`, and editor tests |
-| Feedback | `modules/feedback/`, `modules/feedback_backflow/` | Reader feedback import/analysis/backflow | Partially implemented | feedback tests |
+## 2. Entrypoints
 
-## Novel OS Runtime Modules
-
-| Module | Path | Responsibility | Status | Notes |
-|---|---|---|---|---|
-| OS Envelope | `modules/os_envelope/service.py` | Runtime context/evidence boundary | Partially implemented | Needs universal path coverage |
-| Context Builder | `modules/context_builder/service.py` | Context plan, bundle, stage profile contract, source isolation | Partially implemented | Stage-specific profile enforcement exists; continue KG/context invalidation depth and final workflow assertions |
-| Workflow nodes | `modules/workflow_nodes/` | Node execution/query/control/publishing ops | Partially split | Use seam files for new side-effect boundaries |
-| Agent registry | `modules/agent_registry/service.py` | Runtime profile/operation registry assets | First slice | Add operation coverage as Agents mature |
-| Agent scheduler | `modules/agent_scheduler/` | Queue lifecycle, operation registry, runners, lease/retry/recovery/rollback/dead-letter | First production slices | Keep service facade thin; add tests before each split |
-| Agent runs/messages | `modules/agent_runs/`, `modules/agent_messages/` | Agent run records and message bus slices | Partially implemented | Needs UI/product flow depth |
-| Runtime policy | `modules/runtime_policy/service.py` | Provider policy and runtime envelope checks | Partially implemented | Continue hard-stop coverage |
-| Runtime ledger | `modules/runtime_ledger/service.py` | Trace, gate, model call, cost evidence | Partially implemented | All model paths should write evidence |
-| Model router/gateway | `modules/model_router/service.py`, `model_adapters/` | Provider route resolution and guarded calls | Partially implemented | Production provider allowlist/approval evidence is critical |
-| Loop kernel | `modules/loop_kernel/service.py` | Governance loops and iteration | Partially implemented | Productized learning loops remain partial |
-| Operation transactions/checkpoints | `modules/operation_transactions/`, `modules/operation_checkpoint/` | Transaction, checkpoint, rollback evidence | Partially implemented | Multi-asset rollback depth still growing |
-
-## Knowledge, Canon, And Stability
-
-| Module | Path | Responsibility | Status | Notes |
-|---|---|---|---|---|
-| MKAOS core | `modules/mkaos/` | Knowledge asset selection, risk, quality, pack policy | Broad partial implementation | Continue use-case split and gate hardening |
-| MKAOS ingestion | `modules/mkaos_ingestion/` | Repository/book import, chunking, rights, file formats | Implemented slices | Acceptance tests exist |
-| MKAOS quality | `modules/mkaos_quality/` | Source risk, quote leakage, near duplicate, flow binding, usability gates | Implemented slices | Needs production calibration |
-| MKAOS model extraction | `modules/mkaos_model_extraction/` | Prompt registry, provider runner, sanitizer, confidence, candidate validation | Partially implemented | Provider paths must stay guarded |
-| MKAOS converters | `modules/mkaos_converters/` | Knowledge -> creative assets/rules/hooks | Implemented slices | Lineage must remain visible |
-| Canon graph | `modules/canon_graph/service.py` | Canon graph snapshots/conflict/impact | Partially implemented | Human-grade merge workflows remain partial |
-| Novel KG | `modules/novel_kg/` | Typed ontology/KG workbench | Partially implemented | Graph backend depth remains partial |
-| Continuity graph | `modules/continuity_graph/service.py` | Continuity reports and graph slices | Partially implemented | Long-form consistency remains high-risk |
-| Reader Promise | `modules/reader_promise/service.py` | Project-owned promise/payoff lifecycle, per-draft ledger, broken-promise ReviewIssue/RevisionTask hook | Implemented foundation | Payoff detection is deterministic and needs calibration plus UI repair depth |
-| Chapter Economy | `modules/chapter_economy/service.py` | Pleasure point extraction, scene-value scoring, watery/repeated-payoff risk, ReviewIssue/RevisionTask hook | Implemented foundation | Heuristic detection needs provider/human calibration and guided repair UI |
-| Character Pressure | `modules/character_pressure/service.py` | Protagonist agency/charm scoring, antagonist/proxy pressure scoring, weak-agency/weak-pressure ReviewIssue/RevisionTask hook | Implemented foundation | Heuristic detection needs provider/human calibration and guided repair UI |
-| Mobile Reading | `modules/mobile_reading/service.py` | Paragraph density, long paragraph, dense beat, and scanability report with ReviewIssue/RevisionTask hook | Implemented foundation | Heuristic detection needs provider/human calibration and guided repair UI |
-| Longform recap/stability | `modules/longform_recap/`, `modules/longform_stability/` | Long-chain state, v1 reducer into CanonGraph state-machine ledger/snapshot/diff, explicit light/formal recap cadence, stability gates | Partially implemented | Operator-configurable cadence UI and full novel-scale autonomous proof not complete |
-
-## Quality, Publishing, And Operations
-
-| Module | Path | Responsibility | Status | Notes |
-|---|---|---|---|---|
-| Evaluation center | `modules/evaluation_center/service.py` | Eval cases/results, gate integration | Partially implemented | Needs broader production fixtures |
-| Publishing / local export | `modules/publishing/`, `modules/chapter_production_bus/service.py` | Publish gate, release gate, release package, adapters, and v1 local export markdown/manifest/provenance/checklist handoff | Partially implemented | V1 local export is inspectable and operator-gated; platform auto-publish and final multi-chapter handoff proof remain deferred |
-| Audit / audit log | `modules/audit/`, `modules/audit_log/` | Review/originality/audit assets and logs | Partially implemented | Publishing logic should keep moving out of audit |
-| Platform strategy | `modules/platform_strategy/service.py` | Platform strategy pack and fit | Partially implemented | Real platform integration partial |
-| Permission center | `modules/permission_center/service.py` | Tool/provider permission surface plus schema-backed ApprovalRequest create/list/resolve/expire/snapshot lifecycle | Partially implemented | High-risk source/context/publish/story mutation callers still need staged migration to ApprovalRequest refs |
-| Metrics / analytics | `modules/metrics/`, `modules/clickhouse_analytics/` | Dashboards/analytics slices | Partially implemented | ClickHouse optional profile |
-| Provider fallback | `modules/provider_fallback/service.py` | Environment policy and fallback governance | Partially implemented | Production/local fallback policy remains important |
-
-## Skills
-
-| Area | Path | Status | Rule |
+| Area | Path | Responsibility | Current status |
 |---|---|---|---|
-| Project Skill source | `skills/` | Implemented | Source of truth |
-| Claude runtime Skill copy | `.claude/skills/` | Implemented/generated plus external Skills | Do not edit as source |
-| Sync script | `scripts/sync_claude_skills.py` | Implemented | Use `make sync-skills-dry-run`, `make sync-skills`, `make check-skills` |
-| Skill docs | `docs/09-skills/` | Partially current | Use with current code evidence |
+| Runtime selector | `src/novel_forge/api/app.py` | Select Authority or Legacy API from settings | Implemented; default development selection remains Legacy |
+| Authority API | `src/novel_forge/api/authority_app.py` | PostgreSQL-only command/query surface | Implemented composition root, but current imported module integrity needs verification |
+| Legacy API | `src/novel_forge/api/legacy_app.py` | local-first compatibility/product runtime | Still active in development and default Compose |
+| CLI selector | `src/novel_forge/cli/__init__.py` | Authority/Legacy CLI selection | Implemented; command surfaces differ |
+| Authority workers | `src/novel_forge/workers/*authority*.py` | poll, recover and execute durable Authority work | Chapter worker exists; default deployment wiring incomplete |
+| Web Admin | `web/admin/` | operator console | Broad route coverage; auth/browser E2E incomplete |
 
-## Rolling authority modules
+## 3. Core Authority Layer
 
-| Module | Authority responsibility | Migration |
-| --- | --- | --- |
-| `story_design_authority` | generator definitions and semantic lifecycle | 0038 |
-| `hierarchical_planning` | typed contracts, hierarchy and dependency edges | 0039 |
-| `chapter_group_authority` | group Saga checkpoints and child references | 0040 |
-| `plan_change_authority` | diff, decision, impact and recoverable activation | 0041 |
-| `reader_calibration` | preference, exposure, outcome, calibration and Drift | 0042 |
+### 3.1 Command Kernel
 
-All five reuse existing Operation/Saga/Attempt and
-`authority_asset_version`; none is a parallel runtime or asset authority.
+| Module | Path | Responsibility | Maturity |
+|---|---|---|---|
+| Command admission | `modules/command_kernel/service.py` | schema, definition, permission, approval, idempotency and frozen input validation | High |
+| Operation lifecycle | `modules/command_kernel/runtime.py` | compare-and-set state transitions | High |
+| Saga graph | `modules/command_kernel/operation_graph.py` | dependencies, Saga steps, gate and completion coordination | Medium-high |
+| Attempt runtime | `modules/command_kernel/attempt_runtime.py` | Attempt create/queue/lease/start/result/retry | High |
+| Cancellation | `modules/command_kernel/cancellation.py` | cancellation command and worker signal | Medium-high |
+| External effects | `modules/command_kernel/external_effect_runtime.py` | effect dispatch, query, cancellation, reconciliation | Medium-high, fixture/real-provider boundary remains |
+| Deadline runtime | `modules/command_kernel/deadline_runtime.py` | business deadline scanning and timeout handling | Medium |
+| Worker boundary | `modules/command_kernel/worker_execution.py` | isolate task failures and fatal programming errors | Medium-high |
+
+### 3.2 Authority persistence
+
+| Module | Path | Responsibility | Maturity |
+|---|---|---|---|
+| Unit of Work | `storage/authority_uow.py` | short PostgreSQL transaction boundary | Implemented; no production connection pool shown |
+| Repositories | `storage/authority_repositories.py` | definitions, operations, attempts, effects, evidence, assets and projections | Broad implementation |
+| Migrations | `storage/migrations/` | sequential PostgreSQL schema evolution | 50 migrations indexed; latest targets require integrity verification |
+| Worker health | `storage/worker_health.py` | durable worker observation | Implemented projection slice |
+
+Database-level invariants include idempotency uniqueness, one active Attempt, one held Lease, monotonic Attempt/fence values, project-scoped references and acyclic dependencies.
+
+## 4. Chapter Production Authority
+
+| Module | Path | Responsibility | Maturity |
+|---|---|---|---|
+| Application | `modules/chapter_authority/application.py` | command admission, synchronous fixture boundary and scheduler construction | Medium-high |
+| Orchestrator | `modules/chapter_authority/orchestrator.py` | Root Operation, Saga, 18-node execution and fixture recovery | Medium-high |
+| Contracts | `modules/chapter_authority/contracts.py` | Chapter nodes, typed inputs/outputs and handler registry | High |
+| Handlers | `modules/chapter_authority/handlers.py` | Plan, Context, model stages, Canon, Quality and release handlers | Medium-high; semantic quality unproven |
+| Scheduler | `modules/chapter_authority/scheduler.py` | durable asynchronous execution/recovery | Implemented; deployment proof incomplete |
+| Queries | `modules/chapter_authority/queries.py` | strong run and evidence queries | Implemented |
+| Execution gateway binding | `modules/chapter_authority/execution_gateway.py` | bind Chapter stages to PEP routes and recovery records | Medium-high fixture proof |
+| Export delivery | `modules/chapter_authority/export_delivery.py` | object effect, reconciliation and receipt evidence | Fixture proof |
+
+Authoritative chain:
+
+```text
+Plan
+→ Context
+→ Draft
+→ Review
+→ Revision
+→ Re-review
+→ Canon Extraction
+→ Canon Proposal
+→ Canon Update
+→ 5 Quality groups
+→ Quality Aggregate
+→ Publish Gate
+→ Export
+→ Final Release Gate
+```
+
+## 5. Book And Long-form Authority
+
+| Module | Path | Responsibility | Maturity |
+|---|---|---|---|
+| Book Authority | `modules/book_authority/production.py` | Book root, sequential cursor, Chapter delegation, acceptance and control | Medium |
+| Chapter Outcome | `modules/chapter_outcome/` | accepted Chapter output and Story State reduction | Medium |
+| Book follow-up | `modules/book_followup_authority/` | Reader Outcome and Longform Recap Operations | Medium-low semantic maturity |
+| Story state reducer registry | `modules/story_state_reducer*` and migration `0037` | reducer identity and state evolution | Foundation |
+| Story Design Authority | migration/module references around `0038` | semantic generator lifecycle | Foundation/partial |
+| Hierarchical planning | migration/module references around `0039` | Book/Volume/Arc/ChapterGroup planning | Foundation/partial |
+| Chapter Group Authority | migration/module references around `0040` | group checkpoint and child references | Foundation/partial |
+| Plan Change Authority | migration/module references around `0041` | diff, impact, decision and activation | Foundation/partial |
+| Reader calibration | migration/module references around `0042` | preference, exposure, outcome and drift | Fixture foundation |
+
+Book Authority currently coordinates versioned Chapter work. It is not yet a complete autonomous whole-book supervisor.
+
+## 6. Production Execution And Provider Control
+
+| Module | Path | Responsibility | Maturity |
+|---|---|---|---|
+| Production Execution | `modules/production_execution/` | request contracts, route snapshots, admission, backend registry, validation, commit and recovery | Medium-high protocol maturity |
+| Provider Control | `modules/provider_control/` | Provider v2 registry, capabilities, qualification, query/cancel/callback | Medium |
+| OpenAI v2 | `modules/provider_control/openai_v2.py` | explicit OpenAI SDK transport seam | Implemented code seam; real composition/cost proof missing |
+| Model Router compatibility | `modules/model_router/`, `model_adapters/` | legacy/development routing and fail-closed boundaries | Migration/compatibility only for production |
+| Runtime ledger | `modules/runtime_ledger/` | call, token, cost and trace evidence | Partial universal coverage |
+| Runtime policy | `modules/runtime_policy/` | provider/environment/gate policy | Partial universal coverage |
+
+Controlled environments must use explicitly registered V2 adapters. Scripted providers are fixture-only. Automatic CI does not establish real-provider proof.
+
+## 7. Content, Knowledge And Source Modules
+
+| Group | Main paths | Current role | Authority state |
+|---|---|---|---|
+| Source intake/governance | `modules/source_intake/`, `modules/ingestion/` | source metadata, rights, risk, snapshots and import | broad Legacy foundation; Source Authority migration in progress |
+| MKAOS | `modules/mkaos/`, `mkaos_*` | knowledge candidates/cards/packs, quality, lineage, conversion and feedback | broad Legacy foundation; MKAOS Authority migration in progress |
+| Context Builder | `modules/context_builder/` | stage-aware selection, source isolation and token budgeting | meaningful implementation; universal Authority use still converging |
+| Retrieval | storage vector/Qdrant/pgvector modules | local and controlled remote retrieval | partial production evaluation |
+| Materials | `modules/materials/` | reusable material cards | implemented Legacy/domain slice |
+| Analysis/decomposition | `modules/analysis/`, `modules/decomposition/` | abstract craft/business analysis | partial provider quality and Authority migration |
+| Genre/Style | `modules/genre_os/`, `modules/style_os/` | profiles, strategy, policy and drift evidence | implemented foundation, calibration partial |
+
+Current HEAD imports new `project_authority`, `task_authority`, `source_authority` and `mkaos_authority` modules. Their complete file set must be verified before Authority API build claims.
+
+## 8. Canon, Quality And Creative Domains
+
+| Domain | Main paths | Current status |
+|---|---|---|
+| Canon Graph | `modules/canon_graph/` | conflict/proposal/snapshot foundations; repair UX partial |
+| Continuity / KG | `modules/continuity_graph/`, `modules/novel_kg/` | partial graph and continuity workbench |
+| Quality Authority | `modules/chapter_quality_authority/`, Chapter handlers | five groups and aggregate evidence; calibration incomplete |
+| Evaluation Center | `modules/evaluation_center/`, `modules/quality_eval/` | golden-set/calibration foundations; real premium Judge proof absent |
+| Reader Promise | `modules/reader_promise/` | promise/payoff ledger foundation |
+| Chapter Economy | `modules/chapter_economy/` | pleasure/repetition/water risk foundation |
+| Character Pressure | `modules/character_pressure/` | agency/charm/antagonist pressure foundation |
+| Mobile Reading | `modules/mobile_reading/` | paragraph density and scanability foundation |
+| Topic/World/Character/Outline | corresponding `modules/*` | broad local/domain generation slices |
+| Draft/Review/Revision | corresponding `modules/*` plus Chapter Authority | Legacy/domain services plus Authority production stages |
+
+Heuristic and fixture outputs must not be described as production-calibrated quality judgments.
+
+## 9. Product And Operations Modules
+
+| Group | Main paths | Current status |
+|---|---|---|
+| Web API routers | `api/routers/` | broad surface; Authority and Legacy routers coexist |
+| Product service facade | `api/services/` | compatibility and orchestration concentration remains |
+| Workflow nodes | `modules/workflow_nodes/` | broad execution registry; legacy concentration remains |
+| Agent Registry/Scheduler | `modules/agent_registry/`, `modules/agent_scheduler/` | first production slices, not complete autonomy |
+| Agent Collaboration | `modules/agent_collaboration/` | frozen-scope deliberation fixture protocol |
+| Permission Center | `modules/permission_center/` | approval lifecycle foundation, not complete multi-user RBAC |
+| Publishing | `modules/publishing/`, `publishing_feedback_adapters/` | local/manual/generic adapter foundations; real platform proof absent |
+| Portfolio OS | `modules/portfolio_os/` | scoring, isolation and allocation planning foundation; dispatch proof absent |
+| Cockpit | `modules/novel_os_cockpit/`, `web/admin/app/features/os/` | broad evidence dashboard; guided repair and auth incomplete |
+
+## 10. Current Architecture Risks
+
+1. **HEAD integrity:** new Authority imports and migration registrations may not have all target files committed.
+2. **Dual runtime:** Legacy and Authority can diverge in behavior and evidence.
+3. **Deployment mismatch:** default Compose does not run the intended Authority API and durable worker topology.
+4. **Security boundary:** trusted local Principal is not HTTP user authentication or multi-tenant authorization.
+5. **Provider proof:** real adapter composition, usage, cost and cancellation remain unverified.
+6. **Whole-book autonomy:** Book Authority coordinates Chapters but does not yet own continuous plan-generation/production/replan/ending progression.
+7. **Database operations:** migrations are mostly forward-only and direct psycopg connections are used without a visible pool.
+8. **Service concentration:** Legacy product, MKAOS, workflow and scheduler facades remain large and expensive to change.
+
+## 11. Extension Rule
+
+A new production capability is complete only when it has:
+
+```text
+OperationDefinition
++ permission/approval contract
++ frozen input AssetVersions
++ idempotency and concurrency identity
++ durable Attempt/Lease/Fence
++ governed execution or deterministic handler
++ output AssetVersions and qualification
++ audit/event/outbox evidence
++ strong query/API/UI exposure
++ recovery/cancel behavior
++ focused tests
++ current documentation update
+```
+
+Do not count a schema, class, route, page, fixture or design document alone as product completion.
