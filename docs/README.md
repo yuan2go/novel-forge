@@ -1,6 +1,6 @@
 # Autonomous Novel OS Documentation
 
-Updated: 2026-08-01  
+Updated: 2026-08-02  
 Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`  
 Audited code HEAD: `aa991b53039cdf2e4e7911d4483052b9a6a752a1`
 
@@ -31,12 +31,35 @@ Do not use historical test counts or Fixture proof to override these flags.
 2. [`project-current-state.md`](project-current-state.md) — current implementation fact table.
 3. [`reports/current-engineering-state.md`](reports/current-engineering-state.md) — concise current engineering verdict.
 4. [`reports/2026-08-01-code-audit-and-documentation-rebaseline.md`](reports/2026-08-01-code-audit-and-documentation-rebaseline.md) — detailed code audit, risks and evidence limits.
-5. [`architecture/module-map.md`](architecture/module-map.md) — current runtime and module boundaries.
-6. [`product/capability-map.md`](product/capability-map.md) — capability maturity map.
-7. [`quality/regression-tests.md`](quality/regression-tests.md) — required current-SHA verification matrix.
-8. [`roadmap/current-roadmap.md`](roadmap/current-roadmap.md) — dependency-ordered implementation roadmap.
-9. Relevant active design/blueprint documents for the task.
-10. Historical reports only when researching lineage or a previous implementation pass.
+5. [`architecture-closure/autonomous-novel-os-architecture-closure-epic.md`](architecture-closure/autonomous-novel-os-architecture-closure-epic.md) — next-stage Epic governing architecture closure before full-book autonomy.
+6. [`architecture-closure/README.md`](architecture-closure/README.md) — AC-00 through AC-19 implementation index.
+7. [`architecture/module-map.md`](architecture/module-map.md) — current runtime and module boundaries.
+8. [`product/capability-map.md`](product/capability-map.md) — capability maturity map.
+9. [`quality/regression-tests.md`](quality/regression-tests.md) — required current-SHA verification matrix.
+10. [`roadmap/current-roadmap.md`](roadmap/current-roadmap.md) — dependency-ordered implementation roadmap.
+11. Relevant active design/blueprint documents for the task.
+12. Historical reports only when researching lineage or a previous implementation pass.
+
+## Next Stage Epic: Architecture Closure
+
+The next engineering stage is defined by:
+
+- [`architecture-closure/autonomous-novel-os-architecture-closure-epic.md`](architecture-closure/autonomous-novel-os-architecture-closure-epic.md) — overall Architecture Closure objective, phases, evidence levels and global Gate;
+- [`architecture-closure/README.md`](architecture-closure/README.md) — execution order and dependency map;
+- `architecture-closure/ac-00...ac-19` — twenty work packages covering ADRs, implementation plans, code locations, migration scripts, test matrices and Acceptance Gates.
+
+These documents are target architecture and implementation specifications. They do not prove that the work has been implemented. AC status may only be advanced with current-SHA code, migration, test and deployment evidence.
+
+The intended sequence is:
+
+```text
+Trusted repository baseline
+→ shared Authority and execution kernel
+→ novel planning/state/context closure
+→ Agent/Provider/Quality closure
+→ Book Production Supervisor and Authority-only deployment
+→ Legacy retirement and L3/L10/L30 proof
+```
 
 ## Documentation Authority Order
 
@@ -47,7 +70,8 @@ current code and migrations
 → current-SHA runtime/test evidence
 → project-current-state.md
 → current engineering/audit reports
-→ active design and implementation plans
+→ accepted ADR and active architecture
+→ active implementation plans
 → blueprints
 → historical reports
 ```
@@ -61,6 +85,8 @@ A blueprint describes the target. A report describes its original baseline. A ro
 | Current state | [`project-current-state.md`](project-current-state.md) | implemented, partial, unproven and blocked capabilities |
 | Current engineering verdict | [`reports/current-engineering-state.md`](reports/current-engineering-state.md) | concise state and priority summary |
 | Detailed code audit | [`reports/2026-08-01-code-audit-and-documentation-rebaseline.md`](reports/2026-08-01-code-audit-and-documentation-rebaseline.md) | code facts, runtime limits, risks and staged recommendations |
+| Next-stage Epic | [`architecture-closure/autonomous-novel-os-architecture-closure-epic.md`](architecture-closure/autonomous-novel-os-architecture-closure-epic.md) | architecture closure objective, phases, evidence model and final Gate |
+| AC work packages | [`architecture-closure/README.md`](architecture-closure/README.md) | AC-00 through AC-19 ADR, implementation, migration, test and acceptance index |
 | Architecture/module map | [`architecture/module-map.md`](architecture/module-map.md) | Authority/Legacy boundaries and module responsibilities |
 | Product capability map | [`product/capability-map.md`](product/capability-map.md) | evidence-based capability maturity |
 | Verification | [`quality/regression-tests.md`](quality/regression-tests.md) | static, unit, PostgreSQL, Provider, long-form and multi-book gates |
@@ -72,6 +98,7 @@ A blueprint describes the target. A report describes its original baseline. A ro
 
 These documents define target architecture and implementation intent. They are active references, not implementation proof.
 
+- [`architecture-closure/autonomous-novel-os-architecture-closure-epic.md`](architecture-closure/autonomous-novel-os-architecture-closure-epic.md) — next-stage architecture convergence and anti-rework program.
 - [`blueprint/autonomous-novel-os-full-blueprint.md`](blueprint/autonomous-novel-os-full-blueprint.md) — full functional blueprint.
 - [`blueprint/novel-os-project-blueprint.md`](blueprint/novel-os-project-blueprint.md) — project blueprint and phase plan.
 - [`architecture/production-execution-plane.md`](architecture/production-execution-plane.md) — unified production execution contracts, routing and recovery target.
@@ -150,11 +177,12 @@ Do not delete historical documents during routine cleanup. Preserve them as evid
 Before changing production architecture or claiming completion:
 
 1. read this index and the current-state documents;
-2. inspect the relevant code, migration and tests;
-3. verify that all referenced modules are committed;
-4. follow the Authority dependency direction;
-5. run the smallest focused test, then the required broader gate;
-6. record exact results against the current SHA;
-7. update the current-state, capability, verification and roadmap documents when the maturity verdict changes.
+2. read the Architecture Closure Epic and relevant AC work packages;
+3. inspect the relevant code, migration and tests;
+4. verify that all referenced modules are committed;
+5. follow the Authority dependency direction;
+6. run the smallest focused test, then the required broader Gate;
+7. record exact results against the current SHA;
+8. update AC status, current-state, capability, verification and roadmap documents when the maturity verdict changes.
 
 If current code contradicts an older report, code wins. Record the conflict instead of copying the older claim.
