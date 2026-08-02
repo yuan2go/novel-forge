@@ -1,73 +1,119 @@
 # Current Roadmap
 
-Updated: 2026-08-01  
+Updated: 2026-08-02  
 Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`  
-Audited HEAD: `aa991b53039cdf2e4e7911d4483052b9a6a752a1`
+Audited code HEAD: `aa991b53039cdf2e4e7911d4483052b9a6a752a1`  
+Execution model: `SIX_TRACK_VERTICAL_DELIVERY`
 
-This roadmap is ordered by dependency and proof value. It supersedes feature-count roadmaps for current execution priority. Historical V5/V6/V7 phase reports remain evidence for their original commits only.
+This roadmap is ordered by dependency, vertical proof value and rework risk. It replaces the former P0-P8 horizontal capability roadmap for current execution.
+
+The authoritative Epic is:
+
+- [`../architecture-closure/autonomous-novel-os-architecture-closure-epic.md`](../architecture-closure/autonomous-novel-os-architecture-closure-epic.md)
+- [`../architecture-closure/README.md`](../architecture-closure/README.md)
 
 ## 1. Roadmap Principle
 
-The current bottleneck is not missing isolated features. It is the absence of one fully proven path from a complete repository HEAD through Authority deployment, real Provider execution, whole-book progression and long-form acceptance.
+The current bottleneck is not missing isolated features. It is the absence of one fully proven path from a complete repository HEAD through Authority deployment, real Provider execution, whole-book progression and Arc-level acceptance.
 
 Required order:
 
 ```text
-Repository integrity
-→ Authority deployment
-→ Current-SHA test proof
-→ Real Provider single Chapter
-→ Whole-book supervisor
-→ Judge calibration
-→ Long-form proof
-→ Multi-book proof
-→ Platform/feedback production
+Track A — Trusted Baseline And Governance
+→ Track B — Shared Authority Kernel And Storage
+→ Track C — Novel Domain And Context
+→ Track D — Intelligence, Execution And Quality
+→ Track E — Autonomous Book Runtime And Operations
+→ Track F — Migration, Long-form And Scale Proof
 ```
 
-Do not reorder later capabilities ahead of unresolved P0 dependencies.
+Progress is measured by completed vertical Slices, not by modules, tables, pages or documents.
 
-## 2. P0 — Restore A Verifiable Repository Baseline
+## 2. Current Position
 
-### P0-1 HEAD integrity
+Current execution must start at:
 
-**Goal:** prove that every imported module, migration target, console script and required test is committed.
+```text
+Track A
+Slice A1 — Repository Integrity
+```
+
+Reason:
+
+- audited code entrypoints referenced modules, migrations, workers and tests that could not all be resolved from the same exact HEAD;
+- no current-SHA local build or complete test baseline was executed during the remote audit;
+- Authority-only deployment and real Provider proof therefore remain blocked.
+
+Current flags:
+
+```text
+head_integrity_verified=false
+current_head_import_verified=false
+migration_chain_verified=false
+current_sha_test_baseline_recorded=false
+authority_only_runtime_verified=false
+single_chapter_real_provider_proven=false
+book_coordinator_l10_proven=false
+l30_arc_proven=false
+architecture_closure_gate_passed=false
+```
+
+## 3. Track A — Trusted Baseline And Governance
+
+### Slice A1 — Repository Integrity
+
+**Goal:** make one exact repository SHA structurally complete and machine-verifiable.
 
 Required work:
 
-- verify Project/Task/Source/MKAOS Authority package files;
-- verify migrations `0043` through `0050`;
-- verify Source/MKAOS worker entrypoints;
-- verify focused PostgreSQL test modules;
-- remove invalid registrations or commit missing files;
-- run import smoke against exact HEAD.
+1. produce module, migration, worker, console-script and required-test manifests;
+2. verify every import referenced by API, CLI, workers and migration registry;
+3. verify Project/Task/Source/MKAOS Authority files and remove invalid references or commit missing files;
+4. verify migrations `0043` through `0050` and establish one migration head;
+5. verify every required test pattern matches a non-zero test count;
+6. add CI checks for manifest drift and exact-SHA binding.
+
+Required commands include:
+
+```bash
+python -m compileall -q src tests
+python -c "import novel_forge"
+python -m novel_forge.cli --help
+python scripts/check_module_manifest.py
+python scripts/check_migration_manifest.py
+python scripts/check_worker_manifest.py
+python scripts/check_required_test_manifest.py
+```
+
+Scripts may be introduced under `scripts/` during implementation; names are targets, not claims that they currently exist.
 
 Acceptance:
 
 ```text
 head_integrity_verified=true
-python_import_smoke_passed=true
-migration_module_inventory_passed=true
-console_script_target_inventory_passed=true
+current_head_import_verified=true
+migration_chain_verified=true
 required_test_inventory_passed=true
 ```
 
-### P0-2 Static integrity gates
+### Slice A2 — Current-SHA Validation Baseline
 
-Add CI checks that fail when:
+**Goal:** execute all relevant validation against the same complete SHA.
 
-- a module imported by an entrypoint is missing;
-- a migration is registered but the module is absent;
-- a `pyproject.toml` console script target is absent;
-- a required test pattern matches zero tests;
-- generated evidence is bound to another commit;
-- `git diff --check` or compileall fails.
+Required evidence:
 
-### P0-3 Current-SHA full validation
+- Python dependency versions;
+- PostgreSQL version;
+- Node/npm versions;
+- exact commands;
+- discovered/passed/failed/error/skipped counts;
+- API and worker startup results;
+- Docker config/build result;
+- immutable report bound to commit SHA.
 
-Run and publish exact results for:
+Minimum matrix:
 
 ```bash
-python -m compileall -q src tests
 python -m unittest discover -s tests/architecture -p 'test_*.py'
 python -m unittest discover -s tests/unit -p 'test_*.py'
 python -m unittest discover -s tests/acceptance -p 'test_*.py'
@@ -80,317 +126,490 @@ docker compose config
 docker compose build
 ```
 
-The report must record commit SHA, environment, dependency versions, count, failures, errors and skips.
-
-## 3. P1 — Close Authority Deployment
-
-### P1-1 Authority-only API service
-
-Create a deployment profile that explicitly sets:
-
-```text
-NOVEL_FORGE_ENVIRONMENT=production
-NOVEL_FORGE_STORAGE_AUTHORITY=postgresql
-NOVEL_FORGE_APPLICATION_BUILD_ID
-NOVEL_FORGE_COMMIT_SHA
-NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT
-Provider/model routes
-Provider cost caps
-Trusted principal configuration
-```
-
 Acceptance:
 
-- API imports and starts without Legacy modules;
-- production refuses Legacy authority;
-- migrations are current before readiness;
-- release identity is visible in health/readiness.
-
-### P1-2 Durable worker topology
-
-Deploy explicit services for:
-
 ```text
-Chapter Authority worker
-Book Follow-up worker
-Provider callback worker
-Outbox dispatcher/recovery worker
-Source Authority worker
-MKAOS Authority worker
+current_sha_test_baseline_recorded=true
+api_startup_verified=true
+worker_startup_inventory_verified=true
+web_build_verified=true
 ```
 
-Remove the assumption that the Legacy Celery worker executes Authority workloads.
+The baseline may contain known failures, but they must be enumerated and prioritized. An incomplete or mixed-SHA result is not a baseline.
 
-Acceptance:
+### Slice A3 — ADR And Fitness Foundation
 
-- admitted commands finish without synchronous fixture execution;
-- worker restart resumes pending work;
-- stale Fence results are rejected;
-- worker health and last tick are queryable;
-- dead-letter/outbox recovery is operator-visible.
+**Goal:** prevent the architecture from returning to direct Provider calls, Legacy writes and cross-layer coupling.
 
-### P1-3 Dependency-aware readiness
+Required ADRs and fitness checks:
 
-Readiness must check:
+- modular monolith and process-separated workers;
+- PostgreSQL single Authority;
+- production LocalStorage write/fallback prohibition;
+- Domain import boundaries;
+- direct Provider/HTTP/subprocess scan;
+- migration registry integrity;
+- non-zero required test discovery;
+- current-SHA evidence binding;
+- documentation truth hierarchy.
 
-- database connectivity and migration version;
-- Authority worker health;
-- Provider Registry and route qualification;
-- object store write/read proof;
-- outbox lag threshold;
-- stuck Saga threshold;
-- configured release identity.
-
-Static `{status: ready}` is insufficient.
-
-### P1-4 Database operations
-
-Add or prove:
-
-- connection pool or PgBouncer;
-- backup and point-in-time recovery;
-- forward-fix migration policy;
-- restore rehearsal;
-- schema preflight and lock-risk reporting;
-- rolling/blue-green deployment procedure.
-
-## 4. P2 — Real Provider Single-Chapter Proof
-
-### P2-1 Provider composition root
-
-Build the real Provider Registry from explicit factories and secret references. No domain service may construct SDK clients or read raw credentials.
-
-Start with one provider and one stage:
+Track A Gate:
 
 ```text
-OpenAI Draft
+head_integrity_verified=true
+current_head_import_verified=true
+migration_chain_verified=true
+current_sha_test_baseline_recorded=true
+architecture_fitness_foundation_enabled=true
 ```
 
-Then expand in order:
+## 4. Track B — Shared Authority Kernel And Storage
+
+Track B starts only after Track A Gate.
+
+### Slice B1 — Project/Book Scope Authority
+
+End-to-end path:
 
 ```text
-Review
+Create Project/Book Command
+→ Principal and Scope validation
+→ idempotent PostgreSQL commit
+→ duplicate replay/conflict rejection
+→ query projection
+→ production boot without LocalStorage
+```
+
+Required domain objects:
+
+- Project;
+- Workspace;
+- Book;
+- ProductionProfile;
+- RuntimePolicy;
+- ReleaseIdentity;
+- Principal/ServiceIdentity;
+- ProjectScope/BookScope.
+
+### Slice B2 — Typed Asset Registry
+
+End-to-end proof using BookDesign as the first domain asset:
+
+```text
+BookDesign Candidate
+→ strong schema validation
+→ AssetVersion
+→ Approval Decision
+→ Activation
+→ Supersession
+→ dependency and lineage query
+```
+
+Required rule:
+
+```text
+common metadata
++ strong typed domain payload
++ schema_version
++ content_hash
+```
+
+Do not implement a universal unvalidated JSON asset store.
+
+### Slice B3 — Execution Classification And Kernel
+
+Formalize four execution types:
+
+```text
+Transaction Command
+Durable Job
+Saga
+External Effect
+```
+
+Only use Saga when multi-step cross-transaction recovery is required.
+
+Prove:
+
+- idempotency and digest conflict;
+- Attempt/Lease/Fence;
+- transaction rollback;
+- External UNKNOWN and reconciliation;
+- cancel and late result;
+- outbox atomicity;
+- recovery after worker restart.
+
+### Slice B4 — Storage, Budget And Readiness
+
+Prove:
+
+- PostgreSQL Authority metadata;
+- Object Store large immutable content and hash verification;
+- rebuildable Vector/Search projection;
+- Budget reservation and actual cost ledger;
+- connection pooling and timeouts;
+- dependency-aware readiness.
+
+Track B Gate:
+
+```text
+project_book_scope_authority_proven=true
+typed_asset_lifecycle_proven=true
+execution_classification_enforced=true
+authority_only_minimal_slice_proven=true
+production_legacy_write_blocked=true
+```
+
+## 5. Track C — Novel Domain And Context
+
+Track C may begin domain modeling near the end of Track B, but shared schemas cannot be changed concurrently without an accepted ADR.
+
+### Slice C1 — Book Design To Active Plan
+
+```text
+Book Intent
+→ BookDesign Candidate
+→ Approval/Activation
+→ BookPlan Candidate
+→ PlanVersion Activation
+→ Dependency/Impact Query
+```
+
+Required separation:
+
+- Book Design defines genre, theme, reader promise, ending, world, character and core conflict;
+- Planning defines Book/Volume/Arc/ChapterGroup/Chapter progression;
+- design changes create impact analysis instead of silently modifying plans.
+
+Planning uses controlled node types:
+
+```text
+BOOK
+VOLUME
+ARC
+CHAPTER_GROUP
+CHAPTER
+```
+
+Layers may be optional for shorter formats, but custom uncontrolled node types are not allowed.
+
+### Slice C2 — ChapterOutcome To StoryState Replay
+
+```text
+Final ChapterOutcome
++ Approved Canon Changes
++ Previous StoryState Snapshot
++ Reducer Version
+→ New StoryState Snapshot
+→ Replay Checksum
+```
+
+Required semantics:
+
+- ChapterOutcome is a change declaration;
+- Canon is approved stable truth;
+- StoryState is the current dynamic projection;
+- Recap is read-only analysis, not a formal state source.
+
+### Slice C3 — Context Compiler
+
+```text
+Domain Context Requirement
+→ frozen AssetVersions
+→ Canon/StoryState
+→ eligible Source/Material/Knowledge
+→ selection and budget
+→ compression and validation
+→ ContextManifest
+→ ActualSentContext
+```
+
+Required separation:
+
+```text
+Source = origin, rights, risk, eligibility
+Material = creative facts and reusable subject matter
+Knowledge = methods, rules, templates and review criteria
+```
+
+### Slice C4 — Replan And Historical Freeze
+
+```text
+Deviation
+→ ReplanRequest
+→ PlanDiff Candidate
+→ ImpactAnalysis
+→ Decision
+→ Future PlanVersion
+→ EffectiveRange
+→ Context invalidation
+```
+
+Final Release history cannot be silently rewritten. Retcon/Correction uses a separate Operation and replay/impact workflow.
+
+Track C Gate:
+
+```text
+book_design_to_plan_proven=true
+planning_version_and_effective_range_proven=true
+story_state_replay_proven=true
+context_reproducibility_proven=true
+source_material_knowledge_boundary_proven=true
+historical_freeze_and_replan_proven=true
+```
+
+## 6. Track D — Intelligence, Execution And Quality
+
+Track D begins only after ContextManifest, StoryState and Asset Commit contracts are stable.
+
+### Slice D1 — Qualified Real Provider Capability
+
+Start with one capability:
+
+```text
+chapter.draft.generate
+```
+
+Required proof:
+
+```text
+ExecutionRequest
+→ Capability qualification
+→ RouteSnapshot
+→ ActualSentContext
+→ real Provider request
+→ usage/cost
+→ normalized Candidate
+→ Receipt
+→ recovery projection
+```
+
+### Slice D2 — Real Provider Chapter
+
+Expand through:
+
+```text
+Draft
+→ Review
 → Revision
 → Re-review
 → Canon Extraction
-→ five Quality groups
-→ Reader Outcome
+→ Quality Groups
+→ Gate Aggregate
+→ Final Release
 ```
 
-### P2-2 Control behavior proof
+Must prove:
 
-Each stage must prove:
-
-- stable idempotency key;
-- Provider request ID;
 - timeout;
-- query/retrieve;
-- upstream cancellation where supported;
-- callback verification where supported;
-- duplicate callback replay;
+- retrieve/query;
+- cancel when supported;
+- duplicate callback;
 - UNKNOWN reconciliation;
-- late-result handling;
-- restart recovery.
+- late result;
+- worker restart;
+- actual usage and cost;
+- Chinese web-fiction editorial acceptance.
 
-### P2-3 Real usage and cost
-
-Replace `0 USD / not_provided` with one of:
-
-- provider-billed cost receipt;
-- versioned price-table calculation with model/token evidence;
-- explicit `unavailable` status that blocks cost-sensitive production.
-
-Acceptance:
+### Slice D3 — Agent Candidate And Commit
 
 ```text
-real_provider_proven=true
+AgentWorkOrder
+→ frozen ScopeSnapshot
+→ Candidate v1
+→ Challenge/Conflict
+→ Candidate v2
+→ Authority Decision
+→ Asset Commit Reference
+```
+
+Agent cannot directly update formal plans, Canon, StoryState, Book Cursor or publishing state.
+
+### Slice D4 — Production Quality And Eval Lab
+
+Separate:
+
+- Production Quality Gate;
+- Evaluation And Calibration Lab.
+
+Until calibration passes, Reader Outcome remains SHADOW and uncalibrated scores remain raw/ordinal/pairwise evidence.
+
+Track D Gate:
+
+```text
+single_capability_real_provider_proven=true
+single_chapter_real_provider_proven=true
 real_usage_proven=true
 real_cost_proven=true
-single_chapter_real_provider_proven=true
+agent_candidate_commit_boundary_proven=true
+production_quality_eval_separation_proven=true
 ```
 
-### P2-4 Editorial acceptance
+## 7. Track E — Autonomous Book Runtime And Operations
 
-Use Chinese web-novel ChapterPlans and human editors to evaluate:
-
-- readability;
-- reader promise;
-- payoff and chapter economy;
-- protagonist agency/charm;
-- antagonist pressure;
-- suspense and hook;
-- continuity;
-- originality/source leakage;
-- style drift;
-- platform fit.
-
-A technically successful model call is not a quality proof.
-
-## 5. P3 — Whole-book Autonomous Production Supervisor
-
-Implement a single Authority-led supervisor for:
+### Slice E1 — L3 Book Coordinator
 
 ```text
-BookDesign
-→ VolumePlan
-→ ArcPlan
-→ ChapterGroupPlan
-→ ChapterPlan
-→ Chapter Authority
-→ Chapter Acceptance
-→ Reader Outcome
-→ Longform Recap
-→ Plan Change Decision
-→ Next Chapter
-→ Ending/Closure
+Active BookDesign/Plan
+→ Coordinator reserves Chapter 1
+→ Chapter Production
+→ ChapterOutcome
+→ StoryState Reduce
+→ Cursor Advance
+→ Chapter 2
+→ Chapter 3
 ```
 
-Responsibilities:
+The Coordinator owns Root Saga, Cursor, child Operation references and blocked state. It does not own generation, Canon, StoryState, quality or planning computation.
 
-- resolve the next production unit from frozen versions;
-- admit child Operations and persist delegation;
-- wait/reconcile instead of using process-local state;
-- schedule recap according to cadence and risk;
-- pause on unresolved Canon, quality, budget or approval gates;
-- generate PlanChange proposals rather than mutate plans silently;
-- propagate accepted plan versions to future ChapterPlans;
-- prove ending reachability and completion criteria.
+### Slice E2 — L10 Recap And Replan
 
-Acceptance starts with three real chapters and expands through 10 chapters without manual construction of every command payload.
+Add:
 
-## 6. P4 — Quality And Reader Calibration
+- Recap cadence;
+- Deviation and Replan;
+- PlanDiff/Impact;
+- pause/resume;
+- duplicate command;
+- stale fence;
+- Provider failure;
+- worker/database restart;
+- Context growth;
+- Book/Chapter budget caps;
+- human InterventionTask.
 
-### P4-1 Golden sets
+### Slice E3 — Authority-only Runtime
 
-Create versioned sets by:
+Initial worker grouping:
 
 ```text
-Genre × Platform × Stage × Quality Dimension
+authority-worker
+execution-worker
+integration-worker
+maintenance-worker
 ```
 
-Each case needs target AssetVersion, human labels, evidence spans, disagreement and acceptance policy.
+Required operations proof:
 
-### P4-2 Judge validation
+- migration-aware readiness;
+- worker heartbeat;
+- queue/outbox lag;
+- stuck Saga detection;
+- Service Identity and Project/Book RBAC;
+- secret references;
+- backup/PITR/restore rehearsal;
+- operator-visible blocked reason and recovery action.
 
-Measure:
-
-- inter-judge agreement;
-- human/Judge agreement;
-- position/order sensitivity;
-- mutation stability;
-- adversarial prompt resistance;
-- out-of-distribution behavior;
-- false-positive and false-negative rates;
-- threshold behavior across genres.
-
-### P4-3 Production gate policy
-
-Until calibrated:
+Track E Gate:
 
 ```text
-Reader Outcome = SHADOW
-uncalibrated scores = non-probabilistic raw/ordinal evidence
-provider-only quality = not sufficient for irreversible publish decisions
+book_coordinator_l3_proven=true
+book_coordinator_l10_proven=true
+recap_replan_loop_proven=true
+authority_only_runtime_verified=true
+restart_recovery_proven=true
+operator_intervention_flow_proven=true
 ```
 
-Acceptance:
+## 8. Track F — Migration, Long-form And Scale Proof
+
+### Slice F1 — Critical Legacy Writer Retirement
+
+Migrate by business chain:
 
 ```text
-quality_judge_calibrated=true
-reader_outcome_behavior_calibrated=true
-release_thresholds_versioned=true
+Project/Book
+→ BookDesign/Plan
+→ Context
+→ Chapter
+→ Canon/StoryState
+→ Quality/Outcome/Recap
 ```
 
-## 7. P5 — Long-form Proof Program
-
-Use staged gates:
-
-| Gate | Scope | Required proof |
-|---|---|---|
-| L10 | 10 real-provider chapters | recovery, state evolution, recap, cost |
-| L30 | one meaningful arc/volume slice | arc progression, promise/payoff, replan |
-| L100 | long-form chain | character/relationship/timeline/foreshadow stability |
-| L300 | extended serial production | fatigue, repetition, cost/throughput and operator load |
-| L1M | approximately one million Chinese characters | full-book stability, ending reachability and completion |
-
-Every stage must record:
-
-- accepted ChapterPlan and Draft versions;
-- StoryState and Canon diffs;
-- unresolved issues and debt ledgers;
-- quality trends;
-- actual token/cost/time;
-- retry, cancel and recovery events;
-- human review samples;
-- plan changes and their downstream impact.
-
-Do not promote deterministic 12/50-chapter fixtures to `longform_proven=true`.
-
-## 8. P6 — Multi-book And Portfolio Production
-
-Start only after L30 is stable.
-
-Stages:
+Per wave:
 
 ```text
-3 books in parallel
-→ 5 books
-→ 10 books
+Discover
+→ Classify
+→ Dry-run Convert
+→ Validate
+→ Authority Import
+→ Verify
+→ Freeze Legacy Writer
+→ Observe
+→ Delete Writer
+→ Archive/Delete Reader
 ```
 
-Verify:
+No long-term double write.
 
-- project/book memory isolation;
-- no cross-book Context contamination;
-- worker fairness and concurrency caps;
-- Provider budget caps;
-- database connection and outbox pressure;
-- per-book pause/resume/cancel;
-- portfolio allocation decisions;
-- operator alert volume;
-- recovery after worker/database restart.
+### Slice F2 — L30 Arc Proof
 
-Acceptance:
+Prove one meaningful Arc with:
+
+- plan progression and replan;
+- character/relationship state;
+- foreshadowing and payoff;
+- Reader Promise;
+- Canon/StoryState drift control;
+- quality, cost and latency trends;
+- human samples;
+- recovery and operator load.
+
+### Slice F3 — Post-closure Readiness
+
+After Architecture Closure:
 
 ```text
-multi_book_proven=true
-portfolio_dispatch_proven=true
-cross_book_contamination_tests_passed=true
+L100 → L300 → L1M
+3 → 5 → 10 Books
+Official Publishing Adapter
+Feedback And Controlled Learning
+Multi-user Productization
 ```
 
-## 9. P7 — Platform Publishing And Feedback
+Track F Gate:
 
-After production quality is stable:
+```text
+critical_legacy_writers_retired=true
+l30_arc_proven=true
+cross_book_contamination_baseline_passed=true
+architecture_closure_gate_passed=true
+```
 
-1. maintain manual upload as the safe first production mode;
-2. add one official platform adapter with approved credentials;
-3. prove submit/query/withdraw/callback/rate-limit/duplicate behavior;
-4. import metrics and comments with privacy classification;
-5. generate feedback proposals without silent Canon/plan mutation;
-6. run controlled experiments before claiming causal learning;
-7. require approval for high-risk production changes.
+## 9. WIP And Delivery Policy
 
-## 10. P8 — Security And Multi-user Productization
+- one primary vertical Slice at a time;
+- one additional stabilization/defect lane is allowed;
+- no parallel cross-kernel redesigns;
+- no Slice advances without its Gate Report;
+- no deferred testing debt for shared Authority contracts;
+- no independent AC completion percentage;
+- no real-provider or long-form claim without exact-SHA evidence;
+- no new isolated module expansion unrelated to the active Slice.
 
-Before external or team deployment:
+## 10. Architecture Closure Exit
 
-- OIDC/JWT or equivalent authentication;
-- service accounts and worker identity;
-- project-scoped RBAC;
-- approval-role separation;
-- secret manager integration;
-- signed/mTLS callbacks where applicable;
-- audit retention and export policy;
-- tenant/project isolation tests;
-- threat model and penetration testing.
+Architecture Closure is complete only when:
+
+```text
+one complete current SHA builds and deploys
+one Authority-only Runtime starts without Legacy
+one real Provider Chapter records usage, cost and recovery
+one Book Coordinator chain completes L10 with Recap/Replan
+one real L30 Arc passes state, quality and recovery review
+critical Legacy Writers on the production path are retired
+Architecture Fitness Tests block regression
+```
 
 ## 11. Current Non-goals
 
-Until P0-P2 are complete:
+Until Track D and Track E are complete:
 
 - no repository/package rename;
 - no third production runtime;
-- no broad new module expansion unrelated to closure;
+- no broad new feature modules unrelated to closure;
 - no public SaaS deployment;
 - no automatic irreversible publishing;
-- no claim that fixture, UI or design evidence is production proof.
+- no ten-book scheduling program;
+- no claim that Fixture, UI or design evidence is production proof.
