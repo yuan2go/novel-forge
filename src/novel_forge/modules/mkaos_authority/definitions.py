@@ -5,13 +5,13 @@ from typing import Any
 
 
 MKAOS_CANDIDATE_OPERATION = "mkaos.knowledge_candidate.commit"
-MKAOS_CANDIDATE_DEFINITION_VERSION = "1.0.0"
+MKAOS_CANDIDATE_DEFINITION_VERSION = "1.0.1"
 MKAOS_CANDIDATE_HANDLER_KEY = "novel_forge.mkaos_authority.candidate_commit"
 MKAOS_APPROVE_OPERATION = "mkaos.knowledge.approve"
-MKAOS_APPROVE_DEFINITION_VERSION = "1.0.0"
+MKAOS_APPROVE_DEFINITION_VERSION = "1.0.1"
 MKAOS_APPROVE_HANDLER_KEY = "novel_forge.mkaos_authority.knowledge_approve"
 MKAOS_PACK_OPERATION = "mkaos.knowledge_pack.build"
-MKAOS_PACK_DEFINITION_VERSION = "1.0.0"
+MKAOS_PACK_DEFINITION_VERSION = "1.0.1"
 MKAOS_PACK_HANDLER_KEY = "novel_forge.mkaos_authority.pack_build"
 MKAOS_AUTHORITY_OPERATIONS = frozenset(
     {MKAOS_CANDIDATE_OPERATION, MKAOS_APPROVE_OPERATION, MKAOS_PACK_OPERATION}
@@ -61,6 +61,7 @@ def mkaos_authority_definitions(
             "concurrency_key_template": "project:{project_id}:mkaos-candidate",
             "timeout_policy": {"operation_timeout_seconds": 120},
             "policy": {
+                "execution_classification": "durable_job",
                 "project_scope_required": True,
                 "candidate_only": True,
                 "gateway_execution_evidence_required": True,
@@ -108,6 +109,7 @@ def mkaos_authority_definitions(
             "concurrency_key_template": "project:{project_id}:mkaos-approve",
             "timeout_policy": {"operation_timeout_seconds": 60},
             "policy": {
+                "execution_classification": "durable_job",
                 "project_scope_required": True,
                 "candidate_active_isolation": True,
                 "authority_decision_required": True,
@@ -160,6 +162,7 @@ def mkaos_authority_definitions(
             "concurrency_key_template": "project:{project_id}:mkaos-pack",
             "timeout_policy": {"operation_timeout_seconds": 120},
             "policy": {
+                "execution_classification": "durable_job",
                 "project_scope_required": True,
                 "explicit_asset_versions_only": True,
                 "directory_selection_forbidden": True,

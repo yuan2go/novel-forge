@@ -7,7 +7,7 @@ from novel_forge.infrastructure.settings import IndustrialSettings, optional_dep
 from novel_forge.model_adapters import embedding_provider_health, provider_health
 from novel_forge.storage.graph import neo4j_status as neo4j_status_service
 from novel_forge.storage.local import LocalStorage
-from novel_forge.storage.object_store import sync_minio_assets
+from novel_forge.storage.legacy_object_sync import sync_minio_assets
 from novel_forge.storage.migrations import downgrade_migrations
 from novel_forge.storage.postgres import PostgresAssetStore, postgres_available, sync_postgres_from_local
 from novel_forge.storage.qdrant_index import build_qdrant_index, qdrant_search_assets

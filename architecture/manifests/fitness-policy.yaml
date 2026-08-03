@@ -1,9 +1,22 @@
 {
   "schema_version": "architecture-manifest.v1",
-  "domain_globs": ["src/novel_forge/modules/**/domain.py"],
+  "domain_package_root": "src/novel_forge/modules",
+  "domain_layer_filenames": [
+    "domain.py",
+    "contracts.py",
+    "validators.py",
+    "policies.py"
+  ],
   "forbidden_domain_imports": [
-    "fastapi", "novel_forge.api", "novel_forge.storage", "openai", "anthropic",
-    "httpx", "requests", "subprocess"
+    "fastapi",
+    "novel_forge.api",
+    "novel_forge.storage",
+    "openai",
+    "anthropic",
+    "httpx",
+    "requests",
+    "subprocess",
+    "celery"
   ],
   "production_roots": [
     "src/novel_forge/api/authority_app.py",
@@ -11,8 +24,11 @@
     "src/novel_forge/api/routers/authority_projects.py",
     "src/novel_forge/api/routers/authority_tasks.py",
     "src/novel_forge/api/routers/authority_assets.py",
+    "src/novel_forge/api/routers/book_design_authority.py",
     "src/novel_forge/api/routers/source_authority.py",
     "src/novel_forge/api/routers/mkaos_authority.py",
+    "src/novel_forge/api/routers/chapter_authority.py",
+    "src/novel_forge/api/routers/book_authority.py",
     "src/novel_forge/modules/project_authority",
     "src/novel_forge/modules/task_authority",
     "src/novel_forge/modules/source_authority",
@@ -21,14 +37,55 @@
     "src/novel_forge/modules/content_authority",
     "src/novel_forge/modules/book_authority",
     "src/novel_forge/modules/book_design_authority",
+    "src/novel_forge/modules/provider_control",
     "src/novel_forge/modules/provider_qualification",
+    "src/novel_forge/modules/production_execution",
+    "src/novel_forge/modules/command_kernel/external_effect_runtime.py",
+    "src/novel_forge/storage/authority_uow.py",
+    "src/novel_forge/storage/authority_repositories.py",
+    "src/novel_forge/storage/authority_asset_store.py",
+    "src/novel_forge/storage/project_authority_repositories.py",
+    "src/novel_forge/storage/book_design_authority_repositories.py",
+    "src/novel_forge/storage/source_authority_repositories.py",
+    "src/novel_forge/storage/mkaos_authority_repositories.py",
+    "src/novel_forge/storage/external_effect_repositories.py",
+    "src/novel_forge/storage/production_repositories.py",
+    "src/novel_forge/storage/provider_callback_repositories.py",
+    "src/novel_forge/storage/object_store.py",
     "src/novel_forge/workers/chapter_authority.py",
     "src/novel_forge/workers/content_authority.py",
     "src/novel_forge/workers/source_authority.py",
     "src/novel_forge/workers/mkaos_authority.py",
     "src/novel_forge/workers/runtime_groups.py"
   ],
-  "forbidden_production_imports": ["novel_forge.storage.local", "novel_forge.api.legacy_app"],
+  "forbidden_production_imports": [
+    "novel_forge.storage.local",
+    "novel_forge.api.legacy_app"
+  ],
+  "provider_scan_roots": ["src/novel_forge"],
+  "provider_direct_call_allowlist": [
+    "src/novel_forge/modules/provider_control",
+    "src/novel_forge/modules/production_execution",
+    "src/novel_forge/model_adapters"
+  ],
+  "repository_boundary_rules": [
+    {
+      "owner_roots": ["src/novel_forge/modules/hierarchical_planning", "src/novel_forge/modules/plan_change_authority"],
+      "forbidden_imports": ["novel_forge.storage.story_state_repositories"]
+    },
+    {
+      "owner_roots": ["src/novel_forge/modules/context_builder", "src/novel_forge/modules/production_context"],
+      "forbidden_imports": ["novel_forge.storage.hierarchical_planning_repositories", "novel_forge.storage.plan_change_repositories"]
+    },
+    {
+      "owner_roots": ["src/novel_forge/modules/quality_eval", "src/novel_forge/modules/chapter_quality_authority"],
+      "forbidden_imports": ["novel_forge.storage.chapter_authority_repositories"]
+    },
+    {
+      "owner_roots": ["src/novel_forge/modules/book_authority"],
+      "forbidden_imports": ["novel_forge.storage.story_state_repositories", "novel_forge.storage.story_design_repositories", "novel_forge.storage.plan_change_repositories", "novel_forge.storage.chapter_authority_repositories"]
+    }
+  ],
   "schema_contracts": [
     {"path": "src/novel_forge/modules/project_authority/domain.py", "token": "project-authority.v1"},
     {"path": "src/novel_forge/modules/book_design_authority/domain.py", "token": "book-design.v1"},

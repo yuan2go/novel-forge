@@ -6,7 +6,7 @@ from typing import Any
 from novel_forge.modules.chapter_authority.contracts import ChapterNode
 
 
-CHAPTER_SLICE_DEFINITION_VERSION = "2.0.10"
+CHAPTER_SLICE_DEFINITION_VERSION = "2.0.11"
 CHAPTER_MODEL_EFFECT_DEFINITION_VERSION = "2.2.0"
 CHAPTER_SLICE_HANDLER_CONTRACT_VERSION = "2.0.9"
 CHAPTER_SLICE_ROOT_DEFINITION_NAME = "chapter.slice.run"
@@ -73,6 +73,7 @@ def chapter_root_operation_definition(
         "external_capabilities": [],
         **_definition_maturity_metadata(),
         "policy": {
+            "execution_classification": "saga",
             "authority": "postgresql",
             "local_storage_writes": "forbidden",
             "orchestration": "dynamic_fenced_saga_v1",
@@ -242,6 +243,7 @@ def _definition(
         "external_capabilities": external_capabilities,
         **_definition_maturity_metadata(),
         "policy": {
+            "execution_classification": "durable_job",
             "authority": "postgresql",
             "local_storage_writes": "forbidden",
             "handler_output_policy": "chapter-authority-output-v1",

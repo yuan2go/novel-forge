@@ -15,7 +15,7 @@ from novel_forge.modules.production_execution import (
     ExternalActionExecutionEvidence,
 )
 from novel_forge.storage.graph import neo4j_status
-from novel_forge.storage.object_store import object_name_for_path
+from novel_forge.storage.legacy_object_sync import object_name_for_path
 from novel_forge.storage.postgres import POSTGRES_SCHEMA_STATEMENTS, PostgresAssetStore
 from novel_forge.storage.qdrant_index import build_qdrant_index, qdrant_search_assets
 from novel_forge.storage.local import LocalStorage

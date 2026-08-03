@@ -60,8 +60,9 @@ def _authority_maintenance_loop(worker_kind: str) -> int:
             actor_id=worker_id,
             limit=batch_size,
         )
-        # Book/BookDesign are Transaction Commands. This process owns recovery
-        # and health, while their authoritative state remains in PostgreSQL.
+        # This generic group only owns deadline scanning and health evidence.
+        # Transaction Commands recover by rollback/replay; domain Durable Jobs
+        # require their explicit scheduler/consumer and are not claimed here.
         supervisor.polled(idle=True)
         time.sleep(poll_seconds)
     supervisor.stopped()

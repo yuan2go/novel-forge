@@ -59,7 +59,8 @@ from novel_forge.api.services.postgres_fallback_policy import handle_postgres_as
 from novel_forge.api.services.product_handoff_review import review_handoff_output_quality_with_model
 from novel_forge.api.services import product_tasks as _product_tasks
 from novel_forge.schemas import AssetCollection, BatchTaskItem, DraftChapter, ProjectWorkspaceState, validate_common_fields
-from novel_forge.storage.object_store import MinioObjectStore, object_name_for_path
+from novel_forge.storage.legacy_object_sync import object_name_for_path
+from novel_forge.storage.object_store import MinioObjectStore
 from novel_forge.storage.local import LocalStorage
 from novel_forge.storage.postgres import PostgresAssetStore
 from novel_forge.workflows import pipeline

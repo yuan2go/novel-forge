@@ -4,10 +4,10 @@ from __future__ import annotations
 from typing import Any
 
 
-SOURCE_AUTHORITY_DEFINITION_VERSION = "1.0.1"
+SOURCE_AUTHORITY_DEFINITION_VERSION = "1.0.2"
 SOURCE_AUTHORITY_HANDLER_KEY = "novel_forge.source_authority.document_register"
 SOURCE_AUTHORITY_OPERATION = "source.document.register"
-SOURCE_TRANSFORM_DEFINITION_VERSION = "1.0.0"
+SOURCE_TRANSFORM_DEFINITION_VERSION = "1.0.1"
 SOURCE_TRANSFORM_HANDLER_KEY = "novel_forge.source_authority.transform_commit"
 SOURCE_TRANSFORM_OPERATION = "source.transform.commit"
 SOURCE_AUTHORITY_OPERATIONS = frozenset(
@@ -64,6 +64,7 @@ def source_authority_definitions(
             "irreversible_effect_policy": {"allowed": False},
             "external_capabilities": [],
             "policy": {
+                "execution_classification": "durable_job",
                 "project_scope_required": True,
                 "verified_blob_required": True,
                 "raw_source_in_postgresql_forbidden": True,
@@ -142,6 +143,7 @@ def source_authority_definitions(
             "irreversible_effect_policy": {"allowed": False},
             "external_capabilities": [],
             "policy": {
+                "execution_classification": "durable_job",
                 "project_scope_required": True,
                 "verified_chunk_blobs_required": True,
                 "prepared_transform_manifest_only": True,

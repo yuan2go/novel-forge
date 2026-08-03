@@ -4,7 +4,7 @@ from typing import Any
 
 from .codecs import BOOK_CODECS
 
-BOOK_DEFINITION_VERSION = "1.0.0"
+BOOK_DEFINITION_VERSION = "1.0.1"
 BOOK_ROOT_DEFINITION = "book.production.run"
 BOOK_ROOT_HANDLER = "novel_forge.book_authority.root"
 
@@ -46,7 +46,7 @@ def book_definitions(*, application_build_id: str, commit_sha: str) -> tuple[dic
                 for name in BOOK_CODECS
             ],
         },
-        "policy": {"fixture_protocol_only": True, "real_provider_proven": False},
+        "policy": {"execution_classification": "saga", "fixture_protocol_only": True, "real_provider_proven": False},
     }
     children = []
     for name, codec in BOOK_CODECS.items():
@@ -68,6 +68,6 @@ def book_definitions(*, application_build_id: str, commit_sha: str) -> tuple[dic
                 "required_audit_actions": [topic], "required_outbox_events": [topic],
                 "required_evidence": ["trace", "audit"],
             },
-            "policy": {"fixture_protocol_only": True, "real_model_call": False},
+            "policy": {"execution_classification": "durable_job", "fixture_protocol_only": True, "real_model_call": False},
         })
     return (root, *children)
