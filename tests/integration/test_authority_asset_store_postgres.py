@@ -51,6 +51,7 @@ class AuthorityAssetStorePostgresTests(unittest.TestCase):
             project_id=project_id,
             asset_id=asset_id,
             asset_type="chapter_plan",
+            schema_version="chapter-plan.v1",
             logical_ref=logical_ref,
             category="chapter_plans",
             output_key="chapter.plan",

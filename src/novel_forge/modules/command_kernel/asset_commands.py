@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import PurePosixPath
+import re
 from typing import Any
 
 
@@ -24,6 +25,7 @@ class AuthorityAssetWriteCommand:
     project_id: str
     asset_id: str
     asset_type: str
+    schema_version: str
     logical_ref: str
     category: str
     output_key: str
@@ -45,6 +47,7 @@ class AuthorityAssetWriteCommand:
             "project_id": self.project_id,
             "asset_id": self.asset_id,
             "asset_type": self.asset_type,
+            "schema_version": self.schema_version,
             "category": self.category,
             "output_key": self.output_key,
             "role": self.role,
@@ -57,6 +60,8 @@ class AuthorityAssetWriteCommand:
             raise ValueError(f"authority asset command fields must not be empty: {', '.join(missing)}")
         if not isinstance(self.content, dict):
             raise ValueError("authority asset content must be an object")
+        if not re.fullmatch(r"[a-z0-9][a-z0-9._-]*\.v[0-9]+", self.schema_version):
+            raise ValueError("authority asset schema_version is invalid")
         if self.lifecycle != "ACTIVE":
             raise ValueError("materialized authority output must be ACTIVE")
         if self.eligibility not in {"ELIGIBLE", "INELIGIBLE", "REVOKED", "PENDING_EVALUATION"}:

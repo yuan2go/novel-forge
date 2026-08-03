@@ -135,8 +135,8 @@ class CompletionContractPostgresTests(unittest.TestCase):
                 """
                 INSERT INTO authority_asset_version (
                     asset_version_id, asset_id, version_number, lifecycle,
-                    eligibility, governance, content, content_hash
-                ) VALUES (%s, %s, 1, 'ACTIVE', 'ELIGIBLE', 'CLEAR', '{}'::jsonb, 'sha256:draft')
+                    eligibility, governance, content, content_hash, schema_version
+                ) VALUES (%s, %s, 1, 'ACTIVE', 'ELIGIBLE', 'CLEAR', '{}'::jsonb, 'sha256:draft', 'integration-fixture.v1')
                 """,
                 [version_id, asset_id],
             )
@@ -254,8 +254,8 @@ class CompletionContractPostgresTests(unittest.TestCase):
                 """
                 INSERT INTO authority_asset_version (
                     asset_version_id, asset_id, version_number, lifecycle,
-                    eligibility, governance, content, content_hash
-                ) VALUES (%s, %s, 1, 'ACTIVE', 'ELIGIBLE', 'CLEAR', '{}'::jsonb, 'sha256:old')
+                    eligibility, governance, content, content_hash, schema_version
+                ) VALUES (%s, %s, 1, 'ACTIVE', 'ELIGIBLE', 'CLEAR', '{}'::jsonb, 'sha256:old', 'integration-fixture.v1')
                 """,
                 [identifier("unrelated-version"), asset_id],
             )

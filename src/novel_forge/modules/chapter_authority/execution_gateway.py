@@ -684,6 +684,7 @@ class PostgresChapterExecutionContractBinder:
                 project_id=project_id,
                 asset_id=f"production-execution-contract:{token}",
                 asset_type=asset_type,
+                schema_version="production-execution-contract.v1",
                 logical_ref=logical_ref,
                 category="production_execution_contracts",
                 output_key=f"production_execution.contract.{asset_type}.{token}",

@@ -203,8 +203,8 @@ class AuthorityHandlerRepository:
             """
             INSERT INTO authority_asset_version (
                 asset_version_id, asset_id, version_number, lifecycle,
-                eligibility, governance, content, content_hash
-            ) VALUES (%s, %s, 1, %s, %s, %s, %s, %s)
+                eligibility, governance, content, content_hash, schema_version
+            ) VALUES (%s, %s, 1, %s, %s, %s, %s, %s, %s)
             ON CONFLICT (asset_version_id) DO NOTHING
             RETURNING asset_version_id
             """,
@@ -216,6 +216,7 @@ class AuthorityHandlerRepository:
                 governance,
                 Jsonb(content),
                 content_hash,
+                f"{asset_type.replace('_', '-')}.v1",
             ],
         )
         created = self.cursor.fetchone() is not None

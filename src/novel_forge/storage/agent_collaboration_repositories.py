@@ -1180,6 +1180,7 @@ class PostgresAuthorityCandidateCommitter:
                 project_id=session.project_id,
                 asset_id=asset_id,
                 asset_type="book_design_core_advantage",
+                schema_version="book-design-core-advantage.v1",
                 logical_ref=(
                     f"agent-collaboration/{session.session_id}/"
                     "accepted-core-advantage"

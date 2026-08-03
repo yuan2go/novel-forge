@@ -55,9 +55,13 @@ def create_asset_version(
     asset_id: str,
     content: dict[str, Any],
     content_hash: str,
+    schema_version: str,
 ) -> str:
-    if not content_hash or not isinstance(content, dict):
-        raise KernelError("COMMAND_SCHEMA_INVALID", "asset content and hash are required")
+    if not content_hash or not isinstance(content, dict) or not schema_version:
+        raise KernelError(
+            "COMMAND_SCHEMA_INVALID",
+            "asset content, hash, and schema version are required",
+        )
     version_id = str(uuid4())
     with AuthorityUnitOfWork(database_url) as uow:
         repository = uow.repositories.asset_blobs
@@ -71,6 +75,7 @@ def create_asset_version(
                 "version_number": version_number,
                 "content": content,
                 "content_hash": content_hash,
+                "schema_version": schema_version,
             }
         )
         _record(

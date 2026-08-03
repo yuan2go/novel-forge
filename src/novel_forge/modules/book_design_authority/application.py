@@ -196,8 +196,9 @@ class BookDesignAuthorityApplication:
                 AuthorityAssetWriteCommand(
                     operation_id=operation_id,
                     project_id=project_id,
-                    asset_id=f"book:{book_id}",
-                    asset_type="book_record",
+                        asset_id=f"book:{book_id}",
+                        asset_type="book_record",
+                        schema_version="book-authority.v1",
                     logical_ref=f"books/{book_id}",
                     category="books",
                     output_key="book.record",

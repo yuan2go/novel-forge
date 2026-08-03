@@ -235,6 +235,7 @@ class ProductionExecutionGatewayPostgresTests(unittest.TestCase):
                     project_id=project_id,
                     asset_id=identifier(asset_type),
                     asset_type=asset_type,
+                    schema_version="production-execution-contract.v1",
                     logical_ref=logical_ref,
                     category="production_execution_contracts",
                     output_key=asset_type,

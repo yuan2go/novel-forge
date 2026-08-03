@@ -93,8 +93,8 @@ class AuthorityAssetDocumentRepository:
             """
             INSERT INTO authority_asset_version (
                 asset_version_id, asset_id, version_number, lifecycle,
-                eligibility, governance, content, content_hash
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                eligibility, governance, content, content_hash, schema_version
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
             """,
             [
                 asset_version_id,
@@ -105,6 +105,7 @@ class AuthorityAssetDocumentRepository:
                 command.governance,
                 Jsonb(command.content),
                 content_hash,
+                command.schema_version,
             ],
         )
         qualification_id = str(uuid4())

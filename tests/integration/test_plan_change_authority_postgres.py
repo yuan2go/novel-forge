@@ -372,9 +372,9 @@ class PlanChangeAuthorityPostgresTests(unittest.TestCase):
                 """
                 INSERT INTO authority_asset_version(
                     asset_version_id, asset_id, version_number, lifecycle,
-                    eligibility, governance, content, content_hash
+                    eligibility, governance, content, content_hash, schema_version
                 ) VALUES (
-                    %s, %s, 1, 'ACTIVE', 'ELIGIBLE', 'CLEAR', %s, %s
+                    %s, %s, 1, 'ACTIVE', 'ELIGIBLE', 'CLEAR', %s, %s, 'integration-fixture.v1'
                 )
                 """,
                 [version_id, asset_id, json.dumps(content), content_hash],

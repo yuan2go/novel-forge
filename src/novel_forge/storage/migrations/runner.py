@@ -12,6 +12,10 @@ class Migration:
     down_revision: str | None
     upgrade_statements: tuple[str, ...]
     downgrade_statements: tuple[str, ...]
+    strategy: str = "REVERSIBLE_WHEN_DECLARED"
+    preflight_statements: tuple[str, ...] = ()
+    forward_fix: str = ""
+    backup_required: bool = False
 
 
 MIGRATIONS = tuple(
@@ -20,6 +24,14 @@ MIGRATIONS = tuple(
         down_revision=module.DOWN_REVISION,
         upgrade_statements=tuple(module.UPGRADE_STATEMENTS),
         downgrade_statements=tuple(getattr(module, "DOWNGRADE_STATEMENTS", ())),
+        strategy=(
+            "FORWARD_ONLY"
+            if bool(getattr(module, "FORWARD_ONLY", False))
+            else "REVERSIBLE_WHEN_DECLARED"
+        ),
+        preflight_statements=tuple(getattr(module, "PREFLIGHT_STATEMENTS", ())),
+        forward_fix=str(getattr(module, "FORWARD_FIX", "")),
+        backup_required=bool(getattr(module, "BACKUP_REQUIRED", False)),
     )
     for module in VERSION_MODULES
 )
@@ -65,6 +77,7 @@ def run_migrations(database_url: str) -> dict[str, Any]:
             applied = _applied_migration_rows(cursor)
             applied_ids = {str(row["migration_id"]) for row in applied}
             for migration in pending_migrations(applied_ids):
+                _run_preflight(cursor, migration)
                 for statement in migration.upgrade_statements:
                     cursor.execute(statement)
                 cursor.execute(
@@ -161,3 +174,20 @@ def _connect(database_url: str):
     except ModuleNotFoundError as exc:  # pragma: no cover - dependency-gated path
         raise RuntimeError("PostgreSQL support requires the optional dependency: psycopg[binary]") from exc
     return psycopg.connect(database_url, connect_timeout=1)
+
+
+def _run_preflight(cursor: Any, migration: Migration) -> None:
+    blockers: list[str] = []
+    for statement in migration.preflight_statements:
+        cursor.execute(statement)
+        for row in cursor.fetchall():
+            code = str(row[0])
+            count = int(row[1])
+            if count:
+                blockers.append(f"{code}={count}")
+    if blockers:
+        raise RuntimeError(
+            f"migration preflight blocked {migration.migration_id}: "
+            + ", ".join(blockers)
+            + (f"; forward fix: {migration.forward_fix}" if migration.forward_fix else "")
+        )

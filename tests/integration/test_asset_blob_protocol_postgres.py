@@ -51,6 +51,7 @@ class AssetBlobProtocolPostgresTests(unittest.TestCase):
             asset_id=asset_id,
             content={"text": "authoritative"},
             content_hash="sha256:asset-v1",
+            schema_version="draft-chapter.v1",
         )
         blob_id = reserve_blob(
             DATABASE_URL,
@@ -220,6 +221,7 @@ class AssetBlobProtocolPostgresTests(unittest.TestCase):
             asset_id=asset_id,
             content={"text": "v1"},
             content_hash="sha256:v1",
+            schema_version="draft-chapter.v1",
         )
         blob_id = self._reserve(owner)
         for context, expected_code in (
@@ -263,6 +265,7 @@ class AssetBlobProtocolPostgresTests(unittest.TestCase):
             asset_id=asset_id,
             content={"text": "v1"},
             content_hash="sha256:v1",
+            schema_version="draft-chapter.v1",
         )
         bind_blob_to_asset_version(
             DATABASE_URL,
@@ -371,6 +374,7 @@ class AssetBlobProtocolPostgresTests(unittest.TestCase):
                 asset_id=asset_id,
                 content={"version": number},
                 content_hash=f"sha256:v{number}",
+                schema_version="draft-chapter.v1",
             )
             for number in (1, 2)
         ]

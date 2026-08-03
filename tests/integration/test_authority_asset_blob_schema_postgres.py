@@ -41,9 +41,10 @@ def insert_asset_version(
             eligibility,
             governance,
             content,
-            content_hash
+            content_hash,
+            schema_version
         )
-        VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb, %s)
+        VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb, %s, 'integration-fixture.v1')
         """,
         [
             asset_version_id,

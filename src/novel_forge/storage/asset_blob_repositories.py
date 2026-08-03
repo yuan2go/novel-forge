@@ -73,11 +73,12 @@ class AssetBlobRepository:
             """
             INSERT INTO authority_asset_version (
                 asset_version_id, asset_id, version_number,
-                lifecycle, eligibility, governance, content, content_hash
+                lifecycle, eligibility, governance, content, content_hash, schema_version
             )
             VALUES (
                 %(asset_version_id)s, %(asset_id)s, %(version_number)s,
-                'DRAFT', 'PENDING_EVALUATION', 'CLEAR', %(content)s, %(content_hash)s
+                'DRAFT', 'PENDING_EVALUATION', 'CLEAR', %(content)s, %(content_hash)s,
+                %(schema_version)s
             )
             """,
             {**row, "content": Jsonb(row["content"])},

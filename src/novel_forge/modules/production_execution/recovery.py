@@ -362,6 +362,7 @@ class AuthorityExecutionRecoveryStore:
                 project_id=self.project_id,
                 asset_id=self._asset_id(logical_ref),
                 asset_type="execution_recovery_session",
+                schema_version="authority-execution-recovery.v1",
                 logical_ref=logical_ref,
                 category="production_execution_recovery",
                 output_key=f"production_execution.recovery.{_digest(request.execution_id)}",
@@ -426,6 +427,7 @@ class AuthorityExecutionRecoveryStore:
             project_id=self.project_id,
             asset_id=self._asset_id(logical_ref),
             asset_type="execution_evidence",
+            schema_version="authority-execution-evidence.v1",
             logical_ref=logical_ref,
             category="production_execution_evidence",
             output_key=(
