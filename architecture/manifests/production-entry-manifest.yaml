@@ -144,6 +144,15 @@
       "dispatch": "saga_coordinator",
       "api_call": "_application(ctx).start",
       "definition_factory": "novel_forge.modules.book_authority.definitions:book_definitions"
+    },
+    {
+      "name": "provider.qualification.d0",
+      "source": "scripts/run_d0_provider_probe.py",
+      "application_source": "src/novel_forge/modules/provider_qualification/authority.py",
+      "classification": "durable_job",
+      "dispatch": "worker_claim",
+      "api_call": "authority.admit",
+      "definition_factory": "novel_forge.modules.provider_qualification.definitions:d0_operation_definition"
     }
   ]
 }

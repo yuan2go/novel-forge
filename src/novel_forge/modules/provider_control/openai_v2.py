@@ -255,7 +255,7 @@ def build_openai_d0_adapter(api_key: str) -> OpenAIProviderAdapterV2:
     except ModuleNotFoundError as exc:  # pragma: no cover - optional live boundary
         raise RuntimeError("OpenAI D0 probe requires the optional openai SDK") from exc
     return OpenAIProviderAdapterV2(
-        OpenAISdkTransport(OpenAI(api_key=api_key)),
+        OpenAISdkTransport(OpenAI(api_key=api_key, max_retries=0)),
         supports_query=True,
         supports_cancel=True,
         supports_callback=False,

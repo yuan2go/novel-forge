@@ -53,6 +53,7 @@ from . import (
     v20260801_0050_mkaos_authority,
     v20260803_0051_book_design_authority_slice,
     v20260804_0052_asset_schema_and_scope_integrity,
+    v20260804_0053_d0_provider_qualification_authority,
 )
 
 VERSION_MODULES = [
@@ -108,6 +109,7 @@ VERSION_MODULES = [
     v20260801_0050_mkaos_authority,
     v20260803_0051_book_design_authority_slice,
     v20260804_0052_asset_schema_and_scope_integrity,
+    v20260804_0053_d0_provider_qualification_authority,
 ]
 
 __all__ = ["VERSION_MODULES"]

@@ -129,6 +129,32 @@ class ScriptedProviderAdapterV2:
     def query_v2(self, request: ProviderQueryRequest) -> ProviderInvocationResult:
         with self._lock:
             existing = self.requests.get(request.stable_idempotency_key)
+        if existing is None and request.provider_request_id == (
+            f"scripted-request:{request.stable_idempotency_key}"
+        ):
+            handle = ProviderInvocationHandle(
+                provider_request_id=request.provider_request_id,
+                provider_correlation_id=f"scripted-correlation:{request.correlation_id}",
+                accepted_at=datetime.now(timezone.utc).isoformat(),
+                completion_mode="poll",
+                query_supported=True,
+                cancel_supported=True,
+                callback_supported=True,
+                idempotency_supported=True,
+            )
+            existing = ProviderInvocationResult(
+                "unknown",
+                handle,
+                {
+                    "fixture_protocol_only": True,
+                    "real_model_call": False,
+                    "usage": {"input_tokens": 10, "output_tokens": 5},
+                    "cost": {"amount": "0", "currency": "USD", "source": "fixture"},
+                    "result": {"ok": True, "probe": "d0"},
+                    "recovered_without_resend": True,
+                },
+                True,
+            )
         if self.scenario == "query_not_found" or existing is None:
             return ProviderInvocationResult("not_found", None, {"found": False}, False)
         if self.scenario == "query_ambiguous":

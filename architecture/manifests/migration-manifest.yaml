@@ -1,7 +1,7 @@
 {
   "schema_version": "architecture-manifest.v1",
   "registry": "novel_forge.storage.migrations.versions:VERSION_MODULES",
-  "head": "20260804_0052_asset_schema_and_scope_integrity",
+  "head": "20260804_0053_d0_provider_qualification_authority",
   "migration_ids": [
     "20260625_0001_initial_industrial_schema",
     "20260628_0002_query_and_release_indexes",
@@ -54,6 +54,7 @@
     "20260801_0049_source_transform_fk_indexes",
     "20260801_0050_mkaos_authority",
     "20260803_0051_book_design_authority_slice",
-    "20260804_0052_asset_schema_and_scope_integrity"
+    "20260804_0052_asset_schema_and_scope_integrity",
+    "20260804_0053_d0_provider_qualification_authority"
   ]
 }

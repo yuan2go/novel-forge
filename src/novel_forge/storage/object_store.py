@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 from pathlib import Path
+from io import BytesIO
+import hashlib
+import json
 from typing import Any
 
 from novel_forge.infrastructure.settings import IndustrialSettings
@@ -35,6 +38,28 @@ class MinioObjectStore:
             "etag": getattr(result, "etag", ""),
             "version_id": getattr(result, "version_id", ""),
         }
+
+    def put_json(self, *, object_key: str, payload: dict[str, Any]) -> str:
+        """Store canonical JSON evidence without exposing credentials or local paths."""
+        self.ensure_buckets()
+        body = json.dumps(
+            payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+        ).encode("utf-8")
+        content_hash = "sha256:" + hashlib.sha256(body).hexdigest()
+        result = self.client.put_object(
+            self.settings.minio_artifact_bucket,
+            object_key,
+            BytesIO(body),
+            length=len(body),
+            content_type="application/json",
+            metadata={"content-hash": content_hash, "retention-class": "LONG_TERM"},
+        )
+        version = str(getattr(result, "version_id", "") or "")
+        suffix = f"?versionId={version}" if version else ""
+        return (
+            f"minio://{self.settings.minio_artifact_bucket}/{object_key}{suffix}"
+            f"#content_hash={content_hash}"
+        )
 
 def _minio_client(settings: IndustrialSettings):
     try:

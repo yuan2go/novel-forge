@@ -16,7 +16,7 @@
     {"name": "book-authority", "path": "src/novel_forge/modules/book_authority/__init__.py", "import_path": "novel_forge.modules.book_authority", "owner": "book-coordination", "authority_mode": "postgresql"},
     {"name": "book-design-authority", "path": "src/novel_forge/modules/book_design_authority/__init__.py", "import_path": "novel_forge.modules.book_design_authority", "owner": "book-design", "authority_mode": "postgresql"},
     {"name": "provider-control", "path": "src/novel_forge/modules/provider_control/__init__.py", "import_path": "novel_forge.modules.provider_control", "owner": "execution", "authority_mode": "gateway-only"},
-    {"name": "provider-qualification", "path": "src/novel_forge/modules/provider_qualification/__init__.py", "import_path": "novel_forge.modules.provider_qualification", "owner": "execution", "authority_mode": "probe-only"},
+    {"name": "provider-qualification", "path": "src/novel_forge/modules/provider_qualification/__init__.py", "import_path": "novel_forge.modules.provider_qualification", "owner": "execution", "authority_mode": "postgresql"},
     {"name": "legacy-migration", "path": "src/novel_forge/modules/legacy_migration/__init__.py", "import_path": "novel_forge.modules.legacy_migration", "owner": "migration", "authority_mode": "import-only"}
   ]
 }
