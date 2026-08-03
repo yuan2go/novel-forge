@@ -50,6 +50,7 @@ The current execution model is:
 ```text
 Track A — Trusted Baseline And Governance
 → Track B — Shared Authority Kernel And Storage
+→ D0 — Real Provider Qualification Probe
 → Track C — Novel Domain And Context
 → Track D — Intelligence, Execution And Quality
 → Track E — Autonomous Book Runtime And Operations
@@ -60,6 +61,7 @@ Primary documents:
 
 - [`architecture-closure/autonomous-novel-os-architecture-closure-epic.md`](architecture-closure/autonomous-novel-os-architecture-closure-epic.md) — target architecture, six Tracks, vertical Slices, Gate definitions and final exit criteria;
 - [`architecture-closure/README.md`](architecture-closure/README.md) — execution index, AC reference mapping, WIP rules and Slice Gate Report template;
+- [`architecture-closure/minimal-stable-contracts.md`](architecture-closure/minimal-stable-contracts.md) — Book Completion、Human Intervention、Judge 晋升、Context 失效、StoryState 更正、Read Model、Object Store 和 Outbox/Worker 最小契约；
 - `architecture-closure/ac-00...ac-19` — architecture references and Reviewer checklists, not independent delivery units.
 
 ## Vertical Slice Rule
@@ -118,6 +120,8 @@ The current Epic uses narrower terminology to avoid Authority and orchestration 
 - The shared asset model uses common metadata plus strongly typed domain payloads, not unrestricted generic JSON.
 - Execution is classified as Transaction Command, Durable Job, Saga or External Effect; not every operation becomes a Saga.
 - Event sourcing is selective, primarily for Saga, StoryState reducer, Canon changes, receipts, audit and outbox.
+- Minimal Authority-only Runtime belongs to Track B; Track E hardens deployment, readiness, PITR, SLO, security, capacity and operator control.
+- Critical Legacy Writer cutover is part of every vertical Slice; Track F only retires residual non-critical Legacy.
 
 ## Documentation Authority Order
 

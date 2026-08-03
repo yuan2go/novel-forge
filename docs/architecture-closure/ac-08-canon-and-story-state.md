@@ -4,6 +4,8 @@
 阶段：Phase 2 / Novel Domain Closure  
 前置依赖：AC-05、AC-06、AC-07
 
+2026-08-03 有限修订：StoryState Correction 必须区分 `effective_from_chapter / effective_to_chapter / recorded_at / superseded_by / correction_reason`，详见 [`minimal-stable-contracts.md`](minimal-stable-contracts.md)。本 AC 不要求当前立即实现完整双时态数据库。
+
 ## 1. ADR
 
 ### 背景

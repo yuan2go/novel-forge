@@ -4,6 +4,8 @@
 阶段：Phase 3 / Intelligence and Decision Closure  
 前置依赖：AC-06、AC-08、AC-09、AC-12
 
+2026-08-03 有限修订：JudgeProfile 使用 `DRAFT → BENCHMARKED → CALIBRATED → APPROVED → ACTIVE → SUSPENDED → RETIRED`；Production Gate 只能使用已批准并激活的 Profile，Eval Lab 不能直接改写生产 Gate。
+
 ## 1. ADR
 
 ### 背景

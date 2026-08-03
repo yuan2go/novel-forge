@@ -51,6 +51,7 @@ from . import (
     v20260801_0048_source_transform_authority,
     v20260801_0049_source_transform_fk_indexes,
     v20260801_0050_mkaos_authority,
+    v20260803_0051_book_design_authority_slice,
 )
 
 VERSION_MODULES = [
@@ -104,6 +105,7 @@ VERSION_MODULES = [
     v20260801_0048_source_transform_authority,
     v20260801_0049_source_transform_fk_indexes,
     v20260801_0050_mkaos_authority,
+    v20260803_0051_book_design_authority_slice,
 ]
 
 __all__ = ["VERSION_MODULES"]

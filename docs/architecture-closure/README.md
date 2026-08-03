@@ -61,17 +61,19 @@ API / CLI / Parent Saga
 | Track | 目标 | 必须完成的主要 Slice | 主要 AC 参考 |
 |---|---|---|---|
 | A | 可信仓库基线和自动治理 | Repository Integrity；Current-SHA Validation；ADR/Fitness Baseline | AC-00、01、02、18、19 |
-| B | 共享 Authority、资产和执行内核 | Project/Book Scope；Typed Asset Registry；Execution Classification；Storage/Budget Evidence | AC-02、03、04、05、06、15、16、17、18 |
+| B | 共享 Authority、资产和执行内核 | Project/Book Scope；Typed Asset Registry；Execution Classification；Minimal Authority-only Runtime；Slice 内 Legacy Cutover | AC-02、03、04、05、06、15、16、17、18 |
+| D0 | 前置真实 Provider 资格探针 | 单 Provider/模型/结构化能力；Auth/Request ID/Usage/Cost/Query/Cancel/UNKNOWN/Late Result | AC-05、12、15、16、18 |
 | C | 小说领域和上下文模型 | BookDesign→Plan；ChapterOutcome→StoryState；Context Compiler；Replan/Historical Freeze | AC-06、07、08、09、10、13、18 |
 | D | Agent、真实执行和质量 | Qualified Real Provider；Real Chapter；Agent Candidate/Commit；Quality/Eval Separation | AC-09、11、12、13、18 |
-| E | 全书自治和运行运维 | L3 Book Chain；L10 Recap/Replan；Authority-only Runtime；Operator Intervention | AC-04、05、07、08、09、13、14、15、16、18 |
-| F | Legacy 退役和长篇证明 | Critical Legacy Retirement；L30 Arc Proof；Post-closure Readiness | AC-03、07、08、10、13、15、16、17、18、19 |
+| E | 全书自治和生产运维硬化 | L3 Book Chain；L10 Recap/Replan；Readiness/PITR/SLO/Security/Capacity；Operator Intervention | AC-04、05、07、08、09、13、14、15、16、18 |
+| F | 剩余 Legacy、长篇和规模证明 | Residual Legacy Retirement；L30 Arc Proof；Post-closure Readiness | AC-03、07、08、10、13、15、16、17、18、19 |
 
 ## 4. 推荐执行顺序
 
 ```text
 Track A
 → Track B
+→ D0 Real Provider Qualification Probe
 → Track C
 → Track D
 → Track E
@@ -82,6 +84,7 @@ Track A
 
 - Track A 的 Fitness Tests 和文档治理贯穿全部轨道；
 - Track B 后半段可以与 Track C 领域建模并行，但不能同时修改同一 Shared Schema；
+- D0 必须在 Track B Minimal Authority-only Runtime 可用后执行；D0 不构成小说质量证明；
 - Track D 必须等待 ContextManifest、StoryState 和 Asset Commit 契约稳定；
 - Track F 可提前建立 Legacy Inventory，但正式 Writer 切换必须等待对应纵向 Slice 通过。
 
@@ -116,6 +119,19 @@ typed_asset_lifecycle_proven=true
 execution_classification_enforced=true
 authority_only_minimal_slice_proven=true
 production_legacy_write_blocked=true
+duplicate_replay_proven=true
+query_projection_proven=true
+```
+
+### D0
+
+```text
+real_provider_auth_proven=true
+provider_request_receipt_proven=true
+provider_usage_proven=true
+provider_cost_proven=true
+provider_timeout_query_cancel_behavior_recorded=true
+unknown_reconciliation_proven=true
 ```
 
 ### Track C
@@ -145,7 +161,7 @@ production_quality_eval_separation_proven=true
 book_coordinator_l3_proven=true
 book_coordinator_l10_proven=true
 recap_replan_loop_proven=true
-authority_only_runtime_verified=true
+production_runtime_hardening_verified=true
 restart_recovery_proven=true
 operator_intervention_flow_proven=true
 ```
@@ -192,6 +208,7 @@ architecture_closure_gate_passed=true
 - [AC-12 Provider 与外部执行](ac-12-provider-and-external-execution.md)
 - [AC-13 Quality、Eval 与 Release Gate](ac-13-quality-eval-and-release-gates.md)
 - [AC-14 Book Production Supervisor](ac-14-book-production-supervisor.md)
+- [最小稳定契约与 God Service 防线](minimal-stable-contracts.md)
 
 这些标题保留历史命名。实施时应遵循主 Epic 中的新术语：
 
@@ -215,6 +232,12 @@ entrypoint=
 authority_commit=
 query_projection=
 legacy_write_path=
+legacy_source=
+authority_target=
+import_validation=
+writer_cutover=
+reader_compatibility=
+retirement_deadline=
 provider_or_external_effect=
 usage_and_cost_evidence=
 recovery_scenarios=

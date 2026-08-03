@@ -4,6 +4,8 @@
 阶段：Phase 2 / Novel Domain Closure  
 前置依赖：AC-06、AC-07、AC-08、AC-10 的契约
 
+2026-08-03 有限修订：实现术语为 Context Compiler；它只编译领域声明的 Requirement。Cache/Dependency/Invalidation 至少使用 `context_input_hash / CompilationVersion / ContextDependency / ContextInvalidation`，详见 [`minimal-stable-contracts.md`](minimal-stable-contracts.md)。
+
 ## 1. ADR
 
 ### 背景

@@ -4,6 +4,8 @@
 阶段：Phase 4 / Autonomous Book Runtime Closure  
 前置依赖：AC-00、AC-03、AC-05、AC-12、AC-15
 
+2026-08-03 有限修订：Minimal Authority-only Runtime 前移到 Track B。本 AC 在 Track E 只负责 readiness、backup/PITR、SLO、安全、容量和运维控制台等生产硬化。
+
 ## 1. ADR
 
 ### 背景

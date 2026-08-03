@@ -87,6 +87,8 @@ class TrustedPrincipalResolver:
                     "content.authority.recover",
                     "book.authority.execute",
                     "book.authority.query",
+                    "book_design.authority.execute",
+                    "book_design.authority.query",
                     "project.authority.execute",
                     "project.authority.query",
                     "task.authority.query",
@@ -121,6 +123,7 @@ class TrustedPrincipalResolver:
                 {
                     "chapter.authority.execute",
                     "project.authority.execute",
+                    "book_design.authority.execute",
                     "content.authority.execute",
                     "mkaos.authority.execute",
                     "mkaos.authority.approve",

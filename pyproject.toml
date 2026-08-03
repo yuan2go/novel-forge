@@ -57,6 +57,10 @@ industrial-graph = [
 novel-forge = "novel_forge.cli:main"
 novel-forge-source-authority-worker = "novel_forge.workers.source_authority:cli"
 novel-forge-mkaos-authority-worker = "novel_forge.workers.mkaos_authority:cli"
+novel-forge-authority-worker = "novel_forge.workers.runtime_groups:authority_cli"
+novel-forge-execution-worker = "novel_forge.workers.runtime_groups:execution_cli"
+novel-forge-integration-worker = "novel_forge.workers.runtime_groups:integration_cli"
+novel-forge-maintenance-worker = "novel_forge.workers.runtime_groups:maintenance_cli"
 
 [tool.setuptools.packages.find]
 where = ["src"]

@@ -1,0 +1,27 @@
+{
+  "schema_version": "legacy-authority-compatibility-allowlist.v1",
+  "generated_for": "2026-08-01 authority migration slice",
+  "entries": [
+    {
+      "path": "src/novel_forge/api/app.py",
+      "scope": "development-only selector import of legacy_app",
+      "production_reachable": false,
+      "reason": "production branch fails closed before the development-only import",
+      "delete_when": "WP-12 development product routers are fully Authority-backed"
+    },
+    {
+      "path": "src/novel_forge/modules/legacy_migration/scanner.py",
+      "scope": "explicit frozen-snapshot importer",
+      "production_reachable": true,
+      "reason": "read-only migration source; output authority is PostgreSQL and failures quarantine",
+      "delete_when": "retained as audited migration tooling; never admitted as production read authority"
+    },
+    {
+      "path": "tests/**",
+      "scope": "tests and fixtures",
+      "production_reachable": false,
+      "reason": "verification-only filesystem use",
+      "delete_when": "not applicable"
+    }
+  ]
+}

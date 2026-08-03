@@ -218,9 +218,13 @@ def reserve_blob(
     expected_hash: str,
     expected_size: int,
     media_type: str,
+    retention_class: str = "STANDARD",
+    encryption_metadata: dict[str, Any] | None = None,
 ) -> str:
     if not all((provider, object_key, expected_hash, media_type)) or expected_size < 0:
         raise KernelError("COMMAND_SCHEMA_INVALID", "blob reservation is incomplete")
+    if retention_class not in {"EPHEMERAL", "STANDARD", "LONG_TERM", "LEGAL_HOLD"}:
+        raise KernelError("COMMAND_SCHEMA_INVALID", "unsupported Blob retention_class")
     blob_id = str(uuid4())
     with AuthorityUnitOfWork(database_url) as uow:
         repository = uow.repositories.asset_blobs
@@ -234,6 +238,8 @@ def reserve_blob(
                 "expected_hash": expected_hash,
                 "expected_size": expected_size,
                 "media_type": media_type,
+                "retention_class": retention_class,
+                "encryption_metadata": dict(encryption_metadata or {}),
             }
         )
         _record(
@@ -242,7 +248,12 @@ def reserve_blob(
             "authority_blob",
             blob_id,
             "blob.reserved",
-            {"provider": provider, "object_key": object_key},
+            {
+                "provider": provider,
+                "object_key": object_key,
+                "retention_class": retention_class,
+                "encryption_metadata": dict(encryption_metadata or {}),
+            },
         )
         uow.commit()
     return blob_id

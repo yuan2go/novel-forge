@@ -4,6 +4,8 @@
 阶段：Phase 3 / Intelligence and Decision Closure  
 前置依赖：AC-05、AC-09
 
+2026-08-03 有限修订：在 Track B Minimal Authority-only Runtime 与 Track C 之间增加 D0 Real Provider Qualification Probe；D0 只证明控制面行为，不构成章节或小说质量证明，缺凭据时 Gate 保持 false。
+
 ## 1. ADR
 
 ### 背景

@@ -34,6 +34,9 @@ jobs:
         run: |
           make head-integrity-check
           make authority-parity-check
+          make architecture-manifests-check
+          make architecture-fitness-check
+          make authority-only-config-check
           python -m unittest discover -s tests/architecture -p 'test_*.py'
       - name: Static validation
         run: |
@@ -125,6 +128,7 @@ jobs:
       - name: Mock-only provider control proofs
         run: |
           python -m unittest tests.unit.test_provider_adapter_v2
+          python -m unittest tests.unit.test_d0_provider_qualification
           python -m unittest tests.unit.test_chapter_authority_dependencies
           python -m unittest tests.unit.test_creative_generator_boundary
 

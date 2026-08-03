@@ -1,0 +1,13 @@
+{
+  "schema_version": "d0-provider-probe-config.v1",
+  "provider": "openai",
+  "backend_id": "openai-responses-api",
+  "model_env": "NOVEL_FORGE_D0_MODEL",
+  "model_version_env": "NOVEL_FORGE_D0_MODEL_VERSION",
+  "route_policy_version": "d0-route-policy.v1",
+  "timeout_seconds": 30,
+  "auth_secret_ref": "env://OPENAI_API_KEY",
+  "capability": "structured.echo",
+  "prompt_version": "d0-structured-echo.v1",
+  "skill_version": "provider-runtime-policy@v1"
+}

@@ -4,6 +4,8 @@
 阶段：Phase 5 / Migration and Proof  
 前置依赖：AC-03 至 AC-16
 
+2026-08-03 有限修订：关键 Legacy Writer 切换是每条纵向 Slice 的 Gate 项；Track F 仅清理剩余非关键 Legacy。每条 Slice 必须记录 source、target、import、validation、cutover、reader compatibility 和 retirement deadline。
+
 ## 1. ADR
 
 ### 背景

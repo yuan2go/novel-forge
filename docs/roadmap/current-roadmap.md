@@ -21,6 +21,7 @@ Required order:
 ```text
 Track A — Trusted Baseline And Governance
 → Track B — Shared Authority Kernel And Storage
+→ D0 — Real Provider Qualification Probe
 → Track C — Novel Domain And Context
 → Track D — Intelligence, Execution And Quality
 → Track E — Autonomous Book Runtime And Operations
@@ -250,6 +251,21 @@ Prove:
 - connection pooling and timeouts;
 - dependency-aware readiness.
 
+### Slice B5 — Minimal Authority-only Runtime And Slice Cutover
+
+Run before Track C:
+
+```text
+Authority API + Authority Worker
++ PostgreSQL Authority + Object Store
++ transactional Outbox + Reconciliation
++ no Legacy write + no silent fallback
+```
+
+PostgreSQL owns Task/State; Outbox is the reliable notification source; Queue/Celery/Redis is delivery only. Worker groups are `authority`、`execution`、`integration` and `maintenance` rather than one process per domain.
+
+Every B Slice records `legacy_source / authority_target / import / validation / writer_cutover / reader_compatibility / retirement_deadline`. Critical Writer cutover is part of the Slice, not deferred to Track F.
+
 Track B Gate:
 
 ```text
@@ -258,6 +274,23 @@ typed_asset_lifecycle_proven=true
 execution_classification_enforced=true
 authority_only_minimal_slice_proven=true
 production_legacy_write_blocked=true
+duplicate_replay_proven=true
+query_projection_proven=true
+```
+
+## 4A. D0 — Real Provider Qualification Probe
+
+D0 starts only after the Track B minimal runtime is usable and precedes Track C implementation. It uses one explicit Provider, model and structured capability to record auth, request identity, timeout, retrieve/query, cancel, usage, cost, receipt, UNKNOWN reconciliation, late result and restart recovery. It is not chapter or fiction-quality proof.
+
+Missing credentials produce `BLOCKED_MISSING_CREDENTIALS`; fixture conformance cannot turn any real-provider Gate true.
+
+```text
+real_provider_auth_proven=true|false
+provider_request_receipt_proven=true|false
+provider_usage_proven=true|false
+provider_cost_proven=true|false
+provider_timeout_query_cancel_behavior_recorded=true|false
+unknown_reconciliation_proven=true|false
 ```
 
 ## 5. Track C — Novel Domain And Context
@@ -478,18 +511,9 @@ Add:
 - Book/Chapter budget caps;
 - human InterventionTask.
 
-### Slice E3 — Authority-only Runtime
+### Slice E3 — Production Runtime Hardening
 
-Initial worker grouping:
-
-```text
-authority-worker
-execution-worker
-integration-worker
-maintenance-worker
-```
-
-Required operations proof:
+Track B already owns the minimal Authority-only runtime. Track E adds only production hardening:
 
 - migration-aware readiness;
 - worker heartbeat;
@@ -506,16 +530,16 @@ Track E Gate:
 book_coordinator_l3_proven=true
 book_coordinator_l10_proven=true
 recap_replan_loop_proven=true
-authority_only_runtime_verified=true
+production_runtime_hardening_verified=true
 restart_recovery_proven=true
 operator_intervention_flow_proven=true
 ```
 
 ## 8. Track F — Migration, Long-form And Scale Proof
 
-### Slice F1 — Critical Legacy Writer Retirement
+### Slice F1 — Residual Legacy Retirement
 
-Migrate by business chain:
+Critical-path Writer cutover belongs to each earlier vertical Slice. Track F retires remaining non-critical Legacy readers, expired compatibility paths and observed archives by business chain:
 
 ```text
 Project/Book

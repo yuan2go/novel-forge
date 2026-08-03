@@ -11,7 +11,12 @@ from .contracts import (
 )
 from .scripted import ScriptedProviderAdapterV2
 from .compatibility import LegacyProviderCompatibilityAdapter
-from .openai_v2 import OpenAIProviderAdapterV2, OpenAISdkTransport, OpenAITransportV2
+from .openai_v2 import (
+    OpenAIProviderAdapterV2,
+    OpenAISdkTransport,
+    OpenAITransportV2,
+    build_openai_d0_adapter,
+)
 from .registry import (
     ChapterProviderV2Gateway,
     ChapterProviderV2Route,
@@ -37,6 +42,7 @@ __all__ = [
     "OpenAIProviderAdapterV2",
     "OpenAISdkTransport",
     "OpenAITransportV2",
+    "build_openai_d0_adapter",
     "ChapterProviderV2Gateway",
     "ChapterProviderV2Route",
     "ProviderAdapterFactory",

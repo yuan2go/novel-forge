@@ -50,9 +50,16 @@ Track F — Migration, Long-form And Scale Proof
 - Book Production Coordinator 只协调 Root Saga 和 Cursor，不直接生成或修改领域状态；
 - Production Quality Gate 与 Evaluation And Calibration Lab 分离；
 - Legacy 迁移通过纵向业务链逐波完成，不维持长期双写；
+- Policy Registry 只管理共同生命周期，不解释全部领域规则；
+- Asset Registry 只管理共同元数据，不替代强类型领域 Schema；
+- Book Coordinator 只维护 Root Saga、Cursor 和子 Operation；
+- Agent Center 不重新实现 Workflow、Scheduler、Provider 或 Commit；
+- Production Quality Gate 与 Evaluation And Calibration Lab 使用显式 Judge 晋升边界；
 - 每个关键架构决策都有 Architecture Fitness Test 保护。
 
 架构闭合后的判断标准是：新增 Provider、Agent、质量评估、规划节点、发布平台或多书调度时，不需要重构 Authority、Execution、AssetVersion、StoryState、Context 和 Commit 边界。
+
+八项最小稳定契约及 God Service 防线见 [`minimal-stable-contracts.md`](minimal-stable-contracts.md)。
 
 ## 3. 非目标
 
@@ -307,6 +314,27 @@ Command Kernel 统一处理：
 - Budget Reservation、Actual Usage 和 Cost Ledger；
 - connection pool、timeout 和 readiness 约束。
 
+Object Store 的最小生命周期必须包含 `content_hash`、`object_ref`、`content_type`、`size`、`retention_class`、`encryption_metadata`、Orphan Detection 和通过 External Effect 执行的 GC；扫描器不得直接物理删除对象。
+
+#### Slice B5：Minimal Authority-only Runtime
+
+在进入小说领域建模前，先运行最小生产组合：
+
+```text
+Authority API
+Authority Worker
+PostgreSQL Authority
+Object Store
+Transactional Outbox
+Reconciliation
+Legacy write disabled
+Silent fallback disabled
+```
+
+初始 Worker 按执行性质分为 `authority-worker`、`execution-worker`、`integration-worker`、`maintenance-worker`，不按领域无限拆进程。权威关系固定为：PostgreSQL 保存 Task/State Authority，Outbox 是可靠通知源，Queue/Celery/Redis 仅负责投递，Worker 是获得 Lease/Fence 后回读 Authority 的消费者。
+
+每个 Track B Slice 同时完成 Legacy Cutover 记录：`legacy_source`、`authority_target`、`import`、`validation`、`writer_cutover`、`reader_compatibility`、`retirement_deadline`。不得把关键 Writer 切换推迟到 Track F。
+
 **Track B Gate：**
 
 ```text
@@ -315,6 +343,36 @@ typed_asset_lifecycle_proven=true
 execution_classification_enforced=true
 authority_only_minimal_slice_proven=true
 production_legacy_write_blocked=true
+duplicate_replay_proven=true
+query_projection_proven=true
+```
+
+---
+
+### D0 — Real Provider Qualification Probe
+
+D0 位于 `Track B → D0 → Track C`。它只验证一个 Provider、一个显式配置的模型和一个最小结构化能力：
+
+```text
+Qualified Capability Command
+→ RouteSnapshot
+→ External Effect
+→ authentication/request id/timeout
+→ Provider Receipt + usage + cost
+→ retrieve/query + cancel
+→ UNKNOWN reconciliation + late result
+→ restart recovery
+```
+
+D0 必须保存 Provider request identity、backend/model/version、route policy、timeout、能力声明、raw/normalized usage、Provider/calculated cost、Receipt 和 request/response Object Reference。D0 不是小说质量或章节证明；缺少凭据时只允许 `BLOCKED_MISSING_CREDENTIALS`，Fixture Gate 必须保持 false。
+
+```text
+real_provider_auth_proven=true|false
+provider_request_receipt_proven=true|false
+provider_usage_proven=true|false
+provider_cost_proven=true|false
+provider_timeout_query_cancel_behavior_recorded=true|false
+unknown_reconciliation_proven=true|false
 ```
 
 ---
@@ -388,6 +446,8 @@ Domain Context Requirement
 
 Context Compiler 不拥有领域业务规则；各领域声明需要什么，Compiler 负责编译、预算、隔离和留证。
 
+Cache 与失效键至少固定 `context_input_hash`、`CompilationVersion`、`ContextDependency` 和 `ContextInvalidation`。依赖版本变化时保留历史 `ActualSentContext`，并使受影响的新编译失效，禁止原地改写已发送上下文。
+
 #### Slice C4：Plan Change And Historical Freeze
 
 ```text
@@ -402,6 +462,8 @@ Deviation
 ```
 
 Final Release 历史不可静默重写；历史修改必须走 Retcon/Correction Operation。
+
+StoryState Correction 至少区分 `effective_from_chapter`、`effective_to_chapter`、`recorded_at`、`superseded_by` 和 `correction_reason`；当前阶段不要求完整双时态数据库。
 
 **Track C Gate：**
 
@@ -496,6 +558,14 @@ Agent 不得修改正式资产、计划、Canon、StoryState、Cursor 或发布�
 
 未校准结果只能声明 Raw Score、Ordinal Band 或 Pairwise Preference，不能声明商业概率。
 
+JudgeProfile 的统一晋升生命周期为：
+
+```text
+DRAFT → BENCHMARKED → CALIBRATED → APPROVED → ACTIVE → SUSPENDED → RETIRED
+```
+
+Production Quality Gate 只能使用已批准并激活的 JudgeProfile；Eval Lab 只能产出实验和晋升证据，不能直接改写生产 Gate。
+
 **Track D Gate：**
 
 ```text
@@ -559,18 +629,9 @@ Active BookDesign/Plan
 - Context growth；
 - Book/Chapter budget cap。
 
-#### Slice E3：Authority-only Runtime And Operator Control
+#### Slice E3：Production Runtime Hardening And Operator Control
 
-部署单元初期按执行性质分组，而不是每个领域一个 Worker：
-
-```text
-authority-worker
-execution-worker
-integration-worker
-maintenance-worker
-```
-
-必须具备：
+Track B 已提供 Minimal Authority-only Runtime；Track E 只增加生产部署硬化：
 
 - dependency-aware readiness；
 - migration compatibility；
@@ -583,13 +644,17 @@ maintenance-worker
 - InterventionTask 和 BlockedReason；
 - backup/PITR/restore rehearsal。
 
+统一 Human Intervention 使用 `InterventionRequest / BlockedReason / RequiredEvidence / AllowedAction / AssignedRole / Decision / ResumeToken / AuditTrail`，各领域不得发明不兼容的审批字段。
+
+Book 终局必须由 `BookCompletionContract` 决定，至少验证 Ending、主冲突、人物弧、Reader Promise、必须伏笔、Blocking Issue、Canon 冲突、Final Volume Gate 和 Release Package。Coordinator 只等待该决策。
+
 **Track E Gate：**
 
 ```text
 book_coordinator_l3_proven=true
 book_coordinator_l10_proven=true
 recap_replan_loop_proven=true
-authority_only_runtime_verified=true
+production_runtime_hardening_verified=true
 restart_recovery_proven=true
 operator_intervention_flow_proven=true
 ```
@@ -602,9 +667,9 @@ operator_intervention_flow_proven=true
 
 对应 AC 参考：AC-03、AC-07、AC-08、AC-10、AC-13、AC-15、AC-16、AC-17、AC-18、AC-19。
 
-#### Slice F1：Critical-path Legacy Retirement
+#### Slice F1：Residual Legacy Retirement
 
-按业务链迁移，而不是按表或模块横向迁移：
+关键 Writer 已在各前序纵向 Slice 内完成切换。Track F 只清理剩余非关键 Legacy、过期兼容 Reader 和已观察完成的归档路径；仍按业务链而不是按表横向清理：
 
 ```text
 Project/Book
@@ -615,7 +680,7 @@ Project/Book
 → Quality/Outcome/Recap
 ```
 
-每一波执行：
+每个前序 Slice 和 Track F 清理波都执行：
 
 ```text
 Discover
@@ -624,13 +689,13 @@ Discover
 → Validate
 → Authority Import Operation
 → Verify
-→ Freeze Legacy Writer
+→ Cut Over And Disable Legacy Writer
 → Observe
 → Delete Writer
 → Archive or delete Reader
 ```
 
-禁止长期双写。LocalStorage 可保留导入暂存、开发 Fixture、可重建缓存和临时导出。
+禁止长期双写。LocalStorage 可保留导入暂存、开发 Fixture、可重建缓存和临时导出，但不再是正式 Writer。
 
 #### Slice F2：L30 Arc Proof
 

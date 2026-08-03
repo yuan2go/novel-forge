@@ -22,6 +22,10 @@ from novel_forge.modules.book_authority.production import (
     ChapterAuthorityCommandAdapter,
     PostgresBookAuthority,
 )
+from novel_forge.modules.book_design_authority import (
+    BookDesignAuthorityApplication,
+    BookDesignAuthorityQuery,
+)
 from novel_forge.modules.book_followup_authority.application import (
     BookFollowupAuthorityApplication,
 )
@@ -104,6 +108,27 @@ def authority_release_identity(
     ):
         raise RuntimeError("NOVEL_FORGE_COMMIT_SHA must be a full 40-character hexadecimal commit id")
     return build_id, commit_sha
+
+
+def build_book_design_authority_application(
+    settings: IndustrialSettings,
+) -> BookDesignAuthorityApplication:
+    if settings.storage_authority != "postgresql" or not settings.database_url:
+        raise RuntimeError("BookDesign Authority requires PostgreSQL authority")
+    build_id, commit_sha = authority_release_identity()
+    return BookDesignAuthorityApplication(
+        settings.database_url,
+        application_build_id=build_id,
+        commit_sha=commit_sha,
+    )
+
+
+def build_book_design_authority_query(
+    settings: IndustrialSettings,
+) -> BookDesignAuthorityQuery:
+    if settings.storage_authority != "postgresql" or not settings.database_url:
+        raise RuntimeError("BookDesign Authority requires PostgreSQL authority")
+    return BookDesignAuthorityQuery(settings.database_url)
 
 
 def build_chapter_authority_application(

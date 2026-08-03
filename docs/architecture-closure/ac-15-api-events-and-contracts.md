@@ -4,6 +4,8 @@
 阶段：Phase 4 / Autonomous Book Runtime Closure  
 前置依赖：AC-02、AC-05、AC-06、AC-14
 
+2026-08-03 有限修订：跨领域读取必须通过 Query Port、Projection 或 Snapshot Contract；PostgreSQL 是 Task/State Authority，Outbox 是可靠通知源，Queue/Redis/Celery 只负责投递。
+
 ## 1. ADR
 
 ### 背景

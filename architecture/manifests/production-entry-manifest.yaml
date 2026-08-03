@@ -1,0 +1,17 @@
+{
+  "schema_version": "architecture-manifest.v1",
+  "entries": [
+    {"name": "project_lifecycle.create", "source": "src/novel_forge/api/routers/authority_projects.py", "classification": "transaction_command", "operation_definition": "project_lifecycle.create"},
+    {"name": "project_lifecycle.update", "source": "src/novel_forge/api/routers/authority_projects.py", "classification": "transaction_command", "operation_definition": "project_lifecycle.update"},
+    {"name": "book.create", "source": "src/novel_forge/api/routers/book_design_authority.py", "classification": "transaction_command", "operation_definition": "book.create"},
+    {"name": "book_design.propose", "source": "src/novel_forge/api/routers/book_design_authority.py", "classification": "transaction_command", "operation_definition": "book_design.propose"},
+    {"name": "book_design.decide", "source": "src/novel_forge/api/routers/book_design_authority.py", "classification": "transaction_command", "operation_definition": "book_design.decide"},
+    {"name": "book_design.activate", "source": "src/novel_forge/api/routers/book_design_authority.py", "classification": "transaction_command", "operation_definition": "book_design.activate"},
+    {"name": "d0.provider_qualification", "source": "scripts/run_d0_provider_probe.py", "classification": "external_effect", "operation_definition": "d0.provider_qualification"},
+    {"name": "source_document.register", "source": "src/novel_forge/api/routers/source_authority.py", "classification": "durable_job", "operation_definition": "source_document.register"},
+    {"name": "source_document.transform", "source": "src/novel_forge/api/routers/source_authority.py", "classification": "external_effect", "operation_definition": "source_document.transform"},
+    {"name": "mkaos_knowledge.import", "source": "src/novel_forge/api/routers/mkaos_authority.py", "classification": "durable_job", "operation_definition": "mkaos_knowledge.import"},
+    {"name": "chapter.produce", "source": "src/novel_forge/api/routers/chapter_authority.py", "classification": "saga", "operation_definition": "chapter.produce"},
+    {"name": "book.produce", "source": "src/novel_forge/api/routers/book_authority.py", "classification": "saga", "operation_definition": "book.produce"}
+  ]
+}

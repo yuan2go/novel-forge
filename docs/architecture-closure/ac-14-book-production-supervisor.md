@@ -4,6 +4,8 @@
 阶段：Phase 4 / Autonomous Book Runtime Closure  
 前置依赖：AC-05 至 AC-13
 
+2026-08-03 有限修订：实施术语为 Book Production Coordinator。它只拥有 Root Saga、Cursor、阻塞状态和子 Operation 引用；终局由 [`BookCompletionContract`](minimal-stable-contracts.md#2-bookcompletioncontract) 决定。
+
 ## 1. ADR
 
 ### 背景

@@ -4,7 +4,7 @@ WEB_DIR ?= web/admin
 LOCAL_WORKSPACE ?= .local/workspace
 DEMO_WORKSPACE ?= .local/demo-workspace
 
-.PHONY: test lint validate demo local-workspace infra-up infra-down postgres-authority-test-up postgres-authority-test-down postgres-authority-test online-backends-up online-backends-smoke local-up local-down local-smoke local-logs failure-drill v1-slow-acceptance governance-dead-letter-regression runtime-growth-regression source-governance-regression api worker web-dev sync-skills sync-skills-dry-run check-skills authority-parity-check head-integrity-check help
+.PHONY: test lint validate demo local-workspace infra-up infra-down postgres-authority-test-up postgres-authority-test-down postgres-authority-test online-backends-up online-backends-smoke local-up local-down local-smoke local-logs failure-drill v1-slow-acceptance governance-dead-letter-regression runtime-growth-regression source-governance-regression api worker web-dev sync-skills sync-skills-dry-run check-skills authority-parity-check head-integrity-check architecture-manifests-check architecture-fitness-check authority-only-config-check d0-provider-probe help
 
 help:
 	@echo "make test      - run stdlib unittest suite"
@@ -33,6 +33,10 @@ help:
 	@echo "make sync-skills - sync repository skills to .claude/skills"
 	@echo "make check-skills - fail if .claude/skills drifts from repository skills"
 	@echo "make head-integrity-check - fail on untracked or dangling runtime wiring"
+	@echo "make architecture-manifests-check - verify module/migration/worker/test/console manifests"
+	@echo "make architecture-fitness-check - enforce import, Legacy, Schema and entry classifications"
+	@echo "make authority-only-config-check - validate the Track B production composition"
+	@echo "make d0-provider-probe - run the fail-closed D0 Provider qualification probe"
 
 test:
 	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m unittest discover -s tests -p 'test_*.py'
@@ -133,6 +137,22 @@ check-skills:
 
 head-integrity-check:
 	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m novel_forge.tools.head_integrity --repo-root .
+
+architecture-manifests-check:
+	PYTHONPATH=$(PYTHONPATH) $(PYTHON) scripts/check_module_manifest.py
+	PYTHONPATH=$(PYTHONPATH) $(PYTHON) scripts/check_migration_manifest.py
+	PYTHONPATH=$(PYTHONPATH) $(PYTHON) scripts/check_worker_manifest.py
+	PYTHONPATH=$(PYTHONPATH) $(PYTHON) scripts/check_required_test_manifest.py
+	PYTHONPATH=$(PYTHONPATH) $(PYTHON) scripts/check_console_script_manifest.py
+
+architecture-fitness-check:
+	PYTHONPATH=$(PYTHONPATH) $(PYTHON) scripts/check_architecture_fitness.py
+
+authority-only-config-check:
+	docker compose -f compose.authority-only.yml config --quiet
+
+d0-provider-probe:
+	PYTHONPATH=$(PYTHONPATH) $(PYTHON) scripts/run_d0_provider_probe.py
 
 authority-parity-check: head-integrity-check
 	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m novel_forge.tools.authority_parity_manifest --repo-root .

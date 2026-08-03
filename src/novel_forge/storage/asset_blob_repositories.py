@@ -187,18 +187,25 @@ class AssetBlobRepository:
         )
 
     def reserve_blob(self, row: dict[str, Any]) -> None:
+        parameters = {
+            **row,
+            "retention_class": str(row.get("retention_class") or "STANDARD"),
+            "encryption_metadata": Jsonb(dict(row.get("encryption_metadata") or {})),
+        }
         self.cursor.execute(
             """
             INSERT INTO authority_blob (
                 blob_id, project_id, provider, object_key, expected_hash,
-                expected_size, media_type, status
+                expected_size, media_type, status, retention_class,
+                encryption_metadata
             )
             VALUES (
                 %(blob_id)s, %(project_id)s, %(provider)s, %(object_key)s,
-                %(expected_hash)s, %(expected_size)s, %(media_type)s, 'PENDING_UPLOAD'
+                %(expected_hash)s, %(expected_size)s, %(media_type)s, 'PENDING_UPLOAD',
+                %(retention_class)s, %(encryption_metadata)s
             )
             """,
-            row,
+            parameters,
         )
 
     def blob_for_update(self, blob_id: str) -> dict[str, Any]:
@@ -206,7 +213,9 @@ class AssetBlobRepository:
             """
             SELECT blob_id, project_id, provider, object_key, expected_hash,
                    expected_size, media_type, actual_object_key, actual_hash,
-                   actual_size, receipt_provider, status, legal_hold, upload_effect_id
+                   actual_size, receipt_provider, status, legal_hold, upload_effect_id,
+                   retention_class, encryption_metadata, retention_until,
+                   orphan_detected_at, gc_eligible_at, gc_operation_id
             FROM authority_blob
             WHERE blob_id = %s
             FOR UPDATE
@@ -231,8 +240,99 @@ class AssetBlobRepository:
             "status",
             "legal_hold",
             "upload_effect_id",
+            "retention_class",
+            "encryption_metadata",
+            "retention_until",
+            "orphan_detected_at",
+            "gc_eligible_at",
+            "gc_operation_id",
         )
         return dict(zip(fields, row, strict=True))
+
+    def detect_orphans(
+        self,
+        *,
+        project_id: str,
+        operation_id: str,
+        minimum_age_seconds: int,
+        gc_grace_seconds: int,
+    ) -> list[str]:
+        self.cursor.execute(
+            """
+            UPDATE authority_blob AS blob
+            SET orphan_detected_at = COALESCE(blob.orphan_detected_at, NOW()),
+                gc_eligible_at = COALESCE(
+                    blob.gc_eligible_at,
+                    NOW() + (%s * INTERVAL '1 second')
+                ),
+                gc_operation_id = %s
+            WHERE blob.project_id = %s
+              AND blob.status IN ('AVAILABLE', 'FAILED', 'ABANDONED', 'QUARANTINED')
+              AND blob.legal_hold = FALSE
+              AND blob.retention_class <> 'LEGAL_HOLD'
+              AND (blob.retention_until IS NULL OR blob.retention_until <= NOW())
+              AND blob.created_at <= NOW() - (%s * INTERVAL '1 second')
+              AND NOT EXISTS (
+                    SELECT 1
+                    FROM authority_asset_version_blob_reference AS reference
+                    WHERE reference.blob_id = blob.blob_id
+              )
+            RETURNING blob.blob_id
+            """,
+            [gc_grace_seconds, operation_id, project_id, minimum_age_seconds],
+        )
+        return [str(row[0]) for row in self.cursor.fetchall()]
+
+    def clear_resolved_orphans(self, *, project_id: str) -> list[str]:
+        self.cursor.execute(
+            """
+            UPDATE authority_blob AS blob
+            SET orphan_detected_at = NULL,
+                gc_eligible_at = NULL,
+                gc_operation_id = NULL
+            WHERE blob.project_id = %s
+              AND blob.orphan_detected_at IS NOT NULL
+              AND EXISTS (
+                    SELECT 1
+                    FROM authority_asset_version_blob_reference AS reference
+                    WHERE reference.blob_id = blob.blob_id
+              )
+            RETURNING blob.blob_id
+            """,
+            [project_id],
+        )
+        return [str(row[0]) for row in self.cursor.fetchall()]
+
+    def gc_candidates(self, *, project_id: str, limit: int) -> list[dict[str, Any]]:
+        self.cursor.execute(
+            """
+            SELECT blob_id, provider, object_key, expected_hash, expected_size,
+                   retention_class, orphan_detected_at, gc_eligible_at,
+                   gc_operation_id
+            FROM authority_blob AS blob
+            WHERE project_id = %s
+              AND orphan_detected_at IS NOT NULL
+              AND gc_eligible_at <= NOW()
+              AND legal_hold = FALSE
+              AND retention_class <> 'LEGAL_HOLD'
+              AND status IN ('AVAILABLE', 'FAILED', 'ABANDONED', 'QUARANTINED')
+              AND NOT EXISTS (
+                    SELECT 1
+                    FROM authority_asset_version_blob_reference AS reference
+                    WHERE reference.blob_id = blob.blob_id
+              )
+            ORDER BY gc_eligible_at, blob_id
+            LIMIT %s
+            FOR UPDATE SKIP LOCKED
+            """,
+            [project_id, limit],
+        )
+        fields = (
+            "blob_id", "provider", "object_key", "content_hash", "size",
+            "retention_class", "orphan_detected_at", "gc_eligible_at",
+            "gc_operation_id",
+        )
+        return [dict(zip(fields, row, strict=True)) for row in self.cursor.fetchall()]
 
     def attach_upload_effect(self, blob_id: str, external_effect_id: str) -> None:
         self.cursor.execute(

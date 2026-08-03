@@ -245,4 +245,28 @@ class OpenAISdkTransport:
         }
 
 
-__all__ = ["OpenAIProviderAdapterV2", "OpenAISdkTransport", "OpenAITransportV2"]
+def build_openai_d0_adapter(api_key: str) -> OpenAIProviderAdapterV2:
+    """SDK composition stays inside the controlled Provider boundary."""
+
+    if not api_key:
+        raise ValueError("OpenAI D0 adapter requires a resolved credential")
+    try:
+        from openai import OpenAI
+    except ModuleNotFoundError as exc:  # pragma: no cover - optional live boundary
+        raise RuntimeError("OpenAI D0 probe requires the optional openai SDK") from exc
+    return OpenAIProviderAdapterV2(
+        OpenAISdkTransport(OpenAI(api_key=api_key)),
+        supports_query=True,
+        supports_cancel=True,
+        supports_callback=False,
+        supports_cost_receipt=False,
+        provider_idempotency_supported=True,
+    )
+
+
+__all__ = [
+    "OpenAIProviderAdapterV2",
+    "OpenAISdkTransport",
+    "OpenAITransportV2",
+    "build_openai_d0_adapter",
+]

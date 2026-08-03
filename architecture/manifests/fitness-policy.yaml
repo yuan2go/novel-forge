@@ -1,0 +1,37 @@
+{
+  "schema_version": "architecture-manifest.v1",
+  "domain_globs": ["src/novel_forge/modules/**/domain.py"],
+  "forbidden_domain_imports": [
+    "fastapi", "novel_forge.api", "novel_forge.storage", "openai", "anthropic",
+    "httpx", "requests", "subprocess"
+  ],
+  "production_roots": [
+    "src/novel_forge/api/authority_app.py",
+    "src/novel_forge/api/authority_dependencies.py",
+    "src/novel_forge/api/routers/authority_projects.py",
+    "src/novel_forge/api/routers/authority_tasks.py",
+    "src/novel_forge/api/routers/authority_assets.py",
+    "src/novel_forge/api/routers/source_authority.py",
+    "src/novel_forge/api/routers/mkaos_authority.py",
+    "src/novel_forge/modules/project_authority",
+    "src/novel_forge/modules/task_authority",
+    "src/novel_forge/modules/source_authority",
+    "src/novel_forge/modules/mkaos_authority",
+    "src/novel_forge/modules/chapter_authority",
+    "src/novel_forge/modules/content_authority",
+    "src/novel_forge/modules/book_authority",
+    "src/novel_forge/modules/book_design_authority",
+    "src/novel_forge/modules/provider_qualification",
+    "src/novel_forge/workers/chapter_authority.py",
+    "src/novel_forge/workers/content_authority.py",
+    "src/novel_forge/workers/source_authority.py",
+    "src/novel_forge/workers/mkaos_authority.py",
+    "src/novel_forge/workers/runtime_groups.py"
+  ],
+  "forbidden_production_imports": ["novel_forge.storage.local", "novel_forge.api.legacy_app"],
+  "schema_contracts": [
+    {"path": "src/novel_forge/modules/project_authority/domain.py", "token": "project-authority.v1"},
+    {"path": "src/novel_forge/modules/book_design_authority/domain.py", "token": "book-design.v1"},
+    {"path": "src/novel_forge/modules/provider_qualification/domain.py", "token": "d0-provider-probe-report.v1"}
+  ]
+}

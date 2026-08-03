@@ -356,6 +356,26 @@ Before multi-user exposure, add tests for:
 
 Trusted server configuration alone is not a complete web authentication proof.
 
+## Runtime Growth Focused Regression
+
+Run:
+
+```bash
+make runtime-growth-regression
+```
+
+This bounded bundle verifies runtime write-growth policy, workflow governance, cockpit evidence and calibration readiness. It excludes chapter sequence acceptance and provider proof; those remain separate, slower evidence levels and must not be inferred from this bundle.
+
+## Source Governance Focused Regression
+
+Run:
+
+```bash
+make source-governance-regression
+```
+
+This read/contract-focused bundle verifies source eligibility, leakage preflight, guarded apply readiness and downstream evidence propagation. It excludes connector execution, chapter acceptance, and provider proof, so it performs no network connector or real-model side effect.
+
 ## 13. Current Verification Flags
 
 Until a new current-SHA report is published:

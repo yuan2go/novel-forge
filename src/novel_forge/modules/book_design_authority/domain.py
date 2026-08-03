@@ -1,0 +1,189 @@
+"""Strongly typed Book and BookDesign contracts for the Track B slice."""
+from __future__ import annotations
+
+from dataclasses import asdict, dataclass
+import hashlib
+import json
+from typing import Any, Mapping
+
+from novel_forge.modules.command_kernel.errors import KernelError
+
+
+BOOK_SCHEMA_VERSION = "book-authority.v1"
+BOOK_DESIGN_SCHEMA_VERSION = "book-design.v1"
+
+
+def _required_string(value: Any, field: str) -> str:
+    normalized = str(value or "").strip()
+    if not normalized:
+        raise KernelError("BOOK_DESIGN_INVALID", f"{field} is required")
+    return normalized
+
+
+def _strict_keys(payload: Mapping[str, Any], allowed: set[str], contract: str) -> None:
+    unexpected = sorted(set(payload) - allowed)
+    if unexpected:
+        raise KernelError(
+            "BOOK_DESIGN_INVALID",
+            f"{contract} contains unsupported fields: {', '.join(unexpected)}",
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class BookScope:
+    project_id: str
+    workspace_id: str
+    book_id: str
+    principal: str
+    service_identity: str
+    production_profile: dict[str, Any]
+    runtime_policy: dict[str, Any]
+    release_identity: str
+    schema_version: str = BOOK_SCHEMA_VERSION
+
+    @classmethod
+    def from_mapping(
+        cls,
+        *,
+        project_id: str,
+        workspace_id: str,
+        book_id: str,
+        principal: str,
+        service_identity: str,
+        payload: Mapping[str, Any],
+    ) -> "BookScope":
+        _strict_keys(
+            payload,
+            {"schema_version", "title", "production_profile", "runtime_policy", "release_identity"},
+            "Book",
+        )
+        schema_version = str(payload.get("schema_version") or BOOK_SCHEMA_VERSION)
+        if schema_version != BOOK_SCHEMA_VERSION:
+            raise KernelError("BOOK_SCHEMA_UNSUPPORTED", f"unsupported Book schema: {schema_version}")
+        production_profile = payload.get("production_profile")
+        runtime_policy = payload.get("runtime_policy")
+        if not isinstance(production_profile, dict) or not isinstance(runtime_policy, dict):
+            raise KernelError(
+                "BOOK_SCOPE_INVALID", "production_profile and runtime_policy must be objects"
+            )
+        for field, value in (
+            ("project_id", project_id), ("workspace_id", workspace_id),
+            ("book_id", book_id), ("principal", principal),
+            ("service_identity", service_identity),
+        ):
+            _required_string(value, field)
+        return cls(
+            project_id=project_id,
+            workspace_id=workspace_id,
+            book_id=book_id,
+            principal=principal,
+            service_identity=service_identity,
+            production_profile=dict(production_profile),
+            runtime_policy=dict(runtime_policy),
+            release_identity=_required_string(payload.get("release_identity"), "release_identity"),
+            schema_version=schema_version,
+        )
+
+    def content(self, *, title: str) -> dict[str, Any]:
+        return {**asdict(self), "title": _required_string(title, "title"), "book_scope": {
+            "project_id": self.project_id,
+            "workspace_id": self.workspace_id,
+            "book_id": self.book_id,
+        }}
+
+
+@dataclass(frozen=True, slots=True)
+class ProtagonistDesign:
+    name: str
+    external_goal: str
+    internal_need: str
+    flaw: str
+    arc: str
+
+    @classmethod
+    def from_mapping(cls, payload: Any) -> "ProtagonistDesign":
+        if not isinstance(payload, Mapping):
+            raise KernelError("BOOK_DESIGN_INVALID", "protagonist must be an object")
+        allowed = {"name", "external_goal", "internal_need", "flaw", "arc"}
+        _strict_keys(payload, allowed, "protagonist")
+        return cls(**{field: _required_string(payload.get(field), f"protagonist.{field}") for field in allowed})
+
+
+@dataclass(frozen=True, slots=True)
+class BookDesignPayload:
+    title: str
+    genre: str
+    premise: str
+    theme: str
+    core_conflict: str
+    reader_promise: str
+    ending: str
+    protagonist: ProtagonistDesign
+    world_rules: tuple[str, ...]
+    target_chapters: int
+    schema_version: str = BOOK_DESIGN_SCHEMA_VERSION
+
+    @classmethod
+    def from_mapping(cls, payload: Mapping[str, Any]) -> "BookDesignPayload":
+        if not isinstance(payload, Mapping):
+            raise KernelError("BOOK_DESIGN_INVALID", "BookDesign payload must be an object")
+        allowed = {
+            "schema_version", "title", "genre", "premise", "theme", "core_conflict",
+            "reader_promise", "ending", "protagonist", "world_rules", "target_chapters",
+        }
+        _strict_keys(payload, allowed, "BookDesign")
+        schema_version = str(payload.get("schema_version") or "")
+        if schema_version != BOOK_DESIGN_SCHEMA_VERSION:
+            raise KernelError(
+                "BOOK_DESIGN_SCHEMA_UNSUPPORTED",
+                f"BookDesign requires schema_version={BOOK_DESIGN_SCHEMA_VERSION}",
+            )
+        rules = payload.get("world_rules")
+        if not isinstance(rules, list) or not rules:
+            raise KernelError("BOOK_DESIGN_INVALID", "world_rules must be a non-empty list")
+        normalized_rules = tuple(_required_string(rule, "world_rules[]") for rule in rules)
+        if len(set(normalized_rules)) != len(normalized_rules):
+            raise KernelError("BOOK_DESIGN_INVALID", "world_rules must be unique")
+        target_chapters = payload.get("target_chapters")
+        if not isinstance(target_chapters, int) or isinstance(target_chapters, bool) or target_chapters < 3:
+            raise KernelError("BOOK_DESIGN_INVALID", "target_chapters must be an integer >= 3")
+        return cls(
+            title=_required_string(payload.get("title"), "title"),
+            genre=_required_string(payload.get("genre"), "genre"),
+            premise=_required_string(payload.get("premise"), "premise"),
+            theme=_required_string(payload.get("theme"), "theme"),
+            core_conflict=_required_string(payload.get("core_conflict"), "core_conflict"),
+            reader_promise=_required_string(payload.get("reader_promise"), "reader_promise"),
+            ending=_required_string(payload.get("ending"), "ending"),
+            protagonist=ProtagonistDesign.from_mapping(payload.get("protagonist")),
+            world_rules=normalized_rules,
+            target_chapters=target_chapters,
+            schema_version=schema_version,
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        payload = asdict(self)
+        payload["world_rules"] = list(self.world_rules)
+        return payload
+
+    @property
+    def content_hash(self) -> str:
+        encoded = json.dumps(
+            self.to_dict(), ensure_ascii=False, sort_keys=True, separators=(",", ":")
+        ).encode("utf-8")
+        return "sha256:" + hashlib.sha256(encoded).hexdigest()
+
+
+def evidence_hash(payload: Mapping[str, Any]) -> str:
+    encoded = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return "sha256:" + hashlib.sha256(encoded).hexdigest()
+
+
+__all__ = [
+    "BOOK_DESIGN_SCHEMA_VERSION",
+    "BOOK_SCHEMA_VERSION",
+    "BookDesignPayload",
+    "BookScope",
+    "ProtagonistDesign",
+    "evidence_hash",
+]

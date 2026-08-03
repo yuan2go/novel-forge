@@ -24,6 +24,9 @@ class IndustrialSettings:
     root: Path
     environment: str = "development"
     storage_authority: str = "legacy_local"
+    authority_runtime_profile: str = "full"
+    legacy_write_enabled: bool = False
+    silent_legacy_fallback_enabled: bool = False
     database_url: str = ""
     postgres_write_through: bool = True
     postgres_write_strict: bool = False
@@ -55,14 +58,26 @@ class IndustrialSettings:
     def __post_init__(self) -> None:
         environment = self.environment.strip().lower()
         authority = self.storage_authority.strip().lower()
+        runtime_profile = self.authority_runtime_profile.strip().lower()
         if environment not in {"development", "test", "production"}:
             raise ValueError("environment must be development, test, or production")
         if authority not in {"legacy_local", "postgresql"}:
             raise ValueError("storage_authority must be legacy_local or postgresql")
+        if runtime_profile not in {"full", "track-b-minimal"}:
+            raise ValueError("authority_runtime_profile must be full or track-b-minimal")
         if environment == "production" and authority != "postgresql":
             raise ValueError("production storage authority must be postgresql")
+        if runtime_profile == "track-b-minimal" and authority != "postgresql":
+            raise ValueError("track-b-minimal runtime requires postgresql authority")
+        if runtime_profile == "track-b-minimal" and (
+            self.legacy_write_enabled or self.silent_legacy_fallback_enabled
+        ):
+            raise ValueError(
+                "track-b-minimal runtime forbids legacy writes and silent fallback"
+            )
         object.__setattr__(self, "environment", environment)
         object.__setattr__(self, "storage_authority", authority)
+        object.__setattr__(self, "authority_runtime_profile", runtime_profile)
 
     @classmethod
     def from_env(
@@ -94,6 +109,23 @@ class IndustrialSettings:
             root=resolved_root,
             environment=environment,
             storage_authority=storage_authority,
+            authority_runtime_profile=_get(
+                values,
+                file_values,
+                "NOVEL_FORGE_AUTHORITY_RUNTIME_PROFILE",
+                "full",
+            ),
+            legacy_write_enabled=_env_bool(
+                _get(values, file_values, "NOVEL_FORGE_LEGACY_WRITE_ENABLED", "false")
+            ),
+            silent_legacy_fallback_enabled=_env_bool(
+                _get(
+                    values,
+                    file_values,
+                    "NOVEL_FORGE_SILENT_LEGACY_FALLBACK_ENABLED",
+                    "false",
+                )
+            ),
             database_url=_get(values, file_values, "NOVEL_FORGE_DATABASE_URL", _get(values, file_values, "DATABASE_URL", "")),
             postgres_write_through=_env_bool(
                 _get(values, file_values, "NOVEL_FORGE_POSTGRES_WRITE_THROUGH", "true"),
