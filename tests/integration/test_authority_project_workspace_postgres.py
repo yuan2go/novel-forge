@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import unittest
+from concurrent.futures import ThreadPoolExecutor
 
 from psycopg.types.json import Jsonb
 
@@ -36,7 +37,9 @@ class ProjectWorkspaceAuthorityPostgresTests(unittest.TestCase):
         self.principal = Principal(
             principal_id="project-authority-operator",
             principal_type=PrincipalType.LOCAL_OPERATOR,
-            permissions=frozenset({"project.authority.execute", "project.authority.query"}),
+            permissions=frozenset(
+                {"project.authority.execute", "project.authority.query"}
+            ),
             project_scope=frozenset({self.project_id}),
             authentication_source="integration-test",
         )
@@ -82,13 +85,10 @@ class ProjectWorkspaceAuthorityPostgresTests(unittest.TestCase):
             uow.cursor.execute(
                 """
                 SELECT COUNT(DISTINCT operation.operation_id),
-                       COUNT(DISTINCT attempt.attempt_id),
                        COUNT(DISTINCT event.event_id),
                        COUNT(DISTINCT audit.audit_id),
                        COUNT(DISTINCT outbox.outbox_id)
                 FROM authority_operation AS operation
-                JOIN authority_attempt AS attempt
-                  ON attempt.operation_id = operation.operation_id
                 JOIN state_event AS event
                   ON event.payload->>'operation_id' = operation.operation_id
                 JOIN audit_log AS audit
@@ -101,11 +101,143 @@ class ProjectWorkspaceAuthorityPostgresTests(unittest.TestCase):
                 [self.project_id],
             )
             counts = tuple(int(value) for value in uow.cursor.fetchone())
+            uow.cursor.execute(
+                """
+                SELECT COUNT(*) FROM authority_attempt
+                WHERE operation_id IN (
+                    SELECT operation_id FROM authority_operation
+                    WHERE project_id = %s
+                      AND definition_name LIKE 'project_lifecycle.%%'
+                )
+                """,
+                [self.project_id],
+            )
+            attempt_count = int(uow.cursor.fetchone()[0])
         self.assertEqual(counts[0], 3)
-        self.assertEqual(counts[1], 3)
+        self.assertEqual(attempt_count, 0)
+        self.assertGreaterEqual(counts[1], 3)
         self.assertGreaterEqual(counts[2], 3)
         self.assertGreaterEqual(counts[3], 3)
-        self.assertGreaterEqual(counts[4], 3)
+
+    def test_named_fault_points_are_all_or_nothing_and_response_loss_replays(
+        self,
+    ) -> None:
+        rollback_points = (
+            "before_admission",
+            "after_admission",
+            "after_domain_validation",
+            "after_asset_version_insert",
+            "after_business_projection_update",
+            "after_outbox_insert",
+            "before_operation_completion",
+        )
+        for point in rollback_points:
+            with self.subTest(point=point):
+                project_id = identifier(f"atomic-{point}")
+                workspace_id = identifier(f"workspace-{point}")
+
+                def inject(checkpoint: str, *, target: str = point) -> None:
+                    if checkpoint == target:
+                        raise RuntimeError(f"fault:{target}")
+
+                application = ProjectAuthorityApplication(
+                    DATABASE_URL,
+                    application_build_id="project-atomicity-integration",
+                    commit_sha="c" * 40,
+                    fault_injector=inject,
+                )
+                command = self._create_command(project_id, workspace_id)
+                with self.assertRaisesRegex(RuntimeError, f"fault:{point}"):
+                    application.execute(command)
+                self._assert_command_counts(
+                    project_id, command.idempotency_key, (0,) * 7
+                )
+
+        project_id = identifier("response-loss")
+        workspace_id = identifier("response-loss-workspace")
+
+        def lose_response(checkpoint: str) -> None:
+            if checkpoint == "after_operation_completion_before_response":
+                raise RuntimeError("fault:response-loss")
+
+        command = self._create_command(project_id, workspace_id)
+        with self.assertRaisesRegex(RuntimeError, "response-loss"):
+            ProjectAuthorityApplication(
+                DATABASE_URL,
+                application_build_id="project-atomicity-integration",
+                commit_sha="c" * 40,
+                fault_injector=lose_response,
+            ).execute(command)
+        replay = ProjectAuthorityApplication(
+            DATABASE_URL,
+            application_build_id="project-atomicity-integration",
+            commit_sha="c" * 40,
+        ).execute(command)
+        self.assertTrue(replay["replayed"])
+        self.assertEqual(replay["status"], "SUCCEEDED")
+        counts = self._command_counts(project_id, command.idempotency_key)
+        self.assertEqual(counts[:3], (1, 0, 1))
+        self.assertTrue(all(value >= 1 for value in counts[3:]))
+
+    def test_concurrent_duplicate_command_commits_once_without_attempts(self) -> None:
+        project_id = identifier("concurrent-project")
+        workspace_id = identifier("concurrent-workspace")
+        command = self._create_command(project_id, workspace_id)
+
+        def execute() -> dict:
+            return ProjectAuthorityApplication(
+                DATABASE_URL,
+                application_build_id="project-concurrency-integration",
+                commit_sha="d" * 40,
+            ).execute(command)
+
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            results = list(pool.map(lambda _index: execute(), range(2)))
+        self.assertEqual(len({row["operation_id"] for row in results}), 1)
+        self.assertEqual(sum(bool(row["replayed"]) for row in results), 1)
+        counts = self._command_counts(project_id, command.idempotency_key)
+        self.assertEqual(counts[:3], (1, 0, 1))
+
+    @staticmethod
+    def _create_command(project_id: str, workspace_id: str) -> ProjectAuthorityCommand:
+        return ProjectAuthorityCommand(
+            definition_name="project_lifecycle.create",
+            project_id=project_id,
+            workspace_id=workspace_id,
+            actor_id="project-authority-operator",
+            idempotency_key=f"create:{project_id}",
+            trace_id=f"trace:{project_id}",
+            correlation_id=f"correlation:{project_id}",
+            payload={"title": "Atomic Project", "stage": "DESIGN"},
+        )
+
+    @staticmethod
+    def _command_counts(project_id: str, idempotency_key: str) -> tuple[int, ...]:
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            counts: list[int] = []
+            queries = (
+                "SELECT COUNT(*) FROM authority_operation WHERE project_id = %s AND idempotency_key = %s",
+                "SELECT COUNT(*) FROM authority_attempt WHERE operation_id IN (SELECT operation_id FROM authority_operation WHERE project_id = %s AND idempotency_key = %s)",
+                "SELECT COUNT(*) FROM authority_project WHERE project_id = %s AND EXISTS (SELECT 1 FROM authority_operation WHERE project_id = %s AND idempotency_key = %s)",
+                "SELECT COUNT(*) FROM authority_asset_version WHERE asset_id IN (SELECT asset_id FROM authority_asset WHERE project_id = %s) AND EXISTS (SELECT 1 FROM authority_operation WHERE project_id = %s AND idempotency_key = %s)",
+                "SELECT COUNT(*) FROM state_event WHERE project_id = %s AND EXISTS (SELECT 1 FROM authority_operation WHERE project_id = %s AND idempotency_key = %s)",
+                "SELECT COUNT(*) FROM audit_log WHERE project_id = %s AND EXISTS (SELECT 1 FROM authority_operation WHERE project_id = %s AND idempotency_key = %s)",
+                "SELECT COUNT(*) FROM outbox_event WHERE project_id = %s AND EXISTS (SELECT 1 FROM authority_operation WHERE project_id = %s AND idempotency_key = %s)",
+            )
+            for index, query in enumerate(queries):
+                parameters = (
+                    [project_id, idempotency_key]
+                    if index < 2
+                    else [project_id, project_id, idempotency_key]
+                )
+                uow.cursor.execute(query, parameters)
+                counts.append(int(uow.cursor.fetchone()[0]))
+        return tuple(counts)
+
+    def _assert_command_counts(
+        self, project_id: str, idempotency_key: str, expected: tuple[int, ...]
+    ) -> None:
+        self.assertEqual(self._command_counts(project_id, idempotency_key), expected)
 
     def test_stale_version_and_path_identity_fail_closed(self) -> None:
         self._execute(
@@ -131,7 +263,9 @@ class ProjectWorkspaceAuthorityPostgresTests(unittest.TestCase):
                 expected_asset_version_id=current["asset_version_id"],
             )
 
-    def test_binding_assign_replay_remove_and_scope_use_versioned_decisions(self) -> None:
+    def test_binding_assign_replay_remove_and_scope_use_versioned_decisions(
+        self,
+    ) -> None:
         self._execute(
             "project_lifecycle.create",
             payload={"title": "Binding Authority Project"},

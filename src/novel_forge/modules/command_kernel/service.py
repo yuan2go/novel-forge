@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import dataclass
+from collections.abc import Callable
 from typing import Any
 from uuid import uuid4
 
@@ -18,6 +19,132 @@ class AdmissionContext:
     available_handlers: frozenset[str]
     application_build_id: str
     commit_sha: str
+
+
+TransactionCheckpoint = Callable[[str], None]
+TransactionHandler = Callable[
+    [AuthorityUnitOfWork, str, TransactionCheckpoint], dict[str, Any]
+]
+
+
+def execute_transaction_command(
+    database_url: str,
+    command: dict[str, Any],
+    *,
+    context: AdmissionContext,
+    handler: TransactionHandler,
+    fault_injector: TransactionCheckpoint | None = None,
+) -> dict[str, Any]:
+    """Execute a short, deterministic command in one PostgreSQL transaction.
+
+    Transaction commands never create Attempts or Leases. Admission, business
+    state, completion evidence, the replay result, and the terminal Operation
+    transition are committed together. The one post-commit checkpoint models a
+    lost HTTP response and is intentionally outside the transaction.
+    """
+
+    checkpoint = fault_injector or _noop_checkpoint
+    checkpoint("before_admission")
+    with AuthorityUnitOfWork(database_url) as uow:
+        admitted = admit_command_in_uow(uow, command, context=context)
+        operation_id = str(admitted["operation_id"])
+        if admitted["replayed"]:
+            replay = uow.repositories.operations.transaction_result(
+                operation_id,
+                str(command["project_id"]),
+            )
+            if replay["status"] != "SUCCEEDED":
+                raise KernelError(
+                    "TRANSACTION_COMMAND_INCOMPLETE",
+                    "a persisted transaction command is not terminal; legacy hybrid recovery is required",
+                )
+            return {
+                "operation_id": operation_id,
+                "status": "SUCCEEDED",
+                **dict(replay["result"]),
+                "replayed": True,
+            }
+
+        checkpoint("after_admission")
+        definition = uow.repositories.definitions.get(
+            str(command["definition_name"]),
+            str(command["definition_version"]),
+        )
+        if definition is None:  # admission already proves this; fail closed on drift
+            raise KernelError(
+                "OPERATION_DEFINITION_NOT_FOUND",
+                "transaction command definition disappeared during execution",
+            )
+        if (
+            definition["execution_mode"] != "transactional"
+            or definition["policy"].get("execution_classification")
+            != "transaction_command"
+        ):
+            raise KernelError(
+                "EXECUTION_CLASSIFICATION_CONFLICT",
+                "only transaction-classified definitions may execute inline atomically",
+            )
+
+        result = handler(uow, operation_id, checkpoint)
+        _validate_json_schema(definition["result_schema"], result, "result")
+
+        from novel_forge.modules.command_kernel.completion import (
+            evaluate_completion_in_uow,
+        )
+
+        operation = uow.repositories.completion_contracts.operation(
+            operation_id,
+            str(command["project_id"]),
+            lock=True,
+        )
+        completion = evaluate_completion_in_uow(uow, operation)
+        if completion["target_status"] != "SUCCEEDED":
+            raise KernelError(
+                "TRANSACTION_COMPLETION_CONTRACT_UNSATISFIED",
+                "transaction command completion contract is not satisfied: "
+                + ", ".join(completion["missing"] + completion["failed"]),
+            )
+
+        checkpoint("before_operation_completion")
+        completed = uow.repositories.operation_lifecycle.complete_transaction_command(
+            {
+                "operation_id": operation_id,
+                "project_id": str(command["project_id"]),
+                "expected_version": int(operation["version"]),
+                "result": result,
+            }
+        )
+        uow.repositories.runtime_evidence.record_operation_transition(
+            {
+                "operation_id": operation_id,
+                "project_id": str(command["project_id"]),
+                "expected_version": int(operation["version"]),
+                "expected_status": "ADMITTED",
+                "target_status": "SUCCEEDED",
+                "actor_id": context.actor_id,
+                "reason": "atomic transaction command committed",
+                "trace_id": str(command["trace_id"]),
+                "correlation_id": str(command["correlation_id"]),
+                "causation_id": str(command.get("causation_id") or ""),
+                "version": int(completed["version"]),
+                "event_id": str(uuid4()),
+                "audit_id": str(uuid4()),
+                "outbox_id": str(uuid4()),
+            }
+        )
+        uow.commit()
+
+    checkpoint("after_operation_completion_before_response")
+    return {
+        "operation_id": operation_id,
+        "status": "SUCCEEDED",
+        **result,
+        "replayed": False,
+    }
+
+
+def _noop_checkpoint(_name: str) -> None:
+    return None
 
 
 def admit_command(
@@ -198,7 +325,9 @@ def _validate_definition_and_command(
             )
 
 
-def _validate_json_schema(schema: dict[str, Any], value: Any, path: str = "input") -> None:
+def _validate_json_schema(
+    schema: dict[str, Any], value: Any, path: str = "input"
+) -> None:
     expected_type = schema.get("type")
     type_map = {
         "object": dict,

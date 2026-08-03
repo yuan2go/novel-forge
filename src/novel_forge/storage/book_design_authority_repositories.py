@@ -1,6 +1,7 @@
 """PostgreSQL write model for the Book + BookDesign Track B slice."""
 from __future__ import annotations
 
+from collections.abc import Callable
 from datetime import date, timedelta
 from typing import Any
 from uuid import uuid4
@@ -115,6 +116,7 @@ class BookDesignAuthorityRepository:
         design: BookDesignPayload,
         operation_id: str,
         trace_id: str,
+        checkpoint: Callable[[str], None],
     ) -> dict[str, str]:
         asset_id = f"book-design:{book['book_id']}"
         self.cursor.execute(
@@ -146,6 +148,7 @@ class BookDesignAuthorityRepository:
             """,
             [asset_version_id, asset_id, version_number, Jsonb(content), design.content_hash, design.schema_version],
         )
+        checkpoint("after_asset_version_insert")
         validation = {
             "schema_version": "book-design-validation.v1",
             "validator": "BookDesignPayload.from_mapping",

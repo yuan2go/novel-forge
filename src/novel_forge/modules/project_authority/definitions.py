@@ -4,7 +4,7 @@ from __future__ import annotations
 from typing import Any
 
 
-PROJECT_AUTHORITY_DEFINITION_VERSION = "1.0.0"
+PROJECT_AUTHORITY_DEFINITION_VERSION = "1.0.2"
 PROJECT_AUTHORITY_OPERATIONS = (
     "project_lifecycle.create",
     "project_lifecycle.update",
@@ -83,7 +83,10 @@ def project_authority_definitions(
                     "required": ["project_id", "asset_version_id"],
                     "properties": {
                         "project_id": {"type": "string"},
+                        "workspace_id": {"type": "string"},
+                        "version": {"type": "integer"},
                         "asset_version_id": {"type": "string"},
+                        "content_hash": {"type": "string"},
                     },
                     "additionalProperties": False,
                 },
@@ -91,14 +94,14 @@ def project_authority_definitions(
                 "handler_contract_version": "project-authority-handler-v1",
                 "application_build_id": application_build_id,
                 "commit_sha": commit_sha,
-                "execution_mode": "worker",
+                "execution_mode": "transactional",
                 "permissions": ["project.authority.execute"],
                 "approval_policy": {"required": False, "policy_key": "none"},
                 "idempotency_scope": "project:lifecycle",
                 "concurrency_key_template": "project:{project_id}",
-                "retry_policy": {"max_attempts": 2},
+                "retry_policy": {"max_attempts": 1, "mode": "client_replay_only"},
                 "timeout_policy": {"operation_timeout_seconds": 60},
-                "cancellation_policy": {"mode": "cancel_active_attempt"},
+                "cancellation_policy": {"mode": "not_applicable_atomic_transaction"},
                 "compensation_policy": {
                     "supported": False,
                     "reason": "append_only_project_asset_versions",
@@ -106,6 +109,7 @@ def project_authority_definitions(
                 "irreversible_effect_policy": {"allowed": False},
                 "external_capabilities": [],
                 "policy": {
+                    "execution_classification": "transaction_command",
                     "project_scope_required": True,
                     "filesystem_authority_forbidden": True,
                     "side_effects": "none",

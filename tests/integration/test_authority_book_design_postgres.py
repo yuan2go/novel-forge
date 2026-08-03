@@ -63,7 +63,10 @@ class BookDesignAuthorityPostgresTests(unittest.TestCase):
             payload={
                 "schema_version": "book-authority.v1",
                 "title": "The Glass Harbor",
-                "production_profile": {"environment": "production", "platform": "fixture"},
+                "production_profile": {
+                    "environment": "production",
+                    "platform": "fixture",
+                },
                 "runtime_policy": {"legacy_write": False, "silent_fallback": False},
                 "release_identity": "book-design-integration@" + "b" * 40,
             },
@@ -74,7 +77,10 @@ class BookDesignAuthorityPostgresTests(unittest.TestCase):
             payload={
                 "schema_version": "book-authority.v1",
                 "title": "The Glass Harbor",
-                "production_profile": {"environment": "production", "platform": "fixture"},
+                "production_profile": {
+                    "environment": "production",
+                    "platform": "fixture",
+                },
                 "runtime_policy": {"legacy_write": False, "silent_fallback": False},
                 "release_identity": "book-design-integration@" + "b" * 40,
             },
@@ -93,7 +99,10 @@ class BookDesignAuthorityPostgresTests(unittest.TestCase):
         )
         decided = self._book_command(
             "book_design.decide",
-            payload={"decision": "APPROVE", "reason": "typed contract and reader promise verified"},
+            payload={
+                "decision": "APPROVE",
+                "reason": "typed contract and reader promise verified",
+            },
             idempotency_key=f"design:approve:1:{self.book_id}",
             expected_book_version=book["version"],
             expected_design="",
@@ -111,7 +120,9 @@ class BookDesignAuthorityPostgresTests(unittest.TestCase):
         self.assertTrue(activated["activation_id"])
 
         book = self.query.require_book(project_id=self.project_id, book_id=self.book_id)
-        self.assertEqual(book["active_book_design_version_id"], first["asset_version_id"])
+        self.assertEqual(
+            book["active_book_design_version_id"], first["asset_version_id"]
+        )
         self.assertEqual(book["version"], 2)
         self.assertEqual(book["legacy_cutover"]["writer_cutover_status"], "DISABLED")
 
@@ -124,7 +135,10 @@ class BookDesignAuthorityPostgresTests(unittest.TestCase):
         )
         self._book_command(
             "book_design.decide",
-            payload={"decision": "APPROVE", "reason": "revision closes the stated thematic gap"},
+            payload={
+                "decision": "APPROVE",
+                "reason": "revision closes the stated thematic gap",
+            },
             idempotency_key=f"design:approve:2:{self.book_id}",
             expected_book_version=book["version"],
             expected_design=first["asset_version_id"],
@@ -139,17 +153,27 @@ class BookDesignAuthorityPostgresTests(unittest.TestCase):
             target_asset_version_id=second["asset_version_id"],
         )
 
-        self.assertEqual(superseded["previous_asset_version_id"], first["asset_version_id"])
-        versions = self.query.list_design_versions(project_id=self.project_id, book_id=self.book_id)
+        self.assertEqual(
+            superseded["previous_asset_version_id"], first["asset_version_id"]
+        )
+        versions = self.query.list_design_versions(
+            project_id=self.project_id, book_id=self.book_id
+        )
         self.assertEqual([item["version_number"] for item in versions], [1, 2])
         self.assertEqual(versions[0]["status"], "SUPERSEDED")
         self.assertEqual(versions[0]["lifecycle"], "SUPERSEDED")
         self.assertEqual(versions[1]["status"], "ACTIVE")
         self.assertEqual(versions[1]["lifecycle"], "ACTIVE")
-        self.assertEqual(versions[1]["payload_schema_version"], BOOK_DESIGN_SCHEMA_VERSION)
-        self.assertEqual(versions[1]["book_dependency_version_id"], created["asset_version_id"])
+        self.assertEqual(
+            versions[1]["payload_schema_version"], BOOK_DESIGN_SCHEMA_VERSION
+        )
+        self.assertEqual(
+            versions[1]["book_dependency_version_id"], created["asset_version_id"]
+        )
 
-        outbox = self.query.outbox_projection(project_id=self.project_id, book_id=self.book_id)
+        outbox = self.query.outbox_projection(
+            project_id=self.project_id, book_id=self.book_id
+        )
         topics = {item["topic"] for item in outbox}
         self.assertEqual(
             topics,
@@ -162,7 +186,9 @@ class BookDesignAuthorityPostgresTests(unittest.TestCase):
         )
         self.assertTrue(all(item["delivery_status"] == "PENDING" for item in outbox))
 
-    def test_invalid_candidate_and_stale_book_version_roll_back_business_writes(self) -> None:
+    def test_invalid_candidate_and_stale_book_version_roll_back_business_writes(
+        self,
+    ) -> None:
         self._book_command(
             "book.create",
             payload={
@@ -177,7 +203,10 @@ class BookDesignAuthorityPostgresTests(unittest.TestCase):
         with self.assertRaisesRegex(KernelError, "BOOK_DESIGN_INVALID"):
             self._book_command(
                 "book_design.propose",
-                payload={"schema_version": BOOK_DESIGN_SCHEMA_VERSION, "title": "arbitrary JSON"},
+                payload={
+                    "schema_version": BOOK_DESIGN_SCHEMA_VERSION,
+                    "title": "arbitrary JSON",
+                },
                 idempotency_key=f"design:invalid:{self.book_id}",
                 expected_book_version=1,
             )
@@ -190,7 +219,9 @@ class BookDesignAuthorityPostgresTests(unittest.TestCase):
             )
 
         self.assertEqual(
-            self.query.list_design_versions(project_id=self.project_id, book_id=self.book_id),
+            self.query.list_design_versions(
+                project_id=self.project_id, book_id=self.book_id
+            ),
             [],
         )
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
@@ -199,6 +230,56 @@ class BookDesignAuthorityPostgresTests(unittest.TestCase):
                 [self.book_id],
             )
             self.assertEqual(int(uow.cursor.fetchone()[0]), 0)
+
+    def test_crash_after_business_commit_cannot_leave_partial_command(self) -> None:
+        def fail_before_completion(checkpoint: str) -> None:
+            if checkpoint == "before_operation_completion":
+                raise RuntimeError("fault: before operation completion")
+
+        application = BookDesignAuthorityApplication(
+            DATABASE_URL,
+            application_build_id="book-design-integration",
+            commit_sha="b" * 40,
+            fault_injector=fail_before_completion,
+        )
+        command = BookDesignAuthorityCommand(
+            definition_name="book.create",
+            project_id=self.project_id,
+            workspace_id=self.workspace_id,
+            book_id=self.book_id,
+            actor_id=self.principal.principal_id,
+            service_identity="authority-api",
+            idempotency_key=f"book:crash:{self.book_id}",
+            trace_id=f"trace:{self.project_id}",
+            correlation_id=f"correlation:{self.project_id}",
+            payload={
+                "schema_version": "book-authority.v1",
+                "title": "Crash Window",
+                "production_profile": {},
+                "runtime_policy": {"legacy_write": False, "silent_fallback": False},
+                "release_identity": "book-design-integration@" + "b" * 40,
+            },
+        )
+        with self.assertRaisesRegex(RuntimeError, "before operation completion"):
+            application.execute(command, principal=self.principal)
+
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                "SELECT COUNT(*) FROM authority_book WHERE book_id = %s",
+                [self.book_id],
+            )
+            book_count = int(uow.cursor.fetchone()[0])
+            uow.cursor.execute(
+                "SELECT COUNT(*) FROM authority_operation WHERE idempotency_scope = 'book:design' AND idempotency_key = %s",
+                [command.idempotency_key],
+            )
+            operation_count = int(uow.cursor.fetchone()[0])
+            uow.cursor.execute(
+                "SELECT COUNT(*) FROM authority_attempt WHERE operation_id IN (SELECT operation_id FROM authority_operation WHERE idempotency_key = %s)",
+                [command.idempotency_key],
+            )
+            attempt_count = int(uow.cursor.fetchone()[0])
+        self.assertEqual((book_count, operation_count, attempt_count), (0, 0, 0))
 
     def _create_project(self) -> None:
         self.project_application.execute(

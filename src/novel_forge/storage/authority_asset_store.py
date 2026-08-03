@@ -263,16 +263,29 @@ class AuthorityAssetDocumentRepository:
 
     def _require_executing_operation(self, operation_id: str, project_id: str) -> None:
         self.cursor.execute(
-            "SELECT status FROM authority_operation WHERE operation_id = %s AND project_id = %s FOR UPDATE",
+            """
+            SELECT status,
+                   definition_snapshot->>'execution_mode',
+                   policy_snapshot->>'execution_classification'
+            FROM authority_operation
+            WHERE operation_id = %s AND project_id = %s
+            FOR UPDATE
+            """,
             [operation_id, project_id],
         )
         row = self.cursor.fetchone()
         if row is None:
             raise KernelError("OPERATION_NOT_FOUND", "asset output Operation does not exist")
-        if row[0] != "EXECUTING":
+        transaction_admitted = (
+            row[0] == "ADMITTED"
+            and row[1] == "transactional"
+            and row[2] == "transaction_command"
+        )
+        if row[0] != "EXECUTING" and not transaction_admitted:
             raise KernelError(
                 "OPERATION_STATUS_CONFLICT",
-                f"asset output requires EXECUTING Operation, current status {row[0]}",
+                "asset output requires EXECUTING durable work or an ADMITTED "
+                f"transaction command, current status {row[0]}",
             )
 
     def _require_project_references(self, project_id: str, asset_ids: tuple[str, ...]) -> None:

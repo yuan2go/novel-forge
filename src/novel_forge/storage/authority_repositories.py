@@ -313,6 +313,23 @@ class OperationRepository:
         )
         return self.cursor.fetchone() is not None
 
+    def transaction_result(self, operation_id: str, project_id: str) -> dict[str, Any]:
+        self.cursor.execute(
+            """
+            SELECT status, COALESCE(metadata->'transaction_result', '{}'::jsonb)
+            FROM authority_operation
+            WHERE operation_id = %s AND project_id = %s
+            """,
+            [operation_id, project_id],
+        )
+        row = self.cursor.fetchone()
+        if row is None:
+            raise KernelError(
+                "OPERATION_NOT_FOUND",
+                "transaction command Operation does not exist in the requested project",
+            )
+        return {"status": row[0], "result": dict(row[1] or {})}
+
 
 class AdmissionEvidenceRepository:
     def __init__(self, cursor: Any) -> None:
@@ -453,6 +470,42 @@ class OperationLifecycleRepository:
             "OPERATION_STATUS_CONFLICT",
             f"expected status {row['expected_status']}, current status {current[0]}",
         )
+
+    def complete_transaction_command(self, row: dict[str, Any]) -> dict[str, Any]:
+        self.cursor.execute(
+            """
+            UPDATE authority_operation
+            SET status = 'SUCCEEDED',
+                version = version + 1,
+                metadata = jsonb_set(
+                    jsonb_set(metadata, '{transaction_result}', %s, TRUE),
+                    '{execution_classification}',
+                    '"transaction_command"'::jsonb,
+                    TRUE
+                ),
+                updated_at = NOW()
+            WHERE operation_id = %s
+              AND project_id = %s
+              AND version = %s
+              AND status = 'ADMITTED'
+              AND definition_snapshot->>'execution_mode' = 'transactional'
+              AND policy_snapshot->>'execution_classification' = 'transaction_command'
+            RETURNING status, version
+            """,
+            [
+                Jsonb(row["result"]),
+                row["operation_id"],
+                row["project_id"],
+                row["expected_version"],
+            ],
+        )
+        completed = self.cursor.fetchone()
+        if completed is None:
+            raise KernelError(
+                "EXECUTION_CLASSIFICATION_CONFLICT",
+                "Operation is not an admitted transaction command at the expected version",
+            )
+        return {"status": completed[0], "version": int(completed[1])}
 
 
 class AttemptRuntimeRepository:

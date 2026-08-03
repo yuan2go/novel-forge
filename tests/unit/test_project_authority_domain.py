@@ -66,7 +66,15 @@ class ProjectAuthorityDomainTests(unittest.TestCase):
         for definition in definitions:
             with self.subTest(definition["name"]):
                 self.assertTrue(definition["enabled"])
-                self.assertEqual(definition["execution_mode"], "worker")
+                self.assertEqual(definition["execution_mode"], "transactional")
+                self.assertEqual(
+                    definition["policy"]["execution_classification"],
+                    "transaction_command",
+                )
+                self.assertEqual(
+                    definition["cancellation_policy"]["mode"],
+                    "not_applicable_atomic_transaction",
+                )
                 self.assertTrue(
                     definition["completion_contract"]["required_asset_selectors"]
                 )

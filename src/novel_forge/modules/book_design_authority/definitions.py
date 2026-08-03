@@ -4,7 +4,7 @@ from __future__ import annotations
 from typing import Any
 
 
-BOOK_DESIGN_DEFINITION_VERSION = "1.0.1"
+BOOK_DESIGN_DEFINITION_VERSION = "1.0.2"
 BOOK_DESIGN_HANDLER_KEY = "novel_forge.book_design_authority.transaction"
 BOOK_DESIGN_OPERATIONS = (
     "book.create",
@@ -87,9 +87,9 @@ def book_design_definitions(
                 # Admission exposes project/workspace at the envelope level;
                 # one workspace is authoritatively bound to one Book.
                 "concurrency_key_template": "book-workspace:{workspace_id}:design",
-                "retry_policy": {"max_attempts": 2},
+                "retry_policy": {"max_attempts": 1, "mode": "client_replay_only"},
                 "timeout_policy": {"operation_timeout_seconds": 60},
-                "cancellation_policy": {"mode": "cancel_active_attempt"},
+                "cancellation_policy": {"mode": "not_applicable_atomic_transaction"},
                 "compensation_policy": {"supported": False, "reason": "append-only versions and decisions"},
                 "irreversible_effect_policy": {"allowed": False},
                 "external_capabilities": [],
