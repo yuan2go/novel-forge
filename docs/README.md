@@ -1,22 +1,27 @@
 # Autonomous Novel OS Documentation
 
-Updated: 2026-08-02  
-Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`  
-Audited code HEAD: `aa991b53039cdf2e4e7911d4483052b9a6a752a1`
+Updated: 2026-08-03
+
+Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`
+
+Implementation evidence SHA: `ea6876476287e90a206ec4a10b2345a881f67656`
 
 This directory is the documentation entrypoint for the Autonomous Novel OS target implemented in the `novel-forge` repository.
 
 The repository/package/CLI name remains Novel Forge v6 until an explicit rename migration is approved. Authority API metadata may use a V7 Authority version, but this does not constitute a repository-wide rename.
 
-## Current Status Warning
+## Current Status
 
-The 2026-08-01 audit found a repository-integrity warning: current entrypoints and migration indexes reference new Project, Task, Source and MKAOS Authority modules, workers, migrations and tests, while some target files could not be resolved from the same exact HEAD through the repository content interface.
-
-Until a local checkout verifies the complete file set and imports, use:
+The repository-integrity warning from the 2026-08-01 remote audit is resolved at the implementation evidence SHA. Track A and the isolated Track B Book/BookDesign minimum are verified; D0 real Provider qualification is blocked by missing credentials.
 
 ```text
-head_integrity_verified=false
-current_head_build_verified=false
+head_integrity_verified=true
+current_head_import_verified=true
+migration_chain_verified=true
+current_sha_test_baseline_recorded=true
+architecture_fitness_foundation_enabled=true
+minimal_authority_only_runtime_verified=true
+
 authority_only_runtime_verified=false
 real_provider_proven=false
 longform_proven=false
@@ -24,22 +29,23 @@ multi_book_proven=false
 production_verified=false
 ```
 
-Do not use historical test counts, document completion, UI presence or Fixture proof to override these flags.
+`minimal_authority_only_runtime_verified` is deliberately narrower than full production Authority deployment. Do not use historical test counts, document completion, UI presence or Fixture proof to override the remaining false flags.
 
 ## Required Reading Order
 
 1. [`../CLAUDE.md`](../CLAUDE.md) — repository operating rules for coding agents.
 2. [`project-current-state.md`](project-current-state.md) — current implementation fact table.
 3. [`reports/current-engineering-state.md`](reports/current-engineering-state.md) — concise current engineering verdict.
-4. [`reports/2026-08-01-code-audit-and-documentation-rebaseline.md`](reports/2026-08-01-code-audit-and-documentation-rebaseline.md) — detailed code audit, risks and evidence limits.
-5. [`architecture-closure/autonomous-novel-os-architecture-closure-epic.md`](architecture-closure/autonomous-novel-os-architecture-closure-epic.md) — six-track Architecture Closure Epic.
-6. [`architecture-closure/README.md`](architecture-closure/README.md) — vertical Slice execution index and AC reference map.
-7. [`roadmap/current-roadmap.md`](roadmap/current-roadmap.md) — current six-track delivery order.
-8. [`architecture/module-map.md`](architecture/module-map.md) — current runtime and module boundaries.
-9. [`product/capability-map.md`](product/capability-map.md) — capability maturity map.
-10. [`quality/regression-tests.md`](quality/regression-tests.md) — required current-SHA verification matrix.
-11. Relevant active design/blueprint documents for the selected Slice.
-12. Historical reports only when researching lineage or a previous implementation pass.
+4. [`reports/architecture-closure-current-head-reaudit.md`](reports/architecture-closure-current-head-reaudit.md) — current code facts, conflicts and blockers.
+5. [`reports/track-a-current-sha-validation.md`](reports/track-a-current-sha-validation.md) — exact Current-SHA validation matrix.
+6. [`architecture-closure/autonomous-novel-os-architecture-closure-epic.md`](architecture-closure/autonomous-novel-os-architecture-closure-epic.md) — six-track Architecture Closure Epic.
+7. [`architecture-closure/README.md`](architecture-closure/README.md) — vertical Slice execution index and AC reference map.
+8. [`roadmap/current-roadmap.md`](roadmap/current-roadmap.md) — current six-track delivery order.
+9. [`architecture/module-map.md`](architecture/module-map.md) — current runtime and module boundaries.
+10. [`product/capability-map.md`](product/capability-map.md) — capability maturity map.
+11. [`quality/regression-tests.md`](quality/regression-tests.md) — required current-SHA verification matrix.
+12. Relevant active design/blueprint documents for the selected Slice.
+13. Historical reports only when researching lineage or a previous implementation pass.
 
 ## Next Stage Epic: Six-track Architecture Closure
 
@@ -147,7 +153,11 @@ A blueprint describes the target. A report describes its original baseline. A ro
 |---|---|---|
 | Current state | [`project-current-state.md`](project-current-state.md) | implemented, partial, unproven and blocked capabilities |
 | Current engineering verdict | [`reports/current-engineering-state.md`](reports/current-engineering-state.md) | concise state and priority summary |
-| Detailed code audit | [`reports/2026-08-01-code-audit-and-documentation-rebaseline.md`](reports/2026-08-01-code-audit-and-documentation-rebaseline.md) | code facts, runtime limits, risks and staged recommendations |
+| Current code re-audit | [`reports/architecture-closure-current-head-reaudit.md`](reports/architecture-closure-current-head-reaudit.md) | current module/entry/migration/worker/test facts, conflicts and blockers |
+| Track A validation | [`reports/track-a-current-sha-validation.md`](reports/track-a-current-sha-validation.md) | exact command/result matrix bound to the implementation evidence SHA |
+| Track B slice | [`reports/track-b-book-design-authority-slice.md`](reports/track-b-book-design-authority-slice.md) | Book/BookDesign vertical chain and minimal runtime evidence |
+| D0 probe | [`reports/d0-provider-qualification-probe.md`](reports/d0-provider-qualification-probe.md) | fixture contract evidence and real-provider blocker |
+| Historical detailed audit | [`reports/2026-08-01-code-audit-and-documentation-rebaseline.md`](reports/2026-08-01-code-audit-and-documentation-rebaseline.md) | historical code facts and the now-resolved integrity warning |
 | Next-stage Epic | [`architecture-closure/autonomous-novel-os-architecture-closure-epic.md`](architecture-closure/autonomous-novel-os-architecture-closure-epic.md) | six Tracks, vertical Slices, evidence model and final Gate |
 | Execution index | [`architecture-closure/README.md`](architecture-closure/README.md) | Track order, AC reference map, WIP and Gate Report template |
 | Current roadmap | [`roadmap/current-roadmap.md`](roadmap/current-roadmap.md) | current Track and Slice priority |
@@ -191,10 +201,11 @@ Provider control contracts
 The critical remaining proof is:
 
 ```text
-complete current HEAD
-Authority-only deployment
+D0 real Provider qualification
+production Authority deployment hardening
 real Provider single Chapter
 real usage and cost
+Admin production dependency security update
 Book Coordinator L3/L10
 Recap and replan recovery
 L30 Arc proof

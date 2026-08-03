@@ -1,7 +1,7 @@
 {
-  "artifact_hash": "sha256:bf1b93d12f3b7344147df6a1c7f72c07f100ecc47b131fb886976bc44fbbb5ea",
+  "artifact_hash": "sha256:0a4973733ea2e964be4a92d75b216a1284c798906ff45ec6fb73a562dec888ef",
   "binding_semantics": "latest-commit-affecting-src/novel_forge-plus-working-tree-hash-v1",
-  "commit_sha": "aa991b53039cdf2e4e7911d4483052b9a6a752a1",
+  "commit_sha": "ea6876476287e90a206ec4a10b2345a881f67656",
   "coverage_hash": "sha256:733e8748b655a5e902c29557d964f298d1487e20bc6a05311248de40da90a904",
   "file_count": 670,
   "finding_count": 2144,
@@ -60039,7 +60039,7 @@
       "usage_type": "authority_read"
     }
   ],
-  "generated_at": "2026-08-03T14:34:47+00:00",
+  "generated_at": "2026-08-03T14:35:56+00:00",
   "generator_version": "2.1.0",
   "quality_metrics": {
     "false_positive_sample_count": 0,
@@ -60047,7 +60047,7 @@
     "false_positive_sample_rate": 0.0,
     "false_positive_sample_size": 47
   },
-  "repository_head_at_generation": "5188e1ffb87ec4f42b9ca3e51f3a7ec17ecdf737",
+  "repository_head_at_generation": "ea6876476287e90a206ec4a10b2345a881f67656",
   "scan_rule_version": "receiver-aware-v2",
   "scan_rules": [
     "localstorage_import",

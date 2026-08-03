@@ -1,18 +1,20 @@
 # Project Current State
 
-Updated: 2026-08-01  
-Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`  
-Audited HEAD: `aa991b53039cdf2e4e7911d4483052b9a6a752a1`
+Updated: 2026-08-03
+
+Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`
+
+Implementation evidence SHA: `ea6876476287e90a206ec4a10b2345a881f67656`
 
 Autonomous Novel OS is the product target. The repository/package/CLI name remains `novel-forge` until a dedicated rename migration is approved.
 
 This document is the current implementation fact table. Blueprints describe the target; historical reports describe their original commit; neither replaces current code and HEAD-bound runtime evidence.
 
-Detailed audit: [`reports/2026-08-01-code-audit-and-documentation-rebaseline.md`](reports/2026-08-01-code-audit-and-documentation-rebaseline.md).
+Current re-audit: [`reports/architecture-closure-current-head-reaudit.md`](reports/architecture-closure-current-head-reaudit.md). Current-SHA matrix: [`reports/track-a-current-sha-validation.md`](reports/track-a-current-sha-validation.md).
 
 ## 1. Current Verdict
 
-The codebase has an advanced PostgreSQL Authority and production-control foundation. It is not yet a production-proven autonomous premium long-form novel system.
+Track A is verified and the first Track B Book/BookDesign slice runs in an isolated Authority-only local deployment. The codebase is still not a production-proven autonomous premium long-form novel system.
 
 ```text
 architecture_defined=true
@@ -21,8 +23,14 @@ postgres_authority_fixture_proven=true
 single_chapter_fixture_proven=true
 book_coordination_fixture_proven=true
 
-head_integrity_verified=false
-current_head_build_verified=false
+head_integrity_verified=true
+current_head_import_verified=true
+migration_chain_verified=true
+current_sha_test_baseline_recorded=true
+architecture_fitness_foundation_enabled=true
+minimal_authority_only_runtime_verified=true
+
+authority_only_runtime_verified=false
 real_provider_proven=false
 real_cost_proven=false
 longform_proven=false
@@ -31,24 +39,16 @@ platform_publish_proven=false
 production_verified=false
 ```
 
-## 2. Blocking Baseline Condition
+## 2. Baseline Resolution And Remaining Blockers
 
-The current HEAD contains references to new Project, Task, Source and MKAOS Authority modules, workers, migrations `0043` through `0050`, and focused tests. Some target files could not be resolved from the same exact HEAD through the repository content interface.
+The historical missing-file warning is resolved at the implementation evidence SHA. Project, Task, Source, MKAOS and BookDesign Authority modules, workers, migrations `0043` through `0051` and focused tests are committed, importable and manifest checked. The migration chain has one head and clean PostgreSQL migration passes.
 
-Possible causes are omitted/untracked files or a repository indexing anomaly. Until a local checkout verifies all files and imports, the current HEAD must not be described as buildable.
+Remaining blockers are different in kind:
 
-Required first checks:
-
-```bash
-git status --short
-git ls-files src/novel_forge/modules/project_authority
-git ls-files src/novel_forge/modules/task_authority
-git ls-files src/novel_forge/modules/source_authority
-git ls-files src/novel_forge/modules/mkaos_authority
-git ls-files src/novel_forge/storage/migrations/versions/v20260801_00*
-python -c "import novel_forge.api.authority_app"
-python -c "import novel_forge.storage.migrations"
-```
+- D0 is `BLOCKED_MISSING_CREDENTIALS`; no real Provider execution, usage or cost is proven.
+- `npm audit --omit=dev` reports three high-severity production dependency findings; fix before Track E security acceptance.
+- Browser Playwright smoke, public authentication, backup/PITR, SLO/capacity and production-scale recovery are not executed.
+- L3/L10/L30 and later long-form gates remain false.
 
 ## 3. Runtime Architecture
 
@@ -86,7 +86,8 @@ Do not add new production behavior to Legacy except migration/compatibility work
 | Command Kernel | Operation Definition, Operation, Saga, Attempt, transition, retry, cancellation, compensation | PostgreSQL code and integration fixtures | production load/recovery drill not proven |
 | Idempotency | stable key, request digest, replay/conflict | SQL unique key and application validation | cross-service operational policy still needs full deployment proof |
 | Lease/Fence | one held lease, monotonic fencing token, stale result rejection | DB function, trigger, focused tests | real distributed worker pressure not proven |
-| Asset Authority | Asset, AssetVersion, qualification, output binding, blob references | PostgreSQL schema/runtime | current Project/Source/MKAOS migration integrity needs verification |
+| Asset Authority | Asset, AssetVersion, dependency, decision, activation, supersession, evidence and blob lifecycle | PostgreSQL integration and Track B runtime | generic metadata must not replace typed domain schemas |
+| BookDesign Authority | typed `book-design.v1` Candidate, decision, activation, supersession and read model | unit, PostgreSQL and local Docker HTTP proof | BookPlan activation belongs to Track C1 |
 | External Effects | dispatch, receipt, query/cancel/callback/reconciliation, Inbox/Outbox | protocol and fixture integration | real provider/platform behavior not proven |
 | Chapter Authority | 18-node Chapter Saga | deterministic PostgreSQL integration | real Chinese prose and provider quality not proven |
 | Production Preparation | frozen ChapterPlan/context/profile input manifest | code and fixture tests | end-to-end operator workflow needs deployment proof |
@@ -101,7 +102,7 @@ Do not add new production behavior to Legacy except migration/compatibility work
 | Longform Recap | recap, deviation, adjustment proposal, optional replan request | deterministic Authority handler | no real long-form proof |
 | Provider v2 | registry, capability profile, route qualification, OpenAI seam | unit/protocol code | real registry composition and billed cost unproven |
 | Agent collaboration | frozen scope, work order, candidate graph, decision/commit slices | fixture protocol | not a complete autonomous Agent Center |
-| MKAOS/Source | broad Legacy modules and new Authority migration references | mixed | current Authority file integrity must be verified |
+| MKAOS/Source | Authority modules, workers and migrations plus isolated Legacy migration path | current-SHA unit/PostgreSQL proof | real connector/model extraction remains unproven |
 | Web Admin | Next.js operator consoles and API clients | static/node tests historically reported | authentication and full browser E2E incomplete |
 | Portfolio/multi-book | allocation/isolation/reporting foundations | fixture/schema evidence | real multi-book scheduling and load unproven |
 
@@ -161,7 +162,7 @@ BookDesign
 → ending/closure
 ```
 
-A Book Production Supervisor must own this progression without bypassing domain Authority decisions.
+A Book Production Coordinator must coordinate this progression without owning or bypassing domain Authority decisions.
 
 ## 7. Provider and Quality State
 
@@ -182,40 +183,25 @@ Quality and Reader Outcome values must remain uncalibrated/Shadow until golden-s
 
 ## 8. Deployment and Security State
 
-Current Compose does not establish a complete Authority-only deployment. The independent Chapter Authority worker is not part of the default topology, and Authority health is not a dependency-aware readiness probe.
+`compose.authority-only.yml` establishes the Track B minimum: PostgreSQL Authority, MinIO, Redis delivery-only, migration job, dependency-aware Authority API and grouped Authority/Maintenance workers. It was built, started and restart-tested locally. The default Compose remains the broader Legacy-oriented development topology, and Track E hardening is not complete.
 
 Authority routes use a trusted server-configured Principal and ignore request-supplied actor identity. This is safer than trusting payload identity, but it is not multi-user authentication. There is no demonstrated OIDC/JWT/API-key/mTLS boundary, and the default configured operator can have wildcard project scope.
 
-Current deployment target is a trusted local operator environment, not a public or multi-tenant SaaS runtime.
+Current deployment target is a trusted local operator environment, not a public or multi-tenant SaaS runtime. The narrower `minimal_authority_only_runtime_verified` flag is true; the broader production `authority_only_runtime_verified` flag remains false.
 
 ## 9. Verification Status
 
-The 2026-08-01 audit did not execute tests because no authenticated local checkout was available. Do not copy historical pass counts into a current claim.
-
-The next current-SHA report must record exact commands, duration, test count, skips, environment, database image, Node/Python versions and commit SHA for:
-
-```bash
-python -m compileall -q src tests
-python -m unittest discover -s tests/unit -p 'test_*.py'
-python -m unittest discover -s tests/acceptance -p 'test_*.py'
-python scripts/run_authority_postgres_tests.py
-python -m unittest discover -s tests/integration -p 'test_*.py'
-npm --prefix web/admin ci
-npm --prefix web/admin test
-npm --prefix web/admin run build
-docker compose config
-docker compose build
-```
+The complete current-SHA matrix is published in [`reports/track-a-current-sha-validation.md`](reports/track-a-current-sha-validation.md): architecture 60/60, unit 1,169/1,169, acceptance 2/2, core PostgreSQL 141/141 with zero skips, and full integration 222 passed with 9 optional-backend skips. Admin test/build and both Compose builds pass. Required Playwright browser smoke remains not executed.
 
 ## 10. Current Priority
 
 ```text
-P0: restore and prove a complete HEAD
-P1: deploy Authority API + durable workers
-P2: prove one real Provider single-chapter loop
-P3: implement whole-book autonomous supervisor
-P4: calibrate judges and prove 10/30/100/300 chapters
-P5: prove multi-book, platform and production operations
+P0: preserve the verified Track A/Track B baseline
+P1: unblock and pass D0 with one real Provider/model
+P2: Track C1 BookDesign → Active Plan
+P3: real Provider chapter and Judge promotion/calibration
+P4: autonomous Book Coordinator L3/L10 and Track E hardening
+P5: L30/L100/L300, multi-book, platform and production operations
 ```
 
 Adding more isolated modules is not the current priority. The priority is converging existing capabilities into one buildable, deployable, recoverable and evidence-bound production path.

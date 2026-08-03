@@ -1,8 +1,14 @@
 # Architecture Closure Execution Index
 
-更新时间：2026-08-02  
-状态：`SIX_TRACK_VERTICAL_EXECUTION_INDEX`  
+更新时间：2026-08-03
+
+状态：`D0_BLOCKED_MISSING_CREDENTIALS`
+
 主文档：[`autonomous-novel-os-architecture-closure-epic.md`](autonomous-novel-os-architecture-closure-epic.md)
+
+当前实现证据 SHA：`ea6876476287e90a206ec4a10b2345a881f67656`
+
+当前 Gate：Track A 已通过；Track B Book/BookDesign 最小纵向切片已通过；D0 Harness 已实现但真实 Provider Probe 因缺少凭据阻塞。完整证据见 [`../reports/track-a-current-sha-validation.md`](../reports/track-a-current-sha-validation.md)、[`../reports/track-b-book-design-authority-slice.md`](../reports/track-b-book-design-authority-slice.md) 和 [`../reports/d0-provider-qualification-probe.md`](../reports/d0-provider-qualification-probe.md)。
 
 ## 1. 执行方式
 

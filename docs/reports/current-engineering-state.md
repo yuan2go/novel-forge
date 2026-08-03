@@ -1,10 +1,12 @@
 # Current Engineering State
 
-Updated: 2026-08-01  
-Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`  
-Audited HEAD: `aa991b53039cdf2e4e7911d4483052b9a6a752a1`
+Updated: 2026-08-03
 
-This is the current engineering-state entrypoint. Detailed evidence and limitations are recorded in [`2026-08-01-code-audit-and-documentation-rebaseline.md`](2026-08-01-code-audit-and-documentation-rebaseline.md).
+Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`
+
+Implementation evidence SHA: `ea6876476287e90a206ec4a10b2345a881f67656`
+
+This is the current engineering-state entrypoint. Detailed evidence and limitations are recorded in [`architecture-closure-current-head-reaudit.md`](architecture-closure-current-head-reaudit.md), [`track-a-current-sha-validation.md`](track-a-current-sha-validation.md), [`track-b-book-design-authority-slice.md`](track-b-book-design-authority-slice.md) and [`d0-provider-qualification-probe.md`](d0-provider-qualification-probe.md).
 
 ## 1. Executive Verdict
 
@@ -19,7 +21,11 @@ Novel Forge is an advanced Autonomous Novel OS engineering prototype with a stro
 - five independent Quality groups and aggregate release gates;
 - persistent Book Authority coordination and Chapter child-Saga delegation;
 - Reader Outcome and Longform Recap Authority contracts;
-- Provider v2 capability and control contracts.
+- Provider v2 capability and control contracts;
+- a machine-checked Track A integrity/fitness baseline;
+- a typed Book/BookDesign Authority vertical slice;
+- an isolated Track B Authority-only local runtime with PostgreSQL, MinIO, Outbox, grouped workers and fail-closed Legacy settings;
+- a D0 Provider probe harness that refuses to promote fixture evidence.
 
 The project is not yet a production-proven Autonomous Novel OS. The following remain unproven:
 
@@ -32,31 +38,14 @@ platform_publish_proven=false
 production_verified=false
 ```
 
-## 2. Current Blocking Issue
+## 2. Current Blockers
 
-The audited HEAD contains a high-confidence repository-integrity warning.
+The repository-integrity blocker from the 2026-08-01 remote audit is resolved. Current blockers are:
 
-Reference sites import or register new Project, Task, Source and MKAOS Authority modules, workers, migrations `0043` through `0050`, and focused tests. Some corresponding target files could not be resolved from the same branch or exact HEAD through the repository content interface.
-
-This may be caused by omitted/untracked files or a repository indexing anomaly. Until a local checkout proves otherwise, use:
-
-```text
-head_integrity_verified=false
-current_head_build_verified=false
-```
-
-Required verification:
-
-```bash
-git status --short
-git ls-files src/novel_forge/modules/project_authority
-git ls-files src/novel_forge/modules/task_authority
-git ls-files src/novel_forge/modules/source_authority
-git ls-files src/novel_forge/modules/mkaos_authority
-git ls-files src/novel_forge/storage/migrations/versions/v20260801_00*
-python -c "import novel_forge.api.authority_app"
-python -c "import novel_forge.storage.migrations"
-```
+1. D0 real Provider execution is `BLOCKED_MISSING_CREDENTIALS`; SDK, API key and auth profile are absent.
+2. Three high-severity Admin production dependency findings require a Track E security update and rebuild.
+3. Public authentication, backup/PITR, capacity/SLO and browser E2E are not proven.
+4. Real Provider chapter, Judge promotion/calibration and all long-form acceptance gates remain false.
 
 ## 3. Architecture State
 
@@ -110,13 +99,15 @@ Legacy local-first runtime
 PostgreSQL Authority runtime
 ```
 
-Default development settings and the current Compose topology still favor the Legacy surface. The independent Chapter Authority worker is not part of the default Compose topology. Authority readiness also lacks checks for database migration, worker state, outbox lag, Provider registration and object-store access.
+Default development settings and the default Compose topology still favor the Legacy surface. The new Track B topology provides migration-aware database readiness, object-store reachability, PostgreSQL Outbox identity, delivery-only queue declaration and grouped worker health for the minimal Book/BookDesign slice. Provider qualification is intentionally outside that runtime and is blocked at D0.
 
 Therefore:
 
 ```text
+minimal_authority_only_runtime_verified=true
 authority_deployment_closed=false
-legacy_production_write_retired=false
+legacy_production_write_blocked_for_track_b=true
+legacy_production_write_retired_globally=false
 ```
 
 ## 5. Security State
@@ -134,58 +125,39 @@ The current model is appropriate for a trusted local operator deployment, not an
 
 ## 6. Runtime Verification Status
 
-No commands were executed during the 2026-08-01 remote audit because no authenticated local checkout was available. Historical reports remain useful evidence for their original commit only.
-
-The next HEAD-bound validation must include:
-
-```bash
-python -m compileall -q src tests
-python -m unittest discover -s tests/unit -p 'test_*.py'
-python -m unittest discover -s tests/acceptance -p 'test_*.py'
-python scripts/run_authority_postgres_tests.py
-python -m unittest discover -s tests/integration -p 'test_*.py'
-npm --prefix web/admin ci
-npm --prefix web/admin test
-npm --prefix web/admin run build
-docker compose config
-docker compose build
-```
+The full current-SHA matrix was executed. Results: architecture 60/60; unit 1,169/1,169; acceptance 2/2; PostgreSQL Authority 141/141 with no skips; full integration 222 passed and 9 optional-online-backend skips; Admin 11 passed and one Playwright skip; Admin and Docker production builds passed. See the SHA-bound validation report for command-level details.
 
 ## 7. Current Maturity
 
 | Area | Current maturity | Evidence limit |
 |---|---|---|
 | Command Kernel | High | production load and recovery drills remain |
-| PostgreSQL Authority | Medium-high | current Authority migration and HEAD integrity need verification |
+| PostgreSQL Authority | High for tested contracts | production load, PITR and operational hardening remain |
 | Chapter protocol | Medium-high | fixture proof, no real Provider quality proof |
 | Canon / Story State | Medium | semantic and long-horizon accuracy unproven |
 | Quality / Review | Medium | Judge calibration incomplete |
 | Book coordination | Medium | not a complete autonomous whole-book loop |
 | Long-form | Medium-low | deterministic recap and fixture chains only |
-| Provider execution | Medium-low | real adapter composition, cost and cancellation unproven |
+| Provider execution | Medium-low | D0 harness present; real auth, usage, cost, query/cancel/UNKNOWN remain blocked |
 | Web product | Medium | authentication and deep browser E2E incomplete |
-| Deployment / operations | Low | default runtime remains Legacy-oriented |
+| Deployment / operations | Medium-low | Track B minimum runs locally; Track E hardening and default cutover remain |
 | Multi-book production | Low | no real parallel production proof |
 
 ## 8. Immediate Priorities
 
 ### P0
 
-1. Resolve HEAD integrity and commit all required modules, migrations and tests.
-2. Add static existence/import checks for migration targets, console scripts and required tests.
-3. Build an Authority-only Compose topology with API and durable workers.
-4. Run the complete validation suite against the exact HEAD.
-5. Publish a SHA-bound verification report.
+Preserve Track A and the Track B Book/BookDesign baseline. Do not reopen parallel shared-kernel work or add a second runtime state machine.
 
 ### P1
 
-1. Complete a real Provider single-chapter vertical slice.
-2. Record actual usage, billed/derived cost, timeout, cancel, callback and reconciliation evidence.
-3. Validate Chinese web-novel output with human editorial review.
+1. Supply an approved Secret Reference/model and pass D0 without fixture promotion.
+2. Fix the three high-severity Admin production dependency findings.
+3. Only after D0 passes, enter Track C1 BookDesign → Active Plan.
 
 ### P2
 
-1. Implement a whole-book production supervisor over Book/Volume/Arc/ChapterGroup/Chapter Authority.
+1. Implement a whole-book production coordinator over Book/Volume/Arc/ChapterGroup/Chapter Authority.
 2. Calibrate Quality and Reader Outcome judges.
 3. Complete real 10/30/100/300-chapter and multi-book proof stages.
 

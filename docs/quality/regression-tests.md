@@ -1,10 +1,12 @@
 # Regression And Verification Guide
 
-Updated: 2026-08-01  
-Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`  
-Audited HEAD: `aa991b53039cdf2e4e7911d4483052b9a6a752a1`
+Updated: 2026-08-03
 
-> Note: the 2026-08-01 remote audit did not execute tests because no authenticated local checkout was available. This guide defines the required verification matrix; it does not claim that the audited HEAD passed it.
+Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`
+
+Implementation evidence SHA: `ea6876476287e90a206ec4a10b2345a881f67656`
+
+> Current evidence: the full matrix for the implementation evidence SHA is recorded in [`../reports/track-a-current-sha-validation.md`](../reports/track-a-current-sha-validation.md). This guide continues to define future gates; historical results must not be reused for another source SHA.
 
 ## 1. Evidence Rules
 
@@ -91,6 +93,8 @@ Use an isolated virtual environment. Record the lock/resolution output when depe
 python -m compileall -q src tests
 git diff --check
 make head-integrity-check
+make architecture-manifests-check
+make architecture-fitness-check
 make authority-parity-check
 python -m unittest discover -s tests/architecture -p 'test_*.py'
 make lint
@@ -217,7 +221,7 @@ docker compose build
 docker compose up -d
 ```
 
-Before calling the stack Authority-ready, verify the running API reports:
+Before calling the Track B stack minimally Authority-ready, run `compose.authority-only.yml` and verify:
 
 ```text
 storage_authority=postgresql
@@ -225,12 +229,13 @@ environment=production
 release build id and commit SHA
 latest migration applied
 Authority worker healthy
-Provider route registry qualified
 object store reachable
-outbox lag within threshold
+PostgreSQL is Outbox Authority
+Queue/Redis is delivery-only
+Legacy writes and silent fallback are disabled
 ```
 
-The current static `/health` response is not sufficient. Add a dependency-aware readiness endpoint and test it.
+Provider route qualification is a separate D0 prerequisite before Track C. Track E must add outbox lag/SLO, security, backup/PITR and capacity readiness before full production Authority readiness is true.
 
 Deployment recovery tests:
 
@@ -378,11 +383,17 @@ This read/contract-focused bundle verifies source eligibility, leakage preflight
 
 ## 13. Current Verification Flags
 
-Until a new current-SHA report is published:
+Current implementation evidence SHA:
 
 ```text
-head_integrity_verified=false
-current_head_build_verified=false
+head_integrity_verified=true
+current_head_import_verified=true
+migration_chain_verified=true
+current_sha_test_baseline_recorded=true
+architecture_fitness_foundation_enabled=true
+minimal_authority_only_runtime_verified=true
+
+authority_only_runtime_verified=false
 real_provider_proven=false
 real_cost_proven=false
 longform_proven=false

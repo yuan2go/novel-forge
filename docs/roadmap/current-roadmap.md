@@ -1,8 +1,11 @@
 # Current Roadmap
 
-Updated: 2026-08-02  
-Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`  
-Audited code HEAD: `aa991b53039cdf2e4e7911d4483052b9a6a752a1`  
+Updated: 2026-08-03
+
+Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`
+
+Implementation evidence SHA: `ea6876476287e90a206ec4a10b2345a881f67656`
+
 Execution model: `SIX_TRACK_VERTICAL_DELIVERY`
 
 This roadmap is ordered by dependency, vertical proof value and rework risk. It replaces the former P0-P8 horizontal capability roadmap for current execution.
@@ -32,32 +35,44 @@ Progress is measured by completed vertical Slices, not by modules, tables, pages
 
 ## 2. Current Position
 
-Current execution must start at:
+Current execution is stopped at the D0 gate:
 
 ```text
-Track A
-Slice A1 — Repository Integrity
+Track A Gate = PASS
+Track B Book + BookDesign minimal slice = PASS
+D0 Real Provider Qualification Probe = BLOCKED_MISSING_CREDENTIALS
 ```
 
-Reason:
-
-- audited code entrypoints referenced modules, migrations, workers and tests that could not all be resolved from the same exact HEAD;
-- no current-SHA local build or complete test baseline was executed during the remote audit;
-- Authority-only deployment and real Provider proof therefore remain blocked.
+Track C1 must not begin as an accepted implementation stage until the real D0 probe records Provider evidence. Design preparation may continue without changing shared contracts or claiming the gate.
 
 Current flags:
 
 ```text
-head_integrity_verified=false
-current_head_import_verified=false
-migration_chain_verified=false
-current_sha_test_baseline_recorded=false
+head_integrity_verified=true
+current_head_import_verified=true
+migration_chain_verified=true
+current_sha_test_baseline_recorded=true
+architecture_fitness_foundation_enabled=true
+minimal_authority_only_runtime_verified=true
+
 authority_only_runtime_verified=false
 single_chapter_real_provider_proven=false
 book_coordinator_l10_proven=false
 l30_arc_proven=false
 architecture_closure_gate_passed=false
 ```
+
+Track B slice flags:
+
+```text
+project_book_scope_authority_proven=true
+typed_book_design_asset_proven=true
+production_legacy_write_blocked=true
+duplicate_replay_proven=true
+query_projection_proven=true
+```
+
+D0 real-provider flags are all false. See [`../reports/d0-provider-qualification-probe.md`](../reports/d0-provider-qualification-probe.md).
 
 ## 3. Track A — Trusted Baseline And Governance
 
@@ -270,13 +285,15 @@ Track B Gate:
 
 ```text
 project_book_scope_authority_proven=true
-typed_asset_lifecycle_proven=true
+typed_book_design_asset_proven=true
 execution_classification_enforced=true
-authority_only_minimal_slice_proven=true
+minimal_authority_only_runtime_verified=true
 production_legacy_write_blocked=true
 duplicate_replay_proven=true
 query_projection_proven=true
 ```
+
+These values are verified for the Book/BookDesign minimum only. The broader production `authority_only_runtime_verified` flag remains false pending Track E hardening.
 
 ## 4A. D0 — Real Provider Qualification Probe
 
@@ -291,6 +308,18 @@ provider_usage_proven=true|false
 provider_cost_proven=true|false
 provider_timeout_query_cancel_behavior_recorded=true|false
 unknown_reconciliation_proven=true|false
+```
+
+Current result at `ea687647...`:
+
+```text
+status=BLOCKED_MISSING_CREDENTIALS
+real_provider_auth_proven=false
+provider_request_receipt_proven=false
+provider_usage_proven=false
+provider_cost_proven=false
+provider_timeout_query_cancel_behavior_recorded=false
+unknown_reconciliation_proven=false
 ```
 
 ## 5. Track C — Novel Domain And Context
