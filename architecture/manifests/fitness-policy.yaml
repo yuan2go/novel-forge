@@ -37,6 +37,8 @@
     "src/novel_forge/modules/content_authority",
     "src/novel_forge/modules/book_authority",
     "src/novel_forge/modules/book_design_authority",
+    "src/novel_forge/modules/hierarchical_planning",
+    "src/novel_forge/modules/plan_change_authority",
     "src/novel_forge/modules/provider_control",
     "src/novel_forge/modules/provider_qualification",
     "src/novel_forge/modules/production_execution",
@@ -48,6 +50,7 @@
     "src/novel_forge/storage/book_design_authority_repositories.py",
     "src/novel_forge/storage/source_authority_repositories.py",
     "src/novel_forge/storage/mkaos_authority_repositories.py",
+    "src/novel_forge/storage/plan_change_repositories.py",
     "src/novel_forge/storage/external_effect_repositories.py",
     "src/novel_forge/storage/production_repositories.py",
     "src/novel_forge/storage/provider_callback_repositories.py",
@@ -56,6 +59,7 @@
     "src/novel_forge/workers/content_authority.py",
     "src/novel_forge/workers/source_authority.py",
     "src/novel_forge/workers/mkaos_authority.py",
+    "src/novel_forge/workers/d0_provider_qualification.py",
     "src/novel_forge/workers/runtime_groups.py"
   ],
   "forbidden_production_imports": [

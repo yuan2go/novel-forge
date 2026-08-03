@@ -47,7 +47,12 @@ class HierarchicalPlanningPostgresTests(unittest.TestCase):
         self.principal = Principal(
             principal_id="planning-authority",
             principal_type=PrincipalType.LOCAL_OPERATOR,
-            permissions=frozenset({"story_design.authority.execute"}),
+            permissions=frozenset(
+                {
+                    "story_design.authority.execute",
+                    "book.authority.execute",
+                }
+            ),
             project_scope=frozenset({self.project_id}),
             authentication_source="integration-test",
         )
@@ -56,7 +61,11 @@ class HierarchicalPlanningPostgresTests(unittest.TestCase):
             application_build_id="hierarchical-planning-integration",
             commit_sha="b" * 40,
         )
-        self.planning = PostgresHierarchicalPlanningAuthority(DATABASE_URL)
+        self.planning = PostgresHierarchicalPlanningAuthority(
+            DATABASE_URL,
+            application_build_id="hierarchical-planning-integration",
+            commit_sha="b" * 40,
+        )
         self.counter = 0
 
     def test_book_volume_group_hierarchy_and_parent_versions(self) -> None:
@@ -228,6 +237,8 @@ class HierarchicalPlanningPostgresTests(unittest.TestCase):
                 book_id=self.book_id,
                 asset_version_id=replacement_version,
                 contract_type=PlanContractType.BOOK,
+                expected_active_asset_version_id=first["asset_version_id"],
+                **self._binding_command(replacement_version, "rejected"),
             )
         replacement = self.planning.bind_active_contract(
             project_id=self.project_id,
@@ -235,6 +246,9 @@ class HierarchicalPlanningPostgresTests(unittest.TestCase):
             asset_version_id=replacement_version,
             contract_type=PlanContractType.BOOK,
             replacement_approved=True,
+            expected_active_asset_version_id=first["asset_version_id"],
+            decision_evidence={"decision_id": "fixture-approval"},
+            **self._binding_command(replacement_version, "approved"),
         )
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
             uow.cursor.execute(
@@ -256,7 +270,7 @@ class HierarchicalPlanningPostgresTests(unittest.TestCase):
         self.assertEqual(old_freshness, "STALE")
 
     def test_executed_plan_is_not_overwritten(self) -> None:
-        self._activate_and_bind(
+        executed = self._activate_and_bind(
             PlanContractType.BOOK,
             "book:main",
             execution_scope=PlanExecutionScope.EXECUTED,
@@ -273,7 +287,126 @@ class HierarchicalPlanningPostgresTests(unittest.TestCase):
                 asset_version_id=replacement,
                 contract_type=PlanContractType.BOOK,
                 replacement_approved=True,
+                expected_active_asset_version_id=executed["asset_version_id"],
+                decision_evidence={"decision_id": "fixture-approval"},
+                **self._binding_command(replacement, "executed-replacement"),
             )
+
+    def test_binding_has_own_atomic_operation_and_idempotent_replay(self) -> None:
+        asset_version_id = self._activate_design(
+            PlanContractType.BOOK, "book:formal-binding"
+        )
+        metadata = {
+            "workspace_id": f"workspace:{self.project_id}",
+            "actor_id": self.principal.principal_id,
+            "idempotency_key": f"formal-binding:{asset_version_id}",
+            "trace_id": f"trace:formal-binding:{self.project_id}",
+            "correlation_id": f"book:{self.book_id}",
+            "principal": self.principal,
+        }
+        first = self.planning.bind_active_contract(
+            project_id=self.project_id,
+            book_id=self.book_id,
+            asset_version_id=asset_version_id,
+            contract_type=PlanContractType.BOOK,
+            **metadata,
+        )
+        replay = self.planning.bind_active_contract(
+            project_id=self.project_id,
+            book_id=self.book_id,
+            asset_version_id=asset_version_id,
+            contract_type=PlanContractType.BOOK,
+            **metadata,
+        )
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                """
+                SELECT operation.status, operation.definition_name,
+                       COUNT(attempt.attempt_id)
+                FROM authority_operation AS operation
+                LEFT JOIN authority_attempt AS attempt
+                  ON attempt.operation_id=operation.operation_id
+                WHERE operation.operation_id=%s
+                GROUP BY operation.status, operation.definition_name
+                """,
+                [first["operation_id"]],
+            )
+            operation = uow.cursor.fetchone()
+            uow.cursor.execute(
+                """
+                SELECT COUNT(*) FROM outbox_event
+                WHERE project_id=%s AND topic='story_plan.bound'
+                  AND payload->>'operation_id'=%s
+                """,
+                [self.project_id, first["operation_id"]],
+            )
+            outbox_count = int(uow.cursor.fetchone()[0])
+            uow.cursor.execute(
+                """
+                SELECT updated_by_operation_id
+                FROM authority_story_design_version_state
+                WHERE asset_version_id=%s
+                """,
+                [asset_version_id],
+            )
+            story_design_operation_id = str(uow.cursor.fetchone()[0])
+        self.assertEqual(first["operation_id"], replay["operation_id"])
+        self.assertTrue(replay["replayed"])
+        self.assertEqual(tuple(operation), ("SUCCEEDED", "planning.binding.activate", 0))
+        self.assertEqual(outbox_count, 1)
+        self.assertNotEqual(first["operation_id"], story_design_operation_id)
+        self.assertEqual(first["created_by_operation_id"], first["operation_id"])
+
+    def test_binding_rolls_back_business_outbox_and_operation_on_fault(self) -> None:
+        asset_version_id = self._activate_design(
+            PlanContractType.BOOK, "book:rollback"
+        )
+
+        def inject(point: str) -> None:
+            if point == "after_outbox_insert":
+                raise RuntimeError("injected planning binding failure")
+
+        authority = PostgresHierarchicalPlanningAuthority(
+            DATABASE_URL,
+            application_build_id="hierarchical-planning-fault-test",
+            commit_sha="c" * 40,
+            fault_injector=inject,
+        )
+        idempotency_key = f"formal-binding-fault:{asset_version_id}"
+        with self.assertRaisesRegex(RuntimeError, "injected planning"):
+            authority.bind_active_contract(
+                project_id=self.project_id,
+                book_id=self.book_id,
+                asset_version_id=asset_version_id,
+                contract_type=PlanContractType.BOOK,
+                workspace_id=f"workspace:{self.project_id}",
+                actor_id=self.principal.principal_id,
+                idempotency_key=idempotency_key,
+                trace_id=f"trace:formal-binding:{self.project_id}",
+                correlation_id=f"book:{self.book_id}",
+                principal=self.principal,
+            )
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                "SELECT COUNT(*) FROM story_plan_binding WHERE asset_version_id=%s",
+                [asset_version_id],
+            )
+            binding_count = int(uow.cursor.fetchone()[0])
+            uow.cursor.execute(
+                "SELECT COUNT(*) FROM authority_operation WHERE idempotency_key=%s",
+                [idempotency_key],
+            )
+            operation_count = int(uow.cursor.fetchone()[0])
+            uow.cursor.execute(
+                """
+                SELECT COUNT(*) FROM outbox_event
+                WHERE project_id=%s AND topic='story_plan.bound'
+                  AND payload->>'asset_version_id'=%s
+                """,
+                [self.project_id, asset_version_id],
+            )
+            outbox_count = int(uow.cursor.fetchone()[0])
+        self.assertEqual((binding_count, operation_count, outbox_count), (0, 0, 0))
 
     def _activate_and_bind(
         self,
@@ -301,7 +434,22 @@ class HierarchicalPlanningPostgresTests(unittest.TestCase):
                 "" if parent is None else str(parent["asset_version_id"])
             ),
             execution_scope=execution_scope,
+            **self._binding_command(version_id, "initial"),
         )
+
+    def _binding_command(self, asset_version_id: str, label: str) -> dict:
+        self.counter += 1
+        return {
+            "workspace_id": f"workspace:{self.project_id}",
+            "actor_id": self.principal.principal_id,
+            "idempotency_key": (
+                f"planning-bind:{self.project_id}:{asset_version_id}:"
+                f"{label}:{self.counter}"
+            ),
+            "trace_id": f"trace:planning-bind:{self.project_id}",
+            "correlation_id": f"book:{self.book_id}",
+            "principal": self.principal,
+        }
 
     def _activate_design(
         self,

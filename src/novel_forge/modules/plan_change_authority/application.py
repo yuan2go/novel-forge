@@ -432,6 +432,24 @@ class PostgresPlanChangeAuthority:
                 proposal["target_execution_scope"]
             ),
             replacement_approved=True,
+            expected_active_asset_version_id=proposal[
+                "target_asset_version_id"
+            ],
+            decision_evidence={
+                "plan_change_proposal_id": proposal_id,
+                "approval_operation_id": proposal[
+                    "approval_operation_id"
+                ],
+            },
+            workspace_id=f"workspace:{proposal['project_id']}",
+            actor_id=principal.principal_id,
+            idempotency_key=(
+                f"{proposal['stable_idempotency_key']}:planning-binding"
+            ),
+            trace_id=f"{proposal_id}:planning-binding",
+            correlation_id=proposal["proposal_operation_id"],
+            causation_operation_id=operation_id,
+            principal=principal,
         )
         self._probe("after_plan_activation_before_outbox")
         with AuthorityUnitOfWork(self.database_url) as uow:
