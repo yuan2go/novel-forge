@@ -17,7 +17,9 @@ from novel_forge.modules.legacy_migration.validation import (
 class LegacyMigrationValidationTests(unittest.TestCase):
     def test_validator_descriptor_is_versioned_and_implementation_bound(self) -> None:
         descriptor = validator_descriptor(
-            "novel_forge.legacy_migration.book_design_authority.v1"
+            "novel_forge.legacy_migration.book_design_authority.v1",
+            application_build_id="test-build",
+            commit_sha="a" * 40,
         )
         self.assertEqual(descriptor.adapter_version, "1")
         self.assertTrue(descriptor.validator_name)
@@ -26,8 +28,19 @@ class LegacyMigrationValidationTests(unittest.TestCase):
         self.assertEqual(
             descriptor,
             validator_descriptor(
-                "novel_forge.legacy_migration.book_design_authority.v1"
+                "novel_forge.legacy_migration.book_design_authority.v1",
+                application_build_id="test-build",
+                commit_sha="a" * 40,
             ),
+        )
+        changed_build = validator_descriptor(
+            "novel_forge.legacy_migration.book_design_authority.v1",
+            application_build_id="test-build",
+            commit_sha="b" * 40,
+        )
+        self.assertNotEqual(
+            descriptor.validator_implementation_hash,
+            changed_build.validator_implementation_hash,
         )
 
     def test_validation_command_requires_authoritative_snapshot_identity(self) -> None:

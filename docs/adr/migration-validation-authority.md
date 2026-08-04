@@ -20,14 +20,18 @@ aggregate, StateEvent, Audit, Outbox and item state.
 The Validation aggregate is immutable by identity and has `PASS`, `FAIL`,
 `STALE`, or `REVOKED` status. Its uniqueness binds item/version and validator
 implementation. A newer item, source, target, reference resolution, adapter,
-validator implementation or dependency invalidates the old record.
+validator implementation, tested build/commit identity or dependency invalidates
+the old record.
 
 Approval takes only `migration_validation_id` as validation authority. It reloads
 the record under lock and verifies run/item/version/source/target/adapter/latest-
 valid/status bindings. The Decision persists Validation ID and result hash.
 Activation reloads both Decision and Validation, checks their current bindings,
 requires all references and domain dependencies to remain resolved/activated,
-then records the same Validation identity in the domain transition.
+then records the same Validation identity in the domain transition. A Run-level
+transaction advisory lock plus row locks retain this validation/decision/
+dependency scope while the owning domain Authority commits, closing the
+check-to-activation concurrency window.
 
 Client evidence may be retained as non-authoritative request context but can
 never establish a pass.

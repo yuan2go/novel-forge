@@ -71,7 +71,14 @@ def canonical_hash(value: Any) -> str:
     return "sha256:" + hashlib.sha256(encoded).hexdigest()
 
 
-def validator_descriptor(domain_adapter: str) -> DomainValidatorDescriptor:
+def validator_descriptor(
+    domain_adapter: str,
+    *,
+    application_build_id: str,
+    commit_sha: str,
+) -> DomainValidatorDescriptor:
+    if not application_build_id or len(commit_sha) != 40:
+        raise ValueError("validator descriptor requires tested build identity")
     try:
         validator_name = _VALIDATOR_NAMES[domain_adapter]
     except KeyError as exc:
@@ -104,6 +111,8 @@ def validator_descriptor(domain_adapter: str) -> DomainValidatorDescriptor:
         {
             "domain_adapter": domain_adapter,
             "validator_version": MIGRATION_VALIDATION_DEFINITION_VERSION,
+            "application_build_id": application_build_id,
+            "commit_sha": commit_sha,
             **implementation_inputs,
         }
     )
@@ -362,6 +371,8 @@ class LegacyMigrationValidationApplication:
             item_id,
             bound_item_version=expected_version + 1,
             lock_item=True,
+            application_build_id=self.application_build_id,
+            commit_sha=self.commit_sha,
         )
         item = snapshot["item"]
         expected_scope = (
@@ -611,6 +622,8 @@ def load_validation_snapshot(
     *,
     bound_item_version: int,
     lock_item: bool = False,
+    application_build_id: str,
+    commit_sha: str,
 ) -> dict[str, Any]:
     lock_clause = " FOR UPDATE OF item" if lock_item else ""
     uow.cursor.execute(
@@ -747,7 +760,11 @@ def load_validation_snapshot(
     effective_adapter = item["domain_adapter"] or (
         "novel_forge.legacy_migration.archival_asset_version.v1"
     )
-    descriptor = validator_descriptor(effective_adapter)
+    descriptor = validator_descriptor(
+        effective_adapter,
+        application_build_id=application_build_id,
+        commit_sha=commit_sha,
+    )
     reference_snapshot_hash = canonical_hash(references)
     dependency_projection_hash = canonical_hash(
         [

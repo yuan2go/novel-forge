@@ -991,6 +991,32 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
                 ),
             ],
         )
+        release_without_snapshot = service.verify(
+            imported["migration_run_id"], required_level="RELEASE_READY"
+        )
+        self.assertEqual(release_without_snapshot["verification_status"], "FAIL")
+        self.assertFalse(release_without_snapshot["source_snapshot_verified"])
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                """
+                UPDATE authority_legacy_migration_validation AS validation
+                SET status='REVOKED'
+                FROM authority_legacy_migration_item AS item
+                WHERE validation.migration_validation_id=
+                      item.evidence->>'migration_validation_id'
+                  AND item.migration_run_id=%s
+                  AND item.source_asset_type='book'
+                """,
+                [imported["migration_run_id"]],
+            )
+            self.assertEqual(uow.cursor.rowcount, 1)
+            uow.commit()
+        revoked = service.verify(
+            imported["migration_run_id"], required_level="DOMAIN_NATIVE"
+        )
+        self.assertEqual(revoked["verification_status"], "FAIL")
+        self.assertEqual(revoked["domain_validation_failures"], 1)
+        self.assertFalse(revoked["domain_native_core_proven"])
 
     def test_structured_reference_cycles_optional_edges_and_type_mismatch_fail_closed(
         self,
@@ -1029,6 +1055,8 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
         stable_target = identifier("stable-target")
         type_mismatch = identifier("type-mismatch")
         optional_source = identifier("optional-source")
+        optional_cycle_a = identifier("optional-cycle-a")
+        optional_cycle_b = identifier("optional-cycle-b")
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             (root / "data" / "workspaces").mkdir(parents=True)
@@ -1075,6 +1103,30 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
                         }
                     ],
                 ),
+                book_record(
+                    optional_cycle_a,
+                    [
+                        {
+                            "business_key": optional_cycle_b,
+                            "relation_type": "OPTIONAL_REFERENCE",
+                            "optional": True,
+                            "expected_source_type": "book",
+                            "expected_target_asset_type": "book_record",
+                        }
+                    ],
+                ),
+                book_record(
+                    optional_cycle_b,
+                    [
+                        {
+                            "business_key": optional_cycle_a,
+                            "relation_type": "OPTIONAL_REFERENCE",
+                            "optional": True,
+                            "expected_source_type": "book",
+                            "expected_target_asset_type": "book_record",
+                        }
+                    ],
+                ),
             )
             for ordinal, fixture in enumerate(fixtures, start=1):
                 self._write(
@@ -1097,7 +1149,15 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
                 """,
                 [
                     imported["migration_run_id"],
-                    [cycle_a, cycle_b, stable_target, type_mismatch, optional_source],
+                    [
+                        cycle_a,
+                        cycle_b,
+                        stable_target,
+                        type_mismatch,
+                        optional_source,
+                        optional_cycle_a,
+                        optional_cycle_b,
+                    ],
                 ],
             )
             items = {
@@ -1142,11 +1202,15 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
             references[optional_source],
             ("OPTIONAL_MISSING", "OPTIONAL_REFERENCE", "STRUCTURED_V1"),
         )
+        self.assertEqual(items[optional_cycle_a], ("NEEDS_REVIEW", "", "RESOLVED"))
+        self.assertEqual(items[optional_cycle_b], ("NEEDS_REVIEW", "", "RESOLVED"))
+        self.assertEqual(references[optional_cycle_a][0], "RESOLVED")
+        self.assertEqual(references[optional_cycle_b][0], "RESOLVED")
         self.assertEqual(references[cycle_a][0], "CONFLICT")
         self.assertEqual(references[cycle_b][0], "CONFLICT")
         self.assertEqual(references[type_mismatch][0], "CONFLICT")
         activation_order = service.domain_activation_order(imported["migration_run_id"])
-        self.assertEqual(len(activation_order), 3)
+        self.assertEqual(len(activation_order), 5)
 
     def test_planning_migration_builds_active_hierarchy_after_approval(self) -> None:
         project_id = identifier("domain-planning-project")

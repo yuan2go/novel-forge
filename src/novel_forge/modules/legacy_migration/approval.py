@@ -291,8 +291,8 @@ class LegacyMigrationApprovalApplication:
                 uow.repositories.definitions.register(definition)
             uow.commit()
 
-    @staticmethod
     def _execute_transaction(
+        self,
         uow: AuthorityUnitOfWork,
         operation_id: str,
         checkpoint: TransactionCheckpoint,
@@ -394,6 +394,8 @@ class LegacyMigrationApprovalApplication:
                 uow,
                 item_id,
                 bound_item_version=int(validation[3]),
+                application_build_id=self.application_build_id,
+                commit_sha=self.commit_sha,
             )
             expected_validation_scope = (
                 str(payload["migration_run_id"]),

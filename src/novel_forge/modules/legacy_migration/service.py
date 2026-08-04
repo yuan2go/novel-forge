@@ -466,49 +466,73 @@ class LegacyMigrationService:
         *,
         expected_item_version: int,
     ) -> dict[str, Any]:
-        context, adapter_name, target_level = self._domain_context(
-            migration_item_id
-        )
-        if target_level != MigrationMaterializationLevel.DOMAIN_NATIVE.value:
-            raise KernelError(
-                "DOMAIN_MIGRATION_NOT_REQUIRED",
-                "ARCHIVAL_NATIVE items cannot be activated as domain projections",
-            )
-        if context.item_version != expected_item_version:
-            raise KernelError(
-                (
-                    "MIGRATION_DECISION_STALE"
-                    if context.decision_id
-                    else "MIGRATION_ITEM_VERSION_CONFLICT"
-                ),
-                "domain activation expected item version or decision is stale",
-            )
-        if not context.decision_id:
-            raise KernelError(
-                "MIGRATION_APPROVAL_REQUIRED",
-                "domain activation requires an independent approved decision",
-            )
-        validation_binding = self._require_activation_validation(
-            context,
-            expected_item_version=expected_item_version,
-        )
-        self._require_domain_dependencies_activated(context)
-        context = replace(
-            context,
-            migration_validation_id=str(
-                validation_binding["migration_validation_id"]
-            ),
-            validator_result_hash=str(validation_binding["result_hash"]),
-            validator_version=str(validation_binding["validator_version"]),
-        )
-        adapter = DomainMigrationAdapterRegistry(
-            self.database_url,
-            application_build_id=self.application_build_id,
-            commit_sha=self.commit_sha,
-            allow_fixture_activation=self.allow_fixture_domain_activation,
-        ).resolve(adapter_name)
-        result = adapter.activate(context)
         with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT migration_run_id
+                FROM authority_legacy_migration_item
+                WHERE migration_item_id=%s
+                """,
+                [migration_item_id],
+            )
+            run_row = uow.cursor.fetchone()
+            if run_row is None:
+                raise KernelError(
+                    "MIGRATION_ITEM_NOT_FOUND",
+                    "domain migration item does not exist",
+                )
+            uow.cursor.execute(
+                "SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",
+                [str(run_row[0])],
+            )
+            context, adapter_name, target_level = self._domain_context(
+                migration_item_id,
+                uow=uow,
+                lock_activation_scope=True,
+            )
+            if target_level != MigrationMaterializationLevel.DOMAIN_NATIVE.value:
+                raise KernelError(
+                    "DOMAIN_MIGRATION_NOT_REQUIRED",
+                    "ARCHIVAL_NATIVE items cannot be activated as domain projections",
+                )
+            if context.item_version != expected_item_version:
+                raise KernelError(
+                    (
+                        "MIGRATION_DECISION_STALE"
+                        if context.decision_id
+                        else "MIGRATION_ITEM_VERSION_CONFLICT"
+                    ),
+                    "domain activation expected item version or decision is stale",
+                )
+            if not context.decision_id:
+                raise KernelError(
+                    "MIGRATION_APPROVAL_REQUIRED",
+                    "domain activation requires an independent approved decision",
+                )
+            validation_binding = self._require_activation_validation(
+                context,
+                expected_item_version=expected_item_version,
+                uow=uow,
+            )
+            self._require_domain_dependencies_activated(context, uow=uow)
+            context = replace(
+                context,
+                migration_validation_id=str(
+                    validation_binding["migration_validation_id"]
+                ),
+                validator_result_hash=str(validation_binding["result_hash"]),
+                validator_version=str(validation_binding["validator_version"]),
+            )
+            adapter = DomainMigrationAdapterRegistry(
+                self.database_url,
+                application_build_id=self.application_build_id,
+                commit_sha=self.commit_sha,
+                allow_fixture_activation=self.allow_fixture_domain_activation,
+            ).resolve(adapter_name)
+            # The migration item, validation, decision, references, and
+            # dependency projections remain locked while the domain Authority
+            # commits. This closes the validation/activation TOCTOU window.
+            result = adapter.activate(context)
             uow.cursor.execute(
                 """
                 UPDATE authority_legacy_migration_item
@@ -627,6 +651,7 @@ class LegacyMigrationService:
                 FROM authority_legacy_migration_reference
                 WHERE migration_run_id=%s AND resolution_status='RESOLVED'
                   AND target_item_id IS NOT NULL
+                  AND NOT optional
                 """,
                 [run_id],
             )
@@ -687,9 +712,23 @@ class LegacyMigrationService:
             self._quarantine(run_id, failed_record)
             self._quarantine_or_reconcile_phase(run_id, failed_record)
 
-    def domain_activation_order(self, migration_run_id: str) -> list[str]:
-        with AuthorityUnitOfWork(self.database_url) as uow:
-            uow.cursor.execute(
+    def domain_activation_order(
+        self,
+        migration_run_id: str,
+        *,
+        uow: AuthorityUnitOfWork | None = None,
+        lock_graph: bool = False,
+    ) -> list[str]:
+        if uow is None:
+            with AuthorityUnitOfWork(self.database_url) as owned_uow:
+                return self.domain_activation_order(
+                    migration_run_id,
+                    uow=owned_uow,
+                    lock_graph=lock_graph,
+                )
+        item_lock = " FOR SHARE" if lock_graph else ""
+        reference_lock = " FOR SHARE" if lock_graph else ""
+        uow.cursor.execute(
                 """
                 SELECT migration_item_id
                 FROM authority_legacy_migration_item
@@ -697,25 +736,28 @@ class LegacyMigrationService:
                   AND target_materialization_level='DOMAIN_NATIVE'
                   AND status NOT IN ('QUARANTINED','INELIGIBLE','FAILED')
                 ORDER BY migration_item_id
-                """,
+                """
+                + item_lock,
                 [migration_run_id],
-            )
-            nodes = tuple(str(row[0]) for row in uow.cursor.fetchall())
-            uow.cursor.execute(
+        )
+        nodes = tuple(str(row[0]) for row in uow.cursor.fetchall())
+        uow.cursor.execute(
                 """
                 SELECT source_item_id, target_item_id
                 FROM authority_legacy_migration_reference
                 WHERE migration_run_id=%s AND resolution_status='RESOLVED'
                   AND target_item_id IS NOT NULL
+                  AND NOT optional
                 ORDER BY source_item_id, reference_ordinal
-                """,
+                """
+                + reference_lock,
                 [migration_run_id],
+        )
+        dependencies: dict[str, list[str]] = {}
+        for source_item_id, target_item_id in uow.cursor.fetchall():
+            dependencies.setdefault(str(source_item_id), []).append(
+                str(target_item_id)
             )
-            dependencies: dict[str, list[str]] = {}
-            for source_item_id, target_item_id in uow.cursor.fetchall():
-                dependencies.setdefault(str(source_item_id), []).append(
-                    str(target_item_id)
-                )
         try:
             return topological_activation_order(
                 nodes=nodes,
@@ -728,16 +770,29 @@ class LegacyMigrationService:
             ) from exc
 
     def _require_domain_dependencies_activated(
-        self, context: DomainMigrationContext
+        self,
+        context: DomainMigrationContext,
+        *,
+        uow: AuthorityUnitOfWork | None = None,
     ) -> None:
-        order = self.domain_activation_order(context.migration_run_id)
+        if uow is None:
+            with AuthorityUnitOfWork(self.database_url) as owned_uow:
+                self._require_domain_dependencies_activated(
+                    context,
+                    uow=owned_uow,
+                )
+                return
+        order = self.domain_activation_order(
+            context.migration_run_id,
+            uow=uow,
+            lock_graph=True,
+        )
         if context.migration_item_id not in order:
             raise KernelError(
                 "MIGRATION_ACTIVATION_PLAN_CONFLICT",
                 "migration item is absent from the domain activation graph",
             )
-        with AuthorityUnitOfWork(self.database_url) as uow:
-            uow.cursor.execute(
+        uow.cursor.execute(
                 """
                 SELECT target.migration_item_id, target.source_asset_type,
                        target.target_materialization_level,
@@ -749,10 +804,11 @@ class LegacyMigrationService:
                   AND reference.resolution_status='RESOLVED'
                   AND NOT reference.optional
                 ORDER BY reference.reference_ordinal
+                FOR SHARE OF reference, target
                 """,
                 [context.migration_item_id],
-            )
-            dependencies = list(uow.cursor.fetchall())
+        )
+        dependencies = list(uow.cursor.fetchall())
         for item_id, source_type, target_level, materialization_level, state in dependencies:
             if (
                 str(target_level) == MigrationMaterializationLevel.DOMAIN_NATIVE.value
@@ -776,99 +832,109 @@ class LegacyMigrationService:
         context: DomainMigrationContext,
         *,
         expected_item_version: int,
+        uow: AuthorityUnitOfWork | None = None,
     ) -> dict[str, Any]:
-        with AuthorityUnitOfWork(self.database_url) as uow:
-            uow.cursor.execute(
-                """
-                SELECT decision.migration_validation_id,
-                       decision.validation_result_hash,
-                       validation.migration_run_id,
-                       validation.migration_item_id,
-                       validation.item_version,
-                       validation.source_hash,
-                       validation.target_asset_version_id,
-                       validation.domain_adapter,
-                       validation.validator_name,
-                       validation.validator_version,
-                       validation.validator_implementation_hash,
-                       validation.input_hash, validation.result_hash,
-                       validation.reference_snapshot_hash,
-                       validation.dependency_projection_hash,
-                       validation.status
-                FROM authority_legacy_migration_decision AS decision
-                JOIN authority_legacy_migration_validation AS validation
-                  ON validation.migration_validation_id=
-                     decision.migration_validation_id
-                WHERE decision.migration_decision_id=%s
-                  AND decision.migration_item_id=%s
-                  AND decision.decision='APPROVE'
-                """,
-                [context.decision_id, context.migration_item_id],
+        if uow is None:
+            with AuthorityUnitOfWork(self.database_url) as owned_uow:
+                return self._require_activation_validation(
+                    context,
+                    expected_item_version=expected_item_version,
+                    uow=owned_uow,
+                )
+        uow.cursor.execute(
+            """
+            SELECT decision.migration_validation_id,
+                   decision.validation_result_hash,
+                   validation.migration_run_id,
+                   validation.migration_item_id,
+                   validation.item_version,
+                   validation.source_hash,
+                   validation.target_asset_version_id,
+                   validation.domain_adapter,
+                   validation.validator_name,
+                   validation.validator_version,
+                   validation.validator_implementation_hash,
+                   validation.input_hash, validation.result_hash,
+                   validation.reference_snapshot_hash,
+                   validation.dependency_projection_hash,
+                   validation.status
+            FROM authority_legacy_migration_decision AS decision
+            JOIN authority_legacy_migration_validation AS validation
+              ON validation.migration_validation_id=decision.migration_validation_id
+            WHERE decision.migration_decision_id=%s
+              AND decision.migration_item_id=%s
+              AND decision.decision='APPROVE'
+            FOR SHARE OF decision, validation
+            """,
+            [context.decision_id, context.migration_item_id],
+        )
+        row = uow.cursor.fetchone()
+        if row is None:
+            raise KernelError(
+                "MIGRATION_VALIDATION_REQUIRED",
+                "approved migration decision is not bound to validation",
             )
-            row = uow.cursor.fetchone()
-            if row is None:
-                raise KernelError(
-                    "MIGRATION_VALIDATION_REQUIRED",
-                    "approved migration decision is not bound to validation",
-                )
-            validation_item_version = int(row[4])
-            if expected_item_version != validation_item_version + 1:
-                raise KernelError(
-                    "MIGRATION_DECISION_STALE",
-                    "item version no longer has the validated approval relationship",
-                )
-            snapshot = load_validation_snapshot(
-                uow,
-                context.migration_item_id,
-                bound_item_version=validation_item_version,
+        validation_item_version = int(row[4])
+        if expected_item_version != validation_item_version + 1:
+            raise KernelError(
+                "MIGRATION_DECISION_STALE",
+                "item version no longer has the validated approval relationship",
             )
-            descriptor = validator_descriptor(snapshot["item"]["domain_adapter"])
-            expected_scope = (
-                context.migration_run_id,
-                context.migration_item_id,
-                context.source_hash,
-                context.target_asset_version_id,
-                snapshot["item"]["domain_adapter"],
+        snapshot = load_validation_snapshot(
+            uow,
+            context.migration_item_id,
+            bound_item_version=validation_item_version,
+            lock_item=True,
+            application_build_id=self.application_build_id,
+            commit_sha=self.commit_sha,
+        )
+        descriptor = snapshot["validator_descriptor"]
+        expected_scope = (
+            context.migration_run_id,
+            context.migration_item_id,
+            context.source_hash,
+            context.target_asset_version_id,
+            snapshot["item"]["domain_adapter"],
+        )
+        actual_scope = (
+            str(row[2]),
+            str(row[3]),
+            str(row[5]),
+            str(row[6]),
+            str(row[7]),
+        )
+        if expected_scope != actual_scope:
+            raise KernelError(
+                "MIGRATION_VALIDATION_SCOPE_CONFLICT",
+                "activation validation scope changed after approval",
             )
-            actual_scope = (
-                str(row[2]),
-                str(row[3]),
-                str(row[5]),
-                str(row[6]),
-                str(row[7]),
+        if str(row[15]) != "PASS":
+            raise KernelError(
+                "MIGRATION_VALIDATION_NOT_PASSING",
+                "activation requires a non-revoked PASS validation",
             )
-            if expected_scope != actual_scope:
-                raise KernelError(
-                    "MIGRATION_VALIDATION_SCOPE_CONFLICT",
-                    "activation validation scope changed after approval",
-                )
-            if str(row[15]) != "PASS":
-                raise KernelError(
-                    "MIGRATION_VALIDATION_NOT_PASSING",
-                    "activation requires a non-revoked PASS validation",
-                )
-            if str(row[0]) == "" or str(row[1]) != str(row[12]):
-                raise KernelError(
-                    "MIGRATION_DECISION_VALIDATION_CONFLICT",
-                    "decision validation result binding is invalid",
-                )
-            if snapshot["unresolved_required_references"]:
-                raise KernelError(
-                    "MIGRATION_REQUIRED_REFERENCE_UNRESOLVED",
-                    "required references changed after approval",
-                )
-            if (
-                str(row[8]) != descriptor.validator_name
-                or str(row[9]) != descriptor.validator_version
-                or str(row[10]) != descriptor.validator_implementation_hash
-                or str(row[11]) != snapshot["input_hash"]
-                or str(row[13]) != snapshot["reference_snapshot_hash"]
-                or str(row[14]) != snapshot["dependency_projection_hash"]
-            ):
-                raise KernelError(
-                    "MIGRATION_VALIDATION_STALE",
-                    "activation inputs, dependencies, or validator changed",
-                )
+        if str(row[0]) == "" or str(row[1]) != str(row[12]):
+            raise KernelError(
+                "MIGRATION_DECISION_VALIDATION_CONFLICT",
+                "decision validation result binding is invalid",
+            )
+        if snapshot["unresolved_required_references"]:
+            raise KernelError(
+                "MIGRATION_REQUIRED_REFERENCE_UNRESOLVED",
+                "required references changed after approval",
+            )
+        if (
+            str(row[8]) != descriptor.validator_name
+            or str(row[9]) != descriptor.validator_version
+            or str(row[10]) != descriptor.validator_implementation_hash
+            or str(row[11]) != snapshot["input_hash"]
+            or str(row[13]) != snapshot["reference_snapshot_hash"]
+            or str(row[14]) != snapshot["dependency_projection_hash"]
+        ):
+            raise KernelError(
+                "MIGRATION_VALIDATION_STALE",
+                "activation inputs, dependencies, or validator changed",
+            )
         return {
             "migration_validation_id": str(row[0]),
             "result_hash": str(row[12]),
@@ -876,70 +942,90 @@ class LegacyMigrationService:
         }
 
     def _domain_context(
-        self, migration_item_id: str
+        self,
+        migration_item_id: str,
+        *,
+        uow: AuthorityUnitOfWork | None = None,
+        lock_activation_scope: bool = False,
     ) -> tuple[DomainMigrationContext, str, str]:
-        with AuthorityUnitOfWork(self.database_url) as uow:
-            uow.cursor.execute(
-                """
-                SELECT item.migration_run_id, item.project_id,
-                       item.workspace_id, item.source_asset_type,
-                       item.stable_business_key, item.source_hash,
-                       COALESCE(item.operation_id::text, ''),
-                       item.target_asset_id, item.target_asset_version_id,
-                       item.target_content_hash, version.content,
-                       item.domain_adapter,
-                       item.target_materialization_level,
-                       item.item_version, item.status,
-                       COALESCE(decision.migration_decision_id, ''),
-                       COALESCE(decision.reason, ''),
-                       COALESCE(decision.actor_id, %s)
-                FROM authority_legacy_migration_item AS item
-                JOIN authority_asset_version AS version
-                  ON version.asset_version_id=item.target_asset_version_id
-                LEFT JOIN LATERAL (
-                    SELECT migration_decision_id, reason, actor_id, decision
-                    FROM authority_legacy_migration_decision
-                    WHERE migration_item_id=item.migration_item_id
-                    ORDER BY decision_version DESC LIMIT 1
-                ) AS decision ON decision.decision='APPROVE'
-                WHERE item.migration_item_id=%s
-                """,
-                [self.actor_id, migration_item_id],
-            )
-            row = uow.cursor.fetchone()
-            if row is None:
-                raise KernelError(
-                    "MIGRATION_ITEM_NOT_FOUND",
-                    "domain migration item or target AssetVersion is missing",
+        if uow is None:
+            with AuthorityUnitOfWork(self.database_url) as owned_uow:
+                return self._domain_context(
+                    migration_item_id,
+                    uow=owned_uow,
+                    lock_activation_scope=lock_activation_scope,
                 )
-            uow.cursor.execute(
-                """
-                SELECT reference.legacy_business_key,
-                       reference.relation_type,
-                       reference.target_item_id,
-                       reference.target_asset_version_id,
-                       reference.target_domain_projection_id,
-                       target.source_asset_type
-                FROM authority_legacy_migration_reference AS reference
-                JOIN authority_legacy_migration_item AS target
-                  ON target.migration_item_id=reference.target_item_id
-                WHERE reference.source_item_id=%s
-                  AND reference.resolution_status='RESOLVED'
-                ORDER BY reference.reference_ordinal
-                """,
-                [migration_item_id],
+        item_lock = (
+            " FOR UPDATE OF item"
+            if lock_activation_scope
+            else ""
+        )
+        reference_lock = (
+            " FOR SHARE OF reference, target" if lock_activation_scope else ""
+        )
+        uow.cursor.execute(
+            """
+            SELECT item.migration_run_id, item.project_id,
+                   item.workspace_id, item.source_asset_type,
+                   item.stable_business_key, item.source_hash,
+                   COALESCE(item.operation_id::text, ''),
+                   item.target_asset_id, item.target_asset_version_id,
+                   item.target_content_hash, version.content,
+                   item.domain_adapter,
+                   item.target_materialization_level,
+                   item.item_version, item.status,
+                   COALESCE(decision.migration_decision_id, ''),
+                   COALESCE(decision.reason, ''),
+                   COALESCE(decision.actor_id, %s)
+            FROM authority_legacy_migration_item AS item
+            JOIN authority_asset_version AS version
+              ON version.asset_version_id=item.target_asset_version_id
+            LEFT JOIN LATERAL (
+                SELECT migration_decision_id, reason, actor_id, decision
+                FROM authority_legacy_migration_decision
+                WHERE migration_item_id=item.migration_item_id
+                ORDER BY decision_version DESC LIMIT 1
+            ) AS decision ON decision.decision='APPROVE'
+            WHERE item.migration_item_id=%s
+            """
+            + item_lock,
+            [self.actor_id, migration_item_id],
+        )
+        row = uow.cursor.fetchone()
+        if row is None:
+            raise KernelError(
+                "MIGRATION_ITEM_NOT_FOUND",
+                "domain migration item or target AssetVersion is missing",
             )
-            references = tuple(
-                ResolvedMigrationReference(
-                    legacy_business_key=str(item[0]),
-                    relation_type=str(item[1]),
-                    target_item_id=str(item[2]),
-                    target_asset_version_id=str(item[3]),
-                    target_domain_projection_id=str(item[4] or ""),
-                    target_source_asset_type=str(item[5]),
-                )
-                for item in uow.cursor.fetchall()
+        uow.cursor.execute(
+            """
+            SELECT reference.legacy_business_key,
+                   reference.relation_type,
+                   reference.target_item_id,
+                   reference.target_asset_version_id,
+                   reference.target_domain_projection_id,
+                   target.source_asset_type
+            FROM authority_legacy_migration_reference AS reference
+            JOIN authority_legacy_migration_item AS target
+              ON target.migration_item_id=reference.target_item_id
+            WHERE reference.source_item_id=%s
+              AND reference.resolution_status='RESOLVED'
+            ORDER BY reference.reference_ordinal
+            """
+            + reference_lock,
+            [migration_item_id],
+        )
+        references = tuple(
+            ResolvedMigrationReference(
+                legacy_business_key=str(item[0]),
+                relation_type=str(item[1]),
+                target_item_id=str(item[2]),
+                target_asset_version_id=str(item[3]),
+                target_domain_projection_id=str(item[4] or ""),
+                target_source_asset_type=str(item[5]),
             )
+            for item in uow.cursor.fetchall()
+        )
         if str(row[14]) not in {"NEEDS_REVIEW", "QUALIFIED"}:
             raise KernelError(
                 "MIGRATION_ITEM_NOT_REVIEWABLE",
@@ -1007,12 +1093,17 @@ class LegacyMigrationService:
             MigrationVerificationLevel.ARCHIVAL_NATIVE
         ),
     ) -> dict[str, Any]:
+        verification_level = MigrationVerificationLevel(required_level)
         status = self.status(migration_run_id)
         hash_matches = True
         actual_hash = status["snapshot_hash"]
         if snapshot_root is not None:
             actual_hash = scan_legacy_snapshot(snapshot_root).snapshot_hash
             hash_matches = actual_hash == status["snapshot_hash"]
+        elif verification_level is MigrationVerificationLevel.RELEASE_READY:
+            # Release qualification must prove the current source snapshot,
+            # rather than treating an omitted root as an implicit hash match.
+            hash_matches = False
         counts = status["item_counts"]
         terminal = sum(
             counts.get(value, 0)
@@ -1100,18 +1191,55 @@ class LegacyMigrationService:
             ) = (int(value) for value in uow.cursor.fetchone())
             uow.cursor.execute(
                 """
-                SELECT COUNT(*) FILTER (WHERE latest.status='FAIL')
-                FROM (
-                    SELECT DISTINCT ON (migration_item_id)
-                           migration_item_id, status
+                SELECT item.domain_adapter, item.source_hash,
+                       COALESCE(
+                           item.evidence->>'migration_validation_id',
+                           item.evidence->>'latest_domain_validation_id',
+                           ''
+                       ) AS bound_validation_id,
+                       COALESCE(latest.migration_validation_id, ''),
+                       COALESCE(latest.status, ''),
+                       COALESCE(latest.source_hash, ''),
+                       COALESCE(latest.domain_adapter, ''),
+                       COALESCE(latest.validator_implementation_hash, '')
+                FROM authority_legacy_migration_item AS item
+                LEFT JOIN LATERAL (
+                    SELECT migration_validation_id, status, source_hash,
+                           domain_adapter, validator_implementation_hash
                     FROM authority_legacy_migration_validation
-                    WHERE migration_run_id=%s
-                    ORDER BY migration_item_id, validation_version DESC
-                ) AS latest
+                    WHERE migration_item_id=item.migration_item_id
+                    ORDER BY validation_version DESC
+                    LIMIT 1
+                ) AS latest ON TRUE
+                WHERE item.migration_run_id=%s
+                  AND item.target_materialization_level='DOMAIN_NATIVE'
+                  AND item.domain_state IN (
+                      'DOMAIN_VALIDATED','DOMAIN_DECISION_PENDING',
+                      'DOMAIN_APPROVED','DOMAIN_ACTIVATION_PENDING',
+                      'DOMAIN_ACTIVATED','DOMAIN_RECONCILED'
+                  )
                 """,
                 [migration_run_id],
             )
-            domain_validation_failures = int(uow.cursor.fetchone()[0])
+            validation_rows = list(uow.cursor.fetchall())
+            domain_validation_failures = 0
+            for validation_row in validation_rows:
+                adapter_name = str(validation_row[0])
+                current_descriptor = validator_descriptor(
+                    adapter_name,
+                    application_build_id=self.application_build_id,
+                    commit_sha=self.commit_sha,
+                )
+                if (
+                    not str(validation_row[2])
+                    or str(validation_row[2]) != str(validation_row[3])
+                    or str(validation_row[4]) != "PASS"
+                    or str(validation_row[1]) != str(validation_row[5])
+                    or adapter_name != str(validation_row[6])
+                    or current_descriptor.validator_implementation_hash
+                    != str(validation_row[7])
+                ):
+                    domain_validation_failures += 1
         target_integrity = (
             target_count == distinct_targets == hash_count == qualification_count
         )
@@ -1169,7 +1297,7 @@ class LegacyMigrationService:
                 domain_reconciliation_failures=domain_reconciliation_failures,
                 required_reference_failures=required_reference_failures,
             ),
-            required_level=required_level,
+            required_level=verification_level,
         )
         result = {
             "migration_run_id": migration_run_id,
@@ -1183,6 +1311,7 @@ class LegacyMigrationService:
             "expected_snapshot_hash": status["snapshot_hash"],
             "actual_snapshot_hash": actual_hash,
             "hash_matches": hash_matches,
+            "source_snapshot_verified": snapshot_root is not None and hash_matches,
             "item_count": total,
             "terminal_item_count": terminal,
             "archival_reconciled": archival_reconciled,
