@@ -2,13 +2,13 @@
 
 更新时间：2026-08-03
 
-状态：`D0_BLOCKED_MISSING_CREDENTIALS`
+状态：`TRACK_B_5_VERIFIED_D0_BLOCKED_C1_NOT_STARTED`
 
 主文档：[`autonomous-novel-os-architecture-closure-epic.md`](autonomous-novel-os-architecture-closure-epic.md)
 
-当前实现证据 SHA：`ea6876476287e90a206ec4a10b2345a881f67656`
+当前实现证据 SHA：`8d0c49973ad3f58ca325e3d39941fd89cb5d5f5e`
 
-当前 Gate：Track A 已通过；Track B Book/BookDesign 最小纵向切片已通过；D0 Harness 已实现但真实 Provider Probe 因缺少凭据阻塞。完整证据见 [`../reports/track-a-current-sha-validation.md`](../reports/track-a-current-sha-validation.md)、[`../reports/track-b-book-design-authority-slice.md`](../reports/track-b-book-design-authority-slice.md) 和 [`../reports/d0-provider-qualification-probe.md`](../reports/d0-provider-qualification-probe.md)。
+当前 Gate：Track A 与 Track B 最小纵向切片已通过；Track B.5 已证明 Transaction Command 原子性、精确故障回滚和 Scope 约束；D0 Authority Harness 已持久化，但真实 Provider Probe 因缺少凭据阻塞；BookDesign/Planning 收敛 ADR 已接受，C1 未开始。证据见 [`../reports/track-b-execution-semantics-hardening.md`](../reports/track-b-execution-semantics-hardening.md)、[`../reports/d0-authority-provider-qualification.md`](../reports/d0-authority-provider-qualification.md) 和 [`../reports/track-c-convergence-review.md`](../reports/track-c-convergence-review.md)。
 
 ## 1. 执行方式
 
@@ -138,7 +138,22 @@ provider_usage_proven=true
 provider_cost_proven=true
 provider_timeout_query_cancel_behavior_recorded=true
 unknown_reconciliation_proven=true
+provider_restart_recovery_proven=true
 ```
+
+### Track B.5 / C1 admission
+
+```text
+transaction_command_atomicity_proven=true
+inflight_command_recovery_semantics_proven=true
+execution_classification_consistent=true
+architecture_fitness_scope_hardened=true
+asset_scope_database_constraints_proven=true
+book_design_planning_convergence_adr_accepted=true
+```
+
+这些字段与 D0 全部真实 Gate 必须同时为 true 才能进入 C1。Fixture
+query/reconcile 或应用重建不得被记作真实 Provider restart proof。
 
 ### Track C
 
@@ -168,7 +183,9 @@ book_coordinator_l3_proven=true
 book_coordinator_l10_proven=true
 recap_replan_loop_proven=true
 production_runtime_hardening_verified=true
-restart_recovery_proven=true
+persistent_state_restart_proven=true
+inflight_durable_job_recovery_proven=true
+provider_external_effect_restart_recovery_proven=true
 operator_intervention_flow_proven=true
 ```
 

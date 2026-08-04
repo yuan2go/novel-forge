@@ -1,14 +1,17 @@
 # Autonomous Novel OS Architecture Closure Epic
 
-更新时间：2026-08-03
+更新时间：2026-08-04
 
 目标分支：`feat/v7-content-intelligence-and-longform-proof`
 
-实现证据 SHA：`ea6876476287e90a206ec4a10b2345a881f67656`
+实现证据 SHA：`8d0c49973ad3f58ca325e3d39941fd89cb5d5f5e`
 
-文档状态：`TRACK_A_AND_TRACK_B_MINIMAL_VERIFIED_D0_BLOCKED`
+文档状态：`TRACK_B_5_VERIFIED_D0_BLOCKED_C1_NOT_STARTED`
 
-实现证明：Track A 与 Track B Book/BookDesign 最小切片的代码、迁移、测试和本地隔离部署证据见执行报告；本文其余内容仍是架构程序，不能替代真实 Provider、长篇或生产验证。
+实现证明：Track A、Track B 最小切片与 Track B.5 Transaction Command
+原子性已有代码和 PostgreSQL 证据；D0 Authority Harness 已持久化但仅有
+Fixture 证据；BookDesign/Planning 收敛 ADR 已接受，C1 未开始。详见本轮
+三份执行报告。本文不能替代真实 Provider、长篇或生产验证。
 
 ## 1. Epic 决策
 
@@ -659,7 +662,9 @@ book_coordinator_l3_proven=true
 book_coordinator_l10_proven=true
 recap_replan_loop_proven=true
 production_runtime_hardening_verified=true
-restart_recovery_proven=true
+persistent_state_restart_proven=true
+inflight_durable_job_recovery_proven=true
+provider_external_effect_restart_recovery_proven=true
 operator_intervention_flow_proven=true
 ```
 

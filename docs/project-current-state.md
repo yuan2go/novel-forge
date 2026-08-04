@@ -4,7 +4,7 @@ Updated: 2026-08-04
 
 Branch: `feat/v7-content-intelligence-and-longform-proof`
 
-Implementation SHA: `32e4fd1462509216273cf861c9c4f36a69eb15b4`
+Implementation SHA: `8d0c49973ad3f58ca325e3d39941fd89cb5d5f5e`
 
 Autonomous Novel OS remains the product target. The current engineering verdict
 is narrower: the backend production boundary has completed its PostgreSQL
@@ -26,6 +26,20 @@ longform_proven=false
 multi_book_proven=false
 production_verified=false
 backup_pitr_proven=false
+
+transaction_command_atomicity_proven=true
+inflight_command_recovery_semantics_proven=true
+execution_classification_consistent=true
+architecture_fitness_scope_hardened=true
+asset_scope_database_constraints_proven=true
+book_design_planning_convergence_adr_accepted=true
+real_provider_auth_proven=false
+provider_request_receipt_proven=false
+provider_usage_proven=false
+provider_cost_proven=false
+provider_timeout_query_cancel_behavior_recorded=false
+unknown_reconciliation_proven=false
+provider_restart_recovery_proven=false
 ```
 
 ## Runtime fact
@@ -49,6 +63,8 @@ Outbox and Maintenance Worker groups. It contains no Web or Legacy service.
 | Legacy migration | 59 mappings: 18 domain-native and 41 archival; durable phases, references, approval and reconciliation | synthetic frozen snapshot; no real user data |
 | Chapter/Content | registered Authority definitions and grouped Workers | fixture proof; no real prose quality proof |
 | Project/Book/BookDesign/Planning | PostgreSQL commands and projections | typed integration fixtures |
+| Transaction Commands | admission, domain/business mutation, audit/outbox and Operation completion in one UoW; zero Attempt/Lease | precise PostgreSQL fault injection and replay |
+| D0 qualification | Authority-persisted fixture harness, six scenario rows, object evidence and report AssetVersion | no real Provider call; all real Gates false |
 | Source/MKAOS | Authority commands, object-store boundary and Workers | fixture/source protocol; no real connector proof |
 | External effects | planned execution, receipt, callback, query/reconciliation | scripted/fake Provider only |
 | Runtime governance | process-local psycopg3 pools, timeouts, bounded retry, metrics, drain | real PostgreSQL and Compose fault injection |
@@ -68,7 +84,9 @@ Outbox and Maintenance Worker groups. It contains no Web or Legacy service.
 - MKAOS material/rule/template and remaining historical domains have no
   domain-native migration adapters yet.
 - Final-SHA GitHub Actions have not run because this work has not been pushed.
-- The Admin/Web dependency and browser acceptance surface was outside this task.
+- Admin production dependencies report zero known production vulnerabilities;
+  unit tests, TypeScript/build and a Playwright smoke passed locally. This is not
+  public-authentication or production-deployment proof.
 
 ## Current evidence
 
@@ -80,6 +98,10 @@ Start with current code and these exact-SHA reports:
 - [`architecture/authority-runtime-architecture.md`](architecture/authority-runtime-architecture.md)
 - [`06-operations/authority-compose-runbook.md`](06-operations/authority-compose-runbook.md)
 - [`adr/0004-database-connection-and-transaction-governance.md`](adr/0004-database-connection-and-transaction-governance.md)
+- [`reports/track-b-execution-semantics-hardening.md`](reports/track-b-execution-semantics-hardening.md)
+- [`reports/d0-authority-provider-qualification.md`](reports/d0-authority-provider-qualification.md)
+- [`reports/track-c-convergence-review.md`](reports/track-c-convergence-review.md)
+- [`adr/0003-book-design-and-planning-convergence.md`](adr/0003-book-design-and-planning-convergence.md)
 
 Blueprints and historical reports describe their own target or historical SHA;
 they do not supersede current code and exact-HEAD test evidence.

@@ -4,7 +4,7 @@ Updated: 2026-08-04
 
 Branch: `feat/v7-content-intelligence-and-longform-proof`
 
-Implementation SHA: `32e4fd1462509216273cf861c9c4f36a69eb15b4`
+Implementation SHA: `8d0c49973ad3f58ca325e3d39941fd89cb5d5f5e`
 
 ## Current verdict
 
@@ -29,12 +29,39 @@ longform_proven=false
 multi_book_proven=false
 production_verified=false
 backup_pitr_proven=false
+
+transaction_command_atomicity_proven=true
+inflight_command_recovery_semantics_proven=true
+execution_classification_consistent=true
+architecture_fitness_scope_hardened=true
+asset_scope_database_constraints_proven=true
+book_design_planning_convergence_adr_accepted=true
+real_provider_auth_proven=false
+provider_request_receipt_proven=false
+provider_usage_proven=false
+provider_cost_proven=false
+provider_timeout_query_cancel_behavior_recorded=false
+unknown_reconciliation_proven=false
+provider_restart_recovery_proven=false
 ```
 
 This verdict is limited to the backend Authority and migration/runtime governance
 requested in this slice. Web UI development, public authentication, real Provider
 qualification, real story quality, long-form/multi-book operation, production
 load/SLO and backup/PITR remain outside the proof boundary.
+
+Track B.5 selected true Transaction Commands for Project, Book, BookDesign and
+formal Planning binding. Admission, business state, assets, audit/outbox and
+Operation success commit atomically; these commands create no Attempt/Lease and
+recover response loss through idempotent replay. Generic authority/maintenance
+workers never recovered the replaced inline READY/Attempt path, so their
+deadline/heartbeat behavior is not reported as command recovery.
+
+D0 now has PostgreSQL Operation/Attempt/ExternalEffect/Receipt/scenario/report
+state and Object Store evidence under a worker claim. The executed evidence is
+Fixture-only. With no Provider credential/model and no optional OpenAI SDK in
+the validation environment, every real D0 Gate remains false and C1 has not
+started.
 
 ## Authority runtime
 
@@ -88,6 +115,9 @@ again after a database retry.
 - [`domain-native-migration-matrix.md`](domain-native-migration-matrix.md)
 - [`authority-worker-fleet-e2e.md`](authority-worker-fleet-e2e.md)
 - [`database-retry-and-reconciliation-matrix.md`](database-retry-and-reconciliation-matrix.md)
+- [`track-b-execution-semantics-hardening.md`](track-b-execution-semantics-hardening.md)
+- [`d0-authority-provider-qualification.md`](d0-authority-provider-qualification.md)
+- [`track-c-convergence-review.md`](track-c-convergence-review.md)
 - [`../architecture/authority-runtime-architecture.md`](../architecture/authority-runtime-architecture.md)
 - [`../06-operations/authority-compose-runbook.md`](../06-operations/authority-compose-runbook.md)
 

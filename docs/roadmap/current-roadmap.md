@@ -1,10 +1,10 @@
 # Current Roadmap
 
-Updated: 2026-08-03
+Updated: 2026-08-04
 
 Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`
 
-Implementation evidence SHA: `ea6876476287e90a206ec4a10b2345a881f67656`
+Implementation evidence SHA: `8d0c49973ad3f58ca325e3d39941fd89cb5d5f5e`
 
 Execution model: `SIX_TRACK_VERTICAL_DELIVERY`
 
@@ -40,7 +40,10 @@ Current execution is stopped at the D0 gate:
 ```text
 Track A Gate = PASS
 Track B Book + BookDesign minimal slice = PASS
+Track B.5 execution semantics = PASS
+Track C convergence ADR = ACCEPTED
 D0 Real Provider Qualification Probe = BLOCKED_MISSING_CREDENTIALS
+C1 = NOT_STARTED
 ```
 
 Track C1 must not begin as an accepted implementation stage until the real D0 probe records Provider evidence. Design preparation may continue without changing shared contracts or claiming the gate.
@@ -54,6 +57,12 @@ migration_chain_verified=true
 current_sha_test_baseline_recorded=true
 architecture_fitness_foundation_enabled=true
 minimal_authority_only_runtime_verified=true
+transaction_command_atomicity_proven=true
+inflight_command_recovery_semantics_proven=true
+execution_classification_consistent=true
+architecture_fitness_scope_hardened=true
+asset_scope_database_constraints_proven=true
+book_design_planning_convergence_adr_accepted=true
 
 authority_only_runtime_verified=false
 single_chapter_real_provider_proven=false
@@ -72,7 +81,9 @@ duplicate_replay_proven=true
 query_projection_proven=true
 ```
 
-D0 real-provider flags are all false. See [`../reports/d0-provider-qualification-probe.md`](../reports/d0-provider-qualification-probe.md).
+D0 real-provider flags are all false. The PostgreSQL/Object Store harness does
+not promote Fixture evidence. See
+[`../reports/d0-authority-provider-qualification.md`](../reports/d0-authority-provider-qualification.md).
 
 ## 3. Track A — Trusted Baseline And Governance
 
@@ -560,7 +571,9 @@ book_coordinator_l3_proven=true
 book_coordinator_l10_proven=true
 recap_replan_loop_proven=true
 production_runtime_hardening_verified=true
-restart_recovery_proven=true
+persistent_state_restart_proven=true
+inflight_durable_job_recovery_proven=true
+provider_external_effect_restart_recovery_proven=true
 operator_intervention_flow_proven=true
 ```
 

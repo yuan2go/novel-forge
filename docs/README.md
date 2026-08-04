@@ -1,10 +1,10 @@
 # Autonomous Novel OS Documentation
 
-Updated: 2026-08-03
+Updated: 2026-08-04
 
 Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`
 
-Implementation evidence SHA: `ea6876476287e90a206ec4a10b2345a881f67656`
+Implementation evidence SHA: `8d0c49973ad3f58ca325e3d39941fd89cb5d5f5e`
 
 This directory is the documentation entrypoint for the Autonomous Novel OS target implemented in the `novel-forge` repository.
 
@@ -12,7 +12,11 @@ The repository/package/CLI name remains Novel Forge v6 until an explicit rename 
 
 ## Current Status
 
-The repository-integrity warning from the 2026-08-01 remote audit is resolved at the implementation evidence SHA. Track A and the isolated Track B Book/BookDesign minimum are verified; D0 real Provider qualification is blocked by missing credentials.
+The repository-integrity warning from the 2026-08-01 remote audit is resolved.
+Track A, the Track B minimum and Track B.5 Transaction Command atomicity are
+verified; D0 is Authority-persisted but real Provider qualification remains
+blocked by missing credentials. The convergence ADR is accepted and C1 has not
+started.
 
 ```text
 head_integrity_verified=true
@@ -21,6 +25,10 @@ migration_chain_verified=true
 current_sha_test_baseline_recorded=true
 architecture_fitness_foundation_enabled=true
 minimal_authority_only_runtime_verified=true
+transaction_command_atomicity_proven=true
+inflight_command_recovery_semantics_proven=true
+architecture_fitness_scope_hardened=true
+asset_scope_database_constraints_proven=true
 
 authority_only_runtime_verified=false
 real_provider_proven=false
@@ -157,6 +165,9 @@ A blueprint describes the target. A report describes its original baseline. A ro
 | Track A validation | [`reports/track-a-current-sha-validation.md`](reports/track-a-current-sha-validation.md) | exact command/result matrix bound to the implementation evidence SHA |
 | Track B slice | [`reports/track-b-book-design-authority-slice.md`](reports/track-b-book-design-authority-slice.md) | Book/BookDesign vertical chain and minimal runtime evidence |
 | D0 probe | [`reports/d0-provider-qualification-probe.md`](reports/d0-provider-qualification-probe.md) | fixture contract evidence and real-provider blocker |
+| Track B.5 hardening | [`reports/track-b-execution-semantics-hardening.md`](reports/track-b-execution-semantics-hardening.md) | Transaction Command atomicity, recovery semantics and scope constraints |
+| D0 Authority probe | [`reports/d0-authority-provider-qualification.md`](reports/d0-authority-provider-qualification.md) | persisted harness and explicit real-provider blocker |
+| Track C convergence | [`reports/track-c-convergence-review.md`](reports/track-c-convergence-review.md) | BookDesign/StoryDesign/Content/Planning ownership and C1 Gate |
 | Historical detailed audit | [`reports/2026-08-01-code-audit-and-documentation-rebaseline.md`](reports/2026-08-01-code-audit-and-documentation-rebaseline.md) | historical code facts and the now-resolved integrity warning |
 | Next-stage Epic | [`architecture-closure/autonomous-novel-os-architecture-closure-epic.md`](architecture-closure/autonomous-novel-os-architecture-closure-epic.md) | six Tracks, vertical Slices, evidence model and final Gate |
 | Execution index | [`architecture-closure/README.md`](architecture-closure/README.md) | Track order, AC reference map, WIP and Gate Report template |

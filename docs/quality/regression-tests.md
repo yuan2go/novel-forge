@@ -237,6 +237,20 @@ Legacy writes and silent fallback are disabled
 
 Provider route qualification is a separate D0 prerequisite before Track C. Track E must add outbox lag/SLO, security, backup/PITR and capacity readiness before full production Authority readiness is true.
 
+Track B.5 additionally requires exact checkpoint fault injection for Transaction
+Commands. Admission, domain/business state, AssetVersion, audit/outbox and
+Operation completion must be observed as either all absent or all committed;
+successful commands must have zero Attempts. Response loss after commit must be
+recoverable by same-digest replay, while a different digest must fail.
+
+D0 verification is split into D0-A through D0-F. Fixture PostgreSQL/Object Store
+tests verify protocol and persistence only. Real auth, receipt, usage, calculated
+cost, query/cancel, UNKNOWN reconciliation, late result and worker-process
+restart require separately persisted external evidence. Record
+`persistent_state_restart_proven`, `inflight_command_recovery_proven`, and
+`provider_restart_recovery_proven` independently; do not collapse them into a
+generic `restart_recovery_proven`.
+
 Deployment recovery tests:
 
 - terminate a Chapter worker during RUNNING;
