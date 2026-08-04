@@ -253,6 +253,7 @@ def assert_stale_fence_rejected(
             "ATTEMPT_FENCING_TOKEN_STALE",
             "ATTEMPT_LEASE_NOT_OWNED",
             "ATTEMPT_LEASE_INACTIVE",
+            "ATTEMPT_LEASE_LOST",
         }:
             raise
         return {
