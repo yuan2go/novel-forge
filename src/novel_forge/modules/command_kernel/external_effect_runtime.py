@@ -149,13 +149,27 @@ def prepare_effect_dispatch(
     *,
     effect_id: str,
 ) -> dict[str, Any]:
+    reconciliation_required = False
     with AuthorityUnitOfWork(database_url) as uow:
         repository = uow.repositories.external_effects
         _require_context(repository, context)
         effect = repository.get_for_update(effect_id)
         _require_project(effect, context.project_id)
         result = repository.prepare_dispatch(effect, str(uuid4()))
-        if not result["replayed"]:
+        reconciliation_required = bool(result.get("reconciliation_required"))
+        if reconciliation_required:
+            _record(
+                repository,
+                context,
+                effect_id,
+                "external_effect.reconciliation_required",
+                {
+                    "dispatch_id": result["dispatch_id"],
+                    "generation": result["generation"],
+                    "reason": "dispatch lease expired after request may have started",
+                },
+            )
+        elif not result["replayed"]:
             _record(
                 repository,
                 context,
@@ -164,6 +178,11 @@ def prepare_effect_dispatch(
                 {"dispatch_id": result["dispatch_id"], "generation": result["generation"]},
             )
         uow.commit()
+    if reconciliation_required:
+        raise KernelError(
+            "EFFECT_RECONCILIATION_REQUIRED",
+            "expired dispatch outcome must be queried before any Provider retry",
+        )
     return result
 
 

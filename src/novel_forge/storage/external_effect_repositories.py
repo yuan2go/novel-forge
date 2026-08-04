@@ -162,11 +162,14 @@ class ExternalEffectRepository:
                 "EFFECT_RECONCILIATION_REQUIRED",
                 "unknown external outcome must be reconciled before retry",
             )
-        if effect["status"] not in {"READY", "FAILED_RETRYABLE"}:
-            raise KernelError("EFFECT_STATUS_CONFLICT", "effect is not dispatchable")
         self.cursor.execute(
             """
-            SELECT dispatch_id, generation, status
+            SELECT dispatch_id, generation, status,
+                   EXISTS (
+                       SELECT 1 FROM authority_effect_dispatch_lease AS lease
+                       WHERE lease.dispatch_id=authority_external_effect_dispatch.dispatch_id
+                         AND lease.status='HELD' AND lease.expires_at > NOW()
+                   ) AS active_lease
             FROM authority_external_effect_dispatch
             WHERE external_effect_id = %s
             ORDER BY generation DESC
@@ -176,8 +179,55 @@ class ExternalEffectRepository:
             [effect["external_effect_id"]],
         )
         latest = self.cursor.fetchone()
+        if (
+            latest
+            and latest[2] in {"LEASED", "DISPATCHING"}
+            and not bool(latest[3])
+        ):
+            self.cursor.execute(
+                """
+                UPDATE authority_effect_dispatch_lease
+                SET status='EXPIRED', released_at=NOW(),
+                    release_reason='outcome_unknown_after_lease_expiry'
+                WHERE dispatch_id=%s AND status='HELD' AND expires_at <= NOW()
+                """,
+                [latest[0]],
+            )
+            self.cursor.execute(
+                """
+                UPDATE authority_external_effect_dispatch
+                SET status='UNKNOWN', updated_at=NOW(),
+                    evidence=evidence || %s
+                WHERE dispatch_id=%s
+                """,
+                [
+                    Jsonb(
+                        {
+                            "reason": "dispatch lease expired after request may have started",
+                            "request_sent": "unknown",
+                        }
+                    ),
+                    latest[0],
+                ],
+            )
+            self.cursor.execute(
+                """
+                UPDATE authority_external_effect
+                SET status='RECONCILIATION_REQUIRED'
+                WHERE external_effect_id=%s
+                """,
+                [effect["external_effect_id"]],
+            )
+            return {
+                "dispatch_id": latest[0],
+                "generation": latest[1],
+                "replayed": True,
+                "reconciliation_required": True,
+            }
         if latest and latest[2] in {"CREATED", "LEASED", "DISPATCHING"}:
             return {"dispatch_id": latest[0], "generation": latest[1], "replayed": True}
+        if effect["status"] not in {"READY", "FAILED_RETRYABLE"}:
+            raise KernelError("EFFECT_STATUS_CONFLICT", "effect is not dispatchable")
         generation = int(latest[1]) + 1 if latest else 1
         if generation > effect["max_attempts"]:
             raise KernelError("EFFECT_RETRY_EXHAUSTED", "effect retry policy is exhausted")
@@ -201,7 +251,12 @@ class ExternalEffectRepository:
             "UPDATE authority_external_effect SET status = 'READY' WHERE external_effect_id = %s",
             [effect["external_effect_id"]],
         )
-        return {"dispatch_id": dispatch_id, "generation": generation, "replayed": False}
+        return {
+            "dispatch_id": dispatch_id,
+            "generation": generation,
+            "replayed": False,
+            "reconciliation_required": False,
+        }
 
     def dispatch_for_update(self, dispatch_id: str) -> dict[str, Any]:
         self.cursor.execute(

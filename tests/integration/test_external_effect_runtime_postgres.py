@@ -7,22 +7,17 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from threading import Barrier
 
+import psycopg
+
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.command_kernel.external_effect_adapters import (
     FakeDeterministicProvider,
     LocalFileObjectStoreAdapter,
 )
-from novel_forge.modules.provider_control import ScriptedProviderAdapterV2
-
-
-class _SlowProvider(FakeDeterministicProvider):
-    def execute(self, **kwargs):
-        time.sleep(1.2)
-        return super().execute(**kwargs)
 from novel_forge.modules.command_kernel.external_effect_runtime import (
     EffectCommandContext,
-    acquire_effect_dispatch,
     accept_external_effect_receipt,
+    acquire_effect_dispatch,
     cancel_external_effect,
     compensate_external_effect,
     dispatch_external_effect,
@@ -32,6 +27,7 @@ from novel_forge.modules.command_kernel.external_effect_runtime import (
     reconcile_external_effect,
     submit_effect_dispatch_result,
 )
+from novel_forge.modules.provider_control import ScriptedProviderAdapterV2
 from tests.integration.authority_postgres_support import (
     DATABASE_URL,
     ensure_migrated,
@@ -42,6 +38,33 @@ from tests.integration.authority_postgres_support import (
 )
 
 
+class _SlowProvider(FakeDeterministicProvider):
+    def execute(self, **kwargs):
+        time.sleep(1.2)
+        return super().execute(**kwargs)
+
+
+class _CountingProvider(FakeDeterministicProvider):
+    def __init__(self, database_url: str, scenario: str = "success") -> None:
+        super().__init__(scenario)
+        self.database_url = database_url
+        self.execute_count = 0
+        self.idle_in_transaction_during_execute = -1
+
+    def execute(self, **kwargs):
+        self.execute_count += 1
+        with psycopg.connect(self.database_url) as connection:
+            self.idle_in_transaction_during_execute = int(
+                connection.execute(
+                    """
+                    SELECT COUNT(*) FROM pg_stat_activity
+                    WHERE pid <> pg_backend_pid()
+                      AND state='idle in transaction'
+                      AND application_name LIKE 'novel-forge-%'
+                    """
+                ).fetchone()[0]
+            )
+        return super().execute(**kwargs)
 class ExternalEffectRuntimePostgresTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
@@ -171,6 +194,54 @@ class ExternalEffectRuntimePostgresTests(unittest.TestCase):
                 [result["dispatch_id"]],
             )
             self.assertTrue(cursor.fetchone()[0])
+
+    def test_expired_post_request_lease_requires_query_without_duplicate_execute(self) -> None:
+        context = self._context()
+        stable_key = identifier("db-result-loss")
+        provider = _CountingProvider(DATABASE_URL)
+        effect = plan_external_effect(
+            DATABASE_URL,
+            context,
+            effect_type="provider.test",
+            provider=provider.provider,
+            capability="provider.test",
+            stable_idempotency_key=stable_key,
+            request_payload={"failure_injection": "database_result_commit_lost"},
+            max_attempts=2,
+            reversible=False,
+            reconciliation_mode="query",
+        )["external_effect_id"]
+        dispatch = prepare_effect_dispatch(DATABASE_URL, context, effect_id=effect)
+        acquire_effect_dispatch(
+            DATABASE_URL,
+            context,
+            dispatch_id=dispatch["dispatch_id"],
+            worker_id="crashed-after-provider-request",
+            lease_seconds=1,
+        )
+        provider.execute(
+            stable_idempotency_key=stable_key,
+            capability="provider.test",
+            request_payload={"failure_injection": "database_result_commit_lost"},
+        )
+        time.sleep(1.1)
+        with self.assertRaises(KernelError) as retry:
+            dispatch_external_effect(
+                DATABASE_URL,
+                context,
+                effect_id=effect,
+                worker_id="replacement-dispatcher",
+                lease_seconds=30,
+                adapter=provider,
+            )
+        self.assertEqual(retry.exception.code, "EFFECT_RECONCILIATION_REQUIRED")
+        self.assertEqual(provider.execute_count, 1)
+        reconciled = reconcile_external_effect(
+            DATABASE_URL, context, effect_id=effect, adapter=provider
+        )
+        self.assertEqual(reconciled["outcome"], "success")
+        self.assertEqual(provider.execute_count, 1)
+        self.assertEqual(provider.idle_in_transaction_during_execute, 0)
 
     def test_two_dispatchers_compete_and_expired_lease_takeover_fences_old(self) -> None:
         context = self._context()
