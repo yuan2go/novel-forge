@@ -48,6 +48,26 @@ class AuthorityCoverageBaselineTests(unittest.TestCase):
             current["tested_repository_sha"], current["repository_head_at_generation"]
         )
 
+    def test_ci_persists_every_run_evidence_class_outside_the_source_tree(self) -> None:
+        root = Path(__file__).resolve().parents[2]
+        contract = load_contract(root)
+        workflow = (root / ".github/workflows/core-os-ci.yml").read_text(encoding="utf-8")
+        artifact_tokens = {
+            "coverage_manifest": "postgresql-authority-coverage-${{ github.sha }}",
+            "test_result": "test-result-${{ github.sha }}",
+            "migration_result": "migration-${{ github.sha }}",
+            "compose_evidence": "authority-compose-${{ github.sha }}",
+            "query_plan_evidence": "query-plan-${{ github.sha }}",
+            "worker_fleet_evidence": "worker-fleet-summary-${{ github.sha }}",
+            "docker_image_digest": "docker-image-digest-${{ github.sha }}",
+            "environment_metadata": "environment-metadata-${{ github.sha }}",
+        }
+        required = contract["run_evidence_contract"]["required_artifact_classes"]
+        self.assertEqual(set(required), set(artifact_tokens))
+        for evidence_class in required:
+            self.assertIn(artifact_tokens[evidence_class], workflow)
+        self.assertIn("release-qualification-${{ github.sha }}", workflow)
+
     def test_side_effect_coverage_is_fully_owned_and_mapped(self) -> None:
         root = Path(__file__).resolve().parents[2]
         current = build_manifest(root, generated_at="2026-08-04T00:00:00+00:00")

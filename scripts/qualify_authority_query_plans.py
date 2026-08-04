@@ -6,6 +6,7 @@ import argparse
 from datetime import datetime, timezone
 import json
 import os
+import subprocess
 import time
 from typing import Any
 from uuid import uuid4
@@ -342,10 +343,17 @@ def main() -> int:
         default=os.environ.get("NOVEL_FORGE_DATABASE_URL") or "",
     )
     parser.add_argument("--output", default="")
+    parser.add_argument("--commit-sha", default=os.environ.get("GITHUB_SHA") or "")
     args = parser.parse_args()
     if not args.database_url:
         raise SystemExit("NOVEL_FORGE_DATABASE_URL or --database-url is required")
     result = qualify(args.database_url)
+    commit_sha = args.commit_sha or subprocess.check_output(
+        ["git", "rev-parse", "HEAD"], text=True
+    ).strip()
+    if len(commit_sha) != 40 or any(character not in "0123456789abcdef" for character in commit_sha):
+        raise SystemExit("--commit-sha must be a full lowercase Git SHA")
+    result["tested_sha"] = commit_sha
     encoded = json.dumps(result, indent=2, sort_keys=True)
     if args.output:
         with open(args.output, "w", encoding="utf-8") as handle:
