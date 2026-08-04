@@ -10,6 +10,7 @@ import os
 import random
 import re
 import hashlib
+import hmac
 import json
 import shlex
 import threading
@@ -97,6 +98,11 @@ DEFAULT_AUTHORITY_ROLE_INSTANCES: dict[str, int] = {
 _SECRET_DSN_KEYS = frozenset(
     {"password", "passfile", "sslpassword", "sslkey", "sslcert"}
 )
+# Registry identity is process-local and must distinguish credential rotation
+# without putting a reusable or offline-verifiable DSN digest into logs,
+# metrics, reprs, or persisted evidence.  Public telemetry continues to use the
+# password-free database identity below.
+_PROCESS_REGISTRY_HMAC_KEY = os.urandom(32)
 
 
 def _password_free_database_identity(database_url: str) -> dict[str, Any]:
@@ -198,9 +204,19 @@ class DatabaseRuntimeConfig:
         return "sha256:" + hashlib.sha256(encoded).hexdigest()
 
     @property
+    def database_registry_identity(self) -> str:
+        """Return a credential-sensitive, non-exportable process-local key."""
+
+        return "hmac-sha256:" + hmac.new(
+            _PROCESS_REGISTRY_HMAC_KEY,
+            self.database_url.encode("utf-8"),
+            hashlib.sha256,
+        ).hexdigest()
+
+    @property
     def registry_key(self) -> tuple[str, str, str, str]:
         return (
-            self.database_identity_fingerprint,
+            self.database_registry_identity,
             self.role,
             self.service,
             self.pool_config_fingerprint,

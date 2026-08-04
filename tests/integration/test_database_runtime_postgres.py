@@ -4,6 +4,7 @@ import threading
 import time
 import unittest
 from concurrent.futures import ThreadPoolExecutor
+from unittest.mock import patch
 
 from psycopg_pool import PoolTimeout
 
@@ -13,6 +14,7 @@ from novel_forge.storage.database_runtime import (
     TransactionExecutor,
     database_runtime_report,
 )
+from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from tests.integration.authority_postgres_support import DATABASE_URL, connect
 
 
@@ -66,6 +68,25 @@ class DatabaseRuntimePostgresTests(unittest.TestCase):
         self.assertEqual(session[3], "2s")
         self.assertEqual(session[4], "UTC")
         self.assertEqual(session[5], "public")
+
+    def test_coordinated_nested_authority_uow_uses_one_pool_connection(self) -> None:
+        runtime = self._runtime(max_size=1)
+        with patch(
+            "novel_forge.storage.authority_uow.get_database_runtime",
+            return_value=runtime,
+        ):
+            with AuthorityUnitOfWork(
+                DATABASE_URL, coordinate_nested=True
+            ) as outer:
+                outer.cursor.execute("SELECT pg_backend_pid()")
+                outer_pid = int(outer.cursor.fetchone()[0])
+                with AuthorityUnitOfWork(DATABASE_URL) as nested:
+                    nested.cursor.execute("SELECT pg_backend_pid()")
+                    nested_pid = int(nested.cursor.fetchone()[0])
+                    nested.commit()
+                outer.commit()
+        self.assertEqual(nested_pid, outer_pid)
+        runtime.assert_no_connection_leaks()
 
     def test_pool_exhaustion_is_bounded_and_leaks_are_detected(self) -> None:
         runtime = self._runtime(max_size=1)

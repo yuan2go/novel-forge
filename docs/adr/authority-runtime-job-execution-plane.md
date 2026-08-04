@@ -46,6 +46,7 @@ contract instead of copying delivery authority into Runtime Job.
 Migration 0062 adds Runtime Job tables/indexes/constraints. Migration 0063 adds
 fleet operational projections and hardened Outbox evidence. Book and Maintenance
 now share one recoverable execution contract without creating another business
-Task system. Migration 0064 binds Job, current Attempt, Lease, Checkpoint, Result
-and Event identities with composite database constraints; it also ensures an
+Task system. Migrations 0064–0066 bind Job, current Attempt, Lease, Worker,
+Fence, Checkpoint, Result and Event identities with composite database
+constraints; they also ensure an
 expired final Attempt converges to Dead Letter rather than remaining active.

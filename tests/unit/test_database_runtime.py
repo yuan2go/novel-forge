@@ -101,6 +101,7 @@ class DatabaseRuntimeUnitTests(unittest.TestCase):
             first.database_identity_fingerprint,
             rotated.database_identity_fingerprint,
         )
+        self.assertNotEqual(first.registry_key, rotated.registry_key)
         self.assertNotEqual(
             first.database_identity_fingerprint,
             other_database.database_identity_fingerprint,

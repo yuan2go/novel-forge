@@ -3,9 +3,11 @@ from __future__ import annotations
 import json
 import hashlib
 import os
+import shutil
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 from uuid import uuid4
 
 from psycopg.types.json import Jsonb
@@ -29,6 +31,7 @@ from novel_forge.modules.source_authority import (
     SourceChunkCandidate,
 )
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+from novel_forge.storage.database_runtime import DatabaseRuntime, DatabaseRuntimeConfig
 from tests.integration.authority_postgres_support import DATABASE_URL, ensure_migrated, identifier
 
 
@@ -822,6 +825,7 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
                 path.chmod(0o555 if path.is_dir() else 0o444)
             root.chmod(0o555)
             imported = service.import_snapshot(root)
+            verification_root = self._retain_snapshot(root)
         activation_order = service.domain_activation_order(
             imported["migration_run_id"]
         )
@@ -882,17 +886,90 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
                     correlation_id=f"correlation:{project_id}",
                 )
             )
-            activated[source_type] = service.activate_domain_item(
-                str(item[0]), expected_item_version=int(decision["item_version"])
-            )
+            if source_type == "book":
+                one_connection_runtime = DatabaseRuntime(
+                    DatabaseRuntimeConfig(
+                        DATABASE_URL,
+                        role="migration",
+                        service="legacy-domain-activation-one-connection",
+                        min_size=0,
+                        max_size=1,
+                        max_waiting=1,
+                        timeout=0.5,
+                    )
+                )
+                try:
+                    with patch(
+                        "novel_forge.storage.authority_uow.get_database_runtime",
+                        return_value=one_connection_runtime,
+                    ):
+                        activated[source_type] = service.activate_domain_item(
+                            str(item[0]),
+                            expected_item_version=int(decision["item_version"]),
+                        )
+                finally:
+                    one_connection_runtime.close()
+            else:
+                activated[source_type] = service.activate_domain_item(
+                    str(item[0]),
+                    expected_item_version=int(decision["item_version"]),
+                )
         verified = service.verify(
-            imported["migration_run_id"], required_level="DOMAIN_NATIVE"
+            imported["migration_run_id"],
+            snapshot_root=verification_root,
+            required_level="DOMAIN_NATIVE",
         )
         self.assertEqual(verified["status"], "DOMAIN_RECONCILED")
         self.assertEqual(verified["verification_status"], "PASS")
         self.assertEqual(verified["pending_domain_native_count"], 0)
         self.assertEqual(verified["actual_domain_failures"], 0)
         self.assertTrue(verified["domain_native_core_proven"])
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                """
+                SELECT source_asset_type, migration_item_id, item_version
+                FROM authority_legacy_migration_item
+                WHERE migration_run_id=%s
+                  AND source_asset_type IN ('book','book_design_candidate')
+                """,
+                [imported["migration_run_id"]],
+            )
+            current_items = {
+                str(source_type): (str(item_id), int(item_version))
+                for source_type, item_id, item_version in uow.cursor.fetchall()
+            }
+        book_revalidation = service.validate_domain_item(
+            current_items["book"][0],
+            expected_item_version=current_items["book"][1],
+        )
+        self.assertEqual(book_revalidation["validation_status"], "PASS")
+        stale_dependency = service.verify(
+            imported["migration_run_id"],
+            snapshot_root=verification_root,
+            required_level="DOMAIN_NATIVE",
+        )
+        self.assertEqual(stale_dependency["verification_status"], "FAIL")
+        self.assertGreaterEqual(stale_dependency["domain_validation_failures"], 1)
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                """
+                SELECT item_version FROM authority_legacy_migration_item
+                WHERE migration_item_id=%s
+                """,
+                [current_items["book_design_candidate"][0]],
+            )
+            current_design_version = int(uow.cursor.fetchone()[0])
+        design_revalidation = service.validate_domain_item(
+            current_items["book_design_candidate"][0],
+            expected_item_version=current_design_version,
+        )
+        self.assertEqual(design_revalidation["validation_status"], "PASS")
+        refreshed = service.verify(
+            imported["migration_run_id"],
+            snapshot_root=verification_root,
+            required_level="DOMAIN_NATIVE",
+        )
+        self.assertEqual(refreshed["verification_status"], "PASS")
         self.assertNotEqual(
             activated["book_design_candidate"]["target_asset_version_id"],
             str(item[3]),
@@ -991,11 +1068,12 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
                 ),
             ],
         )
-        release_without_snapshot = service.verify(
-            imported["migration_run_id"], required_level="RELEASE_READY"
-        )
-        self.assertEqual(release_without_snapshot["verification_status"], "FAIL")
-        self.assertFalse(release_without_snapshot["source_snapshot_verified"])
+        for level in ("ARCHIVAL_NATIVE", "DOMAIN_NATIVE", "RELEASE_READY"):
+            proof_without_snapshot = service.verify(
+                imported["migration_run_id"], required_level=level
+            )
+            self.assertEqual(proof_without_snapshot["verification_status"], "FAIL")
+            self.assertFalse(proof_without_snapshot["source_snapshot_verified"])
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
             uow.cursor.execute(
                 """
@@ -1012,7 +1090,9 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
             self.assertEqual(uow.cursor.rowcount, 1)
             uow.commit()
         revoked = service.verify(
-            imported["migration_run_id"], required_level="DOMAIN_NATIVE"
+            imported["migration_run_id"],
+            snapshot_root=verification_root,
+            required_level="DOMAIN_NATIVE",
         )
         self.assertEqual(revoked["verification_status"], "FAIL")
         self.assertEqual(revoked["domain_validation_failures"], 1)
@@ -1324,6 +1404,7 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
                 path.chmod(0o555 if path.is_dir() else 0o444)
             root.chmod(0o555)
             imported = service.import_snapshot(root)
+            verification_root = self._retain_snapshot(root)
         self._validate_approve_activate(
             service, imported["migration_run_id"], "project_workspace_state"
         )
@@ -1381,7 +1462,9 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
                 str(item[0]), expected_item_version=int(decision["item_version"])
             )
         verified = service.verify(
-            imported["migration_run_id"], required_level="DOMAIN_NATIVE"
+            imported["migration_run_id"],
+            snapshot_root=verification_root,
+            required_level="DOMAIN_NATIVE",
         )
         self.assertEqual(verified["status"], "DOMAIN_RECONCILED")
         self.assertEqual(verified["verification_status"], "PASS")
@@ -1490,6 +1573,7 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
                 path.chmod(0o555 if path.is_dir() else 0o444)
             root.chmod(0o555)
             imported = service.import_snapshot(root)
+            verification_root = self._retain_snapshot(root)
         self._validate_approve_activate(
             service, imported["migration_run_id"], "project_workspace_state"
         )
@@ -1540,9 +1624,32 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
             "story_design_candidate",
         )
         verified = service.verify(
-            imported["migration_run_id"], required_level="DOMAIN_NATIVE"
+            imported["migration_run_id"],
+            snapshot_root=verification_root,
+            required_level="DOMAIN_NATIVE",
         )
         self.assertEqual(verified["verification_status"], "PASS")
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                """
+                SELECT migration_item_id, item_version
+                FROM authority_legacy_migration_item
+                WHERE migration_run_id=%s AND source_asset_type='story_design'
+                """,
+                [imported["migration_run_id"]],
+            )
+            activated_item_id, activated_item_version = uow.cursor.fetchone()
+        revalidation = service.validate_domain_item(
+            str(activated_item_id),
+            expected_item_version=int(activated_item_version),
+        )
+        self.assertEqual(revalidation["validation_status"], "PASS")
+        reverified = service.verify(
+            imported["migration_run_id"],
+            snapshot_root=verification_root,
+            required_level="DOMAIN_NATIVE",
+        )
+        self.assertEqual(reverified["verification_status"], "PASS")
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
             uow.cursor.execute(
                 """
@@ -1690,6 +1797,7 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
                 path.chmod(0o555 if path.is_dir() else 0o444)
             root.chmod(0o555)
             imported = service.import_snapshot(root)
+            verification_root = self._retain_snapshot(root)
         self._validate_approve_activate(
             service, imported["migration_run_id"], "project_workspace_state"
         )
@@ -1733,11 +1841,32 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
             str(item[0]), expected_item_version=int(decision["item_version"])
         )
         verified = service.verify(
-            imported["migration_run_id"], required_level="DOMAIN_NATIVE"
+            imported["migration_run_id"],
+            snapshot_root=verification_root,
+            required_level="DOMAIN_NATIVE",
         )
         self.assertEqual(verified["status"], "DOMAIN_RECONCILED")
         self.assertEqual(verified["verification_status"], "PASS")
         self.assertEqual(verified["actual_domain_failures"], 0)
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                "SELECT item_version FROM authority_legacy_migration_item "
+                "WHERE migration_item_id=%s",
+                [str(item[0])],
+            )
+            current_source_item_version = int(uow.cursor.fetchone()[0])
+        source_revalidation = service.validate_domain_item(
+            str(item[0]), expected_item_version=current_source_item_version
+        )
+        self.assertEqual(source_revalidation["validation_status"], "PASS")
+        self.assertEqual(
+            service.verify(
+                imported["migration_run_id"],
+                snapshot_root=verification_root,
+                required_level="DOMAIN_NATIVE",
+            )["verification_status"],
+            "PASS",
+        )
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
             uow.cursor.execute(
                 """
@@ -2052,6 +2181,7 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
                 path.chmod(0o555 if path.is_dir() else 0o444)
             root.chmod(0o555)
             imported = service.import_snapshot(root)
+            verification_root = self._retain_snapshot(root)
         self._validate_approve_activate(
             service, imported["migration_run_id"], "project_workspace_state"
         )
@@ -2102,11 +2232,40 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
                 str(item[0]), expected_item_version=int(decision["item_version"])
             )
         verified = service.verify(
-            imported["migration_run_id"], required_level="DOMAIN_NATIVE"
+            imported["migration_run_id"],
+            snapshot_root=verification_root,
+            required_level="DOMAIN_NATIVE",
         )
         self.assertEqual(verified["status"], "DOMAIN_RECONCILED")
         self.assertEqual(verified["verification_status"], "PASS")
         self.assertEqual(verified["actual_domain_failures"], 0)
+        for source_type in (
+            "knowledge_card_candidate",
+            "knowledge_card",
+            "knowledge_pack",
+        ):
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                uow.cursor.execute(
+                    """
+                    SELECT migration_item_id, item_version
+                    FROM authority_legacy_migration_item
+                    WHERE migration_run_id=%s AND source_asset_type=%s
+                    """,
+                    [imported["migration_run_id"], source_type],
+                )
+                active_item_id, active_item_version = uow.cursor.fetchone()
+            revalidation = service.validate_domain_item(
+                str(active_item_id), expected_item_version=int(active_item_version)
+            )
+            self.assertEqual(revalidation["validation_status"], "PASS")
+        self.assertEqual(
+            service.verify(
+                imported["migration_run_id"],
+                snapshot_root=verification_root,
+                required_level="DOMAIN_NATIVE",
+            )["verification_status"],
+            "PASS",
+        )
         self.assertFalse(
             activations["knowledge_card"]["evidence"]["production_verified"]
         )
@@ -2193,6 +2352,13 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
     @staticmethod
     def _write(path: Path, payload: dict) -> None:
         path.write_text(json.dumps(payload), encoding="utf-8")
+
+    def _retain_snapshot(self, root: Path) -> Path:
+        retained = tempfile.TemporaryDirectory()
+        self.addCleanup(retained.cleanup)
+        retained_root = Path(retained.name)
+        shutil.copytree(root, retained_root, dirs_exist_ok=True)
+        return retained_root
 
 
 if __name__ == "__main__":

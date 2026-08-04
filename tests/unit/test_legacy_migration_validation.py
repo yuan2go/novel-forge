@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import inspect
 import unittest
+from pathlib import Path
+from unittest.mock import patch
 
 from novel_forge.modules.legacy_migration.approval import (
     LegacyMigrationDecisionCommand,
@@ -38,9 +40,25 @@ class LegacyMigrationValidationTests(unittest.TestCase):
             application_build_id="test-build",
             commit_sha="b" * 40,
         )
-        self.assertNotEqual(
+        self.assertEqual(
             descriptor.validator_implementation_hash,
             changed_build.validator_implementation_hash,
+        )
+        original_read_bytes = Path.read_bytes
+        with patch.object(
+            Path,
+            "read_bytes",
+            lambda path: original_read_bytes(path)
+            + (b"dependency-change" if path.name == "domain.py" else b""),
+        ):
+            changed_dependency = validator_descriptor(
+                "novel_forge.legacy_migration.book_design_authority.v1",
+                application_build_id="test-build",
+                commit_sha="a" * 40,
+            )
+        self.assertNotEqual(
+            descriptor.validator_implementation_hash,
+            changed_dependency.validator_implementation_hash,
         )
 
     def test_validation_command_requires_authoritative_snapshot_identity(self) -> None:

@@ -20,8 +20,11 @@ aggregate, StateEvent, Audit, Outbox and item state.
 The Validation aggregate is immutable by identity and has `PASS`, `FAIL`,
 `STALE`, or `REVOKED` status. Its uniqueness binds item/version and validator
 implementation. A newer item, source, target, reference resolution, adapter,
-validator implementation, tested build/commit identity or dependency invalidates
-the old record.
+validator dependency manifest or target dependency invalidates the old record.
+The implementation hash is derived from an explicit, versioned source-file
+dependency manifest; unrelated repository commits do not invalidate it. An
+already activated projection can be revalidated only by creating a new
+append-only Validation record, never by rewriting the historical decision.
 
 Approval takes only `migration_validation_id` as validation authority. It reloads
 the record under lock and verifies run/item/version/source/target/adapter/latest-
@@ -30,8 +33,10 @@ Activation reloads both Decision and Validation, checks their current bindings,
 requires all references and domain dependencies to remain resolved/activated,
 then records the same Validation identity in the domain transition. A Run-level
 transaction advisory lock plus row locks retain this validation/decision/
-dependency scope while the owning domain Authority commits, closing the
-check-to-activation concurrency window.
+dependency scope while the owning domain Authority commits. Explicit coordinated
+UnitOfWork savepoints keep nested domain commands on the same PostgreSQL
+connection, so this remains atomic even with the bounded one-connection
+migration pool.
 
 Client evidence may be retained as non-authoritative request context but can
 never establish a pass.

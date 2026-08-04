@@ -93,7 +93,7 @@ again after a database retry.
 
 ## PostgreSQL Authority release-candidate closure
 
-Migrations 0059–0064 add server-owned Migration Validation, explicit archival
+Migrations 0059–0066 add server-owned Migration Validation, explicit archival
 and domain completion semantics, structured dependency references, the
 non-business Runtime Job plane, hardened Outbox execution evidence, Worker
 health and Fleet metrics. The core migration registry remains deliberately split

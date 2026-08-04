@@ -28,8 +28,8 @@
       "environment_metadata"
     ]
   },
-  "migration_head": "20260804_0064_runtime_job_integrity_hardening",
-  "migration_count": 64,
+  "migration_head": "20260804_0066_runtime_job_attempt_lease_existence",
+  "migration_count": 66,
   "migration_registry": {
     "mapping_count": 59,
     "domain_native_count": 18,

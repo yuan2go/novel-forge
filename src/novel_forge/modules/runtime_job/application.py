@@ -3,7 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Any, Iterable
 from uuid import uuid4
 
@@ -110,7 +110,6 @@ class RuntimeJobAuthority:
         self.database_url = database_url
 
     def schedule(self, spec: RuntimeJobSpec) -> dict[str, Any]:
-        available_at = spec.available_at or datetime.now(timezone.utc)
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
@@ -119,7 +118,8 @@ class RuntimeJobAuthority:
                     subject_id, project_id, dedupe_key, input_snapshot,
                     input_hash, status, priority, available_at, max_attempts
                 ) VALUES (
-                    %s,%s,%s,%s,%s,%s,%s,%s,%s,'READY',%s,%s,%s
+                    %s,%s,%s,%s,%s,%s,%s,%s,%s,'READY',%s,
+                    COALESCE(%s, NOW()),%s
                 )
                 ON CONFLICT DO NOTHING
                 """,
@@ -134,7 +134,7 @@ class RuntimeJobAuthority:
                     Jsonb(spec.input_snapshot),
                     spec.input_hash,
                     spec.priority,
-                    available_at,
+                    spec.available_at,
                     spec.max_attempts,
                 ],
             )
@@ -783,8 +783,9 @@ class RuntimeJobAuthority:
             """
             SELECT job.status, job.current_attempt_id, job.attempt_count,
                    job.max_attempts, job.current_fencing_token,
-                   attempt.worker_id, attempt.status,
-                   lease.lease_id, lease.status, lease.lease_expires_at
+                   attempt.worker_id, attempt.status, attempt.lease_id,
+                   lease.lease_id, lease.worker_id, lease.status,
+                   lease.lease_expires_at
             FROM authority_runtime_job AS job
             JOIN authority_runtime_job_attempt AS attempt
               ON attempt.attempt_id=job.current_attempt_id
@@ -803,7 +804,9 @@ class RuntimeJobAuthority:
             and int(row[4]) == claim.fencing_token
             and str(row[5]) == claim.worker_id
             and str(row[7]) == claim.lease_id
-            and str(row[8]) == "HELD"
+            and str(row[8]) == claim.lease_id
+            and str(row[9]) == claim.worker_id
+            and str(row[10]) == "HELD"
             and str(row[0]) in ACTIVE_JOB_STATUSES
         )
         if not valid:

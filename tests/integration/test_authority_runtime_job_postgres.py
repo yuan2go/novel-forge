@@ -271,6 +271,39 @@ class AuthorityRuntimeJobPostgresTests(unittest.TestCase):
                 uow.commit()
         self.assertNotEqual(first_job["runtime_job_id"], second_job["runtime_job_id"])
 
+    def test_database_rejects_attempt_lease_worker_identity_mismatch(self) -> None:
+        self.authority.schedule(
+            self.spec(
+                dedupe_key="book:lease-identity",
+                subject_id="subject:lease-identity",
+            )
+        )
+        claim = self.authority.claim(
+            runtime_group=self.runtime_group,
+            worker_id="book-worker-authoritative",
+            lease_seconds=30,
+        )
+        assert claim is not None
+        with self.assertRaises(ForeignKeyViolation):
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                uow.cursor.execute(
+                    """
+                    UPDATE authority_runtime_job_lease
+                    SET worker_id='book-worker-forged'
+                    WHERE lease_id=%s
+                    """,
+                    [claim.lease_id],
+                )
+                uow.commit()
+
+        with self.assertRaises(ForeignKeyViolation):
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                uow.cursor.execute(
+                    "DELETE FROM authority_runtime_job_lease WHERE lease_id=%s",
+                    [claim.lease_id],
+                )
+                uow.commit()
+
 
 if __name__ == "__main__":
     unittest.main()

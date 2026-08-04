@@ -31,7 +31,7 @@ from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 MIGRATION_VALIDATION_OPERATION = "migration.item.validate"
 MIGRATION_VALIDATION_HANDLER = "novel_forge.legacy_migration.item_validate"
-MIGRATION_VALIDATION_DEFINITION_VERSION = "1.0.0"
+MIGRATION_VALIDATION_DEFINITION_VERSION = "1.1.0"
 
 
 class MigrationValidationStatus(StrEnum):
@@ -58,6 +58,39 @@ _VALIDATOR_NAMES = {
     "novel_forge.legacy_migration.hierarchical_planning.v1": "hierarchical-planning-domain-validator",
     "novel_forge.legacy_migration.source_authority.v1": "source-document-domain-validator",
     "novel_forge.legacy_migration.mkaos_authority.v1": "mkaos-domain-validator",
+}
+
+_COMMON_VALIDATOR_DEPENDENCIES = (
+    "modules/legacy_migration/validation.py",
+    "modules/legacy_migration/domain_adapters.py",
+)
+_VALIDATOR_DEPENDENCIES = {
+    "novel_forge.legacy_migration.archival_asset_version.v1": (),
+    "novel_forge.legacy_migration.project_authority.v1": (
+        "modules/project_authority/domain.py",
+        "modules/project_authority/query.py",
+    ),
+    "novel_forge.legacy_migration.book_design_authority.v1": (
+        "modules/book_design_authority/domain.py",
+        "modules/book_design_authority/query.py",
+    ),
+    "novel_forge.legacy_migration.story_design_authority.v1": (
+        "modules/story_design_authority/domain.py",
+        "modules/story_design_authority/validators.py",
+    ),
+    "novel_forge.legacy_migration.hierarchical_planning.v1": (
+        "modules/hierarchical_planning/domain.py",
+    ),
+    "novel_forge.legacy_migration.source_authority.v1": (
+        "modules/source_authority/domain.py",
+        "modules/source_authority/query.py",
+        "storage/asset_blob_repositories.py",
+    ),
+    "novel_forge.legacy_migration.mkaos_authority.v1": (
+        "modules/mkaos_authority/application.py",
+        "modules/mkaos_authority/domain.py",
+        "modules/mkaos_authority/query.py",
+    ),
 }
 
 
@@ -92,28 +125,23 @@ def validator_descriptor(
             "DOMAIN_VALIDATOR_VERSION_INVALID",
             f"domain adapter has no frozen version: {domain_adapter}",
         )
-    implementation_path = Path(__file__).with_name("domain_adapters.py")
+    package_root = Path(__file__).parents[2]
+    dependency_paths = (
+        *_COMMON_VALIDATOR_DEPENDENCIES,
+        *_VALIDATOR_DEPENDENCIES[domain_adapter],
+    )
     implementation_inputs = {
-        "domain_adapters_module_sha256": hashlib.sha256(
-            implementation_path.read_bytes()
-        ).hexdigest(),
+        relative_path: hashlib.sha256(
+            (package_root / relative_path).read_bytes()
+        ).hexdigest()
+        for relative_path in dependency_paths
     }
-    if domain_adapter == "novel_forge.legacy_migration.story_design_authority.v1":
-        story_validator_path = (
-            Path(__file__).parents[1]
-            / "story_design_authority"
-            / "validators.py"
-        )
-        implementation_inputs["story_design_validators_sha256"] = (
-            hashlib.sha256(story_validator_path.read_bytes()).hexdigest()
-        )
     implementation_hash = canonical_hash(
         {
             "domain_adapter": domain_adapter,
             "validator_version": MIGRATION_VALIDATION_DEFINITION_VERSION,
-            "application_build_id": application_build_id,
-            "commit_sha": commit_sha,
-            **implementation_inputs,
+            "dependency_manifest_version": "legacy-migration-validator-dependencies-v1",
+            "dependencies": implementation_inputs,
         }
     )
     return DomainValidatorDescriptor(
@@ -399,10 +427,20 @@ class LegacyMigrationValidationApplication:
                 "MIGRATION_ITEM_VERSION_CONFLICT",
                 "migration validation expected item version is stale",
             )
-        if item["status"] != "NEEDS_REVIEW":
+        revalidating_activated_item = item["status"] == "ACTIVATED"
+        if item["status"] not in {"NEEDS_REVIEW", "ACTIVATED"}:
             raise KernelError(
                 "MIGRATION_ITEM_NOT_VALIDATABLE",
-                "migration item is not awaiting domain validation",
+                "migration item is neither awaiting validation nor an activated projection",
+            )
+        if (
+            revalidating_activated_item
+            and item["target_materialization_level"]
+            != MigrationMaterializationLevel.DOMAIN_NATIVE.value
+        ):
+            raise KernelError(
+                "MIGRATION_ITEM_NOT_VALIDATABLE",
+                "only activated DOMAIN_NATIVE items support append-only revalidation",
             )
         checkpoint("after_validation_snapshot_lock")
         validation_status = MigrationValidationStatus.PASS
@@ -543,13 +581,14 @@ class LegacyMigrationValidationApplication:
             UPDATE authority_legacy_migration_item
             SET item_version=item_version+1,
                 domain_state=CASE
-                    WHEN validation_scope='DOMAIN' THEN %s
+                    WHEN validation_scope='DOMAIN' AND status='NEEDS_REVIEW'
+                        THEN %s
                     ELSE domain_state
                 END,
                 evidence=evidence || %s,
                 updated_at=NOW()
             WHERE migration_item_id=%s AND item_version=%s
-              AND status='NEEDS_REVIEW'
+              AND status=%s
             """,
             [
                 (
@@ -562,10 +601,15 @@ class LegacyMigrationValidationApplication:
                         "latest_domain_validation_id": validation_id,
                         "latest_domain_validation_status": validation_status.value,
                         "latest_domain_validation_result_hash": result_hash,
+                        "current_domain_validation_id": validation_id,
+                        "revalidation_of_activated_projection": (
+                            revalidating_activated_item
+                        ),
                     }
                 ),
                 item_id,
                 expected_version,
+                item["status"],
             ],
         )
         if uow.cursor.rowcount != 1:
@@ -632,14 +676,25 @@ def load_validation_snapshot(
                item.source_asset_type, item.stable_business_key,
                item.source_hash, COALESCE(item.operation_id::text, ''),
                item.target_asset_id, item.target_asset_version_id,
-               item.target_content_hash, version.content, version.content_hash,
-               asset.project_id, item.domain_adapter,
+               item.target_content_hash, validation_version.content,
+               current_version.content_hash, current_asset.project_id,
+               item.domain_adapter,
                item.target_materialization_level, item.item_version,
-               item.status
+               item.status, validation_version.asset_id,
+               validation_version.asset_version_id,
+               validation_version.content_hash, validation_asset.project_id
         FROM authority_legacy_migration_item AS item
-        JOIN authority_asset_version AS version
-          ON version.asset_version_id=item.target_asset_version_id
-        JOIN authority_asset AS asset ON asset.asset_id=version.asset_id
+        JOIN authority_asset_version AS current_version
+          ON current_version.asset_version_id=item.target_asset_version_id
+        JOIN authority_asset AS current_asset
+          ON current_asset.asset_id=current_version.asset_id
+        JOIN authority_asset_version AS validation_version
+          ON validation_version.asset_version_id=COALESCE(
+              item.evidence->>'archival_target_asset_version_id',
+              item.target_asset_version_id
+          )
+        JOIN authority_asset AS validation_asset
+          ON validation_asset.asset_id=validation_version.asset_id
         WHERE item.migration_item_id=%s
         """
         + lock_clause,
@@ -651,7 +706,7 @@ def load_validation_snapshot(
             "MIGRATION_ITEM_NOT_FOUND",
             "migration validation item or target AssetVersion is missing",
         )
-    if str(row[1]) != str(row[12]):
+    if str(row[1]) != str(row[12]) or str(row[1]) != str(row[20]):
         raise KernelError(
             "CROSS_PROJECT_REFERENCE",
             "migration validation target belongs to another Project",
@@ -674,6 +729,10 @@ def load_validation_snapshot(
         "target_materialization_level",
         "item_version",
         "status",
+        "validation_source_asset_id",
+        "validation_source_asset_version_id",
+        "validation_source_content_hash",
+        "validation_source_asset_project_id",
     )
     item = dict(zip(keys, row, strict=True))
     for key in keys:
@@ -793,6 +852,13 @@ def load_validation_snapshot(
             "target_asset_version_id": item["target_asset_version_id"],
             "target_content_hash": item["target_content_hash"],
             "asset_version_content_hash": item["asset_version_content_hash"],
+            "validation_source_asset_id": item["validation_source_asset_id"],
+            "validation_source_asset_version_id": item[
+                "validation_source_asset_version_id"
+            ],
+            "validation_source_content_hash": item[
+                "validation_source_content_hash"
+            ],
             "target_materialization_level": item[
                 "target_materialization_level"
             ],

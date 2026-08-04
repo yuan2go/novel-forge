@@ -22,8 +22,8 @@ excluded by an explicit code-level selection contract and unit tests.
 
 | Fact | Value |
 |---|---|
-| Migration head | `20260804_0064_runtime_job_integrity_hardening` |
-| Migration count | 64 |
+| Migration head | `20260804_0066_runtime_job_attempt_lease_existence` |
+| Migration count | 66 |
 | Migration registry | 59 source types: 18 `DOMAIN_NATIVE`, 41 `ARCHIVAL_NATIVE` |
 | Default backend | PostgreSQL Authority, fail closed |
 | Legacy default reachability | forbidden |
