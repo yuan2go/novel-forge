@@ -107,6 +107,7 @@ authority-compose-config-check:
 	$(LEGACY_COMPOSE) config --quiet
 
 authority-query-plan-release:
+	NOVEL_FORGE_DATABASE_URL=$${NOVEL_FORGE_DATABASE_URL:-postgresql://novel_forge:novel_forge@localhost:55432/novel_forge_authority_test} \
 	PYTHONPATH=$(PYTHONPATH) $(PYTHON) scripts/qualify_authority_query_plans.py
 
 legacy-up:
