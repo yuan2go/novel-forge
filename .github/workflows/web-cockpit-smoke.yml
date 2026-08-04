@@ -40,7 +40,9 @@ jobs:
       - run: npx --prefix web/admin playwright install --with-deps chromium
       - name: Start API
         run: |
-          PYTHONPATH=src NOVEL_FORGE_ROOT=.local/workspace NOVEL_FORGE_MODEL_PROVIDER=mock python -m novel_forge.cli serve-api --root .local/workspace &
+          # This optional browser job exercises the explicitly isolated Legacy
+          # development UI backend. It is not PostgreSQL Authority Web proof.
+          PYTHONPATH=src NOVEL_FORGE_ENVIRONMENT=development NOVEL_FORGE_STORAGE_AUTHORITY=legacy_local NOVEL_FORGE_ROOT=.local/workspace NOVEL_FORGE_MODEL_PROVIDER=mock python -m novel_forge.cli legacy serve-api --root .local/workspace &
           echo $! > /tmp/novel-forge-api.pid
           for i in {1..40}; do
             if curl -fsS http://127.0.0.1:8000/health >/dev/null; then exit 0; fi

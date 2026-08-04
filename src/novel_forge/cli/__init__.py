@@ -238,13 +238,15 @@ def _serve_authority_api(
         raise RuntimeError(
             "Authority API serving requires fastapi and uvicorn[standard]"
         ) from exc
-    from novel_forge.api.app import create_app
+    from novel_forge.api.authority_app import create_authority_app
 
     uvicorn.run(
-        "novel_forge.api.app:app" if reload else create_app(settings),
+        "novel_forge.api.authority_app:create_authority_app_from_env" if reload
+        else create_authority_app(settings),
         host=host or settings.api_host,
         port=port or settings.api_port,
         reload=reload,
+        factory=reload,
     )
 
 

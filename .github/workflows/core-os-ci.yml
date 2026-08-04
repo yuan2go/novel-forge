@@ -13,6 +13,10 @@ env:
   PYTHONPATH: src
   NOVEL_FORGE_POSTGRES_WRITE_STRICT: "true"
 
+# Every proof in this workflow is recomputed from the checked-out revision. A
+# repository evidence commit may summarize a run, but it is never its own
+# tested SHA.
+
 jobs:
   lint-and-architecture:
     name: lint and architecture
@@ -24,6 +28,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Bind checkout to workflow SHA
+        run: test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
       - run: python -m pip install -e ".[api,postgres]"
       - name: Immutable revision and compile
         run: |
@@ -52,6 +58,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Bind checkout to workflow SHA
+        run: test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
       - run: python -m pip install -e ".[test]"
       - name: Unit and acceptance collection
         run: |
@@ -80,16 +88,38 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Bind checkout to workflow SHA
+        run: test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
       - run: python -m pip install -e ".[test]"
       - name: Focused Command Kernel and Authority proofs
         run: |
-          python -m novel_forge.cli postgres-init --root .local/ci-workspace
+          python -m novel_forge.cli authority-migrate
           python scripts/run_authority_postgres_tests.py
-          python -m unittest tests.integration.test_chapter_authority_scheduler_postgres
-          python -m unittest tests.integration.test_content_authority_scheduler_recovery_postgres
           python -m unittest tests.integration.test_external_effect_runtime_postgres
+      - name: Core domain migration proofs
+        run: |
+          mkdir -p /tmp/novel-forge-evidence
+          python -m unittest -v \
+            tests.integration.test_authority_legacy_migration_postgres \
+            2>&1 | tee "/tmp/novel-forge-evidence/domain-migration-${GITHUB_SHA}.log"
+      - name: Per-worker PostgreSQL integration proofs
+        run: |
+          python -m unittest -v \
+            tests.integration.test_chapter_authority_scheduler_postgres \
+            tests.integration.test_content_authority_scheduler_recovery_postgres \
+            tests.integration.test_source_document_authority_postgres \
+            tests.integration.test_mkaos_authority_postgres \
+            tests.integration.test_book_authority_postgres \
+            tests.integration.test_outbox_authority_worker_postgres \
+            tests.integration.test_maintenance_worker_postgres \
+            2>&1 | tee "/tmp/novel-forge-evidence/worker-integration-${GITHUB_SHA}.log"
       - name: Complete integration collection
         run: python -m unittest discover -s tests/integration -p 'test_*.py'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: postgres-authority-${{ github.sha }}
+          path: /tmp/novel-forge-evidence/*-${{ github.sha }}.log
+          if-no-files-found: error
 
   migration:
     name: clean and legacy migration
@@ -113,8 +143,22 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: python -m pip install -e ".[postgres]"
-      - run: python -m unittest tests.integration.test_authority_migrations_postgres tests.integration.test_authority_schema_postgres
+      - name: Bind checkout to workflow SHA
+        run: test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
+      - run: python -m pip install -e ".[test]"
+      - name: Clean, upgrade, and domain migration proof
+        run: |
+          mkdir -p /tmp/novel-forge-evidence
+          python -m unittest -v \
+            tests.integration.test_authority_migrations_postgres \
+            tests.integration.test_authority_schema_postgres \
+            tests.integration.test_authority_legacy_migration_postgres \
+            2>&1 | tee "/tmp/novel-forge-evidence/migration-${GITHUB_SHA}.log"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: migration-${{ github.sha }}
+          path: /tmp/novel-forge-evidence/migration-${{ github.sha }}.log
+          if-no-files-found: error
 
   provider-v2-conformance:
     name: provider v2 conformance
@@ -124,6 +168,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Bind checkout to workflow SHA
+        run: test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
       - run: python -m pip install -e ".[test]"
       - name: Mock-only provider control proofs
         run: |
@@ -154,6 +200,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Bind checkout to workflow SHA
+        run: test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
       - run: python -m pip install -e ".[test]"
       - run: python -m unittest tests.integration.test_provider_callback_authority_postgres tests.integration.test_worker_health_postgres
 
@@ -179,6 +227,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Bind checkout to workflow SHA
+        run: test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
       - run: python -m pip install -e ".[test]"
       - run: python -m unittest tests.integration.test_book_authority_postgres
 
@@ -192,6 +242,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Bind checkout to workflow SHA
+        run: test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
       - run: python -m pip install -e ".[test]"
       - name: Generate HEAD-bound evidence
         run: |
@@ -207,6 +259,67 @@ jobs:
           path: /tmp/postgresql-authority-coverage-${{ github.sha }}.json
           if-no-files-found: error
 
+  authority-compose:
+    name: authority compose fixture and recovery
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Bind checkout to workflow SHA
+        run: test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
+      - run: python -m pip install -e ".[test,industrial]"
+      - name: Validate Compose contracts
+        run: make authority-compose-config-check
+      - name: Run isolated Authority Compose proof
+        run: |
+          mkdir -p /tmp/novel-forge-evidence
+          python scripts/verify_authority_compose.py \
+            > "/tmp/novel-forge-evidence/authority-compose-${GITHUB_SHA}.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: authority-compose-${{ github.sha }}
+          path: /tmp/novel-forge-evidence/authority-compose-${{ github.sha }}.json
+          if-no-files-found: error
+
+  query-plan-release:
+    name: representative query plan release qualification
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_DB: novel_forge_query_release
+          POSTGRES_USER: novel_forge
+          POSTGRES_PASSWORD: novel_forge
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U novel_forge -d novel_forge_query_release"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      NOVEL_FORGE_DATABASE_URL: postgresql://novel_forge:novel_forge@localhost:5432/novel_forge_query_release
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Bind checkout to workflow SHA
+        run: test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
+      - run: python -m pip install -e ".[test]"
+      - name: Migrate and qualify real Planner choice
+        run: |
+          mkdir -p /tmp/novel-forge-evidence
+          python -m novel_forge.cli authority-migrate
+          python scripts/qualify_authority_query_plans.py \
+            --output "/tmp/novel-forge-evidence/query-plan-${GITHUB_SHA}.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: query-plan-${{ github.sha }}
+          path: /tmp/novel-forge-evidence/query-plan-${{ github.sha }}.json
+          if-no-files-found: error
+
   web:
     name: web
     runs-on: ubuntu-latest
@@ -217,6 +330,8 @@ jobs:
           node-version: "22"
           cache: npm
           cache-dependency-path: web/admin/package-lock.json
+      - name: Bind checkout to workflow SHA
+        run: test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
       - run: npm --prefix web/admin ci
       - run: npm --prefix web/admin test
       - run: npm --prefix web/admin run build
