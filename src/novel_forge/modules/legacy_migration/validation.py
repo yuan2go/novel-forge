@@ -224,6 +224,11 @@ def migration_validation_definition(
             "required_evidence": ["trace", "audit"],
             "required_outbox_events": ["legacy_migration.item.validated"],
         },
+        "projection_consumers": [
+            "authority_legacy_migration_validation",
+            "authority_legacy_migration_item",
+        ],
+        "migration_owner": "legacy-migration-authority",
     }
 
 

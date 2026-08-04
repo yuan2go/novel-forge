@@ -155,6 +155,11 @@ def migration_decision_definitions(
                 "required_evidence": ["trace", "audit"],
                 "required_outbox_events": ["legacy_migration.item.decided"],
             },
+            "projection_consumers": [
+                "authority_legacy_migration_decision",
+                "authority_legacy_migration_item",
+            ],
+            "migration_owner": "legacy-migration-authority",
         }
         for decision, name in MIGRATION_DECISION_OPERATIONS.items()
     )
