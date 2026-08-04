@@ -32,6 +32,15 @@ class ArchitectureManifestTests(unittest.TestCase):
         self.assertEqual(set(counts), {"architecture", "unit", "acceptance", "integration"})
         self.assertTrue(all(count > 0 for count in counts.values()))
 
+    def test_ci_regenerates_ignored_runtime_skills_before_drift_check(self) -> None:
+        workflow = (ROOT / ".github/workflows/core-os-ci.yml").read_text(encoding="utf-8")
+        sync_position = workflow.find("make sync-skills")
+        check_position = workflow.find("make check-skills")
+
+        self.assertGreaterEqual(sync_position, 0)
+        self.assertGreater(check_position, sync_position)
+        self.assertIn(".claude/skills/", (ROOT / ".gitignore").read_text(encoding="utf-8"))
+
 
 if __name__ == "__main__":
     unittest.main()

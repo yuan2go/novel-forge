@@ -128,9 +128,11 @@ def check_tests(root: Path) -> dict[str, Any]:
                 "-c",
                 (
                     "import sys, unittest; "
-                    "suite=unittest.TestLoader().discover("
+                    "loader=unittest.TestLoader(); "
+                    "suite=loader.discover("
                     "sys.argv[1], pattern=sys.argv[2], top_level_dir=sys.argv[1]); "
-                    "print(suite.countTestCases())"
+                    "sys.stderr.write('\\n'.join(loader.errors)); "
+                    "sys.exit(2) if loader.errors else print(suite.countTestCases())"
                 ),
                 str(start),
                 pattern,

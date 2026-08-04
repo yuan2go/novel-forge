@@ -48,6 +48,9 @@ jobs:
         run: |
           make lint
           make validate
+          # Runtime Skill copies are generated and ignored; reconstruct them
+          # from the root Skills authority before enforcing exact drift.
+          make sync-skills
           make check-skills
 
   unit:
