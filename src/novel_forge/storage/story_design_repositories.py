@@ -76,7 +76,7 @@ class StoryDesignRepository:
             """
             SELECT lifecycle, qualification, approval, freshness,
                    semantic_repair_count, structural_regeneration_count,
-                   version, logical_key
+                   version, logical_key, source_kind
             FROM authority_story_design_version_state
             WHERE project_id=%s AND asset_version_id=%s
             FOR UPDATE
@@ -148,6 +148,7 @@ class StoryDesignRepository:
             ) = self._next_state(
                 generator_operation_name=generator_operation_name,
                 generator_definition_version=generator_definition_version,
+                source_kind=str(row[8]),
                 transition=transition,
                 lifecycle=lifecycle,
                 qualification=qualification,
@@ -304,6 +305,7 @@ class StoryDesignRepository:
         *,
         generator_operation_name: str,
         generator_definition_version: str,
+        source_kind: str,
         transition: str,
         lifecycle: str,
         qualification: str,
@@ -319,6 +321,8 @@ class StoryDesignRepository:
             transition == "STRUCTURAL_VALIDATE"
             and lifecycle == "MATERIALIZED"
         ):
+            if source_kind == "LEGACY_IMPORT":
+                self._require_validator_receipt(evidence, "STRUCTURAL")
             if evidence.get("passed") is False:
                 structural_regenerations += 1
                 maximum = self._repair_bound(
@@ -334,6 +338,8 @@ class StoryDesignRepository:
             transition == "SEMANTIC_VALIDATE"
             and qualification == "STRUCTURALLY_VALID"
         ):
+            if source_kind == "LEGACY_IMPORT":
+                self._require_validator_receipt(evidence, "SEMANTIC")
             if evidence.get("passed") is False:
                 semantic_repairs += 1
                 maximum = self._repair_bound(
@@ -349,6 +355,20 @@ class StoryDesignRepository:
             transition == "QUALIFY"
             and qualification == "SEMANTICALLY_VALID"
         ):
+            if source_kind == "LEGACY_IMPORT":
+                receipt = evidence.get("qualification_receipt")
+                if (
+                    not isinstance(receipt, dict)
+                    or receipt.get("status") != "PASS"
+                    or not str(receipt.get("result_hash") or "").startswith(
+                        "sha256:"
+                    )
+                    or not receipt.get("migration_validation_id")
+                ):
+                    raise KernelError(
+                        "STORY_DESIGN_QUALIFICATION_RECEIPT_REQUIRED",
+                        "Legacy Story Design qualification requires bound validation",
+                    )
             qualification = "QUALIFIED"
         elif (
             transition == "SUBMIT_APPROVAL"
@@ -383,6 +403,24 @@ class StoryDesignRepository:
             semantic_repairs,
             structural_regenerations,
         )
+
+    @staticmethod
+    def _require_validator_receipt(
+        evidence: dict[str, Any], validation_kind: str
+    ) -> None:
+        receipt = evidence.get("validator_receipt")
+        if (
+            not isinstance(receipt, dict)
+            or receipt.get("validation_kind") != validation_kind
+            or receipt.get("status") != "PASS"
+            or not receipt.get("validator_name")
+            or not receipt.get("validator_version")
+            or not str(receipt.get("result_hash") or "").startswith("sha256:")
+        ):
+            raise KernelError(
+                "STORY_DESIGN_VALIDATOR_RECEIPT_REQUIRED",
+                f"Legacy Story Design {validation_kind} validation requires a receipt",
+            )
 
     def _repair_bound(
         self, operation_name: str, definition_version: str, field: str

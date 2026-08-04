@@ -131,6 +131,33 @@ class StoryDesignAuthorityPostgresTests(unittest.TestCase):
             )
             self.assertEqual(int(uow.cursor.fetchone()[0]), 0)
 
+    def test_legacy_import_cannot_use_boolean_pass_as_validation_authority(self) -> None:
+        candidate = self._seed_candidate("legacy-boolean-pass")
+        state = self._transition(
+            candidate,
+            DesignTransition.ENROLL,
+            expected_version=0,
+            source_kind="LEGACY_IMPORT",
+            evidence={"legacy_import_operation_id": "fixture-import-operation"},
+        )
+        state = self._transition(
+            candidate,
+            DesignTransition.MATERIALIZE,
+            expected_version=int(state["version"]),
+        )
+
+        with self.assertRaises(KernelError) as raised:
+            self._transition(
+                candidate,
+                DesignTransition.STRUCTURAL_VALIDATE,
+                expected_version=int(state["version"]),
+                evidence={"passed": True},
+            )
+
+        self.assertEqual(
+            raised.exception.code, "STORY_DESIGN_VALIDATOR_RECEIPT_REQUIRED"
+        )
+
     def test_semantic_repair_is_bounded(self) -> None:
         candidate = self._seed_candidate("bounded-repair")
         state = self._transition(

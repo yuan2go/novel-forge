@@ -371,6 +371,19 @@ _DOMAIN_ADAPTERS = {
     "knowledge_pack": "mkaos_authority",
 }
 
+CORE_DOMAIN_MIGRATION_SOURCE_TYPES = frozenset(_DOMAIN_ADAPTERS)
+DOMAIN_MIGRATION_ALIAS_GROUPS = (
+    ("book", "book_record"),
+    ("book_design", "book_design_candidate"),
+    ("story_design", "story_design_candidate"),
+    ("book_plan", "outline_version"),
+    ("chapter_plan", "chapter_plan_version"),
+    ("knowledge_card_candidate", "knowledge_card"),
+)
+
+if len(CORE_DOMAIN_MIGRATION_SOURCE_TYPES) != 18:
+    raise RuntimeError("core Domain migration source-type contract must contain 18 types")
+
 DEFAULT_CODEC_REGISTRY = TypedMigrationCodecRegistry(
     tuple(
         _codec(source, target, domain=_DOMAIN_ADAPTERS.get(source, ""))

@@ -52,6 +52,7 @@ class DomainValidatorDescriptor:
 
 _VALIDATOR_NAMES = {
     "novel_forge.legacy_migration.archival_asset_version.v1": "archival-native-asset-envelope-validator",
+    "novel_forge.legacy_migration.project_authority.v1": "project-workspace-domain-validator",
     "novel_forge.legacy_migration.book_design_authority.v1": "book-design-domain-validator",
     "novel_forge.legacy_migration.story_design_authority.v1": "story-design-domain-validator",
     "novel_forge.legacy_migration.hierarchical_planning.v1": "hierarchical-planning-domain-validator",
@@ -85,13 +86,25 @@ def validator_descriptor(domain_adapter: str) -> DomainValidatorDescriptor:
             f"domain adapter has no frozen version: {domain_adapter}",
         )
     implementation_path = Path(__file__).with_name("domain_adapters.py")
+    implementation_inputs = {
+        "domain_adapters_module_sha256": hashlib.sha256(
+            implementation_path.read_bytes()
+        ).hexdigest(),
+    }
+    if domain_adapter == "novel_forge.legacy_migration.story_design_authority.v1":
+        story_validator_path = (
+            Path(__file__).parents[1]
+            / "story_design_authority"
+            / "validators.py"
+        )
+        implementation_inputs["story_design_validators_sha256"] = (
+            hashlib.sha256(story_validator_path.read_bytes()).hexdigest()
+        )
     implementation_hash = canonical_hash(
         {
             "domain_adapter": domain_adapter,
             "validator_version": MIGRATION_VALIDATION_DEFINITION_VERSION,
-            "domain_adapters_module_sha256": hashlib.sha256(
-                implementation_path.read_bytes()
-            ).hexdigest(),
+            **implementation_inputs,
         }
     )
     return DomainValidatorDescriptor(

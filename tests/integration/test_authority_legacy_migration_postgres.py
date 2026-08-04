@@ -58,7 +58,7 @@ def _migration_plan_content(
         "budget_policy_ref": "budget:planning:v1",
         "context_profile_ref": "context:planning:v1",
     }
-    if plan_type == "book_plan":
+    if plan_type in {"book_plan", "outline_version"}:
         content.update(
             {
                 "reader_promise": "progress with meaningful cost",
@@ -203,13 +203,13 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
             second = service.import_snapshot(root, resume=True)
             verified = service.verify(first["migration_run_id"], snapshot_root=root)
 
-        self.assertEqual(first["status"], "DOMAIN_ACTIVATION_PARTIAL")
+        self.assertEqual(first["status"], "DOMAIN_REVIEW_PENDING")
         self.assertEqual(second["migration_run_id"], first["migration_run_id"])
         self.assertEqual(second["counts"], first["counts"])
-        self.assertEqual(verified["status"], "DOMAIN_RECONCILED")
+        self.assertEqual(verified["status"], "DOMAIN_REVIEW_PENDING")
         self.assertEqual(verified["verification_status"], "PASS")
-        self.assertEqual(verified["production_assets_activated"], 1)
-        self.assertEqual(verified["needs_review_count"], 1)
+        self.assertEqual(verified["production_assets_activated"], 0)
+        self.assertEqual(verified["needs_review_count"], 2)
         self.assertEqual(verified["target_asset_version_count"], 2)
         self.assertEqual(verified["distinct_target_asset_version_count"], 2)
         self.assertEqual(verified["target_hash_match_count"], 2)
@@ -245,7 +245,7 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
             )
             operation_count = int(uow.cursor.fetchone()[0])
         self.assertEqual(int(count), 2)
-        self.assertEqual((int(activated), int(needs_review)), (1, 1))
+        self.assertEqual((int(activated), int(needs_review)), (0, 2))
         self.assertEqual(list(asset_types), ["material_card", "project_record"])
         self.assertEqual(operation_count, 1)
 
@@ -369,10 +369,9 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
         self.assertIn(verified["status"], {"FAILED", "QUARANTINED"})
         self.assertEqual(verified["verification_status"], "FAIL")
         self.assertFalse(verified["reconciled"])
-        # Only the two Project shells activate during import.  The Legacy
-        # self-declared approved BookPlan remains NEEDS_REVIEW until an
-        # independent Authority decision is recorded.
-        self.assertEqual(verified["production_assets_activated"], 2)
+        # Bootstrap shells remain PAUSED and are not domain activation proof.
+        # The self-declared approved BookPlan also remains NEEDS_REVIEW.
+        self.assertEqual(verified["production_assets_activated"], 0)
         self.assertGreaterEqual(verified["needs_review_count"], 1)
         self.assertEqual(verified["unresolved_reference_count"], 0)
         self.assertTrue(verified["reference_integrity"])
@@ -539,6 +538,49 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
         self.assertEqual(tuple(persisted), ("QUALIFIED", "IMPORTED", "PENDING_EVALUATION", 1))
         self.assertGreaterEqual(int(audit_count), 1)
         self.assertEqual(int(outbox_count), 1)
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                """
+                SELECT migration_item_id, item_version, source_hash,
+                       target_asset_version_id
+                FROM authority_legacy_migration_item
+                WHERE migration_run_id=%s
+                  AND source_asset_type='project_workspace_state'
+                """,
+                [imported["migration_run_id"]],
+            )
+            project_item = uow.cursor.fetchone()
+        rejected = application.execute(
+            LegacyMigrationDecisionCommand(
+                migration_run_id=imported["migration_run_id"],
+                migration_item_id=str(project_item[0]),
+                project_id=project_id,
+                workspace_id=workspace_id,
+                actor_id="migration-reviewer",
+                decision=MigrationDecision.REJECT,
+                reason="project migration requires explicit remediation",
+                expected_item_version=int(project_item[1]),
+                source_hash=str(project_item[2]),
+                target_asset_version_id=str(project_item[3]),
+                migration_validation_id="",
+                idempotency_key=f"reject:{project_item[0]}:{project_item[2]}",
+                trace_id=f"trace:{imported['migration_run_id']}",
+                correlation_id=f"correlation:{project_id}",
+            )
+        )
+        self.assertEqual(rejected["status"], "INELIGIBLE")
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                """
+                SELECT status, domain_state
+                FROM authority_legacy_migration_item
+                WHERE migration_item_id=%s
+                """,
+                [str(project_item[0])],
+            )
+            self.assertEqual(
+                uow.cursor.fetchone(), ("INELIGIBLE", "DOMAIN_REJECTED")
+            )
 
     def test_server_validation_record_supersedes_stale_validation_and_binds_decision(self) -> None:
         nonce = str(uuid4())
@@ -719,7 +761,7 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
                 root / "data" / "assets" / "01-book.json",
                 {
                     "id": book_id,
-                    "type": "book_record",
+                    "type": "book",
                     "project_id": project_id,
                     "content": {
                         "book_id": book_id,
@@ -740,7 +782,7 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
                 root / "data" / "assets" / "02-design.json",
                 {
                     "id": "design-1",
-                    "type": "book_design",
+                    "type": "book_design_candidate",
                     "project_id": project_id,
                     "references": [book_id],
                     "content": {
@@ -770,13 +812,16 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
                 path.chmod(0o555 if path.is_dir() else 0o444)
             root.chmod(0o555)
             imported = service.import_snapshot(root)
+        self._validate_approve_activate(
+            service, imported["migration_run_id"], "project_workspace_state"
+        )
         approval = LegacyMigrationApprovalApplication(
             DATABASE_URL,
             application_build_id="legacy-domain-book-integration",
             commit_sha="e" * 40,
         )
         activated: dict[str, dict] = {}
-        for source_type in ("book_record", "book_design"):
+        for source_type in ("book", "book_design_candidate"):
             with AuthorityUnitOfWork(DATABASE_URL) as uow:
                 uow.cursor.execute(
                     """
@@ -822,7 +867,7 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
         self.assertEqual(verified["actual_domain_failures"], 0)
         self.assertTrue(verified["domain_native_core_proven"])
         self.assertNotEqual(
-            activated["book_design"]["target_asset_version_id"],
+            activated["book_design_candidate"]["target_asset_version_id"],
             str(item[3]),
         )
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
@@ -845,7 +890,7 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
                 JOIN authority_legacy_migration_item AS source
                   ON source.migration_item_id=reference.source_item_id
                 WHERE source.migration_run_id=%s
-                  AND source.source_asset_type='book_design'
+                  AND source.source_asset_type='book_design_candidate'
                 """,
                 [imported["migration_run_id"]],
             )
@@ -866,19 +911,23 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
                        archival_state, domain_state, validation_scope
                 FROM authority_legacy_migration_item
                 WHERE migration_run_id=%s
-                  AND source_asset_type IN ('book_record','book_design')
+                  AND source_asset_type IN (
+                      'book','book_design_candidate'
+                  )
                 ORDER BY source_asset_type
                 """,
                 [imported["migration_run_id"]],
             )
             item_semantics = list(uow.cursor.fetchall())
-        self.assertEqual(str(book[0]), activated["book_record"]["target_asset_version_id"])
-        self.assertEqual(str(book[1]), activated["book_design"]["target_asset_version_id"])
+        self.assertEqual(str(book[0]), activated["book"]["target_asset_version_id"])
+        self.assertEqual(
+            str(book[1]), activated["book_design_candidate"]["target_asset_version_id"]
+        )
         self.assertEqual((str(book[2]), int(book[3])), ("DESIGN_ACTIVE", 2))
         self.assertEqual(
             tuple(str(value) for value in reference),
             (
-                activated["book_record"]["target_asset_version_id"],
+                activated["book"]["target_asset_version_id"],
                 book_id,
             ),
         )
@@ -890,14 +939,14 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
             item_semantics,
             [
                 (
-                    "book_design",
+                    "book",
                     "DOMAIN",
                     "ARCHIVAL_RECONCILED",
                     "DOMAIN_RECONCILED",
                     "DOMAIN",
                 ),
                 (
-                    "book_record",
+                    "book_design_candidate",
                     "DOMAIN",
                     "ARCHIVAL_RECONCILED",
                     "DOMAIN_RECONCILED",
@@ -917,6 +966,7 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
         )
         plan_rows = (
             ("book_plan", "plan-book", "book:main", []),
+            ("outline_version", "plan-book-alias", "book:alternate", []),
             ("volume_plan", "plan-volume", "volume:1", ["plan-book"]),
             ("arc_plan", "plan-arc", "arc:main", ["plan-volume"]),
             (
@@ -926,6 +976,12 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
                 ["plan-volume"],
             ),
             ("chapter_plan", "plan-chapter", "chapter:1", ["plan-group"]),
+            (
+                "chapter_plan_version",
+                "plan-chapter-alias",
+                "chapter:2",
+                ["plan-group"],
+            ),
         )
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -961,6 +1017,34 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
                     },
                 },
             )
+            self._write(
+                root / "data" / "assets" / "00-book-design.json",
+                {
+                    "id": "planning-book-design",
+                    "type": "book_design",
+                    "project_id": project_id,
+                    "references": [book_id],
+                    "content": {
+                        "book_id": book_id,
+                        "title": "Planning Migration",
+                        "genre": "speculative",
+                        "premise": "A planner must expose a falsified dependency graph.",
+                        "theme": "Plans remain legitimate only when changes are traceable.",
+                        "core_conflict": "Speed conflicts with accountable sequencing.",
+                        "reader_promise": "Every shortcut creates a visible later cost.",
+                        "ending": "The plan becomes durable through independent review.",
+                        "protagonist": {
+                            "name": "Yan",
+                            "external_goal": "Complete the migration",
+                            "internal_need": "Accept bounded sequencing",
+                            "flaw": "Treats urgency as authority",
+                            "arc": "From unilateral action to auditable coordination",
+                        },
+                        "world_rules": ["Every plan revision produces an immutable version"],
+                        "target_chapters": 20,
+                    },
+                },
+            )
             for ordinal, (source_type, key, logical_key, references) in enumerate(
                 plan_rows, start=1
             ):
@@ -983,6 +1067,9 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
                 path.chmod(0o555 if path.is_dir() else 0o444)
             root.chmod(0o555)
             imported = service.import_snapshot(root)
+        self._validate_approve_activate(
+            service, imported["migration_run_id"], "project_workspace_state"
+        )
         approval = LegacyMigrationApprovalApplication(
             DATABASE_URL,
             application_build_id="legacy-domain-planning-integration",
@@ -990,11 +1077,14 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
         )
         activation_order = (
             "book_record",
+            "book_design",
             "book_plan",
+            "outline_version",
             "volume_plan",
             "arc_plan",
             "chapter_group_plan",
             "chapter_plan",
+            "chapter_plan_version",
         )
         activated: dict[str, dict] = {}
         for source_type in activation_order:
@@ -1058,17 +1148,203 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
                 [project_id, book_id],
             )
             bindings = list(uow.cursor.fetchall())
-        self.assertEqual(len(bindings), 5)
-        by_type = {str(row[0]): row for row in bindings}
-        self.assertEqual(int(by_type["BOOK"][3]), 0)
-        self.assertEqual(int(by_type["ARC"][3]), 0)
-        self.assertEqual(int(by_type["VOLUME"][3]), 1)
-        self.assertEqual(int(by_type["CHAPTER_GROUP"][3]), 1)
-        self.assertEqual(int(by_type["CHAPTER"][3]), 1)
+        self.assertEqual(len(bindings), 7)
+        counts_by_type = {
+            contract_type: sum(
+                1 for row in bindings if str(row[0]) == contract_type
+            )
+            for contract_type in {str(row[0]) for row in bindings}
+        }
         self.assertEqual(
-            str(by_type["CHAPTER"][1]),
-            activated["chapter_group_plan"]["target_asset_version_id"],
+            counts_by_type,
+            {"BOOK": 2, "VOLUME": 1, "ARC": 1, "CHAPTER_GROUP": 1, "CHAPTER": 2},
         )
+        for contract_type, parent, _active, hierarchy_count in bindings:
+            expected_hierarchy = 1 if str(contract_type) in {
+                "VOLUME",
+                "CHAPTER_GROUP",
+                "CHAPTER",
+            } else 0
+            self.assertEqual(int(hierarchy_count), expected_hierarchy)
+            if str(contract_type) == "CHAPTER":
+                self.assertEqual(
+                    str(parent),
+                    activated["chapter_group_plan"]["target_asset_version_id"],
+                )
+
+    def test_story_design_migration_uses_versioned_server_validator_receipts(self) -> None:
+        project_id = identifier("domain-story-design-project")
+        workspace_id = identifier("domain-story-design-workspace")
+        service = LegacyMigrationService(
+            DATABASE_URL,
+            application_build_id="legacy-story-design-validation-integration",
+            commit_sha="2" * 40,
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "data" / "workspaces").mkdir(parents=True)
+            (root / "data" / "assets").mkdir(parents=True)
+            self._write(
+                root / "data" / "workspaces" / "workspace.json",
+                {
+                    "id": workspace_id,
+                    "type": "project_workspace_state",
+                    "title": "Story Design Migration Project",
+                    "content": {"project_id": project_id},
+                },
+            )
+            self._write(
+                root / "data" / "assets" / "story-design.json",
+                {
+                    "id": "story-design-main",
+                    "type": "story_design",
+                    "project_id": project_id,
+                    "content": {
+                        "generator_operation_name": "book_plan.generate",
+                        "planning_scope": "BOOK",
+                        "logical_key": "book-plan:main",
+                        "candidate_payload": {
+                            "objective": (
+                                "Escalate the central conflict through irreversible choices"
+                            )
+                        },
+                    },
+                },
+            )
+            self._write(
+                root / "data" / "assets" / "story-design-candidate.json",
+                {
+                    "id": "story-design-alias",
+                    "type": "story_design_candidate",
+                    "project_id": project_id,
+                    "content": {
+                        "generator_operation_name": "book_plan.generate",
+                        "planning_scope": "BOOK",
+                        "logical_key": "book-plan:alternate",
+                        "candidate_payload": {
+                            "objective": (
+                                "Test an alternate conflict path without copying expression"
+                            )
+                        },
+                    },
+                },
+            )
+            for path in root.rglob("*"):
+                path.chmod(0o555 if path.is_dir() else 0o444)
+            root.chmod(0o555)
+            imported = service.import_snapshot(root)
+        self._validate_approve_activate(
+            service, imported["migration_run_id"], "project_workspace_state"
+        )
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                """
+                SELECT migration_item_id, item_version, source_hash,
+                       target_asset_version_id
+                FROM authority_legacy_migration_item
+                WHERE migration_run_id=%s AND source_asset_type='story_design'
+                """,
+                [imported["migration_run_id"]],
+            )
+            item = uow.cursor.fetchone()
+        validation = service.validate_domain_item(
+            str(item[0]), expected_item_version=int(item[1])
+        )
+        self.assertEqual(validation["validation_status"], "PASS")
+        approval = LegacyMigrationApprovalApplication(
+            DATABASE_URL,
+            application_build_id="legacy-story-design-validation-integration",
+            commit_sha="2" * 40,
+        )
+        decision = approval.execute(
+            LegacyMigrationDecisionCommand(
+                migration_run_id=imported["migration_run_id"],
+                migration_item_id=str(item[0]),
+                project_id=project_id,
+                workspace_id=workspace_id,
+                actor_id="story-design-migration-reviewer",
+                decision=MigrationDecision.APPROVE,
+                reason="versioned Story Design validator suite accepted",
+                expected_item_version=int(validation["item_version"]),
+                source_hash=str(item[2]),
+                target_asset_version_id=str(item[3]),
+                migration_validation_id=str(validation["migration_validation_id"]),
+                idempotency_key=f"approve:{item[0]}:{item[2]}",
+                trace_id=f"trace:{imported['migration_run_id']}",
+                correlation_id=f"correlation:{project_id}",
+            )
+        )
+        activated = service.activate_domain_item(
+            str(item[0]), expected_item_version=int(decision["item_version"])
+        )
+        alias_activation = self._validate_approve_activate(
+            service,
+            imported["migration_run_id"],
+            "story_design_candidate",
+        )
+        verified = service.verify(
+            imported["migration_run_id"], required_level="DOMAIN_NATIVE"
+        )
+        self.assertEqual(verified["verification_status"], "PASS")
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                """
+                SELECT evidence, validator_version,
+                       validator_implementation_hash, result_hash
+                FROM authority_legacy_migration_validation
+                WHERE migration_validation_id=%s
+                """,
+                [validation["migration_validation_id"]],
+            )
+            validation_row = uow.cursor.fetchone()
+            uow.cursor.execute(
+                """
+                SELECT lifecycle, qualification, approval, version
+                FROM authority_story_design_version_state
+                WHERE project_id=%s AND asset_version_id=%s
+                """,
+                [project_id, activated["target_asset_version_id"]],
+            )
+            state = uow.cursor.fetchone()
+            uow.cursor.execute(
+                """
+                SELECT transition_type, evidence
+                FROM authority_story_design_transition
+                WHERE project_id=%s AND asset_version_id=%s
+                  AND transition_type IN (
+                      'STRUCTURAL_VALIDATE','SEMANTIC_VALIDATE','QUALIFY'
+                  )
+                ORDER BY to_version
+                """,
+                [project_id, activated["target_asset_version_id"]],
+            )
+            transitions = list(uow.cursor.fetchall())
+        validation_evidence = dict(validation_row[0])
+        self.assertEqual(validation_evidence["validator"], "StoryDesignValidatorSuite")
+        self.assertEqual(len(validation_evidence["receipts"]), 5)
+        self.assertTrue(str(validation_row[2]).startswith("sha256:"))
+        self.assertTrue(str(validation_row[3]).startswith("sha256:"))
+        self.assertEqual(tuple(state), ("ACTIVE", "QUALIFIED", "APPROVED", 7))
+        self.assertNotEqual(
+            alias_activation["target_asset_version_id"],
+            activated["target_asset_version_id"],
+        )
+        self.assertEqual(
+            [str(row[0]) for row in transitions],
+            ["STRUCTURAL_VALIDATE", "SEMANTIC_VALIDATE", "QUALIFY"],
+        )
+        for transition_type, evidence in transitions:
+            receipt_key = (
+                "qualification_receipt"
+                if str(transition_type) == "QUALIFY"
+                else "validator_receipt"
+            )
+            self.assertNotIn("passed", evidence)
+            self.assertEqual(
+                str(evidence["migration_validation_id"]),
+                validation["migration_validation_id"],
+            )
+            self.assertEqual(str(evidence[receipt_key]["status"]), "PASS")
 
     def test_source_migration_requires_verified_blob_and_real_projection(self) -> None:
         project_id = identifier("domain-source-project")
@@ -1157,6 +1433,9 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
                 path.chmod(0o555 if path.is_dir() else 0o444)
             root.chmod(0o555)
             imported = service.import_snapshot(root)
+        self._validate_approve_activate(
+            service, imported["migration_run_id"], "project_workspace_state"
+        )
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
             uow.cursor.execute(
                 """
@@ -1405,6 +1684,7 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
             allow_fixture_domain_activation=True,
         )
         knowledge_key = "legacy-knowledge-1"
+        knowledge_candidate_key = "legacy-knowledge-candidate-1"
         pack_key = "legacy-pack-1"
         candidate = {
             "concept_name": "Escalating obligation",
@@ -1438,7 +1718,34 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
                 },
             )
             self._write(
-                root / "data" / "assets" / "01-knowledge.json",
+                root / "data" / "assets" / "01-knowledge-candidate.json",
+                {
+                    "id": knowledge_candidate_key,
+                    "type": "knowledge_card_candidate",
+                    "project_id": project_id,
+                    "content": {
+                        "candidate": {
+                            **candidate,
+                            "concept_name": "Escalating obligation candidate alias",
+                        },
+                        "execution_asset_version_id": execution_version_id,
+                        "evidence_spans": [
+                            {
+                                "source_chunk_asset_version_id": chunk_version_id,
+                                "chunk_byte_start": 0,
+                                "chunk_byte_end": 10,
+                                "evidence_hash": (
+                                    "sha256:"
+                                    + hashlib.sha256(b"span-0-10").hexdigest()
+                                ),
+                            }
+                        ],
+                        "abstraction_policy_version": "anti-copy-abstraction:v1",
+                    },
+                },
+            )
+            self._write(
+                root / "data" / "assets" / "02-knowledge.json",
                 {
                     "id": knowledge_key,
                     "type": "knowledge_card",
@@ -1462,7 +1769,7 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
                 },
             )
             self._write(
-                root / "data" / "assets" / "02-pack.json",
+                root / "data" / "assets" / "03-pack.json",
                 {
                     "id": pack_key,
                     "type": "knowledge_pack",
@@ -1488,13 +1795,20 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
                 path.chmod(0o555 if path.is_dir() else 0o444)
             root.chmod(0o555)
             imported = service.import_snapshot(root)
+        self._validate_approve_activate(
+            service, imported["migration_run_id"], "project_workspace_state"
+        )
         approval = LegacyMigrationApprovalApplication(
             DATABASE_URL,
             application_build_id=build_id,
             commit_sha=commit_sha,
         )
         activations: dict[str, dict] = {}
-        for source_type in ("knowledge_card", "knowledge_pack"):
+        for source_type in (
+            "knowledge_card_candidate",
+            "knowledge_card",
+            "knowledge_pack",
+        ):
             with AuthorityUnitOfWork(DATABASE_URL) as uow:
                 uow.cursor.execute(
                     """
@@ -1569,6 +1883,55 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
             pack = uow.cursor.fetchone()
         self.assertEqual(tuple(card), ("ACTIVE", "ACTIVE", "ELIGIBLE", "CLEAR"))
         self.assertEqual(tuple(int(value) if index else str(value) for index, value in enumerate(pack)), ("ACTIVE", 1, 1))
+
+    def _validate_approve_activate(
+        self,
+        service: LegacyMigrationService,
+        migration_run_id: str,
+        source_type: str,
+    ) -> dict:
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                """
+                SELECT migration_item_id, item_version, source_hash,
+                       target_asset_version_id, project_id, workspace_id
+                FROM authority_legacy_migration_item
+                WHERE migration_run_id=%s AND source_asset_type=%s
+                """,
+                [migration_run_id, source_type],
+            )
+            item = uow.cursor.fetchone()
+        if item is None:
+            raise AssertionError(f"missing migration item for {source_type}")
+        validation = service.validate_domain_item(
+            str(item[0]), expected_item_version=int(item[1])
+        )
+        self.assertEqual(validation["validation_status"], "PASS")
+        decision = LegacyMigrationApprovalApplication(
+            DATABASE_URL,
+            application_build_id=service.application_build_id,
+            commit_sha=service.commit_sha,
+        ).execute(
+            LegacyMigrationDecisionCommand(
+                migration_run_id=migration_run_id,
+                migration_item_id=str(item[0]),
+                project_id=str(item[4]),
+                workspace_id=str(item[5]),
+                actor_id=f"{source_type}-migration-reviewer",
+                decision=MigrationDecision.APPROVE,
+                reason=f"{source_type} server validation independently accepted",
+                expected_item_version=int(validation["item_version"]),
+                source_hash=str(item[2]),
+                target_asset_version_id=str(item[3]),
+                migration_validation_id=str(validation["migration_validation_id"]),
+                idempotency_key=f"approve:{item[0]}:{item[2]}",
+                trace_id=f"trace:{migration_run_id}",
+                correlation_id=f"correlation:{item[4]}",
+            )
+        )
+        return service.activate_domain_item(
+            str(item[0]), expected_item_version=int(decision["item_version"])
+        )
 
     @staticmethod
     def _write(path: Path, payload: dict) -> None:

@@ -200,11 +200,11 @@ class LegacyMigrationService:
                 self._upsert_item(
                     run_id,
                     record,
-                    status="ACTIVATED",
-                    decision="MIGRATE_NATIVE",
+                    status="NEEDS_REVIEW",
+                    decision="IMPORT",
                     target_asset_id=target_asset_id,
                     target_asset_version_id=detail["asset_version_id"],
-                    phase="RECONCILE",
+                    phase="QUALIFY",
                     target_asset_type="project_record",
                     codec_name="native:project_workspace_state->project_record",
                     codec_version="3.0.0",
@@ -212,24 +212,29 @@ class LegacyMigrationService:
                     evidence={
                         "source_hash": record.source_hash,
                         "target_content_hash": detail["content_hash"],
-                        "activation_decision": "ACTIVATE",
+                        "activation_decision": "NEEDS_REVIEW",
                         "replayed": False,
                         "native_project_bootstrap": True,
+                        "bootstrap_shell_is_not_domain_activation": True,
                     },
-                    materialization_level=MigrationMaterializationLevel.DOMAIN_NATIVE,
+                    materialization_level=MigrationMaterializationLevel.ARCHIVAL_NATIVE,
                     target_materialization_level=MigrationMaterializationLevel.DOMAIN_NATIVE,
                     domain_adapter="novel_forge.legacy_migration.project_authority.v1",
                     domain_validator="novel_forge.project_authority.domain_validator.v1",
                     projection_strategy="project_authority.authority_projection.v1",
                     activation_strategy="project_authority.explicit_command.v1",
-                    domain_projection_id=record.project_id,
+                    domain_projection_id="",
                 )
                 self._complete_successful_item_phases(
                     run_id,
                     record,
                     output_hash=str(detail["content_hash"]),
-                    activated=True,
-                    evidence={"domain_projection_id": record.project_id},
+                    activated=False,
+                    awaiting_domain_activation=True,
+                    evidence={
+                        "project_bootstrap_shell_id": record.project_id,
+                        "domain_activation_pending": True,
+                    },
                 )
                 imported += 1
                 self._checkpoint(run_id, ordinal, imported, quarantined, skipped, failed)
@@ -463,8 +468,12 @@ class LegacyMigrationService:
             )
         if context.item_version != expected_item_version:
             raise KernelError(
-                "MIGRATION_ITEM_VERSION_CONFLICT",
-                "domain activation expected item version is stale",
+                (
+                    "MIGRATION_DECISION_STALE"
+                    if context.decision_id
+                    else "MIGRATION_ITEM_VERSION_CONFLICT"
+                ),
+                "domain activation expected item version or decision is stale",
             )
         if not context.decision_id:
             raise KernelError(

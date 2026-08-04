@@ -6,6 +6,9 @@ import unittest
 from pathlib import Path
 
 from novel_forge.modules.legacy_migration import scan_legacy_snapshot
+from novel_forge.modules.legacy_migration.codecs import (
+    DOMAIN_MIGRATION_ALIAS_GROUPS,
+)
 
 
 class LegacyMigrationScannerTests(unittest.TestCase):
@@ -51,6 +54,36 @@ class LegacyMigrationScannerTests(unittest.TestCase):
         broken = next(item for item in scan.records if item.source_ref.endswith("broken.json"))
         self.assertEqual(broken.error_code, "MALFORMED_JSON")
         self.assertTrue(scan.snapshot_hash.startswith("sha256:"))
+
+    def test_alias_identity_conflicts_fail_closed_in_the_same_snapshot(self) -> None:
+        for canonical, alias in DOMAIN_MIGRATION_ALIAS_GROUPS:
+            with self.subTest(canonical=canonical, alias=alias):
+                with tempfile.TemporaryDirectory() as directory:
+                    root = Path(directory)
+                    assets = root / "data" / "assets"
+                    assets.mkdir(parents=True)
+                    common = {
+                        "id": "same-business-key",
+                        "project_id": "project-1",
+                        "content": {"objective": "canonical identity conflict"},
+                    }
+                    self._write(
+                        assets / "01-canonical.json",
+                        {**common, "type": canonical},
+                    )
+                    self._write(
+                        assets / "02-alias.json",
+                        {**common, "type": alias},
+                    )
+
+                    scan = scan_legacy_snapshot(root)
+
+                self.assertEqual(scan.records[0].status, "VALIDATED")
+                self.assertEqual(scan.records[1].status, "QUARANTINED")
+                self.assertEqual(
+                    scan.records[1].error_code,
+                    "BUSINESS_IDENTITY_CONTENT_CONFLICT",
+                )
 
     @staticmethod
     def _write(path: Path, payload: dict) -> None:

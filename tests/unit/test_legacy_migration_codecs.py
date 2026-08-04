@@ -3,7 +3,9 @@ from __future__ import annotations
 import unittest
 
 from novel_forge.modules.legacy_migration.codecs import (
+    CORE_DOMAIN_MIGRATION_SOURCE_TYPES,
     DEFAULT_CODEC_REGISTRY,
+    DOMAIN_MIGRATION_ALIAS_GROUPS,
     MigrationCodecNotFound,
 )
 from novel_forge.modules.legacy_migration.scanner import LegacySnapshotRecord
@@ -64,6 +66,24 @@ class LegacyMigrationCodecTests(unittest.TestCase):
             "publishing_log",
         }
         self.assertTrue(required <= DEFAULT_CODEC_REGISTRY.source_types)
+
+    def test_core_domain_contract_has_18_typed_adapter_routes_and_aliases(self) -> None:
+        rows = {
+            row["source_type"]: row
+            for row in DEFAULT_CODEC_REGISTRY.to_manifest()
+            if row["source_type"] in CORE_DOMAIN_MIGRATION_SOURCE_TYPES
+        }
+
+        self.assertEqual(len(rows), 18)
+        self.assertEqual(set(rows), set(CORE_DOMAIN_MIGRATION_SOURCE_TYPES))
+        self.assertTrue(
+            all(row["materialization_level"] == "DOMAIN_NATIVE" for row in rows.values())
+        )
+        self.assertTrue(all(row["domain_adapter"] for row in rows.values()))
+        for canonical, alias in DOMAIN_MIGRATION_ALIAS_GROUPS:
+            self.assertEqual(
+                rows[canonical]["domain_adapter"], rows[alias]["domain_adapter"]
+            )
 
     def test_conversion_produces_native_content_and_stable_reconciliation(self) -> None:
         codec = DEFAULT_CODEC_REGISTRY.resolve("chapter_plan_version")

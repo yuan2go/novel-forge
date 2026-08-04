@@ -5,6 +5,8 @@ after ``migration.item.approve`` has committed an independent decision.
 """
 from __future__ import annotations
 
+import hashlib
+import json
 from dataclasses import dataclass
 from decimal import Decimal
 from typing import Any, Protocol
@@ -26,11 +28,22 @@ from novel_forge.modules.hierarchical_planning import (
     PostgresHierarchicalPlanningAuthority,
     validate_planning_contract,
 )
+from novel_forge.modules.project_authority import (
+    ProjectAuthorityApplication,
+    ProjectAuthorityCommand,
+    ProjectAuthorityQuery,
+)
+from novel_forge.modules.project_authority.domain import (
+    transition_project_snapshot,
+)
 from novel_forge.modules.story_design_authority import (
     DesignTransition,
     PlanningScope,
     PostgresStoryDesignAssetAuthority,
     StoryDesignTransitionCommand,
+)
+from novel_forge.modules.story_design_authority.validators import (
+    validate_story_design_candidate,
 )
 from novel_forge.modules.source_authority import (
     RegisterSourceDocumentCommand,
@@ -52,6 +65,16 @@ from novel_forge.modules.mkaos_authority.domain import (
     validate_pack_selections,
 )
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+
+
+def _canonical_evidence_hash(value: Any) -> str:
+    encoded = json.dumps(
+        value,
+        ensure_ascii=False,
+        separators=(",", ":"),
+        sort_keys=True,
+    ).encode("utf-8")
+    return "sha256:" + hashlib.sha256(encoded).hexdigest()
 
 
 @dataclass(frozen=True, slots=True)
@@ -104,6 +127,88 @@ class DomainMigrationAdapter(Protocol):
     def validate(self, context: DomainMigrationContext) -> dict[str, Any]: ...
 
     def activate(self, context: DomainMigrationContext) -> DomainMigrationResult: ...
+
+
+class ProjectWorkspaceMigrationAdapter:
+    adapter_name = "novel_forge.legacy_migration.project_authority.v1"
+
+    def __init__(
+        self, database_url: str, *, application_build_id: str, commit_sha: str
+    ) -> None:
+        self.database_url = database_url
+        self.application = ProjectAuthorityApplication(
+            database_url,
+            application_build_id=application_build_id,
+            commit_sha=commit_sha,
+        )
+        self.query = ProjectAuthorityQuery(database_url)
+
+    def validate(self, context: DomainMigrationContext) -> dict[str, Any]:
+        project = self.query.require_project(context.project_id)
+        if (
+            str(project["workspace_id"]) != context.workspace_id
+            or str(project["asset_version_id"])
+            != context.target_asset_version_id
+            or str(project["status"]) not in {"PAUSED", "ACTIVE"}
+        ):
+            raise KernelError(
+                "PROJECT_MIGRATION_SHELL_INVALID",
+                "Project migration requires its version-bound bootstrap shell",
+            )
+        activated = transition_project_snapshot(
+            dict(project["content"]), target_status="ACTIVE"
+        )
+        evidence = {
+            "status": "PASS",
+            "validator": "transition_project_snapshot",
+            "validator_version": "project-authority-domain-v1",
+            "project_id": context.project_id,
+            "workspace_id": context.workspace_id,
+            "source_status": project["status"],
+            "target_status": activated["status"],
+            "expected_project_version": int(project["version"]),
+            "target_asset_version_id": context.target_asset_version_id,
+        }
+        evidence["result_hash"] = _canonical_evidence_hash(evidence)
+        return evidence
+
+    def activate(self, context: DomainMigrationContext) -> DomainMigrationResult:
+        validation = self.validate(context)
+        project = self.query.require_project(context.project_id)
+        result = self.application.execute(
+            ProjectAuthorityCommand(
+                definition_name="project_lifecycle.transition",
+                project_id=context.project_id,
+                workspace_id=context.workspace_id,
+                actor_id=context.actor_id,
+                idempotency_key=(
+                    f"migration:project:activate:{context.migration_item_id}:"
+                    f"{context.decision_id}"
+                ),
+                trace_id=f"trace:{context.migration_run_id}",
+                correlation_id=f"migration:{context.migration_run_id}",
+                payload={"target_status": "ACTIVE"},
+                expected_version=int(project["version"]),
+                expected_current_asset_version_id=str(project["asset_version_id"]),
+            )
+        )
+        current = self.query.require_project(context.project_id)
+        return DomainMigrationResult(
+            domain_projection_id=context.project_id,
+            target_asset_id=_asset_id_from_version(
+                self.database_url, str(current["asset_version_id"])
+            ),
+            target_asset_version_id=str(current["asset_version_id"]),
+            target_content_hash=str(current["content_hash"]),
+            activation_operation_id=str(result["operation_id"]),
+            evidence={
+                **validation,
+                "project_activation_operation_id": result["operation_id"],
+                "independent_migration_decision_id": context.decision_id,
+                "migration_validation_id": context.migration_validation_id,
+                "archival_asset_version_id": context.target_asset_version_id,
+            },
+        )
 
 
 class BookDesignMigrationAdapter:
@@ -278,9 +383,15 @@ class StoryDesignMigrationAdapter:
 
     def validate(self, context: DomainMigrationContext) -> dict[str, Any]:
         generator, scope, logical_key = _story_design_identity(context)
+        result = validate_story_design_candidate(
+            content=_domain_content(context.content),
+            project_id=context.project_id,
+            generator_operation_name=generator,
+            planning_scope=scope,
+            logical_key=logical_key,
+        )
         return {
-            "status": "PASS",
-            "validator": "StoryDesign GeneratorCatalog and PlanningScope",
+            **result.to_evidence(),
             "generator_operation_name": generator,
             "planning_scope": scope.value,
             "logical_key": logical_key,
@@ -296,6 +407,7 @@ class StoryDesignMigrationAdapter:
             generator=str(validation["generator_operation_name"]),
             scope=PlanningScope(str(validation["planning_scope"])),
             logical_key=str(validation["logical_key"]),
+            validation=validation,
         )
         return DomainMigrationResult(
             domain_projection_id=context.target_asset_version_id,
@@ -351,9 +463,10 @@ class HierarchicalPlanningMigrationAdapter:
             execution_scope=execution_scope,
             content=content,
         )
-        return {
+        evidence = {
             "status": "PASS",
             "validator": "validate_planning_contract",
+            "validator_version": "hierarchical-planning-contract-v1",
             "contract_type": contract_type.value,
             "logical_key": contract.logical_key,
             "book_id": book_id,
@@ -362,6 +475,8 @@ class HierarchicalPlanningMigrationAdapter:
             "source_hash": context.source_hash,
             "target_asset_version_id": context.target_asset_version_id,
         }
+        evidence["result_hash"] = _canonical_evidence_hash(evidence)
+        return evidence
 
     def activate(self, context: DomainMigrationContext) -> DomainMigrationResult:
         validation = self.validate(context)
@@ -374,6 +489,7 @@ class HierarchicalPlanningMigrationAdapter:
             generator=generator,
             scope=scope,
             logical_key=str(validation["logical_key"]),
+            validation=validation,
         )
         principal = _principal(
             context.actor_id,
@@ -732,6 +848,11 @@ class DomainMigrationAdapterRegistry:
         allow_fixture_activation: bool = False,
     ) -> None:
         adapters: tuple[DomainMigrationAdapter, ...] = (
+            ProjectWorkspaceMigrationAdapter(
+                database_url,
+                application_build_id=application_build_id,
+                commit_sha=commit_sha,
+            ),
             BookDesignMigrationAdapter(
                 database_url,
                 application_build_id=application_build_id,
@@ -778,7 +899,18 @@ def _activate_story_design(
     generator: str,
     scope: PlanningScope,
     logical_key: str,
+    validation: dict[str, Any],
 ) -> tuple[dict[str, Any], list[str]]:
+    if (
+        validation.get("status") != "PASS"
+        or not context.migration_validation_id
+        or not context.validator_result_hash
+        or not context.validator_version
+    ):
+        raise KernelError(
+            "STORY_DESIGN_VALIDATION_BINDING_REQUIRED",
+            "Story Design activation requires a server validation binding",
+        )
     principal = _principal(
         context.actor_id,
         context.project_id,
@@ -798,14 +930,66 @@ def _activate_story_design(
             DesignTransition.ACTIVATE,
         )
     ):
-        evidence = {
+        evidence: dict[str, Any] = {
             "legacy_import_operation_id": context.import_operation_id,
             "migration_decision_id": context.decision_id,
+            "migration_validation_id": context.migration_validation_id,
+            "validator_result_hash": context.validator_result_hash,
+            "validator_version": context.validator_version,
             "migration_run_id": context.migration_run_id,
             "source_hash": context.source_hash,
-            "passed": True,
             "legacy_state_trusted_for_activation": False,
         }
+        if transition in {
+            DesignTransition.STRUCTURAL_VALIDATE,
+            DesignTransition.SEMANTIC_VALIDATE,
+        }:
+            validation_kind = (
+                "STRUCTURAL"
+                if transition is DesignTransition.STRUCTURAL_VALIDATE
+                else "SEMANTIC"
+            )
+            receipts = list(validation.get("receipts") or [])
+            receipt = next(
+                (
+                    dict(item)
+                    for item in receipts
+                    if str(item.get("validation_kind")) == validation_kind
+                ),
+                {
+                    "validation_kind": validation_kind,
+                    "validator_name": str(validation["validator"]),
+                    "validator_version": str(
+                        validation.get("validator_version") or "1.0.0"
+                    ),
+                    "status": "PASS",
+                    "result_hash": str(
+                        validation.get("result_hash")
+                        or _canonical_evidence_hash(validation)
+                    ),
+                },
+            )
+            if receipt.get("status") != "PASS" or not str(
+                receipt.get("result_hash") or ""
+            ).startswith("sha256:"):
+                raise KernelError(
+                    "STORY_DESIGN_VALIDATOR_RECEIPT_INVALID",
+                    f"{validation_kind} validation receipt is not passing",
+                )
+            evidence["validator_receipt"] = receipt
+        elif transition is DesignTransition.QUALIFY:
+            evidence["qualification_receipt"] = {
+                "status": "PASS",
+                "validator": str(validation["validator"]),
+                "validator_version": str(
+                    validation.get("validator_version") or "1.0.0"
+                ),
+                "result_hash": str(
+                    validation.get("result_hash")
+                    or _canonical_evidence_hash(validation)
+                ),
+                "migration_validation_id": context.migration_validation_id,
+            }
         state = authority.transition(
             StoryDesignTransitionCommand(
                 project_id=context.project_id,
