@@ -491,12 +491,22 @@ class LegacyMigrationApprovalApplication:
         uow.cursor.execute(
             """
             UPDATE authority_legacy_migration_item
-            SET status=%s, item_version=item_version+1,
+            SET status=%s,
+                domain_state=CASE
+                    WHEN validation_scope='DOMAIN' THEN %s
+                    ELSE domain_state
+                END,
+                item_version=item_version+1,
                 evidence=evidence || %s, updated_at=NOW()
             WHERE migration_item_id=%s AND item_version=%s
             """,
             [
                 target_status,
+                (
+                    "DOMAIN_ACTIVATION_PENDING"
+                    if decision is MigrationDecision.APPROVE
+                    else "DOMAIN_REJECTED"
+                ),
                 Jsonb(
                     {
                         "independent_decision_id": decision_id,

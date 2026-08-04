@@ -1,7 +1,7 @@
 {
   "schema_version": "architecture-manifest.v1",
   "registry": "novel_forge.storage.migrations.versions:VERSION_MODULES",
-  "head": "20260804_0059_migration_validation_authority",
+  "head": "20260804_0060_migration_completion_semantics",
   "migration_ids": [
     "20260625_0001_initial_industrial_schema",
     "20260628_0002_query_and_release_indexes",
@@ -61,6 +61,7 @@
     "20260804_0056_database_runtime_governance",
     "20260804_0057_hot_query_governance",
     "20260804_0058_authority_cutover_release_qualification",
-    "20260804_0059_migration_validation_authority"
+    "20260804_0059_migration_validation_authority",
+    "20260804_0060_migration_completion_semantics"
   ]
 }

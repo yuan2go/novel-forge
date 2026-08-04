@@ -461,6 +461,15 @@ class LegacyMigrationValidationApplication:
         validated_item_version = expected_version + 1
         uow.cursor.execute(
             """
+            UPDATE authority_legacy_migration_validation
+            SET status='STALE'
+            WHERE migration_item_id=%s AND status='PASS'
+              AND item_version<>%s
+            """,
+            [item_id, validated_item_version],
+        )
+        uow.cursor.execute(
+            """
             INSERT INTO authority_legacy_migration_validation(
                 migration_validation_id, migration_run_id, migration_item_id,
                 validation_version, item_version, source_hash,
@@ -504,12 +513,21 @@ class LegacyMigrationValidationApplication:
             """
             UPDATE authority_legacy_migration_item
             SET item_version=item_version+1,
+                domain_state=CASE
+                    WHEN validation_scope='DOMAIN' THEN %s
+                    ELSE domain_state
+                END,
                 evidence=evidence || %s,
                 updated_at=NOW()
             WHERE migration_item_id=%s AND item_version=%s
               AND status='NEEDS_REVIEW'
             """,
             [
+                (
+                    "DOMAIN_DECISION_PENDING"
+                    if validation_status is MigrationValidationStatus.PASS
+                    else "DOMAIN_VALIDATION_FAILED"
+                ),
                 Jsonb(
                     {
                         "latest_domain_validation_id": validation_id,

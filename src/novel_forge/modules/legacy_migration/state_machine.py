@@ -18,6 +18,161 @@ class MigrationMaterializationLevel(StrEnum):
     DOMAIN_NATIVE = "DOMAIN_NATIVE"
 
 
+class MigrationArchivalState(StrEnum):
+    DISCOVERED = "DISCOVERED"
+    CLASSIFIED = "CLASSIFIED"
+    ARCHIVAL_IMPORTED = "ARCHIVAL_IMPORTED"
+    ARCHIVAL_VALIDATED = "ARCHIVAL_VALIDATED"
+    REFERENCES_PENDING = "REFERENCES_PENDING"
+    REFERENCES_RESOLVED = "REFERENCES_RESOLVED"
+    ARCHIVAL_RECONCILED = "ARCHIVAL_RECONCILED"
+
+
+class MigrationDomainState(StrEnum):
+    DOMAIN_NOT_APPLICABLE = "DOMAIN_NOT_APPLICABLE"
+    DOMAIN_VALIDATION_PENDING = "DOMAIN_VALIDATION_PENDING"
+    DOMAIN_VALIDATED = "DOMAIN_VALIDATED"
+    DOMAIN_VALIDATION_FAILED = "DOMAIN_VALIDATION_FAILED"
+    DOMAIN_DECISION_PENDING = "DOMAIN_DECISION_PENDING"
+    DOMAIN_APPROVED = "DOMAIN_APPROVED"
+    DOMAIN_REJECTED = "DOMAIN_REJECTED"
+    DOMAIN_ACTIVATION_PENDING = "DOMAIN_ACTIVATION_PENDING"
+    DOMAIN_ACTIVATED = "DOMAIN_ACTIVATED"
+    DOMAIN_RECONCILED = "DOMAIN_RECONCILED"
+    DOMAIN_RECONCILIATION_FAILED = "DOMAIN_RECONCILIATION_FAILED"
+
+
+class MigrationValidationScope(StrEnum):
+    ARCHIVAL = "ARCHIVAL"
+    DOMAIN = "DOMAIN"
+
+
+class MigrationRunCompletionLevel(StrEnum):
+    NONE = "NONE"
+    ARCHIVAL_RECONCILED = "ARCHIVAL_RECONCILED"
+    DOMAIN_RECONCILED = "DOMAIN_RECONCILED"
+    RELEASE_READY = "RELEASE_READY"
+
+
+class MigrationRunStatus(StrEnum):
+    IMPORT_RUNNING = "IMPORT_RUNNING"
+    ARCHIVAL_RECONCILED = "ARCHIVAL_RECONCILED"
+    DOMAIN_REVIEW_PENDING = "DOMAIN_REVIEW_PENDING"
+    DOMAIN_ACTIVATION_PARTIAL = "DOMAIN_ACTIVATION_PARTIAL"
+    DOMAIN_RECONCILED = "DOMAIN_RECONCILED"
+    QUARANTINED = "QUARANTINED"
+    FAILED = "FAILED"
+    CANCELLED = "CANCELLED"
+
+
+class MigrationVerificationLevel(StrEnum):
+    ARCHIVAL_NATIVE = "ARCHIVAL_NATIVE"
+    DOMAIN_NATIVE = "DOMAIN_NATIVE"
+    RELEASE_READY = "RELEASE_READY"
+
+
+@dataclass(frozen=True, slots=True)
+class MigrationCompletionFacts:
+    archival_integrity: bool
+    domain_native_count: int = 0
+    domain_native_activated_count: int = 0
+    pending_domain_native_count: int = 0
+    failed_count: int = 0
+    quarantine_count: int = 0
+    actual_domain_failures: int = 0
+    domain_validation_failures: int = 0
+    domain_reconciliation_failures: int = 0
+    required_reference_failures: int = 0
+
+    def __post_init__(self) -> None:
+        for name in (
+            "domain_native_count",
+            "domain_native_activated_count",
+            "pending_domain_native_count",
+            "failed_count",
+            "quarantine_count",
+            "actual_domain_failures",
+            "domain_validation_failures",
+            "domain_reconciliation_failures",
+            "required_reference_failures",
+        ):
+            if int(getattr(self, name)) < 0:
+                raise ValueError(f"{name} cannot be negative")
+
+
+@dataclass(frozen=True, slots=True)
+class MigrationCompletion:
+    run_status: MigrationRunStatus
+    completion_level: MigrationRunCompletionLevel
+    required_level: MigrationVerificationLevel
+    required_level_satisfied: bool
+
+
+def derive_migration_completion(
+    facts: MigrationCompletionFacts,
+    *,
+    required_level: MigrationVerificationLevel | str,
+) -> MigrationCompletion:
+    """Derive one fail-closed run result from durable reconciliation facts."""
+
+    level = MigrationVerificationLevel(required_level)
+    domain_failure_count = (
+        facts.actual_domain_failures
+        + facts.domain_validation_failures
+        + facts.domain_reconciliation_failures
+        + facts.required_reference_failures
+    )
+    if facts.failed_count or domain_failure_count or not facts.archival_integrity:
+        run_status = MigrationRunStatus.FAILED
+    elif facts.quarantine_count:
+        run_status = MigrationRunStatus.QUARANTINED
+    elif facts.pending_domain_native_count:
+        run_status = (
+            MigrationRunStatus.DOMAIN_ACTIVATION_PARTIAL
+            if facts.domain_native_activated_count
+            else MigrationRunStatus.DOMAIN_REVIEW_PENDING
+        )
+    elif facts.domain_native_count:
+        run_status = MigrationRunStatus.DOMAIN_RECONCILED
+    else:
+        run_status = MigrationRunStatus.ARCHIVAL_RECONCILED
+
+    archival_satisfied = (
+        facts.archival_integrity
+        and facts.failed_count == 0
+        and facts.quarantine_count == 0
+    )
+    domain_satisfied = (
+        archival_satisfied
+        and facts.pending_domain_native_count == 0
+        and domain_failure_count == 0
+    )
+    release_satisfied = (
+        domain_satisfied
+        and facts.domain_native_count > 0
+        and run_status is MigrationRunStatus.DOMAIN_RECONCILED
+    )
+    if release_satisfied and level is MigrationVerificationLevel.RELEASE_READY:
+        completion_level = MigrationRunCompletionLevel.RELEASE_READY
+    elif domain_satisfied and facts.domain_native_count > 0:
+        completion_level = MigrationRunCompletionLevel.DOMAIN_RECONCILED
+    elif archival_satisfied:
+        completion_level = MigrationRunCompletionLevel.ARCHIVAL_RECONCILED
+    else:
+        completion_level = MigrationRunCompletionLevel.NONE
+    satisfied = {
+        MigrationVerificationLevel.ARCHIVAL_NATIVE: archival_satisfied,
+        MigrationVerificationLevel.DOMAIN_NATIVE: domain_satisfied,
+        MigrationVerificationLevel.RELEASE_READY: release_satisfied,
+    }[level]
+    return MigrationCompletion(
+        run_status=run_status,
+        completion_level=completion_level,
+        required_level=level,
+        required_level_satisfied=satisfied,
+    )
+
+
 class MigrationPhase(StrEnum):
     SCAN = "SCAN"
     CLASSIFY = "CLASSIFY"
@@ -131,10 +286,19 @@ class MigrationPhaseCheckpoint:
 
 
 __all__ = [
+    "MigrationArchivalState",
+    "MigrationCompletion",
+    "MigrationCompletionFacts",
     "MigrationDecision",
+    "MigrationDomainState",
     "MigrationMaterializationLevel",
     "MigrationPhase",
     "MigrationPhaseCheckpoint",
     "MigrationReferenceStatus",
+    "MigrationRunCompletionLevel",
+    "MigrationRunStatus",
+    "MigrationValidationScope",
+    "MigrationVerificationLevel",
+    "derive_migration_completion",
     "require_phase_transition",
 ]

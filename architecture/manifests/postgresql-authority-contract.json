@@ -34,7 +34,8 @@
     ],
     "required_migrations": [
       "20260804_0058_authority_cutover_release_qualification",
-      "20260804_0059_migration_validation_authority"
+      "20260804_0059_migration_validation_authority",
+      "20260804_0060_migration_completion_semantics"
     ],
     "required_operation_definitions": [
       "chapter.slice.run",
@@ -112,7 +113,7 @@
     },
     "minimum_module_count": 14,
     "minimum_worker_count": 7,
-    "minimum_migration_count": 59,
+    "minimum_migration_count": 60,
     "maximum_forbidden_production_reachable_paths": 0
   },
   "run_evidence_contract": {

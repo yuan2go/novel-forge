@@ -3,9 +3,16 @@ from __future__ import annotations
 import unittest
 
 from novel_forge.modules.legacy_migration.state_machine import (
+    MigrationCompletionFacts,
+    MigrationDomainState,
+    MigrationRunCompletionLevel,
+    MigrationRunStatus,
     MigrationPhase,
     MigrationPhaseCheckpoint,
     MigrationReferenceStatus,
+    MigrationValidationScope,
+    MigrationVerificationLevel,
+    derive_migration_completion,
     require_phase_transition,
 )
 
@@ -63,6 +70,74 @@ class LegacyMigrationStateMachineTests(unittest.TestCase):
         )
         self.assertEqual(first.checkpoint_hash, replay.checkpoint_hash)
         self.assertNotEqual(first.checkpoint_hash, changed.checkpoint_hash)
+
+    def test_domain_pending_is_never_reported_as_domain_pass(self) -> None:
+        completion = derive_migration_completion(
+            MigrationCompletionFacts(
+                archival_integrity=True,
+                domain_native_count=3,
+                domain_native_activated_count=1,
+                pending_domain_native_count=2,
+            ),
+            required_level=MigrationVerificationLevel.DOMAIN_NATIVE,
+        )
+
+        self.assertEqual(completion.run_status, MigrationRunStatus.DOMAIN_ACTIVATION_PARTIAL)
+        self.assertEqual(
+            completion.completion_level,
+            MigrationRunCompletionLevel.ARCHIVAL_RECONCILED,
+        )
+        self.assertFalse(completion.required_level_satisfied)
+
+    def test_archival_and_domain_verification_levels_are_explicit(self) -> None:
+        facts = MigrationCompletionFacts(
+            archival_integrity=True,
+            domain_native_count=2,
+            domain_native_activated_count=0,
+            pending_domain_native_count=2,
+        )
+        archival = derive_migration_completion(
+            facts,
+            required_level=MigrationVerificationLevel.ARCHIVAL_NATIVE,
+        )
+        release = derive_migration_completion(
+            facts,
+            required_level=MigrationVerificationLevel.RELEASE_READY,
+        )
+
+        self.assertEqual(archival.run_status, MigrationRunStatus.DOMAIN_REVIEW_PENDING)
+        self.assertTrue(archival.required_level_satisfied)
+        self.assertFalse(release.required_level_satisfied)
+
+    def test_domain_failures_and_quarantine_fail_closed(self) -> None:
+        failed = derive_migration_completion(
+            MigrationCompletionFacts(
+                archival_integrity=True,
+                domain_native_count=1,
+                domain_native_activated_count=1,
+                domain_validation_failures=1,
+            ),
+            required_level=MigrationVerificationLevel.DOMAIN_NATIVE,
+        )
+        quarantined = derive_migration_completion(
+            MigrationCompletionFacts(
+                archival_integrity=True,
+                quarantine_count=1,
+            ),
+            required_level=MigrationVerificationLevel.ARCHIVAL_NATIVE,
+        )
+
+        self.assertEqual(failed.run_status, MigrationRunStatus.FAILED)
+        self.assertFalse(failed.required_level_satisfied)
+        self.assertEqual(quarantined.run_status, MigrationRunStatus.QUARANTINED)
+        self.assertFalse(quarantined.required_level_satisfied)
+
+    def test_state_vocabularies_separate_archival_validation_and_domain_state(self) -> None:
+        self.assertEqual(MigrationValidationScope.DOMAIN.value, "DOMAIN")
+        self.assertEqual(
+            MigrationDomainState.DOMAIN_VALIDATION_PENDING.value,
+            "DOMAIN_VALIDATION_PENDING",
+        )
 
 
 if __name__ == "__main__":

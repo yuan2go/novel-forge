@@ -203,10 +203,11 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
             second = service.import_snapshot(root, resume=True)
             verified = service.verify(first["migration_run_id"], snapshot_root=root)
 
-        self.assertIn(first["status"], {"SUCCEEDED", "QUARANTINED"})
+        self.assertEqual(first["status"], "DOMAIN_ACTIVATION_PARTIAL")
         self.assertEqual(second["migration_run_id"], first["migration_run_id"])
         self.assertEqual(second["counts"], first["counts"])
-        self.assertEqual(verified["status"], "PASS")
+        self.assertEqual(verified["status"], "DOMAIN_RECONCILED")
+        self.assertEqual(verified["verification_status"], "PASS")
         self.assertEqual(verified["production_assets_activated"], 1)
         self.assertEqual(verified["needs_review_count"], 1)
         self.assertEqual(verified["target_asset_version_count"], 2)
@@ -365,8 +366,9 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
 
         self.assertEqual(resumed["migration_run_id"], replayed["migration_run_id"])
         self.assertEqual(resumed["item_counts"], replayed["item_counts"])
-        self.assertEqual(verified["status"], "PASS")
-        self.assertTrue(verified["reconciled"])
+        self.assertIn(verified["status"], {"FAILED", "QUARANTINED"})
+        self.assertEqual(verified["verification_status"], "FAIL")
+        self.assertFalse(verified["reconciled"])
         # Only the two Project shells activate during import.  The Legacy
         # self-declared approved BookPlan remains NEEDS_REVIEW until an
         # independent Authority decision is recorded.
@@ -595,6 +597,18 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
         self.assertNotEqual(
             first["migration_validation_id"], second["migration_validation_id"]
         )
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                """
+                SELECT validation_version, status
+                FROM authority_legacy_migration_validation
+                WHERE migration_item_id=%s
+                ORDER BY validation_version
+                """,
+                [str(item[0])],
+            )
+            validation_states = list(uow.cursor.fetchall())
+        self.assertEqual(validation_states, [(1, "STALE"), (2, "PASS")])
         approval = LegacyMigrationApprovalApplication(
             DATABASE_URL,
             application_build_id="legacy-migration-validation-integration",
@@ -664,10 +678,20 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
                 [decided["migration_decision_id"]],
             )
             persisted = uow.cursor.fetchone()
+            uow.cursor.execute(
+                """
+                SELECT validation_scope, domain_state
+                FROM authority_legacy_migration_item
+                WHERE migration_item_id=%s
+                """,
+                [str(item[0])],
+            )
+            item_semantics = uow.cursor.fetchone()
         self.assertEqual(str(persisted[0]), second["migration_validation_id"])
         self.assertEqual(str(persisted[1]), second["result_hash"])
         self.assertEqual(str(persisted[2]), "true")
         self.assertEqual(tuple(int(value) for value in persisted[3:]), (1, 1, 1))
+        self.assertEqual(tuple(item_semantics), ("ARCHIVAL", "DOMAIN_NOT_APPLICABLE"))
 
     def test_book_and_book_design_use_real_domain_authority_after_approval(self) -> None:
         project_id = identifier("domain-book-project")
@@ -789,8 +813,11 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
             activated[source_type] = service.activate_domain_item(
                 str(item[0]), expected_item_version=int(decision["item_version"])
             )
-        verified = service.verify(imported["migration_run_id"])
-        self.assertEqual(verified["status"], "PASS")
+        verified = service.verify(
+            imported["migration_run_id"], required_level="DOMAIN_NATIVE"
+        )
+        self.assertEqual(verified["status"], "DOMAIN_RECONCILED")
+        self.assertEqual(verified["verification_status"], "PASS")
         self.assertEqual(verified["pending_domain_native_count"], 0)
         self.assertEqual(verified["actual_domain_failures"], 0)
         self.assertTrue(verified["domain_native_core_proven"])
@@ -823,6 +850,28 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
                 [imported["migration_run_id"]],
             )
             reference = uow.cursor.fetchone()
+            uow.cursor.execute(
+                """
+                SELECT status, run_completion_level,
+                       required_verification_level
+                FROM authority_migration_run
+                WHERE migration_run_id=%s
+                """,
+                [imported["migration_run_id"]],
+            )
+            run_semantics = uow.cursor.fetchone()
+            uow.cursor.execute(
+                """
+                SELECT source_asset_type, materialization_stage,
+                       archival_state, domain_state, validation_scope
+                FROM authority_legacy_migration_item
+                WHERE migration_run_id=%s
+                  AND source_asset_type IN ('book_record','book_design')
+                ORDER BY source_asset_type
+                """,
+                [imported["migration_run_id"]],
+            )
+            item_semantics = list(uow.cursor.fetchall())
         self.assertEqual(str(book[0]), activated["book_record"]["target_asset_version_id"])
         self.assertEqual(str(book[1]), activated["book_design"]["target_asset_version_id"])
         self.assertEqual((str(book[2]), int(book[3])), ("DESIGN_ACTIVE", 2))
@@ -832,6 +881,29 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
                 activated["book_record"]["target_asset_version_id"],
                 book_id,
             ),
+        )
+        self.assertEqual(
+            tuple(run_semantics),
+            ("DOMAIN_RECONCILED", "DOMAIN_RECONCILED", "DOMAIN_NATIVE"),
+        )
+        self.assertEqual(
+            item_semantics,
+            [
+                (
+                    "book_design",
+                    "DOMAIN",
+                    "ARCHIVAL_RECONCILED",
+                    "DOMAIN_RECONCILED",
+                    "DOMAIN",
+                ),
+                (
+                    "book_record",
+                    "DOMAIN",
+                    "ARCHIVAL_RECONCILED",
+                    "DOMAIN_RECONCILED",
+                    "DOMAIN",
+                ),
+            ],
         )
 
     def test_planning_migration_builds_active_hierarchy_after_approval(self) -> None:
@@ -961,8 +1033,11 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
             activated[source_type] = service.activate_domain_item(
                 str(item[0]), expected_item_version=int(decision["item_version"])
             )
-        verified = service.verify(imported["migration_run_id"])
-        self.assertEqual(verified["status"], "PASS")
+        verified = service.verify(
+            imported["migration_run_id"], required_level="DOMAIN_NATIVE"
+        )
+        self.assertEqual(verified["status"], "DOMAIN_RECONCILED")
+        self.assertEqual(verified["verification_status"], "PASS")
         self.assertEqual(verified["actual_domain_failures"], 0)
         self.assertEqual(verified["pending_domain_native_count"], 0)
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
@@ -1121,8 +1196,11 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
         activated = service.activate_domain_item(
             str(item[0]), expected_item_version=int(decision["item_version"])
         )
-        verified = service.verify(imported["migration_run_id"])
-        self.assertEqual(verified["status"], "PASS")
+        verified = service.verify(
+            imported["migration_run_id"], required_level="DOMAIN_NATIVE"
+        )
+        self.assertEqual(verified["status"], "DOMAIN_RECONCILED")
+        self.assertEqual(verified["verification_status"], "PASS")
         self.assertEqual(verified["actual_domain_failures"], 0)
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
             uow.cursor.execute(
@@ -1452,8 +1530,11 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
             activations[source_type] = service.activate_domain_item(
                 str(item[0]), expected_item_version=int(decision["item_version"])
             )
-        verified = service.verify(imported["migration_run_id"])
-        self.assertEqual(verified["status"], "PASS")
+        verified = service.verify(
+            imported["migration_run_id"], required_level="DOMAIN_NATIVE"
+        )
+        self.assertEqual(verified["status"], "DOMAIN_RECONCILED")
+        self.assertEqual(verified["verification_status"], "PASS")
         self.assertEqual(verified["actual_domain_failures"], 0)
         self.assertFalse(
             activations["knowledge_card"]["evidence"]["production_verified"]

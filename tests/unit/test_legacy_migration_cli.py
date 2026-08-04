@@ -8,10 +8,24 @@ from contextlib import redirect_stdout
 from io import StringIO
 from pathlib import Path
 
-from novel_forge.cli import main
+from novel_forge.cli import _authority_parser, main
 
 
 class LegacyMigrationCliTests(unittest.TestCase):
+    def test_verify_requires_an_explicit_bounded_level_vocabulary(self) -> None:
+        parser = _authority_parser()
+        parsed = parser.parse_args(
+            [
+                "authority-verify-migration",
+                "--migration-run-id",
+                "run-1",
+                "--required-level",
+                "DOMAIN_NATIVE",
+            ]
+        )
+
+        self.assertEqual(parsed.required_level, "DOMAIN_NATIVE")
+
     def test_dry_run_does_not_require_database_or_mutate_snapshot(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

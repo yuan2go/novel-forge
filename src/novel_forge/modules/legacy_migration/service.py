@@ -28,10 +28,18 @@ from novel_forge.modules.legacy_migration.scanner import (
     scan_legacy_snapshot,
 )
 from novel_forge.modules.legacy_migration.state_machine import (
+    MigrationArchivalState,
+    MigrationCompletionFacts,
+    MigrationDomainState,
     MigrationMaterializationLevel,
     MigrationPhase,
     MigrationPhaseCheckpoint,
     MigrationReferenceStatus,
+    MigrationRunCompletionLevel,
+    MigrationRunStatus,
+    MigrationValidationScope,
+    MigrationVerificationLevel,
+    derive_migration_completion,
     require_phase_transition,
 )
 from novel_forge.modules.legacy_migration.validation import (
@@ -95,7 +103,10 @@ class LegacyMigrationService:
         run_id = _stable_id("migration-run", scan.snapshot_hash)
         self._start_run(run_id, scan.snapshot_hash, str(snapshot_root), resume=resume)
         existing_run = self.status(run_id)
-        if existing_run["status"] == "SUCCEEDED":
+        if existing_run["status"] not in {
+            MigrationRunStatus.IMPORT_RUNNING.value,
+            MigrationRunStatus.FAILED.value,
+        }:
             return existing_run
         project_workspaces = self._bootstrap_projects(scan.records, run_id)
         imported, quarantined, skipped = self._resume_counts(run_id)
@@ -346,7 +357,11 @@ class LegacyMigrationService:
         self._resolve_references(run_id, scan.records)
         imported, quarantined, skipped = self._resume_counts(run_id)
         failed = self._failed_count(run_id)
-        status = "FAILED" if failed else ("QUARANTINED" if quarantined else "SUCCEEDED")
+        status = self._derive_import_run_status(
+            run_id,
+            failed=failed,
+            quarantined=quarantined,
+        )
         self._finish_run(run_id, status, imported, quarantined, skipped, failed)
         return self.status(run_id)
 
@@ -357,7 +372,8 @@ class LegacyMigrationService:
                 SELECT migration_run_id, source_kind, source_hash, status, report,
                        workspace_id, snapshot_hash, mode, idempotency_key,
                        cursor_state, counts, phase, reconciliation,
-                       checkpoint_hash, created_at, updated_at, finished_at
+                       checkpoint_hash, created_at, updated_at, finished_at,
+                       run_completion_level, required_verification_level
                 FROM authority_migration_run WHERE migration_run_id = %s
                 """,
                 [migration_run_id],
@@ -391,6 +407,8 @@ class LegacyMigrationService:
             "created_at": str(row[14]),
             "updated_at": str(row[15]),
             "finished_at": str(row[16]) if row[16] else None,
+            "run_completion_level": str(row[17]),
+            "required_verification_level": str(row[18]),
             "item_counts": item_counts,
         }
 
@@ -477,6 +495,8 @@ class LegacyMigrationService:
                 """
                 UPDATE authority_legacy_migration_item
                 SET materialization_level='DOMAIN_NATIVE',
+                    materialization_stage='DOMAIN',
+                    domain_state='DOMAIN_ACTIVATED',
                     status='ACTIVATED',
                     target_asset_id=%s,
                     target_asset_version_id=%s,
@@ -538,6 +558,7 @@ class LegacyMigrationService:
                 ],
             )
             uow.commit()
+        self._mark_run_domain_activation_progress(context.migration_run_id)
         record = self._record_for_item(migration_item_id)
         self._complete_phase(
             context.migration_run_id,
@@ -793,7 +814,13 @@ class LegacyMigrationService:
         )
 
     def verify(
-        self, migration_run_id: str, *, snapshot_root: str | Path | None = None
+        self,
+        migration_run_id: str,
+        *,
+        snapshot_root: str | Path | None = None,
+        required_level: MigrationVerificationLevel | str = (
+            MigrationVerificationLevel.ARCHIVAL_NATIVE
+        ),
     ) -> dict[str, Any]:
         status = self.status(migration_run_id)
         hash_matches = True
@@ -869,6 +896,10 @@ class LegacyMigrationService:
                            WHERE resolution_status IN (
                                'QUARANTINED','OPTIONAL_MISSING','CONFLICT'
                            )
+                       ),
+                       COUNT(*) FILTER (
+                           WHERE NOT optional
+                             AND resolution_status <> 'RESOLVED'
                        )
                 FROM authority_legacy_migration_reference
                 WHERE migration_run_id=%s
@@ -880,7 +911,22 @@ class LegacyMigrationService:
                 resolved_reference_count,
                 unresolved_reference_count,
                 closed_reference_exception_count,
+                required_reference_failures,
             ) = (int(value) for value in uow.cursor.fetchone())
+            uow.cursor.execute(
+                """
+                SELECT COUNT(*) FILTER (WHERE latest.status='FAIL')
+                FROM (
+                    SELECT DISTINCT ON (migration_item_id)
+                           migration_item_id, status
+                    FROM authority_legacy_migration_validation
+                    WHERE migration_run_id=%s
+                    ORDER BY migration_item_id, validation_version DESC
+                ) AS latest
+                """,
+                [migration_run_id],
+            )
+            domain_validation_failures = int(uow.cursor.fetchone()[0])
         target_integrity = (
             target_count == distinct_targets == hash_count == qualification_count
         )
@@ -895,23 +941,67 @@ class LegacyMigrationService:
             == resolved_reference_count + closed_reference_exception_count
         )
         domain = self._reconcile_domains(migration_run_id)
-        reconciled = (
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT COUNT(*) FILTER (WHERE status='FAIL')
+                FROM authority_legacy_migration_domain_reconciliation
+                WHERE migration_run_id=%s
+                """,
+                [migration_run_id],
+            )
+            domain_reconciliation_failures = int(uow.cursor.fetchone()[0])
+        domain["domain_native_core_proven"] = (
+            domain["pending_domain_native_count"] == 0
+            and domain["actual_domain_failures"] == 0
+            and domain_validation_failures == 0
+            and domain_reconciliation_failures == 0
+            and required_reference_failures == 0
+        )
+        archival_reconciled = (
             terminal == total
             and target_integrity
             and operation_integrity
             and reference_integrity
             and counts.get("FAILED", 0) == 0
-            and domain["actual_domain_failures"] == 0
+        )
+        completion = derive_migration_completion(
+            MigrationCompletionFacts(
+                archival_integrity=hash_matches and archival_reconciled,
+                domain_native_count=(
+                    domain["domain_native_count"]
+                    + domain["pending_domain_native_count"]
+                ),
+                domain_native_activated_count=domain["domain_native_pass_count"],
+                pending_domain_native_count=domain["pending_domain_native_count"],
+                failed_count=counts.get("FAILED", 0),
+                quarantine_count=(
+                    counts.get("QUARANTINED", 0)
+                    + counts.get("INELIGIBLE", 0)
+                ),
+                actual_domain_failures=domain["actual_domain_failures"],
+                domain_validation_failures=domain_validation_failures,
+                domain_reconciliation_failures=domain_reconciliation_failures,
+                required_reference_failures=required_reference_failures,
+            ),
+            required_level=required_level,
         )
         result = {
             "migration_run_id": migration_run_id,
-            "status": "PASS" if hash_matches and reconciled else "FAIL",
+            "status": completion.run_status.value,
+            "verification_status": (
+                "PASS" if completion.required_level_satisfied else "FAIL"
+            ),
+            "required_level": completion.required_level.value,
+            "required_level_satisfied": completion.required_level_satisfied,
+            "run_completion_level": completion.completion_level.value,
             "expected_snapshot_hash": status["snapshot_hash"],
             "actual_snapshot_hash": actual_hash,
             "hash_matches": hash_matches,
             "item_count": total,
             "terminal_item_count": terminal,
-            "reconciled": reconciled,
+            "archival_reconciled": archival_reconciled,
+            "reconciled": completion.required_level_satisfied,
             "target_asset_version_count": target_count,
             "distinct_target_asset_version_count": distinct_targets,
             "target_hash_match_count": hash_count,
@@ -927,7 +1017,10 @@ class LegacyMigrationService:
             "resolved_reference_count": resolved_reference_count,
             "unresolved_reference_count": unresolved_reference_count,
             "closed_reference_exception_count": closed_reference_exception_count,
+            "required_reference_failures": required_reference_failures,
             "reference_integrity": reference_integrity,
+            "domain_validation_failures": domain_validation_failures,
+            "domain_reconciliation_failures": domain_reconciliation_failures,
             **domain,
         }
         self._complete_reconciliation_phases(migration_run_id, result)
@@ -1398,6 +1491,31 @@ class LegacyMigrationService:
                         Jsonb(evidence),
                     ],
                 )
+                if str(materialization_level) == MigrationMaterializationLevel.DOMAIN_NATIVE:
+                    domain_state = (
+                        MigrationDomainState.DOMAIN_RECONCILED.value
+                        if status == "PASS"
+                        else MigrationDomainState.DOMAIN_RECONCILIATION_FAILED.value
+                    )
+                    uow.cursor.execute(
+                        """
+                        UPDATE authority_legacy_migration_item
+                        SET materialization_stage='DOMAIN', domain_state=%s,
+                            archival_state='ARCHIVAL_RECONCILED', updated_at=NOW()
+                        WHERE migration_item_id=%s
+                        """,
+                        [domain_state, item_id],
+                    )
+                elif str(target_level) != MigrationMaterializationLevel.DOMAIN_NATIVE:
+                    uow.cursor.execute(
+                        """
+                        UPDATE authority_legacy_migration_item
+                        SET archival_state='ARCHIVAL_RECONCILED',
+                            domain_state='DOMAIN_NOT_APPLICABLE', updated_at=NOW()
+                        WHERE migration_item_id=%s
+                        """,
+                        [item_id],
+                    )
                 uow.commit()
         return {
             "domain_native_count": actual_domain,
@@ -1560,7 +1678,7 @@ class LegacyMigrationService:
                 INSERT INTO authority_migration_run(
                     migration_run_id, source_kind, source_hash, status, report,
                     snapshot_hash, mode, idempotency_key, cursor_state, counts
-                ) VALUES (%s, 'legacy_localstorage_snapshot', %s, 'RUNNING', %s,
+                ) VALUES (%s, 'legacy_localstorage_snapshot', %s, 'IMPORT_RUNNING', %s,
                           %s, 'IMPORT', %s, '{}'::jsonb, '{}'::jsonb)
                 ON CONFLICT (migration_run_id) DO NOTHING
                 """,
@@ -1571,9 +1689,10 @@ class LegacyMigrationService:
             uow.cursor.execute(
                 """
                 UPDATE authority_migration_run
-                SET status = 'RUNNING', updated_at = NOW()
+                SET status = 'IMPORT_RUNNING', run_completion_level='NONE',
+                    updated_at = NOW(), finished_at=NULL
                 WHERE migration_run_id = %s
-                  AND status NOT IN ('SUCCEEDED')
+                  AND status IN ('IMPORT_RUNNING','FAILED')
                 """,
                 [run_id],
             )
@@ -1637,6 +1756,25 @@ class LegacyMigrationService:
         resolved_workspace_id: str = "",
     ) -> None:
         item_id = _stable_id("migration-item", run_id, record.source_ref)
+        reference_state = (
+            MigrationReferenceStatus.UNRESOLVED
+            if record.references
+            else MigrationReferenceStatus.RESOLVED
+        )
+        if status == "DISCOVERED":
+            archival_state = MigrationArchivalState.DISCOVERED
+        elif record.references:
+            archival_state = MigrationArchivalState.REFERENCES_PENDING
+        elif target_asset_version_id:
+            archival_state = MigrationArchivalState.ARCHIVAL_VALIDATED
+        else:
+            archival_state = MigrationArchivalState.CLASSIFIED
+        if target_materialization_level is MigrationMaterializationLevel.ARCHIVAL_NATIVE:
+            domain_state = MigrationDomainState.DOMAIN_NOT_APPLICABLE
+        elif materialization_level is MigrationMaterializationLevel.DOMAIN_NATIVE:
+            domain_state = MigrationDomainState.DOMAIN_ACTIVATED
+        else:
+            domain_state = MigrationDomainState.DOMAIN_VALIDATION_PENDING
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
@@ -1651,10 +1789,12 @@ class LegacyMigrationService:
                     target_materialization_level, domain_adapter,
                     domain_validator, projection_strategy,
                     activation_strategy, domain_projection_id, next_phase,
-                    reference_state
+                    reference_state, materialization_stage, archival_state,
+                    domain_state, validation_scope
                 ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
                           %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                          %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                          %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                          %s)
                 ON CONFLICT (migration_run_id, source_ref) DO UPDATE
                 SET operation_id=COALESCE(EXCLUDED.operation_id, authority_legacy_migration_item.operation_id),
                     target_asset_id=COALESCE(EXCLUDED.target_asset_id, authority_legacy_migration_item.target_asset_id),
@@ -1677,6 +1817,10 @@ class LegacyMigrationService:
                     projection_strategy=COALESCE(NULLIF(EXCLUDED.projection_strategy, ''), authority_legacy_migration_item.projection_strategy),
                     activation_strategy=COALESCE(NULLIF(EXCLUDED.activation_strategy, ''), authority_legacy_migration_item.activation_strategy),
                     domain_projection_id=COALESCE(NULLIF(EXCLUDED.domain_projection_id, ''), authority_legacy_migration_item.domain_projection_id),
+                    materialization_stage=EXCLUDED.materialization_stage,
+                    archival_state=EXCLUDED.archival_state,
+                    domain_state=EXCLUDED.domain_state,
+                    validation_scope=EXCLUDED.validation_scope,
                     updated_at=NOW()
                 """,
                 [
@@ -1697,10 +1841,19 @@ class LegacyMigrationService:
                     activation_strategy,
                     domain_projection_id,
                     MigrationPhase.SCAN.value,
+                    reference_state.value,
                     (
-                        MigrationReferenceStatus.UNRESOLVED.value
-                        if record.references
-                        else MigrationReferenceStatus.RESOLVED.value
+                        "DOMAIN"
+                        if materialization_level is MigrationMaterializationLevel.DOMAIN_NATIVE
+                        else "ARCHIVAL"
+                    ),
+                    archival_state.value,
+                    domain_state.value,
+                    (
+                        MigrationValidationScope.DOMAIN.value
+                        if target_materialization_level
+                        is MigrationMaterializationLevel.DOMAIN_NATIVE
+                        else MigrationValidationScope.ARCHIVAL.value
                     ),
                 ],
             )
@@ -2034,6 +2187,7 @@ class LegacyMigrationService:
                         UPDATE authority_legacy_migration_item
                         SET status='QUARANTINED', decision='QUARANTINE',
                             error_code=%s, reference_state=%s,
+                            archival_state='REFERENCES_PENDING',
                             error_detail=%s, updated_at=NOW()
                         WHERE migration_item_id=%s
                         """,
@@ -2059,7 +2213,13 @@ class LegacyMigrationService:
             uow.cursor.execute(
                 """
                 UPDATE authority_legacy_migration_item AS item
-                SET reference_state=summary.reference_state, updated_at=NOW()
+                SET reference_state=summary.reference_state,
+                    archival_state=CASE
+                        WHEN summary.reference_state='RESOLVED'
+                            THEN 'REFERENCES_RESOLVED'
+                        ELSE 'REFERENCES_PENDING'
+                    END,
+                    updated_at=NOW()
                 FROM (
                     SELECT source_item_id,
                            CASE
@@ -2148,11 +2308,27 @@ class LegacyMigrationService:
         self, run_id: str, status: str, imported: int, quarantined: int, skipped: int, failed: int
     ) -> None:
         counts = {"imported": imported, "quarantined": quarantined, "skipped": skipped, "failed": failed}
+        completion_level = (
+            MigrationRunCompletionLevel.DOMAIN_RECONCILED.value
+            if status == MigrationRunStatus.DOMAIN_RECONCILED.value
+            else (
+                MigrationRunCompletionLevel.ARCHIVAL_RECONCILED.value
+                if status
+                in {
+                    MigrationRunStatus.ARCHIVAL_RECONCILED.value,
+                    MigrationRunStatus.DOMAIN_REVIEW_PENDING.value,
+                    MigrationRunStatus.DOMAIN_ACTIVATION_PARTIAL.value,
+                }
+                else MigrationRunCompletionLevel.NONE.value
+            )
+        )
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
                 UPDATE authority_migration_run
                 SET status=%s, counts=%s, report=%s, phase='RECONCILE',
+                    run_completion_level=%s,
+                    required_verification_level='ARCHIVAL_NATIVE',
                     updated_at=NOW(), finished_at=NOW()
                 WHERE migration_run_id=%s
                 """,
@@ -2166,9 +2342,78 @@ class LegacyMigrationService:
                             "phase": "RECONCILE",
                         }
                     ),
+                    completion_level,
                     run_id,
                 ],
             )
+            uow.commit()
+
+    def _derive_import_run_status(
+        self, run_id: str, *, failed: int, quarantined: int
+    ) -> str:
+        if failed:
+            return MigrationRunStatus.FAILED.value
+        if quarantined:
+            return MigrationRunStatus.QUARANTINED.value
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT
+                    COUNT(*) FILTER (
+                        WHERE target_materialization_level='DOMAIN_NATIVE'
+                    ),
+                    COUNT(*) FILTER (
+                        WHERE materialization_level='DOMAIN_NATIVE'
+                          AND status='ACTIVATED'
+                    ),
+                    COUNT(*) FILTER (
+                        WHERE target_materialization_level='DOMAIN_NATIVE'
+                          AND materialization_level<>'DOMAIN_NATIVE'
+                    )
+                FROM authority_legacy_migration_item
+                WHERE migration_run_id=%s
+                """,
+                [run_id],
+            )
+            domain_count, activated_count, pending_count = (
+                int(value) for value in uow.cursor.fetchone()
+            )
+        if pending_count:
+            return (
+                MigrationRunStatus.DOMAIN_ACTIVATION_PARTIAL.value
+                if activated_count
+                else MigrationRunStatus.DOMAIN_REVIEW_PENDING.value
+            )
+        if domain_count:
+            return MigrationRunStatus.DOMAIN_ACTIVATION_PARTIAL.value
+        return MigrationRunStatus.ARCHIVAL_RECONCILED.value
+
+    def _mark_run_domain_activation_progress(self, run_id: str) -> None:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT COUNT(*) FILTER (
+                           WHERE target_materialization_level='DOMAIN_NATIVE'
+                             AND materialization_level='DOMAIN_NATIVE'
+                       )
+                FROM authority_legacy_migration_item
+                WHERE migration_run_id=%s
+                """,
+                [run_id],
+            )
+            activated_count = int(uow.cursor.fetchone()[0])
+            if activated_count:
+                uow.cursor.execute(
+                    """
+                    UPDATE authority_migration_run
+                    SET status='DOMAIN_ACTIVATION_PARTIAL',
+                        run_completion_level='ARCHIVAL_RECONCILED',
+                        updated_at=NOW(), finished_at=NULL
+                    WHERE migration_run_id=%s
+                      AND status NOT IN ('FAILED','QUARANTINED','CANCELLED')
+                    """,
+                    [run_id],
+                )
             uow.commit()
 
     def _asset_id_for_version(self, asset_version_id: str) -> str:
@@ -2190,10 +2435,25 @@ class LegacyMigrationService:
                 """
                 UPDATE authority_migration_run
                 SET phase='RECONCILE', reconciliation=%s,
-                    report=report || %s, updated_at=NOW()
+                    report=report || %s, status=%s,
+                    run_completion_level=%s,
+                    required_verification_level=%s,
+                    updated_at=NOW(),
+                    finished_at=CASE
+                        WHEN %s IN ('ARCHIVAL_RECONCILED','DOMAIN_RECONCILED',
+                                    'QUARANTINED','FAILED','CANCELLED')
+                        THEN NOW() ELSE finished_at END
                 WHERE migration_run_id=%s
                 """,
-                [Jsonb(reconciliation), Jsonb({"reconciliation": reconciliation}), migration_run_id],
+                [
+                    Jsonb(reconciliation),
+                    Jsonb({"reconciliation": reconciliation}),
+                    reconciliation["status"],
+                    reconciliation["run_completion_level"],
+                    reconciliation["required_level"],
+                    reconciliation["status"],
+                    migration_run_id,
+                ],
             )
             uow.commit()
 

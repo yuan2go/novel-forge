@@ -89,6 +89,11 @@ def _authority_parser() -> argparse.ArgumentParser:
     )
     verify.add_argument("--migration-run-id", required=True)
     verify.add_argument("--root", default=None)
+    verify.add_argument(
+        "--required-level",
+        choices=("ARCHIVAL_NATIVE", "DOMAIN_NATIVE", "RELEASE_READY"),
+        default="ARCHIVAL_NATIVE",
+    )
 
     quarantine = subparsers.add_parser(
         "authority-quarantine-list", help="list unresolved migration quarantine rows"
@@ -171,7 +176,11 @@ def _authority_main(argv: list[str] | None, settings: IndustrialSettings) -> int
             elif args.command == "authority-import-status":
                 result = service.status(args.migration_run_id)
             elif args.command == "authority-verify-migration":
-                result = service.verify(args.migration_run_id, snapshot_root=args.root)
+                result = service.verify(
+                    args.migration_run_id,
+                    snapshot_root=args.root,
+                    required_level=args.required_level,
+                )
             else:
                 result = service.quarantine_list(
                     migration_run_id=args.migration_run_id, limit=args.limit
