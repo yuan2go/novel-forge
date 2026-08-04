@@ -175,6 +175,7 @@ def build_inventory(repo_root: str | Path) -> dict[str, Any]:
             }
         )
     rows.extend(_runtime_configuration_findings(root))
+    rows.extend(_web_excluded_findings(root))
     rows.sort(key=lambda item: (item["file"], item["inventory_id"]))
     status_counts = {
         status: sum(1 for item in rows if item["status"] == status)
@@ -485,6 +486,92 @@ def _runtime_configuration_findings(root: Path) -> list[dict[str, Any]]:
                 "test_requirements": ["architecture: default Compose is PostgreSQL-only"],
                 "migration_status": "LEGACY_PRODUCTION_BLOCKER",
                 "evidence": [evidence],
+            }
+        )
+    return findings
+
+
+def _web_excluded_findings(root: Path) -> list[dict[str, Any]]:
+    """Record Legacy-labelled Web surfaces without treating them as backend authority.
+
+    Web implementation is intentionally excluded from this convergence. Keeping each
+    textual LocalStorage reference in the inventory prevents the exclusion from being
+    mistaken for an Authority proof or from silently re-entering the backend runtime.
+    """
+
+    web_root = root / "web"
+    if not web_root.exists():
+        return []
+    findings: list[dict[str, Any]] = []
+    for candidate in sorted(web_root.rglob("*")):
+        if {"node_modules", ".next", "coverage"} & set(candidate.parts):
+            continue
+        if not candidate.is_file() or candidate.suffix not in {
+            ".js",
+            ".jsx",
+            ".ts",
+            ".tsx",
+        }:
+            continue
+        relative = candidate.relative_to(root).as_posix()
+        lines = candidate.read_text(encoding="utf-8").splitlines()
+        evidence = [
+            {
+                "path": relative,
+                "line": line_number,
+                "symbol": "web_localstorage_reference",
+                "scan_rule": "web_scope_exclusion",
+                "usage_type": "read_only_label",
+            }
+            for line_number, line in enumerate(lines, start=1)
+            if "localstorage" in line.lower()
+        ]
+        if not evidence:
+            continue
+        findings.append(
+            {
+                "inventory_id": _stable_id("web_excluded", relative, "localstorage"),
+                "domain": "web_excluded",
+                "file": relative,
+                "symbol": ["web_localstorage_reference"],
+                "entrypoint": ["web:excluded_from_backend_authority_acceptance"],
+                "read_or_write": "READ",
+                "current_authority": ["web_client_legacy_label"],
+                "target_authority": {
+                    "kind": "postgresql_projection_api",
+                    "asset_type": "authority_projection",
+                    "operation_definition": "web.authority.integration.pending",
+                    "repository": "authority-api",
+                },
+                "production_reachable": False,
+                "migration_strategy": "MAKE_READ_ONLY",
+                "status": "EXPLICIT_COMPATIBILITY",
+                "remaining_action": (
+                    "Web is outside this backend acceptance; before production use, replace "
+                    "or verify the surface against Authority API projections and keep Legacy "
+                    "writes disabled"
+                ),
+                "business_domain": "web_excluded",
+                "current_entrypoints": ["web:excluded_from_backend_authority_acceptance"],
+                "current_authority_source": ["web_client_legacy_label"],
+                "current_write_points": [],
+                "current_read_points": [
+                    f"{item['path']}:{item['line']}:{item['symbol']}" for item in evidence
+                ],
+                "target_authority_asset_type": "authority_projection",
+                "target_operation_definition": "web.authority.integration.pending",
+                "target_repository": "authority-api",
+                "transaction_boundary": "none; Web excluded from backend runtime",
+                "idempotency_key": "not_applicable_web_excluded",
+                "recovery_strategy": "do not start Web in default Compose; fail closed on Legacy write",
+                "migration_method": "MAKE_READ_ONLY",
+                "deletion_condition": "Web integration has its own Authority API acceptance proof",
+                "test_requirements": [
+                    "architecture: default Compose contains no Web service",
+                    "future Web acceptance: no Legacy write and Authority API projection only",
+                ],
+                "migration_status": "EXPLICIT_COMPATIBILITY",
+                "evidence": evidence,
             }
         )
     return findings

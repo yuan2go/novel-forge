@@ -2,9 +2,9 @@
 
 > Generated from AST/code evidence. The JSON sibling is the machine-executable source.
 
-- Rows: 448
-- Findings: 2055
-- Artifact hash: `sha256:91fb4988d69856cd7cc500bf360deee0e6dc4b0c7f677078b7727bca50b6fe1d`
+- Rows: 450
+- Findings: 2057
+- Artifact hash: `sha256:7ee1ebfd41f9b349bc7a79e60d17c7478a8fc4d4a8ad488b86fe9117f2bebe54`
 - Legacy production blockers: 0
 - Unclassified: 0
 
@@ -458,3 +458,5 @@
 | draft_review_revision | `src/novel_forge/workflows/pipeline.py` | localstorage | `draft/review_report/revision_plan/revised_draft` | `review.migration.required` | FROZEN_SNAPSHOT_IMPORT_WITH_REVIEW_OR_QUARANTINE | EXPLICIT_COMPATIBILITY |
 | agent_workflow_task | `src/novel_forge/workflows/status.py` | localstorage | `handoff/work_order/operation_projection` | `workflow.start` | FROZEN_SNAPSHOT_IMPORT_WITH_REVIEW_OR_QUARANTINE | EXPLICIT_COMPATIBILITY |
 | agent_workflow_task | `src/novel_forge/workflows/status.py` | localstorage | `handoff/work_order/operation_projection` | `workflow.migration.required` | FROZEN_SNAPSHOT_IMPORT_WITH_REVIEW_OR_QUARANTINE | EXPLICIT_COMPATIBILITY |
+| web_excluded | `web/admin/app/features/governance/GovernancePages.tsx` | web_client_legacy_label | `authority_projection` | `web.authority.integration.pending` | MAKE_READ_ONLY | EXPLICIT_COMPATIBILITY |
+| web_excluded | `web/admin/app/features/mkaos/MkaosIngestionPages.tsx` | web_client_legacy_label | `authority_projection` | `web.authority.integration.pending` | MAKE_READ_ONLY | EXPLICIT_COMPATIBILITY |

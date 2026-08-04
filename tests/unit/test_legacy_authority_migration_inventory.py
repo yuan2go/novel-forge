@@ -78,6 +78,14 @@ class LegacyAuthorityMigrationInventoryTests(unittest.TestCase):
             inventory["summary"]["unclassified_count"],
             inventory["summary"]["status_counts"]["UNCLASSIFIED"],
         )
+        self.assertGreater(inventory["summary"]["web_excluded_count"], 0)
+        self.assertTrue(
+            all(
+                not item["production_reachable"]
+                for item in inventory["items"]
+                if item["file"].startswith("web/")
+            )
+        )
 
     def test_artifact_hash_excludes_generation_timestamp(self) -> None:
         root = Path(__file__).resolve().parents[2]
