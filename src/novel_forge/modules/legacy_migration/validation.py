@@ -358,6 +358,10 @@ class LegacyMigrationValidationApplication:
                 commit_sha=self.commit_sha,
             ),
             handler=self._execute_transaction,
+            transaction_guard=lambda uow: uow.cursor.execute(
+                "SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",
+                [command.migration_run_id],
+            ),
         )
 
     def _register_definition(self) -> None:
@@ -394,10 +398,6 @@ class LegacyMigrationValidationApplication:
         payload = dict(operation[3])
         item_id = str(payload["migration_item_id"])
         expected_version = int(payload["expected_item_version"])
-        uow.cursor.execute(
-            "SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",
-            [str(payload["migration_run_id"])],
-        )
         snapshot = load_validation_snapshot(
             uow,
             item_id,

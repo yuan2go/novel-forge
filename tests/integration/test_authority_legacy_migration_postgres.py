@@ -1022,6 +1022,19 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
             )
             with self.assertRaises(FutureTimeoutError):
                 revalidate_future.result(timeout=0.2)
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                uow.cursor.execute(
+                    """
+                    SELECT COUNT(*)
+                    FROM authority_operation
+                    WHERE definition_name='migration.item.validate'
+                      AND command_payload->>'migration_item_id'=%s
+                      AND (command_payload->>'expected_item_version')::bigint=%s
+                    """,
+                    [current_items["book"][0], concurrent_book_version],
+                )
+                blocked_admission_count = int(uow.cursor.fetchone()[0])
+            self.assertEqual(blocked_admission_count, 0)
             release_verify.set()
             concurrent_verification = verify_future.result(timeout=5)
             concurrent_revalidation = revalidate_future.result(timeout=5)
@@ -1959,7 +1972,23 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
         # evidence was stored on activated items. The 0067 forward migration
         # must recover the immutable archival AssetVersion from the activation-
         # bound Validation record and make server revalidation possible.
+        ambiguous_asset_id = identifier("ambiguous-archival-asset")
+        ambiguous_version_id = identifier("ambiguous-archival-version")
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                """
+                SELECT item.operation_id, version.content, version.content_hash,
+                       version.schema_version
+                FROM authority_legacy_migration_item AS item
+                JOIN authority_legacy_migration_validation AS validation
+                  ON validation.migration_validation_id=%s
+                JOIN authority_asset_version AS version
+                  ON version.asset_version_id=validation.target_asset_version_id
+                WHERE item.migration_item_id=%s
+                """,
+                [validation["migration_validation_id"], str(item[0])],
+            )
+            archival_source = uow.cursor.fetchone()
             uow.cursor.execute(
                 """
                 ALTER TABLE authority_legacy_migration_item
@@ -1976,10 +2005,76 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
                 SET evidence=(evidence
                     - 'archival_target_asset_id'
                     - 'archival_target_asset_version_id'
-                    - 'archival_target_content_hash')
+                    - 'archival_target_content_hash'
+                    - 'migration_validation_id')
                 WHERE migration_item_id=%s
                 """,
                 [str(item[0])],
+            )
+            uow.cursor.execute(
+                "INSERT INTO authority_asset(asset_id, project_id, asset_type) "
+                "VALUES (%s, %s, 'legacy_archival_ambiguity_fixture')",
+                [ambiguous_asset_id, project_id],
+            )
+            uow.cursor.execute(
+                """
+                INSERT INTO authority_asset_version(
+                    asset_version_id, asset_id, version_number, lifecycle,
+                    eligibility, governance, content, content_hash, schema_version
+                ) VALUES (%s, %s, 1, 'IMPORTED', 'PENDING_EVALUATION',
+                          'CLEAR', %s, %s, %s)
+                """,
+                [
+                    ambiguous_version_id,
+                    ambiguous_asset_id,
+                    Jsonb(dict(archival_source[1])),
+                    str(archival_source[2]),
+                    str(archival_source[3]),
+                ],
+            )
+            uow.cursor.execute(
+                """
+                INSERT INTO authority_operation_output_asset(
+                    operation_id, asset_id, asset_version_id,
+                    output_key, role, content_hash
+                ) VALUES (%s, %s, %s, 'ambiguous-archival', 'PRIMARY', %s)
+                """,
+                [
+                    str(archival_source[0]),
+                    ambiguous_asset_id,
+                    ambiguous_version_id,
+                    str(archival_source[2]),
+                ],
+            )
+            uow.commit()
+        with self.assertRaisesRegex(
+            RuntimeError,
+            "activated_domain_item_without_unique_archival_binding=1",
+        ):
+            run_migrations(DATABASE_URL)
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                "DELETE FROM authority_operation_output_asset "
+                "WHERE asset_version_id=%s",
+                [ambiguous_version_id],
+            )
+            uow.cursor.execute(
+                "DELETE FROM authority_asset_version WHERE asset_version_id=%s",
+                [ambiguous_version_id],
+            )
+            uow.cursor.execute(
+                "DELETE FROM authority_asset WHERE asset_id=%s",
+                [ambiguous_asset_id],
+            )
+            uow.cursor.execute(
+                """
+                UPDATE authority_legacy_migration_item
+                SET evidence=evidence || jsonb_build_object(
+                    'migration_validation_id', %s::text
+                )
+                WHERE migration_item_id=%s
+                """,
+                [validation["migration_validation_id"], str(item[0])],
             )
             uow.commit()
         migration_status = run_migrations(DATABASE_URL)

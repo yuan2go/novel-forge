@@ -27,8 +27,10 @@ PREFLIGHT_STATEMENTS = [
           AND NULLIF(
               item.evidence->>'archival_target_asset_version_id', ''
           ) IS NULL
-    ), recoverable AS (
-        SELECT missing.migration_item_id
+    ), candidates AS (
+        SELECT missing.migration_item_id,
+               validation.target_asset_version_id AS asset_version_id,
+               1 AS priority
         FROM missing
         JOIN authority_legacy_migration_validation AS validation
           ON validation.migration_validation_id=
@@ -41,8 +43,8 @@ PREFLIGHT_STATEMENTS = [
         JOIN authority_asset AS asset
           ON asset.asset_id=version.asset_id
          AND asset.project_id=missing.project_id
-        UNION
-        SELECT missing.migration_item_id
+        UNION ALL
+        SELECT missing.migration_item_id, output.asset_version_id, 2 AS priority
         FROM missing
         JOIN authority_operation_output_asset AS output
           ON output.operation_id=missing.operation_id
@@ -50,8 +52,8 @@ PREFLIGHT_STATEMENTS = [
         JOIN authority_asset AS asset
           ON asset.asset_id=output.asset_id
          AND asset.project_id=missing.project_id
-        UNION
-        SELECT missing.migration_item_id
+        UNION ALL
+        SELECT missing.migration_item_id, version.asset_version_id, 3 AS priority
         FROM missing
         JOIN authority_asset_version AS version
           ON version.asset_version_id=missing.target_asset_version_id
@@ -59,14 +61,24 @@ PREFLIGHT_STATEMENTS = [
         JOIN authority_asset AS asset
           ON asset.asset_id=version.asset_id
          AND asset.project_id=missing.project_id
+    ), candidate_counts AS (
+        SELECT migration_item_id, priority,
+               COUNT(DISTINCT asset_version_id) AS candidate_count
+        FROM candidates
+        GROUP BY migration_item_id, priority
+    ), preferred AS (
+        SELECT DISTINCT ON (migration_item_id)
+               migration_item_id, priority, candidate_count
+        FROM candidate_counts
+        ORDER BY migration_item_id, priority
     )
-    SELECT 'activated_domain_item_without_recoverable_archival_binding', COUNT(*)
+    SELECT 'activated_domain_item_without_unique_archival_binding', COUNT(*)
     FROM missing
+    LEFT JOIN preferred
+      ON preferred.migration_item_id=missing.migration_item_id
     WHERE missing.archival_hash IS NULL
-       OR NOT EXISTS (
-           SELECT 1 FROM recoverable
-           WHERE recoverable.migration_item_id=missing.migration_item_id
-       )
+       OR preferred.migration_item_id IS NULL
+       OR preferred.candidate_count <> 1
     """,
 ]
 
@@ -123,11 +135,27 @@ UPGRADE_STATEMENTS = [
         JOIN authority_asset AS asset
           ON asset.asset_id=version.asset_id
          AND asset.project_id=missing.project_id
+    ), candidate_counts AS (
+        SELECT migration_item_id, priority,
+               COUNT(DISTINCT asset_version_id) AS candidate_count
+        FROM candidates
+        GROUP BY migration_item_id, priority
+    ), preferred AS (
+        SELECT DISTINCT ON (migration_item_id)
+               migration_item_id, priority, candidate_count
+        FROM candidate_counts
+        ORDER BY migration_item_id, priority
     ), recovered AS (
         SELECT DISTINCT ON (migration_item_id)
-               migration_item_id, asset_id, asset_version_id, content_hash
+               candidates.migration_item_id, candidates.asset_id,
+               candidates.asset_version_id, candidates.content_hash
         FROM candidates
-        ORDER BY migration_item_id, priority, asset_version_id
+        JOIN preferred
+          ON preferred.migration_item_id=candidates.migration_item_id
+         AND preferred.priority=candidates.priority
+         AND preferred.candidate_count=1
+        ORDER BY candidates.migration_item_id,
+                 candidates.priority, candidates.asset_version_id
     )
     UPDATE authority_legacy_migration_item AS item
     SET evidence=item.evidence || jsonb_build_object(

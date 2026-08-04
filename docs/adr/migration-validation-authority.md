@@ -36,7 +36,10 @@ transaction advisory lock plus row locks retain this validation/decision/
 dependency scope while the owning domain Authority commits. Explicit coordinated
 UnitOfWork savepoints keep nested domain commands on the same PostgreSQL
 connection, so this remains atomic even with the bounded one-connection
-migration pool.
+migration pool. Validation and Decision acquire the Run lock through the
+Transaction Command guard before idempotency admission; `verify()` takes the
+same lock before freshness reads. This single lock order prevents an admission
+row lock and Run advisory lock from forming a deadlock cycle.
 
 Client evidence may be retained as non-authoritative request context but can
 never establish a pass.
@@ -52,5 +55,7 @@ never establish a pass.
   validated.
 
 Migration 0059 introduces the aggregate and binding. 0060 adds explicit
-archival/domain/run semantics. Both are forward-only; repair uses a new forward
-migration.
+archival/domain/run semantics. Migration 0067 recovers archival identity for
+already-activated rows only when the highest-authority candidate is unique, then
+enforces the binding with a database CHECK. All are forward-only; repair uses a
+new forward migration.

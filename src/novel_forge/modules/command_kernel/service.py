@@ -25,6 +25,7 @@ TransactionCheckpoint = Callable[[str], None]
 TransactionHandler = Callable[
     [AuthorityUnitOfWork, str, TransactionCheckpoint], dict[str, Any]
 ]
+TransactionGuard = Callable[[AuthorityUnitOfWork], None]
 
 
 def execute_transaction_command(
@@ -34,6 +35,7 @@ def execute_transaction_command(
     context: AdmissionContext,
     handler: TransactionHandler,
     fault_injector: TransactionCheckpoint | None = None,
+    transaction_guard: TransactionGuard | None = None,
 ) -> dict[str, Any]:
     """Execute a short, deterministic command in one PostgreSQL transaction.
 
@@ -46,6 +48,8 @@ def execute_transaction_command(
     checkpoint = fault_injector or _noop_checkpoint
     checkpoint("before_admission")
     with AuthorityUnitOfWork(database_url) as uow:
+        if transaction_guard is not None:
+            transaction_guard(uow)
         admitted = admit_command_in_uow(uow, command, context=context)
         operation_id = str(admitted["operation_id"])
         if admitted["replayed"]:
