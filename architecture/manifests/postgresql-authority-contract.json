@@ -33,7 +33,8 @@
       "maintenance-runtime-group"
     ],
     "required_migrations": [
-      "20260804_0058_authority_cutover_release_qualification"
+      "20260804_0058_authority_cutover_release_qualification",
+      "20260804_0059_migration_validation_authority"
     ],
     "required_operation_definitions": [
       "chapter.slice.run",
@@ -42,7 +43,10 @@
       "book.production.coordinate",
       "asset.create",
       "external_effect.reconcile",
-      "canon.change.approve"
+      "canon.change.approve",
+      "migration.item.validate",
+      "migration.item.approve",
+      "migration.item.reject"
     ],
     "forbidden_dependencies": {
       "domain": [
@@ -108,7 +112,7 @@
     },
     "minimum_module_count": 14,
     "minimum_worker_count": 7,
-    "minimum_migration_count": 58,
+    "minimum_migration_count": 59,
     "maximum_forbidden_production_reachable_paths": 0
   },
   "run_evidence_contract": {

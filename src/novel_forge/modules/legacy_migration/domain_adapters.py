@@ -83,6 +83,9 @@ class DomainMigrationContext:
     decision_reason: str
     actor_id: str
     item_version: int
+    migration_validation_id: str = ""
+    validator_result_hash: str = ""
+    validator_version: str = ""
 
 
 @dataclass(frozen=True, slots=True)

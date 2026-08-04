@@ -6,9 +6,11 @@ import os
 import tempfile
 import unittest
 from pathlib import Path
+from uuid import uuid4
 
 from psycopg.types.json import Jsonb
 
+from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.legacy_migration import (
     LegacyMigrationApprovalApplication,
     LegacyMigrationDecisionCommand,
@@ -473,6 +475,9 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
                 uow.cursor.fetchone()
             )
         self.assertEqual(status, "NEEDS_REVIEW")
+        validation = service.validate_domain_item(
+            str(item_id), expected_item_version=int(item_version)
+        )
         command = LegacyMigrationDecisionCommand(
             migration_run_id=imported["migration_run_id"],
             migration_item_id=str(item_id),
@@ -481,14 +486,10 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
             actor_id="migration-reviewer",
             decision=MigrationDecision.APPROVE,
             reason="archival envelope and source hash independently verified",
-            expected_item_version=int(item_version),
+            expected_item_version=int(validation["item_version"]),
             source_hash=str(source_hash),
             target_asset_version_id=str(target_version_id),
-            domain_validation_evidence={
-                "status": "PASS",
-                "validator": "archival-envelope-validator-v1",
-                "scope": "ARCHIVAL_NATIVE",
-            },
+            migration_validation_id=str(validation["migration_validation_id"]),
             idempotency_key=f"approve:{item_id}:{source_hash}",
             trace_id=f"trace:{imported['migration_run_id']}",
             correlation_id=f"correlation:{project_id}",
@@ -536,6 +537,137 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
         self.assertEqual(tuple(persisted), ("QUALIFIED", "IMPORTED", "PENDING_EVALUATION", 1))
         self.assertGreaterEqual(int(audit_count), 1)
         self.assertEqual(int(outbox_count), 1)
+
+    def test_server_validation_record_supersedes_stale_validation_and_binds_decision(self) -> None:
+        nonce = str(uuid4())
+        project_id = identifier(f"migration-validation-project:{nonce}")
+        workspace_id = identifier(f"migration-validation-workspace:{nonce}")
+        service = LegacyMigrationService(
+            DATABASE_URL,
+            application_build_id="legacy-migration-validation-integration",
+            commit_sha="9" * 40,
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "data" / "workspaces").mkdir(parents=True)
+            (root / "data" / "assets").mkdir(parents=True)
+            self._write(
+                root / "data" / "workspaces" / "workspace.json",
+                {
+                    "id": workspace_id,
+                    "type": "project_workspace_state",
+                    "title": "Validation Project",
+                    "content": {"project_id": project_id},
+                },
+            )
+            self._write(
+                root / "data" / "assets" / "draft.json",
+                {
+                    "id": "validation-draft-1",
+                    "type": "draft",
+                    "project_id": project_id,
+                    "content": {"chapter": 1, "text_digest": "fixture-only"},
+                },
+            )
+            for path in root.rglob("*"):
+                path.chmod(0o555 if path.is_dir() else 0o444)
+            root.chmod(0o555)
+            imported = service.import_snapshot(root)
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                """
+                SELECT migration_item_id, item_version, source_hash,
+                       target_asset_version_id
+                FROM authority_legacy_migration_item
+                WHERE migration_run_id=%s AND source_asset_type='draft'
+                """,
+                [imported["migration_run_id"]],
+            )
+            item = uow.cursor.fetchone()
+        first = service.validate_domain_item(
+            str(item[0]), expected_item_version=int(item[1])
+        )
+        self.assertEqual(first["validation_status"], "PASS")
+        second = service.validate_domain_item(
+            str(item[0]), expected_item_version=int(first["item_version"])
+        )
+        self.assertEqual(second["validation_status"], "PASS")
+        self.assertNotEqual(
+            first["migration_validation_id"], second["migration_validation_id"]
+        )
+        approval = LegacyMigrationApprovalApplication(
+            DATABASE_URL,
+            application_build_id="legacy-migration-validation-integration",
+            commit_sha="9" * 40,
+        )
+        common = {
+            "migration_run_id": imported["migration_run_id"],
+            "migration_item_id": str(item[0]),
+            "project_id": project_id,
+            "workspace_id": workspace_id,
+            "actor_id": "migration-validation-reviewer",
+            "decision": MigrationDecision.APPROVE,
+            "reason": "server validation accepted",
+            "expected_item_version": int(second["item_version"]),
+            "source_hash": str(item[2]),
+            "target_asset_version_id": str(item[3]),
+            "trace_id": f"trace:{imported['migration_run_id']}",
+            "correlation_id": f"correlation:{project_id}",
+        }
+        with self.assertRaises(KernelError) as raised:
+            approval.execute(
+                LegacyMigrationDecisionCommand(
+                    **common,
+                    migration_validation_id=str(
+                        first["migration_validation_id"]
+                    ),
+                    idempotency_key=f"approve-stale:{item[0]}",
+                )
+            )
+        self.assertEqual(raised.exception.code, "MIGRATION_VALIDATION_STALE")
+        decided = approval.execute(
+            LegacyMigrationDecisionCommand(
+                **common,
+                migration_validation_id=str(second["migration_validation_id"]),
+                idempotency_key=f"approve-current:{item[0]}",
+            )
+        )
+        self.assertEqual(
+            decided["migration_validation_id"],
+            second["migration_validation_id"],
+        )
+        self.assertEqual(decided["validation_result_hash"], second["result_hash"])
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                """
+                SELECT decision.migration_validation_id,
+                       decision.validation_result_hash,
+                       decision.domain_validation_evidence->>'server_authoritative',
+                       COUNT(DISTINCT validation.validated_by_operation_id),
+                       COUNT(DISTINCT event.event_id),
+                       COUNT(DISTINCT outbox.outbox_id)
+                FROM authority_legacy_migration_decision AS decision
+                JOIN authority_legacy_migration_validation AS validation
+                  ON validation.migration_validation_id=
+                     decision.migration_validation_id
+                LEFT JOIN state_event AS event
+                  ON event.aggregate_id=validation.migration_validation_id
+                 AND event.event_type='legacy_migration.item.validated'
+                LEFT JOIN outbox_event AS outbox
+                  ON outbox.event_id=event.event_id
+                 AND outbox.topic='legacy_migration.item.validated'
+                WHERE decision.migration_decision_id=%s
+                GROUP BY decision.migration_validation_id,
+                         decision.validation_result_hash,
+                         decision.domain_validation_evidence
+                """,
+                [decided["migration_decision_id"]],
+            )
+            persisted = uow.cursor.fetchone()
+        self.assertEqual(str(persisted[0]), second["migration_validation_id"])
+        self.assertEqual(str(persisted[1]), second["result_hash"])
+        self.assertEqual(str(persisted[2]), "true")
+        self.assertEqual(tuple(int(value) for value in persisted[3:]), (1, 1, 1))
 
     def test_book_and_book_design_use_real_domain_authority_after_approval(self) -> None:
         project_id = identifier("domain-book-project")
@@ -648,7 +780,7 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
                     expected_item_version=int(validation["item_version"]),
                     source_hash=str(item[2]),
                     target_asset_version_id=str(item[3]),
-                    domain_validation_evidence=dict(validation),
+                    migration_validation_id=str(validation["migration_validation_id"]),
                     idempotency_key=f"approve:{item[0]}:{item[2]}",
                     trace_id=f"trace:{imported['migration_run_id']}",
                     correlation_id=f"correlation:{project_id}",
@@ -820,7 +952,7 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
                     expected_item_version=int(validation["item_version"]),
                     source_hash=str(item[2]),
                     target_asset_version_id=str(item[3]),
-                    domain_validation_evidence=dict(validation),
+                    migration_validation_id=str(validation["migration_validation_id"]),
                     idempotency_key=f"approve:{item[0]}:{item[2]}",
                     trace_id=f"trace:{imported['migration_run_id']}",
                     correlation_id=f"correlation:{project_id}",
@@ -980,7 +1112,7 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
                 expected_item_version=int(validation["item_version"]),
                 source_hash=str(item[2]),
                 target_asset_version_id=str(item[3]),
-                domain_validation_evidence=dict(validation),
+                migration_validation_id=str(validation["migration_validation_id"]),
                 idempotency_key=f"approve:{item[0]}:{item[2]}",
                 trace_id=f"trace:{imported['migration_run_id']}",
                 correlation_id=f"correlation:{project_id}",
@@ -1311,7 +1443,7 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
                     expected_item_version=int(validation["item_version"]),
                     source_hash=str(item[2]),
                     target_asset_version_id=str(item[3]),
-                    domain_validation_evidence=dict(validation),
+                    migration_validation_id=str(validation["migration_validation_id"]),
                     idempotency_key=f"approve:{item[0]}:{item[2]}",
                     trace_id=f"trace:{imported['migration_run_id']}",
                     correlation_id=f"correlation:{project_id}",

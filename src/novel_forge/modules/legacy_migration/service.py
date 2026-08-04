@@ -1,7 +1,7 @@
 """Resumable Legacy import coordinator and reconciliation queries."""
 from __future__ import annotations
 
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -33,6 +33,12 @@ from novel_forge.modules.legacy_migration.state_machine import (
     MigrationPhaseCheckpoint,
     MigrationReferenceStatus,
     require_phase_transition,
+)
+from novel_forge.modules.legacy_migration.validation import (
+    LegacyMigrationValidationApplication,
+    LegacyMigrationValidationCommand,
+    load_validation_snapshot,
+    validator_descriptor,
 )
 from novel_forge.modules.project_authority import (
     ProjectAuthorityApplication,
@@ -391,52 +397,37 @@ class LegacyMigrationService:
     def validate_domain_item(
         self, migration_item_id: str, *, expected_item_version: int
     ) -> dict[str, Any]:
-        context, adapter_name, target_level = self._domain_context(
+        context, _adapter_name, _target_level = self._domain_context(
             migration_item_id
         )
-        if target_level != MigrationMaterializationLevel.DOMAIN_NATIVE.value:
-            raise KernelError(
-                "DOMAIN_MIGRATION_NOT_REQUIRED",
-                "item is explicitly classified ARCHIVAL_NATIVE",
-            )
         if context.item_version != expected_item_version:
             raise KernelError(
                 "MIGRATION_ITEM_VERSION_CONFLICT",
                 "domain validation expected item version is stale",
             )
-        adapter = DomainMigrationAdapterRegistry(
+        result = LegacyMigrationValidationApplication(
             self.database_url,
             application_build_id=self.application_build_id,
             commit_sha=self.commit_sha,
-        ).resolve(adapter_name)
-        evidence = adapter.validate(context)
-        with AuthorityUnitOfWork(self.database_url) as uow:
-            uow.cursor.execute(
-                """
-                UPDATE authority_legacy_migration_item
-                SET evidence=evidence || %s,
-                    item_version=item_version+1,
-                    updated_at=NOW()
-                WHERE migration_item_id=%s AND item_version=%s
-                  AND status='NEEDS_REVIEW'
-                """,
-                [
-                    Jsonb({"domain_validation": evidence}),
-                    migration_item_id,
-                    expected_item_version,
-                ],
+        ).execute(
+            LegacyMigrationValidationCommand(
+                migration_run_id=context.migration_run_id,
+                migration_item_id=migration_item_id,
+                project_id=context.project_id,
+                workspace_id=context.workspace_id,
+                actor_id=self.actor_id,
+                expected_item_version=expected_item_version,
+                source_hash=context.source_hash,
+                target_asset_version_id=context.target_asset_version_id,
+                idempotency_key=(
+                    f"migration:validate:{migration_item_id}:"
+                    f"{expected_item_version}:{context.source_hash}"
+                ),
+                trace_id=f"trace:{context.migration_run_id}",
+                correlation_id=f"migration:{context.migration_run_id}",
             )
-            if uow.cursor.rowcount != 1:
-                raise KernelError(
-                    "MIGRATION_ITEM_VERSION_CONFLICT",
-                    "domain validation compare-and-set failed",
-                )
-            uow.commit()
-        return {
-            **evidence,
-            "migration_item_id": migration_item_id,
-            "item_version": expected_item_version + 1,
-        }
+        )
+        return result
 
     def activate_domain_item(
         self,
@@ -462,6 +453,18 @@ class LegacyMigrationService:
                 "MIGRATION_APPROVAL_REQUIRED",
                 "domain activation requires an independent approved decision",
             )
+        validation_binding = self._require_activation_validation(
+            context,
+            expected_item_version=expected_item_version,
+        )
+        context = replace(
+            context,
+            migration_validation_id=str(
+                validation_binding["migration_validation_id"]
+            ),
+            validator_result_hash=str(validation_binding["result_hash"]),
+            validator_version=str(validation_binding["validator_version"]),
+        )
         adapter = DomainMigrationAdapterRegistry(
             self.database_url,
             application_build_id=self.application_build_id,
@@ -496,6 +499,8 @@ class LegacyMigrationService:
                             "domain_activation_operation_id": (
                                 result.activation_operation_id
                             ),
+                            "migration_validation_id": context.migration_validation_id,
+                            "validator_result_hash": context.validator_result_hash,
                         }
                     ),
                     migration_item_id,
@@ -544,6 +549,9 @@ class LegacyMigrationService:
                 "domain_projection_id": result.domain_projection_id,
                 "activation_operation_id": result.activation_operation_id,
                 "independent_decision_id": context.decision_id,
+                "migration_validation_id": context.migration_validation_id,
+                "validator_result_hash": context.validator_result_hash,
+                "validator_version": context.validator_version,
             },
         )
         return {
@@ -555,6 +563,110 @@ class LegacyMigrationService:
             "activation_operation_id": result.activation_operation_id,
             "item_version": expected_item_version + 2,
             "evidence": result.evidence,
+        }
+
+    def _require_activation_validation(
+        self,
+        context: DomainMigrationContext,
+        *,
+        expected_item_version: int,
+    ) -> dict[str, Any]:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT decision.migration_validation_id,
+                       decision.validation_result_hash,
+                       validation.migration_run_id,
+                       validation.migration_item_id,
+                       validation.item_version,
+                       validation.source_hash,
+                       validation.target_asset_version_id,
+                       validation.domain_adapter,
+                       validation.validator_name,
+                       validation.validator_version,
+                       validation.validator_implementation_hash,
+                       validation.input_hash, validation.result_hash,
+                       validation.reference_snapshot_hash,
+                       validation.dependency_projection_hash,
+                       validation.status
+                FROM authority_legacy_migration_decision AS decision
+                JOIN authority_legacy_migration_validation AS validation
+                  ON validation.migration_validation_id=
+                     decision.migration_validation_id
+                WHERE decision.migration_decision_id=%s
+                  AND decision.migration_item_id=%s
+                  AND decision.decision='APPROVE'
+                """,
+                [context.decision_id, context.migration_item_id],
+            )
+            row = uow.cursor.fetchone()
+            if row is None:
+                raise KernelError(
+                    "MIGRATION_VALIDATION_REQUIRED",
+                    "approved migration decision is not bound to validation",
+                )
+            validation_item_version = int(row[4])
+            if expected_item_version != validation_item_version + 1:
+                raise KernelError(
+                    "MIGRATION_DECISION_STALE",
+                    "item version no longer has the validated approval relationship",
+                )
+            snapshot = load_validation_snapshot(
+                uow,
+                context.migration_item_id,
+                bound_item_version=validation_item_version,
+            )
+            descriptor = validator_descriptor(snapshot["item"]["domain_adapter"])
+            expected_scope = (
+                context.migration_run_id,
+                context.migration_item_id,
+                context.source_hash,
+                context.target_asset_version_id,
+                snapshot["item"]["domain_adapter"],
+            )
+            actual_scope = (
+                str(row[2]),
+                str(row[3]),
+                str(row[5]),
+                str(row[6]),
+                str(row[7]),
+            )
+            if expected_scope != actual_scope:
+                raise KernelError(
+                    "MIGRATION_VALIDATION_SCOPE_CONFLICT",
+                    "activation validation scope changed after approval",
+                )
+            if str(row[15]) != "PASS":
+                raise KernelError(
+                    "MIGRATION_VALIDATION_NOT_PASSING",
+                    "activation requires a non-revoked PASS validation",
+                )
+            if str(row[0]) == "" or str(row[1]) != str(row[12]):
+                raise KernelError(
+                    "MIGRATION_DECISION_VALIDATION_CONFLICT",
+                    "decision validation result binding is invalid",
+                )
+            if snapshot["unresolved_required_references"]:
+                raise KernelError(
+                    "MIGRATION_REQUIRED_REFERENCE_UNRESOLVED",
+                    "required references changed after approval",
+                )
+            if (
+                str(row[8]) != descriptor.validator_name
+                or str(row[9]) != descriptor.validator_version
+                or str(row[10]) != descriptor.validator_implementation_hash
+                or str(row[11]) != snapshot["input_hash"]
+                or str(row[13]) != snapshot["reference_snapshot_hash"]
+                or str(row[14]) != snapshot["dependency_projection_hash"]
+            ):
+                raise KernelError(
+                    "MIGRATION_VALIDATION_STALE",
+                    "activation inputs, dependencies, or validator changed",
+                )
+        return {
+            "migration_validation_id": str(row[0]),
+            "result_hash": str(row[12]),
+            "validator_version": str(row[9]),
         }
 
     def _domain_context(

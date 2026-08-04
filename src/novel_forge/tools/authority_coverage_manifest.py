@@ -279,6 +279,26 @@ def operation_catalog(
     governed_names = {item["name"] for item in governed_business}
     catalog = [item for item in catalog if item["name"] not in governed_names]
     catalog.extend(governed_business)
+    from novel_forge.modules.legacy_migration.approval import (
+        migration_decision_definitions,
+    )
+    from novel_forge.modules.legacy_migration.validation import (
+        migration_validation_definition,
+    )
+
+    migration_authority = (
+        migration_validation_definition(
+            application_build_id=application_build_id,
+            commit_sha=commit_sha,
+        ),
+        *migration_decision_definitions(
+            application_build_id=application_build_id,
+            commit_sha=commit_sha,
+        ),
+    )
+    migration_names = {item["name"] for item in migration_authority}
+    catalog = [item for item in catalog if item["name"] not in migration_names]
+    catalog.extend(migration_authority)
     return _apply_catalog_relationships(catalog)
 
 

@@ -12,13 +12,15 @@ from novel_forge.storage.migrations.runner import (
 class AgentCollaborationMigrationTests(unittest.TestCase):
     def test_authority_migration_chain_is_current_and_valid(self) -> None:
         validate_migration_chain()
-        self.assertEqual(
-            LATEST_MIGRATION_ID,
-            "20260804_0058_authority_cutover_release_qualification",
+        self.assertEqual(LATEST_MIGRATION_ID, MIGRATIONS[-1].migration_id)
+        collaboration = next(
+            migration
+            for migration in MIGRATIONS
+            if migration.migration_id == "20260728_0033_agent_collaboration_v1"
         )
         self.assertEqual(
-            MIGRATIONS[-1].down_revision,
-            "20260804_0057_hot_query_governance",
+            collaboration.down_revision,
+            "20260718_0032_provider_callback_dispatch_index",
         )
 
     def test_schema_reuses_authority_execution_and_asset_identities(self) -> None:

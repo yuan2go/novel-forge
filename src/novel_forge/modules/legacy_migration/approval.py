@@ -15,10 +15,13 @@ from novel_forge.modules.command_kernel.service import (
     execute_transaction_command,
 )
 from novel_forge.modules.legacy_migration.state_machine import MigrationDecision
+from novel_forge.modules.legacy_migration.validation import (
+    load_validation_snapshot,
+)
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 
-MIGRATION_DECISION_VERSION = "1.0.1"
+MIGRATION_DECISION_VERSION = "2.0.1"
 MIGRATION_DECISION_HANDLER = "novel_forge.legacy_migration.item_decision"
 MIGRATION_DECISION_OPERATIONS = {
     MigrationDecision.APPROVE: "migration.item.approve",
@@ -38,7 +41,7 @@ class LegacyMigrationDecisionCommand:
     expected_item_version: int
     source_hash: str
     target_asset_version_id: str
-    domain_validation_evidence: dict[str, Any]
+    migration_validation_id: str
     idempotency_key: str
     trace_id: str
     correlation_id: str
@@ -63,15 +66,98 @@ class LegacyMigrationDecisionCommand:
             raise ValueError("expected_item_version cannot be negative")
         if not self.source_hash.startswith("sha256:"):
             raise ValueError("source_hash must be canonical SHA-256")
-        if self.decision is MigrationDecision.APPROVE:
-            if self.domain_validation_evidence.get("status") != "PASS":
-                raise ValueError(
-                    "approval requires independent domain validation PASS evidence"
-                )
-            if not str(
-                self.domain_validation_evidence.get("validator") or ""
-            ).strip():
-                raise ValueError("approval requires a domain validator identity")
+        if self.decision is MigrationDecision.APPROVE and not str(
+            self.migration_validation_id
+        ).strip():
+            raise ValueError("approval requires migration_validation_id")
+
+
+def migration_decision_definitions(
+    *, application_build_id: str, commit_sha: str
+) -> tuple[dict[str, Any], ...]:
+    schema = {
+        "type": "object",
+        "required": [
+            "migration_run_id",
+            "migration_item_id",
+            "project_id",
+            "workspace_id",
+            "decision",
+            "reason",
+            "expected_item_version",
+            "source_hash",
+            "target_asset_version_id",
+            "migration_validation_id",
+            "client_idempotency_key",
+        ],
+        "properties": {
+            "migration_run_id": {"type": "string"},
+            "migration_item_id": {"type": "string"},
+            "project_id": {"type": "string"},
+            "workspace_id": {"type": "string"},
+            "decision": {"type": "string", "enum": ["APPROVE", "REJECT"]},
+            "reason": {"type": "string"},
+            "expected_item_version": {"type": "integer", "minimum": 0},
+            "source_hash": {"type": "string"},
+            "target_asset_version_id": {"type": "string"},
+            "migration_validation_id": {"type": "string"},
+            "client_idempotency_key": {"type": "string"},
+        },
+        "additionalProperties": False,
+    }
+    return tuple(
+        {
+            "name": name,
+            "definition_version": MIGRATION_DECISION_VERSION,
+            "family": "legacy_migration_authority",
+            "enabled": True,
+            "definition_status": "release_candidate",
+            "command_schema_version": "migration-item-decision-v2",
+            "result_schema_version": "migration-item-decision-result-v2",
+            "command_schema": schema,
+            "result_schema": {"type": "object"},
+            "input_contract": schema,
+            "output_contract": {
+                "asset_type": "migration_decision",
+                "output_key": "migration.item.decision",
+            },
+            "handler_key": MIGRATION_DECISION_HANDLER,
+            "handler_contract_version": MIGRATION_DECISION_VERSION,
+            "application_build_id": application_build_id,
+            "commit_sha": commit_sha,
+            "execution_mode": "transactional",
+            "permissions": ["legacy_migration.approve"],
+            "approval_policy": {"required": False},
+            "policy": {
+                "execution_classification": "transaction_command",
+                "independent_decision": True,
+                "legacy_status_is_evidence_only": True,
+                "validation_binding": "server_record_id_only",
+                "client_validation_evidence_forbidden": True,
+                "decision": decision.value,
+                "activation_is_separate": True,
+            },
+            "idempotency_scope": "migration:item-decision",
+            "concurrency_key_template": "migration-item:{migration_item_id}",
+            "retry_policy": {"max_attempts": 1, "mode": "client_replay_only"},
+            "timeout_policy": {"operation_timeout_seconds": 60},
+            "cancellation_policy": {"mode": "not_applicable_atomic_transaction"},
+            "compensation_policy": {
+                "supported": False,
+                "reason": "append-only decision with item CAS",
+            },
+            "irreversible_effect_policy": {"allowed": False},
+            "external_capabilities": [],
+            "completion_contract": {
+                "version": "migration.item.decision.completion.v2",
+                "required_asset_selectors": [],
+                "required_qualifications": [],
+                "required_evidence": ["trace", "audit"],
+                "required_outbox_events": ["legacy_migration.item.decided"],
+            },
+        }
+        for decision, name in MIGRATION_DECISION_OPERATIONS.items()
+    )
 
 
 class LegacyMigrationApprovalApplication:
@@ -118,6 +204,28 @@ class LegacyMigrationApprovalApplication:
                 [command.target_asset_version_id, command.project_id],
             )
             target = uow.cursor.fetchone()
+            if command.decision is MigrationDecision.APPROVE:
+                uow.cursor.execute(
+                    """
+                    SELECT validation.target_asset_version_id,
+                           validation.status, validation.result_hash
+                    FROM authority_legacy_migration_validation AS validation
+                    JOIN authority_asset AS asset
+                      ON asset.asset_id=validation.target_asset_id
+                    WHERE validation.migration_validation_id=%s
+                      AND asset.project_id=%s
+                    """,
+                    [command.migration_validation_id, command.project_id],
+                )
+                validation_target = uow.cursor.fetchone()
+                if (
+                    validation_target is None
+                    or str(validation_target[0]) != command.target_asset_version_id
+                ):
+                    raise KernelError(
+                        "MIGRATION_VALIDATION_SCOPE_CONFLICT",
+                        "validation is absent, outside Project scope, or targets another version",
+                    )
         if target is None:
             raise KernelError(
                 "MIGRATION_DECISION_TARGET_INVALID",
@@ -149,9 +257,7 @@ class LegacyMigrationApprovalApplication:
                     "expected_item_version": command.expected_item_version,
                     "source_hash": command.source_hash,
                     "target_asset_version_id": command.target_asset_version_id,
-                    "domain_validation_evidence": dict(
-                        command.domain_validation_evidence
-                    ),
+                    "migration_validation_id": command.migration_validation_id,
                     "client_idempotency_key": command.idempotency_key,
                 },
                 "input_assets": [
@@ -172,95 +278,12 @@ class LegacyMigrationApprovalApplication:
         )
 
     def _register_definitions(self) -> None:
-        schema = {
-            "type": "object",
-            "required": [
-                "migration_run_id",
-                "migration_item_id",
-                "project_id",
-                "workspace_id",
-                "decision",
-                "reason",
-                "expected_item_version",
-                "source_hash",
-                "target_asset_version_id",
-                "domain_validation_evidence",
-                "client_idempotency_key",
-            ],
-            "properties": {
-                "migration_run_id": {"type": "string"},
-                "migration_item_id": {"type": "string"},
-                "project_id": {"type": "string"},
-                "workspace_id": {"type": "string"},
-                "decision": {"type": "string", "enum": ["APPROVE", "REJECT"]},
-                "reason": {"type": "string"},
-                "expected_item_version": {"type": "integer", "minimum": 0},
-                "source_hash": {"type": "string"},
-                "target_asset_version_id": {"type": "string"},
-                "domain_validation_evidence": {"type": "object"},
-                "client_idempotency_key": {"type": "string"},
-            },
-            "additionalProperties": False,
-        }
         with AuthorityUnitOfWork(self.database_url) as uow:
-            for decision, name in MIGRATION_DECISION_OPERATIONS.items():
-                uow.repositories.definitions.register(
-                    {
-                        "name": name,
-                        "definition_version": MIGRATION_DECISION_VERSION,
-                        "family": "legacy_migration_authority",
-                        "enabled": True,
-                        "definition_status": "release_candidate",
-                        "command_schema_version": "migration-item-decision-v1",
-                        "result_schema_version": "migration-item-decision-result-v1",
-                        "command_schema": schema,
-                        "result_schema": {"type": "object"},
-                        "input_contract": schema,
-                        "output_contract": {
-                            "asset_type": "migration_decision",
-                            "output_key": "migration.item.decision",
-                        },
-                        "handler_key": MIGRATION_DECISION_HANDLER,
-                        "handler_contract_version": "1.0.0",
-                        "application_build_id": self.application_build_id,
-                        "commit_sha": self.commit_sha,
-                        "execution_mode": "transactional",
-                        "permissions": ["legacy_migration.approve"],
-                        "approval_policy": {"required": False},
-                        "policy": {
-                            "execution_classification": "transaction_command",
-                            "independent_decision": True,
-                            "legacy_status_is_evidence_only": True,
-                            "decision": decision.value,
-                            "activation_is_separate": True,
-                        },
-                        "idempotency_scope": "migration:item-decision",
-                        "concurrency_key_template": "migration-item:{migration_item_id}",
-                        "retry_policy": {
-                            "max_attempts": 1,
-                            "mode": "client_replay_only",
-                        },
-                        "timeout_policy": {"operation_timeout_seconds": 60},
-                        "cancellation_policy": {
-                            "mode": "not_applicable_atomic_transaction"
-                        },
-                        "compensation_policy": {
-                            "supported": False,
-                            "reason": "append-only decision with item CAS",
-                        },
-                        "irreversible_effect_policy": {"allowed": False},
-                        "external_capabilities": [],
-                        "completion_contract": {
-                            "version": "migration.item.decision.completion.v1",
-                            "required_asset_selectors": [],
-                            "required_qualifications": [],
-                            "required_evidence": ["trace", "audit"],
-                            "required_outbox_events": [
-                                "legacy_migration.item.decided"
-                            ],
-                        },
-                    }
-                )
+            for definition in migration_decision_definitions(
+                application_build_id=self.application_build_id,
+                commit_sha=self.commit_sha,
+            ):
+                uow.repositories.definitions.register(definition)
             uow.commit()
 
     @staticmethod
@@ -325,8 +348,100 @@ class LegacyMigrationApprovalApplication:
                 "MIGRATION_ITEM_NOT_REVIEWABLE",
                 "migration item is not awaiting an independent decision",
             )
-        checkpoint("after_domain_validation")
         decision = MigrationDecision(str(payload["decision"]))
+        validation_id = str(payload.get("migration_validation_id") or "")
+        validation_result_hash = ""
+        server_validation_evidence: dict[str, Any] = {
+            "status": "NOT_REQUIRED",
+            "server_authoritative": True,
+        }
+        if decision is MigrationDecision.APPROVE:
+            uow.cursor.execute(
+                """
+                SELECT migration_run_id, migration_item_id,
+                       validation_version, item_version, source_hash,
+                       target_asset_id, target_asset_version_id,
+                       target_materialization_level, domain_adapter,
+                       validator_name, validator_version,
+                       validator_implementation_hash, input_hash, result_hash,
+                       reference_snapshot_hash, dependency_projection_hash,
+                       status, evidence
+                FROM authority_legacy_migration_validation
+                WHERE migration_validation_id=%s
+                FOR SHARE
+                """,
+                [validation_id],
+            )
+            validation = uow.cursor.fetchone()
+            if validation is None:
+                raise KernelError(
+                    "MIGRATION_VALIDATION_NOT_FOUND",
+                    "approval validation record does not exist",
+                )
+            validation_scope = (
+                str(validation[0]),
+                str(validation[1]),
+                str(validation[4]),
+                str(validation[6]),
+                str(validation[8]),
+            )
+            snapshot = load_validation_snapshot(
+                uow,
+                item_id,
+                bound_item_version=int(validation[3]),
+            )
+            expected_validation_scope = (
+                str(payload["migration_run_id"]),
+                item_id,
+                str(payload["source_hash"]),
+                str(payload["target_asset_version_id"]),
+                snapshot["validator_descriptor"].domain_adapter,
+            )
+            if validation_scope != expected_validation_scope:
+                raise KernelError(
+                    "MIGRATION_VALIDATION_SCOPE_CONFLICT",
+                    "validation no longer matches run, item, source, target, or adapter",
+                )
+            if int(validation[3]) != expected_version:
+                raise KernelError(
+                    "MIGRATION_VALIDATION_STALE",
+                    "validation item version no longer matches the approval item",
+                )
+            if str(validation[16]) != "PASS":
+                raise KernelError(
+                    "MIGRATION_VALIDATION_NOT_PASSING",
+                    "approval requires a non-revoked PASS validation",
+                )
+            uow.cursor.execute(
+                """
+                SELECT MAX(validation_version)
+                FROM authority_legacy_migration_validation
+                WHERE migration_item_id=%s AND status='PASS'
+                """,
+                [item_id],
+            )
+            if int(uow.cursor.fetchone()[0] or 0) != int(validation[2]):
+                raise KernelError(
+                    "MIGRATION_VALIDATION_STALE",
+                    "approval validation is not the latest PASS version",
+                )
+            current_descriptor = snapshot["validator_descriptor"]
+            if (
+                str(validation[11])
+                != current_descriptor.validator_implementation_hash
+                or str(validation[10]) != current_descriptor.validator_version
+                or str(validation[9]) != current_descriptor.validator_name
+                or str(validation[12]) != snapshot["input_hash"]
+                or str(validation[14]) != snapshot["reference_snapshot_hash"]
+                or str(validation[15]) != snapshot["dependency_projection_hash"]
+            ):
+                raise KernelError(
+                    "MIGRATION_VALIDATION_STALE",
+                    "validator implementation or validation inputs changed",
+                )
+            validation_result_hash = str(validation[13])
+            server_validation_evidence = dict(validation[17])
+        checkpoint("after_domain_validation")
         uow.cursor.execute(
             """
             SELECT COALESCE(MAX(decision_version), 0) + 1
@@ -343,8 +458,12 @@ class LegacyMigrationApprovalApplication:
                 migration_decision_id, migration_run_id, migration_item_id,
                 decision_version, actor_id, decision, reason,
                 expected_item_version, source_hash, target_asset_version_id,
-                domain_validation_evidence, idempotency_key, operation_id
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                domain_validation_evidence, idempotency_key, operation_id,
+                migration_validation_id, validation_result_hash
+            ) VALUES (
+                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                %s, %s, %s, %s, %s
+            )
             """,
             [
                 decision_id,
@@ -357,9 +476,11 @@ class LegacyMigrationApprovalApplication:
                 expected_version,
                 payload["source_hash"],
                 payload["target_asset_version_id"],
-                Jsonb(dict(payload["domain_validation_evidence"])),
+                Jsonb(server_validation_evidence),
                 payload["client_idempotency_key"],
                 operation_id,
+                validation_id or None,
+                validation_result_hash,
             ],
         )
         target_status = (
@@ -380,6 +501,8 @@ class LegacyMigrationApprovalApplication:
                     {
                         "independent_decision_id": decision_id,
                         "independent_decision": decision.value,
+                        "migration_validation_id": validation_id,
+                        "validation_result_hash": validation_result_hash,
                         "activation_pending": decision is MigrationDecision.APPROVE,
                     }
                 ),
@@ -411,6 +534,8 @@ class LegacyMigrationApprovalApplication:
                     "migration_item_id": item_id,
                     "decision_id": decision_id,
                     "decision": decision.value,
+                    "migration_validation_id": validation_id,
+                    "validation_result_hash": validation_result_hash,
                     "target_status": target_status,
                     "expected_item_version": expected_version,
                     "new_item_version": expected_version + 1,
@@ -422,6 +547,8 @@ class LegacyMigrationApprovalApplication:
             "migration_item_id": item_id,
             "migration_decision_id": decision_id,
             "decision": decision.value,
+            "migration_validation_id": validation_id,
+            "validation_result_hash": validation_result_hash,
             "status": target_status,
             "item_version": expected_version + 1,
             "activation_pending": decision is MigrationDecision.APPROVE,

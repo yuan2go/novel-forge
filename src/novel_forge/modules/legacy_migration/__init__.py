@@ -7,6 +7,11 @@ from .approval import (
 )
 from .scanner import LegacySnapshotRecord, LegacySnapshotScan, scan_legacy_snapshot
 from .service import LegacyMigrationService
+from .validation import (
+    LegacyMigrationValidationApplication,
+    LegacyMigrationValidationCommand,
+    MigrationValidationStatus,
+)
 from .codecs import DEFAULT_CODEC_REGISTRY, TypedMigrationCodecRegistry
 from .state_machine import (
     MigrationDecision,
@@ -22,6 +27,9 @@ __all__ = [
     "LegacyMigrationApprovalApplication",
     "LegacyMigrationDecisionCommand",
     "LegacyMigrationService",
+    "LegacyMigrationValidationApplication",
+    "LegacyMigrationValidationCommand",
+    "MigrationValidationStatus",
     "DEFAULT_CODEC_REGISTRY",
     "TypedMigrationCodecRegistry",
     "MigrationDecision",
