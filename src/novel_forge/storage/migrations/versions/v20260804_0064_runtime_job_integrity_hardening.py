@@ -79,6 +79,12 @@ UPGRADE_STATEMENTS = [
     DEFERRABLE INITIALLY DEFERRED
     """,
     """
+    CREATE INDEX authority_runtime_job_current_execution_fk_idx
+    ON authority_runtime_job(
+        runtime_job_id, current_attempt_id, current_fencing_token
+    )
+    """,
+    """
     CREATE INDEX authority_runtime_job_lease_execution_fk_idx
     ON authority_runtime_job_lease(runtime_job_id, attempt_id, fencing_token)
     """,
