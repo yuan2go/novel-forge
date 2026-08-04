@@ -41,6 +41,11 @@ class ArchitectureManifestTests(unittest.TestCase):
         self.assertGreater(check_position, sync_position)
         self.assertIn(".claude/skills/", (ROOT / ".gitignore").read_text(encoding="utf-8"))
 
+    def test_ci_architecture_job_installs_test_collection_dependencies(self) -> None:
+        workflow = (ROOT / ".github/workflows/core-os-ci.yml").read_text(encoding="utf-8")
+
+        self.assertIn('python -m pip install -e ".[api,postgres,test]"', workflow)
+
 
 if __name__ == "__main__":
     unittest.main()
