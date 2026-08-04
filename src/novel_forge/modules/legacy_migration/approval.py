@@ -316,6 +316,10 @@ class LegacyMigrationApprovalApplication:
         item_id = str(payload["migration_item_id"])
         expected_version = int(payload["expected_item_version"])
         uow.cursor.execute(
+            "SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",
+            [str(payload["migration_run_id"])],
+        )
+        uow.cursor.execute(
             """
             SELECT migration_run_id, project_id, workspace_id, source_hash,
                    target_asset_version_id, item_version, status

@@ -22,7 +22,7 @@ excluded by an explicit code-level selection contract and unit tests.
 
 | Fact | Value |
 |---|---|
-| Migration head | `20260804_0066_runtime_job_attempt_lease_existence` |
+| Migration head | `20260804_0067_activated_migration_archival_binding` |
 | Migration count | 66 |
 | Migration registry | 59 source types: 18 `DOMAIN_NATIVE`, 41 `ARCHIVAL_NATIVE` |
 | Default backend | PostgreSQL Authority, fail closed |

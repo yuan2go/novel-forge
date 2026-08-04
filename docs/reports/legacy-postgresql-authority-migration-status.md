@@ -1,7 +1,7 @@
 # Legacy to PostgreSQL Authority Migration Status
 
 Implementation target: core domain migration qualification at migration head
-`20260804_0066_runtime_job_attempt_lease_existence`. Remote proof is determined
+`20260804_0067_activated_migration_archival_binding`. Remote proof is determined
 by the exact-SHA CI artifact, not by a status sentence in this file.
 
 ## Materialization levels
@@ -60,8 +60,9 @@ activated; cycles quarantine the affected graph.
 | 0064 | Runtime Job composite execution identity and legacy run-state forward fix |
 | 0065 | Runtime Job Attempt/Lease identity closure across job, lease, worker and fence |
 | 0066 | Deferred reverse FK requiring every Runtime Job Attempt to own its exact Lease |
+| 0067 | Recover immutable archival bindings for already-activated Domain items and enforce their presence |
 
-All eight are forward-only, backup-required migrations with forward-fix recovery.
+All nine are forward-only, backup-required migrations with forward-fix recovery.
 Migrations 0001–0058 are unchanged.
 
 ## Remaining boundary

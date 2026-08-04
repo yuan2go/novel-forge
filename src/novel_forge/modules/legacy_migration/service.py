@@ -1129,6 +1129,34 @@ class LegacyMigrationService:
             MigrationVerificationLevel.ARCHIVAL_NATIVE
         ),
     ) -> dict[str, Any]:
+        # Verification is a single run-consistent observation. Every mutable
+        # migration command (validation, decision, activation) takes the same
+        # transaction-scoped advisory lock before touching Item/Validation
+        # state, so none can commit between freshness checks and the persisted
+        # reconciliation result. Coordinated nested UnitOfWorks reuse this
+        # transaction and retain compatibility with a max_size=1 pool.
+        with AuthorityUnitOfWork(
+            self.database_url, coordinate_nested=True
+        ) as verification_uow:
+            verification_uow.cursor.execute(
+                "SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",
+                [migration_run_id],
+            )
+            result = self._verify_locked(
+                migration_run_id,
+                snapshot_root=snapshot_root,
+                required_level=required_level,
+            )
+            verification_uow.commit()
+            return result
+
+    def _verify_locked(
+        self,
+        migration_run_id: str,
+        *,
+        snapshot_root: str | Path | None,
+        required_level: MigrationVerificationLevel | str,
+    ) -> dict[str, Any]:
         verification_level = MigrationVerificationLevel(required_level)
         self._refresh_current_activated_validations(migration_run_id)
         status = self.status(migration_run_id)

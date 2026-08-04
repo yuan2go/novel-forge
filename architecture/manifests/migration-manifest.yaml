@@ -1,7 +1,7 @@
 {
   "schema_version": "architecture-manifest.v1",
   "registry": "novel_forge.storage.migrations.versions:VERSION_MODULES",
-  "head": "20260804_0066_runtime_job_attempt_lease_existence",
+  "head": "20260804_0067_activated_migration_archival_binding",
   "migration_ids": [
     "20260625_0001_initial_industrial_schema",
     "20260628_0002_query_and_release_indexes",
@@ -68,6 +68,7 @@
     "20260804_0063_worker_fleet_operational_governance",
     "20260804_0064_runtime_job_integrity_hardening",
     "20260804_0065_runtime_job_lease_identity",
-    "20260804_0066_runtime_job_attempt_lease_existence"
+    "20260804_0066_runtime_job_attempt_lease_existence",
+    "20260804_0067_activated_migration_archival_binding"
   ]
 }

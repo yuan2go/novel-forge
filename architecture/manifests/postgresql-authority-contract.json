@@ -42,7 +42,8 @@
       "20260804_0063_worker_fleet_operational_governance",
       "20260804_0064_runtime_job_integrity_hardening",
       "20260804_0065_runtime_job_lease_identity",
-      "20260804_0066_runtime_job_attempt_lease_existence"
+      "20260804_0066_runtime_job_attempt_lease_existence",
+      "20260804_0067_activated_migration_archival_binding"
     ],
     "required_operation_definitions": [
       "chapter.slice.run",
@@ -125,7 +126,7 @@
     },
     "minimum_module_count": 15,
     "minimum_worker_count": 7,
-    "minimum_migration_count": 66,
+    "minimum_migration_count": 67,
     "maximum_forbidden_production_reachable_paths": 0
   },
   "run_evidence_contract": {

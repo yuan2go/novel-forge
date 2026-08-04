@@ -5,7 +5,9 @@ import hashlib
 import os
 import shutil
 import tempfile
+import threading
 import unittest
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
 from pathlib import Path
 from unittest.mock import patch
 from uuid import uuid4
@@ -32,6 +34,7 @@ from novel_forge.modules.source_authority import (
 )
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from novel_forge.storage.database_runtime import DatabaseRuntime, DatabaseRuntimeConfig
+from novel_forge.storage.migrations import run_migrations
 from tests.integration.authority_postgres_support import DATABASE_URL, ensure_migrated, identifier
 
 
@@ -970,6 +973,90 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
             required_level="DOMAIN_NATIVE",
         )
         self.assertEqual(refreshed["verification_status"], "PASS")
+
+        # A release verification must be one run-consistent observation. Pause
+        # after BookDesign freshness is read, then prove a concurrent upstream
+        # Book revalidation cannot commit until verification releases the run
+        # advisory lock. The next verification must observe the new dependency
+        # version and fail closed until BookDesign is explicitly revalidated.
+        snapshot_read = threading.Event()
+        release_verify = threading.Event()
+        design_snapshot_reads = 0
+        from novel_forge.modules.legacy_migration import service as service_module
+
+        original_load_validation_snapshot = service_module.load_validation_snapshot
+
+        def pause_after_design_snapshot(*args, **kwargs):
+            nonlocal design_snapshot_reads
+            snapshot = original_load_validation_snapshot(*args, **kwargs)
+            if str(args[1]) == current_items["book_design_candidate"][0]:
+                design_snapshot_reads += 1
+                if design_snapshot_reads == 2:
+                    snapshot_read.set()
+                    self.assertTrue(release_verify.wait(timeout=5))
+            return snapshot
+
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                "SELECT item_version FROM authority_legacy_migration_item "
+                "WHERE migration_item_id=%s",
+                [current_items["book"][0]],
+            )
+            concurrent_book_version = int(uow.cursor.fetchone()[0])
+        with patch.object(
+            service_module,
+            "load_validation_snapshot",
+            side_effect=pause_after_design_snapshot,
+        ), ThreadPoolExecutor(max_workers=2) as executor:
+            verify_future = executor.submit(
+                service.verify,
+                imported["migration_run_id"],
+                snapshot_root=verification_root,
+                required_level="DOMAIN_NATIVE",
+            )
+            self.assertTrue(snapshot_read.wait(timeout=5))
+            revalidate_future = executor.submit(
+                service.validate_domain_item,
+                current_items["book"][0],
+                expected_item_version=concurrent_book_version,
+            )
+            with self.assertRaises(FutureTimeoutError):
+                revalidate_future.result(timeout=0.2)
+            release_verify.set()
+            concurrent_verification = verify_future.result(timeout=5)
+            concurrent_revalidation = revalidate_future.result(timeout=5)
+        self.assertEqual(concurrent_verification["verification_status"], "PASS")
+        self.assertEqual(concurrent_revalidation["validation_status"], "PASS")
+        self.assertEqual(
+            service.verify(
+                imported["migration_run_id"],
+                snapshot_root=verification_root,
+                required_level="DOMAIN_NATIVE",
+            )["verification_status"],
+            "FAIL",
+        )
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                "SELECT item_version FROM authority_legacy_migration_item "
+                "WHERE migration_item_id=%s",
+                [current_items["book_design_candidate"][0]],
+            )
+            post_concurrency_design_version = int(uow.cursor.fetchone()[0])
+        post_concurrency_design_validation = service.validate_domain_item(
+            current_items["book_design_candidate"][0],
+            expected_item_version=post_concurrency_design_version,
+        )
+        self.assertEqual(
+            post_concurrency_design_validation["validation_status"], "PASS"
+        )
+        self.assertEqual(
+            service.verify(
+                imported["migration_run_id"],
+                snapshot_root=verification_root,
+                required_level="DOMAIN_NATIVE",
+            )["verification_status"],
+            "PASS",
+        )
         self.assertNotEqual(
             activated["book_design_candidate"]["target_asset_version_id"],
             str(item[3]),
@@ -1867,6 +1954,56 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
             )["verification_status"],
             "PASS",
         )
+
+        # Simulate a populated 0066 database produced before archival binding
+        # evidence was stored on activated items. The 0067 forward migration
+        # must recover the immutable archival AssetVersion from the activation-
+        # bound Validation record and make server revalidation possible.
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                """
+                ALTER TABLE authority_legacy_migration_item
+                DROP CONSTRAINT authority_migration_item_archival_binding_check
+                """
+            )
+            uow.cursor.execute(
+                "DELETE FROM nf_schema_migrations WHERE migration_id=%s",
+                ["20260804_0067_activated_migration_archival_binding"],
+            )
+            uow.cursor.execute(
+                """
+                UPDATE authority_legacy_migration_item
+                SET evidence=(evidence
+                    - 'archival_target_asset_id'
+                    - 'archival_target_asset_version_id'
+                    - 'archival_target_content_hash')
+                WHERE migration_item_id=%s
+                """,
+                [str(item[0])],
+            )
+            uow.commit()
+        migration_status = run_migrations(DATABASE_URL)
+        self.assertTrue(migration_status["ok"])
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                """
+                SELECT item.evidence->>'archival_target_asset_version_id',
+                       validation.target_asset_version_id,
+                       item.item_version
+                FROM authority_legacy_migration_item AS item
+                JOIN authority_legacy_migration_validation AS validation
+                  ON validation.migration_validation_id=
+                     item.evidence->>'migration_validation_id'
+                WHERE item.migration_item_id=%s
+                """,
+                [str(item[0])],
+            )
+            recovered_binding = uow.cursor.fetchone()
+        self.assertEqual(str(recovered_binding[0]), str(recovered_binding[1]))
+        recovered_revalidation = service.validate_domain_item(
+            str(item[0]), expected_item_version=int(recovered_binding[2])
+        )
+        self.assertEqual(recovered_revalidation["validation_status"], "PASS")
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
             uow.cursor.execute(
                 """

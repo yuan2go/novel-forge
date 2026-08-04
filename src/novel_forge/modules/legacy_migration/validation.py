@@ -394,6 +394,10 @@ class LegacyMigrationValidationApplication:
         payload = dict(operation[3])
         item_id = str(payload["migration_item_id"])
         expected_version = int(payload["expected_item_version"])
+        uow.cursor.execute(
+            "SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",
+            [str(payload["migration_run_id"])],
+        )
         snapshot = load_validation_snapshot(
             uow,
             item_id,
@@ -688,9 +692,15 @@ def load_validation_snapshot(
           ON current_version.asset_version_id=item.target_asset_version_id
         JOIN authority_asset AS current_asset
           ON current_asset.asset_id=current_version.asset_id
+        LEFT JOIN authority_legacy_migration_validation AS activation_validation
+          ON activation_validation.migration_validation_id=
+             item.evidence->>'migration_validation_id'
+         AND activation_validation.migration_item_id=item.migration_item_id
+         AND activation_validation.migration_run_id=item.migration_run_id
         JOIN authority_asset_version AS validation_version
           ON validation_version.asset_version_id=COALESCE(
-              item.evidence->>'archival_target_asset_version_id',
+              NULLIF(item.evidence->>'archival_target_asset_version_id', ''),
+              activation_validation.target_asset_version_id,
               item.target_asset_version_id
           )
         JOIN authority_asset AS validation_asset
