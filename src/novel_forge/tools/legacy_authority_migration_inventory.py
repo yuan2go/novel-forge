@@ -12,7 +12,60 @@ from typing import Any
 from novel_forge.tools.authority_coverage_manifest import build_manifest
 
 
-SCHEMA_VERSION = "legacy-authority-migration-inventory.v1"
+SCHEMA_VERSION = "legacy-authority-migration-inventory.v2"
+
+INVENTORY_STATUSES = frozenset(
+    {
+        "MIGRATED_NATIVE",
+        "MIGRATED_READ_ONLY",
+        "IMPORT_CANDIDATE_ONLY",
+        "REBUILDABLE",
+        "DEVELOPMENT_ONLY",
+        "TEST_FIXTURE_ONLY",
+        "EXPLICIT_COMPATIBILITY",
+        "LEGACY_PRODUCTION_BLOCKER",
+        "UNCLASSIFIED",
+    }
+)
+
+# These are the only source files which may be entered by the default
+# PostgreSQL backend process plane.  A Legacy finding in one of them is a
+# blocker unless the exact file is an explicit selector/import boundary below.
+PRODUCTION_AUTHORITY_FILES = frozenset(
+    {
+        "src/novel_forge/api/authority_app.py",
+        "src/novel_forge/api/authority_dependencies.py",
+        "src/novel_forge/workers/chapter_authority.py",
+        "src/novel_forge/workers/content_authority.py",
+        "src/novel_forge/workers/source_authority.py",
+        "src/novel_forge/workers/mkaos_authority.py",
+        "src/novel_forge/workers/runtime_groups.py",
+    }
+)
+
+EXPLICIT_IMPORT_FILES = frozenset(
+    {
+        "src/novel_forge/modules/legacy_migration/application.py",
+        "src/novel_forge/modules/legacy_migration/codecs.py",
+        "src/novel_forge/modules/legacy_migration/definitions.py",
+        "src/novel_forge/modules/legacy_migration/scanner.py",
+        "src/novel_forge/modules/legacy_migration/service.py",
+        "src/novel_forge/storage/legacy_object_sync.py",
+        "src/novel_forge/storage/postgres.py",
+    }
+)
+
+EXPLICIT_SELECTOR_FILES = frozenset(
+    {
+        "src/novel_forge/api/app.py",
+        "src/novel_forge/api/legacy_app.py",
+        "src/novel_forge/cli/legacy.py",
+        "src/novel_forge/workers/celery_app.py",
+        "src/novel_forge/workers/legacy_tasks.py",
+        "src/novel_forge/workers/runtime.py",
+        "src/novel_forge/workers/tasks.py",
+    }
+)
 
 
 def build_inventory(repo_root: str | Path) -> dict[str, Any]:
@@ -50,17 +103,44 @@ def build_inventory(repo_root: str | Path) -> dict[str, Any]:
                 for item in findings
             }
         )
+        classification = _classification(path, findings, usage)
+        symbols = sorted(
+            {
+                str(item.get("qualified_symbol") or item.get("symbol") or "<module>")
+                for item in findings
+            }
+        )
+        read_or_write = _read_or_write(reads=reads, writes=writes)
+        target_asset_type = _asset_type(domain, aggregate)
+        target_operation = operation or f"{aggregate}.migration.required"
+        target_repository = repository or f"novel_forge.storage.{aggregate}_repository"
         rows.append(
             {
                 "inventory_id": _stable_id(domain, path, operation or aggregate),
+                "domain": domain,
+                "file": path,
+                "symbol": symbols,
+                "entrypoint": entrypoints,
+                "read_or_write": read_or_write,
+                "current_authority": authorities,
+                "target_authority": {
+                    "kind": "postgresql",
+                    "asset_type": target_asset_type,
+                    "operation_definition": target_operation,
+                    "repository": target_repository,
+                },
+                "production_reachable": classification[1],
+                "migration_strategy": _migration_method(usage, path),
+                "status": classification[0],
+                "remaining_action": classification[2],
                 "business_domain": domain,
                 "current_entrypoints": entrypoints,
                 "current_authority_source": authorities,
                 "current_write_points": writes,
                 "current_read_points": reads,
-                "target_authority_asset_type": _asset_type(domain, aggregate),
-                "target_operation_definition": operation or f"{aggregate}.migration.required",
-                "target_repository": repository or f"novel_forge.storage.{aggregate}_repository",
+                "target_authority_asset_type": target_asset_type,
+                "target_operation_definition": target_operation,
+                "target_repository": target_repository,
                 "transaction_boundary": (
                     "Command admission + fenced Attempt output + aggregate transition + "
                     "StateEvent/Audit/Outbox in one PostgreSQL transaction"
@@ -78,7 +158,7 @@ def build_inventory(repo_root: str | Path) -> dict[str, Any]:
                     "migration: duplicate/corrupt/missing-reference/cross-project/resume/reconcile",
                     "architecture: production LocalStorage/filesystem authority forbidden",
                 ],
-                "migration_status": "PLANNED",
+                "migration_status": classification[0],
                 "evidence": [
                     {
                         "path": item["path"],
@@ -94,11 +174,23 @@ def build_inventory(repo_root: str | Path) -> dict[str, Any]:
                 ],
             }
         )
+    rows.extend(_runtime_configuration_findings(root))
+    rows.sort(key=lambda item: (item["file"], item["inventory_id"]))
+    status_counts = {
+        status: sum(1 for item in rows if item["status"] == status)
+        for status in sorted(INVENTORY_STATUSES)
+    }
     summary = {
         "inventory_rows": len(rows),
         "legacy_findings": sum(len(row["evidence"]) for row in rows),
         "business_domains": sorted({row["business_domain"] for row in rows}),
         "production_localstorage_goal": 0,
+        "status_counts": status_counts,
+        "legacy_production_blocker_count": status_counts["LEGACY_PRODUCTION_BLOCKER"],
+        "unclassified_count": status_counts["UNCLASSIFIED"],
+        "web_excluded_count": sum(
+            1 for item in rows if str(item["file"]).startswith("web/")
+        ),
         "current_coverage_summary": coverage["summary"],
     }
     payload = {
@@ -130,10 +222,17 @@ def write_inventory(
 
 
 def _is_legacy_finding(finding: dict[str, Any]) -> bool:
+    dependency = str(finding.get("dependency") or "").lower()
+    path = str(finding.get("path") or "").lower()
+    legacy_fallback = finding.get("usage_type") == "fallback" and any(
+        token in dependency or token in path
+        for token in ("legacy", "localstorage", "storage.local", "postgres_fallback")
+    )
     return (
         finding.get("current_authority") in {"localstorage", "filesystem", "mixed"}
-        or finding.get("usage_type") in {"fallback", "sync", "dual_write"}
-        or "storage.local" in str(finding.get("dependency") or "")
+        or finding.get("usage_type") in {"sync", "dual_write"}
+        or legacy_fallback
+        or "storage.local" in dependency
     )
 
 
@@ -158,6 +257,184 @@ def _business_domain(finding: dict[str, Any]) -> str:
         if any(token in text for token in tokens):
             return domain
     return "cross_cutting_governance"
+
+
+def _classification(
+    path: str,
+    findings: list[dict[str, Any]],
+    usage: set[str],
+) -> tuple[str, bool, str]:
+    if path.startswith("tests/"):
+        return "TEST_FIXTURE_ONLY", False, "retain as a non-production fixture or test"
+    if path.startswith("scripts/"):
+        return "DEVELOPMENT_ONLY", False, "retain only as an explicit operator/development command"
+    if path.startswith("web/"):
+        return (
+            "EXPLICIT_COMPATIBILITY",
+            False,
+            "backend Authority is out of Web implementation scope; the client must not enable Legacy writes",
+        )
+    if path in EXPLICIT_IMPORT_FILES:
+        return (
+            "IMPORT_CANDIDATE_ONLY",
+            True,
+            "retain only for frozen read-only import/export; never use as runtime read authority",
+        )
+    if path in EXPLICIT_SELECTOR_FILES:
+        return (
+            "EXPLICIT_COMPATIBILITY",
+            False,
+            "keep behind the explicit legacy command/profile and delete after parity",
+        )
+    if _is_rebuildable_path(path):
+        return (
+            "REBUILDABLE",
+            False,
+            "rebuild from PostgreSQL projections/object receipts; never import as authority",
+        )
+    if path in PRODUCTION_AUTHORITY_FILES or _is_authority_runtime_path(path):
+        evidence = ", ".join(
+            sorted({str(item.get("scan_rule") or "legacy") for item in findings})
+        )
+        return (
+            "LEGACY_PRODUCTION_BLOCKER",
+            True,
+            f"remove or replace the production-reachable Legacy dependency ({evidence})",
+        )
+    if path.startswith("src/novel_forge/"):
+        return (
+            "EXPLICIT_COMPATIBILITY",
+            False,
+            "move entry behind the explicit legacy profile or replace with a native Authority operation",
+        )
+    return "UNCLASSIFIED", False, "classify this evidence before cutover"
+
+
+def _is_authority_runtime_path(path: str) -> bool:
+    prefixes = (
+        "src/novel_forge/modules/book_authority/",
+        "src/novel_forge/modules/book_design_authority/",
+        "src/novel_forge/modules/chapter_authority/",
+        "src/novel_forge/modules/command_kernel/",
+        "src/novel_forge/modules/content_authority/",
+        "src/novel_forge/modules/mkaos_authority/",
+        "src/novel_forge/modules/project_authority/",
+        "src/novel_forge/modules/source_authority/",
+        "src/novel_forge/modules/task_authority/",
+    )
+    return path.startswith(prefixes)
+
+
+def _is_rebuildable_path(path: str) -> bool:
+    lowered = path.lower()
+    return any(
+        token in lowered
+        for token in (
+            "/cache/",
+            "/index/",
+            "projection_sync",
+            "search_index",
+            "vector_index",
+        )
+    )
+
+
+def _read_or_write(*, reads: list[str], writes: list[str]) -> str:
+    if reads and writes:
+        return "READ_WRITE"
+    if writes:
+        return "WRITE"
+    return "READ"
+
+
+def _runtime_configuration_findings(root: Path) -> list[dict[str, Any]]:
+    checks = (
+        (
+            "src/novel_forge/infrastructure/settings.py",
+            'storage_authority: str = "legacy_local"',
+            "IndustrialSettings.storage_authority",
+            "default runtime selects Legacy LocalStorage",
+        ),
+        (
+            "src/novel_forge/infrastructure/settings.py",
+            '"postgresql" if environment == "production" else "legacy_local"',
+            "IndustrialSettings.from_env",
+            "standard development runtime selects Legacy LocalStorage",
+        ),
+        (
+            "src/novel_forge/cli/__init__.py",
+            'settings.storage_authority != "postgresql" and not authority_requested',
+            "novel_forge.cli.main",
+            "standard CLI falls through to the Legacy command surface",
+        ),
+        (
+            "docker-compose.yml",
+            'command: ["python", "-m", "novel_forge.cli", "worker"',
+            "services.worker",
+            "default Compose starts the Legacy Celery worker",
+        ),
+        (
+            "docker-compose.yml",
+            "web:\n",
+            "services.web",
+            "default Compose starts the Legacy/UI plane instead of the backend-only Authority plane",
+        ),
+    )
+    findings: list[dict[str, Any]] = []
+    for path, marker, symbol, reason in checks:
+        candidate = root / path
+        if not candidate.exists():
+            continue
+        source = candidate.read_text(encoding="utf-8")
+        if marker not in source:
+            continue
+        line = source[: source.index(marker)].count("\n") + 1
+        evidence = {
+            "path": path,
+            "line": line,
+            "symbol": symbol,
+            "scan_rule": "runtime_default",
+            "usage_type": "fallback",
+            "reason": reason,
+        }
+        findings.append(
+            {
+                "inventory_id": _stable_id("runtime_default", path, symbol),
+                "domain": "runtime_governance",
+                "file": path,
+                "symbol": [symbol],
+                "entrypoint": [f"runtime:{symbol}"],
+                "read_or_write": "READ_WRITE",
+                "current_authority": ["legacy_localstorage"],
+                "target_authority": {
+                    "kind": "postgresql",
+                    "asset_type": "runtime_configuration",
+                    "operation_definition": "runtime.authority.start",
+                    "repository": "novel_forge.storage.database_runtime",
+                },
+                "production_reachable": True,
+                "migration_strategy": "REPLACE_WITH_AUTHORITY",
+                "status": "LEGACY_PRODUCTION_BLOCKER",
+                "remaining_action": reason,
+                "business_domain": "runtime_governance",
+                "current_entrypoints": [f"runtime:{symbol}"],
+                "current_authority_source": ["legacy_localstorage"],
+                "current_write_points": [f"{path}:{line}:{symbol}"],
+                "current_read_points": [],
+                "target_authority_asset_type": "runtime_configuration",
+                "target_operation_definition": "runtime.authority.start",
+                "target_repository": "novel_forge.storage.database_runtime",
+                "transaction_boundary": "startup validation before accepting work",
+                "idempotency_key": "runtime_role:release_sha",
+                "recovery_strategy": "fail closed; retry PostgreSQL startup without Legacy fallback",
+                "migration_method": "REPLACE_WITH_AUTHORITY",
+                "deletion_condition": "default startup is PostgreSQL Authority and architecture gate passes",
+                "test_requirements": ["architecture: default runtime and Compose are PostgreSQL-only"],
+                "migration_status": "LEGACY_PRODUCTION_BLOCKER",
+                "evidence": [evidence],
+            }
+        )
+    return findings
 
 
 def _aggregate_for_domain(domain: str) -> str:
@@ -238,6 +515,8 @@ def _markdown(payload: dict[str, Any]) -> str:
         f"- Rows: {payload['summary']['inventory_rows']}",
         f"- Findings: {payload['summary']['legacy_findings']}",
         f"- Artifact hash: `{payload['artifact_hash']}`",
+        f"- Legacy production blockers: {payload['summary']['legacy_production_blocker_count']}",
+        f"- Unclassified: {payload['summary']['unclassified_count']}",
         "",
         "| Domain | Entrypoint/file | Current authority | Target asset | Operation | Method | Status |",
         "|---|---|---|---|---|---|---|",
@@ -251,7 +530,7 @@ def _markdown(payload: dict[str, Any]) -> str:
                 target=item["target_authority_asset_type"],
                 operation=item["target_operation_definition"],
                 method=item["migration_method"],
-                status=item["migration_status"],
+                status=item["status"],
             )
         )
     return "\n".join(lines) + "\n"
