@@ -5,6 +5,7 @@ import unittest
 from novel_forge.storage.database_runtime import (
     DatabaseRuntimeConfig,
     TransactionExecutor,
+    authority_role_instances_from_env,
     validate_connection_budget,
 )
 
@@ -62,6 +63,20 @@ class DatabaseRuntimeUnitTests(unittest.TestCase):
                 management_reserve=10,
                 migration_reserve=2,
                 emergency_reserve=5,
+            )
+
+    def test_authority_fleet_instance_budget_is_explicit_and_bounded(self) -> None:
+        instances = authority_role_instances_from_env({})
+        result = validate_connection_budget(
+            instances,
+            postgres_max_connections=100,
+        )
+        self.assertEqual(result["application_max_connections"], 29)
+        self.assertEqual(result["application_capacity"], 83)
+        self.assertTrue(result["within_budget"])
+        with self.assertRaisesRegex(ValueError, "nonnegative"):
+            authority_role_instances_from_env(
+                {"NOVEL_FORGE_DB_CHAPTER_INSTANCES": "-1"}
             )
 
     def test_transient_retry_requires_idempotency_key(self) -> None:

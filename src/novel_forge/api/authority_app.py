@@ -44,8 +44,10 @@ from novel_forge.modules.mkaos_authority import (
 from novel_forge.modules.provider_callback_authority import ProviderCallbackAuthorityService
 from novel_forge.modules.provider_control import ProviderAdapterRegistry
 from novel_forge.storage.database_runtime import (
+    authority_role_instances_from_env,
     close_all_database_runtimes,
     get_database_runtime,
+    validate_connection_budget,
 )
 from novel_forge.storage.migrations import get_migration_status
 
@@ -103,6 +105,13 @@ def create_authority_app(settings: IndustrialSettings):
     if settings.storage_authority != "postgresql":
         raise RuntimeError("authority API requires PostgreSQL storage authority")
     authority_release_identity()
+    role_instances = authority_role_instances_from_env()
+    configured_connection_budget = validate_connection_budget(
+        role_instances,
+        postgres_max_connections=int(
+            os.environ.get("NOVEL_FORGE_POSTGRES_MAX_CONNECTIONS") or "100"
+        ),
+    )
     if settings.authority_runtime_profile == "track-b-minimal":
         return _create_track_b_minimal_app(settings, FastAPI, CORSMiddleware)
     application = build_chapter_authority_application(settings)
@@ -306,11 +315,21 @@ def create_authority_app(settings: IndustrialSettings):
     def readiness_payload() -> dict[str, Any]:
         database_error = ""
         database_health: dict[str, Any] = {}
+        connection_budget: dict[str, Any] = configured_connection_budget
         migration: dict[str, Any] = {"ok": False, "current": ""}
         try:
-            database_health = get_database_runtime(
+            database_runtime = get_database_runtime(
                 settings.database_url, role="api"
-            ).health()
+            )
+            database_health = database_runtime.health()
+            with database_runtime.connection() as connection:
+                postgres_max_connections = int(
+                    connection.execute("SHOW max_connections").fetchone()[0]
+                )
+            connection_budget = validate_connection_budget(
+                role_instances,
+                postgres_max_connections=postgres_max_connections,
+            )
             migration = get_migration_status(settings.database_url)
         except Exception as exc:
             database_error = f"{type(exc).__name__}: {exc}"
@@ -343,6 +362,7 @@ def create_authority_app(settings: IndustrialSettings):
         ready = bool(
             migration.get("ok")
             and database_health.get("status") == "ready"
+            and connection_budget.get("within_budget")
             and object_store_ready
             and provider_status != "BLOCKED"
             and all(definitions.values())
@@ -356,6 +376,7 @@ def create_authority_app(settings: IndustrialSettings):
                 "migration_head": migration.get("current", ""),
                 "migration_chain_current": bool(migration.get("ok")),
                 "pool": database_health,
+                "connection_budget": connection_budget,
                 "error": database_error,
             },
             "object_store": {

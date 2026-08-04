@@ -6,6 +6,7 @@ import unittest
 import yaml
 
 from novel_forge.storage.database_runtime import validate_connection_budget
+from novel_forge.storage.database_runtime import authority_role_instances_from_env
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -77,16 +78,7 @@ class AuthorityComposeContractTests(unittest.TestCase):
 
     def test_compose_connection_budget_fits_postgresql_capacity(self) -> None:
         result = validate_connection_budget(
-            {
-                "api": 1,
-                "chapter": 1,
-                "content": 1,
-                "source": 1,
-                "mkaos": 1,
-                "book": 1,
-                "outbox": 1,
-                "maintenance": 1,
-            },
+            authority_role_instances_from_env({}),
             postgres_max_connections=100,
         )
         self.assertTrue(result["within_budget"])

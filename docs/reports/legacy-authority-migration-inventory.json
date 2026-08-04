@@ -1,7 +1,7 @@
 {
-  "artifact_hash": "sha256:7ee1ebfd41f9b349bc7a79e60d17c7478a8fc4d4a8ad488b86fe9117f2bebe54",
-  "coverage_hash": "sha256:46148eea9407496d3341c0a7a3fd90bd92838d8f74bddfacf3bb90a02c3f7889",
-  "generated_at": "2026-08-04T04:05:37.498819+00:00",
+  "artifact_hash": "sha256:11aed5becfdc06f04773e9ba1c29405d9f22f982a8a1375e70f6360eefc75ae4",
+  "coverage_hash": "sha256:30f6131ddf6baa0b9b1e3054507ec7087df4e4d530beef694c82fe0ee2caecdf",
+  "generated_at": "2026-08-04T04:48:36.970865+00:00",
   "items": [
     {
       "business_domain": "project_workspace",
@@ -43448,7 +43448,7 @@
     }
   ],
   "schema_version": "legacy-authority-migration-inventory.v2",
-  "source_tree_sha": "fcf9437e50f3b60cb37a63a2bd5e5973f8b2edc0",
+  "source_tree_sha": "abdd2157b3f7bf4c97d9828b5775986dacdf222a",
   "summary": {
     "business_domains": [
       "agent_workflow_task",

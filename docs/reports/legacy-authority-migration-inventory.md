@@ -4,7 +4,7 @@
 
 - Rows: 450
 - Findings: 2057
-- Artifact hash: `sha256:7ee1ebfd41f9b349bc7a79e60d17c7478a8fc4d4a8ad488b86fe9117f2bebe54`
+- Artifact hash: `sha256:11aed5becfdc06f04773e9ba1c29405d9f22f982a8a1375e70f6360eefc75ae4`
 - Legacy production blockers: 0
 - Unclassified: 0
 

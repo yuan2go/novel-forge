@@ -13,7 +13,7 @@ import threading
 import time
 from contextlib import contextmanager
 from dataclasses import dataclass, field, fields
-from typing import Any, Callable, Iterator, TypeVar
+from typing import Any, Callable, Iterator, Mapping, TypeVar
 
 
 LOGGER = logging.getLogger(__name__)
@@ -47,6 +47,17 @@ DEFAULT_ROLE_BUDGETS: dict[str, tuple[int, int]] = {
     "maintenance": (0, 2),
     "migration": (0, 1),
     "test": (0, 4),
+}
+
+DEFAULT_AUTHORITY_ROLE_INSTANCES: dict[str, int] = {
+    "api": 1,
+    "chapter": 1,
+    "content": 1,
+    "source": 1,
+    "mkaos": 1,
+    "book": 1,
+    "outbox": 1,
+    "maintenance": 1,
 }
 
 
@@ -480,14 +491,32 @@ def validate_connection_budget(
     return result
 
 
+def authority_role_instances_from_env(
+    env: Mapping[str, str] | None = None,
+) -> dict[str, int]:
+    values = os.environ if env is None else env
+    instances: dict[str, int] = {}
+    for role, default in DEFAULT_AUTHORITY_ROLE_INSTANCES.items():
+        raw = str(
+            values.get(f"NOVEL_FORGE_DB_{role.upper()}_INSTANCES") or default
+        )
+        count = int(raw)
+        if count < 0:
+            raise ValueError(f"database role instance count must be nonnegative: {role}")
+        instances[role] = count
+    return instances
+
+
 __all__ = [
     "ConnectionPoolRegistry",
     "DatabaseRuntime",
     "DatabaseRuntimeConfig",
     "DatabaseRuntimeMetrics",
+    "DEFAULT_AUTHORITY_ROLE_INSTANCES",
     "DEFAULT_ROLE_BUDGETS",
     "TRANSIENT_SQLSTATES",
     "TransactionExecutor",
+    "authority_role_instances_from_env",
     "close_all_database_runtimes",
     "get_database_runtime",
     "validate_connection_budget",
