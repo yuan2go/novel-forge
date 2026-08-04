@@ -239,7 +239,7 @@ def build_inventory(repo_root: str | Path) -> dict[str, Any]:
     payload = {
         "schema_version": SCHEMA_VERSION,
         "generated_at": datetime.now(timezone.utc).isoformat(),
-        "source_tree_sha": coverage["source_tree_sha"],
+        "implementation_tree_sha": coverage["implementation_tree_identity"]["implementation_tree_sha"],
         "coverage_hash": coverage["coverage_hash"],
         "summary": summary,
         "items": rows,

@@ -1,0 +1,130 @@
+{
+  "schema_version": "postgresql-authority-architecture-contract.v1",
+  "contract_id": "postgresql-authority-backend-release-v1",
+  "evidence_model": {
+    "architecture_contract": "stable_checked_in_contract",
+    "implementation_tree_identity": "deterministic_semantic_input_identity",
+    "run_evidence": "github_actions_artifact_bound_to_tested_sha"
+  },
+  "requirements": {
+    "required_modules": [
+      "authority-api",
+      "book-authority",
+      "book-design-authority",
+      "chapter-authority",
+      "command-kernel",
+      "database-runtime",
+      "legacy-migration",
+      "migration-registry",
+      "mkaos-authority",
+      "project-authority",
+      "provider-control",
+      "provider-qualification",
+      "source-authority",
+      "task-authority"
+    ],
+    "required_workers": [
+      "chapter-authority",
+      "content-authority",
+      "source-authority",
+      "mkaos-authority",
+      "book-authority",
+      "outbox-authority",
+      "maintenance-runtime-group"
+    ],
+    "required_migrations": [
+      "20260804_0058_authority_cutover_release_qualification"
+    ],
+    "required_operation_definitions": [
+      "chapter.slice.run",
+      "creative.brief.create",
+      "book.production.run",
+      "book.production.coordinate",
+      "asset.create",
+      "external_effect.reconcile",
+      "canon.change.approve"
+    ],
+    "forbidden_dependencies": {
+      "domain": [
+        "fastapi",
+        "novel_forge.api",
+        "novel_forge.storage",
+        "openai",
+        "anthropic",
+        "httpx",
+        "requests",
+        "subprocess",
+        "celery"
+      ],
+      "production": [
+        "novel_forge.storage.local",
+        "novel_forge.api.legacy_app"
+      ]
+    },
+    "forbidden_production_reachable_paths": [
+      "src/novel_forge/storage/local.py",
+      "src/novel_forge/workers/runtime.py",
+      "src/novel_forge/workers/legacy_tasks.py",
+      "src/novel_forge/api/legacy_app.py",
+      "src/novel_forge/api/services/postgres_fallback_policy.py"
+    ],
+    "required_test_modules": [
+      "tests/architecture/test_head_integrity.py",
+      "tests/integration/test_authority_migrations_postgres.py",
+      "tests/integration/test_authority_schema_postgres.py",
+      "tests/integration/test_authority_legacy_migration_postgres.py",
+      "tests/integration/test_book_to_chapter_authority_vertical_postgres.py",
+      "tests/integration/test_source_document_authority_postgres.py",
+      "tests/integration/test_mkaos_authority_postgres.py",
+      "tests/integration/test_authority_book_design_postgres.py"
+    ],
+    "required_schema_and_index_rules": [
+      {
+        "path": "tests/integration/test_authority_schema_postgres.py",
+        "token": "LATEST_MIGRATION_ID"
+      },
+      {
+        "path": "tests/integration/test_authority_migrations_postgres.py",
+        "token": "nf_schema_migrations"
+      },
+      {
+        "path": "scripts/qualify_authority_query_plans.py",
+        "token": "EXPLAIN"
+      }
+    ]
+  },
+  "thresholds": {
+    "coverage_summary_max": {
+      "dual_write": 0,
+      "unmapped_side_effects": 0
+    },
+    "minimum_mapped_side_effect_ratio": 1.0,
+    "maximum_false_positive_sample_rate": 0.05,
+    "minimum_test_counts": {
+      "architecture": 75,
+      "unit": 1191,
+      "acceptance": 2,
+      "integration": 250
+    },
+    "minimum_module_count": 14,
+    "minimum_worker_count": 7,
+    "minimum_migration_count": 58,
+    "maximum_forbidden_production_reachable_paths": 0
+  },
+  "run_evidence_contract": {
+    "storage": "github_actions_artifact",
+    "must_bind_tested_repository_sha": true,
+    "required_artifact_classes": [
+      "coverage_manifest",
+      "test_result",
+      "migration_result",
+      "compose_evidence",
+      "query_plan_evidence",
+      "worker_fleet_evidence",
+      "docker_image_digest",
+      "environment_metadata"
+    ],
+    "checked_in_run_ids_forbidden": true,
+    "checked_in_remote_status_forbidden": true
+  }
+}

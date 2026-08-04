@@ -5,11 +5,16 @@ import ast
 import hashlib
 import json
 import os
+import platform
 import subprocess
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable
+
+from novel_forge.tools.implementation_tree_identity import (
+    build_implementation_tree_identity,
+)
 
 GENERATOR_VERSION = "2.1.0"
 SCAN_RULE_VERSION = "receiver-aware-v2"
@@ -347,9 +352,10 @@ def write_operation_catalog(
     payload = {
         "schema_version": "2.0.0",
         "commit_sha": manifest["commit_sha"],
+        "tested_repository_sha": manifest["tested_repository_sha"],
         "repository_head_at_generation": manifest["repository_head_at_generation"],
         "binding_semantics": manifest["binding_semantics"],
-        "source_tree_sha": manifest["source_tree_sha"],
+        "implementation_tree_sha": manifest["implementation_tree_identity"]["implementation_tree_sha"],
         "generator_version": GENERATOR_VERSION,
         "definitions": catalog,
     }
@@ -519,9 +525,10 @@ def write_legacy_actions(manifest: dict[str, Any], output: str | Path) -> dict[s
     payload = {
         "schema_version": "2.0.0",
         "commit_sha": manifest["commit_sha"],
+        "tested_repository_sha": manifest["tested_repository_sha"],
         "repository_head_at_generation": manifest["repository_head_at_generation"],
         "binding_semantics": manifest["binding_semantics"],
-        "source_tree_sha": manifest["source_tree_sha"],
+        "implementation_tree_sha": manifest["implementation_tree_identity"]["implementation_tree_sha"],
         "baseline_hash": manifest["artifact_hash"],
         "actions": actions,
     }
@@ -536,6 +543,18 @@ def write_legacy_actions(manifest: dict[str, Any], output: str | Path) -> dict[s
 def build_manifest(repo_root: str | Path, *, generated_at: str | None = None) -> dict[str, Any]:
     root = Path(repo_root).resolve()
     paths = sorted((root / "src" / "novel_forge").rglob("*.py"))
+    implementation_tree_identity = build_implementation_tree_identity(root)
+    tested_repository_sha = _git_value(root, "HEAD")
+    contract_path = root / "architecture/manifests/postgresql-authority-contract.json"
+    architecture_contract_id = "unbound-development-contract"
+    if contract_path.is_file():
+        try:
+            contract_payload = json.loads(contract_path.read_text(encoding="utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise ValueError(f"invalid architecture contract: {contract_path}") from exc
+        architecture_contract_id = str(contract_payload.get("contract_id") or "")
+        if not architecture_contract_id:
+            raise ValueError("architecture contract id is required")
     findings = [finding for path in paths for finding in _scan_file(root, path)]
     findings.sort(
         key=lambda item: (
@@ -548,11 +567,25 @@ def build_manifest(repo_root: str | Path, *, generated_at: str | None = None) ->
     counts = Counter(item["usage_type"] for item in findings)
     side_effects = [item for item in findings if item["side_effect"]]
     payload = {
-        "schema_version": "2.0.0",
-        "commit_sha": _source_commit_sha(root),
-        "repository_head_at_generation": _git_value(root, "HEAD"),
-        "binding_semantics": "latest-commit-affecting-src/novel_forge-plus-working-tree-hash-v1",
-        "source_tree_sha": _source_tree_sha(root, paths),
+        "schema_version": "postgresql-authority-run-evidence.v1",
+        "evidence_class": "dynamic_run_evidence",
+        "architecture_contract_id": architecture_contract_id,
+        "commit_sha": tested_repository_sha,
+        "tested_repository_sha": tested_repository_sha,
+        "repository_head_at_generation": tested_repository_sha,
+        "binding_semantics": "github-sha-plus-deterministic-implementation-tree-v1",
+        "implementation_tree_identity": implementation_tree_identity,
+        "environment_metadata": {
+            "python_version": platform.python_version(),
+            "python_implementation": platform.python_implementation(),
+            "platform_system": platform.system(),
+            "ci": os.environ.get("CI", "").lower() == "true",
+            "github_sha": os.environ.get("GITHUB_SHA", ""),
+            "github_run_id": os.environ.get("GITHUB_RUN_ID", ""),
+            "github_workflow": os.environ.get("GITHUB_WORKFLOW", ""),
+            "github_job": os.environ.get("GITHUB_JOB", ""),
+            "runner_os": os.environ.get("RUNNER_OS", ""),
+        },
         "generator_version": GENERATOR_VERSION,
         "generated_at": generated_at or datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
         "scan_rule_version": SCAN_RULE_VERSION,
@@ -593,26 +626,43 @@ def write_manifest(
     return manifest
 
 
-def validate_head_binding(manifest: dict[str, Any], repo_root: str | Path) -> None:
-    """Fail unless an artifact is bound to the current authoritative source snapshot.
+def attach_contract_validation(
+    manifest: dict[str, Any], repo_root: str | Path
+) -> dict[str, Any]:
+    """Attach machine-readable stable-contract validation to a run artifact."""
+    from novel_forge.tools.authority_architecture_contract import (
+        load_contract,
+        validate_contract,
+    )
 
-    Binding to the latest commit affecting ``src/novel_forge`` avoids the impossible
-    self-reference created when committing the generated evidence in a later docs-only
-    commit. The working-tree hash still fails closed for any committed or uncommitted
-    source drift.
-    """
+    payload = dict(manifest)
+    payload["architecture_contract_validation"] = validate_contract(
+        load_contract(repo_root), payload, repo_root
+    )
+    payload["artifact_hash"] = _hash(payload)
+    return payload
+
+
+def validate_head_binding(manifest: dict[str, Any], repo_root: str | Path) -> None:
+    """Fail unless dynamic run evidence binds the checkout and semantic file tree."""
     root = Path(repo_root).resolve()
-    paths = sorted((root / "src" / "novel_forge").rglob("*.py"))
-    commit_sha = _source_commit_sha(root)
-    source_tree_sha = _source_tree_sha(root, paths)
-    if manifest.get("commit_sha") != commit_sha:
+    tested_repository_sha = _git_value(root, "HEAD")
+    current_identity = build_implementation_tree_identity(root)
+    if manifest.get("tested_repository_sha") != tested_repository_sha:
         raise RuntimeError(
-            f"authority baseline commit mismatch: {manifest.get('commit_sha')} != {commit_sha}"
+            "authority run evidence repository SHA mismatch: "
+            f"{manifest.get('tested_repository_sha')} != {tested_repository_sha}"
         )
-    if manifest.get("source_tree_sha") != source_tree_sha:
+    workflow_sha = os.environ.get("GITHUB_SHA", "")
+    if workflow_sha and workflow_sha != tested_repository_sha:
         raise RuntimeError(
-            "authority baseline source tree mismatch: "
-            f"{manifest.get('source_tree_sha')} != {source_tree_sha}"
+            f"workflow SHA mismatch: {workflow_sha} != {tested_repository_sha}"
+        )
+    if manifest.get("implementation_tree_identity") != current_identity:
+        raise RuntimeError(
+            "authority run evidence implementation tree mismatch: "
+            f"{manifest.get('implementation_tree_identity', {}).get('implementation_tree_sha')} "
+            f"!= {current_identity['implementation_tree_sha']}"
         )
 
 
@@ -1241,7 +1291,8 @@ def _coverage_hash(payload: dict[str, Any]) -> str:
         "generator_version": payload["generator_version"],
         "scan_rule_version": payload["scan_rule_version"],
         "scan_rules": payload["scan_rules"],
-        "source_tree_sha": payload["source_tree_sha"],
+        "architecture_contract_id": payload["architecture_contract_id"],
+        "implementation_tree_sha": payload["implementation_tree_identity"]["implementation_tree_sha"],
         "file_count": payload["file_count"],
         "finding_count": payload["finding_count"],
         "summary": payload["summary"],
@@ -1249,60 +1300,6 @@ def _coverage_hash(payload: dict[str, Any]) -> str:
         "findings": payload["findings"],
     }
     return _hash(coverage)
-
-
-def _source_tree_sha(root: Path, paths: list[Path]) -> str:
-    source = root / "src"
-    try:
-        output = subprocess.check_output(
-            ["git", "ls-files", "-z", "--cached", "--others", "--exclude-standard", "src"],
-            cwd=root,
-            stderr=subprocess.DEVNULL,
-        )
-        selected = [root / value.decode() for value in output.split(b"\0") if value]
-    except (OSError, subprocess.CalledProcessError):
-        selected = paths
-    return _git_tree_hash(source, selected)
-
-
-def _git_tree_hash(directory: Path, paths: list[Path]) -> str:
-    """Calculate the Git tree object id from working-tree bytes without mutating .git."""
-    if not directory.exists():
-        digest = hashlib.sha1(b"tree 0\0")
-        return digest.hexdigest()
-
-    def blob_hash(path: Path) -> bytes:
-        data = os.readlink(path).encode() if path.is_symlink() else path.read_bytes()
-        return hashlib.sha1(b"blob " + str(len(data)).encode() + b"\0" + data).digest()
-
-    selected = {path.resolve() for path in paths}
-
-    def tree_hash(current: Path) -> bytes:
-        entries: list[bytes] = []
-        for child in sorted(current.iterdir(), key=lambda item: item.name.encode()):
-            resolved = child.resolve()
-            if child.name == "__pycache__" or (
-                child.is_dir()
-                and not child.is_symlink()
-                and not any(path == resolved or resolved in path.parents for path in selected)
-            ):
-                continue
-            if child.is_dir() and not child.is_symlink():
-                object_hash = tree_hash(child)
-                mode = b"40000"
-            elif child.is_symlink() and resolved in selected:
-                object_hash = blob_hash(child)
-                mode = b"120000"
-            elif child.is_file() and resolved in selected:
-                object_hash = blob_hash(child)
-                mode = b"100755" if os.access(child, os.X_OK) else b"100644"
-            else:
-                continue
-            entries.append(mode + b" " + child.name.encode() + b"\0" + object_hash)
-        body = b"".join(entries)
-        return hashlib.sha1(b"tree " + str(len(body)).encode() + b"\0" + body).digest()
-
-    return tree_hash(directory).hex()
 
 
 def _git_value(root: Path, revision: str) -> str:
@@ -1317,18 +1314,6 @@ def _git_value(root: Path, revision: str) -> str:
         return "unknown"
 
 
-def _source_commit_sha(root: Path) -> str:
-    try:
-        return subprocess.check_output(
-            ["git", "log", "-1", "--format=%H", "--", "src/novel_forge"],
-            cwd=root,
-            text=True,
-            stderr=subprocess.DEVNULL,
-        ).strip() or "unknown"
-    except (OSError, subprocess.CalledProcessError):
-        return "unknown"
-
-
 if __name__ == "__main__":
     import argparse
 
@@ -1336,7 +1321,20 @@ if __name__ == "__main__":
     parser.add_argument("--repo-root", default=".")
     parser.add_argument("--output", required=True)
     parser.add_argument("--check-head", action="store_true")
+    parser.add_argument("--check-contract", action="store_true")
     arguments = parser.parse_args()
     generated = write_manifest(arguments.repo_root, arguments.output)
     if arguments.check_head:
         validate_head_binding(generated, arguments.repo_root)
+    if arguments.check_contract:
+        generated = attach_contract_validation(generated, arguments.repo_root)
+        Path(arguments.output).write_text(
+            json.dumps(generated, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        validation = generated["architecture_contract_validation"]
+        if validation["status"] != "PASS":
+            raise RuntimeError(
+                "PostgreSQL Authority architecture contract failed: "
+                + "; ".join(validation["errors"])
+            )

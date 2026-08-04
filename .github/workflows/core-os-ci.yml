@@ -250,7 +250,8 @@ jobs:
           python -m novel_forge.tools.authority_coverage_manifest \
             --repo-root . \
             --output /tmp/postgresql-authority-coverage-${GITHUB_SHA}.json \
-            --check-head
+            --check-head \
+            --check-contract
           python -m unittest tests.architecture.test_authority_coverage_baseline
           python -m unittest tests.unit.test_authority_coverage_manifest
       - uses: actions/upload-artifact@v4

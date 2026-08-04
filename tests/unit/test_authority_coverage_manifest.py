@@ -18,6 +18,9 @@ class AuthorityCoverageManifestTests(unittest.TestCase):
             first = build_manifest(root, generated_at="2026-07-12T00:00:00+00:00")
             second = build_manifest(root, generated_at="2026-07-12T00:00:00+00:00")
             self.assertEqual(first, second)
+            self.assertEqual(first["schema_version"], "postgresql-authority-run-evidence.v1")
+            self.assertEqual(first["evidence_class"], "dynamic_run_evidence")
+            self.assertIn("implementation_tree_identity", first)
             self.assertEqual(first["summary"]["authority_write"], 1)
             self.assertEqual(
                 first["findings"][-1]["dependency"],

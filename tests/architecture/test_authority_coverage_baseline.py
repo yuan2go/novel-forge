@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import unittest
 from pathlib import Path
 
@@ -9,29 +8,51 @@ from novel_forge.tools.authority_coverage_manifest import (
     operation_catalog,
     validate_head_binding,
 )
+from novel_forge.tools.authority_architecture_contract import (
+    load_contract,
+    validate_contract,
+)
+from novel_forge.tools.implementation_tree_identity import (
+    build_implementation_tree_identity,
+)
 
 
 class AuthorityCoverageBaselineTests(unittest.TestCase):
-    def test_checked_in_baseline_matches_current_head_scan(self) -> None:
+    def test_stable_contract_accepts_current_implementation(self) -> None:
         root = Path(__file__).resolve().parents[2]
-        baseline = json.loads((root / "docs/reports/postgresql-authority-coverage-baseline.json").read_text(encoding="utf-8"))
-        current = build_manifest(root, generated_at=baseline["generated_at"])
+        contract = load_contract(root)
+        current = build_manifest(root, generated_at="2026-08-04T00:00:00+00:00")
         validate_head_binding(current, root)
-        self.assertIn("commit_sha", baseline)
+        report = validate_contract(contract, current, root)
+        self.assertEqual(report["status"], "PASS", report)
         self.assertEqual(
-            baseline["binding_semantics"],
-            "latest-commit-affecting-src/novel_forge-plus-working-tree-hash-v1",
+            current["implementation_tree_identity"],
+            build_implementation_tree_identity(root),
         )
-        self.assertIn("source_tree_sha", baseline)
-        self.assertIn("scan_rule_version", baseline)
-        self.assertEqual(current["source_tree_sha"], baseline["source_tree_sha"])
-        self.assertEqual(current["coverage_hash"], baseline["coverage_hash"])
+        self.assertNotIn("implementation_tree_sha", contract)
+        self.assertNotIn("commit_sha", contract)
+        self.assertNotIn("generated_at", contract)
+
+    def test_contract_and_dynamic_run_evidence_have_distinct_semantics(self) -> None:
+        root = Path(__file__).resolve().parents[2]
+        contract = load_contract(root)
+        current = build_manifest(root, generated_at="2026-08-04T00:00:00+00:00")
+        self.assertEqual(
+            contract["schema_version"],
+            "postgresql-authority-architecture-contract.v1",
+        )
+        self.assertEqual(current["schema_version"], "postgresql-authority-run-evidence.v1")
+        self.assertEqual(current["evidence_class"], "dynamic_run_evidence")
+        self.assertEqual(current["architecture_contract_id"], contract["contract_id"])
+        self.assertEqual(
+            current["tested_repository_sha"], current["repository_head_at_generation"]
+        )
 
     def test_side_effect_coverage_is_fully_owned_and_mapped(self) -> None:
         root = Path(__file__).resolve().parents[2]
-        baseline = json.loads((root / "docs/reports/postgresql-authority-coverage-baseline.json").read_text(encoding="utf-8"))
-        side_effects = [item for item in baseline["findings"] if item["side_effect"]]
-        definitions = {item["name"] for item in operation_catalog(baseline["findings"])}
+        current = build_manifest(root, generated_at="2026-08-04T00:00:00+00:00")
+        side_effects = [item for item in current["findings"] if item["side_effect"]]
+        definitions = {item["name"] for item in operation_catalog(current["findings"])}
         self.assertFalse([item for item in side_effects if not item["qualified_symbol"]])
         self.assertFalse([item for item in side_effects if not item["legacy_action"]])
         self.assertFalse([item for item in side_effects if not item["target_operation_definition"]])
@@ -41,7 +62,7 @@ class AuthorityCoverageBaselineTests(unittest.TestCase):
         self.assertFalse(
             [
                 item
-                for item in baseline["findings"]
+                for item in current["findings"]
                 if item["current_authority"] == "localstorage"
                 and not item["path"].startswith("tests/")
                 and item["legacy_action"] == "retain"
@@ -50,10 +71,10 @@ class AuthorityCoverageBaselineTests(unittest.TestCase):
 
     def test_external_effect_population_has_no_known_receiver_false_positives(self) -> None:
         root = Path(__file__).resolve().parents[2]
-        baseline = json.loads((root / "docs/reports/postgresql-authority-coverage-baseline.json").read_text(encoding="utf-8"))
-        effects = [item for item in baseline["findings"] if item["usage_type"] == "external_effect"]
+        current = build_manifest(root, generated_at="2026-08-04T00:00:00+00:00")
+        effects = [item for item in current["findings"] if item["usage_type"] == "external_effect"]
         forbidden = ("fastapi.", ".get", "mock", "fixture", "local_rules")
         self.assertFalse(
             [item for item in effects if any(token in item["called_symbol"].lower() for token in forbidden)]
         )
-        self.assertLessEqual(baseline["quality_metrics"]["false_positive_sample_rate"], 0.05)
+        self.assertLessEqual(current["quality_metrics"]["false_positive_sample_rate"], 0.05)
