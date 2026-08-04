@@ -27,6 +27,11 @@ from novel_forge.modules.legacy_migration.scanner import (
     LegacySnapshotRecord,
     scan_legacy_snapshot,
 )
+from novel_forge.modules.legacy_migration.references import (
+    cyclic_dependency_nodes,
+    relation_supported,
+    topological_activation_order,
+)
 from novel_forge.modules.legacy_migration.state_machine import (
     MigrationArchivalState,
     MigrationCompletionFacts,
@@ -281,7 +286,10 @@ class LegacyMigrationService:
                         source_asset_type=record.source_asset_type,
                         stable_business_key=record.stable_business_key,
                         payload=dict(record.payload or {}),
-                        references=record.references,
+                        references=tuple(
+                            reference.to_contract()
+                            for reference in record.references
+                        ),
                     )
                 )
                 self._upsert_item(
@@ -484,6 +492,7 @@ class LegacyMigrationService:
             context,
             expected_item_version=expected_item_version,
         )
+        self._require_domain_dependencies_activated(context)
         context = replace(
             context,
             migration_validation_id=str(
@@ -594,6 +603,173 @@ class LegacyMigrationService:
             "item_version": expected_item_version + 2,
             "evidence": result.evidence,
         }
+
+    def _quarantine_dependency_cycles(
+        self,
+        run_id: str,
+        records_by_item: dict[str, LegacySnapshotRecord],
+    ) -> None:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT migration_item_id
+                FROM authority_legacy_migration_item
+                WHERE migration_run_id=%s
+                  AND target_materialization_level='DOMAIN_NATIVE'
+                  AND status NOT IN ('QUARANTINED','INELIGIBLE','FAILED')
+                """,
+                [run_id],
+            )
+            nodes = tuple(str(row[0]) for row in uow.cursor.fetchall())
+            uow.cursor.execute(
+                """
+                SELECT source_item_id, target_item_id
+                FROM authority_legacy_migration_reference
+                WHERE migration_run_id=%s AND resolution_status='RESOLVED'
+                  AND target_item_id IS NOT NULL
+                """,
+                [run_id],
+            )
+            dependencies: dict[str, list[str]] = {}
+            for source_item_id, target_item_id in uow.cursor.fetchall():
+                dependencies.setdefault(str(source_item_id), []).append(
+                    str(target_item_id)
+                )
+            cycle_nodes = cyclic_dependency_nodes(
+                nodes=nodes,
+                dependencies=dependencies,
+            )
+            if not cycle_nodes:
+                return
+            uow.cursor.execute(
+                """
+                UPDATE authority_legacy_migration_reference
+                SET resolution_status='CONFLICT',
+                    evidence=evidence || %s, updated_at=NOW()
+                WHERE migration_run_id=%s
+                  AND source_item_id=ANY(%s)
+                  AND target_item_id=ANY(%s)
+                """,
+                [
+                    Jsonb(
+                        {
+                            "error_code": "MIGRATION_DEPENDENCY_CYCLE",
+                            "cycle_item_ids": sorted(cycle_nodes),
+                        }
+                    ),
+                    run_id,
+                    list(cycle_nodes),
+                    list(cycle_nodes),
+                ],
+            )
+            uow.cursor.execute(
+                """
+                UPDATE authority_legacy_migration_item
+                SET status='QUARANTINED', decision='QUARANTINE',
+                    error_code='MIGRATION_DEPENDENCY_CYCLE',
+                    error_detail='Domain activation dependency graph contains a cycle',
+                    reference_state='CONFLICT',
+                    archival_state='REFERENCES_PENDING', updated_at=NOW()
+                WHERE migration_run_id=%s AND migration_item_id=ANY(%s)
+                """,
+                [run_id, list(cycle_nodes)],
+            )
+            uow.commit()
+        for item_id in cycle_nodes:
+            record = records_by_item.get(item_id)
+            if record is None:
+                continue
+            failed_record = _with_error(
+                record,
+                "MIGRATION_DEPENDENCY_CYCLE",
+                "Domain activation dependency graph contains a cycle",
+            )
+            self._quarantine(run_id, failed_record)
+            self._quarantine_or_reconcile_phase(run_id, failed_record)
+
+    def domain_activation_order(self, migration_run_id: str) -> list[str]:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT migration_item_id
+                FROM authority_legacy_migration_item
+                WHERE migration_run_id=%s
+                  AND target_materialization_level='DOMAIN_NATIVE'
+                  AND status NOT IN ('QUARANTINED','INELIGIBLE','FAILED')
+                ORDER BY migration_item_id
+                """,
+                [migration_run_id],
+            )
+            nodes = tuple(str(row[0]) for row in uow.cursor.fetchall())
+            uow.cursor.execute(
+                """
+                SELECT source_item_id, target_item_id
+                FROM authority_legacy_migration_reference
+                WHERE migration_run_id=%s AND resolution_status='RESOLVED'
+                  AND target_item_id IS NOT NULL
+                ORDER BY source_item_id, reference_ordinal
+                """,
+                [migration_run_id],
+            )
+            dependencies: dict[str, list[str]] = {}
+            for source_item_id, target_item_id in uow.cursor.fetchall():
+                dependencies.setdefault(str(source_item_id), []).append(
+                    str(target_item_id)
+                )
+        try:
+            return topological_activation_order(
+                nodes=nodes,
+                dependencies=dependencies,
+            )
+        except ValueError as exc:
+            raise KernelError(
+                "MIGRATION_DEPENDENCY_CYCLE",
+                str(exc),
+            ) from exc
+
+    def _require_domain_dependencies_activated(
+        self, context: DomainMigrationContext
+    ) -> None:
+        order = self.domain_activation_order(context.migration_run_id)
+        if context.migration_item_id not in order:
+            raise KernelError(
+                "MIGRATION_ACTIVATION_PLAN_CONFLICT",
+                "migration item is absent from the domain activation graph",
+            )
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT target.migration_item_id, target.source_asset_type,
+                       target.target_materialization_level,
+                       target.materialization_level, target.domain_state
+                FROM authority_legacy_migration_reference AS reference
+                JOIN authority_legacy_migration_item AS target
+                  ON target.migration_item_id=reference.target_item_id
+                WHERE reference.source_item_id=%s
+                  AND reference.resolution_status='RESOLVED'
+                  AND NOT reference.optional
+                ORDER BY reference.reference_ordinal
+                """,
+                [context.migration_item_id],
+            )
+            dependencies = list(uow.cursor.fetchall())
+        for item_id, source_type, target_level, materialization_level, state in dependencies:
+            if (
+                str(target_level) == MigrationMaterializationLevel.DOMAIN_NATIVE.value
+                and (
+                    str(materialization_level)
+                    != MigrationMaterializationLevel.DOMAIN_NATIVE.value
+                    or str(state)
+                    not in {
+                        MigrationDomainState.DOMAIN_ACTIVATED.value,
+                        MigrationDomainState.DOMAIN_RECONCILED.value,
+                    }
+                )
+            ):
+                raise KernelError(
+                    "MIGRATION_DEPENDENCY_NOT_ACTIVATED",
+                    f"{source_type} dependency {item_id} is not Domain Activated",
+                )
 
     def _require_activation_validation(
         self,
@@ -2078,27 +2254,48 @@ class LegacyMigrationService:
     ) -> None:
         item_id = _stable_id("migration-item", run_id, record.source_ref)
         with AuthorityUnitOfWork(self.database_url) as uow:
-            for ordinal, business_key in enumerate(record.references):
+            for reference in record.references:
                 uow.cursor.execute(
                     """
                     INSERT INTO authority_legacy_migration_reference(
                         migration_reference_id, migration_run_id,
                         source_item_id, reference_ordinal,
                         legacy_business_key, relation_type, optional,
-                        resolution_status, evidence
-                    ) VALUES (%s, %s, %s, %s, %s,
-                              'LEGACY_REFERENCE', FALSE, 'UNRESOLVED', %s)
+                        expected_source_type, expected_target_asset_type,
+                        expected_content_hash, cardinality,
+                        compatibility_evidence, resolution_status, evidence
+                    ) VALUES (
+                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                        %s, 'UNRESOLVED', %s
+                    )
                     ON CONFLICT (
                         migration_run_id, source_item_id, reference_ordinal
                     ) DO NOTHING
                     """,
                     [
-                        _stable_id("migration-reference", run_id, item_id, str(ordinal)),
+                        _stable_id(
+                            "migration-reference",
+                            run_id,
+                            item_id,
+                            str(reference.ordinal),
+                        ),
                         run_id,
                         item_id,
-                        ordinal,
-                        business_key,
-                        Jsonb({"source_ref": record.source_ref}),
+                        reference.ordinal,
+                        reference.business_key,
+                        reference.relation_type.value,
+                        reference.optional,
+                        reference.expected_source_type,
+                        reference.expected_target_asset_type,
+                        reference.expected_content_hash,
+                        reference.cardinality,
+                        Jsonb(reference.compatibility_evidence),
+                        Jsonb(
+                            {
+                                "source_ref": record.source_ref,
+                                "reference_contract": reference.to_contract(),
+                            }
+                        ),
                     ],
                 )
             uow.commit()
@@ -2118,7 +2315,13 @@ class LegacyMigrationService:
                 SELECT reference.migration_reference_id,
                        reference.source_item_id,
                        reference.legacy_business_key,
-                       source.project_id
+                       source.project_id, source.workspace_id,
+                       source.source_asset_type,
+                       reference.relation_type, reference.optional,
+                       reference.expected_source_type,
+                       reference.expected_target_asset_type,
+                       reference.expected_content_hash,
+                       reference.cardinality
                 FROM authority_legacy_migration_reference AS reference
                 JOIN authority_legacy_migration_item AS source
                   ON source.migration_item_id=reference.source_item_id
@@ -2129,12 +2332,27 @@ class LegacyMigrationService:
                 [run_id],
             )
             unresolved = list(uow.cursor.fetchall())
-        for reference_id, source_item_id, business_key, source_project_id in unresolved:
+        for (
+            reference_id,
+            source_item_id,
+            business_key,
+            source_project_id,
+            source_workspace_id,
+            source_type,
+            relation_type,
+            optional,
+            expected_source_type,
+            expected_target_asset_type,
+            expected_content_hash,
+            cardinality,
+        ) in unresolved:
             with AuthorityUnitOfWork(self.database_url) as uow:
                 uow.cursor.execute(
                     """
                     SELECT migration_item_id, project_id, target_asset_id,
-                           target_asset_version_id, domain_projection_id
+                           target_asset_version_id, domain_projection_id,
+                           workspace_id, source_asset_type, target_asset_type,
+                           target_content_hash
                     FROM authority_legacy_migration_item
                     WHERE migration_run_id=%s AND stable_business_key=%s
                       AND target_asset_version_id IS NOT NULL
@@ -2147,17 +2365,47 @@ class LegacyMigrationService:
                 status = MigrationReferenceStatus.RESOLVED
                 error_code = ""
                 if len(targets) != 1:
-                    status = (
-                        MigrationReferenceStatus.CONFLICT
-                        if len(targets) > 1
-                        else MigrationReferenceStatus.QUARANTINED
-                    )
-                    error_code = (
-                        "AMBIGUOUS_REFERENCE" if len(targets) > 1 else "MISSING_REFERENCE"
-                    )
+                    if len(targets) == 0 and bool(optional):
+                        status = MigrationReferenceStatus.OPTIONAL_MISSING
+                        error_code = "OPTIONAL_REFERENCE_MISSING"
+                    else:
+                        status = (
+                            MigrationReferenceStatus.CONFLICT
+                            if len(targets) > 1
+                            else MigrationReferenceStatus.QUARANTINED
+                        )
+                        error_code = (
+                            "AMBIGUOUS_REFERENCE"
+                            if len(targets) > 1
+                            else "MISSING_REFERENCE"
+                        )
                 elif str(targets[0][1]) != str(source_project_id):
                     status = MigrationReferenceStatus.QUARANTINED
                     error_code = "CROSS_PROJECT_REFERENCE"
+                elif str(targets[0][5]) != str(source_workspace_id):
+                    status = MigrationReferenceStatus.QUARANTINED
+                    error_code = "CROSS_WORKSPACE_REFERENCE"
+                elif not relation_supported(str(source_type), relation_type):
+                    status = MigrationReferenceStatus.QUARANTINED
+                    error_code = "UNSUPPORTED_RELATION_TYPE"
+                elif expected_source_type and str(targets[0][6]) != str(
+                    expected_source_type
+                ):
+                    status = MigrationReferenceStatus.CONFLICT
+                    error_code = "REFERENCE_SOURCE_TYPE_MISMATCH"
+                elif expected_target_asset_type and str(targets[0][7]) != str(
+                    expected_target_asset_type
+                ):
+                    status = MigrationReferenceStatus.CONFLICT
+                    error_code = "REFERENCE_TARGET_TYPE_MISMATCH"
+                elif expected_content_hash and str(targets[0][8]) != str(
+                    expected_content_hash
+                ):
+                    status = MigrationReferenceStatus.CONFLICT
+                    error_code = "REFERENCE_CONTENT_HASH_MISMATCH"
+                elif str(cardinality) == "ONE" and len(targets) != 1:
+                    status = MigrationReferenceStatus.CONFLICT
+                    error_code = "REFERENCE_CARDINALITY_CONFLICT"
                 if status is MigrationReferenceStatus.RESOLVED:
                     target = targets[0]
                     uow.cursor.execute(
@@ -2176,7 +2424,28 @@ class LegacyMigrationService:
                             target[2],
                             target[3],
                             str(target[4] or ""),
-                            Jsonb({"resolved_business_key": business_key}),
+                            Jsonb(
+                                {
+                                    "resolved_business_key": business_key,
+                                    "project_scope_match": True,
+                                    "workspace_scope_match": True,
+                                    "source_type_match": (
+                                        not expected_source_type
+                                        or str(target[6]) == str(expected_source_type)
+                                    ),
+                                    "target_type_match": (
+                                        not expected_target_asset_type
+                                        or str(target[7])
+                                        == str(expected_target_asset_type)
+                                    ),
+                                    "content_hash_match": (
+                                        not expected_content_hash
+                                        or str(target[8])
+                                        == str(expected_content_hash)
+                                    ),
+                                    "cardinality": cardinality,
+                                }
+                            ),
                             reference_id,
                         ],
                     )
@@ -2191,24 +2460,28 @@ class LegacyMigrationService:
                         """,
                         [status.value, Jsonb({"error_code": error_code}), reference_id],
                     )
-                    uow.cursor.execute(
-                        """
-                        UPDATE authority_legacy_migration_item
-                        SET status='QUARANTINED', decision='QUARANTINE',
-                            error_code=%s, reference_state=%s,
-                            archival_state='REFERENCES_PENDING',
-                            error_detail=%s, updated_at=NOW()
-                        WHERE migration_item_id=%s
-                        """,
-                        [
-                            error_code,
-                            status.value,
-                            f"reference resolution failed: {business_key}",
-                            source_item_id,
-                        ],
-                    )
+                    if status is not MigrationReferenceStatus.OPTIONAL_MISSING:
+                        uow.cursor.execute(
+                            """
+                            UPDATE authority_legacy_migration_item
+                            SET status='QUARANTINED', decision='QUARANTINE',
+                                error_code=%s, reference_state=%s,
+                                archival_state='REFERENCES_PENDING',
+                                error_detail=%s, updated_at=NOW()
+                            WHERE migration_item_id=%s
+                            """,
+                            [
+                                error_code,
+                                status.value,
+                                f"reference resolution failed: {business_key}",
+                                source_item_id,
+                            ],
+                        )
                 uow.commit()
-            if status is not MigrationReferenceStatus.RESOLVED:
+            if status not in {
+                MigrationReferenceStatus.RESOLVED,
+                MigrationReferenceStatus.OPTIONAL_MISSING,
+            }:
                 record = records_by_item.get(str(source_item_id))
                 if record is not None:
                     failed_record = _with_error(
@@ -2247,6 +2520,7 @@ class LegacyMigrationService:
                 [run_id],
             )
             uow.commit()
+        self._quarantine_dependency_cycles(run_id, records_by_item)
 
     def _failed_count(self, run_id: str) -> int:
         with AuthorityUnitOfWork(self.database_url) as uow:

@@ -61,6 +61,7 @@ from . import (
     v20260804_0058_authority_cutover_release_qualification,
     v20260804_0059_migration_validation_authority,
     v20260804_0060_migration_completion_semantics,
+    v20260804_0061_structured_migration_references,
 )
 
 VERSION_MODULES = [
@@ -124,6 +125,7 @@ VERSION_MODULES = [
     v20260804_0058_authority_cutover_release_qualification,
     v20260804_0059_migration_validation_authority,
     v20260804_0060_migration_completion_semantics,
+    v20260804_0061_structured_migration_references,
 ]
 
 __all__ = ["VERSION_MODULES"]

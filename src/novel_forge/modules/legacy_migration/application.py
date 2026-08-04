@@ -44,7 +44,7 @@ class LegacyImportCommand:
     source_asset_type: str
     stable_business_key: str
     payload: dict[str, Any]
-    references: tuple[str, ...] = ()
+    references: tuple[dict[str, Any] | str, ...] = ()
 
 
 class _LegacyImportCodec:
@@ -69,7 +69,7 @@ class _LegacyImportCodec:
                 workspace_id=request.workspace_id,
                 source_asset_type=str(payload["source_asset_type"]),
                 payload=dict(payload["payload"]),
-                references=tuple(str(item) for item in payload.get("references") or ()),
+                references=tuple(payload.get("references") or ()),
                 decision="IMPORT",
                 status="VALIDATED",
             )

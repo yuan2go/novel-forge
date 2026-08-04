@@ -784,7 +784,17 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
                     "id": "design-1",
                     "type": "book_design_candidate",
                     "project_id": project_id,
-                    "references": [book_id],
+                    "references": [
+                        {
+                            "business_key": book_id,
+                            "relation_type": "BOOK_DESIGN_OF_BOOK",
+                            "optional": False,
+                            "expected_source_type": "book",
+                            "expected_target_asset_type": "book_record",
+                            "cardinality": "ONE",
+                            "ordinal": 0,
+                        }
+                    ],
                     "content": {
                         "book_id": book_id,
                         "title": "Migration Harbor",
@@ -812,6 +822,23 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
                 path.chmod(0o555 if path.is_dir() else 0o444)
             root.chmod(0o555)
             imported = service.import_snapshot(root)
+        activation_order = service.domain_activation_order(
+            imported["migration_run_id"]
+        )
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                """
+                SELECT source_asset_type, migration_item_id
+                FROM authority_legacy_migration_item
+                WHERE migration_run_id=%s
+                """,
+                [imported["migration_run_id"]],
+            )
+            item_ids = {str(row[0]): str(row[1]) for row in uow.cursor.fetchall()}
+        self.assertLess(
+            activation_order.index(item_ids["book"]),
+            activation_order.index(item_ids["book_design_candidate"]),
+        )
         self._validate_approve_activate(
             service, imported["migration_run_id"], "project_workspace_state"
         )
@@ -885,7 +912,10 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
             uow.cursor.execute(
                 """
                 SELECT reference.target_asset_version_id,
-                       reference.target_domain_projection_id
+                       reference.target_domain_projection_id,
+                       reference.relation_type, reference.optional,
+                       reference.cardinality,
+                       reference.compatibility_evidence
                 FROM authority_legacy_migration_reference AS reference
                 JOIN authority_legacy_migration_item AS source
                   ON source.migration_item_id=reference.source_item_id
@@ -925,11 +955,18 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
         )
         self.assertEqual((str(book[2]), int(book[3])), ("DESIGN_ACTIVE", 2))
         self.assertEqual(
-            tuple(str(value) for value in reference),
+            tuple(str(value) for value in reference[:5]),
             (
                 activated["book"]["target_asset_version_id"],
                 book_id,
+                "BOOK_DESIGN_OF_BOOK",
+                "False",
+                "ONE",
             ),
+        )
+        self.assertEqual(
+            reference[5]["input_format"],
+            "STRUCTURED_V1",
         )
         self.assertEqual(
             tuple(run_semantics),
@@ -954,6 +991,162 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
                 ),
             ],
         )
+
+    def test_structured_reference_cycles_optional_edges_and_type_mismatch_fail_closed(
+        self,
+    ) -> None:
+        project_id = identifier("structured-reference-project")
+        workspace_id = identifier("structured-reference-workspace")
+        service = LegacyMigrationService(
+            DATABASE_URL,
+            application_build_id="structured-reference-integration",
+            commit_sha="6" * 40,
+        )
+
+        def book_record(book_id: str, references: list[dict] | None = None) -> dict:
+            return {
+                "id": book_id,
+                "type": "book",
+                "project_id": project_id,
+                "references": references or [],
+                "content": {
+                    "book_id": book_id,
+                    "title": f"Structured {book_id}",
+                    "production_profile": {
+                        "environment": "fixture",
+                        "real_provider_proven": False,
+                    },
+                    "runtime_policy": {
+                        "legacy_write": False,
+                        "silent_fallback": False,
+                    },
+                    "release_identity": f"structured-reference@{book_id}",
+                },
+            }
+
+        cycle_a = identifier("cycle-a")
+        cycle_b = identifier("cycle-b")
+        stable_target = identifier("stable-target")
+        type_mismatch = identifier("type-mismatch")
+        optional_source = identifier("optional-source")
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "data" / "workspaces").mkdir(parents=True)
+            (root / "data" / "assets").mkdir(parents=True)
+            self._write(
+                root / "data" / "workspaces" / "workspace.json",
+                {
+                    "id": workspace_id,
+                    "type": "project_workspace_state",
+                    "title": "Structured Reference Project",
+                    "content": {"project_id": project_id},
+                },
+            )
+            fixtures = (
+                book_record(
+                    cycle_a,
+                    [{"business_key": cycle_b, "relation_type": "RELATED_ASSET"}],
+                ),
+                book_record(
+                    cycle_b,
+                    [{"business_key": cycle_a, "relation_type": "RELATED_ASSET"}],
+                ),
+                book_record(stable_target),
+                book_record(
+                    type_mismatch,
+                    [
+                        {
+                            "business_key": stable_target,
+                            "relation_type": "RELATED_ASSET",
+                            "expected_source_type": "story_design",
+                            "expected_target_asset_type": "book_record",
+                        }
+                    ],
+                ),
+                book_record(
+                    optional_source,
+                    [
+                        {
+                            "business_key": "missing-optional-book",
+                            "relation_type": "OPTIONAL_REFERENCE",
+                            "optional": True,
+                            "expected_source_type": "book",
+                            "expected_target_asset_type": "book_record",
+                        }
+                    ],
+                ),
+            )
+            for ordinal, fixture in enumerate(fixtures, start=1):
+                self._write(
+                    root / "data" / "assets" / f"{ordinal:02d}.json",
+                    fixture,
+                )
+            for path in root.rglob("*"):
+                path.chmod(0o555 if path.is_dir() else 0o444)
+            root.chmod(0o555)
+            imported = service.import_snapshot(root)
+
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                """
+                SELECT stable_business_key, status, error_code, reference_state
+                FROM authority_legacy_migration_item
+                WHERE migration_run_id=%s
+                  AND stable_business_key=ANY(%s)
+                ORDER BY stable_business_key
+                """,
+                [
+                    imported["migration_run_id"],
+                    [cycle_a, cycle_b, stable_target, type_mismatch, optional_source],
+                ],
+            )
+            items = {
+                str(row[0]): (str(row[1]), str(row[2] or ""), str(row[3]))
+                for row in uow.cursor.fetchall()
+            }
+            uow.cursor.execute(
+                """
+                SELECT source.stable_business_key, reference.resolution_status,
+                       reference.relation_type,
+                       reference.compatibility_evidence->>'input_format'
+                FROM authority_legacy_migration_reference AS reference
+                JOIN authority_legacy_migration_item AS source
+                  ON source.migration_item_id=reference.source_item_id
+                WHERE reference.migration_run_id=%s
+                ORDER BY source.stable_business_key
+                """,
+                [imported["migration_run_id"]],
+            )
+            references = {
+                str(row[0]): tuple(str(value) for value in row[1:])
+                for row in uow.cursor.fetchall()
+            }
+
+        self.assertEqual(
+            items[cycle_a][0:2],
+            ("QUARANTINED", "MIGRATION_DEPENDENCY_CYCLE"),
+        )
+        self.assertEqual(
+            items[cycle_b][0:2],
+            ("QUARANTINED", "MIGRATION_DEPENDENCY_CYCLE"),
+        )
+        self.assertEqual(
+            items[type_mismatch][0:2],
+            ("QUARANTINED", "REFERENCE_SOURCE_TYPE_MISMATCH"),
+        )
+        self.assertEqual(
+            items[optional_source],
+            ("NEEDS_REVIEW", "", "OPTIONAL_MISSING"),
+        )
+        self.assertEqual(
+            references[optional_source],
+            ("OPTIONAL_MISSING", "OPTIONAL_REFERENCE", "STRUCTURED_V1"),
+        )
+        self.assertEqual(references[cycle_a][0], "CONFLICT")
+        self.assertEqual(references[cycle_b][0], "CONFLICT")
+        self.assertEqual(references[type_mismatch][0], "CONFLICT")
+        activation_order = service.domain_activation_order(imported["migration_run_id"])
+        self.assertEqual(len(activation_order), 3)
 
     def test_planning_migration_builds_active_hierarchy_after_approval(self) -> None:
         project_id = identifier("domain-planning-project")

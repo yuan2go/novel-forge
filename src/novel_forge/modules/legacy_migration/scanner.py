@@ -7,6 +7,12 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
 
+from novel_forge.modules.legacy_migration.references import (
+    StructuredMigrationReference,
+    parse_migration_reference,
+    relation_supported,
+)
+
 
 REBUILDABLE_CATEGORIES = frozenset(
     {"indexes", "runs", "backups", "cache", "exports", "task_statuses"}
@@ -24,11 +30,20 @@ class LegacySnapshotRecord:
     workspace_id: str
     source_asset_type: str
     payload: dict[str, Any] | None
-    references: tuple[str, ...]
+    references: tuple[StructuredMigrationReference, ...]
     decision: str
     status: str
     error_code: str = ""
     errors: tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        normalized = tuple(
+            reference
+            if isinstance(reference, StructuredMigrationReference)
+            else parse_migration_reference(reference, ordinal=ordinal)
+            for ordinal, reference in enumerate(self.references)
+        )
+        object.__setattr__(self, "references", normalized)
 
 
 @dataclass(frozen=True, slots=True)
@@ -114,17 +129,39 @@ def scan_legacy_snapshot(
         ).strip()
         asset_type = str(payload.get("type") or "unknown").strip().lower()
         business_key = str(payload.get("id") or relative).strip()
-        references = tuple(
-            dict.fromkeys(
-                str(item).strip()
-                for item in payload.get("references") or ()
-                if str(item).strip()
+        reference_error = ""
+        try:
+            references = tuple(
+                parse_migration_reference(item, ordinal=ordinal)
+                for ordinal, item in enumerate(payload.get("references") or ())
             )
+        except (TypeError, ValueError) as exc:
+            references = ()
+            reference_error = str(exc)
+        unsupported_reference = next(
+            (
+                reference
+                for reference in references
+                if not relation_supported(asset_type, reference.relation_type)
+            ),
+            None,
         )
+        if unsupported_reference is not None:
+            reference_error = (
+                f"{unsupported_reference.relation_type.value} is not supported "
+                f"by {asset_type}"
+            )
         decision, status, error = "IMPORT", "VALIDATED", ""
         errors: tuple[str, ...] = ()
         if category in REBUILDABLE_CATEGORIES or asset_type in {"task_status", "run_log"}:
             decision, status = "DISCARD_REBUILDABLE", "SKIPPED_DUPLICATE"
+        elif reference_error:
+            decision, status, error = (
+                "QUARANTINE",
+                "QUARANTINED",
+                "INVALID_REFERENCE_CONTRACT",
+            )
+            errors = (reference_error,)
         elif not project_id:
             decision, status, error = "QUARANTINE", "QUARANTINED", "PROJECT_ID_MISSING"
             errors = ("record has no stable project_id",)
@@ -186,7 +223,8 @@ def scan_legacy_snapshot(
             (
                 reference
                 for reference in record.references
-                if reference not in reference_projects
+                if not reference.optional
+                and reference.business_key not in reference_projects
             ),
             "",
         )
@@ -197,7 +235,10 @@ def scan_legacy_snapshot(
                     decision="QUARANTINE",
                     status="QUARANTINED",
                     error_code="MISSING_REFERENCE",
-                    errors=(f"reference does not exist in snapshot: {missing}",),
+                    errors=(
+                        "reference does not exist in snapshot: "
+                        f"{missing.business_key}",
+                    ),
                 )
             )
             continue
@@ -205,7 +246,9 @@ def scan_legacy_snapshot(
             (
                 reference
                 for reference in record.references
-                if record.project_id not in reference_projects[reference]
+                if reference.business_key in reference_projects
+                and record.project_id
+                not in reference_projects[reference.business_key]
             ),
             "",
         )
@@ -218,7 +261,7 @@ def scan_legacy_snapshot(
                     error_code="CROSS_PROJECT_REFERENCE",
                     errors=(
                         "reference only resolves outside the record project: "
-                        f"{cross_project}",
+                        f"{cross_project.business_key}",
                     ),
                 )
             )

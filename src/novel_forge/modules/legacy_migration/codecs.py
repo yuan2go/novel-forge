@@ -27,7 +27,7 @@ class NativeMigrationCandidate:
     stable_business_identity: str
     project_id: str
     workspace_id: str
-    references: tuple[str, ...]
+    references: tuple[dict[str, Any], ...]
     content: dict[str, Any]
     content_hash: str
     lifecycle: str
@@ -138,7 +138,9 @@ class TypedMigrationCodec:
             stable_business_identity=self.stable_identity(record),
             project_id=str(record.project_id),
             workspace_id=str(record.workspace_id),
-            references=tuple(record.references),
+            references=tuple(
+                reference.to_contract() for reference in record.references
+            ),
             content=native_content,
             content_hash=content_hash,
             lifecycle="IMPORTED",
