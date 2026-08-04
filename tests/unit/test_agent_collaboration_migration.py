@@ -14,11 +14,11 @@ class AgentCollaborationMigrationTests(unittest.TestCase):
         validate_migration_chain()
         self.assertEqual(
             LATEST_MIGRATION_ID,
-            "20260804_0057_hot_query_governance",
+            "20260804_0058_authority_cutover_release_qualification",
         )
         self.assertEqual(
             MIGRATIONS[-1].down_revision,
-            "20260804_0056_database_runtime_governance",
+            "20260804_0057_hot_query_governance",
         )
 
     def test_schema_reuses_authority_execution_and_asset_identities(self) -> None:

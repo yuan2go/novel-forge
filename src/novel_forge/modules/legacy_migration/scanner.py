@@ -150,6 +150,13 @@ def scan_legacy_snapshot(
             )
         )
 
+    reference_projects: dict[str, set[str]] = {}
+    for candidate in records:
+        if candidate.project_id and candidate.stable_business_key:
+            reference_projects.setdefault(candidate.stable_business_key, set()).add(
+                candidate.project_id
+            )
+
     seen: dict[tuple[str, str], str] = {}
     resolved: list[LegacySnapshotRecord] = []
     for record in records:
@@ -175,10 +182,51 @@ def scan_legacy_snapshot(
             )
             continue
         seen[key] = record.source_hash
-        # References are deliberately not resolved in the filesystem scan.
-        # Pass one must materialize stable PostgreSQL identities; pass two then
-        # resolves each business key to the exact target AssetVersion and
-        # projection under a durable, idempotent reference record.
+        missing = next(
+            (
+                reference
+                for reference in record.references
+                if reference not in reference_projects
+            ),
+            "",
+        )
+        if missing:
+            resolved.append(
+                replace(
+                    record,
+                    decision="QUARANTINE",
+                    status="QUARANTINED",
+                    error_code="MISSING_REFERENCE",
+                    errors=(f"reference does not exist in snapshot: {missing}",),
+                )
+            )
+            continue
+        cross_project = next(
+            (
+                reference
+                for reference in record.references
+                if record.project_id not in reference_projects[reference]
+            ),
+            "",
+        )
+        if cross_project:
+            resolved.append(
+                replace(
+                    record,
+                    decision="QUARANTINE",
+                    status="QUARANTINED",
+                    error_code="CROSS_PROJECT_REFERENCE",
+                    errors=(
+                        "reference only resolves outside the record project: "
+                        f"{cross_project}",
+                    ),
+                )
+            )
+            continue
+        # The scan only establishes that each business key exists in scope.
+        # Pass one materializes stable PostgreSQL identities; pass two resolves
+        # the exact target AssetVersion and projection under a durable,
+        # idempotent reference record.
         resolved.append(record)
     counts: dict[str, int] = {"TOTAL": len(resolved)}
     for record in resolved:
