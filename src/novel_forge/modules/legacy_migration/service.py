@@ -273,7 +273,6 @@ class LegacyMigrationService:
             self.database_url,
             application_build_id=self.application_build_id,
             commit_sha=self.commit_sha,
-            worker_id="legacy-project-migration-worker",
         )
         workspaces: dict[str, str] = {}
         for record in records:

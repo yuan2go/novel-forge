@@ -66,7 +66,7 @@ class AuthorityTaskProjectionPostgresTests(unittest.TestCase):
         self.assertEqual(center["authority"], "postgresql")
         self.assertEqual(center["summary"]["task_count"], 1)
         self.assertEqual(detail["status"], "SUCCEEDED")
-        self.assertEqual(detail["attempt"]["status"], "SUCCEEDED")
+        self.assertEqual(detail["attempt"], {})
         self.assertGreaterEqual(len(timeline), 1)
         self.assertEqual(health["storage_authority"], "postgresql")
         self.assertFalse(health["filesystem_authority"])
