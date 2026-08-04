@@ -1228,7 +1228,7 @@ def _maintenance_scenario(settings: Any, control: "ComposeControl") -> dict[str,
         lambda state: state["succeeded_jobs"] == len(MAINTENANCE_RUNTIME_JOB_KINDS)
         and state["operation_status"] in {"CANCELLATION_REQUESTED", "CANCELLED"}
         and state["attempt_lease_status"] == "EXPIRED"
-        and state["outbox_status"] in {"failed", "dead_letter"},
+        and state["outbox_status"] in {"failed", "dead_letter", "acked"},
     )
     execution = _runtime_job_evidence(settings.database_url, stale_claim.runtime_job_id)
     if execution["status"] != "SUCCEEDED" or execution["fencing_token"] < 2:
@@ -1243,6 +1243,14 @@ def _maintenance_scenario(settings: Any, control: "ComposeControl") -> dict[str,
             [scheduled_ids],
         )
         reconciliation = dict(cursor.fetchone()[0])
+        cursor.execute(
+            "SELECT result FROM authority_runtime_job_result AS result "
+            "JOIN authority_runtime_job_attempt AS attempt ON attempt.attempt_id=result.attempt_id "
+            "JOIN authority_runtime_job AS job ON job.current_attempt_id=attempt.attempt_id "
+            "WHERE job.runtime_job_id=ANY(%s) AND job.job_kind='OUTBOX_RECOVERY_SCAN'",
+            [scheduled_ids],
+        )
+        outbox_recovery = dict(cursor.fetchone()[0])
     matching_effects = [
         item
         for item in reconciliation["reconciliation_required"]
@@ -1253,6 +1261,18 @@ def _maintenance_scenario(settings: Any, control: "ComposeControl") -> dict[str,
     ):
         raise RuntimeError(
             "Maintenance E2E did not retain the seeded unknown effect as query/manual required"
+        )
+    matching_outbox = [
+        item
+        for item in outbox_recovery["recovered_outbox"]
+        if item.get("outbox_id") == ids["outbox"]
+    ]
+    if len(matching_outbox) != 1 or matching_outbox[0].get("status") not in {
+        "failed",
+        "dead_letter",
+    }:
+        raise RuntimeError(
+            "Maintenance E2E did not record recovery of the seeded expired Outbox claim"
         )
     return {
         "scenario": "Deadline/lease/outbox/effect scans through fenced Runtime Jobs and recovery",
@@ -1267,6 +1287,7 @@ def _maintenance_scenario(settings: Any, control: "ComposeControl") -> dict[str,
             "runtime_job_ids": scheduled_ids,
             "unknown_effect_action": reconciliation["reconciliation_required"],
             "seeded_unknown_effect": matching_effects[0],
+            "seeded_outbox_recovery": matching_outbox[0],
             "provider_query_proven": reconciliation["provider_query_proven"],
         },
         "expired_claim": {
