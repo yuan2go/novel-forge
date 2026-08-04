@@ -9,6 +9,8 @@ import logging
 import os
 import random
 import re
+import hashlib
+import json
 import threading
 import time
 from contextlib import contextmanager
@@ -136,6 +138,36 @@ class DatabaseRuntimeConfig:
             raise ValueError(f"unsupported database role: {self.role}")
         if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*(,[A-Za-z_][A-Za-z0-9_]*)*", self.search_path):
             raise ValueError("database search_path contains an unsafe identifier")
+
+    @property
+    def database_identity_fingerprint(self) -> str:
+        return "sha256:" + hashlib.sha256(
+            self.database_url.encode("utf-8")
+        ).hexdigest()
+
+    @property
+    def pool_config_fingerprint(self) -> str:
+        payload = {
+            item.name: getattr(self, item.name)
+            for item in fields(self)
+            if item.name not in {"database_url", "role", "service"}
+        }
+        encoded = json.dumps(
+            payload,
+            sort_keys=True,
+            separators=(",", ":"),
+            default=str,
+        ).encode("utf-8")
+        return "sha256:" + hashlib.sha256(encoded).hexdigest()
+
+    @property
+    def registry_key(self) -> tuple[str, str, str, str]:
+        return (
+            self.database_identity_fingerprint,
+            self.role,
+            self.service,
+            self.pool_config_fingerprint,
+        )
 
     @classmethod
     def from_env(
@@ -398,11 +430,11 @@ class ConnectionPoolRegistry:
 
     def __init__(self) -> None:
         self._lock = threading.Lock()
-        self._runtimes: dict[tuple[str, str], DatabaseRuntime] = {}
+        self._runtimes: dict[tuple[str, str, str, str], DatabaseRuntime] = {}
 
     def get(self, database_url: str, *, role: str | None = None) -> DatabaseRuntime:
         config = DatabaseRuntimeConfig.from_env(database_url, role=role)
-        key = (database_url, config.role)
+        key = config.registry_key
         with self._lock:
             runtime = self._runtimes.get(key)
             if runtime is None:
@@ -535,13 +567,16 @@ def database_runtime_report(
 ) -> dict[str, Any]:
     """Return a lightweight extensible pool and transaction metrics contract."""
 
-    health = get_database_runtime(database_url, role=role).health()
+    runtime = get_database_runtime(database_url, role=role)
+    health = runtime.health()
     return {
         "type": "DatabaseRuntimeReport",
         "contract_version": "database-runtime-report-v1",
         "database_status": "READY",
         "role": health["role"],
         "service": health["service"],
+        "database_identity_fingerprint": runtime.config.database_identity_fingerprint,
+        "pool_config_fingerprint": runtime.config.pool_config_fingerprint,
         "pool_size": health["pool_size"],
         "pool_available": health["pool_available"],
         "pool_in_use": health["pool_in_use"],

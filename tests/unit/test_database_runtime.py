@@ -58,6 +58,32 @@ class DatabaseRuntimeUnitTests(unittest.TestCase):
         self.assertEqual(config.lock_timeout_ms, 5_000)
         self.assertEqual(config.idle_in_transaction_session_timeout_ms, 30_000)
 
+    def test_registry_identity_separates_service_and_pool_config_without_dsn(self) -> None:
+        first = DatabaseRuntimeConfig(
+            database_url="postgresql://secret:password@db.internal:5432/novel",
+            role="book",
+            service="book-worker-a",
+            max_size=3,
+        )
+        second = DatabaseRuntimeConfig(
+            database_url=first.database_url,
+            role="book",
+            service="book-worker-b",
+            max_size=3,
+        )
+        resized = DatabaseRuntimeConfig(
+            database_url=first.database_url,
+            role="book",
+            service="book-worker-a",
+            max_size=4,
+        )
+        self.assertNotEqual(first.registry_key, second.registry_key)
+        self.assertNotEqual(first.registry_key, resized.registry_key)
+        rendered = repr(first.registry_key)
+        self.assertNotIn("secret", rendered)
+        self.assertNotIn("password", rendered)
+        self.assertNotIn(first.database_url, rendered)
+
     def test_connection_budget_fails_fast_when_capacity_is_exceeded(self) -> None:
         with self.assertRaisesRegex(RuntimeError, "exceeds capacity"):
             validate_connection_budget(

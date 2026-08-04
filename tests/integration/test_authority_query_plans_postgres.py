@@ -27,16 +27,29 @@ class AuthorityQueryPlansPostgresTests(unittest.TestCase):
                 """,
             ),
             "book": (
-                "authority_book_production_worker_poll_idx",
+                "authority_book_runtime_job_schedule_idx",
                 """
                 SELECT book_run_id, project_id
                 FROM authority_book_production
                 WHERE state = ANY(ARRAY[
                     'CHAPTER_SUBMITTED', 'CHAPTER_RUNNING',
                     'CHAPTER_WAITING_RETRY', 'CHAPTER_COMPLETED',
-                    'READER_OUTCOME_PENDING', 'CHECKPOINT_PENDING'
+                    'READER_OUTCOME_PENDING', 'CHECKPOINT_PENDING',
+                    'READY', 'COMPLETED'
                 ])
                 ORDER BY updated_at, book_run_id
+                LIMIT 10
+                """,
+            ),
+            "runtime_job": (
+                "authority_runtime_job_claim_idx",
+                """
+                SELECT runtime_job_id
+                FROM authority_runtime_job
+                WHERE runtime_group='book'
+                  AND status IN ('READY','RETRY_WAIT')
+                  AND available_at <= NOW()
+                ORDER BY priority, available_at, created_at, runtime_job_id
                 LIMIT 10
                 """,
             ),

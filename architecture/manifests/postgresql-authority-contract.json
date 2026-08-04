@@ -38,7 +38,8 @@
       "20260804_0059_migration_validation_authority",
       "20260804_0060_migration_completion_semantics",
       "20260804_0061_structured_migration_references",
-      "20260804_0062_runtime_job_execution_plane"
+      "20260804_0062_runtime_job_execution_plane",
+      "20260804_0063_worker_fleet_operational_governance"
     ],
     "required_operation_definitions": [
       "chapter.slice.run",
@@ -82,6 +83,10 @@
       "tests/integration/test_authority_schema_postgres.py",
       "tests/integration/test_authority_legacy_migration_postgres.py",
       "tests/integration/test_authority_runtime_job_postgres.py",
+      "tests/integration/test_outbox_authority_worker_postgres.py",
+      "tests/integration/test_maintenance_worker_postgres.py",
+      "tests/integration/test_worker_health_postgres.py",
+      "tests/integration/test_authority_query_plans_postgres.py",
       "tests/integration/test_book_to_chapter_authority_vertical_postgres.py",
       "tests/integration/test_source_document_authority_postgres.py",
       "tests/integration/test_mkaos_authority_postgres.py",
@@ -117,7 +122,7 @@
     },
     "minimum_module_count": 15,
     "minimum_worker_count": 7,
-    "minimum_migration_count": 62,
+    "minimum_migration_count": 63,
     "maximum_forbidden_production_reachable_paths": 0
   },
   "run_evidence_contract": {

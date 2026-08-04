@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from uuid import uuid4
 
+from psycopg.types.json import Jsonb
+
 from novel_forge.modules.command_kernel.deadline_runtime import (
     scan_expired_operation_deadlines,
 )
@@ -116,6 +118,23 @@ def scan_expired_outbox_leases(
             }
             for row in uow.cursor.fetchall()
         ]
+        for recovered in recovered_outbox:
+            uow.cursor.execute(
+                """
+                UPDATE authority_outbox_delivery_execution
+                SET status=CASE WHEN %s='dead_letter'
+                                THEN 'DEAD_LETTER' ELSE 'ABANDONED' END,
+                    error=%s, completed_at=NOW()
+                WHERE lease_id=%s AND fencing_token=%s
+                  AND status IN ('CLAIMED','RUNNING','CHECKPOINTED')
+                """,
+                [
+                    recovered["status"],
+                    Jsonb({"code": "MAINTENANCE_OUTBOX_LEASE_EXPIRED"}),
+                    recovered["lease_id"],
+                    recovered["fencing_token"],
+                ],
+            )
         uow.commit()
     return recovered_outbox
 

@@ -21,6 +21,7 @@ ROW_COUNTS = {
     "authority_asset_version": 100_000,
     "authority_book_production": 10_000,
     "authority_legacy_migration_item": 100_000,
+    "authority_runtime_job": 100_000,
 }
 
 
@@ -191,6 +192,26 @@ def qualify(database_url: str) -> dict[str, Any]:
         )
         connection.execute(
             """
+            INSERT INTO authority_runtime_job(
+                runtime_job_id,job_kind,runtime_group,subject_kind,subject_id,
+                project_id,dedupe_key,input_snapshot,input_hash,status,priority,
+                available_at,created_at,updated_at
+            )
+            SELECT %(token)s || ':runtime-job:' || value,
+                   'BOOK_COORDINATION_TICK','book','BOOK_RUN',
+                   %(token)s || ':book-run:' || value,
+                   %(token)s || ':project:' || (value %% 1000),
+                   'tick:' || value,'{}'::jsonb,
+                   'sha256:' || repeat('e',64),
+                   CASE WHEN value %% 100 = 0 THEN 'READY' ELSE 'SUCCEEDED' END,
+                   100,NOW()-INTERVAL '1 minute',
+                   NOW()-(value*INTERVAL '1 millisecond'),NOW()
+            FROM generate_series(1,100000) AS value
+            """,
+            {"token": token},
+        )
+        connection.execute(
+            """
             INSERT INTO authority_asset(asset_id,project_id,asset_type)
             SELECT %(token)s || ':asset:' || value,
                    %(token)s || ':project:' || (value %% 1000),'rq_asset'
@@ -217,7 +238,7 @@ def qualify(database_url: str) -> dict[str, Any]:
                 migration_run_id,source_kind,source_hash,status,report,workspace_id,
                 snapshot_hash,mode,idempotency_key,phase
             ) VALUES (%s,'release_qualification','sha256:' || repeat('c',64),
-                      'RUNNING','{}'::jsonb,%s || ':workspace',
+                      'IMPORT_RUNNING','{}'::jsonb,%s || ':workspace',
                       'sha256:' || repeat('c',64),'IMPORT',%s,'VALIDATE')
             """,
             [token, token, token],
@@ -261,6 +282,16 @@ def qualify(database_url: str) -> dict[str, Any]:
                      AND available_at <= NOW()
                      AND (lease_expires_at IS NULL OR lease_expires_at < NOW())
                    ORDER BY available_at,created_at,outbox_id LIMIT 10""",
+            ),
+            (
+                "runtime_job_claim",
+                "authority_runtime_job",
+                """SELECT runtime_job_id FROM authority_runtime_job
+                   WHERE runtime_group='book'
+                     AND status IN ('READY','RETRY_WAIT')
+                     AND available_at <= NOW()
+                   ORDER BY priority,available_at,created_at,runtime_job_id
+                   LIMIT 10""",
             ),
             (
                 "asset_version_lookup",

@@ -63,6 +63,7 @@ from . import (
     v20260804_0060_migration_completion_semantics,
     v20260804_0061_structured_migration_references,
     v20260804_0062_runtime_job_execution_plane,
+    v20260804_0063_worker_fleet_operational_governance,
 )
 
 VERSION_MODULES = [
@@ -128,6 +129,7 @@ VERSION_MODULES = [
     v20260804_0060_migration_completion_semantics,
     v20260804_0061_structured_migration_references,
     v20260804_0062_runtime_job_execution_plane,
+    v20260804_0063_worker_fleet_operational_governance,
 ]
 
 __all__ = ["VERSION_MODULES"]

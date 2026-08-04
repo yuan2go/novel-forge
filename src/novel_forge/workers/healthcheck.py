@@ -30,7 +30,10 @@ def worker_health(
                    completed_operation_count, failed_operation_count,
                    database_status, drain_status,
                    last_heartbeat_at, active_operation_id, active_attempt_id,
-                   lease_count, completed_batch_count,
+                   lease_count, completed_batch_count, active_runtime_job_id,
+                   fencing_token, completed_runtime_job_count,
+                   failed_runtime_job_count, last_database_success_at,
+                   last_database_failure_at,
                    updated_at >= NOW() - (%s * INTERVAL '1 second')
             FROM authority_worker_health_projection
             WHERE worker_kind=%s AND worker_id=%s
@@ -41,7 +44,7 @@ def worker_health(
     ready = bool(
         migration["ok"]
         and row is not None
-        and bool(row[12])
+        and bool(row[18])
         and str(row[0]) in {"READY", "BUSY", "DEGRADED"}
         and str(row[5]) == "READY"
         and str(row[6]) == "ACCEPTING"
@@ -55,12 +58,20 @@ def worker_health(
         "active_attempts": int(row[2]) if row else 0,
         "completed_count": int(row[3]) if row else 0,
         "failed_count": int(row[4]) if row else 0,
-        "database_status": str(row[5]) if row else "UNAVAILABLE",
+        "database_status": (
+            str(row[5]) if row and bool(row[18]) else "UNAVAILABLE"
+        ),
         "drain_status": str(row[6]) if row else "UNKNOWN",
         "active_operation_id": str(row[8]) if row and row[8] else "",
         "active_attempt_id": str(row[9]) if row and row[9] else "",
         "lease_count": int(row[10]) if row else 0,
         "completed_batch_count": int(row[11]) if row else 0,
+        "active_runtime_job_id": str(row[12]) if row and row[12] else "",
+        "fencing_token": int(row[13]) if row else 0,
+        "completed_runtime_job_count": int(row[14]) if row else 0,
+        "failed_runtime_job_count": int(row[15]) if row else 0,
+        "last_database_success_at": str(row[16]) if row and row[16] else "",
+        "last_database_failure_at": str(row[17]) if row and row[17] else "",
         "migration_head": migration["current"],
         "migration_chain_current": migration["ok"],
     }
