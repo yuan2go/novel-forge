@@ -17,7 +17,8 @@ class PostgresWorkerHealthObserver:
     def __call__(self, snapshot: WorkerHealthSnapshot) -> None:
         status = {
             "starting": "STARTING", "healthy": "BUSY", "idle": "READY",
-            "degraded": "DEGRADED", "fatal": "FATAL", "stopped": "STOPPED",
+            "degraded": "DEGRADED", "draining": "DRAINING",
+            "fatal": "FATAL", "stopped": "STOPPED",
         }[snapshot.status.value]
         fatal = (
             {"message": snapshot.last_fatal_error, "exit_code": snapshot.exit_code}
@@ -29,17 +30,37 @@ class PostgresWorkerHealthObserver:
                 INSERT INTO authority_worker_health_projection (
                     worker_id, worker_kind, status, last_poll_at,
                     last_successful_poll_at, last_fatal_error,
-                    restart_expectation, active_operation_id, lease_count, updated_at
-                ) VALUES (%s,%s,%s,NULLIF(%s,'')::timestamptz,NULLIF(%s,'')::timestamptz,%s,%s,NULL,0,NOW())
+                    restart_expectation, active_operation_id, lease_count,
+                    runtime_group, active_attempts, completed_count, failed_count,
+                    database_status, drain_status, updated_at
+                ) VALUES (
+                    %s,%s,%s,NULLIF(%s,'')::timestamptz,
+                    NULLIF(%s,'')::timestamptz,%s,%s,NULL,0,%s,0,%s,%s,
+                    'READY',%s,NOW()
+                )
                 ON CONFLICT (worker_id, worker_kind) DO UPDATE SET
                     status=EXCLUDED.status, last_poll_at=EXCLUDED.last_poll_at,
                     last_successful_poll_at=EXCLUDED.last_successful_poll_at,
                     last_fatal_error=EXCLUDED.last_fatal_error,
-                    restart_expectation=EXCLUDED.restart_expectation, updated_at=NOW()
+                    restart_expectation=EXCLUDED.restart_expectation,
+                    runtime_group=EXCLUDED.runtime_group,
+                    active_attempts=EXCLUDED.active_attempts,
+                    completed_count=EXCLUDED.completed_count,
+                    failed_count=EXCLUDED.failed_count,
+                    database_status=EXCLUDED.database_status,
+                    drain_status=EXCLUDED.drain_status,
+                    updated_at=NOW()
                 """,
                 [snapshot.worker_id, snapshot.worker_kind, status,
                  snapshot.last_poll_at, snapshot.last_successful_poll_at,
-                 json.dumps(fatal), snapshot.restart_policy_expectation],
+                 json.dumps(fatal), snapshot.restart_policy_expectation,
+                 snapshot.worker_kind, snapshot.completed_batches,
+                 snapshot.failed_tasks,
+                 (
+                     "DRAINING" if status == "DRAINING"
+                     else "DRAINED" if status == "STOPPED"
+                     else "ACCEPTING"
+                 )],
             )
             uow.commit()
 
@@ -49,10 +70,21 @@ def runtime_health_report(database_url: str, *, freshness_seconds: int = 120) ->
         raise ValueError("worker freshness must be positive")
     with AuthorityUnitOfWork(database_url) as uow:
         uow.cursor.execute(
-            "SELECT worker_id, worker_kind, status, last_poll_at, last_successful_poll_at, last_fatal_error, restart_expectation, active_operation_id, lease_count, updated_at, updated_at >= NOW() - (%s * INTERVAL '1 second') FROM authority_worker_health_projection ORDER BY worker_kind, worker_id",
+            "SELECT worker_id, worker_kind, status, last_poll_at, "
+            "last_successful_poll_at, last_fatal_error, restart_expectation, "
+            "active_operation_id, lease_count, runtime_group, active_attempts, "
+            "completed_count, failed_count, database_status, drain_status, "
+            "updated_at, updated_at >= NOW() - (%s * INTERVAL '1 second') "
+            "FROM authority_worker_health_projection ORDER BY worker_kind, worker_id",
             [freshness_seconds],
         )
-        keys = ("worker_id", "worker_kind", "status", "last_poll_at", "last_successful_poll_at", "last_fatal_error", "restart_expectation", "active_operation_id", "lease_count", "updated_at", "fresh")
+        keys = (
+            "worker_id", "worker_kind", "status", "last_poll_at",
+            "last_successful_poll_at", "last_fatal_error", "restart_expectation",
+            "active_operation_id", "lease_count", "runtime_group",
+            "active_attempts", "completed_count", "failed_count",
+            "database_status", "drain_status", "updated_at", "fresh",
+        )
         workers = [dict(zip(keys, row, strict=True)) for row in uow.cursor.fetchall()]
         uow.cursor.execute("SELECT COUNT(*) FROM outbox_event WHERE published_at IS NULL")
         outbox_lag = int(uow.cursor.fetchone()[0])

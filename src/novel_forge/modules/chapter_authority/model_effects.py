@@ -25,6 +25,7 @@ from novel_forge.modules.command_kernel.budget_runtime import (
     settle_provider_budget,
 )
 from novel_forge.storage.authority_asset_store import AuthorityAssetQuery, AuthorityAssetWriter
+from novel_forge.storage.database_runtime import get_database_runtime
 from novel_forge.modules.provider_control.contracts import (
     ProviderCapabilityProfile,
     ProviderControlLevel,
@@ -676,9 +677,8 @@ class ExternalEffectChapterModelPort:
     def _completed_effect_result(
         self, external_effect_id: str, project_id: str
     ) -> ModelProviderResult | None:
-        import psycopg
-
-        with psycopg.connect(self.database_url, autocommit=True) as connection:
+        runtime = get_database_runtime(self.database_url)
+        with runtime.connection() as connection:
             with connection.cursor() as cursor:
                 cursor.execute(
                     """

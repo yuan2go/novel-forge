@@ -13,8 +13,6 @@ from pathlib import Path
 from threading import Lock
 from typing import Any, Callable, Mapping, Protocol
 
-import psycopg
-
 from novel_forge.modules.chapter_authority.model_effects import normalize_model_output
 from novel_forge.modules.command_kernel.asset_commands import AuthorityAssetWriteCommand
 from novel_forge.modules.command_kernel.errors import KernelError
@@ -44,6 +42,7 @@ from novel_forge.modules.production_execution import (
     ValidationPolicy,
     default_capability_registry,
 )
+from novel_forge.storage.database_runtime import get_database_runtime
 from novel_forge.modules.production_execution.evidence import (
     ExecutionRecord,
     ExecutionRecordStore,
@@ -606,7 +605,8 @@ class PostgresChapterExecutionContractBinder:
             ) from exc
 
     def _operation_graph(self, operation_id: str, project_id: str) -> dict[str, str]:
-        with psycopg.connect(self.database_url, autocommit=True) as connection:
+        runtime = get_database_runtime(self.database_url)
+        with runtime.connection() as connection:
             with connection.cursor() as cursor:
                 cursor.execute(
                     """
@@ -632,7 +632,8 @@ class PostgresChapterExecutionContractBinder:
         }
 
     def _budget_reservation(self, external_effect_id: str, project_id: str) -> str:
-        with psycopg.connect(self.database_url, autocommit=True) as connection:
+        runtime = get_database_runtime(self.database_url)
+        with runtime.connection() as connection:
             with connection.cursor() as cursor:
                 cursor.execute(
                     """
@@ -891,7 +892,8 @@ class PostgresChapterExecutionPayloadResolver:
         self.command = tuple(command)
 
     def resolve(self, request: ExecutionRequest, admission: Any) -> ResolvedExecutionPayload:
-        with psycopg.connect(self.database_url, autocommit=True) as connection:
+        runtime = get_database_runtime(self.database_url)
+        with runtime.connection() as connection:
             with connection.cursor() as cursor:
                 cursor.execute(
                     """
@@ -1149,7 +1151,8 @@ class ProductionExecutionGatewayExternalEffectAdapter:
             return session
 
     def _effect_id(self, project_id: str, operation_id: str, stable_key: str) -> str:
-        with psycopg.connect(self.database_url, autocommit=True) as connection:
+        runtime = get_database_runtime(self.database_url)
+        with runtime.connection() as connection:
             with connection.cursor() as cursor:
                 cursor.execute(
                     """

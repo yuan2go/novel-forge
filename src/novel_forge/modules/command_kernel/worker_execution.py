@@ -51,6 +51,7 @@ class WorkerHealthStatus(StrEnum):
     HEALTHY = "healthy"
     IDLE = "idle"
     DEGRADED = "degraded"
+    DRAINING = "draining"
     FATAL = "fatal"
     STOPPED = "stopped"
 
@@ -120,6 +121,11 @@ class WorkerSupervisor:
         self._status = WorkerHealthStatus.FATAL
         self._last_fatal_error = f"{type(error).__name__}: {error}"
         self._exit_code = self.FATAL_EXIT_CODE
+        return self._publish()
+
+    def draining(self) -> WorkerHealthSnapshot:
+        if self._status is not WorkerHealthStatus.FATAL:
+            self._status = WorkerHealthStatus.DRAINING
         return self._publish()
 
     def stopped(self) -> WorkerHealthSnapshot:

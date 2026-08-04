@@ -937,11 +937,9 @@ def _pgvector_connect(storage: LocalStorage) -> Any:
     settings = IndustrialSettings.from_env(root=storage.root)
     if not settings.database_url:
         raise RuntimeError("NOVEL_FORGE_DATABASE_URL is required for pgvector online backend")
-    try:
-        import psycopg
-    except Exception as exc:
-        raise RuntimeError("pgvector online backend requires optional dependency: psycopg[binary]") from exc
-    return psycopg.connect(settings.database_url, connect_timeout=2)
+    from novel_forge.storage.database_runtime import get_database_runtime
+
+    return get_database_runtime(settings.database_url).connection(timeout=2)
 
 
 def _execute(conn: Any, sql: str, params: tuple[Any, ...]) -> Any:

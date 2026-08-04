@@ -4,6 +4,7 @@ from __future__ import annotations
 from typing import Any
 
 from novel_forge.storage.production_repositories import (AuditLogRepository, ConsumerDeliveryRepository, IdempotencyRepository, LifecycleCommandRepository, OperationLeaseRepository, OutboxRepository, ProductionOperationRepository, StateEventRepository)
+from novel_forge.storage.database_runtime import get_database_runtime
 
 
 class ProductionUnitOfWork:
@@ -13,10 +14,11 @@ class ProductionUnitOfWork:
         self.database_url = database_url
         self.connection: Any | None = None
         self.cursor: Any | None = None
+        self._runtime: Any | None = None
 
     def __enter__(self) -> "ProductionUnitOfWork":
-        import psycopg
-        self.connection = psycopg.connect(self.database_url, autocommit=False)
+        self._runtime = get_database_runtime(self.database_url)
+        self.connection = self._runtime.acquire()
         self.cursor = self.connection.cursor()
         self.operations = ProductionOperationRepository(self.cursor)
         self.idempotency = IdempotencyRepository(self.cursor)
@@ -60,5 +62,8 @@ class ProductionUnitOfWork:
             else:
                 self.connection.rollback()  # explicit commit is mandatory
             if self.cursor: self.cursor.close()
-            self.connection.close()
+            if self._runtime is not None:
+                self._runtime.release(self.connection)
+            self.connection = None
+            self.cursor = None
         return False

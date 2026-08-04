@@ -23,6 +23,7 @@ from novel_forge.modules.source_authority import (
     SourceAuthorityScheduler,
 )
 from novel_forge.storage.worker_health import PostgresWorkerHealthObserver
+from novel_forge.storage.database_runtime import close_all_database_runtimes
 
 
 def main() -> int:
@@ -100,8 +101,11 @@ def main() -> int:
             supervisor.batch_completed(failures)
         except WorkerProgrammingError as error:
             supervisor.fatal(error)
+            close_all_database_runtimes()
             return WorkerSupervisor.FATAL_EXIT_CODE
+    supervisor.draining()
     supervisor.stopped()
+    close_all_database_runtimes()
     return 0
 
 

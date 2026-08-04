@@ -17,6 +17,7 @@ from novel_forge.modules.command_kernel.worker_execution import (
 )
 from novel_forge.modules.command_kernel.deadline_runtime import scan_expired_operation_deadlines
 from novel_forge.storage.worker_health import PostgresWorkerHealthObserver
+from novel_forge.storage.database_runtime import close_all_database_runtimes
 
 
 @dataclass(slots=True)
@@ -66,8 +67,11 @@ def run_worker(*, poll_seconds: float = 1.0, batch_size: int = 10) -> int:
             supervisor.batch_completed(failures)
         except WorkerProgrammingError as error:
             supervisor.fatal(error)
+            close_all_database_runtimes()
             return WorkerSupervisor.FATAL_EXIT_CODE
+    supervisor.draining()
     supervisor.stopped()
+    close_all_database_runtimes()
     return 0
 
 

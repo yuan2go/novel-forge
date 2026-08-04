@@ -17,6 +17,7 @@ from novel_forge.modules.command_kernel.deadline_runtime import (
 from novel_forge.modules.command_kernel.worker_execution import WorkerSupervisor
 from novel_forge.storage.migrations import get_migration_status
 from novel_forge.storage.worker_health import PostgresWorkerHealthObserver
+from novel_forge.storage.database_runtime import close_all_database_runtimes
 
 
 def _authority_maintenance_loop(worker_kind: str) -> int:
@@ -65,7 +66,9 @@ def _authority_maintenance_loop(worker_kind: str) -> int:
         # require their explicit scheduler/consumer and are not claimed here.
         supervisor.polled(idle=True)
         time.sleep(poll_seconds)
+    supervisor.draining()
     supervisor.stopped()
+    close_all_database_runtimes()
     return 0
 
 

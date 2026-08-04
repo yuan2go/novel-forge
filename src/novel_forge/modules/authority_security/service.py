@@ -122,13 +122,16 @@ class TrustedPrincipalResolver:
             permissions=frozenset(
                 {
                     "chapter.authority.execute",
+                    "book.authority.execute",
                     "project.authority.execute",
                     "book_design.authority.execute",
                     "content.authority.execute",
                     "mkaos.authority.execute",
+                    "source.authority.execute",
                     "mkaos.authority.approve",
                     "content.operation:*",
                     "external_effect.execute",
+                    "book.followup:*",
                 }
             ),
             project_scope=self.configured_project_scope,

@@ -18,5 +18,6 @@
     {"name": "provider-control", "path": "src/novel_forge/modules/provider_control/__init__.py", "import_path": "novel_forge.modules.provider_control", "owner": "execution", "authority_mode": "gateway-only"},
     {"name": "provider-qualification", "path": "src/novel_forge/modules/provider_qualification/__init__.py", "import_path": "novel_forge.modules.provider_qualification", "owner": "execution", "authority_mode": "postgresql"},
     {"name": "legacy-migration", "path": "src/novel_forge/modules/legacy_migration/__init__.py", "import_path": "novel_forge.modules.legacy_migration", "owner": "migration", "authority_mode": "import-only"}
+    ,{"name": "database-runtime", "path": "src/novel_forge/storage/database_runtime.py", "import_path": "novel_forge.storage.database_runtime", "owner": "storage", "authority_mode": "postgresql"}
   ]
 }

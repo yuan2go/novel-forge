@@ -1,0 +1,177 @@
+"""PostgreSQL outbox dispatcher with durable idempotent internal receipts."""
+from __future__ import annotations
+
+import os
+import signal
+import time
+from dataclasses import dataclass
+
+from novel_forge.infrastructure.settings import IndustrialSettings
+from novel_forge.modules.command_kernel.worker_execution import WorkerSupervisor
+from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+from novel_forge.storage.database_runtime import close_all_database_runtimes
+from novel_forge.storage.worker_health import PostgresWorkerHealthObserver
+
+
+@dataclass(frozen=True, slots=True)
+class OutboxClaim:
+    outbox_id: str
+    event_id: str
+    project_id: str
+    topic: str
+
+
+class PostgresOutboxDispatcher:
+    """Claims globally but commits each delivery receipt in a short transaction."""
+
+    def __init__(
+        self,
+        database_url: str,
+        *,
+        worker_id: str,
+        consumer_name: str = "authority-internal-event-bus",
+        lease_seconds: int = 30,
+    ) -> None:
+        if not database_url or not worker_id or lease_seconds <= 0:
+            raise ValueError("outbox dispatcher configuration is invalid")
+        self.database_url = database_url
+        self.worker_id = worker_id
+        self.consumer_name = consumer_name
+        self.lease_seconds = lease_seconds
+
+    def claim(
+        self, *, limit: int, project_id: str = ""
+    ) -> tuple[OutboxClaim, ...]:
+        if limit <= 0:
+            raise ValueError("outbox claim limit must be positive")
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                WITH selected AS (
+                    SELECT outbox_id
+                    FROM outbox_event
+                    WHERE LOWER(status) IN ('pending','queued','failed')
+                      AND (%s='' OR project_id=%s)
+                      AND available_at <= NOW()
+                      AND (lease_expires_at IS NULL OR lease_expires_at < NOW())
+                    ORDER BY available_at, created_at, outbox_id
+                    FOR UPDATE SKIP LOCKED
+                    LIMIT %s
+                )
+                UPDATE outbox_event AS event
+                SET status='claimed', claimed_by=%s, claimed_at=NOW(),
+                    lease_expires_at=NOW() + (%s * INTERVAL '1 second'),
+                    attempt_count=event.attempt_count + 1, updated_at=NOW()
+                FROM selected
+                WHERE event.outbox_id=selected.outbox_id
+                RETURNING event.outbox_id, event.event_id,
+                          event.project_id, event.topic
+                """,
+                [project_id, project_id, limit, self.worker_id, self.lease_seconds],
+            )
+            claims = tuple(OutboxClaim(*map(str, row)) for row in uow.cursor.fetchall())
+            uow.commit()
+        return claims
+
+    def deliver(self, claim: OutboxClaim) -> bool:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT status, claimed_by
+                FROM outbox_event
+                WHERE outbox_id=%s AND event_id=%s AND project_id=%s
+                FOR UPDATE
+                """,
+                [claim.outbox_id, claim.event_id, claim.project_id],
+            )
+            row = uow.cursor.fetchone()
+            if row is None:
+                raise RuntimeError("claimed outbox event disappeared")
+            if str(row[0]).lower() == "acked":
+                return False
+            if str(row[0]).lower() != "claimed" or str(row[1]) != self.worker_id:
+                raise RuntimeError("outbox lease is no longer owned by this worker")
+            uow.cursor.execute(
+                """
+                INSERT INTO outbox_consumer_delivery(consumer_name, event_id)
+                VALUES (%s, %s)
+                ON CONFLICT (consumer_name, event_id) DO NOTHING
+                """,
+                [self.consumer_name, claim.event_id],
+            )
+            inserted = uow.cursor.rowcount == 1
+            uow.cursor.execute(
+                """
+                UPDATE outbox_event
+                SET status='acked', published_at=COALESCE(published_at, NOW()),
+                    acked_at=COALESCE(acked_at, NOW()), lease_expires_at=NULL,
+                    updated_at=NOW()
+                WHERE outbox_id=%s AND claimed_by=%s AND LOWER(status)='claimed'
+                """,
+                [claim.outbox_id, self.worker_id],
+            )
+            if uow.cursor.rowcount != 1:
+                raise RuntimeError("outbox acknowledgement lost its fenced claim")
+            uow.commit()
+        return inserted
+
+
+def main() -> int:
+    settings = IndustrialSettings.from_env()
+    if settings.storage_authority != "postgresql" or not settings.database_url:
+        raise RuntimeError("Outbox worker requires PostgreSQL authority")
+    worker_id = str(
+        os.environ.get("NOVEL_FORGE_OUTBOX_WORKER_ID") or "outbox-worker"
+    ).strip()
+    poll_seconds = max(
+        0.05, float(os.environ.get("NOVEL_FORGE_AUTHORITY_POLL_SECONDS") or "1")
+    )
+    batch_size = max(
+        1, int(os.environ.get("NOVEL_FORGE_AUTHORITY_BATCH_SIZE") or "50")
+    )
+    dispatcher = PostgresOutboxDispatcher(
+        settings.database_url, worker_id=worker_id
+    )
+    supervisor = WorkerSupervisor(
+        worker_kind="outbox",
+        worker_id=worker_id,
+        observer=PostgresWorkerHealthObserver(settings.database_url),
+    )
+    stopping = False
+
+    def stop(_signum: int, _frame: object) -> None:
+        nonlocal stopping
+        stopping = True
+
+    signal.signal(signal.SIGINT, stop)
+    signal.signal(signal.SIGTERM, stop)
+    try:
+        while not stopping:
+            claims = dispatcher.claim(limit=batch_size)
+            if not claims:
+                supervisor.polled(idle=True)
+                time.sleep(poll_seconds)
+                continue
+            supervisor.polled(idle=False)
+            failures = 0
+            for claim in claims:
+                if stopping:
+                    break
+                try:
+                    dispatcher.deliver(claim)
+                except Exception:
+                    failures += 1
+            supervisor.batch_completed(range(failures))  # only the count is observed
+        supervisor.draining()
+        supervisor.stopped()
+        return 0
+    finally:
+        close_all_database_runtimes()
+
+
+def cli() -> None:
+    raise SystemExit(main())
+
+
+if __name__ == "__main__":
+    cli()

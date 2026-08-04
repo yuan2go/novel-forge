@@ -12,6 +12,7 @@ from novel_forge.storage.authority_asset_store import (
     AuthorityAssetDocument,
     AuthorityAssetQuery,
 )
+from novel_forge.storage.database_runtime import get_database_runtime
 
 from .contracts import InputManifest, ModelProfile, RoutePolicy, RouteSnapshot
 
@@ -28,9 +29,8 @@ class PostgresAttemptFenceVerifier:
     def assert_current(
         self, operation_id: str, attempt_id: str, fencing_token: int
     ) -> None:
-        import psycopg
-
-        with psycopg.connect(self.database_url, autocommit=True) as connection:
+        runtime = get_database_runtime(self.database_url)
+        with runtime.connection() as connection:
             with connection.cursor() as cursor:
                 cursor.execute(
                     """
