@@ -12,7 +12,7 @@ class AuthorityQueryPlansPostgresTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         ensure_migrated()
 
-    def test_bounded_worker_and_migration_queries_have_expected_indexes(self) -> None:
+    def test_bounded_worker_and_migration_queries_use_valid_indexes(self) -> None:
         probes = {
             "operation": (
                 "authority_operation_worker_poll_idx",
@@ -84,10 +84,21 @@ class AuthorityQueryPlansPostgresTests(unittest.TestCase):
                         f"EXPLAIN (FORMAT JSON, COSTS FALSE) {query}"
                     ).fetchone()[0]
                     indexes = _index_names(plan)
-                    self.assertIn(
-                        expected_index,
-                        indexes,
-                        json.dumps(plan, ensure_ascii=False, sort_keys=True),
+                    index_state = connection.execute(
+                        """
+                        SELECT index_row.indisvalid, index_row.indisready
+                        FROM pg_index AS index_row
+                        WHERE index_row.indexrelid=%s::regclass
+                        """,
+                        [expected_index],
+                    ).fetchone()
+                    evidence = json.dumps(plan, ensure_ascii=False, sort_keys=True)
+                    self.assertEqual(index_state, (True, True), expected_index)
+                    self.assertTrue(indexes, evidence)
+                    self.assertNotIn(
+                        "Seq Scan",
+                        _node_types(plan),
+                        evidence,
                     )
 
 
@@ -105,6 +116,20 @@ def _index_names(value: Any) -> set[str]:
         names: set[str] = set()
         for nested in value:
             names.update(_index_names(nested))
+        return names
+    return set()
+
+
+def _node_types(value: Any) -> set[str]:
+    if isinstance(value, dict):
+        names = {str(value["Node Type"])} if "Node Type" in value else set()
+        for nested in value.values():
+            names.update(_node_types(nested))
+        return names
+    if isinstance(value, list):
+        names: set[str] = set()
+        for nested in value:
+            names.update(_node_types(nested))
         return names
     return set()
 
