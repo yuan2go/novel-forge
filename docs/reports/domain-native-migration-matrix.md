@@ -1,51 +1,54 @@
 # Domain-Native Migration Matrix
 
-The source of truth is `DEFAULT_CODEC_REGISTRY`. A codec describes source
-classification; only a successful domain adapter, independent decision,
-activation command, projection and reconciliation upgrades an item from
-`ARCHIVAL_NATIVE` to `DOMAIN_NATIVE`.
+The registry is closed at 59 types. The 18 rows below are the only
+`DOMAIN_NATIVE` core in this release. IDs are runtime facts and therefore appear
+in PostgreSQL/CI evidence, not in this checked-in matrix.
 
-## Domain-native core types
+| Source type | Domain adapter | Server validator | Projection authority | Alias identity |
+|---|---|---|---|---|
+| `project_workspace_state` | `ProjectWorkspaceMigrationAdapter` | `project_authority.domain_validator.v1` | Project Authority | canonical |
+| `book` | `BookDesignMigrationAdapter` | `book_design_authority.domain_validator.v1` | Book Authority | `book_record` |
+| `book_record` | `BookDesignMigrationAdapter` | `book_design_authority.domain_validator.v1` | Book Authority | `book` |
+| `book_design` | `BookDesignMigrationAdapter` | `book_design_authority.domain_validator.v1` | BookDesign Authority | `book_design_candidate` |
+| `book_design_candidate` | `BookDesignMigrationAdapter` | `book_design_authority.domain_validator.v1` | BookDesign Authority | `book_design` |
+| `story_design` | `StoryDesignMigrationAdapter` | `StoryDesignValidatorSuite@1.0.0` | Story Design Authority | `story_design_candidate` |
+| `story_design_candidate` | `StoryDesignMigrationAdapter` | `StoryDesignValidatorSuite@1.0.0` | Story Design Authority | `story_design` |
+| `book_plan` | `HierarchicalPlanningMigrationAdapter` | `hierarchical_planning.domain_validator.v1` | PlanChange Authority | `outline_version` |
+| `outline_version` | `HierarchicalPlanningMigrationAdapter` | `hierarchical_planning.domain_validator.v1` | PlanChange Authority | `book_plan` |
+| `volume_plan` | `HierarchicalPlanningMigrationAdapter` | `hierarchical_planning.domain_validator.v1` | PlanChange Authority | canonical |
+| `arc_plan` | `HierarchicalPlanningMigrationAdapter` | `hierarchical_planning.domain_validator.v1` | PlanChange Authority | canonical |
+| `chapter_group_plan` | `HierarchicalPlanningMigrationAdapter` | `hierarchical_planning.domain_validator.v1` | PlanChange Authority | canonical |
+| `chapter_plan` | `HierarchicalPlanningMigrationAdapter` | `hierarchical_planning.domain_validator.v1` | PlanChange Authority | `chapter_plan_version` |
+| `chapter_plan_version` | `HierarchicalPlanningMigrationAdapter` | `hierarchical_planning.domain_validator.v1` | PlanChange Authority | `chapter_plan` |
+| `source_document` | `SourceDocumentMigrationAdapter` | `source_authority.domain_validator.v1` | Source Authority | canonical |
+| `knowledge_card_candidate` | `MkaosMigrationAdapter` | `mkaos_authority.domain_validator.v1` | MKAOS Authority | `knowledge_card` |
+| `knowledge_card` | `MkaosMigrationAdapter` | `mkaos_authority.domain_validator.v1` | MKAOS Authority | `knowledge_card_candidate` |
+| `knowledge_pack` | `MkaosMigrationAdapter` | `mkaos_authority.domain_validator.v1` | MKAOS Pack Authority | canonical |
 
-| Source types | Adapter | Native proof | Important boundary |
-|---|---|---|---|
-| `project_workspace_state` | Project Authority path | project, workspace, binding, scope, current version | project shell can be created, but imported business content still requires review |
-| `book`, `book_record`, `book_design`, `book_design_candidate` | Book/BookDesign Authority | candidate, decision, active design, unique root, expected version | activation follows migration approval and typed Authority commands |
-| `story_design`, `story_design_candidate` | StoryDesign Authority | candidate, decision, active projection, version | candidate generation never self-activates |
-| `book_plan`, `outline_version`, `volume_plan`, `arc_plan`, `chapter_group_plan`, `chapter_plan`, `chapter_plan_version` | Hierarchical Planning Authority | story-design dependency, parent and active binding, containment edge, replacement evidence, expected version | Arc is an overlay; containment remains Book to Volume to ChapterGroup to Chapter |
-| `source_document` | Source Authority | rights, governance, verified blob receipt, hash/object key, projection | absent or invalid blob evidence quarantines; no active SourceDocument is fabricated |
-| `knowledge_card_candidate`, `knowledge_card`, `knowledge_pack` | MKAOS Authority | candidate/approval/knowledge/pack projections and version references | fixture activation is marked fixture-only and is not real-provider proof |
+## Proof contract per source type
 
-Count: **18 DOMAIN_NATIVE source types**.
+Each core type is covered by scanner/import/reference/validation/decision/
+activation/projection/reconciliation flows. Shared adversarial suites additionally
+prove replay and crash resume, same-hash duplicate idempotency, different-hash and
+expected-version conflict, cross-project rejection, explicit rejection, stale
+validation, stale decision, and dependency invalidation. A Domain pass requires
+zero pending items and zero validation, reconciliation or required-reference
+failure.
 
-## Archival-native types
+Alias groups converge on one business identity. The unique business identity and
+content hash policy makes same-content replay idempotent and different-content
+aliases conflict. Two aliases for the same business key in one snapshot cannot
+create duplicate projections and fail closed when their content conflicts.
 
-The remaining **41 source types** are safely stored as immutable Authority
-AssetVersions with `IMPORTED`, `PENDING_EVALUATION`, and `NEEDS_REVIEW`. They do
-not claim a domain projection:
+## Special fail-closed boundaries
 
-```text
-agent_checkpoint, agent_contract, agent_run, analysis_report,
-canon_database, canon_graph_snapshot, character_card, cleaned_text,
-context_build_plan, context_bundle, continuity_bible, draft, draft_chapter,
-draft_diff_report, editor_patch, fact_ledger, faction_card,
-feedback_import_batch, feedback_insight, location_card, material_card,
-publication_record, publish_gate_report, publishing_log, publishing_plan,
-reader_outcome, reader_sentiment_report, release_package, review_issue,
-review_report, revised_draft, revision_plan, revision_task, rule_card,
-source_chunk, story_state_snapshot, template_card, topic_seed,
-workflow_definition, workflow_run, world_bible
-```
-
-`material_card`, `rule_card`, and `template_card` remain archival because the
-current MKAOS Authority does not expose corresponding typed projections. This
-is a deliberate remaining domain-migration gap, not an alias to `knowledge_card`.
-
-## Fail-closed outcomes
-
-- Unknown registry type: `UNSUPPORTED` and quarantine.
-- Missing/cross-project/ambiguous required reference: `QUARANTINED` or
-  `CONFLICT`.
-- Missing Source blob receipt or unsafe rights/governance: `QUARANTINED`.
-- Domain validation without independent approval: remains `NEEDS_REVIEW`.
-- Rebuildable generated data: `REBUILDABLE`, never imported as business truth.
+- Story Design produces versioned receipts for schema, structural, semantic,
+  generator-contract and planning-scope checks. The migration adapter cannot
+  assert success.
+- SourceDocument activation requires an object-store Blob receipt and exact
+  hash, size, object key and rights state.
+- MKAOS candidates require execution evidence resolving to SourceChunk
+  AssetVersions, independent approval, activated card versions and explicit pack
+  selections. Fixture lineage remains marked fixture and non-production.
+- The other 41 registry entries remain `ARCHIVAL_NATIVE`; no domain activation
+  claim is made for them.

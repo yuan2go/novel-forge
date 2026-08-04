@@ -1,86 +1,59 @@
-# Current HEAD SHA Baseline
+# Current HEAD SHA Evidence Model
 
-## Binding
+This file is a stable source-tree contract, not a snapshot of the latest GitHub
+Actions run. It deliberately does not record a commit SHA, remote run id,
+artifact digest, timestamped test count, or remote conclusion.
 
-| Field | Value |
+## Three evidence layers
+
+| Layer | Authority | Persistence | Binding |
+|---|---|---|---|
+| Architecture Contract | `architecture/manifests/postgresql-authority-contract.json` | Git | reviewed requirements and minimum thresholds; never a mutable source-tree hash |
+| Implementation Tree Identity | `novel_forge.tools.implementation_tree_identity` | recomputed locally and in CI | canonical SHA-256 over semantic inputs only |
+| Run Evidence | Core OS CI artifacts | GitHub Actions | exact tested `GITHUB_SHA`, artifact content hash, job result and environment |
+
+The implementation identity includes `src/**`, `tests/**`, `scripts/**`,
+`architecture/manifests/**`, `.github/workflows/**`, Compose definitions,
+Dockerfiles, `Makefile`, and `pyproject.toml`. Reports, generated output, CI ids,
+temporary files, logs, build output, and other self-referential evidence are
+excluded by an explicit code-level selection contract and unit tests.
+
+## Candidate schema facts
+
+| Fact | Value |
 |---|---|
-| Repository | `https://github.com/yuan2go/novel-forge` |
-| Branch | `feat/v7-content-intelligence-and-longform-proof` |
-| Starting local/remote SHA | `a784a52f174cd13c53846eb59a17132a357c2c45` |
-| Implementation SHA | `32e4fd1462509216273cf861c9c4f36a69eb15b4` |
-| Full Python/Admin tested code SHA | `0e573fc0a02687ac54e1c1298f914f38dd533305` |
-| PostgreSQL tested code SHA | `0e573fc0a02687ac54e1c1298f914f38dd533305` |
-| Query/Compose tested implementation SHA | `32e4fd1462509216273cf861c9c4f36a69eb15b4` |
-| Remote branch SHA | `a784a52f174cd13c53846eb59a17132a357c2c45` |
-| Remote final-SHA CI | `NOT_PROVEN` |
+| Migration head | `20260804_0063_worker_fleet_operational_governance` |
+| Migration count | 63 |
+| Migration registry | 59 source types: 18 `DOMAIN_NATIVE`, 41 `ARCHIVAL_NATIVE` |
+| Default backend | PostgreSQL Authority, fail closed |
+| Legacy default reachability | forbidden |
+| Worker runtime groups | Chapter, Content, Source, MKAOS, Book, Outbox, Maintenance |
 
-The one-line difference between the full-suite SHA and implementation SHA adds
-the missing default local PostgreSQL DSN to
-`make authority-query-plan-release`; that exact command and the exact
-implementation SHA then passed query-plan and Compose qualification. Evidence
-documents are committed after these implementation tests and do not claim to
-have tested their own not-yet-created commit. Final handoff records the later
-evidence SHA and its final static/test gates.
-
-## Runtime facts
-
-| Field | Value |
-|---|---|
-| Python / Node | 3.12.2 / v26.3.1 |
-| PostgreSQL | 16.14 |
-| Docker / Compose | 24.0.7 / 2.23.3-desktop.2 |
-| Migration head / count | `20260804_0058_authority_cutover_release_qualification` / 58 |
-| Codec mappings | 59 total: 18 `DOMAIN_NATIVE`, 41 `ARCHIVAL_NATIVE` |
-| Reachability | 15 entrypoints, 719 modules, 454 reachable files |
-| Legacy blockers / unclassified | 0 / 0 |
-| Inventory SHA-256 | `47183f59ed1cf80c236a5468711ce493eff101988d9dcb093edea03c979d62e9` |
-
-## Test matrix
-
-| Command | Passed | Failed | Skipped | Duration | Evidence level | Tested SHA |
-|---|---:|---:|---:|---:|---|---|
-| `make test` Python discovery | 1,457 | 0 | 9 | 710.401s | UNIT_PROVEN plus environment-free integration | `0e573fc` |
-| `make test` Admin Node contract | 11 | 0 | 0 | 0.109s | UNIT_PROVEN | `0e573fc` |
-| `make authority-postgres-test` | 152 | 0 | 0 | 88.597s | POSTGRESQL_INTEGRATION_PROVEN | `0e573fc` |
-| `make authority-query-plan-release` | 5 plans | 0 | 0 | 14.462s | REPRESENTATIVE_PLANNER_PROVEN | `32e4fd1` |
-| `make authority-smoke` | 1 Content scenario | 0 | 0 | 110.757s | COMPOSE_SMOKE / FAULT_INJECTION | `32e4fd1` |
-
-The query qualification populated 100,000 rows each for Operation, Outbox,
-AssetVersion and migration items, plus 10,000 Books. Without disabling
-sequential scans, PostgreSQL selected the expected indexes for Worker poll,
-Outbox claim, AssetVersion lookup, Book poll and migration resume; no plan
-contained a Sort or rows removed by filter.
-
-The Compose smoke migrated an empty database to 0058, reached Ready for the
-11-service Authority plane, completed a synthetic Content operation, recovered
-another after forced Worker restart at fencing token 2, rejected the stale token,
-published Outbox records, drained all seven Workers, and ended with zero Worker
-connections and zero active/idle-in-transaction sessions. This is not seven
-independent domain-operation scenarios.
-
-## Evidence status
+## Final-SHA qualification flow
 
 ```text
-architecture_defined=true
-unit_proven=true
-postgresql_integration_proven=true
-compose_smoke_proven=true
-fault_injection_proven=true
-domain_migration_core_types_proven=false
-worker_fleet_e2e_proven=false
-remote_sha_ci_proven=false
-real_provider_proven=false
-longform_proven=false
-multi_book_proven=false
-production_verified=false
-backup_pitr_proven=false
+code + stable contract commit
+  -> push candidate SHA
+  -> run all Core OS CI required jobs on that SHA
+  -> emit SHA-bound Coverage, tests, migrations, Compose, query plan,
+     Worker Fleet, Docker digest and environment artifacts
+  -> fail-closed release-qualification artifact validates all classes
+  -> annotated qualification tag points to that same green SHA
+  -> no evidence-only source commit after the tag
 ```
 
-Current strict verdicts:
+The authoritative remote status is therefore the Actions run and annotated tag,
+not this report. A later source commit automatically requires a new run and can
+never inherit the preceding tag's proof.
 
-```text
-POSTGRESQL_AUTHORITY_BACKEND_HARDENING_PARTIAL
-LEGACY_DOMAIN_MIGRATION_PARTIAL
-AUTHORITY_WORKER_FLEET_E2E_PARTIAL
-REMOTE_SHA_CI_NOT_PROVEN
-```
+## Evidence boundary
+
+Fixture-based unit, PostgreSQL integration, Compose recovery, core domain
+migration and Worker Fleet claims are eligible only after their exact-SHA jobs
+pass. The following remain false regardless of a green backend qualification:
+
+- real Provider proof;
+- real long-form or multi-book proof;
+- production verification;
+- backup/PITR exercise proof;
+- autonomous Book Loop proof.

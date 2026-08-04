@@ -1,29 +1,21 @@
 # PostgreSQL Authority Cutover Hardening Findings
 
-Baseline SHA: `a784a52f174cd13c53846eb59a17132a357c2c45`
+This report records implementation findings. Exact-SHA execution status is
+authoritative only in Core OS CI artifacts and the annotated qualification tag.
 
-This report is the human-readable view of
-`authority-cutover-hardening-findings.json`. It distinguishes resolved local
-implementation from remote final-SHA evidence and deliberately leaves strict
-fleet and remaining domain coverage open.
+| Area | Severity | Implementation result | Release gate |
+|---|---:|---|---|
+| Evidence identity | P0 | stable Architecture Contract, deterministic semantic tree identity, volatile SHA-bound artifacts | final release artifact must contain all eight required evidence classes |
+| Validation authority | P0 | `migration.item.validate` computes and persists server-side validation; approval accepts only its id | stale/revoked/mismatched validation must reject |
+| Migration semantics | P0 | archival state, domain state, validation scope and run completion are distinct | `DOMAIN_NATIVE` cannot pass with pending review or failures |
+| Core domain adapters | P0 | exactly 18 source types have real Authority adapters; remaining 41 stay archival | all 18 must pass PostgreSQL integration on final SHA |
+| Story Design validation | P0 | versioned schema, structural, semantic, generator-contract and planning-scope validators | no caller-supplied `passed=true` path |
+| Structured references | P0 | typed relation, optionality, type/hash/cardinality/scope checks and dependency graph | ambiguity, cross-project, mismatch and cycle fail closed |
+| Runtime Job plane | P0 | Book and Maintenance use fenced, resumable non-business Runtime Jobs | Runtime Job never owns business state |
+| Outbox execution | P0 | dedicated delivery authority retains Outbox ownership while exposing equivalent lease/fence/checkpoint guarantees | stale claim and poison recovery required |
+| Worker Fleet | P0 | seven independent Compose scenarios and fail-closed fleet summary implemented | all seven exact-SHA matrix jobs must pass |
+| Worker governance | P1 | derived database status, safe pool identity and cross-process metrics projection | no full DSN in registry metrics or logs |
+| Remote qualification | P0 | workflow emits test, migration, coverage, Compose, query, fleet, Docker and environment artifacts | final Required Jobs green, then annotated tag on same SHA |
 
-| ID | Severity | Category | Status | Result |
-|---|---|---|---|---|
-| A | P0 | Migration semantics | FIXED | 18 types are `DOMAIN_NATIVE`; 41 are explicitly `ARCHIVAL_NATIVE`. |
-| B | P0 | Domain validation | PARTIAL | Core adapters invoke real Authorities; remaining types are not mislabelled. |
-| C | P0 | Reference integrity | FIXED | Two-pass bindings persist Asset, AssetVersion and projection identity. |
-| D | P0 | Approval | FIXED | Legacy self-approval is evidence only; independent decisions gate activation. |
-| E | P0 | Resume | FIXED | All nine phases persist evidence and advance with expected-version CAS. |
-| F | P0 | Reconciliation | PARTIAL | Core domain projections reconcile; archival types have no domain proof. |
-| G | P0 | Reachability | FIXED | 15 entrypoints feed a recursive import graph with explicit guard boundaries. |
-| H | P0 | Entrypoints/CI | FIXED_LOCAL_REMOTE_PENDING | Local contracts pass; final-SHA GitHub Actions have not run. |
-| I | P0 | Worker fleet | OPEN | Only Content has a full Compose operation/restart path. |
-| J | P1 | Worker health | FIXED | Health derives from actual attempts, leases and operation outcomes. |
-| K | P1 | Transactions | FIXED | Whole-transaction retry is explicit, pure-DB and idempotent only. |
-| L | P0 | DB errors | FIXED | Unknown outcome reconciles; protocol violations and signals are not retried. |
-| M | P1 | Query plans | FIXED_LOCAL_REMOTE_PENDING | Local representative-scale plans pass; remote release job is pending. |
-
-The unresolved P0 fleet item prevents
-`POSTGRESQL_AUTHORITY_BACKEND_RELEASE_QUALIFIED` and
-`AUTHORITY_WORKER_FLEET_E2E_PROVEN`. The partial core-domain matrix prevents a
-blanket claim that all registered migration types are domain native.
+No item in this table upgrades fixture evidence to real-provider, production,
+long-form, multi-book, backup/PITR or autonomous Book Loop proof.

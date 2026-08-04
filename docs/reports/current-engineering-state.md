@@ -91,5 +91,28 @@ again after a database retry.
 - [`../architecture/authority-runtime-architecture.md`](../architecture/authority-runtime-architecture.md)
 - [`../06-operations/authority-compose-runbook.md`](../06-operations/authority-compose-runbook.md)
 
+## PostgreSQL Authority release-candidate closure
+
+Migrations 0059–0063 add server-owned Migration Validation, explicit archival
+and domain completion semantics, structured dependency references, the
+non-business Runtime Job plane, hardened Outbox execution evidence, Worker
+health and Fleet metrics. The core migration registry remains deliberately split
+between 18 `DOMAIN_NATIVE` and 41 `ARCHIVAL_NATIVE` types.
+
+Seven independent Compose scenarios now exist for Chapter, Content, Source,
+MKAOS, Book, Outbox and Maintenance. Their exact work/attempt-or-job/lease/fence
+identities and final verdict are volatile CI evidence. A fleet claim becomes true
+only when the same-SHA summary accepts all seven PASS artifacts.
+
+The source-tree evidence model no longer stores a mutable coverage hash or final
+remote conclusion. The stable Architecture Contract and deterministic semantic
+Implementation Tree Identity are checked in; Coverage, tests, migrations,
+Compose, query plans, Worker Fleet, Docker image digest and environment metadata
+are generated as exact-SHA Actions artifacts. The annotated release tag is
+created only after every Required Job passes on that same SHA.
+
+This closure does not change the D0/Provider, production, backup/PITR,
+long-form, multi-book or autonomous Book Loop non-claims above.
+
 Historical reports retain the evidence boundary of their own SHA and must not be
 used as current-code proof.

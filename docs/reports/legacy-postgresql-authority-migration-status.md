@@ -1,61 +1,66 @@
 # Legacy to PostgreSQL Authority Migration Status
 
-Current engineering status: `LEGACY_DOMAIN_MIGRATION_PARTIAL`.
+Implementation target: core domain migration qualification at migration head
+`20260804_0063_worker_fleet_operational_governance`. Remote proof is determined
+by the exact-SHA CI artifact, not by a status sentence in this file.
 
-PostgreSQL is the default fail-closed storage authority. Legacy has no default
-read, write, silent-fallback or dual-write path; it is available only through an
-explicit compatibility CLI/profile or the audited frozen-snapshot importer.
+## Materialization levels
 
-## Evidence levels
+| Level | Count | Meaning |
+|---|---:|---|
+| `DOMAIN_NATIVE` | 18 | server validation, independent decision, domain activation and projection reconciliation are implemented |
+| `ARCHIVAL_NATIVE` | 41 | immutable scoped AssetVersion and archival reconciliation only; domain completion is not claimed |
 
-| Level | State | Evidence |
-|---|---|---|
-| `ARCHIVAL_NATIVE` | implemented | immutable scoped AssetVersion, source/target hash, basic schema envelope, Audit, Outbox, replay and quarantine |
-| `DOMAIN_NATIVE` | implemented for 18 source types | real Book/Design, StoryDesign, Planning, Source, MKAOS and Project Authority paths |
-| all registered types domain native | false | 41 mappings intentionally remain archival |
+Archival state and domain state are separate columns. `validation_scope` records
+which contract was executed, and `run_completion_level` distinguishes
+`ARCHIVAL_RECONCILED`, `DOMAIN_RECONCILED` and `RELEASE_READY`. Run status uses
+`IMPORT_RUNNING`, `ARCHIVAL_RECONCILED`, `DOMAIN_REVIEW_PENDING`,
+`DOMAIN_ACTIVATION_PARTIAL`, `DOMAIN_RECONCILED`, `QUARANTINED`, `FAILED` and
+`CANCELLED`; the ambiguous legacy `SUCCEEDED` meaning is not used for new runs.
 
-Every non-project-shell record begins as `IMPORTED`,
-`PENDING_EVALUATION`, `NEEDS_REVIEW`. The durable state machine is:
+`verify(required_level=ARCHIVAL_NATIVE|DOMAIN_NATIVE|RELEASE_READY)` fails closed.
+Domain verification requires pending-domain count, actual domain failures,
+validation failures, reconciliation failures and required-reference failures all
+to be zero.
 
-```text
-SCAN -> CLASSIFY -> IMPORT_CANDIDATE -> SEMANTIC_CONVERT -> VALIDATE
-     -> QUALIFY -> ACTIVATE | QUARANTINE -> RECONCILE -> COMPLETE
-```
+## Validation and activation authority
 
-Each phase stores version, timestamps, attempts, input/output hashes, evidence,
-errors and next phase. Expected-version compare-and-set protects concurrent
-advancement; resume starts at the last successful `next_phase`.
+`migration.item.validate` locks the item, freezes item/source/target/adapter/
+validator identity, executes the server validator, hashes input/result, and
+writes Validation, StateEvent, Audit and Outbox in one transaction. Validation
+records have `PASS`, `FAIL`, `STALE` or `REVOKED` state.
 
-References resolve in two passes from Legacy business key through migration
-item to Asset, AssetVersion and domain projection. Required missing,
-cross-project and ambiguous references fail closed. Replay identity combines
-run, source item, ordinal, relation and target version.
+Approval accepts a `migration_validation_id`, not client evidence. It reloads and
+matches run, item/version, source hash, target version, adapter and latest valid
+validator implementation. Activation reloads the Decision and Validation,
+rechecks their bindings and all required activated dependencies, and records the
+validation/result hash in the domain transition. Item, source, target, reference,
+adapter, validator or dependency changes invalidate reuse.
 
-Independent approval persists actor, decision, reason, expected item version,
-source hash, target AssetVersion, domain-validation evidence, idempotency key,
-Audit and Outbox. Source self-assertions never activate an item.
+## Structured references
 
-## Current inventory
+Structured references carry business key, relation, optionality, expected source
+and target type, expected content hash, cardinality and ordinal. Legacy strings
+are normalized to explicit compatibility references and retain compatibility
+evidence. Project/workspace, ambiguity, type, hash, cardinality and supported
+relation checks fail closed. Required domain dependencies are topologically
+activated; cycles quarantine the affected graph.
 
-| Field | Result |
-|---|---:|
-| Inventory schema | `legacy-authority-migration-inventory.v3` |
-| Inventory rows | 450 |
-| Authority entrypoints | 15 |
-| Transitive modules | 719 |
-| Reachable files | 454 |
-| Production blockers | 0 |
-| Unclassified | 0 |
-| Web excluded | 2 |
+## Forward migration chain
 
-The static graph covers API, dependencies, CLI, all Worker groups, healthcheck,
-callback/effect dispatch, console/Compose commands and static dynamic imports.
-Guarded compatibility paths are retained as evidence, not erased from the graph.
+| Migration | Purpose |
+|---|---|
+| 0059 | server-side Migration Validation aggregate and decision binding |
+| 0060 | archival/domain item state and run completion semantics |
+| 0061 | structured references and dependency graph |
+| 0062 | non-business Runtime Job execution plane |
+| 0063 | Outbox execution evidence, Worker health and fleet metrics |
 
-## Remaining migration gaps
+All five are forward-only, backup-required migrations with forward-fix recovery.
+Migrations 0001–0058 are unchanged.
 
-- `material_card`, `rule_card`, and `template_card` lack typed MKAOS projections.
-- Canon, StoryState, Context, Draft/Review/Revision, Feedback, Publishing and
-  Agent/Workflow historical records remain archival.
-- Runtime system-call tracing of Legacy path access is not a release gate in this
-  slice; static graph plus no Legacy mount/fail-closed tests are the current proof.
+## Remaining boundary
+
+The 41 archival types are not silently promoted. Legacy compatibility remains
+explicit and non-default. Real Provider, production load/SLO, backup/PITR,
+long-form, multi-book and autonomous Book Loop proof remain outside this release.

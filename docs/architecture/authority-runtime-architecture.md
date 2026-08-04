@@ -1,88 +1,80 @@
 # PostgreSQL Authority Runtime Architecture
 
-Evidence binding is recorded in `docs/reports/current-head-sha-baseline.json`.
-
-## Production boundary
+## Authority boundaries
 
 ```text
-API / CLI
-  -> Application Service
-  -> PostgreSQL Command Kernel
-  -> Operation / Saga / Attempt / Lease / Fence
-  -> runtime-group Worker
-  -> domain handler or planned ExternalEffect
-  -> AssetVersion + Projection + Audit + Outbox
-  -> query API
-  -> recovery / reconciliation
+Business Task       product intent and human/workflow ownership
+Authority Operation atomic domain command or resumable business execution
+Runtime Job         non-business claim/lease/fence/checkpoint execution plane
+Outbox Delivery     durable internal event-delivery authority
+ExternalEffect      side-effect intent, receipt and reconciliation authority
 ```
 
-PostgreSQL is authoritative for commands and projections. Object storage holds
-large immutable payloads. Provider and publishing calls are ExternalEffects and
-do not occur inside a database transaction. Legacy LocalStorage is absent from
-this path and cannot be selected as a failure fallback.
+Runtime Job never becomes a second Task or domain authority. Book Authority owns
+Book state, Operation owns command/execution state, Outbox owns delivery state,
+and ExternalEffect owns side-effect outcome. Runtime Job only discovers, claims,
+leases, fences, checkpoints, retries, dead-letters and records worker execution.
 
 ## Default Compose plane
 
-| Service | Runtime group / responsibility | Pool max | Health |
-|---|---|---:|---|
-| `postgresql` | authority database | 100 server connections | PostgreSQL health |
-| `object-store` | hash-addressed blobs | n/a | MinIO live probe |
-| `authority-migration` | one-shot migration with advisory lock | 1 reserve | successful exit |
-| `authority-api` | API, callback admission, readiness | 8 | startup/liveness/readiness |
-| `chapter-authority-worker` | Chapter plus effect dispatch | 4 | PostgreSQL heartbeat |
-| `content-authority-worker` | typed content definitions | 4 | PostgreSQL heartbeat |
-| `source-authority-worker` | Source and object-store effects | 3 | PostgreSQL heartbeat |
-| `mkaos-authority-worker` | MKAOS operations | 3 | PostgreSQL heartbeat |
-| `book-authority-worker` | Book saga coordination | 3 | PostgreSQL heartbeat |
-| `outbox-worker` | idempotent Outbox delivery | 2 | PostgreSQL heartbeat |
-| `maintenance-worker` | recovery/reconciliation/lease maintenance | 2 | PostgreSQL heartbeat |
+The default stack contains PostgreSQL, MinIO, a one-shot migration service,
+Authority API and seven workers: Chapter, Content, Source, MKAOS, Book, Outbox
+and Maintenance. No Legacy or Web service is in the Authority topology.
 
-Provider callback admission is hosted by the Authority API; Provider effect
-dispatch is owned by the Chapter group. These are explicit merged duties, not
-missing services. The seven Worker runtime groups are `chapter`, `content`,
-`source`, `mkaos`, `book`, `outbox`, and `maintenance`.
+Chapter, Content, Source and MKAOS execute Authority Operations. Book coordination
+uses `BOOK_COORDINATION_TICK` Runtime Jobs. Maintenance uses bounded singleton/
+deduped jobs for operation deadlines, expired Attempt leases, Outbox recovery and
+ExternalEffect reconciliation. Outbox retains its dedicated authority while
+providing the same lease/fence/stale-result guarantees; it is not duplicated into
+a second delivery state machine.
 
-## Startup and shutdown
+## Runtime Job model
 
-Startup is ordered: PostgreSQL and object store healthy, one-shot migration
-succeeds, API becomes ready, then Workers register and poll. Services do not race
-to migrate the schema.
+`authority_runtime_job` stores kind/group/subject/project/dedupe input and
+scheduling state. Attempt, lease, checkpoint, result and event tables preserve
+worker identity, attempt number, fencing token, heartbeat, bounded retries,
+dead-letter and recovery. Claims use transactional row locking and database
+uniqueness/CAS; a replaced worker cannot checkpoint or complete with its stale
+token.
 
-SIGTERM stops admission/polling, marks a Worker draining, completes or safely
-checkpoints its current bounded transaction, releases or lets the lease expire,
-returns connections, closes the process-local pool, and exits. API shutdown stops
-new commands, lets active requests finish, rolls back incomplete transactions and
-closes its pool.
+Book ticks can accept a completed Chapter once, create legal follow-up state and
+resume after restart without generating the next chapter automatically.
+Maintenance scans are bounded and idempotent. Unknown external effects become
+query/manual-required unless a real Provider adapter supplies a result.
 
-## Evidence boundary
+## Migration execution
 
-The current clean-volume Compose smoke proves fixture-based command execution,
-outbox delivery, forced Worker restart, lease/fence recovery and graceful drain.
-Provider readiness is `FIXTURE_ONLY`; this is not real-provider or production
-proof.
+Legacy import first reaches archival reconciliation. The 18 core domain types
+then require server-side `migration.item.validate`, an independent Validation-ID
+decision, dependency-ordered activation and projection reconciliation. Structured
+reference edges define the activation DAG; missing, ambiguous, cross-project,
+incompatible or cyclic required edges fail closed.
 
-The smoke's executed domain operation belongs to the Content Worker. The other
-six runtime groups are started, heartbeat-checked and drained, while their
-domain execution is covered by PostgreSQL integration tests rather than isolated
-Compose scenarios. Therefore the fleet remains
-`AUTHORITY_WORKER_FLEET_E2E_PARTIAL`.
+## Health and metrics
 
-## Migration boundary
+Worker health reports active Operation/Runtime Job/Attempt, leases and current
+fence, completion/failure counters, polls/heartbeats/database outcomes and drain
+state. Database status is derived, never unconditionally written `READY`.
 
-The frozen importer first creates an archival AssetVersion and then, only for a
-registry type with a real adapter, performs domain validation, explicit approval,
-typed activation and domain reconciliation. Its two-pass reference table binds
-Legacy keys to target items, AssetVersions and projections. All phase advancement
-is expected-version guarded and resumable.
+Pool registry identity is:
 
-No source status or metadata flag is an Authority decision. Missing Source blob
-receipts, unsafe rights, missing/cross-scope/ambiguous references and unknown
-types fail closed.
+```text
+database identity fingerprint + role + service + pool-config fingerprint
+```
 
-## Operational observation
+Fleet metrics are worker-written PostgreSQL projections suitable for later
+Prometheus/OpenTelemetry export. They aggregate pool, transaction/retry/error,
+backlog, unknown-effect and stale-worker facts without exposing DSNs.
 
-Worker health derives current operation/attempt/lease counts from PostgreSQL and
-keeps batch completion distinct from operation completion. Database status is
-`READY` only after successful database work, otherwise `DEGRADED` or
-`UNAVAILABLE`. Runtime database metrics are available at `/runtime/database` and
-`/runtime/metrics`.
+## Evidence model
+
+Architecture Contract is stable and checked in. Implementation Tree Identity is
+deterministically recomputed from semantic inputs. Volatile evidence is emitted
+only by CI and binds the tested SHA. Seven independent Compose scenarios prove
+fixture execution, forced stop, lease expiry, replacement fence, stale rejection,
+recovery, drain and zero leaked connections. A fail-closed summary accepts only
+seven matching-SHA PASS documents.
+
+This boundary proves backend fixture behavior only. It does not prove real
+Provider execution, story quality, external broker delivery, production load,
+long-form/multi-book operation, PITR or autonomous Book Loop behavior.

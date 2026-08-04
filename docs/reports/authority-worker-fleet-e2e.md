@@ -1,34 +1,29 @@
-# Authority Worker Fleet E2E Status
+# Authority Worker Fleet E2E Contract
 
-Status: `AUTHORITY_WORKER_FLEET_E2E_PARTIAL`.
+Core OS CI runs seven isolated Compose scenarios. Each matrix job starts fresh
+PostgreSQL and MinIO volumes, submits work belonging to that runtime group,
+forces a worker loss, waits for lease expiry, proves a higher fencing token and
+stale-result rejection, converges, drains, and checks zero leaked connections.
 
-The current evidence deliberately distinguishes PostgreSQL worker integration
-from Compose E2E. The 11-service Compose smoke executes and restart-recovers a
-Content operation. Starting, heartbeating, draining or releasing connections
-does not prove that another worker executed its domain operation.
+| Worker | Scenario | Required domain evidence | Explicit non-claim |
+|---|---|---|---|
+| Chapter | full fixture Chapter Saga | Root/Saga, 18 nodes, quality/canon/export/final gate, restart | no real Provider or novel-quality proof |
+| Content | Creative Brief | Operation, Attempt, output AssetVersion, Audit/Outbox | fixture content only |
+| Source | MinIO object to Source projection | Put, Blob receipt, register, transform, projection | fixture object, not production storage |
+| MKAOS | candidate to approved card and pack | SourceChunk evidence, independent approval, active version selection | fixture execution evidence |
+| Book | coordination tick | legal Book run, completed Chapter child, accept/follow-up, Runtime Job resume | no autonomous next-chapter loop |
+| Outbox | internal delivery | claim, lease, fence, ack, replay, poison, expiry/recovery | no external broker delivery proof |
+| Maintenance | recovery scans | expired operation/attempt/outbox plus unknown effect handling | no fabricated Provider query success |
 
-| Worker | Domain operation evidence | Identity evidence | Restart/recovery | Compose E2E | Result |
-|---|---|---|---|---|---|
-| Chapter | Fixture-provider Chapter saga integration: root, saga, attempt, lease, output, quality, Audit, Outbox | worker, attempt, lease and fencing asserted in PostgreSQL tests | scheduler recovery tests exist | not an isolated Compose scenario | PARTIAL |
-| Content | Creative Brief operation through Command Kernel | worker, attempt, lease, fence and output asserted | forced container restart; stale fence rejected | yes | PROVEN_FOR_FIXTURE_CONTENT |
-| Source | verified synthetic blob register/transform through Source Authority | worker and operation attempt/lease asserted | scheduler retry/recovery tests | not an isolated Compose scenario | PARTIAL |
-| MKAOS | synthetic candidate, explicit approval, knowledge and pack chain | worker and operation attempt/lease asserted | scheduler retry/recovery tests | not an isolated Compose scenario | PARTIAL |
-| Book | synthetic Book run advances a legal scheduler tick and rejects duplicate chapter acceptance | worker/runtime group asserted; tick is not modeled as a Command Kernel attempt/lease/fence | restart continuation integration exists | not an isolated Compose scenario | PARTIAL |
-| Outbox | durable internal claim, lease, fenced delivery, ack, replay and poison recovery | worker, lease, fencing and runtime group asserted; no Authority Attempt row | restart/replay integration exists | not an isolated Compose scenario | PARTIAL |
-| Maintenance | expires timed-out operations/attempt leases, requeues/dead-letters Outbox and marks unknown effects query/manual-required | worker/runtime group asserted; cycle is not an Authority Attempt/lease/fence | idempotent repeat/recovery integration exists | not an isolated Compose scenario | PARTIAL |
+Every scenario artifact contains `commit_sha`, worker/runtime group, worker id,
+work id, Attempt or Runtime Job id, lease id, fencing token, checkpoint, restart,
+recovery, stale rejection, drain and connection-leak result. The summary builder
+rejects missing, duplicate, wrong-SHA, health-only or single-fence evidence.
 
-Outbox currently implements durable internal consumer delivery and acknowledgement.
-It is not evidence of an external broker, webhook or publishing delivery.
+Artifacts are named `worker-e2e-<worker>-<GITHUB_SHA>.json`; the summary is
+`worker-fleet-summary-<GITHUB_SHA>.json`. Only the summary artifact can set
+`worker_fleet_e2e_proven=true`, and only when all seven inputs are `PASS` for the
+same full SHA.
 
-## Missing proof for fleet completion
-
-1. Seven isolated Compose scenarios, each submitting work owned by that runtime
-   group.
-2. Per-scenario persisted `claimed_by`, `worker_id`, `attempt_id`, `lease_id`,
-   `fencing_token`, `runtime_group`, output and recovery evidence.
-3. A deliberate attempt/lease/fence contract for Book ticks, Outbox deliveries
-   and Maintenance cycles, or an approved typed equivalent with the same stale
-   worker protection.
-
-Until those exist, `worker_fleet_e2e_proven=false` even when the local
-PostgreSQL integration suite and the Content Compose smoke pass.
+The checked-in implementation defines the proof. The exact remote conclusion is
+owned by the Actions artifact and qualification tag.

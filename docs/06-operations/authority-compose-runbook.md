@@ -1,76 +1,91 @@
 # Authority Compose Runbook
 
-Evidence binding is recorded in `docs/reports/current-head-sha-baseline.json`.
-
-## Default backend start
-
-The default topology is the complete PostgreSQL Authority backend and contains no
-Web or Legacy service.
+## Default backend
 
 ```bash
-make authority-build
-make authority-up
-make authority-logs
+docker compose up -d --build --wait
+docker compose ps
+curl -fsS http://localhost:8000/readiness
 ```
 
-Readiness is exposed by the Authority API. It checks database connectivity,
-migration head, operation definitions, object store, runtime-group registration,
-provider mode and the database connection budget. An unconfigured real Provider
-is reported as blocked/fixture-only; it is never promoted to real proof.
+The migration service must reach
+`20260804_0063_worker_fleet_operational_governance` before API/Workers become
+ready. Legacy compatibility is not started by this topology.
 
-## Automated clean-volume smoke
+## Configuration checks
+
+```bash
+make authority-compose-config-check
+make authority-only-config-check
+make architecture-manifests-check
+```
+
+Production forbids mock providers and fixture MKAOS activation. Never set
+`NOVEL_FORGE_MKAOS_ALLOW_FIXTURE_ACTIVATION=true` outside an explicit non-
+production E2E environment.
+
+## Composite Content smoke
 
 ```bash
 make authority-smoke
 ```
 
-The script uses a unique Compose project and empty volumes, migrates once,
-requires all services ready, submits a synthetic command, checks Operation,
-Attempt, AssetVersion, Audit and Outbox evidence, kills/restarts a Worker, proves
-lease/fence recovery, drains all Workers, verifies no active or idle transaction
-and removes its isolated resources.
+This clean-volume check proves the default topology, Content execution, forced
+worker restart, fence recovery, Outbox/Audit evidence, graceful drain and
+connection cleanup. It remains a Content smoke, not Worker Fleet proof.
 
-This is specifically a Content Worker domain scenario. It is not seven-worker
-domain E2E proof. Consult `docs/reports/authority-worker-fleet-e2e.md` before
-making a fleet claim.
+## Seven Worker E2E scenarios
 
-## Explicit Legacy compatibility
-
-Legacy is never started by the default files. An operator must opt in:
+Run one isolated scenario:
 
 ```bash
-make legacy-up
-make legacy-logs
-make legacy-down
+.venv/bin/python scripts/verify_authority_worker_e2e.py \
+  --worker chapter \
+  --output /tmp/worker-e2e-chapter-$(git rev-parse HEAD).json
 ```
 
-Do not combine this profile with production Authority as a fallback or permanent
-dual-write topology.
+Allowed worker values are `chapter`, `content`, `source`, `mkaos`, `book`,
+`outbox`, and `maintenance`. Each invocation owns a fresh Compose project and
+must remove it unless diagnostic retention was explicitly requested. CI runs the
+seven values as independent matrix jobs and builds the fleet summary with:
+
+```bash
+.venv/bin/python scripts/build_worker_fleet_summary.py \
+  --input-dir /tmp/worker-evidence \
+  --commit-sha "$(git rev-parse HEAD)" \
+  --output "/tmp/worker-fleet-summary-$(git rev-parse HEAD).json"
+```
+
+Do not substitute process health, heartbeat or worker-row existence for the
+scenario's domain and recovery assertions.
+
+## PostgreSQL qualification
+
+```bash
+make authority-postgres-test
+make authority-query-plan-release
+```
+
+The query-plan qualification uses representative cardinalities and leaves
+`enable_seqscan` enabled. Clean migration and schema tests replay 0001→0063.
 
 ## Failure handling
 
-- Migration failure: API and Workers remain unready; repair with a forward
-  migration or restore the documented backup.
-- PostgreSQL unavailable: fail closed; do not launch Legacy.
-- Object store unavailable: readiness fails for workloads requiring blobs.
-- Worker termination: lease expires or is released; a new fencing token prevents
-  the old Worker from committing.
-- Ambiguous Provider result: mark `RECONCILIATION_REQUIRED`; query by external
-  idempotency identity before any further execute call.
-- Shutdown: use `docker compose stop`; honor each service's grace period before
-  forcing termination.
+- Migration failure: remain unready; apply a forward fix. Do not edit 0001–0058.
+- Worker loss: wait for lease expiry/release; replacement must have a higher
+  fence and the old worker must be rejected.
+- Unknown transaction outcome: reconcile by business identity before replay.
+- Unknown ExternalEffect: keep query/manual-required without a real adapter.
+- Poison Outbox delivery: dead-letter with durable error and receipt history.
+- Database outage: use heartbeat/database-success staleness to infer unavailable.
 
-## Validation and probes
+After a failed diagnostic run, inspect `docker compose -p <project> ps`, service
+logs, Worker Health, Runtime Job/Attempt/Lease/Event, Outbox delivery and metrics
+projections. Never expose the full database URL when collecting evidence.
 
-```bash
-make authority-compose-config-check
-make authority-test
-make authority-postgres-test
-make authority-query-plan-release
-curl -fsS http://127.0.0.1:8000/runtime/database
-curl -fsS http://127.0.0.1:8000/runtime/metrics
-```
+## Release evidence
 
-Query-plan release qualification creates representative data inside a rollback
-transaction and uses `EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON)` without disabling
-sequential scans. It is a release job, not a fast unit test.
+Core OS CI emits SHA-bound artifacts for coverage, tests, migration, Compose,
+query plans, Worker Fleet, Docker digest and environment metadata. Only after the
+release-qualification artifact passes and every Required Job is green may an
+annotated qualification tag be created on that same SHA.
