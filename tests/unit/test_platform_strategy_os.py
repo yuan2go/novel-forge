@@ -18,6 +18,7 @@ from novel_forge.modules.platform_strategy import (
 from novel_forge.modules.workspace.service import init_workspace
 from novel_forge.schemas import CharacterCard
 from novel_forge.storage.local import LocalStorage
+from tests.unit.legacy_compatibility import legacy_settings
 
 
 class PlatformStrategyOSTests(unittest.TestCase):
@@ -120,7 +121,7 @@ class PlatformStrategyOSTests(unittest.TestCase):
         from novel_forge.infrastructure.settings import IndustrialSettings
 
         with tempfile.TemporaryDirectory() as tmp:
-            client = TestClient(create_app(IndustrialSettings(root=Path(tmp).resolve())))
+            client = TestClient(create_app(legacy_settings(root=Path(tmp).resolve())))
             pack = client.post("/product/platform-strategy/pack", json={"platform": "晋江", "topic": "县城诡案", "project_id": "api-platform-p"})
             self.assertEqual(pack.status_code, 200, pack.text)
             self.assertEqual(pack.json()["asset"]["content"]["platform_id"], "jinjiang")

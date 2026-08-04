@@ -1,7 +1,6 @@
 from pathlib import Path
 import sys
 import tempfile
-import types
 import unittest
 from unittest.mock import patch
 
@@ -374,7 +373,6 @@ class NovelOSNewCapabilitiesTests(unittest.TestCase):
                 priority=8,
             )
             fake_conn = _FakePgVectorConnection()
-            fake_psycopg = types.SimpleNamespace(connect=lambda *args, **kwargs: fake_conn)
             with patch.dict(
                 "os.environ",
                 {
@@ -382,7 +380,10 @@ class NovelOSNewCapabilitiesTests(unittest.TestCase):
                     "NOVEL_FORGE_PGVECTOR_ONLINE": "1",
                 },
                 clear=False,
-            ), patch.dict("sys.modules", {"psycopg": fake_psycopg}):
+            ), patch(
+                "novel_forge.modules.pgvector_store.service._pgvector_connect",
+                return_value=fake_conn,
+            ):
                 embedding = build_embedding_job(storage, source_paths=[memory["path"]], backend="pgvector", project_id=project_id)
                 hybrid = hybrid_retrieve(storage, query="blue buried gate", project_id=project_id, retrieval_backend="pgvector", limit=3)
 

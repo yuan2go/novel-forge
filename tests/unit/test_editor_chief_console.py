@@ -10,6 +10,7 @@ from novel_forge.modules.longform_stability import create_arc_plan, create_canon
 from novel_forge.modules.review_issue import create_review_issue
 from novel_forge.schemas import DraftChapter
 from novel_forge.storage.local import LocalStorage
+from tests.unit.legacy_compatibility import legacy_settings
 
 
 class EditorChiefConsoleTests(unittest.TestCase):
@@ -55,7 +56,7 @@ class EditorChiefConsoleTests(unittest.TestCase):
         from novel_forge.infrastructure.settings import IndustrialSettings
 
         with tempfile.TemporaryDirectory() as tmp:
-            client = TestClient(create_app(IndustrialSettings(root=Path(tmp).resolve())))
+            client = TestClient(create_app(legacy_settings(root=Path(tmp).resolve())))
             response = client.get("/product/editor-chief/snapshot")
 
             self.assertEqual(response.status_code, 200, response.text)

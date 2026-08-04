@@ -15,6 +15,10 @@ class CliTests(unittest.TestCase):
         env = os.environ.copy()
         env["PYTHONPATH"] = str(ROOT / "src")
         env.setdefault("NOVEL_FORGE_MODEL_PROVIDER", "mock")
+        env["NOVEL_FORGE_ENVIRONMENT"] = "test"
+        env["NOVEL_FORGE_STORAGE_AUTHORITY"] = "legacy_local"
+        env["NOVEL_FORGE_LEGACY_WRITE_ENABLED"] = "true"
+        env["NOVEL_FORGE_SILENT_LEGACY_FALLBACK_ENABLED"] = "false"
         return subprocess.run(
             [sys.executable, "-m", "novel_forge.cli", *args],
             cwd=cwd or ROOT,

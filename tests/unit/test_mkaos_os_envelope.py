@@ -14,6 +14,7 @@ from novel_forge.modules.mkaos import (
     query_knowledge,
 )
 from novel_forge.storage.local import LocalStorage
+from tests.unit.legacy_compatibility import legacy_settings
 from novel_forge.modules.source_intake import create_source_policy, create_source_risk_report
 
 
@@ -142,7 +143,7 @@ class MkaosOsEnvelopeTests(unittest.TestCase):
         from novel_forge.infrastructure.settings import IndustrialSettings
 
         with tempfile.TemporaryDirectory() as tmp:
-            client = TestClient(create_app(IndustrialSettings(root=Path(tmp).resolve())))
+            client = TestClient(create_app(legacy_settings(root=Path(tmp).resolve())))
             missing = client.post(
                 "/product/mkaos/sources",
                 json={"title": "prod", "text": "prod", "project_id": "p-api", "environment": "production"},

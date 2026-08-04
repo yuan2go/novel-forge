@@ -7,6 +7,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from novel_forge.api.models import EditorPatchApplyRequest
 from novel_forge.api.routers.runtime_request import normalize_product_api_runtime_request
+from tests.unit.legacy_compatibility import legacy_settings
 
 
 class ApiPolicyNormalizationTests(unittest.TestCase):
@@ -42,7 +43,7 @@ class ApiPolicyNormalizationTests(unittest.TestCase):
         from novel_forge.infrastructure.settings import IndustrialSettings
 
         with tempfile.TemporaryDirectory() as tmp:
-            app = create_app(IndustrialSettings(root=Path(tmp).resolve()))
+            app = create_app(legacy_settings(root=Path(tmp).resolve()))
             client = TestClient(app)
 
             response = client.get("/product/system/health")
@@ -61,7 +62,7 @@ class ApiPolicyNormalizationTests(unittest.TestCase):
         from novel_forge.infrastructure.settings import IndustrialSettings
 
         with tempfile.TemporaryDirectory() as tmp:
-            app = create_app(IndustrialSettings(root=Path(tmp).resolve()))
+            app = create_app(legacy_settings(root=Path(tmp).resolve()))
             client = TestClient(app)
 
             response = client.post("/product/settings/profile", json={"environment": "production"})

@@ -26,6 +26,7 @@ from novel_forge.modules.mkaos import (
     validate_canon_conflict,
 )
 from novel_forge.storage.local import LocalStorage
+from tests.unit.legacy_compatibility import legacy_settings
 
 
 class MkaosTests(unittest.TestCase):
@@ -36,10 +37,9 @@ class MkaosTests(unittest.TestCase):
             self.skipTest("FastAPI test client is not installed")
 
         from novel_forge.api.app import create_app
-        from novel_forge.infrastructure.settings import IndustrialSettings
 
         with tempfile.TemporaryDirectory() as tmp:
-            client = TestClient(create_app(IndustrialSettings(root=Path(tmp).resolve())))
+            client = TestClient(create_app(legacy_settings(root=Path(tmp).resolve())))
             source = client.post(
                 "/product/mkaos/sources",
                 json={"title": "土地兼并", "text": "王朝末期，土地兼并严重，小农破产。"},

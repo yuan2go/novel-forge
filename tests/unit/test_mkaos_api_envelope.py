@@ -6,12 +6,13 @@ from fastapi.testclient import TestClient
 
 from novel_forge.api.app import create_app
 from novel_forge.infrastructure.settings import IndustrialSettings
+from tests.unit.legacy_compatibility import legacy_settings
 
 
 class MkaosApiEnvelopeTests(unittest.TestCase):
     def test_standard_query_response_and_invalid_flow_error(self):
         with tempfile.TemporaryDirectory() as tmp:
-            client = TestClient(create_app(IndustrialSettings(root=Path(tmp).resolve())))
+            client = TestClient(create_app(legacy_settings(root=Path(tmp).resolve())))
             response = client.post("/product/mkaos/query/knowledge", json={"project_id": "api"})
             self.assertEqual(response.status_code, 200)
             body = response.json()
@@ -23,7 +24,7 @@ class MkaosApiEnvelopeTests(unittest.TestCase):
 
     def test_mutation_response_is_standard_envelope_with_legacy_shadow(self):
         with tempfile.TemporaryDirectory() as tmp:
-            client = TestClient(create_app(IndustrialSettings(root=Path(tmp).resolve())))
+            client = TestClient(create_app(legacy_settings(root=Path(tmp).resolve())))
             response = client.post(
                 "/api/mkaos/knowledge",
                 json={
@@ -43,6 +44,6 @@ class MkaosApiEnvelopeTests(unittest.TestCase):
 
     def test_production_mutation_missing_envelope_is_blocked_by_product_policy(self):
         with tempfile.TemporaryDirectory() as tmp:
-            client = TestClient(create_app(IndustrialSettings(root=Path(tmp).resolve())))
+            client = TestClient(create_app(legacy_settings(root=Path(tmp).resolve())))
             response = client.post("/product/mkaos/knowledge", json={"environment": "production", "concept_name": "X", "core_explanation": "Y"})
             self.assertEqual(response.status_code, 400)

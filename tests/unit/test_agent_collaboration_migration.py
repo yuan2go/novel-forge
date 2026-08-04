@@ -14,11 +14,11 @@ class AgentCollaborationMigrationTests(unittest.TestCase):
         validate_migration_chain()
         self.assertEqual(
             LATEST_MIGRATION_ID,
-            "20260804_0054_scope_foreign_key_indexes",
+            "20260804_0057_hot_query_governance",
         )
         self.assertEqual(
             MIGRATIONS[-1].down_revision,
-            "20260804_0053_d0_provider_qualification_authority",
+            "20260804_0056_database_runtime_governance",
         )
 
     def test_schema_reuses_authority_execution_and_asset_identities(self) -> None:

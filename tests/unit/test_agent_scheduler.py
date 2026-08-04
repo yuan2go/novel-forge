@@ -32,6 +32,7 @@ from novel_forge.storage.local import LocalStorage
 from novel_forge.storage.rag_context import generation_context_policy
 from tests.unit.publishing_fixtures import create_production_ready_release_inputs, production_envelope
 from tests.unit.source_governance_fixtures import record_clean_source_governance_evidence
+from tests.unit.legacy_compatibility import legacy_settings
 
 
 class AgentSchedulerTests(unittest.TestCase):
@@ -314,7 +315,7 @@ class AgentSchedulerTests(unittest.TestCase):
                 evidence={"trace": {"trace_id": "trace-agent-event-summary-api", "span_id": "span-agent-event-summary-api"}},
             )
             update_agent_run_status(storage, run["path"], status="succeeded", event_type="agent_run.succeeded", message="summary fixture done")
-            client = TestClient(create_app(IndustrialSettings(root=root)))
+            client = TestClient(create_app(legacy_settings(root=root)))
 
             response = client.get("/product/agents/center")
 
@@ -649,7 +650,7 @@ class AgentSchedulerTests(unittest.TestCase):
             storage = LocalStorage(root)
             storage.ensure_layout()
             result = _create_drifted_release_dead_letter(storage)
-            client = TestClient(create_app(IndustrialSettings(root=root)))
+            client = TestClient(create_app(legacy_settings(root=root)))
 
             response = client.post("/product/agents/recover", json={"queue_path": result["queue"]["path"], "reason": "api direct recover bypass"})
 
@@ -669,7 +670,7 @@ class AgentSchedulerTests(unittest.TestCase):
             storage = LocalStorage(root)
             storage.ensure_layout()
             result = _create_drifted_release_dead_letter(storage)
-            client = TestClient(create_app(IndustrialSettings(root=root)))
+            client = TestClient(create_app(legacy_settings(root=root)))
 
             response = client.post(
                 "/product/agents/dead-letter-repair",
@@ -697,7 +698,7 @@ class AgentSchedulerTests(unittest.TestCase):
             storage.ensure_layout()
             result = _create_drifted_release_dead_letter(storage)
             governance = agent_center_snapshot(storage, project_id=result["fixture"]["project_id"])["governance_dead_letters"][0]
-            client = TestClient(create_app(IndustrialSettings(root=root)))
+            client = TestClient(create_app(legacy_settings(root=root)))
 
             response = client.post(
                 "/product/agents/dead-letter-repair",
@@ -729,7 +730,7 @@ class AgentSchedulerTests(unittest.TestCase):
             storage = LocalStorage(root)
             storage.ensure_layout()
             result = _create_drifted_release_dead_letter(storage)
-            client = TestClient(create_app(IndustrialSettings(root=root)))
+            client = TestClient(create_app(legacy_settings(root=root)))
 
             response = client.get("/product/agents/center", params={"project_id": result["fixture"]["project_id"]})
 
@@ -756,7 +757,7 @@ class AgentSchedulerTests(unittest.TestCase):
             storage = LocalStorage(root)
             storage.ensure_layout()
             result = _create_drifted_release_dead_letter(storage)
-            client = TestClient(create_app(IndustrialSettings(root=root)))
+            client = TestClient(create_app(legacy_settings(root=root)))
             governance = client.get("/product/agents/center", params={"project_id": result["fixture"]["project_id"]}).json()["governance_dead_letters"][0]
 
             repair_response = client.post(
@@ -803,7 +804,7 @@ class AgentSchedulerTests(unittest.TestCase):
             storage = LocalStorage(root)
             storage.ensure_layout()
             result = _create_drifted_release_dead_letter(storage)
-            client = TestClient(create_app(IndustrialSettings(root=root)))
+            client = TestClient(create_app(legacy_settings(root=root)))
             governance = client.get("/product/agents/center", params={"project_id": result["fixture"]["project_id"]}).json()["governance_dead_letters"][0]
             client.post(
                 "/product/agents/dead-letter-repair",
@@ -854,7 +855,7 @@ class AgentSchedulerTests(unittest.TestCase):
             storage.ensure_layout()
             project_id = "project-governance-repair-drift-api"
             _write_historical_governance_repair_missing_review(storage, project_id)
-            client = TestClient(create_app(IndustrialSettings(root=root)))
+            client = TestClient(create_app(legacy_settings(root=root)))
 
             response = client.get("/product/agents/center", params={"project_id": project_id})
 

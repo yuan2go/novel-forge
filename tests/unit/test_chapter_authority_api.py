@@ -26,6 +26,9 @@ class _FakeApplication:
     def __init__(self) -> None:
         self.query = _FakeQuery()
         self.requests: list[object] = []
+        self.model_port = SimpleNamespace(
+            adapter=SimpleNamespace(provider_adapters={})
+        )
 
     def run(self, request: object) -> object:
         self.requests.append(request)
@@ -57,13 +60,36 @@ class _FakeContentApplication:
 
 
 class ChapterAuthorityApiTests(unittest.TestCase):
+    def setUp(self) -> None:
+        environment = patch.dict(
+            "os.environ",
+            {
+                "NOVEL_FORGE_ENVIRONMENT": "test",
+                "NOVEL_FORGE_APPLICATION_BUILD_ID": "chapter-authority-api-test",
+                "NOVEL_FORGE_COMMIT_SHA": "a" * 40,
+                "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": "object-store",
+                "NOVEL_FORGE_MODEL_PROVIDER": "mock",
+            },
+            clear=False,
+        )
+        environment.start()
+        self.addCleanup(environment.stop)
+
     def test_content_command_returns_202_and_uses_trusted_principal(self) -> None:
         from fastapi.testclient import TestClient
         from novel_forge.modules.authority_security import TrustedPrincipalResolver
 
         fake = _FakeContentApplication()
         with tempfile.TemporaryDirectory() as directory:
-            app = create_app(IndustrialSettings(root=Path(directory)))
+            with patch(
+                "novel_forge.api.authority_app.build_content_authority_application",
+                return_value=fake,
+            ):
+                app = create_app(
+                    IndustrialSettings(
+                        root=Path(directory), database_url="postgresql://fixture"
+                    )
+                )
             with (
                 patch(
                     "novel_forge.api.routers.content_authority.build_content_authority_application",
@@ -137,7 +163,21 @@ class ChapterAuthorityApiTests(unittest.TestCase):
             prepare=lambda request: ProductionPreparationResult(report=report, command=command)
         )
         with tempfile.TemporaryDirectory() as directory:
-            app = create_app(IndustrialSettings(root=Path(directory)))
+            with (
+                patch(
+                    "novel_forge.api.authority_app.build_chapter_authority_application",
+                    return_value=fake,
+                ),
+                patch(
+                    "novel_forge.api.authority_app.build_book_authority_application",
+                    return_value=SimpleNamespace(),
+                ),
+            ):
+                app = create_app(
+                    IndustrialSettings(
+                        root=Path(directory), database_url="postgresql://fixture"
+                    )
+                )
             with (
                 patch(
                     "novel_forge.api.routers.chapter_authority.build_chapter_authority_application",
@@ -183,7 +223,25 @@ class ChapterAuthorityApiTests(unittest.TestCase):
             self.skipTest("FastAPI test client is not installed")
         fake = _FakeApplication()
         with tempfile.TemporaryDirectory() as directory:
-            app = create_app(IndustrialSettings(root=Path(directory)))
+            with (
+                patch(
+                    "novel_forge.api.authority_app.build_chapter_authority_application",
+                    return_value=fake,
+                ),
+                patch(
+                    "novel_forge.api.authority_app.build_chapter_authority_query",
+                    return_value=fake.query,
+                ),
+                patch(
+                    "novel_forge.api.authority_app.build_book_authority_application",
+                    return_value=SimpleNamespace(),
+                ),
+            ):
+                app = create_app(
+                    IndustrialSettings(
+                        root=Path(directory), database_url="postgresql://fixture"
+                    )
+                )
             with (
                 patch(
                     "novel_forge.api.routers.chapter_authority.build_chapter_authority_application",
@@ -238,7 +296,15 @@ class ChapterAuthorityApiTests(unittest.TestCase):
         except ModuleNotFoundError:
             self.skipTest("FastAPI test client is not installed")
         with tempfile.TemporaryDirectory() as directory:
-            app = create_app(IndustrialSettings(root=Path(directory)))
+            with patch(
+                "novel_forge.api.authority_app.build_chapter_authority_query",
+                return_value=None,
+            ):
+                app = create_app(
+                    IndustrialSettings(
+                        root=Path(directory), database_url="postgresql://fixture"
+                    )
+                )
             with (
                 patch(
                     "novel_forge.api.routers.chapter_authority.build_chapter_authority_query",
@@ -260,7 +326,15 @@ class ChapterAuthorityApiTests(unittest.TestCase):
 
         fake = _FakeApplication()
         with tempfile.TemporaryDirectory() as directory:
-            app = create_app(IndustrialSettings(root=Path(directory)))
+            with patch(
+                "novel_forge.api.authority_app.build_chapter_authority_query",
+                return_value=fake.query,
+            ):
+                app = create_app(
+                    IndustrialSettings(
+                        root=Path(directory), database_url="postgresql://fixture"
+                    )
+                )
             with (
                 patch(
                     "novel_forge.api.routers.chapter_authority.build_chapter_authority_query",

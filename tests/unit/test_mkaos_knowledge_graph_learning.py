@@ -21,6 +21,7 @@ from novel_forge.modules.mkaos import (
     record_usage_event,
 )
 from novel_forge.storage.local import LocalStorage
+from tests.unit.legacy_compatibility import legacy_settings
 
 
 RAW_SENTINEL = "RAW_SENTINEL_DO_NOT_LEAK"
@@ -103,7 +104,7 @@ class MkaosKnowledgeGraphLearningTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp).resolve()
-            client = TestClient(create_app(IndustrialSettings(root=root)))
+            client = TestClient(create_app(legacy_settings(root=root)))
             source = client.post(
                 "/product/mkaos/sources",
                 json={"project_id": "kg-api-p", "title": "水利制度", "text": "水利争端会改变乡绅和佃户的成本。"},

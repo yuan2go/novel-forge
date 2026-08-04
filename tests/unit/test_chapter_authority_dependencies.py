@@ -3,6 +3,8 @@ from __future__ import annotations
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import patch
 
 from novel_forge.api.authority_dependencies import (
     authority_release_identity,
@@ -128,6 +130,7 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
             "NOVEL_FORGE_REVIEW_MODEL": "gpt-test",
             "NOVEL_FORGE_REVISION_MODEL": "gpt-test",
             "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": "object-store",
+            "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_BACKEND": "minio",
             "NOVEL_FORGE_PROVIDER_MAX_COST_PER_CALL": "1.00",
             "NOVEL_FORGE_APPLICATION_BUILD_ID": "chapter-gateway-test",
             "NOVEL_FORGE_COMMIT_SHA": "a" * 40,
@@ -152,11 +155,17 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
                 "NOVEL_FORGE_SKILL_BUNDLE_HASH": "sha256:" + "3" * 64,
             }
         )
-        application = build_chapter_authority_application(
-            IndustrialSettings(root=Path("."), database_url="postgresql://authority"),
-            provider_registry=registry,
-            env=controlled_environment,
-        )
+        with patch(
+            "novel_forge.storage.object_store.MinioObjectStore",
+            return_value=SimpleNamespace(client=object()),
+        ):
+            application = build_chapter_authority_application(
+                IndustrialSettings(
+                    root=Path("."), database_url="postgresql://authority"
+                ),
+                provider_registry=registry,
+                env=controlled_environment,
+            )
         self.assertEqual(
             application.model_port.adapter.capability_profile.control_level.value,
             "V2_CONTROLLED",

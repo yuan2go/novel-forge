@@ -8,6 +8,7 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from tests.unit.source_governance_fixtures import create_governed_knowledge, record_clean_source_governance_evidence
+from tests.unit.legacy_compatibility import legacy_settings
 from novel_forge.modules.source_intake import create_source_policy, create_source_risk_report
 
 
@@ -32,7 +33,7 @@ class ProductApiRouterTests(unittest.TestCase):
         from novel_forge.infrastructure.settings import IndustrialSettings
 
         with tempfile.TemporaryDirectory() as tmp:
-            app = create_app(IndustrialSettings(root=Path(tmp).resolve()))
+            app = create_app(legacy_settings(root=Path(tmp).resolve()))
             paths = app.openapi().get("paths", {})
 
             expected = {
@@ -707,7 +708,7 @@ class ProductApiRouterTests(unittest.TestCase):
         from novel_forge.infrastructure.settings import IndustrialSettings
 
         with tempfile.TemporaryDirectory() as tmp:
-            app = create_app(IndustrialSettings(root=Path(tmp).resolve()))
+            app = create_app(legacy_settings(root=Path(tmp).resolve()))
             client = TestClient(app)
 
             response = client.post(
@@ -760,7 +761,7 @@ class ProductApiRouterTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp).resolve()
-            app = create_app(IndustrialSettings(root=root))
+            app = create_app(legacy_settings(root=root))
             client = TestClient(app)
             storage = LocalStorage(root)
             storage.ensure_layout()
@@ -859,7 +860,7 @@ class ProductApiRouterTests(unittest.TestCase):
         from novel_forge.infrastructure.settings import IndustrialSettings
 
         with tempfile.TemporaryDirectory() as tmp:
-            app = create_app(IndustrialSettings(root=Path(tmp).resolve()))
+            app = create_app(legacy_settings(root=Path(tmp).resolve()))
             client = TestClient(app)
             fixtures = [
                 ("source", "allow_generation_context", "source_policy"),
@@ -915,7 +916,7 @@ class ProductApiRouterTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp).resolve()
-            app = create_app(IndustrialSettings(root=root))
+            app = create_app(legacy_settings(root=root))
             client = TestClient(app)
             storage = LocalStorage(root)
             policy = create_source_policy(storage, {"source_ref": "local-corpus", "risk_tier": "R1", "project_id": "route-source-readiness"})
@@ -988,7 +989,7 @@ class ProductApiRouterTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp).resolve()
-            app = create_app(IndustrialSettings(root=root))
+            app = create_app(legacy_settings(root=root))
             client = TestClient(app)
             storage = LocalStorage(root)
             sweep_source_stale_quarantine(storage, {"project_id": "route-source-runtime-gate", "max_assets": 20})
@@ -1021,7 +1022,7 @@ class ProductApiRouterTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp).resolve()
-            app = create_app(IndustrialSettings(root=root))
+            app = create_app(legacy_settings(root=root))
             client = TestClient(app)
             storage = LocalStorage(root)
             project_id = "route-source-leakage-gate"
@@ -1075,7 +1076,7 @@ class ProductApiRouterTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp).resolve()
-            app = create_app(IndustrialSettings(root=root))
+            app = create_app(legacy_settings(root=root))
             client = TestClient(app)
             storage = LocalStorage(root)
             storage.ensure_layout()
@@ -1158,7 +1159,7 @@ class ProductApiRouterTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp).resolve()
-            app = create_app(IndustrialSettings(root=root))
+            app = create_app(legacy_settings(root=root))
             client = TestClient(app)
             storage = LocalStorage(root)
             storage.ensure_layout()
@@ -1212,7 +1213,7 @@ class ProductApiRouterTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp).resolve()
-            app = create_app(IndustrialSettings(root=root))
+            app = create_app(legacy_settings(root=root))
             client = TestClient(app)
             storage = LocalStorage(root)
             storage.write_asset_auto(
@@ -1304,7 +1305,7 @@ class ProductApiRouterTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp).resolve()
-            app = create_app(IndustrialSettings(root=root))
+            app = create_app(legacy_settings(root=root))
             client = TestClient(app)
             storage = LocalStorage(root)
             draft_path = storage.write_asset_auto(
@@ -1469,7 +1470,7 @@ class ProductApiRouterTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp).resolve()
-            app = create_app(IndustrialSettings(root=root))
+            app = create_app(legacy_settings(root=root))
             client = TestClient(app)
             storage = LocalStorage(root)
             draft_path = storage.write_asset_auto(
@@ -1559,7 +1560,7 @@ class ProductApiRouterTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp).resolve()
-            app = create_app(IndustrialSettings(root=root))
+            app = create_app(legacy_settings(root=root))
             client = TestClient(app)
             storage = LocalStorage(root)
             draft_path = storage.write_asset_auto(
@@ -1657,7 +1658,7 @@ class ProductApiRouterTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp).resolve()
-            app = create_app(IndustrialSettings(root=root))
+            app = create_app(legacy_settings(root=root))
             client = TestClient(app)
             storage = LocalStorage(root)
             storage.write_asset_auto(
@@ -1734,7 +1735,7 @@ class ProductApiRouterTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp).resolve()
-            app = create_app(IndustrialSettings(root=root))
+            app = create_app(legacy_settings(root=root))
             client = TestClient(app)
             storage = LocalStorage(root)
             storage.write_asset_auto(
@@ -1793,7 +1794,7 @@ class ProductApiRouterTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp).resolve()
-            app = create_app(IndustrialSettings(root=root))
+            app = create_app(legacy_settings(root=root))
             client = TestClient(app)
 
             readiness_response = client.get("/product/quality/calibration-readiness", params={"project_id": "route-quality-calibration"})
@@ -1824,7 +1825,7 @@ class ProductApiRouterTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp).resolve()
-            app = create_app(IndustrialSettings(root=root))
+            app = create_app(legacy_settings(root=root))
             client = TestClient(app)
 
             gate_response = client.get(
@@ -1858,7 +1859,7 @@ class ProductApiRouterTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp).resolve()
-            app = create_app(IndustrialSettings(root=root))
+            app = create_app(legacy_settings(root=root))
             client = TestClient(app)
 
             response = client.get("/product/os/cockpit/project", params={"project_id": "route-book-missing"})
