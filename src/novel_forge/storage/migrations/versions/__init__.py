@@ -55,6 +55,7 @@ from . import (
     v20260804_0052_asset_schema_and_scope_integrity,
     v20260804_0053_d0_provider_qualification_authority,
     v20260804_0054_scope_foreign_key_indexes,
+    v20260804_0055_legacy_native_conversion,
 )
 
 VERSION_MODULES = [
@@ -112,6 +113,7 @@ VERSION_MODULES = [
     v20260804_0052_asset_schema_and_scope_integrity,
     v20260804_0053_d0_provider_qualification_authority,
     v20260804_0054_scope_foreign_key_indexes,
+    v20260804_0055_legacy_native_conversion,
 ]
 
 __all__ = ["VERSION_MODULES"]
