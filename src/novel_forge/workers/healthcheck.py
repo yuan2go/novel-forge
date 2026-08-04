@@ -26,8 +26,11 @@ def worker_health(
     with runtime.connection() as connection, connection.cursor() as cursor:
         cursor.execute(
             """
-            SELECT status, last_poll_at, active_attempts, completed_count,
-                   failed_count, database_status, drain_status,
+            SELECT status, last_poll_at, active_attempts,
+                   completed_operation_count, failed_operation_count,
+                   database_status, drain_status,
+                   last_heartbeat_at, active_operation_id, active_attempt_id,
+                   lease_count, completed_batch_count,
                    updated_at >= NOW() - (%s * INTERVAL '1 second')
             FROM authority_worker_health_projection
             WHERE worker_kind=%s AND worker_id=%s
@@ -38,7 +41,7 @@ def worker_health(
     ready = bool(
         migration["ok"]
         and row is not None
-        and bool(row[7])
+        and bool(row[12])
         and str(row[0]) in {"READY", "BUSY", "DEGRADED"}
         and str(row[5]) == "READY"
         and str(row[6]) == "ACCEPTING"
@@ -47,13 +50,17 @@ def worker_health(
         "status": "ready" if ready else "not_ready",
         "worker_id": worker_id,
         "runtime_group": worker_kind,
-        "last_heartbeat": str(row[1]) if row else "",
+        "last_heartbeat": str(row[7]) if row else "",
         "last_poll": str(row[1]) if row else "",
         "active_attempts": int(row[2]) if row else 0,
         "completed_count": int(row[3]) if row else 0,
         "failed_count": int(row[4]) if row else 0,
         "database_status": str(row[5]) if row else "UNAVAILABLE",
         "drain_status": str(row[6]) if row else "UNKNOWN",
+        "active_operation_id": str(row[8]) if row and row[8] else "",
+        "active_attempt_id": str(row[9]) if row and row[9] else "",
+        "lease_count": int(row[10]) if row else 0,
+        "completed_batch_count": int(row[11]) if row else 0,
         "migration_head": migration["current"],
         "migration_chain_current": migration["ok"],
     }

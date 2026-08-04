@@ -19,6 +19,9 @@ class OutboxClaim:
     event_id: str
     project_id: str
     topic: str
+    lease_id: str
+    fencing_token: int
+    runtime_group: str
 
 
 class PostgresOutboxDispatcher:
@@ -61,15 +64,30 @@ class PostgresOutboxDispatcher:
                 UPDATE outbox_event AS event
                 SET status='claimed', claimed_by=%s, claimed_at=NOW(),
                     lease_expires_at=NOW() + (%s * INTERVAL '1 second'),
-                    attempt_count=event.attempt_count + 1, updated_at=NOW()
+                    attempt_count=event.attempt_count + 1,
+                    fencing_token=event.fencing_token + 1,
+                    lease_id=event.outbox_id || ':' || (event.fencing_token + 1)::text,
+                    runtime_group='outbox', updated_at=NOW()
                 FROM selected
                 WHERE event.outbox_id=selected.outbox_id
                 RETURNING event.outbox_id, event.event_id,
-                          event.project_id, event.topic
+                          event.project_id, event.topic, event.lease_id,
+                          event.fencing_token, event.runtime_group
                 """,
                 [project_id, project_id, limit, self.worker_id, self.lease_seconds],
             )
-            claims = tuple(OutboxClaim(*map(str, row)) for row in uow.cursor.fetchall())
+            claims = tuple(
+                OutboxClaim(
+                    outbox_id=str(row[0]),
+                    event_id=str(row[1]),
+                    project_id=str(row[2]),
+                    topic=str(row[3]),
+                    lease_id=str(row[4]),
+                    fencing_token=int(row[5]),
+                    runtime_group=str(row[6]),
+                )
+                for row in uow.cursor.fetchall()
+            )
             uow.commit()
         return claims
 
@@ -77,7 +95,7 @@ class PostgresOutboxDispatcher:
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
-                SELECT status, claimed_by
+                SELECT status, claimed_by, lease_id, fencing_token, runtime_group
                 FROM outbox_event
                 WHERE outbox_id=%s AND event_id=%s AND project_id=%s
                 FOR UPDATE
@@ -91,6 +109,12 @@ class PostgresOutboxDispatcher:
                 return False
             if str(row[0]).lower() != "claimed" or str(row[1]) != self.worker_id:
                 raise RuntimeError("outbox lease is no longer owned by this worker")
+            if (
+                str(row[2]) != claim.lease_id
+                or int(row[3]) != claim.fencing_token
+                or str(row[4]) != claim.runtime_group
+            ):
+                raise RuntimeError("outbox fencing evidence no longer matches the claim")
             uow.cursor.execute(
                 """
                 INSERT INTO outbox_consumer_delivery(consumer_name, event_id)
@@ -107,8 +131,15 @@ class PostgresOutboxDispatcher:
                     acked_at=COALESCE(acked_at, NOW()), lease_expires_at=NULL,
                     updated_at=NOW()
                 WHERE outbox_id=%s AND claimed_by=%s AND LOWER(status)='claimed'
+                  AND lease_id=%s AND fencing_token=%s AND runtime_group=%s
                 """,
-                [claim.outbox_id, self.worker_id],
+                [
+                    claim.outbox_id,
+                    self.worker_id,
+                    claim.lease_id,
+                    claim.fencing_token,
+                    claim.runtime_group,
+                ],
             )
             if uow.cursor.rowcount != 1:
                 raise RuntimeError("outbox acknowledgement lost its fenced claim")
@@ -157,10 +188,14 @@ def main() -> int:
             for claim in claims:
                 if stopping:
                     break
+                supervisor.operation_started(claim.outbox_id)
                 try:
                     dispatcher.deliver(claim)
                 except Exception:
                     failures += 1
+                    supervisor.operation_finished(claim.outbox_id, succeeded=False)
+                else:
+                    supervisor.operation_finished(claim.outbox_id, succeeded=True)
             supervisor.batch_completed(range(failures))  # only the count is observed
         supervisor.draining()
         supervisor.stopped()

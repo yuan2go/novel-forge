@@ -1,24 +1,16 @@
 from __future__ import annotations
 
-import ast
 import unittest
 from pathlib import Path
 
 from novel_forge.infrastructure.settings import IndustrialSettings
-
-
-ROOT = Path(__file__).resolve().parents[2]
-AUTHORITY_ENTRYPOINTS = (
-    ROOT / "src/novel_forge/api/authority_app.py",
-    ROOT / "src/novel_forge/api/authority_dependencies.py",
-    ROOT / "src/novel_forge/workers/chapter_authority.py",
-    ROOT / "src/novel_forge/workers/content_authority.py",
-    ROOT / "src/novel_forge/workers/source_authority.py",
-    ROOT / "src/novel_forge/workers/mkaos_authority.py",
-    ROOT / "src/novel_forge/workers/runtime_groups.py",
+from novel_forge.tools.authority_reachability import (
+    build_authority_import_graph,
+    production_paths,
 )
 
 
+ROOT = Path(__file__).resolve().parents[2]
 class LegacyProductionReachabilityTests(unittest.TestCase):
     def test_default_runtime_is_postgresql(self) -> None:
         settings = IndustrialSettings.from_env(env={"NOVEL_FORGE_ROOT": "."})
@@ -27,23 +19,43 @@ class LegacyProductionReachabilityTests(unittest.TestCase):
 
     def test_authority_mode_does_not_import_localstorage_runtime(self) -> None:
         forbidden = {
-            "novel_forge.storage.local",
-            "novel_forge.workers.runtime",
-            "novel_forge.workers.legacy_tasks",
-            "novel_forge.api.legacy_app",
-            "novel_forge.api.services.postgres_fallback_policy",
+            "src/novel_forge/storage/local.py",
+            "src/novel_forge/workers/runtime.py",
+            "src/novel_forge/workers/legacy_tasks.py",
+            "src/novel_forge/api/legacy_app.py",
+            "src/novel_forge/api/services/postgres_fallback_policy.py",
         }
-        findings: list[str] = []
-        for path in AUTHORITY_ENTRYPOINTS:
-            tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
-            imports = {
-                node.module
-                for node in ast.walk(tree)
-                if isinstance(node, ast.ImportFrom) and node.module
-            }
-            for dependency in sorted(imports & forbidden):
-                findings.append(f"{path.relative_to(ROOT)}: {dependency}")
-        self.assertEqual(findings, [])
+        graph = build_authority_import_graph(ROOT)
+        findings = {
+            path: production_paths(graph.paths_by_file.get(path, ()))
+            for path in forbidden
+            if production_paths(graph.paths_by_file.get(path, ()))
+        }
+        self.assertEqual(findings, {})
+
+    def test_recursive_graph_covers_all_authority_runtime_entry_classes(self) -> None:
+        graph = build_authority_import_graph(ROOT)
+        required = {
+            "api-app",
+            "authority-dependencies",
+            "authority-cli",
+            "chapter-worker",
+            "content-worker",
+            "source-worker",
+            "mkaos-worker",
+            "book-worker",
+            "outbox-worker",
+            "maintenance-worker",
+            "worker-healthcheck",
+            "provider-callback",
+            "external-effect-dispatch",
+            "provider-qualification-worker",
+            "compose-probe",
+        }
+        self.assertLessEqual(required, graph.entrypoints.keys())
+        self.assertIn(
+            "src/novel_forge/storage/authority_uow.py", graph.paths_by_file
+        )
 
     def test_production_cannot_enable_legacy_fallback_or_dual_write(self) -> None:
         for field in (

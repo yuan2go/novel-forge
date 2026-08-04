@@ -14,6 +14,7 @@ from novel_forge.infrastructure.settings import IndustrialSettings
 from novel_forge.modules.command_kernel.deadline_runtime import (
     scan_expired_operation_deadlines,
 )
+from novel_forge.modules.command_kernel.maintenance import run_maintenance_cycle
 from novel_forge.modules.command_kernel.worker_execution import WorkerSupervisor
 from novel_forge.storage.migrations import get_migration_status
 from novel_forge.storage.worker_health import PostgresWorkerHealthObserver
@@ -56,15 +57,34 @@ def _authority_maintenance_loop(worker_kind: str) -> int:
     signal.signal(signal.SIGINT, stop)
     signal.signal(signal.SIGTERM, stop)
     while not stopping:
-        scan_expired_operation_deadlines(
-            settings.database_url,
-            actor_id=worker_id,
-            limit=batch_size,
-        )
-        # This generic group only owns deadline scanning and health evidence.
-        # Transaction Commands recover by rollback/replay; domain Durable Jobs
-        # require their explicit scheduler/consumer and are not claimed here.
-        supervisor.polled(idle=True)
+        if worker_kind == "maintenance":
+            cycle_id = f"maintenance-cycle:{worker_id}:{int(time.time())}"
+            supervisor.operation_started(cycle_id)
+            try:
+                result = run_maintenance_cycle(
+                    settings.database_url, actor_id=worker_id, limit=batch_size
+                )
+            except Exception:
+                supervisor.operation_finished(cycle_id, succeeded=False)
+                raise
+            supervisor.operation_finished(cycle_id, succeeded=True)
+            supervisor.batch_completed(())
+            idle = not any(
+                result[key]
+                for key in (
+                    "expired_attempt_leases",
+                    "recovered_outbox",
+                    "reconciliation_required",
+                )
+            ) and not result["deadline_recovery"]["expired_count"]
+            supervisor.polled(idle=idle)
+        else:
+            scan_expired_operation_deadlines(
+                settings.database_url,
+                actor_id=worker_id,
+                limit=batch_size,
+            )
+            supervisor.polled(idle=True)
         time.sleep(poll_seconds)
     supervisor.draining()
     supervisor.stopped()

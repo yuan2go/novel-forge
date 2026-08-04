@@ -3,9 +3,12 @@ from __future__ import annotations
 import unittest
 
 from novel_forge.storage.database_runtime import (
+    DatabaseReconciliationRequired,
+    DatabaseRetryClass,
     DatabaseRuntimeConfig,
     TransactionExecutor,
     authority_role_instances_from_env,
+    classify_sqlstate,
     validate_connection_budget,
 )
 
@@ -84,6 +87,68 @@ class DatabaseRuntimeUnitTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "idempotency"):
             executor.execute("command", lambda _connection: None, retry_transient=True)
 
+    def test_sqlstate_classification_is_fail_closed(self) -> None:
+        self.assertIs(
+            classify_sqlstate("40001"), DatabaseRetryClass.SAFE_RETRY
+        )
+        self.assertIs(
+            classify_sqlstate("40P01"), DatabaseRetryClass.SAFE_RETRY
+        )
+        self.assertIs(
+            classify_sqlstate("08007"),
+            DatabaseRetryClass.RECONCILIATION_REQUIRED,
+        )
+        self.assertIs(
+            classify_sqlstate("08P01"),
+            DatabaseRetryClass.NEVER_AUTOMATIC_RETRY,
+        )
+        self.assertIs(
+            classify_sqlstate("23505"),
+            DatabaseRetryClass.NEVER_AUTOMATIC_RETRY,
+        )
+
+    def test_unknown_commit_outcome_emits_reconciliation_and_is_not_replayed(
+        self,
+    ) -> None:
+        runtime = _Runtime()
+        executor = TransactionExecutor(runtime)  # type: ignore[arg-type]
+        calls = 0
+        evidence: list[dict[str, str]] = []
+
+        def ambiguous(_connection: object) -> None:
+            nonlocal calls
+            calls += 1
+            raise _SqlStateError("08007")
+
+        with self.assertRaises(DatabaseReconciliationRequired) as caught:
+            executor.execute(
+                "ambiguous-command",
+                ambiguous,
+                idempotency_key="stable-command",
+                retry_transient=True,
+                pure_database=True,
+                idempotent=True,
+                reconciliation_handler=evidence.append,
+            )
+        self.assertEqual(calls, 1)
+        self.assertEqual(caught.exception.sqlstate, "08007")
+        self.assertEqual(
+            evidence[0]["classification"], "RECONCILIATION_REQUIRED"
+        )
+
+    def test_external_effect_cannot_be_wrapped_in_transaction_retry(self) -> None:
+        executor = TransactionExecutor(_Runtime())  # type: ignore[arg-type]
+        with self.assertRaisesRegex(ValueError, "external effects"):
+            executor.execute(
+                "provider-command",
+                lambda _connection: None,
+                idempotency_key="stable-command",
+                retry_transient=True,
+                pure_database=True,
+                idempotent=True,
+                external_effects=True,
+            )
+
     def test_serialization_failure_retries_but_business_conflict_does_not(self) -> None:
         runtime = _Runtime()
         executor = TransactionExecutor(
@@ -104,6 +169,8 @@ class DatabaseRuntimeUnitTests(unittest.TestCase):
                 transient,
                 idempotency_key="stable-command",
                 retry_transient=True,
+                pure_database=True,
+                idempotent=True,
             ),
             "ok",
         )
@@ -116,6 +183,8 @@ class DatabaseRuntimeUnitTests(unittest.TestCase):
                 lambda _connection: (_ for _ in ()).throw(_SqlStateError("23505")),
                 idempotency_key="stable-command",
                 retry_transient=True,
+                pure_database=True,
+                idempotent=True,
             )
 
 

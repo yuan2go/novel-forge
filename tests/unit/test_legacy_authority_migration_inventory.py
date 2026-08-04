@@ -12,7 +12,7 @@ class LegacyAuthorityMigrationInventoryTests(unittest.TestCase):
         inventory = build_inventory(root)
 
         self.assertEqual(
-            inventory["schema_version"], "legacy-authority-migration-inventory.v2"
+            inventory["schema_version"], "legacy-authority-migration-inventory.v3"
         )
         self.assertGreater(inventory["summary"]["inventory_rows"], 0)
         required = {
@@ -42,12 +42,24 @@ class LegacyAuthorityMigrationInventoryTests(unittest.TestCase):
             "deletion_condition",
             "test_requirements",
             "evidence",
+            "allowed_runtime",
+            "reason",
+            "owner",
+            "removal_condition",
+            "transitive_paths",
+            "production_transitive_paths",
         }
         for item in inventory["items"]:
             with self.subTest(item["inventory_id"]):
                 self.assertTrue(required.issubset(item))
                 self.assertTrue(item["evidence"])
                 self.assertTrue(item["target_operation_definition"])
+                self.assertEqual(
+                    item["production_reachable"],
+                    bool(item["production_transitive_paths"]),
+                )
+
+        self.assertGreaterEqual(inventory["summary"]["reachability"]["entrypoint_count"], 15)
 
     def test_inventory_statuses_are_exhaustive_and_summary_is_reconciled(self) -> None:
         root = Path(__file__).resolve().parents[2]

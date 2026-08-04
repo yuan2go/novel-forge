@@ -531,9 +531,7 @@ class SourceAuthorityApplication:
                 outcome="success",
                 result=result,
             )
-        except BaseException as exc:
-            if isinstance(exc, (KeyboardInterrupt, SystemExit)):
-                raise
+        except Exception as exc:
             try:
                 submit_attempt_failure(
                     self.database_url,

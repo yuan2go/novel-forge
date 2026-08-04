@@ -231,7 +231,7 @@ class ContentAuthorityScheduler:
                     "recovery_mode": recovery_mode,
                 },
             )
-        except BaseException as exc:
+        except Exception as exc:
             classification = WorkerFailureClassifier.classify(exc)
             if classification is WorkerFailureClass.CANCELLATION:
                 with AuthorityUnitOfWork(self.database_url) as uow:

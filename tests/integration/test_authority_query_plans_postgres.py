@@ -12,7 +12,8 @@ class AuthorityQueryPlansPostgresTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         ensure_migrated()
 
-    def test_bounded_worker_and_migration_queries_use_valid_indexes(self) -> None:
+    def test_indexes_are_valid_and_available_when_sequential_scan_is_disabled(self) -> None:
+        """Index-availability proof only; release qualification proves planner choice."""
         probes = {
             "operation": (
                 "authority_operation_worker_poll_idx",

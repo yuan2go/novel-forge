@@ -50,6 +50,8 @@ class AuthorityHandlerRepository:
         self,
         project_id: str,
         snapshots: list[dict[str, Any]],
+        *,
+        allow_approved_archival_migration: bool = False,
     ) -> list[dict[str, Any]]:
         resolved: list[dict[str, Any]] = []
         for snapshot in snapshots:
@@ -82,12 +84,28 @@ class AuthorityHandlerRepository:
                     "AUTHORITY_INPUT_SNAPSHOT_STALE",
                     f"frozen authority input is missing or changed: {asset_version_id}",
                 )
-            if row[4] != "ACTIVE" or row[5] != "ELIGIBLE" or row[6] != "CLEAR":
+            production_eligible = (
+                row[4] == "ACTIVE"
+                and row[5] == "ELIGIBLE"
+                and row[6] == "CLEAR"
+            )
+            approved_archival = (
+                allow_approved_archival_migration
+                and row[4] == "IMPORTED"
+                and row[5] == "PENDING_EVALUATION"
+                and row[6] == "CLEAR"
+            )
+            if not production_eligible and not approved_archival:
                 raise KernelError(
                     "AUTHORITY_INPUT_NOT_ELIGIBLE",
                     f"frozen authority input is not active and eligible: {asset_version_id}",
                 )
-            if row[7] not in {None, "ELIGIBLE"}:
+            allowed_qualification = (
+                {None, "ELIGIBLE", "PENDING_EVALUATION"}
+                if approved_archival
+                else {None, "ELIGIBLE"}
+            )
+            if row[7] not in allowed_qualification:
                 raise KernelError(
                     "AUTHORITY_INPUT_QUALIFICATION_REVOKED",
                     f"frozen authority input qualification is {row[7]}: {asset_version_id}",

@@ -204,7 +204,7 @@ class SourceAuthorityScheduler:
                 outcome="success",
                 result=result,
             )
-        except BaseException as exc:
+        except Exception as exc:
             if isinstance(exc, (KeyboardInterrupt, SystemExit)):
                 raise
             classification = WorkerFailureClassifier.classify(exc)

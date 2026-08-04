@@ -63,6 +63,10 @@ def run_worker(*, poll_seconds: float = 1.0, batch_size: int = 10) -> int:
                 execute=lambda item: scheduler.tick(
                     project_id=item[0], root_operation_id=item[1]
                 ),
+                on_task_start=supervisor.operation_started,
+                on_task_finish=lambda operation_id, succeeded: supervisor.operation_finished(
+                    operation_id, succeeded=succeeded
+                ),
             )
             supervisor.batch_completed(failures)
         except WorkerProgrammingError as error:

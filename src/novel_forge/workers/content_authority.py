@@ -77,6 +77,10 @@ def main() -> int:
                 batch,
                 identity=lambda item: (item[1], item[0]),
                 execute=execute,
+                on_task_start=supervisor.operation_started,
+                on_task_finish=lambda operation_id, succeeded: supervisor.operation_finished(
+                    operation_id, succeeded=succeeded
+                ),
             )
             supervisor.batch_completed(failures)
         except WorkerProgrammingError as error:

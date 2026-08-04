@@ -46,6 +46,7 @@ from novel_forge.modules.provider_control import ProviderAdapterRegistry
 from novel_forge.storage.database_runtime import (
     authority_role_instances_from_env,
     close_all_database_runtimes,
+    database_runtime_report,
     get_database_runtime,
     validate_connection_budget,
 )
@@ -61,6 +62,37 @@ REQUIRED_RUNTIME_GROUPS = (
     "outbox",
     "maintenance",
 )
+
+
+def _install_database_runtime_routes(app: Any, settings: IndustrialSettings) -> None:
+    @app.get("/runtime/database")
+    def runtime_database() -> dict[str, Any]:
+        return database_runtime_report(settings.database_url, role="api")
+
+    @app.get("/runtime/metrics")
+    def runtime_metrics() -> dict[str, Any]:
+        report = database_runtime_report(settings.database_url, role="api")
+        return {
+            key: report[key]
+            for key in (
+                "type",
+                "contract_version",
+                "database_status",
+                "pool_size",
+                "pool_available",
+                "pool_in_use",
+                "pool_waiting",
+                "connection_acquire_latency",
+                "transaction_count",
+                "transaction_duration_ms",
+                "rollback_count",
+                "retry_count",
+                "timeout_count",
+                "deadlock_count",
+                "serialization_failure_count",
+                "long_transaction_count",
+            )
+        }
 
 
 @dataclass(frozen=True, slots=True)
@@ -430,7 +462,14 @@ def create_authority_app(settings: IndustrialSettings):
     def shutdown_database_runtime() -> None:
         close_all_database_runtimes()
 
+    _install_database_runtime_routes(app, settings)
     return app
+
+
+def create_authority_app_from_env():
+    """Zero-argument Uvicorn reload factory for the Authority-only app."""
+
+    return create_authority_app(IndustrialSettings.from_env())
 
 
 def _create_track_b_minimal_app(settings: IndustrialSettings, FastAPI: Any, CORSMiddleware: Any):
@@ -548,6 +587,7 @@ def _create_track_b_minimal_app(settings: IndustrialSettings, FastAPI: Any, CORS
     def shutdown_database_runtime() -> None:
         close_all_database_runtimes()
 
+    _install_database_runtime_routes(app, settings)
     return app
 
 
@@ -555,4 +595,5 @@ __all__ = [
     "AuthorityApiServices",
     "TrackBMinimalAuthorityServices",
     "create_authority_app",
+    "create_authority_app_from_env",
 ]

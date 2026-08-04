@@ -10,9 +10,14 @@ from pathlib import Path
 from typing import Any
 
 from novel_forge.tools.authority_coverage_manifest import build_manifest
+from novel_forge.tools.authority_reachability import (
+    build_authority_import_graph,
+    production_paths,
+    render_paths,
+)
 
 
-SCHEMA_VERSION = "legacy-authority-migration-inventory.v2"
+SCHEMA_VERSION = "legacy-authority-migration-inventory.v3"
 
 INVENTORY_STATUSES = frozenset(
     {
@@ -71,6 +76,7 @@ EXPLICIT_SELECTOR_FILES = frozenset(
 def build_inventory(repo_root: str | Path) -> dict[str, Any]:
     root = Path(repo_root).resolve()
     coverage = build_manifest(root)
+    import_graph = build_authority_import_graph(root)
     groups: dict[tuple[str, str, str], list[dict[str, Any]]] = defaultdict(list)
     for finding in coverage["findings"]:
         if not _is_legacy_finding(finding):
@@ -103,7 +109,11 @@ def build_inventory(repo_root: str | Path) -> dict[str, Any]:
                 for item in findings
             }
         )
-        classification = _classification(path, findings, usage)
+        all_paths = import_graph.paths_by_file.get(path, ())
+        live_paths = production_paths(all_paths)
+        classification = _classification(
+            path, findings, usage, production_reachable=bool(live_paths)
+        )
         symbols = sorted(
             {
                 str(item.get("qualified_symbol") or item.get("symbol") or "<module>")
@@ -130,6 +140,15 @@ def build_inventory(repo_root: str | Path) -> dict[str, Any]:
                     "repository": target_repository,
                 },
                 "production_reachable": classification[1],
+                "allowed_runtime": _allowed_runtime(path, classification[0]),
+                "reason": classification[2],
+                "owner": _owner_for_domain(domain),
+                "removal_condition": (
+                    "PostgreSQL domain replacement is proven and the transitive "
+                    "Authority entry graph no longer reaches this symbol"
+                ),
+                "transitive_paths": render_paths(all_paths),
+                "production_transitive_paths": render_paths(live_paths),
                 "migration_strategy": _migration_method(usage, path),
                 "status": classification[0],
                 "remaining_action": classification[2],
@@ -176,6 +195,19 @@ def build_inventory(repo_root: str | Path) -> dict[str, Any]:
         )
     rows.extend(_runtime_configuration_findings(root))
     rows.extend(_web_excluded_findings(root))
+    for row in rows:
+        fallback_path = [f"declared:{row['file']}"]
+        row.setdefault(
+            "allowed_runtime", _allowed_runtime(row["file"], row["status"])
+        )
+        row.setdefault("reason", row["remaining_action"])
+        row.setdefault("owner", _owner_for_domain(row["business_domain"]))
+        row.setdefault("removal_condition", row["deletion_condition"])
+        row.setdefault("transitive_paths", [fallback_path])
+        row.setdefault(
+            "production_transitive_paths",
+            [fallback_path] if row["production_reachable"] else [],
+        )
     rows.sort(key=lambda item: (item["file"], item["inventory_id"]))
     status_counts = {
         status: sum(1 for item in rows if item["status"] == status)
@@ -193,6 +225,16 @@ def build_inventory(repo_root: str | Path) -> dict[str, Any]:
             1 for item in rows if str(item["file"]).startswith("web/")
         ),
         "current_coverage_summary": coverage["summary"],
+        "reachability": {
+            "entrypoint_count": len(import_graph.entrypoints),
+            "module_count": len(import_graph.modules),
+            "reachable_file_count": len(import_graph.paths_by_file),
+            "entrypoints": import_graph.entrypoints,
+            "guarded_compatibility_path_count": sum(
+                len(paths) - len(production_paths(paths))
+                for paths in import_graph.paths_by_file.values()
+            ),
+        },
     }
     payload = {
         "schema_version": SCHEMA_VERSION,
@@ -268,6 +310,8 @@ def _classification(
     path: str,
     findings: list[dict[str, Any]],
     usage: set[str],
+    *,
+    production_reachable: bool,
 ) -> tuple[str, bool, str]:
     if path.startswith("tests/"):
         return "TEST_FIXTURE_ONLY", False, "retain as a non-production fixture or test"
@@ -282,7 +326,7 @@ def _classification(
     if path in EXPLICIT_IMPORT_FILES:
         return (
             "IMPORT_CANDIDATE_ONLY",
-            True,
+            production_reachable,
             "retain only for frozen read-only import/export; never use as runtime read authority",
         )
     if path in EXPLICIT_SELECTOR_FILES:
@@ -297,7 +341,7 @@ def _classification(
             False,
             "rebuild from PostgreSQL projections/object receipts; never import as authority",
         )
-    if path in PRODUCTION_AUTHORITY_FILES or _is_authority_runtime_path(path):
+    if production_reachable:
         evidence = ", ".join(
             sorted({str(item.get("scan_rule") or "legacy") for item in findings})
         )
@@ -313,6 +357,30 @@ def _classification(
             "move entry behind the explicit legacy profile or replace with a native Authority operation",
         )
     return "UNCLASSIFIED", False, "classify this evidence before cutover"
+
+
+def _allowed_runtime(path: str, status: str) -> list[str]:
+    if status == "IMPORT_CANDIDATE_ONLY":
+        return ["explicit-migration-cli"]
+    if status == "TEST_FIXTURE_ONLY":
+        return ["test"]
+    if status == "DEVELOPMENT_ONLY" or path in EXPLICIT_SELECTOR_FILES:
+        return ["development", "explicit-legacy-profile"]
+    if status == "REBUILDABLE":
+        return ["projection-rebuild"]
+    if status == "LEGACY_PRODUCTION_BLOCKER":
+        return []
+    return ["compatibility-read-only"]
+
+
+def _owner_for_domain(domain: str) -> str:
+    return {
+        "project_workspace": "Project Authority",
+        "source_governance": "Source Authority",
+        "mkaos": "MKAOS Authority",
+        "planning": "Planning Authority",
+        "agent_workflow_task": "Command Kernel",
+    }.get(domain, "Authority Cutover")
 
 
 def _is_authority_runtime_path(path: str) -> bool:

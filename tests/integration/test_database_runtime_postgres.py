@@ -11,6 +11,7 @@ from novel_forge.storage.database_runtime import (
     DatabaseRuntime,
     DatabaseRuntimeConfig,
     TransactionExecutor,
+    database_runtime_report,
 )
 from tests.integration.authority_postgres_support import DATABASE_URL, connect
 
@@ -163,6 +164,8 @@ class DatabaseRuntimePostgresTests(unittest.TestCase):
                 operation,
                 idempotency_key=f"deadlock-{name}",
                 retry_transient=True,
+                pure_database=True,
+                idempotent=True,
             )
 
         with ThreadPoolExecutor(max_workers=2) as executor:
@@ -205,6 +208,8 @@ class DatabaseRuntimePostgresTests(unittest.TestCase):
                 operation,
                 idempotency_key=f"serialization-{name}",
                 retry_transient=True,
+                pure_database=True,
+                idempotent=True,
             )
 
         with ThreadPoolExecutor(max_workers=2) as executor:
@@ -235,6 +240,26 @@ class DatabaseRuntimePostgresTests(unittest.TestCase):
                 time.sleep(0.05)
         self.assertEqual(value, 1)
         runtime.assert_no_connection_leaks()
+
+    def test_runtime_report_exports_pool_and_transaction_metrics(self) -> None:
+        report = database_runtime_report(DATABASE_URL, role="test")
+        required = {
+            "pool_size",
+            "pool_available",
+            "pool_in_use",
+            "pool_waiting",
+            "connection_acquire_latency",
+            "transaction_count",
+            "transaction_duration_ms",
+            "rollback_count",
+            "retry_count",
+            "timeout_count",
+            "deadlock_count",
+            "serialization_failure_count",
+            "long_transaction_count",
+        }
+        self.assertEqual(report["database_status"], "READY")
+        self.assertLessEqual(required, report.keys())
 
 
 if __name__ == "__main__":

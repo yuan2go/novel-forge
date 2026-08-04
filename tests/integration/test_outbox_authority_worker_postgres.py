@@ -45,18 +45,24 @@ class OutboxAuthorityWorkerPostgresTests(unittest.TestCase):
         )
         claims = dispatcher.claim(limit=10, project_id=project_id)
         self.assertEqual(len(claims), 1)
+        self.assertEqual(claims[0].runtime_group, "outbox")
+        self.assertEqual(claims[0].fencing_token, 1)
+        self.assertTrue(claims[0].lease_id.endswith(":1"))
         self.assertTrue(dispatcher.deliver(claims[0]))
         self.assertFalse(dispatcher.deliver(claims[0]))
 
         with transaction() as connection, connection.cursor() as cursor:
             cursor.execute(
                 """
-                SELECT status, published_at IS NOT NULL, acked_at IS NOT NULL
+                SELECT status, published_at IS NOT NULL, acked_at IS NOT NULL,
+                       lease_id, fencing_token, runtime_group
                 FROM outbox_event WHERE outbox_id=%s
                 """,
                 [outbox_id],
             )
-            self.assertEqual(cursor.fetchone(), ("acked", True, True))
+            row = cursor.fetchone()
+            self.assertEqual(row[:3], ("acked", True, True))
+            self.assertEqual(row[3:], (claims[0].lease_id, 1, "outbox"))
             cursor.execute(
                 """
                 SELECT COUNT(*) FROM outbox_consumer_delivery

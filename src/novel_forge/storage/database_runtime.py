@@ -13,26 +13,56 @@ import threading
 import time
 from contextlib import contextmanager
 from dataclasses import dataclass, field, fields
+from enum import StrEnum
 from typing import Any, Callable, Iterator, Mapping, TypeVar
 
 
 LOGGER = logging.getLogger(__name__)
 T = TypeVar("T")
 
-TRANSIENT_SQLSTATES = frozenset(
+
+class DatabaseRetryClass(StrEnum):
+    SAFE_RETRY = "SAFE_RETRY"
+    RECONCILIATION_REQUIRED = "RECONCILIATION_REQUIRED"
+    NEVER_AUTOMATIC_RETRY = "NEVER_AUTOMATIC_RETRY"
+
+
+SAFE_RETRY_SQLSTATES = frozenset({"40001", "40P01"})
+RECONCILIATION_REQUIRED_SQLSTATES = frozenset(
     {
-        "40001",  # serialization_failure
-        "40P01",  # deadlock_detected
-        "08000",  # connection_exception
-        "08001",  # sqlclient_unable_to_establish_sqlconnection
+        "08000",  # connection_exception after transaction start is ambiguous
         "08003",  # connection_does_not_exist
         "08006",  # connection_failure
         "08007",  # transaction_resolution_unknown
-        "08P01",  # protocol_violation
-        "57P01",  # admin_shutdown
-        "57P03",  # cannot_connect_now
+        "57P01",  # admin_shutdown can interrupt commit acknowledgement
     }
 )
+# Compatibility export now means exactly the SQLSTATEs that are safe for an
+# explicitly idempotent, pure-database transaction replay.
+TRANSIENT_SQLSTATES = SAFE_RETRY_SQLSTATES
+
+
+def classify_sqlstate(sqlstate: str) -> DatabaseRetryClass:
+    normalized = str(sqlstate or "").upper()
+    if normalized in SAFE_RETRY_SQLSTATES:
+        return DatabaseRetryClass.SAFE_RETRY
+    if normalized in RECONCILIATION_REQUIRED_SQLSTATES:
+        return DatabaseRetryClass.RECONCILIATION_REQUIRED
+    return DatabaseRetryClass.NEVER_AUTOMATIC_RETRY
+
+
+class DatabaseReconciliationRequired(RuntimeError):
+    def __init__(
+        self, *, transaction_name: str, idempotency_key: str, sqlstate: str
+    ) -> None:
+        super().__init__(
+            f"database outcome requires reconciliation: {transaction_name} "
+            f"sqlstate={sqlstate or 'unknown'}"
+        )
+        self.transaction_name = transaction_name
+        self.idempotency_key = idempotency_key
+        self.sqlstate = sqlstate
+
 
 DEFAULT_ROLE_BUDGETS: dict[str, tuple[int, int]] = {
     "api": (1, 8),
@@ -174,11 +204,19 @@ class DatabaseRuntimeMetrics:
 
     def snapshot(self) -> dict[str, int | float]:
         with self._lock:
-            return {
+            values = {
                 item.name: getattr(self, item.name)
                 for item in fields(self)
                 if item.name != "_lock"
             }
+            values.update(
+                {
+                    "rollback_count": values["transaction_rollback_count"],
+                    "retry_count": values["database_retry_count"],
+                    "timeout_count": values["statement_timeout_count"],
+                }
+            )
+            return values
 
 
 class DatabaseRuntime:
@@ -271,7 +309,7 @@ class DatabaseRuntime:
             try:
                 yield connection
                 connection.commit()
-            except BaseException as exc:
+            except Exception as exc:
                 connection.rollback()
                 self.metrics.increment("transaction_rollback_count")
                 self._record_database_error(exc)
@@ -290,7 +328,7 @@ class DatabaseRuntime:
                         },
                     )
 
-    def _record_database_error(self, error: BaseException) -> None:
+    def _record_database_error(self, error: Exception) -> None:
         sqlstate = str(getattr(error, "sqlstate", "") or "")
         self.metrics.increment("query_failure_count")
         if sqlstate == "57014":
@@ -386,7 +424,12 @@ class ConnectionPoolRegistry:
 
 
 class TransactionExecutor:
-    """Retry only SQLSTATE-classified transient failures around one transaction."""
+    """Explicit retry boundary for short, idempotent, pure-database work.
+
+    Authority transactions do not opt into whole-transaction retry by default.
+    Unknown commit/connection outcomes are surfaced as reconciliation work and
+    are never blindly replayed.
+    """
 
     def __init__(
         self,
@@ -412,20 +455,49 @@ class TransactionExecutor:
         *,
         idempotency_key: str = "",
         retry_transient: bool = False,
+        pure_database: bool = False,
+        idempotent: bool = False,
+        external_effects: bool = False,
+        reconciliation_handler: Callable[[dict[str, str]], None] | None = None,
     ) -> T:
-        if retry_transient and not idempotency_key:
-            raise ValueError("database retry requires a stable idempotency key")
+        if retry_transient and (
+            not idempotency_key or not pure_database or not idempotent
+        ):
+            raise ValueError(
+                "database retry requires a stable idempotency key and an "
+                "explicit pure-database idempotent transaction"
+            )
+        if retry_transient and external_effects:
+            raise ValueError(
+                "database retry cannot wrap Provider, object-store, publish, "
+                "webhook, callback, or other external effects"
+            )
         attempt = 0
         while True:
             attempt += 1
             try:
                 with self.runtime.transaction(transaction_name) as connection:
                     return operation(connection)
-            except BaseException as exc:
+            except Exception as exc:
                 sqlstate = str(getattr(exc, "sqlstate", "") or "")
+                retry_class = classify_sqlstate(sqlstate)
+                if retry_class is DatabaseRetryClass.RECONCILIATION_REQUIRED:
+                    evidence = {
+                        "transaction_name": transaction_name,
+                        "idempotency_key": idempotency_key,
+                        "sqlstate": sqlstate,
+                        "classification": retry_class.value,
+                    }
+                    if reconciliation_handler is not None:
+                        reconciliation_handler(evidence)
+                    raise DatabaseReconciliationRequired(
+                        transaction_name=transaction_name,
+                        idempotency_key=idempotency_key,
+                        sqlstate=sqlstate,
+                    ) from exc
                 should_retry = (
                     retry_transient
-                    and sqlstate in TRANSIENT_SQLSTATES
+                    and retry_class is DatabaseRetryClass.SAFE_RETRY
                     and attempt < self.max_attempts
                 )
                 if not should_retry:
@@ -456,6 +528,30 @@ def get_database_runtime(
 
 def close_all_database_runtimes() -> None:
     REGISTRY.close_all()
+
+
+def database_runtime_report(
+    database_url: str, *, role: str = "api"
+) -> dict[str, Any]:
+    """Return a lightweight extensible pool and transaction metrics contract."""
+
+    health = get_database_runtime(database_url, role=role).health()
+    return {
+        "type": "DatabaseRuntimeReport",
+        "contract_version": "database-runtime-report-v1",
+        "database_status": "READY",
+        "role": health["role"],
+        "service": health["service"],
+        "pool_size": health["pool_size"],
+        "pool_available": health["pool_available"],
+        "pool_in_use": health["pool_in_use"],
+        "pool_waiting": health["pool_waiting"],
+        "pool_max_size": health["pool_max_size"],
+        "connection_acquire_latency": health["metrics"][
+            "connection_acquire_latency_ms"
+        ],
+        **health["metrics"],
+    }
 
 
 def validate_connection_budget(
@@ -512,12 +608,16 @@ __all__ = [
     "DatabaseRuntime",
     "DatabaseRuntimeConfig",
     "DatabaseRuntimeMetrics",
+    "DatabaseReconciliationRequired",
+    "DatabaseRetryClass",
     "DEFAULT_AUTHORITY_ROLE_INSTANCES",
     "DEFAULT_ROLE_BUDGETS",
     "TRANSIENT_SQLSTATES",
     "TransactionExecutor",
     "authority_role_instances_from_env",
+    "classify_sqlstate",
     "close_all_database_runtimes",
+    "database_runtime_report",
     "get_database_runtime",
     "validate_connection_budget",
 ]

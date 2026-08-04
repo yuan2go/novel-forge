@@ -68,6 +68,10 @@ class WorkerHealthSnapshot:
     restart_policy_expectation: str
     completed_batches: int
     failed_tasks: int
+    active_operation_id: str
+    completed_operations: int
+    failed_operations: int
+    last_heartbeat_at: str
 
 
 class WorkerSupervisor:
@@ -96,13 +100,39 @@ class WorkerSupervisor:
         self._exit_code: int | None = None
         self._completed_batches = 0
         self._failed_tasks = 0
+        self._active_operation_id = ""
+        self._completed_operations = 0
+        self._failed_operations = 0
+        self._last_heartbeat_at = ""
         self._publish()
 
     def polled(self, *, idle: bool) -> WorkerHealthSnapshot:
         now = self._timestamp()
         self._last_poll_at = now
         self._last_successful_poll_at = now
+        self._last_heartbeat_at = now
         self._status = WorkerHealthStatus.IDLE if idle else WorkerHealthStatus.HEALTHY
+        return self._publish()
+
+    def operation_started(self, operation_id: str) -> WorkerHealthSnapshot:
+        if not operation_id:
+            raise ValueError("active operation identity is required")
+        self._active_operation_id = operation_id
+        self._last_heartbeat_at = self._timestamp()
+        self._status = WorkerHealthStatus.HEALTHY
+        return self._publish()
+
+    def operation_finished(
+        self, operation_id: str, *, succeeded: bool
+    ) -> WorkerHealthSnapshot:
+        if operation_id != self._active_operation_id:
+            raise ValueError("finished operation does not match active operation")
+        if succeeded:
+            self._completed_operations += 1
+        else:
+            self._failed_operations += 1
+        self._active_operation_id = ""
+        self._last_heartbeat_at = self._timestamp()
         return self._publish()
 
     def batch_completed(
@@ -112,6 +142,7 @@ class WorkerSupervisor:
         self._completed_batches += 1
         self._failed_tasks += len(failures)
         self._last_successful_poll_at = self._timestamp()
+        self._last_heartbeat_at = self._last_successful_poll_at
         self._status = (
             WorkerHealthStatus.DEGRADED if failures else WorkerHealthStatus.HEALTHY
         )
@@ -146,6 +177,10 @@ class WorkerSupervisor:
             restart_policy_expectation="restart_on_nonzero_exit_with_backoff",
             completed_batches=self._completed_batches,
             failed_tasks=self._failed_tasks,
+            active_operation_id=self._active_operation_id,
+            completed_operations=self._completed_operations,
+            failed_operations=self._failed_operations,
+            last_heartbeat_at=self._last_heartbeat_at,
         )
 
     def _timestamp(self) -> str:
@@ -219,11 +254,15 @@ class AuthorityWorkerExecutionBoundary:
         *,
         identity: Callable[[T], tuple[str, str]],
         execute: Callable[[T], object],
+        on_task_start: Callable[[str], object] | None = None,
+        on_task_finish: Callable[[str, bool], object] | None = None,
     ) -> tuple[WorkerTaskFailure, ...]:
         failures: list[WorkerTaskFailure] = []
         programming_failures: list[WorkerTaskFailure] = []
         for task in tasks:
             project_id, task_id = identity(task)
+            if on_task_start is not None:
+                on_task_start(task_id)
             try:
                 execute(task)
             except Exception as exc:  # signals and explicit process exits must propagate
@@ -255,6 +294,11 @@ class AuthorityWorkerExecutionBoundary:
                         sort_keys=True,
                     )
                 )
+                if on_task_finish is not None:
+                    on_task_finish(task_id, False)
+            else:
+                if on_task_finish is not None:
+                    on_task_finish(task_id, True)
         if programming_failures:
             raise WorkerProgrammingError(
                 f"{len(programming_failures)} programming error(s) were isolated in "
