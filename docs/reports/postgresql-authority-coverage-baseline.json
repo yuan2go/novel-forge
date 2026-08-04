@@ -1,9 +1,9 @@
 {
-  "artifact_hash": "sha256:e89a3e6d847d05457b3a72608974d4dbf9b744ecedde8ad6780651981dc69f28",
+  "artifact_hash": "sha256:aa5daafb9acbf30fe4d0a6742f3d45a257d0b5fd8787f262592c33c3220020b9",
   "binding_semantics": "latest-commit-affecting-src/novel_forge-plus-working-tree-hash-v1",
-  "commit_sha": "01a300f90eaf5ef6ddc9183891e9f8ae783dffb1",
-  "coverage_hash": "sha256:4d59d8c01d4a8f6f2bae8dee0a56149f1ce5790bcba22fd266033a96781935d4",
-  "file_count": 679,
+  "commit_sha": "8dc7ba474746b6dff1b4ce9fb0680dd807784f48",
+  "coverage_hash": "sha256:67d22382ae57612a4e2b7c6c0ebaafa71d0585bd1bcd832253f4f35ac257c2c5",
+  "file_count": 688,
   "finding_count": 2155,
   "findings": [
     {
@@ -16,7 +16,7 @@
       "external_effect_type": "",
       "function_name": "build_chapter_authority_application",
       "legacy_action": "delete",
-      "line": 312,
+      "line": 313,
       "mapping_confidence": 0.98,
       "mapping_reason": "path/owner/receiver map to project_lifecycle.create",
       "migration_action": "delete",
@@ -20036,7 +20036,7 @@
       "external_effect_type": "",
       "function_name": "bind",
       "legacy_action": "delete",
-      "line": 524,
+      "line": 523,
       "mapping_confidence": 0.98,
       "mapping_reason": "path/owner/receiver map to quality.run_completion_gate",
       "migration_action": "delete",
@@ -43024,7 +43024,7 @@
       "external_effect_type": "",
       "function_name": "_write",
       "legacy_action": "replace",
-      "line": 1039,
+      "line": 1037,
       "mapping_confidence": 0.98,
       "mapping_reason": "path/owner/receiver map to project_lifecycle.create",
       "migration_action": "replace",
@@ -60347,7 +60347,7 @@
       "usage_type": "authority_read"
     }
   ],
-  "generated_at": "2026-08-04T01:08:32+00:00",
+  "generated_at": "2026-08-04T04:35:45+00:00",
   "generator_version": "2.1.0",
   "quality_metrics": {
     "false_positive_sample_count": 0,
@@ -60355,7 +60355,7 @@
     "false_positive_sample_rate": 0.0,
     "false_positive_sample_size": 58
   },
-  "repository_head_at_generation": "3bcfa86772cf8d4cd285e7108974a277eec91665",
+  "repository_head_at_generation": "7e7319e3a63899c9711115d990221413728e3a62",
   "scan_rule_version": "receiver-aware-v2",
   "scan_rules": [
     "localstorage_import",
@@ -60367,7 +60367,7 @@
     "direct_runner"
   ],
   "schema_version": "2.0.0",
-  "source_tree_sha": "155c0a0153393a392eb1d72f057a928f796c623a",
+  "source_tree_sha": "cd73b1e645ce25eea7d3b6b781becb934413b7de",
   "summary": {
     "authority_read": 1640,
     "authority_write": 380,
