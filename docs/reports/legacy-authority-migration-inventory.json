@@ -1,7 +1,7 @@
 {
-  "artifact_hash": "sha256:7f81c916639ee9dc175e3fb6de27db9d9907cbfd8cb751a2720ef85cc573ff29",
-  "coverage_hash": "sha256:8d05666c5d5cabb403f250636c7ca46ac35a59c2a12491d076b8962992210c89",
-  "generated_at": "2026-08-04T02:55:41.572238+00:00",
+  "artifact_hash": "sha256:05efac1c10b9a8fad6a9d2c180f889e2a7274511a94a4032403264fd19d7ffa8",
+  "coverage_hash": "sha256:ce35ed2d0995e501c66c68612643058836b5924b33aa7b8f6947496e068dad78",
+  "generated_at": "2026-08-04T03:11:37.770618+00:00",
   "items": [
     {
       "business_domain": "runtime_governance",
@@ -118,66 +118,6 @@
         "architecture: default runtime and Compose are PostgreSQL-only"
       ],
       "transaction_boundary": "startup validation before accepting work"
-    },
-    {
-      "business_domain": "project_workspace",
-      "current_authority": [
-        "mixed"
-      ],
-      "current_authority_source": [
-        "mixed"
-      ],
-      "current_entrypoints": [
-        "internal:novel_forge.api.authority_dependencies.build_chapter_authority_application"
-      ],
-      "current_read_points": [],
-      "current_write_points": [
-        "src/novel_forge/api/authority_dependencies.py:312:novel_forge.api.authority_dependencies.build_chapter_authority_application"
-      ],
-      "deletion_condition": "PostgreSQL command/query entrypoint is integration-proven; import reconciliation passes; architecture guard reports no production reachability",
-      "domain": "project_workspace",
-      "entrypoint": [
-        "internal:novel_forge.api.authority_dependencies.build_chapter_authority_application"
-      ],
-      "evidence": [
-        {
-          "line": 312,
-          "path": "src/novel_forge/api/authority_dependencies.py",
-          "scan_rule": "fallback",
-          "symbol": "novel_forge.api.authority_dependencies.build_chapter_authority_application",
-          "usage_type": "fallback"
-        }
-      ],
-      "file": "src/novel_forge/api/authority_dependencies.py",
-      "idempotency_key": "project_id:project:stable_business_identity:content_hash",
-      "inventory_id": "legacy-migration:4b7cb92f410979b09fac",
-      "migration_method": "DEPRECATE_AFTER_AUTHORITY_REPLACEMENT",
-      "migration_status": "LEGACY_PRODUCTION_BLOCKER",
-      "migration_strategy": "DEPRECATE_AFTER_AUTHORITY_REPLACEMENT",
-      "production_reachable": true,
-      "read_or_write": "WRITE",
-      "recovery_strategy": "database-backed resume cursor; idempotent replay; conflict to quarantine",
-      "remaining_action": "remove or replace the production-reachable Legacy dependency (fallback)",
-      "status": "LEGACY_PRODUCTION_BLOCKER",
-      "symbol": [
-        "novel_forge.api.authority_dependencies.build_chapter_authority_application"
-      ],
-      "target_authority": {
-        "asset_type": "project_record/workspace_record/project_binding",
-        "kind": "postgresql",
-        "operation_definition": "project_lifecycle.create",
-        "repository": "novel_forge.storage.project_lifecycle_repository"
-      },
-      "target_authority_asset_type": "project_record/workspace_record/project_binding",
-      "target_operation_definition": "project_lifecycle.create",
-      "target_repository": "novel_forge.storage.project_lifecycle_repository",
-      "test_requirements": [
-        "unit: domain invariants/hash/idempotency/project scope",
-        "postgres: transaction rollback/concurrency/replay/stale fence/outbox",
-        "migration: duplicate/corrupt/missing-reference/cross-project/resume/reconcile",
-        "architecture: production LocalStorage/filesystem authority forbidden"
-      ],
-      "transaction_boundary": "Command admission + fenced Attempt output + aggregate transition + StateEvent/Audit/Outbox in one PostgreSQL transaction"
     },
     {
       "business_domain": "project_workspace",
@@ -380,66 +320,6 @@
       },
       "target_authority_asset_type": "project_record/workspace_record/project_binding",
       "target_operation_definition": "project.migration.required",
-      "target_repository": "novel_forge.storage.project_lifecycle_repository",
-      "test_requirements": [
-        "unit: domain invariants/hash/idempotency/project scope",
-        "postgres: transaction rollback/concurrency/replay/stale fence/outbox",
-        "migration: duplicate/corrupt/missing-reference/cross-project/resume/reconcile",
-        "architecture: production LocalStorage/filesystem authority forbidden"
-      ],
-      "transaction_boundary": "Command admission + fenced Attempt output + aggregate transition + StateEvent/Audit/Outbox in one PostgreSQL transaction"
-    },
-    {
-      "business_domain": "project_workspace",
-      "current_authority": [
-        "mixed"
-      ],
-      "current_authority_source": [
-        "mixed"
-      ],
-      "current_entrypoints": [
-        "api:novel_forge.api.routers.__init__.product_routers"
-      ],
-      "current_read_points": [],
-      "current_write_points": [
-        "src/novel_forge/api/routers/__init__.py:97:novel_forge.api.routers.__init__.product_routers"
-      ],
-      "deletion_condition": "PostgreSQL command/query entrypoint is integration-proven; import reconciliation passes; architecture guard reports no production reachability",
-      "domain": "project_workspace",
-      "entrypoint": [
-        "api:novel_forge.api.routers.__init__.product_routers"
-      ],
-      "evidence": [
-        {
-          "line": 97,
-          "path": "src/novel_forge/api/routers/__init__.py",
-          "scan_rule": "fallback",
-          "symbol": "novel_forge.api.routers.__init__.product_routers",
-          "usage_type": "fallback"
-        }
-      ],
-      "file": "src/novel_forge/api/routers/__init__.py",
-      "idempotency_key": "project_id:project:stable_business_identity:content_hash",
-      "inventory_id": "legacy-migration:89edddf4b1b8171ae1e2",
-      "migration_method": "DEPRECATE_AFTER_AUTHORITY_REPLACEMENT",
-      "migration_status": "EXPLICIT_COMPATIBILITY",
-      "migration_strategy": "DEPRECATE_AFTER_AUTHORITY_REPLACEMENT",
-      "production_reachable": false,
-      "read_or_write": "WRITE",
-      "recovery_strategy": "database-backed resume cursor; idempotent replay; conflict to quarantine",
-      "remaining_action": "move entry behind the explicit legacy profile or replace with a native Authority operation",
-      "status": "EXPLICIT_COMPATIBILITY",
-      "symbol": [
-        "novel_forge.api.routers.__init__.product_routers"
-      ],
-      "target_authority": {
-        "asset_type": "project_record/workspace_record/project_binding",
-        "kind": "postgresql",
-        "operation_definition": "project_lifecycle.create",
-        "repository": "novel_forge.storage.project_lifecycle_repository"
-      },
-      "target_authority_asset_type": "project_record/workspace_record/project_binding",
-      "target_operation_definition": "project_lifecycle.create",
       "target_repository": "novel_forge.storage.project_lifecycle_repository",
       "test_requirements": [
         "unit: domain invariants/hash/idempotency/project scope",
@@ -5992,77 +5872,6 @@
     {
       "business_domain": "project_workspace",
       "current_authority": [
-        "mixed"
-      ],
-      "current_authority_source": [
-        "mixed"
-      ],
-      "current_entrypoints": [
-        "api:novel_forge.api.routers.provider_fallback.create_router.provider_fallback_approve",
-        "api:novel_forge.api.routers.provider_fallback.create_router.provider_fallback_resolve"
-      ],
-      "current_read_points": [],
-      "current_write_points": [
-        "src/novel_forge/api/routers/provider_fallback.py:22:novel_forge.api.routers.provider_fallback.create_router.provider_fallback_approve",
-        "src/novel_forge/api/routers/provider_fallback.py:26:novel_forge.api.routers.provider_fallback.create_router.provider_fallback_resolve"
-      ],
-      "deletion_condition": "PostgreSQL command/query entrypoint is integration-proven; import reconciliation passes; architecture guard reports no production reachability",
-      "domain": "project_workspace",
-      "entrypoint": [
-        "api:novel_forge.api.routers.provider_fallback.create_router.provider_fallback_approve",
-        "api:novel_forge.api.routers.provider_fallback.create_router.provider_fallback_resolve"
-      ],
-      "evidence": [
-        {
-          "line": 22,
-          "path": "src/novel_forge/api/routers/provider_fallback.py",
-          "scan_rule": "fallback",
-          "symbol": "novel_forge.api.routers.provider_fallback.create_router.provider_fallback_approve",
-          "usage_type": "fallback"
-        },
-        {
-          "line": 26,
-          "path": "src/novel_forge/api/routers/provider_fallback.py",
-          "scan_rule": "fallback",
-          "symbol": "novel_forge.api.routers.provider_fallback.create_router.provider_fallback_resolve",
-          "usage_type": "fallback"
-        }
-      ],
-      "file": "src/novel_forge/api/routers/provider_fallback.py",
-      "idempotency_key": "project_id:project:stable_business_identity:content_hash",
-      "inventory_id": "legacy-migration:8899461ce5e3aa6b293b",
-      "migration_method": "DEPRECATE_AFTER_AUTHORITY_REPLACEMENT",
-      "migration_status": "EXPLICIT_COMPATIBILITY",
-      "migration_strategy": "DEPRECATE_AFTER_AUTHORITY_REPLACEMENT",
-      "production_reachable": false,
-      "read_or_write": "WRITE",
-      "recovery_strategy": "database-backed resume cursor; idempotent replay; conflict to quarantine",
-      "remaining_action": "move entry behind the explicit legacy profile or replace with a native Authority operation",
-      "status": "EXPLICIT_COMPATIBILITY",
-      "symbol": [
-        "novel_forge.api.routers.provider_fallback.create_router.provider_fallback_approve",
-        "novel_forge.api.routers.provider_fallback.create_router.provider_fallback_resolve"
-      ],
-      "target_authority": {
-        "asset_type": "project_record/workspace_record/project_binding",
-        "kind": "postgresql",
-        "operation_definition": "project_lifecycle.create",
-        "repository": "novel_forge.storage.project_lifecycle_repository"
-      },
-      "target_authority_asset_type": "project_record/workspace_record/project_binding",
-      "target_operation_definition": "project_lifecycle.create",
-      "target_repository": "novel_forge.storage.project_lifecycle_repository",
-      "test_requirements": [
-        "unit: domain invariants/hash/idempotency/project scope",
-        "postgres: transaction rollback/concurrency/replay/stale fence/outbox",
-        "migration: duplicate/corrupt/missing-reference/cross-project/resume/reconcile",
-        "architecture: production LocalStorage/filesystem authority forbidden"
-      ],
-      "transaction_boundary": "Command admission + fenced Attempt output + aggregate transition + StateEvent/Audit/Outbox in one PostgreSQL transaction"
-    },
-    {
-      "business_domain": "project_workspace",
-      "current_authority": [
         "localstorage"
       ],
       "current_authority_source": [
@@ -6134,66 +5943,6 @@
       "target_authority_asset_type": "project_record/workspace_record/project_binding",
       "target_operation_definition": "project.migration.required",
       "target_repository": "novel_forge.storage.project_lifecycle_repository",
-      "test_requirements": [
-        "unit: domain invariants/hash/idempotency/project scope",
-        "postgres: transaction rollback/concurrency/replay/stale fence/outbox",
-        "migration: duplicate/corrupt/missing-reference/cross-project/resume/reconcile",
-        "architecture: production LocalStorage/filesystem authority forbidden"
-      ],
-      "transaction_boundary": "Command admission + fenced Attempt output + aggregate transition + StateEvent/Audit/Outbox in one PostgreSQL transaction"
-    },
-    {
-      "business_domain": "draft_review_revision",
-      "current_authority": [
-        "mixed"
-      ],
-      "current_authority_source": [
-        "mixed"
-      ],
-      "current_entrypoints": [
-        "api:novel_forge.api.routers.provider_fallback.create_router.provider_fallback_preview"
-      ],
-      "current_read_points": [],
-      "current_write_points": [
-        "src/novel_forge/api/routers/provider_fallback.py:18:novel_forge.api.routers.provider_fallback.create_router.provider_fallback_preview"
-      ],
-      "deletion_condition": "PostgreSQL command/query entrypoint is integration-proven; import reconciliation passes; architecture guard reports no production reachability",
-      "domain": "draft_review_revision",
-      "entrypoint": [
-        "api:novel_forge.api.routers.provider_fallback.create_router.provider_fallback_preview"
-      ],
-      "evidence": [
-        {
-          "line": 18,
-          "path": "src/novel_forge/api/routers/provider_fallback.py",
-          "scan_rule": "fallback",
-          "symbol": "novel_forge.api.routers.provider_fallback.create_router.provider_fallback_preview",
-          "usage_type": "fallback"
-        }
-      ],
-      "file": "src/novel_forge/api/routers/provider_fallback.py",
-      "idempotency_key": "project_id:review:stable_business_identity:content_hash",
-      "inventory_id": "legacy-migration:db7440c42644f453f69f",
-      "migration_method": "DEPRECATE_AFTER_AUTHORITY_REPLACEMENT",
-      "migration_status": "EXPLICIT_COMPATIBILITY",
-      "migration_strategy": "DEPRECATE_AFTER_AUTHORITY_REPLACEMENT",
-      "production_reachable": false,
-      "read_or_write": "WRITE",
-      "recovery_strategy": "database-backed resume cursor; idempotent replay; conflict to quarantine",
-      "remaining_action": "move entry behind the explicit legacy profile or replace with a native Authority operation",
-      "status": "EXPLICIT_COMPATIBILITY",
-      "symbol": [
-        "novel_forge.api.routers.provider_fallback.create_router.provider_fallback_preview"
-      ],
-      "target_authority": {
-        "asset_type": "draft/review_report/revision_plan/revised_draft",
-        "kind": "postgresql",
-        "operation_definition": "review.run",
-        "repository": "novel_forge.storage.review_repository"
-      },
-      "target_authority_asset_type": "draft/review_report/revision_plan/revised_draft",
-      "target_operation_definition": "review.run",
-      "target_repository": "novel_forge.storage.review_repository",
       "test_requirements": [
         "unit: domain invariants/hash/idempotency/project scope",
         "postgres: transaction rollback/concurrency/replay/stale fence/outbox",
@@ -10043,64 +9792,6 @@
       "transaction_boundary": "Command admission + fenced Attempt output + aggregate transition + StateEvent/Audit/Outbox in one PostgreSQL transaction"
     },
     {
-      "business_domain": "runtime_governance",
-      "current_authority": [
-        "legacy_localstorage"
-      ],
-      "current_authority_source": [
-        "legacy_localstorage"
-      ],
-      "current_entrypoints": [
-        "runtime:novel_forge.cli.main"
-      ],
-      "current_read_points": [],
-      "current_write_points": [
-        "src/novel_forge/cli/__init__.py:16:novel_forge.cli.main"
-      ],
-      "deletion_condition": "default startup is PostgreSQL Authority and architecture gate passes",
-      "domain": "runtime_governance",
-      "entrypoint": [
-        "runtime:novel_forge.cli.main"
-      ],
-      "evidence": [
-        {
-          "line": 16,
-          "path": "src/novel_forge/cli/__init__.py",
-          "reason": "standard CLI falls through to the Legacy command surface",
-          "scan_rule": "runtime_default",
-          "symbol": "novel_forge.cli.main",
-          "usage_type": "fallback"
-        }
-      ],
-      "file": "src/novel_forge/cli/__init__.py",
-      "idempotency_key": "runtime_role:release_sha",
-      "inventory_id": "legacy-migration:8977c6291f10dda5c95e",
-      "migration_method": "REPLACE_WITH_AUTHORITY",
-      "migration_status": "LEGACY_PRODUCTION_BLOCKER",
-      "migration_strategy": "REPLACE_WITH_AUTHORITY",
-      "production_reachable": true,
-      "read_or_write": "READ_WRITE",
-      "recovery_strategy": "fail closed; retry PostgreSQL startup without Legacy fallback",
-      "remaining_action": "standard CLI falls through to the Legacy command surface",
-      "status": "LEGACY_PRODUCTION_BLOCKER",
-      "symbol": [
-        "novel_forge.cli.main"
-      ],
-      "target_authority": {
-        "asset_type": "runtime_configuration",
-        "kind": "postgresql",
-        "operation_definition": "runtime.authority.start",
-        "repository": "novel_forge.storage.database_runtime"
-      },
-      "target_authority_asset_type": "runtime_configuration",
-      "target_operation_definition": "runtime.authority.start",
-      "target_repository": "novel_forge.storage.database_runtime",
-      "test_requirements": [
-        "architecture: default runtime and Compose are PostgreSQL-only"
-      ],
-      "transaction_boundary": "startup validation before accepting work"
-    },
-    {
       "business_domain": "project_workspace",
       "current_authority": [
         "localstorage"
@@ -10314,122 +10005,6 @@
       "transaction_boundary": "Command admission + fenced Attempt output + aggregate transition + StateEvent/Audit/Outbox in one PostgreSQL transaction"
     },
     {
-      "business_domain": "runtime_governance",
-      "current_authority": [
-        "legacy_localstorage"
-      ],
-      "current_authority_source": [
-        "legacy_localstorage"
-      ],
-      "current_entrypoints": [
-        "runtime:IndustrialSettings.storage_authority"
-      ],
-      "current_read_points": [],
-      "current_write_points": [
-        "src/novel_forge/infrastructure/settings.py:26:IndustrialSettings.storage_authority"
-      ],
-      "deletion_condition": "default startup is PostgreSQL Authority and architecture gate passes",
-      "domain": "runtime_governance",
-      "entrypoint": [
-        "runtime:IndustrialSettings.storage_authority"
-      ],
-      "evidence": [
-        {
-          "line": 26,
-          "path": "src/novel_forge/infrastructure/settings.py",
-          "reason": "default runtime selects Legacy LocalStorage",
-          "scan_rule": "runtime_default",
-          "symbol": "IndustrialSettings.storage_authority",
-          "usage_type": "fallback"
-        }
-      ],
-      "file": "src/novel_forge/infrastructure/settings.py",
-      "idempotency_key": "runtime_role:release_sha",
-      "inventory_id": "legacy-migration:03d60089cf6d5f7e8389",
-      "migration_method": "REPLACE_WITH_AUTHORITY",
-      "migration_status": "LEGACY_PRODUCTION_BLOCKER",
-      "migration_strategy": "REPLACE_WITH_AUTHORITY",
-      "production_reachable": true,
-      "read_or_write": "READ_WRITE",
-      "recovery_strategy": "fail closed; retry PostgreSQL startup without Legacy fallback",
-      "remaining_action": "default runtime selects Legacy LocalStorage",
-      "status": "LEGACY_PRODUCTION_BLOCKER",
-      "symbol": [
-        "IndustrialSettings.storage_authority"
-      ],
-      "target_authority": {
-        "asset_type": "runtime_configuration",
-        "kind": "postgresql",
-        "operation_definition": "runtime.authority.start",
-        "repository": "novel_forge.storage.database_runtime"
-      },
-      "target_authority_asset_type": "runtime_configuration",
-      "target_operation_definition": "runtime.authority.start",
-      "target_repository": "novel_forge.storage.database_runtime",
-      "test_requirements": [
-        "architecture: default runtime and Compose are PostgreSQL-only"
-      ],
-      "transaction_boundary": "startup validation before accepting work"
-    },
-    {
-      "business_domain": "runtime_governance",
-      "current_authority": [
-        "legacy_localstorage"
-      ],
-      "current_authority_source": [
-        "legacy_localstorage"
-      ],
-      "current_entrypoints": [
-        "runtime:IndustrialSettings.from_env"
-      ],
-      "current_read_points": [],
-      "current_write_points": [
-        "src/novel_forge/infrastructure/settings.py:106:IndustrialSettings.from_env"
-      ],
-      "deletion_condition": "default startup is PostgreSQL Authority and architecture gate passes",
-      "domain": "runtime_governance",
-      "entrypoint": [
-        "runtime:IndustrialSettings.from_env"
-      ],
-      "evidence": [
-        {
-          "line": 106,
-          "path": "src/novel_forge/infrastructure/settings.py",
-          "reason": "standard development runtime selects Legacy LocalStorage",
-          "scan_rule": "runtime_default",
-          "symbol": "IndustrialSettings.from_env",
-          "usage_type": "fallback"
-        }
-      ],
-      "file": "src/novel_forge/infrastructure/settings.py",
-      "idempotency_key": "runtime_role:release_sha",
-      "inventory_id": "legacy-migration:4690443644c32a41126e",
-      "migration_method": "REPLACE_WITH_AUTHORITY",
-      "migration_status": "LEGACY_PRODUCTION_BLOCKER",
-      "migration_strategy": "REPLACE_WITH_AUTHORITY",
-      "production_reachable": true,
-      "read_or_write": "READ_WRITE",
-      "recovery_strategy": "fail closed; retry PostgreSQL startup without Legacy fallback",
-      "remaining_action": "standard development runtime selects Legacy LocalStorage",
-      "status": "LEGACY_PRODUCTION_BLOCKER",
-      "symbol": [
-        "IndustrialSettings.from_env"
-      ],
-      "target_authority": {
-        "asset_type": "runtime_configuration",
-        "kind": "postgresql",
-        "operation_definition": "runtime.authority.start",
-        "repository": "novel_forge.storage.database_runtime"
-      },
-      "target_authority_asset_type": "runtime_configuration",
-      "target_operation_definition": "runtime.authority.start",
-      "target_repository": "novel_forge.storage.database_runtime",
-      "test_requirements": [
-        "architecture: default runtime and Compose are PostgreSQL-only"
-      ],
-      "transaction_boundary": "startup validation before accepting work"
-    },
-    {
       "business_domain": "agent_workflow_task",
       "current_authority": [
         "localstorage"
@@ -10540,66 +10115,6 @@
       },
       "target_authority_asset_type": "project_record/workspace_record/project_binding",
       "target_operation_definition": "project.migration.required",
-      "target_repository": "novel_forge.storage.project_lifecycle_repository",
-      "test_requirements": [
-        "unit: domain invariants/hash/idempotency/project scope",
-        "postgres: transaction rollback/concurrency/replay/stale fence/outbox",
-        "migration: duplicate/corrupt/missing-reference/cross-project/resume/reconcile",
-        "architecture: production LocalStorage/filesystem authority forbidden"
-      ],
-      "transaction_boundary": "Command admission + fenced Attempt output + aggregate transition + StateEvent/Audit/Outbox in one PostgreSQL transaction"
-    },
-    {
-      "business_domain": "project_workspace",
-      "current_authority": [
-        "mixed"
-      ],
-      "current_authority_source": [
-        "mixed"
-      ],
-      "current_entrypoints": [
-        "internal:novel_forge.model_adapters.selection._policy_route"
-      ],
-      "current_read_points": [],
-      "current_write_points": [
-        "src/novel_forge/model_adapters/selection.py:129:novel_forge.model_adapters.selection._policy_route"
-      ],
-      "deletion_condition": "PostgreSQL command/query entrypoint is integration-proven; import reconciliation passes; architecture guard reports no production reachability",
-      "domain": "project_workspace",
-      "entrypoint": [
-        "internal:novel_forge.model_adapters.selection._policy_route"
-      ],
-      "evidence": [
-        {
-          "line": 129,
-          "path": "src/novel_forge/model_adapters/selection.py",
-          "scan_rule": "fallback",
-          "symbol": "novel_forge.model_adapters.selection._policy_route",
-          "usage_type": "fallback"
-        }
-      ],
-      "file": "src/novel_forge/model_adapters/selection.py",
-      "idempotency_key": "project_id:project:stable_business_identity:content_hash",
-      "inventory_id": "legacy-migration:8717aa608bca86066659",
-      "migration_method": "DEPRECATE_AFTER_AUTHORITY_REPLACEMENT",
-      "migration_status": "EXPLICIT_COMPATIBILITY",
-      "migration_strategy": "DEPRECATE_AFTER_AUTHORITY_REPLACEMENT",
-      "production_reachable": false,
-      "read_or_write": "WRITE",
-      "recovery_strategy": "database-backed resume cursor; idempotent replay; conflict to quarantine",
-      "remaining_action": "move entry behind the explicit legacy profile or replace with a native Authority operation",
-      "status": "EXPLICIT_COMPATIBILITY",
-      "symbol": [
-        "novel_forge.model_adapters.selection._policy_route"
-      ],
-      "target_authority": {
-        "asset_type": "project_record/workspace_record/project_binding",
-        "kind": "postgresql",
-        "operation_definition": "project_lifecycle.create",
-        "repository": "novel_forge.storage.project_lifecycle_repository"
-      },
-      "target_authority_asset_type": "project_record/workspace_record/project_binding",
-      "target_operation_definition": "project_lifecycle.create",
       "target_repository": "novel_forge.storage.project_lifecycle_repository",
       "test_requirements": [
         "unit: domain invariants/hash/idempotency/project scope",
@@ -12679,36 +12194,24 @@
     {
       "business_domain": "draft_review_revision",
       "current_authority": [
-        "localstorage",
-        "mixed"
+        "localstorage"
       ],
       "current_authority_source": [
-        "localstorage",
-        "mixed"
+        "localstorage"
       ],
       "current_entrypoints": [
-        "scheduler:novel_forge.modules.agent_scheduler.service._create_revision_task_from_review_issue",
-        "scheduler:novel_forge.modules.agent_scheduler.service._run_preview_provider_fallback"
+        "scheduler:novel_forge.modules.agent_scheduler.service._create_revision_task_from_review_issue"
       ],
       "current_read_points": [],
       "current_write_points": [
-        "src/novel_forge/modules/agent_scheduler/service.py:3202:novel_forge.modules.agent_scheduler.service._run_preview_provider_fallback",
         "src/novel_forge/modules/agent_scheduler/service.py:3381:novel_forge.modules.agent_scheduler.service._create_revision_task_from_review_issue"
       ],
       "deletion_condition": "PostgreSQL command/query entrypoint is integration-proven; import reconciliation passes; architecture guard reports no production reachability",
       "domain": "draft_review_revision",
       "entrypoint": [
-        "scheduler:novel_forge.modules.agent_scheduler.service._create_revision_task_from_review_issue",
-        "scheduler:novel_forge.modules.agent_scheduler.service._run_preview_provider_fallback"
+        "scheduler:novel_forge.modules.agent_scheduler.service._create_revision_task_from_review_issue"
       ],
       "evidence": [
-        {
-          "line": 3202,
-          "path": "src/novel_forge/modules/agent_scheduler/service.py",
-          "scan_rule": "fallback",
-          "symbol": "novel_forge.modules.agent_scheduler.service._run_preview_provider_fallback",
-          "usage_type": "fallback"
-        },
         {
           "line": 3381,
           "path": "src/novel_forge/modules/agent_scheduler/service.py",
@@ -12720,17 +12223,16 @@
       "file": "src/novel_forge/modules/agent_scheduler/service.py",
       "idempotency_key": "project_id:review:stable_business_identity:content_hash",
       "inventory_id": "legacy-migration:2a56d7450d673506d11d",
-      "migration_method": "DEPRECATE_AFTER_AUTHORITY_REPLACEMENT",
+      "migration_method": "FROZEN_SNAPSHOT_IMPORT_WITH_REVIEW_OR_QUARANTINE",
       "migration_status": "EXPLICIT_COMPATIBILITY",
-      "migration_strategy": "DEPRECATE_AFTER_AUTHORITY_REPLACEMENT",
+      "migration_strategy": "FROZEN_SNAPSHOT_IMPORT_WITH_REVIEW_OR_QUARANTINE",
       "production_reachable": false,
       "read_or_write": "WRITE",
       "recovery_strategy": "database-backed resume cursor; idempotent replay; conflict to quarantine",
       "remaining_action": "move entry behind the explicit legacy profile or replace with a native Authority operation",
       "status": "EXPLICIT_COMPATIBILITY",
       "symbol": [
-        "novel_forge.modules.agent_scheduler.service._create_revision_task_from_review_issue",
-        "novel_forge.modules.agent_scheduler.service._run_preview_provider_fallback"
+        "novel_forge.modules.agent_scheduler.service._create_revision_task_from_review_issue"
       ],
       "target_authority": {
         "asset_type": "draft/review_report/revision_plan/revised_draft",
@@ -12812,23 +12314,19 @@
     {
       "business_domain": "agent_workflow_task",
       "current_authority": [
-        "localstorage",
-        "mixed"
+        "localstorage"
       ],
       "current_authority_source": [
-        "localstorage",
-        "mixed"
+        "localstorage"
       ],
       "current_entrypoints": [
         "scheduler:novel_forge.modules.agent_scheduler.service._attach_agent_registry_resolution",
-        "scheduler:novel_forge.modules.agent_scheduler.service._run_approve_provider_fallback",
         "scheduler:novel_forge.modules.agent_scheduler.service._write_base_run_asset",
         "scheduler:novel_forge.modules.agent_scheduler.service._write_json_validated",
         "scheduler:novel_forge.modules.agent_scheduler.service.create_agent_task"
       ],
       "current_read_points": [],
       "current_write_points": [
-        "src/novel_forge/modules/agent_scheduler/service.py:3216:novel_forge.modules.agent_scheduler.service._run_approve_provider_fallback",
         "src/novel_forge/modules/agent_scheduler/service.py:3578:novel_forge.modules.agent_scheduler.service._attach_agent_registry_resolution",
         "src/novel_forge/modules/agent_scheduler/service.py:4716:novel_forge.modules.agent_scheduler.service._write_base_run_asset",
         "src/novel_forge/modules/agent_scheduler/service.py:4755:novel_forge.modules.agent_scheduler.service._write_json_validated",
@@ -12838,7 +12336,6 @@
       "domain": "agent_workflow_task",
       "entrypoint": [
         "scheduler:novel_forge.modules.agent_scheduler.service._attach_agent_registry_resolution",
-        "scheduler:novel_forge.modules.agent_scheduler.service._run_approve_provider_fallback",
         "scheduler:novel_forge.modules.agent_scheduler.service._write_base_run_asset",
         "scheduler:novel_forge.modules.agent_scheduler.service._write_json_validated",
         "scheduler:novel_forge.modules.agent_scheduler.service.create_agent_task"
@@ -12850,13 +12347,6 @@
           "scan_rule": "localstorage_method",
           "symbol": "novel_forge.modules.agent_scheduler.service.create_agent_task",
           "usage_type": "authority_write"
-        },
-        {
-          "line": 3216,
-          "path": "src/novel_forge/modules/agent_scheduler/service.py",
-          "scan_rule": "fallback",
-          "symbol": "novel_forge.modules.agent_scheduler.service._run_approve_provider_fallback",
-          "usage_type": "fallback"
         },
         {
           "line": 3578,
@@ -12883,9 +12373,9 @@
       "file": "src/novel_forge/modules/agent_scheduler/service.py",
       "idempotency_key": "project_id:agent:stable_business_identity:content_hash",
       "inventory_id": "legacy-migration:a2556c8ba2b84c2fe26a",
-      "migration_method": "DEPRECATE_AFTER_AUTHORITY_REPLACEMENT",
+      "migration_method": "FROZEN_SNAPSHOT_IMPORT_WITH_REVIEW_OR_QUARANTINE",
       "migration_status": "EXPLICIT_COMPATIBILITY",
-      "migration_strategy": "DEPRECATE_AFTER_AUTHORITY_REPLACEMENT",
+      "migration_strategy": "FROZEN_SNAPSHOT_IMPORT_WITH_REVIEW_OR_QUARANTINE",
       "production_reachable": false,
       "read_or_write": "WRITE",
       "recovery_strategy": "database-backed resume cursor; idempotent replay; conflict to quarantine",
@@ -12893,7 +12383,6 @@
       "status": "EXPLICIT_COMPATIBILITY",
       "symbol": [
         "novel_forge.modules.agent_scheduler.service._attach_agent_registry_resolution",
-        "novel_forge.modules.agent_scheduler.service._run_approve_provider_fallback",
         "novel_forge.modules.agent_scheduler.service._write_base_run_asset",
         "novel_forge.modules.agent_scheduler.service._write_json_validated",
         "novel_forge.modules.agent_scheduler.service.create_agent_task"
@@ -14140,66 +13629,6 @@
       "transaction_boundary": "Command admission + fenced Attempt output + aggregate transition + StateEvent/Audit/Outbox in one PostgreSQL transaction"
     },
     {
-      "business_domain": "cross_cutting_governance",
-      "current_authority": [
-        "mixed"
-      ],
-      "current_authority_source": [
-        "mixed"
-      ],
-      "current_entrypoints": [
-        "domain_service:novel_forge.modules.chapter_authority.execution_gateway.PostgresChapterExecutionContractBinder.bind"
-      ],
-      "current_read_points": [],
-      "current_write_points": [
-        "src/novel_forge/modules/chapter_authority/execution_gateway.py:524:novel_forge.modules.chapter_authority.execution_gateway.PostgresChapterExecutionContractBinder.bind"
-      ],
-      "deletion_condition": "PostgreSQL command/query entrypoint is integration-proven; import reconciliation passes; architecture guard reports no production reachability",
-      "domain": "cross_cutting_governance",
-      "entrypoint": [
-        "domain_service:novel_forge.modules.chapter_authority.execution_gateway.PostgresChapterExecutionContractBinder.bind"
-      ],
-      "evidence": [
-        {
-          "line": 524,
-          "path": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
-          "scan_rule": "fallback",
-          "symbol": "novel_forge.modules.chapter_authority.execution_gateway.PostgresChapterExecutionContractBinder.bind",
-          "usage_type": "fallback"
-        }
-      ],
-      "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
-      "idempotency_key": "project_id:quality:stable_business_identity:content_hash",
-      "inventory_id": "legacy-migration:b1c1c6c0ab59f436d087",
-      "migration_method": "DEPRECATE_AFTER_AUTHORITY_REPLACEMENT",
-      "migration_status": "LEGACY_PRODUCTION_BLOCKER",
-      "migration_strategy": "DEPRECATE_AFTER_AUTHORITY_REPLACEMENT",
-      "production_reachable": true,
-      "read_or_write": "WRITE",
-      "recovery_strategy": "database-backed resume cursor; idempotent replay; conflict to quarantine",
-      "remaining_action": "remove or replace the production-reachable Legacy dependency (fallback)",
-      "status": "LEGACY_PRODUCTION_BLOCKER",
-      "symbol": [
-        "novel_forge.modules.chapter_authority.execution_gateway.PostgresChapterExecutionContractBinder.bind"
-      ],
-      "target_authority": {
-        "asset_type": "quality_asset",
-        "kind": "postgresql",
-        "operation_definition": "quality.run_completion_gate",
-        "repository": "novel_forge.storage.quality_repository"
-      },
-      "target_authority_asset_type": "quality_asset",
-      "target_operation_definition": "quality.run_completion_gate",
-      "target_repository": "novel_forge.storage.quality_repository",
-      "test_requirements": [
-        "unit: domain invariants/hash/idempotency/project scope",
-        "postgres: transaction rollback/concurrency/replay/stale fence/outbox",
-        "migration: duplicate/corrupt/missing-reference/cross-project/resume/reconcile",
-        "architecture: production LocalStorage/filesystem authority forbidden"
-      ],
-      "transaction_boundary": "Command admission + fenced Attempt output + aggregate transition + StateEvent/Audit/Outbox in one PostgreSQL transaction"
-    },
-    {
       "business_domain": "project_workspace",
       "current_authority": [
         "localstorage"
@@ -14499,26 +13928,21 @@
     {
       "business_domain": "project_workspace",
       "current_authority": [
-        "localstorage",
-        "mixed"
+        "localstorage"
       ],
       "current_authority_source": [
-        "localstorage",
-        "mixed"
+        "localstorage"
       ],
       "current_entrypoints": [
-        "domain_service:novel_forge.modules.chapter_plan.service._chapter_plan_packet",
         "domain_service:novel_forge.modules.chapter_plan.service.generate_chapter_plan"
       ],
       "current_read_points": [],
       "current_write_points": [
-        "src/novel_forge/modules/chapter_plan/service.py:287:novel_forge.modules.chapter_plan.service.generate_chapter_plan",
-        "src/novel_forge/modules/chapter_plan/service.py:329:novel_forge.modules.chapter_plan.service._chapter_plan_packet"
+        "src/novel_forge/modules/chapter_plan/service.py:287:novel_forge.modules.chapter_plan.service.generate_chapter_plan"
       ],
       "deletion_condition": "PostgreSQL command/query entrypoint is integration-proven; import reconciliation passes; architecture guard reports no production reachability",
       "domain": "project_workspace",
       "entrypoint": [
-        "domain_service:novel_forge.modules.chapter_plan.service._chapter_plan_packet",
         "domain_service:novel_forge.modules.chapter_plan.service.generate_chapter_plan"
       ],
       "evidence": [
@@ -14528,28 +13952,20 @@
           "scan_rule": "localstorage_method",
           "symbol": "novel_forge.modules.chapter_plan.service.generate_chapter_plan",
           "usage_type": "authority_write"
-        },
-        {
-          "line": 329,
-          "path": "src/novel_forge/modules/chapter_plan/service.py",
-          "scan_rule": "fallback",
-          "symbol": "novel_forge.modules.chapter_plan.service._chapter_plan_packet",
-          "usage_type": "fallback"
         }
       ],
       "file": "src/novel_forge/modules/chapter_plan/service.py",
       "idempotency_key": "project_id:project:stable_business_identity:content_hash",
       "inventory_id": "legacy-migration:c97153cc80cba04a087c",
-      "migration_method": "DEPRECATE_AFTER_AUTHORITY_REPLACEMENT",
+      "migration_method": "FROZEN_SNAPSHOT_IMPORT_WITH_REVIEW_OR_QUARANTINE",
       "migration_status": "EXPLICIT_COMPATIBILITY",
-      "migration_strategy": "DEPRECATE_AFTER_AUTHORITY_REPLACEMENT",
+      "migration_strategy": "FROZEN_SNAPSHOT_IMPORT_WITH_REVIEW_OR_QUARANTINE",
       "production_reachable": false,
       "read_or_write": "WRITE",
       "recovery_strategy": "database-backed resume cursor; idempotent replay; conflict to quarantine",
       "remaining_action": "move entry behind the explicit legacy profile or replace with a native Authority operation",
       "status": "EXPLICIT_COMPATIBILITY",
       "symbol": [
-        "novel_forge.modules.chapter_plan.service._chapter_plan_packet",
         "novel_forge.modules.chapter_plan.service.generate_chapter_plan"
       ],
       "target_authority": {
@@ -16644,12 +16060,10 @@
     {
       "business_domain": "context_builder",
       "current_authority": [
-        "localstorage",
-        "mixed"
+        "localstorage"
       ],
       "current_authority_source": [
-        "localstorage",
-        "mixed"
+        "localstorage"
       ],
       "current_entrypoints": [
         "domain_service:novel_forge.modules.context_builder.service._attach_quality_report_to_bundle",
@@ -16668,7 +16082,6 @@
         "src/novel_forge/modules/context_builder/service.py:481:novel_forge.modules.context_builder.service.create_context_bundle",
         "src/novel_forge/modules/context_builder/service.py:503:novel_forge.modules.context_builder.service.create_context_bundle",
         "src/novel_forge/modules/context_builder/service.py:521:novel_forge.modules.context_builder.service.create_context_bundle",
-        "src/novel_forge/modules/context_builder/service.py:632:novel_forge.modules.context_builder.service.build_flow_context_bundle",
         "src/novel_forge/modules/context_builder/service.py:745:novel_forge.modules.context_builder.service.build_flow_context_bundle",
         "src/novel_forge/modules/context_builder/service.py:797:novel_forge.modules.context_builder.service.build_flow_context_bundle"
       ],
@@ -16719,13 +16132,6 @@
           "usage_type": "authority_write"
         },
         {
-          "line": 632,
-          "path": "src/novel_forge/modules/context_builder/service.py",
-          "scan_rule": "fallback",
-          "symbol": "novel_forge.modules.context_builder.service.build_flow_context_bundle",
-          "usage_type": "fallback"
-        },
-        {
           "line": 745,
           "path": "src/novel_forge/modules/context_builder/service.py",
           "scan_rule": "localstorage_method",
@@ -16757,9 +16163,9 @@
       "file": "src/novel_forge/modules/context_builder/service.py",
       "idempotency_key": "project_id:context:stable_business_identity:content_hash",
       "inventory_id": "legacy-migration:45d11f2455d62bcd26e0",
-      "migration_method": "DEPRECATE_AFTER_AUTHORITY_REPLACEMENT",
+      "migration_method": "FROZEN_SNAPSHOT_IMPORT_WITH_REVIEW_OR_QUARANTINE",
       "migration_status": "EXPLICIT_COMPATIBILITY",
-      "migration_strategy": "DEPRECATE_AFTER_AUTHORITY_REPLACEMENT",
+      "migration_strategy": "FROZEN_SNAPSHOT_IMPORT_WITH_REVIEW_OR_QUARANTINE",
       "production_reachable": false,
       "read_or_write": "WRITE",
       "recovery_strategy": "database-backed resume cursor; idempotent replay; conflict to quarantine",
@@ -18054,41 +17460,30 @@
     {
       "business_domain": "draft_review_revision",
       "current_authority": [
-        "localstorage",
-        "mixed"
+        "localstorage"
       ],
       "current_authority_source": [
-        "localstorage",
-        "mixed"
+        "localstorage"
       ],
       "current_entrypoints": [
         "domain_service:novel_forge.modules.editor.service._annotate_apply_editor_patch_metadata",
-        "domain_service:novel_forge.modules.editor.service._fallback_revision_execution_packet",
-        "domain_service:novel_forge.modules.editor.service._fallback_revision_operations",
         "domain_service:novel_forge.modules.editor.service._link_revision_executor_outputs",
-        "domain_service:novel_forge.modules.editor.service._revision_execution_packet",
         "domain_service:novel_forge.modules.editor.service._write",
         "domain_service:novel_forge.modules.editor.service.apply_editor_patch"
       ],
       "current_read_points": [],
       "current_write_points": [
-        "src/novel_forge/modules/editor/service.py:1110:novel_forge.modules.editor.service._fallback_revision_operations",
         "src/novel_forge/modules/editor/service.py:1372:novel_forge.modules.editor.service._link_revision_executor_outputs",
         "src/novel_forge/modules/editor/service.py:1379:novel_forge.modules.editor.service._write",
         "src/novel_forge/modules/editor/service.py:207:novel_forge.modules.editor.service.apply_editor_patch",
         "src/novel_forge/modules/editor/service.py:218:novel_forge.modules.editor.service.apply_editor_patch",
-        "src/novel_forge/modules/editor/service.py:816:novel_forge.modules.editor.service._annotate_apply_editor_patch_metadata",
-        "src/novel_forge/modules/editor/service.py:897:novel_forge.modules.editor.service._revision_execution_packet",
-        "src/novel_forge/modules/editor/service.py:927:novel_forge.modules.editor.service._fallback_revision_execution_packet"
+        "src/novel_forge/modules/editor/service.py:816:novel_forge.modules.editor.service._annotate_apply_editor_patch_metadata"
       ],
       "deletion_condition": "PostgreSQL command/query entrypoint is integration-proven; import reconciliation passes; architecture guard reports no production reachability",
       "domain": "draft_review_revision",
       "entrypoint": [
         "domain_service:novel_forge.modules.editor.service._annotate_apply_editor_patch_metadata",
-        "domain_service:novel_forge.modules.editor.service._fallback_revision_execution_packet",
-        "domain_service:novel_forge.modules.editor.service._fallback_revision_operations",
         "domain_service:novel_forge.modules.editor.service._link_revision_executor_outputs",
-        "domain_service:novel_forge.modules.editor.service._revision_execution_packet",
         "domain_service:novel_forge.modules.editor.service._write",
         "domain_service:novel_forge.modules.editor.service.apply_editor_patch"
       ],
@@ -18115,27 +17510,6 @@
           "usage_type": "authority_write"
         },
         {
-          "line": 897,
-          "path": "src/novel_forge/modules/editor/service.py",
-          "scan_rule": "fallback",
-          "symbol": "novel_forge.modules.editor.service._revision_execution_packet",
-          "usage_type": "fallback"
-        },
-        {
-          "line": 927,
-          "path": "src/novel_forge/modules/editor/service.py",
-          "scan_rule": "fallback",
-          "symbol": "novel_forge.modules.editor.service._fallback_revision_execution_packet",
-          "usage_type": "fallback"
-        },
-        {
-          "line": 1110,
-          "path": "src/novel_forge/modules/editor/service.py",
-          "scan_rule": "fallback",
-          "symbol": "novel_forge.modules.editor.service._fallback_revision_operations",
-          "usage_type": "fallback"
-        },
-        {
           "line": 1372,
           "path": "src/novel_forge/modules/editor/service.py",
           "scan_rule": "localstorage_method",
@@ -18153,9 +17527,9 @@
       "file": "src/novel_forge/modules/editor/service.py",
       "idempotency_key": "project_id:revision:stable_business_identity:content_hash",
       "inventory_id": "legacy-migration:89b52a236cc0e1c8d1ba",
-      "migration_method": "DEPRECATE_AFTER_AUTHORITY_REPLACEMENT",
+      "migration_method": "FROZEN_SNAPSHOT_IMPORT_WITH_REVIEW_OR_QUARANTINE",
       "migration_status": "EXPLICIT_COMPATIBILITY",
-      "migration_strategy": "DEPRECATE_AFTER_AUTHORITY_REPLACEMENT",
+      "migration_strategy": "FROZEN_SNAPSHOT_IMPORT_WITH_REVIEW_OR_QUARANTINE",
       "production_reachable": false,
       "read_or_write": "WRITE",
       "recovery_strategy": "database-backed resume cursor; idempotent replay; conflict to quarantine",
@@ -18163,10 +17537,7 @@
       "status": "EXPLICIT_COMPATIBILITY",
       "symbol": [
         "novel_forge.modules.editor.service._annotate_apply_editor_patch_metadata",
-        "novel_forge.modules.editor.service._fallback_revision_execution_packet",
-        "novel_forge.modules.editor.service._fallback_revision_operations",
         "novel_forge.modules.editor.service._link_revision_executor_outputs",
-        "novel_forge.modules.editor.service._revision_execution_packet",
         "novel_forge.modules.editor.service._write",
         "novel_forge.modules.editor.service.apply_editor_patch"
       ],
@@ -21926,23 +21297,17 @@
     {
       "business_domain": "project_workspace",
       "current_authority": [
-        "localstorage",
-        "mixed"
+        "localstorage"
       ],
       "current_authority_source": [
-        "localstorage",
-        "mixed"
+        "localstorage"
       ],
       "current_entrypoints": [
         "domain_service:novel_forge.modules.longform_stability.service._link_draft_longform_artifacts",
-        "domain_service:novel_forge.modules.longform_stability.service._write",
-        "domain_service:novel_forge.modules.longform_stability.service.model_assisted_longform_extraction"
+        "domain_service:novel_forge.modules.longform_stability.service._write"
       ],
       "current_read_points": [],
       "current_write_points": [
-        "src/novel_forge/modules/longform_stability/service.py:1490:novel_forge.modules.longform_stability.service.model_assisted_longform_extraction",
-        "src/novel_forge/modules/longform_stability/service.py:1514:novel_forge.modules.longform_stability.service.model_assisted_longform_extraction",
-        "src/novel_forge/modules/longform_stability/service.py:1515:novel_forge.modules.longform_stability.service.model_assisted_longform_extraction",
         "src/novel_forge/modules/longform_stability/service.py:1646:novel_forge.modules.longform_stability.service._write",
         "src/novel_forge/modules/longform_stability/service.py:2809:novel_forge.modules.longform_stability.service._link_draft_longform_artifacts"
       ],
@@ -21950,31 +21315,9 @@
       "domain": "project_workspace",
       "entrypoint": [
         "domain_service:novel_forge.modules.longform_stability.service._link_draft_longform_artifacts",
-        "domain_service:novel_forge.modules.longform_stability.service._write",
-        "domain_service:novel_forge.modules.longform_stability.service.model_assisted_longform_extraction"
+        "domain_service:novel_forge.modules.longform_stability.service._write"
       ],
       "evidence": [
-        {
-          "line": 1490,
-          "path": "src/novel_forge/modules/longform_stability/service.py",
-          "scan_rule": "fallback",
-          "symbol": "novel_forge.modules.longform_stability.service.model_assisted_longform_extraction",
-          "usage_type": "fallback"
-        },
-        {
-          "line": 1514,
-          "path": "src/novel_forge/modules/longform_stability/service.py",
-          "scan_rule": "fallback",
-          "symbol": "novel_forge.modules.longform_stability.service.model_assisted_longform_extraction",
-          "usage_type": "fallback"
-        },
-        {
-          "line": 1515,
-          "path": "src/novel_forge/modules/longform_stability/service.py",
-          "scan_rule": "fallback",
-          "symbol": "novel_forge.modules.longform_stability.service.model_assisted_longform_extraction",
-          "usage_type": "fallback"
-        },
         {
           "line": 1646,
           "path": "src/novel_forge/modules/longform_stability/service.py",
@@ -21993,9 +21336,9 @@
       "file": "src/novel_forge/modules/longform_stability/service.py",
       "idempotency_key": "project_id:project:stable_business_identity:content_hash",
       "inventory_id": "legacy-migration:88ff0952845e5aff86cd",
-      "migration_method": "DEPRECATE_AFTER_AUTHORITY_REPLACEMENT",
+      "migration_method": "FROZEN_SNAPSHOT_IMPORT_WITH_REVIEW_OR_QUARANTINE",
       "migration_status": "EXPLICIT_COMPATIBILITY",
-      "migration_strategy": "DEPRECATE_AFTER_AUTHORITY_REPLACEMENT",
+      "migration_strategy": "FROZEN_SNAPSHOT_IMPORT_WITH_REVIEW_OR_QUARANTINE",
       "production_reachable": false,
       "read_or_write": "WRITE",
       "recovery_strategy": "database-backed resume cursor; idempotent replay; conflict to quarantine",
@@ -22003,8 +21346,7 @@
       "status": "EXPLICIT_COMPATIBILITY",
       "symbol": [
         "novel_forge.modules.longform_stability.service._link_draft_longform_artifacts",
-        "novel_forge.modules.longform_stability.service._write",
-        "novel_forge.modules.longform_stability.service.model_assisted_longform_extraction"
+        "novel_forge.modules.longform_stability.service._write"
       ],
       "target_authority": {
         "asset_type": "project_record/workspace_record/project_binding",
@@ -24268,66 +23610,6 @@
       "target_authority_asset_type": "knowledge_card/rule_card/template_card/knowledge_pack",
       "target_operation_definition": "knowledge_asset.migration.required",
       "target_repository": "novel_forge.storage.knowledge_repository",
-      "test_requirements": [
-        "unit: domain invariants/hash/idempotency/project scope",
-        "postgres: transaction rollback/concurrency/replay/stale fence/outbox",
-        "migration: duplicate/corrupt/missing-reference/cross-project/resume/reconcile",
-        "architecture: production LocalStorage/filesystem authority forbidden"
-      ],
-      "transaction_boundary": "Command admission + fenced Attempt output + aggregate transition + StateEvent/Audit/Outbox in one PostgreSQL transaction"
-    },
-    {
-      "business_domain": "mkaos",
-      "current_authority": [
-        "mixed"
-      ],
-      "current_authority_source": [
-        "mixed"
-      ],
-      "current_entrypoints": [
-        "domain_service:novel_forge.modules.mkaos.pack_policy.build_mkaos_flow_context_with_policy"
-      ],
-      "current_read_points": [],
-      "current_write_points": [
-        "src/novel_forge/modules/mkaos/pack_policy.py:71:novel_forge.modules.mkaos.pack_policy.build_mkaos_flow_context_with_policy"
-      ],
-      "deletion_condition": "PostgreSQL command/query entrypoint is integration-proven; import reconciliation passes; architecture guard reports no production reachability",
-      "domain": "mkaos",
-      "entrypoint": [
-        "domain_service:novel_forge.modules.mkaos.pack_policy.build_mkaos_flow_context_with_policy"
-      ],
-      "evidence": [
-        {
-          "line": 71,
-          "path": "src/novel_forge/modules/mkaos/pack_policy.py",
-          "scan_rule": "fallback",
-          "symbol": "novel_forge.modules.mkaos.pack_policy.build_mkaos_flow_context_with_policy",
-          "usage_type": "fallback"
-        }
-      ],
-      "file": "src/novel_forge/modules/mkaos/pack_policy.py",
-      "idempotency_key": "project_id:context:stable_business_identity:content_hash",
-      "inventory_id": "legacy-migration:ac33d536845df80ea0b4",
-      "migration_method": "DEPRECATE_AFTER_AUTHORITY_REPLACEMENT",
-      "migration_status": "EXPLICIT_COMPATIBILITY",
-      "migration_strategy": "DEPRECATE_AFTER_AUTHORITY_REPLACEMENT",
-      "production_reachable": false,
-      "read_or_write": "WRITE",
-      "recovery_strategy": "database-backed resume cursor; idempotent replay; conflict to quarantine",
-      "remaining_action": "move entry behind the explicit legacy profile or replace with a native Authority operation",
-      "status": "EXPLICIT_COMPATIBILITY",
-      "symbol": [
-        "novel_forge.modules.mkaos.pack_policy.build_mkaos_flow_context_with_policy"
-      ],
-      "target_authority": {
-        "asset_type": "knowledge_card/rule_card/template_card/knowledge_pack",
-        "kind": "postgresql",
-        "operation_definition": "context.build",
-        "repository": "novel_forge.storage.context_repository"
-      },
-      "target_authority_asset_type": "knowledge_card/rule_card/template_card/knowledge_pack",
-      "target_operation_definition": "context.build",
-      "target_repository": "novel_forge.storage.context_repository",
       "test_requirements": [
         "unit: domain invariants/hash/idempotency/project scope",
         "postgres: transaction rollback/concurrency/replay/stale fence/outbox",
@@ -30384,26 +29666,21 @@
     {
       "business_domain": "project_workspace",
       "current_authority": [
-        "localstorage",
-        "mixed"
+        "localstorage"
       ],
       "current_authority_source": [
-        "localstorage",
-        "mixed"
+        "localstorage"
       ],
       "current_entrypoints": [
-        "domain_service:novel_forge.modules.outline.service._outline_packet",
         "domain_service:novel_forge.modules.outline.service.generate_outline"
       ],
       "current_read_points": [],
       "current_write_points": [
-        "src/novel_forge/modules/outline/service.py:225:novel_forge.modules.outline.service.generate_outline",
-        "src/novel_forge/modules/outline/service.py:265:novel_forge.modules.outline.service._outline_packet"
+        "src/novel_forge/modules/outline/service.py:225:novel_forge.modules.outline.service.generate_outline"
       ],
       "deletion_condition": "PostgreSQL command/query entrypoint is integration-proven; import reconciliation passes; architecture guard reports no production reachability",
       "domain": "project_workspace",
       "entrypoint": [
-        "domain_service:novel_forge.modules.outline.service._outline_packet",
         "domain_service:novel_forge.modules.outline.service.generate_outline"
       ],
       "evidence": [
@@ -30413,28 +29690,20 @@
           "scan_rule": "localstorage_method",
           "symbol": "novel_forge.modules.outline.service.generate_outline",
           "usage_type": "authority_write"
-        },
-        {
-          "line": 265,
-          "path": "src/novel_forge/modules/outline/service.py",
-          "scan_rule": "fallback",
-          "symbol": "novel_forge.modules.outline.service._outline_packet",
-          "usage_type": "fallback"
         }
       ],
       "file": "src/novel_forge/modules/outline/service.py",
       "idempotency_key": "project_id:project:stable_business_identity:content_hash",
       "inventory_id": "legacy-migration:a2c8dd3bc17881204405",
-      "migration_method": "DEPRECATE_AFTER_AUTHORITY_REPLACEMENT",
+      "migration_method": "FROZEN_SNAPSHOT_IMPORT_WITH_REVIEW_OR_QUARANTINE",
       "migration_status": "EXPLICIT_COMPATIBILITY",
-      "migration_strategy": "DEPRECATE_AFTER_AUTHORITY_REPLACEMENT",
+      "migration_strategy": "FROZEN_SNAPSHOT_IMPORT_WITH_REVIEW_OR_QUARANTINE",
       "production_reachable": false,
       "read_or_write": "WRITE",
       "recovery_strategy": "database-backed resume cursor; idempotent replay; conflict to quarantine",
       "remaining_action": "move entry behind the explicit legacy profile or replace with a native Authority operation",
       "status": "EXPLICIT_COMPATIBILITY",
       "symbol": [
-        "novel_forge.modules.outline.service._outline_packet",
         "novel_forge.modules.outline.service.generate_outline"
       ],
       "target_authority": {
@@ -32247,170 +31516,6 @@
     {
       "business_domain": "project_workspace",
       "current_authority": [
-        "mixed"
-      ],
-      "current_authority_source": [
-        "mixed"
-      ],
-      "current_entrypoints": [
-        "domain_service:novel_forge.modules.production_execution.contracts.FallbackPolicy.__post_init__",
-        "domain_service:novel_forge.modules.production_execution.contracts.FallbackPolicy.from_dict"
-      ],
-      "current_read_points": [],
-      "current_write_points": [
-        "src/novel_forge/modules/production_execution/contracts.py:556:novel_forge.modules.production_execution.contracts.FallbackPolicy.__post_init__",
-        "src/novel_forge/modules/production_execution/contracts.py:621:novel_forge.modules.production_execution.contracts.FallbackPolicy.from_dict"
-      ],
-      "deletion_condition": "PostgreSQL command/query entrypoint is integration-proven; import reconciliation passes; architecture guard reports no production reachability",
-      "domain": "project_workspace",
-      "entrypoint": [
-        "domain_service:novel_forge.modules.production_execution.contracts.FallbackPolicy.__post_init__",
-        "domain_service:novel_forge.modules.production_execution.contracts.FallbackPolicy.from_dict"
-      ],
-      "evidence": [
-        {
-          "line": 556,
-          "path": "src/novel_forge/modules/production_execution/contracts.py",
-          "scan_rule": "fallback",
-          "symbol": "novel_forge.modules.production_execution.contracts.FallbackPolicy.__post_init__",
-          "usage_type": "fallback"
-        },
-        {
-          "line": 621,
-          "path": "src/novel_forge/modules/production_execution/contracts.py",
-          "scan_rule": "fallback",
-          "symbol": "novel_forge.modules.production_execution.contracts.FallbackPolicy.from_dict",
-          "usage_type": "fallback"
-        }
-      ],
-      "file": "src/novel_forge/modules/production_execution/contracts.py",
-      "idempotency_key": "project_id:project:stable_business_identity:content_hash",
-      "inventory_id": "legacy-migration:62106063b6b07f00c4c7",
-      "migration_method": "DEPRECATE_AFTER_AUTHORITY_REPLACEMENT",
-      "migration_status": "EXPLICIT_COMPATIBILITY",
-      "migration_strategy": "DEPRECATE_AFTER_AUTHORITY_REPLACEMENT",
-      "production_reachable": false,
-      "read_or_write": "WRITE",
-      "recovery_strategy": "database-backed resume cursor; idempotent replay; conflict to quarantine",
-      "remaining_action": "move entry behind the explicit legacy profile or replace with a native Authority operation",
-      "status": "EXPLICIT_COMPATIBILITY",
-      "symbol": [
-        "novel_forge.modules.production_execution.contracts.FallbackPolicy.__post_init__",
-        "novel_forge.modules.production_execution.contracts.FallbackPolicy.from_dict"
-      ],
-      "target_authority": {
-        "asset_type": "project_record/workspace_record/project_binding",
-        "kind": "postgresql",
-        "operation_definition": "project_lifecycle.create",
-        "repository": "novel_forge.storage.project_lifecycle_repository"
-      },
-      "target_authority_asset_type": "project_record/workspace_record/project_binding",
-      "target_operation_definition": "project_lifecycle.create",
-      "target_repository": "novel_forge.storage.project_lifecycle_repository",
-      "test_requirements": [
-        "unit: domain invariants/hash/idempotency/project scope",
-        "postgres: transaction rollback/concurrency/replay/stale fence/outbox",
-        "migration: duplicate/corrupt/missing-reference/cross-project/resume/reconcile",
-        "architecture: production LocalStorage/filesystem authority forbidden"
-      ],
-      "transaction_boundary": "Command admission + fenced Attempt output + aggregate transition + StateEvent/Audit/Outbox in one PostgreSQL transaction"
-    },
-    {
-      "business_domain": "project_workspace",
-      "current_authority": [
-        "mixed"
-      ],
-      "current_authority_source": [
-        "mixed"
-      ],
-      "current_entrypoints": [
-        "domain_service:novel_forge.modules.production_execution.routing.RoutePolicyRegistry.fallback_for",
-        "domain_service:novel_forge.modules.production_execution.routing.RoutePolicyRegistry.register",
-        "domain_service:novel_forge.modules.production_execution.routing.RouteResolver.freeze",
-        "domain_service:novel_forge.modules.production_execution.routing.RouteResolver.reroute"
-      ],
-      "current_read_points": [],
-      "current_write_points": [
-        "src/novel_forge/modules/production_execution/routing.py:110:novel_forge.modules.production_execution.routing.RoutePolicyRegistry.register",
-        "src/novel_forge/modules/production_execution/routing.py:141:novel_forge.modules.production_execution.routing.RoutePolicyRegistry.fallback_for",
-        "src/novel_forge/modules/production_execution/routing.py:259:novel_forge.modules.production_execution.routing.RouteResolver.freeze",
-        "src/novel_forge/modules/production_execution/routing.py:317:novel_forge.modules.production_execution.routing.RouteResolver.reroute"
-      ],
-      "deletion_condition": "PostgreSQL command/query entrypoint is integration-proven; import reconciliation passes; architecture guard reports no production reachability",
-      "domain": "project_workspace",
-      "entrypoint": [
-        "domain_service:novel_forge.modules.production_execution.routing.RoutePolicyRegistry.fallback_for",
-        "domain_service:novel_forge.modules.production_execution.routing.RoutePolicyRegistry.register",
-        "domain_service:novel_forge.modules.production_execution.routing.RouteResolver.freeze",
-        "domain_service:novel_forge.modules.production_execution.routing.RouteResolver.reroute"
-      ],
-      "evidence": [
-        {
-          "line": 110,
-          "path": "src/novel_forge/modules/production_execution/routing.py",
-          "scan_rule": "fallback",
-          "symbol": "novel_forge.modules.production_execution.routing.RoutePolicyRegistry.register",
-          "usage_type": "fallback"
-        },
-        {
-          "line": 141,
-          "path": "src/novel_forge/modules/production_execution/routing.py",
-          "scan_rule": "fallback",
-          "symbol": "novel_forge.modules.production_execution.routing.RoutePolicyRegistry.fallback_for",
-          "usage_type": "fallback"
-        },
-        {
-          "line": 259,
-          "path": "src/novel_forge/modules/production_execution/routing.py",
-          "scan_rule": "fallback",
-          "symbol": "novel_forge.modules.production_execution.routing.RouteResolver.freeze",
-          "usage_type": "fallback"
-        },
-        {
-          "line": 317,
-          "path": "src/novel_forge/modules/production_execution/routing.py",
-          "scan_rule": "fallback",
-          "symbol": "novel_forge.modules.production_execution.routing.RouteResolver.reroute",
-          "usage_type": "fallback"
-        }
-      ],
-      "file": "src/novel_forge/modules/production_execution/routing.py",
-      "idempotency_key": "project_id:project:stable_business_identity:content_hash",
-      "inventory_id": "legacy-migration:1b5f491c7a341de8d804",
-      "migration_method": "DEPRECATE_AFTER_AUTHORITY_REPLACEMENT",
-      "migration_status": "EXPLICIT_COMPATIBILITY",
-      "migration_strategy": "DEPRECATE_AFTER_AUTHORITY_REPLACEMENT",
-      "production_reachable": false,
-      "read_or_write": "WRITE",
-      "recovery_strategy": "database-backed resume cursor; idempotent replay; conflict to quarantine",
-      "remaining_action": "move entry behind the explicit legacy profile or replace with a native Authority operation",
-      "status": "EXPLICIT_COMPATIBILITY",
-      "symbol": [
-        "novel_forge.modules.production_execution.routing.RoutePolicyRegistry.fallback_for",
-        "novel_forge.modules.production_execution.routing.RoutePolicyRegistry.register",
-        "novel_forge.modules.production_execution.routing.RouteResolver.freeze",
-        "novel_forge.modules.production_execution.routing.RouteResolver.reroute"
-      ],
-      "target_authority": {
-        "asset_type": "project_record/workspace_record/project_binding",
-        "kind": "postgresql",
-        "operation_definition": "project_lifecycle.create",
-        "repository": "novel_forge.storage.project_lifecycle_repository"
-      },
-      "target_authority_asset_type": "project_record/workspace_record/project_binding",
-      "target_operation_definition": "project_lifecycle.create",
-      "target_repository": "novel_forge.storage.project_lifecycle_repository",
-      "test_requirements": [
-        "unit: domain invariants/hash/idempotency/project scope",
-        "postgres: transaction rollback/concurrency/replay/stale fence/outbox",
-        "migration: duplicate/corrupt/missing-reference/cross-project/resume/reconcile",
-        "architecture: production LocalStorage/filesystem authority forbidden"
-      ],
-      "transaction_boundary": "Command admission + fenced Attempt output + aggregate transition + StateEvent/Audit/Outbox in one PostgreSQL transaction"
-    },
-    {
-      "business_domain": "project_workspace",
-      "current_authority": [
         "localstorage"
       ],
       "current_authority_source": [
@@ -32504,12 +31609,10 @@
     {
       "business_domain": "project_workspace",
       "current_authority": [
-        "localstorage",
-        "mixed"
+        "localstorage"
       ],
       "current_authority_source": [
-        "localstorage",
-        "mixed"
+        "localstorage"
       ],
       "current_entrypoints": [
         "domain_service:novel_forge.modules.production_governance.service.build_production_governance_evidence_drift_report",
@@ -32518,10 +31621,7 @@
       ],
       "current_read_points": [],
       "current_write_points": [
-        "src/novel_forge/modules/production_governance/service.py:163:novel_forge.modules.production_governance.service.record_fallback_decision",
-        "src/novel_forge/modules/production_governance/service.py:166:novel_forge.modules.production_governance.service.record_fallback_decision",
         "src/novel_forge/modules/production_governance/service.py:173:novel_forge.modules.production_governance.service.record_fallback_decision",
-        "src/novel_forge/modules/production_governance/service.py:194:novel_forge.modules.production_governance.service.record_fallback_decision",
         "src/novel_forge/modules/production_governance/service.py:289:novel_forge.modules.production_governance.service.build_production_governance_evidence_drift_report",
         "src/novel_forge/modules/production_governance/service.py:97:novel_forge.modules.production_governance.service.build_production_governance_report"
       ],
@@ -32541,32 +31641,11 @@
           "usage_type": "authority_write"
         },
         {
-          "line": 163,
-          "path": "src/novel_forge/modules/production_governance/service.py",
-          "scan_rule": "fallback",
-          "symbol": "novel_forge.modules.production_governance.service.record_fallback_decision",
-          "usage_type": "fallback"
-        },
-        {
-          "line": 166,
-          "path": "src/novel_forge/modules/production_governance/service.py",
-          "scan_rule": "fallback",
-          "symbol": "novel_forge.modules.production_governance.service.record_fallback_decision",
-          "usage_type": "fallback"
-        },
-        {
           "line": 173,
           "path": "src/novel_forge/modules/production_governance/service.py",
           "scan_rule": "localstorage_method",
           "symbol": "novel_forge.modules.production_governance.service.record_fallback_decision",
           "usage_type": "authority_write"
-        },
-        {
-          "line": 194,
-          "path": "src/novel_forge/modules/production_governance/service.py",
-          "scan_rule": "fallback",
-          "symbol": "novel_forge.modules.production_governance.service.record_fallback_decision",
-          "usage_type": "fallback"
         },
         {
           "line": 289,
@@ -32579,9 +31658,9 @@
       "file": "src/novel_forge/modules/production_governance/service.py",
       "idempotency_key": "project_id:project:stable_business_identity:content_hash",
       "inventory_id": "legacy-migration:8235944ec5abd3fe87e9",
-      "migration_method": "DEPRECATE_AFTER_AUTHORITY_REPLACEMENT",
+      "migration_method": "FROZEN_SNAPSHOT_IMPORT_WITH_REVIEW_OR_QUARANTINE",
       "migration_status": "EXPLICIT_COMPATIBILITY",
-      "migration_strategy": "DEPRECATE_AFTER_AUTHORITY_REPLACEMENT",
+      "migration_strategy": "FROZEN_SNAPSHOT_IMPORT_WITH_REVIEW_OR_QUARANTINE",
       "production_reachable": false,
       "read_or_write": "WRITE",
       "recovery_strategy": "database-backed resume cursor; idempotent replay; conflict to quarantine",
@@ -33293,77 +32372,6 @@
       "transaction_boundary": "Command admission + fenced Attempt output + aggregate transition + StateEvent/Audit/Outbox in one PostgreSQL transaction"
     },
     {
-      "business_domain": "draft_review_revision",
-      "current_authority": [
-        "mixed"
-      ],
-      "current_authority_source": [
-        "mixed"
-      ],
-      "current_entrypoints": [
-        "domain_service:novel_forge.modules.provider_fallback.service.approve_provider_fallback",
-        "domain_service:novel_forge.modules.provider_fallback.service.preview_provider_fallback"
-      ],
-      "current_read_points": [],
-      "current_write_points": [
-        "src/novel_forge/modules/provider_fallback/service.py:53:novel_forge.modules.provider_fallback.service.preview_provider_fallback",
-        "src/novel_forge/modules/provider_fallback/service.py:85:novel_forge.modules.provider_fallback.service.approve_provider_fallback"
-      ],
-      "deletion_condition": "PostgreSQL command/query entrypoint is integration-proven; import reconciliation passes; architecture guard reports no production reachability",
-      "domain": "draft_review_revision",
-      "entrypoint": [
-        "domain_service:novel_forge.modules.provider_fallback.service.approve_provider_fallback",
-        "domain_service:novel_forge.modules.provider_fallback.service.preview_provider_fallback"
-      ],
-      "evidence": [
-        {
-          "line": 53,
-          "path": "src/novel_forge/modules/provider_fallback/service.py",
-          "scan_rule": "fallback",
-          "symbol": "novel_forge.modules.provider_fallback.service.preview_provider_fallback",
-          "usage_type": "fallback"
-        },
-        {
-          "line": 85,
-          "path": "src/novel_forge/modules/provider_fallback/service.py",
-          "scan_rule": "fallback",
-          "symbol": "novel_forge.modules.provider_fallback.service.approve_provider_fallback",
-          "usage_type": "fallback"
-        }
-      ],
-      "file": "src/novel_forge/modules/provider_fallback/service.py",
-      "idempotency_key": "project_id:review:stable_business_identity:content_hash",
-      "inventory_id": "legacy-migration:4f69f092350e13c59c07",
-      "migration_method": "DEPRECATE_AFTER_AUTHORITY_REPLACEMENT",
-      "migration_status": "EXPLICIT_COMPATIBILITY",
-      "migration_strategy": "DEPRECATE_AFTER_AUTHORITY_REPLACEMENT",
-      "production_reachable": false,
-      "read_or_write": "WRITE",
-      "recovery_strategy": "database-backed resume cursor; idempotent replay; conflict to quarantine",
-      "remaining_action": "move entry behind the explicit legacy profile or replace with a native Authority operation",
-      "status": "EXPLICIT_COMPATIBILITY",
-      "symbol": [
-        "novel_forge.modules.provider_fallback.service.approve_provider_fallback",
-        "novel_forge.modules.provider_fallback.service.preview_provider_fallback"
-      ],
-      "target_authority": {
-        "asset_type": "draft/review_report/revision_plan/revised_draft",
-        "kind": "postgresql",
-        "operation_definition": "review.run",
-        "repository": "novel_forge.storage.review_repository"
-      },
-      "target_authority_asset_type": "draft/review_report/revision_plan/revised_draft",
-      "target_operation_definition": "review.run",
-      "target_repository": "novel_forge.storage.review_repository",
-      "test_requirements": [
-        "unit: domain invariants/hash/idempotency/project scope",
-        "postgres: transaction rollback/concurrency/replay/stale fence/outbox",
-        "migration: duplicate/corrupt/missing-reference/cross-project/resume/reconcile",
-        "architecture: production LocalStorage/filesystem authority forbidden"
-      ],
-      "transaction_boundary": "Command admission + fenced Attempt output + aggregate transition + StateEvent/Audit/Outbox in one PostgreSQL transaction"
-    },
-    {
       "business_domain": "project_workspace",
       "current_authority": [
         "localstorage"
@@ -33460,93 +32468,6 @@
       },
       "target_authority_asset_type": "project_record/workspace_record/project_binding",
       "target_operation_definition": "project.migration.required",
-      "target_repository": "novel_forge.storage.project_lifecycle_repository",
-      "test_requirements": [
-        "unit: domain invariants/hash/idempotency/project scope",
-        "postgres: transaction rollback/concurrency/replay/stale fence/outbox",
-        "migration: duplicate/corrupt/missing-reference/cross-project/resume/reconcile",
-        "architecture: production LocalStorage/filesystem authority forbidden"
-      ],
-      "transaction_boundary": "Command admission + fenced Attempt output + aggregate transition + StateEvent/Audit/Outbox in one PostgreSQL transaction"
-    },
-    {
-      "business_domain": "project_workspace",
-      "current_authority": [
-        "mixed"
-      ],
-      "current_authority_source": [
-        "mixed"
-      ],
-      "current_entrypoints": [
-        "domain_service:novel_forge.modules.provider_fallback.service.approve_provider_fallback",
-        "domain_service:novel_forge.modules.provider_fallback.service.resolve_provider_fallback"
-      ],
-      "current_read_points": [],
-      "current_write_points": [
-        "src/novel_forge/modules/provider_fallback/service.py:129:novel_forge.modules.provider_fallback.service.approve_provider_fallback",
-        "src/novel_forge/modules/provider_fallback/service.py:150:novel_forge.modules.provider_fallback.service.approve_provider_fallback",
-        "src/novel_forge/modules/provider_fallback/service.py:171:novel_forge.modules.provider_fallback.service.resolve_provider_fallback",
-        "src/novel_forge/modules/provider_fallback/service.py:183:novel_forge.modules.provider_fallback.service.resolve_provider_fallback"
-      ],
-      "deletion_condition": "PostgreSQL command/query entrypoint is integration-proven; import reconciliation passes; architecture guard reports no production reachability",
-      "domain": "project_workspace",
-      "entrypoint": [
-        "domain_service:novel_forge.modules.provider_fallback.service.approve_provider_fallback",
-        "domain_service:novel_forge.modules.provider_fallback.service.resolve_provider_fallback"
-      ],
-      "evidence": [
-        {
-          "line": 129,
-          "path": "src/novel_forge/modules/provider_fallback/service.py",
-          "scan_rule": "fallback",
-          "symbol": "novel_forge.modules.provider_fallback.service.approve_provider_fallback",
-          "usage_type": "fallback"
-        },
-        {
-          "line": 150,
-          "path": "src/novel_forge/modules/provider_fallback/service.py",
-          "scan_rule": "fallback",
-          "symbol": "novel_forge.modules.provider_fallback.service.approve_provider_fallback",
-          "usage_type": "fallback"
-        },
-        {
-          "line": 171,
-          "path": "src/novel_forge/modules/provider_fallback/service.py",
-          "scan_rule": "fallback",
-          "symbol": "novel_forge.modules.provider_fallback.service.resolve_provider_fallback",
-          "usage_type": "fallback"
-        },
-        {
-          "line": 183,
-          "path": "src/novel_forge/modules/provider_fallback/service.py",
-          "scan_rule": "fallback",
-          "symbol": "novel_forge.modules.provider_fallback.service.resolve_provider_fallback",
-          "usage_type": "fallback"
-        }
-      ],
-      "file": "src/novel_forge/modules/provider_fallback/service.py",
-      "idempotency_key": "project_id:project:stable_business_identity:content_hash",
-      "inventory_id": "legacy-migration:6ec5d05e92311111adf6",
-      "migration_method": "DEPRECATE_AFTER_AUTHORITY_REPLACEMENT",
-      "migration_status": "EXPLICIT_COMPATIBILITY",
-      "migration_strategy": "DEPRECATE_AFTER_AUTHORITY_REPLACEMENT",
-      "production_reachable": false,
-      "read_or_write": "WRITE",
-      "recovery_strategy": "database-backed resume cursor; idempotent replay; conflict to quarantine",
-      "remaining_action": "move entry behind the explicit legacy profile or replace with a native Authority operation",
-      "status": "EXPLICIT_COMPATIBILITY",
-      "symbol": [
-        "novel_forge.modules.provider_fallback.service.approve_provider_fallback",
-        "novel_forge.modules.provider_fallback.service.resolve_provider_fallback"
-      ],
-      "target_authority": {
-        "asset_type": "project_record/workspace_record/project_binding",
-        "kind": "postgresql",
-        "operation_definition": "project_lifecycle.create",
-        "repository": "novel_forge.storage.project_lifecycle_repository"
-      },
-      "target_authority_asset_type": "project_record/workspace_record/project_binding",
-      "target_operation_definition": "project_lifecycle.create",
       "target_repository": "novel_forge.storage.project_lifecycle_repository",
       "test_requirements": [
         "unit: domain invariants/hash/idempotency/project scope",
@@ -34293,36 +33214,24 @@
     {
       "business_domain": "publishing",
       "current_authority": [
-        "localstorage",
-        "mixed"
+        "localstorage"
       ],
       "current_authority_source": [
-        "localstorage",
-        "mixed"
+        "localstorage"
       ],
       "current_entrypoints": [
-        "domain_service:novel_forge.modules.publishing_feedback_adapters.fallbacks._write_platform_failure_status",
-        "domain_service:novel_forge.modules.publishing_feedback_adapters.fallbacks.record_platform_publish_failure"
+        "domain_service:novel_forge.modules.publishing_feedback_adapters.fallbacks._write_platform_failure_status"
       ],
       "current_read_points": [],
       "current_write_points": [
-        "src/novel_forge/modules/publishing_feedback_adapters/fallbacks.py:32:novel_forge.modules.publishing_feedback_adapters.fallbacks.record_platform_publish_failure",
         "src/novel_forge/modules/publishing_feedback_adapters/fallbacks.py:89:novel_forge.modules.publishing_feedback_adapters.fallbacks._write_platform_failure_status"
       ],
       "deletion_condition": "PostgreSQL command/query entrypoint is integration-proven; import reconciliation passes; architecture guard reports no production reachability",
       "domain": "publishing",
       "entrypoint": [
-        "domain_service:novel_forge.modules.publishing_feedback_adapters.fallbacks._write_platform_failure_status",
-        "domain_service:novel_forge.modules.publishing_feedback_adapters.fallbacks.record_platform_publish_failure"
+        "domain_service:novel_forge.modules.publishing_feedback_adapters.fallbacks._write_platform_failure_status"
       ],
       "evidence": [
-        {
-          "line": 32,
-          "path": "src/novel_forge/modules/publishing_feedback_adapters/fallbacks.py",
-          "scan_rule": "fallback",
-          "symbol": "novel_forge.modules.publishing_feedback_adapters.fallbacks.record_platform_publish_failure",
-          "usage_type": "fallback"
-        },
         {
           "line": 89,
           "path": "src/novel_forge/modules/publishing_feedback_adapters/fallbacks.py",
@@ -34334,17 +33243,16 @@
       "file": "src/novel_forge/modules/publishing_feedback_adapters/fallbacks.py",
       "idempotency_key": "project_id:release:stable_business_identity:content_hash",
       "inventory_id": "legacy-migration:483db7ed2adca3691392",
-      "migration_method": "DEPRECATE_AFTER_AUTHORITY_REPLACEMENT",
+      "migration_method": "FROZEN_SNAPSHOT_IMPORT_WITH_REVIEW_OR_QUARANTINE",
       "migration_status": "EXPLICIT_COMPATIBILITY",
-      "migration_strategy": "DEPRECATE_AFTER_AUTHORITY_REPLACEMENT",
+      "migration_strategy": "FROZEN_SNAPSHOT_IMPORT_WITH_REVIEW_OR_QUARANTINE",
       "production_reachable": false,
       "read_or_write": "WRITE",
       "recovery_strategy": "database-backed resume cursor; idempotent replay; conflict to quarantine",
       "remaining_action": "move entry behind the explicit legacy profile or replace with a native Authority operation",
       "status": "EXPLICIT_COMPATIBILITY",
       "symbol": [
-        "novel_forge.modules.publishing_feedback_adapters.fallbacks._write_platform_failure_status",
-        "novel_forge.modules.publishing_feedback_adapters.fallbacks.record_platform_publish_failure"
+        "novel_forge.modules.publishing_feedback_adapters.fallbacks._write_platform_failure_status"
       ],
       "target_authority": {
         "asset_type": "publish_gate/release_package/publishing_receipt",
@@ -34742,12 +33650,10 @@
     {
       "business_domain": "publishing",
       "current_authority": [
-        "localstorage",
-        "mixed"
+        "localstorage"
       ],
       "current_authority_source": [
-        "localstorage",
-        "mixed"
+        "localstorage"
       ],
       "current_entrypoints": [
         "domain_service:novel_forge.modules.publishing_feedback_adapters.service._attach_auto_application_result",
@@ -34759,7 +33665,6 @@
       "current_write_points": [
         "src/novel_forge/modules/publishing_feedback_adapters/service.py:1106:novel_forge.modules.publishing_feedback_adapters.service._attach_auto_application_result",
         "src/novel_forge/modules/publishing_feedback_adapters/service.py:2025:novel_forge.modules.publishing_feedback_adapters.service._write_asset",
-        "src/novel_forge/modules/publishing_feedback_adapters/service.py:518:novel_forge.modules.publishing_feedback_adapters.service.publish_platform_upload_package",
         "src/novel_forge/modules/publishing_feedback_adapters/service.py:552:novel_forge.modules.publishing_feedback_adapters.service.publish_platform_upload_package",
         "src/novel_forge/modules/publishing_feedback_adapters/service.py:855:novel_forge.modules.publishing_feedback_adapters.service.create_feedback_mutation_proposal"
       ],
@@ -34772,13 +33677,6 @@
         "domain_service:novel_forge.modules.publishing_feedback_adapters.service.publish_platform_upload_package"
       ],
       "evidence": [
-        {
-          "line": 518,
-          "path": "src/novel_forge/modules/publishing_feedback_adapters/service.py",
-          "scan_rule": "fallback",
-          "symbol": "novel_forge.modules.publishing_feedback_adapters.service.publish_platform_upload_package",
-          "usage_type": "fallback"
-        },
         {
           "line": 552,
           "path": "src/novel_forge/modules/publishing_feedback_adapters/service.py",
@@ -34811,9 +33709,9 @@
       "file": "src/novel_forge/modules/publishing_feedback_adapters/service.py",
       "idempotency_key": "project_id:release:stable_business_identity:content_hash",
       "inventory_id": "legacy-migration:d8676f96e95f0c5a9780",
-      "migration_method": "DEPRECATE_AFTER_AUTHORITY_REPLACEMENT",
+      "migration_method": "FROZEN_SNAPSHOT_IMPORT_WITH_REVIEW_OR_QUARANTINE",
       "migration_status": "EXPLICIT_COMPATIBILITY",
-      "migration_strategy": "DEPRECATE_AFTER_AUTHORITY_REPLACEMENT",
+      "migration_strategy": "FROZEN_SNAPSHOT_IMPORT_WITH_REVIEW_OR_QUARANTINE",
       "production_reachable": false,
       "read_or_write": "WRITE",
       "recovery_strategy": "database-backed resume cursor; idempotent replay; conflict to quarantine",
@@ -44550,7 +43448,7 @@
     }
   ],
   "schema_version": "legacy-authority-migration-inventory.v2",
-  "source_tree_sha": "001d7f3b8f53c0143db9841eed1a3685b27e0c94",
+  "source_tree_sha": "f8eacd3fc4967b447750b17863c6521de4cfbeb3",
   "summary": {
     "business_domains": [
       "agent_workflow_task",
@@ -44585,15 +43483,15 @@
       "unknown": 4,
       "unmapped_side_effects": 0
     },
-    "inventory_rows": 464,
-    "legacy_findings": 2096,
-    "legacy_production_blocker_count": 7,
+    "inventory_rows": 450,
+    "legacy_findings": 2057,
+    "legacy_production_blocker_count": 2,
     "production_localstorage_goal": 0,
     "status_counts": {
       "DEVELOPMENT_ONLY": 0,
-      "EXPLICIT_COMPATIBILITY": 452,
+      "EXPLICIT_COMPATIBILITY": 443,
       "IMPORT_CANDIDATE_ONLY": 3,
-      "LEGACY_PRODUCTION_BLOCKER": 7,
+      "LEGACY_PRODUCTION_BLOCKER": 2,
       "MIGRATED_NATIVE": 0,
       "MIGRATED_READ_ONLY": 0,
       "REBUILDABLE": 2,

@@ -121,7 +121,7 @@ api:
 	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m novel_forge.cli serve-api --root $(LOCAL_WORKSPACE)
 
 worker:
-	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m novel_forge.cli worker --root $(LOCAL_WORKSPACE)
+	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m novel_forge.workers.chapter_authority
 
 web-dev:
 	npm --prefix $(WEB_DIR) run dev

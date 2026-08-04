@@ -12,8 +12,15 @@ from novel_forge.infrastructure.settings import IndustrialSettings
 def main(argv: list[str] | None = None) -> int:
     settings = IndustrialSettings.from_env()
     requested = (argv or sys.argv[1:])[:1]
-    authority_requested = bool(requested and requested[0].startswith("authority-"))
-    if settings.storage_authority != "postgresql" and not authority_requested:
+    explicit_legacy_command = bool(requested and requested[0] == "legacy")
+    if explicit_legacy_command:
+        if settings.environment == "production":
+            print("error: production CLI forbids the Legacy command surface", file=sys.stderr)
+            return 1
+        from novel_forge.cli.legacy import main as legacy_main
+
+        return legacy_main((argv or sys.argv[1:])[1:])
+    if settings.storage_authority != "postgresql":
         if settings.environment == "production":
             print("error: production CLI requires PostgreSQL authority", file=sys.stderr)
             return 1

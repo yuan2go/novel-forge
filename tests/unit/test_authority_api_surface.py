@@ -43,7 +43,7 @@ class AuthorityApiSurfaceTests(unittest.TestCase):
     def test_track_b_minimal_profile_rejects_legacy_write_or_fallback(self) -> None:
         for field in ("legacy_write_enabled", "silent_legacy_fallback_enabled"):
             with self.subTest(field=field), self.assertRaisesRegex(
-                ValueError, "forbids legacy writes and silent fallback"
+                ValueError, "forbids Legacy writes, dual write, and silent fallback"
             ):
                 IndustrialSettings(
                     root=Path("."),

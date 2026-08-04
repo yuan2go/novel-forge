@@ -7,7 +7,7 @@ from contextlib import redirect_stdout
 from pathlib import Path
 from unittest.mock import patch
 
-from novel_forge.cli import _authority_main
+from novel_forge.cli import _authority_main, main
 from novel_forge.infrastructure.settings import IndustrialSettings
 
 
@@ -17,6 +17,32 @@ class _Query:
 
 
 class PostgreSQLAuthorityCliBoundaryTests(unittest.TestCase):
+    def test_legacy_cli_is_only_reached_by_explicit_legacy_command(self) -> None:
+        with (
+            patch(
+                "novel_forge.infrastructure.settings.IndustrialSettings.from_env",
+                return_value=IndustrialSettings(
+                    root=Path("."),
+                    environment="development",
+                    storage_authority="postgresql",
+                ),
+            ),
+            patch("novel_forge.cli.legacy.main", return_value=17) as legacy,
+        ):
+            self.assertEqual(main(["legacy", "projects"]), 17)
+        legacy.assert_called_once_with(["projects"])
+
+    def test_production_rejects_explicit_legacy_command(self) -> None:
+        with patch(
+            "novel_forge.infrastructure.settings.IndustrialSettings.from_env",
+            return_value=IndustrialSettings(
+                root=Path("."),
+                environment="production",
+                storage_authority="postgresql",
+            ),
+        ):
+            self.assertEqual(main(["legacy", "projects"]), 1)
+
     def test_authority_query_command_uses_postgresql_query_port(self) -> None:
         settings = IndustrialSettings(
             root=Path("."),

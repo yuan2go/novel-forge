@@ -229,7 +229,11 @@ def _is_legacy_finding(finding: dict[str, Any]) -> bool:
         for token in ("legacy", "localstorage", "storage.local", "postgres_fallback")
     )
     return (
-        finding.get("current_authority") in {"localstorage", "filesystem", "mixed"}
+        finding.get("current_authority") in {"localstorage", "filesystem"}
+        or (
+            finding.get("current_authority") == "mixed"
+            and (finding.get("usage_type") != "fallback" or legacy_fallback)
+        )
         or finding.get("usage_type") in {"sync", "dual_write"}
         or legacy_fallback
         or "storage.local" in dependency

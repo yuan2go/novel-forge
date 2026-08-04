@@ -43,7 +43,7 @@ class IndustrialIntegrationTests(unittest.TestCase):
             self.assertEqual(settings.root, Path(tmp).resolve())
             self.assertTrue(settings.configured_services()["postgresql"])
             self.assertTrue(settings.configured_services()["neo4j"])
-            self.assertTrue(settings.postgres_write_through)
+            self.assertFalse(settings.postgres_write_through)
             self.assertTrue(settings.postgres_write_strict)
             self.assertEqual(settings.api_cors_origins, ("http://localhost:3000", "http://localhost:3001"))
 

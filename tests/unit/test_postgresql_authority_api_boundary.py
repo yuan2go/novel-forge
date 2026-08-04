@@ -10,6 +10,15 @@ from novel_forge.infrastructure.settings import IndustrialSettings
 
 
 class PostgreSQLAuthorityApiBoundaryTests(unittest.TestCase):
+    def test_standard_development_defaults_to_postgresql_authority(self) -> None:
+        settings = IndustrialSettings.from_env(
+            env={"NOVEL_FORGE_ROOT": ".", "NOVEL_FORGE_ENVIRONMENT": "development"}
+        )
+        self.assertEqual(settings.storage_authority, "postgresql")
+        self.assertFalse(settings.postgres_write_through)
+        self.assertFalse(settings.legacy_write_enabled)
+        self.assertFalse(settings.silent_legacy_fallback_enabled)
+
     def test_production_defaults_to_postgresql_authority(self) -> None:
         settings = IndustrialSettings.from_env(
             env={
@@ -28,6 +37,21 @@ class PostgreSQLAuthorityApiBoundaryTests(unittest.TestCase):
                 environment="production",
                 storage_authority="legacy_local",
             )
+
+    def test_postgresql_authority_cannot_enable_legacy_write_or_fallback(self) -> None:
+        for field in (
+            "legacy_write_enabled",
+            "silent_legacy_fallback_enabled",
+            "postgres_write_through",
+        ):
+            with self.subTest(field), self.assertRaisesRegex(
+                ValueError, "forbids Legacy writes, dual write, and silent fallback"
+            ):
+                IndustrialSettings(
+                    root=Path("."),
+                    storage_authority="postgresql",
+                    **{field: True},
+                )
 
     def test_postgresql_selector_never_constructs_legacy_app(self) -> None:
         settings = IndustrialSettings(

@@ -23,12 +23,12 @@ def _env_list(value: str | None) -> tuple[str, ...]:
 class IndustrialSettings:
     root: Path
     environment: str = "development"
-    storage_authority: str = "legacy_local"
+    storage_authority: str = "postgresql"
     authority_runtime_profile: str = "full"
     legacy_write_enabled: bool = False
     silent_legacy_fallback_enabled: bool = False
     database_url: str = ""
-    postgres_write_through: bool = True
+    postgres_write_through: bool = False
     postgres_write_strict: bool = False
     redis_url: str = "redis://localhost:6379/0"
     celery_broker_url: str = "redis://localhost:6379/0"
@@ -67,6 +67,14 @@ class IndustrialSettings:
             raise ValueError("authority_runtime_profile must be full or track-b-minimal")
         if environment == "production" and authority != "postgresql":
             raise ValueError("production storage authority must be postgresql")
+        if authority == "postgresql" and (
+            self.legacy_write_enabled
+            or self.silent_legacy_fallback_enabled
+            or self.postgres_write_through
+        ):
+            raise ValueError(
+                "PostgreSQL authority forbids Legacy writes, dual write, and silent fallback"
+            )
         if runtime_profile == "track-b-minimal" and authority != "postgresql":
             raise ValueError("track-b-minimal runtime requires postgresql authority")
         if runtime_profile == "track-b-minimal" and (
@@ -103,7 +111,7 @@ class IndustrialSettings:
             values,
             file_values,
             "NOVEL_FORGE_STORAGE_AUTHORITY",
-            "postgresql" if environment == "production" else "legacy_local",
+            "postgresql",
         )
         return cls(
             root=resolved_root,
@@ -128,8 +136,8 @@ class IndustrialSettings:
             ),
             database_url=_get(values, file_values, "NOVEL_FORGE_DATABASE_URL", _get(values, file_values, "DATABASE_URL", "")),
             postgres_write_through=_env_bool(
-                _get(values, file_values, "NOVEL_FORGE_POSTGRES_WRITE_THROUGH", "true"),
-                True,
+                _get(values, file_values, "NOVEL_FORGE_POSTGRES_WRITE_THROUGH", "false"),
+                False,
             ),
             postgres_write_strict=_env_bool(
                 _get(values, file_values, "NOVEL_FORGE_POSTGRES_WRITE_STRICT", ""),
