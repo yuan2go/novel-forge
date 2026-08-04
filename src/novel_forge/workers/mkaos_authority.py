@@ -50,6 +50,7 @@ def main() -> int:
         application_build_id=build_id,
         commit_sha=commit_sha,
         worker_id=worker_id,
+        allow_fixture_activation=settings.mkaos_fixture_activation_enabled,
     )
     scheduler = MkaosAuthorityScheduler(
         application,

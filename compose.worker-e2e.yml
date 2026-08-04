@@ -1,0 +1,7 @@
+services:
+  postgresql:
+    ports:
+      - "127.0.0.1:${NOVEL_FORGE_WORKER_E2E_POSTGRES_PORT}:5432"
+  object-store:
+    ports:
+      - "127.0.0.1:${NOVEL_FORGE_WORKER_E2E_MINIO_PORT}:9000"

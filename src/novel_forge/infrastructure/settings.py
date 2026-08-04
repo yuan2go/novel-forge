@@ -47,6 +47,7 @@ class IndustrialSettings:
     minio_raw_bucket: str = "novel-forge-raw"
     minio_artifact_bucket: str = "novel-forge-artifacts"
     minio_export_bucket: str = "novel-forge-exports"
+    mkaos_fixture_activation_enabled: bool = False
     api_host: str = "127.0.0.1"
     api_port: int = 8000
     api_cors_origins: tuple[str, ...] = ("http://localhost:3000",)
@@ -82,6 +83,10 @@ class IndustrialSettings:
         ):
             raise ValueError(
                 "track-b-minimal runtime forbids legacy writes and silent fallback"
+            )
+        if environment == "production" and self.mkaos_fixture_activation_enabled:
+            raise ValueError(
+                "production forbids fixture MKAOS activation"
             )
         object.__setattr__(self, "environment", environment)
         object.__setattr__(self, "storage_authority", authority)
@@ -165,6 +170,14 @@ class IndustrialSettings:
             minio_raw_bucket=_get(values, file_values, "NOVEL_FORGE_MINIO_RAW_BUCKET", "novel-forge-raw"),
             minio_artifact_bucket=_get(values, file_values, "NOVEL_FORGE_MINIO_ARTIFACT_BUCKET", "novel-forge-artifacts"),
             minio_export_bucket=_get(values, file_values, "NOVEL_FORGE_MINIO_EXPORT_BUCKET", "novel-forge-exports"),
+            mkaos_fixture_activation_enabled=_env_bool(
+                _get(
+                    values,
+                    file_values,
+                    "NOVEL_FORGE_MKAOS_ALLOW_FIXTURE_ACTIVATION",
+                    "false",
+                )
+            ),
             api_host=_get(values, file_values, "NOVEL_FORGE_API_HOST", "127.0.0.1"),
             api_port=int(_get(values, file_values, "NOVEL_FORGE_API_PORT", "8000")),
             api_cors_origins=_env_list(_get(values, file_values, "NOVEL_FORGE_API_CORS_ORIGINS", "")) or ("http://localhost:3000",),
