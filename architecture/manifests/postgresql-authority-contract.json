@@ -39,7 +39,8 @@
       "20260804_0060_migration_completion_semantics",
       "20260804_0061_structured_migration_references",
       "20260804_0062_runtime_job_execution_plane",
-      "20260804_0063_worker_fleet_operational_governance"
+      "20260804_0063_worker_fleet_operational_governance",
+      "20260804_0064_runtime_job_integrity_hardening"
     ],
     "required_operation_definitions": [
       "chapter.slice.run",
@@ -122,7 +123,7 @@
     },
     "minimum_module_count": 15,
     "minimum_worker_count": 7,
-    "minimum_migration_count": 63,
+    "minimum_migration_count": 64,
     "maximum_forbidden_production_reachable_paths": 0
   },
   "run_evidence_contract": {

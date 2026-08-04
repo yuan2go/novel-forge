@@ -28,8 +28,8 @@
       "environment_metadata"
     ]
   },
-  "migration_head": "20260804_0063_worker_fleet_operational_governance",
-  "migration_count": 63,
+  "migration_head": "20260804_0064_runtime_job_integrity_hardening",
+  "migration_count": 64,
   "migration_registry": {
     "mapping_count": 59,
     "domain_native_count": 18,

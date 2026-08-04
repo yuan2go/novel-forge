@@ -5,7 +5,6 @@ import os
 import signal
 import time
 from dataclasses import dataclass
-from datetime import datetime, timezone
 
 from psycopg.types.json import Jsonb
 
@@ -131,6 +130,7 @@ class PostgresOutboxDispatcher:
                     updated_at=NOW()
                 WHERE outbox_id=%s AND claimed_by=%s AND lease_id=%s
                   AND fencing_token=%s AND LOWER(status)='claimed'
+                  AND lease_expires_at > NOW()
                 RETURNING lease_expires_at
                 """,
                 [
@@ -215,7 +215,7 @@ class PostgresOutboxDispatcher:
             uow.cursor.execute(
                 """
                 SELECT status, claimed_by, lease_id, fencing_token, runtime_group,
-                       lease_expires_at
+                       lease_expires_at > NOW() AS lease_fresh
                 FROM outbox_event
                 WHERE outbox_id=%s AND event_id=%s AND project_id=%s
                 FOR UPDATE
@@ -235,7 +235,7 @@ class PostgresOutboxDispatcher:
                 or str(row[4]) != claim.runtime_group
             ):
                 raise RuntimeError("outbox fencing evidence no longer matches the claim")
-            if row[5] is None or row[5] <= datetime.now(timezone.utc):
+            if not bool(row[5]):
                 raise RuntimeError("outbox stale claim lease has expired")
             uow.cursor.execute(
                 """
@@ -418,6 +418,7 @@ class PostgresOutboxDispatcher:
                    lease_expires_at, attempt_count
             FROM outbox_event
             WHERE outbox_id=%s AND event_id=%s AND project_id=%s
+              AND lease_expires_at > NOW()
             FOR UPDATE
             """,
             [claim.outbox_id, claim.event_id, claim.project_id],
@@ -431,7 +432,6 @@ class PostgresOutboxDispatcher:
             and int(row[3]) == claim.fencing_token
             and str(row[4]) == claim.runtime_group
             and row[5] is not None
-            and row[5] > datetime.now(timezone.utc)
         ):
             raise RuntimeError("outbox stale fencing claim is no longer owned")
         return row

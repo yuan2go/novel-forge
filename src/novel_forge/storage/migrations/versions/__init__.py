@@ -64,6 +64,7 @@ from . import (
     v20260804_0061_structured_migration_references,
     v20260804_0062_runtime_job_execution_plane,
     v20260804_0063_worker_fleet_operational_governance,
+    v20260804_0064_runtime_job_integrity_hardening,
 )
 
 VERSION_MODULES = [
@@ -130,6 +131,7 @@ VERSION_MODULES = [
     v20260804_0061_structured_migration_references,
     v20260804_0062_runtime_job_execution_plane,
     v20260804_0063_worker_fleet_operational_governance,
+    v20260804_0064_runtime_job_integrity_hardening,
 ]
 
 __all__ = ["VERSION_MODULES"]

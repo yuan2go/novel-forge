@@ -228,15 +228,15 @@ class RuntimeJobAuthority:
                 SELECT job.runtime_job_id, job.job_kind, job.subject_kind,
                        job.subject_id, job.project_id, job.attempt_count,
                        job.current_attempt_id, job.current_fencing_token,
-                       job.status, job.input_snapshot
+                       job.status, job.input_snapshot, job.max_attempts
                 FROM authority_runtime_job AS job
                 WHERE job.runtime_group=%s
                   AND (%s::text[]='{}'::text[] OR job.job_kind=ANY(%s))
                   AND (%s='' OR (job.subject_kind=%s AND job.subject_id=%s))
-                  AND job.attempt_count < job.max_attempts
                   AND (
                       (
                           job.status IN ('READY','RETRY_WAIT')
+                          AND job.attempt_count < job.max_attempts
                           AND job.available_at <= NOW()
                       )
                       OR (
@@ -303,6 +303,40 @@ class RuntimeJobAuthority:
                     fencing_token=int(row[7]),
                     payload={"previous_status": previous_status},
                 )
+                if int(row[5]) >= int(row[10]):
+                    terminal_error = {
+                        "code": "FINAL_ATTEMPT_LEASE_EXPIRED",
+                        "attempt_id": previous_attempt_id,
+                    }
+                    uow.cursor.execute(
+                        """
+                        UPDATE authority_runtime_job
+                        SET status='DEAD_LETTER', claimed_by='',
+                            last_error=%s, completed_at=NOW(), updated_at=NOW()
+                        WHERE runtime_job_id=%s
+                          AND current_attempt_id=%s
+                          AND current_fencing_token=%s
+                        """,
+                        [
+                            Jsonb(terminal_error),
+                            runtime_job_id,
+                            previous_attempt_id,
+                            int(row[7]),
+                        ],
+                    )
+                    if uow.cursor.rowcount != 1:
+                        self._raise_stale_claim()
+                    self._append_event(
+                        uow,
+                        runtime_job_id=runtime_job_id,
+                        attempt_id=previous_attempt_id,
+                        event_type="runtime_job.dead_lettered",
+                        worker_id=worker_id,
+                        fencing_token=int(row[7]),
+                        payload=terminal_error,
+                    )
+                    uow.commit()
+                    return None
             attempt_number = int(row[5]) + 1
             fencing_token = int(row[7]) + 1
             attempt_id = f"runtime-attempt:{uuid4()}"
@@ -447,6 +481,7 @@ class RuntimeJobAuthority:
                     lease_expires_at=NOW() + (%s * INTERVAL '1 second')
                 WHERE lease_id=%s AND attempt_id=%s AND worker_id=%s
                   AND fencing_token=%s AND status='HELD'
+                  AND lease_expires_at > NOW()
                 RETURNING lease_expires_at
                 """,
                 [
@@ -756,6 +791,7 @@ class RuntimeJobAuthority:
             JOIN authority_runtime_job_lease AS lease
               ON lease.attempt_id=attempt.attempt_id
             WHERE job.runtime_job_id=%s
+              AND lease.lease_expires_at > NOW()
             FOR UPDATE OF job, attempt, lease
             """,
             [claim.runtime_job_id],
@@ -768,7 +804,6 @@ class RuntimeJobAuthority:
             and str(row[5]) == claim.worker_id
             and str(row[7]) == claim.lease_id
             and str(row[8]) == "HELD"
-            and row[9] > datetime.now(timezone.utc)
             and str(row[0]) in ACTIVE_JOB_STATUSES
         )
         if not valid:

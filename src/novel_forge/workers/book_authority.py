@@ -248,23 +248,20 @@ def main() -> int:
                 runtime_jobs,
                 limit=batch_size,
             )
-            claims: list[RuntimeJobClaim] = []
-            while len(claims) < batch_size and not stopping:
-                claim = runtime_jobs.claim(
-                    runtime_group="book",
-                    worker_id=worker_id,
-                    lease_seconds=lease_seconds,
-                    job_kinds=("BOOK_COORDINATION_TICK",),
-                )
-                if claim is None:
-                    break
-                claims.append(claim)
-            if not claims:
+            claim = runtime_jobs.claim(
+                runtime_group="book",
+                worker_id=worker_id,
+                lease_seconds=lease_seconds,
+                job_kinds=("BOOK_COORDINATION_TICK",),
+            )
+            if claim is None:
                 supervisor.polled(idle=True)
                 time.sleep(poll_seconds)
                 continue
             supervisor.polled(idle=False)
-            batch = tuple(claims)
+            # Claim only work that is about to execute. Pre-claiming a serial
+            # batch allows later leases to expire before their heartbeat starts.
+            batch = (claim,)
             try:
                 failures = boundary.execute_batch(
                     batch,

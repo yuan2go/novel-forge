@@ -4,6 +4,7 @@ import unittest
 
 from novel_forge.modules.command_kernel.worker_execution import WorkerSupervisor
 from novel_forge.modules.runtime_job import RuntimeJobAuthority, RuntimeJobSpec
+from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from novel_forge.storage.worker_health import PostgresWorkerHealthObserver, runtime_health_report
 from tests.integration.authority_postgres_support import DATABASE_URL, ensure_migrated, identifier
 
@@ -91,6 +92,31 @@ class WorkerHealthPostgresTests(unittest.TestCase):
         runtime_jobs.start(claim)
         runtime_jobs.complete(claim, {"status": "observed"})
         supervisor.operation_finished(claim.runtime_job_id, succeeded=True)
+
+    def test_stopped_worker_metrics_do_not_inflate_live_fleet_aggregate(self) -> None:
+        worker_id = identifier("stopped-metrics-worker")
+        supervisor = WorkerSupervisor(
+            worker_kind="maintenance",
+            worker_id=worker_id,
+            observer=PostgresWorkerHealthObserver(DATABASE_URL),
+        )
+        supervisor.polled(idle=True)
+        supervisor.stopped()
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                """
+                UPDATE authority_worker_operational_metrics_projection
+                SET pool_size=999999, transaction_count=999999,
+                    recorded_at=NOW()
+                WHERE worker_id=%s AND worker_kind='maintenance'
+                """,
+                [worker_id],
+            )
+            self.assertEqual(uow.cursor.rowcount, 1)
+            uow.commit()
+        report = runtime_health_report(DATABASE_URL)
+        self.assertLess(report["fleet_metrics"]["pool_size"], 999999)
+        self.assertLess(report["fleet_metrics"]["transaction_count"], 999999)
 
 
 if __name__ == "__main__":

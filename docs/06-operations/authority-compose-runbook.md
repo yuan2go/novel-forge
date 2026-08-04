@@ -9,7 +9,7 @@ curl -fsS http://localhost:8000/readiness
 ```
 
 The migration service must reach
-`20260804_0063_worker_fleet_operational_governance` before API/Workers become
+`20260804_0064_runtime_job_integrity_hardening` before API/Workers become
 ready. Legacy compatibility is not started by this topology.
 
 ## Configuration checks
@@ -67,7 +67,7 @@ make authority-query-plan-release
 ```
 
 The query-plan qualification uses representative cardinalities and leaves
-`enable_seqscan` enabled. Clean migration and schema tests replay 0001→0063.
+`enable_seqscan` enabled. Clean migration and schema tests replay 0001→0064.
 
 ## Failure handling
 

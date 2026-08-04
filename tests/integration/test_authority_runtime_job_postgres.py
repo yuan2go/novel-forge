@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import unittest
 
+from psycopg.errors import ForeignKeyViolation
+
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.runtime_job import RuntimeJobAuthority, RuntimeJobSpec
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
@@ -143,6 +145,131 @@ class AuthorityRuntimeJobPostgresTests(unittest.TestCase):
         self.authority.start(second)
         dead = self.authority.fail(second, {"code": "REPEATED"})
         self.assertEqual(dead["status"], "DEAD_LETTER")
+
+    def test_final_attempt_lease_expiry_dead_letters_instead_of_stranding(self) -> None:
+        scheduled = self.authority.schedule(
+            self.spec(dedupe_key="book:final-expiry", subject_id="subject:final-expiry")
+        )
+        first = self.authority.claim(
+            runtime_group=self.runtime_group,
+            worker_id="book-worker-a",
+            lease_seconds=30,
+        )
+        assert first is not None
+        self.authority.start(first)
+        self.authority.fail(first, {"code": "TRANSIENT"})
+        final = self.authority.claim(
+            runtime_group=self.runtime_group,
+            worker_id="book-worker-b",
+            lease_seconds=30,
+        )
+        assert final is not None
+        self.authority.start(final)
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                """
+                UPDATE authority_runtime_job_lease
+                SET lease_expires_at=NOW() - INTERVAL '1 second'
+                WHERE lease_id=%s
+                """,
+                [final.lease_id],
+            )
+            uow.commit()
+
+        self.assertIsNone(
+            self.authority.claim(
+                runtime_group=self.runtime_group,
+                worker_id="book-worker-recovery",
+                lease_seconds=30,
+            )
+        )
+        job = self.authority.get(scheduled["runtime_job_id"])
+        self.assertEqual(job["status"], "DEAD_LETTER")
+        self.assertEqual(job["last_error"]["code"], "FINAL_ATTEMPT_LEASE_EXPIRED")
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                """
+                SELECT attempt.status, lease.status,
+                       COUNT(*) FILTER (
+                           WHERE event.event_type='runtime_job.dead_lettered'
+                       )
+                FROM authority_runtime_job_attempt AS attempt
+                JOIN authority_runtime_job_lease AS lease
+                  ON lease.attempt_id=attempt.attempt_id
+                LEFT JOIN authority_runtime_job_event AS event
+                  ON event.attempt_id=attempt.attempt_id
+                WHERE attempt.attempt_id=%s
+                GROUP BY attempt.status, lease.status
+                """,
+                [final.attempt_id],
+            )
+            attempt_status, lease_status, dead_letter_events = uow.cursor.fetchone()
+        self.assertEqual((attempt_status, lease_status), ("ABANDONED", "EXPIRED"))
+        self.assertEqual(int(dead_letter_events), 1)
+
+    def test_database_clock_rejects_expired_heartbeat(self) -> None:
+        self.authority.schedule(
+            self.spec(dedupe_key="book:expired-heartbeat", subject_id="subject:heartbeat")
+        )
+        claim = self.authority.claim(
+            runtime_group=self.runtime_group,
+            worker_id="book-worker-clock",
+            lease_seconds=30,
+        )
+        assert claim is not None
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                """
+                UPDATE authority_runtime_job_lease
+                SET lease_expires_at=NOW() - INTERVAL '1 second'
+                WHERE lease_id=%s
+                """,
+                [claim.lease_id],
+            )
+            uow.commit()
+        with self.assertRaisesRegex(KernelError, "stale"):
+            self.authority.heartbeat(claim, lease_seconds=30)
+
+    def test_database_rejects_cross_job_execution_identity(self) -> None:
+        first_job = self.authority.schedule(
+            self.spec(dedupe_key="book:identity-a", subject_id="subject:identity-a")
+        )
+        first_claim = self.authority.claim(
+            runtime_group=self.runtime_group,
+            worker_id="book-worker-identity-a",
+            lease_seconds=30,
+            subject_kind="BOOK_RUN",
+            subject_id="subject:identity-a",
+        )
+        assert first_claim is not None
+        second_job = self.authority.schedule(
+            self.spec(dedupe_key="book:identity-b", subject_id="subject:identity-b")
+        )
+        second_claim = self.authority.claim(
+            runtime_group=self.runtime_group,
+            worker_id="book-worker-identity-b",
+            lease_seconds=30,
+            subject_kind="BOOK_RUN",
+            subject_id="subject:identity-b",
+        )
+        assert second_claim is not None
+
+        with self.assertRaises(ForeignKeyViolation):
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                uow.cursor.execute(
+                    """
+                    UPDATE authority_runtime_job
+                    SET current_attempt_id=%s, current_fencing_token=%s
+                    WHERE runtime_job_id=%s
+                    """,
+                    [
+                        second_claim.attempt_id,
+                        second_claim.fencing_token,
+                        first_job["runtime_job_id"],
+                    ],
+                )
+                uow.commit()
+        self.assertNotEqual(first_job["runtime_job_id"], second_job["runtime_job_id"])
 
 
 if __name__ == "__main__":

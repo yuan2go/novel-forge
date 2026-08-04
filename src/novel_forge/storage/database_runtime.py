@@ -11,8 +11,10 @@ import random
 import re
 import hashlib
 import json
+import shlex
 import threading
 import time
+from urllib.parse import parse_qsl, unquote, urlsplit
 from contextlib import contextmanager
 from dataclasses import dataclass, field, fields
 from enum import StrEnum
@@ -92,6 +94,35 @@ DEFAULT_AUTHORITY_ROLE_INSTANCES: dict[str, int] = {
     "maintenance": 1,
 }
 
+_SECRET_DSN_KEYS = frozenset(
+    {"password", "passfile", "sslpassword", "sslkey", "sslcert"}
+)
+
+
+def _password_free_database_identity(database_url: str) -> dict[str, Any]:
+    """Return connection identity without reusable authentication material."""
+    if "://" in database_url:
+        parsed = urlsplit(database_url)
+        query = sorted(
+            (key, value)
+            for key, value in parse_qsl(parsed.query, keep_blank_values=True)
+            if key.lower() not in _SECRET_DSN_KEYS
+        )
+        return {
+            "scheme": parsed.scheme.lower(),
+            "host": (parsed.hostname or "").lower(),
+            "port": parsed.port,
+            "database": unquote(parsed.path.lstrip("/")),
+            "user": unquote(parsed.username or ""),
+            "query": query,
+        }
+    fields: dict[str, str] = {}
+    for token in shlex.split(database_url):
+        key, separator, value = token.partition("=")
+        if separator and key.lower() not in _SECRET_DSN_KEYS:
+            fields[key.lower()] = value
+    return {"keyword_dsn": dict(sorted(fields.items()))}
+
 
 def _env_int(name: str, default: int) -> int:
     raw = os.environ.get(name)
@@ -141,8 +172,14 @@ class DatabaseRuntimeConfig:
 
     @property
     def database_identity_fingerprint(self) -> str:
+        identity = _password_free_database_identity(self.database_url)
         return "sha256:" + hashlib.sha256(
-            self.database_url.encode("utf-8")
+            json.dumps(
+                identity,
+                sort_keys=True,
+                separators=(",", ":"),
+                ensure_ascii=True,
+            ).encode("utf-8")
         ).hexdigest()
 
     @property

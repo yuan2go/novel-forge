@@ -123,6 +123,8 @@ class OutboxAuthorityWorkerPostgresTests(unittest.TestCase):
                 """,
                 [outbox_id],
             )
+        with self.assertRaisesRegex(RuntimeError, "stale"):
+            stale_dispatcher.heartbeat(stale)
         recovered = stale_dispatcher.recover_expired_claims(limit=10)
         self.assertEqual(recovered[0]["outbox_id"], outbox_id)
 

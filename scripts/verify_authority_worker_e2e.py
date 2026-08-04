@@ -1209,11 +1209,17 @@ def _maintenance_scenario(settings: Any, control: "ComposeControl") -> dict[str,
                 "SELECT status FROM authority_external_effect WHERE external_effect_id=%s", [ids["effect"]]
             )
             effect = str(cursor.fetchone()[0])
+            cursor.execute(
+                "SELECT status FROM outbox_event WHERE outbox_id=%s",
+                [ids["outbox"]],
+            )
+            outbox = str(cursor.fetchone()[0]).lower()
         return {
             "succeeded_jobs": succeeded,
             "operation_status": operation,
             "attempt_lease_status": attempt_lease,
             "external_effect_status": effect,
+            "outbox_status": outbox,
         }
 
     terminal = _poll(
@@ -1221,7 +1227,8 @@ def _maintenance_scenario(settings: Any, control: "ComposeControl") -> dict[str,
         maintenance_state,
         lambda state: state["succeeded_jobs"] == len(MAINTENANCE_RUNTIME_JOB_KINDS)
         and state["operation_status"] in {"CANCELLATION_REQUESTED", "CANCELLED"}
-        and state["attempt_lease_status"] == "EXPIRED",
+        and state["attempt_lease_status"] == "EXPIRED"
+        and state["outbox_status"] in {"failed", "dead_letter"},
     )
     execution = _runtime_job_evidence(settings.database_url, stale_claim.runtime_job_id)
     if execution["status"] != "SUCCEEDED" or execution["fencing_token"] < 2:
@@ -1236,6 +1243,17 @@ def _maintenance_scenario(settings: Any, control: "ComposeControl") -> dict[str,
             [scheduled_ids],
         )
         reconciliation = dict(cursor.fetchone()[0])
+    matching_effects = [
+        item
+        for item in reconciliation["reconciliation_required"]
+        if item.get("external_effect_id") == ids["effect"]
+    ]
+    if len(matching_effects) != 1 or matching_effects[0].get("action") != (
+        "QUERY_OR_MANUAL_RECONCILIATION_REQUIRED"
+    ):
+        raise RuntimeError(
+            "Maintenance E2E did not retain the seeded unknown effect as query/manual required"
+        )
     return {
         "scenario": "Deadline/lease/outbox/effect scans through fenced Runtime Jobs and recovery",
         "work_id": stale_claim.runtime_job_id,
@@ -1248,6 +1266,7 @@ def _maintenance_scenario(settings: Any, control: "ComposeControl") -> dict[str,
             **terminal,
             "runtime_job_ids": scheduled_ids,
             "unknown_effect_action": reconciliation["reconciliation_required"],
+            "seeded_unknown_effect": matching_effects[0],
             "provider_query_proven": reconciliation["provider_query_proven"],
         },
         "expired_claim": {

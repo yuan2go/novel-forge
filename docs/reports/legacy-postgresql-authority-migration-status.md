@@ -1,7 +1,7 @@
 # Legacy to PostgreSQL Authority Migration Status
 
 Implementation target: core domain migration qualification at migration head
-`20260804_0063_worker_fleet_operational_governance`. Remote proof is determined
+`20260804_0064_runtime_job_integrity_hardening`. Remote proof is determined
 by the exact-SHA CI artifact, not by a status sentence in this file.
 
 ## Materialization levels
@@ -55,8 +55,9 @@ activated; cycles quarantine the affected graph.
 | 0061 | structured references and dependency graph |
 | 0062 | non-business Runtime Job execution plane |
 | 0063 | Outbox execution evidence, Worker health and fleet metrics |
+| 0064 | Runtime Job composite execution identity and legacy run-state forward fix |
 
-All five are forward-only, backup-required migrations with forward-fix recovery.
+All six are forward-only, backup-required migrations with forward-fix recovery.
 Migrations 0001–0058 are unchanged.
 
 ## Remaining boundary

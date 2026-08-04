@@ -479,8 +479,17 @@ def runtime_health_report(
                    COALESCE(MAX(outbox_backlog),0),
                    COALESCE(MAX(unknown_effect_backlog),0),
                    COALESCE(MAX(stale_worker_count),0)
-            FROM authority_worker_operational_metrics_projection
-            """
+            FROM authority_worker_operational_metrics_projection AS metrics
+            JOIN authority_worker_health_projection AS health
+              ON health.worker_id=metrics.worker_id
+             AND health.worker_kind=metrics.worker_kind
+            WHERE health.status NOT IN ('STOPPED','FATAL')
+              AND COALESCE(health.last_heartbeat_at, health.updated_at)
+                  >= NOW() - (%s * INTERVAL '1 second')
+              AND metrics.recorded_at
+                  >= NOW() - (%s * INTERVAL '1 second')
+            """,
+            [freshness_seconds, freshness_seconds],
         )
         metric_values = tuple(int(value) for value in uow.cursor.fetchone())
         metric_keys = (

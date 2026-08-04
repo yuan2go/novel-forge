@@ -84,6 +84,28 @@ class DatabaseRuntimeUnitTests(unittest.TestCase):
         self.assertNotIn("password", rendered)
         self.assertNotIn(first.database_url, rendered)
 
+    def test_database_identity_excludes_password_but_keeps_database_identity(self) -> None:
+        first = DatabaseRuntimeConfig(
+            database_url="postgresql://authority:secret-a@db.internal:5432/novel?sslmode=require",
+            role="book",
+        )
+        rotated = DatabaseRuntimeConfig(
+            database_url="postgresql://authority:secret-b@db.internal:5432/novel?sslmode=require",
+            role="book",
+        )
+        other_database = DatabaseRuntimeConfig(
+            database_url="postgresql://authority:secret-b@db.internal:5432/other?sslmode=require",
+            role="book",
+        )
+        self.assertEqual(
+            first.database_identity_fingerprint,
+            rotated.database_identity_fingerprint,
+        )
+        self.assertNotEqual(
+            first.database_identity_fingerprint,
+            other_database.database_identity_fingerprint,
+        )
+
     def test_connection_budget_fails_fast_when_capacity_is_exceeded(self) -> None:
         with self.assertRaisesRegex(RuntimeError, "exceeds capacity"):
             validate_connection_budget(

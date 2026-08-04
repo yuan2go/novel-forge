@@ -10,7 +10,7 @@ not cache a changing CI run conclusion.
 |---|---|
 | Architecture | stable contract validation, deterministic Implementation Tree Identity, zero forbidden reachability |
 | Tests | lint/architecture, unit/acceptance, PostgreSQL integration and Web jobs successful |
-| Migration | clean 0001→0063 replay, schema integration and 18 core Domain flows |
+| Migration | clean 0001→0064 replay, schema integration and 18 core Domain flows |
 | Query plan | representative planner qualification with sequential scan enabled |
 | Compose | default Authority topology Content smoke and recovery |
 | Worker Fleet | all seven independent recovery scenarios and PASS summary |
