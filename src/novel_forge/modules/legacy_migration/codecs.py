@@ -10,6 +10,10 @@ import json
 from dataclasses import dataclass
 from typing import Any
 
+from novel_forge.modules.legacy_migration.state_machine import (
+    MigrationMaterializationLevel,
+)
+
 
 class MigrationCodecNotFound(ValueError):
     pass
@@ -31,6 +35,8 @@ class NativeMigrationCandidate:
     governance: str
     qualification_policy: str
     activation_decision: str
+    materialization_level: MigrationMaterializationLevel
+    legacy_approval_evidence: dict[str, Any]
     reconciliation: dict[str, Any]
 
 
@@ -45,6 +51,11 @@ class TypedMigrationCodec:
     validation: str
     qualification_policy: str
     activation_policy: str
+    materialization_level: MigrationMaterializationLevel
+    domain_adapter: str
+    domain_validator: str
+    projection_strategy: str
+    activation_strategy: str
     rebuildable: bool
     quarantine_rules: tuple[str, ...]
     reconciliation_rules: tuple[str, ...]
@@ -55,7 +66,7 @@ class TypedMigrationCodec:
 
     @property
     def codec_version(self) -> str:
-        return "2.0.0"
+        return "3.0.0"
 
     def stable_identity(self, record: Any) -> str:
         return ":".join(
@@ -112,11 +123,13 @@ class TypedMigrationCodec:
             }
         )
         content_hash = _content_hash(native_content)
-        approved = _explicitly_approved(original)
-        activation_decision = (
-            "ACTIVATE"
-            if approved and self.activation_policy == "AUTO_IF_EXPLICITLY_APPROVED"
-            else "NEEDS_REVIEW"
+        legacy_approval_evidence = _legacy_approval_evidence(original)
+        activation_decision = "NEEDS_REVIEW"
+        validate_archival_candidate(
+            content=native_content,
+            content_hash=content_hash,
+            project_id=str(record.project_id),
+            workspace_id=str(record.workspace_id),
         )
         return NativeMigrationCandidate(
             source_type=self.source_type,
@@ -128,17 +141,24 @@ class TypedMigrationCodec:
             references=tuple(record.references),
             content=native_content,
             content_hash=content_hash,
-            lifecycle="ACTIVE" if activation_decision == "ACTIVATE" else "IMPORTED",
-            eligibility="ELIGIBLE" if approved else "PENDING_EVALUATION",
+            lifecycle="IMPORTED",
+            eligibility="PENDING_EVALUATION",
             governance="CLEAR",
             qualification_policy=self.qualification_policy,
             activation_decision=activation_decision,
+            materialization_level=MigrationMaterializationLevel.ARCHIVAL_NATIVE,
+            legacy_approval_evidence=legacy_approval_evidence,
             reconciliation={
                 "source_hash": str(record.source_hash),
                 "target_content_hash": content_hash,
                 "reference_count": len(record.references),
                 "stable_business_identity": self.stable_identity(record),
                 "activation_decision": activation_decision,
+                "materialization_level": (
+                    MigrationMaterializationLevel.ARCHIVAL_NATIVE.value
+                ),
+                "target_materialization_level": self.materialization_level.value,
+                "legacy_approval_evidence": legacy_approval_evidence,
             },
         )
 
@@ -180,6 +200,11 @@ class TypedMigrationCodecRegistry:
                 "validation": codec.validation,
                 "qualification_policy": codec.qualification_policy,
                 "activation_policy": codec.activation_policy,
+                "materialization_level": codec.materialization_level.value,
+                "domain_adapter": codec.domain_adapter,
+                "domain_validator": codec.domain_validator,
+                "projection_strategy": codec.projection_strategy,
+                "activation_strategy": codec.activation_strategy,
                 "rebuildable": codec.rebuildable,
                 "quarantine_rules": list(codec.quarantine_rules),
                 "reconciliation_rules": list(codec.reconciliation_rules),
@@ -190,7 +215,12 @@ class TypedMigrationCodecRegistry:
         ]
 
 
-def _codec(source_type: str, target_asset_type: str | None = None) -> TypedMigrationCodec:
+def _codec(
+    source_type: str,
+    target_asset_type: str | None = None,
+    *,
+    domain: str = "",
+) -> TypedMigrationCodec:
     target = target_asset_type or source_type
     return TypedMigrationCodec(
         source_type=source_type,
@@ -199,9 +229,32 @@ def _codec(source_type: str, target_asset_type: str | None = None) -> TypedMigra
         scope_resolution="require_project_and_resolve_workspace_v1",
         reference_resolution="same_project_complete_reference_set_v1",
         conversion="native_content_without_local_paths_v1",
-        validation=f"{target}.migration.schema.v1",
-        qualification_policy=f"{target}.legacy-import-qualification.v1",
-        activation_policy="AUTO_IF_EXPLICITLY_APPROVED",
+        validation="legacy_migration.validate_archival_candidate.v1",
+        qualification_policy="legacy-archival-import-qualification-v1",
+        activation_policy="EXPLICIT_AUTHORITY_APPROVAL_REQUIRED",
+        materialization_level=(
+            MigrationMaterializationLevel.DOMAIN_NATIVE
+            if domain
+            else MigrationMaterializationLevel.ARCHIVAL_NATIVE
+        ),
+        domain_adapter=(
+            f"novel_forge.legacy_migration.{domain}.v1" if domain else ""
+        ),
+        domain_validator=(
+            f"novel_forge.{domain}.domain_validator.v1"
+            if domain
+            else "legacy_migration.validate_archival_candidate.v1"
+        ),
+        projection_strategy=(
+            f"{domain}.authority_projection.v1"
+            if domain
+            else "immutable_asset_version_only.v1"
+        ),
+        activation_strategy=(
+            f"{domain}.explicit_command.v1"
+            if domain
+            else "NEEDS_REVIEW"
+        ),
         rebuildable=False,
         quarantine_rules=(
             "PROJECT_ID_MISSING",
@@ -241,6 +294,7 @@ _TYPE_TARGETS = {
     "arc_plan": "arc_plan",
     "chapter_plan": "chapter_plan",
     "chapter_plan_version": "chapter_plan",
+    "chapter_group_plan": "chapter_group_plan",
     "outline_version": "book_plan",
     "topic_seed": "topic_seed",
     "world_bible": "world_bible",
@@ -295,21 +349,75 @@ _TYPE_TARGETS = {
     "publication_record": "publication_record",
 }
 
+
+_DOMAIN_ADAPTERS = {
+    "project_workspace_state": "project_authority",
+    "book": "book_design_authority",
+    "book_record": "book_design_authority",
+    "book_design": "book_design_authority",
+    "book_design_candidate": "book_design_authority",
+    "story_design": "story_design_authority",
+    "story_design_candidate": "story_design_authority",
+    "book_plan": "hierarchical_planning",
+    "outline_version": "hierarchical_planning",
+    "volume_plan": "hierarchical_planning",
+    "arc_plan": "hierarchical_planning",
+    "chapter_plan": "hierarchical_planning",
+    "chapter_plan_version": "hierarchical_planning",
+    "chapter_group_plan": "hierarchical_planning",
+    "source_document": "source_authority",
+    "knowledge_card_candidate": "mkaos_authority",
+    "knowledge_card": "mkaos_authority",
+    "knowledge_pack": "mkaos_authority",
+}
+
 DEFAULT_CODEC_REGISTRY = TypedMigrationCodecRegistry(
-    tuple(_codec(source, target) for source, target in sorted(_TYPE_TARGETS.items()))
+    tuple(
+        _codec(source, target, domain=_DOMAIN_ADAPTERS.get(source, ""))
+        for source, target in sorted(_TYPE_TARGETS.items())
+    )
 )
 
 
-def _explicitly_approved(payload: dict[str, Any]) -> bool:
+def _legacy_approval_evidence(payload: dict[str, Any]) -> dict[str, Any]:
     metadata = payload.get("metadata") if isinstance(payload.get("metadata"), dict) else {}
     content = payload.get("content") if isinstance(payload.get("content"), dict) else {}
     status = str(payload.get("status") or content.get("status") or "").upper()
-    return bool(metadata.get("migration_approved")) and status in {
-        "ACTIVE",
-        "APPROVED",
-        "ACCEPTED",
-        "PUBLISHED",
+    return {
+        "claimed_approved": bool(metadata.get("migration_approved")),
+        "claimed_status": status,
+        "trusted_for_activation": False,
+        "policy": "LEGACY_STATE_IS_EVIDENCE_ONLY",
     }
+
+
+def validate_archival_candidate(
+    *,
+    content: dict[str, Any],
+    content_hash: str,
+    project_id: str,
+    workspace_id: str,
+) -> None:
+    """Validate the real archival envelope produced by the generic converter."""
+    if not project_id or not workspace_id:
+        raise ValueError("archival native candidate requires Project/Workspace scope")
+    if not content_hash.startswith("sha256:") or len(content_hash) != 71:
+        raise ValueError("archival native candidate requires canonical SHA-256")
+    migration = content.get("legacy_migration")
+    if not isinstance(migration, dict):
+        raise ValueError("archival native candidate requires migration lineage")
+    required = {
+        "source_ref",
+        "source_hash",
+        "source_type",
+        "stable_business_identity",
+        "codec",
+        "codec_version",
+    }
+    if required - migration.keys():
+        raise ValueError("archival native candidate migration lineage is incomplete")
+    if not str(migration["source_hash"]).startswith("sha256:"):
+        raise ValueError("archival native candidate source hash is invalid")
 
 
 def _strip_local_paths(value: Any) -> Any:
@@ -337,4 +445,5 @@ __all__ = [
     "NativeMigrationCandidate",
     "TypedMigrationCodec",
     "TypedMigrationCodecRegistry",
+    "validate_archival_candidate",
 ]

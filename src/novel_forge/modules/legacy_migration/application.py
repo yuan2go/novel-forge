@@ -90,6 +90,11 @@ class _LegacyImportCodec:
                 "codec_version": self.codec.codec_version,
                 "target_content_hash": candidate.content_hash,
                 "activation_decision": candidate.activation_decision,
+                "materialization_level": candidate.materialization_level.value,
+                "target_materialization_level": (
+                    self.codec.materialization_level.value
+                ),
+                "legacy_approval_evidence": candidate.legacy_approval_evidence,
                 "reconciliation": candidate.reconciliation,
             },
         )
@@ -236,6 +241,12 @@ class LegacyImportApplication:
             "lifecycle": candidate.lifecycle,
             "eligibility": candidate.eligibility,
             "activation_decision": candidate.activation_decision,
+            "materialization_level": candidate.materialization_level.value,
+            "target_materialization_level": codec.materialization_level.value,
+            "domain_adapter": codec.domain_adapter,
+            "domain_validator": codec.domain_validator,
+            "projection_strategy": codec.projection_strategy,
+            "activation_strategy": codec.activation_strategy,
             "reconciliation": candidate.reconciliation,
         }
 

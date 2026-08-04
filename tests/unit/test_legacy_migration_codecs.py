@@ -81,13 +81,17 @@ class LegacyMigrationCodecTests(unittest.TestCase):
         self.assertEqual(candidate.reconciliation["reference_count"], 1)
         self.assertEqual(candidate.reconciliation["target_content_hash"], candidate.content_hash)
 
-    def test_explicit_approval_can_qualify_and_activate_native_version(self) -> None:
+    def test_legacy_claimed_approval_is_evidence_only(self) -> None:
         codec = DEFAULT_CODEC_REGISTRY.resolve("material_card")
         candidate = codec.convert_record(self._record("material_card", approved=True))
 
-        self.assertEqual(candidate.lifecycle, "ACTIVE")
-        self.assertEqual(candidate.eligibility, "ELIGIBLE")
-        self.assertEqual(candidate.activation_decision, "ACTIVATE")
+        self.assertEqual(candidate.lifecycle, "IMPORTED")
+        self.assertEqual(candidate.eligibility, "PENDING_EVALUATION")
+        self.assertEqual(candidate.activation_decision, "NEEDS_REVIEW")
+        self.assertTrue(candidate.legacy_approval_evidence["claimed_approved"])
+        self.assertFalse(
+            candidate.legacy_approval_evidence["trusted_for_activation"]
+        )
 
     def test_unknown_type_fails_closed(self) -> None:
         with self.assertRaisesRegex(MigrationCodecNotFound, "no native migration codec"):
@@ -110,11 +114,29 @@ class LegacyMigrationCodecTests(unittest.TestCase):
             "validation",
             "qualification_policy",
             "activation_policy",
+            "materialization_level",
+            "domain_adapter",
+            "domain_validator",
+            "projection_strategy",
+            "activation_strategy",
             "rebuildable",
             "quarantine_rules",
             "reconciliation_rules",
         }
         self.assertTrue(required <= row.keys())
+        self.assertEqual(row["materialization_level"], "DOMAIN_NATIVE")
+        self.assertEqual(
+            row["activation_policy"], "EXPLICIT_AUTHORITY_APPROVAL_REQUIRED"
+        )
+
+    def test_historical_types_are_explicitly_archival_native(self) -> None:
+        row = next(
+            item
+            for item in DEFAULT_CODEC_REGISTRY.to_manifest()
+            if item["source_type"] == "draft"
+        )
+        self.assertEqual(row["materialization_level"], "ARCHIVAL_NATIVE")
+        self.assertEqual(row["projection_strategy"], "immutable_asset_version_only.v1")
 
 
 if __name__ == "__main__":

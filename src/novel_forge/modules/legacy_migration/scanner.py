@@ -150,11 +150,6 @@ def scan_legacy_snapshot(
             )
         )
 
-    identities = {
-        record.stable_business_key: record.project_id
-        for record in records
-        if record.payload is not None
-    }
     seen: dict[tuple[str, str], str] = {}
     resolved: list[LegacySnapshotRecord] = []
     for record in records:
@@ -180,34 +175,11 @@ def scan_legacy_snapshot(
             )
             continue
         seen[key] = record.source_hash
-        cross_project = sorted(
-            reference
-            for reference in record.references
-            if identities.get(reference) not in {None, "", record.project_id}
-        )
-        missing = sorted(reference for reference in record.references if reference not in identities)
-        if cross_project:
-            resolved.append(
-                replace(
-                    record,
-                    decision="QUARANTINE",
-                    status="QUARANTINED",
-                    error_code="CROSS_PROJECT_REFERENCE",
-                    errors=(f"cross-project references: {', '.join(cross_project)}",),
-                )
-            )
-        elif missing:
-            resolved.append(
-                replace(
-                    record,
-                    decision="QUARANTINE",
-                    status="QUARANTINED",
-                    error_code="MISSING_REFERENCE",
-                    errors=(f"missing references: {', '.join(missing)}",),
-                )
-            )
-        else:
-            resolved.append(record)
+        # References are deliberately not resolved in the filesystem scan.
+        # Pass one must materialize stable PostgreSQL identities; pass two then
+        # resolves each business key to the exact target AssetVersion and
+        # projection under a durable, idempotent reference record.
+        resolved.append(record)
     counts: dict[str, int] = {"TOTAL": len(resolved)}
     for record in resolved:
         counts[record.status] = counts.get(record.status, 0) + 1

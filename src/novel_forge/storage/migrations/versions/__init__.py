@@ -58,6 +58,7 @@ from . import (
     v20260804_0055_legacy_native_conversion,
     v20260804_0056_database_runtime_governance,
     v20260804_0057_hot_query_governance,
+    v20260804_0058_authority_cutover_release_qualification,
 )
 
 VERSION_MODULES = [
@@ -118,6 +119,7 @@ VERSION_MODULES = [
     v20260804_0055_legacy_native_conversion,
     v20260804_0056_database_runtime_governance,
     v20260804_0057_hot_query_governance,
+    v20260804_0058_authority_cutover_release_qualification,
 ]
 
 __all__ = ["VERSION_MODULES"]

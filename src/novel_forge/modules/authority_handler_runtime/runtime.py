@@ -177,8 +177,14 @@ def _load_request(
                 "AUTHORITY_HANDLER_CONTRACT_STALE",
                 "frozen definition version does not match the runtime codec",
             )
+        allow_archival = _require_approved_archival_story_design(
+            uow,
+            operation=operation,
+        )
         frozen = uow.repositories.chapter_authority.frozen_inputs(
-            command.project_id, list(operation["input_asset_snapshot"] or [])
+            command.project_id,
+            list(operation["input_asset_snapshot"] or []),
+            allow_approved_archival_migration=allow_archival,
         )
     return AuthorityHandlerRequest(
         operation_id=operation["operation_id"],
@@ -195,6 +201,42 @@ def _load_request(
         fencing_token=command.fencing_token,
         worker_id=command.worker_id,
     )
+
+
+def _require_approved_archival_story_design(
+    uow: AuthorityUnitOfWork, *, operation: dict[str, Any]
+) -> bool:
+    """Authorize the narrow IMPORTED input path for Legacy StoryDesign only."""
+    if operation["definition_name"] != "story_design.lifecycle.transition":
+        return False
+    command_payload = operation.get("command_payload") or {}
+    payload = (
+        command_payload.get("payload")
+        if isinstance(command_payload.get("payload"), dict)
+        else {}
+    )
+    if str(payload.get("source_kind") or "") != "LEGACY_IMPORT":
+        return False
+    evidence = payload.get("evidence") if isinstance(payload.get("evidence"), dict) else {}
+    decision_id = str(evidence.get("migration_decision_id") or "")
+    target_version_id = str(payload.get("asset_version_id") or "")
+    if not decision_id or not target_version_id:
+        return False
+    uow.cursor.execute(
+        """
+        SELECT 1
+        FROM authority_legacy_migration_decision AS decision
+        JOIN authority_legacy_migration_item AS item
+          ON item.migration_item_id=decision.migration_item_id
+        WHERE decision.migration_decision_id=%s
+          AND decision.decision='APPROVE'
+          AND decision.target_asset_version_id=%s
+          AND item.project_id=%s
+          AND item.status IN ('QUALIFIED','ACTIVATED')
+        """,
+        [decision_id, target_version_id, operation["project_id"]],
+    )
+    return uow.cursor.fetchone() is not None
 
 
 def require_current_fence(uow: AuthorityUnitOfWork, command: WorkerLeaseCommand) -> dict[str, Any]:
