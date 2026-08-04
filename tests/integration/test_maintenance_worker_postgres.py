@@ -1,8 +1,15 @@
 from __future__ import annotations
 
 import unittest
+import time
 
-from novel_forge.modules.command_kernel.maintenance import run_maintenance_cycle
+from novel_forge.modules.runtime_job import RuntimeJobAuthority
+from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+from novel_forge.workers.runtime_groups import (
+    MAINTENANCE_RUNTIME_JOB_KINDS,
+    execute_maintenance_runtime_claim,
+    schedule_maintenance_runtime_jobs,
+)
 from tests.integration.authority_postgres_support import (
     ensure_migrated,
     identifier,
@@ -80,21 +87,84 @@ class MaintenanceWorkerPostgresTests(unittest.TestCase):
                 [outbox_id, event_id, project_id, f"{outbox_id}:1"],
             )
 
-        result = run_maintenance_cycle(
-            DATABASE_URL, actor_id="maintenance-integration-worker", limit=10_000
+        runtime_jobs = RuntimeJobAuthority(DATABASE_URL)
+        scheduled = schedule_maintenance_runtime_jobs(
+            runtime_jobs,
+            batch_limit=10_000,
+            schedule_bucket=time.time_ns(),
         )
+        results: dict[str, dict[str, object]] = {}
+        claims = []
+        for _ in MAINTENANCE_RUNTIME_JOB_KINDS:
+            claim = runtime_jobs.claim(
+                runtime_group="maintenance",
+                worker_id="maintenance-integration-worker",
+                lease_seconds=30,
+                job_kinds=MAINTENANCE_RUNTIME_JOB_KINDS,
+            )
+            self.assertIsNotNone(claim)
+            assert claim is not None
+            claims.append(claim)
+            results[claim.job_kind] = execute_maintenance_runtime_claim(
+                DATABASE_URL,
+                runtime_jobs,
+                claim,
+                actor_id="maintenance-integration-worker",
+            )
         self.assertIn(
-            lease_id, [item["lease_id"] for item in result["expired_attempt_leases"]]
+            lease_id,
+            [
+                item["lease_id"]
+                for item in results["ATTEMPT_LEASE_EXPIRY_SCAN"][
+                    "expired_attempt_leases"
+                ]
+            ],
         )
         recovered = next(
-            item for item in result["recovered_outbox"] if item["outbox_id"] == outbox_id
+            item
+            for item in results["OUTBOX_RECOVERY_SCAN"]["recovered_outbox"]
+            if item["outbox_id"] == outbox_id
         )
         self.assertEqual(recovered["status"], "failed")
         self.assertEqual(recovered["fencing_token"], 1)
         self.assertIn(
-            operation_id, result["deadline_recovery"]["cancellation_issued"]
+            operation_id,
+            results["OPERATION_DEADLINE_SCAN"]["cancellation_issued"],
         )
-        self.assertEqual(result["external_effects_replayed"], 0)
+        self.assertEqual(
+            results["EXTERNAL_EFFECT_RECONCILIATION_SCAN"][
+                "external_effects_replayed"
+            ],
+            0,
+        )
+        self.assertFalse(
+            results["EXTERNAL_EFFECT_RECONCILIATION_SCAN"][
+                "provider_query_proven"
+            ]
+        )
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                """
+                SELECT COUNT(*), COUNT(*) FILTER (WHERE job.status='SUCCEEDED'),
+                       COUNT(*) FILTER (
+                           WHERE attempt.fencing_token > 0
+                             AND lease.status='RELEASED'
+                             AND EXISTS (
+                                 SELECT 1 FROM authority_runtime_job_checkpoint AS checkpoint
+                                 WHERE checkpoint.attempt_id=attempt.attempt_id
+                             )
+                       )
+                FROM authority_runtime_job AS job
+                JOIN authority_runtime_job_attempt AS attempt
+                  ON attempt.attempt_id=job.current_attempt_id
+                JOIN authority_runtime_job_lease AS lease
+                  ON lease.attempt_id=attempt.attempt_id
+                WHERE job.runtime_job_id=ANY(%s)
+                """,
+                [[item["runtime_job_id"] for item in scheduled]],
+            )
+            runtime_evidence = uow.cursor.fetchone()
+        self.assertEqual(tuple(int(value) for value in runtime_evidence), (4, 4, 4))
 
 
 if __name__ == "__main__":

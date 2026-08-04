@@ -26,12 +26,17 @@ from novel_forge.modules.book_followup_authority.query import (
     BookFollowupProjectionQuery,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.runtime_job import RuntimeJobAuthority
 from novel_forge.modules.chapter_authority.orchestrator import (
     ChapterSagaAdmission,
     SingleChapterRequest,
 )
 from novel_forge.modules.chapter_authority.contracts import ChapterNode
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+from novel_forge.workers.book_authority import (
+    execute_book_coordination_claim,
+    schedule_book_coordination_jobs,
+)
 from tests.integration.authority_postgres_support import (
     DATABASE_URL,
     ensure_migrated,
@@ -187,38 +192,65 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
             scheduler = PostgresBookAuthorityScheduler(
                 authority, principal=principal
             )
-            reader_tick = scheduler.tick(book.book_run_id)
-            reader_complete_tick = scheduler.tick(book.book_run_id)
-            recap_tick = scheduler.tick(book.book_run_id)
-            recap_complete_tick = scheduler.tick(book.book_run_id)
+            runtime_jobs = RuntimeJobAuthority(DATABASE_URL)
+
+            def runtime_tick() -> dict[str, object]:
+                schedule_book_coordination_jobs(
+                    DATABASE_URL,
+                    runtime_jobs,
+                    limit=10,
+                    book_run_id=book.book_run_id,
+                )
+                claim = runtime_jobs.claim(
+                    runtime_group="book",
+                    worker_id="book-runtime-integration-worker",
+                    lease_seconds=30,
+                    job_kinds=("BOOK_COORDINATION_TICK",),
+                    subject_kind="BOOK_RUN",
+                    subject_id=book.book_run_id,
+                )
+                self.assertIsNotNone(claim)
+                assert claim is not None
+                return execute_book_coordination_claim(
+                    runtime_jobs,
+                    scheduler,
+                    claim,
+                )
+
+            reader_tick = runtime_tick()
+            reader_complete_tick = runtime_tick()
+            recap_tick = runtime_tick()
+            recap_complete_tick = runtime_tick()
             final = authority.require(book.book_run_id)
 
             self.assertEqual(final["state"], "COMPLETED")
             self.assertEqual(final["current_chapter"], 1)
-            self.assertEqual(reader_tick.state, "COMPLETED")
-            self.assertEqual(reader_complete_tick.state, "COMPLETED")
-            self.assertEqual(recap_tick.state, "COMPLETED")
-            self.assertEqual(recap_complete_tick.state, "COMPLETED")
+            self.assertEqual(reader_tick["state"], "COMPLETED")
+            self.assertEqual(reader_complete_tick["state"], "COMPLETED")
+            self.assertEqual(recap_tick["state"], "COMPLETED")
+            self.assertEqual(recap_complete_tick["state"], "COMPLETED")
             self.assertEqual(
-                reader_tick.action,
+                reader_tick["action"],
                 "ACCEPT_CHAPTER_AND_SUBMIT_READER_SHADOW",
             )
             self.assertEqual(
-                reader_complete_tick.action, "COMPLETE_READER_SHADOW"
+                reader_complete_tick["action"], "COMPLETE_READER_SHADOW"
             )
             self.assertEqual(
-                recap_tick.action, "SUBMIT_LONGFORM_RECAP_SIDECAR"
+                recap_tick["action"], "SUBMIT_LONGFORM_RECAP_SIDECAR"
             )
             self.assertEqual(
-                recap_complete_tick.action,
+                recap_complete_tick["action"],
                 "COMPLETE_LONGFORM_RECAP_SIDECAR",
             )
             query = BookFollowupProjectionQuery(DATABASE_URL)
             reader_projection = query.reader_outcome(
-                project_id=project_id, operation_id=reader_tick.operation_id
+                project_id=project_id,
+                operation_id=str(reader_tick["operation_id"]),
             )
             recap_projection = query.longform_recap(
-                project_id=project_id, operation_id=recap_tick.operation_id
+                project_id=project_id,
+                operation_id=str(recap_tick["operation_id"]),
             )
             self.assertEqual(reader_projection["content"]["gate"], "PASS")
             self.assertEqual(reader_projection["content"]["mode"], "SHADOW")
@@ -251,7 +283,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                     SELECT COUNT(*) FROM authority_external_effect
                     WHERE operation_id=%s AND capability='model.reader_outcome'
                     """,
-                    [reader_tick.operation_id],
+                    [reader_tick["operation_id"]],
                 )
                 reader_effects = int(uow.cursor.fetchone()[0])
                 uow.cursor.execute(
@@ -265,8 +297,8 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                     [
                         [
                             book.root_operation_id,
-                            reader_tick.operation_id,
-                            recap_tick.operation_id,
+                            reader_tick["operation_id"],
+                            recap_tick["operation_id"],
                         ]
                     ],
                 )
@@ -283,12 +315,42 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                       AND input->>'asset_version_id'=%s
                     """,
                     [
-                        recap_tick.operation_id,
+                        recap_tick["operation_id"],
                         final["last_chapter_outcome_version_id"],
                     ],
                 )
                 recap_outcome_inputs = int(uow.cursor.fetchone()[0])
+                uow.cursor.execute(
+                    """
+                    SELECT COUNT(*),
+                           COUNT(*) FILTER (WHERE job.status='SUCCEEDED'),
+                           COUNT(*) FILTER (
+                               WHERE lease.status='RELEASED'
+                                 AND attempt.fencing_token > 0
+                           ),
+                           COUNT(*) FILTER (
+                               WHERE (
+                                   SELECT COUNT(*)
+                                   FROM authority_runtime_job_checkpoint AS checkpoint
+                                   WHERE checkpoint.attempt_id=attempt.attempt_id
+                               ) >= 2
+                           )
+                    FROM authority_runtime_job AS job
+                    JOIN authority_runtime_job_attempt AS attempt
+                      ON attempt.attempt_id=job.current_attempt_id
+                    JOIN authority_runtime_job_lease AS lease
+                      ON lease.attempt_id=attempt.attempt_id
+                    WHERE job.runtime_group='book'
+                      AND job.job_kind='BOOK_COORDINATION_TICK'
+                      AND job.subject_id=%s
+                    """,
+                    [book.book_run_id],
+                )
+                runtime_job_evidence = tuple(
+                    int(value) for value in uow.cursor.fetchone()
+                )
             self.assertEqual(terminal, ("SUCCEEDED", "SUCCEEDED"))
+            self.assertEqual(runtime_job_evidence, (4, 4, 4, 4))
             self.assertEqual(reader_effects, 1)
             self.assertEqual(recap_outcome_inputs, 1)
             self.assertEqual(

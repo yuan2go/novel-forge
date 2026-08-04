@@ -18,6 +18,35 @@ def run_maintenance_cycle(
     deadline = scan_expired_operation_deadlines(
         database_url, actor_id=actor_id, limit=limit
     )
+    expired_attempt_leases = scan_expired_attempt_leases(
+        database_url, actor_id=actor_id, limit=limit
+    )
+    recovered_outbox = scan_expired_outbox_leases(
+        database_url, actor_id=actor_id, limit=limit
+    )
+    reconciliation_required = scan_external_effect_reconciliation(
+        database_url, actor_id=actor_id, limit=limit
+    )
+    return {
+        "cycle_id": cycle_id,
+        "worker_id": actor_id,
+        "deadline_recovery": deadline,
+        "expired_attempt_leases": expired_attempt_leases,
+        "recovered_outbox": recovered_outbox,
+        "reconciliation_required": reconciliation_required,
+        "external_effects_replayed": 0,
+    }
+
+
+def _validate_scan(actor_id: str, limit: int) -> None:
+    if not actor_id or limit <= 0:
+        raise ValueError("maintenance actor and positive limit are required")
+
+
+def scan_expired_attempt_leases(
+    database_url: str, *, actor_id: str, limit: int = 100
+) -> list[dict[str, object]]:
+    _validate_scan(actor_id, limit)
     with AuthorityUnitOfWork(database_url) as uow:
         uow.cursor.execute(
             """
@@ -46,6 +75,15 @@ def run_maintenance_cycle(
             }
             for row in uow.cursor.fetchall()
         ]
+        uow.commit()
+    return expired_attempt_leases
+
+
+def scan_expired_outbox_leases(
+    database_url: str, *, actor_id: str, limit: int = 100
+) -> list[dict[str, object]]:
+    _validate_scan(actor_id, limit)
+    with AuthorityUnitOfWork(database_url) as uow:
         uow.cursor.execute(
             """
             WITH selected AS (
@@ -78,6 +116,15 @@ def run_maintenance_cycle(
             }
             for row in uow.cursor.fetchall()
         ]
+        uow.commit()
+    return recovered_outbox
+
+
+def scan_external_effect_reconciliation(
+    database_url: str, *, actor_id: str, limit: int = 100
+) -> list[dict[str, object]]:
+    _validate_scan(actor_id, limit)
+    with AuthorityUnitOfWork(database_url) as uow:
         uow.cursor.execute(
             """
             SELECT external_effect_id, operation_id, status
@@ -98,15 +145,12 @@ def run_maintenance_cycle(
             for row in uow.cursor.fetchall()
         ]
         uow.commit()
-    return {
-        "cycle_id": cycle_id,
-        "worker_id": actor_id,
-        "deadline_recovery": deadline,
-        "expired_attempt_leases": expired_attempt_leases,
-        "recovered_outbox": recovered_outbox,
-        "reconciliation_required": reconciliation_required,
-        "external_effects_replayed": 0,
-    }
+    return reconciliation_required
 
 
-__all__ = ["run_maintenance_cycle"]
+__all__ = [
+    "run_maintenance_cycle",
+    "scan_expired_attempt_leases",
+    "scan_expired_outbox_leases",
+    "scan_external_effect_reconciliation",
+]
