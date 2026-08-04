@@ -44,6 +44,15 @@ class _CancelController:
         return None
 
 
+class _DelayedCancellationStore(PersistentExecutionDirectory):
+    """Make the signal-to-receipt race deterministic without changing signaling."""
+
+    def write_receipt(self, receipt):
+        if receipt.status is ProcessReceiptStatus.CANCELLED:
+            time.sleep(0.05)
+        return super().write_receipt(receipt)
+
+
 class ProcessSupervisorTests(unittest.TestCase):
     def test_codex_environment_allowlist_drops_unlisted_secrets(self) -> None:
         source = {
@@ -257,7 +266,7 @@ class ProcessSupervisorTests(unittest.TestCase):
     @unittest.skipUnless(hasattr(os, "killpg"), "process-group signaling requires POSIX")
     def test_external_cancel_signals_verified_running_process_and_persists_receipt(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            store = PersistentExecutionDirectory(Path(tmp))
+            store = _DelayedCancellationStore(Path(tmp))
             supervisor = CodexProcessSupervisor(store)
             request = ProcessLaunchRequest(
                 execution_id="execution:external-cancel",

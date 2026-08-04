@@ -1028,43 +1028,63 @@ class CodexProcessSupervisor:
             return recovery
         if receipt.process_group is None:
             return recovery
-        with self._active_processes_lock:
-            active = self._active_processes.get(execution_id)
-        trusted_active_process = bool(
-            active is not None
-            and active[0].poll() is None
-            and active[1] == receipt.process_group
-        )
-        if not recovery.safe_to_signal and not trusted_active_process:
-            return recovery
         cancellation_timeout = timeout or ProcessTimeout(
             timeout_seconds=5,
             termination_grace_seconds=2,
             poll_interval_seconds=0.05,
         )
         cancelled: ProcessReceipt | None = None
+        termination_signal: str | None = None
+        signal_allowed = False
+        layout = self.execution_directory.prepare(execution_id)
+        # Signaling and its CANCELLED receipt form one serialized boundary.  A
+        # run thread that observes the signal-induced exit must not classify the
+        # same process as FAILED before the cancellation fact is durable.
+        with self.execution_directory.exclusive(layout):
+            current = self.execution_directory._read_receipt_unlocked(layout)
+            if (
+                current is not None
+                and current.status is ProcessReceiptStatus.RUNNING
+                and current.process_group is not None
+                and current.request_digest == receipt.request_digest
+            ):
+                receipt = current
+                with self._active_processes_lock:
+                    active = self._active_processes.get(execution_id)
+                trusted_active_process = bool(
+                    active is not None
+                    and active[0].poll() is None
+                    and active[1] == receipt.process_group
+                )
+                signal_allowed = recovery.safe_to_signal or trusted_active_process
 
-        def persist_cancellation(signal_name: str) -> None:
-            nonlocal cancelled
-            cancelled = replace(
-                receipt,
-                status=ProcessReceiptStatus.CANCELLED,
-                completed_at=_utc_now(),
-                termination_signal=signal_name,
-                termination_reason=(
-                    str(reason).strip() or "local process cancellation requested"
-                ),
-                local_termination_only=True,
-                recovery_reason="VERIFIED_PROCESS_GROUP_CANCELLED",
-            )
-            self.execution_directory.write_receipt(cancelled)
+                def persist_cancellation(signal_name: str) -> None:
+                    nonlocal cancelled
+                    cancelled = replace(
+                        receipt,
+                        status=ProcessReceiptStatus.CANCELLED,
+                        completed_at=_utc_now(),
+                        termination_signal=signal_name,
+                        termination_reason=(
+                            str(reason).strip()
+                            or "local process cancellation requested"
+                        ),
+                        local_termination_only=True,
+                        recovery_reason="VERIFIED_PROCESS_GROUP_CANCELLED",
+                    )
+                    self.execution_directory._write_receipt_unlocked(
+                        layout, cancelled
+                    )
 
-        termination_signal = self._signal_verified_process_group(
-            receipt.process_group,
-            cancellation_timeout,
-            signal_observer=persist_cancellation,
-            trusted_identity=trusted_active_process,
-        )
+                if signal_allowed:
+                    termination_signal = self._signal_verified_process_group(
+                        receipt.process_group,
+                        cancellation_timeout,
+                        signal_observer=persist_cancellation,
+                        trusted_identity=trusted_active_process,
+                    )
+        if not signal_allowed:
+            return self.recover(execution_id)
         if termination_signal is None or cancelled is None:
             return self.recover(execution_id)
         return ProcessRecoveryResult(
