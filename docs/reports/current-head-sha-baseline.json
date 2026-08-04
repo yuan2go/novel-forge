@@ -1,132 +1,96 @@
 {
-  "schema_version": "current-head-sha-baseline.v1",
+  "schema_version": "current-head-sha-baseline.v2",
   "repository": "https://github.com/yuan2go/novel-forge",
   "branch": "feat/v7-content-intelligence-and-longform-proof",
-  "commit_sha": "53b10b896bb934298d1ca11571aa01f24f00a812",
-  "commit_subject": "feat: enforce authority fleet connection budget",
-  "binding_semantics": "commit_sha is the clean implementation commit tested before this evidence-only documentation commit; evidence_commit_sha is populated in the final handoff",
+  "starting_sha": "a784a52f174cd13c53846eb59a17132a357c2c45",
+  "implementation_sha": "32e4fd1462509216273cf861c9c4f36a69eb15b4",
+  "full_suite_tested_code_sha": "0e573fc0a02687ac54e1c1298f914f38dd533305",
+  "postgresql_tested_code_sha": "0e573fc0a02687ac54e1c1298f914f38dd533305",
+  "query_and_compose_tested_sha": "32e4fd1462509216273cf861c9c4f36a69eb15b4",
   "evidence_commit_sha": null,
-  "generated_at": "2026-08-04T04:53:35Z",
-  "python_version": "3.12.2",
-  "node_version": "v26.3.1",
-  "postgresql_version": "16.14",
-  "docker_version": "24.0.7",
-  "docker_compose_version": "2.23.3-desktop.2",
-  "migration_head": "20260804_0057_hot_query_governance",
-  "migration_count": 57,
-  "operation_definition_count": 140,
-  "operation_definition_count_semantics": "static operation catalog derived from the current Authority coverage manifest",
-  "authority_module_count": 17,
-  "worker_manifest_count": 11,
-  "legacy_inventory_hash": "sha256:11aed5becfdc06f04773e9ba1c29405d9f22f982a8a1375e70f6360eefc75ae4",
-  "legacy_production_blocker_count": 0,
-  "legacy_unclassified_count": 0,
-  "native_migration_codec_count": 58,
-  "compose_service_manifest": [
-    "postgresql",
-    "object-store",
-    "authority-migration",
-    "authority-api",
-    "chapter-authority-worker",
-    "content-authority-worker",
-    "source-authority-worker",
-    "mkaos-authority-worker",
-    "book-authority-worker",
-    "outbox-worker",
-    "maintenance-worker"
-  ],
-  "database_connection_budget": {
-    "postgres_max_connections": 100,
-    "management_reserve": 10,
-    "migration_reserve": 2,
-    "emergency_reserve": 5,
-    "application_capacity": 83,
-    "application_max_connections": 29,
-    "within_budget": true
+  "remote_sha": "a784a52f174cd13c53846eb59a17132a357c2c45",
+  "remote_ci_proven": false,
+  "generated_at": "2026-08-04",
+  "versions": {
+    "python": "3.12.2",
+    "node": "v26.3.1",
+    "postgresql": "16.14",
+    "docker": "24.0.7",
+    "docker_compose": "2.23.3-desktop.2"
+  },
+  "migration_head": "20260804_0058_authority_cutover_release_qualification",
+  "migration_count": 58,
+  "migration_registry": {
+    "mapping_count": 59,
+    "domain_native_count": 18,
+    "archival_native_count": 41
+  },
+  "legacy_reachability": {
+    "inventory_sha256": "47183f59ed1cf80c236a5468711ce493eff101988d9dcb093edea03c979d62e9",
+    "inventory_rows": 450,
+    "entrypoint_count": 15,
+    "transitive_module_count": 719,
+    "reachable_file_count": 454,
+    "production_blocker_count": 0,
+    "unclassified_count": 0
   },
   "test_commands": [
     {
-      "command": "make lint architecture-manifests-check architecture-fitness-check head-integrity-check check-skills",
+      "command": "make test",
+      "tested_sha": "0e573fc0a02687ac54e1c1298f914f38dd533305",
+      "python_passed": 1457,
+      "python_failed": 0,
+      "python_skipped": 9,
+      "python_duration_seconds": 710.401,
+      "node_passed": 11,
+      "node_failed": 0,
+      "node_duration_seconds": 0.109
+    },
+    {
+      "command": "make authority-postgres-test",
+      "tested_sha": "0e573fc0a02687ac54e1c1298f914f38dd533305",
+      "passed": 152,
+      "failed": 0,
+      "skipped": 0,
+      "duration_seconds": 88.597
+    },
+    {
+      "command": "make authority-query-plan-release",
+      "tested_sha": "32e4fd1462509216273cf861c9c4f36a69eb15b4",
+      "passed_plans": 5,
+      "failed": 0,
+      "duration_seconds": 14.462,
+      "enable_seqscan_disabled": false
+    },
+    {
+      "command": "make authority-smoke",
+      "tested_sha": "32e4fd1462509216273cf861c9c4f36a69eb15b4",
       "passed": 1,
       "failed": 0,
-      "skipped": 0,
-      "duration_seconds": 11.63,
-      "evidence_level": "CODE_DEFINED"
-    },
-    {
-      "command": "PYTHONPATH=src .venv/bin/python -m unittest discover -s tests/architecture -p 'test_*.py'",
-      "passed": 71,
-      "failed": 0,
-      "skipped": 0,
-      "duration_seconds": 24.464,
-      "evidence_level": "CODE_DEFINED"
-    },
-    {
-      "command": "PYTHONPATH=src .venv/bin/python -m unittest discover -s tests/unit -p 'test_*.py'",
-      "passed": 1191,
-      "failed": 0,
-      "skipped": 0,
-      "duration_seconds": 408.124,
-      "evidence_level": "UNIT_PROVEN"
-    },
-    {
-      "command": "PYTHONPATH=src .venv/bin/python -m unittest discover -s tests/acceptance -p 'test_*.py'",
-      "passed": 2,
-      "failed": 0,
-      "skipped": 0,
-      "duration_seconds": 0.35,
-      "evidence_level": "UNIT_PROVEN"
-    },
-    {
-      "command": "PYTHONPATH=src .venv/bin/python -m unittest discover -s tests/integration -p 'test_*.py'",
-      "passed": 250,
-      "failed": 0,
-      "skipped": 9,
-      "duration_seconds": 250.444,
-      "evidence_level": "UNIT_PROVEN"
-    },
-    {
-      "command": "make postgres-authority-test",
-      "passed": 147,
-      "failed": 0,
-      "skipped": 0,
-      "duration_seconds": 50.107,
-      "evidence_level": "POSTGRESQL_INTEGRATION_PROVEN"
-    },
-    {
-      "command": "PYTHONPATH=src .venv/bin/python scripts/verify_authority_compose.py",
-      "passed": 1,
-      "failed": 0,
-      "skipped": 0,
-      "duration_seconds": 91.756,
-      "evidence_level": "FAULT_INJECTION_PROVEN"
-    },
-    {
-      "command": "npm test --prefix web/admin",
-      "passed": 11,
-      "failed": 0,
-      "skipped": 0,
-      "duration_seconds": 0.32,
-      "evidence_level": "UNIT_PROVEN"
+      "duration_seconds": 110.757,
+      "executed_domain_worker": "content",
+      "drained_worker_count": 7
     }
   ],
-  "known_skips": [
-    "Seven environment-conditional PostgreSQL tests in the broad integration discovery; the same seven passed separately with NOVEL_FORGE_DATABASE_URL.",
-    "One online pgvector/ClickHouse integration requiring external services.",
-    "One 12/50-chapter long-chain pressure acceptance test outside this task.",
-    "Playwright browser smoke: Web was intentionally not started or developed in this backend-only task."
-  ],
-  "known_failures": [],
-  "evidence_boundary": {
+  "evidence": {
     "architecture_defined": true,
-    "fixture_proven": true,
+    "unit_proven": true,
     "postgresql_integration_proven": true,
     "compose_smoke_proven": true,
     "fault_injection_proven": true,
+    "domain_migration_core_types_proven": false,
+    "worker_fleet_e2e_proven": false,
+    "remote_sha_ci_proven": false,
     "real_provider_proven": false,
     "longform_proven": false,
     "multi_book_proven": false,
-    "production_verified": false
+    "production_verified": false,
+    "backup_pitr_proven": false
   },
-  "final_status": "POSTGRESQL_AUTHORITY_BACKEND_CUTOVER_COMPLETE"
+  "verdicts": [
+    "POSTGRESQL_AUTHORITY_BACKEND_HARDENING_PARTIAL",
+    "LEGACY_DOMAIN_MIGRATION_PARTIAL",
+    "AUTHORITY_WORKER_FLEET_E2E_PARTIAL",
+    "REMOTE_SHA_CI_NOT_PROVEN"
+  ]
 }

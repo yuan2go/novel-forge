@@ -4,7 +4,7 @@ Updated: 2026-08-04
 
 Branch: `feat/v7-content-intelligence-and-longform-proof`
 
-Tested implementation SHA: `53b10b896bb934298d1ca11571aa01f24f00a812`
+Implementation SHA: `32e4fd1462509216273cf861c9c4f36a69eb15b4`
 
 Autonomous Novel OS remains the product target. The current engineering verdict
 is narrower: the backend production boundary has completed its PostgreSQL
@@ -12,16 +12,20 @@ Authority cutover, while real Provider, real long-form and production proof have
 not been performed.
 
 ```text
-status=POSTGRESQL_AUTHORITY_BACKEND_CUTOVER_COMPLETE
+status=POSTGRESQL_AUTHORITY_BACKEND_HARDENING_PARTIAL
 architecture_defined=true
 fixture_proven=true
 postgresql_integration_proven=true
 compose_smoke_proven=true
 fault_injection_proven=true
+domain_migration_core_types_proven=false
+worker_fleet_e2e_proven=false
+remote_sha_ci_proven=false
 real_provider_proven=false
 longform_proven=false
 multi_book_proven=false
 production_verified=false
+backup_pitr_proven=false
 ```
 
 ## Runtime fact
@@ -42,13 +46,13 @@ Outbox and Maintenance Worker groups. It contains no Web or Legacy service.
 |---|---|---|
 | Command Kernel | durable Operation/Saga/Attempt, idempotency, lease/fence, recovery | PostgreSQL integration and synthetic fault injection |
 | Asset authority | immutable typed AssetVersion, qualification, activation, projection | PostgreSQL integration |
-| Legacy migration | 58 typed codecs, checkpoints, quarantine and reconciliation | synthetic frozen snapshot; no real user data |
+| Legacy migration | 59 mappings: 18 domain-native and 41 archival; durable phases, references, approval and reconciliation | synthetic frozen snapshot; no real user data |
 | Chapter/Content | registered Authority definitions and grouped Workers | fixture proof; no real prose quality proof |
 | Project/Book/BookDesign/Planning | PostgreSQL commands and projections | typed integration fixtures |
 | Source/MKAOS | Authority commands, object-store boundary and Workers | fixture/source protocol; no real connector proof |
 | External effects | planned execution, receipt, callback, query/reconciliation | scripted/fake Provider only |
 | Runtime governance | process-local psycopg3 pools, timeouts, bounded retry, metrics, drain | real PostgreSQL and Compose fault injection |
-| Compose | clean-volume 11-service backend, migration once, readiness and recovery | local Compose smoke |
+| Compose | clean-volume 11-service backend, migration once, Content execution and recovery | local smoke; not seven domain E2Es |
 | Web | excluded from this task | no Web implementation or browser proof |
 
 ## Current limits
@@ -59,8 +63,11 @@ Outbox and Maintenance Worker groups. It contains no Web or Legacy service.
 - Public authentication, production secrets, backup/PITR, load/capacity/SLO and
   real publishing platform behavior remain unverified.
 - The repository still contains explicit Legacy compatibility source. Architecture
-  gates prove it is not backend-production reachable; source deletion is not
-  claimed.
+  gates use a recursive 15-entrypoint graph to prove guarded reachability; source
+  deletion is not claimed.
+- MKAOS material/rule/template and remaining historical domains have no
+  domain-native migration adapters yet.
+- Final-SHA GitHub Actions have not run because this work has not been pushed.
 - The Admin/Web dependency and browser acceptance surface was outside this task.
 
 ## Current evidence

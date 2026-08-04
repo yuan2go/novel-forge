@@ -4,9 +4,19 @@
 
 - Rows: 450
 - Findings: 2057
-- Artifact hash: `sha256:11aed5becfdc06f04773e9ba1c29405d9f22f982a8a1375e70f6360eefc75ae4`
+- Artifact hash: `sha256:da2d88469e0591de9f9fba61779dd913dc8809bf2084b16087426e3b3e8d83b0`
 - Legacy production blockers: 0
 - Unclassified: 0
+- Recursive Authority entrypoints: 15
+- Transitive Python modules: 719
+- Reachable files: 454
+- Guarded compatibility paths: 2,585
+
+`EXPLICIT_COMPATIBILITY` means the source remains available behind an audited
+guard or migration/tooling boundary. It is not inferred from directory placement.
+The JSON sibling records `allowed_runtime`, owner, removal condition and every
+computed transitive path; any unguarded path from an Authority entrypoint would
+raise a production blocker.
 
 | Domain | Entrypoint/file | Current authority | Target asset | Operation | Method | Status |
 |---|---|---|---|---|---|---|

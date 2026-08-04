@@ -1,7 +1,7 @@
 # Legacy LocalStorage to PostgreSQL Authority Migration
 
-Current tested implementation SHA:
-`53b10b896bb934298d1ca11571aa01f24f00a812`
+Current implementation SHA:
+`32e4fd1462509216273cf861c9c4f36a69eb15b4`
 
 Backend status: `POSTGRESQL_AUTHORITY_BACKEND_CUTOVER_COMPLETE`
 
@@ -23,17 +23,19 @@ export and synthetic fixtures. No permanent dual write is allowed.
 
 ## Migration contract
 
-Frozen snapshots and records are hash-addressed. The typed codec registry maps
-the currently used Legacy business types to native AssetVersion schema versions.
-Scope, references, qualification and activation are validated before authority
-activation. Unsafe or ambiguous data is quarantined with original evidence.
-Checkpointed resume and stable identity/content hashing make replay idempotent.
+Frozen snapshots and records are hash-addressed. The typed registry classifies
+59 Legacy types, but only 18 core types have real domain adapters. The remaining
+41 are archival AssetVersion imports and are not described as domain-native.
+Scope, two-pass references, independent approval and typed activation are
+validated before domain admission. Unsafe or ambiguous data is quarantined with
+original evidence. Durable phase evidence, compare-and-set resume and stable
+identity/content hashing make replay idempotent.
 
-Migration 0055 adds the native-conversion lifecycle and reconciliation evidence.
-It is forward-only and requires a pre-migration backup; restore the backup and
-replay the immutable snapshot if a restore is required. Migrations 0056 and 0057
-add runtime health fields and worker hot-path indexes without changing domain
-authority semantics.
+Migration 0055 adds the initial conversion lifecycle; 0056 and 0057 add runtime
+health and hot-query governance. Forward-only migration 0058 adds materialization
+levels, durable phase/reference/decision/reconciliation records, real Worker
+health fields and fenced Outbox claims. It requires a pre-migration backup;
+restore that backup for rollback or add a forward fix.
 
 ## Explicit exclusions
 

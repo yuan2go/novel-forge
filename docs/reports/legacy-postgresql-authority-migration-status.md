@@ -1,72 +1,61 @@
 # Legacy to PostgreSQL Authority Migration Status
 
-Evidence code SHA: `53b10b896bb934298d1ca11571aa01f24f00a812`
+Current engineering status: `LEGACY_DOMAIN_MIGRATION_PARTIAL`.
 
-Status: `POSTGRESQL_AUTHORITY_BACKEND_CUTOVER_COMPLETE`
-
-This status applies to the backend production boundary. It does not mean that all
-Legacy source files have been deleted, that Web UI work was performed, or that a
-real Provider, a long-form novel, multiple books, or a production deployment was
-verified.
-
-## Completion boundary
-
-The standard development, Compose, CLI, API and Worker entrypoints now select
-PostgreSQL Authority. A PostgreSQL failure fails closed. Legacy can only be
-selected by the explicit compatibility CLI or `compose.legacy.yml --profile
-legacy`; it is not a fallback and is not part of the default Compose plane.
-
-The frozen-snapshot importer executes:
-
-```text
-SCAN -> CLASSIFY -> IMPORT_CANDIDATE -> SEMANTIC_CONVERT -> VALIDATE
-     -> QUALIFY -> ACTIVATE | QUARANTINE -> RECONCILE
-```
-
-It preserves snapshot and record hashes, uses stable business identities, checks
-project scope and references, routes ambiguous rights and oversized inline blobs
-to quarantine, persists checkpoints, and replays without creating duplicate
-AssetVersions.
-
-## Current inventory result
-
-| Field | Result |
-|---|---:|
-| Inventory schema | `legacy-authority-migration-inventory.v2` |
-| Inventory rows | 450 |
-| Artifact hash | `sha256:11aed5becfdc06f04773e9ba1c29405d9f22f982a8a1375e70f6360eefc75ae4` |
-| Production blockers | 0 |
-| Unclassified | 0 |
-| Explicit compatibility | 445 |
-| Import candidate only | 3 |
-| Rebuildable | 2 |
-| Web excluded | 2 |
-| Unapproved dual write | 0 |
-
-The 445 explicit-compatibility findings are code that remains available to the
-explicit Legacy profile or frozen import/export tooling. Architecture tests prove
-that this code is not reachable from Authority production entrypoints. This is
-backend cutover evidence, not Legacy source-retirement evidence.
+PostgreSQL is the default fail-closed storage authority. Legacy has no default
+read, write, silent-fallback or dual-write path; it is available only through an
+explicit compatibility CLI/profile or the audited frozen-snapshot importer.
 
 ## Evidence levels
 
 | Level | State | Evidence |
 |---|---|---|
-| CODE_DEFINED | true | settings, selectors, typed codecs, migration 0055, architecture gates |
-| UNIT_PROVEN | true | complete unit suite and focused codec/cutover tests |
-| POSTGRESQL_INTEGRATION_PROVEN | true | clean migration, conversion, reconciliation, pool/retry and query-plan tests |
-| COMPOSE_SMOKE_PROVEN | true | clean-volume 11-service Authority plane |
-| FAULT_INJECTION_PROVEN | true | crash/resume/replay, Worker restart, lease/fence and uncertain-effect recovery |
-| REAL_PROVIDER_PROVEN | false | fixture/scripted Provider only |
-| LONGFORM_PROVEN | false | not performed |
-| PRODUCTION_VERIFIED | false | no production deployment or load/PITR proof |
+| `ARCHIVAL_NATIVE` | implemented | immutable scoped AssetVersion, source/target hash, basic schema envelope, Audit, Outbox, replay and quarantine |
+| `DOMAIN_NATIVE` | implemented for 18 source types | real Book/Design, StoryDesign, Planning, Source, MKAOS and Project Authority paths |
+| all registered types domain native | false | 41 mappings intentionally remain archival |
 
-## Remaining Legacy categories
+Every non-project-shell record begins as `IMPORTED`,
+`PENDING_EVALUATION`, `NEEDS_REVIEW`. The durable state machine is:
 
-- `production_blockers=0`
-- `development_only=0` inventory rows
-- `import_export_only=3`
-- `test_fixture_only=0` inventory rows; synthetic migration fixtures remain in tests
-- `web_excluded=2`; Web was neither launched nor modified as an Authority UI
-- `explicit_compatibility=445`; retirement is optional cleanup after parity, not a
-  backend production blocker
+```text
+SCAN -> CLASSIFY -> IMPORT_CANDIDATE -> SEMANTIC_CONVERT -> VALIDATE
+     -> QUALIFY -> ACTIVATE | QUARANTINE -> RECONCILE -> COMPLETE
+```
+
+Each phase stores version, timestamps, attempts, input/output hashes, evidence,
+errors and next phase. Expected-version compare-and-set protects concurrent
+advancement; resume starts at the last successful `next_phase`.
+
+References resolve in two passes from Legacy business key through migration
+item to Asset, AssetVersion and domain projection. Required missing,
+cross-project and ambiguous references fail closed. Replay identity combines
+run, source item, ordinal, relation and target version.
+
+Independent approval persists actor, decision, reason, expected item version,
+source hash, target AssetVersion, domain-validation evidence, idempotency key,
+Audit and Outbox. Source self-assertions never activate an item.
+
+## Current inventory
+
+| Field | Result |
+|---|---:|
+| Inventory schema | `legacy-authority-migration-inventory.v3` |
+| Inventory rows | 450 |
+| Authority entrypoints | 15 |
+| Transitive modules | 719 |
+| Reachable files | 454 |
+| Production blockers | 0 |
+| Unclassified | 0 |
+| Web excluded | 2 |
+
+The static graph covers API, dependencies, CLI, all Worker groups, healthcheck,
+callback/effect dispatch, console/Compose commands and static dynamic imports.
+Guarded compatibility paths are retained as evidence, not erased from the graph.
+
+## Remaining migration gaps
+
+- `material_card`, `rule_card`, and `template_card` lack typed MKAOS projections.
+- Canon, StoryState, Context, Draft/Review/Revision, Feedback, Publishing and
+  Agent/Workflow historical records remain archival.
+- Runtime system-call tracing of Legacy path access is not a release gate in this
+  slice; static graph plus no Legacy mount/fail-closed tests are the current proof.

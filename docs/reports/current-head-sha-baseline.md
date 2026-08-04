@@ -6,76 +6,81 @@
 |---|---|
 | Repository | `https://github.com/yuan2go/novel-forge` |
 | Branch | `feat/v7-content-intelligence-and-longform-proof` |
-| Tested implementation SHA | `53b10b896bb934298d1ca11571aa01f24f00a812` |
-| Subject | `feat: enforce authority fleet connection budget` |
-| Generated at | `2026-08-04T04:53:35Z` |
-| Working tree before test | clean |
+| Starting local/remote SHA | `a784a52f174cd13c53846eb59a17132a357c2c45` |
+| Implementation SHA | `32e4fd1462509216273cf861c9c4f36a69eb15b4` |
+| Full Python/Admin tested code SHA | `0e573fc0a02687ac54e1c1298f914f38dd533305` |
+| PostgreSQL tested code SHA | `0e573fc0a02687ac54e1c1298f914f38dd533305` |
+| Query/Compose tested implementation SHA | `32e4fd1462509216273cf861c9c4f36a69eb15b4` |
+| Remote branch SHA | `a784a52f174cd13c53846eb59a17132a357c2c45` |
+| Remote final-SHA CI | `NOT_PROVEN` |
 
-The tested SHA is the clean implementation commit before this evidence-only
-documentation commit. The final handoff records the later evidence-commit SHA;
-this avoids claiming that a commit tested its own not-yet-created report.
+The one-line difference between the full-suite SHA and implementation SHA adds
+the missing default local PostgreSQL DSN to
+`make authority-query-plan-release`; that exact command and the exact
+implementation SHA then passed query-plan and Compose qualification. Evidence
+documents are committed after these implementation tests and do not claim to
+have tested their own not-yet-created commit. Final handoff records the later
+evidence SHA and its final static/test gates.
 
 ## Runtime facts
 
 | Field | Value |
 |---|---|
-| Python | 3.12.2 |
-| Node | v26.3.1 |
+| Python / Node | 3.12.2 / v26.3.1 |
 | PostgreSQL | 16.14 |
-| Docker | 24.0.7 |
-| Docker Compose | 2.23.3-desktop.2 |
-| Migration head / count | `20260804_0057_hot_query_governance` / 57 |
-| Static operation catalog | 140 definitions |
-| Authority module manifest | 17 modules |
-| Worker manifest | 11 entries |
-| Native migration codecs | 58 |
-| Legacy inventory hash | `sha256:11aed5becfdc06f04773e9ba1c29405d9f22f982a8a1375e70f6360eefc75ae4` |
+| Docker / Compose | 24.0.7 / 2.23.3-desktop.2 |
+| Migration head / count | `20260804_0058_authority_cutover_release_qualification` / 58 |
+| Codec mappings | 59 total: 18 `DOMAIN_NATIVE`, 41 `ARCHIVAL_NATIVE` |
+| Reachability | 15 entrypoints, 719 modules, 454 reachable files |
 | Legacy blockers / unclassified | 0 / 0 |
-
-The default Compose service manifest is PostgreSQL, object store, one-shot
-migration, Authority API, and Chapter, Content, Source, MKAOS, Book, Outbox and
-Maintenance Workers. Its tested connection allocation is 29 against application
-capacity 83 on a 100-connection PostgreSQL server.
+| Inventory SHA-256 | `47183f59ed1cf80c236a5468711ce493eff101988d9dcb093edea03c979d62e9` |
 
 ## Test matrix
 
-| Command | Passed | Failed | Skipped | Duration | Evidence level |
-|---|---:|---:|---:|---:|---|
-| `make lint architecture-manifests-check architecture-fitness-check head-integrity-check check-skills` | 1 | 0 | 0 | 11.63s | CODE_DEFINED |
-| Architecture discovery | 71 | 0 | 0 | 24.464s | CODE_DEFINED |
-| Unit discovery | 1,191 | 0 | 0 | 408.124s | UNIT_PROVEN |
-| Acceptance discovery | 2 | 0 | 0 | 0.350s | UNIT_PROVEN |
-| Broad integration discovery | 250 | 0 | 9 | 250.444s | UNIT_PROVEN |
-| `make postgres-authority-test` | 147 | 0 | 0 | 50.107s | POSTGRESQL_INTEGRATION_PROVEN |
-| Clean-volume Authority Compose smoke | 1 | 0 | 0 | 91.756s | FAULT_INJECTION_PROVEN |
-| Admin Node contract test | 11 | 0 | 0 | 0.32s | UNIT_PROVEN |
+| Command | Passed | Failed | Skipped | Duration | Evidence level | Tested SHA |
+|---|---:|---:|---:|---:|---|---|
+| `make test` Python discovery | 1,457 | 0 | 9 | 710.401s | UNIT_PROVEN plus environment-free integration | `0e573fc` |
+| `make test` Admin Node contract | 11 | 0 | 0 | 0.109s | UNIT_PROVEN | `0e573fc` |
+| `make authority-postgres-test` | 152 | 0 | 0 | 88.597s | POSTGRESQL_INTEGRATION_PROVEN | `0e573fc` |
+| `make authority-query-plan-release` | 5 plans | 0 | 0 | 14.462s | REPRESENTATIVE_PLANNER_PROVEN | `32e4fd1` |
+| `make authority-smoke` | 1 Content scenario | 0 | 0 | 110.757s | COMPOSE_SMOKE / FAULT_INJECTION | `32e4fd1` |
 
-The Compose run migrated an empty database, reached Ready on all required
-services, completed a normal synthetic operation, recovered another operation
-after forced Worker restart with fencing token 2, rejected the stale token with
-`ATTEMPT_LEASE_LOST`, published two Outbox records per operation, drained all
-seven Workers, and ended with zero Worker database connections, active
-transactions and idle-in-transaction sessions.
+The query qualification populated 100,000 rows each for Operation, Outbox,
+AssetVersion and migration items, plus 10,000 Books. Without disabling
+sequential scans, PostgreSQL selected the expected indexes for Worker poll,
+Outbox claim, AssetVersion lookup, Book poll and migration resume; no plan
+contained a Sort or rows removed by filter.
 
-The nine broad-integration skips comprise seven environment-conditional
-PostgreSQL cases that passed separately with an explicit DSN, one external
-pgvector/ClickHouse case and one long-chain pressure case. Browser smoke was not
-run because Web is excluded and was not started. No required test is recorded as
-failing.
+The Compose smoke migrated an empty database to 0058, reached Ready for the
+11-service Authority plane, completed a synthetic Content operation, recovered
+another after forced Worker restart at fencing token 2, rejected the stale token,
+published Outbox records, drained all seven Workers, and ended with zero Worker
+connections and zero active/idle-in-transaction sessions. This is not seven
+independent domain-operation scenarios.
 
 ## Evidence status
 
 ```text
 architecture_defined=true
-fixture_proven=true
+unit_proven=true
 postgresql_integration_proven=true
 compose_smoke_proven=true
 fault_injection_proven=true
+domain_migration_core_types_proven=false
+worker_fleet_e2e_proven=false
+remote_sha_ci_proven=false
 real_provider_proven=false
 longform_proven=false
 multi_book_proven=false
 production_verified=false
+backup_pitr_proven=false
 ```
 
-Final engineering status:
-`POSTGRESQL_AUTHORITY_BACKEND_CUTOVER_COMPLETE`.
+Current strict verdicts:
+
+```text
+POSTGRESQL_AUTHORITY_BACKEND_HARDENING_PARTIAL
+LEGACY_DOMAIN_MIGRATION_PARTIAL
+AUTHORITY_WORKER_FLEET_E2E_PARTIAL
+REMOTE_SHA_CI_NOT_PROVEN
+```

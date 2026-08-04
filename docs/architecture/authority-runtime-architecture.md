@@ -1,6 +1,6 @@
 # PostgreSQL Authority Runtime Architecture
 
-Evidence code SHA: `53b10b896bb934298d1ca11571aa01f24f00a812`
+Evidence binding is recorded in `docs/reports/current-head-sha-baseline.json`.
 
 ## Production boundary
 
@@ -60,3 +60,29 @@ The current clean-volume Compose smoke proves fixture-based command execution,
 outbox delivery, forced Worker restart, lease/fence recovery and graceful drain.
 Provider readiness is `FIXTURE_ONLY`; this is not real-provider or production
 proof.
+
+The smoke's executed domain operation belongs to the Content Worker. The other
+six runtime groups are started, heartbeat-checked and drained, while their
+domain execution is covered by PostgreSQL integration tests rather than isolated
+Compose scenarios. Therefore the fleet remains
+`AUTHORITY_WORKER_FLEET_E2E_PARTIAL`.
+
+## Migration boundary
+
+The frozen importer first creates an archival AssetVersion and then, only for a
+registry type with a real adapter, performs domain validation, explicit approval,
+typed activation and domain reconciliation. Its two-pass reference table binds
+Legacy keys to target items, AssetVersions and projections. All phase advancement
+is expected-version guarded and resumable.
+
+No source status or metadata flag is an Authority decision. Missing Source blob
+receipts, unsafe rights, missing/cross-scope/ambiguous references and unknown
+types fail closed.
+
+## Operational observation
+
+Worker health derives current operation/attempt/lease counts from PostgreSQL and
+keeps batch completion distinct from operation completion. Database status is
+`READY` only after successful database work, otherwise `DEGRADED` or
+`UNAVAILABLE`. Runtime database metrics are available at `/runtime/database` and
+`/runtime/metrics`.

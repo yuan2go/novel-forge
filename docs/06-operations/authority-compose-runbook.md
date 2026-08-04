@@ -1,6 +1,6 @@
 # Authority Compose Runbook
 
-Evidence code SHA: `53b10b896bb934298d1ca11571aa01f24f00a812`
+Evidence binding is recorded in `docs/reports/current-head-sha-baseline.json`.
 
 ## Default backend start
 
@@ -8,8 +8,9 @@ The default topology is the complete PostgreSQL Authority backend and contains n
 Web or Legacy service.
 
 ```bash
-docker compose -f compose.yml -f compose.override.yml up -d --build
-docker compose -f compose.yml -f compose.override.yml ps
+make authority-build
+make authority-up
+make authority-logs
 ```
 
 Readiness is exposed by the Authority API. It checks database connectivity,
@@ -20,7 +21,7 @@ is reported as blocked/fixture-only; it is never promoted to real proof.
 ## Automated clean-volume smoke
 
 ```bash
-PYTHONPATH=src .venv/bin/python scripts/verify_authority_compose.py
+make authority-smoke
 ```
 
 The script uses a unique Compose project and empty volumes, migrates once,
@@ -29,12 +30,18 @@ Attempt, AssetVersion, Audit and Outbox evidence, kills/restarts a Worker, prove
 lease/fence recovery, drains all Workers, verifies no active or idle transaction
 and removes its isolated resources.
 
+This is specifically a Content Worker domain scenario. It is not seven-worker
+domain E2E proof. Consult `docs/reports/authority-worker-fleet-e2e.md` before
+making a fleet claim.
+
 ## Explicit Legacy compatibility
 
 Legacy is never started by the default files. An operator must opt in:
 
 ```bash
-docker compose -f compose.legacy.yml --profile legacy up legacy-api
+make legacy-up
+make legacy-logs
+make legacy-down
 ```
 
 Do not combine this profile with production Authority as a fallback or permanent
@@ -52,3 +59,18 @@ dual-write topology.
   idempotency identity before any further execute call.
 - Shutdown: use `docker compose stop`; honor each service's grace period before
   forcing termination.
+
+## Validation and probes
+
+```bash
+make authority-compose-config-check
+make authority-test
+make authority-postgres-test
+make authority-query-plan-release
+curl -fsS http://127.0.0.1:8000/runtime/database
+curl -fsS http://127.0.0.1:8000/runtime/metrics
+```
+
+Query-plan release qualification creates representative data inside a rollback
+transaction and uses `EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON)` without disabling
+sequential scans. It is a release job, not a fast unit test.

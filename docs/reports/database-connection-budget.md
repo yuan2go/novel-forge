@@ -1,6 +1,6 @@
 # Database Connection Budget
 
-Evidence code SHA: `53b10b896bb934298d1ca11571aa01f24f00a812`
+Evidence binding is recorded in `docs/reports/current-head-sha-baseline.json`.
 
 The default Authority fleet is validated during API construction and again by
 the database-backed readiness probe against PostgreSQL's actual
@@ -33,3 +33,9 @@ Callback admission is part of API and dispatch is part of Chapter, so they do no
 add separate container pools. Instance counts are explicit environment settings;
 scaling a role without increasing its declared instance count makes readiness
 fail rather than silently exceeding capacity.
+
+The pool report is exposed at `/runtime/database` and `/runtime/metrics` with
+size, available, in-use and waiting counts plus acquisition and transaction
+statistics. It contains neither DSNs nor credentials. Health status is derived
+from real successful/failed database operations rather than a fixed `READY`
+placeholder.

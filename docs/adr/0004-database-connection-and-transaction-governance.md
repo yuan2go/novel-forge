@@ -2,7 +2,8 @@
 
 Status: Accepted
 
-Evidence code SHA: `53b10b896bb934298d1ca11571aa01f24f00a812`
+Evidence binding: implementation SHA is recorded in
+`docs/reports/current-head-sha-baseline.json` after the final local regression.
 
 ## Context
 
@@ -14,8 +15,12 @@ shutdown behavior inconsistent.
 
 All API, Worker, repository and UnitOfWork access uses a process-local
 `DatabaseRuntime` backed by the official psycopg3 `ConnectionPool`. The
-`ConnectionPoolRegistry` shares a runtime per DSN/role/service, and
-`TransactionExecutor` provides the only bounded SQLSTATE retry boundary.
+`ConnectionPoolRegistry` shares a runtime per DSN/role/service.
+
+Normal `AuthorityUnitOfWork` transactions execute once. `TransactionExecutor`
+is an explicit opt-in boundary only for pure-database, replay-idempotent work
+with a stable idempotency key. It is not automatically installed around all
+production commands.
 
 Direct `psycopg.connect` is allowlisted only for schema migration, very early
 startup/bootstrap probes, frozen import/export maintenance and PostgreSQL test
@@ -27,12 +32,16 @@ Every connection configures `application_name`, `statement_timeout=30s`,
 return the connection. Provider calls and object-store uploads occur outside the
 transaction.
 
-Retries are finite, exponential and jittered and apply only to SQLSTATE `40001`,
-`40P01`, class `08` connection failures represented in the allowlist, `57P01` and
-`57P03`. Retried commands require an idempotency key. Business, version,
-qualification and permission conflicts are not retried. An ExternalEffect that
-may already have executed is reconciled and is not executed again because a DB
-commit was uncertain.
+Retries are finite, exponential and jittered. Only SQLSTATE `40001` and `40P01`
+are `SAFE_RETRY`, and only under the executor preconditions above. `08007` and
+connection-loss/administrative-shutdown states with an uncertain outcome are
+`RECONCILIATION_REQUIRED`; `08P01`, unknown states, business, version,
+qualification and permission conflicts are never automatically retried. An
+ExternalEffect that may already have executed is queried/reconciled and is not
+executed again because a DB commit was uncertain.
+
+Retry code catches `Exception`, not `BaseException`; process shutdown and
+operator interrupts are not transformed into transaction attempts.
 
 The runtime exposes pool size/available/in-use/waiting, acquire latency,
 transaction duration/rollback, retry, timeout, deadlock, serialization, idle and
@@ -48,3 +57,5 @@ excluding DSNs, passwords, provider secrets and content payloads.
 - Long network work cannot keep an Authority transaction idle.
 - Pool shutdown and leak checks are part of Worker/API drain and integration
   tests.
+- The API exposes `/runtime/database` and `/runtime/metrics` as a lightweight,
+  credential-free snapshot suitable for later metrics adapters.
