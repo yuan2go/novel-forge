@@ -32,6 +32,7 @@ from novel_forge.modules.book_followup_authority.application import (
 from novel_forge.modules.authority_security import TrustedPrincipalResolver
 from novel_forge.modules.command_kernel.external_effect_adapters import (
     LocalFileObjectStoreAdapter,
+    MinioObjectStoreExternalEffectAdapter,
 )
 from novel_forge.modules.production_preparation import (
     PostgresProductionAssetResolver,
@@ -458,10 +459,27 @@ def build_chapter_authority_application(
             adapter.provider: adapter for adapter in provider_adapters.values()
         },
     )
+    object_store_backend = str(
+        values.get("NOVEL_FORGE_AUTHORITY_OBJECT_STORE_BACKEND") or "local"
+    ).strip().lower()
+    if object_store_backend == "minio":
+        from novel_forge.storage.object_store import MinioObjectStore
+
+        store = MinioObjectStore(settings)
+        object_store_adapter = MinioObjectStoreExternalEffectAdapter(
+            store.client, bucket=settings.minio_artifact_bucket
+        )
+    elif object_store_backend == "local" and environment in {"development", "test"}:
+        object_store_adapter = LocalFileObjectStoreAdapter(object_root)
+    else:
+        raise RuntimeError(
+            "controlled Authority runtime requires the MinIO object-store backend"
+        )
+
     return ChapterAuthorityApplication(
         settings.database_url,
         model_adapter=model_gateway,
-        object_store_adapter=LocalFileObjectStoreAdapter(object_root),
+        object_store_adapter=object_store_adapter,
         worker_id=str(values.get("NOVEL_FORGE_AUTHORITY_WORKER_ID") or "chapter-authority-api"),
         allow_synchronous_fixture=environment in {"test", "development"}
         and str(values.get("NOVEL_FORGE_ENABLE_SYNCHRONOUS_AUTHORITY_FIXTURE") or "").lower()

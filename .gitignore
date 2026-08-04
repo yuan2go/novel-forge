@@ -17,5 +17,6 @@ node_modules/
 # Runtime workspaces and generated state
 data/
 .local/
+.runtime/
 local-workspace/
 examples/sample_outputs/

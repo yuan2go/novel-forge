@@ -1,124 +1,8 @@
 {
-  "artifact_hash": "sha256:05efac1c10b9a8fad6a9d2c180f889e2a7274511a94a4032403264fd19d7ffa8",
-  "coverage_hash": "sha256:ce35ed2d0995e501c66c68612643058836b5924b33aa7b8f6947496e068dad78",
-  "generated_at": "2026-08-04T03:11:37.770618+00:00",
+  "artifact_hash": "sha256:91fb4988d69856cd7cc500bf360deee0e6dc4b0c7f677078b7727bca50b6fe1d",
+  "coverage_hash": "sha256:883ccd513aee40a89ca95c6b857ebe5df4d06d3ee3ea08f8bc536f2699554e84",
+  "generated_at": "2026-08-04T03:31:50.796951+00:00",
   "items": [
-    {
-      "business_domain": "runtime_governance",
-      "current_authority": [
-        "legacy_localstorage"
-      ],
-      "current_authority_source": [
-        "legacy_localstorage"
-      ],
-      "current_entrypoints": [
-        "runtime:services.worker"
-      ],
-      "current_read_points": [],
-      "current_write_points": [
-        "docker-compose.yml:132:services.worker"
-      ],
-      "deletion_condition": "default startup is PostgreSQL Authority and architecture gate passes",
-      "domain": "runtime_governance",
-      "entrypoint": [
-        "runtime:services.worker"
-      ],
-      "evidence": [
-        {
-          "line": 132,
-          "path": "docker-compose.yml",
-          "reason": "default Compose starts the Legacy Celery worker",
-          "scan_rule": "runtime_default",
-          "symbol": "services.worker",
-          "usage_type": "fallback"
-        }
-      ],
-      "file": "docker-compose.yml",
-      "idempotency_key": "runtime_role:release_sha",
-      "inventory_id": "legacy-migration:046f21cf3c1da0c990c4",
-      "migration_method": "REPLACE_WITH_AUTHORITY",
-      "migration_status": "LEGACY_PRODUCTION_BLOCKER",
-      "migration_strategy": "REPLACE_WITH_AUTHORITY",
-      "production_reachable": true,
-      "read_or_write": "READ_WRITE",
-      "recovery_strategy": "fail closed; retry PostgreSQL startup without Legacy fallback",
-      "remaining_action": "default Compose starts the Legacy Celery worker",
-      "status": "LEGACY_PRODUCTION_BLOCKER",
-      "symbol": [
-        "services.worker"
-      ],
-      "target_authority": {
-        "asset_type": "runtime_configuration",
-        "kind": "postgresql",
-        "operation_definition": "runtime.authority.start",
-        "repository": "novel_forge.storage.database_runtime"
-      },
-      "target_authority_asset_type": "runtime_configuration",
-      "target_operation_definition": "runtime.authority.start",
-      "target_repository": "novel_forge.storage.database_runtime",
-      "test_requirements": [
-        "architecture: default runtime and Compose are PostgreSQL-only"
-      ],
-      "transaction_boundary": "startup validation before accepting work"
-    },
-    {
-      "business_domain": "runtime_governance",
-      "current_authority": [
-        "legacy_localstorage"
-      ],
-      "current_authority_source": [
-        "legacy_localstorage"
-      ],
-      "current_entrypoints": [
-        "runtime:services.web"
-      ],
-      "current_read_points": [],
-      "current_write_points": [
-        "docker-compose.yml:141:services.web"
-      ],
-      "deletion_condition": "default startup is PostgreSQL Authority and architecture gate passes",
-      "domain": "runtime_governance",
-      "entrypoint": [
-        "runtime:services.web"
-      ],
-      "evidence": [
-        {
-          "line": 141,
-          "path": "docker-compose.yml",
-          "reason": "default Compose starts the Legacy/UI plane instead of the backend-only Authority plane",
-          "scan_rule": "runtime_default",
-          "symbol": "services.web",
-          "usage_type": "fallback"
-        }
-      ],
-      "file": "docker-compose.yml",
-      "idempotency_key": "runtime_role:release_sha",
-      "inventory_id": "legacy-migration:7813cf83f42124b73fd2",
-      "migration_method": "REPLACE_WITH_AUTHORITY",
-      "migration_status": "LEGACY_PRODUCTION_BLOCKER",
-      "migration_strategy": "REPLACE_WITH_AUTHORITY",
-      "production_reachable": true,
-      "read_or_write": "READ_WRITE",
-      "recovery_strategy": "fail closed; retry PostgreSQL startup without Legacy fallback",
-      "remaining_action": "default Compose starts the Legacy/UI plane instead of the backend-only Authority plane",
-      "status": "LEGACY_PRODUCTION_BLOCKER",
-      "symbol": [
-        "services.web"
-      ],
-      "target_authority": {
-        "asset_type": "runtime_configuration",
-        "kind": "postgresql",
-        "operation_definition": "runtime.authority.start",
-        "repository": "novel_forge.storage.database_runtime"
-      },
-      "target_authority_asset_type": "runtime_configuration",
-      "target_operation_definition": "runtime.authority.start",
-      "target_repository": "novel_forge.storage.database_runtime",
-      "test_requirements": [
-        "architecture: default runtime and Compose are PostgreSQL-only"
-      ],
-      "transaction_boundary": "startup validation before accepting work"
-    },
     {
       "business_domain": "project_workspace",
       "current_authority": [
@@ -30131,7 +30015,7 @@
       ],
       "current_read_points": [],
       "current_write_points": [
-        "src/novel_forge/modules/pgvector_store/service.py:1039:novel_forge.modules.pgvector_store.service._write",
+        "src/novel_forge/modules/pgvector_store/service.py:1037:novel_forge.modules.pgvector_store.service._write",
         "src/novel_forge/modules/pgvector_store/service.py:159:novel_forge.modules.pgvector_store.service.pgvector_operations_plan"
       ],
       "deletion_condition": "PostgreSQL command/query entrypoint is integration-proven; import reconciliation passes; architecture guard reports no production reachability",
@@ -30149,7 +30033,7 @@
           "usage_type": "authority_write"
         },
         {
-          "line": 1039,
+          "line": 1037,
           "path": "src/novel_forge/modules/pgvector_store/service.py",
           "scan_rule": "localstorage_method",
           "symbol": "novel_forge.modules.pgvector_store.service._write",
@@ -43448,7 +43332,7 @@
     }
   ],
   "schema_version": "legacy-authority-migration-inventory.v2",
-  "source_tree_sha": "f8eacd3fc4967b447750b17863c6521de4cfbeb3",
+  "source_tree_sha": "ef8ed3e0afbf82432801b3b4fa6994a6985246a6",
   "summary": {
     "business_domains": [
       "agent_workflow_task",
@@ -43460,7 +43344,6 @@
       "planning",
       "project_workspace",
       "publishing",
-      "runtime_governance",
       "source_governance"
     ],
     "current_coverage_summary": {
@@ -43483,15 +43366,15 @@
       "unknown": 4,
       "unmapped_side_effects": 0
     },
-    "inventory_rows": 450,
-    "legacy_findings": 2057,
-    "legacy_production_blocker_count": 2,
+    "inventory_rows": 448,
+    "legacy_findings": 2055,
+    "legacy_production_blocker_count": 0,
     "production_localstorage_goal": 0,
     "status_counts": {
       "DEVELOPMENT_ONLY": 0,
       "EXPLICIT_COMPATIBILITY": 443,
       "IMPORT_CANDIDATE_ONLY": 3,
-      "LEGACY_PRODUCTION_BLOCKER": 2,
+      "LEGACY_PRODUCTION_BLOCKER": 0,
       "MIGRATED_NATIVE": 0,
       "MIGRATED_READ_ONLY": 0,
       "REBUILDABLE": 2,

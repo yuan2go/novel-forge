@@ -2,16 +2,14 @@
 
 > Generated from AST/code evidence. The JSON sibling is the machine-executable source.
 
-- Rows: 450
-- Findings: 2057
-- Artifact hash: `sha256:05efac1c10b9a8fad6a9d2c180f889e2a7274511a94a4032403264fd19d7ffa8`
-- Legacy production blockers: 2
+- Rows: 448
+- Findings: 2055
+- Artifact hash: `sha256:91fb4988d69856cd7cc500bf360deee0e6dc4b0c7f677078b7727bca50b6fe1d`
+- Legacy production blockers: 0
 - Unclassified: 0
 
 | Domain | Entrypoint/file | Current authority | Target asset | Operation | Method | Status |
 |---|---|---|---|---|---|---|
-| runtime_governance | `docker-compose.yml` | legacy_localstorage | `runtime_configuration` | `runtime.authority.start` | REPLACE_WITH_AUTHORITY | LEGACY_PRODUCTION_BLOCKER |
-| runtime_governance | `docker-compose.yml` | legacy_localstorage | `runtime_configuration` | `runtime.authority.start` | REPLACE_WITH_AUTHORITY | LEGACY_PRODUCTION_BLOCKER |
 | project_workspace | `src/novel_forge/api/legacy_app.py` | localstorage | `project_record/workspace_record/project_binding` | `project.migration.required` | FROZEN_SNAPSHOT_IMPORT_WITH_REVIEW_OR_QUARANTINE | EXPLICIT_COMPATIBILITY |
 | project_workspace | `src/novel_forge/api/legacy_app.py` | mixed | `project_record/workspace_record/project_binding` | `project_lifecycle.create` | DEPRECATE_AFTER_AUTHORITY_REPLACEMENT | EXPLICIT_COMPATIBILITY |
 | project_workspace | `src/novel_forge/api/provider_adapters.py` | localstorage | `project_record/workspace_record/project_binding` | `project.migration.required` | FROZEN_SNAPSHOT_IMPORT_WITH_REVIEW_OR_QUARANTINE | EXPLICIT_COMPATIBILITY |

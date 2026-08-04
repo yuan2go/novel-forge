@@ -6,6 +6,7 @@ projection synchronization, or filesystem routing policy.
 from __future__ import annotations
 
 from dataclasses import dataclass
+import os
 from typing import Any
 
 from novel_forge.api.authority_dependencies import (
@@ -42,6 +43,22 @@ from novel_forge.modules.mkaos_authority import (
 )
 from novel_forge.modules.provider_callback_authority import ProviderCallbackAuthorityService
 from novel_forge.modules.provider_control import ProviderAdapterRegistry
+from novel_forge.storage.database_runtime import (
+    close_all_database_runtimes,
+    get_database_runtime,
+)
+from novel_forge.storage.migrations import get_migration_status
+
+
+REQUIRED_RUNTIME_GROUPS = (
+    "chapter",
+    "content",
+    "source",
+    "mkaos",
+    "book",
+    "outbox",
+    "maintenance",
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -273,10 +290,124 @@ def create_authority_app(settings: IndustrialSettings):
     @app.get("/health")
     def health() -> dict[str, Any]:
         return {
-            "status": "ready",
+            "status": "alive",
             "storage_authority": "postgresql",
             "legacy_localstorage_loaded": False,
         }
+
+    @app.get("/liveness")
+    def liveness() -> dict[str, Any]:
+        return {
+            "status": "alive",
+            "runtime_profile": settings.authority_runtime_profile,
+            "storage_authority": "postgresql",
+        }
+
+    def readiness_payload() -> dict[str, Any]:
+        database_error = ""
+        database_health: dict[str, Any] = {}
+        migration: dict[str, Any] = {"ok": False, "current": ""}
+        try:
+            database_health = get_database_runtime(
+                settings.database_url, role="api"
+            ).health()
+            migration = get_migration_status(settings.database_url)
+        except Exception as exc:
+            database_error = f"{type(exc).__name__}: {exc}"
+        object_store_error = ""
+        try:
+            from novel_forge.storage.object_store import MinioObjectStore
+
+            MinioObjectStore(settings).client.list_buckets()
+            object_store_ready = True
+        except Exception as exc:
+            object_store_ready = False
+            object_store_error = f"{type(exc).__name__}: {exc}"
+        provider_name = str(
+            os.environ.get("NOVEL_FORGE_MODEL_PROVIDER") or ""
+        ).strip().lower()
+        fixture_provider = provider_name in {"", "mock", "local", "offline"}
+        provider_status = (
+            "FIXTURE_ONLY"
+            if settings.environment in {"development", "test"} and fixture_provider
+            else "CONFIGURED"
+            if provider_name
+            else "BLOCKED"
+        )
+        definitions = {
+            "chapter_handler_count": len(application.registry.available_handler_keys),
+            "content_definition_count": len(
+                services.content_authority_application.registry.definition_names
+            ),
+        }
+        ready = bool(
+            migration.get("ok")
+            and database_health.get("status") == "ready"
+            and object_store_ready
+            and provider_status != "BLOCKED"
+            and all(definitions.values())
+        )
+        return {
+            "status": "ready" if ready else "not_ready",
+            "runtime_profile": settings.authority_runtime_profile,
+            "postgresql": {
+                "authority": True,
+                "reachable": database_health.get("status") == "ready",
+                "migration_head": migration.get("current", ""),
+                "migration_chain_current": bool(migration.get("ok")),
+                "pool": database_health,
+                "error": database_error,
+            },
+            "object_store": {
+                "configured": True,
+                "reachable": object_store_ready,
+                "error": object_store_error,
+            },
+            "operation_definitions": definitions,
+            "runtime_groups": {
+                "registered": list(REQUIRED_RUNTIME_GROUPS),
+                "registration_status": "REGISTERED",
+                "heartbeat_status_endpoint": "/runtime/readiness",
+            },
+            "provider": {
+                "status": provider_status,
+                "real_provider_proven": False,
+            },
+            "legacy_write_enabled": False,
+            "silent_fallback_enabled": False,
+        }
+
+    @app.get("/startup")
+    def startup() -> dict[str, Any]:
+        result = readiness_payload()
+        if result["status"] != "ready":
+            from fastapi import HTTPException
+
+            raise HTTPException(status_code=503, detail=result)
+        return result
+
+    @app.get("/readiness")
+    def readiness() -> dict[str, Any]:
+        return startup()
+
+    @app.get("/ready")
+    def ready() -> dict[str, Any]:
+        return startup()
+
+    @app.get("/runtime/readiness")
+    def runtime_readiness() -> dict[str, Any]:
+        from novel_forge.storage.worker_health import runtime_health_report
+
+        result = runtime_health_report(settings.database_url)
+        if result["readiness"] != "READY":
+            from fastapi import HTTPException
+
+            raise HTTPException(status_code=503, detail=result)
+        return result
+
+    @app.on_event("shutdown")
+    def shutdown_database_runtime() -> None:
+        close_all_database_runtimes()
 
     return app
 
@@ -319,7 +450,6 @@ def _create_track_b_minimal_app(settings: IndustrialSettings, FastAPI: Any, CORS
         create_router as create_book_design_router,
     )
     from novel_forge.api.routers.context import ProductRouterContext
-    from novel_forge.storage.migrations import get_migration_status
     from novel_forge.storage.object_store import MinioObjectStore
 
     context = ProductRouterContext(
@@ -345,6 +475,10 @@ def _create_track_b_minimal_app(settings: IndustrialSettings, FastAPI: Any, CORS
             "legacy_write_enabled": False,
             "silent_fallback_enabled": False,
         }
+
+    @app.get("/liveness")
+    def liveness() -> dict[str, Any]:
+        return health()
 
     @app.get("/ready")
     def ready() -> dict[str, Any]:
@@ -380,6 +514,18 @@ def _create_track_b_minimal_app(settings: IndustrialSettings, FastAPI: Any, CORS
 
             raise HTTPException(status_code=503, detail=result)
         return result
+
+    @app.get("/startup")
+    def startup() -> dict[str, Any]:
+        return ready()
+
+    @app.get("/readiness")
+    def readiness() -> dict[str, Any]:
+        return ready()
+
+    @app.on_event("shutdown")
+    def shutdown_database_runtime() -> None:
+        close_all_database_runtimes()
 
     return app
 

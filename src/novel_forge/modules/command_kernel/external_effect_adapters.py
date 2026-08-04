@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import base64
 import hashlib
+from io import BytesIO
 from dataclasses import dataclass
 from pathlib import Path
 from threading import Lock
@@ -287,5 +288,204 @@ class LocalFileObjectStoreAdapter:
             {
                 "cancelled": False,
                 "reason": "completed local object writes are immutable; compensation required",
+            },
+        )
+
+
+class MinioObjectStoreExternalEffectAdapter:
+    """Idempotent object-store effect with hash/size reconciliation evidence."""
+
+    provider = "minio_object_store"
+    reconciliation_mode = "query"
+    capability_profile = {
+        "provider": provider,
+        "control_level": "SELF_HOSTED_CONTROLLED",
+        "supports_request_timeout": True,
+        "supports_provider_idempotency": True,
+        "supports_query": True,
+        "supports_cancel": False,
+        "supports_callback": False,
+        "supports_usage_receipt": False,
+        "supports_cost_receipt": False,
+        "reconciliation_mode": "query",
+        "real_provider_validation_eligible": False,
+        "contract_version": "provider-capability-v2",
+    }
+
+    def __init__(self, client: Any, *, bucket: str) -> None:
+        if not bucket:
+            raise ValueError("MinIO object-store bucket is required")
+        self.client = client
+        self.bucket = bucket
+
+    def execute(
+        self,
+        *,
+        stable_idempotency_key: str,
+        capability: str,
+        request_payload: dict[str, Any],
+    ) -> ProviderResult:
+        if capability != "object_store.put":
+            return ProviderResult(
+                "final_failure",
+                f"minio:{stable_idempotency_key}",
+                {"error": "unsupported_capability"},
+            )
+        object_key, content, digest = self._payload(request_payload)
+        expected_size = request_payload.get("expected_size")
+        expected_hash = str(request_payload.get("expected_hash") or "")
+        if (expected_hash and expected_hash != digest) or (
+            expected_size is not None and int(expected_size) != len(content)
+        ):
+            return ProviderResult(
+                "final_failure",
+                f"minio:{stable_idempotency_key}",
+                {"error": "content_identity_mismatch"},
+            )
+        existing = self._stat(object_key)
+        if existing is not None:
+            metadata = dict(getattr(existing, "metadata", {}) or {})
+            existing_hash = str(
+                metadata.get("x-amz-meta-content-hash")
+                or metadata.get("content-hash")
+                or ""
+            )
+            if existing_hash == digest and int(existing.size) == len(content):
+                return self._result(
+                    stable_idempotency_key, object_key, digest, len(content), True
+                )
+            return ProviderResult(
+                "final_failure",
+                f"minio:{stable_idempotency_key}",
+                {"error": "object_identity_conflict", "object_key": object_key},
+            )
+        if not self.client.bucket_exists(self.bucket):
+            self.client.make_bucket(self.bucket)
+        self.client.put_object(
+            self.bucket,
+            object_key,
+            BytesIO(content),
+            length=len(content),
+            content_type="application/octet-stream",
+            metadata={
+                "content-hash": digest,
+                "stable-idempotency-key": stable_idempotency_key,
+            },
+        )
+        return self._result(
+            stable_idempotency_key, object_key, digest, len(content), False
+        )
+
+    def query(
+        self,
+        *,
+        stable_idempotency_key: str,
+        capability: str,
+        request_payload: dict[str, Any],
+    ) -> ProviderResult:
+        del capability
+        object_key = self._object_key(request_payload)
+        existing = self._stat(object_key)
+        if existing is None:
+            return ProviderResult(
+                "not_found",
+                f"minio-query:{stable_idempotency_key}",
+                {"bucket": self.bucket, "object_key": object_key},
+            )
+        metadata = dict(getattr(existing, "metadata", {}) or {})
+        digest = str(
+            metadata.get("x-amz-meta-content-hash")
+            or metadata.get("content-hash")
+            or ""
+        )
+        return self._result(
+            stable_idempotency_key,
+            object_key,
+            digest,
+            int(existing.size),
+            True,
+            query=True,
+        )
+
+    def cancel(
+        self,
+        *,
+        stable_idempotency_key: str,
+        capability: str,
+        request_payload: dict[str, Any],
+        provider_request_id: str,
+    ) -> ProviderResult:
+        del capability, request_payload
+        return ProviderResult(
+            "cancelled",
+            provider_request_id or f"minio-cancel:{stable_idempotency_key}",
+            {
+                "cancelled": False,
+                "reason": "committed object versions are immutable; compensation required",
+            },
+        )
+
+    def _payload(
+        self, request_payload: dict[str, Any]
+    ) -> tuple[str, bytes, str]:
+        object_key = self._object_key(request_payload)
+        encoded = str(request_payload.get("content_base64") or "")
+        if encoded:
+            try:
+                content = base64.b64decode(encoded, validate=True)
+            except ValueError as exc:
+                raise ExternalEffectAdapterError(
+                    "invalid object content_base64", request_sent=False
+                ) from exc
+        elif "content" in request_payload:
+            content = str(request_payload.get("content") or "").encode("utf-8")
+        else:
+            raise ExternalEffectAdapterError(
+                "object content bytes are missing", request_sent=False
+            )
+        return object_key, content, "sha256:" + hashlib.sha256(content).hexdigest()
+
+    @staticmethod
+    def _object_key(request_payload: dict[str, Any]) -> str:
+        object_key = str(request_payload.get("object_key") or "").strip()
+        if (
+            not object_key
+            or object_key.startswith("/")
+            or any(part in {"", ".", ".."} for part in object_key.split("/"))
+        ):
+            raise ExternalEffectAdapterError(
+                "unsafe object key", request_sent=False
+            )
+        return object_key
+
+    def _stat(self, object_key: str) -> Any | None:
+        try:
+            return self.client.stat_object(self.bucket, object_key)
+        except Exception as exc:
+            code = str(getattr(exc, "code", "") or "")
+            if code in {"NoSuchKey", "NoSuchObject", "NoSuchBucket"}:
+                return None
+            raise
+
+    def _result(
+        self,
+        stable_idempotency_key: str,
+        object_key: str,
+        digest: str,
+        size: int,
+        replayed: bool,
+        *,
+        query: bool = False,
+    ) -> ProviderResult:
+        prefix = "minio-query" if query else "minio"
+        return ProviderResult(
+            "success",
+            f"{prefix}:{stable_idempotency_key}",
+            {
+                "bucket": self.bucket,
+                "object_key": object_key,
+                "actual_hash": digest,
+                "actual_size": size,
+                "replayed": replayed,
             },
         )

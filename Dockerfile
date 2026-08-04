@@ -16,6 +16,13 @@ COPY src ./src
 RUN python -m pip install --no-cache-dir --upgrade pip \
     && python -m pip install --no-cache-dir -e '.[industrial]'
 
+RUN groupadd --gid 10001 novel-forge \
+    && useradd --uid 10001 --gid 10001 --no-create-home novel-forge \
+    && mkdir -p /runtime/objects /runtime/tmp \
+    && chown -R 10001:10001 /runtime
+
+USER 10001:10001
+
 EXPOSE 8000
 
 CMD ["python", "-m", "novel_forge.cli", "serve-api", "--root", "/workspace", "--host", "0.0.0.0", "--port", "8000"]

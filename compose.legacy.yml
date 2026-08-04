@@ -1,0 +1,55 @@
+name: novel-forge-legacy-explicit
+
+services:
+  legacy-redis:
+    image: redis:7-alpine
+    profiles: ["legacy"]
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - legacy-redis-data:/data
+
+  legacy-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    profiles: ["legacy"]
+    command: ["python", "-m", "novel_forge.cli", "legacy", "serve-api", "--host", "0.0.0.0", "--port", "8001"]
+    environment:
+      NOVEL_FORGE_ENVIRONMENT: development
+      NOVEL_FORGE_STORAGE_AUTHORITY: legacy_local
+      NOVEL_FORGE_ROOT: /runtime
+      NOVEL_FORGE_LEGACY_WRITE_ENABLED: "true"
+      NOVEL_FORGE_SILENT_LEGACY_FALLBACK_ENABLED: "false"
+      NOVEL_FORGE_REDIS_URL: redis://legacy-redis:6379/0
+      NOVEL_FORGE_CELERY_BROKER_URL: redis://legacy-redis:6379/0
+      NOVEL_FORGE_CELERY_RESULT_BACKEND: redis://legacy-redis:6379/1
+    volumes:
+      - legacy-runtime:/runtime
+    ports:
+      - "8001:8001"
+    depends_on:
+      - legacy-redis
+
+  legacy-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    profiles: ["legacy"]
+    command: ["python", "-m", "novel_forge.cli", "legacy", "worker", "--root", "/runtime"]
+    environment:
+      NOVEL_FORGE_ENVIRONMENT: development
+      NOVEL_FORGE_STORAGE_AUTHORITY: legacy_local
+      NOVEL_FORGE_ROOT: /runtime
+      NOVEL_FORGE_LEGACY_WRITE_ENABLED: "true"
+      NOVEL_FORGE_SILENT_LEGACY_FALLBACK_ENABLED: "false"
+      NOVEL_FORGE_REDIS_URL: redis://legacy-redis:6379/0
+      NOVEL_FORGE_CELERY_BROKER_URL: redis://legacy-redis:6379/0
+      NOVEL_FORGE_CELERY_RESULT_BACKEND: redis://legacy-redis:6379/1
+    volumes:
+      - legacy-runtime:/runtime
+    depends_on:
+      - legacy-redis
+
+volumes:
+  legacy-redis-data:
+  legacy-runtime:

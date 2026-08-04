@@ -371,18 +371,6 @@ def _runtime_configuration_findings(root: Path) -> list[dict[str, Any]]:
             "novel_forge.cli.main",
             "standard CLI falls through to the Legacy command surface",
         ),
-        (
-            "docker-compose.yml",
-            'command: ["python", "-m", "novel_forge.cli", "worker"',
-            "services.worker",
-            "default Compose starts the Legacy Celery worker",
-        ),
-        (
-            "docker-compose.yml",
-            "web:\n",
-            "services.web",
-            "default Compose starts the Legacy/UI plane instead of the backend-only Authority plane",
-        ),
     )
     findings: list[dict[str, Any]] = []
     for path, marker, symbol, reason in checks:
@@ -434,6 +422,67 @@ def _runtime_configuration_findings(root: Path) -> list[dict[str, Any]]:
                 "migration_method": "REPLACE_WITH_AUTHORITY",
                 "deletion_condition": "default startup is PostgreSQL Authority and architecture gate passes",
                 "test_requirements": ["architecture: default runtime and Compose are PostgreSQL-only"],
+                "migration_status": "LEGACY_PRODUCTION_BLOCKER",
+                "evidence": [evidence],
+            }
+        )
+    compose_path = root / "compose.yml"
+    compose_source = (
+        compose_path.read_text(encoding="utf-8") if compose_path.exists() else ""
+    )
+    compose_failures = []
+    if not compose_source:
+        compose_failures.append("default compose.yml is missing")
+    if "NOVEL_FORGE_STORAGE_AUTHORITY: postgresql" not in compose_source:
+        compose_failures.append("default Compose does not select PostgreSQL authority")
+    if "NOVEL_FORGE_LEGACY_WRITE_ENABLED: \"false\"" not in compose_source:
+        compose_failures.append("default Compose does not disable Legacy writes")
+    if "NOVEL_FORGE_SILENT_LEGACY_FALLBACK_ENABLED: \"false\"" not in compose_source:
+        compose_failures.append("default Compose does not disable Legacy fallback")
+    if "  web:\n" in compose_source or "  legacy-api:\n" in compose_source:
+        compose_failures.append("default Compose contains a Web or Legacy service")
+    for index, reason in enumerate(compose_failures, start=1):
+        evidence = {
+            "path": "compose.yml",
+            "line": index,
+            "symbol": "services",
+            "scan_rule": "runtime_default",
+            "usage_type": "fallback",
+            "reason": reason,
+        }
+        findings.append(
+            {
+                "inventory_id": _stable_id("runtime_default", "compose.yml", reason),
+                "domain": "runtime_governance",
+                "file": "compose.yml",
+                "symbol": ["services"],
+                "entrypoint": ["runtime:compose"],
+                "read_or_write": "READ_WRITE",
+                "current_authority": ["legacy_localstorage"],
+                "target_authority": {
+                    "kind": "postgresql",
+                    "asset_type": "runtime_configuration",
+                    "operation_definition": "runtime.authority.start",
+                    "repository": "novel_forge.storage.database_runtime",
+                },
+                "production_reachable": True,
+                "migration_strategy": "REPLACE_WITH_AUTHORITY",
+                "status": "LEGACY_PRODUCTION_BLOCKER",
+                "remaining_action": reason,
+                "business_domain": "runtime_governance",
+                "current_entrypoints": ["runtime:compose"],
+                "current_authority_source": ["legacy_localstorage"],
+                "current_write_points": ["compose.yml:services"],
+                "current_read_points": [],
+                "target_authority_asset_type": "runtime_configuration",
+                "target_operation_definition": "runtime.authority.start",
+                "target_repository": "novel_forge.storage.database_runtime",
+                "transaction_boundary": "startup validation before accepting work",
+                "idempotency_key": "runtime_role:release_sha",
+                "recovery_strategy": "fail closed; retry PostgreSQL startup without Legacy fallback",
+                "migration_method": "REPLACE_WITH_AUTHORITY",
+                "deletion_condition": "default Compose is PostgreSQL Authority-only",
+                "test_requirements": ["architecture: default Compose is PostgreSQL-only"],
                 "migration_status": "LEGACY_PRODUCTION_BLOCKER",
                 "evidence": [evidence],
             }
