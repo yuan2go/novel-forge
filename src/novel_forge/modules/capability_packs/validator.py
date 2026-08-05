@@ -12,6 +12,7 @@ from novel_forge.modules.production_execution.capability_registry import (
     CapabilityRegistry,
     default_capability_registry,
 )
+from novel_forge.modules.production_execution.capabilities import CapabilityDefinition
 from novel_forge.modules.production_execution.security import assert_no_inline_secrets
 from novel_forge.modules.chapter_authority.contracts import ChapterNode
 from novel_forge.modules.chapter_authority.definitions import (
@@ -61,10 +62,12 @@ _TOP_LEVEL_FIELDS = (
     "audit",
     "ext",
 )
-_TOP_LEVEL_OBJECTS = _TOP_LEVEL_FIELDS[1:]
 _EXTENSION_NAMESPACES = frozenset({"ui", "enterprise", "experiments", "vendor"})
 _RAW_SOURCE_TYPES = frozenset({"raw_source_document", "raw_source_chunk"})
 _TOOL_PERMISSIONS = frozenset({"READ", "WRITE", "EXECUTE", "QUERY"})
+_EXTERNAL_EFFECT_TOOL_REFS = frozenset(
+    {"model.provider.invoke", "storage.object.put"}
+)
 _SOURCE_ISOLATION_MODES = frozenset(
     {"ABSTRACT_ASSETS_ONLY", "FROZEN_ASSETS_ONLY", "RAW_ALLOWED_WITH_APPROVAL"}
 )
@@ -96,6 +99,7 @@ _UUID_VALUE = re.compile(
 _LOCAL_ABSOLUTE_PATH = re.compile(
     r"^(?:/Users/|/home/|/tmp/|[A-Za-z]:[\\/]Users[\\/])"
 )
+_CHAPTER_GENERATION_PACK_ID = "chapter_generation_pack"
 _WORKFLOW_BINDINGS = {
     f"{node.definition_name}@{CHAPTER_MODEL_EFFECT_DEFINITION_VERSION}": {
         "operation_name": node.definition_name,
@@ -209,293 +213,6 @@ def _validate_schema_version(
         )
 
 
-def _validate_required_protocol_fields(
-    payload: Mapping[str, Any], issues: _IssueCollector
-) -> None:
-    sections: tuple[tuple[str, tuple[str, ...]], ...] = (
-        ("identity", ("pack_id", "name", "domain", "capability_type", "version", "owner", "status", "lifecycle", "description")),
-        ("compatibility", ("novel_forge_min_version", "novel_forge_max_version", "protocol_min_version", "protocol_max_version", "required_capabilities", "required_schema_versions", "incompatible_packs", "compatible_runtime_profiles")),
-        ("role", ("role_type", "role_name", "responsibilities", "boundaries", "forbidden_actions", "upstream_packs", "downstream_packs", "authority_level")),
-        ("skill_binding", ("mode", "skills", "anti_drift")),
-        ("prompt_binding", ("prompt_bundle_type", "system_instruction_hash", "template_hash", "compiler_version", "input_schema_ref", "output_schema_ref")),
-        ("workflow_template", ("workflow_id", "workflow_version", "execution_mode", "idempotency_scope", "nodes", "completion")),
-        ("context_sources", ("policy_id", "max_tokens", "source_isolation", "allowed_asset_types", "forbidden_asset_types", "required_version_refs", "priority", "freshness", "longform_bindings")),
-        ("tool_permissions", ("policy_id", "default", "tools", "database", "files", "external_models", "retrieval")),
-        ("assets", ("knowledge", "rules", "templates", "source_policy")),
-        ("evaluation", ("evaluation_id", "required_gates", "metrics", "failure_policy")),
-        ("runtime_contract", ("input_protocol_ref", "output_protocol_ref", "error_protocol_ref", "state_protocol_ref", "event_protocol_ref", "audit_protocol_ref", "rollback_protocol_ref", "commit_policy_ref", "validation_policy_ref", "execution")),
-        ("governance", ("release_channel", "approval_policy_ref", "versioning", "rollout", "rollback", "cost_tracking", "quality_tracking", "deprecation")),
-        ("audit", ("audit_level", "record_operation_snapshot", "record_pack_manifest_hash", "record_input_manifest", "record_route_snapshot", "record_tool_calls", "record_cost_receipts", "record_evaluation_results")),
-    )
-    for section, required in sections:
-        value = payload.get(section)
-        if isinstance(value, dict):
-            _require_keys(value, required, f"$.{section}", issues)
-
-    skill_binding = payload.get("skill_binding")
-    if isinstance(skill_binding, dict):
-        for index, skill in enumerate(_array(skill_binding.get("skills"))):
-            if isinstance(skill, dict):
-                _require_keys(
-                    skill,
-                    ("skill_ref", "version", "content_hash", "required", "input_contract_ref", "output_contract_ref", "preconditions", "postconditions", "depends_on", "max_invocations_per_run", "drift_policy"),
-                    f"$.skill_binding.skills[{index}]",
-                    issues,
-                )
-    workflow = payload.get("workflow_template")
-    if isinstance(workflow, dict):
-        for index, node in enumerate(_array(workflow.get("nodes"))):
-            if not isinstance(node, dict):
-                issues.error("CAPABILITY_PACK_PROTOCOL_INVALID", f"$.workflow_template.nodes[{index}]", "workflow node must be an object")
-                continue
-            node_path = f"$.workflow_template.nodes[{index}]"
-            _require_keys(node, ("node_id", "operation_name", "operation_definition_ref", "handler_key", "stage", "capability_id", "input_asset_types", "output_asset_types", "depends_on", "retry_policy", "timeout_policy_ref", "approval", "compensation"), node_path, issues)
-            retry = node.get("retry_policy")
-            if isinstance(retry, dict):
-                _require_keys(retry, ("max_attempts", "retryable_errors", "dead_letter_on_exhausted"), f"{node_path}.retry_policy", issues)
-        completion = workflow.get("completion")
-        if isinstance(completion, dict):
-            _require_keys(completion, ("required_terminal_nodes", "required_evidence", "required_output_asset_types"), "$.workflow_template.completion", issues)
-    tool_permissions = payload.get("tool_permissions")
-    if isinstance(tool_permissions, dict):
-        for index, tool in enumerate(_array(tool_permissions.get("tools"))):
-            if isinstance(tool, dict):
-                _require_keys(tool, ("tool_ref", "permission", "allowed_operations", "risk_class", "approval_required", "audit_required", "budget_policy_ref"), f"$.tool_permissions.tools[{index}]", issues)
-    evaluation = payload.get("evaluation")
-    if isinstance(evaluation, dict):
-        for index, gate in enumerate(_array(evaluation.get("required_gates"))):
-            if isinstance(gate, dict):
-                _require_keys(gate, ("gate_id", "judge_capability_id", "blocking", "threshold", "required_evidence"), f"$.evaluation.required_gates[{index}]", issues)
-
-
-def _array(value: Any) -> tuple[Any, ...]:
-    return tuple(value) if isinstance(value, list) else ()
-
-
-def _require_keys(
-    value: Mapping[str, Any],
-    required: tuple[str, ...],
-    path: str,
-    issues: _IssueCollector,
-) -> None:
-    for field in required:
-        if field not in value:
-            issues.error(
-                "CAPABILITY_PACK_REQUIRED_FIELD_MISSING",
-                f"{path}.{field}",
-                "required protocol field is missing",
-            )
-
-
-def _validate_protocol_types(
-    payload: Mapping[str, Any], issues: _IssueCollector
-) -> None:
-    array_fields = {
-        "$.compatibility": ("required_capabilities", "required_schema_versions", "incompatible_packs", "compatible_runtime_profiles"),
-        "$.role": ("responsibilities", "boundaries", "forbidden_actions", "upstream_packs", "downstream_packs"),
-        "$.context_sources": ("allowed_asset_types", "forbidden_asset_types", "required_version_refs", "priority"),
-        "$.assets": ("rules", "templates"),
-        "$.evaluation": ("required_gates", "metrics"),
-    }
-    object_fields = {
-        "$.skill_binding": ("anti_drift",),
-        "$.workflow_template": ("completion",),
-        "$.context_sources": ("freshness", "longform_bindings"),
-        "$.tool_permissions": ("database", "files", "external_models", "retrieval"),
-        "$.assets": ("knowledge", "source_policy"),
-        "$.evaluation": ("failure_policy",),
-        "$.runtime_contract": ("execution",),
-        "$.governance": ("versioning", "rollout", "rollback", "cost_tracking", "quality_tracking", "deprecation"),
-    }
-    for path, fields in array_fields.items():
-        section = payload.get(path.removeprefix("$."))
-        if not isinstance(section, dict):
-            continue
-        for field in fields:
-            if field in section and not isinstance(section[field], list):
-                issues.error("CAPABILITY_PACK_PROTOCOL_INVALID", f"{path}.{field}", "field must be an array")
-    for path, fields in object_fields.items():
-        section = payload.get(path.removeprefix("$."))
-        if not isinstance(section, dict):
-            continue
-        for field in fields:
-            if field in section and not isinstance(section[field], dict):
-                issues.error("CAPABILITY_PACK_PROTOCOL_INVALID", f"{path}.{field}", "field must be an object")
-    for section_name, list_name in (("skill_binding", "skills"), ("workflow_template", "nodes"), ("tool_permissions", "tools")):
-        section = payload.get(section_name)
-        if isinstance(section, dict) and list_name in section and not isinstance(section[list_name], list):
-            issues.error("CAPABILITY_PACK_PROTOCOL_INVALID", f"$.{section_name}.{list_name}", "field must be an array")
-
-    string_arrays = {
-        "compatibility": ("required_capabilities", "required_schema_versions", "incompatible_packs", "compatible_runtime_profiles"),
-        "role": ("responsibilities", "boundaries", "forbidden_actions", "upstream_packs", "downstream_packs"),
-        "context_sources": ("allowed_asset_types", "forbidden_asset_types", "required_version_refs", "priority"),
-    }
-    for section_name, fields in string_arrays.items():
-        section = payload.get(section_name)
-        if not isinstance(section, dict):
-            continue
-        for field in fields:
-            value = section.get(field)
-            if isinstance(value, list):
-                _require_string_items(value, f"$.{section_name}.{field}", issues)
-
-    skill_binding = payload.get("skill_binding")
-    if isinstance(skill_binding, dict):
-        for index, skill in enumerate(_array(skill_binding.get("skills"))):
-            if not isinstance(skill, dict):
-                issues.error("CAPABILITY_PACK_PROTOCOL_INVALID", f"$.skill_binding.skills[{index}]", "skill binding must be an object")
-                continue
-            for field in ("preconditions", "postconditions", "depends_on"):
-                if field in skill and not isinstance(skill[field], list):
-                    issues.error("CAPABILITY_PACK_PROTOCOL_INVALID", f"$.skill_binding.skills[{index}].{field}", "field must be an array")
-                elif isinstance(skill.get(field), list):
-                    _require_string_items(skill[field], f"$.skill_binding.skills[{index}].{field}", issues)
-            if "required" in skill and not isinstance(skill["required"], bool):
-                issues.error("CAPABILITY_PACK_PROTOCOL_INVALID", f"$.skill_binding.skills[{index}].required", "required must be boolean")
-    workflow = payload.get("workflow_template")
-    if isinstance(workflow, dict):
-        for index, node in enumerate(_array(workflow.get("nodes"))):
-            if not isinstance(node, dict):
-                continue
-            for field in ("input_asset_types", "output_asset_types", "depends_on"):
-                if field in node and not isinstance(node[field], list):
-                    issues.error("CAPABILITY_PACK_PROTOCOL_INVALID", f"$.workflow_template.nodes[{index}].{field}", "field must be an array")
-                elif isinstance(node.get(field), list):
-                    _require_string_items(node[field], f"$.workflow_template.nodes[{index}].{field}", issues)
-            for field in ("retry_policy", "approval", "compensation"):
-                if field in node and not isinstance(node[field], dict):
-                    issues.error("CAPABILITY_PACK_PROTOCOL_INVALID", f"$.workflow_template.nodes[{index}].{field}", "field must be an object")
-            retry = node.get("retry_policy")
-            if isinstance(retry, dict):
-                _validate_string_array_value(retry, "retryable_errors", f"$.workflow_template.nodes[{index}].retry_policy", issues)
-                _require_boolean_value(retry, "dead_letter_on_exhausted", f"$.workflow_template.nodes[{index}].retry_policy", issues)
-            approval = node.get("approval")
-            if isinstance(approval, dict):
-                _require_boolean_value(approval, "required", f"$.workflow_template.nodes[{index}].approval", issues)
-            compensation = node.get("compensation")
-            if isinstance(compensation, dict):
-                _require_boolean_value(compensation, "supported", f"$.workflow_template.nodes[{index}].compensation", issues)
-        completion = workflow.get("completion")
-        if isinstance(completion, dict):
-            for field in ("required_terminal_nodes", "required_evidence", "required_output_asset_types"):
-                _validate_string_array_value(completion, field, "$.workflow_template.completion", issues)
-
-    tool_permissions = payload.get("tool_permissions")
-    if isinstance(tool_permissions, dict):
-        for index, tool in enumerate(_array(tool_permissions.get("tools"))):
-            if not isinstance(tool, dict):
-                issues.error("CAPABILITY_PACK_PROTOCOL_INVALID", f"$.tool_permissions.tools[{index}]", "tool binding must be an object")
-                continue
-            path = f"$.tool_permissions.tools[{index}]"
-            _validate_string_array_value(tool, "allowed_operations", path, issues)
-            _require_boolean_value(tool, "approval_required", path, issues)
-            _require_boolean_value(tool, "audit_required", path, issues)
-        for section_name in ("database", "files", "external_models", "retrieval"):
-            section = tool_permissions.get(section_name)
-            if not isinstance(section, dict):
-                continue
-            path = f"$.tool_permissions.{section_name}"
-            for field in {
-                "database": ("read_allowed", "write_allowed"),
-                "files": ("read_allowed", "write_allowed"),
-                "external_models": ("allowed",),
-                "retrieval": ("allowed",),
-            }[section_name]:
-                _require_boolean_value(section, field, path, issues)
-            for field in {
-                "database": ("allowed_tables", "forbidden_tables"),
-                "files": ("allowed_roots",),
-                "external_models": (),
-                "retrieval": (),
-            }[section_name]:
-                _validate_string_array_value(section, field, path, issues)
-
-    evaluation = payload.get("evaluation")
-    if isinstance(evaluation, dict):
-        for index, gate in enumerate(_array(evaluation.get("required_gates"))):
-            if not isinstance(gate, dict):
-                issues.error("CAPABILITY_PACK_PROTOCOL_INVALID", f"$.evaluation.required_gates[{index}]", "evaluation gate must be an object")
-                continue
-            path = f"$.evaluation.required_gates[{index}]"
-            _require_boolean_value(gate, "blocking", path, issues)
-            threshold = gate.get("threshold")
-            if "threshold" in gate and (not isinstance(threshold, (int, float)) or isinstance(threshold, bool)):
-                issues.error("CAPABILITY_PACK_PROTOCOL_INVALID", f"{path}.threshold", "threshold must be numeric")
-            _validate_string_array_value(gate, "required_evidence", path, issues)
-        failure_policy = evaluation.get("failure_policy")
-        if isinstance(failure_policy, dict):
-            for field in ("acceptable_failures", "retryable_failures", "terminal_failures"):
-                _validate_string_array_value(failure_policy, field, "$.evaluation.failure_policy", issues)
-
-    assets = payload.get("assets")
-    if isinstance(assets, dict):
-        knowledge = assets.get("knowledge")
-        if isinstance(knowledge, dict):
-            for field in ("required_packs", "allowed_usage_roles"):
-                _validate_string_array_value(knowledge, field, "$.assets.knowledge", issues)
-        source_policy = assets.get("source_policy")
-        if isinstance(source_policy, dict):
-            _validate_string_array_value(source_policy, "allowed_eligibility", "$.assets.source_policy", issues)
-            for field in ("raw_source_expression_allowed", "requires_lineage"):
-                _require_boolean_value(source_policy, field, "$.assets.source_policy", issues)
-
-    runtime = payload.get("runtime_contract")
-    if isinstance(runtime, dict) and isinstance(runtime.get("execution"), dict):
-        for field in ("binds_authority_operation", "binds_attempt_fence", "external_effects_allowed", "synchronous_fixture_allowed"):
-            _require_boolean_value(runtime["execution"], field, "$.runtime_contract.execution", issues)
-
-    audit = payload.get("audit")
-    if isinstance(audit, dict):
-        for field in ("record_operation_snapshot", "record_pack_manifest_hash", "record_input_manifest", "record_route_snapshot", "record_tool_calls", "record_cost_receipts", "record_evaluation_results"):
-            _require_boolean_value(audit, field, "$.audit", issues)
-
-
-def _require_string_items(
-    values: list[Any], path: str, issues: _IssueCollector
-) -> None:
-    for index, item in enumerate(values):
-        if not isinstance(item, str):
-            issues.error(
-                "CAPABILITY_PACK_PROTOCOL_INVALID",
-                f"{path}[{index}]",
-                "array item must be a string",
-            )
-
-
-def _validate_string_array_value(
-    mapping: Mapping[str, Any],
-    field: str,
-    path: str,
-    issues: _IssueCollector,
-) -> None:
-    if field not in mapping:
-        return
-    value = mapping[field]
-    if not isinstance(value, list):
-        issues.error(
-            "CAPABILITY_PACK_PROTOCOL_INVALID",
-            f"{path}.{field}",
-            "field must be an array",
-        )
-        return
-    _require_string_items(value, f"{path}.{field}", issues)
-
-
-def _require_boolean_value(
-    mapping: Mapping[str, Any],
-    field: str,
-    path: str,
-    issues: _IssueCollector,
-) -> None:
-    if field in mapping and not isinstance(mapping[field], bool):
-        issues.error(
-            "CAPABILITY_PACK_PROTOCOL_INVALID",
-            f"{path}.{field}",
-            "field must be boolean",
-        )
-
-
 def _validate_identity(
     manifest: CapabilityPackManifest, issues: _IssueCollector
 ) -> None:
@@ -561,16 +278,18 @@ def _resolve_capability(
     registry: CapabilityRegistry,
     resolved: set[str],
     issues: _IssueCollector,
-) -> None:
+) -> CapabilityDefinition | None:
     if not isinstance(capability_id, str) or not capability_id:
         issues.error(code, path, "capability ID must be a non-empty string")
-        return
+        return None
     try:
         definition = registry.resolve(capability_id)
     except ValueError as exc:
         issues.error(code, path, str(exc))
+        return None
     else:
         resolved.add(definition.capability_id.value)
+        return definition
 
 
 def _validate_compatibility(
@@ -635,6 +354,15 @@ def _validate_compatibility(
             "CAPABILITY_PACK_COMPATIBILITY_INVALID",
             "$.compatibility.compatible_runtime_profiles",
             "unsupported runtime profiles: " + ", ".join(unsupported_profiles),
+        )
+    if (
+        isinstance(manifest.identity.pack_id, str)
+        and manifest.identity.pack_id in compatibility.incompatible_packs
+    ):
+        issues.error(
+            "CAPABILITY_PACK_COMPATIBILITY_INVALID",
+            "$.compatibility.incompatible_packs",
+            "pack cannot declare itself incompatible",
         )
     _validate_version_range(compatibility, issues)
 
@@ -733,6 +461,7 @@ def _validate_skills(manifest: CapabilityPackManifest, issues: _IssueCollector) 
     refs = [skill.skill_ref for skill in binding.skills]
     known = {value for value in refs if isinstance(value, str) and value}
     seen: set[str] = set()
+    dependency_graph: dict[str, tuple[str, ...]] = {}
     if not isinstance(binding.mode, str) or binding.mode not in _SKILL_BINDING_MODES:
         issues.error(
             "CAPABILITY_PACK_SKILL_POLICY_INVALID",
@@ -759,6 +488,7 @@ def _validate_skills(manifest: CapabilityPackManifest, issues: _IssueCollector) 
             )
         if isinstance(skill.skill_ref, str):
             seen.add(skill.skill_ref)
+            dependency_graph.setdefault(skill.skill_ref, skill.depends_on)
         if not _valid_hash(skill.content_hash):
             issues.error(
                 "CAPABILITY_PACK_HASH_INVALID",
@@ -799,11 +529,22 @@ def _validate_skills(manifest: CapabilityPackManifest, issues: _IssueCollector) 
             "dynamic selection requires an explicit selection policy",
         )
     anti_drift = binding.anti_drift
-    if anti_drift.get("unbound_skill_forbidden") is not True:
+    for field in (
+        "duplicate_skill_refs_forbidden",
+        "unbound_skill_forbidden",
+        "dynamic_selection_requires_policy",
+    ):
+        if anti_drift.get(field) is not True:
+            issues.error(
+                "CAPABILITY_PACK_SKILL_POLICY_INVALID",
+                f"$.skill_binding.anti_drift.{field}",
+                f"{field} must be true",
+            )
+    if _has_cycle(dependency_graph):
         issues.error(
-            "CAPABILITY_PACK_SKILL_POLICY_INVALID",
-            "$.skill_binding.anti_drift.unbound_skill_forbidden",
-            "unbound runtime skill invocation must be forbidden",
+            "CAPABILITY_PACK_SKILL_DEPENDENCY_CYCLE",
+            "$.skill_binding.skills",
+            "skill dependency graph contains a cycle",
         )
 
 
@@ -845,6 +586,12 @@ def _validate_workflow(
             issues.error("CAPABILITY_PACK_PROTOCOL_INVALID", f"$.workflow_template.{field}", f"{field} must be a non-empty string")
     if not isinstance(workflow.workflow_version, str) or not _SEMVER.fullmatch(workflow.workflow_version):
         issues.error("CAPABILITY_PACK_PROTOCOL_INVALID", "$.workflow_template.workflow_version", "workflow_version must be SemVer MAJOR.MINOR.PATCH")
+    if workflow.execution_mode != "SAGA":
+        issues.error(
+            "CAPABILITY_PACK_WORKFLOW_BINDING_INVALID",
+            "$.workflow_template.execution_mode",
+            "production_workflow requires SAGA execution_mode in P0",
+        )
     if not workflow.nodes:
         issues.error("CAPABILITY_PACK_PROTOCOL_INVALID", "$.workflow_template.nodes", "workflow requires at least one node")
     node_ids = [node.node_id for node in workflow.nodes]
@@ -873,7 +620,7 @@ def _validate_workflow(
         if isinstance(node.node_id, str):
             seen.add(node.node_id)
             graph.setdefault(node.node_id, node.depends_on)
-        _resolve_capability(
+        capability = _resolve_capability(
             node.capability_id,
             path=f"{path}.capability_id",
             code="CAPABILITY_PACK_CAPABILITY_UNKNOWN",
@@ -881,6 +628,24 @@ def _validate_workflow(
             resolved=resolved,
             issues=issues,
         )
+        if (
+            capability is not None
+            and node.timeout_policy_ref != capability.timeout_policy_ref
+        ):
+            issues.error(
+                "CAPABILITY_PACK_WORKFLOW_BINDING_INVALID",
+                f"{path}.timeout_policy_ref",
+                "timeout policy differs from the governed Capability Definition",
+            )
+        dependencies = tuple(
+            value for value in node.depends_on if isinstance(value, str)
+        )
+        if len(dependencies) != len(set(dependencies)):
+            issues.error(
+                "CAPABILITY_PACK_WORKFLOW_DEPENDENCY_UNKNOWN",
+                f"{path}.depends_on",
+                "workflow dependencies must be unique",
+            )
         for dependency in node.depends_on:
             if isinstance(dependency, str) and dependency not in known:
                 issues.error(
@@ -904,7 +669,23 @@ def _validate_workflow(
                 path,
                 "workflow nodes require operation and handler bindings",
             )
-        _validate_known_workflow_binding(node, path, issues)
+        _validate_operation_binding(manifest.identity.pack_id, node, path, issues)
+        if node.approval.get("required") is True and not _non_empty(
+            node.approval.get("policy_ref")
+        ):
+            issues.error(
+                "CAPABILITY_PACK_WORKFLOW_BINDING_INVALID",
+                f"{path}.approval.policy_ref",
+                "required approval requires policy_ref",
+            )
+        if node.compensation.get("supported") is True and not _non_empty(
+            node.compensation.get("policy_ref")
+        ):
+            issues.error(
+                "CAPABILITY_PACK_WORKFLOW_BINDING_INVALID",
+                f"{path}.compensation.policy_ref",
+                "supported compensation requires policy_ref",
+            )
     if _has_cycle(graph):
         issues.error(
             "CAPABILITY_PACK_WORKFLOW_CYCLE",
@@ -918,11 +699,40 @@ def _validate_workflow(
                 f"$.workflow_template.completion.required_terminal_nodes[{index}]",
                 f"unknown completion terminal node: {terminal}",
             )
+        elif isinstance(terminal, str) and any(
+            terminal in dependencies for dependencies in graph.values()
+        ):
+            issues.error(
+                "CAPABILITY_PACK_WORKFLOW_TERMINAL_UNKNOWN",
+                f"$.workflow_template.completion.required_terminal_nodes[{index}]",
+                f"declared completion node is not terminal: {terminal}",
+            )
     if not workflow.completion.required_terminal_nodes:
         issues.error(
             "CAPABILITY_PACK_WORKFLOW_TERMINAL_UNKNOWN",
             "$.workflow_template.completion.required_terminal_nodes",
             "at least one completion terminal node is required",
+        )
+    produced_assets = {
+        asset_type
+        for node in workflow.nodes
+        for asset_type in node.output_asset_types
+        if isinstance(asset_type, str)
+    }
+    missing_outputs = sorted(
+        {
+            value
+            for value in workflow.completion.required_output_asset_types
+            if isinstance(value, str)
+        }
+        - produced_assets
+    )
+    if missing_outputs:
+        issues.error(
+            "CAPABILITY_PACK_WORKFLOW_BINDING_INVALID",
+            "$.workflow_template.completion.required_output_asset_types",
+            "completion requires outputs not produced by the workflow: "
+            + ", ".join(missing_outputs),
         )
 
 
@@ -951,10 +761,31 @@ def _has_cycle(graph: Mapping[str, tuple[str, ...]]) -> bool:
     return visited != len(graph)
 
 
-def _validate_known_workflow_binding(
-    node: Any, path: str, issues: _IssueCollector
+def _validate_operation_binding(
+    pack_id: Any,
+    node: Any,
+    path: str,
+    issues: _IssueCollector,
 ) -> None:
-    binding = _WORKFLOW_BINDINGS.get(node.operation_definition_ref)
+    if isinstance(node.operation_definition_ref, str):
+        operation_name, separator, version = node.operation_definition_ref.rpartition("@")
+        if (
+            separator != "@"
+            or operation_name != node.operation_name
+            or _SEMVER.fullmatch(version) is None
+        ):
+            issues.error(
+                "CAPABILITY_PACK_WORKFLOW_BINDING_INVALID",
+                f"{path}.operation_definition_ref",
+                "operation definition ref must bind operation_name to a SemVer version",
+            )
+    if pack_id != _CHAPTER_GENERATION_PACK_ID:
+        return
+    binding = (
+        _WORKFLOW_BINDINGS.get(node.operation_definition_ref)
+        if isinstance(node.operation_definition_ref, str)
+        else None
+    )
     if binding is None:
         issues.error(
             "CAPABILITY_PACK_WORKFLOW_BINDING_UNKNOWN",
@@ -998,6 +829,19 @@ def _validate_context(
         )
     allowed = {value for value in context.allowed_asset_types if isinstance(value, str)}
     forbidden = {value for value in context.forbidden_asset_types if isinstance(value, str)}
+    for field, values in (
+        ("allowed_asset_types", context.allowed_asset_types),
+        ("forbidden_asset_types", context.forbidden_asset_types),
+        ("required_version_refs", context.required_version_refs),
+        ("priority", context.priority),
+    ):
+        strings = tuple(value for value in values if isinstance(value, str))
+        if len(strings) != len(set(strings)):
+            issues.error(
+                "CAPABILITY_PACK_CONTEXT_POLICY_INVALID",
+                f"$.context_sources.{field}",
+                f"{field} entries must be unique",
+            )
     overlap = sorted(allowed & forbidden)
     if overlap:
         issues.error(
@@ -1011,6 +855,30 @@ def _validate_context(
             "$.context_sources.freshness.reject_cross_project",
             "cross-project context must be rejected",
         )
+    latest_refs = sorted(
+        value
+        for value in context.required_version_refs
+        if isinstance(value, str)
+        and re.search(r"(?:^|[:/@._-])latest$", value, re.IGNORECASE)
+    )
+    if latest_refs:
+        issues.error(
+            "CAPABILITY_PACK_CONTEXT_POLICY_INVALID",
+            "$.context_sources.required_version_refs",
+            "required version refs cannot use latest aliases: "
+            + ", ".join(latest_refs),
+    )
+    for field, value in context.longform_bindings.items():
+        if not isinstance(value, str) or value not in {
+            "required",
+            "optional",
+            "forbidden",
+        }:
+            issues.error(
+                "CAPABILITY_PACK_CONTEXT_POLICY_INVALID",
+                f"$.context_sources.longform_bindings.{field}",
+                "longform binding must be required, optional, or forbidden",
+            )
     if policy_class.production and context.source_isolation == "RAW_ALLOWED_WITH_APPROVAL":
         issues.error(
             "CAPABILITY_PACK_RAW_SOURCE_PRODUCTION_FORBIDDEN",
@@ -1034,21 +902,58 @@ def _validate_tools(
     issues: _IssueCollector,
 ) -> None:
     permissions = manifest.tool_permissions
+    if not isinstance(permissions.policy_id, str) or not permissions.policy_id.strip():
+        issues.error(
+            "CAPABILITY_PACK_TOOL_POLICY_INVALID",
+            "$.tool_permissions.policy_id",
+            "tool policy_id must be a non-empty string",
+        )
     if permissions.default != "DENY":
         issues.error(
             "CAPABILITY_PACK_TOOL_DEFAULT_ALLOW_FORBIDDEN",
             "$.tool_permissions.default",
             "tool policy default must be DENY",
         )
+    workflow_nodes = {
+        node.node_id
+        for node in manifest.workflow_template.nodes
+        if isinstance(node.node_id, str)
+    }
+    seen_tools: set[str] = set()
     for index, tool in enumerate(permissions.tools):
         path = f"$.tool_permissions.tools[{index}]"
         for field, value in (("tool_ref", tool.tool_ref), ("budget_policy_ref", tool.budget_policy_ref)):
             if not isinstance(value, str) or not value.strip():
                 issues.error("CAPABILITY_PACK_TOOL_POLICY_INVALID", f"{path}.{field}", f"{field} must be a non-empty string")
+        if isinstance(tool.tool_ref, str):
+            if tool.tool_ref in seen_tools:
+                issues.error(
+                    "CAPABILITY_PACK_TOOL_DUPLICATE",
+                    f"{path}.tool_ref",
+                    f"duplicate tool_ref: {tool.tool_ref}",
+                )
+            seen_tools.add(tool.tool_ref)
         if not isinstance(tool.permission, str) or tool.permission not in _TOOL_PERMISSIONS:
             issues.error("CAPABILITY_PACK_TOOL_POLICY_INVALID", f"{path}.permission", "tool permission is not supported")
         if not tool.allowed_operations:
             issues.error("CAPABILITY_PACK_TOOL_POLICY_INVALID", f"{path}.allowed_operations", "tool requires at least one allowed operation")
+        operation_names = tuple(
+            value for value in tool.allowed_operations if isinstance(value, str)
+        )
+        if len(operation_names) != len(set(operation_names)):
+            issues.error(
+                "CAPABILITY_PACK_TOOL_POLICY_INVALID",
+                f"{path}.allowed_operations",
+                "allowed operations must be unique",
+            )
+        unknown_operations = sorted(set(operation_names) - workflow_nodes)
+        if unknown_operations:
+            issues.error(
+                "CAPABILITY_PACK_TOOL_POLICY_INVALID",
+                f"{path}.allowed_operations",
+                "tool references unknown workflow nodes: "
+                + ", ".join(unknown_operations),
+            )
         if not isinstance(tool.approval_required, bool):
             issues.error("CAPABILITY_PACK_TOOL_POLICY_INVALID", f"{path}.approval_required", "approval_required must be boolean")
         if not isinstance(tool.audit_required, bool):
@@ -1096,6 +1001,68 @@ def _validate_tools(
                     f"$.tool_permissions.files.allowed_roots[{index}]",
                     "production file roots must be absolute",
                 )
+    database_allowed = {
+        value
+        for value in _json_items(permissions.database.get("allowed_tables"))
+        if isinstance(value, str)
+    }
+    database_forbidden = {
+        value
+        for value in _json_items(permissions.database.get("forbidden_tables"))
+        if isinstance(value, str)
+    }
+    table_overlap = sorted(database_allowed & database_forbidden)
+    if table_overlap:
+        issues.error(
+            "CAPABILITY_PACK_TOOL_POLICY_INVALID",
+            "$.tool_permissions.database",
+            "database tables cannot be both allowed and forbidden: "
+            + ", ".join(table_overlap),
+        )
+    if (
+        "model.provider.invoke" in seen_tools
+        and permissions.external_models.get("allowed") is not True
+    ):
+        issues.error(
+            "CAPABILITY_PACK_TOOL_POLICY_INVALID",
+            "$.tool_permissions.external_models.allowed",
+            "model provider tool requires external model permission",
+        )
+    if permissions.external_models.get("allowed") is True and not _non_empty(
+        permissions.external_models.get("route_policy_ref")
+    ):
+        issues.error(
+            "CAPABILITY_PACK_TOOL_POLICY_INVALID",
+            "$.tool_permissions.external_models.route_policy_ref",
+            "external model permission requires route_policy_ref",
+        )
+    if permissions.retrieval.get("allowed") is True and not _non_empty(
+        permissions.retrieval.get("source_policy_ref")
+    ):
+        issues.error(
+            "CAPABILITY_PACK_TOOL_POLICY_INVALID",
+            "$.tool_permissions.retrieval.source_policy_ref",
+            "retrieval permission requires source_policy_ref",
+        )
+    if (
+        seen_tools & _EXTERNAL_EFFECT_TOOL_REFS
+        and manifest.runtime_contract.execution.get("external_effects_allowed")
+        is not True
+    ):
+        issues.error(
+            "CAPABILITY_PACK_TOOL_POLICY_INVALID",
+            "$.runtime_contract.execution.external_effects_allowed",
+            "declared external-effect tools require runtime permission",
+        )
+    if roots and not (
+        permissions.files.get("read_allowed") is True
+        or permissions.files.get("write_allowed") is True
+    ):
+        issues.error(
+            "CAPABILITY_PACK_TOOL_POLICY_INVALID",
+            "$.tool_permissions.files.allowed_roots",
+            "file roots require read or write permission",
+        )
 
 
 def _validate_assets(
@@ -1103,6 +1070,24 @@ def _validate_assets(
     policy_class: _PackPolicyClass,
     issues: _IssueCollector,
 ) -> None:
+    seen_rules: set[str] = set()
+    for index, rule in enumerate(manifest.assets.rules):
+        rule_ref = rule.get("rule_ref")
+        path = f"$.assets.rules[{index}]"
+        if not _non_empty(rule_ref):
+            issues.error(
+                "CAPABILITY_PACK_ASSET_POLICY_INVALID",
+                f"{path}.rule_ref",
+                "rule_ref must be a non-empty string",
+            )
+        elif rule_ref in seen_rules:
+            issues.error(
+                "CAPABILITY_PACK_ASSET_POLICY_INVALID",
+                f"{path}.rule_ref",
+                f"duplicate rule_ref: {rule_ref}",
+            )
+        else:
+            seen_rules.add(rule_ref)
     if not policy_class.generation:
         return
     source = manifest.assets.source_policy
@@ -1130,21 +1115,106 @@ def _validate_evaluation(
         issues.error("CAPABILITY_PACK_EVALUATION_INVALID", "$.evaluation.evaluation_id", "evaluation_id must be a non-empty string")
     if not manifest.evaluation.required_gates:
         issues.error("CAPABILITY_PACK_EVALUATION_INVALID", "$.evaluation.required_gates", "at least one evaluation gate is required")
+    seen_gates: set[str] = set()
     for index, gate in enumerate(manifest.evaluation.required_gates):
         path = f"$.evaluation.required_gates[{index}]"
         if not isinstance(gate.gate_id, str) or not gate.gate_id.strip():
             issues.error("CAPABILITY_PACK_EVALUATION_INVALID", f"{path}.gate_id", "gate_id must be a non-empty string")
+        elif gate.gate_id in seen_gates:
+            issues.error(
+                "CAPABILITY_PACK_EVALUATION_INVALID",
+                f"{path}.gate_id",
+                f"duplicate gate_id: {gate.gate_id}",
+            )
+        else:
+            seen_gates.add(gate.gate_id)
         if not isinstance(gate.blocking, bool):
             issues.error("CAPABILITY_PACK_EVALUATION_INVALID", f"{path}.blocking", "blocking must be boolean")
         if not gate.required_evidence:
             issues.error("CAPABILITY_PACK_EVALUATION_INVALID", f"{path}.required_evidence", "evaluation gate requires evidence")
-        _resolve_capability(
+        judge = _resolve_capability(
             gate.judge_capability_id,
             path=f"$.evaluation.required_gates[{index}].judge_capability_id",
             code="CAPABILITY_PACK_EVALUATION_CAPABILITY_UNKNOWN",
             registry=registry,
             resolved=resolved,
             issues=issues,
+        )
+        if judge is not None and not judge.capability_id.value.endswith(".judge"):
+            issues.error(
+                "CAPABILITY_PACK_EVALUATION_CAPABILITY_UNKNOWN",
+                f"{path}.judge_capability_id",
+                "evaluation gate capability is registered but is not a Judge capability",
+            )
+    seen_metrics: set[str] = set()
+    for index, metric in enumerate(manifest.evaluation.metrics):
+        metric_id = metric.get("metric_id")
+        path = f"$.evaluation.metrics[{index}].metric_id"
+        if not isinstance(metric_id, str) or not metric_id.strip():
+            issues.error(
+                "CAPABILITY_PACK_EVALUATION_INVALID",
+                path,
+                "metric_id must be a non-empty string",
+            )
+        elif metric_id in seen_metrics:
+            issues.error(
+                "CAPABILITY_PACK_EVALUATION_INVALID",
+                path,
+                f"duplicate metric_id: {metric_id}",
+            )
+        else:
+            seen_metrics.add(metric_id)
+    failure_sets = {
+        field: {
+            value
+            for value in _json_items(
+                manifest.evaluation.failure_policy.get(field)
+            )
+            if isinstance(value, str)
+        }
+        for field in (
+            "acceptable_failures",
+            "retryable_failures",
+            "terminal_failures",
+        )
+    }
+    overlap = sorted(
+        (failure_sets["acceptable_failures"] & failure_sets["retryable_failures"])
+        | (failure_sets["acceptable_failures"] & failure_sets["terminal_failures"])
+        | (failure_sets["retryable_failures"] & failure_sets["terminal_failures"])
+    )
+    if overlap:
+        issues.error(
+            "CAPABILITY_PACK_EVALUATION_INVALID",
+            "$.evaluation.failure_policy",
+            "failure classes must be disjoint: " + ", ".join(overlap),
+        )
+
+
+def _validate_capability_declarations(
+    manifest: CapabilityPackManifest, issues: _IssueCollector
+) -> None:
+    declared = {
+        value
+        for value in manifest.compatibility.required_capabilities
+        if isinstance(value, str)
+    }
+    referenced: dict[str, list[str]] = {}
+    for index, node in enumerate(manifest.workflow_template.nodes):
+        if isinstance(node.capability_id, str):
+            referenced.setdefault(node.capability_id, []).append(
+                f"$.workflow_template.nodes[{index}].capability_id"
+            )
+    for index, gate in enumerate(manifest.evaluation.required_gates):
+        if isinstance(gate.judge_capability_id, str):
+            referenced.setdefault(gate.judge_capability_id, []).append(
+                f"$.evaluation.required_gates[{index}].judge_capability_id"
+            )
+    for capability_id in sorted(set(referenced) - declared):
+        issues.error(
+            "CAPABILITY_PACK_CAPABILITY_DECLARATION_MISSING",
+            referenced[capability_id][0],
+            f"referenced capability is absent from compatibility.required_capabilities: {capability_id}",
         )
 
 
@@ -1189,6 +1259,77 @@ def _validate_governance_and_audit(
         )
     if not isinstance(manifest.governance.approval_policy_ref, str) or not manifest.governance.approval_policy_ref.strip():
         issues.error("CAPABILITY_PACK_GOVERNANCE_INVALID", "$.governance.approval_policy_ref", "approval_policy_ref must be a non-empty string")
+    governance = manifest.governance
+    canary_percent = governance.rollout.get("canary_percent")
+    if (
+        not isinstance(canary_percent, int)
+        or isinstance(canary_percent, bool)
+        or not 0 <= canary_percent <= 100
+    ):
+        issues.error(
+            "CAPABILITY_PACK_GOVERNANCE_INVALID",
+            "$.governance.rollout.canary_percent",
+            "canary_percent must be an integer from 0 through 100",
+        )
+    rollout_mode = governance.rollout.get("mode")
+    if not isinstance(rollout_mode, str) or rollout_mode not in {
+        "OFF",
+        "CANARY",
+        "FULL",
+    }:
+        issues.error(
+            "CAPABILITY_PACK_GOVERNANCE_INVALID",
+            "$.governance.rollout.mode",
+            "rollout mode must be OFF, CANARY, or FULL",
+        )
+    if rollout_mode == "OFF" and canary_percent != 0:
+        issues.error(
+            "CAPABILITY_PACK_GOVERNANCE_INVALID",
+            "$.governance.rollout",
+            "OFF rollout requires canary_percent=0",
+        )
+    if rollout_mode == "CANARY" and (
+        not isinstance(canary_percent, int)
+        or isinstance(canary_percent, bool)
+        or not 1 <= canary_percent <= 99
+    ):
+        issues.error(
+            "CAPABILITY_PACK_GOVERNANCE_INVALID",
+            "$.governance.rollout",
+            "CANARY rollout requires canary_percent from 1 through 99",
+        )
+    if governance.versioning.get("migration_required") is True and not _non_empty(
+        governance.versioning.get("migration_policy_ref")
+    ):
+        issues.error(
+            "CAPABILITY_PACK_GOVERNANCE_INVALID",
+            "$.governance.versioning.migration_policy_ref",
+            "migration_required requires migration_policy_ref",
+        )
+    if governance.rollback.get("allowed") is True and not _non_empty(
+        governance.rollback.get("policy_ref")
+    ):
+        issues.error(
+            "CAPABILITY_PACK_GOVERNANCE_INVALID",
+            "$.governance.rollback.policy_ref",
+            "allowed rollback requires policy_ref",
+        )
+    if governance.cost_tracking.get("required") is True and not _non_empty(
+        governance.cost_tracking.get("budget_policy_ref")
+    ):
+        issues.error(
+            "CAPABILITY_PACK_GOVERNANCE_INVALID",
+            "$.governance.cost_tracking.budget_policy_ref",
+            "required cost tracking requires budget_policy_ref",
+        )
+    if governance.quality_tracking.get("required") is True and not _json_items(
+        governance.quality_tracking.get("report_refs")
+    ):
+        issues.error(
+            "CAPABILITY_PACK_GOVERNANCE_INVALID",
+            "$.governance.quality_tracking.report_refs",
+            "required quality tracking requires report refs",
+        )
     audit = manifest.audit
     if not isinstance(audit.audit_level, str) or not audit.audit_level.strip():
         issues.error("CAPABILITY_PACK_AUDIT_INVALID", "$.audit.audit_level", "audit_level must be a non-empty string")
@@ -1208,6 +1349,23 @@ def _validate_governance_and_audit(
                 f"$.audit.{field}",
                 "audit recording flag must be boolean",
             )
+        elif (
+            manifest.identity.capability_type == "production_workflow"
+            and value is not True
+        ):
+            issues.error(
+                "CAPABILITY_PACK_AUDIT_INVALID",
+                f"$.audit.{field}",
+                "production_workflow requires complete audit evidence",
+            )
+
+
+def _non_empty(value: Any) -> bool:
+    return isinstance(value, str) and bool(value.strip())
+
+
+def _json_items(value: Any) -> tuple[Any, ...]:
+    return tuple(value) if isinstance(value, (list, tuple)) else ()
 
 
 def _validate_stable_identity_inputs(
@@ -1273,13 +1431,26 @@ def _validate_extensions(value: Any, issues: _IssueCollector) -> None:
                 "extension namespace must contain an object",
             )
             continue
-        overridden = sorted(set(extension) & set(_TOP_LEVEL_FIELDS))
+        overridden = sorted(_find_core_overrides(extension))
         if overridden:
             issues.error(
                 "CAPABILITY_PACK_EXTENSION_INVALID",
                 f"$.ext.{namespace}",
-                "extension cannot override core fields: " + ", ".join(overridden),
+                "extension cannot shadow core fields: " + ", ".join(overridden),
             )
+
+
+def _find_core_overrides(value: Any) -> set[str]:
+    found: set[str] = set()
+    if isinstance(value, Mapping):
+        for key, item in value.items():
+            if key in _TOP_LEVEL_FIELDS:
+                found.add(key)
+            found.update(_find_core_overrides(item))
+    elif isinstance(value, list):
+        for item in value:
+            found.update(_find_core_overrides(item))
+    return found
 
 
 __all__ = ["validate_capability_pack"]
