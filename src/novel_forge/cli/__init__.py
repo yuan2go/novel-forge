@@ -17,16 +17,30 @@ def main(argv: list[str] | None = None) -> int:
         if settings.environment == "production":
             print("error: production CLI forbids the Legacy command surface", file=sys.stderr)
             return 1
+        print(
+            json.dumps(
+                {
+                    "event": "legacy_usage",
+                    "classification": "COMPATIBILITY_ADAPTER",
+                    "entrypoint": "novel-forge legacy",
+                    "environment": settings.environment,
+                    "silent_fallback": False,
+                },
+                ensure_ascii=False,
+                sort_keys=True,
+            ),
+            file=sys.stderr,
+        )
         from novel_forge.cli.legacy import main as legacy_main
 
         return legacy_main((argv or sys.argv[1:])[1:])
     if settings.storage_authority != "postgresql":
-        if settings.environment == "production":
-            print("error: production CLI requires PostgreSQL authority", file=sys.stderr)
-            return 1
-        from novel_forge.cli.legacy import main as legacy_main
-
-        return legacy_main(argv)
+        print(
+            "error: Authority CLI requires PostgreSQL; use the explicit "
+            "'legacy' command only in a development environment",
+            file=sys.stderr,
+        )
+        return 1
     return _authority_main(argv, settings)
 
 

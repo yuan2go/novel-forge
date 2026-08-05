@@ -81,6 +81,11 @@ class TrustedPrincipalResolver:
                     "chapter.authority.execute",
                     "chapter.authority.query",
                     "chapter.authority.cancel",
+                    "agent.authority.admin",
+                    "agent.authority.execute",
+                    "agent.authority.query",
+                    "agent.authority.cancel",
+                    "agent.authority.recover",
                     "content.authority.execute",
                     "content.authority.query",
                     "content.authority.cancel",
@@ -122,6 +127,9 @@ class TrustedPrincipalResolver:
             permissions=frozenset(
                 {
                     "chapter.authority.execute",
+                    "agent.authority.execute",
+                    "agent.authority.query",
+                    "agent.authority.recover",
                     "book.authority.execute",
                     "project.authority.execute",
                     "book_design.authority.execute",

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Any
 
@@ -150,7 +150,9 @@ class QualityCalibrationReport:
     calibration_status: QualityCalibrationStatus
     production_verified: bool = False
     real_provider_proven: bool = False
+    fixture_protocol_only: bool = False
     contract_version: str = "quality-calibration-report-v1"
+    extended_metrics: dict[str, Any] = field(default_factory=dict)
 
 
 def evaluate_calibration_run(
@@ -271,7 +273,162 @@ def evaluate_calibration_run(
         failed_policy_rules=tuple(failures),
         policy_version=policy.policy_version,
         calibration_status=status,
+        fixture_protocol_only=bool(samples) and all(
+            sample.project_scope.strip().lower() == "fixture"
+            for sample in samples
+        ),
+        extended_metrics=quality_calibration_metrics(samples, decisions),
     )
+
+
+def quality_calibration_metrics(
+    samples: tuple[QualityGoldenSample, ...],
+    decisions: tuple[QualityProviderDecision, ...],
+) -> dict[str, Any]:
+    """Compute calibration diagnostics without upgrading qualification status."""
+
+    by_sample = {item.sample_id: item for item in decisions}
+    matched = [
+        (sample, by_sample[sample.sample_id])
+        for sample in samples
+        if sample.sample_id in by_sample
+    ]
+    labels = sorted(
+        {sample.expected_status for sample, _ in matched}
+        | {decision.status for _, decision in matched}
+    )
+    label_index = {label: index for index, label in enumerate(labels)}
+    weighted_kappa = _weighted_kappa(
+        [label_index[sample.expected_status] for sample, _ in matched],
+        [label_index[decision.status] for _, decision in matched],
+        len(labels),
+    )
+    scored = [
+        (
+            (sample.expected_score_range[0] + sample.expected_score_range[1]) / 2,
+            float(decision.score),
+        )
+        for sample, decision in matched
+        if decision.score is not None
+    ]
+    correctness = [
+        (decision.confidence, int(decision.status == sample.expected_status))
+        for sample, decision in matched
+    ]
+    false_positive = sum(
+        sample.expected_status == "PASSED" and decision.status != "PASSED"
+        for sample, decision in matched
+    )
+    false_negative = sum(
+        sample.expected_status != "PASSED" and decision.status == "PASSED"
+        for sample, decision in matched
+    )
+    segments: dict[str, dict[str, int | float]] = {}
+    for sample, decision in matched:
+        segment = segments.setdefault(
+            sample.project_scope, {"count": 0, "matched": 0, "accuracy": 0.0}
+        )
+        segment["count"] = int(segment["count"]) + 1
+        segment["matched"] = int(segment["matched"]) + int(
+            sample.expected_status == decision.status
+        )
+    for segment in segments.values():
+        segment["accuracy"] = int(segment["matched"]) / int(segment["count"])
+    return {
+        "weighted_kappa": weighted_kappa,
+        "rank_correlation": _spearman(scored),
+        "calibration_error": _expected_calibration_error(correctness),
+        "false_positive_count": false_positive,
+        "false_negative_count": false_negative,
+        "segment_breakdown": segments,
+        "position_bias": {"status": "NOT_MEASURED", "value": None},
+        "judge_disagreement": {"status": "NOT_MEASURED", "value": None},
+        "ood_rate": {"status": "NOT_MEASURED", "value": None},
+        "harmless_mutation_stability": {
+            "status": "NOT_MEASURED",
+            "value": None,
+        },
+    }
+
+
+def _weighted_kappa(
+    expected: list[int], predicted: list[int], label_count: int
+) -> float | None:
+    count = len(expected)
+    if not count or label_count <= 1:
+        return None
+    scale = float((label_count - 1) ** 2)
+    observed = sum((left - right) ** 2 / scale for left, right in zip(expected, predicted)) / count
+    expected_counts = [expected.count(index) / count for index in range(label_count)]
+    predicted_counts = [predicted.count(index) / count for index in range(label_count)]
+    random_disagreement = sum(
+        expected_counts[left]
+        * predicted_counts[right]
+        * ((left - right) ** 2 / scale)
+        for left in range(label_count)
+        for right in range(label_count)
+    )
+    if random_disagreement == 0:
+        return 1.0 if observed == 0 else 0.0
+    return 1.0 - observed / random_disagreement
+
+
+def _spearman(pairs: list[tuple[float, float]]) -> float | None:
+    if len(pairs) < 2:
+        return None
+    left = _ranks([item[0] for item in pairs])
+    right = _ranks([item[1] for item in pairs])
+    left_mean = sum(left) / len(left)
+    right_mean = sum(right) / len(right)
+    numerator = sum(
+        (a - left_mean) * (b - right_mean) for a, b in zip(left, right)
+    )
+    left_scale = sum((item - left_mean) ** 2 for item in left) ** 0.5
+    right_scale = sum((item - right_mean) ** 2 for item in right) ** 0.5
+    return (
+        numerator / (left_scale * right_scale)
+        if left_scale and right_scale
+        else None
+    )
+
+
+def _ranks(values: list[float]) -> list[float]:
+    ranks = [0.0] * len(values)
+    ordered = sorted(range(len(values)), key=values.__getitem__)
+    cursor = 0
+    while cursor < len(ordered):
+        end = cursor + 1
+        while end < len(ordered) and values[ordered[end]] == values[ordered[cursor]]:
+            end += 1
+        rank = (cursor + 1 + end) / 2
+        for index in ordered[cursor:end]:
+            ranks[index] = rank
+        cursor = end
+    return ranks
+
+
+def _expected_calibration_error(
+    observations: list[tuple[float, int]], bins: int = 10
+) -> float | None:
+    if not observations:
+        return None
+    total = len(observations)
+    error = 0.0
+    for index in range(bins):
+        lower = index / bins
+        upper = (index + 1) / bins
+        bucket = [
+            item
+            for item in observations
+            if lower <= item[0] <= upper
+            and (index == bins - 1 or item[0] < upper)
+        ]
+        if not bucket:
+            continue
+        confidence = sum(item[0] for item in bucket) / len(bucket)
+        accuracy = sum(item[1] for item in bucket) / len(bucket)
+        error += len(bucket) / total * abs(confidence - accuracy)
+    return error
 
 
 def promote_calibration_profile(
@@ -281,6 +438,11 @@ def promote_calibration_profile(
         raise KernelError("QUALITY_CALIBRATION_PROFILE_INELIGIBLE", "stale or revoked profile cannot be promoted")
     if report.calibration_status is not QualityCalibrationStatus.CALIBRATION_CANDIDATE:
         raise KernelError("QUALITY_CALIBRATION_POLICY_FAILED", "only a passing calibration candidate can be promoted")
+    if report.fixture_protocol_only:
+        raise KernelError(
+            "QUALITY_FIXTURE_PROMOTION_FORBIDDEN",
+            "Fixture Golden Set evidence cannot activate a calibrated Judge profile",
+        )
     if report.dimension != profile.dimension or report.dataset_version != profile.dataset_version:
         raise KernelError("QUALITY_CALIBRATION_PROFILE_CONFLICT", "report does not target the profile")
     return QualityCalibrationProfile(
@@ -296,6 +458,6 @@ __all__ = [
     name for name in globals()
     if name.startswith("Quality") or name in {
         "DEFAULT_CALIBRATION_POLICY", "evaluate_calibration_run",
-        "promote_calibration_profile",
+        "promote_calibration_profile", "quality_calibration_metrics",
     }
 ]

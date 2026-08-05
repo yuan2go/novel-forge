@@ -2,6 +2,60 @@
   "schema_version": "architecture-manifest.v1",
   "entries": [
     {
+      "name": "agent.candidate.execute",
+      "source": "src/novel_forge/api/routers/agent_runtime.py",
+      "application_source": "src/novel_forge/modules/agent_runtime/application.py",
+      "classification": "durable_job",
+      "dispatch": "worker_claim",
+      "api_call": "application.admit_run",
+      "definition_factory": "novel_forge.modules.agent_runtime.definitions:agent_runtime_operation_definitions"
+    },
+    {
+      "name": "agent.definition.register",
+      "source": "src/novel_forge/api/routers/agent_runtime.py",
+      "application_source": "src/novel_forge/modules/agent_runtime/application.py",
+      "classification": "transaction_command",
+      "dispatch": "inline_atomic",
+      "api_call": "application.execute_admin",
+      "definition_factory": "novel_forge.modules.agent_runtime.definitions:agent_runtime_operation_definitions"
+    },
+    {
+      "name": "agent.definition.activate",
+      "source": "src/novel_forge/api/routers/agent_runtime.py",
+      "application_source": "src/novel_forge/modules/agent_runtime/application.py",
+      "classification": "transaction_command",
+      "dispatch": "inline_atomic",
+      "api_call": "application.execute_admin",
+      "definition_factory": "novel_forge.modules.agent_runtime.definitions:agent_runtime_operation_definitions"
+    },
+    {
+      "name": "agent.definition.disable",
+      "source": "src/novel_forge/api/routers/agent_runtime.py",
+      "application_source": "src/novel_forge/modules/agent_runtime/application.py",
+      "classification": "transaction_command",
+      "dispatch": "inline_atomic",
+      "api_call": "application.execute_admin",
+      "definition_factory": "novel_forge.modules.agent_runtime.definitions:agent_runtime_operation_definitions"
+    },
+    {
+      "name": "agent.chapter_binding.register",
+      "source": "src/novel_forge/api/routers/agent_runtime.py",
+      "application_source": "src/novel_forge/modules/agent_runtime/application.py",
+      "classification": "transaction_command",
+      "dispatch": "inline_atomic",
+      "api_call": "application.execute_admin",
+      "definition_factory": "novel_forge.modules.agent_runtime.definitions:agent_runtime_operation_definitions"
+    },
+    {
+      "name": "agent.chapter_binding.activate",
+      "source": "src/novel_forge/api/routers/agent_runtime.py",
+      "application_source": "src/novel_forge/modules/agent_runtime/application.py",
+      "classification": "transaction_command",
+      "dispatch": "inline_atomic",
+      "api_call": "application.execute_admin",
+      "definition_factory": "novel_forge.modules.agent_runtime.definitions:agent_runtime_operation_definitions"
+    },
+    {
       "name": "project_lifecycle.create",
       "source": "src/novel_forge/api/routers/authority_projects.py",
       "application_source": "src/novel_forge/modules/project_authority/application.py",

@@ -258,6 +258,7 @@ class WorkflowNode:
     handler_key: Any
     stage: Any
     capability_id: Any
+    agent_definition_ref: Any
     input_asset_types: tuple[str, ...]
     output_asset_types: tuple[str, ...]
     depends_on: tuple[str, ...]
@@ -276,6 +277,7 @@ class WorkflowNode:
             payload.get("handler_key"),
             payload.get("stage"),
             payload.get("capability_id"),
+            payload.get("agent_definition_ref"),
             _strings(payload.get("input_asset_types")),
             _strings(payload.get("output_asset_types")),
             _strings(payload.get("depends_on")),

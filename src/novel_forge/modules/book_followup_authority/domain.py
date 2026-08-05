@@ -8,6 +8,11 @@ from __future__ import annotations
 from enum import Enum
 from typing import Any, Mapping, Sequence
 
+from novel_forge.modules.reader_calibration.domain import (
+    ReaderJudgeQualificationStatus,
+    evaluate_reader_outcome_consumption,
+)
+
 
 class ReaderOutcomeGate(str, Enum):
     PASS = "PASS"
@@ -185,13 +190,35 @@ def build_longform_recap_outputs(
     deviations: list[dict[str, Any]] = []
 
     reader = _mapping(observations.get("reader_state"))
+    reader_qualification = _mapping(observations.get("reader_qualification"))
+    reader_consumption = evaluate_reader_outcome_consumption(
+        qualification_status=ReaderJudgeQualificationStatus(
+            str(reader_qualification.get("qualification_status") or "SHADOW")
+        ),
+        sample_size=int(reader_qualification.get("sample_size") or 0),
+        confidence=float(reader_qualification.get("confidence") or 0),
+        recent_reports=list(reader_qualification.get("recent_reports") or []),
+        current_chapter=end,
+        last_adjustment_chapter=(
+            int(reader_qualification["last_adjustment_chapter"])
+            if reader_qualification.get("last_adjustment_chapter") is not None
+            else None
+        ),
+        disagreement=bool(reader_qualification.get("disagreement", True)),
+        position_bias=bool(reader_qualification.get("position_bias", True)),
+        ood=bool(reader_qualification.get("ood", True)),
+        drift_detected=bool(reader_qualification.get("drift_detected", False)),
+    )
     quality = _mapping(observations.get("quality_trend"))
     canon = _mapping(observations.get("canon"))
     rewards = _mapping(observations.get("reward_ledger"))
     promises = _mapping(observations.get("promise_ledger"))
     _add_if(deviations, bool(canon.get("conflicts")), "CANON_CONFLICT", "BLOCKING", canon)
-    _add_if(deviations, float(reader.get("confusion") or 0) >= 0.65, "READER_CONFUSION_RISE", "MAJOR", reader)
-    _add_if(deviations, float(reader.get("repetition_fatigue") or 0) >= 0.65, "REPETITION_FATIGUE", "MAJOR", reader)
+    reader_allowed = bool(
+        reader_consumption["future_production_influence_allowed"]
+    )
+    _add_if(deviations, reader_allowed and float(reader.get("confusion") or 0) >= 0.65, "READER_CONFUSION_RISE", "MAJOR", reader)
+    _add_if(deviations, reader_allowed and float(reader.get("repetition_fatigue") or 0) >= 0.65, "REPETITION_FATIGUE", "MAJOR", reader)
     _add_if(deviations, str(quality.get("direction") or "").upper() == "DECLINING", "QUALITY_TREND_DECLINE", "MAJOR", quality)
     _add_if(deviations, int(rewards.get("overdue") or 0) > 0, "REWARD_CADENCE_FAILURE", "MAJOR", rewards)
     _add_if(deviations, int(promises.get("overdue") or 0) > 0, "PROMISE_DEBT", "MAJOR", promises)
@@ -222,6 +249,7 @@ def build_longform_recap_outputs(
         "observation_snapshot": dict(observations),
         "deviation_count": len(deviations),
         "plan_mutation_allowed": False,
+        "reader_outcome_consumption": reader_consumption,
     }
     deviation_report = {
         "contract_version": "longform-deviation-report-v1",
@@ -232,6 +260,7 @@ def build_longform_recap_outputs(
         "contract_version": "plan-adjustment-proposal-v1",
         "decision_status": "AUTHORITY_PENDING",
         "mutates_plan": False,
+        "reader_outcome_consumption": reader_consumption,
         "proposed_actions": [
             {
                 "deviation_type": item["type"],

@@ -30,6 +30,88 @@ class JudgeMode(StrEnum):
     BOUNDED_PRODUCTION = "BOUNDED_PRODUCTION"
 
 
+class ReaderJudgeQualificationStatus(StrEnum):
+    UNQUALIFIED = "UNQUALIFIED"
+    SHADOW = "SHADOW"
+    CALIBRATION_PENDING = "CALIBRATION_PENDING"
+    CALIBRATED = "CALIBRATED"
+    QUALIFIED = "QUALIFIED"
+    DRIFTED = "DRIFTED"
+    SUSPENDED = "SUSPENDED"
+    RETIRED = "RETIRED"
+
+
+_QUALIFICATION_TRANSITIONS = {
+    ReaderJudgeQualificationStatus.UNQUALIFIED: {
+        ReaderJudgeQualificationStatus.SHADOW,
+        ReaderJudgeQualificationStatus.RETIRED,
+    },
+    ReaderJudgeQualificationStatus.SHADOW: {
+        ReaderJudgeQualificationStatus.CALIBRATION_PENDING,
+        ReaderJudgeQualificationStatus.SUSPENDED,
+        ReaderJudgeQualificationStatus.RETIRED,
+    },
+    ReaderJudgeQualificationStatus.CALIBRATION_PENDING: {
+        ReaderJudgeQualificationStatus.CALIBRATED,
+        ReaderJudgeQualificationStatus.SHADOW,
+        ReaderJudgeQualificationStatus.SUSPENDED,
+    },
+    ReaderJudgeQualificationStatus.CALIBRATED: {
+        ReaderJudgeQualificationStatus.QUALIFIED,
+        ReaderJudgeQualificationStatus.DRIFTED,
+        ReaderJudgeQualificationStatus.SUSPENDED,
+    },
+    ReaderJudgeQualificationStatus.QUALIFIED: {
+        ReaderJudgeQualificationStatus.DRIFTED,
+        ReaderJudgeQualificationStatus.SUSPENDED,
+        ReaderJudgeQualificationStatus.RETIRED,
+    },
+    ReaderJudgeQualificationStatus.DRIFTED: {
+        ReaderJudgeQualificationStatus.SHADOW,
+        ReaderJudgeQualificationStatus.CALIBRATION_PENDING,
+        ReaderJudgeQualificationStatus.SUSPENDED,
+        ReaderJudgeQualificationStatus.RETIRED,
+    },
+    ReaderJudgeQualificationStatus.SUSPENDED: {
+        ReaderJudgeQualificationStatus.SHADOW,
+        ReaderJudgeQualificationStatus.RETIRED,
+    },
+    ReaderJudgeQualificationStatus.RETIRED: set(),
+}
+
+
+@dataclass(frozen=True, slots=True)
+class ReaderOutcomeDecisionPolicy:
+    policy_version: str
+    minimum_sample_size: int
+    minimum_confidence: float
+    minimum_consecutive_chapters: int
+    cooldown_chapters: int
+    maximum_adjustment_chapters: int
+    human_approval_required: bool = True
+
+    def __post_init__(self) -> None:
+        if (
+            not self.policy_version
+            or self.minimum_sample_size <= 0
+            or self.minimum_consecutive_chapters <= 0
+            or self.cooldown_chapters < 0
+            or self.maximum_adjustment_chapters <= 0
+            or not 0 <= self.minimum_confidence <= 1
+        ):
+            raise ValueError("Reader Outcome decision policy is invalid")
+
+
+DEFAULT_READER_OUTCOME_DECISION_POLICY = ReaderOutcomeDecisionPolicy(
+    policy_version="reader-outcome-decision-policy-v1",
+    minimum_sample_size=100,
+    minimum_confidence=0.8,
+    minimum_consecutive_chapters=3,
+    cooldown_chapters=3,
+    maximum_adjustment_chapters=3,
+)
+
+
 @dataclass(frozen=True, slots=True)
 class CalibrationScope:
     platform: str
@@ -262,6 +344,98 @@ def reader_decision_policy(
     }
 
 
+def transition_reader_judge_qualification(
+    current: ReaderJudgeQualificationStatus,
+    target: ReaderJudgeQualificationStatus,
+    *,
+    evidence_level: str,
+    sample_size: int,
+    minimum_sample_size: int,
+    drift_detected: bool,
+) -> ReaderJudgeQualificationStatus:
+    current = ReaderJudgeQualificationStatus(current)
+    target = ReaderJudgeQualificationStatus(target)
+    if target not in _QUALIFICATION_TRANSITIONS[current]:
+        raise KernelError(
+            "READER_JUDGE_QUALIFICATION_TRANSITION_INVALID",
+            f"Reader Judge cannot transition from {current.value} to {target.value}",
+        )
+    if target is ReaderJudgeQualificationStatus.QUALIFIED and (
+        evidence_level != "BEHAVIOR_CALIBRATED"
+        or sample_size < minimum_sample_size
+        or drift_detected
+    ):
+        raise KernelError(
+            "READER_JUDGE_QUALIFICATION_EVIDENCE_INSUFFICIENT",
+            "QUALIFIED Reader Judge requires enough behavior evidence and no drift",
+        )
+    if evidence_level == "FIXTURE" and target in {
+        ReaderJudgeQualificationStatus.CALIBRATED,
+        ReaderJudgeQualificationStatus.QUALIFIED,
+    }:
+        raise KernelError(
+            "READER_JUDGE_FIXTURE_QUALIFICATION_FORBIDDEN",
+            "Fixture evidence cannot qualify a Reader Judge",
+        )
+    return target
+
+
+def evaluate_reader_outcome_consumption(
+    *,
+    qualification_status: ReaderJudgeQualificationStatus,
+    sample_size: int,
+    confidence: float,
+    recent_reports: list[dict[str, Any]],
+    current_chapter: int,
+    last_adjustment_chapter: int | None,
+    disagreement: bool,
+    position_bias: bool,
+    ood: bool,
+    drift_detected: bool,
+    policy: ReaderOutcomeDecisionPolicy = DEFAULT_READER_OUTCOME_DECISION_POLICY,
+) -> dict[str, Any]:
+    status = ReaderJudgeQualificationStatus(qualification_status)
+    reasons: list[str] = []
+    if status is not ReaderJudgeQualificationStatus.QUALIFIED:
+        reasons.append("JUDGE_NOT_QUALIFIED")
+    if sample_size < policy.minimum_sample_size:
+        reasons.append("MINIMUM_SAMPLE_NOT_MET")
+    if confidence < policy.minimum_confidence:
+        reasons.append("CONFIDENCE_BELOW_POLICY")
+    if disagreement:
+        reasons.append("JUDGE_DISAGREEMENT")
+    if position_bias:
+        reasons.append("POSITION_BIAS")
+    if ood:
+        reasons.append("OOD")
+    if drift_detected or status is ReaderJudgeQualificationStatus.DRIFTED:
+        reasons.append("DRIFT")
+    if current_chapter <= 0:
+        raise ValueError("Reader Outcome consumption requires a positive chapter")
+    if (
+        last_adjustment_chapter is not None
+        and current_chapter - last_adjustment_chapter < policy.cooldown_chapters
+    ):
+        reasons.append("COOLDOWN_ACTIVE")
+    usable_reports = recent_reports[-policy.minimum_consecutive_chapters :]
+    if len(usable_reports) < policy.minimum_consecutive_chapters:
+        reasons.append("TREND_WINDOW_INSUFFICIENT")
+    elif not all(bool(item.get("declining")) for item in usable_reports):
+        reasons.append("NO_CONSECUTIVE_DECLINE")
+    allowed = not reasons
+    return {
+        "contract_version": "reader-outcome-consumption-decision-v1",
+        "policy_version": policy.policy_version,
+        "decision": "PLAN_ADJUSTMENT_CANDIDATE" if allowed else "SHADOW_ONLY",
+        "future_production_influence_allowed": allowed,
+        "direct_plan_activation_allowed": False,
+        "direct_body_mutation_allowed": False,
+        "human_approval_required": policy.human_approval_required,
+        "maximum_adjustment_chapters": policy.maximum_adjustment_chapters,
+        "reasons": reasons,
+    }
+
+
 def _scope_matches(
     requested: CalibrationScope, candidate: CalibrationScope
 ) -> bool:
@@ -285,6 +459,9 @@ __all__ = [
     "CalibrationScope",
     "CalibrationStatus",
     "JudgeMode",
+    "ReaderJudgeQualificationStatus",
+    "ReaderOutcomeDecisionPolicy",
+    "DEFAULT_READER_OUTCOME_DECISION_POLICY",
     "PreferenceChoice",
     "blind_pair_order",
     "calibrated_probability",
@@ -293,6 +470,8 @@ __all__ = [
     "mode_after_drift",
     "preference_bias_report",
     "reader_decision_policy",
+    "evaluate_reader_outcome_consumption",
     "require_exposure_denominator",
     "resolve_calibration_profile",
+    "transition_reader_judge_qualification",
 ]

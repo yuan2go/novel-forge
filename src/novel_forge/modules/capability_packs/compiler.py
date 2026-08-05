@@ -50,6 +50,7 @@ class CompiledWorkflowNode:
     handler_contract_version: str
     capability_id: str
     capability_contract_hash: str
+    agent_definition_ref: str
     depends_on: tuple[str, ...]
     authoritative_retry_policy_json: str
     authoritative_timeout_policy_json: str
@@ -68,6 +69,7 @@ class CompiledWorkflowNode:
             "handler_contract_version": self.handler_contract_version,
             "capability_id": self.capability_id,
             "capability_contract_hash": self.capability_contract_hash,
+            "agent_definition_ref": self.agent_definition_ref,
             "depends_on": list(self.depends_on),
             "authoritative_retry_policy": json.loads(self.authoritative_retry_policy_json),
             "authoritative_timeout_policy": json.loads(self.authoritative_timeout_policy_json),
@@ -288,6 +290,7 @@ class CapabilityPackCompiler:
                     handler_contract_version=operation.handler_contract_version,
                     capability_id=str(node.capability_id),
                     capability_contract_hash="sha256:" + capability.contract_hash,
+                    agent_definition_ref=str(node.agent_definition_ref or ""),
                     depends_on=tuple(sorted(str(item) for item in node.depends_on)),
                     authoritative_retry_policy_json=operation.retry_policy_json,
                     authoritative_timeout_policy_json=operation.timeout_policy_json,

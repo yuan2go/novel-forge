@@ -18,6 +18,8 @@ from novel_forge.api.authority_dependencies import (
     build_book_authority_application,
     build_book_design_authority_application,
     build_book_design_authority_query,
+    build_agent_runtime_authority_application,
+    build_agent_runtime_query,
 )
 from novel_forge.infrastructure.settings import IndustrialSettings
 from novel_forge.modules.chapter_authority.application import ChapterAuthorityApplication
@@ -28,6 +30,11 @@ from novel_forge.modules.book_design_authority import (
     BookDesignAuthorityApplication,
     BookDesignAuthorityQuery,
 )
+from novel_forge.modules.agent_runtime.application import (
+    AgentRuntimeAuthorityApplication,
+)
+from novel_forge.modules.agent_runtime.definitions import AGENT_RUNTIME_OPERATIONS
+from novel_forge.modules.agent_runtime.queries import AgentRuntimeQuery
 from novel_forge.modules.project_authority import (
     ProjectAuthorityApplication,
     ProjectAuthorityQuery,
@@ -54,6 +61,7 @@ from novel_forge.storage.migrations import get_migration_status
 
 
 REQUIRED_RUNTIME_GROUPS = (
+    "agent",
     "chapter",
     "content",
     "source",
@@ -112,6 +120,8 @@ class AuthorityApiServices:
     mkaos_authority_query: MkaosAuthorityQuery
     book_design_authority_application: BookDesignAuthorityApplication
     book_design_authority_query: BookDesignAuthorityQuery
+    agent_runtime_authority_application: AgentRuntimeAuthorityApplication
+    agent_runtime_query: AgentRuntimeQuery
 
 
 @dataclass(frozen=True, slots=True)
@@ -186,6 +196,10 @@ def create_authority_app(settings: IndustrialSettings):
         mkaos_authority_query=MkaosAuthorityQuery(settings.database_url),
         book_design_authority_application=build_book_design_authority_application(settings),
         book_design_authority_query=build_book_design_authority_query(settings),
+        agent_runtime_authority_application=(
+            build_agent_runtime_authority_application(settings)
+        ),
+        agent_runtime_query=build_agent_runtime_query(settings),
     )
     app = FastAPI(
         title="Novel Forge PostgreSQL Authority API",
@@ -226,6 +240,9 @@ def create_authority_app(settings: IndustrialSettings):
     )
     from novel_forge.api.routers.book_design_authority import (
         create_router as create_book_design_router,
+    )
+    from novel_forge.api.routers.agent_runtime import (
+        create_router as create_agent_runtime_router,
     )
 
     app.include_router(
@@ -275,6 +292,15 @@ def create_authority_app(settings: IndustrialSettings):
     )
     app.include_router(
         create_book_design_router(
+            ProductRouterContext(
+                app_settings=settings,
+                models=product_model_map(),
+                services=services,
+            )
+        )
+    )
+    app.include_router(
+        create_agent_runtime_router(
             ProductRouterContext(
                 app_settings=settings,
                 models=product_model_map(),
@@ -390,6 +416,7 @@ def create_authority_app(settings: IndustrialSettings):
             "content_definition_count": len(
                 services.content_authority_application.registry.definition_names
             ),
+            "agent_runtime_definition_count": len(AGENT_RUNTIME_OPERATIONS),
         }
         ready = bool(
             migration.get("ok")

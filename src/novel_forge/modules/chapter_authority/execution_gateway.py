@@ -250,6 +250,7 @@ class PostgresChapterExecutionContractBinder:
         input_ref = f"production_execution/inputs/{token}"
         prompt_ref = f"production_execution/prompt_bundles/{token}"
         skill_ref = f"production_execution/skill_bundles/{token}"
+        tool_ref = f"production_execution/tool_permissions/{token}"
         context_policy_ref = (
             "context-policy:"
             + definition.capability_id.value.replace(".", "-")
@@ -329,7 +330,7 @@ class PostgresChapterExecutionContractBinder:
             capability=definition.capability_id.value,
             skill_refs=(route.skill_version,),
             skill_content_hashes=(route.skill_content_hash,),
-            tool_policy_ref=f"tools:chapter:{stage}:v1",
+            tool_policy_ref=tool_ref,
             created_by_operation_id=operation_id,
         )
         prompt_bundle = PromptBundle(
@@ -478,6 +479,28 @@ class PostgresChapterExecutionContractBinder:
             logical_ref=commit_policy.policy_id,
             asset_type="execution_commit_policy",
             contract=commit_policy.to_dict(),
+            trace_id=str(request_payload.get("trace_id") or ""),
+            correlation_id=str(request_payload.get("correlation_id") or ""),
+        )
+        self._ensure_contract(
+            operation_id=operation_id,
+            project_id=project_id,
+            logical_ref=tool_ref,
+            asset_type="tool_permission_snapshot",
+            contract={
+                "tool_policy_id": tool_ref,
+                "tool_policy_version": "v1",
+                "allowed_tools": [],
+                "direct_http": "FORBIDDEN",
+                "direct_file": "FORBIDDEN",
+                "direct_command": "FORBIDDEN",
+                "direct_database": "FORBIDDEN",
+                "direct_mcp": "FORBIDDEN",
+                "gateway_required": True,
+                "operation_id": operation_id,
+                "attempt_id": attempt_id,
+                "fencing_token": fencing_token,
+            },
             trace_id=str(request_payload.get("trace_id") or ""),
             correlation_id=str(request_payload.get("correlation_id") or ""),
         )
@@ -640,7 +663,7 @@ class PostgresChapterExecutionContractBinder:
                     SELECT reservation_id
                     FROM authority_budget_reservation
                     WHERE external_effect_id = %s AND project_id = %s
-                      AND status IN ('RESERVED', 'HELD_UNKNOWN')
+                      AND status IN ('RESERVED', 'HELD_UNKNOWN', 'SETTLED')
                     ORDER BY created_at DESC LIMIT 1
                     """,
                     [external_effect_id, project_id],

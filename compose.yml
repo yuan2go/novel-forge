@@ -197,6 +197,26 @@ services:
       novel-forge.concurrency: "1"
       novel-forge.database-max-connections: "4"
 
+  agent-authority-worker:
+    <<: *python-service
+    command: ["python", "-m", "novel_forge.workers.agent_authority"]
+    environment:
+      <<: *authority-environment
+      NOVEL_FORGE_SERVICE_NAME: agent-authority-worker
+      NOVEL_FORGE_DATABASE_ROLE: agent
+      NOVEL_FORGE_AUTHORITY_WORKER_ID: agent-authority-worker-1
+    depends_on: *worker-dependencies
+    healthcheck:
+      test: ["CMD", "python", "-m", "novel_forge.workers.healthcheck", "--worker-kind", "agent", "--worker-id", "agent-authority-worker-1"]
+      interval: 5s
+      timeout: 4s
+      retries: 30
+    labels:
+      novel-forge.runtime-group: agent-execution-effect-dispatch
+      novel-forge.operation-definitions: agent.*
+      novel-forge.concurrency: "1"
+      novel-forge.database-max-connections: "4"
+
   content-authority-worker:
     <<: *python-service
     command: ["python", "-m", "novel_forge.workers.content_authority"]

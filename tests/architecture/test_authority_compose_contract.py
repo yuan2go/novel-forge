@@ -26,6 +26,7 @@ class AuthorityComposeContractTests(unittest.TestCase):
             "source-authority-worker",
             "mkaos-authority-worker",
             "book-authority-worker",
+            "agent-authority-worker",
             "outbox-worker",
             "maintenance-worker",
         }
@@ -82,7 +83,7 @@ class AuthorityComposeContractTests(unittest.TestCase):
             postgres_max_connections=100,
         )
         self.assertTrue(result["within_budget"])
-        self.assertEqual(result["application_max_connections"], 29)
+        self.assertEqual(result["application_max_connections"], 33)
         self.assertEqual(result["application_capacity"], 83)
 
 

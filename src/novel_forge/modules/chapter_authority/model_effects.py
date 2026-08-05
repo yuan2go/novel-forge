@@ -148,6 +148,28 @@ class ChapterModelPort(Protocol):
     ) -> ModelProviderResult: ...
 
 
+class ChapterAgentBindingRecorder(Protocol):
+    def freeze(
+        self,
+        request: ChapterHandlerRequest,
+        *,
+        stage: str,
+        execution_binding: Any,
+    ) -> Any: ...
+
+    def accept_candidate(
+        self,
+        frozen_work_order: Any,
+        *,
+        result: ModelProviderResult,
+        execution_binding: Any,
+    ) -> None: ...
+
+    def record_compatibility_usage(
+        self, request: ChapterHandlerRequest, *, stage: str
+    ) -> None: ...
+
+
 @dataclass(frozen=True, slots=True)
 class ChapterModelRoute:
     adapter: LegacyChapterModelAdapter
@@ -484,6 +506,8 @@ class ExternalEffectChapterModelPort:
         lease_seconds: int = 60,
         max_cost_per_call: str = "0",
         budget_caps: dict[str, str] | None = None,
+        agent_binding_recorder: ChapterAgentBindingRecorder | None = None,
+        agent_binding_required: bool = False,
     ) -> None:
         if not database_url or not worker_id or lease_seconds <= 0:
             raise ValueError("model effect database, worker, and lease are required")
@@ -498,6 +522,10 @@ class ExternalEffectChapterModelPort:
             raise ValueError("model max cost per call must be a non-negative decimal") from exc
         self.max_cost_per_call = max_cost_per_call
         self.budget_caps = dict(budget_caps or {})
+        self.agent_binding_recorder = agent_binding_recorder
+        self.agent_binding_required = agent_binding_required
+        if agent_binding_required and agent_binding_recorder is None:
+            raise ValueError("production Chapter model execution requires Agent Binding")
         self.query = AuthorityAssetQuery(database_url)
         self.writer = AuthorityAssetWriter(database_url)
 
@@ -521,11 +549,6 @@ class ExternalEffectChapterModelPort:
             if isinstance(request.command.get("payload"), dict)
             else request.command
         )
-        existing = self._existing_result(request.project_id, logical_ref)
-        if existing is not None:
-            self._ensure_cost_evidence(request, stage, existing)
-            return existing
-
         context = EffectCommandContext(
             operation_id=request.operation_id,
             project_id=request.project_id,
@@ -533,6 +556,52 @@ class ExternalEffectChapterModelPort:
             trace_id=request.trace_id,
             correlation_id=request.correlation_id,
         )
+        effect_request_payload = {
+            "stage": stage,
+            "input": payload,
+            "trace_id": request.trace_id,
+            "correlation_id": request.correlation_id,
+            "workspace_id": request.workspace_id,
+            "_production_execution": {
+                "operation_id": request.operation_id,
+                "attempt_id": request.attempt_id,
+                "fencing_token": request.fencing_token,
+                "project_id": request.project_id,
+                "workspace_id": request.workspace_id,
+                "worker_id": request.worker_id,
+                "chapter": int(
+                    business_payload.get("chapter_number")
+                    or business_payload.get("chapter")
+                    or 0
+                ),
+                "book_id": str(
+                    business_payload.get("book_id")
+                    or f"book:{request.project_id}"
+                ),
+                "route_provider": str(
+                    getattr(
+                        self.adapter,
+                        "provider_id_for_stage",
+                        lambda _stage: self.adapter.provider,
+                    )(stage)
+                ),
+                "input_artifacts": [
+                    {
+                        "artifact_ref": f"asset-version:{item.asset_version_id}",
+                        "asset_version_id": item.asset_version_id,
+                        "artifact_type": item.asset_type,
+                        "content_hash": item.content_hash,
+                        "schema_version": str(
+                            item.content.get("schema_version")
+                            or item.content.get("contract_version")
+                            or f"{item.asset_type}.v1"
+                        ),
+                        "source_eligibility": "PRODUCTION_ELIGIBLE",
+                    }
+                    for item in request.inputs
+                ],
+            },
+        }
         effect = plan_external_effect(
             self.database_url,
             context,
@@ -540,52 +609,7 @@ class ExternalEffectChapterModelPort:
             provider=self.adapter.provider,
             capability=f"model.{stage}",
             stable_idempotency_key=f"{request.operation_id}:{stage}:v1",
-            request_payload={
-                "stage": stage,
-                "input": payload,
-                "trace_id": request.trace_id,
-                "correlation_id": request.correlation_id,
-                "workspace_id": request.workspace_id,
-                "_production_execution": {
-                    "operation_id": request.operation_id,
-                    "attempt_id": request.attempt_id,
-                    "fencing_token": request.fencing_token,
-                    "project_id": request.project_id,
-                    "workspace_id": request.workspace_id,
-                    "worker_id": request.worker_id,
-                    "chapter": int(
-                        business_payload.get("chapter_number")
-                        or business_payload.get("chapter")
-                        or 0
-                    ),
-                    "book_id": str(
-                        business_payload.get("book_id")
-                        or f"book:{request.project_id}"
-                    ),
-                    "route_provider": str(
-                        getattr(
-                            self.adapter,
-                            "provider_id_for_stage",
-                            lambda _stage: self.adapter.provider,
-                        )(stage)
-                    ),
-                    "input_artifacts": [
-                        {
-                            "artifact_ref": f"asset-version:{item.asset_version_id}",
-                            "asset_version_id": item.asset_version_id,
-                            "artifact_type": item.asset_type,
-                            "content_hash": item.content_hash,
-                            "schema_version": str(
-                                item.content.get("schema_version")
-                                or item.content.get("contract_version")
-                                or f"{item.asset_type}.v1"
-                            ),
-                            "source_eligibility": "PRODUCTION_ELIGIBLE",
-                        }
-                        for item in request.inputs
-                    ],
-                },
-            },
+            request_payload=effect_request_payload,
             max_attempts=2,
             reversible=False,
             completion_policy="synchronous_final",
@@ -604,13 +628,6 @@ class ExternalEffectChapterModelPort:
                 else dict(self.adapter.capability_profile)
             ),
         )
-        completed = self._completed_effect_result(
-            str(effect["external_effect_id"]), request.project_id
-        )
-        if completed is not None:
-            self._record_model_call(request, stage, completed, logical_ref)
-            self._ensure_cost_evidence(request, stage, completed)
-            return completed
         reservation = reserve_provider_budget(
             self.database_url,
             BudgetReservationRequest(
@@ -633,6 +650,52 @@ class ExternalEffectChapterModelPort:
                 caps=self.budget_caps,
             ),
         )
+        execution_binding = None
+        frozen_work_order = None
+        binder = getattr(self.adapter, "binder", None)
+        if self.agent_binding_recorder is not None:
+            if binder is None:
+                raise KernelError(
+                    "CHAPTER_AGENT_BINDING_PEP_REQUIRED",
+                    "Chapter Agent Binding requires the PEP contract binder",
+                )
+            execution_binding = binder.bind(
+                stable_idempotency_key=f"{request.operation_id}:{stage}:v1",
+                capability=f"model.{stage}",
+                request_payload={
+                    **effect_request_payload,
+                    "external_effect_id": str(effect["external_effect_id"]),
+                },
+                external_effect_id=str(effect["external_effect_id"]),
+            )
+            frozen_work_order = self.agent_binding_recorder.freeze(
+                request,
+                stage=stage,
+                execution_binding=execution_binding,
+            )
+        elif self.agent_binding_required:
+            raise KernelError(
+                "CHAPTER_AGENT_BINDING_REQUIRED",
+                "production Chapter model node has no Agent Binding recorder",
+            )
+        else:
+            # Explicit development compatibility path; never a silent fallback.
+            recorder = self.agent_binding_recorder
+            if recorder is not None:
+                recorder.record_compatibility_usage(request, stage=stage)
+        completed = self._completed_effect_result(
+            str(effect["external_effect_id"]), request.project_id
+        )
+        if completed is not None:
+            self._record_model_call(request, stage, completed, logical_ref)
+            self._ensure_cost_evidence(request, stage, completed)
+            if frozen_work_order is not None and execution_binding is not None:
+                self.agent_binding_recorder.accept_candidate(
+                    frozen_work_order,
+                    result=completed,
+                    execution_binding=execution_binding,
+                )
+            return completed
         try:
             dispatched = dispatch_external_effect(
                 self.database_url,
@@ -672,7 +735,27 @@ class ExternalEffectChapterModelPort:
         )
         self._record_model_call(request, stage, result, logical_ref)
         self._ensure_cost_evidence(request, stage, result)
+        if frozen_work_order is not None and execution_binding is not None:
+            self.agent_binding_recorder.accept_candidate(
+                frozen_work_order,
+                result=result,
+                execution_binding=execution_binding,
+            )
         return result
+
+    def record_result_evidence(
+        self,
+        request: ChapterHandlerRequest,
+        *,
+        stage: str,
+        result: ModelProviderResult,
+    ) -> None:
+        """Persist model/cost evidence for an already-dispatched governed effect."""
+
+        self._record_model_call(
+            request, stage, result, _model_log_ref(request.operation_id, stage)
+        )
+        self._ensure_cost_evidence(request, stage, result)
 
     def _completed_effect_result(
         self, external_effect_id: str, project_id: str
@@ -705,21 +788,6 @@ class ExternalEffectChapterModelPort:
             raise KernelError(
                 "MODEL_EFFECT_EVIDENCE_INVALID",
                 "successful model ExternalEffect has no durable result evidence",
-            )
-        return ModelProviderResult.from_evidence(dict(evidence))
-
-    def _existing_result(self, project_id: str, logical_ref: str) -> ModelProviderResult | None:
-        try:
-            document = self.query.require(project_id=project_id, logical_ref=logical_ref)
-        except KernelError as exc:
-            if exc.code == "AUTHORITY_ASSET_NOT_FOUND":
-                return None
-            raise
-        evidence = document.content.get("provider_evidence")
-        if not isinstance(evidence, dict):
-            raise KernelError(
-                "MODEL_EFFECT_EVIDENCE_INVALID",
-                "stored model call has no provider evidence",
             )
         return ModelProviderResult.from_evidence(dict(evidence))
 
@@ -965,6 +1033,7 @@ def _review_severity(value: str) -> str:
 
 
 __all__ = [
+    "ChapterAgentBindingRecorder",
     "ChapterModelPort",
     "ChapterModelExternalEffectAdapter",
     "ChapterModelRoute",

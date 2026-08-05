@@ -68,6 +68,7 @@ from . import (
     v20260804_0065_runtime_job_lease_identity,
     v20260804_0066_runtime_job_attempt_lease_existence,
     v20260804_0067_activated_migration_archival_binding,
+    v20260805_0068_unified_agent_runtime,
 )
 
 VERSION_MODULES = [
@@ -138,6 +139,7 @@ VERSION_MODULES = [
     v20260804_0065_runtime_job_lease_identity,
     v20260804_0066_runtime_job_attempt_lease_existence,
     v20260804_0067_activated_migration_archival_binding,
+    v20260805_0068_unified_agent_runtime,
 ]
 
 __all__ = ["VERSION_MODULES"]

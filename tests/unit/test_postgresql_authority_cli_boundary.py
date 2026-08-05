@@ -3,7 +3,7 @@ from __future__ import annotations
 import ast
 import io
 import unittest
-from contextlib import redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 from unittest.mock import patch
 
@@ -17,7 +17,23 @@ class _Query:
 
 
 class PostgreSQLAuthorityCliBoundaryTests(unittest.TestCase):
+    def test_non_postgresql_cli_never_silently_falls_back_to_legacy(self) -> None:
+        with (
+            patch(
+                "novel_forge.infrastructure.settings.IndustrialSettings.from_env",
+                return_value=IndustrialSettings(
+                    root=Path("."),
+                    environment="development",
+                    storage_authority="legacy_local",
+                ),
+            ),
+            patch("novel_forge.cli.legacy.main") as legacy,
+        ):
+            self.assertEqual(main(["projects"]), 1)
+        legacy.assert_not_called()
+
     def test_legacy_cli_is_only_reached_by_explicit_legacy_command(self) -> None:
+        stderr = io.StringIO()
         with (
             patch(
                 "novel_forge.infrastructure.settings.IndustrialSettings.from_env",
@@ -28,9 +44,12 @@ class PostgreSQLAuthorityCliBoundaryTests(unittest.TestCase):
                 ),
             ),
             patch("novel_forge.cli.legacy.main", return_value=17) as legacy,
+            redirect_stderr(stderr),
         ):
             self.assertEqual(main(["legacy", "projects"]), 17)
-        legacy.assert_called_once_with(["projects"])
+            legacy.assert_called_once_with(["projects"])
+            self.assertIn("legacy_usage", stderr.getvalue())
+            self.assertIn("COMPATIBILITY_ADAPTER", stderr.getvalue())
 
     def test_production_rejects_explicit_legacy_command(self) -> None:
         with patch(

@@ -23,6 +23,18 @@
     "tests/integration/test_authority_book_design_postgres.py",
     "tests/unit/test_d0_provider_qualification.py",
     "tests/integration/test_d0_provider_qualification_authority_postgres.py",
-    "tests/unit/test_worker_fleet_evidence.py"
+    "tests/unit/test_worker_fleet_evidence.py",
+    "tests/unit/test_agent_runtime_contracts.py",
+    "tests/unit/test_agent_runtime_definitions.py",
+    "tests/unit/test_agent_runtime_bootstrap.py",
+    "tests/unit/test_agent_authority_scheduler.py",
+    "tests/unit/test_agent_runtime_api_contract.py",
+    "tests/unit/test_unified_agent_runtime_migration.py",
+    "tests/unit/test_capability_pack_runtime_binding.py",
+    "tests/unit/test_chapter_agent_binding_boundary.py",
+    "tests/unit/test_reader_outcome_decision_policy.py",
+    "tests/unit/test_quality_calibration_foundation.py",
+    "tests/architecture/test_legacy_surface_manifest.py",
+    "tests/integration/test_unified_agent_runtime_postgres.py"
   ]
 }

@@ -2,7 +2,10 @@
 from __future__ import annotations
 
 from novel_forge.modules.chapter_authority.handlers import build_chapter_handler_registry
-from novel_forge.modules.chapter_authority.model_effects import ExternalEffectChapterModelPort
+from novel_forge.modules.chapter_authority.model_effects import (
+    ChapterAgentBindingRecorder,
+    ExternalEffectChapterModelPort,
+)
 from novel_forge.modules.chapter_authority.orchestrator import (
     ChapterSagaAdmission,
     ChapterSliceResult,
@@ -27,6 +30,8 @@ class ChapterAuthorityApplication:
         allow_synchronous_fixture: bool = True,
         max_cost_per_model_call: str = "0",
         budget_caps: dict[str, str] | None = None,
+        agent_binding_recorder: ChapterAgentBindingRecorder | None = None,
+        agent_binding_required: bool = False,
     ) -> None:
         if not database_url or not worker_id:
             raise ValueError("PostgreSQL database and worker identity are required")
@@ -37,6 +42,8 @@ class ChapterAuthorityApplication:
             worker_id=f"{worker_id}:model",
             max_cost_per_call=max_cost_per_model_call,
             budget_caps=budget_caps,
+            agent_binding_recorder=agent_binding_recorder,
+            agent_binding_required=agent_binding_required,
         )
         self.registry = build_chapter_handler_registry(self.model_port)
         self.object_store_adapter = object_store_adapter

@@ -71,6 +71,7 @@ class DatabaseReconciliationRequired(RuntimeError):
 
 DEFAULT_ROLE_BUDGETS: dict[str, tuple[int, int]] = {
     "api": (1, 8),
+    "agent": (0, 4),
     "chapter": (0, 4),
     "content": (0, 4),
     "source": (0, 3),
@@ -86,6 +87,7 @@ DEFAULT_ROLE_BUDGETS: dict[str, tuple[int, int]] = {
 
 DEFAULT_AUTHORITY_ROLE_INSTANCES: dict[str, int] = {
     "api": 1,
+    "agent": 1,
     "chapter": 1,
     "content": 1,
     "source": 1,

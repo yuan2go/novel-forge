@@ -5,6 +5,7 @@
     {"name": "novel-forge-source-authority-worker", "target": "novel_forge.workers.source_authority:cli", "owner": "source", "authority_mode": "postgresql"},
     {"name": "novel-forge-mkaos-authority-worker", "target": "novel_forge.workers.mkaos_authority:cli", "owner": "mkaos", "authority_mode": "postgresql"},
     {"name": "novel-forge-book-authority-worker", "target": "novel_forge.workers.book_authority:cli", "owner": "book-coordination", "authority_mode": "postgresql"},
+    {"name": "novel-forge-agent-authority-worker", "target": "novel_forge.workers.agent_authority:main", "owner": "agent-os", "authority_mode": "postgresql"},
     {"name": "novel-forge-outbox-worker", "target": "novel_forge.workers.outbox_authority:cli", "owner": "platform", "authority_mode": "postgresql"},
     {"name": "novel-forge-authority-worker", "target": "novel_forge.workers.runtime_groups:authority_cli", "owner": "platform", "authority_mode": "postgresql"},
     {"name": "novel-forge-execution-worker", "target": "novel_forge.workers.runtime_groups:execution_cli", "owner": "execution", "authority_mode": "postgresql"},

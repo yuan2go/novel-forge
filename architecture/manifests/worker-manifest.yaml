@@ -1,6 +1,7 @@
 {
   "schema_version": "architecture-manifest.v1",
   "workers": [
+    {"name": "agent-authority", "path": "src/novel_forge/workers/agent_authority.py", "entrypoint": "novel_forge.workers.agent_authority:main", "deployment_unit": "authority-worker", "execution_class": "durable_job", "queue": "authority.agent", "health": "postgres-worker-heartbeat"},
     {"name": "chapter-authority", "path": "src/novel_forge/workers/chapter_authority.py", "entrypoint": "novel_forge.workers.chapter_authority:main", "deployment_unit": "authority-worker", "execution_class": "durable_job", "queue": "authority.chapter", "health": "postgres-worker-heartbeat"},
     {"name": "content-authority", "path": "src/novel_forge/workers/content_authority.py", "entrypoint": "novel_forge.workers.content_authority:main", "deployment_unit": "authority-worker", "execution_class": "durable_job", "queue": "authority.content", "health": "postgres-worker-heartbeat"},
     {"name": "source-authority", "path": "src/novel_forge/workers/source_authority.py", "entrypoint": "novel_forge.workers.source_authority:cli", "deployment_unit": "integration-worker", "execution_class": "external_effect", "queue": "integration.source", "health": "postgres-worker-heartbeat"},

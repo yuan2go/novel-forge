@@ -29,6 +29,18 @@ from novel_forge.modules.book_design_authority import (
 from novel_forge.modules.book_followup_authority.application import (
     BookFollowupAuthorityApplication,
 )
+from novel_forge.modules.agent_runtime.application import (
+    AgentRuntimeAuthorityApplication,
+)
+from novel_forge.modules.agent_runtime.chapter_binding import (
+    AGENT_BOUND_CHAPTER_STAGES,
+    PostgresChapterAgentBindingRecorder,
+)
+from novel_forge.modules.agent_runtime.execution import (
+    ChapterGatewayAgentExecutionPreparer,
+)
+from novel_forge.modules.agent_runtime.queries import AgentRuntimeQuery
+from novel_forge.modules.agent_runtime.scheduler import AgentAuthorityScheduler
 from novel_forge.modules.authority_security import TrustedPrincipalResolver
 from novel_forge.modules.command_kernel.external_effect_adapters import (
     LocalFileObjectStoreAdapter,
@@ -496,6 +508,59 @@ def build_chapter_authority_application(
             )
             if str(values.get(value) or "").strip()
         },
+        agent_binding_recorder=PostgresChapterAgentBindingRecorder(
+            settings.database_url,
+            bound_stages=AGENT_BOUND_CHAPTER_STAGES,
+            required_stages=(
+                AGENT_BOUND_CHAPTER_STAGES if controlled else frozenset()
+            ),
+            compatibility_allowed=not controlled,
+        ),
+        agent_binding_required=controlled,
+    )
+
+
+def build_agent_runtime_authority_application(
+    settings: IndustrialSettings,
+    *,
+    env: Mapping[str, str] | None = None,
+) -> AgentRuntimeAuthorityApplication:
+    if settings.storage_authority != "postgresql" or not settings.database_url:
+        raise RuntimeError("Agent Runtime Authority requires PostgreSQL authority")
+    build_id, commit_sha = authority_release_identity(env=env)
+    return AgentRuntimeAuthorityApplication(
+        settings.database_url,
+        application_build_id=build_id,
+        commit_sha=commit_sha,
+    )
+
+
+def build_agent_runtime_query(settings: IndustrialSettings) -> AgentRuntimeQuery:
+    if settings.storage_authority != "postgresql" or not settings.database_url:
+        raise RuntimeError("Agent Runtime query requires PostgreSQL authority")
+    return AgentRuntimeQuery(settings.database_url)
+
+
+def build_agent_authority_scheduler(
+    settings: IndustrialSettings,
+    *,
+    chapter_application: ChapterAuthorityApplication,
+    worker_id: str,
+) -> AgentAuthorityScheduler:
+    adapter = chapter_application.model_port.adapter
+    if not isinstance(adapter, ProductionExecutionGatewayExternalEffectAdapter):
+        raise RuntimeError("Agent worker requires the Production Execution Gateway")
+    preparer = ChapterGatewayAgentExecutionPreparer(
+        settings.database_url,
+        adapter=adapter,
+        worker_id=worker_id,
+        max_cost_per_call=chapter_application.model_port.max_cost_per_call,
+        budget_caps=chapter_application.model_port.budget_caps,
+    )
+    return AgentAuthorityScheduler(
+        settings.database_url,
+        execution_preparer=preparer,
+        worker_id=worker_id,
     )
 
 

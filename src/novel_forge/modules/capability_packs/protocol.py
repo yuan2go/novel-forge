@@ -110,6 +110,7 @@ WORKFLOW_NODE = _object(
         "handler_key": STRING,
         "stage": STRING,
         "capability_id": STRING,
+        "agent_definition_ref": STRING,
         "input_asset_types": STRING_ARRAY,
         "output_asset_types": STRING_ARRAY,
         "depends_on": STRING_ARRAY,
@@ -117,7 +118,25 @@ WORKFLOW_NODE = _object(
         "timeout_policy_ref": STRING,
         "approval": APPROVAL,
         "compensation": COMPENSATION,
-    }
+    },
+    required=frozenset(
+        {
+            "node_id",
+            "operation_name",
+            "operation_definition_ref",
+            "operation_definition_hash",
+            "handler_key",
+            "stage",
+            "capability_id",
+            "input_asset_types",
+            "output_asset_types",
+            "depends_on",
+            "retry_policy",
+            "timeout_policy_ref",
+            "approval",
+            "compensation",
+        }
+    ),
 )
 
 TOOL = _object(

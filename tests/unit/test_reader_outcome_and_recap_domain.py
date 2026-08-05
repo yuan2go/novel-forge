@@ -88,6 +88,16 @@ class ReaderOutcomeAndRecapDomainTests(unittest.TestCase):
             checkpoint_type=LongformCheckpointType.ARC_CHECKPOINT,
             observations={
                 "reader_state": {"confusion": 0.8, "repetition_fatigue": 0.7},
+                "reader_qualification": {
+                    "qualification_status": "QUALIFIED",
+                    "sample_size": 100,
+                    "confidence": 0.9,
+                    "recent_reports": [{"declining": True}] * 3,
+                    "disagreement": False,
+                    "position_bias": False,
+                    "ood": False,
+                    "drift_detected": False,
+                },
                 "quality_trend": {"direction": "DECLINING"},
                 "canon": {"conflicts": [{"id": "canon-conflict:1"}]},
                 "reward_ledger": {"overdue": 2},

@@ -4,6 +4,7 @@ import unittest
 from dataclasses import replace
 
 from novel_forge.modules.chapter_quality_authority.calibration import (
+    DEFAULT_CALIBRATION_POLICY,
     QualityCalibrationProfile,
     QualityCalibrationPolicy,
     QualityCalibrationRun,
@@ -58,10 +59,18 @@ class QualityCalibrationFoundationTests(unittest.TestCase):
         self.assertEqual(report.status_accuracy, 1)
         self.assertEqual(report.score_in_range_rate, 1)
         self.assertEqual(report.calibration_status, QualityCalibrationStatus.CALIBRATION_CANDIDATE)
-        promoted = promote_calibration_profile(profile=self.profile, report=report)
-        self.assertEqual(promoted.status, QualityCalibrationStatus.GOLDEN_SET_CALIBRATED)
+        self.assertTrue(report.fixture_protocol_only)
+        with self.assertRaisesRegex(KernelError, "Fixture Golden Set"):
+            promote_calibration_profile(profile=self.profile, report=report)
         self.assertFalse(report.production_verified)
         self.assertFalse(report.real_provider_proven)
+        self.assertIn("weighted_kappa", report.extended_metrics)
+        self.assertIn("rank_correlation", report.extended_metrics)
+        self.assertIn("calibration_error", report.extended_metrics)
+        self.assertEqual(
+            report.extended_metrics["position_bias"]["status"],
+            "NOT_MEASURED",
+        )
 
     def test_stale_and_revoked_profiles_remain_explicit(self) -> None:
         stale = evaluate_calibration_run(
@@ -74,6 +83,21 @@ class QualityCalibrationFoundationTests(unittest.TestCase):
         )
         self.assertEqual(stale.calibration_status, QualityCalibrationStatus.CALIBRATION_STALE)
         self.assertEqual(revoked.calibration_status, QualityCalibrationStatus.CALIBRATION_REVOKED)
+
+    def test_non_fixture_candidate_can_enter_authority_promotion_flow(self) -> None:
+        policy = replace(DEFAULT_CALIBRATION_POLICY, minimum_sample_count=1)
+        report = evaluate_calibration_run(
+            run=self.run,
+            profile=self.profile,
+            samples=(replace(self.sample, project_scope="calibration-dataset"),),
+            decisions=(self.decision,),
+            policy=policy,
+        )
+        promoted = promote_calibration_profile(profile=self.profile, report=report)
+        self.assertFalse(report.fixture_protocol_only)
+        self.assertEqual(
+            promoted.status, QualityCalibrationStatus.GOLDEN_SET_CALIBRATED
+        )
 
     def test_wrong_dimension_is_rejected(self) -> None:
         with self.assertRaisesRegex(KernelError, "wrong dimension"):

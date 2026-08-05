@@ -323,6 +323,24 @@ class PostgresBookAuthorityScheduler:
                     "reader_state": dict(
                         reader["content"].get("reader_state") or {}
                     ),
+                    "reader_qualification": {
+                        "qualification_status": str(
+                            reader["content"].get("judge_qualification_status")
+                            or "SHADOW"
+                        ),
+                        "sample_size": int(
+                            reader["content"].get("sample_size") or 0
+                        ),
+                        "confidence": float(
+                            reader["content"].get("confidence") or 0
+                        ),
+                        "disagreement": True,
+                        "position_bias": True,
+                        "ood": True,
+                        "drift_detected": False,
+                        "recent_reports": [],
+                        "last_adjustment_chapter": None,
+                    },
                     "canon": {"conflicts": []},
                     "quality_trend": {"direction": "STABLE"},
                 },

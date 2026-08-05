@@ -39,7 +39,7 @@ QUALITY_GROUPS: dict[str, tuple[str, ...]] = {
 }
 QUALITY_DIMENSIONS = tuple(item for values in QUALITY_GROUPS.values() for item in values)
 QUALITY_EVIDENCE_STATUSES = frozenset({
-    "PASSED", "PASSED_WITH_WARNINGS", "FAILED", "UNCALIBRATED",
+    "PASSED", "PASSED_WITH_WARNINGS", "PASSED_WITH_UNCALIBRATED", "FAILED", "UNCALIBRATED",
     "INSUFFICIENT_EVIDENCE", "REQUIRES_PROVIDER_JUDGE", "REQUIRES_HUMAN_REVIEW",
     "WAIVED_BY_APPROVAL",
 })
@@ -73,7 +73,7 @@ def build_quality_group_evidence(
         )
         for dimension in QUALITY_GROUPS[group]
     ]
-    blocked = [item for item in reports if item["blocking"] and item["gate_status"] not in {"PASSED", "PASSED_WITH_WARNINGS", "WAIVED_BY_APPROVAL"}]
+    blocked = [item for item in reports if item["blocking"] and item["gate_status"] not in {"PASSED", "PASSED_WITH_WARNINGS", "PASSED_WITH_UNCALIBRATED", "WAIVED_BY_APPROVAL"}]
     group_status = "FAILED" if any(item["gate_status"] == "FAILED" for item in blocked) else (
         "INSUFFICIENT_EVIDENCE" if blocked else
         "PASSED_WITH_WARNINGS" if any(item["gate_status"] != "PASSED" for item in reports) else "PASSED"
@@ -181,11 +181,22 @@ def _calibrated_evidence(
             calibration = str(entry.get("calibration_status") or "").upper()
             human = entry.get("human_verified") is True
             provider = entry.get("provider_verified") is True
-            if calibration not in {"HUMAN_CALIBRATED", "GOLDEN_SET_CALIBRATED"} and not (human or provider):
+            qualified = calibration in {
+                "HUMAN_CALIBRATED",
+                "GOLDEN_SET_CALIBRATED",
+            } and not fixture_protocol
+            if not qualified and not fixture_protocol:
                 continue
+            gate_status = entry.get("gate_status")
+            if fixture_protocol and str(gate_status).upper() == "PASSED":
+                gate_status = "PASSED_WITH_UNCALIBRATED"
             return {
-                "gate_status": entry.get("gate_status"), "score": entry.get("score"),
-                "calibration_status": calibration or "PROVIDER_UNCALIBRATED",
+                "gate_status": gate_status, "score": entry.get("score"),
+                "calibration_status": (
+                    "FIXTURE_UNCALIBRATED"
+                    if fixture_protocol
+                    else calibration or "PROVIDER_UNCALIBRATED"
+                ),
                 "human_verified": human, "provider_verified": provider,
                 "evidence_source": segment.get("asset_version_id"),
                 "evidence_locations": entry.get("evidence_locations") or [],
@@ -202,7 +213,7 @@ def _report(group: str, dimension: str, project_id: str, target: str, status: st
         "threshold": 70.0 if score is not None else None, "gate_status": status,
         "blocking": dimension in BLOCKING_DIMENSIONS, "weight": 1.0 if score is not None else 0.0,
         "calibration_status": calibration, "source": source,
-        "evidence_locations": locations, "revision_strategy": [] if status in {"PASSED", "PASSED_WITH_WARNINGS"} else [f"obtain or repair {dimension} evidence"],
+        "evidence_locations": locations, "revision_strategy": [] if status in {"PASSED", "PASSED_WITH_WARNINGS", "PASSED_WITH_UNCALIBRATED"} else [f"obtain or repair {dimension} evidence"],
         "confidence": 1.0 if calibration == "DETERMINISTIC" else .5,
         **profile_ids, "fixture": fixture, "production_verified": False,
         "provider_verified": provider_verified, "human_verified": human_verified,

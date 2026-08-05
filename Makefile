@@ -6,13 +6,15 @@ DEMO_WORKSPACE ?= .local/demo-workspace
 AUTHORITY_COMPOSE ?= docker compose -f compose.yml
 LEGACY_COMPOSE ?= docker compose -f compose.legacy.yml --profile legacy
 
-.PHONY: test lint validate demo local-workspace infra-up infra-down postgres-authority-test-up postgres-authority-test-down postgres-authority-test authority-up authority-down authority-build authority-smoke authority-logs authority-test authority-postgres-test authority-compose-config-check authority-query-plan-release legacy-up legacy-down legacy-logs local-up local-down local-smoke local-logs failure-drill v1-slow-acceptance governance-dead-letter-regression runtime-growth-regression source-governance-regression api worker web-dev sync-skills sync-skills-dry-run check-skills authority-parity-check head-integrity-check architecture-manifests-check architecture-fitness-check authority-only-config-check d0-provider-probe help
+.PHONY: test lint validate demo authority-demo legacy-validate legacy-demo local-workspace infra-up infra-down postgres-authority-test-up postgres-authority-test-down postgres-authority-test authority-up authority-down authority-build authority-smoke authority-logs authority-test authority-postgres-test authority-compose-config-check authority-query-plan-release legacy-up legacy-down legacy-logs local-up local-down local-smoke local-logs failure-drill v1-slow-acceptance governance-dead-letter-regression runtime-growth-regression source-governance-regression api worker web-dev sync-skills sync-skills-dry-run check-skills authority-parity-check head-integrity-check architecture-manifests-check architecture-fitness-check authority-only-config-check d0-provider-probe help
 
 help:
 	@echo "make test      - run stdlib unittest suite"
 	@echo "make lint      - compile Python sources"
-	@echo "make validate  - validate Novel Forge workspace structure and JSON assets"
-	@echo "make demo      - run sample end-to-end pipeline"
+	@echo "make validate  - validate Authority code, manifests, fitness, and Compose configuration"
+	@echo "make demo      - run the PostgreSQL Authority fixture/recovery demo"
+	@echo "make legacy-validate - explicitly validate a Legacy development workspace"
+	@echo "make legacy-demo - explicitly run the Legacy development fixture"
 	@echo "make local-workspace - create ignored local runtime workspace"
 	@echo "make authority-up - build and start the PostgreSQL Authority backend"
 	@echo "make authority-down - stop the PostgreSQL Authority backend"
@@ -54,13 +56,20 @@ test:
 lint:
 	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m compileall -q src tests
 
-validate: local-workspace
-	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m novel_forge.cli legacy validate --root $(LOCAL_WORKSPACE)
+validate: lint architecture-manifests-check architecture-fitness-check authority-only-config-check
 
 local-workspace:
 	mkdir -p $(LOCAL_WORKSPACE)
 
-demo: local-workspace
+demo: authority-demo
+
+authority-demo:
+	PYTHONPATH=$(PYTHONPATH) $(PYTHON) scripts/verify_authority_compose.py
+
+legacy-validate: local-workspace
+	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m novel_forge.cli legacy validate --root $(LOCAL_WORKSPACE)
+
+legacy-demo: local-workspace
 	mkdir -p $(DEMO_WORKSPACE)
 	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m novel_forge.cli legacy run-pipeline --sample --root $(DEMO_WORKSPACE)
 
@@ -87,13 +96,13 @@ authority-down:
 	$(AUTHORITY_COMPOSE) down --timeout 45
 
 authority-build:
-	$(AUTHORITY_COMPOSE) build authority-migration authority-api chapter-authority-worker content-authority-worker source-authority-worker mkaos-authority-worker book-authority-worker outbox-worker maintenance-worker
+	$(AUTHORITY_COMPOSE) build authority-migration authority-api agent-authority-worker chapter-authority-worker content-authority-worker source-authority-worker mkaos-authority-worker book-authority-worker outbox-worker maintenance-worker
 
 authority-smoke:
 	PYTHONPATH=$(PYTHONPATH) $(PYTHON) scripts/verify_authority_compose.py
 
 authority-logs:
-	$(AUTHORITY_COMPOSE) logs -f authority-api chapter-authority-worker content-authority-worker source-authority-worker mkaos-authority-worker book-authority-worker outbox-worker maintenance-worker
+	$(AUTHORITY_COMPOSE) logs -f authority-api agent-authority-worker chapter-authority-worker content-authority-worker source-authority-worker mkaos-authority-worker book-authority-worker outbox-worker maintenance-worker
 
 authority-test: lint architecture-manifests-check architecture-fitness-check head-integrity-check
 	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m unittest discover -s tests/unit -p 'test_*.py'

@@ -1,0 +1,82 @@
+{
+  "schema_version": "novel-forge.legacy-surface-manifest.v1",
+  "production_policy": {
+    "silent_fallback": "FORBIDDEN",
+    "production_import": "FORBIDDEN",
+    "usage_evidence_required": true
+  },
+  "surfaces": [
+    {
+      "id": "legacy-migration-authority",
+      "paths": ["src/novel_forge/modules/legacy_migration"],
+      "classification": "MIGRATION_ONLY",
+      "allowed_environments": ["development", "test", "migration"],
+      "replacement": "PostgreSQL domain-native Authority state",
+      "removal_preconditions": ["all imported records are domain-native", "archival retention expires"]
+    },
+    {
+      "id": "legacy-cli",
+      "paths": ["src/novel_forge/cli/legacy.py"],
+      "classification": "COMPATIBILITY_ADAPTER",
+      "allowed_environments": ["development", "test"],
+      "replacement": "novel_forge.cli PostgreSQL Authority commands",
+      "removal_preconditions": ["operator workflows have Authority command parity"]
+    },
+    {
+      "id": "legacy-compose-api-worker",
+      "paths": ["compose.legacy.yml", "src/novel_forge/api/legacy_app.py", "src/novel_forge/workers/legacy_tasks.py"],
+      "classification": "DEVELOPMENT_FIXTURE",
+      "allowed_environments": ["development", "test"],
+      "replacement": "compose.yml Authority API and workers",
+      "removal_preconditions": ["Legacy snapshot import no longer needs interactive fixture services"]
+    },
+    {
+      "id": "legacy-local-storage",
+      "paths": ["src/novel_forge/storage/local.py"],
+      "classification": "DEVELOPMENT_FIXTURE",
+      "allowed_environments": ["development", "test", "migration"],
+      "replacement": "PostgreSQL Authority repositories and AssetVersion",
+      "removal_preconditions": ["all retained LocalStorage snapshots are imported or archived"]
+    },
+    {
+      "id": "static-agent-runtime-profiles",
+      "paths": ["src/novel_forge/agents/runtime.py", "src/novel_forge/modules/agent_registry"],
+      "classification": "COMPATIBILITY_ADAPTER",
+      "allowed_environments": ["development", "test", "migration"],
+      "replacement": "versioned PostgreSQL AgentDefinition Authority",
+      "removal_preconditions": ["all required Agent Definitions are registered and activated"]
+    },
+    {
+      "id": "local-agent-run-message",
+      "paths": ["src/novel_forge/agents"],
+      "classification": "REPLACE_PENDING",
+      "allowed_environments": ["development", "test", "migration"],
+      "replacement": "Agent Run projection plus Agent Collaboration Authority",
+      "removal_preconditions": ["all local Agent call sites use the Authority API"]
+    },
+    {
+      "id": "local-tool-gateway",
+      "paths": ["src/novel_forge/modules/tool_gateway"],
+      "classification": "REPLACE_PENDING",
+      "allowed_environments": ["development", "test", "migration"],
+      "replacement": "PostgreSQL ExternalEffect-backed Production Execution Tool Gateway",
+      "removal_preconditions": ["versioned ToolDefinition Authority exists", "all Agent tool calls bind Operation, Attempt and Fence"]
+    },
+    {
+      "id": "legacy-production-execution",
+      "paths": ["src/novel_forge/modules/production_execution/legacy.py"],
+      "classification": "COMPATIBILITY_ADAPTER",
+      "allowed_environments": ["development", "test"],
+      "replacement": "ProductionExecutionGateway ExternalEffect adapter",
+      "removal_preconditions": ["all fixture tests use the governed PEP boundary"]
+    },
+    {
+      "id": "old-workflow-service",
+      "paths": ["src/novel_forge/workflows"],
+      "classification": "REPLACE_PENDING",
+      "allowed_environments": ["development", "test", "migration"],
+      "replacement": "Command Kernel Saga and versioned Workflow Definition",
+      "removal_preconditions": ["call graph proves no Authority or migration consumer remains"]
+    }
+  ]
+}

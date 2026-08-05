@@ -8,6 +8,8 @@
     {"name": "authority-api", "path": "src/novel_forge/api/authority_app.py", "import_path": "novel_forge.api.authority_app", "owner": "authority-runtime", "authority_mode": "postgresql"},
     {"name": "migration-registry", "path": "src/novel_forge/storage/migrations/versions/__init__.py", "import_path": "novel_forge.storage.migrations.versions", "owner": "storage", "authority_mode": "postgresql"},
     {"name": "command-kernel", "path": "src/novel_forge/modules/command_kernel/__init__.py", "import_path": "novel_forge.modules.command_kernel", "owner": "authority-runtime", "authority_mode": "postgresql"},
+    {"name": "agent-runtime", "path": "src/novel_forge/modules/agent_runtime/__init__.py", "import_path": "novel_forge.modules.agent_runtime", "owner": "agent-os", "authority_mode": "postgresql-composed-projection"},
+    {"name": "agent-collaboration", "path": "src/novel_forge/modules/agent_collaboration/__init__.py", "import_path": "novel_forge.modules.agent_collaboration", "owner": "agent-os", "authority_mode": "postgresql-candidate-authority"},
     {"name": "project-authority", "path": "src/novel_forge/modules/project_authority/__init__.py", "import_path": "novel_forge.modules.project_authority", "owner": "project", "authority_mode": "postgresql"},
     {"name": "task-authority", "path": "src/novel_forge/modules/task_authority/__init__.py", "import_path": "novel_forge.modules.task_authority", "owner": "task", "authority_mode": "postgresql"},
     {"name": "source-authority", "path": "src/novel_forge/modules/source_authority/__init__.py", "import_path": "novel_forge.modules.source_authority", "owner": "source", "authority_mode": "postgresql"},
@@ -19,7 +21,7 @@
     {"name": "provider-qualification", "path": "src/novel_forge/modules/provider_qualification/__init__.py", "import_path": "novel_forge.modules.provider_qualification", "owner": "execution", "authority_mode": "postgresql"},
     {"name": "legacy-migration", "path": "src/novel_forge/modules/legacy_migration/__init__.py", "import_path": "novel_forge.modules.legacy_migration", "owner": "migration", "authority_mode": "import-only"},
     {"name": "runtime-job", "path": "src/novel_forge/modules/runtime_job/__init__.py", "import_path": "novel_forge.modules.runtime_job", "owner": "authority-runtime", "authority_mode": "execution-plane"},
-    {"name": "capability-packs", "path": "src/novel_forge/modules/capability_packs/__init__.py", "import_path": "novel_forge.modules.capability_packs", "owner": "agent-os", "authority_mode": "static-contract"},
+    {"name": "capability-packs", "path": "src/novel_forge/modules/capability_packs/__init__.py", "import_path": "novel_forge.modules.capability_packs", "owner": "agent-os", "authority_mode": "compiled-admission-binding"},
     {"name": "database-runtime", "path": "src/novel_forge/storage/database_runtime.py", "import_path": "novel_forge.storage.database_runtime", "owner": "storage", "authority_mode": "postgresql"}
   ]
 }

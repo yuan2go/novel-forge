@@ -19,6 +19,7 @@ from .calibration import (
     QualityHumanDecision,
     QualityProviderDecision,
     evaluate_calibration_run,
+    quality_calibration_metrics,
 )
 
 __all__ = [
@@ -28,4 +29,5 @@ __all__ = [
     "QualityCalibrationProfile", "QualityCalibrationReport", "QualityCalibrationRun",
     "QualityCalibrationStatus", "QualityGoldenSample", "QualityHumanDecision",
     "QualityProviderDecision", "evaluate_calibration_run",
+    "quality_calibration_metrics",
 ]

@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
-from decimal import Decimal
-from typing import Any, Mapping, Protocol
+from typing import Mapping, Protocol
 
 from novel_forge.modules.production_execution.domain_execution import (
     CandidateKind,
@@ -251,6 +250,16 @@ class AgentCollaborationApplication:
             work_order,
             envelope,
             execution_evidence=candidate.evidence,
+        )
+
+    @staticmethod
+    def validate_execution_evidence(
+        work_order: AgentWorkOrder, evidence: DomainExecutionEvidence
+    ) -> None:
+        """Validate a PEP result before opening the candidate-write transaction."""
+
+        AgentCollaborationApplication._validate_execution_evidence(
+            work_order, evidence
         )
 
     def accept_agent_output(
