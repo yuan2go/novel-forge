@@ -1,6 +1,6 @@
 # Autonomous Novel OS Documentation
 
-Updated: 2026-08-04
+Updated: 2026-08-05
 
 Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`
 
@@ -51,9 +51,12 @@ production_verified=false
 8. [`roadmap/current-roadmap.md`](roadmap/current-roadmap.md) — current six-track delivery order.
 9. [`architecture/module-map.md`](architecture/module-map.md) — current runtime and module boundaries.
 10. [`product/capability-map.md`](product/capability-map.md) — capability maturity map.
-11. [`quality/regression-tests.md`](quality/regression-tests.md) — required current-SHA verification matrix.
-12. Relevant active design/blueprint documents for the selected Slice.
-13. Historical reports only when researching lineage or a previous implementation pass.
+11. [`product/capability-pack-product-design.md`](product/capability-pack-product-design.md) — Capability Pack product definition, lifecycle, governance and rollout.
+12. [`architecture/capability-pack-system-design.md`](architecture/capability-pack-system-design.md) — Capability Pack protocol, runtime mapping, persistence and implementation design.
+13. [`prompts/codex-capability-pack-p0-implementation.md`](prompts/codex-capability-pack-p0-implementation.md) — bounded Codex prompt for the P0 protocol and validator slice.
+14. [`quality/regression-tests.md`](quality/regression-tests.md) — required current-SHA verification matrix.
+15. Relevant active design/blueprint documents for the selected Slice.
+16. Historical reports only when researching lineage or a previous implementation pass.
 
 ## Next Stage Epic: Six-track Architecture Closure
 
@@ -168,6 +171,9 @@ A blueprint describes the target. A report describes its original baseline. A ro
 | Track B.5 hardening | [`reports/track-b-execution-semantics-hardening.md`](reports/track-b-execution-semantics-hardening.md) | Transaction Command atomicity, recovery semantics and scope constraints |
 | D0 Authority probe | [`reports/d0-authority-provider-qualification.md`](reports/d0-authority-provider-qualification.md) | persisted harness and explicit real-provider blocker |
 | Track C convergence | [`reports/track-c-convergence-review.md`](reports/track-c-convergence-review.md) | BookDesign/StoryDesign/Content/Planning ownership and C1 Gate |
+| Capability Pack product design | [`product/capability-pack-product-design.md`](product/capability-pack-product-design.md) | product purpose, users, lifecycle, governance, metrics and phased rollout |
+| Capability Pack system design | [`architecture/capability-pack-system-design.md`](architecture/capability-pack-system-design.md) | code-based protocol, component, runtime, database, security and test design |
+| Capability Pack P0 Codex prompt | [`prompts/codex-capability-pack-p0-implementation.md`](prompts/codex-capability-pack-p0-implementation.md) | bounded implementation prompt for protocol, loader, validator, sample and unit tests |
 | Historical detailed audit | [`reports/2026-08-01-code-audit-and-documentation-rebaseline.md`](reports/2026-08-01-code-audit-and-documentation-rebaseline.md) | historical code facts and the now-resolved integrity warning |
 | Next-stage Epic | [`architecture-closure/autonomous-novel-os-architecture-closure-epic.md`](architecture-closure/autonomous-novel-os-architecture-closure-epic.md) | six Tracks, vertical Slices, evidence model and final Gate |
 | Execution index | [`architecture-closure/README.md`](architecture-closure/README.md) | Track order, AC reference map, WIP and Gate Report template |
@@ -185,6 +191,9 @@ These documents define target architecture and implementation intent. They are a
 - [`architecture-closure/autonomous-novel-os-architecture-closure-epic.md`](architecture-closure/autonomous-novel-os-architecture-closure-epic.md) — current architecture convergence program.
 - [`blueprint/autonomous-novel-os-full-blueprint.md`](blueprint/autonomous-novel-os-full-blueprint.md) — full functional blueprint.
 - [`blueprint/novel-os-project-blueprint.md`](blueprint/novel-os-project-blueprint.md) — project blueprint and phase plan.
+- [`product/capability-pack-product-design.md`](product/capability-pack-product-design.md) — Capability Pack product standard and minimum product closure.
+- [`architecture/capability-pack-system-design.md`](architecture/capability-pack-system-design.md) — Capability Pack architecture and protocol design.
+- [`prompts/codex-capability-pack-p0-implementation.md`](prompts/codex-capability-pack-p0-implementation.md) — P0 implementation prompt; it does not constitute implementation proof.
 - [`architecture/production-execution-plane.md`](architecture/production-execution-plane.md) — unified production execution contracts, routing and recovery target.
 - [`architecture/scoped-conversational-agent-architecture.md`](architecture/scoped-conversational-agent-architecture.md) — frozen-scope Agent collaboration architecture.
 - [`design/hierarchical-story-planning-and-production-authority.md`](design/hierarchical-story-planning-and-production-authority.md) — hierarchical planning design; use the current Epic terminology and constraints when implementing.
