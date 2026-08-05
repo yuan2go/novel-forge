@@ -639,6 +639,74 @@ def _validate_compatibility(
     _validate_version_range(compatibility, issues)
 
 
+def _validate_version_range(compatibility: Any, issues: _IssueCollector) -> None:
+    minimum = _parse_semver(compatibility.novel_forge_min_version)
+    maximum = _parse_semver(compatibility.novel_forge_max_version)
+    if minimum is None:
+        issues.error(
+            "CAPABILITY_PACK_COMPATIBILITY_INVALID",
+            "$.compatibility.novel_forge_min_version",
+            "minimum Novel Forge version must be SemVer",
+        )
+    if compatibility.novel_forge_max_version is not None and maximum is None:
+        issues.error(
+            "CAPABILITY_PACK_COMPATIBILITY_INVALID",
+            "$.compatibility.novel_forge_max_version",
+            "maximum Novel Forge version must be null or SemVer",
+        )
+    if minimum is not None and maximum is not None and minimum > maximum:
+        issues.error(
+            "CAPABILITY_PACK_COMPATIBILITY_INVALID",
+            "$.compatibility",
+            "Novel Forge minimum version exceeds maximum version",
+        )
+    protocol_minimum = _parse_protocol_version(compatibility.protocol_min_version)
+    protocol_maximum = _parse_protocol_version(compatibility.protocol_max_version)
+    if protocol_minimum is None:
+        issues.error(
+            "CAPABILITY_PACK_COMPATIBILITY_INVALID",
+            "$.compatibility.protocol_min_version",
+            "minimum protocol version is invalid",
+        )
+    if compatibility.protocol_max_version is not None and protocol_maximum is None:
+        issues.error(
+            "CAPABILITY_PACK_COMPATIBILITY_INVALID",
+            "$.compatibility.protocol_max_version",
+            "maximum protocol version is invalid",
+        )
+    current = _parse_protocol_version(CAPABILITY_PACK_SCHEMA_VERSION)
+    if (
+        current is not None
+        and protocol_minimum is not None
+        and current < protocol_minimum
+    ) or (
+        current is not None
+        and protocol_maximum is not None
+        and current > protocol_maximum
+    ):
+        issues.error(
+            "CAPABILITY_PACK_COMPATIBILITY_INVALID",
+            "$.compatibility",
+            "current protocol version is outside the declared compatibility range",
+        )
+
+
+def _parse_semver(value: Any) -> tuple[int, int, int] | None:
+    if not isinstance(value, str):
+        return None
+    match = _SEMVER.fullmatch(value)
+    if match is None:
+        return None
+    return tuple(int(part) for part in match.groups())
+
+
+def _parse_protocol_version(value: Any) -> int | None:
+    if not isinstance(value, str):
+        return None
+    match = _PROTOCOL_VERSION.fullmatch(value)
+    return int(match.group(1)) if match is not None else None
+
+
 def _validate_role(manifest: CapabilityPackManifest, issues: _IssueCollector) -> None:
     role = manifest.role
     if not isinstance(role.role_type, str) or role.role_type not in _ROLE_TYPES:
