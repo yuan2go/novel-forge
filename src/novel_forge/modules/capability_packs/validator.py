@@ -1,9 +1,8 @@
-"""Static, fail-closed Capability Pack P0 validation."""
+"""Static, fail-closed Capability Pack protocol validation."""
 
 from __future__ import annotations
 
 from collections.abc import Mapping
-from dataclasses import dataclass
 from pathlib import PurePosixPath, PureWindowsPath
 import re
 from typing import Any
@@ -14,9 +13,13 @@ from novel_forge.modules.production_execution.capability_registry import (
 )
 from novel_forge.modules.production_execution.capabilities import CapabilityDefinition
 from novel_forge.modules.production_execution.security import assert_no_inline_secrets
-from novel_forge.modules.chapter_authority.contracts import ChapterNode
-from novel_forge.modules.chapter_authority.definitions import (
-    CHAPTER_MODEL_EFFECT_DEFINITION_VERSION,
+from .artifacts import is_floating_version
+from .operation_catalog import chapter_workflow_binding_catalog
+from .type_catalog import (
+    CapabilityTypePolicy,
+    conservative_capability_type_policy,
+    default_capability_type_catalog,
+    default_tool_definition_catalog,
 )
 
 from .errors import CapabilityPackValidationIssue, CapabilityPackValidationReport
@@ -71,7 +74,6 @@ _EXTERNAL_EFFECT_TOOL_REFS = frozenset(
 _SOURCE_ISOLATION_MODES = frozenset(
     {"ABSTRACT_ASSETS_ONLY", "FROZEN_ASSETS_ONLY", "RAW_ALLOWED_WITH_APPROVAL"}
 )
-_CAPABILITY_TYPES = frozenset({"production_workflow"})
 _RUNTIME_PROFILES = frozenset(
     {"development", "validation", "provider-validation", "production"}
 )
@@ -99,39 +101,6 @@ _UUID_VALUE = re.compile(
 _LOCAL_ABSOLUTE_PATH = re.compile(
     r"^(?:/Users/|/home/|/tmp/|[A-Za-z]:[\\/]Users[\\/])"
 )
-_CHAPTER_GENERATION_PACK_ID = "chapter_generation_pack"
-_WORKFLOW_BINDINGS = {
-    f"{node.definition_name}@{CHAPTER_MODEL_EFFECT_DEFINITION_VERSION}": {
-        "operation_name": node.definition_name,
-        "handler_key": node.handler_key,
-        "stage": node.value,
-        "output_asset_types": (node.asset_type,),
-    }
-    for node in ChapterNode
-}
-
-
-@dataclass(frozen=True, slots=True)
-class _PackPolicyClass:
-    generation: bool
-    production: bool
-
-    @classmethod
-    def derive(cls, manifest: CapabilityPackManifest) -> "_PackPolicyClass":
-        capability_type = manifest.identity.capability_type
-        recognized = (
-            isinstance(capability_type, str)
-            and capability_type in _CAPABILITY_TYPES
-        )
-        generation = (
-            capability_type == "production_workflow"
-            or not recognized
-        )
-        production = (
-            manifest.identity.lifecycle == "PRODUCTION"
-            or manifest.governance.release_channel == "PRODUCTION"
-        )
-        return cls(generation=generation, production=production)
 
 
 class _IssueCollector:
@@ -164,25 +133,34 @@ def validate_capability_pack(
     issues = _IssueCollector()
     resolved: set[str] = set()
     payload = manifest.to_dict()
-    policy_class = _PackPolicyClass.derive(manifest)
+    try:
+        capability_type_policy = default_capability_type_catalog().resolve(
+            str(manifest.identity.capability_type)
+        )
+    except KeyError:
+        capability_type_policy = conservative_capability_type_policy(
+            str(manifest.identity.capability_type)
+        )
 
     issues.extend_errors(validate_protocol_contract(payload))
     _validate_schema_version(manifest, issues)
     _validate_identity(manifest, issues)
+    _validate_lifecycle_policy(manifest, issues)
     _validate_compatibility(manifest, registry, resolved, issues)
     _validate_role(manifest, issues)
     _validate_skills(manifest, issues)
     _validate_prompt(manifest, issues)
     _validate_workflow(manifest, registry, resolved, issues)
-    _validate_context(manifest, policy_class, issues)
-    _validate_tools(manifest, policy_class, issues)
-    _validate_assets(manifest, policy_class, issues)
+    _validate_context(manifest, capability_type_policy, issues)
+    _validate_tools(manifest, capability_type_policy, issues)
+    _validate_assets(manifest, capability_type_policy, issues)
     _validate_evaluation(manifest, registry, resolved, issues)
     _validate_capability_declarations(manifest, issues)
-    _validate_runtime(manifest, policy_class, issues)
+    _validate_runtime(manifest, capability_type_policy, issues)
     _validate_governance_and_audit(manifest, issues)
     _validate_extensions(payload.get("ext"), issues)
     _validate_stable_identity_inputs(payload, issues)
+    _validate_floating_references(payload, issues)
     try:
         assert_no_inline_secrets(payload, label="CapabilityPackManifest")
     except ValueError as exc:
@@ -259,14 +237,18 @@ def _validate_identity(
             "$.identity.lifecycle",
             "lifecycle is not supported",
         )
-    if (
-        not isinstance(identity.capability_type, str)
-        or identity.capability_type not in _CAPABILITY_TYPES
-    ):
+    try:
+        default_capability_type_catalog().resolve(str(identity.capability_type))
+    except KeyError:
+        issues.error(
+            "CAPABILITY_PACK_CAPABILITY_TYPE_UNKNOWN",
+            "$.identity.capability_type",
+            "capability_type is not present in the governed policy catalog",
+        )
         issues.error(
             "CAPABILITY_PACK_IDENTITY_INVALID",
             "$.identity.capability_type",
-            "capability_type is not supported by the P0 policy catalog",
+            "capability_type is not supported by the Capability Type policy catalog",
         )
 
 
@@ -290,6 +272,28 @@ def _resolve_capability(
     else:
         resolved.add(definition.capability_id.value)
         return definition
+
+
+def _validate_lifecycle_policy(
+    manifest: CapabilityPackManifest, issues: _IssueCollector
+) -> None:
+    try:
+        policy = default_capability_type_catalog().resolve(
+            str(manifest.identity.capability_type)
+        )
+    except KeyError:
+        return  # identity validation already reports the unknown type
+    triple = (
+        str(manifest.identity.status),
+        str(manifest.identity.lifecycle),
+        str(manifest.governance.release_channel),
+    )
+    if triple not in policy.allowed_status_lifecycle_channels:
+        issues.error(
+            "CAPABILITY_PACK_LIFECYCLE_CONFLICT",
+            "$.identity",
+            "status, lifecycle, and release_channel are not a governed combination",
+        )
 
 
 def _validate_compatibility(
@@ -552,6 +556,10 @@ def _validate_prompt(manifest: CapabilityPackManifest, issues: _IssueCollector) 
     prompt = manifest.prompt_binding
     for field, value in (
         ("prompt_bundle_type", prompt.prompt_bundle_type),
+        ("system_instruction_ref", prompt.system_instruction_ref),
+        ("system_instruction_version", prompt.system_instruction_version),
+        ("template_ref", prompt.template_ref),
+        ("template_version", prompt.template_version),
         ("compiler_version", prompt.compiler_version),
         ("input_schema_ref", prompt.input_schema_ref),
         ("output_schema_ref", prompt.output_schema_ref),
@@ -604,6 +612,7 @@ def _validate_workflow(
             ("node_id", node.node_id),
             ("operation_name", node.operation_name),
             ("operation_definition_ref", node.operation_definition_ref),
+            ("operation_definition_hash", node.operation_definition_hash),
             ("handler_key", node.handler_key),
             ("stage", node.stage),
             ("capability_id", node.capability_id),
@@ -669,7 +678,13 @@ def _validate_workflow(
                 path,
                 "workflow nodes require operation and handler bindings",
             )
-        _validate_operation_binding(manifest.identity.pack_id, node, path, issues)
+        if not _valid_hash(node.operation_definition_hash):
+            issues.error(
+                "CAPABILITY_PACK_HASH_INVALID",
+                f"{path}.operation_definition_hash",
+                "operation_definition_hash must be sha256:<64 lowercase hex>",
+            )
+        _validate_operation_binding(manifest, node, path, issues)
         if node.approval.get("required") is True and not _non_empty(
             node.approval.get("policy_ref")
         ):
@@ -692,6 +707,18 @@ def _validate_workflow(
             "$.workflow_template.nodes",
             "workflow dependency graph contains a cycle",
         )
+    governed_workflow = chapter_workflow_binding_catalog()
+    if (
+        workflow.workflow_id == governed_workflow.workflow_id
+        and workflow.workflow_version == governed_workflow.workflow_version
+    ):
+        governed_nodes = {item.node_id for item in governed_workflow.bindings()}
+        if known != governed_nodes:
+            issues.error(
+                "CAPABILITY_PACK_WORKFLOW_BINDING_INVALID",
+                "$.workflow_template.nodes",
+                "workflow node set differs from the governed Authority graph",
+            )
     for index, terminal in enumerate(workflow.completion.required_terminal_nodes):
         if isinstance(terminal, str) and terminal not in known:
             issues.error(
@@ -762,7 +789,7 @@ def _has_cycle(graph: Mapping[str, tuple[str, ...]]) -> bool:
 
 
 def _validate_operation_binding(
-    pack_id: Any,
+    manifest: CapabilityPackManifest,
     node: Any,
     path: str,
     issues: _IssueCollector,
@@ -779,38 +806,47 @@ def _validate_operation_binding(
                 f"{path}.operation_definition_ref",
                 "operation definition ref must bind operation_name to a SemVer version",
             )
-    if pack_id != _CHAPTER_GENERATION_PACK_ID:
+    workflow = manifest.workflow_template
+    catalog = chapter_workflow_binding_catalog()
+    if (
+        workflow.workflow_id != catalog.workflow_id
+        or workflow.workflow_version != catalog.workflow_version
+    ):
         return
-    binding = (
-        _WORKFLOW_BINDINGS.get(node.operation_definition_ref)
-        if isinstance(node.operation_definition_ref, str)
-        else None
-    )
-    if binding is None:
+    try:
+        binding = catalog.resolve(str(node.node_id))
+    except KeyError:
         issues.error(
             "CAPABILITY_PACK_WORKFLOW_BINDING_UNKNOWN",
-            f"{path}.operation_definition_ref",
-            "operation definition is not in the P0 static binding allowlist",
+            f"{path}.node_id",
+            "node is not in the governed Authority workflow binding catalog",
         )
         return
-    actual = {
-        "operation_name": node.operation_name,
-        "handler_key": node.handler_key,
-        "stage": node.stage,
-        "output_asset_types": node.output_asset_types,
-    }
-    for field, expected in binding.items():
-        if actual[field] != expected:
+    expectations = (
+        ("operation_name", binding.operation_name, node.operation_name),
+        ("handler_key", binding.handler_key, node.handler_key),
+        ("stage", binding.stage, node.stage),
+        ("capability_id", binding.capability_id, node.capability_id),
+        ("depends_on", binding.depends_on, node.depends_on),
+    )
+    for field, expected, actual in expectations:
+        if actual != expected:
             issues.error(
                 "CAPABILITY_PACK_WORKFLOW_BINDING_INVALID",
                 f"{path}.{field}",
-                "workflow binding differs from the registered P0 Operation contract",
+                "workflow binding differs from the governed Authority/Scheduler contract",
             )
+    if binding.primary_output_asset_type not in node.output_asset_types:
+        issues.error(
+            "CAPABILITY_PACK_WORKFLOW_BINDING_INVALID",
+            f"{path}.output_asset_types",
+            "workflow binding omits the governed primary output asset",
+        )
 
 
 def _validate_context(
     manifest: CapabilityPackManifest,
-    policy_class: _PackPolicyClass,
+    capability_type_policy: CapabilityTypePolicy,
     issues: _IssueCollector,
 ) -> None:
     context = manifest.context_sources
@@ -859,13 +895,13 @@ def _validate_context(
         value
         for value in context.required_version_refs
         if isinstance(value, str)
-        and re.search(r"(?:^|[:/@._-])latest$", value, re.IGNORECASE)
+        and is_floating_version(value)
     )
     if latest_refs:
         issues.error(
             "CAPABILITY_PACK_CONTEXT_POLICY_INVALID",
             "$.context_sources.required_version_refs",
-            "required version refs cannot use latest aliases: "
+            "required version refs cannot use floating aliases: "
             + ", ".join(latest_refs),
     )
     for field, value in context.longform_bindings.items():
@@ -879,13 +915,13 @@ def _validate_context(
                 f"$.context_sources.longform_bindings.{field}",
                 "longform binding must be required, optional, or forbidden",
             )
-    if policy_class.production and context.source_isolation == "RAW_ALLOWED_WITH_APPROVAL":
+    if _is_production_pack(manifest) and context.source_isolation == "RAW_ALLOWED_WITH_APPROVAL":
         issues.error(
             "CAPABILITY_PACK_RAW_SOURCE_PRODUCTION_FORBIDDEN",
             "$.context_sources.source_isolation",
             "production packs cannot admit raw source context with approval",
         )
-    if policy_class.generation:
+    if capability_type_policy.generation:
         missing = sorted(_RAW_SOURCE_TYPES - forbidden)
         admitted = sorted(_RAW_SOURCE_TYPES & allowed)
         if missing or admitted:
@@ -898,7 +934,7 @@ def _validate_context(
 
 def _validate_tools(
     manifest: CapabilityPackManifest,
-    policy_class: _PackPolicyClass,
+    capability_type_policy: CapabilityTypePolicy,
     issues: _IssueCollector,
 ) -> None:
     permissions = manifest.tool_permissions
@@ -932,6 +968,11 @@ def _validate_tools(
                     f"{path}.tool_ref",
                     f"duplicate tool_ref: {tool.tool_ref}",
                 )
+                issues.error(
+                    "CAPABILITY_PACK_TOOL_BINDING_DUPLICATE",
+                    f"{path}.tool_ref",
+                    f"duplicate tool_ref: {tool.tool_ref}",
+                )
             seen_tools.add(tool.tool_ref)
         if not isinstance(tool.permission, str) or tool.permission not in _TOOL_PERMISSIONS:
             issues.error("CAPABILITY_PACK_TOOL_POLICY_INVALID", f"{path}.permission", "tool permission is not supported")
@@ -950,6 +991,12 @@ def _validate_tools(
         if unknown_operations:
             issues.error(
                 "CAPABILITY_PACK_TOOL_POLICY_INVALID",
+                f"{path}.allowed_operations",
+                "tool references unknown workflow nodes: "
+                + ", ".join(unknown_operations),
+            )
+            issues.error(
+                "CAPABILITY_PACK_TOOL_OPERATION_UNKNOWN",
                 f"{path}.allowed_operations",
                 "tool references unknown workflow nodes: "
                 + ", ".join(unknown_operations),
@@ -977,6 +1024,22 @@ def _validate_tools(
                 f"{path}.approval_required",
                 "CRITICAL tools require approval in P0",
             )
+        try:
+            governed = default_tool_definition_catalog().resolve(str(tool.tool_ref))
+        except KeyError:
+            issues.error(
+                "CAPABILITY_PACK_TOOL_CAPABILITY_CONFLICT",
+                f"{path}.tool_ref",
+                "tool is not present in the governed ToolDefinition catalog",
+            )
+        else:
+            rank = {"LOW": 0, "MEDIUM": 1, "HIGH": 2, "CRITICAL": 3}
+            if rank.get(risk, -1) < rank[governed.minimum_risk_class]:
+                issues.error(
+                    "CAPABILITY_PACK_TOOL_CAPABILITY_CONFLICT",
+                    f"{path}.risk_class",
+                    "tool risk is lower than its governed minimum",
+                )
     roots = permissions.files.get("allowed_roots")
     if isinstance(roots, (list, tuple)):
         for index, root in enumerate(roots):
@@ -995,7 +1058,7 @@ def _validate_tools(
                     f"$.tool_permissions.files.allowed_roots[{index}]",
                     "file root cannot contain ..",
                 )
-            if policy_class.production and not (posix.is_absolute() or windows.is_absolute()):
+            if _is_production_pack(manifest) and not (posix.is_absolute() or windows.is_absolute()):
                 issues.error(
                     "CAPABILITY_PACK_FILE_ROOT_INVALID",
                     f"$.tool_permissions.files.allowed_roots[{index}]",
@@ -1018,6 +1081,24 @@ def _validate_tools(
             "$.tool_permissions.database",
             "database tables cannot be both allowed and forbidden: "
             + ", ".join(table_overlap),
+        )
+    if (
+        permissions.database.get("read_allowed") is True
+        or permissions.database.get("write_allowed") is True
+    ) and not database_allowed:
+        issues.error(
+            "CAPABILITY_PACK_PERMISSION_ALLOWLIST_EMPTY",
+            "$.tool_permissions.database.allowed_tables",
+            "enabled database access with an empty allowlist is fail-closed DENY_ALL",
+        )
+    if (
+        permissions.files.get("read_allowed") is True
+        or permissions.files.get("write_allowed") is True
+    ) and not roots:
+        issues.error(
+            "CAPABILITY_PACK_PERMISSION_ALLOWLIST_EMPTY",
+            "$.tool_permissions.files.allowed_roots",
+            "enabled file access with an empty allowlist is fail-closed DENY_ALL",
         )
     if (
         "model.provider.invoke" in seen_tools
@@ -1054,6 +1135,15 @@ def _validate_tools(
             "$.runtime_contract.execution.external_effects_allowed",
             "declared external-effect tools require runtime permission",
         )
+    if (
+        seen_tools & _EXTERNAL_EFFECT_TOOL_REFS
+        and not capability_type_policy.allows_external_effects
+    ):
+        issues.error(
+            "CAPABILITY_PACK_POLICY_BINDING_INVALID",
+            "$.tool_permissions.tools",
+            "Capability Type policy forbids external-effect tools",
+        )
     if roots and not (
         permissions.files.get("read_allowed") is True
         or permissions.files.get("write_allowed") is True
@@ -1067,7 +1157,7 @@ def _validate_tools(
 
 def _validate_assets(
     manifest: CapabilityPackManifest,
-    policy_class: _PackPolicyClass,
+    capability_type_policy: CapabilityTypePolicy,
     issues: _IssueCollector,
 ) -> None:
     seen_rules: set[str] = set()
@@ -1088,7 +1178,7 @@ def _validate_assets(
             )
         else:
             seen_rules.add(rule_ref)
-    if not policy_class.generation:
+    if not capability_type_policy.generation:
         return
     source = manifest.assets.source_policy
     if source.get("raw_source_expression_allowed") is not False:
@@ -1102,6 +1192,18 @@ def _validate_assets(
             "CAPABILITY_PACK_SOURCE_LINEAGE_REQUIRED",
             "$.assets.source_policy.requires_lineage",
             "generation packs require source lineage",
+        )
+    eligibility = {
+        value
+        for value in _json_items(source.get("allowed_eligibility"))
+        if isinstance(value, str)
+    }
+    governed_eligibility = {"PRODUCTION_ELIGIBLE", "NOT_SOURCE_DERIVED"}
+    if not eligibility or not eligibility.issubset(governed_eligibility):
+        issues.error(
+            "CAPABILITY_PACK_SOURCE_POLICY_INVALID",
+            "$.assets.source_policy.allowed_eligibility",
+            "generation source eligibility must use the governed production-safe set",
         )
 
 
@@ -1122,7 +1224,7 @@ def _validate_evaluation(
             issues.error("CAPABILITY_PACK_EVALUATION_INVALID", f"{path}.gate_id", "gate_id must be a non-empty string")
         elif gate.gate_id in seen_gates:
             issues.error(
-                "CAPABILITY_PACK_EVALUATION_INVALID",
+                "CAPABILITY_PACK_EVALUATION_GATE_DUPLICATE",
                 f"{path}.gate_id",
                 f"duplicate gate_id: {gate.gate_id}",
             )
@@ -1146,6 +1248,16 @@ def _validate_evaluation(
                 f"{path}.judge_capability_id",
                 "evaluation gate capability is registered but is not a Judge capability",
             )
+    if manifest.identity.capability_type == "production_workflow" and not any(
+        gate.blocking is True
+        and gate.judge_capability_id == "quality.originality.judge"
+        for gate in manifest.evaluation.required_gates
+    ):
+        issues.error(
+            "CAPABILITY_PACK_SOURCE_ISOLATION_GATE_REQUIRED",
+            "$.evaluation.required_gates",
+            "production generation requires a blocking originality/source-isolation gate",
+        )
     seen_metrics: set[str] = set()
     for index, metric in enumerate(manifest.evaluation.metrics):
         metric_id = metric.get("metric_id")
@@ -1220,7 +1332,7 @@ def _validate_capability_declarations(
 
 def _validate_runtime(
     manifest: CapabilityPackManifest,
-    policy_class: _PackPolicyClass,
+    capability_type_policy: CapabilityTypePolicy,
     issues: _IssueCollector,
 ) -> None:
     runtime = manifest.runtime_contract
@@ -1233,7 +1345,12 @@ def _validate_runtime(
         if not isinstance(value, str) or not value.strip():
             issues.error("CAPABILITY_PACK_PROTOCOL_INVALID", f"$.runtime_contract.{field}", f"{field} must be a non-empty string")
     execution = manifest.runtime_contract.execution
-    if (policy_class.generation or policy_class.production) and (
+    if (
+        capability_type_policy.requires_authority_operation
+        or capability_type_policy.requires_attempt_fence
+        or capability_type_policy.generation
+        or _is_production_pack(manifest)
+    ) and (
         execution.get("binds_authority_operation") is not True
         or execution.get("binds_attempt_fence") is not True
         or execution.get("synchronous_fixture_allowed") is not False
@@ -1243,6 +1360,23 @@ def _validate_runtime(
             "$.runtime_contract.execution",
             "generation/production packs require Authority Operation and Attempt Fence binding and prohibit synchronous fixtures",
         )
+
+    if (
+        execution.get("external_effects_allowed") is True
+        and not capability_type_policy.allows_external_effects
+    ):
+        issues.error(
+            "CAPABILITY_PACK_POLICY_BINDING_INVALID",
+            "$.runtime_contract.execution.external_effects_allowed",
+            "Capability Type policy forbids external effects",
+        )
+
+
+def _is_production_pack(manifest: CapabilityPackManifest) -> bool:
+    return (
+        manifest.identity.lifecycle == "PRODUCTION"
+        or manifest.governance.release_channel == "PRODUCTION"
+    )
 
 
 def _validate_governance_and_audit(
@@ -1438,6 +1572,32 @@ def _validate_extensions(value: Any, issues: _IssueCollector) -> None:
                 f"$.ext.{namespace}",
                 "extension cannot shadow core fields: " + ", ".join(overridden),
             )
+
+
+def _validate_floating_references(
+    payload: Mapping[str, Any], issues: _IssueCollector
+) -> None:
+    def visit(value: Any, path: str, field: str) -> None:
+        if isinstance(value, Mapping):
+            for key, item in value.items():
+                visit(item, f"{path}.{key}", str(key))
+            return
+        if isinstance(value, list):
+            for index, item in enumerate(value):
+                visit(item, f"{path}[{index}]", field)
+            return
+        if (
+            isinstance(value, str)
+            and ("ref" in field.lower() or "version" in field.lower())
+            and is_floating_version(value)
+        ):
+            issues.error(
+                "CAPABILITY_PACK_FLOATING_VERSION_FORBIDDEN",
+                path,
+                "floating version aliases are forbidden",
+            )
+
+    visit(payload, "$", "")
 
 
 def _find_core_overrides(value: Any) -> set[str]:

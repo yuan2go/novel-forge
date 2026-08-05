@@ -1,0 +1,330 @@
+"""Explicit, local-only Artifact resolution for Capability Pack compilation."""
+
+from __future__ import annotations
+
+from collections.abc import Iterable, Mapping
+from dataclasses import dataclass
+from enum import StrEnum
+import hashlib
+import json
+from pathlib import Path
+import re
+from types import MappingProxyType
+from typing import Any, Protocol
+
+from novel_forge.modules.production_execution.security import assert_no_inline_secrets
+
+
+_FLOATING = re.compile(
+    r"(?:^|[:/@._-])"
+    r"(latest|current|active-latest|stable|main|master|head|tip|trunk|nightly)$",
+    re.IGNORECASE,
+)
+
+
+class ArtifactKind(StrEnum):
+    SKILL = "SKILL"
+    PROMPT_SYSTEM_INSTRUCTION = "PROMPT_SYSTEM_INSTRUCTION"
+    PROMPT_TEMPLATE = "PROMPT_TEMPLATE"
+    SCHEMA = "SCHEMA"
+    CONTEXT_POLICY = "CONTEXT_POLICY"
+    SOURCE_POLICY = "SOURCE_POLICY"
+    TOOL_POLICY = "TOOL_POLICY"
+    VALIDATION_POLICY = "VALIDATION_POLICY"
+    COMMIT_POLICY = "COMMIT_POLICY"
+    TIMEOUT_POLICY = "TIMEOUT_POLICY"
+    BUDGET_POLICY = "BUDGET_POLICY"
+    APPROVAL_POLICY = "APPROVAL_POLICY"
+    COMPENSATION_POLICY = "COMPENSATION_POLICY"
+    PROTOCOL = "PROTOCOL"
+    RULE = "RULE"
+    KNOWLEDGE = "KNOWLEDGE"
+    TEMPLATE = "TEMPLATE"
+
+
+def canonical_artifact_json(content: Any) -> str:
+    return json.dumps(
+        content,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+        allow_nan=False,
+    )
+
+
+def artifact_content_hash(content: Any) -> str:
+    return "sha256:" + hashlib.sha256(canonical_artifact_json(content).encode("utf-8")).hexdigest()
+
+
+def is_floating_version(value: str) -> bool:
+    return bool(_FLOATING.search(value.strip()))
+
+
+@dataclass(frozen=True, slots=True)
+class ResolvedArtifact:
+    kind: ArtifactKind
+    ref: str
+    version: str
+    content_hash: str
+    content_json: str
+    source_identity: str
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "kind": self.kind.value,
+            "ref": self.ref,
+            "version": self.version,
+            "content_hash": self.content_hash,
+            "content": json.loads(self.content_json),
+            "source_identity": self.source_identity,
+        }
+
+
+class ArtifactResolver(Protocol):
+    def resolve(
+        self, kind: ArtifactKind, ref: str, version: str
+    ) -> ResolvedArtifact: ...
+
+    def snapshot_hash(self) -> str: ...
+
+
+class ExplicitArtifactResolver:
+    """An immutable exact-key catalog. It never consults network or environment."""
+
+    def __init__(self, artifacts: Iterable[ResolvedArtifact]) -> None:
+        values: dict[tuple[ArtifactKind, str, str], ResolvedArtifact] = {}
+        for artifact in artifacts:
+            if is_floating_version(artifact.version) or is_floating_version(artifact.ref):
+                raise ValueError("floating artifact versions are forbidden")
+            if artifact.content_hash != artifact_content_hash(
+                json.loads(artifact.content_json)
+            ):
+                raise ValueError("artifact catalog content hash mismatch")
+            assert_no_inline_secrets(
+                json.loads(artifact.content_json),
+                label=f"CapabilityPackArtifact:{artifact.ref}",
+            )
+            key = (artifact.kind, artifact.ref, artifact.version)
+            existing = values.get(key)
+            if existing is not None and existing != artifact:
+                raise ValueError(
+                    "artifact identity is bound to different content or provenance"
+                )
+            values[key] = artifact
+        self._values = MappingProxyType(values)
+
+    def resolve(
+        self, kind: ArtifactKind, ref: str, version: str
+    ) -> ResolvedArtifact:
+        if is_floating_version(ref) or is_floating_version(version):
+            raise ValueError("floating artifact versions are forbidden")
+        matching_identity = [
+            item for key, item in self._values.items() if key[1:] == (ref, version)
+        ]
+        if matching_identity and (kind, ref, version) not in self._values:
+            raise TypeError(f"artifact kind mismatch for {ref}@{version}")
+        try:
+            return self._values[(kind, ref, version)]
+        except KeyError as exc:
+            versions = sorted(
+                key[2] for key in self._values if key[0] is kind and key[1] == ref
+            )
+            if versions:
+                raise LookupError(
+                    f"artifact version unresolved: {ref}@{version}"
+                ) from exc
+            raise KeyError(f"artifact not found: {kind.value}:{ref}@{version}") from exc
+
+    def artifacts(self) -> tuple[ResolvedArtifact, ...]:
+        return tuple(
+            self._values[key]
+            for key in sorted(self._values, key=lambda item: (item[0].value, item[1], item[2]))
+        )
+
+    def snapshot_hash(self) -> str:
+        payload = [
+            {
+                "kind": item.kind.value,
+                "ref": item.ref,
+                "version": item.version,
+                "content_hash": item.content_hash,
+                "source_identity": item.source_identity,
+            }
+            for item in self.artifacts()
+        ]
+        return artifact_content_hash({"artifacts": payload})
+
+    @classmethod
+    def from_catalog_file(
+        cls, repository_root: str | Path, catalog_path: str | Path
+    ) -> "ExplicitArtifactResolver":
+        root = Path(repository_root).resolve()
+        catalog = Path(catalog_path)
+        if not catalog.is_absolute():
+            catalog = root / catalog
+        payload = _load_unique_json(catalog)
+        if not isinstance(payload, Mapping) or payload.get("schema_version") != "novelos.capability_pack.artifact_catalog.v1":
+            raise ValueError("artifact catalog schema is unsupported")
+        entries = payload.get("artifacts")
+        if not isinstance(entries, list):
+            raise ValueError("artifact catalog requires an artifacts array")
+        artifacts: list[ResolvedArtifact] = []
+        for index, raw in enumerate(entries):
+            if not isinstance(raw, Mapping):
+                raise ValueError(f"artifact catalog entry {index} must be an object")
+            kind = ArtifactKind(str(raw.get("kind") or ""))
+            ref = str(raw.get("ref") or "")
+            version = str(raw.get("version") or "")
+            if not ref or not version:
+                raise ValueError("artifact ref and version are required")
+            has_content = "content" in raw
+            has_path = "source_path" in raw
+            if has_content == has_path:
+                raise ValueError("artifact requires exactly one content source")
+            if has_path:
+                relative = Path(str(raw["source_path"]))
+                if relative.is_absolute() or ".." in relative.parts:
+                    raise ValueError("artifact source_path must be repository-relative")
+                target = (root / relative).resolve()
+                if root not in target.parents:
+                    raise ValueError("artifact source escapes repository root")
+                text = target.read_bytes().decode("utf-8", errors="strict")
+                content: Any = {"text": text.replace("\r\n", "\n")}
+                source_identity = relative.as_posix()
+            else:
+                content = raw["content"]
+                source_identity = (
+                    f"catalog:{catalog.relative_to(root).as_posix()}#"
+                    f"{kind.value}:{ref}@{version}"
+                )
+            assert_no_inline_secrets(content, label=f"CapabilityPackArtifact:{ref}")
+            content_json = canonical_artifact_json(content)
+            artifacts.append(
+                ResolvedArtifact(
+                    kind=kind,
+                    ref=ref,
+                    version=version,
+                    content_hash=artifact_content_hash(content),
+                    content_json=content_json,
+                    source_identity=source_identity,
+                )
+            )
+        return cls(artifacts)
+
+
+def exact_ref_version(ref: str) -> str:
+    """Return a deterministic explicit version suffix from a governed ref."""
+
+    if is_floating_version(ref):
+        raise ValueError("floating artifact versions are forbidden")
+    match = re.search(r"(?:^|[:.-])(v?[0-9]+(?:\.[0-9]+){0,2})$", ref)
+    if match is None:
+        raise ValueError(f"artifact ref has no exact version: {ref}")
+    return match.group(1)
+
+
+def _load_unique_json(path: Path) -> Any:
+    def unique(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+        value: dict[str, Any] = {}
+        for key, item in pairs:
+            if key in value:
+                raise ValueError(f"duplicate artifact catalog key: {key}")
+            value[key] = item
+        return value
+
+    def reject_constant(value: str) -> None:
+        raise ValueError(f"non-finite JSON number is forbidden: {value}")
+
+    return json.loads(
+        path.read_bytes().decode("utf-8", errors="strict"),
+        object_pairs_hook=unique,
+        parse_constant=reject_constant,
+    )
+
+
+def _artifact(
+    kind: ArtifactKind,
+    ref: str,
+    version: str,
+    content: Any,
+    source_identity: str,
+) -> ResolvedArtifact:
+    return ResolvedArtifact(
+        kind=kind,
+        ref=ref,
+        version=version,
+        content_hash=artifact_content_hash(content),
+        content_json=canonical_artifact_json(content),
+        source_identity=source_identity,
+    )
+
+
+def default_chapter_artifact_resolver(
+    repository_root: str | Path,
+) -> ExplicitArtifactResolver:
+    """P1A exact catalog backed by repository skills and governed local contracts."""
+
+    root = Path(repository_root).resolve()
+    artifacts: list[ResolvedArtifact] = []
+    skill_sources = (
+        ("chapter-outline", "chapter-plan-skill-v1", "skills/chapter-outline/SKILL.md"),
+        (
+            "context-builder-source-isolation",
+            "context-builder-source-isolation-v1",
+            "skills/context-builder-source-isolation/SKILL.md",
+        ),
+        ("prose-generation", "prose-generation-v1", "skills/prose-generation/SKILL.md"),
+        ("quality-review", "quality-review-v1", "skills/quality-review/SKILL.md"),
+        (
+            "canon-continuity-graph",
+            "canon-continuity-graph-v1",
+            "skills/canon-continuity-graph/SKILL.md",
+        ),
+    )
+    for ref, version, source in skill_sources:
+        text = (root / source).read_bytes().decode("utf-8", errors="strict")
+        artifacts.append(
+            _artifact(
+                ArtifactKind.SKILL,
+                ref,
+                version,
+                {"text": text.replace("\r\n", "\n")},
+                source,
+            )
+        )
+    for kind, ref, source in (
+        (
+            ArtifactKind.PROMPT_SYSTEM_INSTRUCTION,
+            "prompt-system:chapter-generation-pack",
+            "config/capability_packs/artifacts/chapter_generation_system_instruction.md",
+        ),
+        (
+            ArtifactKind.PROMPT_TEMPLATE,
+            "prompt-template:chapter-generation-pack",
+            "config/capability_packs/artifacts/chapter_generation_template.md",
+        ),
+    ):
+        text = (root / source).read_bytes().decode("utf-8", errors="strict")
+        artifacts.append(
+            _artifact(kind, ref, "v1", {"text": text.replace("\r\n", "\n")}, source)
+        )
+
+    signed_catalog = ExplicitArtifactResolver.from_catalog_file(
+        root,
+        "config/capability_packs/artifacts/chapter_generation_contract_catalog.json",
+    )
+    artifacts.extend(signed_catalog.artifacts())
+    return ExplicitArtifactResolver(artifacts)
+
+
+__all__ = [
+    "ArtifactKind",
+    "ArtifactResolver",
+    "ExplicitArtifactResolver",
+    "ResolvedArtifact",
+    "artifact_content_hash",
+    "canonical_artifact_json",
+    "default_chapter_artifact_resolver",
+    "exact_ref_version",
+    "is_floating_version",
+]

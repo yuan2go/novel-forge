@@ -1,4 +1,4 @@
-"""Structured errors returned by the Capability Pack P0 boundary."""
+"""Structured errors returned by Capability Pack validation and compilation."""
 
 from __future__ import annotations
 
@@ -24,6 +24,38 @@ class CapabilityPackValidationReport:
     resolved_capabilities: tuple[str, ...]
 
 
+@dataclass(frozen=True, slots=True)
+class CapabilityPackCompilationIssue:
+    code: str
+    path: str
+    message: str
+    severity: str = "ERROR"
+
+
+@dataclass(frozen=True, slots=True)
+class CapabilityPackResolutionReport:
+    ok: bool
+    pack_id: str
+    version: str
+    manifest_hash: str
+    errors: tuple[CapabilityPackCompilationIssue, ...]
+    warnings: tuple[CapabilityPackCompilationIssue, ...]
+    resolved_artifacts: tuple[str, ...]
+    resolved_operations: tuple[str, ...]
+    resolved_capabilities: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class CapabilityPackCompilationReport:
+    ok: bool
+    pack_id: str
+    version: str
+    manifest_hash: str
+    compilation_hash: str
+    errors: tuple[CapabilityPackCompilationIssue, ...]
+    warnings: tuple[CapabilityPackCompilationIssue, ...]
+
+
 class CapabilityPackLoadError(ValueError):
     """Fail-closed Loader error with a stable machine-readable code."""
 
@@ -39,6 +71,9 @@ class CapabilityPackLoadError(ValueError):
 
 __all__ = [
     "CapabilityPackLoadError",
+    "CapabilityPackCompilationIssue",
+    "CapabilityPackCompilationReport",
+    "CapabilityPackResolutionReport",
     "CapabilityPackValidationIssue",
     "CapabilityPackValidationReport",
 ]

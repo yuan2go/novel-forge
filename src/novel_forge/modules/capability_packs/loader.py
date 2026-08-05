@@ -75,7 +75,11 @@ def _unique_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
     value: dict[str, Any] = {}
     for key, item in pairs:
         if key in value:
-            raise ValueError(f"duplicate JSON object key: {key}")
+            raise CapabilityPackLoadError(
+                "CAPABILITY_PACK_JSON_DUPLICATE_KEY",
+                "$",
+                f"duplicate JSON object key: {key}",
+            )
         value[key] = item
     return value
 

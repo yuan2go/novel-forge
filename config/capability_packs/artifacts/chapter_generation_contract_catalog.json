@@ -1,0 +1,511 @@
+{
+  "schema_version": "novelos.capability_pack.artifact_catalog.v1",
+  "artifacts": [
+    {
+      "kind": "SCHEMA",
+      "ref": "chapter-plan-authority.v1",
+      "version": "v1",
+      "content": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "novel-forge://schemas/chapter-plan-authority/v1",
+        "type": "object",
+        "required": ["project_id", "chapter_id", "chapter_plan_asset_version_id"],
+        "properties": {
+          "project_id": {"type": "string", "minLength": 1},
+          "chapter_id": {"type": "string", "minLength": 1},
+          "chapter_plan_asset_version_id": {"type": "string", "minLength": 1}
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "operation-saga-attempt-state.v1",
+      "version": "v1",
+      "content": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "novel-forge://schemas/operation-saga-attempt-state/v1",
+        "type": "object",
+        "required": ["operation_id", "operation_status", "saga_id", "saga_status", "attempt_id", "attempt_status", "fencing_token"],
+        "properties": {
+          "operation_id": {"type": "string", "minLength": 1},
+          "operation_status": {
+            "enum": [
+              "ADMITTED", "WAITING_APPROVAL", "READY", "EXECUTING",
+              "WAITING_CHILDREN", "WAITING_EXTERNAL_RESULT", "WAITING_GATE",
+              "FAILED_RETRYABLE", "FAILED_FINAL", "CANCELLATION_REQUESTED",
+              "RECONCILIATION_REQUIRED", "COMPENSATION_REQUIRED", "COMPENSATING",
+              "COMPENSATED", "COMPENSATION_FAILED", "SUCCEEDED", "CANCELLED",
+              "DEAD_LETTER"
+            ]
+          },
+          "saga_id": {"type": "string", "minLength": 1},
+          "saga_status": {
+            "enum": [
+              "RUNNING", "FORWARD_RECOVERY", "WAITING_GATE", "COMPENSATING",
+              "SUCCEEDED", "COMPENSATED", "COMPENSATION_FAILED",
+              "MANUAL_INTERVENTION", "CANCELLED"
+            ]
+          },
+          "attempt_id": {"type": "string", "minLength": 1},
+          "attempt_status": {
+            "enum": [
+              "CREATED", "QUEUED", "LEASED", "RUNNING", "CHECKPOINTED",
+              "RESULT_SUBMITTED", "SUCCEEDED", "FAILED_RETRYABLE", "FAILED_FINAL",
+              "TIMED_OUT", "LEASE_LOST", "SUPERSEDED", "LATE_RESULT_REJECTED",
+              "CANCELLED"
+            ]
+          },
+          "fencing_token": {"type": "integer", "minimum": 1}
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:canon-extraction-input:v1",
+      "version": "v1",
+      "content": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "novel-forge://schemas/canon-extraction-input/v1",
+        "type": "object",
+        "required": ["draft_asset_version_id", "canon_snapshot_version_id"],
+        "properties": {
+          "draft_asset_version_id": {"type": "string", "minLength": 1},
+          "canon_snapshot_version_id": {"type": "string", "minLength": 1}
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:canon-patch:v1",
+      "version": "v1",
+      "content": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "novel-forge://schemas/canon-patch/v1",
+        "type": "object",
+        "required": ["base_canon_version_id", "claims", "evidence_refs"],
+        "properties": {
+          "base_canon_version_id": {"type": "string", "minLength": 1},
+          "claims": {"type": "array", "items": {"type": "object"}},
+          "evidence_refs": {"type": "array", "items": {"type": "string", "minLength": 1}}
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:chapter-context-input:v1",
+      "version": "v1",
+      "content": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "novel-forge://schemas/chapter-context-input/v1",
+        "type": "object",
+        "required": ["project_id", "chapter_plan_asset_version_id", "source_isolation_policy_ref"],
+        "properties": {
+          "project_id": {"type": "string", "minLength": 1},
+          "chapter_plan_asset_version_id": {"type": "string", "minLength": 1},
+          "source_isolation_policy_ref": {"const": "source:chapter-generation-pack:v1"}
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:chapter-generation-pack-input:v1",
+      "version": "v1",
+      "content": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "novel-forge://schemas/chapter-generation-pack-input/v1",
+        "type": "object",
+        "required": ["project_id", "chapter_id", "chapter_plan_asset_version_id", "canon_snapshot_version_id"],
+        "properties": {
+          "project_id": {"type": "string", "minLength": 1},
+          "chapter_id": {"type": "string", "minLength": 1},
+          "chapter_plan_asset_version_id": {"type": "string", "minLength": 1},
+          "canon_snapshot_version_id": {"type": "string", "minLength": 1}
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:chapter-generation-pack-output:v1",
+      "version": "v1",
+      "content": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "novel-forge://schemas/chapter-generation-pack-output/v1",
+        "type": "object",
+        "required": ["release_package_asset_version_id", "final_release_gate_report_asset_version_id"],
+        "properties": {
+          "release_package_asset_version_id": {"type": "string", "minLength": 1},
+          "final_release_gate_report_asset_version_id": {"type": "string", "minLength": 1}
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:chapter-plan-version:v1",
+      "version": "v1",
+      "content": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "novel-forge://schemas/chapter-plan-version/v1",
+        "type": "object",
+        "required": ["asset_version_id", "content_hash", "status"],
+        "properties": {
+          "asset_version_id": {"type": "string", "minLength": 1},
+          "content_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+          "status": {"enum": ["FROZEN", "ACTIVE"]}
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:chapter-plan:v1",
+      "version": "v1",
+      "content": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "novel-forge://schemas/chapter-plan/v1",
+        "type": "object",
+        "required": ["chapter_goal", "conflicts", "scenes", "ending_hook"],
+        "properties": {
+          "chapter_goal": {"type": "string", "minLength": 1},
+          "conflicts": {"type": "array", "minItems": 1},
+          "scenes": {"type": "array", "minItems": 1},
+          "ending_hook": {"type": "string", "minLength": 1}
+        },
+        "additionalProperties": true
+      }
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:chapter-review-input:v1",
+      "version": "v1",
+      "content": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "novel-forge://schemas/chapter-review-input/v1",
+        "type": "object",
+        "required": ["draft_asset_version_id", "chapter_plan_asset_version_id", "canon_snapshot_version_id"],
+        "properties": {
+          "draft_asset_version_id": {"type": "string", "minLength": 1},
+          "chapter_plan_asset_version_id": {"type": "string", "minLength": 1},
+          "canon_snapshot_version_id": {"type": "string", "minLength": 1}
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:chapter-review-output:v1",
+      "version": "v1",
+      "content": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "novel-forge://schemas/chapter-review-output/v1",
+        "type": "object",
+        "required": ["decision", "issues", "evidence_refs"],
+        "properties": {
+          "decision": {"enum": ["PASS", "REVISE", "BLOCK"]},
+          "issues": {"type": "array", "items": {"type": "object"}},
+          "evidence_refs": {"type": "array", "items": {"type": "string", "minLength": 1}}
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:context-bundle:v1",
+      "version": "v1",
+      "content": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "novel-forge://schemas/context-bundle/v1",
+        "type": "object",
+        "required": ["project_id", "asset_version_refs", "source_isolation", "token_count"],
+        "properties": {
+          "project_id": {"type": "string", "minLength": 1},
+          "asset_version_refs": {"type": "array", "items": {"type": "string", "minLength": 1}},
+          "source_isolation": {"const": "ABSTRACT_ASSETS_ONLY"},
+          "token_count": {"type": "integer", "minimum": 0, "maximum": 6000}
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:execution-input:prose-chapter-draft:v1",
+      "version": "v1",
+      "content": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "novel-forge://schemas/execution-input/prose-chapter-draft/v1",
+        "type": "object",
+        "required": ["input_manifest_hash", "context_bundle_asset_version_id", "route_snapshot_hash"],
+        "properties": {
+          "input_manifest_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+          "context_bundle_asset_version_id": {"type": "string", "minLength": 1},
+          "route_snapshot_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:execution-output:prose-chapter-draft:v1",
+      "version": "v1",
+      "content": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "novel-forge://schemas/execution-output/prose-chapter-draft/v1",
+        "type": "object",
+        "required": ["output_asset_version_id", "output_content_hash", "receipt_id"],
+        "properties": {
+          "output_asset_version_id": {"type": "string", "minLength": 1},
+          "output_content_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+          "receipt_id": {"type": "string", "minLength": 1}
+        },
+        "additionalProperties": false
+      }
+    },
+
+    {"kind": "TIMEOUT_POLICY", "ref": "timeout:canon-extract:v1", "version": "v1", "content": {"policy_id": "timeout:canon-extract:v1", "operation_timeout_seconds": 60, "timeout_action": "FAIL_ATTEMPT", "authority_binding": "chapter_operation_definition@2.2.0"}},
+    {"kind": "TIMEOUT_POLICY", "ref": "timeout:planning-chapter-generate:v1", "version": "v1", "content": {"policy_id": "timeout:planning-chapter-generate:v1", "operation_timeout_seconds": 60, "timeout_action": "FAIL_ATTEMPT", "authority_binding": "chapter_operation_definition@2.2.0"}},
+    {"kind": "TIMEOUT_POLICY", "ref": "timeout:prose-chapter-draft:v1", "version": "v1", "content": {"policy_id": "timeout:prose-chapter-draft:v1", "operation_timeout_seconds": 60, "timeout_action": "FAIL_ATTEMPT", "authority_binding": "chapter_operation_definition@2.2.0"}},
+    {"kind": "TIMEOUT_POLICY", "ref": "timeout:publishing-release-query:v1", "version": "v1", "content": {"policy_id": "timeout:publishing-release-query:v1", "operation_timeout_seconds": 60, "timeout_action": "FAIL_ATTEMPT", "authority_binding": "chapter_operation_definition@2.2.0"}},
+    {"kind": "TIMEOUT_POLICY", "ref": "timeout:quality-intrinsic-judge:v1", "version": "v1", "content": {"policy_id": "timeout:quality-intrinsic-judge:v1", "operation_timeout_seconds": 60, "timeout_action": "FAIL_ATTEMPT", "authority_binding": "chapter_operation_definition@2.2.0"}},
+    {"kind": "TIMEOUT_POLICY", "ref": "timeout:quality-originality-judge:v1", "version": "v1", "content": {"policy_id": "timeout:quality-originality-judge:v1", "operation_timeout_seconds": 60, "timeout_action": "FAIL_ATTEMPT", "authority_binding": "chapter_operation_definition@2.2.0"}},
+    {"kind": "TIMEOUT_POLICY", "ref": "timeout:quality-platform-judge:v1", "version": "v1", "content": {"policy_id": "timeout:quality-platform-judge:v1", "operation_timeout_seconds": 60, "timeout_action": "FAIL_ATTEMPT", "authority_binding": "chapter_operation_definition@2.2.0"}},
+    {"kind": "TIMEOUT_POLICY", "ref": "timeout:retrieval-index-query:v1", "version": "v1", "content": {"policy_id": "timeout:retrieval-index-query:v1", "operation_timeout_seconds": 60, "timeout_action": "FAIL_ATTEMPT", "authority_binding": "chapter_operation_definition@2.2.0"}},
+    {"kind": "TIMEOUT_POLICY", "ref": "timeout:review-chapter-evaluate:v1", "version": "v1", "content": {"policy_id": "timeout:review-chapter-evaluate:v1", "operation_timeout_seconds": 60, "timeout_action": "FAIL_ATTEMPT", "authority_binding": "chapter_operation_definition@2.2.0"}},
+    {"kind": "TIMEOUT_POLICY", "ref": "timeout:revision-chapter-revise:v1", "version": "v1", "content": {"policy_id": "timeout:revision-chapter-revise:v1", "operation_timeout_seconds": 60, "timeout_action": "FAIL_ATTEMPT", "authority_binding": "chapter_operation_definition@2.2.0"}},
+    {"kind": "TIMEOUT_POLICY", "ref": "timeout:storage-object-put:v1", "version": "v1", "content": {"policy_id": "timeout:storage-object-put:v1", "operation_timeout_seconds": 60, "timeout_action": "FAIL_ATTEMPT", "authority_binding": "chapter_operation_definition@2.2.0"}},
+
+    {
+      "kind": "APPROVAL_POLICY",
+      "ref": "chapter-operation-admission:v1",
+      "version": "v1",
+      "content": {
+        "policy_id": "chapter-operation-admission:v1",
+        "operation_admission_approval_required": false,
+        "business_quality_gates_are_separate": true,
+        "failure_mode": "DENY"
+      }
+    },
+    {
+      "kind": "APPROVAL_POLICY",
+      "ref": "chapter.stage.route.policy:v1",
+      "version": "v1",
+      "content": {
+        "policy_id": "chapter.stage.route.policy:v1",
+        "route_snapshot_required": true,
+        "provider_profile_must_be_governed": true,
+        "inline_auth_material_allowed": false,
+        "failure_mode": "DENY"
+      }
+    },
+    {
+      "kind": "APPROVAL_POLICY",
+      "ref": "domain-decision-record:v1",
+      "version": "v1",
+      "content": {
+        "policy_id": "domain-decision-record:v1",
+        "pack_release_approval_required": true,
+        "operation_admission_approval_required": false,
+        "decision_record_required": true,
+        "failure_mode": "DENY"
+      }
+    },
+    {
+      "kind": "COMPENSATION_POLICY",
+      "ref": "append-only-evidence:v1",
+      "version": "v1",
+      "content": {
+        "policy_id": "append-only-evidence:v1",
+        "supported": false,
+        "rollback_mode": "APPEND_ONLY_EVIDENCE",
+        "mutation_of_prior_evidence_allowed": false
+      }
+    },
+    {
+      "kind": "COMPENSATION_POLICY",
+      "ref": "append-only-supersede:v1",
+      "version": "v1",
+      "content": {
+        "policy_id": "append-only-supersede:v1",
+        "supported": false,
+        "rollback_mode": "SUPERSEDE_WITH_NEW_VERSION",
+        "mutation_of_prior_evidence_allowed": false
+      }
+    },
+    {
+      "kind": "CONTEXT_POLICY",
+      "ref": "context-policy:chapter-generation-pack:v1",
+      "version": "v1",
+      "content": {
+        "policy_id": "context-policy:chapter-generation-pack:v1",
+        "max_tokens": 6000,
+        "source_isolation": "ABSTRACT_ASSETS_ONLY",
+        "reject_cross_project": true,
+        "required_version_refs": ["canon_snapshot_version_id", "chapter_plan_asset_version_id"],
+        "allowed_asset_types": ["book_design", "canon_snapshot", "chapter_plan", "chapter_plan_version", "context_bundle", "knowledge_pack", "story_state"],
+        "forbidden_asset_types": ["raw_source_chunk", "raw_source_document"]
+      }
+    },
+    {
+      "kind": "SOURCE_POLICY",
+      "ref": "source:chapter-generation-pack:v1",
+      "version": "v1",
+      "content": {
+        "policy_id": "source:chapter-generation-pack:v1",
+        "allowed_eligibility": ["NOT_SOURCE_DERIVED", "PRODUCTION_ELIGIBLE"],
+        "raw_source_expression_allowed": false,
+        "requires_lineage": true,
+        "cross_project_reads_allowed": false,
+        "failure_mode": "DENY"
+      }
+    },
+    {
+      "kind": "TOOL_POLICY",
+      "ref": "tools:chapter-generation-pack:v1",
+      "version": "v1",
+      "content": {
+        "policy_id": "tools:chapter-generation-pack:v1",
+        "default": "DENY",
+        "empty_allowlist_semantics": "DENY_ALL",
+        "audit_high_and_critical": true,
+        "critical_requires_approval": true,
+        "inline_auth_material_allowed": false,
+        "explicit_tool_refs": ["model.provider.invoke", "storage.object.put"]
+      }
+    },
+    {
+      "kind": "VALIDATION_POLICY",
+      "ref": "validation:chapter-generation-pack:v1",
+      "version": "v1",
+      "content": {
+        "policy_id": "validation:chapter-generation-pack:v1",
+        "failure_mode": "FAIL_CLOSED",
+        "required_validators": ["schema", "structural", "semantic", "source_isolation", "authority_completion"],
+        "validation_evidence_required": true,
+        "client_asserted_pass_allowed": false
+      }
+    },
+    {
+      "kind": "COMMIT_POLICY",
+      "ref": "commit:chapter-generation-pack:v1",
+      "version": "v1",
+      "content": {
+        "policy_id": "commit:chapter-generation-pack:v1",
+        "domain_authority_commit_only": true,
+        "validated_result_required": true,
+        "attempt_fence_required": true,
+        "completion_receipt_required": true
+      }
+    },
+    {
+      "kind": "BUDGET_POLICY",
+      "ref": "budget:chapter-generation-pack:v1",
+      "version": "v1",
+      "content": {
+        "policy_id": "budget:chapter-generation-pack:v1",
+        "bounded": true,
+        "receipt_required": true,
+        "hard_stop_on_exhaustion": true,
+        "maximum_invocations_are_manifest_bounded": true
+      }
+    },
+    {
+      "kind": "RULE",
+      "ref": "source-isolation-no-raw-expression:v1",
+      "version": "v1",
+      "content": {
+        "rule_id": "source-isolation-no-raw-expression:v1",
+        "severity": "BLOCKING",
+        "hard_constraint": true,
+        "raw_source_expression_allowed": false,
+        "requires_abstract_assets": true,
+        "requires_lineage": true
+      }
+    },
+
+    {
+      "kind": "PROTOCOL",
+      "ref": "append-only-supersede.v1",
+      "version": "v1",
+      "content": {
+        "protocol_id": "append-only-supersede.v1",
+        "required_fields": ["superseded_asset_version_id", "replacement_asset_version_id", "reason", "actor_id"],
+        "prior_record_mutation_allowed": false,
+        "rollback_creates_new_version": true
+      }
+    },
+    {
+      "kind": "PROTOCOL",
+      "ref": "authority-audit.v1",
+      "version": "v1",
+      "content": {
+        "protocol_id": "authority-audit.v1",
+        "required_fields": ["audit_id", "operation_id", "actor_id", "action", "input_hash", "result_hash"],
+        "append_only": true,
+        "pack_manifest_hash_required": true
+      }
+    },
+    {
+      "kind": "PROTOCOL",
+      "ref": "authority-error.v1",
+      "version": "v1",
+      "content": {
+        "protocol_id": "authority-error.v1",
+        "required_fields": ["code", "message", "retryable", "operation_id", "attempt_id"],
+        "unknown_errors_retryable": false,
+        "inline_auth_material_allowed": false
+      }
+    },
+    {
+      "kind": "PROTOCOL",
+      "ref": "authority-event.v1",
+      "version": "v1",
+      "content": {
+        "protocol_id": "authority-event.v1",
+        "required_fields": ["event_id", "operation_id", "event_type", "payload_hash", "occurred_at"],
+        "append_only": true,
+        "ordered_by_authority_sequence": true
+      }
+    },
+    {
+      "kind": "PROTOCOL",
+      "ref": "chapter-generation-input.v1",
+      "version": "v1",
+      "content": {
+        "protocol_id": "chapter-generation-input.v1",
+        "schema_ref": "schema:chapter-generation-pack-input:v1",
+        "frozen_asset_versions_required": true,
+        "route_snapshot_required": true,
+        "source_isolation_required": true
+      }
+    },
+    {
+      "kind": "PROTOCOL",
+      "ref": "chapter-generation-output.v1",
+      "version": "v1",
+      "content": {
+        "protocol_id": "chapter-generation-output.v1",
+        "schema_ref": "schema:chapter-generation-pack-output:v1",
+        "release_gate_required": true,
+        "lineage_required": true,
+        "completion_receipt_required": true
+      }
+    },
+    {
+      "kind": "PROTOCOL",
+      "ref": "operation-saga-attempt-state.v1",
+      "version": "v1",
+      "content": {
+        "protocol_id": "operation-saga-attempt-state.v1",
+        "schema_ref": "operation-saga-attempt-state.v1",
+        "operation_is_authority": true,
+        "attempt_fence_required": true,
+        "stale_attempt_result_rejected": true
+      }
+    }
+  ]
+}

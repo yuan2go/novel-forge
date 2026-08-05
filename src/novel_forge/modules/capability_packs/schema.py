@@ -219,7 +219,11 @@ class SkillBinding:
 @dataclass(frozen=True, slots=True)
 class PromptBinding:
     prompt_bundle_type: Any
+    system_instruction_ref: Any
+    system_instruction_version: Any
     system_instruction_hash: Any
+    template_ref: Any
+    template_version: Any
     template_hash: Any
     compiler_version: Any
     input_schema_ref: Any
@@ -250,6 +254,7 @@ class WorkflowNode:
     node_id: Any
     operation_name: Any
     operation_definition_ref: Any
+    operation_definition_hash: Any
     handler_key: Any
     stage: Any
     capability_id: Any
@@ -267,6 +272,7 @@ class WorkflowNode:
             payload.get("node_id"),
             payload.get("operation_name"),
             payload.get("operation_definition_ref"),
+            payload.get("operation_definition_hash"),
             payload.get("handler_key"),
             payload.get("stage"),
             payload.get("capability_id"),
@@ -554,6 +560,7 @@ def canonical_json(payload: Mapping[str, Any]) -> str:
         ensure_ascii=False,
         sort_keys=True,
         separators=(",", ":"),
+        allow_nan=False,
     )
 
 

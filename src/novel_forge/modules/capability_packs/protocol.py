@@ -106,6 +106,7 @@ WORKFLOW_NODE = _object(
         "node_id": STRING,
         "operation_name": STRING,
         "operation_definition_ref": STRING,
+        "operation_definition_hash": STRING,
         "handler_key": STRING,
         "stage": STRING,
         "capability_id": STRING,
@@ -231,7 +232,11 @@ CAPABILITY_PACK_V1_CONTRACT = _object(
         "prompt_binding": _object(
             {
                 "prompt_bundle_type": STRING,
+                "system_instruction_ref": STRING,
+                "system_instruction_version": STRING,
                 "system_instruction_hash": STRING,
+                "template_ref": STRING,
+                "template_version": STRING,
                 "template_hash": STRING,
                 "compiler_version": STRING,
                 "input_schema_ref": STRING,

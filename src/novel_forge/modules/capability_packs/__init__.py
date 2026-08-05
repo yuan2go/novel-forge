@@ -1,7 +1,10 @@
-"""Novel OS Capability Pack P0 protocol and static validation boundary."""
+"""Capability Pack protocol, governed resolution, and pure compilation boundary."""
 
 from .errors import (
+    CapabilityPackCompilationIssue,
+    CapabilityPackCompilationReport,
     CapabilityPackLoadError,
+    CapabilityPackResolutionReport,
     CapabilityPackValidationIssue,
     CapabilityPackValidationReport,
 )
@@ -23,13 +26,58 @@ from .schema import (
     canonical_json,
 )
 from .validator import validate_capability_pack
+from .artifacts import (
+    ArtifactKind,
+    ExplicitArtifactResolver,
+    ResolvedArtifact,
+    default_chapter_artifact_resolver,
+)
+from .compiler import (
+    COMPILED_CAPABILITY_PACK_SCHEMA_VERSION,
+    CapabilityPackCompilationResult,
+    CapabilityPackCompiler,
+    CompiledCapabilityPack,
+    CompiledWorkflowNode,
+)
+from .operation_catalog import (
+    InMemoryOperationDefinitionCatalog,
+    OperationDefinitionCatalog,
+    OperationDefinitionReader,
+    RepositoryOperationDefinitionLoader,
+    ResolvedOperationDefinition,
+    chapter_operation_definition_catalog,
+    chapter_workflow_binding_catalog,
+)
+from .semantic import SemanticResolution, validate_capability_pack_semantics
+from .type_catalog import (
+    CapabilityTypePolicy,
+    CapabilityTypePolicyCatalog,
+    ToolDefinition,
+    ToolDefinitionCatalog,
+    conservative_capability_type_policy,
+    default_capability_type_catalog,
+    default_tool_definition_catalog,
+)
+from .versioning import (
+    CapabilityPackVersionResolver,
+    PackCatalogEntry,
+    PackDependency,
+    ReadOnlyPackCatalog,
+    ResolvedPackSet,
+)
 
 
 __all__ = [
     "CAPABILITY_PACK_SCHEMA_VERSION",
+    "COMPILED_CAPABILITY_PACK_SCHEMA_VERSION",
     "MAX_CAPABILITY_PACK_BYTES",
     "CapabilityPackLoadError",
+    "CapabilityPackCompilationIssue",
+    "CapabilityPackCompilationReport",
+    "CapabilityPackCompilationResult",
+    "CapabilityPackCompiler",
     "CapabilityPackManifest",
+    "CapabilityPackResolutionReport",
     "CapabilityPackValidationIssue",
     "CapabilityPackValidationReport",
     "PackLifecycle",
@@ -39,8 +87,35 @@ __all__ = [
     "SkillBindingMode",
     "SkillDriftPolicy",
     "ToolRiskClass",
+    "ArtifactKind",
+    "CapabilityPackVersionResolver",
+    "CapabilityTypePolicy",
+    "CapabilityTypePolicyCatalog",
+    "CompiledCapabilityPack",
+    "CompiledWorkflowNode",
+    "ExplicitArtifactResolver",
+    "InMemoryOperationDefinitionCatalog",
+    "OperationDefinitionCatalog",
+    "OperationDefinitionReader",
+    "PackCatalogEntry",
+    "PackDependency",
+    "ReadOnlyPackCatalog",
+    "RepositoryOperationDefinitionLoader",
+    "ResolvedArtifact",
+    "ResolvedOperationDefinition",
+    "ResolvedPackSet",
+    "SemanticResolution",
+    "ToolDefinition",
+    "ToolDefinitionCatalog",
     "canonical_json",
+    "chapter_operation_definition_catalog",
+    "chapter_workflow_binding_catalog",
+    "default_capability_type_catalog",
+    "conservative_capability_type_policy",
+    "default_chapter_artifact_resolver",
+    "default_tool_definition_catalog",
     "load_capability_pack",
     "load_capability_pack_payload",
     "validate_capability_pack",
+    "validate_capability_pack_semantics",
 ]

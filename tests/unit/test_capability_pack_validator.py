@@ -274,7 +274,7 @@ class CapabilityPackValidatorTests(unittest.TestCase):
             copy.deepcopy(payload["evaluation"]["required_gates"][0])
         )
 
-        self.assertIn("CAPABILITY_PACK_EVALUATION_INVALID", self._codes(payload))
+        self.assertIn("CAPABILITY_PACK_EVALUATION_GATE_DUPLICATE", self._codes(payload))
 
     def test_evaluation_failure_classes_cannot_overlap(self) -> None:
         payload = self._payload()
@@ -466,10 +466,10 @@ class CapabilityPackValidatorTests(unittest.TestCase):
         ] = "chapter.unknown@1.0.0"
 
         self.assertIn(
-            "CAPABILITY_PACK_WORKFLOW_BINDING_UNKNOWN", self._codes(payload)
+            "CAPABILITY_PACK_WORKFLOW_BINDING_INVALID", self._codes(payload)
         )
 
-    def test_non_chapter_pack_uses_generic_operation_ref_contract(self) -> None:
+    def test_pack_id_rename_cannot_bypass_governed_workflow_contract(self) -> None:
         payload = self._payload()
         payload["identity"]["pack_id"] = "alternate_generation_pack"
         node = payload["workflow_template"]["nodes"][0]
@@ -477,7 +477,9 @@ class CapabilityPackValidatorTests(unittest.TestCase):
         node["operation_definition_ref"] = "alternate.plan.generate@1.0.0"
         node["handler_key"] = "novel_forge.alternate.plan"
 
-        self.assertTrue(self._report(payload).ok, self._report(payload).errors)
+        self.assertIn(
+            "CAPABILITY_PACK_WORKFLOW_BINDING_INVALID", self._codes(payload)
+        )
 
     def test_generic_operation_ref_must_match_operation_name(self) -> None:
         payload = self._payload()
@@ -514,6 +516,7 @@ class CapabilityPackValidatorTests(unittest.TestCase):
 
     def test_required_node_approval_needs_policy(self) -> None:
         payload = self._payload()
+        payload["workflow_template"]["nodes"][-1]["approval"]["required"] = True
         payload["workflow_template"]["nodes"][-1]["approval"]["policy_ref"] = None
 
         self.assertIn("CAPABILITY_PACK_WORKFLOW_BINDING_INVALID", self._codes(payload))
@@ -622,7 +625,9 @@ class CapabilityPackValidatorTests(unittest.TestCase):
             path.write_text("{invalid", encoding="utf-8")
             with self.assertRaises(CapabilityPackLoadError) as raised:
                 load_capability_pack(path)
-        self.assertEqual(raised.exception.issue.code, "CAPABILITY_PACK_JSON_INVALID")
+        self.assertEqual(
+            raised.exception.issue.code, "CAPABILITY_PACK_JSON_INVALID"
+        )
 
     def test_loader_rejects_duplicate_json_object_keys(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -631,7 +636,9 @@ class CapabilityPackValidatorTests(unittest.TestCase):
             with self.assertRaises(CapabilityPackLoadError) as raised:
                 load_capability_pack(path)
 
-        self.assertEqual(raised.exception.issue.code, "CAPABILITY_PACK_JSON_INVALID")
+        self.assertEqual(
+            raised.exception.issue.code, "CAPABILITY_PACK_JSON_DUPLICATE_KEY"
+        )
 
     def test_loader_rejects_non_object_root(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
