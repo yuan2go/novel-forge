@@ -16,6 +16,7 @@ from novel_forge.modules.chapter_authority.orchestrator import (
 from novel_forge.modules.command_kernel.external_effect_adapters import (
     FakeDeterministicProvider,
 )
+from novel_forge.modules.chapter_quality_authority import QUALITY_DIMENSIONS
 from tests.integration.authority_postgres_support import (
     DATABASE_URL,
     ensure_migrated,
@@ -43,7 +44,8 @@ class PostgreSQLOnlyChapterSliceTests(unittest.TestCase):
                 "structured_facts": [{
                     "key": "dimension_evidence",
                     "value": [{
-                        "dimension": item, "gate_status": "PASSED",
+                        "dimension": item,
+                        "gate_status": "WAIVED_BY_APPROVAL",
                         "calibration_status": "HUMAN_CALIBRATED",
                         "human_verified": True,
                         "fixture_protocol_only": True,
@@ -69,7 +71,13 @@ class PostgreSQLOnlyChapterSliceTests(unittest.TestCase):
                 "asset_version_id": f"{project_id}:checklist-v1", "asset_type": "operator_checklist",
                 "project_id": project_id, "estimated_tokens": 20,
                 "safe_summary": "Operator checklist completed.",
-                "structured_facts": [{"key": "completed", "value": True}],
+                "structured_facts": [
+                    {"key": "completed", "value": True},
+                    {
+                        "key": "contract_version",
+                        "value": "fixture-waiver-checklist-v1",
+                    },
+                ],
                 "narrative_function": "release_evidence",
             },
             {
@@ -96,7 +104,32 @@ class PostgreSQLOnlyChapterSliceTests(unittest.TestCase):
                 "asset_version_id": f"{project_id}:approval-v1", "asset_type": "operator_approval",
                 "project_id": project_id, "estimated_tokens": 20,
                 "safe_summary": "Operator approved fixture release evidence.",
-                "structured_facts": [{"key": "approved", "value": True}],
+                "structured_facts": [
+                    {"key": "approved", "value": True},
+                    {"key": "decision", "value": "APPROVED"},
+                    {
+                        "key": "contract_version",
+                        "value": "fixture-waiver-approval-v1",
+                    },
+                    {"key": "fixture_protocol_only", "value": True},
+                    {
+                        "key": "waiver_reason",
+                        "value": "Deterministic integration fixture release only.",
+                    },
+                    {
+                        "key": "waived_dimensions",
+                        "value": list(QUALITY_DIMENSIONS),
+                    },
+                    {
+                        "key": "scope",
+                        "value": {
+                            "project_id": project_id,
+                            "scope_type": "PROJECT_FIXTURE",
+                            "release_readiness": "INTERNAL_REVIEW_RELEASE",
+                        },
+                    },
+                    {"key": "expiry", "value": "2099-01-01T00:00:00Z"},
+                ],
                 "narrative_function": "release_evidence",
             },
             report("commercial_quality_report", (

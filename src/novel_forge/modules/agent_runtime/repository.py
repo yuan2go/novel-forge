@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 from dataclasses import asdict
-from typing import Any
+import hashlib
+import json
+from typing import Any, Mapping
 
 from novel_forge.modules.command_kernel.errors import KernelError
 
@@ -48,14 +50,19 @@ class PostgresAgentRuntimeRepository:
         )
         self.cursor.execute(
             """
-            SELECT mapping_hash
+            SELECT execution_capability_id, execution_capability_hash
             FROM authority_agent_capability_execution_mapping
             WHERE capability_id=%s AND capability_version=%s
             """,
             [mapping.capability_id, mapping.capability_version],
         )
         row = self.cursor.fetchone()
-        if row is None or str(row[0]) != mapping.mapping_hash:
+        if row is None or (
+            str(row[0]), str(row[1])
+        ) != (
+            mapping.execution_capability_id,
+            mapping.execution_capability_hash,
+        ):
             raise KernelError(
                 "AGENT_CAPABILITY_MAPPING_CONFLICT",
                 "Capability version already maps to different PEP content",
@@ -702,41 +709,46 @@ class PostgresAgentRuntimeRepository:
         operation_name, operation_version = _version_ref(
             binding.operation_definition_ref
         )
-        chapter_binding_id, chapter_binding_version = _integer_version_ref(
-            binding.chapter_node_binding_ref
-        )
-        active = self.resolve_active_chapter_node_binding(
-            workflow_definition_ref=binding.workflow_definition_ref,
-            workflow_node_id=binding.workflow_node_id,
-        )
-        expected = {
-            "binding_id": chapter_binding_id,
-            "binding_version": chapter_binding_version,
-            "agent_id": binding.agent_id,
-            "agent_definition_version": binding.agent_definition_version,
-            "agent_definition_hash": binding.agent_definition_hash,
-            "capability_id": binding.capability_id,
-            "capability_version": binding.capability_version,
-            "capability_hash": binding.capability_hash,
-            "execution_capability_id": binding.execution_capability_id,
-            "capability_pack_ref": binding.capability_pack_ref,
-            "capability_pack_compilation_hash": (
-                binding.capability_pack_compilation_hash
-            ),
-            "commit_authority": binding.commit_authority,
-            "release_sha": binding.release_sha,
-        }
-        drift = [
-            key
-            for key, value in expected.items()
-            if str(active[key]) != str(value)
-        ]
-        if drift:
-            raise KernelError(
-                "AGENT_RUNTIME_BINDING_DRIFT",
-                "Runtime binding differs from active Chapter binding: "
-                + ", ".join(drift),
+        if binding.capability_pack_deployment_id:
+            chapter_binding_id = None
+            chapter_binding_version = None
+            self._validate_pack_runtime_binding(binding)
+        else:
+            chapter_binding_id, chapter_binding_version = _integer_version_ref(
+                binding.chapter_node_binding_ref
             )
+            active = self.resolve_active_chapter_node_binding(
+                workflow_definition_ref=binding.workflow_definition_ref,
+                workflow_node_id=binding.workflow_node_id,
+            )
+            expected = {
+                "binding_id": chapter_binding_id,
+                "binding_version": chapter_binding_version,
+                "agent_id": binding.agent_id,
+                "agent_definition_version": binding.agent_definition_version,
+                "agent_definition_hash": binding.agent_definition_hash,
+                "capability_id": binding.capability_id,
+                "capability_version": binding.capability_version,
+                "capability_hash": binding.capability_hash,
+                "execution_capability_id": binding.execution_capability_id,
+                "capability_pack_ref": binding.capability_pack_ref,
+                "capability_pack_compilation_hash": (
+                    binding.capability_pack_compilation_hash
+                ),
+                "commit_authority": binding.commit_authority,
+                "release_sha": binding.release_sha,
+            }
+            drift = [
+                key
+                for key, value in expected.items()
+                if str(active[key]) != str(value)
+            ]
+            if drift:
+                raise KernelError(
+                    "AGENT_RUNTIME_BINDING_DRIFT",
+                    "Runtime binding differs from active legacy Chapter binding: "
+                    + ", ".join(drift),
+                )
         self.cursor.execute(
             """
             SELECT definition_hash
@@ -778,7 +790,13 @@ class PostgresAgentRuntimeRepository:
                 input_manifest_ref, input_manifest_hash,
                 budget_policy_ref, timeout_policy_ref, approval_policy_ref,
                 validation_policy_ref, commit_policy_ref, commit_authority,
-                release_sha, binding_hash
+                release_sha, binding_hash,
+                capability_pack_deployment_id,
+                capability_pack_activation_version,
+                capability_pack_binding_set_id,
+                capability_pack_binding_set_hash,
+                capability_pack_scope_type,
+                capability_pack_assignment_ref
             ) VALUES (
                 %(binding_id)s, %(project_id)s, %(workspace_id)s, %(book_id)s,
                 %(workflow_definition_ref)s, %(workflow_node_id)s,
@@ -804,7 +822,13 @@ class PostgresAgentRuntimeRepository:
                 %(budget_policy_ref)s, %(timeout_policy_ref)s,
                 %(approval_policy_ref)s, %(validation_policy_ref)s,
                 %(commit_policy_ref)s, %(commit_authority)s,
-                %(release_sha)s, %(binding_hash)s
+                %(release_sha)s, %(binding_hash)s,
+                %(capability_pack_deployment_id)s,
+                %(capability_pack_activation_version)s,
+                %(capability_pack_binding_set_id)s,
+                %(capability_pack_binding_set_hash)s,
+                %(capability_pack_scope_type)s,
+                %(capability_pack_assignment_ref)s
             )
             ON CONFLICT (binding_id) DO NOTHING
             """,
@@ -816,6 +840,24 @@ class PostgresAgentRuntimeRepository:
                 "chapter_node_binding_id": chapter_binding_id,
                 "chapter_node_binding_version": chapter_binding_version,
                 "binding_hash": binding.binding_hash,
+                "capability_pack_deployment_id": (
+                    binding.capability_pack_deployment_id or None
+                ),
+                "capability_pack_activation_version": (
+                    binding.capability_pack_activation_version or None
+                ),
+                "capability_pack_binding_set_id": (
+                    binding.capability_pack_binding_set_id or None
+                ),
+                "capability_pack_binding_set_hash": (
+                    binding.capability_pack_binding_set_hash or None
+                ),
+                "capability_pack_scope_type": (
+                    binding.capability_pack_scope_type or None
+                ),
+                "capability_pack_assignment_ref": (
+                    binding.capability_pack_assignment_ref or None
+                ),
             },
         )
         self.cursor.execute(
@@ -833,6 +875,102 @@ class PostgresAgentRuntimeRepository:
                 "Agent Runtime binding id already has different content",
             )
         return binding
+
+    def _validate_pack_runtime_binding(self, binding: AgentRuntimeBinding) -> None:
+        self.cursor.execute(
+            """
+            SELECT deployment.pack_id, deployment.pack_version,
+                   deployment.target_scope_type,
+                   COALESCE(deployment.project_id, ''),
+                   COALESCE(deployment.workspace_id, ''),
+                   COALESCE(deployment.book_id, ''),
+                   deployment.workflow_definition_ref,
+                   compilation.compilation_hash, compilation.release_sha,
+                   binding_set.binding_set_id, binding_set.binding_set_hash,
+                   binding_set.node_bindings
+            FROM authority_capability_pack_deployment AS deployment
+            JOIN authority_capability_pack_compilation AS compilation
+              ON compilation.compilation_id=deployment.compilation_id
+            JOIN authority_capability_pack_binding_set AS binding_set
+              ON binding_set.binding_set_id=deployment.binding_set_id
+            WHERE deployment.deployment_id=%s
+            """,
+            [binding.capability_pack_deployment_id],
+        )
+        row = self.cursor.fetchone()
+        if row is None:
+            raise KernelError(
+                "CAPABILITY_PACK_DEPLOYMENT_NOT_FOUND",
+                "runtime binding references an unknown Pack Deployment",
+            )
+        nodes = [
+            dict(item)
+            for item in row[11]
+            if str(item.get("workflow_node_id")) == binding.workflow_node_id
+        ]
+        if len(nodes) != 1:
+            raise KernelError(
+                "CAPABILITY_PACK_WORKFLOW_NODE_AMBIGUOUS",
+                "runtime binding requires exactly one Pack Workflow Node",
+            )
+        node = nodes[0]
+        expected_ref = (
+            f"pack-binding-set:{row[9]}:{binding.workflow_node_id}@"
+            f"{binding.capability_pack_activation_version}"
+        )
+        deployment_expected = {
+            "capability_pack_ref": f"{row[0]}@{row[1]}",
+            "capability_pack_scope_type": row[2],
+            "workflow_definition_ref": row[6],
+            "capability_pack_compilation_hash": row[7],
+            "release_sha": row[8],
+            "capability_pack_binding_set_id": row[9],
+            "capability_pack_binding_set_hash": row[10],
+            "chapter_node_binding_ref": expected_ref,
+        }
+        node_expected = {
+            "operation_definition_ref": node["operation_definition_ref"],
+            "operation_definition_hash": node["operation_definition_hash"],
+            "agent_definition_hash": node["agent_definition_hash"],
+            "capability_hash": node["capability_hash"],
+            "execution_capability_id": node["execution_capability_id"],
+            "commit_authority": node["commit_authority"],
+        }
+        drift = [
+            key
+            for key, expected in {**deployment_expected, **node_expected}.items()
+            if str(getattr(binding, key)) != str(expected)
+        ]
+        agent_id, _, agent_version = str(node["agent_definition_ref"]).rpartition("@")
+        capability_id, _, capability_version = str(node["capability_ref"]).rpartition(
+            "@"
+        )
+        if (binding.agent_id, binding.agent_definition_version) != (
+            agent_id,
+            int(agent_version),
+        ):
+            drift.append("agent_definition_ref")
+        if (binding.capability_id, binding.capability_version) != (
+            capability_id,
+            int(capability_version),
+        ):
+            drift.append("capability_ref")
+        scope_identities = {
+            "SYSTEM": ("", "", ""),
+            "PROJECT": (binding.project_id, "", ""),
+            "WORKSPACE": (binding.project_id, binding.workspace_id, ""),
+            "BOOK": (binding.project_id, binding.workspace_id, binding.book_id),
+        }
+        if (str(row[3]), str(row[4]), str(row[5])) != scope_identities.get(
+            str(row[2]), (None, None, None)
+        ):
+            drift.append("scope_identity")
+        if drift:
+            raise KernelError(
+                "CAPABILITY_PACK_RUNTIME_BINDING_DRIFT",
+                "runtime binding differs from immutable Pack facts: "
+                + ", ".join(sorted(set(drift))),
+            )
 
     def _definition_capabilities(
         self, agent_id: str, definition_version: int
@@ -905,6 +1043,17 @@ def _version_ref(value: str) -> tuple[str, str]:
     if not separator or not identity or not version:
         raise ValueError(f"version ref must be exact: {value}")
     return identity, version
+
+
+def _hash(value: Mapping[str, Any]) -> str:
+    encoded = json.dumps(
+        value,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+        allow_nan=False,
+    ).encode("utf-8")
+    return "sha256:" + hashlib.sha256(encoded).hexdigest()
 
 
 def _integer_version_ref(value: str) -> tuple[str, int]:

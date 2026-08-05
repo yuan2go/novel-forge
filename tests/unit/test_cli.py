@@ -20,7 +20,7 @@ class CliTests(unittest.TestCase):
         env["NOVEL_FORGE_LEGACY_WRITE_ENABLED"] = "true"
         env["NOVEL_FORGE_SILENT_LEGACY_FALLBACK_ENABLED"] = "false"
         return subprocess.run(
-            [sys.executable, "-m", "novel_forge.cli", *args],
+            [sys.executable, "-m", "novel_forge.cli", "legacy", *args],
             cwd=cwd or ROOT,
             env=env,
             text=True,

@@ -42,6 +42,12 @@ from novel_forge.modules.agent_runtime.execution import (
 )
 from novel_forge.modules.agent_runtime.queries import AgentRuntimeQuery
 from novel_forge.modules.agent_runtime.scheduler import AgentAuthorityScheduler
+from novel_forge.modules.capability_pack_authority.application import (
+    CapabilityPackAuthorityApplication,
+)
+from novel_forge.modules.capability_pack_authority.query import (
+    CapabilityPackAuthorityQuery,
+)
 from novel_forge.modules.authority_security import TrustedPrincipalResolver
 from novel_forge.modules.command_kernel.external_effect_adapters import (
     LocalFileObjectStoreAdapter,
@@ -472,6 +478,13 @@ def build_chapter_authority_application(
         provider_adapters={
             adapter.provider: adapter for adapter in provider_adapters.values()
         },
+        capability_pack_id="chapter_generation_pack",
+        pack_environment=environment,
+        pack_runtime_profile=environment,
+        pack_release_channel=str(
+            values.get("NOVEL_FORGE_RELEASE_CHANNEL") or "VALIDATION"
+        ),
+        pack_required=controlled,
     )
     object_store_backend = str(
         values.get("NOVEL_FORGE_AUTHORITY_OBJECT_STORE_BACKEND") or "local"
@@ -517,6 +530,15 @@ def build_chapter_authority_application(
                 AGENT_BOUND_CHAPTER_STAGES if controlled else frozenset()
             ),
             compatibility_allowed=not controlled,
+            environment=environment,
+            runtime_profile=environment,
+            release_channel=str(
+                values.get("NOVEL_FORGE_RELEASE_CHANNEL") or "VALIDATION"
+            ).upper(),
+            capability_pack_id=str(
+                values.get("NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID")
+                or "chapter_generation_pack"
+            ),
             fault_injector=runtime_fault_injector,
         ),
         agent_binding_required=controlled,
@@ -532,10 +554,17 @@ def build_agent_runtime_authority_application(
     if settings.storage_authority != "postgresql" or not settings.database_url:
         raise RuntimeError("Agent Runtime Authority requires PostgreSQL authority")
     build_id, commit_sha = authority_release_identity(env=env)
+    values = env or os.environ
     return AgentRuntimeAuthorityApplication(
         settings.database_url,
         application_build_id=build_id,
         commit_sha=commit_sha,
+        runtime_environment=str(
+            values.get("NOVEL_FORGE_ENVIRONMENT") or "development"
+        ),
+        release_channel=str(
+            values.get("NOVEL_FORGE_RELEASE_CHANNEL") or "VALIDATION"
+        ),
     )
 
 
@@ -543,6 +572,42 @@ def build_agent_runtime_query(settings: IndustrialSettings) -> AgentRuntimeQuery
     if settings.storage_authority != "postgresql" or not settings.database_url:
         raise RuntimeError("Agent Runtime query requires PostgreSQL authority")
     return AgentRuntimeQuery(settings.database_url)
+
+
+def build_capability_pack_authority_application(
+    settings: IndustrialSettings,
+    *,
+    env: Mapping[str, str] | None = None,
+) -> CapabilityPackAuthorityApplication:
+    if settings.storage_authority != "postgresql" or not settings.database_url:
+        raise RuntimeError("Capability Pack Authority requires PostgreSQL authority")
+    build_id, commit_sha = authority_release_identity(env=env)
+    return CapabilityPackAuthorityApplication(
+        settings.database_url,
+        application_build_id=build_id,
+        commit_sha=commit_sha,
+    )
+
+
+def build_capability_pack_authority_query(
+    settings: IndustrialSettings,
+    *,
+    env: Mapping[str, str] | None = None,
+) -> CapabilityPackAuthorityQuery:
+    if settings.storage_authority != "postgresql" or not settings.database_url:
+        raise RuntimeError("Capability Pack Authority query requires PostgreSQL")
+    _, commit_sha = authority_release_identity(env=env)
+    values = env or os.environ
+    return CapabilityPackAuthorityQuery(
+        settings.database_url,
+        current_release_sha=commit_sha,
+        current_runtime_profile=str(
+            values.get("NOVEL_FORGE_ENVIRONMENT") or settings.environment
+        ),
+        current_release_channel=str(
+            values.get("NOVEL_FORGE_RELEASE_CHANNEL") or "VALIDATION"
+        ),
+    )
 
 
 def build_agent_authority_scheduler(
@@ -651,4 +716,6 @@ __all__ = [
     "build_content_authority_application",
     "build_content_authority_query",
     "build_book_authority_application",
+    "build_capability_pack_authority_application",
+    "build_capability_pack_authority_query",
 ]

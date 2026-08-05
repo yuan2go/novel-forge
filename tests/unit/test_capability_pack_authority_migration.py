@@ -1,0 +1,64 @@
+from __future__ import annotations
+
+from novel_forge.storage.migrations import LATEST_MIGRATION_ID, validate_migration_chain
+from novel_forge.storage.migrations.versions import (
+    v20260805_0071_capability_pack_authority as migration,
+)
+
+
+def _sql() -> str:
+    return "\n".join(migration.UPGRADE_STATEMENTS)
+
+
+def test_capability_pack_authority_is_linear_migration_head() -> None:
+    validate_migration_chain()
+    assert migration.MIGRATION_ID == "20260805_0071_capability_pack_authority"
+    assert migration.DOWN_REVISION == "20260805_0070_agent_runtime_recovery_protocol"
+    assert LATEST_MIGRATION_ID == migration.MIGRATION_ID
+    assert migration.FORWARD_ONLY is True
+
+
+def test_schema_has_registry_deployment_and_runtime_snapshot_facts() -> None:
+    sql = _sql()
+    for relation in (
+        "authority_capability_pack",
+        "authority_capability_pack_version",
+        "authority_capability_pack_compilation",
+        "authority_capability_pack_approval",
+        "authority_capability_pack_binding_set",
+        "authority_capability_pack_deployment",
+        "authority_capability_pack_activation",
+        "authority_capability_pack_rollout",
+        "authority_capability_pack_assignment",
+        "authority_capability_pack_deprecation",
+    ):
+        assert f"CREATE TABLE {relation}" in sql
+    assert "capability_pack_deployment_id" in sql
+    assert "capability_pack_binding_set_hash" in sql
+    assert "capability_pack_assignment_ref" in sql
+    assert "chapter_node_binding_id DROP NOT NULL" in sql
+    assert "authority_agent_runtime_binding_source_check" in sql
+    assert "ALTER TABLE authority_chapter_node_agent_binding" not in sql
+
+
+def test_schema_uses_cas_immutability_and_scope_constraints() -> None:
+    sql = _sql()
+    assert "activation_version BIGINT NOT NULL" in sql
+    assert "authority_capability_pack_immutable" in sql
+    assert "authority_capability_pack_assignment_immutable" in sql
+    assert "target_scope_type IN ('SYSTEM', 'PROJECT', 'WORKSPACE', 'BOOK')" in sql
+    assert "baseline_deployment_id <> candidate_deployment_id" in sql
+    assert "manifest_hash ~ '^sha256:[0-9a-f]{64}$'" in sql
+    assert "compilation_hash ~ '^sha256:[0-9a-f]{64}$'" in sql
+
+
+def test_schema_does_not_create_a_second_runtime() -> None:
+    sql = _sql().lower()
+    for forbidden in (
+        "create table authority_capability_pack_run",
+        "create table authority_capability_pack_attempt",
+        "create table authority_capability_pack_lease",
+        "create table authority_capability_pack_fence",
+        "create table authority_capability_pack_worker",
+    ):
+        assert forbidden not in sql

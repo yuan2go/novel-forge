@@ -672,7 +672,7 @@ class _QualityGroupHandler:
                     "structured_facts": [{"key": "dimension_evidence", "value": provider_entries}],
                 },
             ]
-            fixture = False
+            fixture = not generated.real_model_call
         content = build_quality_group_evidence(
             group=self.group,
             project_id=request.project_id,

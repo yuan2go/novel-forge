@@ -92,7 +92,14 @@ class AgentCapabilityExecutionMapping:
 
     @property
     def mapping_hash(self) -> str:
-        return _hash(asdict(self))
+        return _hash(
+            {
+                "capability_id": self.capability_id,
+                "capability_version": self.capability_version,
+                "execution_capability_id": self.execution_capability_id,
+                "execution_capability_hash": self.execution_capability_hash,
+            }
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -141,7 +148,9 @@ class AgentDefinitionRuntimeContract:
 
     @property
     def runtime_contract_hash(self) -> str:
-        return _hash(asdict(self))
+        payload = asdict(self)
+        payload.pop("created_by_operation_id")
+        return _hash(payload)
 
 
 @dataclass(frozen=True, slots=True)
@@ -377,8 +386,29 @@ class AgentRuntimeBinding:
     commit_policy_ref: str
     commit_authority: str
     release_sha: str
+    capability_pack_deployment_id: str = ""
+    capability_pack_activation_version: int = 0
+    capability_pack_binding_set_id: str = ""
+    capability_pack_binding_set_hash: str = ""
+    capability_pack_scope_type: str = ""
+    capability_pack_assignment_ref: str = ""
 
     def __post_init__(self) -> None:
+        pack_snapshot_fields = {
+            "capability_pack_deployment_id",
+            "capability_pack_activation_version",
+            "capability_pack_binding_set_id",
+            "capability_pack_binding_set_hash",
+            "capability_pack_scope_type",
+            "capability_pack_assignment_ref",
+        }
+        pack_snapshot_present = any(
+            bool(getattr(self, name)) for name in pack_snapshot_fields
+        )
+        if pack_snapshot_present and not all(
+            bool(getattr(self, name)) for name in pack_snapshot_fields
+        ):
+            raise ValueError("Capability Pack runtime snapshot is incomplete")
         required = tuple(
             value
             for name, value in asdict(self).items()
@@ -387,6 +417,7 @@ class AgentRuntimeBinding:
                 "fencing_token",
                 "agent_definition_version",
                 "capability_version",
+                *pack_snapshot_fields,
             }
             and not name.endswith("_hash")
         )
@@ -413,8 +444,27 @@ class AgentRuntimeBinding:
             context_policy_hash=self.context_policy_hash,
             route_snapshot_hash=self.route_snapshot_hash,
             input_manifest_hash=self.input_manifest_hash,
+            **(
+                {
+                    "capability_pack_binding_set_hash": (
+                        self.capability_pack_binding_set_hash
+                    )
+                }
+                if pack_snapshot_present
+                else {}
+            ),
         )
         _require_release_sha(self.release_sha)
+        if pack_snapshot_present:
+            if self.capability_pack_activation_version <= 0:
+                raise ValueError("Capability Pack activation version must be positive")
+            if self.capability_pack_scope_type not in {
+                "SYSTEM",
+                "PROJECT",
+                "WORKSPACE",
+                "BOOK",
+            }:
+                raise ValueError("Capability Pack scope type is invalid")
         if not self.commit_authority.endswith("_AUTHORITY"):
             raise ValueError("Agent output must be committed by a Domain Authority")
 

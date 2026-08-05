@@ -63,6 +63,14 @@
       "removal_preconditions": ["versioned ToolDefinition Authority exists", "all Agent tool calls bind Operation, Attempt and Fence"]
     },
     {
+      "id": "inline-compiled-capability-pack-binding",
+      "paths": ["src/novel_forge/modules/agent_runtime/application.py"],
+      "classification": "COMPATIBILITY_ADAPTER",
+      "allowed_environments": ["development", "test", "migration"],
+      "replacement": "Capability Pack Deployment activation and derived Binding Set projection",
+      "removal_preconditions": ["all bootstrap fixtures register trusted Pack Deployments", "direct Chapter binding commands have zero production reachability"]
+    },
+    {
       "id": "legacy-production-execution",
       "paths": ["src/novel_forge/modules/production_execution/legacy.py"],
       "classification": "COMPATIBILITY_ADAPTER",

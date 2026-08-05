@@ -1348,6 +1348,9 @@ class AuthorityRepositories:
         from novel_forge.storage.plan_change_repositories import (
             PlanChangeRepository,
         )
+        from novel_forge.storage.capability_pack_authority_repositories import (
+            CapabilityPackAuthorityRepository,
+        )
 
         self.definitions = OperationDefinitionRepository(cursor)
         self.operations = OperationRepository(cursor)
@@ -1371,3 +1374,4 @@ class AuthorityRepositories:
         self.story_design = StoryDesignRepository(cursor)
         self.chapter_group = ChapterGroupRepository(cursor)
         self.plan_change = PlanChangeRepository(cursor)
+        self.capability_packs = CapabilityPackAuthorityRepository(cursor)

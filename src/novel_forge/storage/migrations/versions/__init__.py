@@ -71,6 +71,7 @@ from . import (
     v20260805_0068_unified_agent_runtime,
     v20260805_0069_agent_runtime_domain_commit_closure,
     v20260805_0070_agent_runtime_recovery_protocol,
+    v20260805_0071_capability_pack_authority,
 )
 
 VERSION_MODULES = [
@@ -144,6 +145,7 @@ VERSION_MODULES = [
     v20260805_0068_unified_agent_runtime,
     v20260805_0069_agent_runtime_domain_commit_closure,
     v20260805_0070_agent_runtime_recovery_protocol,
+    v20260805_0071_capability_pack_authority,
 ]
 
 __all__ = ["VERSION_MODULES"]

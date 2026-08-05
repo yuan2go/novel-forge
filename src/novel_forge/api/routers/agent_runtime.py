@@ -47,6 +47,7 @@ class AgentRunRequest(BaseModel):
     capability_version: int = Field(ge=1)
     capability_hash: str
     execution_capability_id: str
+    execution_capability_hash: str
     capability_pack_ref: str
     capability_pack_compilation_hash: str
     workflow_definition_ref: str
@@ -89,6 +90,12 @@ class AgentRunRequest(BaseModel):
     failure_policy: str
     continuation_policy: str
     release_sha: str
+    capability_pack_deployment_id: str
+    capability_pack_activation_version: int = Field(ge=1)
+    capability_pack_binding_set_id: str
+    capability_pack_binding_set_hash: str
+    capability_pack_scope_type: str
+    capability_pack_assignment_ref: str
     idempotency_key: str
     trace_id: str = ""
     correlation_id: str = ""

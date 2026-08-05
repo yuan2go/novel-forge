@@ -873,6 +873,24 @@ def build_runtime_binding(
         commit_policy_ref=str(command["commit_policy_ref"]),
         commit_authority=str(command["commit_authority"]),
         release_sha=str(command["release_sha"]),
+        capability_pack_deployment_id=str(
+            command.get("capability_pack_deployment_id") or ""
+        ),
+        capability_pack_activation_version=int(
+            command.get("capability_pack_activation_version") or 0
+        ),
+        capability_pack_binding_set_id=str(
+            command.get("capability_pack_binding_set_id") or ""
+        ),
+        capability_pack_binding_set_hash=str(
+            command.get("capability_pack_binding_set_hash") or ""
+        ),
+        capability_pack_scope_type=str(
+            command.get("capability_pack_scope_type") or ""
+        ),
+        capability_pack_assignment_ref=str(
+            command.get("capability_pack_assignment_ref") or ""
+        ),
     )
 
 

@@ -3,7 +3,9 @@ from __future__ import annotations
 
 import argparse
 import json
+from pathlib import Path
 import sys
+from typing import Any
 from uuid import uuid4
 
 from novel_forge.infrastructure.settings import IndustrialSettings
@@ -114,6 +116,35 @@ def _authority_parser() -> argparse.ArgumentParser:
     )
     quarantine.add_argument("--migration-run-id", default=None)
     quarantine.add_argument("--limit", type=int, default=200)
+
+    pack = subparsers.add_parser(
+        "authority-capability-pack",
+        help="manage PostgreSQL Capability Pack Authority lifecycle",
+    )
+    pack.add_argument(
+        "action",
+        choices=(
+            "register", "validate", "compile", "approve", "deploy",
+            "activate", "disable", "rollout-start", "rollout-pause",
+            "rollout-resume", "rollout-complete", "rollback", "deprecate",
+            "retire", "revoke", "list", "detail", "deployments",
+            "deployment-detail", "rollout-detail", "drift", "usage",
+        ),
+    )
+    pack.add_argument("--project-id", required=True)
+    pack.add_argument("--workspace-id", default="")
+    pack.add_argument("--pack-id", default="")
+    pack.add_argument("--pack-version", default="")
+    pack.add_argument("--compilation-id", default="")
+    pack.add_argument("--deployment-id", default="")
+    pack.add_argument("--rollout-id", default="")
+    pack.add_argument("--expected-activation-version", type=int, default=0)
+    pack.add_argument("--payload-file", default="")
+    pack.add_argument("--idempotency-key", default="")
+    pack.add_argument("--trace-id", default="")
+    pack.add_argument("--correlation-id", default="")
+    pack.add_argument("--environment", default="")
+    pack.add_argument("--limit", type=int, default=100)
     return parser
 
 
@@ -201,6 +232,10 @@ def _authority_main(argv: list[str] | None, settings: IndustrialSettings) -> int
                 )
             print(json.dumps(result, ensure_ascii=False, indent=2, default=str))
             return 0
+        if args.command == "authority-capability-pack":
+            result = _run_capability_pack_command(settings, args)
+            print(json.dumps(result, ensure_ascii=False, indent=2, default=str))
+            return 0
         if args.command == "authority-chapter-run":
             from novel_forge.api.authority_dependencies import (
                 authority_release_identity,
@@ -247,6 +282,102 @@ def _authority_main(argv: list[str] | None, settings: IndustrialSettings) -> int
     except Exception as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
+
+
+def _run_capability_pack_command(
+    settings: IndustrialSettings, args: argparse.Namespace
+) -> Any:
+    from novel_forge.api.authority_dependencies import (
+        build_capability_pack_authority_application,
+        build_capability_pack_authority_query,
+        build_trusted_principal_resolver,
+    )
+    from novel_forge.modules.capability_pack_authority.application import (
+        CapabilityPackAuthorityCommand,
+    )
+
+    principal = build_trusted_principal_resolver().resolve_api_principal()
+    query = build_capability_pack_authority_query(settings)
+    if args.action == "list":
+        principal.require("capability_pack.authority.query", args.project_id)
+        return query.list_versions(project_id=args.project_id, pack_id=args.pack_id)
+    if args.action == "detail":
+        principal.require("capability_pack.authority.query", args.project_id)
+        return query.version_detail(
+            project_id=args.project_id,
+            pack_id=args.pack_id,
+            pack_version=args.pack_version,
+        )
+    if args.action == "deployments":
+        principal.require("capability_pack.authority.query", args.project_id)
+        return query.list_deployments(
+            pack_id=args.pack_id,
+            project_id=args.project_id,
+            environment=args.environment,
+            limit=args.limit,
+        )
+    if args.action == "deployment-detail":
+        principal.require("capability_pack.authority.query", args.project_id)
+        return query.deployment_detail(
+            args.deployment_id, project_id=args.project_id
+        )
+    if args.action == "rollout-detail":
+        principal.require("capability_pack.authority.query", args.project_id)
+        return query.rollout_detail(args.rollout_id, project_id=args.project_id)
+    if args.action == "drift":
+        principal.require("capability_pack.authority.query", args.project_id)
+        return query.drift_report(args.deployment_id, project_id=args.project_id)
+    if args.action == "usage":
+        principal.require("capability_pack.authority.query", args.project_id)
+        return query.usage_metrics(args.deployment_id, project_id=args.project_id)
+
+    actions = {
+        "register": "capability_pack.manifest.register",
+        "validate": "capability_pack.manifest.validate",
+        "compile": "capability_pack.compile",
+        "approve": "capability_pack.approval.decide",
+        "deploy": "capability_pack.deployment.create",
+        "activate": "capability_pack.deployment.activate",
+        "disable": "capability_pack.deployment.disable",
+        "rollout-start": "capability_pack.rollout.start",
+        "rollout-pause": "capability_pack.rollout.pause",
+        "rollout-resume": "capability_pack.rollout.resume",
+        "rollout-complete": "capability_pack.rollout.complete",
+        "rollback": "capability_pack.rollback",
+        "deprecate": "capability_pack.deprecate",
+        "retire": "capability_pack.retire",
+        "revoke": "capability_pack.revoke",
+    }
+    payload: dict[str, Any] = {}
+    if args.payload_file:
+        loaded = json.loads(Path(args.payload_file).read_text(encoding="utf-8"))
+        if not isinstance(loaded, dict):
+            raise ValueError("Capability Pack payload file must contain a JSON object")
+        payload = loaded
+    return build_capability_pack_authority_application(settings).execute(
+        CapabilityPackAuthorityCommand(
+            definition_name=actions[args.action],
+            project_id=args.project_id,
+            workspace_id=args.workspace_id,
+            actor_id=principal.principal_id,
+            pack_id=args.pack_id,
+            pack_version=args.pack_version,
+            compilation_id=args.compilation_id,
+            deployment_id=args.deployment_id,
+            rollout_id=args.rollout_id,
+            expected_activation_version=args.expected_activation_version,
+            idempotency_key=(
+                args.idempotency_key
+                or f"capability-pack:{args.action}:{uuid4()}"
+            ),
+            trace_id=args.trace_id or f"trace:capability-pack:{uuid4()}",
+            correlation_id=(
+                args.correlation_id or f"correlation:capability-pack:{uuid4()}"
+            ),
+            payload=payload,
+        ),
+        principal=principal,
+    )
 
 
 def _serve_authority_api(

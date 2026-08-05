@@ -53,6 +53,11 @@ from novel_forge.modules.chapter_authority.model_effects import (
 )
 from novel_forge.modules.command_kernel.asset_commands import AuthorityAssetWriteCommand
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.capability_pack_authority.runtime import (
+    CapabilityPackResolutionRequest,
+    CapabilityPackRuntimeResolver,
+    chapter_node_binding_from_snapshot,
+)
 from novel_forge.modules.production_execution.domain_execution import (
     DomainExecutionEvidence,
 )
@@ -83,6 +88,10 @@ class PostgresChapterAgentBindingRecorder:
         bound_stages: frozenset[str] = AGENT_BOUND_CHAPTER_STAGES,
         required_stages: frozenset[str] = frozenset(),
         compatibility_allowed: bool = True,
+        environment: str = "development",
+        runtime_profile: str = "development",
+        release_channel: str = "VALIDATION",
+        capability_pack_id: str = "chapter_generation_pack",
         fault_injector: Callable[[str], None] | None = None,
     ) -> None:
         if not database_url or not workflow_definition_ref:
@@ -94,6 +103,11 @@ class PostgresChapterAgentBindingRecorder:
         self.bound_stages = bound_stages
         self.required_stages = required_stages
         self.compatibility_allowed = compatibility_allowed
+        self.environment = environment
+        self.runtime_profile = runtime_profile
+        self.release_channel = release_channel
+        self.capability_pack_id = capability_pack_id
+        self.pack_resolver = CapabilityPackRuntimeResolver(database_url)
         self.legacy_writer = AuthorityAssetWriter(database_url)
         self.turn_coordinator = AgentTurnExecutionCoordinator(
             database_url, fault_injector=fault_injector
@@ -132,24 +146,57 @@ class PostgresChapterAgentBindingRecorder:
                     owner_authority="CHAPTER_AUTHORITY",
                 )
 
+            operation = _operation_snapshot(uow.cursor, request)
+            pack_snapshot = None
             try:
-                node_binding = (
-                    uow.repositories.agent_runtime.resolve_active_chapter_node_binding(
+                pack_snapshot = self.pack_resolver.resolve_in_uow(
+                    uow,
+                    CapabilityPackResolutionRequest(
+                        project_id=request.project_id,
+                        workspace_id=request.workspace_id,
+                        book_id=execution_binding.request.book_id,
                         workflow_definition_ref=self.workflow_definition_ref,
                         workflow_node_id=stage,
-                    )
+                        environment=self.environment,
+                        runtime_profile=self.runtime_profile,
+                        release_channel=self.release_channel,
+                        release_sha=execution_binding.route_snapshot.release_sha,
+                        operation_definition_ref=(
+                            f"{operation['definition_name']}"
+                            f"@{operation['definition_version']}"
+                        ),
+                        pack_id=self.capability_pack_id,
+                    ),
                 )
             except KernelError as exc:
                 if (
-                    exc.code == "CHAPTER_AGENT_BINDING_NOT_FOUND"
+                    exc.code == "CAPABILITY_PACK_DEPLOYMENT_NOT_RESOLVED"
+                    and self.compatibility_allowed
                     and stage not in self.required_stages
                 ):
-                    uow.commit()
-                    self.record_compatibility_usage(request, stage=stage)
-                    return None
-                raise
+                    pack_snapshot = None
+                else:
+                    raise
+            if pack_snapshot is not None:
+                node_binding = chapter_node_binding_from_snapshot(pack_snapshot)
+            else:
+                try:
+                    node_binding = (
+                        uow.repositories.agent_runtime.resolve_active_chapter_node_binding(
+                            workflow_definition_ref=self.workflow_definition_ref,
+                            workflow_node_id=stage,
+                        )
+                    )
+                except KernelError as exc:
+                    if (
+                        exc.code == "CHAPTER_AGENT_BINDING_NOT_FOUND"
+                        and stage not in self.required_stages
+                    ):
+                        uow.commit()
+                        self.record_compatibility_usage(request, stage=stage)
+                        return None
+                    raise
 
-            operation = _operation_snapshot(uow.cursor, request)
             _validate_operation_binding(operation, node_binding, stage)
             agent = uow.repositories.agent_runtime.lock_active_definition(
                 str(node_binding["agent_id"])
@@ -186,6 +233,73 @@ class PostgresChapterAgentBindingRecorder:
                 request.project_id,
                 execution_binding,
             )
+            if pack_snapshot is not None:
+                self.pack_resolver.validate_runtime_admission(
+                    pack_snapshot,
+                    {
+                        "operation_definition_ref": (
+                            f"{operation['definition_name']}"
+                            f"@{operation['definition_version']}"
+                        ),
+                        "operation_definition_hash": operation["definition_hash"],
+                        "agent_definition_ref": (
+                            f"{agent['agent_id']}@{agent['definition_version']}"
+                        ),
+                        "agent_definition_hash": agent["definition_hash"],
+                        "capability_ref": (
+                            f"{capability['capability_id']}"
+                            f"@{capability['capability_version']}"
+                        ),
+                        "capability_hash": capability["capability_hash"],
+                        "execution_capability_id": capability[
+                            "execution_capability_id"
+                        ],
+                        "execution_capability_hash": capability[
+                            "execution_capability_hash"
+                        ],
+                        "tool_policy_ref": agent["tool_policy_ref"],
+                        "tool_policy_hash": agent["tool_policy_hash"],
+                        "context_policy_ref": agent["context_policy_ref"],
+                        "context_policy_hash": agent["context_policy_hash"],
+                        "evaluation_policy_ref": contracts[
+                            "governing_evaluation_policy_ref"
+                        ],
+                        "evaluation_policy_hash": contracts[
+                            "governing_evaluation_policy_hash"
+                        ],
+                        "release_sha": execution_binding.route_snapshot.release_sha,
+                        "derived_execution_contract": True,
+                        "prompt_system_instruction_hash": contracts[
+                            "prompt_system_instruction_hash"
+                        ],
+                        "prompt_template_hash": contracts[
+                            "prompt_template_hash"
+                        ],
+                        "prompt_compiler_version": contracts[
+                            "prompt_compiler_version"
+                        ],
+                        "skill_ref": contracts["skill_ref"],
+                        "skill_content_hash": contracts["skill_content_hash"],
+                        "governing_tool_policy_ref": contracts[
+                            "governing_tool_policy_ref"
+                        ],
+                        "governing_tool_policy_hash": contracts[
+                            "governing_tool_policy_hash"
+                        ],
+                        "governing_context_policy_ref": contracts[
+                            "governing_context_policy_ref"
+                        ],
+                        "governing_context_policy_hash": contracts[
+                            "governing_context_policy_hash"
+                        ],
+                        "governing_evaluation_policy_ref": contracts[
+                            "governing_evaluation_policy_ref"
+                        ],
+                        "governing_evaluation_policy_hash": contracts[
+                            "governing_evaluation_policy_hash"
+                        ],
+                    },
+                )
             # A retry is a new Authority Attempt and must retain its own frozen
             # collaboration evidence instead of mutating the prior attempt.
             session_id = _identity("chapter-agent-session", request.attempt_id)
@@ -356,8 +470,12 @@ class PostgresChapterAgentBindingRecorder:
                 capability_version=work_order.capability_version,
                 capability_hash=str(capability["capability_hash"]),
                 execution_capability_id=work_order.execution_capability,
-                chapter_node_binding_ref=(
-                    f"{node_binding['binding_id']}@{node_binding['binding_version']}"
+                chapter_node_binding_ref=str(
+                    node_binding.get("chapter_node_binding_ref")
+                    or (
+                        f"{node_binding['binding_id']}@"
+                        f"{node_binding['binding_version']}"
+                    )
                 ),
                 capability_pack_ref=str(node_binding["capability_pack_ref"]),
                 capability_pack_compilation_hash=str(
@@ -388,6 +506,24 @@ class PostgresChapterAgentBindingRecorder:
                 commit_policy_ref=execution_binding.request.commit_policy_ref,
                 commit_authority=str(node_binding["commit_authority"]),
                 release_sha=str(node_binding["release_sha"]),
+                capability_pack_deployment_id=(
+                    pack_snapshot.deployment_id if pack_snapshot else ""
+                ),
+                capability_pack_activation_version=(
+                    pack_snapshot.activation_version if pack_snapshot else 0
+                ),
+                capability_pack_binding_set_id=(
+                    pack_snapshot.binding_set_id if pack_snapshot else ""
+                ),
+                capability_pack_binding_set_hash=(
+                    pack_snapshot.binding_set_hash if pack_snapshot else ""
+                ),
+                capability_pack_scope_type=(
+                    pack_snapshot.selected_scope_type.value if pack_snapshot else ""
+                ),
+                capability_pack_assignment_ref=(
+                    pack_snapshot.assignment_ref if pack_snapshot else ""
+                ),
             )
             self.turn_coordinator.freeze_turn_in_uow(uow, work_order, runtime_binding)
             uow.commit()
@@ -484,7 +620,7 @@ class PostgresChapterAgentBindingRecorder:
         fencing_token: int,
         asset_version_id: str,
         content_hash: str,
-    ) -> CollaborationCommit:
+    ) -> CollaborationCommit | None:
         """Attach the accepted Candidate to the already materialized Chapter asset."""
 
         with AuthorityUnitOfWork(self.database_url) as uow:
@@ -518,6 +654,8 @@ class PostgresChapterAgentBindingRecorder:
             )
             row = uow.cursor.fetchone()
         if row is None:
+            if self.compatibility_allowed:
+                return None
             raise KernelError(
                 "CHAPTER_AGENT_CANDIDATE_MISSING",
                 "Agent-bound Chapter asset cannot complete without its Candidate",
@@ -761,16 +899,80 @@ def _execution_contracts(
         "prompt_bundle_ref": binding.route_snapshot.prompt_bundle_ref,
         "skill_bundle_ref": binding.route_snapshot.skill_bundle_ref,
         "tool_permission_snapshot_ref": f"production_execution/tool_permissions/{suffix}",
-        "context_policy_ref": (
-            "context-policy:" + binding.request.capability.replace(".", "-") + ":v1"
-        ),
+        "evaluation_policy_ref": binding.request.validation_policy_ref,
     }
     frozen: dict[str, str] = {}
+    documents: dict[str, Any] = {}
     for name, logical_ref in refs.items():
         document = assets.require(project_id=project_id, logical_ref=logical_ref)
+        documents[name] = document
         frozen[name] = logical_ref
         frozen[name.removesuffix("_ref") + "_hash"] = document.content_hash
+    prompt = _authority_contract(documents["prompt_bundle_ref"].content)
+    context_policy_ref = str(prompt.get("context_policy_ref") or "")
+    if not context_policy_ref:
+        raise KernelError(
+            "CAPABILITY_PACK_DERIVED_CONTEXT_POLICY_INVALID",
+            "Chapter Prompt Bundle has no exact Context Policy reference",
+        )
+    context_document = assets.require(
+        project_id=project_id, logical_ref=context_policy_ref
+    )
+    documents["context_policy_ref"] = context_document
+    frozen["context_policy_ref"] = context_policy_ref
+    frozen["context_policy_hash"] = context_document.content_hash
+    skill = _authority_contract(documents["skill_bundle_ref"].content)
+    tool = _authority_contract(documents["tool_permission_snapshot_ref"].content)
+    context = _authority_contract(documents["context_policy_ref"].content)
+    evaluation = _authority_contract(documents["evaluation_policy_ref"].content)
+    skill_refs = tuple(str(value) for value in skill.get("skill_refs") or ())
+    skill_hashes = tuple(
+        str(value) for value in skill.get("skill_content_hashes") or ()
+    )
+    if len(skill_refs) != 1 or len(skill_hashes) != 1:
+        raise KernelError(
+            "CAPABILITY_PACK_DERIVED_SKILL_BUNDLE_INVALID",
+            "Chapter PEP requires one exact Pack-selected Skill source",
+        )
+    frozen.update(
+        {
+            "prompt_system_instruction_hash": str(
+                prompt.get("system_instruction_hash") or ""
+            ),
+            "prompt_template_hash": str(prompt.get("template_hash") or ""),
+            "prompt_compiler_version": str(prompt.get("compiler_version") or ""),
+            "skill_ref": skill_refs[0],
+            "skill_content_hash": skill_hashes[0],
+            "governing_tool_policy_ref": str(
+                tool.get("governing_capability_pack_policy_ref") or ""
+            ),
+            "governing_tool_policy_hash": str(
+                tool.get("governing_capability_pack_policy_hash") or ""
+            ),
+            "governing_context_policy_ref": str(
+                context.get("governing_capability_pack_policy_ref") or ""
+            ),
+            "governing_context_policy_hash": str(
+                context.get("governing_capability_pack_policy_hash") or ""
+            ),
+            "governing_evaluation_policy_ref": str(
+                evaluation.get("governing_capability_pack_policy_ref") or ""
+            ),
+            "governing_evaluation_policy_hash": str(
+                evaluation.get("governing_capability_pack_policy_hash") or ""
+            ),
+        }
+    )
     return frozen
+
+
+def _authority_contract(content: Any) -> dict[str, Any]:
+    if not isinstance(content, dict) or not isinstance(content.get("contract"), dict):
+        raise KernelError(
+            "CAPABILITY_PACK_DERIVED_CONTRACT_INVALID",
+            "Chapter PEP Authority Asset lacks a schema-backed contract payload",
+        )
+    return dict(content["contract"])
 
 
 def _chapter_number(

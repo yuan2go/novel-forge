@@ -22,6 +22,7 @@
     {"name": "legacy-migration", "path": "src/novel_forge/modules/legacy_migration/__init__.py", "import_path": "novel_forge.modules.legacy_migration", "owner": "migration", "authority_mode": "import-only"},
     {"name": "runtime-job", "path": "src/novel_forge/modules/runtime_job/__init__.py", "import_path": "novel_forge.modules.runtime_job", "owner": "authority-runtime", "authority_mode": "execution-plane"},
     {"name": "capability-packs", "path": "src/novel_forge/modules/capability_packs/__init__.py", "import_path": "novel_forge.modules.capability_packs", "owner": "agent-os", "authority_mode": "compiled-admission-binding"},
+    {"name": "capability-pack-authority", "path": "src/novel_forge/modules/capability_pack_authority/__init__.py", "import_path": "novel_forge.modules.capability_pack_authority", "owner": "agent-os", "authority_mode": "postgresql-deployment-authority"},
     {"name": "database-runtime", "path": "src/novel_forge/storage/database_runtime.py", "import_path": "novel_forge.storage.database_runtime", "owner": "storage", "authority_mode": "postgresql"}
   ]
 }

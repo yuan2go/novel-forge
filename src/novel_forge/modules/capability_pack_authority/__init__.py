@@ -1,0 +1,25 @@
+"""PostgreSQL authority for Capability Pack configuration and deployment."""
+
+from .domain import (
+    ApprovalDecision,
+    CapabilityPackExecutionSnapshot,
+    CapabilityPackScope,
+    DeploymentStatus,
+    DriftClassification,
+    RolloutStatus,
+    ScopeType,
+    canonical_hash,
+    stable_rollout_bucket,
+)
+
+__all__ = [
+    "ApprovalDecision",
+    "CapabilityPackExecutionSnapshot",
+    "CapabilityPackScope",
+    "DeploymentStatus",
+    "DriftClassification",
+    "RolloutStatus",
+    "ScopeType",
+    "canonical_hash",
+    "stable_rollout_bucket",
+]

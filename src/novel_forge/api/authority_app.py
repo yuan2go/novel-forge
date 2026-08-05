@@ -20,6 +20,8 @@ from novel_forge.api.authority_dependencies import (
     build_book_design_authority_query,
     build_agent_runtime_authority_application,
     build_agent_runtime_query,
+    build_capability_pack_authority_application,
+    build_capability_pack_authority_query,
 )
 from novel_forge.infrastructure.settings import IndustrialSettings
 from novel_forge.modules.chapter_authority.application import ChapterAuthorityApplication
@@ -35,6 +37,12 @@ from novel_forge.modules.agent_runtime.application import (
 )
 from novel_forge.modules.agent_runtime.definitions import AGENT_RUNTIME_OPERATIONS
 from novel_forge.modules.agent_runtime.queries import AgentRuntimeQuery
+from novel_forge.modules.capability_pack_authority.application import (
+    CapabilityPackAuthorityApplication,
+)
+from novel_forge.modules.capability_pack_authority.query import (
+    CapabilityPackAuthorityQuery,
+)
 from novel_forge.modules.project_authority import (
     ProjectAuthorityApplication,
     ProjectAuthorityQuery,
@@ -122,6 +130,8 @@ class AuthorityApiServices:
     book_design_authority_query: BookDesignAuthorityQuery
     agent_runtime_authority_application: AgentRuntimeAuthorityApplication
     agent_runtime_query: AgentRuntimeQuery
+    capability_pack_authority_application: CapabilityPackAuthorityApplication
+    capability_pack_authority_query: CapabilityPackAuthorityQuery
 
 
 @dataclass(frozen=True, slots=True)
@@ -200,6 +210,12 @@ def create_authority_app(settings: IndustrialSettings):
             build_agent_runtime_authority_application(settings)
         ),
         agent_runtime_query=build_agent_runtime_query(settings),
+        capability_pack_authority_application=(
+            build_capability_pack_authority_application(settings)
+        ),
+        capability_pack_authority_query=build_capability_pack_authority_query(
+            settings
+        ),
     )
     app = FastAPI(
         title="Novel Forge PostgreSQL Authority API",
@@ -243,6 +259,9 @@ def create_authority_app(settings: IndustrialSettings):
     )
     from novel_forge.api.routers.agent_runtime import (
         create_router as create_agent_runtime_router,
+    )
+    from novel_forge.api.routers.capability_pack_authority import (
+        create_router as create_capability_pack_router,
     )
 
     app.include_router(
@@ -301,6 +320,15 @@ def create_authority_app(settings: IndustrialSettings):
     )
     app.include_router(
         create_agent_runtime_router(
+            ProductRouterContext(
+                app_settings=settings,
+                models=product_model_map(),
+                services=services,
+            )
+        )
+    )
+    app.include_router(
+        create_capability_pack_router(
             ProductRouterContext(
                 app_settings=settings,
                 models=product_model_map(),

@@ -394,7 +394,13 @@ class AgentRuntimeQuery:
                        budget_policy_ref, timeout_policy_ref,
                        approval_policy_ref, validation_policy_ref,
                        commit_policy_ref, commit_authority,
-                       release_sha, binding_hash, created_at
+                       release_sha, binding_hash, created_at,
+                       capability_pack_deployment_id,
+                       capability_pack_activation_version,
+                       capability_pack_binding_set_id,
+                       capability_pack_binding_set_hash,
+                       capability_pack_scope_type,
+                       capability_pack_assignment_ref
                 FROM authority_agent_runtime_binding
                 WHERE operation_id=%s
                 ORDER BY created_at, binding_id
@@ -448,6 +454,12 @@ class AgentRuntimeQuery:
                 "release_sha",
                 "binding_hash",
                 "created_at",
+                "capability_pack_deployment_id",
+                "capability_pack_activation_version",
+                "capability_pack_binding_set_id",
+                "capability_pack_binding_set_hash",
+                "capability_pack_scope_type",
+                "capability_pack_assignment_ref",
             )
             runtime_bindings = []
             for row in cursor.fetchall():
@@ -456,16 +468,30 @@ class AgentRuntimeQuery:
                     "fencing_token",
                     "agent_definition_version",
                     "capability_version",
-                    "chapter_node_binding_version",
                 ):
                     binding[name] = int(binding[name])
+                if binding["capability_pack_deployment_id"]:
+                    binding["capability_pack_activation_version"] = int(
+                        binding["capability_pack_activation_version"]
+                    )
+                else:
+                    binding["chapter_node_binding_version"] = int(
+                        binding["chapter_node_binding_version"]
+                    )
                 binding["operation_definition_ref"] = (
                     f"{binding.pop('operation_definition_name')}@"
                     f"{binding.pop('operation_definition_version')}"
                 )
+                chapter_binding_id = binding.pop("chapter_node_binding_id")
+                chapter_binding_version = binding.pop(
+                    "chapter_node_binding_version"
+                )
                 binding["chapter_node_binding_ref"] = (
-                    f"{binding.pop('chapter_node_binding_id')}@"
-                    f"{binding.pop('chapter_node_binding_version')}"
+                    f"pack-binding-set:{binding['capability_pack_binding_set_id']}:"
+                    f"{binding['workflow_node_id']}@"
+                    f"{binding['capability_pack_activation_version']}"
+                    if binding["capability_pack_deployment_id"]
+                    else f"{chapter_binding_id}@{chapter_binding_version}"
                 )
                 binding["created_at"] = _timestamp(binding["created_at"])
                 runtime_bindings.append(binding)

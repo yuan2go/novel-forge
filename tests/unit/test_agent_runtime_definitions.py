@@ -72,6 +72,8 @@ def test_agent_run_admission_requires_frozen_versions_and_asset_inputs() -> None
         "tool_policy_hash",
         "context_policy_ref",
         "context_policy_hash",
+        "evaluation_policy_ref",
+        "evaluation_policy_hash",
         "route_policy_ref",
         "model_profile_ref",
         "release_sha",

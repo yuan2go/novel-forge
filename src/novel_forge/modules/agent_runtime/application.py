@@ -31,6 +31,11 @@ from novel_forge.modules.capability_packs.runtime_binding import (
     bind_compiled_pack_for_admission,
     compiled_capability_pack_from_payload,
 )
+from novel_forge.modules.capability_pack_authority.runtime import (
+    CapabilityPackResolutionRequest,
+    CapabilityPackRuntimeResolver,
+    chapter_node_binding_from_snapshot,
+)
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 from .contracts import (
@@ -93,6 +98,7 @@ class AgentRunAdmissionRequest:
     capability_version: int
     capability_hash: str
     execution_capability_id: str
+    execution_capability_hash: str
     capability_pack_ref: str
     capability_pack_compilation_hash: str
     workflow_definition_ref: str
@@ -114,6 +120,8 @@ class AgentRunAdmissionRequest:
     tool_policy_hash: str
     context_policy_ref: str
     context_policy_hash: str
+    evaluation_policy_ref: str
+    evaluation_policy_hash: str
     route_policy_ref: str
     model_profile_ref: str
     budget_policy_ref: str
@@ -135,6 +143,12 @@ class AgentRunAdmissionRequest:
     failure_policy: str
     continuation_policy: str
     release_sha: str
+    capability_pack_deployment_id: str
+    capability_pack_activation_version: int
+    capability_pack_binding_set_id: str
+    capability_pack_binding_set_hash: str
+    capability_pack_scope_type: str
+    capability_pack_assignment_ref: str
     idempotency_key: str
     trace_id: str
     correlation_id: str
@@ -143,6 +157,8 @@ class AgentRunAdmissionRequest:
         object.__setattr__(self, "message_type", AgentMessageType(self.message_type))
         if self.agent_definition_version <= 0 or self.capability_version <= 0:
             raise ValueError("Agent and capability versions must be positive")
+        if self.capability_pack_activation_version <= 0:
+            raise ValueError("Capability Pack activation version must be positive")
         if self.chapter_number <= 0:
             raise ValueError("Chapter Agent run requires a positive chapter number")
         if not self.input_assets:
@@ -194,6 +210,8 @@ class AgentRuntimeAuthorityApplication:
         *,
         application_build_id: str,
         commit_sha: str,
+        runtime_environment: str = "development",
+        release_channel: str = "VALIDATION",
         fault_injector: TransactionCheckpoint | None = None,
     ) -> None:
         if not database_url:
@@ -203,6 +221,9 @@ class AgentRuntimeAuthorityApplication:
         self.database_url = database_url
         self.application_build_id = application_build_id
         self.commit_sha = commit_sha
+        self.runtime_environment = runtime_environment.strip().lower()
+        self.release_channel = release_channel.strip().upper()
+        self.pack_resolver = CapabilityPackRuntimeResolver(database_url)
         self.fault_injector = fault_injector
 
     def execute_admin(
@@ -269,11 +290,66 @@ class AgentRuntimeAuthorityApplication:
             commit_sha=self.commit_sha,
         )
         with AuthorityUnitOfWork(self.database_url) as uow:
+            snapshot = None
+            if self.runtime_environment in {
+                "validation",
+                "provider-validation",
+                "production",
+            }:
+                pack_id, separator, _ = request.capability_pack_ref.rpartition("@")
+                if not separator:
+                    raise KernelError(
+                        "CAPABILITY_PACK_REFERENCE_INVALID",
+                        "Agent run requires an exact Capability Pack ref",
+                    )
+                snapshot = self.pack_resolver.resolve_in_uow(
+                    uow,
+                    CapabilityPackResolutionRequest(
+                        project_id=request.project_id,
+                        workspace_id=request.workspace_id,
+                        book_id=request.book_id,
+                        workflow_definition_ref=request.workflow_definition_ref,
+                        workflow_node_id=request.workflow_node_id,
+                        environment=self.runtime_environment,
+                        runtime_profile=self.runtime_environment,
+                        release_channel=self.release_channel,
+                        release_sha=request.release_sha,
+                        operation_definition_ref=request.operation_definition_ref,
+                        pack_id=pack_id,
+                    ),
+                )
+                self.pack_resolver.validate_runtime_admission(
+                    snapshot, request.command_input()
+                )
+                pack_drift = [
+                    key
+                    for key, expected in {
+                        "capability_pack_deployment_id": snapshot.deployment_id,
+                        "capability_pack_activation_version": (
+                            snapshot.activation_version
+                        ),
+                        "capability_pack_binding_set_id": snapshot.binding_set_id,
+                        "capability_pack_binding_set_hash": snapshot.binding_set_hash,
+                        "capability_pack_scope_type": (
+                            snapshot.selected_scope_type.value
+                        ),
+                        "capability_pack_assignment_ref": snapshot.assignment_ref,
+                    }.items()
+                    if str(getattr(request, key)) != str(expected)
+                ]
+                if pack_drift:
+                    raise KernelError(
+                        "CAPABILITY_PACK_RUNTIME_SNAPSHOT_DRIFT",
+                        "Agent run Pack snapshot differs from resolver: "
+                        + ", ".join(pack_drift),
+                    )
             active_definition = uow.repositories.agent_runtime.lock_active_definition(
                 request.agent_id
             )
             active_binding = (
-                uow.repositories.agent_runtime.resolve_active_chapter_node_binding(
+                chapter_node_binding_from_snapshot(snapshot)
+                if snapshot is not None
+                else uow.repositories.agent_runtime.resolve_active_chapter_node_binding(
                     workflow_definition_ref=request.workflow_definition_ref,
                     workflow_node_id=request.workflow_node_id,
                 )
@@ -415,6 +491,8 @@ class AgentRuntimeAuthorityApplication:
             }
         elif action == "agent.chapter_binding.register":
             binding_payload = dict(payload)
+            self._require_legacy_binding_mode(binding_payload)
+            binding_payload.pop("authority_mode", None)
             compiled_payload = binding_payload.pop("compiled_capability_pack", None)
             if not isinstance(compiled_payload, Mapping):
                 raise KernelError(
@@ -453,6 +531,7 @@ class AgentRuntimeAuthorityApplication:
                 "binding_hash": binding.binding_hash,
             }
         elif action == "agent.chapter_binding.activate":
+            self._require_legacy_binding_mode(payload)
             result = uow.repositories.agent_runtime.activate_chapter_node_binding(
                 workflow_definition_ref=str(payload["workflow_definition_ref"]),
                 workflow_node_id=str(payload["workflow_node_id"]),
@@ -496,6 +575,26 @@ class AgentRuntimeAuthorityApplication:
         )
         checkpoint("after_outbox_insert")
         return result
+
+    def _require_legacy_binding_mode(self, payload: Mapping[str, Any]) -> None:
+        if self.runtime_environment in {
+            "validation",
+            "provider-validation",
+            "production",
+        }:
+            raise KernelError(
+                "CAPABILITY_PACK_DEPLOYMENT_REQUIRED",
+                "controlled runtime forbids direct Chapter binding administration",
+            )
+        if str(payload.get("authority_mode") or "") not in {
+            "DEVELOPMENT_FIXTURE",
+            "LEGACY_MIGRATION",
+            "BOOTSTRAP_ADAPTER",
+        }:
+            raise KernelError(
+                "CAPABILITY_PACK_LEGACY_MODE_REQUIRED",
+                "direct Chapter binding requires an explicit non-production legacy mode",
+            )
 
     @staticmethod
     def _register_agent_definition(
@@ -617,16 +716,15 @@ class AgentRuntimeAuthorityApplication:
             capability["capability_hash"] != request.capability_hash
             or capability["execution_capability_id"]
             != request.execution_capability_id
+            or capability["execution_capability_hash"]
+            != request.execution_capability_hash
         ):
             raise KernelError(
                 "AGENT_CAPABILITY_SNAPSHOT_DRIFT",
                 "Agent Capability or PEP mapping differs from frozen request",
             )
         expected_binding = {
-            "binding_id": _ref_identity(request.chapter_node_binding_ref),
-            "binding_version": _ref_integer_version(
-                request.chapter_node_binding_ref
-            ),
+            "chapter_node_binding_ref": request.chapter_node_binding_ref,
             "agent_id": request.agent_id,
             "agent_definition_version": request.agent_definition_version,
             "capability_id": request.capability_id,
@@ -636,11 +734,25 @@ class AgentRuntimeAuthorityApplication:
             ),
             "release_sha": request.release_sha,
             "commit_authority": request.commit_authority,
+            "capability_pack_deployment_id": request.capability_pack_deployment_id,
+            "capability_pack_binding_set_id": request.capability_pack_binding_set_id,
+            "capability_pack_binding_set_hash": (
+                request.capability_pack_binding_set_hash
+            ),
         }
         binding_drift = [
             key
             for key, value in expected_binding.items()
-            if str(active_binding.get(key)) != str(value)
+            if str(
+                active_binding.get(key)
+                if key != "chapter_node_binding_ref"
+                else active_binding.get(key)
+                or (
+                    f"{active_binding.get('binding_id')}@"
+                    f"{active_binding.get('binding_version')}"
+                )
+            )
+            != str(value)
         ]
         if binding_drift:
             raise KernelError(

@@ -393,6 +393,28 @@ class UnifiedAgentRuntimePostgresTests(unittest.TestCase):
         compiled_payload.pop("compilation_hash")
         compiled_payload["compilation_hash"] = _hash(compiled_payload)
         binding_id = f"chapter-draft-binding:{project_id}"
+        with connect() as connection:
+            binding_version = int(
+                connection.execute(
+                    """
+                    SELECT COALESCE(MAX(binding_version), 0) + 1
+                    FROM authority_chapter_node_agent_binding
+                    WHERE workflow_definition_ref='chapter_authority_slice@2.2.0'
+                      AND workflow_node_id='draft'
+                    """
+                ).fetchone()[0]
+            )
+            activation_row = connection.execute(
+                """
+                SELECT activation_version
+                FROM authority_chapter_node_agent_binding_activation
+                WHERE workflow_definition_ref='chapter_authority_slice@2.2.0'
+                  AND workflow_node_id='draft'
+                """
+            ).fetchone()
+            expected_activation_version = (
+                int(activation_row[0]) if activation_row is not None else 0
+            )
         runtime.execute_admin(
             AgentRuntimeAdminCommand(
                 definition_name="agent.chapter_binding.register",
@@ -402,7 +424,8 @@ class UnifiedAgentRuntimePostgresTests(unittest.TestCase):
                 trace_id=f"trace:{project_id}:binding-register",
                 correlation_id=f"correlation:{project_id}",
                 payload={
-                    "binding_id": binding_id, "binding_version": 1,
+                    "authority_mode": "DEVELOPMENT_FIXTURE",
+                    "binding_id": binding_id, "binding_version": binding_version,
                     "workflow_definition_ref": "chapter_authority_slice@2.2.0",
                     "workflow_node_id": "draft",
                     "operation_definition_ref": "chapter.draft.generate@2.2.0",
@@ -432,10 +455,12 @@ class UnifiedAgentRuntimePostgresTests(unittest.TestCase):
                 idempotency_key=f"{project_id}:binding:activate",
                 trace_id=f"trace:{project_id}:binding-activate",
                 correlation_id=f"correlation:{project_id}",
+                expected_activation_version=expected_activation_version,
                 payload={
+                    "authority_mode": "DEVELOPMENT_FIXTURE",
                     "workflow_definition_ref": "chapter_authority_slice@2.2.0",
                     "workflow_node_id": "draft", "binding_id": binding_id,
-                    "binding_version": 1, "status": "ACTIVE",
+                    "binding_version": binding_version, "status": "ACTIVE",
                     "reason": "fixture activation",
                 },
             ),

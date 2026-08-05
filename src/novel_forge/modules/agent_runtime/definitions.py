@@ -180,6 +180,7 @@ def _execution_schema() -> dict[str, Any]:
         "capability_version": {"type": "integer"},
         "capability_hash": hash_schema,
         "execution_capability_id": {"type": "string"},
+        "execution_capability_hash": hash_schema,
         "capability_pack_ref": {"type": "string"},
         "capability_pack_compilation_hash": hash_schema,
         "workflow_definition_ref": {"type": "string"},
@@ -206,6 +207,8 @@ def _execution_schema() -> dict[str, Any]:
         "tool_policy_hash": hash_schema,
         "context_policy_ref": {"type": "string"},
         "context_policy_hash": hash_schema,
+        "evaluation_policy_ref": {"type": "string"},
+        "evaluation_policy_hash": hash_schema,
         "route_policy_ref": {"type": "string"},
         "model_profile_ref": {"type": "string"},
         "budget_policy_ref": {"type": "string"},
@@ -227,6 +230,15 @@ def _execution_schema() -> dict[str, Any]:
         "failure_policy": {"type": "string"},
         "continuation_policy": {"type": "string"},
         "release_sha": {"type": "string"},
+        "capability_pack_deployment_id": {"type": "string"},
+        "capability_pack_activation_version": {"type": "integer", "minimum": 1},
+        "capability_pack_binding_set_id": {"type": "string"},
+        "capability_pack_binding_set_hash": hash_schema,
+        "capability_pack_scope_type": {
+            "type": "string",
+            "enum": ["SYSTEM", "PROJECT", "WORKSPACE", "BOOK"],
+        },
+        "capability_pack_assignment_ref": {"type": "string"},
     }
     required = tuple(properties)
     return {

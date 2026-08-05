@@ -21,6 +21,13 @@ from novel_forge.modules.command_kernel.external_effect_adapters import (
     ExternalEffectAdapterError,
     ProviderResult,
 )
+from novel_forge.modules.capability_pack_authority.domain import (
+    CapabilityPackExecutionSnapshot,
+)
+from novel_forge.modules.capability_pack_authority.runtime import (
+    CapabilityPackResolutionRequest,
+    CapabilityPackRuntimeResolver,
+)
 from novel_forge.modules.production_execution import (
     ArtifactPointer,
     CapabilityId,
@@ -192,7 +199,15 @@ class PostgresChapterExecutionContractBinder:
     """Materialize immutable per-Attempt contracts through Authority AssetVersion."""
 
     def __init__(
-        self, database_url: str, routes: Mapping[str, ChapterExecutionRoute]
+        self,
+        database_url: str,
+        routes: Mapping[str, ChapterExecutionRoute],
+        *,
+        capability_pack_id: str = "",
+        pack_environment: str = "development",
+        pack_runtime_profile: str = "development",
+        pack_release_channel: str = "VALIDATION",
+        pack_required: bool = False,
     ) -> None:
         if not database_url or set(routes) != _STAGES:
             raise ValueError(
@@ -202,6 +217,12 @@ class PostgresChapterExecutionContractBinder:
         self.routes = dict(routes)
         self.query = AuthorityAssetQuery(database_url)
         self.writer = AuthorityAssetWriter(database_url)
+        self.capability_pack_id = capability_pack_id
+        self.pack_environment = pack_environment
+        self.pack_runtime_profile = pack_runtime_profile
+        self.pack_release_channel = pack_release_channel
+        self.pack_required = pack_required
+        self.pack_resolver = CapabilityPackRuntimeResolver(database_url)
 
     def bind(
         self,
@@ -252,6 +273,14 @@ class PostgresChapterExecutionContractBinder:
             "chapter_number": chapter,
         }
         artifacts = self._artifacts(metadata)
+        pack_snapshot = self._resolve_pack_snapshot(
+            project_id=project_id,
+            workspace_id=workspace_id,
+            book_id=book_id,
+            stage=stage,
+            graph=graph,
+            route=route,
+        )
         context_ref = next(
             (
                 item.artifact_ref
@@ -266,14 +295,22 @@ class PostgresChapterExecutionContractBinder:
         prompt_ref = f"production_execution/prompt_bundles/{token}"
         skill_ref = f"production_execution/skill_bundles/{token}"
         tool_ref = f"production_execution/tool_permissions/{token}"
-        context_policy_ref = (
-            "context-policy:" + definition.capability_id.value.replace(".", "-") + ":v1"
-        )
-        context_policy = ContextPolicy(
-            policy_id=context_policy_ref,
-            policy_version="v1",
-            maximum_tokens=16000,
-            allowed_asset_types=(
+        if pack_snapshot is None:
+            context_policy_ref = (
+                "context-policy:"
+                + definition.capability_id.value.replace(".", "-")
+                + ":v1"
+            )
+            context_policy_payload: dict[str, Any] = {}
+            tool_policy_payload: dict[str, Any] = {}
+            prompt_version = route.prompt_version
+            skill_version = route.skill_version
+            system_instruction_hash = route.system_instruction_hash
+            template_hash = route.template_hash
+            skill_content_hash = route.skill_content_hash
+            prompt_compiler_version = route.prompt_compiler_version
+            context_maximum_tokens = 16000
+            context_allowed_asset_types = (
                 "book_plan",
                 "volume_plan",
                 "arc_plan",
@@ -289,7 +326,33 @@ class PostgresChapterExecutionContractBinder:
                 "draft_chapter",
                 "review_report",
                 "revision_patch",
-            ),
+            )
+        else:
+            context_policy_ref = pack_snapshot.context_policy_ref
+            context_policy_payload = json.loads(
+                pack_snapshot.context_policy_payload_json
+            )
+            tool_policy_payload = json.loads(pack_snapshot.tool_policy_payload_json)
+            prompt_version = pack_snapshot.prompt_bundle_ref
+            skill_version = pack_snapshot.skill_version
+            system_instruction_hash = (
+                pack_snapshot.prompt_system_instruction_hash
+            )
+            template_hash = pack_snapshot.prompt_template_hash
+            skill_content_hash = pack_snapshot.skill_content_hash
+            prompt_compiler_version = pack_snapshot.prompt_compiler_version
+            context_maximum_tokens = int(
+                context_policy_payload.get("max_tokens") or 0
+            )
+            context_allowed_asset_types = tuple(
+                str(value)
+                for value in context_policy_payload.get("allowed_asset_types") or ()
+            )
+        context_policy = ContextPolicy(
+            policy_id=context_policy_ref,
+            policy_version="v1",
+            maximum_tokens=context_maximum_tokens,
+            allowed_asset_types=context_allowed_asset_types,
             compression_policy_ref="compression:chapter-authority:v1",
             source_policy_ref=definition.source_policy_ref,
         )
@@ -336,27 +399,27 @@ class PostgresChapterExecutionContractBinder:
         )
         skill_bundle = SkillBundle(
             skill_bundle_id=skill_ref,
-            skill_version=route.skill_version,
+            skill_version=skill_version,
             domain=definition.domain.value,
             capability=definition.capability_id.value,
-            skill_refs=(route.skill_version,),
-            skill_content_hashes=(route.skill_content_hash,),
+            skill_refs=(skill_version,),
+            skill_content_hashes=(skill_content_hash,),
             tool_policy_ref=tool_ref,
             created_by_operation_id=operation_id,
         )
         prompt_bundle = PromptBundle(
             prompt_bundle_id=prompt_ref,
-            prompt_version=route.prompt_version,
+            prompt_version=prompt_version,
             domain=definition.domain.value,
             capability=definition.capability_id.value,
-            system_instruction_hash=route.system_instruction_hash,
-            template_hash=route.template_hash,
+            system_instruction_hash=system_instruction_hash,
+            template_hash=template_hash,
             input_schema_ref=definition.input_schema_ref,
             output_schema_ref=definition.output_schema_ref,
             skill_bundle_ref=skill_ref,
             context_policy_ref=context_policy_ref,
             source_policy_ref=definition.source_policy_ref,
-            compiler_version=route.prompt_compiler_version,
+            compiler_version=prompt_compiler_version,
             created_by_operation_id=operation_id,
         )
         manifest = InputManifest(
@@ -378,8 +441,8 @@ class PostgresChapterExecutionContractBinder:
                 ),
                 f"context:none:{operation_id}",
             ),
-            prompt_bundle_version=route.prompt_version,
-            skill_bundle_version=route.skill_version,
+            prompt_bundle_version=prompt_version,
+            skill_bundle_version=skill_version,
             canon_snapshot_version=next(
                 (
                     item.asset_version_id
@@ -460,7 +523,15 @@ class PostgresChapterExecutionContractBinder:
             project_id=project_id,
             logical_ref=context_policy.policy_id,
             asset_type="execution_context_policy",
-            contract=context_policy.to_dict(),
+            contract={
+                **context_policy.to_dict(),
+                "governing_capability_pack_policy_ref": (
+                    pack_snapshot.context_policy_ref if pack_snapshot else ""
+                ),
+                "governing_capability_pack_policy_hash": (
+                    pack_snapshot.context_policy_hash if pack_snapshot else ""
+                ),
+            },
             trace_id=str(request_payload.get("trace_id") or ""),
             correlation_id=str(request_payload.get("correlation_id") or ""),
         )
@@ -478,7 +549,15 @@ class PostgresChapterExecutionContractBinder:
             project_id=project_id,
             logical_ref=validation_policy.policy_id,
             asset_type="execution_validation_policy",
-            contract=validation_policy.to_dict(),
+            contract={
+                **validation_policy.to_dict(),
+                "governing_capability_pack_policy_ref": (
+                    pack_snapshot.evaluation_policy_ref if pack_snapshot else ""
+                ),
+                "governing_capability_pack_policy_hash": (
+                    pack_snapshot.evaluation_policy_hash if pack_snapshot else ""
+                ),
+            },
             trace_id=str(request_payload.get("trace_id") or ""),
             correlation_id=str(request_payload.get("correlation_id") or ""),
         )
@@ -499,7 +578,9 @@ class PostgresChapterExecutionContractBinder:
             contract={
                 "tool_policy_id": tool_ref,
                 "tool_policy_version": "v1",
-                "allowed_tools": [],
+                "allowed_tools": list(
+                    tool_policy_payload.get("explicit_tool_refs") or ()
+                ),
                 "direct_http": "FORBIDDEN",
                 "direct_file": "FORBIDDEN",
                 "direct_command": "FORBIDDEN",
@@ -509,6 +590,12 @@ class PostgresChapterExecutionContractBinder:
                 "operation_id": operation_id,
                 "attempt_id": attempt_id,
                 "fencing_token": fencing_token,
+                "governing_capability_pack_policy_ref": (
+                    pack_snapshot.tool_policy_ref if pack_snapshot else ""
+                ),
+                "governing_capability_pack_policy_hash": (
+                    pack_snapshot.tool_policy_hash if pack_snapshot else ""
+                ),
             },
             trace_id=str(request_payload.get("trace_id") or ""),
             correlation_id=str(request_payload.get("correlation_id") or ""),
@@ -642,8 +729,8 @@ class PostgresChapterExecutionContractBinder:
             with connection.cursor() as cursor:
                 cursor.execute(
                     """
-                    SELECT operation.definition_name, operation.root_operation_id,
-                           saga.saga_id
+                    SELECT operation.definition_name, operation.definition_version,
+                           operation.root_operation_id, saga.saga_id
                     FROM authority_operation AS operation
                     LEFT JOIN authority_saga AS saga
                       ON saga.root_operation_id = operation.root_operation_id
@@ -653,15 +740,54 @@ class PostgresChapterExecutionContractBinder:
                     [operation_id, project_id],
                 )
                 row = cursor.fetchone()
-        if row is None or not row[2]:
+        if row is None or not row[3]:
             raise ExternalEffectAdapterError(
                 "Chapter gateway operation has no Authority Saga", request_sent=False
             )
         return {
             "definition_name": str(row[0]),
-            "root_operation_id": str(row[1]),
-            "saga_id": str(row[2]),
+            "definition_version": str(row[1]),
+            "root_operation_id": str(row[2]),
+            "saga_id": str(row[3]),
         }
+
+    def _resolve_pack_snapshot(
+        self,
+        *,
+        project_id: str,
+        workspace_id: str,
+        book_id: str,
+        stage: str,
+        graph: Mapping[str, str],
+        route: ChapterExecutionRoute,
+    ) -> CapabilityPackExecutionSnapshot | None:
+        if not self.capability_pack_id:
+            return None
+        try:
+            return self.pack_resolver.resolve_active_deployment(
+                CapabilityPackResolutionRequest(
+                    project_id=project_id,
+                    workspace_id=workspace_id,
+                    book_id=book_id,
+                    workflow_definition_ref="chapter_authority_slice@2.2.0",
+                    workflow_node_id=stage,
+                    environment=self.pack_environment,
+                    runtime_profile=self.pack_runtime_profile,
+                    release_channel=self.pack_release_channel,
+                    release_sha=route.release_sha,
+                    operation_definition_ref=(
+                        f"{graph['definition_name']}@{graph['definition_version']}"
+                    ),
+                    pack_id=self.capability_pack_id,
+                )
+            )
+        except KernelError as exc:
+            if (
+                exc.code == "CAPABILITY_PACK_DEPLOYMENT_NOT_RESOLVED"
+                and not self.pack_required
+            ):
+                return None
+            raise
 
     def _budget_reservation(self, external_effect_id: str, project_id: str) -> str:
         runtime = get_database_runtime(self.database_url)
@@ -1081,12 +1207,25 @@ class ProductionExecutionGatewayExternalEffectAdapter:
         routes: Mapping[str, ChapterExecutionRoute],
         session_factory: Callable[[str], ChapterExecutionGatewaySession],
         provider_adapters: Mapping[str, Any] | None = None,
+        capability_pack_id: str = "",
+        pack_environment: str = "development",
+        pack_runtime_profile: str = "development",
+        pack_release_channel: str = "VALIDATION",
+        pack_required: bool = False,
     ) -> None:
         if set(routes) != _STAGES:
             raise ValueError("all governed execution stages must use the gateway")
         self.database_url = database_url
         self.routes = dict(routes)
-        self.binder = PostgresChapterExecutionContractBinder(database_url, routes)
+        self.binder = PostgresChapterExecutionContractBinder(
+            database_url,
+            routes,
+            capability_pack_id=capability_pack_id,
+            pack_environment=pack_environment,
+            pack_runtime_profile=pack_runtime_profile,
+            pack_release_channel=pack_release_channel,
+            pack_required=pack_required,
+        )
         self.recovery_authorizations = PostgresExecutionRecoveryAuthorizationStore(
             database_url
         )
