@@ -17,6 +17,8 @@ from .contracts import (
     ExecutionCancellationResult,
     ExecutionCapabilityProfile,
     ExecutionHandle,
+    ExecutionRecoveryAction,
+    ExecutionRecoveryAuthorization,
     ExecutionRequest,
     ExecutionResult,
     InputManifest,
@@ -31,6 +33,14 @@ from novel_forge.modules.provider_control.contracts import ProviderReceipt
 class AttemptFenceVerifier(Protocol):
     def assert_current(
         self, operation_id: str, attempt_id: str, fencing_token: int
+    ) -> None: ...
+
+    def assert_recovery_current(
+        self,
+        operation_id: str,
+        attempt_id: str,
+        fencing_token: int,
+        worker_id: str,
     ) -> None: ...
 
 
@@ -58,8 +68,14 @@ class ExecutionAdmission:
 class StaticAttemptFenceVerifier:
     """Explicit test/composition fixture; production injects the Authority query."""
 
-    def __init__(self, tokens: dict[tuple[str, str], int]) -> None:
+    def __init__(
+        self,
+        tokens: dict[tuple[str, str], int],
+        *,
+        owners: dict[tuple[str, str], str] | None = None,
+    ) -> None:
         self._tokens = dict(tokens)
+        self._owners = dict(owners or {})
 
     def assert_current(
         self, operation_id: str, attempt_id: str, fencing_token: int
@@ -67,6 +83,18 @@ class StaticAttemptFenceVerifier:
         current = self._tokens.get((operation_id, attempt_id))
         if current != fencing_token:
             raise ValueError("stale Authority fencing token")
+
+    def assert_recovery_current(
+        self,
+        operation_id: str,
+        attempt_id: str,
+        fencing_token: int,
+        worker_id: str,
+    ) -> None:
+        self.assert_current(operation_id, attempt_id, fencing_token)
+        expected_owner = self._owners.get((operation_id, attempt_id))
+        if expected_owner is not None and expected_owner != worker_id:
+            raise ValueError("recovery worker does not own the current lease")
 
 
 class StaticExecutionContractSource:
@@ -175,6 +203,45 @@ class AdmissionController:
         self.attempt_fence.assert_current(
             request.operation_id, request.attempt_id, request.fencing_token
         )
+        return self._admit_frozen_contracts(request, capability)
+
+    def admit_recovery(
+        self,
+        request: ExecutionRequest,
+        capability: ExecutionCapabilityProfile,
+        authorization: ExecutionRecoveryAuthorization,
+    ) -> ExecutionAdmission:
+        expected_identity = (
+            request.execution_id,
+            request.external_effect_id,
+            request.operation_id,
+            request.attempt_id,
+            request.fencing_token,
+        )
+        authorized_identity = (
+            authorization.execution_id,
+            authorization.external_effect_id,
+            authorization.operation_id,
+            authorization.attempt_id,
+            authorization.execution_fencing_token,
+        )
+        if expected_identity != authorized_identity:
+            raise ValueError(
+                "Recovery Authorization differs from frozen execution identity"
+            )
+        self.attempt_fence.assert_recovery_current(
+            request.operation_id,
+            request.attempt_id,
+            authorization.recovery_fencing_token,
+            authorization.recovery_worker_id,
+        )
+        return self._admit_frozen_contracts(request, capability)
+
+    def _admit_frozen_contracts(
+        self,
+        request: ExecutionRequest,
+        capability: ExecutionCapabilityProfile,
+    ) -> ExecutionAdmission:
         if self.require_external_effect and not all(
             (request.trace_id, request.correlation_id, request.external_effect_id)
         ):
@@ -339,6 +406,91 @@ class ProductionExecutionGateway:
         )
         return handle
 
+    def resume_planned_execution(
+        self,
+        request: ExecutionRequest,
+        authorization: ExecutionRecoveryAuthorization,
+    ) -> ExecutionHandle:
+        if authorization.action is not ExecutionRecoveryAction.DISPATCH_PLANNED:
+            raise ValueError(
+                "planned execution recovery requires DISPATCH_PLANNED authorization"
+            )
+        route = self.admission.resolve_route(request)
+        backend = self.backends.resolve(route.backend_id)
+        self.admission.admit_recovery(
+            request,
+            backend.capability_profile,
+            authorization,
+        )
+        handle = backend.submit_recovered(request, authorization)
+        self._validate_handle(
+            request,
+            route,
+            handle,
+            backend.capability_profile.runtime_class,
+        )
+        return handle
+
+    def recover_existing_execution(
+        self,
+        request: ExecutionRequest,
+        handle: ExecutionHandle,
+        authorization: ExecutionRecoveryAuthorization,
+    ) -> ExecutionResult:
+        if authorization.action not in {
+            ExecutionRecoveryAction.QUERY,
+            ExecutionRecoveryAction.CONSUME_RESULT,
+        }:
+            raise ValueError(
+                "existing execution recovery requires QUERY or CONSUME_RESULT authorization"
+            )
+        route = self.admission.resolve_route(request)
+        backend = self.backends.resolve(route.backend_id)
+        self.admission.admit_recovery(
+            request,
+            backend.capability_profile,
+            authorization,
+        )
+        self._validate_handle(
+            request,
+            route,
+            handle,
+            backend.capability_profile.runtime_class,
+        )
+        result = backend.reconcile(handle)
+        self._validate_result(handle, result)
+        return result
+
+    def cancel_existing_execution(
+        self,
+        request: ExecutionRequest,
+        handle: ExecutionHandle,
+        authorization: ExecutionRecoveryAuthorization,
+        reason: str,
+    ) -> ExecutionCancellationResult:
+        if authorization.action is not ExecutionRecoveryAction.CANCEL:
+            raise ValueError(
+                "existing execution cancellation requires CANCEL authorization"
+            )
+        if not reason.strip():
+            raise ValueError("execution cancellation reason is required")
+        route = self.admission.resolve_route(request)
+        backend = self.backends.resolve(route.backend_id)
+        self.admission.admit_recovery(
+            request,
+            backend.capability_profile,
+            authorization,
+        )
+        self._validate_handle(
+            request,
+            route,
+            handle,
+            backend.capability_profile.runtime_class,
+        )
+        result = backend.cancel(handle, reason)
+        self._validate_cancellation(handle, result)
+        return result
+
     def reconcile(self, handle: ExecutionHandle) -> ExecutionResult:
         self.admission.assert_handle_current(handle)
         backend = self.backends.resolve(handle.backend_id)
@@ -354,6 +506,14 @@ class ProductionExecutionGateway:
             raise ValueError("execution cancellation reason is required")
         backend = self.backends.resolve(handle.backend_id)
         result = backend.cancel(handle, reason)
+        self._validate_cancellation(handle, result)
+        return result
+
+    @staticmethod
+    def _validate_cancellation(
+        handle: ExecutionHandle,
+        result: ExecutionCancellationResult,
+    ) -> None:
         if (
             result.execution_id,
             result.operation_id,
@@ -368,7 +528,6 @@ class ProductionExecutionGateway:
             handle.backend_id,
         ):
             raise ValueError("backend cancellation result changed execution identity")
-        return result
 
     def accept_callback(
         self, handle: ExecutionHandle, receipt: ProviderReceipt

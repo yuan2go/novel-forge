@@ -58,6 +58,14 @@ class ExecutionOutcome(StrEnum):
     CORRUPT_RESULT = "CORRUPT_RESULT"
 
 
+class ExecutionRecoveryAction(StrEnum):
+    DISPATCH_PLANNED = "DISPATCH_PLANNED"
+    QUERY = "QUERY"
+    CANCEL = "CANCEL"
+    CONSUME_RESULT = "CONSUME_RESULT"
+    FINALIZE = "FINALIZE"
+
+
 class CancellationOutcome(StrEnum):
     CANCELLED = "CANCELLED"
     ALREADY_COMPLETED = "ALREADY_COMPLETED"
@@ -949,6 +957,70 @@ class ExecutionRequest(_Contract):
 
 
 @dataclass(frozen=True, slots=True)
+class ExecutionRecoveryAuthorization(_Contract):
+    """Current-worker authority over one immutable execution identity.
+
+    ``execution_fencing_token`` remains the fence embedded in the original
+    request, route/input contracts, Provider handle, and result evidence.
+    ``recovery_fencing_token`` is checked against the currently HELD Attempt
+    lease and authorizes only the named recovery action.
+    """
+
+    authorization_id: str
+    execution_id: str
+    external_effect_id: str
+    operation_id: str
+    attempt_id: str
+    execution_fencing_token: int
+    recovery_fencing_token: int
+    recovery_worker_id: str
+    action: ExecutionRecoveryAction
+    trace_id: str
+    correlation_id: str
+
+    def __post_init__(self) -> None:
+        _required(
+            "ExecutionRecoveryAuthorization",
+            self.authorization_id,
+            self.execution_id,
+            self.external_effect_id,
+            self.operation_id,
+            self.attempt_id,
+            self.recovery_worker_id,
+            self.trace_id,
+            self.correlation_id,
+        )
+        _validate_attempt(
+            self.operation_id,
+            self.attempt_id,
+            self.execution_fencing_token,
+        )
+        if self.recovery_fencing_token < self.execution_fencing_token:
+            raise ValueError(
+                "recovery fencing token cannot precede the execution fence"
+            )
+        object.__setattr__(
+            self,
+            "action",
+            ExecutionRecoveryAction(self.action),
+        )
+
+    @classmethod
+    def from_dict(
+        cls, payload: Mapping[str, Any]
+    ) -> ExecutionRecoveryAuthorization:
+        values = dict(payload)
+        values["execution_fencing_token"] = int(
+            values.get("execution_fencing_token") or 0
+        )
+        values["recovery_fencing_token"] = int(
+            values.get("recovery_fencing_token") or 0
+        )
+        values["action"] = ExecutionRecoveryAction(values.get("action"))
+        return cls(**{item.name: values.get(item.name) for item in fields(cls)})
+
+
+@dataclass(frozen=True, slots=True)
 class ExecutionHandle(_Contract):
     execution_id: str
     operation_id: str
@@ -1141,6 +1213,12 @@ class ExecutionBackend(Protocol):
     capability_profile: ExecutionCapabilityProfile
 
     def submit(self, request: ExecutionRequest) -> ExecutionHandle: ...
+
+    def submit_recovered(
+        self,
+        request: ExecutionRequest,
+        authorization: ExecutionRecoveryAuthorization,
+    ) -> ExecutionHandle: ...
 
     def reconcile(self, handle: ExecutionHandle) -> ExecutionResult: ...
 

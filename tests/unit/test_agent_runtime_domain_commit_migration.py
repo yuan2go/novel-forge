@@ -3,9 +3,14 @@ from __future__ import annotations
 from novel_forge.storage.migrations import MIGRATIONS, validate_migration_chain
 
 
-def test_domain_commit_closure_is_the_linear_head() -> None:
+def test_domain_commit_closure_remains_in_the_linear_chain() -> None:
     validate_migration_chain()
-    migration = MIGRATIONS[-1]
+    migration = next(
+        item
+        for item in MIGRATIONS
+        if item.migration_id
+        == "20260805_0069_agent_runtime_domain_commit_closure"
+    )
     assert migration.migration_id == (
         "20260805_0069_agent_runtime_domain_commit_closure"
     )

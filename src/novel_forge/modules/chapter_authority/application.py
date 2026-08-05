@@ -19,6 +19,7 @@ from novel_forge.modules.chapter_authority.scheduler import ChapterAuthoritySche
 from novel_forge.modules.authority_security import Principal
 from novel_forge.modules.chapter_authority.queries import ChapterAuthorityQuery
 from novel_forge.modules.command_kernel.external_effect_adapters import ExternalEffectAdapter
+from novel_forge.storage.database_runtime import close_all_database_runtimes
 
 
 class ChapterAuthorityApplication:
@@ -105,6 +106,14 @@ class ChapterAuthorityApplication:
             fault_injector=self.runtime_fault_injector,
             model_effect_adapter=self.model_port.adapter,
         )
+
+    def close(self) -> None:
+        """Destroy process-local gateway sessions and PostgreSQL pools."""
+
+        close_sessions = getattr(self.model_port.adapter, "close_sessions", None)
+        if callable(close_sessions):
+            close_sessions()
+        close_all_database_runtimes()
 
 
 __all__ = ["ChapterAuthorityApplication"]

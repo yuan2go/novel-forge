@@ -5,6 +5,7 @@ import hashlib
 import json
 
 from novel_forge.modules.chapter_authority.contracts import ChapterNode
+from novel_forge.modules.chapter_quality_authority import QUALITY_DIMENSIONS
 from novel_forge.modules.chapter_authority.handlers import (
     DeterministicFixtureChapterProvider,
     build_chapter_handler_registry,
@@ -116,6 +117,70 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
         self.assertEqual(seen, [node.value for node in ChapterNode])
         self.assertEqual(terminal.saga_status, "SUCCEEDED")
         self.assertEqual(terminal.recovery_mode, "terminal_replay")
+        quality, publish_gate = self._quality_and_publish_gate(
+            admission.root_operation_id
+        )
+        self.assertEqual(quality["gate"], "PASSED_WITH_UNCALIBRATED")
+        self.assertEqual(publish_gate["gate"], "PASSED")
+        self.assertEqual(
+            publish_gate["release_readiness"], "INTERNAL_REVIEW_RELEASE"
+        )
+        self.assertFalse(publish_gate["external_publish_permitted"])
+        self.assertFalse(publish_gate["production_verified"])
+        self.assertTrue(publish_gate["fixture_protocol_only"])
+
+    def test_uncalibrated_fixture_is_a_successful_publish_block(self) -> None:
+        project_id = identifier("uncalibrated-publish-block-project")
+        registry = build_chapter_handler_registry(
+            DeterministicFixtureChapterProvider()
+        )
+        admission = admit_single_chapter_saga(
+            DATABASE_URL,
+            request=SingleChapterRequest(
+                project_id=project_id,
+                workspace_id=f"workspace:{project_id}",
+                actor_id="trusted-operator",
+                chapter=1,
+                title="An Honest Fixture",
+                premise="Fixture evidence cannot become production proof.",
+                trace_id=identifier("uncalibrated-trace"),
+                correlation_id=identifier("uncalibrated-correlation"),
+                application_build_id="uncalibrated-fixture-test",
+                commit_sha="f" * 40,
+                idempotency_key=f"{project_id}:chapter:1",
+                preparation_report={"decision": "READY", "fixture": True},
+                context_candidates=tuple(
+                    self._release_evidence(project_id, with_waiver=False)
+                ),
+            ),
+            registry=registry,
+            permissions=frozenset({"chapter.authority.execute"}),
+        )
+        scheduler = ChapterAuthorityScheduler(
+            DATABASE_URL,
+            registry=registry,
+            object_store_adapter=FakeDeterministicProvider("success"),
+            worker_id="uncalibrated-fixture-worker",
+            permissions=frozenset({"chapter.authority.execute"}),
+        )
+        for _ in ChapterNode:
+            tick = scheduler.tick(
+                project_id=project_id,
+                root_operation_id=admission.root_operation_id,
+            )
+            if tick.node == ChapterNode.PUBLISH_GATE.value:
+                break
+        else:
+            self.fail("uncalibrated fixture did not reach Publish Gate")
+
+        quality, publish_gate = self._quality_and_publish_gate(
+            admission.root_operation_id
+        )
+        self.assertEqual(quality["gate"], "PASSED_WITH_UNCALIBRATED")
+        self.assertEqual(publish_gate["gate"], "PUBLISH_GATE_BLOCKED")
+        self.assertEqual(publish_gate["release_readiness"], "BLOCKED")
+        self.assertFalse(publish_gate["external_publish_permitted"])
+        self.assertFalse(publish_gate["production_verified"])
 
     def test_preparation_command_runs_through_async_context_and_full_saga(self) -> None:
         project_id = identifier("prepared-async-project")
@@ -611,16 +676,16 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
         absence_inputs: list[tuple[str, dict[str, str]]] = []
         def calibrated(dimensions: tuple[str, ...]) -> dict[str, object]:
             return {
-                "safe_summary": "Human-calibrated fixture gate evidence.",
+                "safe_summary": "Fixture-only waived quality evidence.",
                 "allowed_use": "evidence_only",
                 "structured_facts": [{
                     "key": "dimension_evidence",
                     "value": [
                         {
                             "dimension": item,
-                            "gate_status": "PASSED",
-                            "calibration_status": "HUMAN_CALIBRATED",
-                            "human_verified": True,
+                            "gate_status": "WAIVED_BY_APPROVAL",
+                            "calibration_status": "FIXTURE_UNCALIBRATED",
+                            "human_verified": False,
                             "fixture_protocol_only": True,
                         }
                         for item in dimensions
@@ -658,11 +723,42 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
             },
             "operator_checklist": {
                 "safe_summary": "Checklist completed.",
-                "structured_facts": [{"key": "completed", "value": True}],
+                "structured_facts": [
+                    {"key": "completed", "value": True},
+                    {
+                        "key": "contract_version",
+                        "value": "fixture-waiver-checklist-v1",
+                    },
+                ],
             },
-            "operator_approval": {
-                "safe_summary": "Operator approval.",
-                "structured_facts": [{"key": "approved", "value": True}],
+            "approval_decision": {
+                "safe_summary": "Versioned fixture-only waiver approval.",
+                "structured_facts": [
+                    {"key": "approved", "value": True},
+                    {"key": "decision", "value": "APPROVED"},
+                    {
+                        "key": "contract_version",
+                        "value": "fixture-waiver-approval-v1",
+                    },
+                    {
+                        "key": "waiver_reason",
+                        "value": "Exercise internal fixture release protocol.",
+                    },
+                    {
+                        "key": "waived_dimensions",
+                        "value": list(QUALITY_DIMENSIONS),
+                    },
+                    {
+                        "key": "scope",
+                        "value": {
+                            "project_id": project_id,
+                            "scope_type": "PROJECT_FIXTURE",
+                            "release_readiness": "INTERNAL_REVIEW_RELEASE",
+                        },
+                    },
+                    {"key": "expiry", "value": "2099-01-01T00:00:00Z"},
+                    {"key": "fixture_protocol_only", "value": True},
+                ],
             },
             "commercial_quality_report": calibrated((
                 "golden_opening", "reader_promise", "reward", "protagonist_charm",
@@ -768,7 +864,9 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
                 )
 
     @staticmethod
-    def _release_evidence(project_id: str) -> list[dict[str, object]]:
+    def _release_evidence(
+        project_id: str, *, with_waiver: bool = True
+    ) -> list[dict[str, object]]:
         candidates: list[dict[str, object]] = []
         quality = {
             "commercial_quality_report": (
@@ -814,17 +912,65 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
                     "publish_metadata": {"title_required": True},
                 }}], None,
             ),
-            ("operator_checklist", "Operator checklist completed.", [{"key": "completed", "value": True}]),
-            ("operator_approval", "Operator approved fixture release.", [{"key": "approved", "value": True}]),
+            (
+                "operator_checklist",
+                "Versioned fixture waiver checklist.",
+                [
+                    {"key": "completed", "value": True},
+                    {
+                        "key": "contract_version",
+                        "value": "fixture-waiver-checklist-v1",
+                    },
+                ],
+            ),
+            (
+                "operator_approval",
+                "Versioned fixture-only approval decision.",
+                [
+                    {"key": "approved", "value": with_waiver},
+                    {
+                        "key": "decision",
+                        "value": "APPROVED" if with_waiver else "NOT_APPROVED",
+                    },
+                    {
+                        "key": "contract_version",
+                        "value": "fixture-waiver-approval-v1",
+                    },
+                    {
+                        "key": "waiver_reason",
+                        "value": "Exercise internal fixture release protocol.",
+                    },
+                    {
+                        "key": "waived_dimensions",
+                        "value": list(QUALITY_DIMENSIONS) if with_waiver else [],
+                    },
+                    {
+                        "key": "scope",
+                        "value": {
+                            "project_id": project_id,
+                            "scope_type": "PROJECT_FIXTURE",
+                            "release_readiness": "INTERNAL_REVIEW_RELEASE",
+                        },
+                    },
+                    {"key": "expiry", "value": "2099-01-01T00:00:00Z"},
+                    {"key": "fixture_protocol_only", "value": True},
+                ],
+            ),
         ]
         evidence.extend(
             (
                 asset_type,
-                "Human-calibrated fixture quality evidence.",
+                "Honest fixture-only quality evidence.",
                 [{"key": "dimension_evidence", "value": [
                     {
-                        "dimension": dimension, "gate_status": "PASSED",
-                        "calibration_status": "HUMAN_CALIBRATED", "human_verified": True,
+                        "dimension": dimension,
+                        "gate_status": (
+                            "WAIVED_BY_APPROVAL"
+                            if with_waiver
+                            else "PASSED"
+                        ),
+                        "calibration_status": "FIXTURE_UNCALIBRATED",
+                        "human_verified": False,
                         "fixture_protocol_only": True,
                     }
                     for dimension in dimensions
@@ -874,6 +1020,39 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
                     }
                 )
         return candidates
+
+    @staticmethod
+    def _quality_and_publish_gate(
+        root_operation_id: str,
+    ) -> tuple[dict[str, object], dict[str, object]]:
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT operation.definition_name, version.content
+                FROM authority_operation AS operation
+                JOIN authority_operation_output_asset AS output
+                  ON output.operation_id=operation.operation_id
+                JOIN authority_asset_version AS version
+                  ON version.asset_version_id=output.asset_version_id
+                WHERE operation.root_operation_id=%s
+                  AND operation.definition_name IN (
+                      'chapter.quality.evaluate',
+                      'chapter.publishing.prepare_release'
+                  )
+                  AND output.output_key IN (
+                      'chapter.quality', 'chapter.publish_gate'
+                  )
+                """,
+                [root_operation_id],
+            )
+            values = {
+                str(name): dict(content)
+                for name, content in cursor.fetchall()
+            }
+        return (
+            values["chapter.quality.evaluate"],
+            values["chapter.publishing.prepare_release"],
+        )
 
 
 if __name__ == "__main__":

@@ -128,6 +128,140 @@ class CanonSemanticQualityAuthorityTests(unittest.TestCase):
         self.assertEqual(originality["gate_status"], "REQUIRES_PROVIDER_JUDGE")
         self.assertIn("originality", group["blocking_dimension_codes"])
 
+    def test_fixture_human_claim_is_normalized_to_uncalibrated(self) -> None:
+        group = build_quality_group_evidence(
+            group="source_originality",
+            project_id="project-1",
+            revision={
+                "chapter": 1,
+                "text": "A complete sentence. Another consequence follows.",
+            },
+            revision_asset_version_id="revision-current",
+            context_bundle={
+                "source_isolation_result": {"passed": True},
+                "copyright_boundary": "abstract_or_project_owned_only",
+                "context_segments": [
+                    {
+                        "asset_version_id": "fixture-quality-v1",
+                        "source_expression_included": False,
+                        "structured_facts": [
+                            {
+                                "key": "dimension_evidence",
+                                "value": [
+                                    {
+                                        "dimension": "originality",
+                                        "gate_status": "PASSED",
+                                        "calibration_status": "HUMAN_CALIBRATED",
+                                        "human_verified": True,
+                                        "fixture_protocol_only": True,
+                                    }
+                                ],
+                            }
+                        ],
+                    }
+                ],
+            },
+            canon={"gate": "PASSED", "conflicts": []},
+            fixture=True,
+        )
+        originality = next(
+            item
+            for item in group["dimensions"]
+            if item["dimension"] == "originality"
+        )
+        self.assertEqual(
+            originality["gate_status"], "PASSED_WITH_UNCALIBRATED"
+        )
+        self.assertEqual(
+            originality["calibration_status"], "FIXTURE_UNCALIBRATED"
+        )
+
+    def test_fixture_waiver_requires_versioned_scoped_approval(self) -> None:
+        project_id = "project-1"
+        common = {
+            "source_isolation_result": {"passed": True},
+            "copyright_boundary": "abstract_or_project_owned_only",
+            "context_segments": [
+                {
+                    "asset_type": "operator_checklist",
+                    "asset_version_id": "checklist-v1",
+                    "source_expression_included": False,
+                    "structured_facts": [
+                        {"key": "completed", "value": True},
+                        {
+                            "key": "contract_version",
+                            "value": "fixture-waiver-checklist-v1",
+                        },
+                    ],
+                },
+                {
+                    "asset_type": "operator_approval",
+                    "asset_version_id": "approval-v1",
+                    "source_expression_included": False,
+                    "structured_facts": [
+                        {"key": "decision", "value": "APPROVED"},
+                        {
+                            "key": "contract_version",
+                            "value": "fixture-waiver-approval-v1",
+                        },
+                        {"key": "waiver_reason", "value": "fixture protocol"},
+                        {"key": "waived_dimensions", "value": ["originality"]},
+                        {
+                            "key": "scope",
+                            "value": {
+                                "project_id": project_id,
+                                "scope_type": "PROJECT_FIXTURE",
+                                "release_readiness": "INTERNAL_REVIEW_RELEASE",
+                            },
+                        },
+                        {"key": "expiry", "value": "2099-01-01T00:00:00Z"},
+                        {"key": "fixture_protocol_only", "value": True},
+                    ],
+                },
+                {
+                    "asset_type": "source_originality_quality_report",
+                    "asset_version_id": "fixture-quality-v1",
+                    "source_expression_included": False,
+                    "structured_facts": [
+                        {
+                            "key": "dimension_evidence",
+                            "value": [
+                                {
+                                    "dimension": "originality",
+                                    "gate_status": "WAIVED_BY_APPROVAL",
+                                    "calibration_status": "FIXTURE_UNCALIBRATED",
+                                    "fixture_protocol_only": True,
+                                }
+                            ],
+                        }
+                    ],
+                },
+            ],
+        }
+        group = build_quality_group_evidence(
+            group="source_originality",
+            project_id=project_id,
+            revision={
+                "chapter": 1,
+                "text": "A complete sentence. Another consequence follows.",
+            },
+            revision_asset_version_id="revision-current",
+            context_bundle=common,
+            canon={"gate": "PASSED", "conflicts": []},
+            fixture=True,
+        )
+        originality = next(
+            item
+            for item in group["dimensions"]
+            if item["dimension"] == "originality"
+        )
+        self.assertEqual(originality["gate_status"], "WAIVED_BY_APPROVAL")
+        self.assertEqual(
+            originality["waiver"]["approval_asset_version_id"],
+            "approval-v1",
+        )
+        self.assertFalse(originality["waiver"]["production_verified"])
+
 
 if __name__ == "__main__":
     unittest.main()

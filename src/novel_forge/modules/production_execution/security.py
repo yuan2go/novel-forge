@@ -32,6 +32,8 @@ CONTROLLED_EXECUTION_ENVIRONMENTS = frozenset(
 _ALLOWED_TOKEN_EVIDENCE_KEYS = frozenset(
     {
         "fencing_token",
+        "execution_fencing_token",
+        "recovery_fencing_token",
         "process_start_token",
         "supervisor_process_start_token",
         "input_token",

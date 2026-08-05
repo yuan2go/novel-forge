@@ -29,6 +29,14 @@ def execute_authority_handler(
     execution_probe: Callable[[], object] | None = None,
 ) -> AuthorityExecutionResult:
     request = _load_request(database_url, command, registration)
+    replayed = _load_materialized_result(
+        database_url,
+        command=command,
+        request=request,
+        registration=registration,
+    )
+    if replayed is not None:
+        return replayed
     if execution_probe is not None:
         execution_probe()
     output = registration.handler.execute(request)
@@ -148,6 +156,62 @@ def execute_authority_handler(
         output_key=output.output_key,
         replayed=all(item.replayed for item in materialized),
         materialized_outputs=tuple(materialized),
+    )
+
+
+def _load_materialized_result(
+    database_url: str,
+    *,
+    command: WorkerLeaseCommand,
+    request: AuthorityHandlerRequest,
+    registration: AuthorityHandlerRegistration,
+) -> AuthorityExecutionResult | None:
+    """Return an atomically materialized handler result without recomputing it.
+
+    A lease takeover changes the recovery fence. Handler output may legitimately
+    contain the original execution fence, so recomputing after materialization
+    would manufacture conflicting historical evidence. The stable operation
+    output is the recovery source of truth once it exists.
+    """
+    with AuthorityUnitOfWork(database_url) as uow:
+        require_current_fence(uow, command)
+        uow.cursor.execute(
+            """
+            SELECT output.asset_id, output.asset_version_id, output.content_hash
+            FROM authority_operation_output_asset AS output
+            WHERE output.operation_id = %s
+              AND output.output_key = %s
+              AND output.role = %s
+            ORDER BY output.asset_version_id
+            """,
+            [request.operation_id, registration.output_key, registration.role],
+        )
+        rows = uow.cursor.fetchall()
+    if not rows:
+        return None
+    if len(rows) != 1:
+        raise KernelError(
+            "AUTHORITY_OUTPUT_REPLAY_CONFLICT",
+            "authority handler primary output is not unique",
+        )
+    asset_id, asset_version_id, content_hash = rows[0]
+    materialized = AuthorityMaterializedOutput(
+        asset_id=str(asset_id),
+        asset_version_id=str(asset_version_id),
+        asset_type=registration.output_asset_type,
+        output_key=registration.output_key,
+        role=registration.role,
+        content_hash=str(content_hash),
+        replayed=True,
+    )
+    return AuthorityExecutionResult(
+        operation_id=request.operation_id,
+        asset_id=materialized.asset_id,
+        asset_version_id=materialized.asset_version_id,
+        content_hash=materialized.content_hash,
+        output_key=materialized.output_key,
+        replayed=True,
+        materialized_outputs=(materialized,),
     )
 
 

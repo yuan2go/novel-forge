@@ -7,7 +7,7 @@ Attempt and it never commits the Chapter domain asset.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from decimal import Decimal
 from collections.abc import Callable
 from typing import Any
@@ -217,6 +217,7 @@ class PostgresChapterAgentBindingRecorder:
                     saga_id=str(operation["saga_id"]),
                     authority_decision_ref="",
                     last_turn_id="",
+                    attempt_id=request.attempt_id,
                 )
             )
             input_versions = tuple(item.asset_version_id for item in request.inputs)
@@ -346,7 +347,7 @@ class PostgresChapterAgentBindingRecorder:
                 operation_definition_hash=str(operation["definition_hash"]),
                 operation_id=request.operation_id,
                 attempt_id=request.attempt_id,
-                fencing_token=request.fencing_token,
+                fencing_token=execution_binding.request.fencing_token,
                 work_order_id=work_order.work_order_id,
                 agent_id=work_order.agent_id,
                 agent_definition_version=work_order.agent_definition_version,
@@ -404,8 +405,11 @@ class PostgresChapterAgentBindingRecorder:
         result: ModelProviderResult,
         execution_binding: ChapterExecutionBinding,
     ) -> None:
-        evidence = _domain_evidence(result, execution_binding)
         work_order = frozen_work_order.work_order
+        evidence = replace(
+            _domain_evidence(result, execution_binding),
+            fencing_token=work_order.fencing_token,
+        )
         candidate_id = _identity("chapter-agent-candidate", work_order.attempt_id)
         output_id = _identity("chapter-agent-output", work_order.attempt_id)
         proposed_change = ProposedAssetChange(
@@ -488,7 +492,8 @@ class PostgresChapterAgentBindingRecorder:
                 """
                 SELECT work_order.session_id, candidate.candidate_version_id,
                        binding.commit_policy_ref, binding.commit_authority,
-                       output.execution_evidence_ref
+                       output.execution_evidence_ref,
+                       collaboration_commit.fencing_token
                 FROM authority_agent_runtime_binding AS binding
                 JOIN authority_agent_work_order AS work_order
                   ON work_order.work_order_id=binding.work_order_id
@@ -496,6 +501,10 @@ class PostgresChapterAgentBindingRecorder:
                   ON candidate.originating_turn_id=work_order.turn_id
                 LEFT JOIN authority_agent_output_envelope AS output
                   ON output.turn_id=work_order.turn_id
+                LEFT JOIN authority_agent_collaboration_commit
+                  AS collaboration_commit
+                  ON collaboration_commit.candidate_version_id=
+                     candidate.candidate_version_id
                 WHERE binding.project_id=%s AND binding.operation_id=%s
                   AND binding.attempt_id=%s
                   AND EXISTS (
@@ -520,7 +529,7 @@ class PostgresChapterAgentBindingRecorder:
                 candidate_version_id=str(row[1]),
                 operation_id=operation_id,
                 attempt_id=attempt_id,
-                fencing_token=fencing_token,
+                fencing_token=int(row[5] or fencing_token),
                 asset_version_id=asset_version_id,
                 content_hash=content_hash,
                 commit_policy_ref=str(row[2]),

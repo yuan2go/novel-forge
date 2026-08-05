@@ -6,11 +6,21 @@ DEMO_WORKSPACE ?= .local/demo-workspace
 AUTHORITY_COMPOSE ?= docker compose -f compose.yml
 LEGACY_COMPOSE ?= docker compose -f compose.legacy.yml --profile legacy
 
-.PHONY: test lint validate demo authority-demo legacy-validate legacy-demo local-workspace infra-up infra-down postgres-authority-test-up postgres-authority-test-down postgres-authority-test authority-up authority-down authority-build authority-smoke authority-logs authority-test authority-postgres-test authority-compose-config-check authority-query-plan-release legacy-up legacy-down legacy-logs local-up local-down local-smoke local-logs failure-drill v1-slow-acceptance governance-dead-letter-regression runtime-growth-regression source-governance-regression api worker web-dev sync-skills sync-skills-dry-run check-skills authority-parity-check head-integrity-check architecture-manifests-check architecture-fitness-check authority-only-config-check d0-provider-probe help
+.PHONY: test lint lint-authority lint-ratchet validate demo authority-demo legacy-validate legacy-demo local-workspace infra-up infra-down postgres-authority-test-up postgres-authority-test-down postgres-authority-test authority-up authority-down authority-build authority-smoke authority-logs authority-test authority-postgres-test authority-compose-config-check authority-query-plan-release legacy-up legacy-down legacy-logs local-up local-down local-smoke local-logs failure-drill v1-slow-acceptance governance-dead-letter-regression runtime-growth-regression source-governance-regression api worker web-dev sync-skills sync-skills-dry-run check-skills authority-parity-check head-integrity-check architecture-manifests-check architecture-fitness-check authority-only-config-check d0-provider-probe help
+
+RUFF ?= ruff
+AUTHORITY_RUFF_PATHS := \
+	src/novel_forge/modules/agent_runtime \
+	src/novel_forge/modules/agent_collaboration \
+	src/novel_forge/modules/command_kernel \
+	src/novel_forge/modules/production_execution \
+	src/novel_forge/modules/chapter_authority
 
 help:
 	@echo "make test      - run stdlib unittest suite"
 	@echo "make lint      - compile Python sources"
+	@echo "make lint-authority - require Ruff-clean Authority production surfaces"
+	@echo "make lint-ratchet - reject new or increased repository Ruff debt"
 	@echo "make validate  - validate Authority code, manifests, fitness, and Compose configuration"
 	@echo "make demo      - run the PostgreSQL Authority fixture/recovery demo"
 	@echo "make legacy-validate - explicitly validate a Legacy development workspace"
@@ -56,7 +66,13 @@ test:
 lint:
 	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m compileall -q src tests
 
-validate: lint architecture-manifests-check architecture-fitness-check authority-only-config-check
+lint-authority:
+	$(RUFF) check $(AUTHORITY_RUFF_PATHS)
+
+lint-ratchet:
+	PYTHONPATH=$(PYTHONPATH) $(PYTHON) scripts/check_ruff_ratchet.py --ruff $(RUFF)
+
+validate: lint lint-authority lint-ratchet architecture-manifests-check architecture-fitness-check authority-only-config-check
 
 local-workspace:
 	mkdir -p $(LOCAL_WORKSPACE)
@@ -104,7 +120,7 @@ authority-smoke:
 authority-logs:
 	$(AUTHORITY_COMPOSE) logs -f authority-api agent-authority-worker chapter-authority-worker content-authority-worker source-authority-worker mkaos-authority-worker book-authority-worker outbox-worker maintenance-worker
 
-authority-test: lint architecture-manifests-check architecture-fitness-check head-integrity-check
+authority-test: lint lint-authority lint-ratchet architecture-manifests-check architecture-fitness-check head-integrity-check
 	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m unittest discover -s tests/unit -p 'test_*.py'
 	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m unittest discover -s tests/acceptance -p 'test_*.py'
 

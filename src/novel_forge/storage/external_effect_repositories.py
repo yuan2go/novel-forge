@@ -568,7 +568,10 @@ class ExternalEffectRepository:
             UPDATE authority_external_effect
             SET status = %s, reconciliation = %s
             WHERE external_effect_id = %s
-              AND status IN ('UNKNOWN', 'RECONCILIATION_REQUIRED')
+              AND status IN (
+                  'DISPATCHING', 'DISPATCHED',
+                  'UNKNOWN', 'RECONCILIATION_REQUIRED'
+              )
             """,
             [target, Jsonb(row["evidence"]), row["external_effect_id"]],
         )

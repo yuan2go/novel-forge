@@ -1,4 +1,5 @@
 """Generic ExternalEffect-backed model boundary for chapter handlers."""
+
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -25,26 +26,32 @@ from novel_forge.modules.command_kernel.budget_runtime import (
     resolve_provider_budget_failure,
     settle_provider_budget,
 )
-from novel_forge.storage.authority_asset_store import AuthorityAssetQuery, AuthorityAssetWriter
+from novel_forge.storage.authority_asset_store import (
+    AuthorityAssetQuery,
+    AuthorityAssetWriter,
+)
 from novel_forge.storage.database_runtime import get_database_runtime
 from novel_forge.modules.provider_control.contracts import (
     ProviderCapabilityProfile,
     ProviderControlLevel,
 )
+from novel_forge.modules.production_execution.contracts import ExecutionRecoveryAction
 
 
-AGENT_MODEL_STAGES = frozenset({
-    "draft",
-    "review",
-    "revision",
-    "rereview",
-    "canon_extraction",
-    "quality_structural",
-    "quality_commercial",
-    "quality_source_originality",
-    "quality_longform",
-    "quality_platform",
-})
+AGENT_MODEL_STAGES = frozenset(
+    {
+        "draft",
+        "review",
+        "revision",
+        "rereview",
+        "canon_extraction",
+        "quality_structural",
+        "quality_commercial",
+        "quality_source_originality",
+        "quality_longform",
+        "quality_platform",
+    }
+)
 
 
 class LegacyChapterModelAdapter(Protocol):
@@ -87,8 +94,12 @@ class ModelProviderResult:
     def __post_init__(self) -> None:
         if not isinstance(self.output, dict) or not self.output:
             raise ValueError("model provider output must be a non-empty object")
-        if not all((self.provider_id, self.model_id, self.prompt_version, self.skill_version)):
-            raise ValueError("model provider identity and semantic versions are required")
+        if not all(
+            (self.provider_id, self.model_id, self.prompt_version, self.skill_version)
+        ):
+            raise ValueError(
+                "model provider identity and semantic versions are required"
+            )
         if self.input_tokens < 0 or self.output_tokens < 0:
             raise ValueError("model token usage cannot be negative")
         try:
@@ -127,7 +138,10 @@ class ModelProviderResult:
         cost = evidence.get("cost") if isinstance(evidence.get("cost"), dict) else {}
         output = evidence.get("result")
         if not isinstance(output, dict):
-            raise KernelError("MODEL_EFFECT_EVIDENCE_INVALID", "model receipt has no structured result")
+            raise KernelError(
+                "MODEL_EFFECT_EVIDENCE_INVALID",
+                "model receipt has no structured result",
+            )
         try:
             return cls(
                 output=output,
@@ -260,9 +274,16 @@ class ChapterModelExternalEffectAdapter:
         environment: str = "test",
     ) -> None:
         unsupported = set(routes) - {
-            "draft", "review", "revision", "rereview", "canon_extraction",
-            "quality_structural", "quality_commercial",
-            "quality_source_originality", "quality_longform", "quality_platform",
+            "draft",
+            "review",
+            "revision",
+            "rereview",
+            "canon_extraction",
+            "quality_structural",
+            "quality_commercial",
+            "quality_source_originality",
+            "quality_longform",
+            "quality_platform",
             "reader_outcome",
         }
         if not routes or unsupported:
@@ -293,13 +314,13 @@ class ChapterModelExternalEffectAdapter:
             if stage.startswith("quality_"):
                 requested_dimensions = inputs.get("dimensions")
                 returned_dimensions = [
-                    str(item.get("dimension") or "")
-                    for item in output["dimensions"]
+                    str(item.get("dimension") or "") for item in output["dimensions"]
                 ]
                 if (
                     not isinstance(requested_dimensions, list)
                     or len(returned_dimensions) != len(set(returned_dimensions))
-                    or set(returned_dimensions) != {str(item) for item in requested_dimensions}
+                    or set(returned_dimensions)
+                    != {str(item) for item in requested_dimensions}
                 ):
                     raise KernelError(
                         "MODEL_RESPONSE_INVALID",
@@ -555,14 +576,18 @@ class ExternalEffectChapterModelPort:
             if Decimal(max_cost_per_call) < 0:
                 raise ValueError
         except (InvalidOperation, ValueError) as exc:
-            raise ValueError("model max cost per call must be a non-negative decimal") from exc
+            raise ValueError(
+                "model max cost per call must be a non-negative decimal"
+            ) from exc
         self.max_cost_per_call = max_cost_per_call
         self.budget_caps = dict(budget_caps or {})
         self.agent_binding_recorder = agent_binding_recorder
         self.agent_binding_required = agent_binding_required
         self.fault_injector = fault_injector or (lambda _checkpoint: None)
         if agent_binding_required and agent_binding_recorder is None:
-            raise ValueError("production Chapter model execution requires Agent Binding")
+            raise ValueError(
+                "production Chapter model execution requires Agent Binding"
+            )
         self.query = AuthorityAssetQuery(database_url)
         self.writer = AuthorityAssetWriter(database_url)
 
@@ -574,8 +599,10 @@ class ExternalEffectChapterModelPort:
         payload: dict[str, Any],
     ) -> ModelProviderResult:
         if stage not in AGENT_MODEL_STAGES | {"reader_outcome"}:
-            raise KernelError("MODEL_EFFECT_STAGE_UNSUPPORTED", f"unsupported model stage: {stage}")
-        logical_ref = _model_log_ref(request.operation_id, stage)
+            raise KernelError(
+                "MODEL_EFFECT_STAGE_UNSUPPORTED", f"unsupported model stage: {stage}"
+            )
+        logical_ref = _model_log_ref(request.operation_id, request.attempt_id, stage)
         business_payload = (
             request.command.get("payload")
             if isinstance(request.command.get("payload"), dict)
@@ -584,9 +611,14 @@ class ExternalEffectChapterModelPort:
         context = EffectCommandContext(
             operation_id=request.operation_id,
             project_id=request.project_id,
-            actor_id=self.worker_id,
+            actor_id=request.worker_id or self.worker_id,
             trace_id=request.trace_id,
             correlation_id=request.correlation_id,
+        )
+        stable_key = f"{request.operation_id}:{request.attempt_id}:{stage}:attempt-v1"
+        execution_fencing_token, execution_worker_id = self._execution_identity(
+            request,
+            stable_key=stable_key,
         )
         effect_request_payload = {
             "stage": stage,
@@ -597,18 +629,17 @@ class ExternalEffectChapterModelPort:
             "_production_execution": {
                 "operation_id": request.operation_id,
                 "attempt_id": request.attempt_id,
-                "fencing_token": request.fencing_token,
+                "fencing_token": execution_fencing_token,
                 "project_id": request.project_id,
                 "workspace_id": request.workspace_id,
-                "worker_id": request.worker_id,
+                "worker_id": execution_worker_id,
                 "chapter": int(
                     business_payload.get("chapter_number")
                     or business_payload.get("chapter")
                     or 0
                 ),
                 "book_id": str(
-                    business_payload.get("book_id")
-                    or f"book:{request.project_id}"
+                    business_payload.get("book_id") or f"book:{request.project_id}"
                 ),
                 "route_provider": str(
                     getattr(
@@ -640,7 +671,7 @@ class ExternalEffectChapterModelPort:
             effect_type="model.invoke",
             provider=self.adapter.provider,
             capability=f"model.{stage}",
-            stable_idempotency_key=f"{request.operation_id}:{stage}:v1",
+            stable_idempotency_key=stable_key,
             request_payload=effect_request_payload,
             max_attempts=2,
             reversible=False,
@@ -649,9 +680,7 @@ class ExternalEffectChapterModelPort:
                 getattr(self.adapter, "model_id_for_stage", lambda _stage: "")(stage)
             ),
             request_timeout_seconds=self.lease_seconds * 5,
-            reconciliation_mode=str(
-                self.adapter.reconciliation_mode
-            ),
+            reconciliation_mode=str(self.adapter.reconciliation_mode),
             provider_capability_profile=(
                 self.adapter.capability_profile.to_dict()
                 if isinstance(
@@ -661,19 +690,46 @@ class ExternalEffectChapterModelPort:
             ),
         )
         self.fault_injector("after_external_effect_plan")
+        effect_adapter = self.adapter
+        if bool(effect.get("replayed")):
+            authorize = getattr(self.adapter, "for_recovery", None)
+            if not callable(authorize):
+                if execution_fencing_token != request.fencing_token:
+                    raise KernelError(
+                        "MODEL_EFFECT_RECOVERY_AUTHORIZATION_MISSING",
+                        "stale execution fence requires an explicit recovery adapter",
+                    )
+            else:
+                effect_adapter = authorize(
+                    execution_id=(
+                        "chapter-execution:" + str(effect["external_effect_id"])
+                    ),
+                    external_effect_id=str(effect["external_effect_id"]),
+                    operation_id=request.operation_id,
+                    attempt_id=request.attempt_id,
+                    execution_fencing_token=execution_fencing_token,
+                    recovery_fencing_token=request.fencing_token,
+                    recovery_worker_id=request.worker_id,
+                    action=ExecutionRecoveryAction.DISPATCH_PLANNED,
+                    trace_id=request.trace_id,
+                    correlation_id=request.correlation_id,
+                )
+                record_authorization = getattr(
+                    effect_adapter, "record_authorization", None
+                )
+                if callable(record_authorization):
+                    record_authorization()
         reservation = reserve_provider_budget(
             self.database_url,
             BudgetReservationRequest(
                 operation_id=request.operation_id,
                 external_effect_id=str(effect["external_effect_id"]),
                 project_id=request.project_id,
-                stable_idempotency_key=f"budget:{request.operation_id}:{stage}:v1",
+                stable_idempotency_key=f"budget:{stable_key}",
                 provider=self.adapter.provider,
                 currency="USD",
                 estimated_amount=self.max_cost_per_call,
-                estimated_tokens=int(
-                    business_payload.get("context_token_budget") or 0
-                ),
+                estimated_tokens=int(business_payload.get("context_token_budget") or 0),
                 chapter=int(
                     business_payload.get("chapter_number")
                     or business_payload.get("chapter")
@@ -693,7 +749,7 @@ class ExternalEffectChapterModelPort:
                     "Chapter Agent Binding requires the PEP contract binder",
                 )
             execution_binding = binder.bind(
-                stable_idempotency_key=f"{request.operation_id}:{stage}:v1",
+                stable_idempotency_key=stable_key,
                 capability=f"model.{stage}",
                 request_payload={
                     **effect_request_payload,
@@ -720,6 +776,24 @@ class ExternalEffectChapterModelPort:
             str(effect["external_effect_id"]), request.project_id
         )
         if completed is not None:
+            if bool(effect.get("replayed")):
+                authorize = getattr(self.adapter, "for_recovery", None)
+                if callable(authorize):
+                    authorization = authorize(
+                        execution_id=(
+                            "chapter-execution:" + str(effect["external_effect_id"])
+                        ),
+                        external_effect_id=str(effect["external_effect_id"]),
+                        operation_id=request.operation_id,
+                        attempt_id=request.attempt_id,
+                        execution_fencing_token=execution_fencing_token,
+                        recovery_fencing_token=request.fencing_token,
+                        recovery_worker_id=request.worker_id,
+                        action=ExecutionRecoveryAction.CONSUME_RESULT,
+                        trace_id=request.trace_id,
+                        correlation_id=request.correlation_id,
+                    )
+                    authorization.record_authorization()
             settle_provider_budget(
                 self.database_url,
                 reservation_id=str(reservation["reservation_id"]),
@@ -748,9 +822,9 @@ class ExternalEffectChapterModelPort:
                 self.database_url,
                 context,
                 effect_id=effect["external_effect_id"],
-                worker_id=self.worker_id,
+                worker_id=request.worker_id or self.worker_id,
                 lease_seconds=self.lease_seconds,
-                adapter=self.adapter,
+                adapter=effect_adapter,
             )
         except KernelError:
             resolve_provider_budget_failure(
@@ -765,8 +839,12 @@ class ExternalEffectChapterModelPort:
                 reservation_id=str(reservation["reservation_id"]),
                 project_id=request.project_id,
             )
-            raise KernelError("MODEL_EFFECT_NOT_FINAL", "model effect did not complete successfully")
-        result = ModelProviderResult.from_evidence(dict(dispatched["provider_evidence"]))
+            raise KernelError(
+                "MODEL_EFFECT_NOT_FINAL", "model effect did not complete successfully"
+            )
+        result = ModelProviderResult.from_evidence(
+            dict(dispatched["provider_evidence"])
+        )
         self.fault_injector("after_provider_success")
         settle_provider_budget(
             self.database_url,
@@ -791,6 +869,64 @@ class ExternalEffectChapterModelPort:
             )
         return result
 
+    def _execution_identity(
+        self,
+        request: ChapterHandlerRequest,
+        *,
+        stable_key: str,
+    ) -> tuple[int, str]:
+        """Read the immutable execution fence/worker from a replayed effect."""
+
+        runtime = get_database_runtime(self.database_url)
+        with runtime.connection() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT request_payload
+                    FROM authority_external_effect
+                    WHERE project_id=%s AND operation_id=%s
+                      AND effect_type='model.invoke'
+                      AND stable_idempotency_key=%s
+                    """,
+                    [request.project_id, request.operation_id, stable_key],
+                )
+                row = cursor.fetchone()
+        if row is None:
+            return request.fencing_token, request.worker_id
+        payload = row[0]
+        metadata = (
+            payload.get("_production_execution") if isinstance(payload, dict) else None
+        )
+        if not isinstance(metadata, dict):
+            raise KernelError(
+                "MODEL_EFFECT_EXECUTION_IDENTITY_INVALID",
+                "replayed ExternalEffect has no frozen execution identity",
+            )
+        if str(metadata.get("attempt_id") or "") != request.attempt_id:
+            raise KernelError(
+                "MODEL_EFFECT_EXECUTION_IDENTITY_CONFLICT",
+                "replayed ExternalEffect belongs to another Attempt",
+            )
+        try:
+            fencing_token = int(metadata.get("fencing_token") or 0)
+        except (TypeError, ValueError) as exc:
+            raise KernelError(
+                "MODEL_EFFECT_EXECUTION_IDENTITY_INVALID",
+                "replayed ExternalEffect has an invalid execution fence",
+            ) from exc
+        if fencing_token <= 0 or fencing_token > request.fencing_token:
+            raise KernelError(
+                "MODEL_EFFECT_EXECUTION_IDENTITY_INVALID",
+                "replayed ExternalEffect execution fence is not historical",
+            )
+        execution_worker_id = str(metadata.get("worker_id") or "")
+        if not execution_worker_id:
+            raise KernelError(
+                "MODEL_EFFECT_EXECUTION_IDENTITY_INVALID",
+                "replayed ExternalEffect has no original execution worker",
+            )
+        return fencing_token, execution_worker_id
+
     def record_result_evidence(
         self,
         request: ChapterHandlerRequest,
@@ -801,7 +937,10 @@ class ExternalEffectChapterModelPort:
         """Persist model/cost evidence for an already-dispatched governed effect."""
 
         self._record_model_call(
-            request, stage, result, _model_log_ref(request.operation_id, stage)
+            request,
+            stage,
+            result,
+            _model_log_ref(request.operation_id, request.attempt_id, stage),
         )
         self._ensure_cost_evidence(request, stage, result)
 
@@ -848,11 +987,19 @@ class ExternalEffectChapterModelPort:
         result: ModelProviderResult,
         logical_ref: str,
     ) -> None:
+        try:
+            self.query.require(project_id=request.project_id, logical_ref=logical_ref)
+            return
+        except KernelError as exc:
+            if exc.code != "AUTHORITY_ASSET_NOT_FOUND":
+                raise
         self.writer.materialize_output(
             AuthorityAssetWriteCommand(
                 operation_id=request.operation_id,
                 project_id=request.project_id,
-                asset_id=f"model-call:{request.operation_id}:{stage}",
+                asset_id=(
+                    f"model-call:{request.operation_id}:{request.attempt_id}:{stage}"
+                ),
                 asset_type="model_call_log",
                 schema_version="model-call-log.v1",
                 logical_ref=logical_ref,
@@ -878,7 +1025,7 @@ class ExternalEffectChapterModelPort:
         stage: str,
         result: ModelProviderResult,
     ) -> None:
-        logical_ref = _cost_log_ref(request.operation_id, stage)
+        logical_ref = _cost_log_ref(request.operation_id, request.attempt_id, stage)
         try:
             self.query.require(project_id=request.project_id, logical_ref=logical_ref)
             return
@@ -889,7 +1036,9 @@ class ExternalEffectChapterModelPort:
             AuthorityAssetWriteCommand(
                 operation_id=request.operation_id,
                 project_id=request.project_id,
-                asset_id=f"cost-ledger:{request.operation_id}:{stage}",
+                asset_id=(
+                    f"cost-ledger:{request.operation_id}:{request.attempt_id}:{stage}"
+                ),
                 asset_type="cost_ledger",
                 schema_version="model-cost-ledger.v1",
                 logical_ref=logical_ref,
@@ -911,23 +1060,27 @@ class ExternalEffectChapterModelPort:
                 qualification_policy="model-cost-evidence-v1",
                 trace_id=request.trace_id,
                 correlation_id=request.correlation_id,
-                reference_asset_ids=(f"model-call:{request.operation_id}:{stage}",),
+                reference_asset_ids=(
+                    f"model-call:{request.operation_id}:{request.attempt_id}:{stage}",
+                ),
             )
         )
 
 
-def _model_log_ref(operation_id: str, stage: str) -> str:
-    return f"runs/model_calls/{operation_id}-{stage}.json"
+def _model_log_ref(operation_id: str, attempt_id: str, stage: str) -> str:
+    return f"runs/model_calls/{operation_id}-{attempt_id}-{stage}.json"
 
 
-def _cost_log_ref(operation_id: str, stage: str) -> str:
-    return f"runs/cost_ledgers/{operation_id}-{stage}.json"
+def _cost_log_ref(operation_id: str, attempt_id: str, stage: str) -> str:
+    return f"runs/cost_ledgers/{operation_id}-{attempt_id}-{stage}.json"
 
 
 def _object(payload: dict[str, Any], key: str) -> dict[str, Any]:
     value = payload.get(key)
     if not isinstance(value, dict):
-        raise KernelError("MODEL_EFFECT_INPUT_INVALID", f"model input {key} must be an object")
+        raise KernelError(
+            "MODEL_EFFECT_INPUT_INVALID", f"model input {key} must be an object"
+        )
     return value
 
 
@@ -942,35 +1095,52 @@ def _normalize_model_output(stage: str, raw: dict[str, Any]) -> dict[str, Any]:
     if stage in {"review", "rereview"}:
         score_value = raw.get("score")
         if not isinstance(score_value, (int, float)) or isinstance(score_value, bool):
-            raise KernelError("MODEL_RESPONSE_INVALID", "review response has no numeric score")
+            raise KernelError(
+                "MODEL_RESPONSE_INVALID", "review response has no numeric score"
+            )
         score = float(score_value)
         issues = raw.get("issues")
         if not isinstance(issues, list):
-            raise KernelError("MODEL_RESPONSE_INVALID", "review response has no issue list")
+            raise KernelError(
+                "MODEL_RESPONSE_INVALID", "review response has no issue list"
+            )
         normalized: list[dict[str, str]] = []
         for item in issues:
             if not isinstance(item, dict):
-                raise KernelError("MODEL_RESPONSE_INVALID", "review issue must be an object")
+                raise KernelError(
+                    "MODEL_RESPONSE_INVALID", "review issue must be an object"
+                )
             code = str(item.get("code") or item.get("dimension") or "").strip().upper()
             severity = _review_severity(str(item.get("severity") or ""))
             message = str(item.get("message") or "").strip()
             if not code or not message:
-                raise KernelError("MODEL_RESPONSE_INVALID", "review issue identity is incomplete")
+                raise KernelError(
+                    "MODEL_RESPONSE_INVALID", "review issue identity is incomplete"
+                )
             normalized.append({"code": code, "severity": severity, "message": message})
         decision = "NEEDS_REVISION" if normalized or score < 80 else "PASSED"
         return {"decision": decision, "score": score, "issues": normalized}
     if stage == "canon_extraction":
         fields = (
-            "canon_facts", "character_state_changes", "relationship_changes",
-            "timeline_events", "foreshadow_changes", "promise_changes",
-            "reward_changes", "world_rule_usages", "power_state_changes",
-            "narrative_pattern_fingerprints", "theme_movements",
+            "canon_facts",
+            "character_state_changes",
+            "relationship_changes",
+            "timeline_events",
+            "foreshadow_changes",
+            "promise_changes",
+            "reward_changes",
+            "world_rule_usages",
+            "power_state_changes",
+            "narrative_pattern_fingerprints",
+            "theme_movements",
             "antagonist_pressure_changes",
         )
         normalized_extraction: dict[str, list[dict[str, Any]]] = {}
         for field in fields:
             values = raw.get(field)
-            if not isinstance(values, list) or any(not isinstance(item, dict) for item in values):
+            if not isinstance(values, list) or any(
+                not isinstance(item, dict) for item in values
+            ):
                 raise KernelError(
                     "MODEL_RESPONSE_INVALID",
                     f"Canon semantic extraction field {field} must be an array of objects",
@@ -985,52 +1155,94 @@ def _normalize_model_output(stage: str, raw: dict[str, Any]) -> dict[str, Any]:
     if stage.startswith("quality_"):
         dimensions = raw.get("dimensions")
         if not isinstance(dimensions, list) or not dimensions:
-            raise KernelError("MODEL_RESPONSE_INVALID", "quality response has no dimension evidence")
+            raise KernelError(
+                "MODEL_RESPONSE_INVALID", "quality response has no dimension evidence"
+            )
         normalized_dimensions: list[dict[str, Any]] = []
         for item in dimensions:
             if not isinstance(item, dict):
-                raise KernelError("MODEL_RESPONSE_INVALID", "quality dimension must be an object")
+                raise KernelError(
+                    "MODEL_RESPONSE_INVALID", "quality dimension must be an object"
+                )
             dimension = str(item.get("dimension") or "").strip()
             status = str(item.get("gate_status") or "").strip().upper()
             confidence = item.get("confidence")
             locations = item.get("evidence_locations")
             score = item.get("score")
             if not dimension or status not in {
-                "PASSED", "PASSED_WITH_WARNINGS", "FAILED",
-                "INSUFFICIENT_EVIDENCE", "REQUIRES_HUMAN_REVIEW",
+                "PASSED",
+                "PASSED_WITH_WARNINGS",
+                "FAILED",
+                "INSUFFICIENT_EVIDENCE",
+                "REQUIRES_HUMAN_REVIEW",
             }:
-                raise KernelError("MODEL_RESPONSE_INVALID", "quality dimension identity or status is invalid")
-            if not isinstance(confidence, (int, float)) or isinstance(confidence, bool) or not 0 <= float(confidence) <= 1:
-                raise KernelError("MODEL_RESPONSE_INVALID", "quality confidence must be between zero and one")
+                raise KernelError(
+                    "MODEL_RESPONSE_INVALID",
+                    "quality dimension identity or status is invalid",
+                )
+            if (
+                not isinstance(confidence, (int, float))
+                or isinstance(confidence, bool)
+                or not 0 <= float(confidence) <= 1
+            ):
+                raise KernelError(
+                    "MODEL_RESPONSE_INVALID",
+                    "quality confidence must be between zero and one",
+                )
             if (
                 not isinstance(locations, list)
-                or any(not isinstance(location, dict) or not location for location in locations)
+                or any(
+                    not isinstance(location, dict) or not location
+                    for location in locations
+                )
                 or (status in {"PASSED", "FAILED"} and not locations)
             ):
-                raise KernelError("MODEL_RESPONSE_INVALID", "quality decision requires evidence locations")
+                raise KernelError(
+                    "MODEL_RESPONSE_INVALID",
+                    "quality decision requires evidence locations",
+                )
             if score is not None and (
                 not isinstance(score, (int, float))
                 or isinstance(score, bool)
                 or not 0 <= float(score) <= 100
             ):
-                raise KernelError("MODEL_RESPONSE_INVALID", "quality score must be between zero and one hundred")
-            normalized_dimensions.append({
-                "dimension": dimension, "gate_status": status,
-                "score": score, "confidence": float(confidence),
-                "evidence_locations": locations,
-                "issue_codes": list(item.get("issue_codes") or []),
-                "revision_strategies": list(item.get("revision_strategies") or []),
-            })
+                raise KernelError(
+                    "MODEL_RESPONSE_INVALID",
+                    "quality score must be between zero and one hundred",
+                )
+            normalized_dimensions.append(
+                {
+                    "dimension": dimension,
+                    "gate_status": status,
+                    "score": score,
+                    "confidence": float(confidence),
+                    "evidence_locations": locations,
+                    "issue_codes": list(item.get("issue_codes") or []),
+                    "revision_strategies": list(item.get("revision_strategies") or []),
+                }
+            )
         return {"dimensions": normalized_dimensions}
     if stage == "reader_outcome":
         state = raw.get("reader_state")
         evidence = raw.get("evidence")
         required = (
-            "continue_intent", "curiosity", "satisfaction", "confusion", "trust",
-            "character_attachment", "antagonist_pressure", "promise_expectation",
-            "payoff_satisfaction", "drop_risk", "repetition_fatigue",
+            "continue_intent",
+            "curiosity",
+            "satisfaction",
+            "confusion",
+            "trust",
+            "character_attachment",
+            "antagonist_pressure",
+            "promise_expectation",
+            "payoff_satisfaction",
+            "drop_risk",
+            "repetition_fatigue",
         )
-        if not isinstance(state, dict) or not isinstance(evidence, list) or not evidence:
+        if (
+            not isinstance(state, dict)
+            or not isinstance(evidence, list)
+            or not evidence
+        ):
             raise KernelError(
                 "MODEL_RESPONSE_INVALID",
                 "Reader Outcome response requires reader_state and evidence",
@@ -1063,7 +1275,9 @@ def _normalize_model_output(stage: str, raw: dict[str, Any]) -> dict[str, Any]:
         if str(item).strip()
     ]
     if not text:
-        raise KernelError("MODEL_RESPONSE_INVALID", "revision response has no revised text")
+        raise KernelError(
+            "MODEL_RESPONSE_INVALID", "revision response has no revised text"
+        )
     return {"text": text, "resolved_issue_codes": resolved}
 
 

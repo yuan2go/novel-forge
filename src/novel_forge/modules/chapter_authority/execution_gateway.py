@@ -4,9 +4,10 @@ The bridge owns no Attempt, retry, budget, or receipt state.  It freezes executi
 contracts as ordinary Authority AssetVersions and reconstructs gateway submissions
 from the PostgreSQL ExternalEffect after a worker restart.
 """
+
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 import hashlib
 import json
 from pathlib import Path
@@ -28,6 +29,8 @@ from novel_forge.modules.production_execution import (
     ContextPolicy,
     ExecutionHandle,
     ExecutionOutcome,
+    ExecutionRecoveryAction,
+    ExecutionRecoveryAuthorization,
     ExecutionRequest,
     FallbackPolicy,
     InputManifest,
@@ -43,6 +46,9 @@ from novel_forge.modules.production_execution import (
     default_capability_registry,
 )
 from novel_forge.storage.database_runtime import get_database_runtime
+from novel_forge.modules.production_execution.postgres import (
+    PostgresExecutionRecoveryAuthorizationStore,
+)
 from novel_forge.modules.production_execution.evidence import (
     ExecutionRecord,
     ExecutionRecordStore,
@@ -51,7 +57,10 @@ from novel_forge.modules.provider_control.contracts import (
     ProviderCapabilityProfile,
     ProviderControlLevel,
 )
-from novel_forge.storage.authority_asset_store import AuthorityAssetQuery, AuthorityAssetWriter
+from novel_forge.storage.authority_asset_store import (
+    AuthorityAssetQuery,
+    AuthorityAssetWriter,
+)
 
 
 _STAGES = frozenset(
@@ -93,7 +102,9 @@ def chapter_stage_capability(stage: str) -> CapabilityId:
 
 
 def _canonical(payload: Mapping[str, Any]) -> str:
-    return json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return json.dumps(
+        payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    )
 
 
 def _identity_token(value: str) -> str:
@@ -122,19 +133,18 @@ class ChapterExecutionRoute:
     def __post_init__(self) -> None:
         if self.stage not in _STAGES:
             raise ValueError(f"unsupported Chapter execution stage: {self.stage}")
-        if self.model_profile.profile_id not in self.route_policy.allowed_model_profile_ids:
+        if (
+            self.model_profile.profile_id
+            not in self.route_policy.allowed_model_profile_ids
+        ):
             raise ValueError("Chapter route policy does not allow its ModelProfile")
         if (
-            self.route_policy.fallback_policy_ref
-            != self.fallback_policy.policy_id
+            self.route_policy.fallback_policy_ref != self.fallback_policy.policy_id
             or self.route_policy.fallback_policy_version
             != self.fallback_policy.policy_version
-            or self.route_policy.fallback_policy
-            != self.fallback_policy.mode.value
+            or self.route_policy.fallback_policy != self.fallback_policy.mode.value
         ):
-            raise ValueError(
-                "Chapter route policy does not bind its FallbackPolicy"
-            )
+            raise ValueError("Chapter route policy does not bind its FallbackPolicy")
         if not all(
             (
                 self.backend_version,
@@ -166,8 +176,7 @@ class ChapterExecutionRoute:
         ):
             normalized = value.removeprefix("sha256:")
             if len(normalized) != 64 or any(
-                character not in "0123456789abcdefABCDEF"
-                for character in normalized
+                character not in "0123456789abcdefABCDEF" for character in normalized
             ):
                 raise ValueError(f"Chapter route {label} hash must be SHA-256")
 
@@ -182,9 +191,13 @@ class ChapterExecutionBinding:
 class PostgresChapterExecutionContractBinder:
     """Materialize immutable per-Attempt contracts through Authority AssetVersion."""
 
-    def __init__(self, database_url: str, routes: Mapping[str, ChapterExecutionRoute]) -> None:
+    def __init__(
+        self, database_url: str, routes: Mapping[str, ChapterExecutionRoute]
+    ) -> None:
         if not database_url or set(routes) != _STAGES:
-            raise ValueError("PostgreSQL and all governed execution routes are required")
+            raise ValueError(
+                "PostgreSQL and all governed execution routes are required"
+            )
         self.database_url = database_url
         self.routes = dict(routes)
         self.query = AuthorityAssetQuery(database_url)
@@ -208,7 +221,9 @@ class PostgresChapterExecutionContractBinder:
             raise ExternalEffectAdapterError(
                 "Chapter gateway execution metadata is missing", request_sent=False
             )
-        operation_id = str(metadata.get("operation_id") or request_payload.get("operation_id") or "")
+        operation_id = str(
+            metadata.get("operation_id") or request_payload.get("operation_id") or ""
+        )
         attempt_id = str(metadata.get("attempt_id") or "")
         project_id = str(metadata.get("project_id") or "")
         workspace_id = str(metadata.get("workspace_id") or "")
@@ -252,9 +267,7 @@ class PostgresChapterExecutionContractBinder:
         skill_ref = f"production_execution/skill_bundles/{token}"
         tool_ref = f"production_execution/tool_permissions/{token}"
         context_policy_ref = (
-            "context-policy:"
-            + definition.capability_id.value.replace(".", "-")
-            + ":v1"
+            "context-policy:" + definition.capability_id.value.replace(".", "-") + ":v1"
         )
         context_policy = ContextPolicy(
             policy_id=context_policy_ref,
@@ -296,9 +309,7 @@ class PostgresChapterExecutionContractBinder:
             policy_version="v1",
             structural_schema_ref=definition.output_schema_ref,
             semantic_validator_refs=(
-                "validator:"
-                + definition.capability_id.value.replace(".", "-")
-                + ":v1",
+                "validator:" + definition.capability_id.value.replace(".", "-") + ":v1",
             ),
             maximum_repair_attempts=2,
             requires_domain_validation=True,
@@ -442,9 +453,7 @@ class PostgresChapterExecutionContractBinder:
             output_schema_ref=route.output_schema_ref,
             release_sha=route.release_sha,
             fallback_policy_ref=route.route_policy.fallback_policy_ref,
-            fallback_policy_version=(
-                route.route_policy.fallback_policy_version
-            ),
+            fallback_policy_version=(route.route_policy.fallback_policy_version),
         )
         self._ensure_contract(
             operation_id=operation_id,
@@ -688,7 +697,9 @@ class PostgresChapterExecutionContractBinder:
         correlation_id: str,
     ) -> None:
         try:
-            existing = self.query.require(project_id=project_id, logical_ref=logical_ref)
+            existing = self.query.require(
+                project_id=project_id, logical_ref=logical_ref
+            )
         except KernelError as exc:
             if exc.code != "AUTHORITY_ASSET_NOT_FOUND":
                 raise
@@ -762,7 +773,9 @@ class ExternalEffectExecutionSessionStore:
         try:
             return self._records[execution_id]
         except KeyError as exc:
-            raise ValueError(f"execution session is not available: {execution_id}") from exc
+            raise ValueError(
+                f"execution session is not available: {execution_id}"
+            ) from exc
 
     def find_record(self, execution_id: str) -> ExecutionRecord | None:
         return self._records.get(execution_id)
@@ -784,7 +797,9 @@ class ExternalEffectExecutionSessionStore:
         try:
             return dict(self._evidence[ref])
         except KeyError as exc:
-            raise ValueError(f"execution session evidence is not available: {ref}") from exc
+            raise ValueError(
+                f"execution session evidence is not available: {ref}"
+            ) from exc
 
 
 def default_chapter_fixture_response(
@@ -823,8 +838,14 @@ def default_chapter_fixture_response(
     if stage == "rereview":
         return {"score": 90, "issues": []}
     if stage == "canon_extraction":
-        revision = inputs.get("revision") if isinstance(inputs.get("revision"), Mapping) else {}
-        text = str(revision.get("text") or "The protagonist gives up the safe route home.")
+        revision = (
+            inputs.get("revision")
+            if isinstance(inputs.get("revision"), Mapping)
+            else {}
+        )
+        text = str(
+            revision.get("text") or "The protagonist gives up the safe route home."
+        )
         evidence_end = max(1, min(len(text), 40))
         empty_fields = {
             "character_state_changes": [],
@@ -871,7 +892,9 @@ def default_chapter_fixture_response(
             ]
         }
     if stage == "reader_outcome":
-        assets = inputs.get("assets") if isinstance(inputs.get("assets"), Mapping) else {}
+        assets = (
+            inputs.get("assets") if isinstance(inputs.get("assets"), Mapping) else {}
+        )
         source = next(iter(assets), "final_draft")
         return {
             "reader_state": {
@@ -914,7 +937,9 @@ class PostgresChapterExecutionPayloadResolver:
         self.working_directory = str(working_directory)
         self.command = tuple(command)
 
-    def resolve(self, request: ExecutionRequest, admission: Any) -> ResolvedExecutionPayload:
+    def resolve(
+        self, request: ExecutionRequest, admission: Any
+    ) -> ResolvedExecutionPayload:
         runtime = get_database_runtime(self.database_url)
         with runtime.connection() as connection:
             with connection.cursor() as cursor:
@@ -924,7 +949,11 @@ class PostgresChapterExecutionPayloadResolver:
                     FROM authority_external_effect
                     WHERE external_effect_id = %s AND operation_id = %s AND project_id = %s
                     """,
-                    [request.external_effect_id, request.operation_id, request.project_id],
+                    [
+                        request.external_effect_id,
+                        request.operation_id,
+                        request.project_id,
+                    ],
                 )
                 row = cursor.fetchone()
         if row is None:
@@ -967,6 +996,77 @@ class ChapterExecutionGatewaySession:
     evidence_store: ExecutionRecordStore
 
 
+@dataclass(frozen=True, slots=True)
+class _RecoveryAuthorizedGatewayAdapter:
+    adapter: "ProductionExecutionGatewayExternalEffectAdapter"
+    authorization: ExecutionRecoveryAuthorization
+
+    @property
+    def provider(self) -> str:
+        return self.adapter.provider
+
+    @property
+    def reconciliation_mode(self) -> str:
+        return self.adapter.reconciliation_mode
+
+    @property
+    def production_execution_gateway_backed(self) -> bool:
+        return self.adapter.production_execution_gateway_backed
+
+    @property
+    def capability_profile(self) -> ProviderCapabilityProfile:
+        return self.adapter.capability_profile
+
+    def execute(
+        self,
+        *,
+        stable_idempotency_key: str,
+        capability: str,
+        request_payload: dict[str, Any],
+    ) -> ProviderResult:
+        return self.adapter._invoke(
+            stable_idempotency_key=stable_idempotency_key,
+            capability=capability,
+            request_payload=request_payload,
+            reconciliation=False,
+            recovery_authorization=self.authorization,
+        )
+
+    def query(
+        self,
+        *,
+        stable_idempotency_key: str,
+        capability: str,
+        request_payload: dict[str, Any],
+    ) -> ProviderResult:
+        return self.adapter._invoke(
+            stable_idempotency_key=stable_idempotency_key,
+            capability=capability,
+            request_payload=request_payload,
+            reconciliation=True,
+            recovery_authorization=self.authorization,
+        )
+
+    def cancel(
+        self,
+        *,
+        stable_idempotency_key: str,
+        capability: str,
+        request_payload: dict[str, Any],
+        provider_request_id: str,
+    ) -> ProviderResult:
+        return self.adapter._cancel(
+            stable_idempotency_key=stable_idempotency_key,
+            capability=capability,
+            request_payload=request_payload,
+            provider_request_id=provider_request_id,
+            recovery_authorization=self.authorization,
+        )
+
+    def record_authorization(self) -> None:
+        self.adapter._record_recovery_authorization(self.authorization)
+
+
 class ProductionExecutionGatewayExternalEffectAdapter:
     """Map the existing ExternalEffect protocol to one Attempt-bound gateway call."""
 
@@ -987,11 +1087,16 @@ class ProductionExecutionGatewayExternalEffectAdapter:
         self.database_url = database_url
         self.routes = dict(routes)
         self.binder = PostgresChapterExecutionContractBinder(database_url, routes)
+        self.recovery_authorizations = PostgresExecutionRecoveryAuthorizationStore(
+            database_url
+        )
         self.session_factory = session_factory
         self.provider_adapters = dict(provider_adapters or {})
         self._sessions: dict[str, ChapterExecutionGatewaySession] = {}
         self._lock = Lock()
-        all_real = all(item.real_provider_validation_eligible for item in routes.values())
+        all_real = all(
+            item.real_provider_validation_eligible for item in routes.values()
+        )
         all_idempotent = all(
             item.model_profile.runtime_class.value != "LOCAL_CLI_REMOTE_INFERENCE"
             for item in routes.values()
@@ -1050,14 +1155,56 @@ class ProductionExecutionGatewayExternalEffectAdapter:
         request_payload: dict[str, Any],
         provider_request_id: str,
     ) -> ProviderResult:
+        return self._cancel(
+            stable_idempotency_key=stable_idempotency_key,
+            capability=capability,
+            request_payload=request_payload,
+            provider_request_id=provider_request_id,
+            recovery_authorization=None,
+        )
+
+    def _cancel(
+        self,
+        *,
+        stable_idempotency_key: str,
+        capability: str,
+        request_payload: dict[str, Any],
+        provider_request_id: str,
+        recovery_authorization: ExecutionRecoveryAuthorization | None,
+    ) -> ProviderResult:
         binding, session = self._binding_and_session(
             stable_idempotency_key, capability, request_payload
         )
         try:
-            handle = session.gateway.submit(binding.request)
-            if provider_request_id and handle.provider_request_id != provider_request_id:
-                raise ValueError("Provider request identity changed during cancellation")
-            result = session.gateway.cancel(handle, "authority cancellation")
+            if recovery_authorization is None:
+                handle = session.gateway.submit(binding.request)
+            else:
+                record = session.evidence_store.find_record(
+                    binding.request.execution_id
+                )
+                if record is None:
+                    raise ValueError(
+                        "cannot cancel an execution without persisted Provider identity"
+                    )
+                self._record_recovery_authorization(recovery_authorization)
+                handle = record.handle
+            if (
+                provider_request_id
+                and handle.provider_request_id != provider_request_id
+            ):
+                raise ValueError(
+                    "Provider request identity changed during cancellation"
+                )
+            result = (
+                session.gateway.cancel(handle, "authority cancellation")
+                if recovery_authorization is None
+                else session.gateway.cancel_existing_execution(
+                    binding.request,
+                    handle,
+                    recovery_authorization,
+                    "authority cancellation",
+                )
+            )
         except ExternalEffectAdapterError:
             raise
         except Exception as exc:
@@ -1089,6 +1236,46 @@ class ProductionExecutionGatewayExternalEffectAdapter:
         route = self.routes.get(stage)
         return "" if route is None else route.model_profile.model_provider
 
+    def for_recovery(
+        self,
+        *,
+        execution_id: str,
+        external_effect_id: str,
+        operation_id: str,
+        attempt_id: str,
+        execution_fencing_token: int,
+        recovery_fencing_token: int,
+        recovery_worker_id: str,
+        action: ExecutionRecoveryAction,
+        trace_id: str,
+        correlation_id: str,
+    ) -> _RecoveryAuthorizedGatewayAdapter:
+        token = _identity_token(
+            ":".join(
+                (
+                    execution_id,
+                    str(recovery_fencing_token),
+                    action.value,
+                )
+            )
+        )
+        return _RecoveryAuthorizedGatewayAdapter(
+            self,
+            ExecutionRecoveryAuthorization(
+                authorization_id=f"execution-recovery:{token}",
+                execution_id=execution_id,
+                external_effect_id=external_effect_id,
+                operation_id=operation_id,
+                attempt_id=attempt_id,
+                execution_fencing_token=execution_fencing_token,
+                recovery_fencing_token=recovery_fencing_token,
+                recovery_worker_id=recovery_worker_id,
+                action=action,
+                trace_id=trace_id,
+                correlation_id=correlation_id,
+            ),
+        )
+
     def _invoke(
         self,
         *,
@@ -1096,21 +1283,66 @@ class ProductionExecutionGatewayExternalEffectAdapter:
         capability: str,
         request_payload: dict[str, Any],
         reconciliation: bool,
+        recovery_authorization: ExecutionRecoveryAuthorization | None = None,
     ) -> ProviderResult:
         binding, session = self._binding_and_session(
             stable_idempotency_key, capability, request_payload
         )
         request_sent = False
         try:
-            handle = session.gateway.submit(binding.request)
-            request_sent = True
-            result = session.gateway.reconcile(handle)
+            if recovery_authorization is None:
+                handle = session.gateway.submit(binding.request)
+                request_sent = True
+                result = session.gateway.reconcile(handle)
+            else:
+                record = session.evidence_store.find_record(
+                    binding.request.execution_id
+                )
+                authorization = recovery_authorization
+                if record is None:
+                    if (
+                        authorization.action
+                        is not ExecutionRecoveryAction.DISPATCH_PLANNED
+                    ):
+                        raise ValueError(
+                            "Provider identity is absent; query must remain unresolved"
+                        )
+                    self._record_recovery_authorization(authorization)
+                    handle = session.gateway.resume_planned_execution(
+                        binding.request,
+                        authorization,
+                    )
+                    request_sent = True
+                    authorization = replace(
+                        authorization,
+                        authorization_id=(authorization.authorization_id + ":consume"),
+                        action=ExecutionRecoveryAction.CONSUME_RESULT,
+                    )
+                else:
+                    handle = record.handle
+                    request_sent = bool(
+                        handle.provider_request_id
+                        or handle.external_request_id
+                        or record.raw_evidence.get("submission_phase")
+                    )
+                    if authorization.action is ExecutionRecoveryAction.DISPATCH_PLANNED:
+                        authorization = replace(
+                            authorization,
+                            authorization_id=(
+                                authorization.authorization_id + ":consume"
+                            ),
+                            action=ExecutionRecoveryAction.CONSUME_RESULT,
+                        )
+                self._record_recovery_authorization(authorization)
+                result = session.gateway.recover_existing_execution(
+                    binding.request,
+                    handle,
+                    authorization,
+                )
         except ExternalEffectAdapterError:
             raise
         except Exception as exc:
-            recovered = session.evidence_store.find_record(
-                binding.request.execution_id
-            )
+            recovered = session.evidence_store.find_record(binding.request.execution_id)
             submission_phase = (
                 str(recovered.raw_evidence.get("submission_phase") or "")
                 if recovered is not None
@@ -1139,6 +1371,12 @@ class ProductionExecutionGatewayExternalEffectAdapter:
             handle.provider_request_id or "",
         )
 
+    def _record_recovery_authorization(
+        self,
+        authorization: ExecutionRecoveryAuthorization,
+    ) -> None:
+        self.recovery_authorizations.record(authorization)
+
     def _binding_and_session(
         self,
         stable_idempotency_key: str,
@@ -1146,8 +1384,16 @@ class ProductionExecutionGatewayExternalEffectAdapter:
         request_payload: dict[str, Any],
     ) -> tuple[ChapterExecutionBinding, ChapterExecutionGatewaySession]:
         metadata = request_payload.get("_production_execution")
-        project_id = str(metadata.get("project_id") or "") if isinstance(metadata, Mapping) else ""
-        operation_id = str(metadata.get("operation_id") or "") if isinstance(metadata, Mapping) else ""
+        project_id = (
+            str(metadata.get("project_id") or "")
+            if isinstance(metadata, Mapping)
+            else ""
+        )
+        operation_id = (
+            str(metadata.get("operation_id") or "")
+            if isinstance(metadata, Mapping)
+            else ""
+        )
         external_effect_id = str(request_payload.get("external_effect_id") or "")
         if not external_effect_id and project_id and operation_id:
             external_effect_id = self._effect_id(
@@ -1172,6 +1418,12 @@ class ProductionExecutionGatewayExternalEffectAdapter:
                 session = self.session_factory(project_id)
                 self._sessions[project_id] = session
             return session
+
+    def close_sessions(self) -> None:
+        """Drop all process-local gateway sessions before worker recovery."""
+
+        with self._lock:
+            self._sessions.clear()
 
     def _effect_id(self, project_id: str, operation_id: str, stable_key: str) -> str:
         runtime = get_database_runtime(self.database_url)
@@ -1243,7 +1495,9 @@ class ProductionExecutionGatewayExternalEffectAdapter:
                 "reason": "execution_result_has_no_usage_receipt",
             }
         if result.cost_receipt_ref:
-            evidence["cost"] = session.evidence_store.read_evidence(result.cost_receipt_ref)
+            evidence["cost"] = session.evidence_store.read_evidence(
+                result.cost_receipt_ref
+            )
         else:
             evidence["cost"] = {
                 "availability": "UNAVAILABLE",
@@ -1261,7 +1515,11 @@ class ProductionExecutionGatewayExternalEffectAdapter:
             return "failed_final" if reconciliation else "final_failure"
         if outcome is ExecutionOutcome.CANCELLED:
             return "cancelled"
-        if outcome in {ExecutionOutcome.ACCEPTED, ExecutionOutcome.RUNNING, ExecutionOutcome.UNKNOWN}:
+        if outcome in {
+            ExecutionOutcome.ACCEPTED,
+            ExecutionOutcome.RUNNING,
+            ExecutionOutcome.UNKNOWN,
+        }:
             return "ambiguous" if reconciliation else "unknown"
         return "failed_final" if reconciliation else "final_failure"
 

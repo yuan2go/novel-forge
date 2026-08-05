@@ -6,6 +6,7 @@ closed with an explicit non-passing status.
 """
 from __future__ import annotations
 
+from datetime import datetime, timezone
 import re
 from typing import Any, Iterable
 
@@ -117,7 +118,20 @@ def _evaluate(
         status = str(calibrated.get("gate_status") or "INSUFFICIENT_EVIDENCE").upper()
         if status not in QUALITY_EVIDENCE_STATUSES:
             raise KernelError("QUALITY_EVIDENCE_STATUS_INVALID", f"invalid {dimension} evidence status")
-        return _report(
+        waiver = None
+        if status == "WAIVED_BY_APPROVAL":
+            waiver = _approved_fixture_waiver(
+                dimension,
+                segments,
+                project_id=project_id,
+                target_asset_version_id=target,
+            )
+            if waiver is None:
+                raise KernelError(
+                    "QUALITY_FIXTURE_WAIVER_INVALID",
+                    f"{dimension} waiver lacks a current scoped approval",
+                )
+        report = _report(
             group, dimension, project_id, target, status,
             score=calibrated.get("score"), calibration=str(calibrated["calibration_status"]),
             source=str(calibrated.get("evidence_source") or "authority_asset"),
@@ -126,6 +140,9 @@ def _evaluate(
             provider_verified=bool(calibrated.get("provider_verified")),
             human_verified=bool(calibrated.get("human_verified")),
         )
+        if waiver is not None:
+            report["waiver"] = waiver
+        return report
 
     source_clear = bool(context_bundle.get("source_isolation_result", {}).get("passed")) and all(
         not segment.get("source_expression_included", True) for segment in segments
@@ -203,6 +220,70 @@ def _calibrated_evidence(
                 "fixture_protocol_only": fixture_protocol,
             }
     return None
+
+
+def _approved_fixture_waiver(
+    dimension: str,
+    segments: Iterable[dict[str, Any]],
+    *,
+    project_id: str,
+    target_asset_version_id: str,
+) -> dict[str, Any] | None:
+    by_type = {str(item.get("asset_type")): item for item in segments}
+    checklist = by_type.get("operator_checklist", {})
+    approval = by_type.get("approval_decision") or by_type.get(
+        "operator_approval", {}
+    )
+    checklist_facts = {
+        str(item.get("key")): item.get("value")
+        for item in checklist.get("structured_facts", [])
+    }
+    approval_facts = {
+        str(item.get("key")): item.get("value")
+        for item in approval.get("structured_facts", [])
+    }
+    scope = approval_facts.get("scope")
+    dimensions = approval_facts.get("waived_dimensions")
+    expiry = str(approval_facts.get("expiry") or "")
+    try:
+        expires_at = datetime.fromisoformat(expiry.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if expires_at.tzinfo is None:
+        return None
+    valid = (
+        bool(checklist.get("asset_version_id"))
+        and checklist_facts.get("completed") is True
+        and checklist_facts.get("contract_version")
+        == "fixture-waiver-checklist-v1"
+        and bool(approval.get("asset_version_id"))
+        and approval_facts.get("contract_version")
+        == "fixture-waiver-approval-v1"
+        and approval_facts.get("decision") == "APPROVED"
+        and approval_facts.get("fixture_protocol_only") is True
+        and bool(str(approval_facts.get("waiver_reason") or "").strip())
+        and isinstance(dimensions, list)
+        and dimension in dimensions
+        and isinstance(scope, dict)
+        and scope.get("project_id") == project_id
+        and scope.get("scope_type") == "PROJECT_FIXTURE"
+        and scope.get("release_readiness") == "INTERNAL_REVIEW_RELEASE"
+        and expires_at > datetime.now(timezone.utc)
+    )
+    if not valid:
+        return None
+    return {
+        "approval_asset_version_id": approval["asset_version_id"],
+        "checklist_asset_version_id": checklist["asset_version_id"],
+        "reason": approval_facts["waiver_reason"],
+        "dimension": dimension,
+        "scope": scope,
+        "target_asset_version_id": target_asset_version_id,
+        "expiry": expiry,
+        "fixture_protocol_only": True,
+        "production_verified": False,
+        "contract_version": "fixture-quality-waiver-v1",
+    }
 
 
 def _report(group: str, dimension: str, project_id: str, target: str, status: str, *, score: Any, calibration: str, source: str, locations: list[dict[str, Any]], fixture: bool, profile_ids: dict[str, str], provider_verified: bool = False, human_verified: bool = False) -> dict[str, Any]:

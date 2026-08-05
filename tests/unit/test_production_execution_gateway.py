@@ -16,6 +16,8 @@ from novel_forge.modules.production_execution import (
     CancellationOutcome,
     ExecutionCapabilityProfile,
     ExecutionOutcome,
+    ExecutionRecoveryAction,
+    ExecutionRecoveryAuthorization,
     ExecutionRequest,
     ExecutionRuntimeClass,
     FallbackPolicy,
@@ -381,6 +383,136 @@ class ProductionExecutionGatewayTests(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, "stale Authority fencing token"):
             gateway.submit(request)
+
+    def test_recovery_authorization_keeps_original_execution_fence_immutable(self) -> None:
+        contract_set = contracts(
+            backend_id="scripted-fixture",
+            runtime=ExecutionRuntimeClass.SCRIPTED_FIXTURE,
+        )
+        capability, profile, policy, route, manifest, request = contract_set
+        source = StaticExecutionContractSource(
+            route_snapshots=(route,),
+            model_profiles=(profile,),
+            route_policies=(policy,),
+            input_manifests=(manifest,),
+        )
+        initial_admission = AdmissionController(
+            source,
+            StaticAttemptFenceVerifier({("operation:1", "attempt:1"): 7}),
+        )
+        store = InMemoryExecutionRecordStore()
+        backend = ScriptedFixtureExecutionBackend(
+            admission=initial_admission,
+            payload_resolver=StaticExecutionPayloadResolver(
+                {
+                    request.execution_id: ResolvedExecutionPayload(
+                        request_payload={"result": {"text": "fixture"}},
+                        input_text="fixture",
+                        working_directory=".",
+                        timeout_seconds=5,
+                        output_schema_version="chapter-draft.v1",
+                    )
+                }
+            ),
+            record_store=store,
+        )
+        registry = ExecutionBackendRegistry()
+        registry.register(backend)
+        initial_gateway = ProductionExecutionGateway(registry, initial_admission)
+        handle = initial_gateway.submit(request)
+
+        recovery_admission = AdmissionController(
+            source,
+            StaticAttemptFenceVerifier(
+                {("operation:1", "attempt:1"): 8},
+                owners={("operation:1", "attempt:1"): "worker:new"},
+            ),
+        )
+        backend.admission = recovery_admission
+        recovery_gateway = ProductionExecutionGateway(registry, recovery_admission)
+        authorization = ExecutionRecoveryAuthorization(
+            authorization_id="recovery:execution:1:fence:8:consume",
+            execution_id=request.execution_id,
+            external_effect_id=request.external_effect_id,
+            operation_id=request.operation_id,
+            attempt_id=request.attempt_id,
+            execution_fencing_token=7,
+            recovery_fencing_token=8,
+            recovery_worker_id="worker:new",
+            action=ExecutionRecoveryAction.CONSUME_RESULT,
+            trace_id=request.trace_id,
+            correlation_id=request.correlation_id,
+        )
+
+        with self.assertRaisesRegex(ValueError, "stale Authority fencing token"):
+            recovery_gateway.submit(request)
+        result = recovery_gateway.recover_existing_execution(
+            request,
+            handle,
+            authorization,
+        )
+
+        self.assertEqual(result.outcome, ExecutionOutcome.SUCCEEDED)
+        self.assertEqual(result.fencing_token, 7)
+        self.assertEqual(store.get_record(request.execution_id).request.fencing_token, 7)
+
+    def test_planned_recovery_dispatches_once_under_current_recovery_fence(self) -> None:
+        contract_set = contracts(
+            backend_id="scripted-fixture",
+            runtime=ExecutionRuntimeClass.SCRIPTED_FIXTURE,
+        )
+        capability, profile, policy, route, manifest, request = contract_set
+        source = StaticExecutionContractSource(
+            route_snapshots=(route,),
+            model_profiles=(profile,),
+            route_policies=(policy,),
+            input_manifests=(manifest,),
+        )
+        admission = AdmissionController(
+            source,
+            StaticAttemptFenceVerifier(
+                {("operation:1", "attempt:1"): 8},
+                owners={("operation:1", "attempt:1"): "worker:new"},
+            ),
+        )
+        store = InMemoryExecutionRecordStore()
+        backend = ScriptedFixtureExecutionBackend(
+            admission=admission,
+            payload_resolver=StaticExecutionPayloadResolver(
+                {
+                    request.execution_id: ResolvedExecutionPayload(
+                        request_payload={"result": {"text": "fixture"}},
+                        input_text="fixture",
+                        working_directory=".",
+                        timeout_seconds=5,
+                        output_schema_version="chapter-draft.v1",
+                    )
+                }
+            ),
+            record_store=store,
+        )
+        registry = ExecutionBackendRegistry()
+        registry.register(backend)
+        gateway = ProductionExecutionGateway(registry, admission)
+        authorization = ExecutionRecoveryAuthorization(
+            authorization_id="recovery:execution:1:fence:8:dispatch",
+            execution_id=request.execution_id,
+            external_effect_id=request.external_effect_id,
+            operation_id=request.operation_id,
+            attempt_id=request.attempt_id,
+            execution_fencing_token=7,
+            recovery_fencing_token=8,
+            recovery_worker_id="worker:new",
+            action=ExecutionRecoveryAction.DISPATCH_PLANNED,
+            trace_id=request.trace_id,
+            correlation_id=request.correlation_id,
+        )
+
+        first = gateway.resume_planned_execution(request, authorization)
+        second = gateway.resume_planned_execution(request, authorization)
+
+        self.assertEqual(first.contract_hash, second.contract_hash)
+        self.assertEqual(store.get_record(request.execution_id).request.fencing_token, 7)
 
     def test_structurally_corrupt_fixture_result_is_not_materialized_as_success(self) -> None:
         contract_set = contracts(

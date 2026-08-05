@@ -7,7 +7,7 @@ accepts it and an Authority command commits a versioned asset.
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, fields, is_dataclass, replace
+from dataclasses import dataclass, fields, is_dataclass, replace
 from decimal import Decimal
 from enum import StrEnum
 import hashlib
@@ -847,6 +847,7 @@ class AgentCollaborationSession:
     authority_decision_ref: str
     last_turn_id: str
     persistence_version: int = 0
+    attempt_id: str = ""
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "status", _enum(SessionStatus, self.status))
@@ -875,6 +876,8 @@ class AgentCollaborationSession:
             raise ValueError("collaboration counters cannot be negative")
         if self.spent_budget < 0:
             raise ValueError("collaboration spent budget cannot be negative")
+        if self.attempt_id and not self.attempt_id.strip():
+            raise ValueError("collaboration Attempt identity is invalid")
 
     def advance_turn(
         self, turn_id: str, *, cost: Decimal = Decimal("0")

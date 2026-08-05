@@ -35,6 +35,23 @@ Current publishing gate includes:
    - villain operation;
    - review score.
 
+## Fixture calibration contract
+
+Fixture evidence is always `FIXTURE_UNCALIBRATED`; it cannot also claim
+`HUMAN_CALIBRATED`. Without an approval, the quality aggregate is
+`PASSED_WITH_UNCALIBRATED`, the publish decision is `PUBLISH_GATE_BLOCKED`, and
+`external_publish_permitted=false`.
+
+A fixture-only internal review may use `WAIVED_BY_APPROVAL` only when a
+versioned Operator Checklist, Approval Decision, reason, exact waived
+dimensions, project fixture scope, and unexpired approval are present. The
+waiver never rewrites evidence to `PASSED` or `HUMAN_CALIBRATED`; its maximum
+result is `INTERNAL_REVIEW_RELEASE` with
+`external_publish_permitted=false`, `production_verified=false`, and
+`fixture_protocol_only=true`. Production originality, anti-AI, copyright,
+sensitive-content, AI policy, metadata, Canon, timeline, world, and power
+consistency gates remain unchanged.
+
 ## OS Acceptance Gate
 
 Long-form production readiness is also checked by:

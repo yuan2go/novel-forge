@@ -44,8 +44,11 @@ from novel_forge.modules.command_kernel.worker_execution import (
 )
 from novel_forge.modules.command_kernel.external_effect_adapters import ExternalEffectAdapter
 from novel_forge.modules.command_kernel.external_effect_runtime import (
+    EffectRecoveryDisposition,
     EffectCommandContext,
+    classify_external_effect_recovery,
     reconcile_external_effect,
+    resume_operation_from_completed_effect,
 )
 from novel_forge.modules.command_kernel.cancellation import acknowledge_worker_cancellation
 from novel_forge.modules.canon_graph.approval_authority import (
@@ -67,6 +70,7 @@ from novel_forge.modules.command_kernel.runtime import (
     OperationTransitionCommand,
     transition_operation,
 )
+from novel_forge.modules.production_execution.contracts import ExecutionRecoveryAction
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 
@@ -214,25 +218,6 @@ class ChapterAuthorityScheduler:
                 "CHAPTER_SCHEDULER_STATE_RACE",
                 "scheduler selected an already completed node",
             )
-        if (
-            operation["status"] in {
-                "WAITING_EXTERNAL_RESULT",
-                "RECONCILIATION_REQUIRED",
-            }
-            and node.value in AGENT_MODEL_STAGES
-        ):
-            recovery_outcome = self._reconcile_agent_effects(request, operation)
-            operation = self._child(str(operation["operation_id"]), project_id)
-            if operation["status"] == "RECONCILIATION_REQUIRED":
-                return ChapterSchedulerTick(
-                    root_operation_id=root_operation_id,
-                    saga_id=saga["saga_id"],
-                    saga_status="WAITING_EXTERNAL_RESULT",
-                    operation_id=str(operation["operation_id"]),
-                    node=node.value,
-                    operation_status=str(operation["status"]),
-                    recovery_mode=recovery_outcome,
-                )
         recovery_mode = self._execute_node(request, node, operation)
         final = coordinate_saga(self.database_url, context, saga["saga_id"])
         status = self._operation_status(str(operation["operation_id"]), project_id)
@@ -608,6 +593,27 @@ class ChapterAuthorityScheduler:
         if attempt_status in {"QUEUED", "LEASED"}:
             start_attempt(self.database_url, worker)
         try:
+            if (
+                operation["status"]
+                in {"WAITING_EXTERNAL_RESULT", "RECONCILIATION_REQUIRED"}
+                and node.value in AGENT_MODEL_STAGES
+            ):
+                recovery_mode = self._reconcile_agent_effects(
+                    request,
+                    operation,
+                    worker=worker,
+                )
+                recovered = self._child(operation_id, project_id)
+                if recovered["status"] == "RECONCILIATION_REQUIRED":
+                    checkpoint_attempt_for_external_reconciliation(
+                        self.database_url,
+                        worker,
+                        {
+                            "reason": "provider_query_remains_ambiguous",
+                            "recovery_mode": recovery_mode,
+                        },
+                    )
+                    return recovery_mode
             with LeaseHeartbeatGuard(
                 lambda: heartbeat_attempt(self.database_url, worker, self.lease_seconds),
                 lease_seconds=self.lease_seconds,
@@ -905,6 +911,8 @@ class ChapterAuthorityScheduler:
         self,
         request: SingleChapterRequest,
         operation: dict[str, Any],
+        *,
+        worker: WorkerLeaseCommand,
     ) -> str:
         if self.model_effect_adapter is None:
             raise KernelError(
@@ -914,16 +922,16 @@ class ChapterAuthorityScheduler:
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
-                SELECT external_effect_id
+                SELECT external_effect_id, status, request_payload
                 FROM authority_external_effect
                 WHERE operation_id=%s
-                  AND status IN ('UNKNOWN','RECONCILIATION_REQUIRED')
+                  AND effect_type='model.invoke'
                 ORDER BY created_at, external_effect_id
                 """,
                 [operation["operation_id"]],
             )
-            effect_ids = [str(row[0]) for row in uow.cursor.fetchall()]
-        if not effect_ids:
+            effects = tuple(uow.cursor.fetchall())
+        if not effects:
             raise KernelError(
                 "CHAPTER_AGENT_RECONCILIATION_EVIDENCE_MISSING",
                 "reconciliation-required Chapter Operation has no uncertain ExternalEffect",
@@ -936,16 +944,92 @@ class ChapterAuthorityScheduler:
             correlation_id=request.correlation_id,
         )
         outcomes = []
-        for effect_id in effect_ids:
+        matched_attempt = False
+        for effect_id_value, effect_status, request_payload in effects:
+            effect_id = str(effect_id_value)
+            metadata = (
+                request_payload.get("_production_execution")
+                if isinstance(request_payload, dict)
+                else None
+            )
+            if not isinstance(metadata, dict):
+                raise KernelError(
+                    "CHAPTER_EXECUTION_IDENTITY_INVALID",
+                    "uncertain ExternalEffect has no frozen execution identity",
+                )
+            execution_fence = int(metadata.get("fencing_token") or 0)
+            attempt_id = str(metadata.get("attempt_id") or "")
+            if attempt_id != worker.attempt_id:
+                continue
+            matched_attempt = True
+            if execution_fence <= 0:
+                raise KernelError(
+                    "CHAPTER_EXECUTION_IDENTITY_CONFLICT",
+                    "uncertain ExternalEffect differs from the active Attempt",
+                )
+            disposition = classify_external_effect_recovery(str(effect_status))
+            if disposition is EffectRecoveryDisposition.DISPATCH_PLANNED:
+                continue
+            if disposition is EffectRecoveryDisposition.CONSUME_SUCCEEDED:
+                resume_operation_from_completed_effect(
+                    self.database_url,
+                    context,
+                    effect_id=effect_id,
+                )
+                outcomes.append("success")
+                continue
+            if disposition is EffectRecoveryDisposition.RETRY_POLICY:
+                raise KernelError(
+                    "CHAPTER_EXTERNAL_EFFECT_RETRY_REQUIRED",
+                    "Provider retry requires a new Chapter Attempt",
+                )
+            if disposition is EffectRecoveryDisposition.TERMINAL_FAILURE:
+                raise KernelError(
+                    "CHAPTER_EXTERNAL_EFFECT_FINAL_FAILURE",
+                    "Provider Final Failure cannot be recovered as success",
+                )
+            if disposition is EffectRecoveryDisposition.TERMINAL_CANCELLED:
+                raise KernelError(
+                    "CHAPTER_EXTERNAL_EFFECT_CANCELLED",
+                    "cancelled Provider execution cannot produce a Chapter candidate",
+                )
+            if disposition is EffectRecoveryDisposition.OPERATOR_RECONCILIATION:
+                raise KernelError(
+                    "CHAPTER_EXTERNAL_EFFECT_OPERATOR_RECONCILIATION_REQUIRED",
+                    "ExternalEffect status requires operator reconciliation",
+                )
+            authorize = getattr(self.model_effect_adapter, "for_recovery", None)
+            if not callable(authorize):
+                raise KernelError(
+                    "CHAPTER_EXECUTION_RECOVERY_AUTHORIZATION_MISSING",
+                    "Chapter reconciliation requires a recovery-capable PEP adapter",
+                )
+            recovery_adapter = authorize(
+                execution_id=f"chapter-execution:{effect_id}",
+                external_effect_id=effect_id,
+                operation_id=str(operation["operation_id"]),
+                attempt_id=attempt_id,
+                execution_fencing_token=execution_fence,
+                recovery_fencing_token=worker.fencing_token,
+                recovery_worker_id=worker.worker_id,
+                action=ExecutionRecoveryAction.QUERY,
+                trace_id=request.trace_id,
+                correlation_id=request.correlation_id,
+            )
             outcomes.append(
                 str(
                     reconcile_external_effect(
                         self.database_url,
                         context,
                         effect_id=effect_id,
-                        adapter=self.model_effect_adapter,
+                        adapter=recovery_adapter,
                     )["outcome"]
                 )
+            )
+        if not matched_attempt:
+            raise KernelError(
+                "CHAPTER_AGENT_RECONCILIATION_EVIDENCE_MISSING",
+                "current Chapter Attempt has no uncertain ExternalEffect",
             )
         if "ambiguous" in outcomes:
             return "external_effect_reconciliation_required"

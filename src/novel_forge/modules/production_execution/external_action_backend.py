@@ -27,13 +27,14 @@ from .contracts import (
     ExecutionCapabilityProfile,
     ExecutionHandle,
     ExecutionOutcome,
+    ExecutionRecoveryAuthorization,
     ExecutionRequest,
     ExecutionResult,
     ExecutionRuntimeClass,
     LocalTerminationOutcome,
     UpstreamCancellationOutcome,
 )
-from .gateway import AdmissionController
+from .gateway import AdmissionController, ExecutionAdmission
 
 
 @dataclass(frozen=True, slots=True)
@@ -343,6 +344,25 @@ class RemoteExternalActionBackend:
 
     def submit(self, request: ExecutionRequest) -> ExecutionHandle:
         admission = self.admission.admit(request, self.capability_profile)
+        return self._submit(request, admission)
+
+    def submit_recovered(
+        self,
+        request: ExecutionRequest,
+        authorization: ExecutionRecoveryAuthorization,
+    ) -> ExecutionHandle:
+        admission = self.admission.admit_recovery(
+            request,
+            self.capability_profile,
+            authorization,
+        )
+        return self._submit(request, admission)
+
+    def _submit(
+        self,
+        request: ExecutionRequest,
+        admission: ExecutionAdmission,
+    ) -> ExecutionHandle:
         existing = self.record_store.find_record(request.execution_id)
         if existing is not None:
             if existing.request.contract_hash != request.contract_hash:

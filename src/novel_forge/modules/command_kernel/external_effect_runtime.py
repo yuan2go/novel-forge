@@ -4,6 +4,7 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import dataclass
+from enum import StrEnum
 from typing import Any
 from uuid import uuid4
 
@@ -41,6 +42,38 @@ class EffectCommandContext:
     trace_id: str
     correlation_id: str
     causation_id: str = ""
+
+
+class EffectRecoveryDisposition(StrEnum):
+    DISPATCH_PLANNED = "DISPATCH_PLANNED"
+    QUERY_EXISTING = "QUERY_EXISTING"
+    RECONCILE_UNKNOWN = "RECONCILE_UNKNOWN"
+    CONSUME_SUCCEEDED = "CONSUME_SUCCEEDED"
+    RETRY_POLICY = "RETRY_POLICY"
+    TERMINAL_FAILURE = "TERMINAL_FAILURE"
+    TERMINAL_CANCELLED = "TERMINAL_CANCELLED"
+    OPERATOR_RECONCILIATION = "OPERATOR_RECONCILIATION"
+
+
+def classify_external_effect_recovery(status: str) -> EffectRecoveryDisposition:
+    """Classify existing Effect facts without creating a second state machine."""
+
+    normalized = status.strip().upper()
+    if normalized == "READY":
+        return EffectRecoveryDisposition.DISPATCH_PLANNED
+    if normalized in {"DISPATCHING", "DISPATCHED"}:
+        return EffectRecoveryDisposition.QUERY_EXISTING
+    if normalized in {"UNKNOWN", "RECONCILIATION_REQUIRED"}:
+        return EffectRecoveryDisposition.RECONCILE_UNKNOWN
+    if normalized == "SUCCEEDED":
+        return EffectRecoveryDisposition.CONSUME_SUCCEEDED
+    if normalized == "FAILED_RETRYABLE":
+        return EffectRecoveryDisposition.RETRY_POLICY
+    if normalized in {"FAILED_FINAL", "DEAD_LETTER"}:
+        return EffectRecoveryDisposition.TERMINAL_FAILURE
+    if normalized == "CANCELLED":
+        return EffectRecoveryDisposition.TERMINAL_CANCELLED
+    return EffectRecoveryDisposition.OPERATOR_RECONCILIATION
 
 
 def plan_external_effect(
@@ -762,7 +795,12 @@ def reconcile_external_effect(
     adapter: ExternalEffectAdapter,
 ) -> dict[str, Any]:
     effect = _read_effect(database_url, effect_id, context.project_id)
-    if effect["status"] not in {"UNKNOWN", "RECONCILIATION_REQUIRED"}:
+    if effect["status"] not in {
+        "DISPATCHING",
+        "DISPATCHED",
+        "UNKNOWN",
+        "RECONCILIATION_REQUIRED",
+    }:
         raise KernelError("EFFECT_STATUS_CONFLICT", "effect does not require reconciliation")
     if adapter.provider != effect["provider"]:
         raise KernelError("EFFECT_PROVIDER_CONFLICT", "reconciler provider is unexpected")
@@ -872,6 +910,67 @@ def reconcile_external_effect(
         "external_effect_id": effect_id,
         "outcome": result.outcome,
         "operation_status": target_status,
+    }
+
+
+def resume_operation_from_completed_effect(
+    database_url: str,
+    context: EffectCommandContext,
+    *,
+    effect_id: str,
+) -> dict[str, Any]:
+    """Repair only the Operation projection from durable SUCCEEDED evidence."""
+
+    with AuthorityUnitOfWork(database_url) as uow:
+        repository = uow.repositories.external_effects
+        _require_context(repository, context)
+        effect = repository.get_for_update(effect_id)
+        _require_project(effect, context.project_id)
+        if effect["status"] != "SUCCEEDED":
+            raise KernelError(
+                "EFFECT_STATUS_CONFLICT",
+                "completed-effect recovery requires SUCCEEDED evidence",
+            )
+        operation = uow.repositories.attempt_runtime.operation_state(
+            context.operation_id,
+            context.project_id,
+        )
+        current_status = str(operation["status"])
+        if current_status in {
+            "WAITING_EXTERNAL_RESULT",
+            "RECONCILIATION_REQUIRED",
+        }:
+            _cas_operation(
+                uow,
+                operation_id=context.operation_id,
+                project_id=context.project_id,
+                expected_status=current_status,
+                expected_version=int(operation["version"]),
+                target_status="EXECUTING",
+                actor_id=context.actor_id,
+                reason="durable successful ExternalEffect evidence recovered",
+                trace_id=context.trace_id,
+                correlation_id=context.correlation_id,
+                causation_id=effect_id,
+            )
+            _record(
+                repository,
+                context,
+                effect_id,
+                "external_effect.completed_result_recovered",
+                {"prior_operation_status": current_status},
+            )
+            current_status = "EXECUTING"
+        elif current_status != "EXECUTING":
+            raise KernelError(
+                "OPERATION_STATUS_CONFLICT",
+                f"completed effect cannot resume Operation from {current_status}",
+            )
+        uow.commit()
+    return {
+        "external_effect_id": effect_id,
+        "outcome": "success",
+        "operation_status": current_status,
     }
 
 

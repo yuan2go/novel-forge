@@ -159,7 +159,7 @@ class PostgresAgentCollaborationRepository:
                 current_candidate_version_id, status, round_number,
                 turn_number, execution_count, spent_budget, budget_ref,
                 termination_policy_ref, created_operation_id, saga_id,
-                authority_decision_id, last_turn_id, version
+                authority_decision_id, last_turn_id, version, attempt_id
             ) VALUES (
                 %(session_id)s, %(project_id)s, %(owner_authority)s,
                 %(business_goal)s, %(issue_type)s, %(scope_snapshot_ref)s,
@@ -168,7 +168,7 @@ class PostgresAgentCollaborationRepository:
                 %(execution_count)s, %(spent_budget)s, %(budget_ref)s,
                 %(termination_policy_ref)s, %(created_operation_id)s,
                 %(saga_id)s, %(authority_decision_ref)s, %(last_turn_id)s,
-                %(persistence_version)s
+                %(persistence_version)s, %(attempt_id)s
             )
             ON CONFLICT (session_id) DO NOTHING
             """,
@@ -189,7 +189,8 @@ class PostgresAgentCollaborationRepository:
                    round_number, turn_number, execution_count, spent_budget,
                    budget_ref, termination_policy_ref, created_operation_id,
                    saga_id, COALESCE(authority_decision_id, ''),
-                   COALESCE(last_turn_id, ''), version
+                   COALESCE(last_turn_id, ''), version,
+                   COALESCE(attempt_id, '')
             FROM authority_agent_collaboration_session
             WHERE session_id = %s
             """,
@@ -219,6 +220,10 @@ class PostgresAgentCollaborationRepository:
                 spent_budget = %(spent_budget)s,
                 authority_decision_id = %(authority_decision_ref)s,
                 last_turn_id = %(last_turn_id)s,
+                attempt_id = CASE
+                    WHEN attempt_id IS NULL THEN %(attempt_id)s
+                    ELSE attempt_id
+                END,
                 cancelled_at = CASE
                     WHEN %(status)s = 'CANCELLED' THEN NOW()
                     ELSE cancelled_at
@@ -1225,6 +1230,7 @@ def _session_parameters(session: AgentCollaborationSession) -> dict[str, Any]:
         ),
         "authority_decision_ref": session.authority_decision_ref or None,
         "last_turn_id": session.last_turn_id or None,
+        "attempt_id": session.attempt_id or None,
     }
 
 

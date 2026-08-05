@@ -127,16 +127,17 @@ class ChapterAuthorityBusinessDomainTests(unittest.TestCase):
             canon_asset_version_id="canon-v1", context_bundle_version_id="context-v1",
             context_bundle=context_bundle,
         )
-        with self.assertRaisesRegex(KernelError, "PUBLISH_GATE_BLOCKED"):
-            prepare_internal_release(
-                project_id="project-a", revision=revision,
-                revision_asset_version_id="revision-v1", quality=quality,
-                quality_asset_version_id="quality-v1", review=rereview,
-                review_asset_version_id="rereview-v1", canon=canon,
-                canon_asset_version_id="canon-v1",
-                context_bundle=context_bundle,
-                context_bundle_version_id="context-v1",
-            )
+        publish_gate = prepare_internal_release(
+            project_id="project-a", revision=revision,
+            revision_asset_version_id="revision-v1", quality=quality,
+            quality_asset_version_id="quality-v1", review=rereview,
+            review_asset_version_id="rereview-v1", canon=canon,
+            canon_asset_version_id="canon-v1",
+            context_bundle=context_bundle,
+            context_bundle_version_id="context-v1",
+        )
+        self.assertEqual(publish_gate["gate"], "PUBLISH_GATE_BLOCKED")
+        self.assertFalse(publish_gate["external_publish_permitted"])
         self.assertEqual(canon["facts"][0]["object"], "broken")
         self.assertEqual(quality["gate"], "FAILED")
         self.assertIn("anti_ai", quality["blocking_dimensions"])

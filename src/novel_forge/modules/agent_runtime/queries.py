@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any
 
 from novel_forge.modules.command_kernel.errors import KernelError
@@ -45,55 +46,177 @@ class AgentRuntimeQuery:
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 f"""
-                SELECT
-                    COUNT(DISTINCT binding.binding_id) FILTER (WHERE attempt.status IN (
-                        'RUNNING','CHECKPOINTED','LEASED','RESULT_SUBMITTED'
-                    )),
-                    COUNT(DISTINCT effect.external_effect_id) FILTER (WHERE effect.status IN (
-                        'UNKNOWN','RECONCILIATION_REQUIRED'
-                    )),
-                    EXTRACT(EPOCH FROM (
-                        NOW() - MIN(binding.created_at) FILTER (
-                            WHERE attempt.status IN (
-                                'RUNNING','CHECKPOINTED','LEASED','RESULT_SUBMITTED'
-                            )
-                        )
-                    )),
-                    COUNT(DISTINCT candidate.candidate_version_id) FILTER (
-                        WHERE candidate.candidate_version_id IS NOT NULL
-                          AND commit.commit_id IS NULL
-                          AND operation.definition_name<>'agent.candidate.execute'
-                    ),
-                    COUNT(DISTINCT binding.binding_id) FILTER (
-                        WHERE candidate.candidate_version_id IS NULL
-                          AND attempt.status IN (
-                              'RUNNING','CHECKPOINTED','LEASED','RESULT_SUBMITTED'
-                          )
-                    )
+                SELECT binding.binding_id, binding.attempt_id,
+                       binding.fencing_token, binding.book_id,
+                       binding.created_at, operation.operation_id,
+                       operation.definition_name, attempt.attempt_number,
+                       attempt.status, current_lease.fencing_token,
+                       effects.planned, effects.waiting, effects.unknown,
+                       effects.reconciliation, effects.succeeded,
+                       candidate.candidate_version_id,
+                       supersession.supersession_id,
+                       decision.decision_id, domain_asset.asset_version_id,
+                       collaboration_commit.commit_id
                 FROM authority_agent_runtime_binding AS binding
                 JOIN authority_operation AS operation
                   ON operation.operation_id=binding.operation_id
                 JOIN authority_attempt AS attempt
                   ON attempt.attempt_id=binding.attempt_id
-                LEFT JOIN authority_external_effect AS effect
-                  ON effect.operation_id=binding.operation_id
+                LEFT JOIN LATERAL (
+                    SELECT lease.fencing_token
+                    FROM authority_lease_acquisition AS lease
+                    WHERE lease.attempt_id=binding.attempt_id
+                    ORDER BY lease.fencing_token DESC
+                    LIMIT 1
+                ) AS current_lease ON TRUE
+                LEFT JOIN LATERAL (
+                    SELECT
+                        BOOL_OR(effect.status='READY') AS planned,
+                        BOOL_OR(effect.status IN (
+                            'DISPATCHING','DISPATCHED'
+                        )) AS waiting,
+                        BOOL_OR(effect.status='UNKNOWN') AS unknown,
+                        BOOL_OR(effect.status='RECONCILIATION_REQUIRED')
+                            AS reconciliation,
+                        BOOL_OR(effect.status='SUCCEEDED') AS succeeded
+                    FROM authority_external_effect AS effect
+                    WHERE effect.operation_id=binding.operation_id
+                      AND effect.request_payload
+                          ->'_production_execution'->>'attempt_id'
+                          =binding.attempt_id
+                ) AS effects ON TRUE
                 LEFT JOIN authority_agent_work_order AS work_order
                   ON work_order.work_order_id=binding.work_order_id
                 LEFT JOIN authority_agent_candidate_version AS candidate
                   ON candidate.originating_turn_id=work_order.turn_id
-                LEFT JOIN authority_agent_collaboration_commit AS commit
-                  ON commit.candidate_version_id=candidate.candidate_version_id
+                LEFT JOIN authority_agent_candidate_supersession AS supersession
+                  ON supersession.superseded_candidate_version_id=
+                     candidate.candidate_version_id
+                LEFT JOIN authority_agent_collaboration_decision AS decision
+                  ON decision.candidate_version_id=candidate.candidate_version_id
+                LEFT JOIN authority_agent_collaboration_commit
+                  AS collaboration_commit
+                  ON collaboration_commit.candidate_version_id=
+                     candidate.candidate_version_id
+                LEFT JOIN LATERAL (
+                    SELECT output.asset_version_id
+                    FROM authority_operation_output_asset AS output
+                    WHERE output.operation_id=binding.operation_id
+                    ORDER BY output.created_at DESC, output.asset_version_id
+                    LIMIT 1
+                ) AS domain_asset ON TRUE
                 WHERE TRUE {project_clause}
+                ORDER BY binding.created_at, binding.binding_id
                 """,
                 parameters,
             )
-            row = uow.cursor.fetchone()
+            rows = uow.cursor.fetchall()
+        metric_names = (
+            "planned_effect_not_dispatched",
+            "waiting_external_result",
+            "unknown_external_effect",
+            "reconciliation_required",
+            "completed_effect_candidate_missing",
+            "candidate_domain_decision_pending",
+            "domain_asset_commit_missing",
+            "commit_attempt_result_missing",
+            "superseded_candidate",
+            "standalone_candidate_ready",
+        )
+        metrics = {name: 0 for name in metric_names}
+        scopes: list[dict[str, Any]] = []
+        backlog_ages: list[int] = []
+        for row in rows:
+            standalone = str(row[6]) == "agent.candidate.execute"
+            candidate_id = str(row[15] or "")
+            superseded = bool(row[16])
+            commit_id = str(row[19] or "")
+            categories: list[str] = []
+            if superseded:
+                categories.append("superseded_candidate")
+            else:
+                if bool(row[10]):
+                    categories.append("planned_effect_not_dispatched")
+                if bool(row[11]):
+                    categories.append("waiting_external_result")
+                if bool(row[12]):
+                    categories.append("unknown_external_effect")
+                if bool(row[13]):
+                    categories.append("reconciliation_required")
+                if bool(row[14]) and not candidate_id:
+                    categories.append("completed_effect_candidate_missing")
+                if standalone and candidate_id and not commit_id:
+                    categories.append("standalone_candidate_ready")
+                if not standalone and candidate_id and not row[17]:
+                    categories.append("candidate_domain_decision_pending")
+                if not standalone and row[17] and not commit_id:
+                    categories.append("domain_asset_commit_missing")
+                if commit_id and str(row[8]) != "SUCCEEDED":
+                    categories.append("commit_attempt_result_missing")
+            if not categories:
+                continue
+            for category in categories:
+                metrics[category] += 1
+            age_seconds = max(
+                0,
+                int(
+                    (
+                        datetime.now(row[4].tzinfo)
+                        - row[4]
+                    ).total_seconds()
+                ),
+            )
+            if any(
+                item not in {
+                    "superseded_candidate",
+                    "standalone_candidate_ready",
+                }
+                for item in categories
+            ):
+                backlog_ages.append(age_seconds)
+            scopes.append(
+                {
+                    "binding_id": str(row[0]),
+                    "operation_id": str(row[5]),
+                    "attempt_id": str(row[1]),
+                    "attempt_number": int(row[7]),
+                    "book_id": str(row[3]),
+                    "execution_fencing_token": int(row[2]),
+                    "recovery_fencing_token": int(row[9] or row[2]),
+                    "categories": categories,
+                    "age_seconds": age_seconds,
+                }
+            )
         return {
-            "recoverable_runtime_binding_count": int(row[0] or 0),
-            "unknown_external_effect_count": int(row[1] or 0),
-            "oldest_recovery_age_seconds": int(row[2] or 0),
-            "candidate_without_domain_commit_count": int(row[3] or 0),
-            "frozen_binding_without_final_result_count": int(row[4] or 0),
+            **metrics,
+            "recoverable_runtime_binding_count": len(
+                {
+                    scope["binding_id"]
+                    for scope in scopes
+                    if any(
+                        category
+                        not in {
+                            "superseded_candidate",
+                            "standalone_candidate_ready",
+                        }
+                        for category in scope["categories"]
+                    )
+                }
+            ),
+            "unknown_external_effect_count": (
+                metrics["unknown_external_effect"]
+                + metrics["reconciliation_required"]
+            ),
+            "oldest_recovery_age_seconds": max(backlog_ages, default=0),
+            "candidate_without_domain_commit_count": (
+                metrics["candidate_domain_decision_pending"]
+                + metrics["domain_asset_commit_missing"]
+            ),
+            "frozen_binding_without_final_result_count": (
+                metrics["completed_effect_candidate_missing"]
+                + metrics["commit_attempt_result_missing"]
+            ),
+            "scopes": scopes,
         }
 
     def list_runs(
@@ -154,7 +277,8 @@ class AgentRuntimeQuery:
                        binding.input_manifest_ref,
                        operation.trace_id, operation.span_id,
                        operation.correlation_id,
-                       operation.created_at, operation.updated_at
+                       operation.created_at, operation.updated_at,
+                       binding.fencing_token
                 FROM authority_operation AS operation
                 LEFT JOIN LATERAL (
                     SELECT current.*
@@ -406,6 +530,75 @@ class AgentRuntimeQuery:
             ]
             cursor.execute(
                 """
+                SELECT authorization_id, attempt_id, external_effect_id,
+                       execution_id, execution_fencing_token,
+                       recovery_fencing_token, recovery_worker_id,
+                       action, trace_id, correlation_id, created_at
+                FROM authority_execution_recovery_authorization
+                WHERE operation_id=%s AND project_id=%s
+                ORDER BY created_at, authorization_id
+                """,
+                [operation_id, project_id],
+            )
+            recovery_authorizations = [
+                {
+                    "authorization_id": row[0],
+                    "attempt_id": row[1],
+                    "external_effect_id": row[2],
+                    "execution_id": row[3],
+                    "execution_fencing_token": int(row[4]),
+                    "recovery_fencing_token": int(row[5]),
+                    "recovery_worker_id": row[6],
+                    "action": row[7],
+                    "trace_id": row[8],
+                    "correlation_id": row[9],
+                    "created_at": _timestamp(row[10]),
+                }
+                for row in cursor.fetchall()
+            ]
+            cursor.execute(
+                """
+                SELECT attempt.attempt_id, attempt.attempt_number,
+                       session.session_id, session.status,
+                       candidate.candidate_version_id,
+                       supersession.supersession_id,
+                       supersession.superseding_candidate_version_id,
+                       collaboration_commit.commit_id
+                FROM authority_attempt AS attempt
+                LEFT JOIN authority_agent_collaboration_session AS session
+                  ON session.attempt_id=attempt.attempt_id
+                LEFT JOIN authority_agent_candidate_version AS candidate
+                  ON candidate.session_id=session.session_id
+                LEFT JOIN authority_agent_candidate_supersession AS supersession
+                  ON supersession.superseded_candidate_version_id=
+                     candidate.candidate_version_id
+                LEFT JOIN authority_agent_collaboration_commit
+                  AS collaboration_commit
+                  ON collaboration_commit.candidate_version_id=
+                     candidate.candidate_version_id
+                WHERE attempt.operation_id=%s
+                ORDER BY attempt.attempt_number,
+                         candidate.created_at, candidate.candidate_version_id
+                """,
+                [operation_id],
+            )
+            candidate_attempts = [
+                {
+                    "attempt_id": row[0],
+                    "attempt_number": int(row[1]),
+                    "session_id": row[2] or "",
+                    "session_status": row[3] or "",
+                    "candidate_version_id": row[4] or "",
+                    "supersession_id": row[5] or "",
+                    "superseding_candidate_version_id": row[6] or "",
+                    "commit_id": row[7] or "",
+                    "is_effective_candidate": bool(row[4])
+                    and not bool(row[5]),
+                }
+                for row in cursor.fetchall()
+            ]
+            cursor.execute(
+                """
                 SELECT output.output_key, output.role, output.asset_id,
                        output.asset_version_id, output.content_hash,
                        asset.asset_type, version.schema_version,
@@ -519,6 +712,16 @@ class AgentRuntimeQuery:
             ),
             "leases": leases,
             "external_effects": effects,
+            "recovery_authorizations": recovery_authorizations,
+            "candidate_attempts": candidate_attempts,
+            "effective_candidate": next(
+                (
+                    item
+                    for item in reversed(candidate_attempts)
+                    if item["is_effective_candidate"]
+                ),
+                {},
+            ),
             "provider_calls": [
                 effect for effect in effects if effect["effect_type"] == "model.invoke"
             ],
@@ -725,6 +928,8 @@ class AgentRuntimeQuery:
             "worker_id": row[14] or "",
             "lease_id": row[15] or "",
             "fencing_token": int(row[16] or 0),
+            "execution_fencing_token": int(row[30] or 0),
+            "recovery_fencing_token": int(row[16] or 0),
             "lease_status": row[17] or "",
             "external_effect_status": row[18] or "",
             "runtime_binding_id": row[19] or "",
@@ -764,7 +969,9 @@ class AgentRuntimeQuery:
                    decision.decision_id, decision.decision_type,
                    commit.commit_id, commit.asset_version_id,
                    commit.receipt_ref, commit.attempt_id,
-                   commit.fencing_token, commit.content_hash
+                   commit.fencing_token, commit.content_hash,
+                   session.attempt_id, supersession.supersession_id,
+                   supersession.superseding_candidate_version_id
             FROM authority_agent_work_order AS work_order
             JOIN authority_agent_collaboration_session AS session
               ON session.session_id=work_order.session_id
@@ -777,6 +984,9 @@ class AgentRuntimeQuery:
              AND decision.decision_id=session.authority_decision_id
             LEFT JOIN authority_agent_collaboration_commit AS commit
               ON commit.session_id=session.session_id
+            LEFT JOIN authority_agent_candidate_supersession AS supersession
+              ON supersession.superseded_candidate_version_id=
+                 candidate.candidate_version_id
             WHERE (
                 (%s <> '' AND session.session_id=%s)
                 OR (%s = '' AND work_order.operation_id=%s)
@@ -795,6 +1005,7 @@ class AgentRuntimeQuery:
             "business_goal": row[2],
             "issue_type": row[3],
             "session_status": row[4],
+            "attempt_id": row[28] or "",
             "scope_snapshot_ref": row[5] or "",
             "participant_snapshot_ref": row[6] or "",
             "current_candidate_version_id": row[7] or "",
@@ -813,6 +1024,9 @@ class AgentRuntimeQuery:
                 "candidate_version_id": row[17] or "",
                 "validation_status": row[18] or "",
                 "content_ref": row[19] or "",
+                "supersession_id": row[29] or "",
+                "superseding_candidate_version_id": row[30] or "",
+                "is_effective": bool(row[17]) and not bool(row[29]),
             },
             "decision": {
                 "decision_id": row[20] or "",

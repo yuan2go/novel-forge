@@ -47,6 +47,8 @@ jobs:
       - name: Static validation
         run: |
           make lint
+          make lint-authority
+          make lint-ratchet
           make validate
           # Runtime Skill copies are generated and ignored; reconstruct them
           # from the root Skills authority before enforcing exact drift.

@@ -28,6 +28,7 @@ test = [
     "psycopg[binary]>=3.2",
     "psycopg_pool>=3.2",
     "PyYAML>=6.0",
+    "ruff==0.15.20",
 ]
 worker = [
     "celery[redis]>=5.4",

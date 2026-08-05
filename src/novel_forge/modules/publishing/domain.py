@@ -1,6 +1,7 @@
 """Storage-free internal release gate and export manifest builder."""
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from typing import Any
 
 from novel_forge.modules.command_kernel.errors import KernelError
@@ -51,6 +52,19 @@ def prepare_internal_release(
         )
     )
     approval_required = bool(approval_requirements)
+    def cleared(dimension: str) -> bool:
+        item = by_dimension.get(dimension, {})
+        status = item.get("gate_status")
+        return status in {"PASSED", "PASSED_WITH_WARNINGS"} or (
+            status == "WAIVED_BY_APPROVAL"
+            and _fixture_waiver_is_valid(
+                item,
+                evidence_types=evidence_types,
+                project_id=project_id,
+                target_asset_version_id=revision_asset_version_id,
+            )
+        )
+
     checks = {
         "quality_evidence_current": (
             quality.get("gate") in {"PASSED", "PASSED_WITH_UNCALIBRATED"}
@@ -61,19 +75,13 @@ def prepare_internal_release(
         "canon_consistent": canon.get("gate") == "PASSED" and not canon.get("conflicts"),
         "source_eligible_and_leakage_clear": (
             bool(source_gate)
-            and by_dimension.get("source_leakage", {}).get("gate_status") == "PASSED"
+            and cleared("source_leakage")
         ),
-        "originality_risk_clear": (
-            by_dimension.get("originality", {}).get("gate_status") == "PASSED"
-        ),
-        "anti_ai_clear_or_approved": (
-            by_dimension.get("anti_ai", {}).get("gate_status") == "PASSED"
-        ),
+        "originality_risk_clear": cleared("originality"),
+        "anti_ai_clear_or_approved": cleared("anti_ai"),
         "platform_rules_clear_or_approved": (
             all(
-                by_dimension.get(item, {}).get("gate_status") in {
-                    "PASSED", "PASSED_WITH_WARNINGS", "WAIVED_BY_APPROVAL"
-                }
+                cleared(item)
                 for item in (
                     "chapter_length", "format", "sensitive_content",
                     "ai_content_policy", "publish_metadata",
@@ -81,9 +89,16 @@ def prepare_internal_release(
             )
         ),
         "all_blocking_dimensions_passed": all(
-            item.get("gate_status") in {
-                "PASSED", "PASSED_WITH_WARNINGS", "WAIVED_BY_APPROVAL"
-            }
+            item.get("gate_status") in {"PASSED", "PASSED_WITH_WARNINGS"}
+            or (
+                item.get("gate_status") == "WAIVED_BY_APPROVAL"
+                and _fixture_waiver_is_valid(
+                    item,
+                    evidence_types=evidence_types,
+                    project_id=project_id,
+                    target_asset_version_id=revision_asset_version_id,
+                )
+            )
             for item in dimensions
             if item.get("blocking")
         ),
@@ -99,16 +114,36 @@ def prepare_internal_release(
     }
     if not project_id or not all(checks.values()):
         failed = sorted(key for key, passed in checks.items() if not passed)
-        raise KernelError(
-            "PUBLISH_GATE_BLOCKED",
-            "release evidence is missing or blocked: " + ", ".join(failed),
-        )
+        return {
+            "project_id": project_id,
+            "chapter": revision["chapter"],
+            "gate": "PUBLISH_GATE_BLOCKED",
+            "release_readiness": "BLOCKED",
+            "external_publish_permitted": False,
+            "production_verified": False,
+            "fixture_protocol_only": bool(quality.get("fixture")),
+            "checks": checks,
+            "failed_checks": failed,
+            "release_manifest": {},
+            "rollback_metadata": {
+                "rollback_to_asset_version_id": revision.get(
+                    "source_draft_version_id", ""
+                ),
+                "release_not_externally_published": True,
+            },
+            "publish_gate_contract_version": "internal-publish-gate-v3",
+        }
     return {
         "project_id": project_id,
         "chapter": revision["chapter"],
         "gate": "PASSED",
         "release_readiness": "INTERNAL_REVIEW_RELEASE",
         "external_publish_permitted": False,
+        "production_verified": False,
+        "fixture_protocol_only": bool(quality.get("fixture")) or any(
+            item.get("gate_status") == "WAIVED_BY_APPROVAL"
+            for item in dimensions
+        ),
         "checks": checks,
         "release_manifest": {
             "revision_asset_version_id": revision_asset_version_id,
@@ -127,6 +162,46 @@ def prepare_internal_release(
         },
         "publish_gate_contract_version": "internal-publish-gate-v3",
     }
+
+
+def _fixture_waiver_is_valid(
+    dimension: dict[str, Any],
+    *,
+    evidence_types: dict[str, dict[str, Any]],
+    project_id: str,
+    target_asset_version_id: str,
+) -> bool:
+    waiver = dimension.get("waiver")
+    if not isinstance(waiver, dict):
+        return False
+    approval = evidence_types.get("approval_decision") or evidence_types.get(
+        "operator_approval", {}
+    )
+    checklist = evidence_types.get("operator_checklist", {})
+    expiry = str(waiver.get("expiry") or "")
+    try:
+        expires_at = datetime.fromisoformat(expiry.replace("Z", "+00:00"))
+    except ValueError:
+        return False
+    scope = waiver.get("scope")
+    return (
+        expires_at.tzinfo is not None
+        and expires_at > datetime.now(timezone.utc)
+        and waiver.get("contract_version") == "fixture-quality-waiver-v1"
+        and waiver.get("fixture_protocol_only") is True
+        and waiver.get("production_verified") is False
+        and waiver.get("dimension") == dimension.get("dimension")
+        and waiver.get("approval_asset_version_id")
+        == approval.get("asset_version_id")
+        and waiver.get("checklist_asset_version_id")
+        == checklist.get("asset_version_id")
+        and isinstance(scope, dict)
+        and scope.get("project_id") == project_id
+        and scope.get("scope_type") == "PROJECT_FIXTURE"
+        and waiver.get("target_asset_version_id")
+        == target_asset_version_id
+        and scope.get("release_readiness") == "INTERNAL_REVIEW_RELEASE"
+    )
 
 
 def build_export_blob_manifest(

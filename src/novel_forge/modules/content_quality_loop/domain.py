@@ -89,7 +89,10 @@ def evaluate_quality_evidence(
     blocking = [
         item for item in dimensions
         if item["blocking"] and item["gate_status"] not in {
-            "PASSED", "PASSED_WITH_WARNINGS", "WAIVED_BY_APPROVAL"
+            "PASSED",
+            "PASSED_WITH_WARNINGS",
+            "PASSED_WITH_UNCALIBRATED",
+            "WAIVED_BY_APPROVAL",
         }
     ]
     scored = [item for item in dimensions if isinstance(item["score"], (int, float)) and item["weight"] > 0]
@@ -113,7 +116,10 @@ def evaluate_quality_evidence(
                 "UNCALIBRATED", "FIXTURE_UNCALIBRATED", "PROVIDER_UNCALIBRATED"
             }
         ],
-        "fixture": all(item["source"] in {"fixture", "none", "deterministic_extractor"} for item in dimensions),
+        "fixture": any(
+            item["calibration_status"] == "FIXTURE_UNCALIBRATED"
+            for item in dimensions
+        ),
         "production_verified": False,
         "provider_verified": any(bool(item.get("provider_verified")) for item in dimensions),
         "human_verified": any(bool(item.get("human_verified")) for item in dimensions),
@@ -162,6 +168,7 @@ def _normalize_evidence_dimension(
         human_verified=bool(report.get("human_verified")),
         quality_profile_version_id=str(report.get("quality_profile_version_id") or ""),
         platform_profile_version_id=str(report.get("platform_profile_version_id") or ""),
+        waiver=dict(report.get("waiver") or {}),
     )
 
 

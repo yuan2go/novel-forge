@@ -7,15 +7,21 @@ runtime facts.  The scheduler only coordinates them.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any, Protocol
 from uuid import NAMESPACE_URL, uuid4, uuid5
 
 from psycopg.types.json import Jsonb
 
+from novel_forge.modules.agent_collaboration.application import (
+    AgentCollaborationApplication,
+)
 from novel_forge.modules.agent_collaboration.domain import (
+    AgentCollaborationSession,
     AgentMessageType,
     AgentWorkOrder,
+    CollaborationStateMachine,
+    SessionStatus,
 )
 from novel_forge.modules.command_kernel.attempt_runtime import (
     WorkerLeaseCommand,
@@ -37,8 +43,11 @@ from novel_forge.modules.command_kernel.deadline_runtime import (
 )
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.command_kernel.external_effect_runtime import (
+    EffectRecoveryDisposition,
     EffectCommandContext,
+    classify_external_effect_recovery,
     reconcile_external_effect,
+    resume_operation_from_completed_effect,
 )
 from novel_forge.modules.command_kernel.lease_heartbeat import LeaseHeartbeatGuard
 from novel_forge.modules.command_kernel.worker_execution import (
@@ -48,6 +57,7 @@ from novel_forge.modules.command_kernel.worker_execution import (
 from novel_forge.modules.production_execution.domain_execution import (
     DomainExecutionPort,
 )
+from novel_forge.modules.production_execution.contracts import ExecutionRecoveryAction
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 from .contracts import AgentRuntimeBinding
@@ -109,7 +119,8 @@ class AgentExecutionPreparer(Protocol):
         *,
         operation: dict[str, Any],
         attempt_id: str,
-        fencing_token: int,
+        execution_fencing_token: int,
+        recovery_fencing_token: int,
         worker_id: str,
     ) -> PreparedAgentExecution: ...
 
@@ -188,29 +199,47 @@ class AgentAuthorityScheduler:
         if attempt_status in {"QUEUED", "LEASED"}:
             start_attempt(self.database_url, worker)
         try:
-            self._reconcile_required_effects(operation)
+            collaboration_session_id = self._collaboration_session_for_attempt(
+                operation=operation,
+                attempt_id=attempt_id,
+                recovery_mode=recovery_mode,
+            )
+            execution_operation = {
+                **operation,
+                "command_payload": {
+                    **operation["command_payload"],
+                    "collaboration_session_id": collaboration_session_id,
+                },
+            }
             frozen_binding = self._runtime_binding(attempt_id)
             execution_fence = (
                 int(frozen_binding["fencing_token"])
                 if frozen_binding is not None
                 else worker.fencing_token
             )
+            self._reconcile_required_effects(
+                execution_operation,
+                worker=worker,
+                execution_fencing_token=execution_fence,
+            )
             prepared = self.execution_preparer.prepare(
-                operation=operation,
+                operation=execution_operation,
                 attempt_id=attempt_id,
-                fencing_token=execution_fence,
+                execution_fencing_token=execution_fence,
+                recovery_fencing_token=worker.fencing_token,
                 worker_id=self.worker_id,
             )
             work_order = build_agent_work_order(
-                operation=operation,
+                operation=execution_operation,
                 attempt_id=attempt_id,
-                fencing_token=execution_fence,
+                fencing_token=worker.fencing_token,
                 prepared=prepared,
             )
             runtime_binding = build_runtime_binding(
-                operation=operation,
+                operation=execution_operation,
                 work_order=work_order,
                 prepared=prepared,
+                execution_fencing_token=execution_fence,
             )
             self._freeze_turn(work_order, runtime_binding)
             with LeaseHeartbeatGuard(
@@ -506,22 +535,135 @@ class AgentAuthorityScheduler:
             "work_order_id": str(row[2]),
         }
 
-    def _reconcile_required_effects(self, operation: dict[str, Any]) -> None:
+    def _collaboration_session_for_attempt(
+        self,
+        *,
+        operation: dict[str, Any],
+        attempt_id: str,
+        recovery_mode: str,
+    ) -> str:
+        operation_id = str(operation["operation_id"])
+        base_session_id = str(
+            operation["command_payload"]["collaboration_session_id"]
+        )
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            repository = uow.repositories.agent_collaboration
+            uow.cursor.execute(
+                """
+                SELECT session_id
+                FROM authority_agent_collaboration_session
+                WHERE attempt_id=%s AND created_operation_id=%s
+                """,
+                [attempt_id, operation_id],
+            )
+            row = uow.cursor.fetchone()
+            if row is not None:
+                return str(row[0])
+
+            base = repository.get_session(base_session_id)
+            if recovery_mode == "fresh_attempt" and not base.attempt_id:
+                bound = repository.update_session(
+                    replace(base, attempt_id=attempt_id)
+                )
+                uow.commit()
+                return bound.session_id
+            if base.attempt_id == attempt_id:
+                return base.session_id
+
+            uow.cursor.execute(
+                """
+                SELECT session_id
+                FROM authority_agent_collaboration_session
+                WHERE created_operation_id=%s AND attempt_id IS NOT NULL
+                ORDER BY created_at DESC, session_id DESC
+                LIMIT 1
+                """,
+                [operation_id],
+            )
+            prior_row = uow.cursor.fetchone()
+            prior = (
+                repository.get_session(str(prior_row[0]))
+                if prior_row is not None
+                else base
+            )
+            if prior.status not in {
+                SessionStatus.COMMITTED,
+                SessionStatus.REJECTED,
+                SessionStatus.CANCELLED,
+                SessionStatus.FAILED,
+            }:
+                repository.update_session(
+                    CollaborationStateMachine.transition(
+                        prior, SessionStatus.FAILED
+                    )
+                )
+            session_id = str(
+                uuid5(
+                    NAMESPACE_URL,
+                    f"novel-forge:agent-retry-session:{attempt_id}",
+                )
+            )
+            application = AgentCollaborationApplication(repository)
+            created = application.create_collaboration_session(
+                AgentCollaborationSession(
+                    session_id=session_id,
+                    project_id=prior.project_id,
+                    owner_authority=prior.owner_authority,
+                    business_goal=prior.business_goal,
+                    issue_type=prior.issue_type,
+                    scope_snapshot_ref="",
+                    participant_snapshot_ref="",
+                    current_candidate_version_ref="",
+                    status=SessionStatus.CREATED,
+                    round_number=0,
+                    turn_number=0,
+                    execution_count=0,
+                    spent_budget=0,
+                    budget_ref=prior.budget_ref,
+                    termination_policy_ref=prior.termination_policy_ref,
+                    created_operation_id=operation_id,
+                    saga_id=prior.saga_id,
+                    authority_decision_ref="",
+                    last_turn_id="",
+                    attempt_id=attempt_id,
+                )
+            )
+            application.freeze_scope(
+                created.session_id,
+                repository.get_scope_snapshot(prior.scope_snapshot_ref),
+            )
+            application.assign_participants(
+                created.session_id,
+                repository.get_participant_snapshot(
+                    prior.participant_snapshot_ref
+                ),
+            )
+            uow.commit()
+            return created.session_id
+
+    def _reconcile_required_effects(
+        self,
+        operation: dict[str, Any],
+        *,
+        worker: WorkerLeaseCommand,
+        execution_fencing_token: int,
+    ) -> None:
         adapter = getattr(self.execution_preparer, "adapter", None)
         if adapter is None:
             return
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
-                SELECT external_effect_id
+                SELECT external_effect_id, status, request_payload,
+                       provider_request_id
                 FROM authority_external_effect
                 WHERE operation_id=%s
-                  AND status IN ('UNKNOWN','RECONCILIATION_REQUIRED')
+                  AND effect_type='model.invoke'
                 ORDER BY created_at, external_effect_id
                 """,
                 [operation["operation_id"]],
             )
-            effect_ids = [str(row[0]) for row in uow.cursor.fetchall()]
+            effects = tuple(uow.cursor.fetchall())
         context = EffectCommandContext(
             operation_id=str(operation["operation_id"]),
             project_id=str(operation["project_id"]),
@@ -529,12 +671,81 @@ class AgentAuthorityScheduler:
             trace_id=str(operation["trace_id"]),
             correlation_id=str(operation["correlation_id"]),
         )
-        for effect_id in effect_ids:
+        for (
+            effect_id_value,
+            effect_status,
+            request_payload,
+            _provider_request_id,
+        ) in effects:
+            effect_id = str(effect_id_value)
+            metadata = (
+                request_payload.get("_production_execution")
+                if isinstance(request_payload, dict)
+                else None
+            )
+            if not isinstance(metadata, dict):
+                raise KernelError(
+                    "AGENT_EXECUTION_IDENTITY_INVALID",
+                    "ExternalEffect lacks frozen execution identity",
+                )
+            if str(metadata.get("attempt_id") or "") != worker.attempt_id:
+                continue
+            disposition = classify_external_effect_recovery(str(effect_status))
+            if disposition is EffectRecoveryDisposition.DISPATCH_PLANNED:
+                continue
+            if disposition is EffectRecoveryDisposition.CONSUME_SUCCEEDED:
+                resume_operation_from_completed_effect(
+                    self.database_url,
+                    context,
+                    effect_id=effect_id,
+                )
+                continue
+            if disposition is EffectRecoveryDisposition.RETRY_POLICY:
+                raise KernelError(
+                    "AGENT_EXTERNAL_EFFECT_RETRY_REQUIRED",
+                    "Provider retry requires a new Authority Attempt",
+                )
+            if disposition is EffectRecoveryDisposition.TERMINAL_FAILURE:
+                raise KernelError(
+                    "AGENT_EXTERNAL_EFFECT_FINAL_FAILURE",
+                    "Provider Final Failure cannot be recovered as success",
+                )
+            if disposition is EffectRecoveryDisposition.TERMINAL_CANCELLED:
+                raise KernelError(
+                    "AGENT_EXTERNAL_EFFECT_CANCELLED",
+                    "cancelled Provider execution cannot produce a Candidate",
+                )
+            if disposition is EffectRecoveryDisposition.OPERATOR_RECONCILIATION:
+                raise KernelError(
+                    "AGENT_EXTERNAL_EFFECT_OPERATOR_RECONCILIATION_REQUIRED",
+                    "ExternalEffect status requires operator reconciliation",
+                )
+            frozen_fence = int(
+                metadata.get("fencing_token") or execution_fencing_token
+            )
+            authorize = getattr(adapter, "for_recovery", None)
+            if not callable(authorize):
+                raise KernelError(
+                    "AGENT_EXECUTION_RECOVERY_AUTHORIZATION_MISSING",
+                    "ExternalEffect reconciliation requires a recovery-capable adapter",
+                )
+            recovery_adapter = authorize(
+                execution_id=f"chapter-execution:{effect_id}",
+                external_effect_id=effect_id,
+                operation_id=str(operation["operation_id"]),
+                attempt_id=worker.attempt_id,
+                execution_fencing_token=frozen_fence,
+                recovery_fencing_token=worker.fencing_token,
+                recovery_worker_id=worker.worker_id,
+                action=ExecutionRecoveryAction.QUERY,
+                trace_id=str(operation["trace_id"]),
+                correlation_id=str(operation["correlation_id"]),
+            )
             result = reconcile_external_effect(
                 self.database_url,
                 context,
                 effect_id=effect_id,
-                adapter=adapter,
+                adapter=recovery_adapter,
             )
             if result["outcome"] == "ambiguous":
                 raise KernelError(
@@ -599,6 +810,7 @@ def build_runtime_binding(
     operation: dict[str, Any],
     work_order: AgentWorkOrder,
     prepared: PreparedAgentExecution,
+    execution_fencing_token: int | None = None,
 ) -> AgentRuntimeBinding:
     command = dict(operation["command_payload"])
     definition = dict(operation["definition_snapshot"])
@@ -620,7 +832,11 @@ def build_runtime_binding(
         operation_definition_hash=str(definition["definition_hash"]),
         operation_id=work_order.operation_id,
         attempt_id=work_order.attempt_id,
-        fencing_token=work_order.fencing_token,
+        fencing_token=(
+            work_order.fencing_token
+            if execution_fencing_token is None
+            else execution_fencing_token
+        ),
         work_order_id=work_order.work_order_id,
         agent_id=work_order.agent_id,
         agent_definition_version=work_order.agent_definition_version,

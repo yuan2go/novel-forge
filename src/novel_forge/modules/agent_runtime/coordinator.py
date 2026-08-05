@@ -12,6 +12,8 @@ from collections.abc import Callable
 from typing import Any
 from uuid import NAMESPACE_URL, uuid5
 
+from psycopg.types.json import Jsonb
+
 from novel_forge.modules.agent_collaboration.application import (
     AgentCollaborationApplication,
     TurnProcessingResult,
@@ -21,6 +23,8 @@ from novel_forge.modules.agent_collaboration.domain import (
     AgentWorkOrder,
     CollaborationDecision,
     CollaborationDecisionType,
+    CollaborationStateMachine,
+    SessionStatus,
 )
 from novel_forge.modules.agent_collaboration.repository import CollaborationCommit
 from novel_forge.modules.command_kernel.errors import KernelError
@@ -177,11 +181,145 @@ class AgentTurnExecutionCoordinator:
                     envelope,
                     execution_evidence=evidence,
                 )
+                if result.candidate_version_id:
+                    self._record_candidate_supersession(
+                        uow,
+                        work_order=work_order,
+                        superseding_candidate_version_id=(result.candidate_version_id),
+                    )
                 uow.commit()
             self.fault_injector("after_candidate_persist")
             return result
         except (TypeError, ValueError) as exc:
             raise KernelError("AGENT_CANDIDATE_VALIDATION_FAILED", str(exc)) from exc
+
+    @staticmethod
+    def _record_candidate_supersession(
+        uow: AuthorityUnitOfWork,
+        *,
+        work_order: AgentWorkOrder,
+        superseding_candidate_version_id: str,
+    ) -> None:
+        uow.cursor.execute(
+            """
+            SELECT candidate.candidate_version_id, turn.attempt_id,
+                   attempt.error, attempt.result,
+                   current_lease.fencing_token, current_lease.owner,
+                   candidate.session_id
+            FROM authority_agent_candidate_version AS candidate
+            JOIN authority_agent_collaboration_turn AS turn
+              ON turn.turn_id=candidate.originating_turn_id
+            JOIN authority_attempt AS attempt
+              ON attempt.attempt_id=turn.attempt_id
+            JOIN authority_attempt AS current_attempt
+              ON current_attempt.attempt_id=%s
+            JOIN authority_lease_acquisition AS current_lease
+              ON current_lease.attempt_id=current_attempt.attempt_id
+             AND current_lease.status='HELD'
+             AND current_lease.expires_at > NOW()
+            LEFT JOIN authority_agent_candidate_supersession AS supersession
+              ON supersession.superseded_candidate_version_id=
+                 candidate.candidate_version_id
+            LEFT JOIN authority_agent_collaboration_commit AS collaboration_commit
+              ON collaboration_commit.candidate_version_id=
+                 candidate.candidate_version_id
+            WHERE turn.operation_id=%s
+              AND attempt.attempt_number < current_attempt.attempt_number
+              AND supersession.supersession_id IS NULL
+              AND collaboration_commit.commit_id IS NULL
+            ORDER BY attempt.attempt_number DESC, candidate.created_at DESC
+            LIMIT 1
+            """,
+            [work_order.attempt_id, work_order.operation_id],
+        )
+        prior = uow.cursor.fetchone()
+        if prior is None:
+            return
+        superseded_candidate_id = str(prior[0])
+        superseded_attempt_id = str(prior[1])
+        supersession_id = agent_turn_identity(
+            "candidate-supersession",
+            f"{superseded_candidate_id}:{superseding_candidate_version_id}",
+        )
+        failure_reason = {
+            "attempt_id": superseded_attempt_id,
+            "error": dict(prior[2] or {}),
+            "result": dict(prior[3] or {}),
+        }
+        recovery_fencing_token = int(prior[4])
+        recovery_worker_id = str(prior[5])
+        superseded_session_id = str(prior[6])
+        uow.cursor.execute(
+            """
+            INSERT INTO authority_agent_candidate_supersession(
+                supersession_id, project_id, operation_id,
+                superseded_attempt_id, superseding_attempt_id,
+                superseded_candidate_version_id,
+                superseding_candidate_version_id,
+                recovery_fencing_token, created_by_worker,
+                failure_reason, retry_policy_ref
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT(supersession_id) DO NOTHING
+            """,
+            [
+                supersession_id,
+                work_order.project_id,
+                work_order.operation_id,
+                superseded_attempt_id,
+                work_order.attempt_id,
+                superseded_candidate_id,
+                superseding_candidate_version_id,
+                recovery_fencing_token,
+                recovery_worker_id,
+                Jsonb(failure_reason),
+                work_order.failure_policy,
+            ],
+        )
+        event_id = agent_turn_identity("candidate-supersession-event", supersession_id)
+        uow.repositories.operation_graph.record_event(
+            {
+                "event_id": event_id,
+                "audit_id": agent_turn_identity(
+                    "candidate-supersession-audit", supersession_id
+                ),
+                "outbox_id": agent_turn_identity(
+                    "candidate-supersession-outbox", supersession_id
+                ),
+                "aggregate_type": "authority_agent_candidate_supersession",
+                "aggregate_id": supersession_id,
+                "operation_id": work_order.operation_id,
+                "project_id": work_order.project_id,
+                "event_type": "authority.agent.candidate.superseded",
+                "correlation_id": work_order.operation_id,
+                "causation_id": work_order.turn_id,
+                "payload": {
+                    "supersession_id": supersession_id,
+                    "superseded_attempt_id": superseded_attempt_id,
+                    "superseding_attempt_id": work_order.attempt_id,
+                    "superseded_candidate_version_id": (superseded_candidate_id),
+                    "superseding_candidate_version_id": (
+                        superseding_candidate_version_id
+                    ),
+                    "failure_reason": failure_reason,
+                    "retry_policy_ref": work_order.failure_policy,
+                },
+            }
+        )
+        superseded_session = uow.repositories.agent_collaboration.get_session(
+            superseded_session_id
+        )
+        if superseded_session.status not in {
+            SessionStatus.COMMITTED,
+            SessionStatus.REJECTED,
+            SessionStatus.CANCELLED,
+            SessionStatus.FAILED,
+        }:
+            uow.repositories.agent_collaboration.update_session(
+                CollaborationStateMachine.transition(
+                    superseded_session,
+                    SessionStatus.FAILED,
+                )
+            )
 
     def execute_candidate(
         self, work_order: AgentWorkOrder, execution_port: DomainExecutionPort

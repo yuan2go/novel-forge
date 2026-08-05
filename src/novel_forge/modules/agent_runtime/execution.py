@@ -42,7 +42,9 @@ from novel_forge.modules.production_execution.domain_execution import (
     DomainExecutionCommand,
     DomainExecutionEvidence,
 )
+from novel_forge.modules.production_execution.contracts import ExecutionRecoveryAction
 from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+from novel_forge.storage.database_runtime import get_database_runtime
 
 from .scheduler import PreparedAgentExecution
 
@@ -102,7 +104,8 @@ class ChapterGatewayAgentExecutionPreparer:
         *,
         operation: dict[str, Any],
         attempt_id: str,
-        fencing_token: int,
+        execution_fencing_token: int,
+        recovery_fencing_token: int,
         worker_id: str,
     ) -> PreparedAgentExecution:
         if worker_id != self.worker_id:
@@ -134,6 +137,12 @@ class ChapterGatewayAgentExecutionPreparer:
             correlation_id=str(operation["correlation_id"]),
         )
         stable_key = f"{operation['operation_id']}:{attempt_id}:{stage}:agent-v1"
+        execution_fencing_token, execution_worker_id = self._execution_identity(
+            operation=operation,
+            attempt_id=attempt_id,
+            stable_key=stable_key,
+            execution_fencing_token=execution_fencing_token,
+        )
         payload = {
             "stage": stage,
             "input": _stage_payload(stage, inputs),
@@ -143,10 +152,10 @@ class ChapterGatewayAgentExecutionPreparer:
             "_production_execution": {
                 "operation_id": str(operation["operation_id"]),
                 "attempt_id": attempt_id,
-                "fencing_token": fencing_token,
+                "fencing_token": execution_fencing_token,
                 "project_id": str(operation["project_id"]),
                 "workspace_id": str(operation["workspace_id"]),
-                "worker_id": self.worker_id,
+                "worker_id": execution_worker_id,
                 "chapter": int(command["chapter_number"]),
                 "book_id": str(command["book_id"]),
                 "route_provider": self.adapter.provider_id_for_stage(stage),
@@ -183,6 +192,23 @@ class ChapterGatewayAgentExecutionPreparer:
             reconciliation_mode=self.adapter.reconciliation_mode,
             provider_capability_profile=self.adapter.capability_profile.to_dict(),
         )
+        effect_adapter: Any = self.adapter
+        if bool(effect.get("replayed")):
+            effect_adapter = self.adapter.for_recovery(
+                execution_id=(
+                    "chapter-execution:" + str(effect["external_effect_id"])
+                ),
+                external_effect_id=str(effect["external_effect_id"]),
+                operation_id=str(operation["operation_id"]),
+                attempt_id=attempt_id,
+                execution_fencing_token=execution_fencing_token,
+                recovery_fencing_token=recovery_fencing_token,
+                recovery_worker_id=worker_id,
+                action=ExecutionRecoveryAction.DISPATCH_PLANNED,
+                trace_id=str(operation["trace_id"]),
+                correlation_id=str(operation["correlation_id"]),
+            )
+            effect_adapter.record_authorization()
         reservation = reserve_provider_budget(
             self.database_url,
             BudgetReservationRequest(
@@ -209,20 +235,78 @@ class ChapterGatewayAgentExecutionPreparer:
         return PreparedAgentExecution(
             execution_port=_ExternalEffectPepAgentPort(
                 database_url=self.database_url,
-                adapter=self.adapter,
-                worker_id=self.worker_id,
+                adapter=effect_adapter,
+                worker_id=worker_id,
                 lease_seconds=self.lease_seconds,
                 effect_context=effect_context,
                 external_effect_id=str(effect["external_effect_id"]),
                 stable_key=stable_key,
                 reservation_id=str(reservation["reservation_id"]),
                 binding=binding,
+                recovery_fencing_token=recovery_fencing_token,
                 operation=operation,
                 inputs=inputs,
                 evidence_writer=self.evidence_writer,
             ),
             **contracts,
         )
+
+    def _execution_identity(
+        self,
+        *,
+        operation: dict[str, Any],
+        attempt_id: str,
+        stable_key: str,
+        execution_fencing_token: int,
+    ) -> tuple[int, str]:
+        runtime = get_database_runtime(self.database_url)
+        with runtime.connection() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT request_payload
+                    FROM authority_external_effect
+                    WHERE project_id=%s AND operation_id=%s
+                      AND effect_type='model.invoke'
+                      AND stable_idempotency_key=%s
+                    """,
+                    [
+                        str(operation["project_id"]),
+                        str(operation["operation_id"]),
+                        stable_key,
+                    ],
+                )
+                row = cursor.fetchone()
+        if row is None:
+            return execution_fencing_token, self.worker_id
+        payload = row[0]
+        metadata = (
+            payload.get("_production_execution")
+            if isinstance(payload, dict)
+            else None
+        )
+        if not isinstance(metadata, dict):
+            raise KernelError(
+                "AGENT_EXECUTION_IDENTITY_INVALID",
+                "replayed ExternalEffect has no frozen execution identity",
+            )
+        if str(metadata.get("attempt_id") or "") != attempt_id:
+            raise KernelError(
+                "AGENT_EXECUTION_IDENTITY_CONFLICT",
+                "replayed ExternalEffect belongs to another Attempt",
+            )
+        frozen_fence = int(metadata.get("fencing_token") or 0)
+        execution_worker_id = str(metadata.get("worker_id") or "")
+        if (
+            frozen_fence <= 0
+            or frozen_fence > execution_fencing_token
+            or not execution_worker_id
+        ):
+            raise KernelError(
+                "AGENT_EXECUTION_IDENTITY_INVALID",
+                "replayed ExternalEffect has invalid frozen execution identity",
+            )
+        return frozen_fence, execution_worker_id
 
     def _input_assets(
         self, *, project_id: str, asset_version_ids: tuple[str, ...]
@@ -274,7 +358,7 @@ class ChapterGatewayAgentExecutionPreparer:
 @dataclass(slots=True)
 class _ExternalEffectPepAgentPort:
     database_url: str
-    adapter: ProductionExecutionGatewayExternalEffectAdapter
+    adapter: Any
     worker_id: str
     lease_seconds: int
     effect_context: EffectCommandContext
@@ -282,6 +366,7 @@ class _ExternalEffectPepAgentPort:
     stable_key: str
     reservation_id: str
     binding: ChapterExecutionBinding
+    recovery_fencing_token: int
     operation: dict[str, Any]
     inputs: tuple[ChapterInputAsset, ...]
     evidence_writer: ExternalEffectChapterModelPort
@@ -435,7 +520,7 @@ class _ExternalEffectPepAgentPort:
                 execution_id=self.binding.request.execution_id,
                 operation_id=self.binding.request.operation_id,
                 attempt_id=self.binding.request.attempt_id,
-                fencing_token=self.binding.request.fencing_token,
+                fencing_token=self.recovery_fencing_token,
                 capability=self.binding.request.capability,
                 backend_id=str(execution_handle.get("backend_id") or ""),
                 route_snapshot_id=self.binding.request.route_snapshot_id,
