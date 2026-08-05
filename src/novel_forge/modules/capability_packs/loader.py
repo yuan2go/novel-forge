@@ -41,10 +41,10 @@ def load_capability_pack(path: str | Path) -> CapabilityPackManifest:
                 f"pack file exceeds {MAX_CAPABILITY_PACK_BYTES} bytes",
             )
         text = raw.decode("utf-8", errors="strict")
-        payload = json.loads(text)
+        payload = json.loads(text, object_pairs_hook=_unique_object)
     except CapabilityPackLoadError:
         raise
-    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError, ValueError) as exc:
         raise CapabilityPackLoadError(
             "CAPABILITY_PACK_JSON_INVALID", "$", f"pack is not valid UTF-8 JSON: {exc}"
         ) from exc
@@ -69,6 +69,15 @@ def load_capability_pack_payload(
             "CAPABILITY_PACK_JSON_INVALID", "$", f"pack payload is not JSON-compatible: {exc}"
         ) from exc
     return CapabilityPackManifest.from_dict(normalized)
+
+
+def _unique_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    value: dict[str, Any] = {}
+    for key, item in pairs:
+        if key in value:
+            raise ValueError(f"duplicate JSON object key: {key}")
+        value[key] = item
+    return value
 
 
 def _copy_json_value(value: Any, *, path: str, root: bool = False) -> Any:

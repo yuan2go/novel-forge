@@ -154,6 +154,81 @@ class CapabilityPackValidatorTests(unittest.TestCase):
                     self._codes(payload),
                 )
 
+    def test_unknown_nested_core_field_fails_closed(self) -> None:
+        payload = self._payload()
+        payload["runtime_contract"]["execution"]["silent_fallback"] = True
+
+        self.assertIn("CAPABILITY_PACK_PROTOCOL_INVALID", self._codes(payload))
+
+    def test_missing_deep_required_field_is_reported(self) -> None:
+        payload = self._payload()
+        del payload["tool_permissions"]["database"]["read_allowed"]
+
+        self.assertIn("CAPABILITY_PACK_REQUIRED_FIELD_MISSING", self._codes(payload))
+
+    def test_all_referenced_capabilities_must_be_declared(self) -> None:
+        payload = self._payload()
+        payload["compatibility"]["required_capabilities"].remove(
+            "prose.chapter.draft"
+        )
+
+        self.assertIn(
+            "CAPABILITY_PACK_CAPABILITY_DECLARATION_MISSING",
+            self._codes(payload),
+        )
+
+    def test_skill_dependency_cycle_fails(self) -> None:
+        payload = self._payload()
+        payload["skill_binding"]["skills"][0]["depends_on"] = [
+            "canon-continuity-graph"
+        ]
+
+        self.assertIn("CAPABILITY_PACK_SKILL_DEPENDENCY_CYCLE", self._codes(payload))
+
+    def test_duplicate_tool_ref_fails(self) -> None:
+        payload = self._payload()
+        payload["tool_permissions"]["tools"].append(
+            copy.deepcopy(payload["tool_permissions"]["tools"][0])
+        )
+
+        self.assertIn("CAPABILITY_PACK_TOOL_DUPLICATE", self._codes(payload))
+
+    def test_tool_operation_must_reference_workflow_node(self) -> None:
+        payload = self._payload()
+        payload["tool_permissions"]["tools"][0]["allowed_operations"].append(
+            "missing-node"
+        )
+
+        self.assertIn("CAPABILITY_PACK_TOOL_POLICY_INVALID", self._codes(payload))
+
+    def test_database_table_allow_and_forbid_overlap_fails(self) -> None:
+        payload = self._payload()
+        payload["tool_permissions"]["database"]["allowed_tables"] = [
+            "legacy_assets"
+        ]
+
+        self.assertIn("CAPABILITY_PACK_TOOL_POLICY_INVALID", self._codes(payload))
+
+    def test_duplicate_evaluation_gate_fails(self) -> None:
+        payload = self._payload()
+        payload["evaluation"]["required_gates"].append(
+            copy.deepcopy(payload["evaluation"]["required_gates"][0])
+        )
+
+        self.assertIn("CAPABILITY_PACK_EVALUATION_INVALID", self._codes(payload))
+
+    def test_invalid_governance_canary_percentage_fails(self) -> None:
+        payload = self._payload()
+        payload["governance"]["rollout"]["canary_percent"] = 101
+
+        self.assertIn("CAPABILITY_PACK_GOVERNANCE_INVALID", self._codes(payload))
+
+    def test_nested_extension_cannot_shadow_core_section(self) -> None:
+        payload = self._payload()
+        payload["ext"]["ui"]["panel"] = {"runtime_contract": {}}
+
+        self.assertIn("CAPABILITY_PACK_EXTENSION_INVALID", self._codes(payload))
+
     def test_manifest_hash_is_deterministic(self) -> None:
         payload = self._payload()
         reordered = dict(reversed(tuple(payload.items())))
@@ -394,6 +469,15 @@ class CapabilityPackValidatorTests(unittest.TestCase):
             path.write_text("{invalid", encoding="utf-8")
             with self.assertRaises(CapabilityPackLoadError) as raised:
                 load_capability_pack(path)
+        self.assertEqual(raised.exception.issue.code, "CAPABILITY_PACK_JSON_INVALID")
+
+    def test_loader_rejects_duplicate_json_object_keys(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "pack.json"
+            path.write_text('{"identity": {}, "identity": {}}', encoding="utf-8")
+            with self.assertRaises(CapabilityPackLoadError) as raised:
+                load_capability_pack(path)
+
         self.assertEqual(raised.exception.issue.code, "CAPABILITY_PACK_JSON_INVALID")
 
     def test_loader_rejects_non_object_root(self) -> None:

@@ -19,6 +19,7 @@ from novel_forge.modules.chapter_authority.definitions import (
 )
 
 from .errors import CapabilityPackValidationIssue, CapabilityPackValidationReport
+from .protocol import validate_protocol_contract
 from .schema import (
     CAPABILITY_PACK_SCHEMA_VERSION,
     CapabilityPackManifest,
@@ -140,6 +141,11 @@ class _IssueCollector:
             CapabilityPackValidationIssue(code, path, message, "WARNING")
         )
 
+    def extend_errors(
+        self, values: tuple[CapabilityPackValidationIssue, ...]
+    ) -> None:
+        self.errors.extend(values)
+
 
 def validate_capability_pack(
     manifest: CapabilityPackManifest,
@@ -152,9 +158,8 @@ def validate_capability_pack(
     payload = manifest.to_dict()
     policy_class = _PackPolicyClass.derive(manifest)
 
-    _validate_top_level(payload, manifest, issues)
-    _validate_required_protocol_fields(payload, issues)
-    _validate_protocol_types(payload, issues)
+    issues.extend_errors(validate_protocol_contract(payload))
+    _validate_schema_version(manifest, issues)
     _validate_identity(manifest, issues)
     _validate_compatibility(manifest, registry, resolved, issues)
     _validate_role(manifest, issues)
@@ -187,8 +192,7 @@ def validate_capability_pack(
     )
 
 
-def _validate_top_level(
-    payload: Mapping[str, Any],
+def _validate_schema_version(
     manifest: CapabilityPackManifest,
     issues: _IssueCollector,
 ) -> None:
@@ -198,26 +202,6 @@ def _validate_top_level(
             "$.schema_version",
             f"schema_version must be {CAPABILITY_PACK_SCHEMA_VERSION}",
         )
-    for field in _TOP_LEVEL_FIELDS:
-        if field not in payload:
-            issues.error(
-                "CAPABILITY_PACK_REQUIRED_FIELD_MISSING",
-                f"$.{field}",
-                "required top-level field is missing",
-            )
-    for field in sorted(set(payload) - set(_TOP_LEVEL_FIELDS)):
-        issues.error(
-            "CAPABILITY_PACK_PROTOCOL_INVALID",
-            f"$.{field}",
-            "unknown top-level fields must be placed under an allowed ext namespace",
-        )
-    for field in _TOP_LEVEL_OBJECTS:
-        if field in payload and not isinstance(payload[field], dict):
-            issues.error(
-                "CAPABILITY_PACK_PROTOCOL_INVALID",
-                f"$.{field}",
-                "top-level section must be an object",
-            )
 
 
 def _validate_required_protocol_fields(
