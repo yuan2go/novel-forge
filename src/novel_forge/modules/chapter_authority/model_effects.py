@@ -1,6 +1,7 @@
 """Generic ExternalEffect-backed model boundary for chapter handlers."""
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 from typing import Any, Protocol
@@ -30,6 +31,20 @@ from novel_forge.modules.provider_control.contracts import (
     ProviderCapabilityProfile,
     ProviderControlLevel,
 )
+
+
+AGENT_MODEL_STAGES = frozenset({
+    "draft",
+    "review",
+    "revision",
+    "rereview",
+    "canon_extraction",
+    "quality_structural",
+    "quality_commercial",
+    "quality_source_originality",
+    "quality_longform",
+    "quality_platform",
+})
 
 
 class LegacyChapterModelAdapter(Protocol):
@@ -168,6 +183,26 @@ class ChapterAgentBindingRecorder(Protocol):
     def record_compatibility_usage(
         self, request: ChapterHandlerRequest, *, stage: str
     ) -> None: ...
+
+    def finalize_domain_commit(
+        self,
+        *,
+        project_id: str,
+        operation_id: str,
+        attempt_id: str,
+        fencing_token: int,
+        asset_version_id: str,
+        content_hash: str,
+    ) -> Any: ...
+
+    def record_domain_rejection(
+        self,
+        *,
+        project_id: str,
+        operation_id: str,
+        attempt_id: str,
+        error_code: str,
+    ) -> bool: ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -508,6 +543,7 @@ class ExternalEffectChapterModelPort:
         budget_caps: dict[str, str] | None = None,
         agent_binding_recorder: ChapterAgentBindingRecorder | None = None,
         agent_binding_required: bool = False,
+        fault_injector: Callable[[str], None] | None = None,
     ) -> None:
         if not database_url or not worker_id or lease_seconds <= 0:
             raise ValueError("model effect database, worker, and lease are required")
@@ -524,6 +560,7 @@ class ExternalEffectChapterModelPort:
         self.budget_caps = dict(budget_caps or {})
         self.agent_binding_recorder = agent_binding_recorder
         self.agent_binding_required = agent_binding_required
+        self.fault_injector = fault_injector or (lambda _checkpoint: None)
         if agent_binding_required and agent_binding_recorder is None:
             raise ValueError("production Chapter model execution requires Agent Binding")
         self.query = AuthorityAssetQuery(database_url)
@@ -536,12 +573,7 @@ class ExternalEffectChapterModelPort:
         stage: str,
         payload: dict[str, Any],
     ) -> ModelProviderResult:
-        if stage not in {
-            "draft", "review", "revision", "rereview", "canon_extraction",
-            "quality_structural", "quality_commercial",
-            "quality_source_originality", "quality_longform", "quality_platform",
-            "reader_outcome",
-        }:
+        if stage not in AGENT_MODEL_STAGES | {"reader_outcome"}:
             raise KernelError("MODEL_EFFECT_STAGE_UNSUPPORTED", f"unsupported model stage: {stage}")
         logical_ref = _model_log_ref(request.operation_id, stage)
         business_payload = (
@@ -628,6 +660,7 @@ class ExternalEffectChapterModelPort:
                 else dict(self.adapter.capability_profile)
             ),
         )
+        self.fault_injector("after_external_effect_plan")
         reservation = reserve_provider_budget(
             self.database_url,
             BudgetReservationRequest(
@@ -683,10 +716,24 @@ class ExternalEffectChapterModelPort:
             recorder = self.agent_binding_recorder
             if recorder is not None:
                 recorder.record_compatibility_usage(request, stage=stage)
-        completed = self._completed_effect_result(
+        completed = self.completed_effect_result(
             str(effect["external_effect_id"]), request.project_id
         )
         if completed is not None:
+            settle_provider_budget(
+                self.database_url,
+                reservation_id=str(reservation["reservation_id"]),
+                project_id=request.project_id,
+                actual_amount=completed.cost_amount,
+                actual_tokens=completed.total_tokens,
+                evidence={
+                    "provider_id": completed.provider_id,
+                    "model_id": completed.model_id,
+                    "real_model_call": completed.real_model_call,
+                    "fixture": not completed.real_model_call,
+                    "recovered_completed_effect": True,
+                },
+            )
             self._record_model_call(request, stage, completed, logical_ref)
             self._ensure_cost_evidence(request, stage, completed)
             if frozen_work_order is not None and execution_binding is not None:
@@ -720,6 +767,7 @@ class ExternalEffectChapterModelPort:
             )
             raise KernelError("MODEL_EFFECT_NOT_FINAL", "model effect did not complete successfully")
         result = ModelProviderResult.from_evidence(dict(dispatched["provider_evidence"]))
+        self.fault_injector("after_provider_success")
         settle_provider_budget(
             self.database_url,
             reservation_id=str(reservation["reservation_id"]),
@@ -757,9 +805,11 @@ class ExternalEffectChapterModelPort:
         )
         self._ensure_cost_evidence(request, stage, result)
 
-    def _completed_effect_result(
+    def completed_effect_result(
         self, external_effect_id: str, project_id: str
     ) -> ModelProviderResult | None:
+        """Return durable provider evidence without dispatching the effect again."""
+
         runtime = get_database_runtime(self.database_url)
         with runtime.connection() as connection:
             with connection.cursor() as cursor:

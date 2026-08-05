@@ -7,7 +7,12 @@ from typing import Any
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
-from .contracts import derive_agent_run_status
+from .contracts import (
+    AgentDomainCommitStatus,
+    AgentExecutionEmbedding,
+    AgentSchedulingAuthority,
+    derive_agent_run_status,
+)
 
 
 class AgentRuntimeQuery:
@@ -31,6 +36,65 @@ class AgentRuntimeQuery:
                 activation_status=activation_status,
                 limit=limit,
             )
+
+    def recovery_health(self, *, project_id: str = "") -> dict[str, Any]:
+        """Aggregate derived recovery backlog without creating runtime state."""
+
+        project_clause = "AND operation.project_id=%s" if project_id else ""
+        parameters: list[Any] = [project_id] if project_id else []
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                f"""
+                SELECT
+                    COUNT(DISTINCT binding.binding_id) FILTER (WHERE attempt.status IN (
+                        'RUNNING','CHECKPOINTED','LEASED','RESULT_SUBMITTED'
+                    )),
+                    COUNT(DISTINCT effect.external_effect_id) FILTER (WHERE effect.status IN (
+                        'UNKNOWN','RECONCILIATION_REQUIRED'
+                    )),
+                    EXTRACT(EPOCH FROM (
+                        NOW() - MIN(binding.created_at) FILTER (
+                            WHERE attempt.status IN (
+                                'RUNNING','CHECKPOINTED','LEASED','RESULT_SUBMITTED'
+                            )
+                        )
+                    )),
+                    COUNT(DISTINCT candidate.candidate_version_id) FILTER (
+                        WHERE candidate.candidate_version_id IS NOT NULL
+                          AND commit.commit_id IS NULL
+                          AND operation.definition_name<>'agent.candidate.execute'
+                    ),
+                    COUNT(DISTINCT binding.binding_id) FILTER (
+                        WHERE candidate.candidate_version_id IS NULL
+                          AND attempt.status IN (
+                              'RUNNING','CHECKPOINTED','LEASED','RESULT_SUBMITTED'
+                          )
+                    )
+                FROM authority_agent_runtime_binding AS binding
+                JOIN authority_operation AS operation
+                  ON operation.operation_id=binding.operation_id
+                JOIN authority_attempt AS attempt
+                  ON attempt.attempt_id=binding.attempt_id
+                LEFT JOIN authority_external_effect AS effect
+                  ON effect.operation_id=binding.operation_id
+                LEFT JOIN authority_agent_work_order AS work_order
+                  ON work_order.work_order_id=binding.work_order_id
+                LEFT JOIN authority_agent_candidate_version AS candidate
+                  ON candidate.originating_turn_id=work_order.turn_id
+                LEFT JOIN authority_agent_collaboration_commit AS commit
+                  ON commit.candidate_version_id=candidate.candidate_version_id
+                WHERE TRUE {project_clause}
+                """,
+                parameters,
+            )
+            row = uow.cursor.fetchone()
+        return {
+            "recoverable_runtime_binding_count": int(row[0] or 0),
+            "unknown_external_effect_count": int(row[1] or 0),
+            "oldest_recovery_age_seconds": int(row[2] or 0),
+            "candidate_without_domain_commit_count": int(row[3] or 0),
+            "frozen_binding_without_final_result_count": int(row[4] or 0),
+        }
 
     def list_runs(
         self,
@@ -139,9 +203,7 @@ class AgentRuntimeQuery:
             rows = uow.cursor.fetchall()
         return [self._run_summary(row) for row in rows]
 
-    def require_run(
-        self, *, project_id: str, agent_run_id: str
-    ) -> dict[str, Any]:
+    def require_run(self, *, project_id: str, agent_run_id: str) -> dict[str, Any]:
         runs = self._run_header(project_id=project_id, agent_run_id=agent_run_id)
         if runs is None:
             raise KernelError(
@@ -441,6 +503,13 @@ class AgentRuntimeQuery:
                 for row in cursor.fetchall()
             ]
             collaboration = self._collaboration_projection(cursor, operation_id)
+            domain_resolution = _domain_resolution_projection(
+                collaboration,
+                standalone=(
+                    str(runs["operation_definition_ref"]).split("@", 1)[0]
+                    == "agent.candidate.execute"
+                ),
+            )
         return {
             **runs,
             "attempts": attempts,
@@ -480,12 +549,11 @@ class AgentRuntimeQuery:
             "cancellation": cancellations,
             "audit": audit,
             "collaboration": collaboration,
+            **domain_resolution,
             "retry_count": max(0, len(attempts) - 1),
             "recovery": {
                 "checkpointed_attempts": [
-                    item["attempt_id"]
-                    for item in attempts
-                    if item["checkpoint"]
+                    item["attempt_id"] for item in attempts if item["checkpoint"]
                 ],
                 "reconciliation_required": any(
                     item["status"] in {"UNKNOWN", "RECONCILIATION_REQUIRED"}
@@ -523,10 +591,16 @@ class AgentRuntimeQuery:
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
-                SELECT output.operation_id, operation.root_operation_id
+                SELECT output.operation_id, operation.root_operation_id,
+                       commit.commit_id, commit.candidate_version_id,
+                       commit.decision_id, commit.attempt_id,
+                       commit.fencing_token, commit.content_hash,
+                       commit.receipt_ref
                 FROM authority_operation_output_asset AS output
                 JOIN authority_operation AS operation
                   ON operation.operation_id=output.operation_id
+                LEFT JOIN authority_agent_collaboration_commit AS commit
+                  ON commit.asset_version_id=output.asset_version_id
                 WHERE output.asset_version_id=%s
                   AND operation.project_id=%s
                 ORDER BY output.created_at DESC
@@ -536,17 +610,27 @@ class AgentRuntimeQuery:
             )
             row = uow.cursor.fetchone()
             if row is not None:
+                exact = bool(row[2])
                 uow.cursor.execute(
-                    """
-                    SELECT DISTINCT binding.operation_id
-                    FROM authority_agent_runtime_binding AS binding
-                    JOIN authority_operation AS operation
-                      ON operation.operation_id=binding.operation_id
-                    WHERE operation.project_id=%s
-                      AND operation.root_operation_id=%s
-                    ORDER BY binding.operation_id
-                    """,
-                    [project_id, str(row[1])],
+                    (
+                        """
+                        SELECT DISTINCT binding.operation_id
+                        FROM authority_agent_runtime_binding AS binding
+                        WHERE binding.project_id=%s AND binding.operation_id=%s
+                        ORDER BY binding.operation_id
+                        """
+                        if exact
+                        else """
+                        SELECT DISTINCT binding.operation_id
+                        FROM authority_agent_runtime_binding AS binding
+                        JOIN authority_operation AS operation
+                          ON operation.operation_id=binding.operation_id
+                        WHERE operation.project_id=%s
+                          AND operation.root_operation_id=%s
+                        ORDER BY binding.operation_id
+                        """
+                    ),
+                    [project_id, str(row[0] if exact else row[1])],
                 )
                 agent_operation_ids = [str(item[0]) for item in uow.cursor.fetchall()]
         if row is None:
@@ -559,10 +643,33 @@ class AgentRuntimeQuery:
                 "AGENT_ASSET_LINEAGE_NOT_FOUND",
                 "AssetVersion root workflow contains no Agent Runtime binding",
             )
+        same_operation_binding = str(row[0]) in agent_operation_ids
         return {
             "final_asset_version_id": asset_version_id,
             "producing_operation_id": str(row[0]),
             "root_operation_id": str(row[1]),
+            "lineage_strength": (
+                "EXACT_COLLABORATION_COMMIT"
+                if row[2]
+                else (
+                    "SAME_OPERATION_BINDING"
+                    if same_operation_binding
+                    else "SAME_ROOT_WORKFLOW_ONLY"
+                )
+            ),
+            "exact_collaboration_commit": (
+                {
+                    "commit_id": str(row[2]),
+                    "candidate_version_id": str(row[3]),
+                    "decision_id": str(row[4]),
+                    "attempt_id": str(row[5] or ""),
+                    "fencing_token": int(row[6] or 0),
+                    "content_hash": str(row[7] or ""),
+                    "receipt_ref": str(row[8] or ""),
+                }
+                if row[2]
+                else {}
+            ),
             "agent_runs": [
                 self.require_run(
                     project_id=project_id,
@@ -575,16 +682,13 @@ class AgentRuntimeQuery:
     def _run_header(
         self, *, project_id: str, agent_run_id: str
     ) -> dict[str, Any] | None:
-        rows = self.list_runs(
-            project_id=project_id, agent_run_id=agent_run_id, limit=1
-        )
-        return next(
-            (row for row in rows if row["agent_run_id"] == agent_run_id), None
-        )
+        rows = self.list_runs(project_id=project_id, agent_run_id=agent_run_id, limit=1)
+        return next((row for row in rows if row["agent_run_id"] == agent_run_id), None)
 
     @staticmethod
     def _run_summary(row: tuple[Any, ...]) -> dict[str, Any]:
         operation_status = str(row[9])
+        standalone = str(row[7]) == "agent.candidate.execute"
         attempt_status = str(row[13] or "")
         external_effect_status = str(row[18] or "")
         return {
@@ -597,6 +701,16 @@ class AgentRuntimeQuery:
             "agent_definition_version": int(row[5] or 0),
             "capability_id": row[6],
             "operation_definition_ref": f"{row[7]}@{row[8]}",
+            "execution_embedding": (
+                AgentExecutionEmbedding.STANDALONE_CANDIDATE_OPERATION.value
+                if standalone
+                else AgentExecutionEmbedding.EMBEDDED_DOMAIN_ATTEMPT.value
+            ),
+            "scheduling_authority": (
+                AgentSchedulingAuthority.AGENT_RUNTIME_AUTHORITY.value
+                if standalone
+                else AgentSchedulingAuthority.CHAPTER_AUTHORITY.value
+            ),
             "status": derive_agent_run_status(
                 operation_status=operation_status,
                 attempt_status=attempt_status,
@@ -649,7 +763,8 @@ class AgentRuntimeQuery:
                    candidate.content_ref,
                    decision.decision_id, decision.decision_type,
                    commit.commit_id, commit.asset_version_id,
-                   commit.receipt_ref
+                   commit.receipt_ref, commit.attempt_id,
+                   commit.fencing_token, commit.content_hash
             FROM authority_agent_work_order AS work_order
             JOIN authority_agent_collaboration_session AS session
               ON session.session_id=work_order.session_id
@@ -707,6 +822,9 @@ class AgentRuntimeQuery:
                 "commit_id": row[22] or "",
                 "asset_version_id": row[23] or "",
                 "receipt_ref": row[24] or "",
+                "attempt_id": row[25] or "",
+                "fencing_token": int(row[26] or 0),
+                "content_hash": row[27] or "",
             },
         }
 
@@ -715,6 +833,35 @@ def _outputs_of_type(
     outputs: list[dict[str, Any]], asset_type: str
 ) -> list[dict[str, Any]]:
     return [item for item in outputs if item["asset_type"] == asset_type]
+
+
+def _domain_resolution_projection(
+    collaboration: dict[str, Any], *, standalone: bool
+) -> dict[str, str]:
+    candidate = str(
+        collaboration.get("candidate", {}).get("candidate_version_id") or ""
+    )
+    decision = str(collaboration.get("decision", {}).get("decision_type") or "")
+    commit = str(collaboration.get("commit", {}).get("commit_id") or "")
+    asset = str(collaboration.get("commit", {}).get("asset_version_id") or "")
+    candidate_status = "CANDIDATE_READY" if candidate else "CANDIDATE_NOT_CREATED"
+    if commit:
+        domain_status = AgentDomainCommitStatus.DOMAIN_COMMITTED.value
+    elif decision in {"REPAIR_REQUIRED", "REPLAN_REQUIRED"}:
+        domain_status = AgentDomainCommitStatus.REPAIR_REQUIRED.value
+    elif decision == "REJECTED":
+        domain_status = AgentDomainCommitStatus.REJECTED.value
+    elif candidate and not standalone:
+        domain_status = AgentDomainCommitStatus.DOMAIN_DECISION_PENDING.value
+    else:
+        domain_status = AgentDomainCommitStatus.NOT_REQUESTED.value
+    return {
+        "candidate_status": candidate_status,
+        "domain_resolution_status": domain_status,
+        "authority_decision_status": decision or "NOT_REQUESTED",
+        "domain_commit_status": domain_status,
+        "final_asset_version_id": asset,
+    }
 
 
 def _usage_projection(outputs: list[dict[str, Any]]) -> list[dict[str, Any]]:

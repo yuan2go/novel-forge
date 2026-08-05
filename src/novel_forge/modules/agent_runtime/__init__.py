@@ -14,6 +14,10 @@ from .chapter_binding import (
     FrozenChapterAgentWorkOrder,
     PostgresChapterAgentBindingRecorder,
 )
+from .coordinator import (
+    AgentTurnExecutionCoordinator,
+    ExistingDomainAssetCommit,
+)
 
 __all__ = [
     "AgentCapabilityExecutionMapping",
@@ -26,4 +30,6 @@ __all__ = [
     "derive_agent_run_status",
     "FrozenChapterAgentWorkOrder",
     "PostgresChapterAgentBindingRecorder",
+    "AgentTurnExecutionCoordinator",
+    "ExistingDomainAssetCommit",
 ]

@@ -1,6 +1,7 @@
 """Durable Chapter Saga scheduler over the shared Command Kernel primitives."""
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
@@ -19,6 +20,10 @@ from novel_forge.modules.chapter_authority.orchestrator import (
     _input_nodes,
 )
 from novel_forge.modules.chapter_authority.runtime import execute_chapter_handler
+from novel_forge.modules.chapter_authority.model_effects import (
+    AGENT_MODEL_STAGES,
+    ChapterAgentBindingRecorder,
+)
 from novel_forge.modules.command_kernel.attempt_runtime import (
     WorkerLeaseCommand,
     WorkerResultCommand,
@@ -38,6 +43,10 @@ from novel_forge.modules.command_kernel.worker_execution import (
     WorkerFailureClassifier,
 )
 from novel_forge.modules.command_kernel.external_effect_adapters import ExternalEffectAdapter
+from novel_forge.modules.command_kernel.external_effect_runtime import (
+    EffectCommandContext,
+    reconcile_external_effect,
+)
 from novel_forge.modules.command_kernel.cancellation import acknowledge_worker_cancellation
 from novel_forge.modules.canon_graph.approval_authority import (
     advance_canon_reextraction,
@@ -95,6 +104,9 @@ class ChapterAuthorityScheduler:
         worker_id: str,
         permissions: frozenset[str],
         lease_seconds: int = 30,
+        agent_binding_recorder: ChapterAgentBindingRecorder | None = None,
+        fault_injector: Callable[[str], None] | None = None,
+        model_effect_adapter: ExternalEffectAdapter | None = None,
     ) -> None:
         if not worker_id or lease_seconds <= 0:
             raise ValueError("configured worker identity and positive lease are required")
@@ -104,6 +116,9 @@ class ChapterAuthorityScheduler:
         self.worker_id = worker_id
         self.permissions = permissions
         self.lease_seconds = lease_seconds
+        self.agent_binding_recorder = agent_binding_recorder
+        self.fault_injector = fault_injector or (lambda _checkpoint: None)
+        self.model_effect_adapter = model_effect_adapter
 
     def tick(self, *, project_id: str, root_operation_id: str) -> ChapterSchedulerTick:
         root, saga, children = self._graph_state(project_id, root_operation_id)
@@ -199,6 +214,25 @@ class ChapterAuthorityScheduler:
                 "CHAPTER_SCHEDULER_STATE_RACE",
                 "scheduler selected an already completed node",
             )
+        if (
+            operation["status"] in {
+                "WAITING_EXTERNAL_RESULT",
+                "RECONCILIATION_REQUIRED",
+            }
+            and node.value in AGENT_MODEL_STAGES
+        ):
+            recovery_outcome = self._reconcile_agent_effects(request, operation)
+            operation = self._child(str(operation["operation_id"]), project_id)
+            if operation["status"] == "RECONCILIATION_REQUIRED":
+                return ChapterSchedulerTick(
+                    root_operation_id=root_operation_id,
+                    saga_id=saga["saga_id"],
+                    saga_status="WAITING_EXTERNAL_RESULT",
+                    operation_id=str(operation["operation_id"]),
+                    node=node.value,
+                    operation_status=str(operation["status"]),
+                    recovery_mode=recovery_outcome,
+                )
         recovery_mode = self._execute_node(request, node, operation)
         final = coordinate_saga(self.database_url, context, saga["saga_id"])
         status = self._operation_status(str(operation["operation_id"]), project_id)
@@ -539,7 +573,12 @@ class ChapterAuthorityScheduler:
                 correlation_id=request.correlation_id,
             )
             attempt_status = "QUEUED"
-        elif operation["status"] == "EXECUTING" and active is not None:
+        elif operation["status"] in {
+            "EXECUTING",
+            "WAITING_EXTERNAL_RESULT",
+            "RECONCILIATION_REQUIRED",
+            "CANCELLATION_REQUESTED",
+        } and active is not None:
             attempt_id = active["attempt_id"]
             attempt_status = active["status"]
             recovery_mode = "lease_takeover"
@@ -590,6 +629,19 @@ class ChapterAuthorityScheduler:
                         project_id=project_id,
                     ),
                 )
+                self.fault_injector("after_domain_asset_materialized")
+                if (
+                    self.agent_binding_recorder is not None
+                    and node.value in AGENT_MODEL_STAGES
+                ):
+                    self.agent_binding_recorder.finalize_domain_commit(
+                        project_id=project_id,
+                        operation_id=operation_id,
+                        attempt_id=attempt_id,
+                        fencing_token=worker.fencing_token,
+                        asset_version_id=output.asset_version_id,
+                        content_hash=output.content_hash,
+                    )
                 if node is ChapterNode.EXPORT:
                     deliver_export(
                         self.database_url,
@@ -607,6 +659,7 @@ class ChapterAuthorityScheduler:
                     )
             with AuthorityUnitOfWork(self.database_url) as uow:
                 state = uow.repositories.attempt_runtime.operation_state(operation_id, project_id)
+            self.fault_injector("before_attempt_result_submission")
             submit_attempt_result(
                 self.database_url,
                 WorkerResultCommand(
@@ -623,6 +676,18 @@ class ChapterAuthorityScheduler:
             )
         except Exception as exc:
             classification = WorkerFailureClassifier.classify(exc)
+            if (
+                self.agent_binding_recorder is not None
+                and isinstance(exc, KernelError)
+                and _is_domain_validation_failure(exc.code)
+                and node.value in AGENT_MODEL_STAGES
+            ):
+                self.agent_binding_recorder.record_domain_rejection(
+                    project_id=project_id,
+                    operation_id=operation_id,
+                    attempt_id=attempt_id,
+                    error_code=exc.code,
+                )
             if classification is WorkerFailureClass.CANCELLATION:
                 with AuthorityUnitOfWork(self.database_url) as uow:
                     current = uow.repositories.attempt_runtime.operation_state(
@@ -835,6 +900,63 @@ class ChapterAuthorityScheduler:
         with AuthorityUnitOfWork(self.database_url) as uow:
             state = uow.repositories.attempt_runtime.operation_state(operation_id, project_id)
         return str(state["status"])
+
+    def _reconcile_agent_effects(
+        self,
+        request: SingleChapterRequest,
+        operation: dict[str, Any],
+    ) -> str:
+        if self.model_effect_adapter is None:
+            raise KernelError(
+                "CHAPTER_AGENT_RECONCILER_MISSING",
+                "Agent-bound Chapter recovery requires its model effect adapter",
+            )
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT external_effect_id
+                FROM authority_external_effect
+                WHERE operation_id=%s
+                  AND status IN ('UNKNOWN','RECONCILIATION_REQUIRED')
+                ORDER BY created_at, external_effect_id
+                """,
+                [operation["operation_id"]],
+            )
+            effect_ids = [str(row[0]) for row in uow.cursor.fetchall()]
+        if not effect_ids:
+            raise KernelError(
+                "CHAPTER_AGENT_RECONCILIATION_EVIDENCE_MISSING",
+                "reconciliation-required Chapter Operation has no uncertain ExternalEffect",
+            )
+        context = EffectCommandContext(
+            operation_id=str(operation["operation_id"]),
+            project_id=request.project_id,
+            actor_id=self.worker_id,
+            trace_id=request.trace_id,
+            correlation_id=request.correlation_id,
+        )
+        outcomes = []
+        for effect_id in effect_ids:
+            outcomes.append(
+                str(
+                    reconcile_external_effect(
+                        self.database_url,
+                        context,
+                        effect_id=effect_id,
+                        adapter=self.model_effect_adapter,
+                    )["outcome"]
+                )
+            )
+        if "ambiguous" in outcomes:
+            return "external_effect_reconciliation_required"
+        return "external_effect_reconciled:" + ",".join(outcomes)
+
+
+def _is_domain_validation_failure(error_code: str) -> bool:
+    return error_code.startswith((
+        "CHAPTER_HANDLER_", "PUBLISH_GATE_", "QUALITY_", "CANON_",
+        "REVISION_", "REVIEW_",
+    ))
 
 
 __all__ = ["ChapterAuthorityScheduler", "ChapterSchedulerTick"]

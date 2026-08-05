@@ -10,11 +10,27 @@ from novel_forge.modules.agent_runtime.contracts import (
     ChapterNodeExecutionBinding,
     derive_agent_run_status,
 )
+from novel_forge.modules.agent_runtime.queries import _domain_resolution_projection
 
 
 HASH_A = "sha256:" + "a" * 64
 HASH_B = "sha256:" + "b" * 64
 HASH_C = "sha256:" + "c" * 64
+
+
+def test_candidate_only_and_embedded_domain_resolution_are_distinct() -> None:
+    collaboration = {
+        "candidate": {"candidate_version_id": "candidate-1"},
+        "decision": {},
+        "commit": {},
+    }
+
+    standalone = _domain_resolution_projection(collaboration, standalone=True)
+    embedded = _domain_resolution_projection(collaboration, standalone=False)
+
+    assert standalone["candidate_status"] == "CANDIDATE_READY"
+    assert standalone["domain_commit_status"] == "NOT_REQUESTED"
+    assert embedded["domain_commit_status"] == "DOMAIN_DECISION_PENDING"
 
 
 def test_agent_run_status_is_derived_from_kernel_facts() -> None:

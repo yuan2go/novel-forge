@@ -557,11 +557,19 @@ class AgentCollaborationApplication:
         return evaluation
 
     def request_authority_decision(
-        self, session_id: str
+        self, session_id: str, *, domain_candidate_validated: bool = False
     ) -> AgentCollaborationSession:
         session = self.repository.get_session(session_id)
         if any(item.is_blocking for item in self.repository.conflicts(session_id)):
             raise ValueError("blocking conflict prevents Authority decision request")
+        if domain_candidate_validated and session.status is SessionStatus.DELIBERATING:
+            if not session.current_candidate_version_ref:
+                raise ValueError("Domain validation requires a current CandidateVersion")
+            session = self.repository.update_session(
+                CollaborationStateMachine.transition(
+                    session, SessionStatus.CONSENSUS_REACHED
+                )
+            )
         updated = CollaborationStateMachine.transition(
             session, SessionStatus.AUTHORITY_DECISION_PENDING
         )
@@ -666,6 +674,9 @@ class AgentCollaborationApplication:
                 candidate.candidate_version_id
             ),
             receipt_ref=str(external.get("receipt_ref") or ""),
+            attempt_id=str(external.get("attempt_id") or ""),
+            fencing_token=int(external.get("fencing_token") or 0),
+            content_hash=str(external.get("content_hash") or ""),
         )
         if not commit.commit_id or not commit.asset_version_id:
             raise ValueError("Authority commit did not return versioned asset evidence")
@@ -933,7 +944,8 @@ class AgentCollaborationApplication:
         )
         if actual != expected:
             raise ValueError(
-                "PEP execution evidence differs from the frozen Agent work order"
+                "PEP execution evidence differs from the frozen Agent work order: "
+                f"expected={expected!r}, actual={actual!r}"
             )
         if not all(
             (

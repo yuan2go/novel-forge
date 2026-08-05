@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from decimal import Decimal
+from collections.abc import Callable
 from typing import Any
 from uuid import NAMESPACE_URL, uuid5
 
@@ -23,6 +24,8 @@ from novel_forge.modules.agent_collaboration.domain import (
     AgentWorkOrder,
     AssetReadScope,
     AuthorityScope,
+    CollaborationDecision,
+    CollaborationDecisionType,
     KnowledgeVisibility,
     KnowledgeVisibilityScope,
     NarrativeScope,
@@ -34,12 +37,20 @@ from novel_forge.modules.agent_collaboration.domain import (
     SessionStatus,
     TemporalScope,
 )
+from novel_forge.modules.agent_collaboration.repository import CollaborationCommit
 from novel_forge.modules.agent_runtime.contracts import AgentRuntimeBinding
+from novel_forge.modules.agent_runtime.coordinator import (
+    AgentTurnExecutionCoordinator,
+    ExistingDomainAssetCommit,
+)
 from novel_forge.modules.chapter_authority.contracts import ChapterHandlerRequest
 from novel_forge.modules.chapter_authority.execution_gateway import (
     ChapterExecutionBinding,
 )
-from novel_forge.modules.chapter_authority.model_effects import ModelProviderResult
+from novel_forge.modules.chapter_authority.model_effects import (
+    AGENT_MODEL_STAGES,
+    ModelProviderResult,
+)
 from novel_forge.modules.command_kernel.asset_commands import AuthorityAssetWriteCommand
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.production_execution.domain_execution import (
@@ -49,20 +60,7 @@ from novel_forge.storage.authority_asset_store import AuthorityAssetWriter
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 
-AGENT_BOUND_CHAPTER_STAGES = frozenset(
-    {
-        "draft",
-        "review",
-        "revision",
-        "rereview",
-        "canon_extraction",
-        "quality_structural",
-        "quality_commercial",
-        "quality_source_originality",
-        "quality_longform",
-        "quality_platform",
-    }
-)
+AGENT_BOUND_CHAPTER_STAGES = AGENT_MODEL_STAGES
 
 
 @dataclass(frozen=True, slots=True)
@@ -85,6 +83,7 @@ class PostgresChapterAgentBindingRecorder:
         bound_stages: frozenset[str] = AGENT_BOUND_CHAPTER_STAGES,
         required_stages: frozenset[str] = frozenset(),
         compatibility_allowed: bool = True,
+        fault_injector: Callable[[str], None] | None = None,
     ) -> None:
         if not database_url or not workflow_definition_ref:
             raise ValueError("Chapter Agent Binding recorder is incomplete")
@@ -96,6 +95,9 @@ class PostgresChapterAgentBindingRecorder:
         self.required_stages = required_stages
         self.compatibility_allowed = compatibility_allowed
         self.legacy_writer = AuthorityAssetWriter(database_url)
+        self.turn_coordinator = AgentTurnExecutionCoordinator(
+            database_url, fault_injector=fault_injector
+        )
 
     def freeze(
         self,
@@ -160,10 +162,20 @@ class PostgresChapterAgentBindingRecorder:
             )
             chapter_number = _chapter_number(request, execution_binding)
             book_id = execution_binding.request.book_id
-            context = uow.repositories.asset_documents.require(
-                project_id=request.project_id,
-                asset_version_id=execution_binding.input_manifest.context_bundle_version,
+            context = next(
+                (
+                    item
+                    for item in request.inputs
+                    if item.asset_version_id
+                    == execution_binding.input_manifest.context_bundle_version
+                ),
+                None,
             )
+            if context is None:
+                raise KernelError(
+                    "CHAPTER_AGENT_CONTEXT_NOT_FROZEN",
+                    "Agent-bound Chapter node requires its Context Bundle in the frozen input set",
+                )
             if context.asset_type != "context_bundle":
                 raise KernelError(
                     "CHAPTER_AGENT_CONTEXT_NOT_FROZEN",
@@ -319,67 +331,66 @@ class PostgresChapterAgentBindingRecorder:
                 capability_version=int(capability["capability_version"]),
                 execution_capability=str(capability["execution_capability_id"]),
             )
-            collaboration.schedule_next_turn(work_order)
-            uow.repositories.agent_runtime.save_runtime_binding(
-                AgentRuntimeBinding(
-                    binding_id=_identity("chapter-agent-runtime-binding", request.attempt_id),
-                    project_id=request.project_id,
-                    workspace_id=request.workspace_id,
-                    book_id=book_id,
-                    workflow_definition_ref=self.workflow_definition_ref,
-                    workflow_node_id=stage,
-                    operation_definition_ref=(
-                        f"{operation['definition_name']}@{operation['definition_version']}"
-                    ),
-                    operation_definition_hash=str(operation["definition_hash"]),
-                    operation_id=request.operation_id,
-                    attempt_id=request.attempt_id,
-                    fencing_token=request.fencing_token,
-                    work_order_id=work_order.work_order_id,
-                    agent_id=work_order.agent_id,
-                    agent_definition_version=work_order.agent_definition_version,
-                    agent_definition_hash=str(agent["definition_hash"]),
-                    capability_id=work_order.capability,
-                    capability_version=work_order.capability_version,
-                    capability_hash=str(capability["capability_hash"]),
-                    execution_capability_id=work_order.execution_capability,
-                    chapter_node_binding_ref=(
-                        f"{node_binding['binding_id']}@{node_binding['binding_version']}"
-                    ),
-                    capability_pack_ref=str(node_binding["capability_pack_ref"]),
-                    capability_pack_compilation_hash=str(
-                        node_binding["capability_pack_compilation_hash"]
-                    ),
-                    context_bundle_asset_version_id=context.asset_version_id,
-                    context_bundle_hash=context.content_hash,
-                    prompt_bundle_ref=contracts["prompt_bundle_ref"],
-                    prompt_bundle_hash=contracts["prompt_bundle_hash"],
-                    skill_bundle_ref=contracts["skill_bundle_ref"],
-                    skill_bundle_hash=contracts["skill_bundle_hash"],
-                    tool_policy_ref=str(agent["tool_policy_ref"]),
-                    tool_policy_hash=str(agent["tool_policy_hash"]),
-                    tool_permission_snapshot_ref=contracts[
-                        "tool_permission_snapshot_ref"
-                    ],
-                    tool_permission_snapshot_hash=contracts[
-                        "tool_permission_snapshot_hash"
-                    ],
-                    context_policy_ref=contracts["context_policy_ref"],
-                    context_policy_hash=contracts["context_policy_hash"],
-                    route_snapshot_ref=contracts["route_snapshot_ref"],
-                    route_snapshot_hash=contracts["route_snapshot_hash"],
-                    input_manifest_ref=contracts["input_manifest_ref"],
-                    input_manifest_hash=contracts["input_manifest_hash"],
-                    budget_policy_ref=execution_binding.request.budget_policy_ref,
-                    timeout_policy_ref=execution_binding.request.timeout_policy_ref,
-                    approval_policy_ref=str(agent["approval_policy_ref"]),
-                    validation_policy_ref=execution_binding.request.validation_policy_ref,
-                    commit_policy_ref=execution_binding.request.commit_policy_ref,
-                    commit_authority=str(node_binding["commit_authority"]),
-                    release_sha=str(node_binding["release_sha"]),
-                )
+            runtime_binding = AgentRuntimeBinding(
+                binding_id=_identity(
+                    "chapter-agent-runtime-binding", request.attempt_id
+                ),
+                project_id=request.project_id,
+                workspace_id=request.workspace_id,
+                book_id=book_id,
+                workflow_definition_ref=self.workflow_definition_ref,
+                workflow_node_id=stage,
+                operation_definition_ref=(
+                    f"{operation['definition_name']}@{operation['definition_version']}"
+                ),
+                operation_definition_hash=str(operation["definition_hash"]),
+                operation_id=request.operation_id,
+                attempt_id=request.attempt_id,
+                fencing_token=request.fencing_token,
+                work_order_id=work_order.work_order_id,
+                agent_id=work_order.agent_id,
+                agent_definition_version=work_order.agent_definition_version,
+                agent_definition_hash=str(agent["definition_hash"]),
+                capability_id=work_order.capability,
+                capability_version=work_order.capability_version,
+                capability_hash=str(capability["capability_hash"]),
+                execution_capability_id=work_order.execution_capability,
+                chapter_node_binding_ref=(
+                    f"{node_binding['binding_id']}@{node_binding['binding_version']}"
+                ),
+                capability_pack_ref=str(node_binding["capability_pack_ref"]),
+                capability_pack_compilation_hash=str(
+                    node_binding["capability_pack_compilation_hash"]
+                ),
+                context_bundle_asset_version_id=context.asset_version_id,
+                context_bundle_hash=context.content_hash,
+                prompt_bundle_ref=contracts["prompt_bundle_ref"],
+                prompt_bundle_hash=contracts["prompt_bundle_hash"],
+                skill_bundle_ref=contracts["skill_bundle_ref"],
+                skill_bundle_hash=contracts["skill_bundle_hash"],
+                tool_policy_ref=str(agent["tool_policy_ref"]),
+                tool_policy_hash=str(agent["tool_policy_hash"]),
+                tool_permission_snapshot_ref=contracts["tool_permission_snapshot_ref"],
+                tool_permission_snapshot_hash=contracts[
+                    "tool_permission_snapshot_hash"
+                ],
+                context_policy_ref=contracts["context_policy_ref"],
+                context_policy_hash=contracts["context_policy_hash"],
+                route_snapshot_ref=contracts["route_snapshot_ref"],
+                route_snapshot_hash=contracts["route_snapshot_hash"],
+                input_manifest_ref=contracts["input_manifest_ref"],
+                input_manifest_hash=contracts["input_manifest_hash"],
+                budget_policy_ref=execution_binding.request.budget_policy_ref,
+                timeout_policy_ref=execution_binding.request.timeout_policy_ref,
+                approval_policy_ref=str(agent["approval_policy_ref"]),
+                validation_policy_ref=execution_binding.request.validation_policy_ref,
+                commit_policy_ref=execution_binding.request.commit_policy_ref,
+                commit_authority=str(node_binding["commit_authority"]),
+                release_sha=str(node_binding["release_sha"]),
             )
+            self.turn_coordinator.freeze_turn_in_uow(uow, work_order, runtime_binding)
             uow.commit()
+        self.turn_coordinator.fault_injector("after_runtime_binding_freeze")
         return FrozenChapterAgentWorkOrder(
             work_order=work_order,
             chapter_number=chapter_number,
@@ -453,21 +464,138 @@ class PostgresChapterAgentBindingRecorder:
             requested_next_action="DOMAIN_AUTHORITY_VALIDATE_AND_COMMIT",
             execution_evidence_ref=evidence.validation_manifest_ref,
         )
+        accepted = self.turn_coordinator.accept_envelope(work_order, envelope, evidence)
+        if not accepted.attempt_completion_allowed:
+            raise KernelError(
+                "CHAPTER_AGENT_CANDIDATE_REJECTED",
+                "Agent candidate failed collaboration scope validation",
+            )
+
+    def finalize_domain_commit(
+        self,
+        *,
+        project_id: str,
+        operation_id: str,
+        attempt_id: str,
+        fencing_token: int,
+        asset_version_id: str,
+        content_hash: str,
+    ) -> CollaborationCommit:
+        """Attach the accepted Candidate to the already materialized Chapter asset."""
+
         with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT work_order.session_id, candidate.candidate_version_id,
+                       binding.commit_policy_ref, binding.commit_authority,
+                       output.execution_evidence_ref
+                FROM authority_agent_runtime_binding AS binding
+                JOIN authority_agent_work_order AS work_order
+                  ON work_order.work_order_id=binding.work_order_id
+                JOIN authority_agent_candidate_version AS candidate
+                  ON candidate.originating_turn_id=work_order.turn_id
+                LEFT JOIN authority_agent_output_envelope AS output
+                  ON output.turn_id=work_order.turn_id
+                WHERE binding.project_id=%s AND binding.operation_id=%s
+                  AND binding.attempt_id=%s
+                  AND EXISTS (
+                      SELECT 1 FROM authority_lease_acquisition AS lease
+                      WHERE lease.attempt_id=binding.attempt_id
+                        AND lease.fencing_token=%s
+                        AND lease.status='HELD'
+                  )
+                """,
+                [project_id, operation_id, attempt_id, fencing_token],
+            )
+            row = uow.cursor.fetchone()
+        if row is None:
+            raise KernelError(
+                "CHAPTER_AGENT_CANDIDATE_MISSING",
+                "Agent-bound Chapter asset cannot complete without its Candidate",
+            )
+        return self.turn_coordinator.record_existing_domain_commit(
+            ExistingDomainAssetCommit(
+                project_id=project_id,
+                session_id=str(row[0]),
+                candidate_version_id=str(row[1]),
+                operation_id=operation_id,
+                attempt_id=attempt_id,
+                fencing_token=fencing_token,
+                asset_version_id=asset_version_id,
+                content_hash=content_hash,
+                commit_policy_ref=str(row[2]),
+                authority_type=str(row[3]),
+                receipt_ref=(
+                    f"authority-operation-output:{operation_id}:{asset_version_id}"
+                ),
+                decision_evidence=tuple(item for item in (str(row[4] or ""),) if item),
+            )
+        )
+
+    def record_domain_rejection(
+        self,
+        *,
+        project_id: str,
+        operation_id: str,
+        attempt_id: str,
+        error_code: str,
+    ) -> bool:
+        """Record Domain validation failure without creating an AssetVersion."""
+
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT session.session_id, candidate.candidate_version_id,
+                       binding.commit_authority, binding.commit_policy_ref,
+                       session.authority_decision_id
+                FROM authority_agent_runtime_binding AS binding
+                JOIN authority_agent_work_order AS work_order
+                  ON work_order.work_order_id=binding.work_order_id
+                JOIN authority_agent_collaboration_session AS session
+                  ON session.session_id=work_order.session_id
+                JOIN authority_agent_candidate_version AS candidate
+                  ON candidate.originating_turn_id=work_order.turn_id
+                WHERE binding.project_id=%s AND binding.operation_id=%s
+                  AND binding.attempt_id=%s
+                """,
+                [project_id, operation_id, attempt_id],
+            )
+            row = uow.cursor.fetchone()
+            if row is None:
+                uow.commit()
+                return False
+            if row[4]:
+                uow.commit()
+                return True
             application = AgentCollaborationApplication(
                 uow.repositories.agent_collaboration
             )
-            accepted = application.accept_agent_output(
-                work_order,
-                envelope,
-                execution_evidence=evidence,
+            application.request_authority_decision(
+                str(row[0]), domain_candidate_validated=True
             )
-            if not accepted.attempt_completion_allowed:
-                raise KernelError(
-                    "CHAPTER_AGENT_CANDIDATE_REJECTED",
-                    "Agent candidate failed collaboration scope validation",
+            application.apply_authority_decision(
+                CollaborationDecision(
+                    decision_id=_identity(
+                        "chapter-agent-domain-rejection", str(row[0])
+                    ),
+                    decision=CollaborationDecisionType.REPAIR_REQUIRED,
+                    authority_type=str(row[2]),
+                    authority_version=1,
+                    session_id=str(row[0]),
+                    candidate_version_id=str(row[1]),
+                    accepted_changes=(),
+                    rejected_changes=("domain handler rejected candidate",),
+                    deferred_changes=(),
+                    accepted_with_objections=(),
+                    unresolved_objections=(error_code,),
+                    required_followup=("repair candidate and rerun Domain validation",),
+                    affected_asset_versions=(),
+                    commit_policy_ref=str(row[3]),
+                    decision_evidence=(f"domain-error:{error_code}",),
                 )
+            )
             uow.commit()
+            return True
 
     def record_compatibility_usage(
         self, request: ChapterHandlerRequest, *, stage: str
@@ -608,8 +736,7 @@ def _validate_definition_binding(
     if drift:
         raise KernelError(
             "CHAPTER_AGENT_DEFINITION_BINDING_DRIFT",
-            "active Agent Definition differs from Chapter binding: "
-            + ", ".join(drift),
+            "active Agent Definition differs from Chapter binding: " + ", ".join(drift),
         )
 
 
@@ -626,9 +753,7 @@ def _execution_contracts(
         "skill_bundle_ref": binding.route_snapshot.skill_bundle_ref,
         "tool_permission_snapshot_ref": f"production_execution/tool_permissions/{suffix}",
         "context_policy_ref": (
-            "context-policy:"
-            + binding.request.capability.replace(".", "-")
-            + ":v1"
+            "context-policy:" + binding.request.capability.replace(".", "-") + ":v1"
         ),
     }
     frozen: dict[str, str] = {}

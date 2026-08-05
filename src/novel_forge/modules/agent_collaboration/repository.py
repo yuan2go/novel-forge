@@ -137,6 +137,9 @@ class CollaborationCommit:
     stable_idempotency_key: str
     source_lineage: tuple[str, ...]
     receipt_ref: str
+    attempt_id: str = ""
+    fencing_token: int = 0
+    content_hash: str = ""
 
 
 class InMemoryAgentCollaborationRepository:

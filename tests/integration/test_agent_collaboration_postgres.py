@@ -39,6 +39,13 @@ from novel_forge.storage.agent_collaboration_repositories import (
 )
 from tests.unit.test_agent_collaboration_pep import _gateway_port
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+from novel_forge.storage.authority_asset_store import AuthorityAssetWriter
+from novel_forge.modules.command_kernel.asset_commands import AuthorityAssetWriteCommand
+from novel_forge.modules.agent_runtime.coordinator import (
+    AgentTurnExecutionCoordinator,
+    ExistingDomainAssetCommit,
+)
+from novel_forge.modules.command_kernel.errors import KernelError
 from tests.integration.authority_postgres_support import (
     DATABASE_URL,
     connect,
@@ -71,6 +78,101 @@ class AgentCollaborationPostgresTests(unittest.TestCase):
         self._insert_authority_graph()
         self._register_agents()
         self._create_and_freeze_session()
+
+    def test_existing_domain_asset_commit_records_exact_attempt_lineage(self) -> None:
+        proposal = _envelope(
+            self.session_id, 1, AgentMessageType.PROPOSAL,
+            "character-design-agent",
+            candidate_version_id=f"{self.session_id}:candidate:exact",
+            content_ref="pep-evidence:exact-candidate",
+            structured_diff={"op": "create", "path": "/core_advantage"},
+        )
+        accepted = self._accept(1, proposal)
+        operation_id, attempt_id, fencing_token = self.turn_bindings[0]
+        document = AuthorityAssetWriter(DATABASE_URL).materialize_output(
+            AuthorityAssetWriteCommand(
+                operation_id=operation_id,
+                project_id=self.project_id,
+                asset_id=f"asset:exact:{self.session_id}",
+                asset_type="book_design",
+                schema_version="book-design.v1",
+                logical_ref=f"book_design/exact/{self.session_id}",
+                category="book_design",
+                output_key="book_design.exact",
+                role="primary",
+                content={"core_advantage": "costly promise", "fixture": True},
+                qualification_policy="fixture-domain-handler-v1",
+                trace_id=f"trace:{self.session_id}",
+                correlation_id=f"correlation:{self.session_id}",
+            )
+        )
+        command = ExistingDomainAssetCommit(
+            project_id=self.project_id,
+            session_id=self.session_id,
+            candidate_version_id=accepted.candidate_version_id,
+            operation_id=operation_id,
+            attempt_id=attempt_id,
+            fencing_token=fencing_token,
+            asset_version_id=document.asset_version_id,
+            content_hash=document.content_hash,
+            commit_policy_ref="commit-policy:book-design:v1",
+            authority_type="BOOK_DESIGN_AUTHORITY",
+            receipt_ref=f"operation-output:{document.asset_version_id}",
+            decision_evidence=(proposal.execution_evidence_ref,),
+        )
+        def crash_after_decision(checkpoint: str) -> None:
+            if checkpoint == "after_authority_decision":
+                raise RuntimeError("injected crash after authority decision")
+
+        with self.assertRaisesRegex(RuntimeError, "after authority decision"):
+            AgentTurnExecutionCoordinator(
+                DATABASE_URL, fault_injector=crash_after_decision
+            ).record_existing_domain_commit(command)
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                """
+                SELECT COUNT(*),
+                       (SELECT COUNT(*)
+                        FROM authority_agent_collaboration_commit
+                        WHERE candidate_version_id=%s)
+                FROM authority_agent_collaboration_decision
+                WHERE candidate_version_id=%s
+                """,
+                [accepted.candidate_version_id, accepted.candidate_version_id],
+            )
+            self.assertEqual(tuple(uow.cursor.fetchone()), (1, 0))
+
+        def crash_after_commit(checkpoint: str) -> None:
+            if checkpoint == "after_collaboration_commit":
+                raise RuntimeError("injected crash after collaboration commit")
+
+        with self.assertRaisesRegex(RuntimeError, "after collaboration commit"):
+            AgentTurnExecutionCoordinator(
+                DATABASE_URL, fault_injector=crash_after_commit
+            ).record_existing_domain_commit(command)
+        coordinator = AgentTurnExecutionCoordinator(DATABASE_URL)
+        commit = coordinator.record_existing_domain_commit(command)
+        replay = coordinator.record_existing_domain_commit(command)
+        self.assertEqual(commit, replay)
+        with self.assertRaisesRegex(KernelError, "different lineage"):
+            coordinator.record_existing_domain_commit(
+                replace(command, content_hash="sha256:" + "f" * 64)
+            )
+        self.assertEqual(commit.asset_version_id, document.asset_version_id)
+        self.assertEqual(commit.attempt_id, attempt_id)
+        self.assertEqual(commit.fencing_token, fencing_token)
+        self.assertEqual(commit.content_hash, document.content_hash)
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                """
+                SELECT COUNT(DISTINCT decision_id), COUNT(DISTINCT commit_id),
+                       COUNT(DISTINCT asset_version_id)
+                FROM authority_agent_collaboration_commit
+                WHERE candidate_version_id=%s
+                """,
+                [accepted.candidate_version_id],
+            )
+            self.assertEqual(tuple(uow.cursor.fetchone()), (1, 1, 1))
 
     def test_flow_recovers_across_connections_and_commits_authority_asset(self) -> None:
         proposal = _envelope(

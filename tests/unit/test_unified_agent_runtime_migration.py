@@ -14,7 +14,11 @@ def _sql() -> str:
 
 def test_unified_agent_runtime_migration_extends_linear_head() -> None:
     validate_migration_chain()
-    migration = MIGRATIONS[-1]
+    migration = next(
+        item
+        for item in MIGRATIONS
+        if item.migration_id == "20260805_0068_unified_agent_runtime"
+    )
     assert migration.migration_id == "20260805_0068_unified_agent_runtime"
     assert (
         migration.down_revision

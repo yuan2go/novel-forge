@@ -48,6 +48,28 @@ class AgentDefinitionActivationStatus(StrEnum):
     RETIRED = "RETIRED"
 
 
+class AgentExecutionEmbedding(StrEnum):
+    """Evidence about where the Agent turn is embedded, not lifecycle state."""
+
+    EMBEDDED_DOMAIN_ATTEMPT = "EMBEDDED_DOMAIN_ATTEMPT"
+    STANDALONE_CANDIDATE_OPERATION = "STANDALONE_CANDIDATE_OPERATION"
+
+
+class AgentSchedulingAuthority(StrEnum):
+    CHAPTER_AUTHORITY = "CHAPTER_AUTHORITY"
+    AGENT_RUNTIME_AUTHORITY = "AGENT_RUNTIME_AUTHORITY"
+
+
+class AgentDomainCommitStatus(StrEnum):
+    """Query-only status derived from Candidate, Decision, and Commit facts."""
+
+    NOT_REQUESTED = "NOT_REQUESTED"
+    DOMAIN_DECISION_PENDING = "DOMAIN_DECISION_PENDING"
+    REPAIR_REQUIRED = "REPAIR_REQUIRED"
+    REJECTED = "REJECTED"
+    DOMAIN_COMMITTED = "DOMAIN_COMMITTED"
+
+
 @dataclass(frozen=True, slots=True)
 class AgentCapabilityExecutionMapping:
     """One-to-one mapping to the existing PEP Capability Registry."""
@@ -427,6 +449,9 @@ def _hash(payload: Any) -> str:
 
 
 __all__ = [
+    "AgentDomainCommitStatus",
+    "AgentExecutionEmbedding",
+    "AgentSchedulingAuthority",
     "AgentCapabilityExecutionMapping",
     "AgentDefinitionActivation",
     "AgentDefinitionActivationStatus",

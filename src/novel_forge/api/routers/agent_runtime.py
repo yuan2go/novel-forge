@@ -184,6 +184,13 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
             limit=limit,
         )
 
+    @router.get("/health/recovery")
+    def agent_runtime_recovery_health(
+        project_id: str = Query(..., min_length=1)
+    ) -> dict[str, Any]:
+        _authorize("agent.authority.query", project_id)
+        return query.recovery_health(project_id=project_id)
+
     @router.get("/agent-runs/{agent_run_id}")
     def require_agent_run(
         agent_run_id: str, project_id: str = Query(..., min_length=1)

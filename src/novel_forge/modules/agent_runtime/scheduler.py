@@ -13,12 +13,8 @@ from uuid import NAMESPACE_URL, uuid4, uuid5
 
 from psycopg.types.json import Jsonb
 
-from novel_forge.modules.agent_collaboration.application import (
-    AgentCollaborationApplication,
-)
 from novel_forge.modules.agent_collaboration.domain import (
     AgentMessageType,
-    AgentOutputEnvelope,
     AgentWorkOrder,
 )
 from novel_forge.modules.command_kernel.attempt_runtime import (
@@ -40,19 +36,22 @@ from novel_forge.modules.command_kernel.deadline_runtime import (
     probe_operation_execution,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.command_kernel.external_effect_runtime import (
+    EffectCommandContext,
+    reconcile_external_effect,
+)
 from novel_forge.modules.command_kernel.lease_heartbeat import LeaseHeartbeatGuard
 from novel_forge.modules.command_kernel.worker_execution import (
     WorkerFailureClass,
     WorkerFailureClassifier,
 )
 from novel_forge.modules.production_execution.domain_execution import (
-    CandidateKind,
     DomainExecutionPort,
-    execute_domain_candidate,
 )
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 from .contracts import AgentRuntimeBinding
+from .coordinator import AgentTurnExecutionCoordinator
 
 
 @dataclass(frozen=True, slots=True)
@@ -92,17 +91,16 @@ class PreparedAgentExecution:
         )
         if any(not item.strip() for item in required):
             raise ValueError("prepared Agent execution references are incomplete")
-        if any(
-            not value.startswith("sha256:") or len(value) != 71
-            for value in hashes
-        ):
+        if any(not value.startswith("sha256:") or len(value) != 71 for value in hashes):
             raise ValueError("prepared Agent execution hashes must be SHA-256")
         if not getattr(self.execution_port, "external_effect_backed", False):
             raise ValueError("Agent execution port must be ExternalEffect-backed")
         if not getattr(
             self.execution_port, "production_execution_gateway_backed", False
         ):
-            raise ValueError("Agent execution port must use Production Execution Gateway")
+            raise ValueError(
+                "Agent execution port must use Production Execution Gateway"
+            )
 
 
 class AgentExecutionPreparer(Protocol):
@@ -143,6 +141,7 @@ class AgentAuthorityScheduler:
         self.execution_preparer = execution_preparer
         self.worker_id = worker_id
         self.lease_seconds = lease_seconds
+        self.turn_coordinator = AgentTurnExecutionCoordinator(database_url)
 
     def pending_runs(self, *, limit: int = 20) -> tuple[tuple[str, str], ...]:
         if limit <= 0 or limit > 500:
@@ -153,13 +152,10 @@ class AgentAuthorityScheduler:
                 SELECT project_id, operation_id
                 FROM authority_operation
                 WHERE definition_name='agent.candidate.execute'
-                  AND status IN ('READY', 'FAILED_RETRYABLE', 'EXECUTING')
-                  AND NOT (
-                    status='EXECUTING'
-                    AND EXISTS (
-                      SELECT 1 FROM authority_agent_runtime_binding AS binding
-                      WHERE binding.operation_id=authority_operation.operation_id
-                    )
+                  AND status IN (
+                    'READY', 'FAILED_RETRYABLE', 'EXECUTING',
+                    'WAITING_EXTERNAL_RESULT', 'RECONCILIATION_REQUIRED',
+                    'CANCELLATION_REQUESTED'
                   )
                 ORDER BY created_at, operation_id
                 LIMIT %s
@@ -192,16 +188,23 @@ class AgentAuthorityScheduler:
         if attempt_status in {"QUEUED", "LEASED"}:
             start_attempt(self.database_url, worker)
         try:
+            self._reconcile_required_effects(operation)
+            frozen_binding = self._runtime_binding(attempt_id)
+            execution_fence = (
+                int(frozen_binding["fencing_token"])
+                if frozen_binding is not None
+                else worker.fencing_token
+            )
             prepared = self.execution_preparer.prepare(
                 operation=operation,
                 attempt_id=attempt_id,
-                fencing_token=worker.fencing_token,
+                fencing_token=execution_fence,
                 worker_id=self.worker_id,
             )
             work_order = build_agent_work_order(
                 operation=operation,
                 attempt_id=attempt_id,
-                fencing_token=worker.fencing_token,
+                fencing_token=execution_fence,
                 prepared=prepared,
             )
             runtime_binding = build_runtime_binding(
@@ -222,44 +225,9 @@ class AgentAuthorityScheduler:
                     project_id=project_id,
                 ),
             ):
-                candidate = execute_domain_candidate(
-                    capability=work_order.execution_capability,
-                    operation="analyze",
-                    candidate_kind=CandidateKind.AGENT_RESULT,
-                    prompt=(
-                        "Execute the frozen Agent work order and return only a "
-                        "candidate AgentOutputEnvelope. Domain Authority owns commit."
-                    ),
-                    context={
-                        "agent_work_order": work_order.to_context(),
-                        "commit_authority": "domain_authority_only",
-                    },
-                    execution_port=prepared.execution_port,
-                    environment="production",
+                result = self.turn_coordinator.execute_candidate(
+                    work_order, prepared.execution_port
                 )
-                AgentCollaborationApplication.validate_execution_evidence(
-                    work_order, candidate.evidence
-                )
-                try:
-                    envelope = AgentOutputEnvelope.from_mapping(
-                        candidate.raw_output,
-                        execution_evidence_ref=(
-                            candidate.evidence.validation_manifest_ref
-                        ),
-                    )
-                except (TypeError, ValueError) as exc:
-                    raise KernelError(
-                        "AGENT_OUTPUT_SCHEMA_INVALID", str(exc)
-                    ) from exc
-                with AuthorityUnitOfWork(self.database_url) as uow:
-                    result = AgentCollaborationApplication(
-                        uow.repositories.agent_collaboration
-                    ).accept_agent_output(
-                        work_order,
-                        envelope,
-                        execution_evidence=candidate.evidence,
-                    )
-                    uow.commit()
             if not result.attempt_completion_allowed:
                 raise KernelError(
                     "AGENT_CANDIDATE_REPAIR_REQUIRED",
@@ -332,19 +300,24 @@ class AgentAuthorityScheduler:
                 correlation_id=str(operation["correlation_id"]),
             )
             return attempt_id, "QUEUED", recovery
-        if operation["status"] == "EXECUTING":
+        if operation["status"] in {
+            "EXECUTING",
+            "WAITING_EXTERNAL_RESULT",
+            "RECONCILIATION_REQUIRED",
+            "CANCELLATION_REQUESTED",
+        }:
             active = self._active_attempt(operation_id, project_id)
             if active is None:
                 raise KernelError(
                     "AGENT_ATTEMPT_MISSING",
                     "executing Agent Operation has no recoverable Attempt",
                 )
-            if self._runtime_binding_exists(str(active["attempt_id"])):
-                raise KernelError(
-                    "AGENT_EXECUTION_RECONCILIATION_REQUIRED",
-                    "Attempt already has frozen execution evidence; reconcile before takeover",
-                )
-            return str(active["attempt_id"]), str(active["status"]), "lease_takeover"
+            mode = (
+                "frozen_binding_reconciliation"
+                if self._runtime_binding_exists(str(active["attempt_id"]))
+                else "lease_takeover"
+            )
+            return str(active["attempt_id"]), str(active["status"]), mode
         raise KernelError(
             "AGENT_OPERATION_NOT_RECOVERABLE",
             f"cannot execute Agent run from {operation['status']}",
@@ -353,12 +326,7 @@ class AgentAuthorityScheduler:
     def _freeze_turn(
         self, work_order: AgentWorkOrder, runtime_binding: AgentRuntimeBinding
     ) -> None:
-        with AuthorityUnitOfWork(self.database_url) as uow:
-            AgentCollaborationApplication(
-                uow.repositories.agent_collaboration
-            ).schedule_next_turn(work_order)
-            uow.repositories.agent_runtime.save_runtime_binding(runtime_binding)
-            uow.commit()
+        self.turn_coordinator.freeze_turn(work_order, runtime_binding)
 
     def _record_candidate_completion(
         self,
@@ -519,6 +487,61 @@ class AgentAuthorityScheduler:
             )
             return bool(uow.cursor.fetchone()[0])
 
+    def _runtime_binding(self, attempt_id: str) -> dict[str, Any] | None:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT binding_id, fencing_token, work_order_id
+                FROM authority_agent_runtime_binding
+                WHERE attempt_id=%s
+                """,
+                [attempt_id],
+            )
+            row = uow.cursor.fetchone()
+        if row is None:
+            return None
+        return {
+            "binding_id": str(row[0]),
+            "fencing_token": int(row[1]),
+            "work_order_id": str(row[2]),
+        }
+
+    def _reconcile_required_effects(self, operation: dict[str, Any]) -> None:
+        adapter = getattr(self.execution_preparer, "adapter", None)
+        if adapter is None:
+            return
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT external_effect_id
+                FROM authority_external_effect
+                WHERE operation_id=%s
+                  AND status IN ('UNKNOWN','RECONCILIATION_REQUIRED')
+                ORDER BY created_at, external_effect_id
+                """,
+                [operation["operation_id"]],
+            )
+            effect_ids = [str(row[0]) for row in uow.cursor.fetchall()]
+        context = EffectCommandContext(
+            operation_id=str(operation["operation_id"]),
+            project_id=str(operation["project_id"]),
+            actor_id=self.worker_id,
+            trace_id=str(operation["trace_id"]),
+            correlation_id=str(operation["correlation_id"]),
+        )
+        for effect_id in effect_ids:
+            result = reconcile_external_effect(
+                self.database_url,
+                context,
+                effect_id=effect_id,
+                adapter=adapter,
+            )
+            if result["outcome"] == "ambiguous":
+                raise KernelError(
+                    "AGENT_EXTERNAL_EFFECT_RECONCILIATION_REQUIRED",
+                    "Provider query remains ambiguous; operator reconciliation is required",
+                )
+
 
 def build_agent_work_order(
     *,
@@ -611,9 +634,7 @@ def build_runtime_binding(
         capability_pack_compilation_hash=str(
             command["capability_pack_compilation_hash"]
         ),
-        context_bundle_asset_version_id=str(
-            command["context_bundle_asset_version_id"]
-        ),
+        context_bundle_asset_version_id=str(command["context_bundle_asset_version_id"]),
         context_bundle_hash=str(command["context_bundle_hash"]),
         prompt_bundle_ref=prepared.prompt_bundle_ref,
         prompt_bundle_hash=prepared.prompt_bundle_hash,

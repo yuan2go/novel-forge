@@ -8,7 +8,7 @@ from enum import StrEnum
 import hashlib
 import json
 from typing import Any, Mapping
-from uuid import NAMESPACE_URL, uuid4, uuid5
+from uuid import NAMESPACE_URL, uuid5
 
 from psycopg.types.json import Jsonb
 
@@ -17,7 +17,6 @@ from novel_forge.modules.agent_collaboration.domain import (
     AgentCollaborationSession,
     AgentConversationMessage,
     AgentDefinition,
-    AgentMessageType,
     AgentOutputEnvelope,
     AgentScopeContract,
     AgentWorkOrder,
@@ -25,9 +24,7 @@ from novel_forge.modules.agent_collaboration.domain import (
     AuthorityScope,
     CandidateVersion,
     CollaborationDecision,
-    CollaborationDecisionType,
     ConflictRecord,
-    ConflictSeverity,
     ConflictStatus,
     DomainAcceptance,
     KnowledgeVisibilityScope,
@@ -38,7 +35,6 @@ from novel_forge.modules.agent_collaboration.domain import (
     ProposedAssetChange,
     ScopeExpansionRequest,
     ScopeSnapshot,
-    SessionStatus,
     TemporalScope,
 )
 from novel_forge.modules.agent_collaboration.repository import CollaborationCommit
@@ -977,8 +973,9 @@ class PostgresAgentCollaborationRepository:
             INSERT INTO authority_agent_collaboration_commit (
                 commit_id, session_id, decision_id, candidate_version_id,
                 operation_id, asset_version_id, stable_idempotency_key,
-                source_lineage, receipt_ref
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                source_lineage, receipt_ref, attempt_id, fencing_token,
+                content_hash
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT (session_id) DO NOTHING
             """,
             [
@@ -991,6 +988,9 @@ class PostgresAgentCollaborationRepository:
                 commit.stable_idempotency_key,
                 Jsonb({"candidate_version_ids": list(commit.source_lineage)}),
                 commit.receipt_ref or None,
+                commit.attempt_id or None,
+                commit.fencing_token or None,
+                commit.content_hash or None,
             ],
         )
         existing = self.find_commit(commit.session_id)
@@ -1003,7 +1003,9 @@ class PostgresAgentCollaborationRepository:
             """
             SELECT commit_id, session_id, decision_id, candidate_version_id,
                    operation_id, asset_version_id, stable_idempotency_key,
-                   source_lineage, COALESCE(receipt_ref, '')
+                   source_lineage, COALESCE(receipt_ref, ''),
+                   COALESCE(attempt_id, ''), COALESCE(fencing_token, 0),
+                   COALESCE(content_hash, '')
             FROM authority_agent_collaboration_commit
             WHERE session_id = %s
             """,
@@ -1022,6 +1024,9 @@ class PostgresAgentCollaborationRepository:
             stable_idempotency_key=row[6],
             source_lineage=tuple(row[7]["candidate_version_ids"]),
             receipt_ref=row[8],
+            attempt_id=row[9],
+            fencing_token=int(row[10]),
+            content_hash=row[11],
         )
 
     def save_processing_result(self, turn_id: str, result: Any) -> Any:

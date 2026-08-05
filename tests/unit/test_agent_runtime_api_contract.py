@@ -22,6 +22,10 @@ def test_agent_runtime_authority_routes_cover_control_and_query_surface() -> Non
     assert ("POST", "/product/production/agent-runtime/agent-runs") in routes
     assert ("GET", "/product/production/agent-runtime/agent-runs") in routes
     assert (
+        "GET",
+        "/product/production/agent-runtime/health/recovery",
+    ) in routes
+    assert (
         "POST",
         "/product/production/agent-runtime/agent-runs/{agent_run_id}/cancel",
     ) in routes

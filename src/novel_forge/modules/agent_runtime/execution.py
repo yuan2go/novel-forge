@@ -263,7 +263,9 @@ class ChapterGatewayAgentExecutionPreparer:
         }
         result: dict[str, str] = {}
         for name, logical_ref in refs.items():
-            document = self.assets.require(project_id=project_id, logical_ref=logical_ref)
+            document = self.assets.require(
+                project_id=project_id, logical_ref=logical_ref
+            )
             result[name] = logical_ref
             result[name.removesuffix("_ref") + "_hash"] = document.content_hash
         return result
@@ -293,35 +295,41 @@ class _ExternalEffectPepAgentPort:
                 "AGENT_PEP_CAPABILITY_DRIFT",
                 "Domain execution capability differs from frozen PEP request",
             )
-        try:
-            dispatched = dispatch_external_effect(
-                self.database_url,
-                self.effect_context,
-                effect_id=self.external_effect_id,
-                worker_id=self.worker_id,
-                lease_seconds=self.lease_seconds,
-                adapter=self.adapter,
-            )
-        except KernelError:
-            resolve_provider_budget_failure(
-                self.database_url,
-                reservation_id=self.reservation_id,
-                project_id=self.effect_context.project_id,
-            )
-            raise
-        if dispatched["outcome"] != "success":
-            resolve_provider_budget_failure(
-                self.database_url,
-                reservation_id=self.reservation_id,
-                project_id=self.effect_context.project_id,
-            )
-            raise KernelError(
-                "AGENT_EXTERNAL_EFFECT_NOT_FINAL",
-                "Agent PEP ExternalEffect did not complete successfully",
-            )
-        result = ModelProviderResult.from_evidence(
-            dict(dispatched["provider_evidence"])
+        result = self.evidence_writer.completed_effect_result(
+            self.external_effect_id,
+            self.effect_context.project_id,
         )
+        recovered_completed_effect = result is not None
+        if result is None:
+            try:
+                dispatched = dispatch_external_effect(
+                    self.database_url,
+                    self.effect_context,
+                    effect_id=self.external_effect_id,
+                    worker_id=self.worker_id,
+                    lease_seconds=self.lease_seconds,
+                    adapter=self.adapter,
+                )
+            except KernelError:
+                resolve_provider_budget_failure(
+                    self.database_url,
+                    reservation_id=self.reservation_id,
+                    project_id=self.effect_context.project_id,
+                )
+                raise
+            if dispatched["outcome"] != "success":
+                resolve_provider_budget_failure(
+                    self.database_url,
+                    reservation_id=self.reservation_id,
+                    project_id=self.effect_context.project_id,
+                )
+                raise KernelError(
+                    "AGENT_EXTERNAL_EFFECT_NOT_FINAL",
+                    "Agent PEP ExternalEffect did not complete successfully",
+                )
+            result = ModelProviderResult.from_evidence(
+                dict(dispatched["provider_evidence"])
+            )
         settle_provider_budget(
             self.database_url,
             reservation_id=self.reservation_id,
@@ -333,6 +341,7 @@ class _ExternalEffectPepAgentPort:
                 "model_id": result.model_id,
                 "real_model_call": result.real_model_call,
                 "fixture": not result.real_model_call,
+                "recovered_completed_effect": recovered_completed_effect,
             },
         )
         stage = self.binding.request.stage
@@ -348,9 +357,7 @@ class _ExternalEffectPepAgentPort:
             fencing_token=self.binding.request.fencing_token,
             worker_id=self.worker_id,
         )
-        self.evidence_writer.record_result_evidence(
-            request, stage=stage, result=result
-        )
+        self.evidence_writer.record_result_evidence(request, stage=stage, result=result)
         production = dict(result.execution_evidence or {})
         execution_result = dict(production.get("execution_result") or {})
         execution_handle = dict(production.get("execution_handle") or {})
@@ -384,9 +391,24 @@ class _ExternalEffectPepAgentPort:
             "agent_id": str(command_payload["agent_id"]),
             "message_type": str(command_payload["message_type"]),
             "structured_payload": {
+                "candidate_version_id": str(
+                    uuid5(
+                        NAMESPACE_URL,
+                        "novel-forge:agent-candidate:"
+                        + self.binding.request.attempt_id,
+                    )
+                ),
+                "candidate_type": f"{stage}_candidate",
                 "candidate_kind": stage,
+                "content_ref": str(required["output_manifest_ref"]),
+                "structured_diff": {
+                    "op": "candidate.create",
+                    "path": f"/{stage}",
+                    "value_ref": str(required["output_manifest_ref"]),
+                },
                 "domain_candidate": result.output,
                 "commit_status": "NOT_COMMITTED",
+                "change_reason_refs": [str(required["validation_manifest_ref"])],
             },
             "natural_language_explanation": (
                 "PEP produced a structured candidate for Domain Authority validation."
@@ -437,9 +459,7 @@ class _ExternalEffectPepAgentPort:
         )
 
 
-def _stage_payload(
-    stage: str, inputs: tuple[ChapterInputAsset, ...]
-) -> dict[str, Any]:
+def _stage_payload(stage: str, inputs: tuple[ChapterInputAsset, ...]) -> dict[str, Any]:
     by_type = {item.asset_type: dict(item.content) for item in inputs}
     if stage == "draft":
         return {
@@ -449,9 +469,7 @@ def _stage_payload(
         }
     if stage in {"review", "rereview"}:
         return {
-            "draft": by_type.get("draft_chapter")
-            or by_type.get("draft_version")
-            or {},
+            "draft": by_type.get("draft_chapter") or by_type.get("draft_version") or {},
             "review": by_type.get("review_report", {}),
             "revision": by_type.get("draft_version", {}),
         }

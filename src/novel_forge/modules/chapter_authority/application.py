@@ -1,6 +1,8 @@
 """Application facade for PostgreSQL-only chapter commands and strong queries."""
 from __future__ import annotations
 
+from collections.abc import Callable
+
 from novel_forge.modules.chapter_authority.handlers import build_chapter_handler_registry
 from novel_forge.modules.chapter_authority.model_effects import (
     ChapterAgentBindingRecorder,
@@ -32,10 +34,12 @@ class ChapterAuthorityApplication:
         budget_caps: dict[str, str] | None = None,
         agent_binding_recorder: ChapterAgentBindingRecorder | None = None,
         agent_binding_required: bool = False,
+        runtime_fault_injector: Callable[[str], None] | None = None,
     ) -> None:
         if not database_url or not worker_id:
             raise ValueError("PostgreSQL database and worker identity are required")
         self.database_url = database_url
+        self.agent_binding_recorder = agent_binding_recorder
         self.model_port = ExternalEffectChapterModelPort(
             database_url,
             adapter=model_adapter,
@@ -44,11 +48,13 @@ class ChapterAuthorityApplication:
             budget_caps=budget_caps,
             agent_binding_recorder=agent_binding_recorder,
             agent_binding_required=agent_binding_required,
+            fault_injector=runtime_fault_injector,
         )
         self.registry = build_chapter_handler_registry(self.model_port)
         self.object_store_adapter = object_store_adapter
         self.worker_id = worker_id
         self.allow_synchronous_fixture = allow_synchronous_fixture
+        self.runtime_fault_injector = runtime_fault_injector
         self.query = ChapterAuthorityQuery(database_url)
 
     @property
@@ -95,6 +101,9 @@ class ChapterAuthorityApplication:
             object_store_adapter=self.object_store_adapter,
             worker_id=principal.principal_id,
             permissions=principal.permissions,
+            agent_binding_recorder=self.agent_binding_recorder,
+            fault_injector=self.runtime_fault_injector,
+            model_effect_adapter=self.model_port.adapter,
         )
 
 

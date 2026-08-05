@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import os
+from collections.abc import Callable
 from dataclasses import replace
 from pathlib import Path
 from typing import Mapping
@@ -149,6 +150,7 @@ def build_chapter_authority_application(
     *,
     env: Mapping[str, str] | None = None,
     provider_registry: ProviderAdapterRegistry | None = None,
+    runtime_fault_injector: Callable[[str], None] | None = None,
 ) -> ChapterAuthorityApplication:
     values = env or os.environ
     if not settings.database_url:
@@ -515,8 +517,10 @@ def build_chapter_authority_application(
                 AGENT_BOUND_CHAPTER_STAGES if controlled else frozenset()
             ),
             compatibility_allowed=not controlled,
+            fault_injector=runtime_fault_injector,
         ),
         agent_binding_required=controlled,
+        runtime_fault_injector=runtime_fault_injector,
     )
 
 
