@@ -36,6 +36,7 @@ from .schema import (
 _PACK_ID = re.compile(r"^[a-z][a-z0-9_.-]*$")
 _SEMVER = re.compile(r"^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$")
 _SHA256 = re.compile(r"^sha256:[0-9a-f]{64}$")
+_PROTOCOL_VERSION = re.compile(r"^novelos\.capability_pack\.v([1-9][0-9]*)$")
 _STATUSES = frozenset(item.value for item in PackStatus)
 _LIFECYCLES = frozenset(item.value for item in PackLifecycle)
 _ROLE_TYPES = frozenset(item.value for item in PackRoleType)
@@ -68,6 +69,9 @@ _SOURCE_ISOLATION_MODES = frozenset(
     {"ABSTRACT_ASSETS_ONLY", "FROZEN_ASSETS_ONLY", "RAW_ALLOWED_WITH_APPROVAL"}
 )
 _CAPABILITY_TYPES = frozenset({"production_workflow"})
+_RUNTIME_PROFILES = frozenset(
+    {"development", "validation", "provider-validation", "production"}
+)
 _VOLATILE_IDENTITY_KEYS = frozenset(
     {
         "current_timestamp",
@@ -170,6 +174,7 @@ def validate_capability_pack(
     _validate_tools(manifest, policy_class, issues)
     _validate_assets(manifest, policy_class, issues)
     _validate_evaluation(manifest, registry, resolved, issues)
+    _validate_capability_declarations(manifest, issues)
     _validate_runtime(manifest, policy_class, issues)
     _validate_governance_and_audit(manifest, issues)
     _validate_extensions(payload.get("ext"), issues)
@@ -596,6 +601,42 @@ def _validate_compatibility(
             resolved=resolved,
             issues=issues,
         )
+    required_capabilities = tuple(
+        value
+        for value in compatibility.required_capabilities
+        if isinstance(value, str)
+    )
+    if len(required_capabilities) != len(set(required_capabilities)):
+        issues.error(
+            "CAPABILITY_PACK_COMPATIBILITY_INVALID",
+            "$.compatibility.required_capabilities",
+            "required capabilities must be unique",
+        )
+    for field, values in (
+        ("required_schema_versions", compatibility.required_schema_versions),
+        ("incompatible_packs", compatibility.incompatible_packs),
+        ("compatible_runtime_profiles", compatibility.compatible_runtime_profiles),
+    ):
+        strings = tuple(value for value in values if isinstance(value, str))
+        if len(strings) != len(set(strings)):
+            issues.error(
+                "CAPABILITY_PACK_COMPATIBILITY_INVALID",
+                f"$.compatibility.{field}",
+                f"{field} entries must be unique",
+            )
+    profiles = {
+        value
+        for value in compatibility.compatible_runtime_profiles
+        if isinstance(value, str)
+    }
+    unsupported_profiles = sorted(profiles - _RUNTIME_PROFILES)
+    if unsupported_profiles:
+        issues.error(
+            "CAPABILITY_PACK_COMPATIBILITY_INVALID",
+            "$.compatibility.compatible_runtime_profiles",
+            "unsupported runtime profiles: " + ", ".join(unsupported_profiles),
+        )
+    _validate_version_range(compatibility, issues)
 
 
 def _validate_role(manifest: CapabilityPackManifest, issues: _IssueCollector) -> None:
