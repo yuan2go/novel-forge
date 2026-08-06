@@ -94,7 +94,16 @@ class ScriptedProviderAdapterV2:
     @staticmethod
     def _result_for(request: ProviderInvocationRequest) -> dict[str, Any]:
         if request.stage == "draft":
-            return {"text": "Scripted chapter fixture."}
+            marker = str(
+                request.request_payload.get("capability_pack_fixture_marker") or ""
+            )
+            return {
+                "text": (
+                    f"Scripted chapter fixture [{marker}]."
+                    if marker
+                    else "Scripted chapter fixture."
+                )
+            }
         if request.stage == "review":
             return {"score": 90, "issues": []}
         if request.stage == "canon_extraction":

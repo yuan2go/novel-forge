@@ -392,6 +392,8 @@ class AgentRuntimeBinding:
     capability_pack_binding_set_hash: str = ""
     capability_pack_scope_type: str = ""
     capability_pack_assignment_ref: str = ""
+    capability_pack_attempt_snapshot_id: str = ""
+    capability_pack_attempt_snapshot_hash: str = ""
 
     def __post_init__(self) -> None:
         pack_snapshot_fields = {
@@ -401,6 +403,8 @@ class AgentRuntimeBinding:
             "capability_pack_binding_set_hash",
             "capability_pack_scope_type",
             "capability_pack_assignment_ref",
+            "capability_pack_attempt_snapshot_id",
+            "capability_pack_attempt_snapshot_hash",
         }
         pack_snapshot_present = any(
             bool(getattr(self, name)) for name in pack_snapshot_fields
@@ -448,7 +452,13 @@ class AgentRuntimeBinding:
                 {
                     "capability_pack_binding_set_hash": (
                         self.capability_pack_binding_set_hash
-                    )
+                    ),
+                    "capability_pack_attempt_snapshot_id": (
+                        self.capability_pack_attempt_snapshot_id
+                    ),
+                    "capability_pack_attempt_snapshot_hash": (
+                        self.capability_pack_attempt_snapshot_hash
+                    ),
                 }
                 if pack_snapshot_present
                 else {}

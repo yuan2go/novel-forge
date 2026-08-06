@@ -20,6 +20,24 @@ HASH_B = "sha256:" + "b" * 64
 RELEASE_SHA = "c" * 40
 
 
+def _approval_scope() -> dict[str, object]:
+    return {
+        "schema_version": "CapabilityPackApprovalScope.v1",
+        "allowed_environments": ["validation"],
+        "allowed_runtime_profiles": ["validation"],
+        "allowed_release_channels": ["VALIDATION"],
+        "allowed_scope_types": ["SYSTEM", "PROJECT", "WORKSPACE", "BOOK"],
+        "allowed_project_ids": ["project-1"],
+        "allowed_workspace_ids": ["workspace-1"],
+        "allowed_book_ids": ["book-1"],
+        "allowed_workflow_definition_refs": ["chapter_authority_slice@2.2.0"],
+        "allow_canary": True,
+        "allow_percentage_rollout": True,
+        "allow_full_rollout": True,
+        "maximum_rollout_percentage": 100,
+    }
+
+
 class _Definitions:
     def get(self, name: str, version: str):
         assert (name, version) == ("chapter.draft.generate", "2.2.0")
@@ -33,6 +51,9 @@ class _Packs:
         self.rollout = rollout
         self.assignment = assignment
         self.assigned_subject = ""
+
+    def validate_resolution_scope(self, **_kwargs):
+        return None
 
     def resolve_activation_candidates(self, **_kwargs):
         return list(self.candidates)
@@ -52,15 +73,20 @@ class _Packs:
             "decision": "APPROVED",
             "compilation_hash": HASH_B,
             "expires_at": None,
+            "approval_scope": _approval_scope(),
+            "structured_limitations": [],
         }
 
     def latest_deprecation(self, _pack_id: str, _pack_version: str):
         return None
 
+    def blocked_dependencies(self, _pack_id: str, _pack_version: str):
+        return []
+
 
 class _AgentRuntime:
-    def resolve_active_definition(self, agent_id: str):
-        assert agent_id == "chapter-draft-agent"
+    def lock_definition_version(self, agent_id: str, definition_version: int):
+        assert (agent_id, definition_version) == ("chapter-draft-agent", 1)
         return {
             "definition_version": 1,
             "definition_hash": HASH_B,
@@ -391,7 +417,7 @@ def test_paused_rollout_fails_back_to_baseline_without_reassigning_subject() -> 
     assert snapshot.assignment_ref == "rollout:rollout-1:paused-baseline"
 
 
-def test_completed_rollout_promotes_candidate_without_reassigning_subject() -> None:
+def test_completed_rollout_obeys_promoted_activation_pointer() -> None:
     scope = CapabilityPackScope(
         ScopeType.BOOK,
         project_id="project-1",
@@ -403,26 +429,20 @@ def test_completed_rollout_promotes_candidate_without_reassigning_subject() -> N
             {
                 "scope_key": scope.scope_key,
                 "target_scope_type": "BOOK",
-                "active_deployment_id": "baseline",
-                "activation_version": 1,
+                "active_deployment_id": "candidate",
+                "activation_version": 2,
             }
         ],
         {"baseline": _deployment("baseline"), "candidate": _deployment("candidate")},
-        rollout={
-            "rollout_id": "rollout-1",
-            "baseline_deployment_id": "baseline",
-            "candidate_deployment_id": "candidate",
-            "status": "COMPLETED",
-            "percentage": 50,
-            "assignment_key_policy": "BOOK",
-        },
-        assignment=None,
+        rollout=None,
     )
 
     snapshot = CapabilityPackRuntimeResolver.resolve_in_uow(_Uow(packs), _request())
 
     assert snapshot.deployment_id == "candidate"
-    assert snapshot.assignment_ref == "rollout:rollout-1:completed-candidate"
+    assert snapshot.activation_version == 2
+    assert snapshot.rollout_id == ""
+    assert snapshot.assignment_ref.endswith("@2")
 
 
 def test_project_workspace_rollout_policy_does_not_bucket_by_book() -> None:

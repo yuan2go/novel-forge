@@ -1,19 +1,17 @@
 from __future__ import annotations
 
-from novel_forge.storage.migrations import LATEST_MIGRATION_ID
 from novel_forge.storage.migrations.versions import (
     v20260805_0070_agent_runtime_recovery_protocol as migration,
 )
 
 
-def test_recovery_protocol_is_linear_migration_head() -> None:
+def test_recovery_protocol_keeps_its_linear_predecessor_contract() -> None:
     assert migration.MIGRATION_ID == (
         "20260805_0070_agent_runtime_recovery_protocol"
     )
     assert migration.DOWN_REVISION == (
         "20260805_0069_agent_runtime_domain_commit_closure"
     )
-    assert LATEST_MIGRATION_ID == migration.MIGRATION_ID
     assert migration.FORWARD_ONLY is True
 
 

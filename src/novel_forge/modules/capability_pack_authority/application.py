@@ -28,6 +28,7 @@ from novel_forge.modules.capability_packs.type_catalog import (
 )
 from novel_forge.modules.capability_packs.versioning import (
     PackCatalogEntry,
+    PackDependency,
     ReadOnlyPackCatalog,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
@@ -49,6 +50,7 @@ from .definitions import (
     capability_pack_operation_definitions,
 )
 from .domain import ApprovalDecision, CapabilityPackScope, RolloutStatus, ScopeType, canonical_hash
+from .policy import CapabilityPackApprovalScope, normalize_limitations
 
 
 _FORBIDDEN_COMPILED_INPUTS = {"compiled_payload", "compiled_capability_pack"}
@@ -461,12 +463,13 @@ class CapabilityPackAuthorityApplication:
                 command.pack_version,
                 project_id=command.project_id,
             )
-            manifests = [
-                load_capability_pack_payload(payload)
-                for payload in uow.repositories.capability_packs.all_manifest_payloads(
-                    project_id=command.project_id
+            catalog_records = (
+                uow.repositories.capability_packs.exact_dependency_catalog(
+                    pack_id=command.pack_id,
+                    pack_version=command.pack_version,
+                    project_id=command.project_id,
                 )
-            ]
+            )
             manifest = load_capability_pack_payload(version["manifest"])
             identities = []
             for node in manifest.workflow_template.nodes:
@@ -491,7 +494,14 @@ class CapabilityPackAuthorityApplication:
             artifact_resolver=artifact_resolver,
             tool_catalog=default_tool_definition_catalog(),
             pack_catalog=ReadOnlyPackCatalog(
-                PackCatalogEntry(item) for item in manifests
+                PackCatalogEntry(
+                    load_capability_pack_payload(record["manifest"]),
+                    tuple(
+                        PackDependency(item["pack_id"], item["version"])
+                        for item in record["dependencies"]
+                    ),
+                )
+                for record in catalog_records
             ),
         )
         result = compiler.compile(
@@ -574,6 +584,7 @@ class CapabilityPackAuthorityApplication:
     ) -> dict[str, Any]:
         action = command.definition_name
         repository = uow.repositories.capability_packs
+        repository.lock_pack_authority(command.pack_id)
         if action == "capability_pack.manifest.register":
             manifest_payload = command.payload.get("manifest")
             catalog_payload = command.payload.get("artifact_catalog")
@@ -601,6 +612,21 @@ class CapabilityPackAuthorityApplication:
                     command.payload.get("release_channel")
                     or manifest.governance.release_channel
                 ),
+                owner_scope_type=str(
+                    command.payload.get("owner_scope_type") or "PROJECT"
+                ),
+                owner_project_id=str(
+                    command.payload.get("owner_project_id")
+                    or (
+                        command.project_id
+                        if str(
+                            command.payload.get("owner_scope_type") or "PROJECT"
+                        ).upper()
+                        == "PROJECT"
+                        else ""
+                    )
+                ),
+                dependencies=tuple(command.payload.get("dependencies") or ()),
                 registered_by=command.actor_id,
                 operation_id=operation_id,
                 checkpoint=checkpoint,
@@ -667,10 +693,14 @@ class CapabilityPackAuthorityApplication:
                 approval_policy_ref=str(
                     command.payload.get("approval_policy_ref") or ""
                 ),
-                approval_scope=dict(command.payload.get("scope") or {}),
+                approval_scope=CapabilityPackApprovalScope.from_payload(
+                    dict(command.payload.get("scope") or {})
+                ),
                 reason=str(command.payload.get("reason") or ""),
                 evidence_refs=tuple(command.payload.get("evidence_refs") or ()),
-                limitations=tuple(command.payload.get("limitations") or ()),
+                limitations=normalize_limitations(
+                    tuple(command.payload.get("limitations") or ())
+                ),
                 expires_at=_optional_datetime(command.payload.get("expires_at")),
                 decided_by=command.actor_id,
                 operation_id=operation_id,
@@ -759,8 +789,8 @@ class CapabilityPackAuthorityApplication:
                 str(command.payload.get("candidate_deployment_id") or ""),
                 project_id=command.project_id,
             )
-            _verify_target_identity(command, baseline)
-            _verify_target_identity(command, candidate)
+            _verify_pack_family(command, baseline)
+            _verify_pack_family(command, candidate)
             result = repository.start_rollout(
                 project_id=command.project_id,
                 rollout_id=command.rollout_id or str(uuid4()),
@@ -797,9 +827,24 @@ class CapabilityPackAuthorityApplication:
                 ),
                 "capability_pack.rollout.complete": RolloutStatus.COMPLETED,
             }[action]
-            result = repository.update_rollout_status(
-                command.rollout_id, status, project_id=command.project_id
-            )
+            if action == "capability_pack.rollout.complete":
+                if command.expected_activation_version <= 0:
+                    raise KernelError(
+                        "CAPABILITY_PACK_ACTIVATION_VERSION_REQUIRED",
+                        "rollout completion requires expected_activation_version",
+                    )
+                result = repository.complete_rollout(
+                    command.rollout_id,
+                    project_id=command.project_id,
+                    expected_activation_version=command.expected_activation_version,
+                    reason=str(command.payload.get("reason") or action),
+                    activated_by=command.actor_id,
+                    operation_id=operation_id,
+                )
+            else:
+                result = repository.update_rollout_status(
+                    command.rollout_id, status, project_id=command.project_id
+                )
         elif action in {"capability_pack.deprecate", "capability_pack.retire"}:
             repository.require_version(
                 command.pack_id,
@@ -840,7 +885,15 @@ class CapabilityPackAuthorityApplication:
                     command.payload.get("approval_policy_ref")
                     or "security-revocation:v1"
                 ),
-                approval_scope=dict(command.payload.get("scope") or {}),
+                approval_scope=CapabilityPackApprovalScope.from_payload(
+                    dict(
+                        command.payload.get("scope")
+                        or repository.require_approved_compilation(
+                            command.compilation_id,
+                            project_id=command.project_id,
+                        )["approval_scope"]
+                    )
+                ),
                 reason=str(command.payload.get("reason") or "security revocation"),
                 evidence_refs=tuple(command.payload.get("evidence_refs") or ()),
                 limitations=(),
@@ -1043,6 +1096,16 @@ def _verify_target_identity(
         raise KernelError(
             "CAPABILITY_PACK_TARGET_IDENTITY_CONFLICT",
             "target object belongs to a different Capability Pack identity",
+        )
+
+
+def _verify_pack_family(
+    command: CapabilityPackAuthorityCommand, target: Mapping[str, Any]
+) -> None:
+    if str(target.get("pack_id") or "") != command.pack_id:
+        raise KernelError(
+            "CAPABILITY_PACK_TARGET_IDENTITY_CONFLICT",
+            "target object belongs to a different Capability Pack family",
         )
 
 

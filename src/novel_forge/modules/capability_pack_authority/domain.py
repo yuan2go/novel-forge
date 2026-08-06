@@ -264,6 +264,42 @@ class CapabilityPackExecutionSnapshot:
         return value
 
 
+@dataclass(frozen=True, slots=True)
+class CapabilityPackAttemptSnapshot:
+    """One immutable Pack resolution owned by an existing Authority Attempt."""
+
+    snapshot_id: str
+    operation_id: str
+    attempt_id: str
+    execution_fencing_token: int
+    snapshot_creation_fencing_token: int
+    snapshot_hash: str
+    trace_id: str
+    span_id: str
+    execution_snapshot: CapabilityPackExecutionSnapshot
+
+    def __post_init__(self) -> None:
+        if any(
+            not value.strip()
+            for value in (
+                self.snapshot_id,
+                self.operation_id,
+                self.attempt_id,
+                self.trace_id,
+                self.span_id,
+            )
+        ):
+            raise ValueError("Capability Pack Attempt Snapshot identity is incomplete")
+        if self.execution_fencing_token <= 0:
+            raise ValueError("Attempt Snapshot execution fence must be positive")
+        if self.snapshot_creation_fencing_token <= 0:
+            raise ValueError("Attempt Snapshot creation fence must be positive")
+        if not _CONTENT_HASH.fullmatch(self.snapshot_id):
+            raise ValueError("Attempt Snapshot id must be content-addressed")
+        if self.snapshot_hash != self.execution_snapshot.snapshot_hash:
+            raise ValueError("Attempt Snapshot hash differs from frozen execution content")
+
+
 def require_content_hashes(values: Mapping[str, str]) -> None:
     invalid = [
         name for name, value in values.items() if not _CONTENT_HASH.fullmatch(value)
@@ -274,6 +310,7 @@ def require_content_hashes(values: Mapping[str, str]) -> None:
 
 __all__ = [
     "ApprovalDecision",
+    "CapabilityPackAttemptSnapshot",
     "CapabilityPackExecutionSnapshot",
     "CapabilityPackScope",
     "DeploymentStatus",

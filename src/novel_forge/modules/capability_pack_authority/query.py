@@ -257,6 +257,7 @@ class CapabilityPackAuthorityQuery:
             agent_drift: list[str] = []
             capability_drift: list[str] = []
             artifact_drift: list[str] = []
+            dependency_drift: list[str] = []
             resolved_artifacts = [
                 dict(item)
                 for item in deployment["artifact_bindings"].get(
@@ -289,15 +290,14 @@ class CapabilityPackAuthorityQuery:
                 if agent_ref:
                     agent_id, _, raw_version = agent_ref.rpartition("@")
                     try:
-                        agent = uow.repositories.agent_runtime.resolve_active_definition(
-                            agent_id
+                        agent = uow.repositories.agent_runtime.lock_definition_version(
+                            agent_id, int(raw_version)
                         )
                     except KernelError:
                         agent_drift.append(agent_ref)
                     else:
                         if (
-                            str(agent.get("definition_version")) != raw_version
-                            or str(agent.get("definition_hash"))
+                            str(agent.get("definition_hash"))
                             != str(node["agent_definition_hash"])
                         ):
                             agent_drift.append(agent_ref)
@@ -384,6 +384,35 @@ class CapabilityPackAuthorityQuery:
             binding_set_drift = (
                 expected_binding_hash != deployment["binding_set_hash"]
             )
+            for dependency in repository.dependencies_for_version(
+                str(deployment["pack_id"]), str(deployment["pack_version"])
+            ):
+                dependency_version = repository.require_version(
+                    dependency["pack_id"], dependency["version"]
+                )
+                dependency_deprecation = repository.latest_deprecation(
+                    dependency["pack_id"], dependency["version"]
+                )
+                if (
+                    dependency_version is None
+                    or dependency_version["manifest_hash"]
+                    != dependency["manifest_hash"]
+                    or bool(
+                        dependency_deprecation
+                        and dependency_deprecation["retired"]
+                    )
+                ):
+                    dependency_drift.append(
+                        f"{dependency['pack_id']}@{dependency['version']}"
+                    )
+            dependency_drift.extend(
+                item
+                for item in repository.blocked_dependencies(
+                    str(deployment["pack_id"]),
+                    str(deployment["pack_version"]),
+                )
+                if item not in dependency_drift
+            )
             deadline_elapsed = bool(
                 deprecation
                 and deprecation["retirement_deadline"] is not None
@@ -396,6 +425,7 @@ class CapabilityPackAuthorityQuery:
                     binding_set_drift,
                     bool(artifact_drift),
                     bool(capability_drift),
+                    bool(dependency_drift),
                     release_drift,
                     runtime_profile_drift,
                     release_channel_drift,
@@ -423,6 +453,12 @@ class CapabilityPackAuthorityQuery:
                     "artifact_or_policy_drift": artifact_drift,
                     "manifest_compilation_catalog_drift": identity_drift,
                     "binding_set_hash_drift": binding_set_drift,
+                    "dependency_drift": dependency_drift,
+                    "dependency_admission_status": (
+                        "NEW_ADMISSION_BLOCKED"
+                        if dependency_drift
+                        else "CLEAN"
+                    ),
                     "running_release_differs": release_drift,
                     "runtime_profile_differs": runtime_profile_drift,
                     "release_channel_differs": release_channel_drift,
@@ -618,7 +654,8 @@ class CapabilityPackAuthorityQuery:
                     "domain_commit_count": int(row[7]),
                     "provider_call_count": int(row[8]),
                     "fixture_provider_call_count": int(row[9]),
-                    "real_provider_call_count": int(row[10]),
+                    "real_provider_call_evidence_count": int(row[10]),
+                    "real_provider_call_evidence_present": int(row[10]) > 0,
                     "token_usage": int(row[11]),
                     "cost_amount": row[12],
                     "cost_evidence_count": int(row[13]),
@@ -630,7 +667,9 @@ class CapabilityPackAuthorityQuery:
                     "publish_gate_pass_count": int(row[18]),
                     "publish_gate_pass_rate": publish_rate,
                     "reader_outcome_sample_count": int(row[19]),
-                    "real_provider_proven": int(row[10]) > 0,
+                    "provider_vertical_qualification_status": (
+                        "CALL_EVIDENCE_PRESENT" if int(row[10]) > 0 else "NOT_STARTED"
+                    ),
                     "production_verified": False,
                     "currency_note": "inspect per-operation evidence for mixed currencies",
                 }
@@ -712,7 +751,7 @@ class CapabilityPackAuthorityQuery:
             "domain_commit_count",
             "provider_call_count",
             "fixture_provider_call_count",
-            "real_provider_call_count",
+            "real_provider_call_evidence_count",
             "token_usage",
             "cost_evidence_count",
             "quality_gate_count",
@@ -747,8 +786,13 @@ class CapabilityPackAuthorityQuery:
             aggregate["publish_gate_pass_count"],
             aggregate["publish_gate_count"],
         )
-        aggregate["real_provider_proven"] = (
-            aggregate["real_provider_call_count"] > 0
+        aggregate["real_provider_call_evidence_present"] = (
+            aggregate["real_provider_call_evidence_count"] > 0
+        )
+        aggregate["provider_vertical_qualification_status"] = (
+            "CALL_EVIDENCE_PRESENT"
+            if aggregate["real_provider_call_evidence_present"]
+            else "NOT_STARTED"
         )
         aggregate["production_verified"] = False
         return _json_safe(

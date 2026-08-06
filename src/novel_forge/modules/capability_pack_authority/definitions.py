@@ -103,8 +103,11 @@ def _definition(
             "implemented": True,
             "handler_bound": True,
             "integration_proven": False,
-            "real_provider_proven": False,
+            "real_provider_call_evidence_count": 0,
+            "real_provider_call_evidence_present": False,
+            "provider_vertical_qualification_status": "NOT_STARTED",
             "longform_proven": False,
+            "production_verified": False,
         },
         "projection_consumers": [
             "capability_pack_query",

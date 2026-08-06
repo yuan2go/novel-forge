@@ -754,6 +754,14 @@ class ExternalEffectChapterModelPort:
                 request_payload={
                     **effect_request_payload,
                     "external_effect_id": str(effect["external_effect_id"]),
+                    "_production_execution": {
+                        **effect_request_payload["_production_execution"],
+                        # ExternalEffect keeps its original execution identity.
+                        # Snapshot admission instead uses the worker that holds
+                        # the Attempt lease now, including after takeover.
+                        "snapshot_fencing_token": request.fencing_token,
+                        "snapshot_worker_id": request.worker_id or self.worker_id,
+                    },
                 },
                 external_effect_id=str(effect["external_effect_id"]),
             )

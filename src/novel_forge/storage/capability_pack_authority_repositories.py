@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import re
 from typing import Any, Callable, Mapping, Sequence
 from uuid import uuid4
 
@@ -10,6 +11,7 @@ from psycopg.types.json import Jsonb
 
 from novel_forge.modules.capability_pack_authority.domain import (
     ApprovalDecision,
+    CapabilityPackExecutionSnapshot,
     CapabilityPackScope,
     DeploymentStatus,
     RolloutStatus,
@@ -17,12 +19,24 @@ from novel_forge.modules.capability_pack_authority.domain import (
     canonical_hash,
     stable_rollout_bucket,
 )
+from novel_forge.modules.capability_pack_authority.policy import (
+    CapabilityPackApprovalScope,
+)
+from novel_forge.modules.capability_packs.artifacts import is_floating_version
 from novel_forge.modules.command_kernel.errors import KernelError
 
 
 class CapabilityPackAuthorityRepository:
     def __init__(self, cursor: Any) -> None:
         self.cursor = cursor
+
+    def lock_pack_authority(self, pack_id: str) -> None:
+        """Serialize one Pack family across independent Authority sessions."""
+
+        self.cursor.execute(
+            "SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",
+            [f"novel-forge:capability-pack:{pack_id}"],
+        )
 
     def register_version(
         self,
@@ -33,6 +47,9 @@ class CapabilityPackAuthorityRepository:
         artifact_catalog: Mapping[str, Any],
         artifact_catalog_hash: str,
         release_channel: str,
+        owner_scope_type: str,
+        owner_project_id: str,
+        dependencies: Sequence[Mapping[str, Any]],
         registered_by: str,
         operation_id: str,
         checkpoint: Callable[[str], None] | None = None,
@@ -45,6 +62,27 @@ class CapabilityPackAuthorityRepository:
                 "CAPABILITY_PACK_IDENTITY_REQUIRED",
                 "Capability Pack manifest requires exact pack_id and version",
             )
+        owner_scope_type = str(owner_scope_type).upper()
+        if owner_scope_type not in {ScopeType.SYSTEM.value, ScopeType.PROJECT.value}:
+            raise KernelError(
+                "CAPABILITY_PACK_OWNER_SCOPE_INVALID",
+                "Pack owner scope must be SYSTEM or PROJECT",
+            )
+        if (
+            owner_scope_type == ScopeType.SYSTEM.value
+            and owner_project_id
+        ) or (
+            owner_scope_type == ScopeType.PROJECT.value
+            and owner_project_id != project_id
+        ):
+            raise KernelError(
+                "CAPABILITY_PACK_OWNER_SCOPE_INVALID",
+                "SYSTEM owner has no owner Project; PROJECT owner must be the command Project",
+            )
+        normalized_dependencies = self._normalize_dependencies(
+            manifest=manifest,
+            dependencies=dependencies,
+        )
         existing = self.require_version(
             pack_id,
             pack_version,
@@ -61,14 +99,24 @@ class CapabilityPackAuthorityRepository:
                     "CAPABILITY_PACK_VERSION_CONFLICT",
                     "Pack version is already bound to different immutable content",
                 )
+            if (
+                existing["owner_scope_type"] != owner_scope_type
+                or existing["owner_project_id"] != owner_project_id
+                or self.dependencies_for_version(pack_id, pack_version)
+                != normalized_dependencies
+            ):
+                raise KernelError(
+                    "CAPABILITY_PACK_VERSION_CONFLICT",
+                    "Pack version ownership or exact dependencies changed",
+                )
             return {**existing, "replayed": True}
 
         self.cursor.execute(
             """
             INSERT INTO authority_capability_pack(
                 pack_id, name, domain, capability_type, owner, description,
-                created_by_operation_id
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+                created_by_operation_id, owner_scope_type, owner_project_id
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NULLIF(%s, ''))
             ON CONFLICT(pack_id) DO NOTHING
             """,
             [
@@ -79,11 +127,14 @@ class CapabilityPackAuthorityRepository:
                 str(identity.get("owner") or ""),
                 str(identity.get("description") or ""),
                 operation_id,
+                owner_scope_type,
+                owner_project_id,
             ],
         )
         self.cursor.execute(
             """
-            SELECT name, domain, capability_type, owner
+            SELECT name, domain, capability_type, owner,
+                   owner_scope_type, COALESCE(owner_project_id, '')
             FROM authority_capability_pack WHERE pack_id=%s FOR SHARE
             """,
             [pack_id],
@@ -94,6 +145,8 @@ class CapabilityPackAuthorityRepository:
             str(identity.get("domain") or ""),
             str(identity.get("capability_type") or ""),
             str(identity.get("owner") or ""),
+            owner_scope_type,
+            owner_project_id,
         )
         if row != expected:
             raise KernelError(
@@ -145,6 +198,25 @@ class CapabilityPackAuthorityRepository:
                 operation_id,
             ],
         )
+        for dependency in normalized_dependencies:
+            self.cursor.execute(
+                """
+                INSERT INTO authority_capability_pack_dependency(
+                    pack_id, pack_version, dependency_pack_id,
+                    dependency_pack_version, dependency_manifest_hash,
+                    dependency_type, created_by_operation_id
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+                """,
+                [
+                    pack_id,
+                    pack_version,
+                    dependency["pack_id"],
+                    dependency["version"],
+                    dependency["manifest_hash"],
+                    dependency["dependency_type"],
+                    operation_id,
+                ],
+            )
         result = self.require_version(
             pack_id, pack_version, project_id=project_id
         )
@@ -169,10 +241,17 @@ class CapabilityPackAuthorityRepository:
                    version.manifest_hash, version.artifact_catalog_hash,
                    version.protocol_version, version.lifecycle,
                    version.release_channel, version.registered_by,
-                   manifest.content, catalog.content
+                   manifest.content, catalog.content,
+                   pack.owner_scope_type,
+                   COALESCE(pack.owner_project_id, ''),
+                   manifest_owner.project_id
             FROM authority_capability_pack_version AS version
+            JOIN authority_capability_pack AS pack
+              ON pack.pack_id=version.pack_id
             JOIN authority_asset_version AS manifest
               ON manifest.asset_version_id=version.manifest_asset_version_id
+            JOIN authority_asset AS manifest_owner
+              ON manifest_owner.asset_id=manifest.asset_id
             JOIN authority_asset_version AS catalog
               ON catalog.asset_version_id=version.artifact_catalog_asset_version_id
             WHERE version.pack_id=%s AND version.pack_version=%s{lock}
@@ -200,13 +279,124 @@ class CapabilityPackAuthorityRepository:
             "registered_by",
             "manifest",
             "artifact_catalog",
+            "owner_scope_type",
+            "owner_project_id",
+            "authority_storage_project_id",
         )
         result = dict(zip(fields, row, strict=True))
         if project_id:
-            self._require_asset_project(
-                str(result["manifest_asset_version_id"]), project_id
-            )
+            if result["owner_scope_type"] == ScopeType.PROJECT.value:
+                if result["owner_project_id"] != project_id:
+                    raise KernelError(
+                        "CAPABILITY_PACK_PROJECT_SCOPE_MISMATCH",
+                        "Project-owned Pack is outside the authorized project",
+                    )
+            elif result["authority_storage_project_id"] != project_id:
+                raise KernelError(
+                    "CAPABILITY_PACK_SYSTEM_AUTHORITY_PROJECT_REQUIRED",
+                    "SYSTEM Pack mutation requires its explicit Authority Project",
+                )
         return result
+
+    def dependencies_for_version(
+        self, pack_id: str, pack_version: str
+    ) -> tuple[dict[str, str], ...]:
+        self.cursor.execute(
+            """
+            SELECT dependency_pack_id, dependency_pack_version,
+                   dependency_manifest_hash, dependency_type
+            FROM authority_capability_pack_dependency
+            WHERE pack_id=%s AND pack_version=%s
+            ORDER BY dependency_pack_id
+            """,
+            [pack_id, pack_version],
+        )
+        return tuple(
+            {
+                "pack_id": str(row[0]),
+                "version": str(row[1]),
+                "manifest_hash": str(row[2]),
+                "dependency_type": str(row[3]),
+            }
+            for row in self.cursor.fetchall()
+        )
+
+    def blocked_dependencies(
+        self, pack_id: str, pack_version: str
+    ) -> tuple[str, ...]:
+        """Return exact upstream versions that cannot admit new runtime work."""
+
+        blocked: list[str] = []
+        for dependency in self.dependencies_for_version(pack_id, pack_version):
+            dependency_id = dependency["pack_id"]
+            dependency_version = dependency["version"]
+            version = self.require_version(dependency_id, dependency_version)
+            deprecation = self.latest_deprecation(
+                dependency_id, dependency_version
+            )
+            self.cursor.execute(
+                """
+                SELECT EXISTS(
+                    SELECT 1
+                    FROM authority_capability_pack_compilation AS compilation
+                    WHERE compilation.pack_id=%s
+                      AND compilation.pack_version=%s
+                      AND (
+                        compilation.compilation_status='REVOKED'
+                        OR (
+                            SELECT approval.decision
+                            FROM authority_capability_pack_approval AS approval
+                            WHERE approval.compilation_id=compilation.compilation_id
+                            ORDER BY approval.decided_at DESC,
+                                     approval.approval_id DESC
+                            LIMIT 1
+                        )='REVOKED'
+                      )
+                )
+                """,
+                [dependency_id, dependency_version],
+            )
+            revoked = bool(self.cursor.fetchone()[0])
+            if (
+                version["manifest_hash"] != dependency["manifest_hash"]
+                or bool(deprecation and deprecation["retired"])
+                or revoked
+            ):
+                blocked.append(f"{dependency_id}@{dependency_version}")
+        return tuple(sorted(blocked))
+
+    def exact_dependency_catalog(
+        self, *, pack_id: str, pack_version: str, project_id: str
+    ) -> tuple[dict[str, Any], ...]:
+        root = self.require_version(
+            pack_id, pack_version, project_id=project_id
+        )
+        assert root is not None
+        result: dict[tuple[str, str], dict[str, Any]] = {}
+
+        def visit(version: Mapping[str, Any]) -> None:
+            identity = (str(version["pack_id"]), str(version["pack_version"]))
+            if identity in result:
+                return
+            dependencies = self.dependencies_for_version(*identity)
+            result[identity] = {
+                "manifest": dict(version["manifest"]),
+                "dependencies": dependencies,
+            }
+            for dependency in dependencies:
+                child = self.require_version(
+                    dependency["pack_id"], dependency["version"]
+                )
+                assert child is not None
+                if child["manifest_hash"] != dependency["manifest_hash"]:
+                    raise KernelError(
+                        "CAPABILITY_PACK_DEPENDENCY_HASH_DRIFT",
+                        "registered dependency differs from its exact Manifest hash",
+                    )
+                visit(child)
+
+        visit(root)
+        return tuple(result[key] for key in sorted(result))
 
     def list_versions(
         self, *, project_id: str, pack_id: str = ""
@@ -456,10 +646,10 @@ class CapabilityPackAuthorityRepository:
         compilation_hash: str,
         decision: ApprovalDecision,
         approval_policy_ref: str,
-        approval_scope: Mapping[str, Any],
+        approval_scope: CapabilityPackApprovalScope,
         reason: str,
         evidence_refs: Sequence[str],
-        limitations: Sequence[str],
+        limitations: Sequence[Mapping[str, Any]],
         expires_at: datetime | None,
         decided_by: str,
         operation_id: str,
@@ -484,8 +674,10 @@ class CapabilityPackAuthorityRepository:
             INSERT INTO authority_capability_pack_approval(
                 approval_id, compilation_id, compilation_hash, decision,
                 approval_policy_ref, approval_scope, reason, evidence_refs,
-                limitations, expires_at, decided_by, decided_by_operation_id
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                limitations, expires_at, decided_by, decided_by_operation_id,
+                approval_scope_v1, structured_limitations
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                      %s, %s)
             """,
             [
                 approval_id,
@@ -493,13 +685,15 @@ class CapabilityPackAuthorityRepository:
                 compilation_hash,
                 ApprovalDecision(decision).value,
                 approval_policy_ref,
-                Jsonb(dict(approval_scope)),
+                Jsonb(approval_scope.to_dict()),
                 reason,
                 Jsonb(list(evidence_refs)),
-                Jsonb(list(limitations)),
+                Jsonb([dict(item) for item in limitations]),
                 expires_at,
                 decided_by,
                 operation_id,
+                Jsonb(approval_scope.to_dict()),
+                Jsonb([dict(item) for item in limitations]),
             ],
         )
         return {
@@ -518,7 +712,8 @@ class CapabilityPackAuthorityRepository:
         self.cursor.execute(
             """
             SELECT approval_id, compilation_hash, decision, expires_at,
-                   approval_policy_ref, approval_scope
+                   approval_policy_ref, approval_scope_v1,
+                   structured_limitations
             FROM authority_capability_pack_approval
             WHERE compilation_id=%s
             ORDER BY decided_at DESC, approval_id DESC
@@ -545,6 +740,7 @@ class CapabilityPackAuthorityRepository:
             "approval_id": str(row[0]),
             "approval_policy_ref": str(row[4]),
             "approval_scope": dict(row[5] or {}),
+            "structured_limitations": tuple(dict(item) for item in row[6] or ()),
         }
 
     def store_binding_set(
@@ -628,6 +824,16 @@ class CapabilityPackAuthorityRepository:
         operation_id: str,
     ) -> dict[str, Any]:
         self._validate_scope_exists(scope)
+        CapabilityPackApprovalScope.from_payload(
+            dict(compilation["approval_scope"])
+        ).require_admission(
+            scope=scope,
+            environment=environment,
+            runtime_profile=str(compilation["runtime_profile"]),
+            release_channel=str(compilation["release_channel"]),
+            workflow_definition_ref=str(binding_set["workflow_definition_ref"]),
+            limitations=tuple(compilation.get("structured_limitations") or ()),
+        )
         deprecation = self.latest_deprecation(
             str(compilation["pack_id"]), str(compilation["pack_version"])
         )
@@ -944,6 +1150,15 @@ class CapabilityPackAuthorityRepository:
                 "CAPABILITY_PACK_ROLLOUT_MODE_INVALID",
                 "rollout start requires OFF, CANARY, PERCENTAGE, or FULL",
             )
+        approval = self.latest_approval(str(candidate["compilation_id"]))
+        assert approval is not None
+        CapabilityPackApprovalScope.from_payload(
+            dict(approval["approval_scope"])
+        ).require_rollout(
+            mode=normalized,
+            percentage=percentage,
+            limitations=tuple(approval.get("structured_limitations") or ()),
+        )
         self.cursor.execute(
             """
             INSERT INTO authority_capability_pack_rollout(
@@ -991,6 +1206,109 @@ class CapabilityPackAuthorityRepository:
             )
         return self.require_rollout(rollout_id, project_id=project_id)
 
+    def complete_rollout(
+        self,
+        rollout_id: str,
+        *,
+        project_id: str,
+        expected_activation_version: int,
+        reason: str,
+        activated_by: str,
+        operation_id: str,
+    ) -> dict[str, Any]:
+        self.cursor.execute(
+            """
+            SET CONSTRAINTS
+                authority_capability_pack_activation_fact_guard,
+                authority_capability_pack_rollout_fact_guard
+            DEFERRED
+            """
+        )
+        rollout = self.require_rollout(
+            rollout_id, project_id=project_id, for_update=True
+        )
+        if rollout["status"] in {
+            RolloutStatus.COMPLETED.value,
+            RolloutStatus.ROLLED_BACK.value,
+        }:
+            raise KernelError(
+                "CAPABILITY_PACK_ROLLOUT_TRANSITION_CONFLICT",
+                "rollout is already terminal",
+            )
+        baseline = self.require_deployment(
+            str(rollout["baseline_deployment_id"]),
+            project_id=project_id,
+            for_update=True,
+        )
+        candidate = self.require_deployment(
+            str(rollout["candidate_deployment_id"]),
+            project_id=project_id,
+            for_update=True,
+        )
+        activation_key = canonical_hash(
+            {
+                "scope_key": baseline["scope_key"],
+                "environment": baseline["environment"],
+                "workflow_definition_ref": baseline["workflow_definition_ref"],
+                "pack_id": baseline["pack_id"],
+            }
+        )
+        self.cursor.execute(
+            """
+            SELECT active_deployment_id, activation_version
+            FROM authority_capability_pack_activation
+            WHERE activation_key=%s FOR UPDATE
+            """,
+            [activation_key],
+        )
+        activation_row = self.cursor.fetchone()
+        if activation_row != (
+            baseline["deployment_id"],
+            expected_activation_version,
+        ):
+            raise KernelError(
+                "CAPABILITY_PACK_ACTIVATION_CONFLICT",
+                "rollout baseline Activation changed; qualification must be re-evaluated",
+            )
+        self._require_deployment_admissible(candidate)
+        approval = self.latest_approval(str(candidate["compilation_id"]))
+        assert approval is not None
+        CapabilityPackApprovalScope.from_payload(
+            dict(approval["approval_scope"])
+        ).require_rollout(
+            mode=RolloutStatus.FULL,
+            percentage=100,
+            limitations=tuple(approval.get("structured_limitations") or ()),
+        )
+        activation = self.activate_deployment_cas(
+            project_id=project_id,
+            deployment_id=str(candidate["deployment_id"]),
+            expected_activation_version=expected_activation_version,
+            reason=reason,
+            activated_by=activated_by,
+            operation_id=operation_id,
+        )
+        self.cursor.execute(
+            """
+            UPDATE authority_capability_pack_rollout
+            SET status='COMPLETED', completed_at=NOW(), updated_at=NOW()
+            WHERE rollout_id=%s
+              AND status NOT IN ('COMPLETED', 'ROLLED_BACK')
+            """,
+            [rollout_id],
+        )
+        if self.cursor.rowcount != 1:
+            raise KernelError(
+                "CAPABILITY_PACK_ROLLOUT_TRANSITION_CONFLICT",
+                "rollout changed concurrently",
+            )
+        result = self.require_rollout(rollout_id, project_id=project_id)
+        return {
+            **result,
+            "active_deployment_id": activation["active_deployment_id"],
+            "activation_version": activation["activation_version"],
+        }
+
     def mark_rollouts_rolled_back(
         self, baseline_deployment_id: str, *, project_id: str
     ) -> None:
@@ -1011,14 +1329,19 @@ class CapabilityPackAuthorityRepository:
         )
 
     def require_rollout(
-        self, rollout_id: str, *, project_id: str = ""
+        self,
+        rollout_id: str,
+        *,
+        project_id: str = "",
+        for_update: bool = False,
     ) -> dict[str, Any]:
+        lock = " FOR UPDATE" if for_update else ""
         self.cursor.execute(
-            """
+            f"""
             SELECT rollout_id, baseline_deployment_id, candidate_deployment_id,
                    mode, percentage, assignment_key_policy, status,
                    started_at, paused_at, completed_at
-            FROM authority_capability_pack_rollout WHERE rollout_id=%s
+            FROM authority_capability_pack_rollout WHERE rollout_id=%s{lock}
             """,
             [rollout_id],
         )
@@ -1054,7 +1377,7 @@ class CapabilityPackAuthorityRepository:
             FROM authority_capability_pack_rollout
             WHERE baseline_deployment_id=%s
               AND status IN (
-                  'CANARY', 'PERCENTAGE', 'FULL', 'PAUSED', 'COMPLETED'
+                  'CANARY', 'PERCENTAGE', 'FULL', 'PAUSED'
               )
             ORDER BY started_at DESC LIMIT 2
             """,
@@ -1209,10 +1532,13 @@ class CapabilityPackAuthorityRepository:
                    activation.active_deployment_id,
                    activation.activation_version
             FROM authority_capability_pack_activation AS activation
+            JOIN authority_capability_pack_deployment AS deployment
+              ON deployment.deployment_id=activation.active_deployment_id
             WHERE activation.scope_key IN ({placeholders})
               AND activation.environment=%s
               AND activation.workflow_definition_ref=%s
               AND activation.pack_id=%s
+              AND deployment.deployment_status='ACTIVE'
             """,
             [*scope_keys, environment, workflow_definition_ref, pack_id],
         )
@@ -1224,6 +1550,233 @@ class CapabilityPackAuthorityRepository:
             "activation_version",
         )
         return [dict(zip(fields, row, strict=True)) for row in self.cursor.fetchall()]
+
+    def validate_resolution_scope(
+        self, *, project_id: str, workspace_id: str, book_id: str
+    ) -> None:
+        self.cursor.execute(
+            "SELECT 1 FROM authority_project WHERE project_id=%s",
+            [project_id],
+        )
+        if self.cursor.fetchone() is None:
+            raise KernelError(
+                "CAPABILITY_PACK_SCOPE_NOT_FOUND",
+                "runtime Project does not exist",
+            )
+        if workspace_id:
+            self.cursor.execute(
+                """
+                SELECT 1 FROM authority_workspace
+                WHERE project_id=%s AND workspace_id=%s
+                """,
+                [project_id, workspace_id],
+            )
+            if self.cursor.fetchone() is None:
+                raise KernelError(
+                    "CAPABILITY_PACK_SCOPE_CONFLICT",
+                    "runtime Workspace does not belong to Project",
+                )
+        if book_id:
+            self.cursor.execute(
+                """
+                SELECT 1 FROM authority_book
+                WHERE project_id=%s AND workspace_id=%s AND book_id=%s
+                """,
+                [project_id, workspace_id, book_id],
+            )
+            if self.cursor.fetchone() is None:
+                raise KernelError(
+                    "CAPABILITY_PACK_SCOPE_CONFLICT",
+                    "runtime Book does not belong to Workspace and Project",
+                )
+
+    def find_attempt_snapshot(
+        self, attempt_id: str
+    ) -> dict[str, Any] | None:
+        self.cursor.execute(
+            """
+            SELECT snapshot_id, operation_id, attempt_id,
+                   execution_fencing_token, snapshot_creation_fencing_token,
+                   snapshot_payload, snapshot_hash, trace_id, span_id,
+                   created_by_worker_id, created_at
+            FROM authority_attempt_capability_pack_snapshot
+            WHERE attempt_id=%s
+            """,
+            [attempt_id],
+        )
+        row = self.cursor.fetchone()
+        if row is None:
+            return None
+        return {
+            "snapshot_id": str(row[0]),
+            "operation_id": str(row[1]),
+            "attempt_id": str(row[2]),
+            "execution_fencing_token": int(row[3]),
+            "snapshot_creation_fencing_token": int(row[4]),
+            "snapshot": CapabilityPackExecutionSnapshot(**dict(row[5])),
+            "snapshot_hash": str(row[6]),
+            "trace_id": str(row[7]),
+            "span_id": str(row[8]),
+            "created_by_worker_id": str(row[9]),
+            "created_at": row[10],
+        }
+
+    def store_attempt_snapshot(
+        self,
+        *,
+        operation_id: str,
+        attempt_id: str,
+        execution_fencing_token: int,
+        snapshot_creation_fencing_token: int,
+        worker_id: str,
+        snapshot: CapabilityPackExecutionSnapshot,
+    ) -> dict[str, Any]:
+        existing = self.find_attempt_snapshot(attempt_id)
+        if existing is not None:
+            if existing["operation_id"] != operation_id:
+                raise KernelError(
+                    "CAPABILITY_PACK_ATTEMPT_SNAPSHOT_CONFLICT",
+                    "Attempt is already bound to another Pack snapshot operation",
+                )
+            return existing
+        snapshot_id = canonical_hash(
+            {
+                "type": "CapabilityPackAttemptSnapshot.v1",
+                "operation_id": operation_id,
+                "attempt_id": attempt_id,
+            }
+        )
+        assignment_id = (
+            snapshot.assignment_ref
+            if snapshot.rollout_id
+            and snapshot.assignment_ref.startswith("sha256:")
+            else None
+        )
+        self.cursor.execute(
+            """
+            SELECT project_id, trace_id, span_id, correlation_id, causation_id
+            FROM authority_operation WHERE operation_id=%s
+            """,
+            [operation_id],
+        )
+        operation = self.cursor.fetchone()
+        if operation is None:
+            raise KernelError(
+                "CAPABILITY_PACK_ATTEMPT_OPERATION_INVALID",
+                "Pack Snapshot operation does not exist",
+            )
+        project_id, trace_id, span_id, correlation_id, causation_id = operation
+        self.cursor.execute(
+            """
+            INSERT INTO authority_attempt_capability_pack_snapshot(
+                snapshot_id, operation_id, attempt_id,
+                execution_fencing_token, snapshot_creation_fencing_token,
+                deployment_id,
+                activation_version, pack_id, pack_version, manifest_hash,
+                compilation_id, compilation_hash, catalog_snapshot_hash,
+                binding_set_id, binding_set_hash, selected_scope_type,
+                rollout_id, assignment_id, assignment_ref,
+                workflow_node_id, operation_definition_ref,
+                agent_definition_ref, release_sha, snapshot_payload,
+                snapshot_hash, trace_id, span_id, created_by_worker_id
+            ) VALUES (
+                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                %s, %s, %s, %s, NULLIF(%s, ''), %s, %s, %s, %s, %s,
+                %s, %s, %s, %s, %s, %s
+            )
+            ON CONFLICT(attempt_id) DO NOTHING
+            """,
+            [
+                snapshot_id,
+                operation_id,
+                attempt_id,
+                execution_fencing_token,
+                snapshot_creation_fencing_token,
+                snapshot.deployment_id,
+                snapshot.activation_version,
+                snapshot.pack_id,
+                snapshot.pack_version,
+                snapshot.manifest_hash,
+                snapshot.compilation_id,
+                snapshot.compilation_hash,
+                snapshot.catalog_snapshot_hash,
+                snapshot.binding_set_id,
+                snapshot.binding_set_hash,
+                snapshot.selected_scope_type.value,
+                snapshot.rollout_id,
+                assignment_id,
+                snapshot.assignment_ref,
+                snapshot.workflow_node_id,
+                snapshot.operation_definition_ref,
+                snapshot.agent_definition_ref,
+                snapshot.release_sha,
+                Jsonb(snapshot.to_dict()),
+                snapshot.snapshot_hash,
+                trace_id,
+                span_id,
+                worker_id,
+            ],
+        )
+        inserted = self.cursor.rowcount == 1
+        if inserted:
+            event_id = str(uuid4())
+            topic = "authority.capability_pack.attempt_snapshot.frozen"
+            evidence = {
+                "operation_id": operation_id,
+                "attempt_id": attempt_id,
+                "snapshot_id": snapshot_id,
+                "snapshot_hash": snapshot.snapshot_hash,
+                "execution_fencing_token": execution_fencing_token,
+                "snapshot_creation_fencing_token": (
+                    snapshot_creation_fencing_token
+                ),
+                "trace_id": str(trace_id),
+                "span_id": str(span_id),
+            }
+            self.cursor.execute(
+                """
+                INSERT INTO state_event(
+                    event_id, aggregate_type, aggregate_id, project_id,
+                    event_type, event_version, sequence_number,
+                    correlation_id, causation_id, payload
+                ) VALUES (
+                    %s, 'capability_pack_attempt_snapshot', %s, %s,
+                    %s, 1, 1, %s, %s, %s
+                )
+                """,
+                [
+                    event_id,
+                    snapshot_id,
+                    project_id,
+                    topic,
+                    correlation_id,
+                    causation_id,
+                    Jsonb(evidence),
+                ],
+            )
+            self.cursor.execute(
+                """
+                INSERT INTO audit_log(
+                    audit_id, project_id, operation_id, action, payload
+                ) VALUES (%s, %s, %s, %s, %s)
+                """,
+                [str(uuid4()), project_id, operation_id, topic, Jsonb(evidence)],
+            )
+            self.cursor.execute(
+                """
+                INSERT INTO outbox_event(
+                    outbox_id, event_id, project_id, topic, status, payload
+                ) VALUES (%s, %s, %s, %s, 'PENDING', %s)
+                """,
+                [str(uuid4()), event_id, project_id, topic, Jsonb(evidence)],
+            )
+        stored = self.find_attempt_snapshot(attempt_id)
+        if stored is None or stored["snapshot_hash"] != snapshot.snapshot_hash:
+            raise KernelError(
+                "CAPABILITY_PACK_ATTEMPT_SNAPSHOT_CONFLICT",
+                "Attempt is already bound to different immutable Pack content",
+            )
+        return stored
 
     def latest_deprecation(self, pack_id: str, pack_version: str) -> dict[str, Any] | None:
         self.cursor.execute(
@@ -1255,8 +1808,8 @@ class CapabilityPackAuthorityRepository:
         self.cursor.execute(
             """
             SELECT approval_id, compilation_hash, decision,
-                   approval_policy_ref, approval_scope, expires_at,
-                   decided_by, decided_at
+                   approval_policy_ref, approval_scope_v1, expires_at,
+                   decided_by, decided_at, structured_limitations
             FROM authority_capability_pack_approval
             WHERE compilation_id=%s
             ORDER BY decided_at DESC, approval_id DESC LIMIT 1
@@ -1275,6 +1828,7 @@ class CapabilityPackAuthorityRepository:
             "expires_at",
             "decided_by",
             "decided_at",
+            "structured_limitations",
         )
         return dict(zip(fields, row, strict=True))
 
@@ -1318,6 +1872,14 @@ class CapabilityPackAuthorityRepository:
         asset_version_id = str(uuid4())
         self.cursor.execute(
             """
+            UPDATE authority_asset_version
+            SET lifecycle='SUPERSEDED'
+            WHERE asset_id=%s AND lifecycle='ACTIVE'
+            """,
+            [asset_id],
+        )
+        self.cursor.execute(
+            """
             INSERT INTO authority_asset_version(
                 asset_version_id, asset_id, version_number, lifecycle,
                 eligibility, governance, content, content_hash, schema_version
@@ -1333,6 +1895,82 @@ class CapabilityPackAuthorityRepository:
             ],
         )
         return asset_version_id
+
+    def _normalize_dependencies(
+        self,
+        *,
+        manifest: Mapping[str, Any],
+        dependencies: Sequence[Mapping[str, Any]],
+    ) -> tuple[dict[str, str], ...]:
+        declared = {
+            str(value)
+            for value in (manifest.get("role") or {}).get("upstream_packs") or ()
+        }
+        normalized: dict[str, dict[str, str]] = {}
+        for raw in dependencies:
+            if set(raw) != {
+                "pack_id",
+                "version",
+                "manifest_hash",
+                "dependency_type",
+            }:
+                raise KernelError(
+                    "CAPABILITY_PACK_DEPENDENCY_PROTOCOL_INVALID",
+                    "dependency declaration must use the closed exact protocol",
+                )
+            dependency = {
+                "pack_id": str(raw.get("pack_id") or ""),
+                "version": str(raw.get("version") or ""),
+                "manifest_hash": str(raw.get("manifest_hash") or ""),
+                "dependency_type": str(raw.get("dependency_type") or ""),
+            }
+            if (
+                not dependency["pack_id"]
+                or is_floating_version(dependency["version"])
+                or re.fullmatch(
+                    r"(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)",
+                    dependency["version"],
+                )
+                is None
+                or dependency["dependency_type"] not in {"REQUIRED", "OPTIONAL"}
+            ):
+                raise KernelError(
+                    "CAPABILITY_PACK_DEPENDENCY_VERSION_INVALID",
+                    "Pack dependency requires an exact SemVer and governed type",
+                )
+            if dependency["pack_id"] in normalized:
+                raise KernelError(
+                    "CAPABILITY_PACK_DEPENDENCY_DUPLICATE",
+                    "one Pack dependency id cannot resolve to multiple versions",
+                )
+            target = self.require_version(
+                dependency["pack_id"], dependency["version"]
+            )
+            assert target is not None
+            if target["manifest_hash"] != dependency["manifest_hash"]:
+                raise KernelError(
+                    "CAPABILITY_PACK_DEPENDENCY_HASH_DRIFT",
+                    "dependency declaration does not bind the exact Manifest hash",
+                )
+            normalized[dependency["pack_id"]] = dependency
+        if declared != set(normalized):
+            raise KernelError(
+                "CAPABILITY_PACK_DEPENDENCY_DECLARATION_MISMATCH",
+                "Manifest upstream_packs require exact registered dependencies",
+            )
+        incompatible = {
+            str(value)
+            for value in (manifest.get("compatibility") or {}).get(
+                "incompatible_packs"
+            )
+            or ()
+        }
+        if incompatible & set(normalized):
+            raise KernelError(
+                "CAPABILITY_PACK_DEPENDENCY_INCOMPATIBLE",
+                "Manifest dependency is explicitly incompatible",
+            )
+        return tuple(normalized[key] for key in sorted(normalized))
 
     def _require_asset_project(
         self, asset_version_id: str, project_id: str
@@ -1420,6 +2058,21 @@ class CapabilityPackAuthorityRepository:
                 "CAPABILITY_PACK_APPROVAL_EXPIRED",
                 "Deployment approval has expired",
             )
+        CapabilityPackApprovalScope.from_payload(
+            dict(approval["approval_scope"])
+        ).require_admission(
+            scope=CapabilityPackScope(
+                ScopeType(str(deployment["target_scope_type"])),
+                project_id=str(deployment.get("project_id") or ""),
+                workspace_id=str(deployment.get("workspace_id") or ""),
+                book_id=str(deployment.get("book_id") or ""),
+            ),
+            environment=str(deployment["environment"]),
+            runtime_profile=str(deployment["runtime_profile"]),
+            release_channel=str(deployment["release_channel"]),
+            workflow_definition_ref=str(deployment["workflow_definition_ref"]),
+            limitations=tuple(approval.get("structured_limitations") or ()),
+        )
         deprecation = self.latest_deprecation(
             str(deployment["pack_id"]), str(deployment["pack_version"])
         )

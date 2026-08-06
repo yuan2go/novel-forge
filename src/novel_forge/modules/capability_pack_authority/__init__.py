@@ -2,6 +2,7 @@
 
 from .domain import (
     ApprovalDecision,
+    CapabilityPackAttemptSnapshot,
     CapabilityPackExecutionSnapshot,
     CapabilityPackScope,
     DeploymentStatus,
@@ -14,6 +15,7 @@ from .domain import (
 
 __all__ = [
     "ApprovalDecision",
+    "CapabilityPackAttemptSnapshot",
     "CapabilityPackExecutionSnapshot",
     "CapabilityPackScope",
     "DeploymentStatus",

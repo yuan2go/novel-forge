@@ -891,6 +891,12 @@ def build_runtime_binding(
         capability_pack_assignment_ref=str(
             command.get("capability_pack_assignment_ref") or ""
         ),
+        capability_pack_attempt_snapshot_id=str(
+            command.get("capability_pack_attempt_snapshot_id") or ""
+        ),
+        capability_pack_attempt_snapshot_hash=str(
+            command.get("capability_pack_attempt_snapshot_hash") or ""
+        ),
     )
 
 

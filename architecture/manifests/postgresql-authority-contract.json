@@ -45,7 +45,8 @@
       "20260804_0065_runtime_job_lease_identity",
       "20260804_0066_runtime_job_attempt_lease_existence",
       "20260804_0067_activated_migration_archival_binding",
-      "20260805_0071_capability_pack_authority"
+      "20260805_0071_capability_pack_authority",
+      "20260806_0072_capability_pack_integrity_hardening"
     ],
     "required_operation_definitions": [
       "chapter.slice.run",
@@ -97,7 +98,14 @@
       "tests/integration/test_source_document_authority_postgres.py",
       "tests/integration/test_mkaos_authority_postgres.py",
       "tests/integration/test_authority_book_design_postgres.py",
-      "tests/integration/test_capability_pack_authority_postgres.py"
+      "tests/integration/test_capability_pack_registration_compilation_postgres.py",
+      "tests/integration/test_capability_pack_approval_policy_postgres.py",
+      "tests/integration/test_capability_pack_activation_concurrency_postgres.py",
+      "tests/integration/test_capability_pack_scope_resolution_postgres.py",
+      "tests/integration/test_capability_pack_rollout_postgres.py",
+      "tests/integration/test_capability_pack_runtime_snapshot_postgres.py",
+      "tests/integration/test_capability_pack_integrity_constraints_postgres.py",
+      "tests/integration/test_capability_pack_dependency_postgres.py"
     ],
     "required_schema_and_index_rules": [
       {

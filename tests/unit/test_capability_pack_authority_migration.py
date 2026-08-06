@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from novel_forge.storage.migrations import LATEST_MIGRATION_ID, validate_migration_chain
 from novel_forge.storage.migrations.versions import (
-    v20260805_0071_capability_pack_authority as migration,
+    v20260805_0071_capability_pack_authority as foundation_migration,
+)
+from novel_forge.storage.migrations.versions import (
+    v20260806_0072_capability_pack_integrity_hardening as migration,
 )
 
 
@@ -12,14 +15,16 @@ def _sql() -> str:
 
 def test_capability_pack_authority_is_linear_migration_head() -> None:
     validate_migration_chain()
-    assert migration.MIGRATION_ID == "20260805_0071_capability_pack_authority"
-    assert migration.DOWN_REVISION == "20260805_0070_agent_runtime_recovery_protocol"
+    assert migration.MIGRATION_ID == (
+        "20260806_0072_capability_pack_integrity_hardening"
+    )
+    assert migration.DOWN_REVISION == foundation_migration.MIGRATION_ID
     assert LATEST_MIGRATION_ID == migration.MIGRATION_ID
     assert migration.FORWARD_ONLY is True
 
 
 def test_schema_has_registry_deployment_and_runtime_snapshot_facts() -> None:
-    sql = _sql()
+    sql = "\n".join(foundation_migration.UPGRADE_STATEMENTS)
     for relation in (
         "authority_capability_pack",
         "authority_capability_pack_version",
@@ -42,7 +47,7 @@ def test_schema_has_registry_deployment_and_runtime_snapshot_facts() -> None:
 
 
 def test_schema_uses_cas_immutability_and_scope_constraints() -> None:
-    sql = _sql()
+    sql = "\n".join(foundation_migration.UPGRADE_STATEMENTS)
     assert "activation_version BIGINT NOT NULL" in sql
     assert "authority_capability_pack_immutable" in sql
     assert "authority_capability_pack_assignment_immutable" in sql
@@ -53,12 +58,37 @@ def test_schema_uses_cas_immutability_and_scope_constraints() -> None:
 
 
 def test_schema_does_not_create_a_second_runtime() -> None:
-    sql = _sql().lower()
+    sql = ("\n".join(foundation_migration.UPGRADE_STATEMENTS) + _sql()).lower()
     for forbidden in (
         "create table authority_capability_pack_run",
         "create table authority_capability_pack_attempt",
         "create table authority_capability_pack_lease",
         "create table authority_capability_pack_fence",
         "create table authority_capability_pack_worker",
+    ):
+        assert forbidden not in sql
+
+
+def test_integrity_hardening_adds_provenance_and_attempt_snapshot_authority() -> None:
+    sql = _sql()
+    for signal in (
+        "authority_capability_pack_approval_exact_compilation_fk",
+        "authority_capability_pack_deployment_compilation_chain_fk",
+        "authority_capability_pack_deployment_binding_chain_fk",
+        "authority_capability_pack_dependency",
+        "authority_attempt_capability_pack_snapshot",
+        "authority_attempt_capability_pack_snapshot_immutable",
+        "authority_agent_runtime_pack_integrity_fact_guard",
+        "authority_capability_pack_one_open_rollout",
+    ):
+        assert signal in sql
+
+
+def test_integrity_hardening_keeps_existing_attempt_lease_and_fence_authority() -> None:
+    sql = _sql().lower()
+    for forbidden in (
+        "create table authority_capability_pack_attempt",
+        "create table authority_capability_pack_lease",
+        "create table authority_capability_pack_fence",
     ):
         assert forbidden not in sql

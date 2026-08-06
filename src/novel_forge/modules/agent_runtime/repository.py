@@ -321,6 +321,93 @@ class PostgresAgentRuntimeRepository:
             )
         return self.resolve_active_definition(agent_id)
 
+    def lock_definition_version(
+        self, agent_id: str, definition_version: int
+    ) -> dict[str, Any]:
+        """Resolve an exact immutable definition frozen by a Pack Deployment.
+
+        A canary may legitimately run two Pack versions at once, so the global
+        Agent activation pointer cannot be the authority for both versions.
+        """
+
+        self.cursor.execute(
+            """
+            SELECT definition.agent_id, definition.definition_version,
+                   definition.agent_type, definition.domain, definition.role,
+                   definition.input_contract_ref,
+                   definition.output_contract_ref,
+                   definition.authority_scope_ref,
+                   definition.default_scope_policy_ref,
+                   definition.allowed_tools,
+                   definition.allowed_context_types,
+                   definition.execution_policy_ref,
+                   definition.approval_policy_ref,
+                   definition.quality_policy_ref,
+                   definition.definition_hash,
+                   contract.capability_pack_ref,
+                   contract.prompt_bundle_ref, contract.prompt_bundle_hash,
+                   contract.skill_bundle_ref, contract.skill_bundle_hash,
+                   contract.tool_policy_ref, contract.tool_policy_hash,
+                   contract.context_policy_ref, contract.context_policy_hash,
+                   contract.runtime_contract_hash,
+                   contract.definition_source,
+                   definition.status
+            FROM authority_agent_definition AS definition
+            JOIN authority_agent_definition_runtime_contract AS contract
+              ON contract.agent_id=definition.agent_id
+             AND contract.definition_version=definition.definition_version
+            WHERE definition.agent_id=%s
+              AND definition.definition_version=%s
+            FOR SHARE OF definition, contract
+            """,
+            [agent_id, definition_version],
+        )
+        row = self.cursor.fetchone()
+        if row is None:
+            raise KernelError(
+                "AGENT_DEFINITION_NOT_FOUND",
+                f"exact Agent Definition does not exist: {agent_id}@{definition_version}",
+            )
+        fields = (
+            "agent_id",
+            "definition_version",
+            "agent_type",
+            "domain",
+            "role",
+            "input_contract_ref",
+            "output_contract_ref",
+            "authority_scope_ref",
+            "default_scope_policy_ref",
+            "allowed_tools",
+            "allowed_context_types",
+            "execution_policy_ref",
+            "approval_policy_ref",
+            "quality_policy_ref",
+            "definition_hash",
+            "capability_pack_ref",
+            "prompt_bundle_ref",
+            "prompt_bundle_hash",
+            "skill_bundle_ref",
+            "skill_bundle_hash",
+            "tool_policy_ref",
+            "tool_policy_hash",
+            "context_policy_ref",
+            "context_policy_hash",
+            "runtime_contract_hash",
+            "definition_source",
+            "definition_status",
+        )
+        result = dict(zip(fields, row, strict=True))
+        if result["definition_status"] != "ACTIVE":
+            raise KernelError(
+                "AGENT_DEFINITION_DISABLED",
+                f"exact Agent Definition is not deployable: {agent_id}@{definition_version}",
+            )
+        result["capabilities"] = self._definition_capabilities(
+            agent_id, definition_version
+        )
+        return result
+
     def list_definitions(
         self,
         *,
@@ -796,7 +883,9 @@ class PostgresAgentRuntimeRepository:
                 capability_pack_binding_set_id,
                 capability_pack_binding_set_hash,
                 capability_pack_scope_type,
-                capability_pack_assignment_ref
+                capability_pack_assignment_ref,
+                capability_pack_attempt_snapshot_id,
+                capability_pack_attempt_snapshot_hash
             ) VALUES (
                 %(binding_id)s, %(project_id)s, %(workspace_id)s, %(book_id)s,
                 %(workflow_definition_ref)s, %(workflow_node_id)s,
@@ -828,7 +917,9 @@ class PostgresAgentRuntimeRepository:
                 %(capability_pack_binding_set_id)s,
                 %(capability_pack_binding_set_hash)s,
                 %(capability_pack_scope_type)s,
-                %(capability_pack_assignment_ref)s
+                %(capability_pack_assignment_ref)s,
+                %(capability_pack_attempt_snapshot_id)s,
+                %(capability_pack_attempt_snapshot_hash)s
             )
             ON CONFLICT (binding_id) DO NOTHING
             """,
@@ -857,6 +948,12 @@ class PostgresAgentRuntimeRepository:
                 ),
                 "capability_pack_assignment_ref": (
                     binding.capability_pack_assignment_ref or None
+                ),
+                "capability_pack_attempt_snapshot_id": (
+                    binding.capability_pack_attempt_snapshot_id or None
+                ),
+                "capability_pack_attempt_snapshot_hash": (
+                    binding.capability_pack_attempt_snapshot_hash or None
                 ),
             },
         )

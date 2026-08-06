@@ -54,7 +54,6 @@ from novel_forge.modules.chapter_authority.model_effects import (
 from novel_forge.modules.command_kernel.asset_commands import AuthorityAssetWriteCommand
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.capability_pack_authority.runtime import (
-    CapabilityPackResolutionRequest,
     CapabilityPackRuntimeResolver,
     chapter_node_binding_from_snapshot,
 )
@@ -107,7 +106,6 @@ class PostgresChapterAgentBindingRecorder:
         self.runtime_profile = runtime_profile
         self.release_channel = release_channel
         self.capability_pack_id = capability_pack_id
-        self.pack_resolver = CapabilityPackRuntimeResolver(database_url)
         self.legacy_writer = AuthorityAssetWriter(database_url)
         self.turn_coordinator = AgentTurnExecutionCoordinator(
             database_url, fault_injector=fault_injector
@@ -130,6 +128,19 @@ class PostgresChapterAgentBindingRecorder:
             return None
         work_order_id = _identity("chapter-agent-work-order", request.attempt_id)
         with AuthorityUnitOfWork(self.database_url) as uow:
+            if self.compatibility_allowed:
+                uow.cursor.execute(
+                    "SELECT 1 FROM authority_project WHERE project_id=%s",
+                    [request.project_id],
+                )
+                if uow.cursor.fetchone() is None:
+                    # Legacy fixture Operations can predate Project Authority.
+                    # They may emit explicit compatibility evidence, but must
+                    # not borrow a global Agent binding and manufacture an
+                    # invalid authoritative Runtime Binding.
+                    uow.commit()
+                    self.record_compatibility_usage(request, stage=stage)
+                    return None
             existing = uow.repositories.agent_collaboration.find_work_order_by_turn(
                 _identity("chapter-agent-turn", request.attempt_id)
             )
@@ -147,36 +158,14 @@ class PostgresChapterAgentBindingRecorder:
                 )
 
             operation = _operation_snapshot(uow.cursor, request)
-            pack_snapshot = None
-            try:
-                pack_snapshot = self.pack_resolver.resolve_in_uow(
-                    uow,
-                    CapabilityPackResolutionRequest(
-                        project_id=request.project_id,
-                        workspace_id=request.workspace_id,
-                        book_id=execution_binding.request.book_id,
-                        workflow_definition_ref=self.workflow_definition_ref,
-                        workflow_node_id=stage,
-                        environment=self.environment,
-                        runtime_profile=self.runtime_profile,
-                        release_channel=self.release_channel,
-                        release_sha=execution_binding.route_snapshot.release_sha,
-                        operation_definition_ref=(
-                            f"{operation['definition_name']}"
-                            f"@{operation['definition_version']}"
-                        ),
-                        pack_id=self.capability_pack_id,
-                    ),
-                )
-            except KernelError as exc:
-                if (
-                    exc.code == "CAPABILITY_PACK_DEPLOYMENT_NOT_RESOLVED"
-                    and self.compatibility_allowed
-                    and stage not in self.required_stages
-                ):
-                    pack_snapshot = None
-                else:
-                    raise
+            attempt_pack_snapshot = (
+                execution_binding.capability_pack_attempt_snapshot
+            )
+            pack_snapshot = (
+                attempt_pack_snapshot.execution_snapshot
+                if attempt_pack_snapshot is not None
+                else None
+            )
             if pack_snapshot is not None:
                 node_binding = chapter_node_binding_from_snapshot(pack_snapshot)
             else:
@@ -198,8 +187,15 @@ class PostgresChapterAgentBindingRecorder:
                     raise
 
             _validate_operation_binding(operation, node_binding, stage)
-            agent = uow.repositories.agent_runtime.lock_active_definition(
-                str(node_binding["agent_id"])
+            agent = (
+                uow.repositories.agent_runtime.lock_definition_version(
+                    str(node_binding["agent_id"]),
+                    int(node_binding["agent_definition_version"]),
+                )
+                if pack_snapshot is not None
+                else uow.repositories.agent_runtime.lock_active_definition(
+                    str(node_binding["agent_id"])
+                )
             )
             _validate_definition_binding(agent, node_binding)
             capability = _bound_capability(
@@ -234,7 +230,7 @@ class PostgresChapterAgentBindingRecorder:
                 execution_binding,
             )
             if pack_snapshot is not None:
-                self.pack_resolver.validate_runtime_admission(
+                CapabilityPackRuntimeResolver.validate_runtime_admission(
                     pack_snapshot,
                     {
                         "operation_definition_ref": (
@@ -523,6 +519,16 @@ class PostgresChapterAgentBindingRecorder:
                 ),
                 capability_pack_assignment_ref=(
                     pack_snapshot.assignment_ref if pack_snapshot else ""
+                ),
+                capability_pack_attempt_snapshot_id=(
+                    attempt_pack_snapshot.snapshot_id
+                    if attempt_pack_snapshot
+                    else ""
+                ),
+                capability_pack_attempt_snapshot_hash=(
+                    attempt_pack_snapshot.snapshot_hash
+                    if attempt_pack_snapshot
+                    else ""
                 ),
             )
             self.turn_coordinator.freeze_turn_in_uow(uow, work_order, runtime_binding)

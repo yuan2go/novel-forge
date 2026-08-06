@@ -22,7 +22,7 @@ from novel_forge.modules.command_kernel.external_effect_adapters import (
     ProviderResult,
 )
 from novel_forge.modules.capability_pack_authority.domain import (
-    CapabilityPackExecutionSnapshot,
+    CapabilityPackAttemptSnapshot,
 )
 from novel_forge.modules.capability_pack_authority.runtime import (
     CapabilityPackResolutionRequest,
@@ -193,6 +193,7 @@ class ChapterExecutionBinding:
     request: ExecutionRequest
     route_snapshot: RouteSnapshot
     input_manifest: InputManifest
+    capability_pack_attempt_snapshot: CapabilityPackAttemptSnapshot | None = None
 
 
 class PostgresChapterExecutionContractBinder:
@@ -249,14 +250,20 @@ class PostgresChapterExecutionContractBinder:
         project_id = str(metadata.get("project_id") or "")
         workspace_id = str(metadata.get("workspace_id") or "")
         book_id = str(metadata.get("book_id") or "")
+        worker_id = str(metadata.get("worker_id") or "")
         try:
             fencing_token = int(metadata.get("fencing_token") or 0)
+            snapshot_fencing_token = int(
+                metadata.get("snapshot_fencing_token") or fencing_token
+            )
             chapter = int(metadata.get("chapter") or 0)
         except (TypeError, ValueError) as exc:
             raise ExternalEffectAdapterError(
                 "Chapter gateway Attempt metadata is invalid", request_sent=False
             ) from exc
-        if not all((operation_id, attempt_id, project_id, workspace_id, book_id)):
+        if not all(
+            (operation_id, attempt_id, project_id, workspace_id, book_id, worker_id)
+        ):
             raise ExternalEffectAdapterError(
                 "Chapter gateway Attempt metadata is incomplete", request_sent=False
             )
@@ -273,13 +280,26 @@ class PostgresChapterExecutionContractBinder:
             "chapter_number": chapter,
         }
         artifacts = self._artifacts(metadata)
-        pack_snapshot = self._resolve_pack_snapshot(
+        attempt_pack_snapshot = self._resolve_pack_snapshot(
             project_id=project_id,
             workspace_id=workspace_id,
             book_id=book_id,
+            operation_id=operation_id,
+            attempt_id=attempt_id,
+            execution_fencing_token=fencing_token,
+            worker_id=worker_id,
+            snapshot_creation_fencing_token=snapshot_fencing_token,
+            snapshot_creation_worker_id=str(
+                metadata.get("snapshot_worker_id") or worker_id
+            ),
             stage=stage,
             graph=graph,
             route=route,
+        )
+        pack_snapshot = (
+            attempt_pack_snapshot.execution_snapshot
+            if attempt_pack_snapshot is not None
+            else None
         )
         context_ref = next(
             (
@@ -669,7 +689,19 @@ class PostgresChapterExecutionContractBinder:
             project_id=project_id,
             logical_ref=route_ref,
             asset_type="route_snapshot",
-            contract=snapshot.to_dict(),
+            contract={
+                **snapshot.to_dict(),
+                "capability_pack_attempt_snapshot_id": (
+                    attempt_pack_snapshot.snapshot_id
+                    if attempt_pack_snapshot
+                    else ""
+                ),
+                "capability_pack_attempt_snapshot_hash": (
+                    attempt_pack_snapshot.snapshot_hash
+                    if attempt_pack_snapshot
+                    else ""
+                ),
+            },
             trace_id=str(request_payload.get("trace_id") or ""),
             correlation_id=str(request_payload.get("correlation_id") or ""),
         )
@@ -707,7 +739,12 @@ class PostgresChapterExecutionContractBinder:
             external_effect_id=external_effect_id,
             budget_reservation_id=budget_reservation_id,
         )
-        return ChapterExecutionBinding(request, snapshot, manifest)
+        return ChapterExecutionBinding(
+            request,
+            snapshot,
+            manifest,
+            attempt_pack_snapshot,
+        )
 
     @staticmethod
     def _artifacts(metadata: Mapping[str, Any]) -> tuple[ArtifactPointer, ...]:
@@ -757,14 +794,20 @@ class PostgresChapterExecutionContractBinder:
         project_id: str,
         workspace_id: str,
         book_id: str,
+        operation_id: str,
+        attempt_id: str,
+        execution_fencing_token: int,
+        worker_id: str,
+        snapshot_creation_fencing_token: int,
+        snapshot_creation_worker_id: str,
         stage: str,
         graph: Mapping[str, str],
         route: ChapterExecutionRoute,
-    ) -> CapabilityPackExecutionSnapshot | None:
+    ) -> CapabilityPackAttemptSnapshot | None:
         if not self.capability_pack_id:
             return None
         try:
-            return self.pack_resolver.resolve_active_deployment(
+            return self.pack_resolver.freeze_attempt_snapshot(
                 CapabilityPackResolutionRequest(
                     project_id=project_id,
                     workspace_id=workspace_id,
@@ -779,13 +822,21 @@ class PostgresChapterExecutionContractBinder:
                         f"{graph['definition_name']}@{graph['definition_version']}"
                     ),
                     pack_id=self.capability_pack_id,
-                )
+                ),
+                operation_id=operation_id,
+                attempt_id=attempt_id,
+                execution_fencing_token=execution_fencing_token,
+                worker_id=worker_id,
+                snapshot_creation_fencing_token=(
+                    snapshot_creation_fencing_token
+                ),
+                snapshot_creation_worker_id=snapshot_creation_worker_id,
             )
         except KernelError as exc:
-            if (
-                exc.code == "CAPABILITY_PACK_DEPLOYMENT_NOT_RESOLVED"
-                and not self.pack_required
-            ):
+            if exc.code in {
+                "CAPABILITY_PACK_DEPLOYMENT_NOT_RESOLVED",
+                "CAPABILITY_PACK_SCOPE_NOT_FOUND",
+            } and not self.pack_required:
                 return None
             raise
 
@@ -1102,6 +1153,9 @@ class PostgresChapterExecutionPayloadResolver:
                 "result": self.fixture_response_factory(stage, inputs),
                 "usage": {"input_tokens": 0, "output_tokens": 0},
                 "cost": {"amount": "0", "currency": "USD"},
+                "capability_pack_fixture_marker": (
+                    admission.route_snapshot.prompt_bundle_ref
+                ),
                 "fixture_protocol_only": True,
                 "real_model_call": False,
                 "production_verified": False,
@@ -1424,6 +1478,25 @@ class ProductionExecutionGatewayExternalEffectAdapter:
         reconciliation: bool,
         recovery_authorization: ExecutionRecoveryAuthorization | None = None,
     ) -> ProviderResult:
+        if recovery_authorization is not None:
+            metadata = request_payload.get("_production_execution")
+            if not isinstance(metadata, Mapping):
+                raise ExternalEffectAdapterError(
+                    "recovery payload has no execution metadata",
+                    request_sent=False,
+                )
+            request_payload = {
+                **request_payload,
+                "_production_execution": {
+                    **metadata,
+                    "snapshot_fencing_token": (
+                        recovery_authorization.recovery_fencing_token
+                    ),
+                    "snapshot_worker_id": (
+                        recovery_authorization.recovery_worker_id
+                    ),
+                },
+            }
         binding, session = self._binding_and_session(
             stable_idempotency_key, capability, request_payload
         )

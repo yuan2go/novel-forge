@@ -478,7 +478,10 @@ def build_chapter_authority_application(
         provider_adapters={
             adapter.provider: adapter for adapter in provider_adapters.values()
         },
-        capability_pack_id="chapter_generation_pack",
+        capability_pack_id=str(
+            values.get("NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID")
+            or "chapter_generation_pack"
+        ),
         pack_environment=environment,
         pack_runtime_profile=environment,
         pack_release_channel=str(

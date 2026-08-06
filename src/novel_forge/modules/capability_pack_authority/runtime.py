@@ -12,12 +12,14 @@ from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 from .domain import (
     ApprovalDecision,
+    CapabilityPackAttemptSnapshot,
     CapabilityPackExecutionSnapshot,
     CapabilityPackScope,
     DeploymentStatus,
     RolloutStatus,
     ScopeType,
 )
+from .policy import CapabilityPackApprovalScope
 
 
 @dataclass(frozen=True, slots=True)
@@ -89,6 +91,92 @@ class CapabilityPackRuntimeResolver:
         self, request: CapabilityPackResolutionRequest
     ) -> CapabilityPackExecutionSnapshot:
         return self.resolve_active_deployment(request)
+
+    def freeze_attempt_snapshot(
+        self,
+        request: CapabilityPackResolutionRequest,
+        *,
+        operation_id: str,
+        attempt_id: str,
+        execution_fencing_token: int,
+        worker_id: str,
+        snapshot_creation_fencing_token: int | None = None,
+        snapshot_creation_worker_id: str = "",
+    ) -> CapabilityPackAttemptSnapshot:
+        """Resolve at most once and bind the result to the current Attempt fence."""
+
+        creation_fence = (
+            execution_fencing_token
+            if snapshot_creation_fencing_token is None
+            else snapshot_creation_fencing_token
+        )
+        creation_worker = snapshot_creation_worker_id or worker_id
+        if (
+            not operation_id
+            or not attempt_id
+            or not worker_id
+            or execution_fencing_token <= 0
+            or creation_fence <= 0
+            or not creation_worker
+        ):
+            raise ValueError("Attempt Pack Snapshot admission identity is incomplete")
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT attempt.operation_id
+                FROM authority_attempt AS attempt
+                WHERE attempt.attempt_id=%s
+                FOR UPDATE OF attempt
+                """,
+                [attempt_id],
+            )
+            attempt = uow.cursor.fetchone()
+            if attempt != (operation_id,):
+                raise KernelError(
+                    "CAPABILITY_PACK_ATTEMPT_OPERATION_INVALID",
+                    "Pack Snapshot Attempt belongs to another operation",
+                )
+            existing = uow.repositories.capability_packs.find_attempt_snapshot(
+                attempt_id
+            )
+            if existing is None:
+                uow.cursor.execute(
+                    """
+                    SELECT owner FROM authority_lease_acquisition
+                    WHERE attempt_id=%s AND fencing_token=%s
+                      AND status='HELD' AND expires_at>NOW()
+                    """,
+                    [attempt_id, creation_fence],
+                )
+                lease = uow.cursor.fetchone()
+                if lease != (creation_worker,):
+                    raise KernelError(
+                        "CAPABILITY_PACK_ATTEMPT_FENCE_INVALID",
+                        "Pack Snapshot creation requires the current Attempt fence and worker",
+                    )
+                execution_snapshot = self.resolve_in_uow(uow, request)
+                existing = uow.repositories.capability_packs.store_attempt_snapshot(
+                    operation_id=operation_id,
+                    attempt_id=attempt_id,
+                    execution_fencing_token=execution_fencing_token,
+                    snapshot_creation_fencing_token=creation_fence,
+                    worker_id=creation_worker,
+                    snapshot=execution_snapshot,
+                )
+            uow.commit()
+        return CapabilityPackAttemptSnapshot(
+            snapshot_id=str(existing["snapshot_id"]),
+            operation_id=str(existing["operation_id"]),
+            attempt_id=str(existing["attempt_id"]),
+            execution_fencing_token=int(existing["execution_fencing_token"]),
+            snapshot_creation_fencing_token=int(
+                existing["snapshot_creation_fencing_token"]
+            ),
+            snapshot_hash=str(existing["snapshot_hash"]),
+            trace_id=str(existing["trace_id"]),
+            span_id=str(existing["span_id"]),
+            execution_snapshot=existing["snapshot"],
+        )
 
     @staticmethod
     def validate_runtime_admission(
@@ -169,6 +257,11 @@ class CapabilityPackRuntimeResolver:
     def resolve_in_uow(
         uow: AuthorityUnitOfWork, request: CapabilityPackResolutionRequest
     ) -> CapabilityPackExecutionSnapshot:
+        uow.repositories.capability_packs.validate_resolution_scope(
+            project_id=request.project_id,
+            workspace_id=request.workspace_id,
+            book_id=request.book_id,
+        )
         scopes = _scope_precedence(request)
         candidates = uow.repositories.capability_packs.resolve_activation_candidates(
             scope_keys=[scope.scope_key for scope in scopes],
@@ -202,7 +295,13 @@ class CapabilityPackRuntimeResolver:
         deployment = repository.require_deployment(
             str(selected_activation["active_deployment_id"])
         )
-        _validate_deployment(repository, deployment, request, active=True)
+        _validate_deployment(
+            repository,
+            deployment,
+            request,
+            scope=selected_scope,
+            active=True,
+        )
         rollout = repository.active_rollout_for_baseline(
             str(deployment["deployment_id"])
         )
@@ -238,9 +337,6 @@ class CapabilityPackRuntimeResolver:
             if rollout_status == RolloutStatus.PAUSED.value:
                 selected_id = str(rollout["baseline_deployment_id"])
                 assignment_ref = f"rollout:{rollout_id}:paused-baseline"
-            elif rollout_status == RolloutStatus.COMPLETED.value:
-                selected_id = str(rollout["candidate_deployment_id"])
-                assignment_ref = f"rollout:{rollout_id}:completed-candidate"
             else:
                 assignment = repository.assign_rollout_subject(
                     rollout, subject_key
@@ -249,7 +345,13 @@ class CapabilityPackRuntimeResolver:
                 selected_id = str(assignment["selected_deployment_id"])
             if selected_id != deployment["deployment_id"]:
                 deployment = repository.require_deployment(selected_id)
-                _validate_deployment(repository, deployment, request, active=False)
+                _validate_deployment(
+                    repository,
+                    deployment,
+                    request,
+                    scope=selected_scope,
+                    active=False,
+                )
 
         nodes = [
             dict(item)
@@ -467,6 +569,7 @@ def _validate_deployment(
     repository: Any,
     deployment: Mapping[str, Any],
     request: CapabilityPackResolutionRequest,
+    scope: CapabilityPackScope,
     *,
     active: bool,
 ) -> None:
@@ -509,6 +612,16 @@ def _validate_deployment(
             "CAPABILITY_PACK_APPROVAL_INVALID",
             "Pack Deployment no longer has a current exact approval",
         )
+    CapabilityPackApprovalScope.from_payload(
+        dict(approval["approval_scope"])
+    ).require_admission(
+        scope=scope,
+        environment=request.environment,
+        runtime_profile=request.runtime_profile,
+        release_channel=request.release_channel,
+        workflow_definition_ref=request.workflow_definition_ref,
+        limitations=tuple(approval.get("structured_limitations") or ()),
+    )
     deprecation = repository.latest_deprecation(
         str(deployment["pack_id"]), str(deployment["pack_version"])
     )
@@ -516,6 +629,15 @@ def _validate_deployment(
         raise KernelError(
             "CAPABILITY_PACK_VERSION_RETIRED",
             "retired Pack Version cannot admit new runtime work",
+        )
+    blocked_dependencies = repository.blocked_dependencies(
+        str(deployment["pack_id"]), str(deployment["pack_version"])
+    )
+    if blocked_dependencies:
+        raise KernelError(
+            "CAPABILITY_PACK_DEPENDENCY_ADMISSION_BLOCKED",
+            "Pack dependency is revoked, retired, or drifted: "
+            + ", ".join(blocked_dependencies),
         )
 
 
@@ -531,7 +653,9 @@ def _validate_active_agent(
             "CAPABILITY_PACK_AGENT_DEFINITION_INVALID",
             "runtime Node must bind an exact Agent Definition",
         )
-    active = uow.repositories.agent_runtime.resolve_active_definition(agent_id)
+    active = uow.repositories.agent_runtime.lock_definition_version(
+        agent_id, int(raw_version)
+    )
     checks = {
         "definition_version": int(raw_version),
         "definition_hash": node["agent_definition_hash"],
