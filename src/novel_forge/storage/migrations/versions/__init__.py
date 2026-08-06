@@ -73,6 +73,7 @@ from . import (
     v20260805_0070_agent_runtime_recovery_protocol,
     v20260805_0071_capability_pack_authority,
     v20260806_0072_capability_pack_integrity_hardening,
+    v20260806_0073_core_functional_loops,
 )
 
 VERSION_MODULES = [
@@ -148,6 +149,7 @@ VERSION_MODULES = [
     v20260805_0070_agent_runtime_recovery_protocol,
     v20260805_0071_capability_pack_authority,
     v20260806_0072_capability_pack_integrity_hardening,
+    v20260806_0073_core_functional_loops,
 ]
 
 __all__ = ["VERSION_MODULES"]

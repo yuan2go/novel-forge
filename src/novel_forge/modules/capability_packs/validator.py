@@ -14,7 +14,7 @@ from novel_forge.modules.production_execution.capability_registry import (
 from novel_forge.modules.production_execution.capabilities import CapabilityDefinition
 from novel_forge.modules.production_execution.security import assert_no_inline_secrets
 from .artifacts import is_floating_version
-from .operation_catalog import chapter_workflow_binding_catalog
+from .operation_catalog import governed_workflow_binding_catalog
 from .type_catalog import (
     CapabilityTypePolicy,
     conservative_capability_type_policy,
@@ -68,14 +68,22 @@ _TOP_LEVEL_FIELDS = (
 _EXTENSION_NAMESPACES = frozenset({"ui", "enterprise", "experiments", "vendor"})
 _RAW_SOURCE_TYPES = frozenset({"raw_source_document", "raw_source_chunk"})
 _TOOL_PERMISSIONS = frozenset({"READ", "WRITE", "EXECUTE", "QUERY"})
-_EXTERNAL_EFFECT_TOOL_REFS = frozenset(
-    {"model.provider.invoke", "storage.object.put"}
-)
+_EXTERNAL_EFFECT_TOOL_REFS = frozenset({"model.provider.invoke", "storage.object.put"})
 _SOURCE_ISOLATION_MODES = frozenset(
     {"ABSTRACT_ASSETS_ONLY", "FROZEN_ASSETS_ONLY", "RAW_ALLOWED_WITH_APPROVAL"}
 )
 _RUNTIME_PROFILES = frozenset(
     {"development", "validation", "provider-validation", "production"}
+)
+_COMMIT_AUTHORITIES = frozenset(
+    {
+        "BOOK_DESIGN_AUTHORITY",
+        "STORY_DESIGN_AUTHORITY",
+        "HIERARCHICAL_PLANNING_AUTHORITY",
+        "CHAPTER_AUTHORITY",
+        "READER_JUDGE_AUTHORITY",
+        "PLAN_CHANGE_AUTHORITY",
+    }
 )
 _VOLATILE_IDENTITY_KEYS = frozenset(
     {
@@ -98,9 +106,7 @@ _UUID_VALUE = re.compile(
     r"^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
     re.IGNORECASE,
 )
-_LOCAL_ABSOLUTE_PATH = re.compile(
-    r"^(?:/Users/|/home/|/tmp/|[A-Za-z]:[\\/]Users[\\/])"
-)
+_LOCAL_ABSOLUTE_PATH = re.compile(r"^(?:/Users/|/home/|/tmp/|[A-Za-z]:[\\/]Users[\\/])")
 
 
 class _IssueCollector:
@@ -109,18 +115,14 @@ class _IssueCollector:
         self.warnings: list[CapabilityPackValidationIssue] = []
 
     def error(self, code: str, path: str, message: str) -> None:
-        self.errors.append(
-            CapabilityPackValidationIssue(code, path, message, "ERROR")
-        )
+        self.errors.append(CapabilityPackValidationIssue(code, path, message, "ERROR"))
 
     def warning(self, code: str, path: str, message: str) -> None:
         self.warnings.append(
             CapabilityPackValidationIssue(code, path, message, "WARNING")
         )
 
-    def extend_errors(
-        self, values: tuple[CapabilityPackValidationIssue, ...]
-    ) -> None:
+    def extend_errors(self, values: tuple[CapabilityPackValidationIssue, ...]) -> None:
         self.errors.extend(values)
 
 
@@ -164,14 +166,20 @@ def validate_capability_pack(
     try:
         assert_no_inline_secrets(payload, label="CapabilityPackManifest")
     except ValueError as exc:
-        issues.error(
-            "CAPABILITY_PACK_INLINE_SECRET_FORBIDDEN", "$", str(exc)
-        )
+        issues.error("CAPABILITY_PACK_INLINE_SECRET_FORBIDDEN", "$", str(exc))
 
     return CapabilityPackValidationReport(
         ok=not issues.errors,
-        pack_id=(manifest.identity.pack_id if isinstance(manifest.identity.pack_id, str) else ""),
-        version=(manifest.identity.version if isinstance(manifest.identity.version, str) else ""),
+        pack_id=(
+            manifest.identity.pack_id
+            if isinstance(manifest.identity.pack_id, str)
+            else ""
+        ),
+        version=(
+            manifest.identity.version
+            if isinstance(manifest.identity.version, str)
+            else ""
+        ),
         manifest_hash=manifest.manifest_hash,
         errors=tuple(issues.errors),
         warnings=tuple(issues.warnings),
@@ -308,13 +316,21 @@ def _validate_compatibility(
         ("protocol_min_version", compatibility.protocol_min_version),
     ):
         if not isinstance(value, str) or not value.strip():
-            issues.error("CAPABILITY_PACK_PROTOCOL_INVALID", f"$.compatibility.{field}", f"{field} must be a non-empty string")
+            issues.error(
+                "CAPABILITY_PACK_PROTOCOL_INVALID",
+                f"$.compatibility.{field}",
+                f"{field} must be a non-empty string",
+            )
     for field, value in (
         ("novel_forge_max_version", compatibility.novel_forge_max_version),
         ("protocol_max_version", compatibility.protocol_max_version),
     ):
         if value is not None and (not isinstance(value, str) or not value.strip()):
-            issues.error("CAPABILITY_PACK_PROTOCOL_INVALID", f"$.compatibility.{field}", f"{field} must be null or a non-empty string")
+            issues.error(
+                "CAPABILITY_PACK_PROTOCOL_INVALID",
+                f"$.compatibility.{field}",
+                f"{field} must be null or a non-empty string",
+            )
     for index, capability_id in enumerate(compatibility.required_capabilities):
         _resolve_capability(
             capability_id,
@@ -325,9 +341,7 @@ def _validate_compatibility(
             issues=issues,
         )
     required_capabilities = tuple(
-        value
-        for value in compatibility.required_capabilities
-        if isinstance(value, str)
+        value for value in compatibility.required_capabilities if isinstance(value, str)
     )
     if len(required_capabilities) != len(set(required_capabilities)):
         issues.error(
@@ -447,7 +461,10 @@ def _validate_role(manifest: CapabilityPackManifest, issues: _IssueCollector) ->
             "$.role.role_type",
             "role_type is not supported",
         )
-    for field, value in (("role_name", role.role_name), ("authority_level", role.authority_level)):
+    for field, value in (
+        ("role_name", role.role_name),
+        ("authority_level", role.authority_level),
+    ):
         if not isinstance(value, str) or not value.strip():
             issues.error(
                 "CAPABILITY_PACK_ROLE_INVALID",
@@ -481,9 +498,17 @@ def _validate_skills(manifest: CapabilityPackManifest, issues: _IssueCollector) 
             ("output_contract_ref", skill.output_contract_ref),
         ):
             if not isinstance(value, str) or not value.strip():
-                issues.error("CAPABILITY_PACK_SKILL_POLICY_INVALID", f"{path}.{field}", f"{field} must be a non-empty string")
+                issues.error(
+                    "CAPABILITY_PACK_SKILL_POLICY_INVALID",
+                    f"{path}.{field}",
+                    f"{field} must be a non-empty string",
+                )
         if not isinstance(skill.required, bool):
-            issues.error("CAPABILITY_PACK_SKILL_POLICY_INVALID", f"{path}.required", "required must be boolean")
+            issues.error(
+                "CAPABILITY_PACK_SKILL_POLICY_INVALID",
+                f"{path}.required",
+                "required must be boolean",
+            )
         if isinstance(skill.skill_ref, str) and skill.skill_ref in seen:
             issues.error(
                 "CAPABILITY_PACK_SKILL_DUPLICATE",
@@ -508,9 +533,11 @@ def _validate_skills(manifest: CapabilityPackManifest, issues: _IssueCollector) 
                 f"{path}.drift_policy",
                 "skill drift_policy is not supported",
             )
-        if not isinstance(skill.max_invocations_per_run, int) or isinstance(
-            skill.max_invocations_per_run, bool
-        ) or skill.max_invocations_per_run <= 0:
+        if (
+            not isinstance(skill.max_invocations_per_run, int)
+            or isinstance(skill.max_invocations_per_run, bool)
+            or skill.max_invocations_per_run <= 0
+        ):
             issues.error(
                 "CAPABILITY_PACK_SKILL_POLICY_INVALID",
                 f"{path}.max_invocations_per_run",
@@ -565,7 +592,11 @@ def _validate_prompt(manifest: CapabilityPackManifest, issues: _IssueCollector) 
         ("output_schema_ref", prompt.output_schema_ref),
     ):
         if not isinstance(value, str) or not value.strip():
-            issues.error("CAPABILITY_PACK_PROTOCOL_INVALID", f"$.prompt_binding.{field}", f"{field} must be a non-empty string")
+            issues.error(
+                "CAPABILITY_PACK_PROTOCOL_INVALID",
+                f"$.prompt_binding.{field}",
+                f"{field} must be a non-empty string",
+            )
     for field, value in (
         ("system_instruction_hash", prompt.system_instruction_hash),
         ("template_hash", prompt.template_hash),
@@ -591,9 +622,19 @@ def _validate_workflow(
         ("idempotency_scope", workflow.idempotency_scope),
     ):
         if not isinstance(value, str) or not value.strip():
-            issues.error("CAPABILITY_PACK_PROTOCOL_INVALID", f"$.workflow_template.{field}", f"{field} must be a non-empty string")
-    if not isinstance(workflow.workflow_version, str) or not _SEMVER.fullmatch(workflow.workflow_version):
-        issues.error("CAPABILITY_PACK_PROTOCOL_INVALID", "$.workflow_template.workflow_version", "workflow_version must be SemVer MAJOR.MINOR.PATCH")
+            issues.error(
+                "CAPABILITY_PACK_PROTOCOL_INVALID",
+                f"$.workflow_template.{field}",
+                f"{field} must be a non-empty string",
+            )
+    if not isinstance(workflow.workflow_version, str) or not _SEMVER.fullmatch(
+        workflow.workflow_version
+    ):
+        issues.error(
+            "CAPABILITY_PACK_PROTOCOL_INVALID",
+            "$.workflow_template.workflow_version",
+            "workflow_version must be SemVer MAJOR.MINOR.PATCH",
+        )
     if workflow.execution_mode != "SAGA":
         issues.error(
             "CAPABILITY_PACK_WORKFLOW_BINDING_INVALID",
@@ -601,7 +642,11 @@ def _validate_workflow(
             "production_workflow requires SAGA execution_mode in P0",
         )
     if not workflow.nodes:
-        issues.error("CAPABILITY_PACK_PROTOCOL_INVALID", "$.workflow_template.nodes", "workflow requires at least one node")
+        issues.error(
+            "CAPABILITY_PACK_PROTOCOL_INVALID",
+            "$.workflow_template.nodes",
+            "workflow requires at least one node",
+        )
     node_ids = [node.node_id for node in workflow.nodes]
     known = {value for value in node_ids if isinstance(value, str) and value}
     seen: set[str] = set()
@@ -632,7 +677,11 @@ def _validate_workflow(
             ("timeout_policy_ref", node.timeout_policy_ref),
         ):
             if not isinstance(value, str) or not value.strip():
-                issues.error("CAPABILITY_PACK_PROTOCOL_INVALID", f"{path}.{field}", f"{field} must be a non-empty string")
+                issues.error(
+                    "CAPABILITY_PACK_PROTOCOL_INVALID",
+                    f"{path}.{field}",
+                    f"{field} must be a non-empty string",
+                )
         if isinstance(node.node_id, str) and node.node_id in seen:
             issues.error(
                 "CAPABILITY_PACK_WORKFLOW_NODE_DUPLICATE",
@@ -650,14 +699,24 @@ def _validate_workflow(
             resolved=resolved,
             issues=issues,
         )
-        if isinstance(node.stage, str) and node.stage in agent_bound_stages and (
-            not isinstance(node.agent_definition_ref, str)
-            or "@" not in node.agent_definition_ref
+        if (
+            isinstance(node.stage, str)
+            and node.stage in agent_bound_stages
+            and (
+                not isinstance(node.agent_definition_ref, str)
+                or "@" not in node.agent_definition_ref
+            )
         ):
             issues.error(
                 "CAPABILITY_PACK_AGENT_BINDING_REQUIRED",
                 f"{path}.agent_definition_ref",
                 "model-backed workflow node requires an exact Agent Definition ref",
+            )
+        if node.commit_authority not in _COMMIT_AUTHORITIES:
+            issues.error(
+                "CAPABILITY_PACK_COMMIT_AUTHORITY_INVALID",
+                f"{path}.commit_authority",
+                "commit_authority must name an allowed Domain Authority",
             )
         if (
             capability is not None
@@ -693,7 +752,11 @@ def _validate_workflow(
             )
         if any(
             not isinstance(value, str) or not value.strip()
-            for value in (node.operation_name, node.operation_definition_ref, node.handler_key)
+            for value in (
+                node.operation_name,
+                node.operation_definition_ref,
+                node.handler_key,
+            )
         ):
             issues.error(
                 "CAPABILITY_PACK_WORKFLOW_BINDING_INVALID",
@@ -729,11 +792,13 @@ def _validate_workflow(
             "$.workflow_template.nodes",
             "workflow dependency graph contains a cycle",
         )
-    governed_workflow = chapter_workflow_binding_catalog()
-    if (
-        workflow.workflow_id == governed_workflow.workflow_id
-        and workflow.workflow_version == governed_workflow.workflow_version
-    ):
+    try:
+        governed_workflow = governed_workflow_binding_catalog(
+            str(workflow.workflow_id), str(workflow.workflow_version)
+        )
+    except KeyError:
+        governed_workflow = None
+    if governed_workflow is not None:
         governed_nodes = {item.node_id for item in governed_workflow.bindings()}
         if known != governed_nodes:
             issues.error(
@@ -817,7 +882,9 @@ def _validate_operation_binding(
     issues: _IssueCollector,
 ) -> None:
     if isinstance(node.operation_definition_ref, str):
-        operation_name, separator, version = node.operation_definition_ref.rpartition("@")
+        operation_name, separator, version = node.operation_definition_ref.rpartition(
+            "@"
+        )
         if (
             separator != "@"
             or operation_name != node.operation_name
@@ -829,11 +896,11 @@ def _validate_operation_binding(
                 "operation definition ref must bind operation_name to a SemVer version",
             )
     workflow = manifest.workflow_template
-    catalog = chapter_workflow_binding_catalog()
-    if (
-        workflow.workflow_id != catalog.workflow_id
-        or workflow.workflow_version != catalog.workflow_version
-    ):
+    try:
+        catalog = governed_workflow_binding_catalog(
+            str(workflow.workflow_id), str(workflow.workflow_version)
+        )
+    except KeyError:
         return
     try:
         binding = catalog.resolve(str(node.node_id))
@@ -873,20 +940,34 @@ def _validate_context(
 ) -> None:
     context = manifest.context_sources
     if not isinstance(context.policy_id, str) or not context.policy_id.strip():
-        issues.error("CAPABILITY_PACK_CONTEXT_POLICY_INVALID", "$.context_sources.policy_id", "policy_id must be a non-empty string")
+        issues.error(
+            "CAPABILITY_PACK_CONTEXT_POLICY_INVALID",
+            "$.context_sources.policy_id",
+            "policy_id must be a non-empty string",
+        )
     if (
         not isinstance(context.source_isolation, str)
         or context.source_isolation not in _SOURCE_ISOLATION_MODES
     ):
-        issues.error("CAPABILITY_PACK_CONTEXT_POLICY_INVALID", "$.context_sources.source_isolation", "source_isolation is not supported")
-    if not isinstance(context.max_tokens, int) or isinstance(context.max_tokens, bool) or context.max_tokens <= 0:
+        issues.error(
+            "CAPABILITY_PACK_CONTEXT_POLICY_INVALID",
+            "$.context_sources.source_isolation",
+            "source_isolation is not supported",
+        )
+    if (
+        not isinstance(context.max_tokens, int)
+        or isinstance(context.max_tokens, bool)
+        or context.max_tokens <= 0
+    ):
         issues.error(
             "CAPABILITY_PACK_CONTEXT_POLICY_INVALID",
             "$.context_sources.max_tokens",
             "max_tokens must be a positive integer",
         )
     allowed = {value for value in context.allowed_asset_types if isinstance(value, str)}
-    forbidden = {value for value in context.forbidden_asset_types if isinstance(value, str)}
+    forbidden = {
+        value for value in context.forbidden_asset_types if isinstance(value, str)
+    }
     for field, values in (
         ("allowed_asset_types", context.allowed_asset_types),
         ("forbidden_asset_types", context.forbidden_asset_types),
@@ -916,8 +997,7 @@ def _validate_context(
     latest_refs = sorted(
         value
         for value in context.required_version_refs
-        if isinstance(value, str)
-        and is_floating_version(value)
+        if isinstance(value, str) and is_floating_version(value)
     )
     if latest_refs:
         issues.error(
@@ -925,7 +1005,7 @@ def _validate_context(
             "$.context_sources.required_version_refs",
             "required version refs cannot use floating aliases: "
             + ", ".join(latest_refs),
-    )
+        )
     for field, value in context.longform_bindings.items():
         if not isinstance(value, str) or value not in {
             "required",
@@ -937,7 +1017,10 @@ def _validate_context(
                 f"$.context_sources.longform_bindings.{field}",
                 "longform binding must be required, optional, or forbidden",
             )
-    if _is_production_pack(manifest) and context.source_isolation == "RAW_ALLOWED_WITH_APPROVAL":
+    if (
+        _is_production_pack(manifest)
+        and context.source_isolation == "RAW_ALLOWED_WITH_APPROVAL"
+    ):
         issues.error(
             "CAPABILITY_PACK_RAW_SOURCE_PRODUCTION_FORBIDDEN",
             "$.context_sources.source_isolation",
@@ -980,9 +1063,16 @@ def _validate_tools(
     seen_tools: set[str] = set()
     for index, tool in enumerate(permissions.tools):
         path = f"$.tool_permissions.tools[{index}]"
-        for field, value in (("tool_ref", tool.tool_ref), ("budget_policy_ref", tool.budget_policy_ref)):
+        for field, value in (
+            ("tool_ref", tool.tool_ref),
+            ("budget_policy_ref", tool.budget_policy_ref),
+        ):
             if not isinstance(value, str) or not value.strip():
-                issues.error("CAPABILITY_PACK_TOOL_POLICY_INVALID", f"{path}.{field}", f"{field} must be a non-empty string")
+                issues.error(
+                    "CAPABILITY_PACK_TOOL_POLICY_INVALID",
+                    f"{path}.{field}",
+                    f"{field} must be a non-empty string",
+                )
         if isinstance(tool.tool_ref, str):
             if tool.tool_ref in seen_tools:
                 issues.error(
@@ -996,10 +1086,21 @@ def _validate_tools(
                     f"duplicate tool_ref: {tool.tool_ref}",
                 )
             seen_tools.add(tool.tool_ref)
-        if not isinstance(tool.permission, str) or tool.permission not in _TOOL_PERMISSIONS:
-            issues.error("CAPABILITY_PACK_TOOL_POLICY_INVALID", f"{path}.permission", "tool permission is not supported")
+        if (
+            not isinstance(tool.permission, str)
+            or tool.permission not in _TOOL_PERMISSIONS
+        ):
+            issues.error(
+                "CAPABILITY_PACK_TOOL_POLICY_INVALID",
+                f"{path}.permission",
+                "tool permission is not supported",
+            )
         if not tool.allowed_operations:
-            issues.error("CAPABILITY_PACK_TOOL_POLICY_INVALID", f"{path}.allowed_operations", "tool requires at least one allowed operation")
+            issues.error(
+                "CAPABILITY_PACK_TOOL_POLICY_INVALID",
+                f"{path}.allowed_operations",
+                "tool requires at least one allowed operation",
+            )
         operation_names = tuple(
             value for value in tool.allowed_operations if isinstance(value, str)
         )
@@ -1024,9 +1125,17 @@ def _validate_tools(
                 + ", ".join(unknown_operations),
             )
         if not isinstance(tool.approval_required, bool):
-            issues.error("CAPABILITY_PACK_TOOL_POLICY_INVALID", f"{path}.approval_required", "approval_required must be boolean")
+            issues.error(
+                "CAPABILITY_PACK_TOOL_POLICY_INVALID",
+                f"{path}.approval_required",
+                "approval_required must be boolean",
+            )
         if not isinstance(tool.audit_required, bool):
-            issues.error("CAPABILITY_PACK_TOOL_POLICY_INVALID", f"{path}.audit_required", "audit_required must be boolean")
+            issues.error(
+                "CAPABILITY_PACK_TOOL_POLICY_INVALID",
+                f"{path}.audit_required",
+                "audit_required must be boolean",
+            )
         risk = tool.risk_class if isinstance(tool.risk_class, str) else ""
         if risk not in _TOOL_RISK_CLASSES:
             issues.error(
@@ -1080,7 +1189,9 @@ def _validate_tools(
                     f"$.tool_permissions.files.allowed_roots[{index}]",
                     "file root cannot contain ..",
                 )
-            if _is_production_pack(manifest) and not (posix.is_absolute() or windows.is_absolute()):
+            if _is_production_pack(manifest) and not (
+                posix.is_absolute() or windows.is_absolute()
+            ):
                 issues.error(
                     "CAPABILITY_PACK_FILE_ROOT_INVALID",
                     f"$.tool_permissions.files.allowed_roots[{index}]",
@@ -1235,15 +1346,30 @@ def _validate_evaluation(
     resolved: set[str],
     issues: _IssueCollector,
 ) -> None:
-    if not isinstance(manifest.evaluation.evaluation_id, str) or not manifest.evaluation.evaluation_id.strip():
-        issues.error("CAPABILITY_PACK_EVALUATION_INVALID", "$.evaluation.evaluation_id", "evaluation_id must be a non-empty string")
+    if (
+        not isinstance(manifest.evaluation.evaluation_id, str)
+        or not manifest.evaluation.evaluation_id.strip()
+    ):
+        issues.error(
+            "CAPABILITY_PACK_EVALUATION_INVALID",
+            "$.evaluation.evaluation_id",
+            "evaluation_id must be a non-empty string",
+        )
     if not manifest.evaluation.required_gates:
-        issues.error("CAPABILITY_PACK_EVALUATION_INVALID", "$.evaluation.required_gates", "at least one evaluation gate is required")
+        issues.error(
+            "CAPABILITY_PACK_EVALUATION_INVALID",
+            "$.evaluation.required_gates",
+            "at least one evaluation gate is required",
+        )
     seen_gates: set[str] = set()
     for index, gate in enumerate(manifest.evaluation.required_gates):
         path = f"$.evaluation.required_gates[{index}]"
         if not isinstance(gate.gate_id, str) or not gate.gate_id.strip():
-            issues.error("CAPABILITY_PACK_EVALUATION_INVALID", f"{path}.gate_id", "gate_id must be a non-empty string")
+            issues.error(
+                "CAPABILITY_PACK_EVALUATION_INVALID",
+                f"{path}.gate_id",
+                "gate_id must be a non-empty string",
+            )
         elif gate.gate_id in seen_gates:
             issues.error(
                 "CAPABILITY_PACK_EVALUATION_GATE_DUPLICATE",
@@ -1253,9 +1379,17 @@ def _validate_evaluation(
         else:
             seen_gates.add(gate.gate_id)
         if not isinstance(gate.blocking, bool):
-            issues.error("CAPABILITY_PACK_EVALUATION_INVALID", f"{path}.blocking", "blocking must be boolean")
+            issues.error(
+                "CAPABILITY_PACK_EVALUATION_INVALID",
+                f"{path}.blocking",
+                "blocking must be boolean",
+            )
         if not gate.required_evidence:
-            issues.error("CAPABILITY_PACK_EVALUATION_INVALID", f"{path}.required_evidence", "evaluation gate requires evidence")
+            issues.error(
+                "CAPABILITY_PACK_EVALUATION_INVALID",
+                f"{path}.required_evidence",
+                "evaluation gate requires evidence",
+            )
         judge = _resolve_capability(
             gate.judge_capability_id,
             path=f"$.evaluation.required_gates[{index}].judge_capability_id",
@@ -1301,9 +1435,7 @@ def _validate_evaluation(
     failure_sets = {
         field: {
             value
-            for value in _json_items(
-                manifest.evaluation.failure_policy.get(field)
-            )
+            for value in _json_items(manifest.evaluation.failure_policy.get(field))
             if isinstance(value, str)
         }
         for field in (
@@ -1359,13 +1491,23 @@ def _validate_runtime(
 ) -> None:
     runtime = manifest.runtime_contract
     for field in (
-        "input_protocol_ref", "output_protocol_ref", "error_protocol_ref",
-        "state_protocol_ref", "event_protocol_ref", "audit_protocol_ref",
-        "rollback_protocol_ref", "commit_policy_ref", "validation_policy_ref",
+        "input_protocol_ref",
+        "output_protocol_ref",
+        "error_protocol_ref",
+        "state_protocol_ref",
+        "event_protocol_ref",
+        "audit_protocol_ref",
+        "rollback_protocol_ref",
+        "commit_policy_ref",
+        "validation_policy_ref",
     ):
         value = getattr(runtime, field)
         if not isinstance(value, str) or not value.strip():
-            issues.error("CAPABILITY_PACK_PROTOCOL_INVALID", f"$.runtime_contract.{field}", f"{field} must be a non-empty string")
+            issues.error(
+                "CAPABILITY_PACK_PROTOCOL_INVALID",
+                f"$.runtime_contract.{field}",
+                f"{field} must be a non-empty string",
+            )
     execution = manifest.runtime_contract.execution
     if (
         capability_type_policy.requires_authority_operation
@@ -1413,8 +1555,15 @@ def _validate_governance_and_audit(
             "$.governance.release_channel",
             "release_channel is not supported",
         )
-    if not isinstance(manifest.governance.approval_policy_ref, str) or not manifest.governance.approval_policy_ref.strip():
-        issues.error("CAPABILITY_PACK_GOVERNANCE_INVALID", "$.governance.approval_policy_ref", "approval_policy_ref must be a non-empty string")
+    if (
+        not isinstance(manifest.governance.approval_policy_ref, str)
+        or not manifest.governance.approval_policy_ref.strip()
+    ):
+        issues.error(
+            "CAPABILITY_PACK_GOVERNANCE_INVALID",
+            "$.governance.approval_policy_ref",
+            "approval_policy_ref must be a non-empty string",
+        )
     governance = manifest.governance
     canary_percent = governance.rollout.get("canary_percent")
     if (
@@ -1488,7 +1637,11 @@ def _validate_governance_and_audit(
         )
     audit = manifest.audit
     if not isinstance(audit.audit_level, str) or not audit.audit_level.strip():
-        issues.error("CAPABILITY_PACK_AUDIT_INVALID", "$.audit.audit_level", "audit_level must be a non-empty string")
+        issues.error(
+            "CAPABILITY_PACK_AUDIT_INVALID",
+            "$.audit.audit_level",
+            "audit_level must be a non-empty string",
+        )
     required_audit_flags = {
         "record_operation_snapshot": audit.record_operation_snapshot,
         "record_pack_manifest_hash": audit.record_pack_manifest_hash,
@@ -1532,9 +1685,9 @@ def _validate_stable_identity_inputs(
     def visit(value: Any, path: str) -> None:
         if isinstance(value, Mapping):
             for key, item in value.items():
-                normalized = re.sub(
-                    r"[^a-z0-9]+", "_", str(key).strip().lower()
-                ).strip("_")
+                normalized = re.sub(r"[^a-z0-9]+", "_", str(key).strip().lower()).strip(
+                    "_"
+                )
                 child_path = f"{path}.{key}"
                 if normalized in _VOLATILE_IDENTITY_KEYS:
                     issues.error(

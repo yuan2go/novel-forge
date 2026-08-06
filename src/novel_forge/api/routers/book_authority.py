@@ -1,4 +1,5 @@
 """PostgreSQL-only Book Authority command and reconciliation entrypoints."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -15,6 +16,10 @@ from novel_forge.modules.book_authority.production import (
     StartBookProductionCommand,
     SubmitBookChapterCommand,
 )
+from novel_forge.modules.book_authority.input_resolver import (
+    BookProductionInputResolver,
+    ResolveBookProductionInputCommand,
+)
 from novel_forge.modules.book_authority.governed_scheduler import (
     PostgresBookAuthorityScheduler,
 )
@@ -25,6 +30,7 @@ from novel_forge.modules.production_preparation import PostgresProductionAssetRe
 def create_router(ctx: ProductRouterContext) -> APIRouter:
     globals().update(ctx.models)
     BookAuthorityStartRequest = ctx.models["BookAuthorityStartRequest"]
+    BookProductionInputResolveRequest = ctx.models["BookProductionInputResolveRequest"]
     BookAuthorityChapterRequest = ctx.models["BookAuthorityChapterRequest"]
     BookAuthorityControlRequest = ctx.models["BookAuthorityControlRequest"]
     router = APIRouter(
@@ -32,12 +38,80 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
         tags=["product-book-authority"],
     )
 
-    @router.post("/commands", status_code=202)
-    def start_book(request: BookAuthorityStartRequest) -> dict[str, Any]:
+    @router.post("/books/{book_id}/production-inputs/resolve")
+    def resolve_production_inputs(
+        book_id: str, request: BookProductionInputResolveRequest
+    ) -> dict[str, Any]:
         try:
+            authority = _application(ctx)
             principal = build_trusted_principal_resolver().resolve_api_principal(
                 claimed_actor_id=request.actor_id
             )
+            snapshot = BookProductionInputResolver(
+                authority.database_url,
+                application_build_id=authority.application_build_id,
+                commit_sha=authority.commit_sha,
+            ).resolve(
+                ResolveBookProductionInputCommand(
+                    project_id=request.project_id,
+                    workspace_id=request.workspace_id,
+                    book_id=book_id,
+                    production_profile=request.production_profile,
+                    expected_book_version=request.expected_book_version,
+                    actor_id=principal.principal_id,
+                    idempotency_key=request.idempotency_key,
+                    trace_id=request.trace_id or f"trace:{uuid4()}",
+                    correlation_id=request.correlation_id or f"correlation:{uuid4()}",
+                ),
+                principal=principal,
+            )
+            return snapshot.to_dict()
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
+
+    @router.post("/commands", status_code=202)
+    def start_book(request: BookAuthorityStartRequest) -> dict[str, Any]:
+        try:
+            authority = _application(ctx)
+            principal = build_trusted_principal_resolver().resolve_api_principal(
+                claimed_actor_id=request.actor_id
+            )
+            book_design_version = request.book_design_version
+            book_plan_version = request.book_plan_version
+            production_profile_version = request.production_profile_version
+            longform_context_versions = dict(request.longform_context_versions)
+            if request.input_mode == "RESOLVED_AUTHORITY_INPUT":
+                snapshot = BookProductionInputResolver(
+                    authority.database_url,
+                    application_build_id=authority.application_build_id,
+                    commit_sha=authority.commit_sha,
+                ).require(request.input_snapshot_id)
+                if (snapshot.project_id, snapshot.workspace_id, snapshot.book_id) != (
+                    request.project_id,
+                    request.workspace_id,
+                    request.book_id,
+                ):
+                    raise KernelError(
+                        "BOOK_PRODUCTION_INPUT_SNAPSHOT_SCOPE_INVALID",
+                        "resolved input snapshot belongs to another Book scope",
+                    )
+                book_design_version = snapshot.book_design_version
+                book_plan_version = snapshot.book_plan_version
+                production_profile_version = snapshot.production_profile_version
+                longform_context_versions = {
+                    "volume_plan_version": snapshot.current_volume_plan_version,
+                    "arc_plan_version": snapshot.active_arc_plan_versions[0],
+                    "character_state_version": snapshot.character_state_version,
+                    "foreshadowing_state_version": snapshot.foreshadowing_state_version,
+                    "quality_trend_version": snapshot.quality_trend_version,
+                    "reward_ledger_version": snapshot.reward_ledger_version,
+                    "promise_ledger_version": snapshot.promise_ledger_version,
+                    "reader_segment_version": snapshot.reader_segment_version,
+                    "reader_contract_version": snapshot.reader_contract_version,
+                    "platform_profile_version": snapshot.platform_profile_version,
+                }
             admission = _application(ctx).start(
                 StartBookProductionCommand(
                     project_id=request.project_id,
@@ -47,15 +121,15 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                     trace_id=request.trace_id or f"trace:{uuid4()}",
                     correlation_id=request.correlation_id or f"correlation:{uuid4()}",
                     stable_idempotency_key=request.idempotency_key,
-                    book_design_version=request.book_design_version,
-                    book_plan_version=request.book_plan_version,
-                    production_profile_version=request.production_profile_version,
-                    longform_context_versions=dict(
-                        request.longform_context_versions
-                    ),
+                    book_design_version=book_design_version,
+                    book_plan_version=book_plan_version,
+                    production_profile_version=production_profile_version,
+                    longform_context_versions=longform_context_versions,
                     target_chapter_count=request.target_chapter_count,
                     light_recap_cadence=request.light_recap_cadence,
                     formal_recap_cadence=request.formal_recap_cadence,
+                    input_snapshot_id=request.input_snapshot_id,
+                    input_mode=request.input_mode,
                 ),
                 principal=principal,
             )
@@ -93,8 +167,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 (
                     item
                     for item in resolved
-                    if item.asset_version_id
-                    == request.chapter_plan_asset_version_id
+                    if item.asset_version_id == request.chapter_plan_asset_version_id
                     and item.asset_type == "chapter_plan"
                 ),
                 None,
@@ -115,9 +188,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                     "structured_facts": list(
                         item.content.get("structured_facts") or []
                     ),
-                    "estimated_tokens": int(
-                        item.content.get("estimated_tokens") or 1
-                    ),
+                    "estimated_tokens": int(item.content.get("estimated_tokens") or 1),
                     "narrative_function": str(
                         item.content.get("narrative_function") or item.asset_type
                     ),
@@ -191,9 +262,20 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
             book = authority.require(book_run_id)
             principal = build_trusted_principal_resolver().resolve_api_principal()
             principal.require("book.authority.execute", book["project_id"])
-            tick = PostgresBookAuthorityScheduler(
-                authority, principal=principal
-            ).tick(book_run_id)
+            if book["input_mode"] == "RESOLVED_AUTHORITY_INPUT":
+                supervisor = getattr(
+                    ctx.services, "book_production_supervisor", None
+                )
+                if supervisor is None:
+                    raise KernelError(
+                        "BOOK_PRODUCTION_SUPERVISOR_NOT_CONFIGURED",
+                        "resolved Book production requires the governed Supervisor runtime",
+                    )
+                tick = supervisor.tick(book_run_id)
+            else:
+                tick = PostgresBookAuthorityScheduler(
+                    authority, principal=principal
+                ).tick(book_run_id)
             return {
                 "book_run_id": tick.book_run_id,
                 "previous_state": tick.previous_state,

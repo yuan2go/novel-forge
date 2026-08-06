@@ -1,4 +1,5 @@
 """Operation-backed PlanChange proposal, approval, impact and activation."""
+
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
@@ -86,9 +87,7 @@ class PlanChangeProposalCommand:
 
 
 class _Handler:
-    def execute(
-        self, request: AuthorityHandlerRequest
-    ) -> AuthorityHandlerOutput:
+    def execute(self, request: AuthorityHandlerRequest) -> AuthorityHandlerOutput:
         payload = request.command.get("payload")
         if not isinstance(payload, dict):
             raise KernelError(
@@ -103,12 +102,9 @@ class _Handler:
                 "plan_change.activate": "PlanChangeActivationReceipt",
                 "plan_change.revalidate": "PlanRevalidationReceipt",
             }[request.definition_name],
-            "contract_version": request.definition_name.replace(".", "-")
-            + "-v1",
+            "contract_version": request.definition_name.replace(".", "-") + "-v1",
             **payload,
-            "source_asset_versions": [
-                item.asset_version_id for item in request.inputs
-            ],
+            "source_asset_versions": [item.asset_version_id for item in request.inputs],
             "direct_plan_mutation_allowed": False,
         }
         return AuthorityHandlerOutput(
@@ -198,9 +194,7 @@ class PostgresPlanChangeAuthority:
                 "proposed plan must target the same logical key and scope",
             )
         require_approvable_scope(str(target["execution_scope"]))
-        changes = semantic_plan_diff(
-            dict(target["content"]), dict(proposed["content"])
-        )
+        changes = semantic_plan_diff(dict(target["content"]), dict(proposed["content"]))
         if not changes:
             raise KernelError(
                 "PLAN_CHANGE_EMPTY",
@@ -223,9 +217,7 @@ class PostgresPlanChangeAuthority:
                 "book_id": command.book_id,
                 "source_type": command.source_type.value,
                 "target_asset_version_id": command.target_asset_version_id,
-                "proposed_asset_version_id": (
-                    command.proposed_asset_version_id
-                ),
+                "proposed_asset_version_id": (command.proposed_asset_version_id),
                 "semantic_diff": diff,
                 "risk": risk.value,
                 "authority_decision_required": True,
@@ -248,24 +240,16 @@ class PostgresPlanChangeAuthority:
                     "project_id": command.project_id,
                     "book_id": command.book_id,
                     "source_type": command.source_type.value,
-                    "source_evidence_version_id": (
-                        command.source_evidence_version_id
-                    ),
-                    "target_asset_version_id": (
-                        command.target_asset_version_id
-                    ),
-                    "proposed_asset_version_id": (
-                        command.proposed_asset_version_id
-                    ),
+                    "source_evidence_version_id": (command.source_evidence_version_id),
+                    "target_asset_version_id": (command.target_asset_version_id),
+                    "proposed_asset_version_id": (command.proposed_asset_version_id),
                     "target_contract_type": target["contract_type"],
                     "target_logical_key": target["logical_key"],
                     "target_execution_scope": target["execution_scope"],
                     "semantic_diff": diff,
                     "risk": risk.value,
                     "proposal_operation_id": operation_id,
-                    "stable_idempotency_key": (
-                        command.stable_idempotency_key
-                    ),
+                    "stable_idempotency_key": (command.stable_idempotency_key),
                 }
             )
             uow.commit()
@@ -283,6 +267,7 @@ class PostgresPlanChangeAuthority:
     ) -> dict[str, Any]:
         proposal = self.require(proposal_id)
         principal.require("book.authority.execute", proposal["project_id"])
+        workspace_id = self._workspace_id(proposal["project_id"], proposal["book_id"])
         decision = "APPROVED" if approved else "REJECTED"
         proposal_output = self._operation_output(
             proposal["proposal_operation_id"], "plan_change.proposal"
@@ -290,7 +275,7 @@ class PostgresPlanChangeAuthority:
         operation_id = self._execute(
             definition="plan_change.approve",
             project_id=proposal["project_id"],
-            workspace_id=f"workspace:{proposal['project_id']}",
+            workspace_id=workspace_id,
             actor_id=principal.principal_id,
             trace_id=f"{proposal_id}:decision",
             correlation_id=proposal["proposal_operation_id"],
@@ -319,11 +304,10 @@ class PostgresPlanChangeAuthority:
             uow.commit()
         return self.require(proposal_id)
 
-    def activate(
-        self, proposal_id: str, *, principal: Principal
-    ) -> dict[str, Any]:
+    def activate(self, proposal_id: str, *, principal: Principal) -> dict[str, Any]:
         proposal = self.require(proposal_id)
         principal.require("book.authority.execute", proposal["project_id"])
+        workspace_id = self._workspace_id(proposal["project_id"], proposal["book_id"])
         if proposal["status"] not in {
             "APPROVED",
             "ACTIVATION_PENDING",
@@ -345,21 +329,15 @@ class PostgresPlanChangeAuthority:
         operation_id = self._execute(
             definition="plan_change.activate",
             project_id=proposal["project_id"],
-            workspace_id=f"workspace:{proposal['project_id']}",
+            workspace_id=workspace_id,
             actor_id=principal.principal_id,
             trace_id=f"{proposal_id}:activate",
             correlation_id=proposal["proposal_operation_id"],
-            idempotency_key=(
-                f"{proposal['stable_idempotency_key']}:activate"
-            ),
+            idempotency_key=(f"{proposal['stable_idempotency_key']}:activate"),
             payload={
                 "proposal_id": proposal_id,
-                "target_asset_version_id": proposal[
-                    "target_asset_version_id"
-                ],
-                "proposed_asset_version_id": proposal[
-                    "proposed_asset_version_id"
-                ],
+                "target_asset_version_id": proposal["target_asset_version_id"],
+                "proposed_asset_version_id": proposal["proposed_asset_version_id"],
                 "recoverable_activation": True,
             },
             input_assets=(
@@ -376,36 +354,57 @@ class PostgresPlanChangeAuthority:
                 proposal_id, operation_id
             )
             uow.commit()
-        if proposed_state["lifecycle"] != "ACTIVE":
-            self.story_design.transition(
+        if proposed_state["approval"] == "PENDING":
+            proposed_state = self.story_design.transition(
                 StoryDesignTransitionCommand(
                     project_id=proposal["project_id"],
-                    workspace_id=f"workspace:{proposal['project_id']}",
+                    workspace_id=workspace_id,
                     actor_id=principal.principal_id,
-                    trace_id=f"{proposal_id}:story-design-activate",
+                    trace_id=f"{proposal_id}:story-design-approve",
                     correlation_id=operation_id,
                     idempotency_key=(
-                        f"{proposal['stable_idempotency_key']}:"
-                        "story-design-activate"
+                        f"{proposal['stable_idempotency_key']}:story-design-approve"
                     ),
                     asset_version_id=proposal["proposed_asset_version_id"],
                     content_hash=self._asset_hash(
                         proposal["proposed_asset_version_id"]
                     ),
                     logical_key=proposal["target_logical_key"],
-                    generator_operation_name=proposed_state[
-                        "generator_operation_name"
-                    ],
-                    transition=DesignTransition.ACTIVATE,
-                    planning_scope=PlanningScope(
-                        proposal["target_contract_type"]
-                    ),
+                    generator_operation_name=proposed_state["generator_operation_name"],
+                    transition=DesignTransition.APPROVE,
+                    planning_scope=PlanningScope(proposal["target_contract_type"]),
                     expected_version=int(proposed_state["version"]),
                     evidence={
                         "plan_change_proposal_id": proposal_id,
-                        "decision_operation_id": proposal[
-                            "approval_operation_id"
-                        ],
+                        "decision_operation_id": proposal["approval_operation_id"],
+                        "authority_type": "PLAN_CHANGE_AUTHORITY",
+                    },
+                ),
+                principal=principal,
+            )
+        if proposed_state["lifecycle"] != "ACTIVE":
+            self.story_design.transition(
+                StoryDesignTransitionCommand(
+                    project_id=proposal["project_id"],
+                    workspace_id=workspace_id,
+                    actor_id=principal.principal_id,
+                    trace_id=f"{proposal_id}:story-design-activate",
+                    correlation_id=operation_id,
+                    idempotency_key=(
+                        f"{proposal['stable_idempotency_key']}:story-design-activate"
+                    ),
+                    asset_version_id=proposal["proposed_asset_version_id"],
+                    content_hash=self._asset_hash(
+                        proposal["proposed_asset_version_id"]
+                    ),
+                    logical_key=proposal["target_logical_key"],
+                    generator_operation_name=proposed_state["generator_operation_name"],
+                    transition=DesignTransition.ACTIVATE,
+                    planning_scope=PlanningScope(proposal["target_contract_type"]),
+                    expected_version=int(proposed_state["version"]),
+                    evidence={
+                        "plan_change_proposal_id": proposal_id,
+                        "decision_operation_id": proposal["approval_operation_id"],
                         "replacement_approved": True,
                     },
                 ),
@@ -424,28 +423,18 @@ class PostgresPlanChangeAuthority:
             project_id=proposal["project_id"],
             book_id=proposal["book_id"],
             asset_version_id=proposal["proposed_asset_version_id"],
-            contract_type=PlanContractType(
-                proposal["target_contract_type"]
-            ),
+            contract_type=PlanContractType(proposal["target_contract_type"]),
             parent_version_id=str(target["parent_version_id"] or ""),
-            execution_scope=PlanExecutionScope(
-                proposal["target_execution_scope"]
-            ),
+            execution_scope=PlanExecutionScope(proposal["target_execution_scope"]),
             replacement_approved=True,
-            expected_active_asset_version_id=proposal[
-                "target_asset_version_id"
-            ],
+            expected_active_asset_version_id=proposal["target_asset_version_id"],
             decision_evidence={
                 "plan_change_proposal_id": proposal_id,
-                "approval_operation_id": proposal[
-                    "approval_operation_id"
-                ],
+                "approval_operation_id": proposal["approval_operation_id"],
             },
-            workspace_id=f"workspace:{proposal['project_id']}",
+            workspace_id=workspace_id,
             actor_id=principal.principal_id,
-            idempotency_key=(
-                f"{proposal['stable_idempotency_key']}:planning-binding"
-            ),
+            idempotency_key=(f"{proposal['stable_idempotency_key']}:planning-binding"),
             trace_id=f"{proposal_id}:planning-binding",
             correlation_id=proposal["proposal_operation_id"],
             causation_operation_id=operation_id,
@@ -456,9 +445,7 @@ class PostgresPlanChangeAuthority:
             uow.repositories.plan_change.record_impacts(
                 proposal_id=proposal_id,
                 project_id=proposal["project_id"],
-                source_asset_version_id=proposal[
-                    "target_asset_version_id"
-                ],
+                source_asset_version_id=proposal["target_asset_version_id"],
                 operation_id=operation_id,
             )
             uow.repositories.plan_change.mark_active(proposal_id)
@@ -477,9 +464,7 @@ class PostgresPlanChangeAuthority:
                     "causation_id": proposal["approval_operation_id"],
                     "payload": {
                         "proposal_id": proposal_id,
-                        "new_plan_version_id": proposal[
-                            "proposed_asset_version_id"
-                        ],
+                        "new_plan_version_id": proposal["proposed_asset_version_id"],
                     },
                 }
             )
@@ -495,16 +480,16 @@ class PostgresPlanChangeAuthority:
         principal: Principal,
     ) -> dict[str, Any]:
         principal.require("book.authority.execute", project_id)
+        workspace_id = self._workspace_for_asset(project_id, asset_version_id)
         operation_id = self._execute(
             definition="plan_change.revalidate",
             project_id=project_id,
-            workspace_id=f"workspace:{project_id}",
+            workspace_id=workspace_id,
             actor_id=principal.principal_id,
             trace_id=f"{asset_version_id}:revalidate",
             correlation_id=asset_version_id,
             idempotency_key=(
-                f"plan-revalidate:{project_id}:{asset_version_id}:"
-                f"{evidence_version_id}"
+                f"plan-revalidate:{project_id}:{asset_version_id}:{evidence_version_id}"
             ),
             payload={
                 "asset_version_id": asset_version_id,
@@ -620,9 +605,7 @@ class PostgresPlanChangeAuthority:
             )
             start_saga(
                 self.database_url,
-                GraphCommandContext(
-                    project_id, actor_id, trace_id, correlation_id
-                ),
+                GraphCommandContext(project_id, actor_id, trace_id, correlation_id),
                 root_operation_id=operation_id,
             )
         ContentAuthorityScheduler(
@@ -687,13 +670,13 @@ class PostgresPlanChangeAuthority:
             project_id=project_id, asset_version_id=asset_version_id
         )
         if (
-            state["approval"] != "APPROVED"
+            state["approval"] not in {"PENDING", "APPROVED"}
             or state["qualification"] != "QUALIFIED"
             or state["lifecycle"] != "MATERIALIZED"
         ):
             raise KernelError(
-                "PLAN_CHANGE_CANDIDATE_NOT_APPROVED",
-                "proposed plan must be qualified and approved but inactive",
+                "PLAN_CHANGE_CANDIDATE_NOT_QUALIFIED",
+                "proposed plan must be qualified, approval-pending or approved, and inactive",
             )
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
@@ -705,6 +688,40 @@ class PostgresPlanChangeAuthority:
             )
             row = uow.cursor.fetchone()
         return {**state, "content": dict(row[0])}
+
+    def _workspace_id(self, project_id: str, book_id: str) -> str:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT workspace_id FROM authority_book
+                WHERE project_id=%s AND book_id=%s
+                """,
+                [project_id, book_id],
+            )
+            rows = uow.cursor.fetchall()
+        if len(rows) != 1:
+            raise KernelError(
+                "PLAN_CHANGE_BOOK_SCOPE_INVALID",
+                "PlanChange could not resolve one authoritative Book workspace",
+            )
+        return str(rows[0][0])
+
+    def _workspace_for_asset(self, project_id: str, asset_version_id: str) -> str:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT DISTINCT book_id FROM story_plan_binding
+                WHERE project_id=%s AND asset_version_id=%s
+                """,
+                [project_id, asset_version_id],
+            )
+            rows = uow.cursor.fetchall()
+        if len(rows) != 1:
+            raise KernelError(
+                "PLAN_CHANGE_ASSET_SCOPE_INVALID",
+                "Plan revalidation requires one authoritative Book binding",
+            )
+        return self._workspace_id(project_id, str(rows[0][0]))
 
     def _resolve(
         self, project_id: str, version_ids: tuple[str, ...]
@@ -754,9 +771,7 @@ class PostgresPlanChangeAuthority:
             )
         return str(row[0])
 
-    def _require_story_design_active(
-        self, proposal: dict[str, Any]
-    ) -> None:
+    def _require_story_design_active(self, proposal: dict[str, Any]) -> None:
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
@@ -770,18 +785,13 @@ class PostgresPlanChangeAuthority:
                 ],
             )
             row = uow.cursor.fetchone()
-        if (
-            row is None
-            or str(row[0]) != proposal["proposed_asset_version_id"]
-        ):
+        if row is None or str(row[0]) != proposal["proposed_asset_version_id"]:
             raise KernelError(
                 "PLAN_CHANGE_ACTIVATION_RECOVERY_CONFLICT",
                 "active Story Design version differs from the proposal",
             )
 
-    def _operation_output(
-        self, operation_id: str, output_key: str
-    ) -> dict[str, str]:
+    def _operation_output(self, operation_id: str, output_key: str) -> dict[str, str]:
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """

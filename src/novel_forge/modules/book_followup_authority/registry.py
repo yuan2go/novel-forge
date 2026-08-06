@@ -1,4 +1,5 @@
 """Handler registry for governed post-chapter operations."""
+
 from __future__ import annotations
 
 from novel_forge.modules.authority_handler_runtime import AuthorityHandlerRegistration
@@ -10,6 +11,7 @@ from .contracts import (
     ReaderOutcomeModelPort,
 )
 from .handlers import LongformRecapHandler, ReaderOutcomeHandler
+from novel_forge.modules.reader_judge_authority import ReaderJudgeRuntimeResolver
 
 
 class _UnavailableReaderOutcomeHandler:
@@ -21,11 +23,15 @@ class _UnavailableReaderOutcomeHandler:
 
 
 class BookFollowupHandlerRegistry:
-    def __init__(self, model_port: ReaderOutcomeModelPort | None = None) -> None:
+    def __init__(
+        self,
+        model_port: ReaderOutcomeModelPort | None = None,
+        reader_judge_resolver: ReaderJudgeRuntimeResolver | None = None,
+    ) -> None:
         self._handlers = {
             READER_OUTCOME_DEFINITION: (
-                ReaderOutcomeHandler(model_port)
-                if model_port is not None
+                ReaderOutcomeHandler(model_port, reader_judge_resolver)
+                if model_port is not None and reader_judge_resolver is not None
                 else _UnavailableReaderOutcomeHandler()
             ),
             LONGFORM_RECAP_DEFINITION: LongformRecapHandler(),

@@ -20,7 +20,7 @@ from novel_forge.modules.capability_packs.compiler import CapabilityPackCompiler
 from novel_forge.modules.capability_packs.loader import load_capability_pack_payload
 from novel_forge.modules.capability_packs.operation_catalog import (
     RepositoryOperationDefinitionLoader,
-    chapter_workflow_binding_catalog,
+    governed_workflow_binding_catalog,
 )
 from novel_forge.modules.capability_packs.type_catalog import (
     default_capability_type_catalog,
@@ -49,7 +49,13 @@ from .definitions import (
     CAPABILITY_PACK_DEFINITION_VERSION,
     capability_pack_operation_definitions,
 )
-from .domain import ApprovalDecision, CapabilityPackScope, RolloutStatus, ScopeType, canonical_hash
+from .domain import (
+    ApprovalDecision,
+    CapabilityPackScope,
+    RolloutStatus,
+    ScopeType,
+    canonical_hash,
+)
 from .policy import CapabilityPackApprovalScope, normalize_limitations
 
 
@@ -87,7 +93,10 @@ class CapabilityPackAuthorityCommand:
         )
         if any(not value.strip() for value in required):
             raise ValueError("Capability Pack Authority command is incomplete")
-        if self.definition_name != "capability_pack.manifest.register" and not self.pack_version:
+        if (
+            self.definition_name != "capability_pack.manifest.register"
+            and not self.pack_version
+        ):
             raise ValueError("pack_version is required for this Capability Pack action")
         if self.expected_activation_version < 0:
             raise ValueError("expected activation version cannot be negative")
@@ -123,12 +132,13 @@ def build_binding_set(
     runtime = dict(manifest.get("runtime_contract") or {})
     prompt_binding = dict(manifest.get("prompt_binding") or {})
     skill_bindings = [
-        dict(item)
-        for item in (manifest.get("skill_binding") or {}).get("skills") or ()
+        dict(item) for item in (manifest.get("skill_binding") or {}).get("skills") or ()
     ]
     route_ref = str((tool.get("external_models") or {}).get("route_policy_ref") or "")
     approval_ref = str(governance.get("approval_policy_ref") or "")
-    budget_ref = str((governance.get("cost_tracking") or {}).get("budget_policy_ref") or "")
+    budget_ref = str(
+        (governance.get("cost_tracking") or {}).get("budget_policy_ref") or ""
+    )
     policy_bindings = {
         "tool_policy_ref": str(tool.get("policy_id") or ""),
         "tool_policy_hash": canonical_hash(tool),
@@ -144,15 +154,12 @@ def build_binding_set(
         "budget_policy_hash": _artifact_hash(artifacts, budget_ref),
         "commit_policy_ref": str(runtime.get("commit_policy_ref") or ""),
         "validation_policy_ref": str(runtime.get("validation_policy_ref") or ""),
-        "commit_authority": "CHAPTER_AUTHORITY",
     }
     expected_pack_ref = f"{compiled['pack_id']}@{compiled['pack_version']}"
     nodes: list[dict[str, Any]] = []
     for raw in compiled.get("workflow_nodes") or ():
         node = dict(raw)
-        definition_ref = (
-            f"{node['definition_name']}@{node['definition_version']}"
-        )
+        definition_ref = f"{node['definition_name']}@{node['definition_version']}"
         binding: dict[str, Any] = {
             "ordinal": int(node["ordinal"]),
             "workflow_node_id": str(node["node_id"]),
@@ -163,6 +170,9 @@ def build_binding_set(
             "agent_definition_ref": str(node.get("agent_definition_ref") or ""),
             "agent_definition_hash": "",
             "execution_capability_id": str(node["capability_id"]),
+            "commit_authority": str(
+                node.get("commit_authority") or "CHAPTER_AUTHORITY"
+            ),
             **policy_bindings,
         }
         agent_ref = binding["agent_definition_ref"]
@@ -191,11 +201,10 @@ def build_binding_set(
                     "CAPABILITY_PACK_CAPABILITY_BINDING_DRIFT",
                     "Agent Definition lacks the compiled Capability mapping",
                 )
-            if (
-                str(capability.get("execution_capability_id"))
-                != str(node["capability_id"])
-                or str(capability.get("execution_capability_hash"))
-                != str(node["capability_contract_hash"])
+            if str(capability.get("execution_capability_id")) != str(
+                node["capability_id"]
+            ) or str(capability.get("execution_capability_hash")) != str(
+                node["capability_contract_hash"]
             ):
                 raise KernelError(
                     "CAPABILITY_PACK_EXECUTION_CAPABILITY_DRIFT",
@@ -224,11 +233,9 @@ def build_binding_set(
                 prompt_template_ref,
                 str(prompt_binding.get("template_hash") or ""),
             )
-            if (
-                str(agent.get("prompt_bundle_ref") or "") != prompt_system_ref
-                or str(agent.get("prompt_bundle_hash") or "")
-                != str(prompt_binding.get("system_instruction_hash") or "")
-            ):
+            if str(agent.get("prompt_bundle_ref") or "") != prompt_system_ref or str(
+                agent.get("prompt_bundle_hash") or ""
+            ) != str(prompt_binding.get("system_instruction_hash") or ""):
                 raise KernelError(
                     "CAPABILITY_PACK_PROMPT_BINDING_DRIFT",
                     "Agent Definition prompt source differs from Pack Prompt Binding",
@@ -310,9 +317,7 @@ def build_binding_set(
                     ),
                     "prompt_template_ref": prompt_template_ref,
                     "prompt_template_hash": str(prompt_binding["template_hash"]),
-                    "prompt_compiler_version": str(
-                        prompt_binding["compiler_version"]
-                    ),
+                    "prompt_compiler_version": str(prompt_binding["compiler_version"]),
                     "skill_ref": str(selected_skill["skill_ref"]),
                     "skill_version": str(selected_skill["version"]),
                     "skill_content_hash": str(selected_skill["content_hash"]),
@@ -355,7 +360,9 @@ class CapabilityPackAuthorityApplication:
         if not database_url:
             raise ValueError("Capability Pack Authority requires PostgreSQL")
         if not application_build_id or len(commit_sha) != 40:
-            raise ValueError("Capability Pack Authority requires exact release identity")
+            raise ValueError(
+                "Capability Pack Authority requires exact release identity"
+            )
         self.database_url = database_url
         self.application_build_id = application_build_id
         self.commit_sha = commit_sha
@@ -367,9 +374,7 @@ class CapabilityPackAuthorityApplication:
         permission = _permission_for(command.definition_name)
         principal.require(permission, command.project_id)
         if principal.principal_id != command.actor_id:
-            raise PermissionError(
-                "Capability Pack actor must be the trusted Principal"
-            )
+            raise PermissionError("Capability Pack actor must be the trusted Principal")
         _validate_command_scope(command, principal)
         self._register_definitions()
         prepared = self._prepare(command)
@@ -473,9 +478,9 @@ class CapabilityPackAuthorityApplication:
             manifest = load_capability_pack_payload(version["manifest"])
             identities = []
             for node in manifest.workflow_template.nodes:
-                name, separator, value = str(
-                    node.operation_definition_ref
-                ).rpartition("@")
+                name, separator, value = str(node.operation_definition_ref).rpartition(
+                    "@"
+                )
                 if not separator:
                     raise KernelError(
                         "CAPABILITY_PACK_OPERATION_DEFINITION_INVALID",
@@ -490,7 +495,10 @@ class CapabilityPackAuthorityApplication:
             capability_registry=default_capability_registry(),
             capability_type_catalog=default_capability_type_catalog(),
             operation_catalog=operation_catalog,
-            workflow_catalog=chapter_workflow_binding_catalog(),
+            workflow_catalog=governed_workflow_binding_catalog(
+                str(manifest.workflow_template.workflow_id),
+                str(manifest.workflow_template.workflow_version),
+            ),
             artifact_resolver=artifact_resolver,
             tool_catalog=default_tool_definition_catalog(),
             pack_catalog=ReadOnlyPackCatalog(
@@ -509,9 +517,7 @@ class CapabilityPackAuthorityApplication:
             target_runtime_profile=str(
                 command.payload.get("target_runtime_profile") or ""
             ),
-            novel_forge_version=str(
-                command.payload.get("novel_forge_version") or ""
-            ),
+            novel_forge_version=str(command.payload.get("novel_forge_version") or ""),
             release_sha=release_sha,
             release_channel=str(command.payload.get("release_channel") or ""),
             expected_manifest_hash=str(version["manifest_hash"]),
@@ -664,7 +670,7 @@ class CapabilityPackAuthorityApplication:
                     "CAPABILITY_PACK_COMPILATION_REJECTED",
                     "trusted compilation failed: "
                     + ", ".join(
-                        str(item.get("code"))
+                        f"{item.get('code')}@{item.get('path')}:{item.get('message')}"
                         for item in prepared["report"].get("errors") or ()
                     ),
                 )
@@ -687,9 +693,7 @@ class CapabilityPackAuthorityApplication:
                 project_id=command.project_id,
                 compilation_id=command.compilation_id,
                 compilation_hash=str(command.payload.get("compilation_hash") or ""),
-                decision=ApprovalDecision(
-                    str(command.payload.get("decision") or "")
-                ),
+                decision=ApprovalDecision(str(command.payload.get("decision") or "")),
                 approval_policy_ref=str(
                     command.payload.get("approval_policy_ref") or ""
                 ),
@@ -714,23 +718,20 @@ class CapabilityPackAuthorityApplication:
                 command.compilation_id, project_id=command.project_id
             )
             _verify_target_identity(command, compilation)
-            if compilation["compilation_hash"] != prepared["compilation"][
-                "compilation_hash"
-            ]:
+            if (
+                compilation["compilation_hash"]
+                != prepared["compilation"]["compilation_hash"]
+            ):
                 raise KernelError(
                     "CAPABILITY_PACK_COMPILATION_DRIFT",
                     "Compilation changed after Binding Set preparation",
                 )
             binding = dict(prepared["binding_set"])
             binding_set = repository.store_binding_set(
-                binding_set_id=str(
-                    command.payload.get("binding_set_id") or uuid4()
-                ),
+                binding_set_id=str(command.payload.get("binding_set_id") or uuid4()),
                 compilation_id=command.compilation_id,
                 binding_set_hash=str(binding["binding_set_hash"]),
-                workflow_definition_ref=str(
-                    binding["workflow_definition_ref"]
-                ),
+                workflow_definition_ref=str(binding["workflow_definition_ref"]),
                 node_bindings=tuple(binding["node_bindings"]),
                 artifact_bindings=dict(binding["artifact_bindings"]),
                 policy_bindings=dict(binding["policy_bindings"]),
@@ -822,9 +823,7 @@ class CapabilityPackAuthorityApplication:
             _verify_target_identity(command, baseline)
             status = {
                 "capability_pack.rollout.pause": RolloutStatus.PAUSED,
-                "capability_pack.rollout.resume": RolloutStatus(
-                    str(rollout["mode"])
-                ),
+                "capability_pack.rollout.resume": RolloutStatus(str(rollout["mode"])),
                 "capability_pack.rollout.complete": RolloutStatus.COMPLETED,
             }[action]
             if action == "capability_pack.rollout.complete":
@@ -1025,7 +1024,9 @@ def _artifact_hash(artifacts: Sequence[Mapping[str, Any]], ref: str) -> str:
             "CAPABILITY_PACK_POLICY_BINDING_INCOMPLETE",
             "Binding Set policy reference is missing",
         )
-    matches = [str(item["content_hash"]) for item in artifacts if str(item["ref"]) == ref]
+    matches = [
+        str(item["content_hash"]) for item in artifacts if str(item["ref"]) == ref
+    ]
     if len(set(matches)) != 1:
         raise KernelError(
             "CAPABILITY_PACK_RUNTIME_ARTIFACT_DRIFT",

@@ -118,6 +118,7 @@ WORKFLOW_NODE = _object(
         "timeout_policy_ref": STRING,
         "approval": APPROVAL,
         "compensation": COMPENSATION,
+        "commit_authority": STRING,
     },
     required=frozenset(
         {
@@ -390,9 +391,7 @@ CAPABILITY_PACK_V1_CONTRACT = _object(
                         "migration_policy_ref": NULLABLE_STRING,
                     }
                 ),
-                "rollout": _object(
-                    {"mode": STRING, "canary_percent": INTEGER}
-                ),
+                "rollout": _object({"mode": STRING, "canary_percent": INTEGER}),
                 "rollback": _object(
                     {"allowed": BOOLEAN, "policy_ref": NULLABLE_STRING}
                 ),

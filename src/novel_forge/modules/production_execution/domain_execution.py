@@ -5,6 +5,7 @@ This module only turns an already frozen Authority ExecutionRequest into a struc
 candidate plus execution evidence.  The development adapter is an explicit
 strangler seam and is fail-closed in controlled environments.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -125,6 +126,11 @@ class GatewayDomainExecutionPort:
     """Submit pre-bound Authority requests and return candidates without committing."""
 
     production_execution_gateway_backed = True
+    # A GatewayDomainExecutionPort is only admissible after its request has
+    # been frozen and dispatched by the Command Kernel ExternalEffect runtime.
+    # Bare gateway callers must not claim this marker; Planning binds the
+    # ExternalEffect-aware port exposed by Agent Runtime instead.
+    external_effect_backed = False
 
     def __init__(
         self,
@@ -163,7 +169,9 @@ class GatewayDomainExecutionPort:
             )
         output = self.evidence_store.read_evidence(str(result.normalized_output_ref))
         if not isinstance(output, Mapping) or not output:
-            raise RuntimeError("normalized production output is not a structured object")
+            raise RuntimeError(
+                "normalized production output is not a structured object"
+            )
         return DomainExecutionCandidate(
             candidate_kind=command.candidate_kind,
             raw_output=dict(output),
@@ -181,8 +189,7 @@ class GatewayDomainExecutionPort:
                 usage_receipt_ref=str(result.usage_receipt_ref),
                 cost_receipt_ref=str(result.cost_receipt_ref),
                 fixture_protocol_only=(
-                    handle.transport
-                    is ExecutionRuntimeClass.SCRIPTED_FIXTURE
+                    handle.transport is ExecutionRuntimeClass.SCRIPTED_FIXTURE
                 ),
                 real_model_call=handle.transport
                 in {
@@ -235,7 +242,9 @@ def execute_domain_candidate(
         )
     if legacy_model is None:
         if not legacy_model_role:
-            raise ValueError("development compatibility execution requires a model role")
+            raise ValueError(
+                "development compatibility execution requires a model role"
+            )
         from novel_forge.model_adapters import model_from_env
         import os
 

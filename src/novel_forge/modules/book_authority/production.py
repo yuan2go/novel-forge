@@ -4,6 +4,7 @@ Only book checkpoints and Chapter operation references are stored here. Chapter
 attempts, leases, fences, effects, outputs, and terminal state remain owned by
 Chapter Authority.
 """
+
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
@@ -23,7 +24,9 @@ from novel_forge.modules.book_followup_authority.contracts import (
     LONGFORM_RECAP_DEFINITION,
     READER_OUTCOME_DEFINITION,
 )
-from novel_forge.modules.chapter_authority.application import ChapterAuthorityApplication
+from novel_forge.modules.chapter_authority.application import (
+    ChapterAuthorityApplication,
+)
 from novel_forge.modules.chapter_authority.orchestrator import (
     ChapterSagaAdmission,
     SingleChapterRequest,
@@ -51,7 +54,12 @@ from novel_forge.modules.command_kernel.runtime import (
     OperationTransitionCommand,
     transition_operation,
 )
-from novel_forge.modules.command_kernel.service import AdmissionContext, admit_command
+from novel_forge.modules.command_kernel.service import (
+    AdmissionContext,
+    TransactionCheckpoint,
+    admit_command,
+    execute_transaction_command,
+)
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 
@@ -75,18 +83,28 @@ LONGFORM_CONTEXT_VERSION_KEYS = frozenset(
 
 
 class BookProductionState(StrEnum):
+    INPUT_RESOLUTION_REQUIRED = "INPUT_RESOLUTION_REQUIRED"
+    PLANNING_REQUIRED = "PLANNING_REQUIRED"
+    PLAN_GENERATING = "PLAN_GENERATING"
+    PLAN_APPROVAL_PENDING = "PLAN_APPROVAL_PENDING"
     READY = "READY"
+    CHAPTER_GROUP_REQUIRED = "CHAPTER_GROUP_REQUIRED"
+    CHAPTER_PLAN_REQUIRED = "CHAPTER_PLAN_REQUIRED"
     CHAPTER_SUBMITTED = "CHAPTER_SUBMITTED"
     CHAPTER_RUNNING = "CHAPTER_RUNNING"
     CHAPTER_WAITING_RETRY = "CHAPTER_WAITING_RETRY"
     CHAPTER_COMPLETED = "CHAPTER_COMPLETED"
+    CHAPTER_ACCEPTANCE_PENDING = "CHAPTER_ACCEPTANCE_PENDING"
     CHAPTER_FAILED_RETRYABLE = "CHAPTER_FAILED_RETRYABLE"
     CHAPTER_FAILED_TERMINAL = "CHAPTER_FAILED_TERMINAL"
     CANON_PENDING = "CANON_PENDING"
     CANON_COMMITTED = "CANON_COMMITTED"
     READER_OUTCOME_PENDING = "READER_OUTCOME_PENDING"
+    FOLLOWUP_PENDING = "FOLLOWUP_PENDING"
     CHECKPOINT_PENDING = "CHECKPOINT_PENDING"
     REPLAN_REQUIRED = "REPLAN_REQUIRED"
+    REPLAN_GENERATING = "REPLAN_GENERATING"
+    REPLAN_APPROVAL_PENDING = "REPLAN_APPROVAL_PENDING"
     PAUSED = "PAUSED"
     COMPLETED = "COMPLETED"
     ABORTED = "ABORTED"
@@ -108,6 +126,8 @@ class StartBookProductionCommand:
     target_chapter_count: int
     light_recap_cadence: int = 5
     formal_recap_cadence: int = 10
+    input_snapshot_id: str = ""
+    input_mode: str = "LEGACY_FIXTURE_INPUT_MODE"
 
 
 @dataclass(frozen=True, slots=True)
@@ -168,9 +188,7 @@ class ChapterAuthorityCommandAdapter:
     ) -> ChapterSagaAdmission:
         return self.application.admit(request, principal=principal)
 
-    def require_run(
-        self, *, project_id: str, root_operation_id: str
-    ) -> dict[str, Any]:
+    def require_run(self, *, project_id: str, root_operation_id: str) -> dict[str, Any]:
         return self.application.query.require_run(
             project_id=project_id, root_operation_id=root_operation_id
         )
@@ -261,6 +279,7 @@ class PostgresBookAuthority:
         application_build_id: str,
         commit_sha: str,
         failure_injector: Callable[[str], None] | None = None,
+        legacy_fixture_input_allowed: bool = True,
     ) -> None:
         if not database_url or not application_build_id or len(commit_sha) != 40:
             raise ValueError("PostgreSQL, build id, and full commit SHA are required")
@@ -270,6 +289,7 @@ class PostgresBookAuthority:
         self.application_build_id = application_build_id
         self.commit_sha = commit_sha
         self.failure_injector = failure_injector
+        self.legacy_fixture_input_allowed = legacy_fixture_input_allowed
         self.outcomes = ChapterOutcomeAuthorityApplication(
             database_url,
             application_build_id=application_build_id,
@@ -283,6 +303,15 @@ class PostgresBookAuthority:
     ) -> BookProductionAdmission:
         principal.require("book.authority.execute", command.project_id)
         _validate_start(command)
+        if (
+            command.input_mode == "LEGACY_FIXTURE_INPUT_MODE"
+            and not self.legacy_fixture_input_allowed
+        ):
+            raise KernelError(
+                "BOOK_PRODUCTION_LEGACY_INPUT_FORBIDDEN",
+                "controlled Book Production requires an Authority-resolved input snapshot",
+            )
+        resolved_input_versions = self._validate_input_snapshot(command)
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.repositories.definitions.register(
                 book_coordinate_definition(
@@ -291,7 +320,7 @@ class PostgresBookAuthority:
                 )
             )
             uow.commit()
-        root_input_version_ids = (
+        root_input_version_ids = resolved_input_versions or (
             command.book_design_version,
             command.book_plan_version,
             *(
@@ -388,8 +417,35 @@ class PostgresBookAuthority:
                     "target_chapter_count": command.target_chapter_count,
                     "light_recap_cadence": command.light_recap_cadence,
                     "formal_recap_cadence": command.formal_recap_cadence,
+                    "input_snapshot_id": command.input_snapshot_id,
+                    "input_mode": command.input_mode,
                 }
             )
+            if command.input_mode == "RESOLVED_AUTHORITY_INPUT":
+                binding_id = (
+                    "book-input-binding:"
+                    + hashlib.sha256(
+                        f"{book_run_id}:1:{command.input_snapshot_id}".encode()
+                    ).hexdigest()
+                )
+                uow.cursor.execute(
+                    """
+                    INSERT INTO authority_book_production_input_binding(
+                        binding_id, project_id, book_id, book_run_id,
+                        binding_version, snapshot_id, reason,
+                        bound_by_operation_id
+                    ) VALUES (%s,%s,%s,%s,1,%s,'BOOK_START',%s)
+                    ON CONFLICT(book_run_id, snapshot_id) DO NOTHING
+                    """,
+                    [
+                        binding_id,
+                        command.project_id,
+                        command.book_id,
+                        book_run_id,
+                        command.input_snapshot_id,
+                        root_operation_id,
+                    ],
+                )
             uow.cursor.execute(
                 """
                 SELECT book_run_id, root_operation_id, saga_id
@@ -468,7 +524,9 @@ class PostgresBookAuthority:
                 existing = (request_id, None)
             uow.commit()
         if existing is None:
-            raise KernelError("BOOK_CHAPTER_REQUEST_MISSING", "chapter request was not persisted")
+            raise KernelError(
+                "BOOK_CHAPTER_REQUEST_MISSING", "chapter request was not persisted"
+            )
         request_id = str(existing[0])
         if existing[1]:
             return self.require_chapter_request(request_id)
@@ -574,9 +632,7 @@ class PostgresBookAuthority:
                 *acceptance_inputs,
                 *self.resolve_asset_refs(
                     project_id=request["project_id"],
-                    asset_version_ids=(
-                        str(book["active_story_state_version_id"]),
-                    ),
+                    asset_version_ids=(str(book["active_story_state_version_id"]),),
                 ),
             )
         stable_key = f"{request['stable_idempotency_key']}:accept"
@@ -594,9 +650,7 @@ class PostgresBookAuthority:
                     "parent_group_version_id": str(
                         request.get("parent_group_version_id") or ""
                     ),
-                    "cost_receipt_refs": list(
-                        evidence.get("cost_receipt_refs") or ()
-                    ),
+                    "cost_receipt_refs": list(evidence.get("cost_receipt_refs") or ()),
                 },
                 input_assets=acceptance_inputs,
                 root_operation_id=book["root_operation_id"],
@@ -622,10 +676,7 @@ class PostgresBookAuthority:
                 project_id=request["project_id"],
             )
         )
-        outputs = {
-            item.asset_type: item
-            for item in materialized_outputs
-        }
+        outputs = {item.asset_type: item for item in materialized_outputs}
         outcome = outputs["chapter_outcome"]
         story_state = outputs["story_state_snapshot"]
         canon_snapshot = next(
@@ -635,8 +686,7 @@ class PostgresBookAuthority:
         )
         self._probe("before_acceptance")
         acceptance_id = (
-            "chapter-acceptance:"
-            + hashlib.sha256(stable_key.encode()).hexdigest()
+            "chapter-acceptance:" + hashlib.sha256(stable_key.encode()).hexdigest()
         )
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
@@ -663,22 +713,16 @@ class PostgresBookAuthority:
                 chapter_number=int(request["chapter_number"]),
                 chapter_outcome_asset_version_id=outcome.asset_version_id,
                 story_state_asset_version_id=story_state.asset_version_id,
-                canon_snapshot_asset_version_id=str(
-                    canon_snapshot["asset_version_id"]
-                ),
+                canon_snapshot_asset_version_id=str(canon_snapshot["asset_version_id"]),
                 evidence={
-                    "child_root_operation_id": request[
-                        "chapter_root_operation_id"
-                    ],
+                    "child_root_operation_id": request["chapter_root_operation_id"],
                     "child_saga_id": request["chapter_saga_id"],
                     "final_release_gate": next(
                         item["asset_version_id"]
                         for item in evidence["outputs"]
                         if item["asset_type"] == "final_release_gate_report"
                     ),
-                    "cost_receipt_refs": list(
-                        evidence.get("cost_receipt_refs") or ()
-                    ),
+                    "cost_receipt_refs": list(evidence.get("cost_receipt_refs") or ()),
                 },
                 before_cursor_advance=lambda: self._probe(
                     "after_acceptance_before_cursor"
@@ -698,9 +742,7 @@ class PostgresBookAuthority:
             "acceptance_operation_id": admission.operation_id,
             "last_chapter_outcome_version_id": outcome.asset_version_id,
             "active_story_state_version_id": story_state.asset_version_id,
-            "active_canon_snapshot_version_id": str(
-                canon_snapshot["asset_version_id"]
-            ),
+            "active_canon_snapshot_version_id": str(canon_snapshot["asset_version_id"]),
         }
 
     def pause(
@@ -827,6 +869,197 @@ class PostgresBookAuthority:
             uow.commit()
         return self.require(book_run_id)
 
+    def bind_replanned_input_snapshot(
+        self,
+        book_run_id: str,
+        *,
+        snapshot_id: str,
+        causation_operation_id: str,
+        target_state: BookProductionState,
+        expected_version: int,
+        principal: Principal,
+    ) -> dict[str, Any]:
+        """Append a new input binding and CAS the current Book checkpoint pointer."""
+        book = self.require(book_run_id)
+        principal.require("book.authority.execute", book["project_id"])
+        if target_state not in {
+            BookProductionState.READY,
+            BookProductionState.CHAPTER_GROUP_REQUIRED,
+            BookProductionState.CHAPTER_PLAN_REQUIRED,
+            BookProductionState.PLANNING_REQUIRED,
+        }:
+            raise ValueError("replanned Book input target state is invalid")
+        if (
+            str(book.get("input_snapshot_id") or "") == snapshot_id
+            and str(book["state"]) == target_state.value
+        ):
+            return book
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.repositories.definitions.register(
+                book_replan_input_binding_definition(
+                    application_build_id=self.application_build_id,
+                    commit_sha=self.commit_sha,
+                )
+            )
+            uow.commit()
+
+        def handler(
+            uow: AuthorityUnitOfWork,
+            operation_id: str,
+            checkpoint: TransactionCheckpoint,
+        ) -> dict[str, Any]:
+            uow.cursor.execute(
+                """
+                SELECT version, COALESCE(input_snapshot_id,''), state
+                FROM authority_book_production
+                WHERE book_run_id=%s FOR UPDATE
+                """,
+                [book_run_id],
+            )
+            locked = uow.cursor.fetchone()
+            if locked is not None and (
+                str(locked[1]) == snapshot_id and str(locked[2]) == target_state.value
+            ):
+                return {
+                    "book_run_id": book_run_id,
+                    "state": target_state.value,
+                    "input_snapshot_id": snapshot_id,
+                }
+            if locked is None or int(locked[0]) != expected_version:
+                raise KernelError(
+                    "BOOK_REPLAN_CHECKPOINT_CONFLICT",
+                    "Book checkpoint changed before replacement input binding",
+                )
+            uow.cursor.execute(
+                """
+                SELECT project_id, book_id FROM authority_book_production_input_snapshot
+                WHERE snapshot_id=%s
+                """,
+                [snapshot_id],
+            )
+            snapshot = uow.cursor.fetchone()
+            if snapshot != (book["project_id"], book["book_id"]):
+                raise KernelError(
+                    "BOOK_REPLAN_INPUT_SCOPE_MISMATCH",
+                    "replacement input snapshot belongs to another Book",
+                )
+            checkpoint("after_domain_validation")
+            uow.cursor.execute(
+                """
+                SELECT COALESCE(MAX(binding_version),0)
+                FROM authority_book_production_input_binding
+                WHERE book_run_id=%s
+                """,
+                [book_run_id],
+            )
+            binding_version = int(uow.cursor.fetchone()[0]) + 1
+            binding_id = (
+                "book-input-binding:"
+                + hashlib.sha256(
+                    f"{book_run_id}:{binding_version}:{snapshot_id}".encode()
+                ).hexdigest()
+            )
+            uow.cursor.execute(
+                """
+                INSERT INTO authority_book_production_input_binding(
+                    binding_id, project_id, book_id, book_run_id,
+                    binding_version, snapshot_id, reason,
+                    bound_by_operation_id
+                ) VALUES (%s,%s,%s,%s,%s,%s,'PLAN_CHANGE_ACTIVATED',%s)
+                """,
+                [
+                    binding_id,
+                    book["project_id"],
+                    book["book_id"],
+                    book_run_id,
+                    binding_version,
+                    snapshot_id,
+                    operation_id,
+                ],
+            )
+            uow.cursor.execute(
+                """
+                UPDATE authority_book_production
+                SET input_snapshot_id=%s, state=%s, version=version+1,
+                    updated_at=NOW()
+                WHERE book_run_id=%s AND version=%s
+                """,
+                [snapshot_id, target_state.value, book_run_id, expected_version],
+            )
+            if uow.cursor.rowcount != 1:
+                raise KernelError(
+                    "BOOK_REPLAN_CHECKPOINT_CONFLICT",
+                    "Book checkpoint changed before replacement input binding",
+                )
+            uow.repositories.operation_graph.record_event(
+                {
+                    "event_id": str(uuid4()),
+                    "audit_id": str(uuid4()),
+                    "outbox_id": str(uuid4()),
+                    "aggregate_type": "book_production_input_binding",
+                    "aggregate_id": binding_id,
+                    "operation_id": operation_id,
+                    "project_id": str(book["project_id"]),
+                    "event_type": "book.production_input.replanned",
+                    "correlation_id": causation_operation_id,
+                    "causation_id": causation_operation_id,
+                    "payload": {
+                        "operation_id": operation_id,
+                        "book_run_id": book_run_id,
+                        "binding_id": binding_id,
+                        "binding_version": binding_version,
+                        "snapshot_id": snapshot_id,
+                        "state": target_state.value,
+                    },
+                }
+            )
+            checkpoint("after_outbox_insert")
+            return {
+                "book_run_id": book_run_id,
+                "state": target_state.value,
+                "input_snapshot_id": snapshot_id,
+                "binding_id": binding_id,
+            }
+
+        result = execute_transaction_command(
+            self.database_url,
+            {
+                "definition_name": "book.production_input.replan_bind",
+                "definition_version": "1.0.0",
+                "project_id": str(book["project_id"]),
+                "workspace_id": str(book["workspace_id"]),
+                "book_id": str(book["book_id"]),
+                "actor_id": principal.principal_id,
+                "idempotency_scope": "book:production-input-binding",
+                "idempotency_key": (
+                    f"{book['stable_idempotency_key']}:replan-input:{snapshot_id}"
+                ),
+                "trace_id": f"{causation_operation_id}:book-replan-input",
+                "span_id": str(uuid4()),
+                "correlation_id": causation_operation_id,
+                "causation_id": causation_operation_id,
+                "causation_operation_id": causation_operation_id,
+                "input": {
+                    "book_run_id": book_run_id,
+                    "snapshot_id": snapshot_id,
+                    "target_state": target_state.value,
+                    "expected_version": expected_version,
+                },
+                "input_assets": [],
+            },
+            context=AdmissionContext(
+                actor_id=principal.principal_id,
+                permissions=frozenset({"book.authority.execute"}),
+                available_handlers=frozenset(
+                    {"novel_forge.book_authority.production_input.replan_bind"}
+                ),
+                application_build_id=self.application_build_id,
+                commit_sha=self.commit_sha,
+            ),
+            handler=handler,
+        )
+        return {**self.require(book_run_id), "operation_id": result["operation_id"]}
+
     def recover_chapter_submission(
         self, chapter_request_id: str, *, principal: Principal
     ) -> dict[str, Any]:
@@ -866,11 +1099,20 @@ class PostgresBookAuthority:
         operation_status = str(run["status"])
         saga_status = str(run.get("saga", {}).get("status") or "")
         if operation_status == "SUCCEEDED" or saga_status == "SUCCEEDED":
-            request_status, book_state = "SUCCEEDED", BookProductionState.CHAPTER_COMPLETED
+            request_status, book_state = (
+                "SUCCEEDED",
+                BookProductionState.CHAPTER_COMPLETED,
+            )
         elif operation_status == "FAILED_RETRYABLE":
-            request_status, book_state = "FAILED_RETRYABLE", BookProductionState.CHAPTER_FAILED_RETRYABLE
+            request_status, book_state = (
+                "FAILED_RETRYABLE",
+                BookProductionState.CHAPTER_FAILED_RETRYABLE,
+            )
         elif operation_status in {"FAILED_FINAL", "DEAD_LETTER"}:
-            request_status, book_state = "FAILED_TERMINAL", BookProductionState.CHAPTER_FAILED_TERMINAL
+            request_status, book_state = (
+                "FAILED_TERMINAL",
+                BookProductionState.CHAPTER_FAILED_TERMINAL,
+            )
         elif operation_status == "CANCELLED":
             request_status, book_state = "CANCELLED", BookProductionState.PAUSED
         else:
@@ -944,9 +1186,13 @@ class PostgresBookAuthority:
             )
             row = uow.cursor.fetchone()
             if row is None:
-                raise KernelError("BOOK_FOLLOWUP_NOT_FOUND", "follow-up link does not exist")
+                raise KernelError(
+                    "BOOK_FOLLOWUP_NOT_FOUND", "follow-up link does not exist"
+                )
             if row[2] != "SUCCEEDED":
-                raise KernelError("BOOK_FOLLOWUP_NOT_COMPLETE", f"follow-up Operation is {row[2]}")
+                raise KernelError(
+                    "BOOK_FOLLOWUP_NOT_COMPLETE", f"follow-up Operation is {row[2]}"
+                )
             if replan_required:
                 state = BookProductionState.REPLAN_REQUIRED
             elif row[1] == "READER_OUTCOME":
@@ -964,9 +1210,7 @@ class PostgresBookAuthority:
         if state is BookProductionState.COMPLETED:
             coordinate_saga(
                 self.database_url,
-                GraphCommandContext(
-                    str(row[6]), str(row[7]), str(row[8]), str(row[9])
-                ),
+                GraphCommandContext(str(row[6]), str(row[7]), str(row[8]), str(row[9])),
                 str(row[5]),
             )
         return self.require(str(row[0]))
@@ -1006,9 +1250,7 @@ class PostgresBookAuthority:
         if state is BookProductionState.COMPLETED:
             coordinate_saga(
                 self.database_url,
-                GraphCommandContext(
-                    str(row[2]), str(row[3]), str(row[4]), str(row[5])
-                ),
+                GraphCommandContext(str(row[2]), str(row[3]), str(row[4]), str(row[5])),
                 str(row[1]),
             )
         return self.require(book_run_id)
@@ -1030,7 +1272,8 @@ class PostgresBookAuthority:
                        active_child_delegation_id, active_chapter_number,
                        active_plan_version_id, active_story_state_version_id,
                        active_canon_snapshot_version_id,
-                       last_chapter_outcome_version_id, failure_reason
+                       last_chapter_outcome_version_id, failure_reason,
+                       COALESCE(input_snapshot_id, ''), input_mode
                 FROM authority_book_production WHERE book_run_id=%s
                 """,
                 [book_run_id],
@@ -1039,22 +1282,123 @@ class PostgresBookAuthority:
         if row is None:
             raise KernelError("BOOK_RUN_NOT_FOUND", "Book Authority run does not exist")
         fields = (
-            "book_run_id", "project_id", "workspace_id", "book_id",
-            "book_design_version", "book_plan_version",
-            "production_profile_version", "longform_context_versions",
-            "root_operation_id", "saga_id",
-            "stable_idempotency_key", "state", "current_chapter",
-            "target_chapter_count", "light_recap_cadence",
-            "formal_recap_cadence", "active_chapter_request_id",
-            "last_reader_outcome_operation_id", "last_recap_operation_id",
-            "version", "paused_reason", "failure_classification",
-            "accepted_through_chapter", "active_child_delegation_id",
-            "active_chapter_number", "active_plan_version_id",
+            "book_run_id",
+            "project_id",
+            "workspace_id",
+            "book_id",
+            "book_design_version",
+            "book_plan_version",
+            "production_profile_version",
+            "longform_context_versions",
+            "root_operation_id",
+            "saga_id",
+            "stable_idempotency_key",
+            "state",
+            "current_chapter",
+            "target_chapter_count",
+            "light_recap_cadence",
+            "formal_recap_cadence",
+            "active_chapter_request_id",
+            "last_reader_outcome_operation_id",
+            "last_recap_operation_id",
+            "version",
+            "paused_reason",
+            "failure_classification",
+            "accepted_through_chapter",
+            "active_child_delegation_id",
+            "active_chapter_number",
+            "active_plan_version_id",
             "active_story_state_version_id",
             "active_canon_snapshot_version_id",
-            "last_chapter_outcome_version_id", "failure_reason",
+            "last_chapter_outcome_version_id",
+            "failure_reason",
+            "input_snapshot_id",
+            "input_mode",
         )
         return dict(zip(fields, row, strict=True))
+
+    def _validate_input_snapshot(
+        self, command: StartBookProductionCommand
+    ) -> tuple[str, ...]:
+        if command.input_mode == "LEGACY_FIXTURE_INPUT_MODE":
+            return ()
+        if (
+            command.input_mode != "RESOLVED_AUTHORITY_INPUT"
+            or not command.input_snapshot_id
+        ):
+            raise KernelError(
+                "BOOK_PRODUCTION_INPUT_SNAPSHOT_REQUIRED",
+                "controlled Book Production must bind a resolved Authority snapshot",
+            )
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT project_id, workspace_id, book_id,
+                       book_design_version, book_plan_version,
+                       production_profile_version,
+                       current_volume_plan_version, active_arc_plan_versions,
+                       COALESCE(current_chapter_group_plan_version, ''),
+                       reader_segment_version, reader_contract_version,
+                       platform_profile_version, character_state_version,
+                       foreshadowing_state_version, quality_trend_version,
+                       reward_ledger_version, promise_ledger_version,
+                       profile.content
+                FROM authority_book_production_input_snapshot AS snapshot
+                JOIN authority_asset_version AS profile
+                  ON profile.asset_version_id=snapshot.production_profile_version
+                WHERE snapshot.snapshot_id=%s
+                """,
+                [command.input_snapshot_id],
+            )
+            row = uow.cursor.fetchone()
+        if row is None or tuple(str(item) for item in row[:3]) != (
+            command.project_id,
+            command.workspace_id,
+            command.book_id,
+        ):
+            raise KernelError(
+                "BOOK_PRODUCTION_INPUT_SNAPSHOT_SCOPE_INVALID",
+                "Book Production snapshot does not belong to the requested scope",
+            )
+        expected = {
+            "book_design_version": str(row[3]),
+            "book_plan_version": str(row[4]),
+            "production_profile_version": str(row[5]),
+            "volume_plan_version": str(row[6]),
+            "reader_segment_version": str(row[9]),
+            "reader_contract_version": str(row[10]),
+            "platform_profile_version": str(row[11]),
+            "character_state_version": str(row[12]),
+            "foreshadowing_state_version": str(row[13]),
+            "quality_trend_version": str(row[14]),
+            "reward_ledger_version": str(row[15]),
+            "promise_ledger_version": str(row[16]),
+        }
+        if (
+            command.book_design_version != expected["book_design_version"]
+            or command.book_plan_version != expected["book_plan_version"]
+            or command.production_profile_version
+            != expected["production_profile_version"]
+            or any(
+                command.longform_context_versions[key] != value
+                for key, value in expected.items()
+                if key in LONGFORM_CONTEXT_VERSION_KEYS
+            )
+            or command.longform_context_versions["arc_plan_version"]
+            not in {str(item) for item in row[7]}
+            or command.target_chapter_count
+            != int(dict(row[17]).get("target_chapter_count") or 0)
+        ):
+            raise KernelError(
+                "BOOK_PRODUCTION_INPUT_SNAPSHOT_DRIFT",
+                "caller projection differs from the immutable Authority snapshot",
+            )
+        values = [str(item) for item in row[3:7]]
+        values.extend(str(item) for item in row[7])
+        if row[8]:
+            values.append(str(row[8]))
+        values.extend(str(item) for item in row[9:17])
+        return tuple(dict.fromkeys(values))
 
     def require_chapter_request(self, chapter_request_id: str) -> dict[str, Any]:
         with AuthorityUnitOfWork(self.database_url) as uow:
@@ -1080,15 +1424,24 @@ class PostgresBookAuthority:
             )
             row = uow.cursor.fetchone()
         if row is None:
-            raise KernelError("BOOK_CHAPTER_REQUEST_NOT_FOUND", "chapter request does not exist")
+            raise KernelError(
+                "BOOK_CHAPTER_REQUEST_NOT_FOUND", "chapter request does not exist"
+            )
         fields = (
-            "chapter_request_id", "book_run_id", "project_id",
-            "chapter_number", "chapter_plan_version",
-            "chapter_plan_content_hash", "parent_group_version_id",
+            "chapter_request_id",
+            "book_run_id",
+            "project_id",
+            "chapter_number",
+            "chapter_plan_version",
+            "chapter_plan_content_hash",
+            "parent_group_version_id",
             "production_profile_version",
-            "stable_idempotency_key", "command_payload",
-            "chapter_root_operation_id", "chapter_saga_id",
-            "status_reference", "failure_classification",
+            "stable_idempotency_key",
+            "command_payload",
+            "chapter_root_operation_id",
+            "chapter_saga_id",
+            "status_reference",
+            "failure_classification",
             "delegation_id",
         )
         return dict(zip(fields, row, strict=True))
@@ -1118,8 +1471,7 @@ class PostgresBookAuthority:
         if missing:
             raise KernelError(
                 "BOOK_AUTHORITY_INPUT_ASSET_MISSING",
-                "missing immutable Book input AssetVersions: "
-                + ", ".join(missing),
+                "missing immutable Book input AssetVersions: " + ", ".join(missing),
             )
         return tuple(
             {"asset_version_id": item, "content_hash": found[item]}
@@ -1137,7 +1489,10 @@ class PostgresBookAuthority:
         input_assets: tuple[dict[str, str], ...],
     ) -> BookFollowupAdmission:
         request = self.require_chapter_request(chapter_request_id)
-        if followup_type == "READER_OUTCOME" and request["status_reference"] != "SUCCEEDED":
+        if (
+            followup_type == "READER_OUTCOME"
+            and request["status_reference"] != "SUCCEEDED"
+        ):
             raise KernelError(
                 "BOOK_READER_OUTCOME_NOT_READY",
                 "Reader Outcome requires a completed Chapter operation",
@@ -1298,13 +1653,10 @@ class PostgresBookAuthority:
                 "project_id": project_id,
                 "estimated_tokens": max(1, len(str(row[3])) // 4),
                 "safe_summary": (
-                    f"Accepted chapter {chapter_number - 1} "
-                    f"{row[0]} state snapshot."
+                    f"Accepted chapter {chapter_number - 1} {row[0]} state snapshot."
                 ),
                 "structured_facts": list(
-                    (row[3] or {}).get("changes")
-                    or (row[3] or {}).get("facts")
-                    or []
+                    (row[3] or {}).get("changes") or (row[3] or {}).get("facts") or []
                 ),
                 "narrative_function": "authoritative_story_state",
                 "source_use_mode": "generation",
@@ -1322,6 +1674,52 @@ class PostgresBookAuthority:
     def _probe(self, point: str) -> None:
         if self.failure_injector is not None:
             self.failure_injector(point)
+
+
+def book_replan_input_binding_definition(
+    *, application_build_id: str, commit_sha: str
+) -> dict[str, Any]:
+    schema = {"type": "object"}
+    return {
+        "name": "book.production_input.replan_bind",
+        "definition_version": "1.0.0",
+        "family": "book_authority",
+        "enabled": True,
+        "definition_status": "implemented_validation_pending",
+        "command_schema_version": "book.production_input.replan_bind.command.v1",
+        "result_schema_version": "book.production_input.replan_bind.result.v1",
+        "command_schema": schema,
+        "result_schema": schema,
+        "input_contract": schema,
+        "output_contract": {"type": "BookProductionInputBinding"},
+        "handler_key": "novel_forge.book_authority.production_input.replan_bind",
+        "handler_contract_version": "book-production-input-replan-binding-v1",
+        "application_build_id": application_build_id,
+        "commit_sha": commit_sha,
+        "execution_mode": "transactional",
+        "permissions": ["book.authority.execute"],
+        "approval_policy": {"required": False},
+        "idempotency_scope": "book:production-input-binding",
+        "concurrency_key_template": "book:{book_id}:production-input-binding",
+        "retry_policy": {"max_attempts": 1},
+        "timeout_policy": {"operation_timeout_seconds": 30},
+        "cancellation_policy": {"mode": "not_applicable"},
+        "compensation_policy": {
+            "supported": False,
+            "reason": "append-only snapshot binding",
+        },
+        "irreversible_effect_policy": {"allowed": False},
+        "external_capabilities": [],
+        "policy": {
+            "execution_classification": "transaction_command",
+            "plan_change_activation_required": True,
+            "append_only_binding": True,
+        },
+        "completion_contract": {
+            "version": "book-production-input-replan-binding-completion-v1",
+            "required_evidence": ["trace", "audit", "input_snapshot"],
+        },
+    }
 
 
 def book_coordinate_definition(
@@ -1424,8 +1822,7 @@ def _validate_chapter_acceptance_evidence(
             and final_gate.get("release_status") == "INTERNAL_RELEASE_FINALIZED"
             and bool(final_gate.get("blob_receipt", {}).get("receipt_id"))
         ),
-        "quality": quality.get("gate")
-        in {"PASSED", "PASSED_WITH_UNCALIBRATED"},
+        "quality": quality.get("gate") in {"PASSED", "PASSED_WITH_UNCALIBRATED"},
         "review": (
             rereview.get("decision") == "PASSED"
             and int(rereview.get("blocking_issue_count", 0)) == 0
@@ -1490,9 +1887,16 @@ def _validate_start(command: StartBookProductionCommand) -> None:
         or command.light_recap_cadence <= 0
         or command.formal_recap_cadence <= 0
         or set(versions) != LONGFORM_CONTEXT_VERSION_KEYS
-        or any(
-            not value or value.endswith(":current")
-            for value in versions.values()
+        or any(not value or value.endswith(":current") for value in versions.values())
+        or command.input_mode
+        not in {"LEGACY_FIXTURE_INPUT_MODE", "RESOLVED_AUTHORITY_INPUT"}
+        or (
+            command.input_mode == "RESOLVED_AUTHORITY_INPUT"
+            and not command.input_snapshot_id
+        )
+        or (
+            command.input_mode == "LEGACY_FIXTURE_INPUT_MODE"
+            and command.input_snapshot_id
         )
     ):
         raise ValueError(

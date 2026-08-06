@@ -1,4 +1,5 @@
 """Transactional plan-change proposal, decision and impact persistence."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -101,9 +102,7 @@ class PlanChangeRepository:
             [decision, operation_id, proposal_id, decision],
         )
 
-    def mark_activation_pending(
-        self, proposal_id: str, operation_id: str
-    ) -> None:
+    def mark_activation_pending(self, proposal_id: str, operation_id: str) -> None:
         self.cursor.execute(
             """
             UPDATE authority_plan_change_proposal
@@ -223,6 +222,17 @@ class PlanChangeRepository:
                         str(impacted_version),
                         target,
                     ],
+                )
+                self.cursor.execute(
+                    """
+                    DELETE FROM active_story_plan_version AS active
+                    USING story_plan_binding AS binding
+                    WHERE active.binding_id=binding.binding_id
+                      AND binding.project_id=%s
+                      AND binding.asset_version_id=%s
+                      AND binding.freshness IN ('IMPACTED','STALE')
+                    """,
+                    [project_id, str(impacted_version)],
                 )
         return len(impacts)
 

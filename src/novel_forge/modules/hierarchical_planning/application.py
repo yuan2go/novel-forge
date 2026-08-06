@@ -1,9 +1,13 @@
 """Typed planning bindings over active Story Design AssetVersions."""
+
 from __future__ import annotations
 
 from collections.abc import Callable
+from hashlib import sha256
 from typing import Any
 from uuid import uuid4
+
+from psycopg.types.json import Jsonb
 
 from novel_forge.modules.authority_security import Principal
 from novel_forge.modules.command_kernel.errors import KernelError
@@ -92,11 +96,7 @@ class PostgresHierarchicalPlanningAuthority:
         self._register_definitions()
         input_assets = self._input_assets(
             project_id,
-            tuple(
-                item
-                for item in (asset_version_id, parent_version_id)
-                if item
-            ),
+            tuple(item for item in (asset_version_id, parent_version_id) if item),
         )
         result = execute_transaction_command(
             self.database_url,
@@ -177,9 +177,7 @@ class PostgresHierarchicalPlanningAuthority:
         contract_type = PlanContractType(str(payload["contract_type"]))
         parent_version_id = str(payload.get("parent_version_id") or "")
         execution_scope = PlanExecutionScope(str(payload["execution_scope"]))
-        expected_active = str(
-            payload.get("expected_active_asset_version_id") or ""
-        )
+        expected_active = str(payload.get("expected_active_asset_version_id") or "")
         replacement_approved = bool(payload["replacement_approved"])
         decision_evidence = dict(payload.get("decision_evidence") or {})
         uow.cursor.execute(
@@ -318,6 +316,40 @@ class PostgresHierarchicalPlanningAuthority:
                 content=content,
                 operation_id=operation_id,
             )
+        else:
+            uow.cursor.execute(
+                """
+                SELECT execution_scope FROM story_plan_binding
+                WHERE binding_id=%s FOR UPDATE
+                """,
+                [str(existing[0])],
+            )
+            current_scope = str(uow.cursor.fetchone()[0])
+            if current_scope != execution_scope.value:
+                if (
+                    current_scope,
+                    execution_scope.value,
+                ) != (
+                    PlanExecutionScope.PLANNED.value,
+                    PlanExecutionScope.FROZEN.value,
+                ):
+                    raise KernelError(
+                        "PLANNING_EXECUTION_SCOPE_TRANSITION_INVALID",
+                        "only an Active Planned contract may advance to Frozen here",
+                    )
+                uow.cursor.execute(
+                    """
+                    UPDATE story_plan_binding
+                    SET execution_scope='FROZEN', version=version+1
+                    WHERE binding_id=%s AND execution_scope='PLANNED'
+                    """,
+                    [str(existing[0])],
+                )
+                if uow.cursor.rowcount != 1:
+                    raise KernelError(
+                        "PLANNING_EXECUTION_SCOPE_CONFLICT",
+                        "planning execution scope changed during freeze",
+                    )
         checkpoint("after_business_projection_update")
         uow.cursor.execute(
             """
@@ -401,9 +433,7 @@ class PostgresHierarchicalPlanningAuthority:
                 """,
                 [project_id, list(asset_version_ids)],
             )
-            found = {
-                str(row[0]): str(row[1]) for row in uow.cursor.fetchall()
-            }
+            found = {str(row[0]): str(row[1]) for row in uow.cursor.fetchall()}
         missing = sorted(set(asset_version_ids) - set(found))
         if missing:
             raise KernelError(
@@ -525,6 +555,17 @@ class PostgresHierarchicalPlanningAuthority:
     ) -> None:
         if contract_type is PlanContractType.ARC:
             for volume_version in content.get("cross_volume_scope") or []:
+                self._arc_membership(
+                    cursor,
+                    project_id=project_id,
+                    book_id=book_id,
+                    arc_plan_version=asset_version_id,
+                    member_plan_version=str(volume_version),
+                    member_scope="VOLUME",
+                    membership_kind="VOLUME_SPAN",
+                    declaration={"volume_plan_version_id": str(volume_version)},
+                    operation_id=operation_id,
+                )
                 self._dependency(
                     cursor,
                     project_id,
@@ -535,15 +576,76 @@ class PostgresHierarchicalPlanningAuthority:
                     "MARK_IMPACTED",
                     operation_id,
                 )
+        if contract_type is PlanContractType.CHAPTER_GROUP:
+            declarations = (
+                ("primary_arc_ids", "PRIMARY"),
+                ("secondary_arc_ids", "SECONDARY"),
+                ("required_arc_contributions", "REQUIRED_CONTRIBUTION"),
+                ("arc_checkpoint_expectations", "CHECKPOINT_EXPECTATION"),
+            )
+            for field, membership_kind in declarations:
+                for raw in content.get(field) or []:
+                    declaration = dict(raw) if isinstance(raw, dict) else {"value": raw}
+                    arc_ref = (
+                        declaration.get("arc_plan_version_id")
+                        or declaration.get("arc_id")
+                        or declaration.get("value")
+                    )
+                    arc_version = self._resolve_arc_version(
+                        cursor,
+                        project_id=project_id,
+                        book_id=book_id,
+                        arc_ref=str(arc_ref or ""),
+                    )
+                    self._arc_membership(
+                        cursor,
+                        project_id=project_id,
+                        book_id=book_id,
+                        arc_plan_version=arc_version,
+                        member_plan_version=asset_version_id,
+                        member_scope="CHAPTER_GROUP",
+                        membership_kind=membership_kind,
+                        declaration={**declaration, "source_field": field},
+                        operation_id=operation_id,
+                    )
         if contract_type is PlanContractType.CHAPTER:
-            for arc_version in content.get(
-                "required_arc_contributions"
-            ) or []:
+            for contribution in content.get("required_arc_contributions") or []:
+                arc_version = (
+                    contribution.get("arc_plan_version_id")
+                    if isinstance(contribution, dict)
+                    else contribution
+                )
+                if not isinstance(arc_version, str) or not arc_version:
+                    raise KernelError(
+                        "PLANNING_ARC_CONTRIBUTION_INVALID",
+                        "Chapter arc contribution must bind an exact ArcPlan AssetVersion",
+                    )
+                arc_version = self._resolve_arc_version(
+                    cursor,
+                    project_id=project_id,
+                    book_id=book_id,
+                    arc_ref=arc_version,
+                )
+                self._arc_membership(
+                    cursor,
+                    project_id=project_id,
+                    book_id=book_id,
+                    arc_plan_version=arc_version,
+                    member_plan_version=asset_version_id,
+                    member_scope="CHAPTER",
+                    membership_kind="REQUIRED_CONTRIBUTION",
+                    declaration=(
+                        dict(contribution)
+                        if isinstance(contribution, dict)
+                        else {"value": contribution}
+                    ),
+                    operation_id=operation_id,
+                )
                 self._dependency(
                     cursor,
                     project_id,
                     book_id,
-                    str(arc_version),
+                    arc_version,
                     asset_version_id,
                     "ARC_CONTRIBUTION",
                     "MARK_STALE",
@@ -561,6 +663,80 @@ class PostgresHierarchicalPlanningAuthority:
                     "MARK_STALE",
                     operation_id,
                 )
+
+    @staticmethod
+    def _resolve_arc_version(
+        cursor: Any,
+        *,
+        project_id: str,
+        book_id: str,
+        arc_ref: str,
+    ) -> str:
+        if not arc_ref:
+            raise KernelError(
+                "PLANNING_ARC_MEMBERSHIP_INVALID",
+                "Arc membership requires an exact version or active logical Arc id",
+            )
+        cursor.execute(
+            """
+            SELECT binding.asset_version_id
+            FROM story_plan_binding AS binding
+            JOIN active_story_plan_version AS active
+              ON active.binding_id=binding.binding_id
+            WHERE binding.project_id=%s AND binding.book_id=%s
+              AND binding.contract_type='ARC' AND binding.freshness='CURRENT'
+              AND (binding.asset_version_id=%s OR binding.logical_key=%s)
+            """,
+            [project_id, book_id, arc_ref, arc_ref],
+        )
+        rows = cursor.fetchall()
+        if len(rows) != 1:
+            raise KernelError(
+                "PLANNING_ARC_MEMBERSHIP_AMBIGUOUS",
+                f"Arc reference {arc_ref} did not resolve to one Active ArcPlan",
+            )
+        return str(rows[0][0])
+
+    @staticmethod
+    def _arc_membership(
+        cursor: Any,
+        *,
+        project_id: str,
+        book_id: str,
+        arc_plan_version: str,
+        member_plan_version: str,
+        member_scope: str,
+        membership_kind: str,
+        declaration: dict[str, Any],
+        operation_id: str,
+    ) -> None:
+        identity = (
+            f"{project_id}:{arc_plan_version}:{member_plan_version}:{membership_kind}"
+        )
+        cursor.execute(
+            """
+            INSERT INTO authority_arc_membership(
+                membership_id, project_id, book_id, arc_plan_version_id,
+                member_plan_version_id, member_scope, membership_kind,
+                required_contribution, created_by_operation_id
+            ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            ON CONFLICT (
+                project_id, arc_plan_version_id,
+                member_plan_version_id, membership_kind
+            ) DO NOTHING
+            """,
+            [
+                "arc-membership:" + sha256(identity.encode()).hexdigest(),
+                project_id,
+                book_id,
+                arc_plan_version,
+                member_plan_version,
+                member_scope,
+                membership_kind,
+                Jsonb(declaration),
+                operation_id,
+            ],
+        )
 
     @staticmethod
     def _dependency(
@@ -587,8 +763,7 @@ class PostgresHierarchicalPlanningAuthority:
             ) DO NOTHING
             """,
             [
-                f"dependency:{project_id}:{source}:{dependent}:"
-                f"{dependency_type}",
+                f"dependency:{project_id}:{source}:{dependent}:{dependency_type}",
                 project_id,
                 book_id,
                 source,

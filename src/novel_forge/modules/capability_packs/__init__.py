@@ -47,6 +47,8 @@ from .operation_catalog import (
     ResolvedOperationDefinition,
     chapter_operation_definition_catalog,
     chapter_workflow_binding_catalog,
+    governed_workflow_binding_catalog,
+    story_planning_workflow_binding_catalog,
 )
 from .semantic import SemanticResolution, validate_capability_pack_semantics
 from .type_catalog import (
@@ -110,6 +112,8 @@ __all__ = [
     "canonical_json",
     "chapter_operation_definition_catalog",
     "chapter_workflow_binding_catalog",
+    "governed_workflow_binding_catalog",
+    "story_planning_workflow_binding_catalog",
     "default_capability_type_catalog",
     "conservative_capability_type_policy",
     "default_chapter_artifact_resolver",

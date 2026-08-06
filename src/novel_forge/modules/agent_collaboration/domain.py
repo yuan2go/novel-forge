@@ -116,27 +116,60 @@ class NarrativeScope:
     chapter_id: str = ""
     scene_id: str = ""
 
-    _PATH = (
-        ("book_id", NarrativeScopeType.BOOK),
-        ("volume_id", NarrativeScopeType.VOLUME),
-        ("arc_id", NarrativeScopeType.ARC),
-        ("chapter_group_id", NarrativeScopeType.CHAPTER_GROUP),
-        ("chapter_id", NarrativeScopeType.CHAPTER),
-        ("scene_id", NarrativeScopeType.SCENE),
-    )
-
     def __post_init__(self) -> None:
         kind = _enum(NarrativeScopeType, self.kind)
         object.__setattr__(self, "kind", kind)
-        target_index = _scope_index(kind)
-        for index, (field_name, _) in enumerate(self._PATH):
+        required = {
+            NarrativeScopeType.BOOK: {"book_id"},
+            NarrativeScopeType.VOLUME: {"book_id", "volume_id"},
+            # Arc is a semantic graph dimension and is not a Volume ancestor.
+            NarrativeScopeType.ARC: {"book_id", "arc_id"},
+            NarrativeScopeType.CHAPTER_GROUP: {
+                "book_id",
+                "volume_id",
+                "chapter_group_id",
+            },
+            NarrativeScopeType.CHAPTER: {
+                "book_id",
+                "volume_id",
+                "chapter_group_id",
+                "chapter_id",
+            },
+            NarrativeScopeType.SCENE: {
+                "book_id",
+                "volume_id",
+                "chapter_group_id",
+                "chapter_id",
+                "scene_id",
+            },
+        }[kind]
+        allowed = (
+            required
+            | ({"volume_id"} if kind is NarrativeScopeType.ARC else set())
+            | (
+                {"arc_id"}
+                if kind
+                in {
+                    NarrativeScopeType.CHAPTER_GROUP,
+                    NarrativeScopeType.CHAPTER,
+                    NarrativeScopeType.SCENE,
+                }
+                else set()
+            )
+        )
+        for field_name in (
+            "book_id",
+            "volume_id",
+            "arc_id",
+            "chapter_group_id",
+            "chapter_id",
+            "scene_id",
+        ):
             value = str(getattr(self, field_name) or "").strip()
             object.__setattr__(self, field_name, value)
-            if index <= target_index and not value:
-                raise ValueError(
-                    f"{kind.value} narrative scope requires {field_name}"
-                )
-            if index > target_index and value:
+            if field_name in required and not value:
+                raise ValueError(f"{kind.value} narrative scope requires {field_name}")
+            if field_name not in allowed and value:
                 raise ValueError(
                     f"{kind.value} narrative scope cannot set {field_name}"
                 )
@@ -144,13 +177,28 @@ class NarrativeScope:
     def contains(self, other: NarrativeScope) -> bool:
         if not isinstance(other, NarrativeScope):
             return False
-        own_index = _scope_index(self.kind)
-        other_index = _scope_index(other.kind)
-        if own_index > other_index:
+        if self.book_id != other.book_id:
             return False
-        return all(
+        if self.kind is NarrativeScopeType.BOOK:
+            return True
+        if self.kind is NarrativeScopeType.ARC:
+            return self.arc_id == other.arc_id
+        containment = {
+            NarrativeScopeType.VOLUME: ("volume_id",),
+            NarrativeScopeType.CHAPTER_GROUP: ("volume_id", "chapter_group_id"),
+            NarrativeScopeType.CHAPTER: ("volume_id", "chapter_group_id", "chapter_id"),
+            NarrativeScopeType.SCENE: (
+                "volume_id",
+                "chapter_group_id",
+                "chapter_id",
+                "scene_id",
+            ),
+        }
+        fields = containment.get(self.kind, ())
+        other_fields = containment.get(other.kind, ())
+        return len(fields) <= len(other_fields) and all(
             getattr(self, field_name) == getattr(other, field_name)
-            for field_name, _ in self._PATH[: own_index + 1]
+            for field_name in fields
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -215,15 +263,16 @@ class AuthorityScope:
         object.__setattr__(
             self,
             "allowed_narrative_scopes",
-            tuple(_enum(NarrativeScopeType, item) for item in self.allowed_narrative_scopes),
+            tuple(
+                _enum(NarrativeScopeType, item)
+                for item in self.allowed_narrative_scopes
+            ),
         )
         _freeze_strings(self, "allowed_change_types")
         if not self.allowed_narrative_scopes or not self.allowed_change_types:
             raise ValueError("authority scope is incomplete")
 
-    def can_accept(
-        self, authority_type: str, change: ProposedAssetChange
-    ) -> bool:
+    def can_accept(self, authority_type: str, change: ProposedAssetChange) -> bool:
         return (
             authority_type == self.authority_type
             and change.narrative_scope.kind in self.allowed_narrative_scopes
@@ -247,8 +296,13 @@ class TemporalScope:
         ):
             raise ValueError("temporal scope values must be non-negative")
         start, end = self.active_range
-        if start <= max(self.past_locked_through, self.published_boundary) or end < start:
-            raise ValueError("temporal active range overlaps locked or published history")
+        if (
+            start <= max(self.past_locked_through, self.published_boundary)
+            or end < start
+        ):
+            raise ValueError(
+                "temporal active range overlaps locked or published history"
+            )
         if end > self.forecast_horizon:
             raise ValueError("temporal active range exceeds forecast horizon")
 
@@ -452,7 +506,9 @@ class AgentCapability:
         object.__setattr__(
             self,
             "supported_message_types",
-            tuple(_enum(AgentMessageType, item) for item in self.supported_message_types),
+            tuple(
+                _enum(AgentMessageType, item) for item in self.supported_message_types
+            ),
         )
         _freeze_strings(self, "supported_scope_types")
         object.__setattr__(
@@ -640,7 +696,10 @@ class AgentOutputEnvelope:
         object.__setattr__(
             self, "message_type", _enum(AgentMessageType, self.message_type)
         )
-        if not isinstance(self.structured_payload, Mapping) or not self.structured_payload:
+        if (
+            not isinstance(self.structured_payload, Mapping)
+            or not self.structured_payload
+        ):
             raise ValueError("AgentOutputEnvelope structured_payload is required")
         object.__setattr__(
             self, "structured_payload", _freeze_mapping(self.structured_payload)
@@ -867,12 +926,15 @@ class AgentCollaborationSession:
             )
         ):
             raise ValueError("collaboration session is incomplete")
-        if min(
-            self.round_number,
-            self.turn_number,
-            self.execution_count,
-            self.persistence_version,
-        ) < 0:
+        if (
+            min(
+                self.round_number,
+                self.turn_number,
+                self.execution_count,
+                self.persistence_version,
+            )
+            < 0
+        ):
             raise ValueError("collaboration counters cannot be negative")
         if self.spent_budget < 0:
             raise ValueError("collaboration spent budget cannot be negative")
@@ -898,15 +960,11 @@ class AgentCollaborationSession:
 class CollaborationStateMachine:
     _TRANSITIONS: Mapping[SessionStatus, frozenset[SessionStatus]] = {
         SessionStatus.CREATED: frozenset({SessionStatus.SCOPE_FROZEN}),
-        SessionStatus.SCOPE_FROZEN: frozenset(
-            {SessionStatus.PARTICIPANTS_ASSIGNED}
-        ),
+        SessionStatus.SCOPE_FROZEN: frozenset({SessionStatus.PARTICIPANTS_ASSIGNED}),
         SessionStatus.PARTICIPANTS_ASSIGNED: frozenset(
             {SessionStatus.INITIAL_PROPOSAL_PENDING}
         ),
-        SessionStatus.INITIAL_PROPOSAL_PENDING: frozenset(
-            {SessionStatus.DELIBERATING}
-        ),
+        SessionStatus.INITIAL_PROPOSAL_PENDING: frozenset({SessionStatus.DELIBERATING}),
         SessionStatus.DELIBERATING: frozenset(
             {
                 SessionStatus.REVISION_PENDING,
@@ -1315,9 +1373,7 @@ def _mapping(value: Any, label: str) -> Mapping[str, Any]:
     return value
 
 
-def _required_mapping(
-    payload: Mapping[str, Any], key: str
-) -> Mapping[str, Any]:
+def _required_mapping(payload: Mapping[str, Any], key: str) -> Mapping[str, Any]:
     value = _mapping(payload.get(key), key)
     if not value:
         raise ValueError(f"{key} cannot be empty")

@@ -7,19 +7,23 @@ from novel_forge.storage.migrations.versions import (
 from novel_forge.storage.migrations.versions import (
     v20260806_0072_capability_pack_integrity_hardening as migration,
 )
+from novel_forge.storage.migrations.versions import (
+    v20260806_0073_core_functional_loops as latest_migration,
+)
 
 
 def _sql() -> str:
     return "\n".join(migration.UPGRADE_STATEMENTS)
 
 
-def test_capability_pack_authority_is_linear_migration_head() -> None:
+def test_capability_pack_authority_remains_in_linear_migration_chain() -> None:
     validate_migration_chain()
     assert migration.MIGRATION_ID == (
         "20260806_0072_capability_pack_integrity_hardening"
     )
     assert migration.DOWN_REVISION == foundation_migration.MIGRATION_ID
-    assert LATEST_MIGRATION_ID == migration.MIGRATION_ID
+    assert latest_migration.DOWN_REVISION == migration.MIGRATION_ID
+    assert LATEST_MIGRATION_ID == latest_migration.MIGRATION_ID
     assert migration.FORWARD_ONLY is True
 
 

@@ -1,4 +1,5 @@
 """Mutation repository for the persistent Book Authority aggregate."""
+
 from __future__ import annotations
 
 from typing import Any, Callable
@@ -19,7 +20,8 @@ class BookAuthorityRepository:
                 production_profile_version, longform_context_versions,
                 root_operation_id, saga_id,
                 stable_idempotency_key, state, target_chapter_count,
-                light_recap_cadence, formal_recap_cadence
+                light_recap_cadence, formal_recap_cadence,
+                input_snapshot_id, input_mode
             ) VALUES (
                 %(book_run_id)s, %(project_id)s, %(workspace_id)s, %(book_id)s,
                 %(book_design_version)s, %(book_plan_version)s,
@@ -27,15 +29,14 @@ class BookAuthorityRepository:
                 %(root_operation_id)s,
                 %(saga_id)s, %(stable_idempotency_key)s, 'READY',
                 %(target_chapter_count)s, %(light_recap_cadence)s,
-                %(formal_recap_cadence)s
+                %(formal_recap_cadence)s,
+                NULLIF(%(input_snapshot_id)s, ''), %(input_mode)s
             )
             ON CONFLICT (project_id, stable_idempotency_key) DO NOTHING
             """,
             {
                 **row,
-                "longform_context_versions": Jsonb(
-                    row["longform_context_versions"]
-                ),
+                "longform_context_versions": Jsonb(row["longform_context_versions"]),
             },
         )
 
@@ -370,9 +371,7 @@ class BookAuthorityRepository:
             [state, chapter_number, book_run_id],
         )
 
-    def set_gate_state(
-        self, *, book_run_id: str, state: str, reason: str = ""
-    ) -> None:
+    def set_gate_state(self, *, book_run_id: str, state: str, reason: str = "") -> None:
         self.cursor.execute(
             """
             UPDATE authority_book_production

@@ -1,0 +1,183 @@
+from __future__ import annotations
+
+from types import SimpleNamespace
+
+import pytest
+
+from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.production_execution.domain_execution import (
+    CandidateKind,
+    DomainExecutionCandidate,
+    DomainExecutionEvidence,
+)
+from novel_forge.modules.story_design_authority import GENERATOR_CATALOG
+from novel_forge.modules.story_planning_runtime import (
+    GENERATOR_INPUT_ROLES,
+    CapabilityPackBackedPlanningExecutionBinder,
+    FrozenPlanningInput,
+    PlanningExecutionBundle,
+    StoryPlanningGenerationCommand,
+)
+
+
+HASH = "sha256:" + "a" * 64
+
+
+def _command(generator: str) -> StoryPlanningGenerationCommand:
+    return StoryPlanningGenerationCommand(
+        project_id="project-1",
+        workspace_id="workspace-1",
+        book_id="book-1",
+        actor_id="planner",
+        generator_operation_name=generator,
+        logical_key=f"{generator}:main",
+        input_versions={
+            role: f"asset:{role}:v1" for role in GENERATOR_INPUT_ROLES[generator]
+        },
+        idempotency_key=f"generate:{generator}",
+        trace_id="trace-1",
+        correlation_id="correlation-1",
+    )
+
+
+def _inputs(command: StoryPlanningGenerationCommand) -> tuple[FrozenPlanningInput, ...]:
+    return tuple(
+        FrozenPlanningInput(role, version, HASH, role)
+        for role, version in command.input_versions.items()
+    )
+
+
+@pytest.mark.parametrize("generator", sorted(GENERATOR_INPUT_ROLES))
+def test_five_planning_generators_require_exact_authority_input_roles(
+    generator: str,
+) -> None:
+    command = _command(generator)
+    assert (
+        command.generator_operation_name == GENERATOR_CATALOG[generator].operation_name
+    )
+    assert {item.role for item in _inputs(command)} == set(
+        GENERATOR_INPUT_ROLES[generator]
+    )
+
+    incomplete = dict(command.input_versions)
+    incomplete.pop(next(iter(incomplete)))
+    with pytest.raises(ValueError, match="Authority role set"):
+        StoryPlanningGenerationCommand(
+            project_id=command.project_id,
+            workspace_id=command.workspace_id,
+            book_id=command.book_id,
+            actor_id=command.actor_id,
+            generator_operation_name=generator,
+            logical_key=command.logical_key,
+            input_versions=incomplete,
+            idempotency_key="incomplete",
+            trace_id=command.trace_id,
+            correlation_id=command.correlation_id,
+        )
+
+
+class _ExecutionPort:
+    production_execution_gateway_backed = True
+    external_effect_backed = True
+
+    def execute(self, command):
+        return DomainExecutionCandidate(
+            candidate_kind=CandidateKind.GENERATION,
+            raw_output={"objective": "Advance the governed story plan"},
+            evidence=DomainExecutionEvidence(
+                execution_id="execution-1",
+                operation_id="operation-1",
+                attempt_id="attempt-1",
+                fencing_token=7,
+                capability=command.capability,
+                backend_id="scripted-fixture",
+                route_snapshot_id="route-1",
+                input_manifest_ref="input-1",
+                output_manifest_ref="output-1",
+                validation_manifest_ref="validation-1",
+                usage_receipt_ref="usage-1",
+                cost_receipt_ref="cost-1",
+                fixture_protocol_only=True,
+                real_model_call=False,
+                production_verified=False,
+                external_receipt_ref="external-effect-receipt-1",
+            ),
+        )
+
+
+class _Resolver:
+    def __init__(self, *, commit_authority: str = "STORY_DESIGN_AUTHORITY") -> None:
+        self.commit_authority = commit_authority
+
+    def resolve(self, **kwargs):
+        definition = kwargs["definition"]
+        snapshot = SimpleNamespace(
+            operation_id="operation-1",
+            attempt_id="attempt-1",
+            execution_fencing_token=7,
+            snapshot_id=HASH,
+            snapshot_hash=HASH,
+            execution_snapshot=SimpleNamespace(
+                execution_capability_id=definition.capability,
+                prompt_bundle_ref="prompt-bundle:planning:v1",
+            ),
+        )
+        work_order = SimpleNamespace(
+            operation_id="operation-1",
+            attempt_id="attempt-1",
+            fencing_token=7,
+            execution_capability=definition.capability,
+            project_id="project-1",
+            book_id="book-1",
+            work_order_id="work-order-1",
+            to_context=lambda: {"work_order_id": "work-order-1"},
+        )
+        binding = SimpleNamespace(
+            operation_id="operation-1",
+            attempt_id="attempt-1",
+            fencing_token=7,
+            execution_capability_id=definition.capability,
+            capability_pack_attempt_snapshot_id=HASH,
+            capability_pack_attempt_snapshot_hash=HASH,
+            commit_authority=self.commit_authority,
+            input_manifest_ref="input-1",
+            binding_id="binding-1",
+            binding_hash=HASH,
+        )
+        return PlanningExecutionBundle(snapshot, work_order, binding, _ExecutionPort())
+
+
+def test_planning_binder_requires_pack_agent_and_pep_on_one_attempt() -> None:
+    command = _command("book_plan.generate")
+    candidate = CapabilityPackBackedPlanningExecutionBinder(_Resolver()).execute(
+        operation_id="operation-1",
+        attempt_id="attempt-1",
+        fencing_token=7,
+        worker_id="planning-worker",
+        command=command,
+        inputs=_inputs(command),
+        definition=GENERATOR_CATALOG[command.generator_operation_name],
+    )
+
+    assert candidate.evidence.operation_id == "operation-1"
+    assert candidate.evidence.capability_pack_attempt_snapshot_id == HASH
+    assert candidate.evidence.fixture_protocol_only is True
+    assert candidate.authority_content(project_id="project-1", book_id="book-1")[
+        "candidate_payload"
+    ]["objective"]
+
+
+def test_planning_agent_cannot_claim_chapter_commit_authority() -> None:
+    command = _command("chapter_plan.generate")
+    with pytest.raises(KernelError, match="Planning Agent can only submit"):
+        CapabilityPackBackedPlanningExecutionBinder(
+            _Resolver(commit_authority="CHAPTER_AUTHORITY")
+        ).execute(
+            operation_id="operation-1",
+            attempt_id="attempt-1",
+            fencing_token=7,
+            worker_id="planning-worker",
+            command=command,
+            inputs=_inputs(command),
+            definition=GENERATOR_CATALOG[command.generator_operation_name],
+        )

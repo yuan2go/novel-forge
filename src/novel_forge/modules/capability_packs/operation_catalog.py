@@ -9,8 +9,12 @@ from types import MappingProxyType
 from typing import Any, Protocol
 
 from novel_forge.modules.chapter_authority.contracts import ChapterNode
-from novel_forge.modules.chapter_authority.definitions import chapter_operation_definitions
-from novel_forge.modules.chapter_authority.execution_gateway import chapter_stage_capability
+from novel_forge.modules.chapter_authority.definitions import (
+    chapter_operation_definitions,
+)
+from novel_forge.modules.chapter_authority.execution_gateway import (
+    chapter_stage_capability,
+)
 from novel_forge.modules.chapter_authority.scheduler import _admission_dependencies
 from novel_forge.storage.authority_repositories import definition_hash
 
@@ -78,7 +82,9 @@ class ResolvedOperationDefinition:
             timeout_policy_json=_canonical(row["timeout_policy"]),
             cancellation_policy_json=_canonical(row["cancellation_policy"]),
             compensation_policy_json=_canonical(row["compensation_policy"]),
-            irreversible_effect_policy_json=_canonical(row["irreversible_effect_policy"]),
+            irreversible_effect_policy_json=_canonical(
+                row["irreversible_effect_policy"]
+            ),
             external_capabilities=tuple(
                 sorted(str(item) for item in row["external_capabilities"])
             ),
@@ -164,7 +170,10 @@ class InMemoryOperationDefinitionCatalog:
         import hashlib
 
         payload = [item.to_dict() for item in self.definitions()]
-        return "sha256:" + hashlib.sha256(_canonical({"definitions": payload}).encode()).hexdigest()
+        return (
+            "sha256:"
+            + hashlib.sha256(_canonical({"definitions": payload}).encode()).hexdigest()
+        )
 
 
 class RepositoryOperationDefinitionLoader:
@@ -205,7 +214,12 @@ class WorkflowBinding:
 
 
 class WorkflowBindingCatalog:
-    def __init__(self, workflow_id: str, workflow_version: str, bindings: Iterable[WorkflowBinding]) -> None:
+    def __init__(
+        self,
+        workflow_id: str,
+        workflow_version: str,
+        bindings: Iterable[WorkflowBinding],
+    ) -> None:
         self.workflow_id = workflow_id
         self.workflow_version = workflow_version
         source = tuple(bindings)
@@ -256,6 +270,50 @@ def chapter_workflow_binding_catalog() -> WorkflowBindingCatalog:
     return WorkflowBindingCatalog("chapter_authority_slice", "2.2.0", bindings)
 
 
+def story_planning_workflow_binding_catalog() -> WorkflowBindingCatalog:
+    capabilities = (
+        ("book_plan.generate", "planning.book.generate"),
+        ("volume_plan.generate", "planning.volume.generate"),
+        ("arc_plan.generate", "planning.arc.generate"),
+        ("chapter_group_plan.generate", "planning.chapter_group.generate"),
+        ("chapter_plan.generate", "planning.chapter.generate"),
+    )
+    return WorkflowBindingCatalog(
+        "story_planning_generators",
+        "1.0.0",
+        (
+            WorkflowBinding(
+                node_id=node_id,
+                operation_name="story_planning.generate",
+                stage=node_id,
+                handler_key="novel_forge.story_planning.generate",
+                capability_id=capability,
+                depends_on=(),
+                primary_output_asset_type="planning_generation_candidate",
+            )
+            for node_id, capability in capabilities
+        ),
+    )
+
+
+def governed_workflow_binding_catalog(
+    workflow_id: str, workflow_version: str
+) -> WorkflowBindingCatalog:
+    catalogs = (
+        chapter_workflow_binding_catalog(),
+        story_planning_workflow_binding_catalog(),
+    )
+    for catalog in catalogs:
+        if (catalog.workflow_id, catalog.workflow_version) == (
+            workflow_id,
+            workflow_version,
+        ):
+            return catalog
+    raise KeyError(
+        f"governed workflow binding not found: {workflow_id}@{workflow_version}"
+    )
+
+
 def chapter_operation_definition_catalog(
     *, release_sha: str, application_build_id: str = "novel-forge-capability-compiler"
 ) -> InMemoryOperationDefinitionCatalog:
@@ -278,4 +336,6 @@ __all__ = [
     "WorkflowBindingCatalog",
     "chapter_operation_definition_catalog",
     "chapter_workflow_binding_catalog",
+    "governed_workflow_binding_catalog",
+    "story_planning_workflow_binding_catalog",
 ]

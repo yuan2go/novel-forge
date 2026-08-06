@@ -45,7 +45,9 @@ class BookProductionAuthorityTests(unittest.TestCase):
         }
         handlers = BookFollowupHandlerRegistry().available_handler_keys
 
-        self.assertEqual(set(definitions), {"reader_outcome.evaluate", "longform.recap"})
+        self.assertEqual(
+            set(definitions), {"reader_outcome.evaluate", "longform.recap"}
+        )
         self.assertEqual(len(handlers), 2)
         reader = definitions["reader_outcome.evaluate"]
         recap = definitions["longform.recap"]
@@ -55,7 +57,10 @@ class BookProductionAuthorityTests(unittest.TestCase):
             {"reader_state_transition", "reader_issue_set"},
         )
         self.assertFalse(recap["policy"]["plan_mutation_allowed"])
-        self.assertIn("plan_adjustment_proposal", recap["output_contract"]["auxiliary_asset_types"])
+        self.assertIn(
+            "plan_adjustment_proposal",
+            recap["output_contract"]["auxiliary_asset_types"],
+        )
         self.assertEqual(
             recap["output_contract"]["optional_auxiliary_asset_types"],
             ["replan_request"],
@@ -63,32 +68,52 @@ class BookProductionAuthorityTests(unittest.TestCase):
 
     def test_book_states_and_database_constraints_cover_recovery(self) -> None:
         required = {
-            "READY", "CHAPTER_SUBMITTED", "CHAPTER_RUNNING",
-            "CHAPTER_WAITING_RETRY", "CHAPTER_COMPLETED",
-            "CHAPTER_FAILED_RETRYABLE", "CHAPTER_FAILED_TERMINAL",
-            "CANON_PENDING", "CANON_COMMITTED", "READER_OUTCOME_PENDING",
-            "CHECKPOINT_PENDING", "REPLAN_REQUIRED", "PAUSED", "COMPLETED",
+            "INPUT_RESOLUTION_REQUIRED",
+            "PLANNING_REQUIRED",
+            "PLAN_GENERATING",
+            "PLAN_APPROVAL_PENDING",
+            "READY",
+            "CHAPTER_SUBMITTED",
+            "CHAPTER_RUNNING",
+            "CHAPTER_GROUP_REQUIRED",
+            "CHAPTER_PLAN_REQUIRED",
+            "CHAPTER_WAITING_RETRY",
+            "CHAPTER_COMPLETED",
+            "CHAPTER_ACCEPTANCE_PENDING",
+            "FOLLOWUP_PENDING",
+            "CHAPTER_FAILED_RETRYABLE",
+            "CHAPTER_FAILED_TERMINAL",
+            "CANON_PENDING",
+            "CANON_COMMITTED",
+            "READER_OUTCOME_PENDING",
+            "CHECKPOINT_PENDING",
+            "REPLAN_REQUIRED",
+            "REPLAN_GENERATING",
+            "REPLAN_APPROVAL_PENDING",
+            "PAUSED",
+            "COMPLETED",
             "ABORTED",
         }
         self.assertEqual({item.value for item in BookProductionState}, required)
-        migration = next(
+        base = next(
             item
             for item in MIGRATIONS
             if item.migration_id == "20260729_0034_unified_business_authority"
         )
-        sql = "\n".join(migration.upgrade_statements)
+        functional = next(
+            item
+            for item in MIGRATIONS
+            if item.migration_id == "20260806_0073_core_functional_loops"
+        )
+        sql = "\n".join((*base.upgrade_statements, *functional.upgrade_statements))
         for value in required:
             self.assertIn(f"'{value}'", sql)
         self.assertIn("UNIQUE(project_id, stable_idempotency_key)", sql)
         self.assertIn("REFERENCES authority_operation(operation_id)", sql)
         self.assertIn("CREATE VIEW authority_reader_outcome_projection", sql)
         self.assertIn("CREATE VIEW authority_longform_recap_projection", sql)
-        self.assertIn(
-            "authority_book_production_active_request_fk_idx", sql
-        )
-        self.assertIn(
-            "authority_book_chapter_request_saga_fk_idx", sql
-        )
+        self.assertIn("authority_book_production_active_request_fk_idx", sql)
+        self.assertIn("authority_book_chapter_request_saga_fk_idx", sql)
         self.assertEqual(
             LONGFORM_CONTEXT_VERSION_KEYS,
             {

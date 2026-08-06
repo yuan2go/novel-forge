@@ -1,4 +1,5 @@
 """Fail-closed dependency construction for PostgreSQL authority entrypoints."""
+
 from __future__ import annotations
 
 import hashlib
@@ -9,7 +10,9 @@ from pathlib import Path
 from typing import Mapping
 
 from novel_forge.infrastructure.settings import IndustrialSettings
-from novel_forge.modules.chapter_authority.application import ChapterAuthorityApplication
+from novel_forge.modules.chapter_authority.application import (
+    ChapterAuthorityApplication,
+)
 from novel_forge.modules.chapter_authority.execution_gateway import (
     ChapterExecutionGatewaySession,
     ChapterExecutionRoute,
@@ -96,17 +99,18 @@ def _execution_content_hash(
     controlled: bool,
     fixture_identity: str,
 ) -> str:
-    configured = str(
-        values.get(specific_key) or values.get(common_key) or ""
-    ).strip()
+    configured = str(values.get(specific_key) or values.get(common_key) or "").strip()
     if not configured:
         if controlled:
             raise RuntimeError(
                 f"{specific_key} or {common_key} is required in a controlled environment"
             )
-        configured = "sha256:" + hashlib.sha256(
-            f"fixture-protocol:{stage}:{fixture_identity}".encode("utf-8")
-        ).hexdigest()
+        configured = (
+            "sha256:"
+            + hashlib.sha256(
+                f"fixture-protocol:{stage}:{fixture_identity}".encode("utf-8")
+            ).hexdigest()
+        )
     normalized = configured.removeprefix("sha256:")
     if len(normalized) != 64 or any(
         character not in "0123456789abcdefABCDEF" for character in normalized
@@ -126,7 +130,9 @@ def authority_release_identity(
     if len(commit_sha) != 40 or any(
         character not in "0123456789abcdef" for character in commit_sha
     ):
-        raise RuntimeError("NOVEL_FORGE_COMMIT_SHA must be a full 40-character hexadecimal commit id")
+        raise RuntimeError(
+            "NOVEL_FORGE_COMMIT_SHA must be a full 40-character hexadecimal commit id"
+        )
     return build_id, commit_sha
 
 
@@ -161,7 +167,9 @@ def build_chapter_authority_application(
     values = env or os.environ
     if not settings.database_url:
         raise RuntimeError("PostgreSQL database is required for chapter authority")
-    environment = str(values.get("NOVEL_FORGE_ENVIRONMENT") or "development").strip().lower()
+    environment = (
+        str(values.get("NOVEL_FORGE_ENVIRONMENT") or "development").strip().lower()
+    )
     registry = provider_registry or ProviderAdapterRegistry()
     if provider_registry is None and environment in {"test", "development"}:
         registry.register(ScriptedProviderAdapterV2("success"))
@@ -171,7 +179,9 @@ def build_chapter_authority_application(
     else:
         release_sha = str(values.get("NOVEL_FORGE_COMMIT_SHA") or "0" * 40).lower()
         if len(release_sha) != 40:
-            raise RuntimeError("NOVEL_FORGE_COMMIT_SHA must be a full 40-character commit id")
+            raise RuntimeError(
+                "NOVEL_FORGE_COMMIT_SHA must be a full 40-character commit id"
+            )
     runtime_host_id = str(
         values.get("NOVEL_FORGE_RUNTIME_HOST_ID")
         or ("host:fixture" if not controlled else "host:unverified")
@@ -193,11 +203,31 @@ def build_chapter_authority_application(
             "NOVEL_FORGE_CANON_EXTRACTION_PROVIDER",
             "NOVEL_FORGE_CANON_EXTRACTION_MODEL",
         ),
-        ("quality_structural", "NOVEL_FORGE_QUALITY_PROVIDER", "NOVEL_FORGE_QUALITY_MODEL"),
-        ("quality_commercial", "NOVEL_FORGE_QUALITY_PROVIDER", "NOVEL_FORGE_QUALITY_MODEL"),
-        ("quality_source_originality", "NOVEL_FORGE_QUALITY_PROVIDER", "NOVEL_FORGE_QUALITY_MODEL"),
-        ("quality_longform", "NOVEL_FORGE_QUALITY_PROVIDER", "NOVEL_FORGE_QUALITY_MODEL"),
-        ("quality_platform", "NOVEL_FORGE_QUALITY_PROVIDER", "NOVEL_FORGE_QUALITY_MODEL"),
+        (
+            "quality_structural",
+            "NOVEL_FORGE_QUALITY_PROVIDER",
+            "NOVEL_FORGE_QUALITY_MODEL",
+        ),
+        (
+            "quality_commercial",
+            "NOVEL_FORGE_QUALITY_PROVIDER",
+            "NOVEL_FORGE_QUALITY_MODEL",
+        ),
+        (
+            "quality_source_originality",
+            "NOVEL_FORGE_QUALITY_PROVIDER",
+            "NOVEL_FORGE_QUALITY_MODEL",
+        ),
+        (
+            "quality_longform",
+            "NOVEL_FORGE_QUALITY_PROVIDER",
+            "NOVEL_FORGE_QUALITY_MODEL",
+        ),
+        (
+            "quality_platform",
+            "NOVEL_FORGE_QUALITY_PROVIDER",
+            "NOVEL_FORGE_QUALITY_MODEL",
+        ),
         (
             "reader_outcome",
             "NOVEL_FORGE_READER_OUTCOME_PROVIDER",
@@ -212,8 +242,7 @@ def build_chapter_authority_application(
             or (
                 values.get("NOVEL_FORGE_REVIEW_PROVIDER")
                 if stage == "rereview"
-                else
-                values.get("NOVEL_FORGE_REVISION_PROVIDER")
+                else values.get("NOVEL_FORGE_REVISION_PROVIDER")
                 if stage == "canon_extraction"
                 else values.get("NOVEL_FORGE_REVIEW_PROVIDER")
                 if stage.startswith("quality_") or stage == "reader_outcome"
@@ -223,7 +252,9 @@ def build_chapter_authority_application(
             or ""
         ).strip()
         if not provider:
-            raise RuntimeError(f"explicit chapter model provider is required for {stage}")
+            raise RuntimeError(
+                f"explicit chapter model provider is required for {stage}"
+            )
         normalized_provider = provider.lower()
         if normalized_provider in {"mock", "local", "offline"}:
             normalized_provider = "scripted_provider_v2"
@@ -232,8 +263,7 @@ def build_chapter_authority_application(
             or (
                 values.get("NOVEL_FORGE_REVIEW_MODEL")
                 if stage == "rereview"
-                else
-                values.get("NOVEL_FORGE_REVISION_MODEL")
+                else values.get("NOVEL_FORGE_REVISION_MODEL")
                 if stage == "canon_extraction"
                 else values.get("NOVEL_FORGE_REVIEW_MODEL")
                 if stage.startswith("quality_") or stage == "reader_outcome"
@@ -253,10 +283,13 @@ def build_chapter_authority_application(
         )
         if not qualification.qualified:
             raise RuntimeError(
-                "provider v2 route qualification failed: " + "; ".join(qualification.reasons)
+                "provider v2 route qualification failed: "
+                + "; ".join(qualification.reasons)
             )
         provider_profile = adapter.capability_profile
-        scripted = provider_profile.control_level is ProviderControlLevel.FIXTURE_CONTROLLED
+        scripted = (
+            provider_profile.control_level is ProviderControlLevel.FIXTURE_CONTROLLED
+        )
         backend_id = (
             "scripted-fixture"
             if scripted
@@ -355,9 +388,7 @@ def build_chapter_authority_application(
             system_instruction_hash=_execution_content_hash(
                 values,
                 stage=stage,
-                specific_key=(
-                    f"NOVEL_FORGE_{stage.upper()}_SYSTEM_INSTRUCTION_HASH"
-                ),
+                specific_key=(f"NOVEL_FORGE_{stage.upper()}_SYSTEM_INSTRUCTION_HASH"),
                 common_key="NOVEL_FORGE_PROMPT_SYSTEM_INSTRUCTION_HASH",
                 controlled=controlled,
                 fixture_identity=prompt_version + ":system",
@@ -390,7 +421,9 @@ def build_chapter_authority_application(
         )
     if controlled:
         _build_id, verified_release_sha = authority_release_identity(env=values)
-        verified_runtime_host = str(values.get("NOVEL_FORGE_RUNTIME_HOST_ID") or "").strip()
+        verified_runtime_host = str(
+            values.get("NOVEL_FORGE_RUNTIME_HOST_ID") or ""
+        ).strip()
         verified_auth_profile = str(
             values.get("NOVEL_FORGE_PROVIDER_AUTH_PROFILE") or ""
         ).strip()
@@ -439,8 +472,7 @@ def build_chapter_authority_application(
         )
         backends = ExecutionBackendRegistry()
         if any(
-            route.model_profile.runtime_class
-            is ExecutionRuntimeClass.SCRIPTED_FIXTURE
+            route.model_profile.runtime_class is ExecutionRuntimeClass.SCRIPTED_FIXTURE
             for route in routes.values()
         ):
             backends.register(
@@ -489,9 +521,11 @@ def build_chapter_authority_application(
         ),
         pack_required=controlled,
     )
-    object_store_backend = str(
-        values.get("NOVEL_FORGE_AUTHORITY_OBJECT_STORE_BACKEND") or "local"
-    ).strip().lower()
+    object_store_backend = (
+        str(values.get("NOVEL_FORGE_AUTHORITY_OBJECT_STORE_BACKEND") or "local")
+        .strip()
+        .lower()
+    )
     if object_store_backend == "minio":
         from novel_forge.storage.object_store import MinioObjectStore
 
@@ -510,9 +544,13 @@ def build_chapter_authority_application(
         settings.database_url,
         model_adapter=model_gateway,
         object_store_adapter=object_store_adapter,
-        worker_id=str(values.get("NOVEL_FORGE_AUTHORITY_WORKER_ID") or "chapter-authority-api"),
+        worker_id=str(
+            values.get("NOVEL_FORGE_AUTHORITY_WORKER_ID") or "chapter-authority-api"
+        ),
         allow_synchronous_fixture=environment in {"test", "development"}
-        and str(values.get("NOVEL_FORGE_ENABLE_SYNCHRONOUS_AUTHORITY_FIXTURE") or "").lower()
+        and str(
+            values.get("NOVEL_FORGE_ENABLE_SYNCHRONOUS_AUTHORITY_FIXTURE") or ""
+        ).lower()
         in {"1", "true", "yes"},
         max_cost_per_model_call=max_cost_per_call or "0",
         budget_caps={
@@ -529,9 +567,7 @@ def build_chapter_authority_application(
         agent_binding_recorder=PostgresChapterAgentBindingRecorder(
             settings.database_url,
             bound_stages=AGENT_BOUND_CHAPTER_STAGES,
-            required_stages=(
-                AGENT_BOUND_CHAPTER_STAGES if controlled else frozenset()
-            ),
+            required_stages=(AGENT_BOUND_CHAPTER_STAGES if controlled else frozenset()),
             compatibility_allowed=not controlled,
             environment=environment,
             runtime_profile=environment,
@@ -562,12 +598,8 @@ def build_agent_runtime_authority_application(
         settings.database_url,
         application_build_id=build_id,
         commit_sha=commit_sha,
-        runtime_environment=str(
-            values.get("NOVEL_FORGE_ENVIRONMENT") or "development"
-        ),
-        release_channel=str(
-            values.get("NOVEL_FORGE_RELEASE_CHANNEL") or "VALIDATION"
-        ),
+        runtime_environment=str(values.get("NOVEL_FORGE_ENVIRONMENT") or "development"),
+        release_channel=str(values.get("NOVEL_FORGE_RELEASE_CHANNEL") or "VALIDATION"),
     )
 
 
@@ -641,11 +673,14 @@ def build_production_preparation_service(
 ) -> ProductionPreparationService:
     if not settings.database_url:
         raise RuntimeError("PostgreSQL database is required for production preparation")
-    return ProductionPreparationService(PostgresProductionAssetResolver(settings.database_url))
+    return ProductionPreparationService(
+        PostgresProductionAssetResolver(settings.database_url)
+    )
 
 
 def build_trusted_principal_resolver(
-    *, env: Mapping[str, str] | None = None,
+    *,
+    env: Mapping[str, str] | None = None,
 ) -> TrustedPrincipalResolver:
     return TrustedPrincipalResolver.from_environment(env or os.environ)
 
@@ -667,13 +702,17 @@ def build_content_authority_application(
     )
 
 
-def build_content_authority_query(settings: IndustrialSettings) -> ContentAuthorityQuery:
+def build_content_authority_query(
+    settings: IndustrialSettings,
+) -> ContentAuthorityQuery:
     if not settings.database_url:
         raise RuntimeError("PostgreSQL database is required for Content Authority")
     return ContentAuthorityQuery(settings.database_url)
 
 
-def build_chapter_authority_query(settings: IndustrialSettings) -> ChapterAuthorityQuery:
+def build_chapter_authority_query(
+    settings: IndustrialSettings,
+) -> ChapterAuthorityQuery:
     if not settings.database_url:
         raise RuntimeError("PostgreSQL database is required for chapter authority")
     return ChapterAuthorityQuery(settings.database_url)
@@ -707,6 +746,12 @@ def build_book_authority_application(
         followup_application=followup,
         application_build_id=build_id,
         commit_sha=commit_sha,
+        legacy_fixture_input_allowed=(
+            str((env or os.environ).get("NOVEL_FORGE_ENVIRONMENT") or "development")
+            .strip()
+            .lower()
+            not in {"validation", "provider-validation", "production"}
+        ),
     )
 
 

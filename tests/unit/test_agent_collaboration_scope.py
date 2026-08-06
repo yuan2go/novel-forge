@@ -95,12 +95,23 @@ class AgentScopeContractTests(unittest.TestCase):
         self.assertFalse(chapter.contains(container))
         self.assertFalse(container.contains(other_book))
 
-    def test_narrative_scope_requires_every_ancestor(self) -> None:
-        with self.assertRaisesRegex(ValueError, "volume_id"):
+    def test_arc_scope_is_a_semantic_graph_dimension_not_volume_containment(
+        self,
+    ) -> None:
+        arc = NarrativeScope(
+            kind=NarrativeScopeType.ARC,
+            book_id="book:1",
+            arc_id="arc:1",
+        )
+        self.assertEqual(arc.arc_id, "arc:1")
+        self.assertEqual(arc.volume_id, "")
+
+        with self.assertRaisesRegex(ValueError, "chapter_group_id"):
             NarrativeScope(
-                kind=NarrativeScopeType.ARC,
+                kind=NarrativeScopeType.CHAPTER,
                 book_id="book:1",
-                arc_id="arc:1",
+                volume_id="volume:1",
+                chapter_id="chapter:1",
             )
 
     def test_temporal_scope_rejects_inverted_or_published_active_range(self) -> None:
@@ -227,9 +238,7 @@ class AgentScopeContractTests(unittest.TestCase):
                 )
             ),
         )
-        envelope = _envelope(
-            accessed_knowledge=(KnowledgeVisibility.HIDDEN_PLANNING,)
-        )
+        envelope = _envelope(accessed_knowledge=(KnowledgeVisibility.HIDDEN_PLANNING,))
 
         result = ScopePolicy.validate_output(
             reader_contract.freeze(
@@ -307,6 +316,7 @@ def _envelope(
         requested_next_action="CHALLENGE",
         execution_evidence_ref="execution-evidence:1",
     )
+
 
 if __name__ == "__main__":
     unittest.main()

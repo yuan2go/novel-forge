@@ -1,4 +1,5 @@
 """One-step persistent Book scheduler using only Authority command/query ports."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -99,13 +100,12 @@ class PostgresBookAuthorityScheduler:
                 "COMPLETE_READER_SHADOW",
                 operation_id,
             )
-        reader = self._output(
-            operation_id, book["project_id"], "reader_outcome.report"
-        )
+        reader = self._output(operation_id, book["project_id"], "reader_outcome.report")
         trigger = should_trigger_longform_recap(
             chapter_number=int(request["chapter_number"]),
             light_cadence=int(book["light_recap_cadence"]),
             formal_cadence=int(book["formal_recap_cadence"]),
+            chapter_group_complete=self._chapter_group_complete(request),
         )
         if not trigger["should_trigger"]:
             return None
@@ -122,9 +122,7 @@ class PostgresBookAuthorityScheduler:
             )
         if self._operation_status(recap_operation, book["project_id"]) != "SUCCEEDED":
             self.authority.followup.run_or_recover(
-                BookFollowupAdmission(
-                    recap_operation, book["project_id"], True
-                )
+                BookFollowupAdmission(recap_operation, book["project_id"], True)
             )
             return self._result(
                 book["book_run_id"],
@@ -134,9 +132,28 @@ class PostgresBookAuthorityScheduler:
             )
         return None
 
-    def _latest_accepted_request(
-        self, book: dict[str, Any]
-    ) -> dict[str, Any] | None:
+    def _chapter_group_complete(self, request: dict[str, Any]) -> bool:
+        group_version = str(request.get("parent_group_version_id") or "")
+        if not group_version:
+            return False
+        with AuthorityUnitOfWork(self.authority.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT content->'chapter_range'
+                FROM authority_asset_version
+                WHERE asset_version_id=%s
+                """,
+                [group_version],
+            )
+            row = uow.cursor.fetchone()
+        if row is None or not isinstance(row[0], list) or len(row[0]) != 2:
+            raise KernelError(
+                "BOOK_CHAPTER_GROUP_PLAN_INVALID",
+                "Chapter request references an invalid ChapterGroup Plan",
+            )
+        return int(request["chapter_number"]) == int(row[0][1])
+
+    def _latest_accepted_request(self, book: dict[str, Any]) -> dict[str, Any] | None:
         with AuthorityUnitOfWork(self.authority.database_url) as uow:
             uow.cursor.execute(
                 """
@@ -158,9 +175,7 @@ class PostgresBookAuthorityScheduler:
             else None
         )
 
-    def _followup_operation(
-        self, chapter_request_id: str, followup_type: str
-    ) -> str:
+    def _followup_operation(self, chapter_request_id: str, followup_type: str) -> str:
         with AuthorityUnitOfWork(self.authority.database_url) as uow:
             uow.cursor.execute(
                 """
@@ -190,9 +205,7 @@ class PostgresBookAuthorityScheduler:
         draft = self._evidence_output(evidence, "draft_version")
         canon = self._evidence_output(evidence, "canon_snapshot")
         quality = self._evidence_output(evidence, "quality_score_report")
-        manifest = self._evidence_output(
-            evidence, "production_input_manifest"
-        )
+        manifest = self._evidence_output(evidence, "production_input_manifest")
         frozen_versions = dict(book["longform_context_versions"])
         authority_inputs = self.authority.resolve_asset_refs(
             project_id=book["project_id"],
@@ -221,24 +234,14 @@ class PostgresBookAuthorityScheduler:
                 "book_design_version": book["book_design_version"],
                 "book_plan_version": book["book_plan_version"],
                 "parent_plan_versions": {
-                    "volume_plan_version": frozen_versions[
-                        "volume_plan_version"
-                    ],
+                    "volume_plan_version": frozen_versions["volume_plan_version"],
                     "arc_plan_version": frozen_versions["arc_plan_version"],
                 },
-                "reader_segment_version": frozen_versions[
-                    "reader_segment_version"
-                ],
-                "reader_contract_version": frozen_versions[
-                    "reader_contract_version"
-                ],
-                "platform_profile_version": frozen_versions[
-                    "platform_profile_version"
-                ],
+                "reader_segment_version": frozen_versions["reader_segment_version"],
+                "reader_contract_version": frozen_versions["reader_contract_version"],
+                "platform_profile_version": frozen_versions["platform_profile_version"],
                 "canon_snapshot_version": canon["asset_version_id"],
-                "chapter_outcome_version": book[
-                    "last_chapter_outcome_version_id"
-                ],
+                "chapter_outcome_version": book["last_chapter_outcome_version_id"],
                 "story_state_version": book["active_story_state_version_id"],
                 "quality_evidence_version": quality["asset_version_id"],
                 "input_manifest_ref": manifest["asset_version_id"],
@@ -247,7 +250,6 @@ class PostgresBookAuthorityScheduler:
                 ),
                 "evaluation_profile_version": "reader-evaluation:v1",
                 "model_strategy_version": book["production_profile_version"],
-                "mode": "SHADOW",
             },
             input_assets=(
                 self._asset_ref(draft),
@@ -270,9 +272,7 @@ class PostgresBookAuthorityScheduler:
             root_operation_id=request["chapter_root_operation_id"],
         )
         canon = self._evidence_output(evidence, "canon_snapshot")
-        character = self._evidence_output(
-            evidence, "character_state_snapshot"
-        )
+        character = self._evidence_output(evidence, "character_state_snapshot")
         foreshadow = self._evidence_output(evidence, "foreshadow_snapshot")
         reward = self._evidence_output(evidence, "reward_ledger_snapshot")
         promise = self._evidence_output(evidence, "promise_ledger_snapshot")
@@ -306,34 +306,22 @@ class PostgresBookAuthorityScheduler:
                 "arc_plan_version": frozen_versions["arc_plan_version"],
                 "canon_snapshot_version": canon["asset_version_id"],
                 "character_state_version": character["asset_version_id"],
-                "foreshadowing_state_version": foreshadow[
-                    "asset_version_id"
-                ],
+                "foreshadowing_state_version": foreshadow["asset_version_id"],
                 "reader_state_version": reader["asset_version_id"],
-                "quality_trend_version": frozen_versions[
-                    "quality_trend_version"
-                ],
+                "quality_trend_version": frozen_versions["quality_trend_version"],
                 "reward_ledger_version": reward["asset_version_id"],
                 "promise_ledger_version": promise["asset_version_id"],
-                "chapter_outcome_versions": [
-                    book["last_chapter_outcome_version_id"]
-                ],
+                "chapter_outcome_versions": [book["last_chapter_outcome_version_id"]],
                 "story_state_version": book["active_story_state_version_id"],
                 "observations": {
-                    "reader_state": dict(
-                        reader["content"].get("reader_state") or {}
-                    ),
+                    "reader_state": dict(reader["content"].get("reader_state") or {}),
                     "reader_qualification": {
                         "qualification_status": str(
                             reader["content"].get("judge_qualification_status")
                             or "SHADOW"
                         ),
-                        "sample_size": int(
-                            reader["content"].get("sample_size") or 0
-                        ),
-                        "confidence": float(
-                            reader["content"].get("confidence") or 0
-                        ),
+                        "sample_size": int(reader["content"].get("sample_size") or 0),
+                        "confidence": float(reader["content"].get("confidence") or 0),
                         "disagreement": True,
                         "position_bias": True,
                         "ood": True,
@@ -359,9 +347,7 @@ class PostgresBookAuthorityScheduler:
             ),
         )
 
-    def _previous_reader_state(
-        self, book: dict[str, Any], chapter_number: int
-    ) -> str:
+    def _previous_reader_state(self, book: dict[str, Any], chapter_number: int) -> str:
         if chapter_number <= 1:
             return "NONE"
         with AuthorityUnitOfWork(self.authority.database_url) as uow:
@@ -384,13 +370,9 @@ class PostgresBookAuthorityScheduler:
         return str(row[0]) if row is not None else "NONE"
 
     @staticmethod
-    def _evidence_output(
-        evidence: dict[str, Any], asset_type: str
-    ) -> dict[str, Any]:
+    def _evidence_output(evidence: dict[str, Any], asset_type: str) -> dict[str, Any]:
         matches = [
-            item
-            for item in evidence["outputs"]
-            if item["asset_type"] == asset_type
+            item for item in evidence["outputs"] if item["asset_type"] == asset_type
         ]
         if len(matches) != 1:
             raise KernelError(

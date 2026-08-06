@@ -7,7 +7,9 @@ import hashlib
 import json
 from typing import Any
 
-from novel_forge.modules.production_execution.capability_registry import CapabilityRegistry
+from novel_forge.modules.production_execution.capability_registry import (
+    CapabilityRegistry,
+)
 
 from .artifacts import ArtifactResolver
 from .errors import (
@@ -57,6 +59,7 @@ class CompiledWorkflowNode:
     authoritative_approval_policy_json: str
     authoritative_compensation_policy_json: str
     authoritative_completion_contract_json: str
+    commit_authority: str = "CHAPTER_AUTHORITY"
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -71,11 +74,22 @@ class CompiledWorkflowNode:
             "capability_contract_hash": self.capability_contract_hash,
             "agent_definition_ref": self.agent_definition_ref,
             "depends_on": list(self.depends_on),
-            "authoritative_retry_policy": json.loads(self.authoritative_retry_policy_json),
-            "authoritative_timeout_policy": json.loads(self.authoritative_timeout_policy_json),
-            "authoritative_approval_policy": json.loads(self.authoritative_approval_policy_json),
-            "authoritative_compensation_policy": json.loads(self.authoritative_compensation_policy_json),
-            "authoritative_completion_contract": json.loads(self.authoritative_completion_contract_json),
+            "authoritative_retry_policy": json.loads(
+                self.authoritative_retry_policy_json
+            ),
+            "authoritative_timeout_policy": json.loads(
+                self.authoritative_timeout_policy_json
+            ),
+            "authoritative_approval_policy": json.loads(
+                self.authoritative_approval_policy_json
+            ),
+            "authoritative_compensation_policy": json.loads(
+                self.authoritative_compensation_policy_json
+            ),
+            "authoritative_completion_contract": json.loads(
+                self.authoritative_completion_contract_json
+            ),
+            "commit_authority": self.commit_authority,
         }
 
 
@@ -128,8 +142,12 @@ class CompiledCapabilityPack:
             "tool_permission_snapshot": json.loads(self.tool_permission_snapshot_json),
             "context_source_snapshot": json.loads(self.context_source_snapshot_json),
             "evaluation_gate_snapshot": json.loads(self.evaluation_gate_snapshot_json),
-            "audit_requirement_snapshot": json.loads(self.audit_requirement_snapshot_json),
-            "version_resolution_snapshot": json.loads(self.version_resolution_snapshot_json),
+            "audit_requirement_snapshot": json.loads(
+                self.audit_requirement_snapshot_json
+            ),
+            "version_resolution_snapshot": json.loads(
+                self.version_resolution_snapshot_json
+            ),
         }
 
     @property
@@ -177,17 +195,30 @@ class CapabilityPackCompiler:
     ) -> CapabilityPackCompilationResult:
         errors: list[CapabilityPackCompilationIssue] = []
         warnings: list[CapabilityPackCompilationIssue] = []
-        if expected_manifest_hash is not None and expected_manifest_hash != manifest.manifest_hash:
-            errors.append(CapabilityPackCompilationIssue("CAPABILITY_PACK_MANIFEST_HASH_DRIFT", "$", "Manifest hash differs from the caller-bound identity"))
+        if (
+            expected_manifest_hash is not None
+            and expected_manifest_hash != manifest.manifest_hash
+        ):
+            errors.append(
+                CapabilityPackCompilationIssue(
+                    "CAPABILITY_PACK_MANIFEST_HASH_DRIFT",
+                    "$",
+                    "Manifest hash differs from the caller-bound identity",
+                )
+            )
         static = validate_capability_pack(
             manifest, capability_registry=self.capability_registry
         )
         errors.extend(
-            CapabilityPackCompilationIssue(item.code, item.path, item.message, item.severity)
+            CapabilityPackCompilationIssue(
+                item.code, item.path, item.message, item.severity
+            )
             for item in static.errors
         )
         warnings.extend(
-            CapabilityPackCompilationIssue(item.code, item.path, item.message, item.severity)
+            CapabilityPackCompilationIssue(
+                item.code, item.path, item.message, item.severity
+            )
             for item in static.warnings
         )
         try:
@@ -202,12 +233,16 @@ class CapabilityPackCompiler:
                 catalog=self.pack_catalog,
             )
         except (KeyError, ValueError) as exc:
-            errors.append(CapabilityPackCompilationIssue("CAPABILITY_PACK_VERSION_RESOLUTION_FAILED", "$.compatibility", str(exc)))
+            errors.append(
+                CapabilityPackCompilationIssue(
+                    "CAPABILITY_PACK_VERSION_RESOLUTION_FAILED",
+                    "$.compatibility",
+                    str(exc),
+                )
+            )
             version_set = None
         if version_set is not None:
-            root_identity = (
-                f"{manifest.identity.pack_id}@{manifest.identity.version}"
-            )
+            root_identity = f"{manifest.identity.pack_id}@{manifest.identity.version}"
             resolved_manifest_hashes = dict(version_set.manifest_hashes)
             if resolved_manifest_hashes.get(root_identity) != manifest.manifest_hash:
                 errors.append(
@@ -275,9 +310,7 @@ class CapabilityPackCompiler:
             ).rpartition("@")
             if not separator:  # guarded by semantic validation
                 raise ValueError("compiled node has no exact OperationDefinition ref")
-            operation = operation_by_identity[
-                (definition_name, definition_version)
-            ]
+            operation = operation_by_identity[(definition_name, definition_version)]
             capability = capability_definitions[str(node.capability_id)]
             compiled_nodes.append(
                 CompiledWorkflowNode(
@@ -297,6 +330,7 @@ class CapabilityPackCompiler:
                     authoritative_approval_policy_json=operation.approval_policy_json,
                     authoritative_compensation_policy_json=operation.compensation_policy_json,
                     authoritative_completion_contract_json=operation.completion_contract_json,
+                    commit_authority=str(node.commit_authority),
                 )
             )
 
@@ -308,7 +342,13 @@ class CapabilityPackCompiler:
             }
             for key in sorted(capability_definitions)
         ]
-        operations_snapshot = [item.to_dict() for item in sorted(semantic.operations, key=lambda value: (value.definition_name, value.definition_version))]
+        operations_snapshot = [
+            item.to_dict()
+            for item in sorted(
+                semantic.operations,
+                key=lambda value: (value.definition_name, value.definition_version),
+            )
+        ]
         artifacts_snapshot = [
             {
                 "kind": item.kind.value,
@@ -362,8 +402,12 @@ class CapabilityPackCompiler:
             "resolved_operations": operations_snapshot,
             "resolved_artifacts": artifacts_snapshot,
             "workflow_nodes": [item.to_dict() for item in compiled_nodes],
-            "external_input_asset_contract": sorted(str(item) for item in manifest.context_sources.allowed_asset_types),
-            "completion_contract": manifest.to_dict()["workflow_template"]["completion"],
+            "external_input_asset_contract": sorted(
+                str(item) for item in manifest.context_sources.allowed_asset_types
+            ),
+            "completion_contract": manifest.to_dict()["workflow_template"][
+                "completion"
+            ],
             "tool_permission_snapshot": manifest.to_dict()["tool_permissions"],
             "context_source_snapshot": manifest.to_dict()["context_sources"],
             "evaluation_gate_snapshot": manifest.to_dict()["evaluation"],
@@ -371,7 +415,9 @@ class CapabilityPackCompiler:
             "version_resolution_snapshot": {
                 "dependency_order": list(version_set.dependency_order),
                 "manifest_hashes": [list(item) for item in version_set.manifest_hashes],
-                "dependency_edges": [list(item) for item in version_set.dependency_edges],
+                "dependency_edges": [
+                    list(item) for item in version_set.dependency_edges
+                ],
                 "novel_forge_version": novel_forge_version,
                 "release_channel": release_channel,
                 "runtime_profile": target_runtime_profile,
@@ -395,13 +441,25 @@ class CapabilityPackCompiler:
             resolved_operations_json=_canonical(operations_snapshot),
             resolved_artifacts_json=_canonical(artifacts_snapshot),
             workflow_nodes=tuple(compiled_nodes),
-            external_input_asset_contract=tuple(sorted(str(item) for item in manifest.context_sources.allowed_asset_types)),
-            completion_contract_json=_canonical(manifest.to_dict()["workflow_template"]["completion"]),
-            tool_permission_snapshot_json=_canonical(manifest.to_dict()["tool_permissions"]),
-            context_source_snapshot_json=_canonical(manifest.to_dict()["context_sources"]),
+            external_input_asset_contract=tuple(
+                sorted(
+                    str(item) for item in manifest.context_sources.allowed_asset_types
+                )
+            ),
+            completion_contract_json=_canonical(
+                manifest.to_dict()["workflow_template"]["completion"]
+            ),
+            tool_permission_snapshot_json=_canonical(
+                manifest.to_dict()["tool_permissions"]
+            ),
+            context_source_snapshot_json=_canonical(
+                manifest.to_dict()["context_sources"]
+            ),
             evaluation_gate_snapshot_json=_canonical(manifest.to_dict()["evaluation"]),
             audit_requirement_snapshot_json=_canonical(manifest.to_dict()["audit"]),
-            version_resolution_snapshot_json=_canonical(payload_without_hash["version_resolution_snapshot"]),
+            version_resolution_snapshot_json=_canonical(
+                payload_without_hash["version_resolution_snapshot"]
+            ),
         )
         return CapabilityPackCompilationResult(
             compiled,

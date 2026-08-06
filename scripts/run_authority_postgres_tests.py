@@ -21,6 +21,7 @@ def main() -> int:
         "test_book_to_chapter_authority_vertical_postgres.py",
         "test_chapter_authority_*_postgres.py",
         "test_postgresql_only_chapter_slice.py",
+        "test_core_functional_loops_postgres.py",
     ):
         suite.addTests(
             unittest.defaultTestLoader.discover(

@@ -706,7 +706,9 @@ class ContextBuildPlanRequest(BaseModel):
     token_budget: int = 4000
     backend: str = "auto"
     retrieval_backend: str | None = None
-    memory_levels: list[str] = Field(default_factory=lambda: ["L0", "L1", "L2", "L3", "L4", "L5"])
+    memory_levels: list[str] = Field(
+        default_factory=lambda: ["L0", "L1", "L2", "L3", "L4", "L5"]
+    )
     kg_context: bool = True
     quality_memory: bool = True
     context_profile: str = "chapter_generation"
@@ -787,7 +789,9 @@ class AuthorityChapterCommandRequest(BaseModel):
     idempotency_key: str = Field(min_length=1)
     title_override: str = ""
     premise_override: str = ""
-    explicit_asset_version_overrides: dict[str, str | list[str]] = Field(default_factory=dict)
+    explicit_asset_version_overrides: dict[str, str | list[str]] = Field(
+        default_factory=dict
+    )
     requested_quality_profile: str = "default"
     requested_platform_profile: str = "default"
     operator_decision: dict[str, Any] = Field(default_factory=dict)
@@ -826,13 +830,26 @@ class BookAuthorityStartRequest(BaseModel):
     workspace_id: str = Field(min_length=1)
     book_id: str = Field(min_length=1)
     idempotency_key: str = Field(min_length=1)
-    book_design_version: str = Field(min_length=1)
-    book_plan_version: str = Field(min_length=1)
-    production_profile_version: str = Field(min_length=1)
-    longform_context_versions: dict[str, str]
+    input_snapshot_id: str = ""
+    input_mode: str = "RESOLVED_AUTHORITY_INPUT"
+    book_design_version: str = ""
+    book_plan_version: str = ""
+    production_profile_version: str = ""
+    longform_context_versions: dict[str, str] = Field(default_factory=dict)
     target_chapter_count: int = Field(ge=1)
     light_recap_cadence: int = Field(default=5, ge=1)
     formal_recap_cadence: int = Field(default=10, ge=1)
+    actor_id: str = ""
+    trace_id: str = ""
+    correlation_id: str = ""
+
+
+class BookProductionInputResolveRequest(BaseModel):
+    project_id: str = Field(min_length=1)
+    workspace_id: str = Field(min_length=1)
+    production_profile: str = Field(min_length=1)
+    expected_book_version: int = Field(ge=1)
+    idempotency_key: str = Field(min_length=1)
     actor_id: str = ""
     trace_id: str = ""
     correlation_id: str = ""
@@ -1838,7 +1855,9 @@ class HandoffKnowledgeRequest(BaseModel):
 class GitHubKnowledgeHandoffRequest(BaseModel):
     repo_refs: list[str]
     discipline: str = ""
-    credibility: str = "registered GitHub source metadata; license review required before raw access"
+    credibility: str = (
+        "registered GitHub source metadata; license review required before raw access"
+    )
     scope: str = ""
     project_context: str = ""
     workspace_path: str | None = None
@@ -2222,6 +2241,7 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "AuthorityOperationControlRequest": AuthorityOperationControlRequest,
         "ContentAuthorityCommandRequest": ContentAuthorityCommandRequest,
         "BookAuthorityStartRequest": BookAuthorityStartRequest,
+        "BookProductionInputResolveRequest": BookProductionInputResolveRequest,
         "BookAuthorityChapterRequest": BookAuthorityChapterRequest,
         "BookAuthorityControlRequest": BookAuthorityControlRequest,
         "ExternalEffectManualResolutionRequest": ExternalEffectManualResolutionRequest,

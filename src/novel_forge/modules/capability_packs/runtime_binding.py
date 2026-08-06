@@ -54,11 +54,24 @@ def compiled_capability_pack_from_payload(
                 capability_contract_hash=str(node["capability_contract_hash"]),
                 agent_definition_ref=str(node.get("agent_definition_ref") or ""),
                 depends_on=tuple(str(item) for item in node["depends_on"]),
-                authoritative_retry_policy_json=_json(node["authoritative_retry_policy"]),
-                authoritative_timeout_policy_json=_json(node["authoritative_timeout_policy"]),
-                authoritative_approval_policy_json=_json(node["authoritative_approval_policy"]),
-                authoritative_compensation_policy_json=_json(node["authoritative_compensation_policy"]),
-                authoritative_completion_contract_json=_json(node["authoritative_completion_contract"]),
+                authoritative_retry_policy_json=_json(
+                    node["authoritative_retry_policy"]
+                ),
+                authoritative_timeout_policy_json=_json(
+                    node["authoritative_timeout_policy"]
+                ),
+                authoritative_approval_policy_json=_json(
+                    node["authoritative_approval_policy"]
+                ),
+                authoritative_compensation_policy_json=_json(
+                    node["authoritative_compensation_policy"]
+                ),
+                authoritative_completion_contract_json=_json(
+                    node["authoritative_completion_contract"]
+                ),
+                commit_authority=str(
+                    node.get("commit_authority") or "CHAPTER_AUTHORITY"
+                ),
             )
             for node in payload["workflow_nodes"]
         )
@@ -86,8 +99,12 @@ def compiled_capability_pack_from_payload(
             tool_permission_snapshot_json=_json(payload["tool_permission_snapshot"]),
             context_source_snapshot_json=_json(payload["context_source_snapshot"]),
             evaluation_gate_snapshot_json=_json(payload["evaluation_gate_snapshot"]),
-            audit_requirement_snapshot_json=_json(payload["audit_requirement_snapshot"]),
-            version_resolution_snapshot_json=_json(payload["version_resolution_snapshot"]),
+            audit_requirement_snapshot_json=_json(
+                payload["audit_requirement_snapshot"]
+            ),
+            version_resolution_snapshot_json=_json(
+                payload["version_resolution_snapshot"]
+            ),
         )
     except (KeyError, TypeError, ValueError) as exc:
         raise KernelError(
@@ -96,9 +113,9 @@ def compiled_capability_pack_from_payload(
         ) from exc
     canonical = compiled.to_dict()
     claimed_hash = str(canonical.pop("compilation_hash"))
-    actual_hash = "sha256:" + hashlib.sha256(
-        _json(canonical).encode("utf-8")
-    ).hexdigest()
+    actual_hash = (
+        "sha256:" + hashlib.sha256(_json(canonical).encode("utf-8")).hexdigest()
+    )
     if claimed_hash != actual_hash:
         raise KernelError(
             "CAPABILITY_PACK_COMPILATION_HASH_DRIFT",
@@ -163,8 +180,7 @@ def bind_compiled_pack_for_admission(
     if drift:
         raise KernelError(
             "CAPABILITY_PACK_AUTHORITY_BINDING_DRIFT",
-            "compiled Pack differs from Chapter Agent Binding: "
-            + ", ".join(drift),
+            "compiled Pack differs from Chapter Agent Binding: " + ", ".join(drift),
         )
     _validate_operation_definition(node, authority_operation_definition)
     return CapabilityPackAuthorityBinding(
@@ -196,19 +212,14 @@ def _validate_operation_definition(
         "retry_policy": json.loads(node.authoritative_retry_policy_json),
         "timeout_policy": json.loads(node.authoritative_timeout_policy_json),
         "approval_policy": json.loads(node.authoritative_approval_policy_json),
-        "compensation_policy": json.loads(
-            node.authoritative_compensation_policy_json
-        ),
-        "completion_contract": json.loads(
-            node.authoritative_completion_contract_json
-        ),
+        "compensation_policy": json.loads(node.authoritative_compensation_policy_json),
+        "completion_contract": json.loads(node.authoritative_completion_contract_json),
     }
     drift = [name for name, value in expected.items() if authority.get(name) != value]
     if drift:
         raise KernelError(
             "CAPABILITY_PACK_OPERATION_AUTHORITY_CONFLICT",
-            "Capability Pack cannot override OperationDefinition: "
-            + ", ".join(drift),
+            "Capability Pack cannot override OperationDefinition: " + ", ".join(drift),
         )
 
 

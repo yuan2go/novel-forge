@@ -1,7 +1,7 @@
 {
   "schema_version": "architecture-manifest.v1",
   "registry": "novel_forge.storage.migrations.versions:VERSION_MODULES",
-  "head": "20260806_0072_capability_pack_integrity_hardening",
+  "head": "20260806_0073_core_functional_loops",
   "migration_ids": [
     "20260625_0001_initial_industrial_schema",
     "20260628_0002_query_and_release_indexes",
@@ -74,6 +74,7 @@
     "20260805_0069_agent_runtime_domain_commit_closure",
     "20260805_0070_agent_runtime_recovery_protocol",
     "20260805_0071_capability_pack_authority",
-    "20260806_0072_capability_pack_integrity_hardening"
+    "20260806_0072_capability_pack_integrity_hardening",
+    "20260806_0073_core_functional_loops"
   ]
 }

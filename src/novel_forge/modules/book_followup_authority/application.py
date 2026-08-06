@@ -1,4 +1,5 @@
 """Command application over the existing Command Kernel and Attempt scheduler."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -17,6 +18,7 @@ from novel_forge.modules.command_kernel.operation_graph import (
 from novel_forge.modules.command_kernel.service import AdmissionContext, admit_command
 from novel_forge.modules.content_authority.scheduler import ContentAuthorityScheduler
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+from novel_forge.modules.reader_judge_authority import ReaderJudgeRuntimeResolver
 
 from .contracts import BOOK_FOLLOWUP_DEFINITION_VERSION, ReaderOutcomeModelPort
 from .definitions import book_followup_operation_definitions
@@ -54,6 +56,7 @@ class BookFollowupAuthorityApplication:
         application_build_id: str,
         commit_sha: str,
         model_port: ReaderOutcomeModelPort | None = None,
+        reader_judge_resolver: ReaderJudgeRuntimeResolver | None = None,
         worker_id: str = "book-followup-authority-worker",
     ) -> None:
         if not database_url or not application_build_id or len(commit_sha) != 40:
@@ -61,7 +64,10 @@ class BookFollowupAuthorityApplication:
         self.database_url = database_url
         self.application_build_id = application_build_id
         self.commit_sha = commit_sha
-        self.registry = BookFollowupHandlerRegistry(model_port)
+        self.registry = BookFollowupHandlerRegistry(
+            model_port,
+            reader_judge_resolver or ReaderJudgeRuntimeResolver(database_url),
+        )
         self.worker_id = worker_id
 
     def admit(

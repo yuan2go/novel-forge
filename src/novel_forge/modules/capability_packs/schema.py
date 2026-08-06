@@ -72,7 +72,9 @@ class ReleaseChannel(StrEnum):
 
 def _freeze_json(value: Any) -> Any:
     if isinstance(value, Mapping):
-        return MappingProxyType({str(key): _freeze_json(item) for key, item in value.items()})
+        return MappingProxyType(
+            {str(key): _freeze_json(item) for key, item in value.items()}
+        )
     if isinstance(value, (list, tuple)):
         return tuple(_freeze_json(item) for item in value)
     return value
@@ -211,7 +213,10 @@ class SkillBinding:
         return cls(
             payload.get("mode"),
             payload.get("selection_policy_ref"),
-            tuple(BoundSkill.from_dict(_object(item)) for item in _items(payload.get("skills"))),
+            tuple(
+                BoundSkill.from_dict(_object(item))
+                for item in _items(payload.get("skills"))
+            ),
             _object(payload.get("anti_drift")),
         )
 
@@ -266,6 +271,7 @@ class WorkflowNode:
     timeout_policy_ref: Any
     approval: Mapping[str, Any]
     compensation: Mapping[str, Any]
+    commit_authority: Any
 
     @classmethod
     def from_dict(cls, payload: Mapping[str, Any]) -> "WorkflowNode":
@@ -285,6 +291,7 @@ class WorkflowNode:
             payload.get("timeout_policy_ref"),
             _object(payload.get("approval")),
             _object(payload.get("compensation")),
+            payload.get("commit_authority", "CHAPTER_AUTHORITY"),
         )
 
 
@@ -319,7 +326,10 @@ class WorkflowTemplate:
             payload.get("workflow_version"),
             payload.get("execution_mode"),
             payload.get("idempotency_scope"),
-            tuple(WorkflowNode.from_dict(_object(item)) for item in _items(payload.get("nodes"))),
+            tuple(
+                WorkflowNode.from_dict(_object(item))
+                for item in _items(payload.get("nodes"))
+            ),
             WorkflowCompletion.from_dict(_object(payload.get("completion"))),
         )
 
@@ -389,7 +399,10 @@ class ToolPermissions:
         return cls(
             payload.get("policy_id"),
             payload.get("default"),
-            tuple(ToolBinding.from_dict(_object(item)) for item in _items(payload.get("tools"))),
+            tuple(
+                ToolBinding.from_dict(_object(item))
+                for item in _items(payload.get("tools"))
+            ),
             _object(payload.get("database")),
             _object(payload.get("files")),
             _object(payload.get("external_models")),
@@ -444,7 +457,10 @@ class EvaluationDefinition:
     def from_dict(cls, payload: Mapping[str, Any]) -> "EvaluationDefinition":
         return cls(
             payload.get("evaluation_id"),
-            tuple(EvaluationGate.from_dict(_object(item)) for item in _items(payload.get("required_gates"))),
+            tuple(
+                EvaluationGate.from_dict(_object(item))
+                for item in _items(payload.get("required_gates"))
+            ),
             tuple(_object(item) for item in _items(payload.get("metrics"))),
             _object(payload.get("failure_policy")),
         )
@@ -465,7 +481,10 @@ class RuntimeContract:
 
     @classmethod
     def from_dict(cls, payload: Mapping[str, Any]) -> "RuntimeContract":
-        return cls(*(payload.get(name) for name in tuple(cls.__dataclass_fields__)[:-1]), _object(payload.get("execution")))
+        return cls(
+            *(payload.get(name) for name in tuple(cls.__dataclass_fields__)[:-1]),
+            _object(payload.get("execution")),
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -484,7 +503,10 @@ class GovernanceDefinition:
         return cls(
             payload.get("release_channel"),
             payload.get("approval_policy_ref"),
-            *(_object(payload.get(name)) for name in tuple(cls.__dataclass_fields__)[2:]),
+            *(
+                _object(payload.get(name))
+                for name in tuple(cls.__dataclass_fields__)[2:]
+            ),
         )
 
 

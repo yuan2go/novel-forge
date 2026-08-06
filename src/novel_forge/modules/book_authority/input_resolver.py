@@ -1,0 +1,759 @@
+"""Resolve one immutable, compatible Book Production input snapshot."""
+
+from __future__ import annotations
+
+from dataclasses import asdict, dataclass
+from types import MappingProxyType
+from typing import Any, Mapping
+from uuid import uuid4
+
+from psycopg.types.json import Jsonb
+
+from novel_forge.modules.authority_security import Principal
+from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.command_kernel.service import (
+    AdmissionContext,
+    TransactionCheckpoint,
+    execute_transaction_command,
+)
+from novel_forge.modules.story_design_authority import GENERATOR_CATALOG
+from novel_forge.modules.story_planning_runtime import canonical_hash
+from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+
+
+BOOK_INPUT_RESOLVE_DEFINITION = "book.production_input.resolve"
+BOOK_INPUT_RESOLVE_VERSION = "1.0.0"
+BOOK_INPUT_RESOLVE_HANDLER = "novel_forge.book_authority.production_input.resolve"
+
+
+_ACTIVE_ROLE_TYPES: Mapping[str, tuple[str, ...]] = MappingProxyType(
+    {
+        "production_profile_version": ("production_profile",),
+        "reader_segment_version": ("reader_segment_profile", "reader_segment"),
+        "reader_contract_version": ("reader_contract",),
+        "platform_profile_version": ("platform_profile",),
+        "character_state_version": ("character_state_snapshot", "character_state"),
+        "foreshadowing_state_version": ("foreshadow_snapshot", "foreshadowing_state"),
+        "quality_trend_version": ("quality_trend",),
+        "reward_ledger_version": ("reward_ledger_snapshot", "reward_ledger"),
+        "promise_ledger_version": (
+            "promise_ledger_snapshot",
+            "reader_promise_ledger",
+            "promise_ledger",
+        ),
+    }
+)
+
+
+@dataclass(frozen=True, slots=True)
+class ResolveBookProductionInputCommand:
+    project_id: str
+    workspace_id: str
+    book_id: str
+    production_profile: str
+    expected_book_version: int
+    actor_id: str
+    idempotency_key: str
+    trace_id: str
+    correlation_id: str
+
+    def __post_init__(self) -> None:
+        values = (
+            self.project_id,
+            self.workspace_id,
+            self.book_id,
+            self.production_profile,
+            self.actor_id,
+            self.idempotency_key,
+            self.trace_id,
+            self.correlation_id,
+        )
+        if (
+            any(not value.strip() for value in values)
+            or self.expected_book_version <= 0
+        ):
+            raise ValueError("Book Production input resolution command is incomplete")
+
+
+@dataclass(frozen=True, slots=True)
+class BookProductionInputSnapshot:
+    snapshot_id: str
+    project_id: str
+    workspace_id: str
+    book_id: str
+    expected_book_version: int
+    book_record_version: str
+    book_design_version: str
+    book_plan_version: str
+    current_volume_plan_version: str
+    active_arc_plan_versions: tuple[str, ...]
+    current_chapter_group_plan_version: str
+    production_profile_version: str
+    reader_segment_version: str
+    reader_contract_version: str
+    platform_profile_version: str
+    character_state_version: str
+    foreshadowing_state_version: str
+    quality_trend_version: str
+    reward_ledger_version: str
+    promise_ledger_version: str
+    capability_pack_deployment_refs: tuple[str, ...]
+    release_sha: str
+    snapshot_hash: str
+    resolved_by_operation_id: str
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+class BookProductionInputResolver:
+    def __init__(
+        self,
+        database_url: str,
+        *,
+        application_build_id: str,
+        commit_sha: str,
+    ) -> None:
+        if not database_url or not application_build_id or len(commit_sha) != 40:
+            raise ValueError(
+                "Book input resolver requires PostgreSQL and build identity"
+            )
+        self.database_url = database_url
+        self.application_build_id = application_build_id
+        self.commit_sha = commit_sha
+
+    def resolve(
+        self,
+        command: ResolveBookProductionInputCommand,
+        *,
+        principal: Principal,
+    ) -> BookProductionInputSnapshot:
+        principal.require("book.authority.execute", command.project_id)
+        if principal.principal_id != command.actor_id:
+            raise PermissionError(
+                "Book input resolver actor must be the trusted Principal"
+            )
+        self._register_definition()
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            preview = self._resolve_in_cursor(uow.cursor, command)
+        input_ids = self._snapshot_asset_ids(preview)
+        input_assets = self._input_assets(command.project_id, input_ids)
+        result = execute_transaction_command(
+            self.database_url,
+            {
+                "definition_name": BOOK_INPUT_RESOLVE_DEFINITION,
+                "definition_version": BOOK_INPUT_RESOLVE_VERSION,
+                "project_id": command.project_id,
+                "workspace_id": command.workspace_id,
+                "book_id": command.book_id,
+                "actor_id": command.actor_id,
+                "idempotency_scope": "book:production-input-resolve",
+                "idempotency_key": command.idempotency_key,
+                "trace_id": command.trace_id,
+                "span_id": str(uuid4()),
+                "correlation_id": command.correlation_id,
+                "causation_id": "",
+                "input": {
+                    "project_id": command.project_id,
+                    "workspace_id": command.workspace_id,
+                    "book_id": command.book_id,
+                    "production_profile": command.production_profile,
+                    "expected_book_version": command.expected_book_version,
+                    "expected_snapshot_hash": preview["snapshot_hash"],
+                },
+                "input_assets": list(input_assets),
+            },
+            context=AdmissionContext(
+                actor_id=command.actor_id,
+                permissions=frozenset({"book.authority.execute"}),
+                available_handlers=frozenset({BOOK_INPUT_RESOLVE_HANDLER}),
+                application_build_id=self.application_build_id,
+                commit_sha=self.commit_sha,
+            ),
+            handler=self._execute_transaction,
+        )
+        return self.require(str(result["snapshot_id"]))
+
+    def require(self, snapshot_id: str) -> BookProductionInputSnapshot:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT snapshot_id, project_id, workspace_id, book_id,
+                       expected_book_version, book_record_version,
+                       book_design_version, book_plan_version,
+                       current_volume_plan_version, active_arc_plan_versions,
+                       COALESCE(current_chapter_group_plan_version, ''),
+                       production_profile_version, reader_segment_version,
+                       reader_contract_version, platform_profile_version,
+                       character_state_version, foreshadowing_state_version,
+                       quality_trend_version, reward_ledger_version,
+                       promise_ledger_version, capability_pack_deployment_refs,
+                       release_sha, snapshot_hash, resolved_by_operation_id
+                FROM authority_book_production_input_snapshot
+                WHERE snapshot_id=%s
+                """,
+                [snapshot_id],
+            )
+            row = uow.cursor.fetchone()
+        if row is None:
+            raise KernelError(
+                "BOOK_PRODUCTION_INPUT_SNAPSHOT_NOT_FOUND",
+                "Book Production input snapshot does not exist",
+            )
+        values = list(row)
+        values[9] = tuple(str(item) for item in values[9])
+        values[20] = tuple(str(item) for item in values[20])
+        return BookProductionInputSnapshot(*values)
+
+    def _execute_transaction(
+        self,
+        uow: AuthorityUnitOfWork,
+        operation_id: str,
+        checkpoint: TransactionCheckpoint,
+    ) -> dict[str, Any]:
+        uow.cursor.execute(
+            """
+            SELECT project_id, workspace_id, command_payload->>'book_id', actor_id,
+                   trace_id, correlation_id, command_payload
+            FROM authority_operation WHERE operation_id=%s
+            """,
+            [operation_id],
+        )
+        row = uow.cursor.fetchone()
+        if row is None:
+            raise KernelError(
+                "OPERATION_NOT_FOUND", "Book input Operation does not exist"
+            )
+        payload = dict(row[6])
+        command = ResolveBookProductionInputCommand(
+            project_id=str(row[0]),
+            workspace_id=str(row[1]),
+            book_id=str(row[2]),
+            actor_id=str(row[3]),
+            trace_id=str(row[4]),
+            correlation_id=str(row[5]),
+            production_profile=str(payload["production_profile"]),
+            expected_book_version=int(payload["expected_book_version"]),
+            idempotency_key=str(payload.get("idempotency_key") or operation_id),
+        )
+        resolved = self._resolve_in_cursor(uow.cursor, command)
+        if resolved["snapshot_hash"] != str(payload["expected_snapshot_hash"]):
+            raise KernelError(
+                "BOOK_PRODUCTION_INPUT_CHANGED_DURING_RESOLUTION",
+                "active Book inputs changed before the snapshot transaction committed",
+            )
+        checkpoint("after_domain_validation")
+        snapshot_id = resolved["snapshot_id"]
+        uow.cursor.execute(
+            """
+            INSERT INTO authority_book_production_input_snapshot(
+                snapshot_id, project_id, workspace_id, book_id,
+                expected_book_version, book_record_version,
+                book_design_version, book_plan_version,
+                current_volume_plan_version, active_arc_plan_versions,
+                current_chapter_group_plan_version,
+                production_profile_version, reader_segment_version,
+                reader_contract_version, platform_profile_version,
+                character_state_version, foreshadowing_state_version,
+                quality_trend_version, reward_ledger_version,
+                promise_ledger_version, capability_pack_deployment_refs,
+                release_sha, snapshot_hash, resolved_by_operation_id
+            ) VALUES (
+                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NULLIF(%s, ''),
+                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+            ) ON CONFLICT (snapshot_hash) DO NOTHING
+            """,
+            [
+                snapshot_id,
+                resolved["project_id"],
+                resolved["workspace_id"],
+                resolved["book_id"],
+                resolved["expected_book_version"],
+                resolved["book_record_version"],
+                resolved["book_design_version"],
+                resolved["book_plan_version"],
+                resolved["current_volume_plan_version"],
+                Jsonb(resolved["active_arc_plan_versions"]),
+                resolved["current_chapter_group_plan_version"],
+                resolved["production_profile_version"],
+                resolved["reader_segment_version"],
+                resolved["reader_contract_version"],
+                resolved["platform_profile_version"],
+                resolved["character_state_version"],
+                resolved["foreshadowing_state_version"],
+                resolved["quality_trend_version"],
+                resolved["reward_ledger_version"],
+                resolved["promise_ledger_version"],
+                Jsonb(resolved["capability_pack_deployment_refs"]),
+                resolved["release_sha"],
+                resolved["snapshot_hash"],
+                operation_id,
+            ],
+        )
+        checkpoint("after_business_projection_update")
+        uow.repositories.operation_graph.record_event(
+            {
+                "event_id": str(uuid4()),
+                "audit_id": str(uuid4()),
+                "outbox_id": str(uuid4()),
+                "aggregate_type": "book_production_input_snapshot",
+                "aggregate_id": snapshot_id,
+                "operation_id": operation_id,
+                "project_id": command.project_id,
+                "event_type": "book.production_input.resolved",
+                "correlation_id": command.correlation_id,
+                "causation_id": operation_id,
+                "payload": {
+                    "operation_id": operation_id,
+                    "snapshot_id": snapshot_id,
+                    "snapshot_hash": resolved["snapshot_hash"],
+                    "book_id": command.book_id,
+                },
+            }
+        )
+        checkpoint("after_outbox_insert")
+        return {"snapshot_id": snapshot_id, "snapshot_hash": resolved["snapshot_hash"]}
+
+    def _resolve_in_cursor(
+        self, cursor: Any, command: ResolveBookProductionInputCommand
+    ) -> dict[str, Any]:
+        cursor.execute(
+            """
+            SELECT current_book_asset_version_id,
+                   current_book_design_asset_version_id,
+                   version, production_profile, release_identity, status
+            FROM authority_book
+            WHERE project_id=%s AND workspace_id=%s AND book_id=%s
+            """,
+            [command.project_id, command.workspace_id, command.book_id],
+        )
+        book = cursor.fetchone()
+        if book is None:
+            raise KernelError(
+                "BOOK_PRODUCTION_SCOPE_INVALID",
+                "Book belongs to another Project or Workspace",
+            )
+        if int(book[2]) != command.expected_book_version:
+            raise KernelError(
+                "BOOK_PRODUCTION_VERSION_CONFLICT",
+                "expected Book version is stale",
+            )
+        if str(book[5]) != "DESIGN_ACTIVE" or not book[1]:
+            raise KernelError(
+                "BOOK_DESIGN_ACTIVE_REQUIRED",
+                "Book Production requires an Active Book Design",
+            )
+        plans = self._active_plans(cursor, command)
+        roles = {
+            role: self._active_role_asset(
+                cursor,
+                command=command,
+                role=role,
+                asset_types=asset_types,
+                requested_profile=(
+                    command.production_profile
+                    if role == "production_profile_version"
+                    else ""
+                ),
+            )
+            for role, asset_types in _ACTIVE_ROLE_TYPES.items()
+        }
+        self._validate_plan_hierarchy(plans)
+        book_design = self._asset_content(cursor, str(book[1]), command.project_id)
+        book_plan = plans["BOOK"][0]
+        self._validate_design_plan_compatibility(
+            book_design=book_design,
+            book_plan=book_plan["content"],
+            production_profile=roles["production_profile_version"]["content"],
+        )
+        deployments = self._planning_deployments(cursor, command)
+        value: dict[str, Any] = {
+            "project_id": command.project_id,
+            "workspace_id": command.workspace_id,
+            "book_id": command.book_id,
+            "expected_book_version": command.expected_book_version,
+            "book_record_version": str(book[0]),
+            "book_design_version": str(book[1]),
+            "book_plan_version": book_plan["asset_version_id"],
+            "current_volume_plan_version": plans["VOLUME"][0]["asset_version_id"],
+            "active_arc_plan_versions": sorted(
+                item["asset_version_id"] for item in plans["ARC"]
+            ),
+            "current_chapter_group_plan_version": (
+                plans["CHAPTER_GROUP"][0]["asset_version_id"]
+                if plans["CHAPTER_GROUP"]
+                else ""
+            ),
+            **{role: item["asset_version_id"] for role, item in roles.items()},
+            "capability_pack_deployment_refs": deployments,
+            "release_sha": self.commit_sha,
+        }
+        value["snapshot_hash"] = canonical_hash(value)
+        value["snapshot_id"] = value["snapshot_hash"]
+        return value
+
+    @staticmethod
+    def _active_plans(
+        cursor: Any, command: ResolveBookProductionInputCommand
+    ) -> dict[str, list[dict[str, Any]]]:
+        cursor.execute(
+            """
+            SELECT binding.contract_type, binding.asset_version_id,
+                   COALESCE(binding.parent_version_id, ''), binding.logical_key,
+                   version.content, version.content_hash, binding.freshness,
+                   binding.execution_scope
+            FROM active_story_plan_version AS active
+            JOIN story_plan_binding AS binding ON binding.binding_id=active.binding_id
+            JOIN authority_asset_version AS version
+              ON version.asset_version_id=binding.asset_version_id
+            WHERE active.project_id=%s AND active.book_id=%s
+            ORDER BY active.activated_at DESC, binding.logical_key
+            """,
+            [command.project_id, command.book_id],
+        )
+        result = {
+            name: [] for name in ("BOOK", "VOLUME", "ARC", "CHAPTER_GROUP", "CHAPTER")
+        }
+        for row in cursor.fetchall():
+            if str(row[6]) != "CURRENT":
+                raise KernelError(
+                    "BOOK_PRODUCTION_PLAN_STALE",
+                    "Book Production cannot bind an Impacted or Stale plan",
+                )
+            result[str(row[0])].append(
+                {
+                    "asset_version_id": str(row[1]),
+                    "parent_version_id": str(row[2]),
+                    "logical_key": str(row[3]),
+                    "content": dict(row[4]),
+                    "content_hash": str(row[5]),
+                    "execution_scope": str(row[7]),
+                }
+            )
+        if len(result["BOOK"]) != 1 or len(result["VOLUME"]) != 1 or not result["ARC"]:
+            raise KernelError(
+                "BOOK_PRODUCTION_PLAN_SET_INCOMPLETE",
+                "Book Production requires one BookPlan, one current VolumePlan, and active ArcPlans",
+            )
+        if len(result["CHAPTER_GROUP"]) > 1:
+            raise KernelError(
+                "BOOK_PRODUCTION_GROUP_AMBIGUOUS",
+                "Book Production has multiple active ChapterGroupPlans",
+            )
+        return result
+
+    @staticmethod
+    def _validate_plan_hierarchy(plans: dict[str, list[dict[str, Any]]]) -> None:
+        book = plans["BOOK"][0]["asset_version_id"]
+        volume = plans["VOLUME"][0]
+        if volume["parent_version_id"] != book:
+            raise KernelError(
+                "BOOK_PRODUCTION_PLAN_PARENT_INVALID",
+                "current VolumePlan is not a child of the active BookPlan",
+            )
+        if plans["CHAPTER_GROUP"] and (
+            plans["CHAPTER_GROUP"][0]["parent_version_id"] != volume["asset_version_id"]
+        ):
+            raise KernelError(
+                "BOOK_PRODUCTION_PLAN_PARENT_INVALID",
+                "current ChapterGroupPlan is not a child of the current VolumePlan",
+            )
+        for arc in plans["ARC"]:
+            spans = [
+                str(item) for item in arc["content"].get("cross_volume_scope") or ()
+            ]
+            if spans and volume["asset_version_id"] not in spans:
+                raise KernelError(
+                    "BOOK_PRODUCTION_ARC_VOLUME_INVALID",
+                    "active ArcPlan does not span the current VolumePlan",
+                )
+
+    @staticmethod
+    def _validate_design_plan_compatibility(
+        *,
+        book_design: dict[str, Any],
+        book_plan: dict[str, Any],
+        production_profile: dict[str, Any],
+    ) -> None:
+        design_ending = book_design.get("ending_contract") or book_design.get(
+            "ending_intent"
+        )
+        plan_ending = book_plan.get("ending_contract")
+        if (
+            design_ending
+            and plan_ending
+            and canonical_hash(design_ending) != canonical_hash(plan_ending)
+        ):
+            raise KernelError(
+                "BOOK_DESIGN_ENDING_PLAN_CONFLICT",
+                "BookDesign and BookPlan Ending Contract differ",
+            )
+        planned = int(
+            (book_plan.get("length_strategy") or {}).get("target_chapters") or 0
+        )
+        profiled = int(production_profile.get("target_chapter_count") or planned or 0)
+        if planned <= 0 or profiled <= 0 or planned != profiled:
+            raise KernelError(
+                "BOOK_PRODUCTION_CHAPTER_RANGE_CONFLICT",
+                "Production Profile target chapters differ from the active BookPlan",
+            )
+
+    @staticmethod
+    def _asset_content(cursor: Any, version_id: str, project_id: str) -> dict[str, Any]:
+        cursor.execute(
+            """
+            SELECT version.content
+            FROM authority_asset_version AS version
+            JOIN authority_asset AS asset ON asset.asset_id=version.asset_id
+            WHERE version.asset_version_id=%s AND asset.project_id=%s
+            """,
+            [version_id, project_id],
+        )
+        row = cursor.fetchone()
+        if row is None:
+            raise KernelError(
+                "BOOK_INPUT_ASSET_INVALID", "Book input asset is outside Project scope"
+            )
+        return dict(row[0])
+
+    @staticmethod
+    def _active_role_asset(
+        cursor: Any,
+        *,
+        command: ResolveBookProductionInputCommand,
+        role: str,
+        asset_types: tuple[str, ...],
+        requested_profile: str,
+    ) -> dict[str, Any]:
+        cursor.execute(
+            """
+            SELECT version.asset_version_id, asset.asset_id,
+                   version.content_hash, version.content
+            FROM authority_asset AS asset
+            JOIN authority_asset_version AS version ON version.asset_id=asset.asset_id
+            WHERE asset.project_id=%s AND asset.asset_type=ANY(%s)
+              AND version.lifecycle='ACTIVE' AND version.eligibility='ELIGIBLE'
+              AND version.governance='CLEAR'
+              AND (COALESCE(version.content->>'book_id', '') IN ('', %s))
+            ORDER BY version.created_at DESC, version.version_number DESC
+            """,
+            [command.project_id, list(asset_types), command.book_id],
+        )
+        rows = cursor.fetchall()
+        if requested_profile:
+            rows = [
+                row
+                for row in rows
+                if requested_profile
+                in {
+                    str(row[0]),
+                    str(row[1]),
+                    str(dict(row[3]).get("profile_id") or ""),
+                    str(dict(row[3]).get("name") or ""),
+                }
+            ]
+        asset_ids = {str(row[1]) for row in rows}
+        if len(rows) != 1 or len(asset_ids) != 1:
+            raise KernelError(
+                "BOOK_PRODUCTION_ACTIVE_INPUT_AMBIGUOUS",
+                f"Authority role {role} resolved {len(rows)} active versions",
+            )
+        row = rows[0]
+        return {
+            "asset_version_id": str(row[0]),
+            "content_hash": str(row[2]),
+            "content": dict(row[3]),
+        }
+
+    @staticmethod
+    def _planning_deployments(
+        cursor: Any, command: ResolveBookProductionInputCommand
+    ) -> list[str]:
+        cursor.execute(
+            """
+            SELECT deployment.deployment_id, binding.node_bindings
+            FROM authority_capability_pack_activation AS activation
+            JOIN authority_capability_pack_deployment AS deployment
+              ON deployment.deployment_id=activation.active_deployment_id
+            JOIN authority_capability_pack_binding_set AS binding
+              ON binding.binding_set_id=deployment.binding_set_id
+            WHERE deployment.deployment_status='ACTIVE'
+              AND (
+                activation.target_scope_type='SYSTEM'
+                OR (activation.project_id=%s AND activation.target_scope_type='PROJECT')
+                OR (activation.project_id=%s AND activation.workspace_id=%s
+                    AND activation.target_scope_type='WORKSPACE')
+                OR (activation.project_id=%s AND activation.workspace_id=%s
+                    AND activation.book_id=%s AND activation.target_scope_type='BOOK')
+              )
+            """,
+            [
+                command.project_id,
+                command.project_id,
+                command.workspace_id,
+                command.project_id,
+                command.workspace_id,
+                command.book_id,
+            ],
+        )
+        rows = cursor.fetchall()
+        expected = {
+            name: GENERATOR_CATALOG[name].capability
+            for name in (
+                "book_plan.generate",
+                "volume_plan.generate",
+                "arc_plan.generate",
+                "chapter_group_plan.generate",
+                "chapter_plan.generate",
+            )
+        }
+        compatible_nodes: set[str] = set()
+        for _, bindings in rows:
+            for item in list(bindings):
+                node_id = str(item.get("workflow_node_id") or "")
+                if node_id not in expected:
+                    continue
+                if (
+                    str(item.get("execution_capability_id") or "") != expected[node_id]
+                    or str(item.get("operation_definition_ref") or "")
+                    != "story_planning.generate@1.0.0"
+                    or str(item.get("commit_authority") or "")
+                    != "STORY_DESIGN_AUTHORITY"
+                    or not str(item.get("agent_definition_ref") or "")
+                ):
+                    raise KernelError(
+                        "BOOK_PRODUCTION_CAPABILITY_PACK_INCOMPATIBLE",
+                        f"Planning Pack node {node_id} is not runtime compatible",
+                    )
+                compatible_nodes.add(node_id)
+        if not rows or compatible_nodes != set(expected):
+            raise KernelError(
+                "BOOK_PRODUCTION_CAPABILITY_PACK_INCOMPATIBLE",
+                "active Capability Pack deployments do not cover all Planning Generators",
+            )
+        return sorted(str(row[0]) for row in rows)
+
+    @staticmethod
+    def _snapshot_asset_ids(snapshot: dict[str, Any]) -> tuple[str, ...]:
+        scalar = (
+            "book_record_version",
+            "book_design_version",
+            "book_plan_version",
+            "current_volume_plan_version",
+            "current_chapter_group_plan_version",
+            *_ACTIVE_ROLE_TYPES.keys(),
+        )
+        values = [str(snapshot[key]) for key in scalar if snapshot.get(key)]
+        values.extend(str(item) for item in snapshot["active_arc_plan_versions"])
+        return tuple(dict.fromkeys(values))
+
+    def _input_assets(
+        self, project_id: str, version_ids: tuple[str, ...]
+    ) -> tuple[dict[str, str], ...]:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT version.asset_version_id, version.content_hash
+                FROM authority_asset_version AS version
+                JOIN authority_asset AS asset ON asset.asset_id=version.asset_id
+                WHERE asset.project_id=%s AND version.asset_version_id=ANY(%s)
+                """,
+                [project_id, list(version_ids)],
+            )
+            rows = uow.cursor.fetchall()
+        found = {str(row[0]): str(row[1]) for row in rows}
+        if set(found) != set(version_ids):
+            raise KernelError(
+                "BOOK_PRODUCTION_INPUT_ASSET_MISSING",
+                "resolved Book Production input is missing from Authority storage",
+            )
+        return tuple(
+            {"asset_version_id": version_id, "content_hash": found[version_id]}
+            for version_id in version_ids
+        )
+
+    def _register_definition(self) -> None:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.repositories.definitions.register(
+                book_production_input_definition(
+                    application_build_id=self.application_build_id,
+                    commit_sha=self.commit_sha,
+                )
+            )
+            uow.commit()
+
+
+def book_production_input_definition(
+    *, application_build_id: str, commit_sha: str
+) -> dict[str, Any]:
+    schema = {
+        "type": "object",
+        "required": [
+            "project_id",
+            "workspace_id",
+            "book_id",
+            "production_profile",
+            "expected_book_version",
+            "expected_snapshot_hash",
+        ],
+        "properties": {
+            "project_id": {"type": "string"},
+            "workspace_id": {"type": "string"},
+            "book_id": {"type": "string"},
+            "production_profile": {"type": "string"},
+            "expected_book_version": {"type": "integer"},
+            "expected_snapshot_hash": {"type": "string"},
+        },
+        "additionalProperties": False,
+    }
+    return {
+        "name": BOOK_INPUT_RESOLVE_DEFINITION,
+        "definition_version": BOOK_INPUT_RESOLVE_VERSION,
+        "family": "book_authority",
+        "enabled": True,
+        "definition_status": "implemented_validation_pending",
+        "command_schema_version": "book-production-input-resolve-command-v1",
+        "result_schema_version": "book-production-input-snapshot-v1",
+        "command_schema": schema,
+        "result_schema": {"type": "object"},
+        "input_contract": schema,
+        "output_contract": {"type": "BookProductionInputSnapshot"},
+        "handler_key": BOOK_INPUT_RESOLVE_HANDLER,
+        "handler_contract_version": "book-production-input-resolver-v1",
+        "application_build_id": application_build_id,
+        "commit_sha": commit_sha,
+        "execution_mode": "transactional",
+        "permissions": ["book.authority.execute"],
+        "approval_policy": {"required": False},
+        "policy": {
+            "execution_classification": "transaction_command",
+            "authority_resolution_required": True,
+            "caller_json_versions_forbidden": True,
+            "stale_plan_fail_closed": True,
+            "snapshot_immutable": True,
+        },
+        "idempotency_scope": "book:production-input-resolve",
+        "concurrency_key_template": "book:{book_id}:production-input",
+        "retry_policy": {"max_attempts": 1},
+        "timeout_policy": {"operation_timeout_seconds": 30},
+        "cancellation_policy": {"mode": "not_applicable"},
+        "compensation_policy": {"supported": False, "reason": "immutable snapshot"},
+        "irreversible_effect_policy": {"allowed": False},
+        "external_capabilities": [],
+        "projection_consumers": ["book_authority", "book_production_supervisor"],
+        "migration_owner": "book-authority",
+        "completion_contract": {
+            "version": "book-production-input-resolve-completion-v1",
+            "required_evidence": ["trace", "audit"],
+            "required_outbox_events": ["book.production_input.resolved"],
+        },
+    }
+
+
+__all__ = [
+    "BOOK_INPUT_RESOLVE_DEFINITION",
+    "BookProductionInputResolver",
+    "BookProductionInputSnapshot",
+    "ResolveBookProductionInputCommand",
+    "book_production_input_definition",
+]

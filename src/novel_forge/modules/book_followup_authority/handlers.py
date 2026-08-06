@@ -1,4 +1,5 @@
 """Storage-free handlers executed by the shared fenced Authority runtime."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -10,6 +11,11 @@ from novel_forge.modules.authority_handler_runtime import (
     AuthorityHandlerRequest,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.reader_calibration import JudgeMode
+from novel_forge.modules.reader_judge_authority import (
+    ReaderJudgeResolutionScope,
+    ReaderJudgeRuntimeResolver,
+)
 
 from .contracts import ReaderOutcomeModelPort
 from .domain import (
@@ -22,10 +28,13 @@ from .domain import (
 @dataclass(frozen=True, slots=True)
 class ReaderOutcomeHandler:
     model_port: ReaderOutcomeModelPort
+    runtime_resolver: ReaderJudgeRuntimeResolver
 
     def __post_init__(self) -> None:
         if not bool(getattr(self.model_port, "external_effect_backed", False)):
-            raise ValueError("Reader Outcome requires an ExternalEffect-backed model port")
+            raise ValueError(
+                "Reader Outcome requires an ExternalEffect-backed model port"
+            )
 
     def execute(self, request: AuthorityHandlerRequest) -> AuthorityHandlerOutput:
         payload = _payload(request)
@@ -63,6 +72,22 @@ class ReaderOutcomeHandler:
                 "READER_OUTCOME_FROZEN_INPUT_MISMATCH",
                 "Reader Outcome declared inputs differ from frozen assets",
             )
+        judge = self.runtime_resolver.resolve(
+            ReaderJudgeResolutionScope(
+                project_id=request.project_id,
+                book_id=str(payload["book_id"]),
+                platform=str(
+                    payload.get("platform") or payload["platform_profile_version"]
+                ),
+                genre=str(payload.get("genre") or "*"),
+                subgenre=str(payload.get("subgenre") or "*"),
+                chapter_type=str(payload.get("chapter_type") or "STANDARD"),
+                reader_segment=str(
+                    payload.get("reader_segment") or payload["reader_segment_version"]
+                ),
+                model_version=str(payload["model_strategy_version"]),
+            )
+        )
         result = self.model_port.invoke(
             request,
             stage="reader_outcome",
@@ -70,11 +95,11 @@ class ReaderOutcomeHandler:
                 "chapter": int(payload["chapter_number"]),
                 "book_id": str(payload["book_id"]),
                 "reader_contract_version": str(payload["reader_contract_version"]),
-                "evaluation_profile_version": str(payload["evaluation_profile_version"]),
-                "assets": {
-                    item.asset_type: item.content
-                    for item in request.inputs
-                },
+                "evaluation_profile_version": str(
+                    payload["evaluation_profile_version"]
+                ),
+                "reader_judge_execution_snapshot": judge.to_dict(),
+                "assets": {item.asset_type: item.content for item in request.inputs},
             },
         )
         raw_state = result.output.get("reader_state")
@@ -116,29 +141,21 @@ class ReaderOutcomeHandler:
             "source_asset_versions": list(source_refs),
             "model_evidence": result.to_evidence(),
             "body_mutation_allowed": False,
-            "mode": "SHADOW",
-            "calibration_status": "UNCALIBRATED",
-            "score_semantics": "RAW_SCORE",
-            "publish_blocking": False,
-            "judge_profile_version": str(
-                payload["evaluation_profile_version"]
-            ),
-            "target_asset_version_id": str(
-                payload["final_draft_asset_version"]
-            ),
-            "reader_segment_version": str(
-                payload.get("reader_segment_version") or ""
-            ),
+            "reader_judge_execution_snapshot": judge.to_dict(),
+            "mode": judge.mode.value,
+            "judge_qualification_status": judge.calibration_status.value,
+            "calibration_status": judge.calibration_label,
+            "score_semantics": judge.score_semantics,
+            "publish_blocking": judge.publish_blocking,
+            "judge_profile_version": str(payload["evaluation_profile_version"]),
+            "target_asset_version_id": str(payload["final_draft_asset_version"]),
+            "reader_segment_version": str(payload.get("reader_segment_version") or ""),
             "input_manifest_ref": str(
                 payload.get("input_manifest_ref")
-                or (execution.get("input_manifest") or {}).get(
-                    "input_manifest_id"
-                )
+                or (execution.get("input_manifest") or {}).get("input_manifest_id")
                 or ""
             ),
-            "route_snapshot_id": str(
-                route_snapshot.get("route_snapshot_id") or ""
-            ),
+            "route_snapshot_id": str(route_snapshot.get("route_snapshot_id") or ""),
             "raw_scores": dict(decision["reader_state"]),
             "ordinal_band": ordinal_band,
             "evidence_spans": [dict(item) for item in raw_evidence],
@@ -146,13 +163,87 @@ class ReaderOutcomeHandler:
             "position_sensitivity": {"status": "NOT_MEASURED"},
             "ood_status": "NOT_EVALUATED",
             "mutation_stability": {"status": "NOT_MEASURED"},
-            "usage_receipt_ref": str(
-                execution_result.get("usage_receipt_ref") or ""
-            ),
-            "cost_receipt_ref": str(
-                execution_result.get("cost_receipt_ref") or ""
-            ),
+            "usage_receipt_ref": str(execution_result.get("usage_receipt_ref") or ""),
+            "cost_receipt_ref": str(execution_result.get("cost_receipt_ref") or ""),
         }
+        auxiliaries = [
+            AuthorityAuxiliaryOutput(
+                asset_type="reader_state_transition",
+                output_key="reader_outcome.state_transition",
+                role="reader_state",
+                content={
+                    "type": "ReaderStateTransition",
+                    "contract_version": "reader-state-transition-v1",
+                    "previous_reader_state_version": str(
+                        payload["previous_reader_state_version"]
+                    ),
+                    "reader_state": decision["reader_state"],
+                    "gate": decision["gate"],
+                    "candidate_status": f"{judge.mode.value}_CANDIDATE",
+                    "judge_qualification_status": judge.calibration_status.value,
+                    "calibration_status": judge.calibration_label,
+                    "score_semantics": judge.score_semantics,
+                    "authority_commit_allowed": judge.authority_commit_allowed,
+                },
+                qualification_policy="reader-outcome-output-v1",
+                reference_asset_version_ids=source_refs,
+                evidence=common_evidence,
+            ),
+            AuthorityAuxiliaryOutput(
+                asset_type="reader_issue_set",
+                output_key="reader_outcome.issue_set",
+                role="issues",
+                content={
+                    "type": "ReaderIssueSet",
+                    "contract_version": "reader-issue-set-v1",
+                    "issues": decision["issues"],
+                    "gate": decision["gate"],
+                },
+                qualification_policy="reader-outcome-output-v1",
+                reference_asset_version_ids=source_refs,
+                evidence=common_evidence,
+            ),
+        ]
+        if (
+            judge.mode is JudgeMode.BOUNDED_PRODUCTION
+            and judge.plan_adjustment_candidate_allowed
+            and decision["gate"]
+            in {
+                "REVISION_REQUIRED",
+                "REVISION_RECOMMENDED",
+                "HUMAN_REVIEW_REQUIRED",
+            }
+        ):
+            chapter = int(payload["chapter_number"])
+            auxiliaries.append(
+                AuthorityAuxiliaryOutput(
+                    asset_type="reader_plan_adjustment_candidate",
+                    output_key="reader_outcome.plan_adjustment_candidate",
+                    role="plan_adjustment_candidate",
+                    content={
+                        "type": "ReaderPlanAdjustmentCandidate",
+                        "contract_version": "reader-plan-adjustment-candidate-v1",
+                        "book_id": str(payload["book_id"]),
+                        "source_chapter": chapter,
+                        "affected_chapter_range": [
+                            chapter + 1,
+                            chapter + judge.maximum_adjustment_chapters,
+                        ],
+                        "maximum_adjustment_chapters": judge.maximum_adjustment_chapters,
+                        "target_scope": "FUTURE_ONLY",
+                        "candidate_only": True,
+                        "plan_change_activation_required": True,
+                        "body_mutation_allowed": False,
+                        "executed_plan_mutation_allowed": False,
+                        "ending_mutation_allowed": False,
+                        "issues": decision["issues"],
+                        "judge_snapshot_id": judge.snapshot_id,
+                    },
+                    qualification_policy="reader-bounded-adjustment-v1",
+                    reference_asset_version_ids=source_refs,
+                    evidence=common_evidence,
+                )
+            )
         return AuthorityHandlerOutput(
             asset_type="reader_outcome_report",
             output_key="reader_outcome.report",
@@ -161,44 +252,7 @@ class ReaderOutcomeHandler:
             qualification_policy="reader-outcome-output-v1",
             reference_asset_version_ids=source_refs,
             evidence=common_evidence,
-            auxiliary_outputs=(
-                AuthorityAuxiliaryOutput(
-                    asset_type="reader_state_transition",
-                    output_key="reader_outcome.state_transition",
-                    role="reader_state",
-                    content={
-                        "type": "ReaderStateTransition",
-                        "contract_version": "reader-state-transition-v1",
-                        "previous_reader_state_version": str(
-                            payload["previous_reader_state_version"]
-                        ),
-                        "reader_state": decision["reader_state"],
-                        "gate": decision["gate"],
-                        "candidate_status": "SHADOW_CANDIDATE",
-                        "judge_qualification_status": "SHADOW",
-                        "calibration_status": "UNCALIBRATED",
-                        "score_semantics": "RAW_SCORE",
-                        "authority_commit_allowed": False,
-                    },
-                    qualification_policy="reader-outcome-output-v1",
-                    reference_asset_version_ids=source_refs,
-                    evidence=common_evidence,
-                ),
-                AuthorityAuxiliaryOutput(
-                    asset_type="reader_issue_set",
-                    output_key="reader_outcome.issue_set",
-                    role="issues",
-                    content={
-                        "type": "ReaderIssueSet",
-                        "contract_version": "reader-issue-set-v1",
-                        "issues": decision["issues"],
-                        "gate": decision["gate"],
-                    },
-                    qualification_policy="reader-outcome-output-v1",
-                    reference_asset_version_ids=source_refs,
-                    evidence=common_evidence,
-                ),
-            ),
+            auxiliary_outputs=tuple(auxiliaries),
         )
 
 
