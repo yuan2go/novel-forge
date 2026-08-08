@@ -795,7 +795,7 @@ class PostgresChapterExecutionContractBinder:
             input_schema_ref=definition.input_schema_ref,
             output_schema_ref=provider_output_schema_ref,
             skill_bundle_ref=skill_ref,
-            context_policy_ref=context_policy_ref,
+            context_policy_ref=context_policy_snapshot_ref,
             source_policy_ref=definition.source_policy_ref,
             compiler_version=prompt_compiler_version,
             created_by_operation_id=operation_id,
