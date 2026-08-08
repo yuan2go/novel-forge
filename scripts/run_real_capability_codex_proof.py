@@ -1499,7 +1499,7 @@ def main() -> int:
     parser.add_argument("--reasoning-effort", default="medium")
     parser.add_argument("--minio-endpoint", default="127.0.0.1:59039")
     parser.add_argument("--minio-access-key", default="novel_forge")
-    parser.add_argument("--minio-secret-key", default="novel_forge_dev_only")
+    parser.add_argument("--minio-secret-key", default="novel_forge_secret")
     parser.add_argument("--minio-secure", action="store_true")
     parser.add_argument("--allow-dirty", action="store_true")
     args = parser.parse_args()
