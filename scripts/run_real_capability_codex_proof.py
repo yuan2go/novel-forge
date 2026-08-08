@@ -537,6 +537,31 @@ def _author_inputs(
             "chapter_hook": (
                 "The signature belongs to a woman officially listed among the dead."
             ),
+            "conflict_chain": [
+                {
+                    "pressure": "the archive purge destroys the only auditable copy",
+                    "choice": "attend the promotion interview or preserve the ledger",
+                    "cost": "preserving truth exposes Lin Qiao as the disobedient clerk",
+                }
+            ],
+            "reader_promise_actions": [
+                {
+                    "promise": "institutional lies leave physical evidence",
+                    "action": "the water stain reveals an erased accounting layer",
+                }
+            ],
+            "protagonist_charm_mechanism": (
+                "Lin Qiao protects a vulnerable witness even when accuracy costs her safety."
+            ),
+            "information_reveals": [
+                {
+                    "fact": "the official rescue report reassigned casualties",
+                    "consequence": "the living witness is legally recorded as dead",
+                }
+            ],
+            "next_chapter_bridge": (
+                "Lin Qiao must find why the living witness signed a ledger scheduled for destruction."
+            ),
             "safe_summary": (
                 "An original civic-fantasy chapter about evidence, complicity, and "
                 "the immediate cost of preserving truth."
