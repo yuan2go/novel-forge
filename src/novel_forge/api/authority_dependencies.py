@@ -24,6 +24,7 @@ from novel_forge.modules.chapter_authority.execution_gateway import (
 from novel_forge.modules.chapter_authority.model_effects import normalize_model_output
 from novel_forge.modules.chapter_authority.provider_output_contracts import (
     validate_chapter_provider_output_against_schema,
+    validate_chapter_provider_output_semantics,
 )
 from novel_forge.modules.capability_packs.artifacts import (
     ArtifactKind,
@@ -626,7 +627,8 @@ def build_chapter_authority_application(
             output_schema,
             value,
         )
-        return normalize_model_output(stage, validated)
+        semantic = validate_chapter_provider_output_semantics(stage, validated)
+        return normalize_model_output(stage, semantic)
 
     def execution_session(project_id: str) -> ChapterExecutionGatewaySession:
         contracts = PostgresExecutionContractSource(

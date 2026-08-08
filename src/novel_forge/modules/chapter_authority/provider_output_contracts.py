@@ -96,9 +96,18 @@ def _review_schema() -> dict[str, Any]:
 def _revision_schema() -> dict[str, Any]:
     return _object_schema(
         {
-            "text": {"type": "string", "minLength": 1},
+            "text": {
+                "type": "string",
+                "minLength": 1,
+                "description": (
+                    "Final reader-facing revised chapter prose only. Do not embed "
+                    "JSON, analysis, self-checks, change logs, evidence appendices, "
+                    "or other operator metadata in this string."
+                ),
+            },
             "resolved_issue_codes": {
                 "type": "array",
+                "minItems": 1,
                 "items": {"type": "string", "minLength": 1},
             },
         },
@@ -282,6 +291,60 @@ def validate_chapter_provider_output_against_schema(
         ) from exc
     # JSON round-tripping freezes a JSON-compatible copy for downstream semantics.
     return json.loads(json.dumps(value, ensure_ascii=False))
+
+
+def validate_chapter_provider_output_semantics(
+    stage: str,
+    value: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Reject structurally legal results that are not eligible stage outputs."""
+
+    normalized = json.loads(json.dumps(value, ensure_ascii=False))
+    if stage != "revision":
+        return normalized
+
+    text = str(normalized.get("text") or "").strip()
+    if not text:
+        raise KernelError(
+            "CHAPTER_PROVIDER_OUTPUT_SEMANTIC_INVALID",
+            "Revision output has no reader-facing prose",
+        )
+    try:
+        embedded = json.loads(text)
+    except json.JSONDecodeError:
+        embedded = None
+    if isinstance(embedded, Mapping):
+        raise KernelError(
+            "CHAPTER_PROVIDER_OUTPUT_SEMANTIC_INVALID",
+            "Revision text contains a serialized result object instead of chapter prose",
+        )
+    forbidden_markers = (
+        "## 自检",
+        "## 修订证据引用",
+        "## self-check",
+        "## revision evidence",
+    )
+    folded = text.casefold()
+    marker = next(
+        (item for item in forbidden_markers if item.casefold() in folded),
+        None,
+    )
+    if marker is not None:
+        raise KernelError(
+            "CHAPTER_PROVIDER_OUTPUT_SEMANTIC_INVALID",
+            f"Revision text contains operator-only metadata marker {marker}",
+        )
+    issue_codes = normalized.get("resolved_issue_codes")
+    if (
+        not isinstance(issue_codes, list)
+        or not issue_codes
+        or len(issue_codes) != len(set(issue_codes))
+    ):
+        raise KernelError(
+            "CHAPTER_PROVIDER_OUTPUT_SEMANTIC_INVALID",
+            "Revision output requires unique resolved issue codes",
+        )
+    return normalized
 
 
 def _validate(

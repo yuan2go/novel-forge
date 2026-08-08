@@ -6,6 +6,7 @@ import pytest
 
 from novel_forge.modules.chapter_authority.provider_output_contracts import (
     chapter_provider_output_schema,
+    validate_chapter_provider_output_semantics,
     validate_chapter_provider_output_schema,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
@@ -165,6 +166,41 @@ def test_schema_validation_does_not_treat_boolean_as_number() -> None:
 
     assert raised.value.code == "CHAPTER_PROVIDER_OUTPUT_SCHEMA_INVALID"
     assert "confidence" in str(raised.value)
+
+
+@pytest.mark.parametrize(
+    "text",
+    (
+        '{"stage":"revision","revision_markdown":"reader-facing prose"}',
+        "修订后的正文。\n\n## 自检\n所有问题均已处理。",
+        "修订后的正文。\n\n## 修订证据引用\n- ISSUE-1",
+    ),
+)
+def test_revision_semantics_rejects_operator_metadata_inside_reader_prose(
+    text: str,
+) -> None:
+    value = {"text": text, "resolved_issue_codes": ["ISSUE-1"]}
+
+    with pytest.raises(KernelError) as raised:
+        validate_chapter_provider_output_semantics("revision", value)
+
+    assert raised.value.code == "CHAPTER_PROVIDER_OUTPUT_SEMANTIC_INVALID"
+
+
+def test_revision_semantics_accepts_clean_reader_facing_prose() -> None:
+    value = {
+        "text": "她烧掉地图，火光照亮每一名见证人的脸。",
+        "resolved_issue_codes": ["COST_NOT_CONCRETE"],
+    }
+
+    assert validate_chapter_provider_output_semantics("revision", value) == value
+
+
+def test_revision_schema_tells_provider_text_is_reader_facing_prose_only() -> None:
+    text_schema = chapter_provider_output_schema("revision")["properties"]["text"]
+
+    assert "reader-facing" in text_schema["description"]
+    assert "metadata" in text_schema["description"]
 
 
 def test_unsupported_stage_fails_closed() -> None:

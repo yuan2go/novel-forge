@@ -1717,6 +1717,14 @@ def _materialize_chapter_codex_prompt(
             "CHAPTER_CAPABILITY_TOOL_UNAUTHORIZED",
             "Codex execution permits only the governed provider invocation",
         )
+    stage_semantic_contract = (
+        "Return text as final reader-facing revised chapter prose only. "
+        "Do not put a serialized JSON object inside text. Do not include analysis, "
+        "self-checks, change logs, revision evidence, or operator-facing appendices "
+        "in text. Record only issue identifiers in resolved_issue_codes."
+        if stage == "revision"
+        else "Return only the stage result defined by the frozen output schema."
+    )
     prompt = "\n\n".join(
         (
             "<system_instruction>\n" + system_text + "\n</system_instruction>",
@@ -1728,6 +1736,9 @@ def _materialize_chapter_codex_prompt(
             + _canonical(tools)
             + "\nDo not invoke shell, file, MCP, web, or any other tool.\n</tool_policy>",
             "<prompt_template>\n" + rendered_template + "\n</prompt_template>",
+            "<stage_semantic_contract>\n"
+            + stage_semantic_contract
+            + "\n</stage_semantic_contract>",
             "<output_schema>\n"
             + _canonical(schema["content"])
             + "\n</output_schema>",
