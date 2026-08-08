@@ -30,6 +30,15 @@ from tests.unit.test_production_execution_gateway import contracts
 ROOT = Path(__file__).resolve().parents[2]
 HASH = "sha256:" + "a" * 64
 RELEASE_SHA = "b" * 40
+CHAPTER_MODEL_POLICY_KEYS = (
+    "prose-chapter-draft",
+    "review-chapter-evaluate",
+    "revision-chapter-revise",
+    "canon-extract",
+    "quality-intrinsic-judge",
+    "quality-originality-judge",
+    "quality-platform-judge",
+)
 
 
 def _registered_version_and_snapshot():
@@ -156,6 +165,22 @@ def test_materializes_exact_provider_content_from_registered_pack_version() -> N
         "knowledge:chapter-causal-cost:v1"
     ]
     assert result.materialization_hash.startswith("sha256:")
+
+
+@pytest.mark.parametrize("policy_key", CHAPTER_MODEL_POLICY_KEYS)
+def test_catalog_contains_each_chapter_model_execution_contract(
+    policy_key: str,
+) -> None:
+    resolver = default_chapter_artifact_resolver(ROOT)
+
+    for direction in ("input", "output"):
+        artifact = resolver.resolve(
+            ArtifactKind.SCHEMA,
+            f"schema:execution-{direction}:{policy_key}:v1",
+            "v1",
+        )
+        assert json.loads(artifact.content_json)["type"] == "object"
+        assert artifact.content_hash.startswith("sha256:")
 
 
 def test_materialization_rejects_registered_catalog_content_hash_drift() -> None:
