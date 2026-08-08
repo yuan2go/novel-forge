@@ -20,6 +20,11 @@ from novel_forge.modules.capability_packs.artifacts import (
 )
 from novel_forge.modules.capability_packs.loader import load_capability_pack_payload
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.chapter_authority.execution_gateway import (
+    _materialize_chapter_codex_prompt,
+)
+from novel_forge.modules.production_execution import ExecutionRuntimeClass
+from tests.unit.test_production_execution_gateway import contracts
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -188,3 +193,61 @@ def test_materialization_rejects_snapshot_version_mismatch() -> None:
         materialize_registered_pack_version(snapshot, registered)
 
     assert raised.value.code == "CAPABILITY_PACK_VERSION_MISMATCH"
+
+
+def test_codex_prompt_materializes_typed_target_scope_as_json() -> None:
+    *_, request = contracts(
+        backend_id="codex-cli",
+        runtime=ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE,
+    )
+    prompt, evidence = _materialize_chapter_codex_prompt(
+        request=request,
+        stage="draft",
+        inputs={"chapter": 1},
+        materialization={
+            "materialization_hash": HASH,
+            "pack_artifacts": {
+                "system_instruction": {
+                    "ref": "system",
+                    "version": "v1",
+                    "content_hash": HASH,
+                    "content": {"text": "System instruction."},
+                },
+                "prompt_template": {
+                    "ref": "template",
+                    "version": "v1",
+                    "content_hash": HASH,
+                    "content": {
+                        "text": (
+                            "{{stage}} {{target_scope}} {{input_manifest}} "
+                            "{{context_bundle}} {{output_schema_ref}}"
+                        )
+                    },
+                },
+                "skill": {
+                    "ref": "skill",
+                    "version": "v1",
+                    "content_hash": HASH,
+                    "content": {"text": "Skill body."},
+                },
+            },
+            "context_selection": [
+                {"asset_version_id": "context:v1", "content": {"segments": []}}
+            ],
+            "knowledge_selection": [
+                {"content_hash": HASH, "content": {"rules": ["cost"]}}
+            ],
+            "tool_permissions": {
+                "allowed": ["model.provider.invoke"],
+                "denied": ["storage.object.put"],
+            },
+            "output_schema": {
+                "ref": "schema:draft:v1",
+                "content_hash": HASH,
+                "content": {"type": "object"},
+            },
+        },
+    )
+
+    assert '"scope_kind":"chapter"' in prompt
+    assert evidence["fully_rendered_prompt_hash"].startswith("sha256:")

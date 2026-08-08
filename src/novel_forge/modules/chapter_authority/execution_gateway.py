@@ -1688,7 +1688,7 @@ def _materialize_chapter_codex_prompt(
         )
     replacements = {
         "{{stage}}": stage,
-        "{{target_scope}}": _canonical(request.target_scope),
+        "{{target_scope}}": _canonical(request.target_scope.to_dict()),
         "{{input_manifest}}": _canonical(inputs),
         "{{context_bundle}}": _canonical(context[0].get("content")),
         "{{output_schema_ref}}": str(schema.get("ref") or ""),
