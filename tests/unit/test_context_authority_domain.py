@@ -145,7 +145,7 @@ class ContextAuthorityDomainTests(unittest.TestCase):
             select_context_candidates(
                 project_id="project-a",
                 profile=resolve_context_profile("draft"),
-                token_budget=6001,
+                token_budget=16001,
                 candidates=[self.candidate("plan-v1", "chapter_plan")],
             )
 

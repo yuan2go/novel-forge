@@ -115,7 +115,7 @@ CONTEXT_PROFILES: dict[str, ContextProfile] = {
     "draft": _profile(
         "draft",
         required=("chapter_plan",),
-        maximum=6000,
+        maximum=16000,
         review_only={"review_report", "review_issue", "quality_report"},
         evidence_only={
             "operator_checklist", "operator_approval", "approval_decision", "source_leakage_report",
@@ -213,7 +213,6 @@ def build_authority_context_bundle(
     )
     refs = dict(version_refs or {})
     selected = [item.asset_version_id for item in selection.selected]
-    rejected = [item["asset_version_id"] for item in selection.rejected]
     segments = [_context_segment(item, profile) for item in selection.selected]
     stage_view = {
         "stage": profile.name,
