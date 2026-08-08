@@ -774,7 +774,7 @@ def _seed_authorities(
             },
             requested_quality_profile="quality:codex-proof",
             requested_platform_profile="platform:codex-proof",
-            context_token_budget=6_000,
+            context_token_budget=16_000,
             stage="draft",
         )
     )

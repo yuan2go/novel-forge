@@ -464,7 +464,7 @@
   },
   "context_sources": {
     "policy_id": "context-policy:chapter-generation-pack:v1",
-    "max_tokens": 6000,
+    "max_tokens": 16000,
     "source_isolation": "ABSTRACT_ASSETS_ONLY",
     "allowed_asset_types": [
       "chapter_plan_version",

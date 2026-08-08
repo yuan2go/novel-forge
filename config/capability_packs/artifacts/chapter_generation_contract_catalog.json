@@ -242,7 +242,7 @@
           "project_id": {"type": "string", "minLength": 1},
           "asset_version_refs": {"type": "array", "items": {"type": "string", "minLength": 1}},
           "source_isolation": {"const": "ABSTRACT_ASSETS_ONLY"},
-          "token_count": {"type": "integer", "minimum": 0, "maximum": 6000}
+          "token_count": {"type": "integer", "minimum": 0, "maximum": 16000}
         },
         "additionalProperties": false
       }
@@ -561,7 +561,7 @@
       "version": "v1",
       "content": {
         "policy_id": "context-policy:chapter-generation-pack:v1",
-        "max_tokens": 6000,
+        "max_tokens": 16000,
         "source_isolation": "ABSTRACT_ASSETS_ONLY",
         "reject_cross_project": true,
         "required_version_refs": ["canon_snapshot_version_id", "chapter_plan_asset_version_id"],
