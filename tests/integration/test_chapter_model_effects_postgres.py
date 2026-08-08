@@ -551,9 +551,9 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
             self.assertEqual(counts["execution_commit_manifest"], 10)
             self.assertEqual(counts["prompt_bundle"], 10)
             self.assertEqual(counts["skill_bundle"], 10)
-            self.assertEqual(counts["execution_context_policy"], 7)
+            self.assertEqual(counts["execution_context_policy"], 10)
             self.assertEqual(counts["execution_source_policy"], 7)
-            self.assertEqual(counts["execution_validation_policy"], 7)
+            self.assertEqual(counts["execution_validation_policy"], 10)
             self.assertEqual(counts["execution_commit_policy"], 7)
             cursor.execute(
                 """

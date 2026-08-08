@@ -711,8 +711,14 @@ class PostgresChapterExecutionContractBinder:
                 str(value)
                 for value in context_policy_payload.get("allowed_asset_types") or ()
             )
+        context_policy_snapshot_ref = (
+            f"production_execution/context_policies/{token}"
+        )
+        validation_policy_snapshot_ref = (
+            f"production_execution/validation_policies/{token}"
+        )
         context_policy = ContextPolicy(
-            policy_id=context_policy_ref,
+            policy_id=context_policy_snapshot_ref,
             policy_version="v1",
             maximum_tokens=context_maximum_tokens,
             allowed_asset_types=context_allowed_asset_types,
@@ -898,7 +904,9 @@ class PostgresChapterExecutionContractBinder:
             contract={
                 **context_policy.to_dict(),
                 "governing_capability_pack_policy_ref": (
-                    pack_snapshot.context_policy_ref if pack_snapshot else ""
+                    pack_snapshot.context_policy_ref
+                    if pack_snapshot
+                    else context_policy_ref
                 ),
                 "governing_capability_pack_policy_hash": (
                     pack_snapshot.context_policy_hash if pack_snapshot else ""
@@ -919,10 +927,11 @@ class PostgresChapterExecutionContractBinder:
         self._ensure_contract(
             operation_id=operation_id,
             project_id=project_id,
-            logical_ref=validation_policy.policy_id,
+            logical_ref=validation_policy_snapshot_ref,
             asset_type="execution_validation_policy",
             contract={
                 **validation_policy.to_dict(),
+                "runtime_snapshot_ref": validation_policy_snapshot_ref,
                 "governing_capability_pack_policy_ref": (
                     pack_snapshot.evaluation_policy_ref if pack_snapshot else ""
                 ),
