@@ -157,7 +157,15 @@ class CapabilityPackRuntimeResolver:
                         "CAPABILITY_PACK_ATTEMPT_FENCE_INVALID",
                         "Pack Snapshot creation requires the current Attempt fence and worker",
                     )
-                execution_snapshot = self.resolve_in_uow(uow, request)
+                prior = uow.repositories.capability_packs.find_latest_operation_attempt_snapshot(
+                    operation_id,
+                    excluding_attempt_id=attempt_id,
+                )
+                execution_snapshot = (
+                    prior["snapshot"]
+                    if prior is not None
+                    else self.resolve_in_uow(uow, request)
+                )
                 existing = uow.repositories.capability_packs.store_attempt_snapshot(
                     operation_id=operation_id,
                     attempt_id=attempt_id,
@@ -165,6 +173,12 @@ class CapabilityPackRuntimeResolver:
                     snapshot_creation_fencing_token=creation_fence,
                     worker_id=creation_worker,
                     snapshot=execution_snapshot,
+                    reused_from_snapshot_id=(
+                        str(prior["snapshot_id"]) if prior is not None else ""
+                    ),
+                    reused_from_attempt_id=(
+                        str(prior["attempt_id"]) if prior is not None else ""
+                    ),
                 )
             uow.commit()
         return CapabilityPackAttemptSnapshot(
@@ -299,12 +313,8 @@ class CapabilityPackRuntimeResolver:
                 "governing_tool_policy_hash": snapshot.tool_policy_hash,
                 "governing_context_policy_ref": snapshot.context_policy_ref,
                 "governing_context_policy_hash": snapshot.context_policy_hash,
-                "governing_evaluation_policy_ref": (
-                    snapshot.evaluation_policy_ref
-                ),
-                "governing_evaluation_policy_hash": (
-                    snapshot.evaluation_policy_hash
-                ),
+                "governing_evaluation_policy_ref": (snapshot.evaluation_policy_ref),
+                "governing_evaluation_policy_hash": (snapshot.evaluation_policy_hash),
             }
             semantic_drift = [
                 name
@@ -404,9 +414,7 @@ class CapabilityPackRuntimeResolver:
                 selected_id = str(rollout["baseline_deployment_id"])
                 assignment_ref = f"rollout:{rollout_id}:paused-baseline"
             else:
-                assignment = repository.assign_rollout_subject(
-                    rollout, subject_key
-                )
+                assignment = repository.assign_rollout_subject(rollout, subject_key)
                 assignment_ref = str(assignment["assignment_id"])
                 selected_id = str(assignment["selected_deployment_id"])
             if selected_id != deployment["deployment_id"]:
@@ -454,9 +462,7 @@ class CapabilityPackRuntimeResolver:
             deployment_id=str(deployment["deployment_id"]),
             activation_version=int(selected_activation["activation_version"]),
             selected_scope_type=selected_scope.scope_type,
-            selection_reason=(
-                f"{selected_scope.scope_type.value} deployment selected"
-            ),
+            selection_reason=(f"{selected_scope.scope_type.value} deployment selected"),
             pack_id=str(deployment["pack_id"]),
             pack_version=str(deployment["pack_version"]),
             manifest_hash=str(deployment["manifest_hash"]),
@@ -493,9 +499,7 @@ class CapabilityPackRuntimeResolver:
             budget_policy_hash=str(node["budget_policy_hash"]),
             input_contract_ref=str(node["input_contract_ref"]),
             output_contract_ref=str(node["output_contract_ref"]),
-            domain_acceptance_policy_ref=str(
-                node["domain_acceptance_policy_ref"]
-            ),
+            domain_acceptance_policy_ref=str(node["domain_acceptance_policy_ref"]),
             commit_authority=str(node["commit_authority"]),
             release_sha=str(deployment["release_sha"]),
             rollout_id=rollout_id,
@@ -508,9 +512,7 @@ class CapabilityPackRuntimeResolver:
             ),
             prompt_template_ref=str(node.get("prompt_template_ref") or ""),
             prompt_template_hash=str(node.get("prompt_template_hash") or ""),
-            prompt_compiler_version=str(
-                node.get("prompt_compiler_version") or ""
-            ),
+            prompt_compiler_version=str(node.get("prompt_compiler_version") or ""),
             skill_ref=str(node.get("skill_ref") or ""),
             skill_version=str(node.get("skill_version") or ""),
             skill_content_hash=str(node.get("skill_content_hash") or ""),
@@ -648,8 +650,7 @@ def materialize_registered_pack_version(
     if drift:
         raise KernelError(
             "CAPABILITY_PACK_VERSION_MISMATCH",
-            "registered Pack Version differs from frozen Snapshot: "
-            + ", ".join(drift),
+            "registered Pack Version differs from frozen Snapshot: " + ", ".join(drift),
         )
     catalog_hash = canonical_hash(catalog_payload)
     if str(registered_version.get("artifact_catalog_hash") or "") != catalog_hash:
@@ -732,8 +733,7 @@ def materialize_registered_pack_version(
         or canonical_hash(tool_payload) != snapshot.tool_policy_hash
         or str(context_policy.content.get("policy_id") or "")
         != snapshot.context_policy_ref
-        or str(tool_policy.content.get("policy_id") or "")
-        != snapshot.tool_policy_ref
+        or str(tool_policy.content.get("policy_id") or "") != snapshot.tool_policy_ref
     ):
         raise KernelError(
             "CAPABILITY_PACK_ARTIFACT_HASH_DRIFT",
@@ -890,9 +890,7 @@ def _scope_precedence(
         )
     scopes.extend(
         (
-            CapabilityPackScope(
-                ScopeType.PROJECT, project_id=request.project_id
-            ),
+            CapabilityPackScope(ScopeType.PROJECT, project_id=request.project_id),
             CapabilityPackScope(ScopeType.SYSTEM),
         )
     )
@@ -907,10 +905,14 @@ def _validate_deployment(
     *,
     active: bool,
 ) -> None:
-    allowed = {DeploymentStatus.ACTIVE.value} if active else {
-        DeploymentStatus.ACTIVE.value,
-        DeploymentStatus.CANDIDATE.value,
-    }
+    allowed = (
+        {DeploymentStatus.ACTIVE.value}
+        if active
+        else {
+            DeploymentStatus.ACTIVE.value,
+            DeploymentStatus.CANDIDATE.value,
+        }
+    )
     if str(deployment["deployment_status"]) not in allowed:
         raise KernelError(
             "CAPABILITY_PACK_DEPLOYMENT_BLOCKED",

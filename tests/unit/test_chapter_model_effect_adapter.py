@@ -5,6 +5,7 @@ import unittest
 from novel_forge.modules.chapter_authority.model_effects import (
     ChapterModelExternalEffectAdapter,
     ChapterModelRoute,
+    _failed_provider_measurement,
 )
 from novel_forge.model_adapters.mock import MockModelAdapter
 from novel_forge.model_adapters.selection import model_for_explicit_route
@@ -26,11 +27,16 @@ class _Adapter:
                         "confidence": 0.91,
                     }
                 ],
-                "character_state_changes": [], "relationship_changes": [],
-                "timeline_events": [], "foreshadow_changes": [],
-                "promise_changes": [], "reward_changes": [],
-                "world_rule_usages": [], "power_state_changes": [],
-                "narrative_pattern_fingerprints": [], "theme_movements": [],
+                "character_state_changes": [],
+                "relationship_changes": [],
+                "timeline_events": [],
+                "foreshadow_changes": [],
+                "promise_changes": [],
+                "reward_changes": [],
+                "world_rule_usages": [],
+                "power_state_changes": [],
+                "narrative_pattern_fingerprints": [],
+                "theme_movements": [],
                 "antagonist_pressure_changes": [],
             }
         if "Evaluate only the requested chapter quality dimensions" in prompt:
@@ -89,7 +95,10 @@ class ChapterModelExternalEffectAdapterTests(unittest.TestCase):
                     real_model_call=True,
                 )
                 for stage in (
-                    "draft", "review", "revision", "canon_extraction",
+                    "draft",
+                    "review",
+                    "revision",
+                    "canon_extraction",
                     "quality_structural",
                 )
             }
@@ -167,7 +176,9 @@ class ChapterModelExternalEffectAdapterTests(unittest.TestCase):
             {"readability", "scene_completeness"},
         )
 
-    def test_controlled_environment_blocks_legacy_route_before_adapter_call(self) -> None:
+    def test_controlled_environment_blocks_legacy_route_before_adapter_call(
+        self,
+    ) -> None:
         class _MustNotRun(_Adapter):
             def generate(self, prompt, context=None):  # type: ignore[no-untyped-def]
                 raise AssertionError("controlled legacy route launched a model call")
@@ -201,26 +212,78 @@ class ChapterModelExternalEffectAdapterTests(unittest.TestCase):
 
         self.assertFalse(caught.exception.request_sent)
 
-    def test_quality_response_must_cover_the_exact_frozen_dimension_contract(self) -> None:
+    def test_retryable_provider_failure_preserves_measured_usage_and_estimated_cost(
+        self,
+    ) -> None:
+        usage = {
+            "availability": "AVAILABLE",
+            "measurement": "MEASURED",
+            "input_tokens": 100,
+            "output_tokens": 20,
+            "total_tokens": 120,
+        }
+        cost = {
+            "availability": "AVAILABLE",
+            "amount": "0.001",
+            "currency": "USD",
+            "estimated": True,
+            "provider_billed": False,
+        }
+
+        measured = _failed_provider_measurement(
+            {
+                "outcome": "retryable_failure",
+                "provider_evidence": {
+                    "production_execution": {
+                        "process_evidence": {"usage": usage, "cost": cost}
+                    }
+                },
+            }
+        )
+
+        self.assertEqual(measured, (usage, cost))
+
+    def test_failed_measurement_does_not_invent_missing_provider_usage(self) -> None:
+        self.assertIsNone(
+            _failed_provider_measurement(
+                {
+                    "outcome": "retryable_failure",
+                    "provider_evidence": {
+                        "production_execution": {"process_evidence": {}}
+                    },
+                }
+            )
+        )
+
+    def test_quality_response_must_cover_the_exact_frozen_dimension_contract(
+        self,
+    ) -> None:
         class _Partial(_Adapter):
             def generate(self, prompt, context=None):  # type: ignore[no-untyped-def]
                 return {
-                    "dimensions": [{
-                        "dimension": "readability",
-                        "gate_status": "PASSED",
-                        "score": 90,
-                        "confidence": .9,
-                        "evidence_locations": [{"start": 0, "end": 5}],
-                    }]
+                    "dimensions": [
+                        {
+                            "dimension": "readability",
+                            "gate_status": "PASSED",
+                            "score": 90,
+                            "confidence": 0.9,
+                            "evidence_locations": [{"start": 0, "end": 5}],
+                        }
+                    ]
                 }
 
-        adapter = ChapterModelExternalEffectAdapter({
-            "quality_structural": ChapterModelRoute(
-                adapter=_Partial(), provider_id="provider", model_id="model",
-                prompt_version="quality-v1", skill_version="quality-skill-v1",
-                real_model_call=True,
-            )
-        })
+        adapter = ChapterModelExternalEffectAdapter(
+            {
+                "quality_structural": ChapterModelRoute(
+                    adapter=_Partial(),
+                    provider_id="provider",
+                    model_id="model",
+                    prompt_version="quality-v1",
+                    skill_version="quality-skill-v1",
+                    real_model_call=True,
+                )
+            }
+        )
         result = adapter.execute(
             stable_idempotency_key="quality-partial",
             capability="model.quality_structural",
@@ -241,20 +304,29 @@ class ChapterModelExternalEffectAdapterTests(unittest.TestCase):
         class _InvalidEvidence(_Adapter):
             def generate(self, prompt, context=None):  # type: ignore[no-untyped-def]
                 return {
-                    "dimensions": [{
-                        "dimension": "readability", "gate_status": "PASSED",
-                        "score": 101, "confidence": .9,
-                        "evidence_locations": ["chapter looks readable"],
-                    }]
+                    "dimensions": [
+                        {
+                            "dimension": "readability",
+                            "gate_status": "PASSED",
+                            "score": 101,
+                            "confidence": 0.9,
+                            "evidence_locations": ["chapter looks readable"],
+                        }
+                    ]
                 }
 
-        adapter = ChapterModelExternalEffectAdapter({
-            "quality_structural": ChapterModelRoute(
-                adapter=_InvalidEvidence(), provider_id="provider", model_id="model",
-                prompt_version="quality-v1", skill_version="quality-skill-v1",
-                real_model_call=True,
-            )
-        })
+        adapter = ChapterModelExternalEffectAdapter(
+            {
+                "quality_structural": ChapterModelRoute(
+                    adapter=_InvalidEvidence(),
+                    provider_id="provider",
+                    model_id="model",
+                    prompt_version="quality-v1",
+                    skill_version="quality-skill-v1",
+                    real_model_call=True,
+                )
+            }
+        )
         result = adapter.execute(
             stable_idempotency_key="quality-invalid-evidence",
             capability="model.quality_structural",
@@ -271,7 +343,9 @@ class ChapterModelExternalEffectAdapterTests(unittest.TestCase):
         self.assertEqual(result.outcome, "final_failure")
         self.assertEqual(result.evidence["error_code"], "MODEL_RESPONSE_INVALID")
 
-    def test_invalid_model_response_is_final_failure_and_query_is_ambiguous(self) -> None:
+    def test_invalid_model_response_is_final_failure_and_query_is_ambiguous(
+        self,
+    ) -> None:
         class _Invalid(_Adapter):
             def generate(self, prompt, context=None):  # type: ignore[no-untyped-def]
                 return {"text": ""}
@@ -291,7 +365,10 @@ class ChapterModelExternalEffectAdapterTests(unittest.TestCase):
         result = adapter.execute(
             stable_idempotency_key="key",
             capability="model.draft",
-            request_payload={"stage": "draft", "input": {"plan": {}, "context": {}, "style": {}}},
+            request_payload={
+                "stage": "draft",
+                "input": {"plan": {}, "context": {}, "style": {}},
+            },
         )
         query = adapter.query(
             stable_idempotency_key="key",

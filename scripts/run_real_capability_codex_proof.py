@@ -43,6 +43,11 @@ from novel_forge.modules.capability_packs.artifacts import (
 from novel_forge.modules.chapter_authority import SingleChapterRequest
 from novel_forge.modules.chapter_authority.contracts import ChapterNode
 from novel_forge.modules.content_authority import ContentOperationRequest
+from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.command_kernel.worker_execution import (
+    WorkerFailureClass,
+    WorkerFailureClassifier,
+)
 from novel_forge.modules.canon_graph.approval_authority import (
     CanonApprovalContext,
     decide_canon_approval,
@@ -800,9 +805,7 @@ def _seed_authorities(
                 "style_policy": inputs["chapter.style_policy.author"],
                 "quality_rubric": inputs["chapter.quality_rubric.author"],
                 "platform_profile": inputs["chapter.platform_profile.author"],
-                "operator_checklist": inputs[
-                    "chapter.operator_checklist.author"
-                ],
+                "operator_checklist": inputs["chapter.operator_checklist.author"],
             },
             requested_quality_profile="quality:codex-proof",
             requested_platform_profile="platform:codex-proof",
@@ -867,6 +870,21 @@ def _collect_evidence(
           ON operation.operation_id=snapshot.operation_id
         WHERE operation.project_id=%s AND operation.root_operation_id=%s
         ORDER BY snapshot.created_at, snapshot.snapshot_id
+        """,
+        (project_id, root_operation_id),
+    )
+    snapshot_events = _query_rows(
+        database_url,
+        """
+        SELECT event.*
+        FROM state_event AS event
+        JOIN authority_attempt_capability_pack_snapshot AS snapshot
+          ON snapshot.snapshot_id=event.aggregate_id
+        JOIN authority_operation AS operation
+          ON operation.operation_id=snapshot.operation_id
+        WHERE operation.project_id=%s AND operation.root_operation_id=%s
+          AND event.aggregate_type='capability_pack_attempt_snapshot'
+        ORDER BY event.sequence_number, event.event_id
         """,
         (project_id, root_operation_id),
     )
@@ -981,6 +999,7 @@ def _collect_evidence(
             "operations": operations,
             "attempts": attempts,
             "capability_snapshots": snapshots,
+            "capability_snapshot_events": snapshot_events,
             "agent_bindings": agent_bindings,
             "leases": leases,
             "external_effects": effects,
@@ -1009,9 +1028,15 @@ def _asset_contents(
 def _evaluate_proof(
     evidence: Mapping[str, Any], *, commit_sha: str, model: str
 ) -> dict[str, bool]:
-    model_logs = _asset_contents(evidence, "model_call_log")
-    cost_ledgers = _asset_contents(evidence, "cost_ledger")
+    all_model_logs = _asset_contents(evidence, "model_call_log")
+    all_cost_ledgers = _asset_contents(evidence, "cost_ledger")
     materializations = _asset_contents(evidence, "capability_materialization_manifest")
+    model_logs = [
+        item for item in all_model_logs if item.get("accepted_candidate") is not False
+    ]
+    cost_ledgers = [
+        item for item in all_cost_ledgers if item.get("accepted_candidate") is not False
+    ]
     stages = {str(item.get("stage") or "") for item in model_logs}
 
     def provider(item: Mapping[str, Any]) -> Mapping[str, Any]:
@@ -1044,15 +1069,19 @@ def _evaluate_proof(
         )
         for item in model_logs
     )
-    usage_tracking = len(cost_ledgers) == len(MODEL_STAGES) and all(
-        int(item.get("total_tokens") or 0) > 0
-        and (item.get("usage") or {}).get("measurement") == "MEASURED"
-        and item.get("estimated") is True
-        and item.get("provider_billed") is False
-        and bool(item.get("pricing_ref"))
-        and bool(item.get("pricing_snapshot_hash"))
-        and bool(item.get("calculation_basis"))
-        for item in cost_ledgers
+    usage_tracking = (
+        len(cost_ledgers) == len(MODEL_STAGES)
+        and len(all_cost_ledgers) == len(all_model_logs)
+        and all(
+            int(item.get("total_tokens") or 0) > 0
+            and (item.get("usage") or {}).get("measurement") == "MEASURED"
+            and item.get("estimated") is True
+            and item.get("provider_billed") is False
+            and bool(item.get("pricing_ref"))
+            and bool(item.get("pricing_snapshot_hash"))
+            and bool(item.get("calculation_basis"))
+            for item in all_cost_ledgers
+        )
     )
     capability_trace = len(model_logs) == len(MODEL_STAGES) and all(
         bool(
@@ -1080,10 +1109,13 @@ def _evaluate_proof(
         in (provider(item).get("tools") or {}).get("denied", [])
         and (provider(item).get("tools") or {}).get("invoked")
         == ["model.provider.invoke"]
-        for item in model_logs
+        for item in all_model_logs
     )
     snapshots = list(evidence.get("capability_snapshots") or ())
     effects = list(evidence.get("external_effects") or ())
+    model_effects = [
+        item for item in effects if item.get("effect_type") == "model.invoke"
+    ]
     snapshot_by_attempt = {str(item.get("attempt_id")): item for item in snapshots}
     snapshot_precedes_effect = True
     for effect in effects:
@@ -1114,11 +1146,21 @@ def _evaluate_proof(
         ):
             snapshot_precedes_effect = False
             break
+    snapshot_hashes_by_operation: dict[str, set[str]] = {}
+    for snapshot in snapshots:
+        snapshot_hashes_by_operation.setdefault(
+            str(snapshot.get("operation_id") or ""), set()
+        ).add(str(snapshot.get("snapshot_hash") or ""))
+    retry_snapshots_unchanged = all(
+        len(values) == 1 and "" not in values
+        for values in snapshot_hashes_by_operation.values()
+    )
     capability_runtime = (
-        len(snapshots) == len(MODEL_STAGES)
-        and len(materializations) == len(MODEL_STAGES)
+        len(snapshots) >= len(MODEL_STAGES)
+        and len(snapshots) == len(materializations) == len(model_effects)
         and all(int(item.get("resolution_count") or 0) == 1 for item in snapshots)
         and snapshot_precedes_effect
+        and retry_snapshots_unchanged
         and capability_trace
     )
     operations = list(evidence.get("operations") or ())
@@ -1197,6 +1239,11 @@ def _evaluate_proof(
         "usage_tracking_proven": usage_tracking,
         "capability_trace_proven": capability_trace,
         "recovery_proven": recovery,
+        "attempt_retry_proven": any(
+            int(item.get("attempt_number") or 0) > 1
+            for item in evidence.get("attempts") or ()
+        )
+        and retry_snapshots_unchanged,
         "reader_outcome_proven": False,
         "production_verified": False,
         "exact_release_sha_proven": all(
@@ -1427,10 +1474,24 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
     terminal = None
     try:
         for _ in range(80):
-            tick = scheduler.tick(
-                project_id=project_id,
-                root_operation_id=admission.root_operation_id,
-            )
+            try:
+                tick = scheduler.tick(
+                    project_id=project_id,
+                    root_operation_id=admission.root_operation_id,
+                )
+            except KernelError as exc:
+                classification = WorkerFailureClassifier.classify(exc)
+                if classification is not WorkerFailureClass.RETRYABLE:
+                    raise
+                row = {
+                    "phase": "retryable_worker_failure",
+                    "error_code": exc.code,
+                    "message": str(exc),
+                    "classification": classification.value,
+                }
+                ticks.append(row)
+                print(json.dumps(row, ensure_ascii=False), flush=True)
+                continue
             terminal = tick
             row = _jsonable(asdict(tick))
             ticks.append(row)

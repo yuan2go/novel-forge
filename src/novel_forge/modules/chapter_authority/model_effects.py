@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
-from typing import Any, Protocol
+from typing import Any, Mapping, Protocol
 
 from novel_forge.modules.chapter_authority.contracts import ChapterHandlerRequest
 from novel_forge.modules.command_kernel.asset_commands import AuthorityAssetWriteCommand
@@ -700,9 +700,7 @@ class ExternalEffectChapterModelPort:
                 "controlled Chapter model node has no Capability contract binder",
             )
         if binder is not None:
-            freeze_capability = getattr(
-                binder, "freeze_before_external_effect", None
-            )
+            freeze_capability = getattr(binder, "freeze_before_external_effect", None)
             if not callable(freeze_capability):
                 raise KernelError(
                     "CHAPTER_CAPABILITY_PREFLIGHT_REQUIRED",
@@ -717,9 +715,7 @@ class ExternalEffectChapterModelPort:
             if preflight is not None:
                 metadata = dict(effect_request_payload["_production_execution"])
                 frozen_artifacts = list(metadata["input_artifacts"])
-                frozen_artifacts.append(
-                    preflight.materialization_artifact.to_dict()
-                )
+                frozen_artifacts.append(preflight.materialization_artifact.to_dict())
                 metadata.update(
                     {
                         "input_artifacts": frozen_artifacts,
@@ -907,11 +903,47 @@ class ExternalEffectChapterModelPort:
             )
             raise
         if dispatched["outcome"] != "success":
-            resolve_provider_budget_failure(
-                self.database_url,
-                reservation_id=str(reservation["reservation_id"]),
-                project_id=request.project_id,
-            )
+            measurement = _failed_provider_measurement(dispatched)
+            if measurement is None:
+                resolve_provider_budget_failure(
+                    self.database_url,
+                    reservation_id=str(reservation["reservation_id"]),
+                    project_id=request.project_id,
+                )
+            else:
+                usage, cost = measurement
+                settle_provider_budget(
+                    self.database_url,
+                    reservation_id=str(reservation["reservation_id"]),
+                    project_id=request.project_id,
+                    actual_amount=str(cost.get("amount") or "0"),
+                    actual_tokens=int(usage.get("total_tokens") or 0),
+                    evidence={
+                        "provider_id": str(
+                            (dispatched.get("provider_evidence") or {}).get(
+                                "provider_id"
+                            )
+                            or ""
+                        ),
+                        "model_id": str(cost.get("model") or ""),
+                        "real_model_call": True,
+                        "execution_outcome": str(dispatched["outcome"]).upper(),
+                        "accepted_candidate": False,
+                    },
+                )
+                self._record_failed_model_call(
+                    request,
+                    stage,
+                    dispatched=dispatched,
+                    logical_ref=logical_ref,
+                )
+                self._record_failed_cost_evidence(
+                    request,
+                    stage,
+                    dispatched=dispatched,
+                    usage=usage,
+                    cost=cost,
+                )
             _raise_model_effect_failure(dispatched)
         result = ModelProviderResult.from_evidence(
             dict(dispatched["provider_evidence"])
@@ -963,7 +995,7 @@ class ExternalEffectChapterModelPort:
                 )
                 row = cursor.fetchone()
         if row is None:
-            return request.fencing_token, request.worker_id
+            return request.fencing_token, request.worker_id or self.worker_id
         payload = row[0]
         metadata = (
             payload.get("_production_execution") if isinstance(payload, dict) else None
@@ -1096,6 +1128,125 @@ class ExternalEffectChapterModelPort:
             )
         )
 
+    def _record_failed_model_call(
+        self,
+        request: ChapterHandlerRequest,
+        stage: str,
+        *,
+        dispatched: dict[str, Any],
+        logical_ref: str,
+    ) -> None:
+        try:
+            self.query.require(project_id=request.project_id, logical_ref=logical_ref)
+            return
+        except KernelError as exc:
+            if exc.code != "AUTHORITY_ASSET_NOT_FOUND":
+                raise
+        provider_evidence = dispatched.get("provider_evidence")
+        evidence = (
+            dict(provider_evidence) if isinstance(provider_evidence, dict) else {}
+        )
+        process = (
+            (evidence.get("production_execution") or {}).get("process_evidence")
+            if isinstance(evidence.get("production_execution"), dict)
+            else {}
+        )
+        self.writer.materialize_output(
+            AuthorityAssetWriteCommand(
+                operation_id=request.operation_id,
+                project_id=request.project_id,
+                asset_id=(
+                    f"model-call:{request.operation_id}:{request.attempt_id}:{stage}"
+                ),
+                asset_type="model_call_log",
+                schema_version="model-call-log.v1",
+                logical_ref=logical_ref,
+                category="runs",
+                output_key=f"model_call.{stage}.failed.{request.attempt_id}",
+                role="model_failure_evidence",
+                content={
+                    "type": "model_call_log",
+                    "operation_id": request.operation_id,
+                    "project_id": request.project_id,
+                    "stage": stage,
+                    "call_status": str(dispatched.get("outcome") or "").upper(),
+                    "accepted_candidate": False,
+                    "failure_code": str(
+                        process.get("failure_code")
+                        if isinstance(process, dict)
+                        else "PROVIDER_FAILURE"
+                    ),
+                    "provider_evidence": evidence,
+                },
+                qualification_policy="model-call-failure-evidence-v1",
+                trace_id=request.trace_id,
+                correlation_id=request.correlation_id,
+            )
+        )
+
+    def _record_failed_cost_evidence(
+        self,
+        request: ChapterHandlerRequest,
+        stage: str,
+        *,
+        dispatched: dict[str, Any],
+        usage: Mapping[str, Any],
+        cost: Mapping[str, Any],
+    ) -> None:
+        logical_ref = _cost_log_ref(request.operation_id, request.attempt_id, stage)
+        try:
+            self.query.require(project_id=request.project_id, logical_ref=logical_ref)
+            return
+        except KernelError as exc:
+            if exc.code != "AUTHORITY_ASSET_NOT_FOUND":
+                raise
+        provider_evidence = dispatched.get("provider_evidence")
+        provider = provider_evidence if isinstance(provider_evidence, dict) else {}
+        self.writer.materialize_output(
+            AuthorityAssetWriteCommand(
+                operation_id=request.operation_id,
+                project_id=request.project_id,
+                asset_id=(
+                    f"cost-ledger:{request.operation_id}:{request.attempt_id}:{stage}"
+                ),
+                asset_type="cost_ledger",
+                schema_version="model-cost-ledger.v1",
+                logical_ref=logical_ref,
+                category="runs",
+                output_key=f"cost_ledger.{stage}.failed.{request.attempt_id}",
+                role="cost_failure_evidence",
+                content={
+                    "type": "cost_ledger",
+                    "operation_id": request.operation_id,
+                    "project_id": request.project_id,
+                    "stage": stage,
+                    "availability": "AVAILABLE",
+                    "amount": str(cost.get("amount") or "0"),
+                    "currency": str(cost.get("currency") or "USD"),
+                    "provider_id": str(provider.get("provider_id") or ""),
+                    "model_id": str(provider.get("model_id") or ""),
+                    "total_tokens": int(usage.get("total_tokens") or 0),
+                    "usage": dict(usage),
+                    "cost": dict(cost),
+                    "pricing_ref": str(cost.get("pricing_ref") or ""),
+                    "pricing_snapshot_hash": str(
+                        cost.get("pricing_snapshot_hash") or ""
+                    ),
+                    "calculation_basis": dict(cost.get("calculation_basis") or {}),
+                    "estimated": bool(cost.get("estimated", False)),
+                    "provider_billed": bool(cost.get("provider_billed", False)),
+                    "execution_outcome": str(dispatched.get("outcome") or "").upper(),
+                    "accepted_candidate": False,
+                },
+                qualification_policy="model-cost-failure-evidence-v1",
+                trace_id=request.trace_id,
+                correlation_id=request.correlation_id,
+                reference_asset_ids=(
+                    f"model-call:{request.operation_id}:{request.attempt_id}:{stage}",
+                ),
+            )
+        )
+
     def _ensure_cost_evidence(
         self,
         request: ChapterHandlerRequest,
@@ -1139,8 +1290,7 @@ class ExternalEffectChapterModelPort:
                         (result.cost_evidence or {}).get("pricing_ref") or ""
                     ),
                     "pricing_snapshot_hash": str(
-                        (result.cost_evidence or {}).get("pricing_snapshot_hash")
-                        or ""
+                        (result.cost_evidence or {}).get("pricing_snapshot_hash") or ""
                     ),
                     "calculation_basis": dict(
                         (result.cost_evidence or {}).get("calculation_basis") or {}
@@ -1208,6 +1358,29 @@ def _raise_model_effect_failure(dispatched: dict[str, Any]) -> None:
         "MODEL_EFFECT_OUTCOME_INVALID",
         f"unexpected ExternalEffect outcome {outcome}: {failure_code}",
     )
+
+
+def _failed_provider_measurement(
+    dispatched: Mapping[str, Any],
+) -> tuple[Mapping[str, Any], Mapping[str, Any]] | None:
+    provider = dispatched.get("provider_evidence")
+    production = (
+        provider.get("production_execution") if isinstance(provider, Mapping) else None
+    )
+    process = (
+        production.get("process_evidence") if isinstance(production, Mapping) else None
+    )
+    usage = process.get("usage") if isinstance(process, Mapping) else None
+    cost = process.get("cost") if isinstance(process, Mapping) else None
+    if (
+        not isinstance(usage, Mapping)
+        or not isinstance(cost, Mapping)
+        or usage.get("availability") != "AVAILABLE"
+        or usage.get("measurement") != "MEASURED"
+        or cost.get("availability") != "AVAILABLE"
+    ):
+        return None
+    return usage, cost
 
 
 def _object(payload: dict[str, Any], key: str) -> dict[str, Any]:

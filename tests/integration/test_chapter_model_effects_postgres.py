@@ -8,7 +8,9 @@ from pathlib import Path
 
 from novel_forge.api.authority_dependencies import build_chapter_authority_application
 from novel_forge.infrastructure.settings import IndustrialSettings
-from novel_forge.modules.chapter_authority.application import ChapterAuthorityApplication
+from novel_forge.modules.chapter_authority.application import (
+    ChapterAuthorityApplication,
+)
 from novel_forge.modules.chapter_authority.contracts import ChapterHandlerRequest
 from novel_forge.modules.chapter_authority.model_effects import (
     ChapterModelExternalEffectAdapter,
@@ -114,17 +116,23 @@ class _StageModelAdapter:
 
     def generate(self, prompt, context=None):  # type: ignore[no-untyped-def]
         self.calls += 1
-        if (context or {}).get("contract_version") == "chapter-quality-provider-evidence-v1":
+        if (context or {}).get(
+            "contract_version"
+        ) == "chapter-quality-provider-evidence-v1":
             quality_context = (context or {}).get("quality_context") or {}
-            if not str(quality_context.get("type") or "").endswith("QualityContextView"):
-                raise AssertionError("quality provider did not receive a stage-specific view")
+            if not str(quality_context.get("type") or "").endswith(
+                "QualityContextView"
+            ):
+                raise AssertionError(
+                    "quality provider did not receive a stage-specific view"
+                )
             return {
                 "dimensions": [
                     {
                         "dimension": dimension,
                         "gate_status": "PASSED",
                         "score": 85,
-                        "confidence": .8,
+                        "confidence": 0.8,
                         "evidence_locations": [{"start": 0, "end": 10}],
                         "issue_codes": [],
                         "revision_strategies": [],
@@ -138,16 +146,24 @@ class _StageModelAdapter:
             return {
                 "canon_facts": [
                     {
-                        "subject": "protagonist", "predicate": "gave_up",
-                        "object": "safe_route_home", "evidence_start": 0,
-                        "evidence_end": 10, "confidence": 0.95,
+                        "subject": "protagonist",
+                        "predicate": "gave_up",
+                        "object": "safe_route_home",
+                        "evidence_start": 0,
+                        "evidence_end": 10,
+                        "confidence": 0.95,
                     }
                 ],
-                "character_state_changes": [], "relationship_changes": [],
-                "timeline_events": [], "foreshadow_changes": [],
-                "promise_changes": [], "reward_changes": [],
-                "world_rule_usages": [], "power_state_changes": [],
-                "narrative_pattern_fingerprints": [], "theme_movements": [],
+                "character_state_changes": [],
+                "relationship_changes": [],
+                "timeline_events": [],
+                "foreshadow_changes": [],
+                "promise_changes": [],
+                "reward_changes": [],
+                "world_rule_usages": [],
+                "power_state_changes": [],
+                "narrative_pattern_fingerprints": [],
+                "theme_movements": [],
                 "antagonist_pressure_changes": [],
                 "usage": {"input_tokens": 30, "output_tokens": 20},
                 "cost": {"amount": "0.001", "currency": "USD"},
@@ -187,6 +203,49 @@ class _StageModelAdapter:
         }
 
 
+class _RetryableMeasuredAdapter(_ModelAdapter):
+    def execute(self, *, stable_idempotency_key, capability, request_payload):  # type: ignore[no-untyped-def]
+        self.calls += 1
+        usage = {
+            "availability": "AVAILABLE",
+            "measurement": "MEASURED",
+            "input_tokens": 120,
+            "output_tokens": 40,
+            "total_tokens": 160,
+        }
+        cost = {
+            "availability": "AVAILABLE",
+            "measurement": "ESTIMATED",
+            "amount": "0.0042",
+            "currency": "USD",
+            "estimated": True,
+            "provider_billed": False,
+            "pricing_ref": "pricing:test:v1",
+            "pricing_snapshot_hash": "sha256:pricing",
+            "calculation_basis": {"formula": "test"},
+            "model": "fixture-model-v1",
+        }
+        return ProviderResult(
+            outcome="retryable_failure",
+            provider_correlation_id=f"fixture:{stable_idempotency_key}",
+            evidence={
+                "provider_id": self.provider,
+                "model_id": "fixture-model-v1",
+                "prompt_version": "draft-prompt-v1",
+                "skill_version": "prose-generation-v1",
+                "real_model_call": True,
+                "production_execution": {
+                    "process_evidence": {
+                        "failure_code": "OUTPUT_SEMANTIC_FAILURE",
+                        "failure_message": "invalid stage semantics",
+                        "usage": usage,
+                        "cost": cost,
+                    }
+                },
+            },
+        )
+
+
 class ChapterModelEffectsPostgresTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
@@ -219,11 +278,16 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
         candidates: list[dict[str, object]] = [
             {
                 "asset_version_id": f"{project_id}:chapter-plan-v1",
-                "asset_type": "chapter_plan", "project_id": project_id,
-                "safe_summary": "Complete ChapterPlan.", "structured_facts": [],
-                "estimated_tokens": 120, "narrative_function": "chapter_plan",
+                "asset_type": "chapter_plan",
+                "project_id": project_id,
+                "safe_summary": "Complete ChapterPlan.",
+                "structured_facts": [],
+                "estimated_tokens": 120,
+                "narrative_function": "chapter_plan",
                 "content": {
-                    "project_id": project_id, "chapter": 1, "title": "A Visible Cost",
+                    "project_id": project_id,
+                    "chapter": 1,
+                    "title": "A Visible Cost",
                     "premise": "A public promise becomes irreversible.",
                     "chapter_objective": "Make the public promise costly.",
                     "scene_sequence": [{"scene_id": "s1", "goal": "choose the cost"}],
@@ -232,23 +296,36 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
             },
             {
                 "asset_version_id": f"{project_id}:quality-rubric-v1",
-                "asset_type": "quality_rubric", "project_id": project_id,
+                "asset_type": "quality_rubric",
+                "project_id": project_id,
                 "safe_summary": "Versioned chapter quality thresholds.",
-                "structured_facts": [{"key": "thresholds", "value": {"readability": 70}}],
-                "estimated_tokens": 20, "narrative_function": "quality_policy",
+                "structured_facts": [
+                    {"key": "thresholds", "value": {"readability": 70}}
+                ],
+                "estimated_tokens": 20,
+                "narrative_function": "quality_policy",
             },
             {
                 "asset_version_id": f"{project_id}:platform-profile-v1",
-                "asset_type": "platform_profile", "project_id": project_id,
+                "asset_type": "platform_profile",
+                "project_id": project_id,
                 "safe_summary": "Versioned internal platform policy.",
-                "structured_facts": [{"key": "platform_rules", "value": {
-                    "chapter_length": {"minimum": 10, "maximum": 10000},
-                    "format": {"paragraph_max": 500},
-                    "sensitive_content": [], "ai_content": {"mode": "internal"},
-                    "opening": ["visible conflict"], "rhythm": ["payoff"],
-                    "publish_metadata": {"title_required": True},
-                }}],
-                "estimated_tokens": 30, "narrative_function": "platform_policy",
+                "structured_facts": [
+                    {
+                        "key": "platform_rules",
+                        "value": {
+                            "chapter_length": {"minimum": 10, "maximum": 10000},
+                            "format": {"paragraph_max": 500},
+                            "sensitive_content": [],
+                            "ai_content": {"mode": "internal"},
+                            "opening": ["visible conflict"],
+                            "rhythm": ["payoff"],
+                            "publish_metadata": {"title_required": True},
+                        },
+                    }
+                ],
+                "estimated_tokens": 30,
+                "narrative_function": "platform_policy",
             },
             {
                 "asset_version_id": f"{project_id}:checklist-v1",
@@ -271,13 +348,21 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
         ]
         with transaction() as connection, connection.cursor() as cursor:
             for candidate in candidates:
-                content = dict(candidate.get("content") or {
-                    "safe_summary": candidate["safe_summary"],
-                    "structured_facts": candidate["structured_facts"],
-                })
-                content_hash = "sha256:" + hashlib.sha256(
-                    json.dumps(content, sort_keys=True, separators=(",", ":")).encode()
-                ).hexdigest()
+                content = dict(
+                    candidate.get("content")
+                    or {
+                        "safe_summary": candidate["safe_summary"],
+                        "structured_facts": candidate["structured_facts"],
+                    }
+                )
+                content_hash = (
+                    "sha256:"
+                    + hashlib.sha256(
+                        json.dumps(
+                            content, sort_keys=True, separators=(",", ":")
+                        ).encode()
+                    ).hexdigest()
+                )
                 candidate["content_hash"] = content_hash
                 asset_id = f"{candidate['asset_version_id']}:asset"
                 cursor.execute(
@@ -291,7 +376,12 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                         eligibility, governance, content, content_hash, schema_version
                     ) VALUES (%s, %s, 1, 'ACTIVE', 'ELIGIBLE', 'CLEAR', %s, %s, 'integration-fixture.v1')
                     """,
-                    [candidate["asset_version_id"], asset_id, json.dumps(content), content_hash],
+                    [
+                        candidate["asset_version_id"],
+                        asset_id,
+                        json.dumps(content),
+                        content_hash,
+                    ],
                 )
                 cursor.execute(
                     """
@@ -299,7 +389,10 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                         qualification_id, asset_version_id, policy_version, decision, evidence
                     ) VALUES (%s, %s, 'model-fixture-release-v1', 'ELIGIBLE', '{}'::jsonb)
                     """,
-                    [f"{candidate['asset_version_id']}:qualification", candidate["asset_version_id"]],
+                    [
+                        f"{candidate['asset_version_id']}:qualification",
+                        candidate["asset_version_id"],
+                    ],
                 )
         return tuple(candidates)
 
@@ -334,7 +427,61 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                 """,
                 [request.operation_id],
             )
-            self.assertEqual(dict(cursor.fetchall()), {"cost_ledger": 1, "model_call_log": 1})
+            self.assertEqual(
+                dict(cursor.fetchall()), {"cost_ledger": 1, "model_call_log": 1}
+            )
+
+    def test_retryable_model_failure_records_usage_cost_and_no_candidate(self) -> None:
+        request = self._request()
+        port = ExternalEffectChapterModelPort(
+            DATABASE_URL,
+            adapter=_RetryableMeasuredAdapter(),
+            worker_id="model-worker",
+            max_cost_per_call="0.01",
+        )
+
+        with self.assertRaisesRegex(
+            KernelError,
+            "MODEL_EFFECT_RETRYABLE_OUTPUT_SEMANTIC_FAILURE",
+        ):
+            port.invoke(request, stage="draft", payload={"prompt": "write"})
+
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT asset.asset_type, version.content
+                FROM authority_operation_output_asset AS binding
+                JOIN authority_asset AS asset ON asset.asset_id=binding.asset_id
+                JOIN authority_asset_version AS version
+                  ON version.asset_version_id=binding.asset_version_id
+                WHERE binding.operation_id=%s
+                  AND asset.asset_type IN ('model_call_log', 'cost_ledger')
+                ORDER BY asset.asset_type
+                """,
+                [request.operation_id],
+            )
+            evidence = {str(row[0]): dict(row[1]) for row in cursor.fetchall()}
+            self.assertFalse(evidence["model_call_log"]["accepted_candidate"])
+            self.assertEqual(
+                evidence["model_call_log"]["failure_code"],
+                "OUTPUT_SEMANTIC_FAILURE",
+            )
+            self.assertFalse(evidence["cost_ledger"]["accepted_candidate"])
+            self.assertEqual(evidence["cost_ledger"]["total_tokens"], 160)
+            self.assertTrue(evidence["cost_ledger"]["estimated"])
+            self.assertFalse(evidence["cost_ledger"]["provider_billed"])
+            cursor.execute(
+                """
+                SELECT status, actual_tokens, settled_amount
+                FROM authority_budget_reservation
+                WHERE operation_id=%s
+                """,
+                [request.operation_id],
+            )
+            status, actual_tokens, settled_amount = cursor.fetchone()
+            self.assertEqual(status, "SETTLED")
+            self.assertEqual(actual_tokens, 160)
+            self.assertEqual(str(settled_amount), "0.00420000")
 
     def test_exception_after_send_is_unknown_and_not_blindly_retried(self) -> None:
         request = self._request()
@@ -358,7 +505,9 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
             )
             self.assertEqual(cursor.fetchone()[0], "UNKNOWN")
 
-    def test_full_chapter_slice_uses_five_model_effects_and_authority_ledgers(self) -> None:
+    def test_full_chapter_slice_uses_five_model_effects_and_authority_ledgers(
+        self,
+    ) -> None:
         project_id = identifier("model-slice-project")
         stage_model = _StageModelAdapter()
         adapter = ChapterModelExternalEffectAdapter(
@@ -372,9 +521,14 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                     real_model_call=False,
                 )
                 for stage in (
-                    "draft", "review", "revision", "canon_extraction",
-                    "quality_structural", "quality_commercial",
-                    "quality_source_originality", "quality_longform",
+                    "draft",
+                    "review",
+                    "revision",
+                    "canon_extraction",
+                    "quality_structural",
+                    "quality_commercial",
+                    "quality_source_originality",
+                    "quality_longform",
                     "quality_platform",
                 )
             }
@@ -384,7 +538,9 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
         application = ChapterAuthorityApplication(
             DATABASE_URL,
             model_adapter=adapter,
-            object_store_adapter=LocalFileObjectStoreAdapter(Path(export_directory.name)),
+            object_store_adapter=LocalFileObjectStoreAdapter(
+                Path(export_directory.name)
+            ),
             worker_id="model-worker",
             max_cost_per_model_call="0.01",
         )
@@ -465,9 +621,13 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                 """,
                 [result.root_operation_id],
             )
-            self.assertEqual(dict(cursor.fetchall()), {"cost_ledger": 10, "model_call_log": 10})
+            self.assertEqual(
+                dict(cursor.fetchall()), {"cost_ledger": 10, "model_call_log": 10}
+            )
 
-    def test_full_chapter_slice_uses_unified_execution_gateway_and_commit_manifests(self) -> None:
+    def test_full_chapter_slice_uses_unified_execution_gateway_and_commit_manifests(
+        self,
+    ) -> None:
         project_id = identifier("gateway-model-slice-project")
         recovery_execution_id = ""
         with tempfile.TemporaryDirectory() as directory:
@@ -507,9 +667,7 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                 application.model_port.adapter.production_execution_gateway_backed
             )
             exported = (
-                Path(directory)
-                / "objects"
-                / f"chapters/{project_id}/1/chapter.txt"
+                Path(directory) / "objects" / f"chapters/{project_id}/1/chapter.txt"
             )
             self.assertIn("only safe route home", exported.read_text())
 

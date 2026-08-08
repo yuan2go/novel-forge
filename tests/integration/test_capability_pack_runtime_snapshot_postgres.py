@@ -9,15 +9,31 @@ from novel_forge.modules.capability_pack_authority.query import (
 from novel_forge.modules.capability_pack_authority.runtime import (
     CapabilityPackRuntimeResolver,
 )
+from novel_forge.modules.command_kernel.attempt_runtime import (
+    WorkerLeaseCommand,
+    acquire_attempt_lease,
+    create_attempt,
+    queue_attempt,
+    start_attempt,
+    submit_attempt_failure,
+)
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from tests.integration.authority_postgres_support import connect
+from tests.integration.authority_postgres_support import (
+    identifier,
+    insert_definition,
+    insert_operation,
+    transaction,
+)
 from tests.integration.capability_pack_postgres_support import (
     DATABASE_URL,
     CapabilityPackPostgresHarness,
 )
 
 
-def test_attempt_snapshot_is_frozen_once_and_shared_by_gateway_and_agent_binding() -> None:
+def test_attempt_snapshot_is_frozen_once_and_shared_by_gateway_and_agent_binding() -> (
+    None
+):
     harness = CapabilityPackPostgresHarness("pack-attempt-snapshot")
     version_1 = harness.register_compile_approve("1.0.0", generation=1)
     baseline = harness.deploy(version_1)
@@ -29,9 +45,9 @@ def test_attempt_snapshot_is_frozen_once_and_shared_by_gateway_and_agent_binding
     assert runtime["binding_deployment_id"] == runtime["deployment_id"]
     assert runtime["binding_binding_set_id"] == runtime["binding_set_id"]
     assert runtime["binding_binding_set_hash"] == runtime["binding_set_hash"]
-    assert runtime["snapshot_creation_fencing_token"] == runtime[
-        "execution_fencing_token"
-    ]
+    assert (
+        runtime["snapshot_creation_fencing_token"] == runtime["execution_fencing_token"]
+    )
     assert runtime["trace_id"] and runtime["span_id"]
     assert runtime["snapshot_payload"]["deployment_id"] == baseline.deployment_id
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
@@ -82,6 +98,118 @@ def test_attempt_snapshot_is_frozen_once_and_shared_by_gateway_and_agent_binding
     )
     assert reused.snapshot_id == runtime["snapshot_id"]
     assert reused.snapshot_hash == runtime["snapshot_hash"]
+
+
+def test_operation_retry_reuses_prior_attempt_snapshot_after_activation_changes() -> (
+    None
+):
+    harness = CapabilityPackPostgresHarness("pack-attempt-retry-snapshot")
+    version_1 = harness.register_compile_approve("1.0.0", generation=1)
+    baseline = harness.deploy(version_1)
+    harness.activate(baseline)
+    definition_name = identifier("retry-snapshot-definition")
+    operation_id = identifier("retry-snapshot-operation")
+    with transaction() as connection, connection.cursor() as cursor:
+        insert_definition(cursor, definition_name)
+        insert_operation(
+            cursor,
+            operation_id=operation_id,
+            definition_name=definition_name,
+            project_id=harness.project_id,
+            status="READY",
+        )
+
+    def start(number: int) -> WorkerLeaseCommand:
+        created = create_attempt(
+            DATABASE_URL,
+            operation_id=operation_id,
+            project_id=harness.project_id,
+            max_attempts=2,
+            trace_id=f"trace:retry:{number}",
+            correlation_id="correlation:retry",
+        )
+        attempt_id = str(created["attempt_id"])
+        queue_attempt(
+            DATABASE_URL,
+            attempt_id=attempt_id,
+            project_id=harness.project_id,
+            trace_id=f"trace:retry:{number}",
+            correlation_id="correlation:retry",
+        )
+        lease = acquire_attempt_lease(
+            DATABASE_URL,
+            attempt_id=attempt_id,
+            project_id=harness.project_id,
+            worker_id=f"retry-worker-{number}",
+            lease_seconds=60,
+            trace_id=f"trace:retry:{number}",
+            correlation_id="correlation:retry",
+        )
+        command = WorkerLeaseCommand(
+            attempt_id=attempt_id,
+            project_id=harness.project_id,
+            worker_id=f"retry-worker-{number}",
+            fencing_token=int(lease["fencing_token"]),
+            trace_id=f"trace:retry:{number}",
+            correlation_id="correlation:retry",
+            causation_id=operation_id,
+        )
+        start_attempt(DATABASE_URL, command)
+        return command
+
+    resolver = CapabilityPackRuntimeResolver(DATABASE_URL)
+    first_worker = start(1)
+    first = resolver.freeze_attempt_snapshot(
+        harness.resolution_request(),
+        operation_id=operation_id,
+        attempt_id=first_worker.attempt_id,
+        execution_fencing_token=first_worker.fencing_token,
+        worker_id=first_worker.worker_id,
+    )
+    submit_attempt_failure(
+        DATABASE_URL,
+        first_worker,
+        retryable=True,
+        error_code="OUTPUT_SEMANTIC_FAILURE",
+        error_message="retry with frozen capability",
+        failure_class="retryable",
+    )
+
+    version_2 = harness.register_compile_approve("1.1.0", generation=2)
+    candidate = harness.deploy(version_2)
+    harness.activate(candidate, expected_activation_version=1)
+    second_worker = start(2)
+    second = resolver.freeze_attempt_snapshot(
+        harness.resolution_request(),
+        operation_id=operation_id,
+        attempt_id=second_worker.attempt_id,
+        execution_fencing_token=second_worker.fencing_token,
+        worker_id=second_worker.worker_id,
+    )
+
+    assert second.snapshot_id != first.snapshot_id
+    assert second.snapshot_hash == first.snapshot_hash
+    assert second.execution_snapshot == first.execution_snapshot
+    assert second.execution_snapshot.deployment_id == baseline.deployment_id
+    assert second.execution_snapshot.deployment_id != candidate.deployment_id
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute(
+            """
+            SELECT payload->>'resolution_mode',
+                   payload->>'reused_from_snapshot_id',
+                   payload->>'reused_from_attempt_id'
+            FROM audit_log
+            WHERE operation_id=%s
+              AND action='authority.capability_pack.attempt_snapshot.frozen'
+            ORDER BY created_at DESC LIMIT 1
+            """,
+            [operation_id],
+        )
+        assert uow.cursor.fetchone() == (
+            "REUSED_OPERATION_RETRY_SNAPSHOT",
+            first.snapshot_id,
+            first.attempt_id,
+        )
 
 
 def test_rollout_and_rollback_do_not_reassign_historical_runtime_evidence() -> None:

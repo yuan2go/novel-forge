@@ -68,10 +68,7 @@ class CapabilityPackAuthorityRepository:
                 "CAPABILITY_PACK_OWNER_SCOPE_INVALID",
                 "Pack owner scope must be SYSTEM or PROJECT",
             )
-        if (
-            owner_scope_type == ScopeType.SYSTEM.value
-            and owner_project_id
-        ) or (
+        if (owner_scope_type == ScopeType.SYSTEM.value and owner_project_id) or (
             owner_scope_type == ScopeType.PROJECT.value
             and owner_project_id != project_id
         ):
@@ -217,9 +214,7 @@ class CapabilityPackAuthorityRepository:
                     operation_id,
                 ],
             )
-        result = self.require_version(
-            pack_id, pack_version, project_id=project_id
-        )
+        result = self.require_version(pack_id, pack_version, project_id=project_id)
         assert result is not None
         return {**result, "replayed": False}
 
@@ -321,9 +316,7 @@ class CapabilityPackAuthorityRepository:
             for row in self.cursor.fetchall()
         )
 
-    def blocked_dependencies(
-        self, pack_id: str, pack_version: str
-    ) -> tuple[str, ...]:
+    def blocked_dependencies(self, pack_id: str, pack_version: str) -> tuple[str, ...]:
         """Return exact upstream versions that cannot admit new runtime work."""
 
         blocked: list[str] = []
@@ -331,9 +324,7 @@ class CapabilityPackAuthorityRepository:
             dependency_id = dependency["pack_id"]
             dependency_version = dependency["version"]
             version = self.require_version(dependency_id, dependency_version)
-            deprecation = self.latest_deprecation(
-                dependency_id, dependency_version
-            )
+            deprecation = self.latest_deprecation(dependency_id, dependency_version)
             self.cursor.execute(
                 """
                 SELECT EXISTS(
@@ -368,9 +359,7 @@ class CapabilityPackAuthorityRepository:
     def exact_dependency_catalog(
         self, *, pack_id: str, pack_version: str, project_id: str
     ) -> tuple[dict[str, Any], ...]:
-        root = self.require_version(
-            pack_id, pack_version, project_id=project_id
-        )
+        root = self.require_version(pack_id, pack_version, project_id=project_id)
         assert root is not None
         result: dict[tuple[str, str], dict[str, Any]] = {}
 
@@ -722,8 +711,10 @@ class CapabilityPackAuthorityRepository:
             [compilation_id],
         )
         row = self.cursor.fetchone()
-        expired = row is not None and row[3] is not None and row[3] <= datetime.now(
-            timezone.utc
+        expired = (
+            row is not None
+            and row[3] is not None
+            and row[3] <= datetime.now(timezone.utc)
         )
         if (
             row is None
@@ -870,9 +861,7 @@ class CapabilityPackAuthorityRepository:
                 operation_id,
             ],
         )
-        return self.require_deployment(
-            deployment_id, project_id=owner_project_id
-        )
+        return self.require_deployment(deployment_id, project_id=owner_project_id)
 
     def require_deployment(
         self,
@@ -1370,7 +1359,9 @@ class CapabilityPackAuthorityRepository:
             )
         return result
 
-    def active_rollout_for_baseline(self, baseline_deployment_id: str) -> dict[str, Any] | None:
+    def active_rollout_for_baseline(
+        self, baseline_deployment_id: str
+    ) -> dict[str, Any] | None:
         self.cursor.execute(
             """
             SELECT rollout_id
@@ -1590,9 +1581,7 @@ class CapabilityPackAuthorityRepository:
                     "runtime Book does not belong to Workspace and Project",
                 )
 
-    def find_attempt_snapshot(
-        self, attempt_id: str
-    ) -> dict[str, Any] | None:
+    def find_attempt_snapshot(self, attempt_id: str) -> dict[str, Any] | None:
         self.cursor.execute(
             """
             SELECT snapshot_id, operation_id, attempt_id,
@@ -1607,19 +1596,53 @@ class CapabilityPackAuthorityRepository:
         row = self.cursor.fetchone()
         if row is None:
             return None
+        snapshot = CapabilityPackExecutionSnapshot(**dict(row[5]))
+        if str(row[6]) != snapshot.snapshot_hash:
+            raise KernelError(
+                "CAPABILITY_PACK_ATTEMPT_SNAPSHOT_HASH_DRIFT",
+                "stored Attempt Capability Snapshot differs from its immutable hash",
+            )
         return {
             "snapshot_id": str(row[0]),
             "operation_id": str(row[1]),
             "attempt_id": str(row[2]),
             "execution_fencing_token": int(row[3]),
             "snapshot_creation_fencing_token": int(row[4]),
-            "snapshot": CapabilityPackExecutionSnapshot(**dict(row[5])),
+            "snapshot": snapshot,
             "snapshot_hash": str(row[6]),
             "trace_id": str(row[7]),
             "span_id": str(row[8]),
             "created_by_worker_id": str(row[9]),
             "created_at": row[10],
         }
+
+    def find_latest_operation_attempt_snapshot(
+        self,
+        operation_id: str,
+        *,
+        excluding_attempt_id: str,
+    ) -> dict[str, Any] | None:
+        """Return the prior immutable Capability content for an Attempt retry."""
+
+        self.cursor.execute(
+            """
+            SELECT snapshot.attempt_id
+            FROM authority_attempt_capability_pack_snapshot AS snapshot
+            JOIN authority_attempt AS attempt
+              ON attempt.attempt_id=snapshot.attempt_id
+            JOIN authority_attempt AS current_attempt
+              ON current_attempt.attempt_id=%s
+             AND current_attempt.operation_id=snapshot.operation_id
+            WHERE snapshot.operation_id=%s
+              AND snapshot.attempt_id<>current_attempt.attempt_id
+              AND attempt.attempt_number<current_attempt.attempt_number
+            ORDER BY attempt.attempt_number DESC, snapshot.created_at DESC
+            LIMIT 1
+            """,
+            [excluding_attempt_id, operation_id],
+        )
+        row = self.cursor.fetchone()
+        return None if row is None else self.find_attempt_snapshot(str(row[0]))
 
     def store_attempt_snapshot(
         self,
@@ -1630,6 +1653,8 @@ class CapabilityPackAuthorityRepository:
         snapshot_creation_fencing_token: int,
         worker_id: str,
         snapshot: CapabilityPackExecutionSnapshot,
+        reused_from_snapshot_id: str = "",
+        reused_from_attempt_id: str = "",
     ) -> dict[str, Any]:
         existing = self.find_attempt_snapshot(attempt_id)
         if existing is not None:
@@ -1648,8 +1673,7 @@ class CapabilityPackAuthorityRepository:
         )
         assignment_id = (
             snapshot.assignment_ref
-            if snapshot.rollout_id
-            and snapshot.assignment_ref.startswith("sha256:")
+            if snapshot.rollout_id and snapshot.assignment_ref.startswith("sha256:")
             else None
         )
         self.cursor.execute(
@@ -1727,11 +1751,16 @@ class CapabilityPackAuthorityRepository:
                 "snapshot_id": snapshot_id,
                 "snapshot_hash": snapshot.snapshot_hash,
                 "execution_fencing_token": execution_fencing_token,
-                "snapshot_creation_fencing_token": (
-                    snapshot_creation_fencing_token
-                ),
+                "snapshot_creation_fencing_token": (snapshot_creation_fencing_token),
                 "trace_id": str(trace_id),
                 "span_id": str(span_id),
+                "resolution_mode": (
+                    "REUSED_OPERATION_RETRY_SNAPSHOT"
+                    if reused_from_snapshot_id
+                    else "RESOLVED_ACTIVE_DEPLOYMENT"
+                ),
+                "reused_from_snapshot_id": reused_from_snapshot_id,
+                "reused_from_attempt_id": reused_from_attempt_id,
             }
             self.cursor.execute(
                 """
@@ -1778,7 +1807,9 @@ class CapabilityPackAuthorityRepository:
             )
         return stored
 
-    def latest_deprecation(self, pack_id: str, pack_version: str) -> dict[str, Any] | None:
+    def latest_deprecation(
+        self, pack_id: str, pack_version: str
+    ) -> dict[str, Any] | None:
         self.cursor.execute(
             """
             SELECT replacement_pack_ref, deprecation_reason,
@@ -1943,9 +1974,7 @@ class CapabilityPackAuthorityRepository:
                     "CAPABILITY_PACK_DEPENDENCY_DUPLICATE",
                     "one Pack dependency id cannot resolve to multiple versions",
                 )
-            target = self.require_version(
-                dependency["pack_id"], dependency["version"]
-            )
+            target = self.require_version(dependency["pack_id"], dependency["version"])
             assert target is not None
             if target["manifest_hash"] != dependency["manifest_hash"]:
                 raise KernelError(
@@ -1960,9 +1989,7 @@ class CapabilityPackAuthorityRepository:
             )
         incompatible = {
             str(value)
-            for value in (manifest.get("compatibility") or {}).get(
-                "incompatible_packs"
-            )
+            for value in (manifest.get("compatibility") or {}).get("incompatible_packs")
             or ()
         }
         if incompatible & set(normalized):
@@ -1972,9 +1999,7 @@ class CapabilityPackAuthorityRepository:
             )
         return tuple(normalized[key] for key in sorted(normalized))
 
-    def _require_asset_project(
-        self, asset_version_id: str, project_id: str
-    ) -> None:
+    def _require_asset_project(self, asset_version_id: str, project_id: str) -> None:
         self.cursor.execute(
             """
             SELECT asset.project_id
