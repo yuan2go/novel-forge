@@ -173,7 +173,6 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
         self.assertTrue(
             application.model_port.adapter.capability_profile.real_provider_validation_eligible
         )
-
     def test_provider_validation_composes_codex_directly_without_provider_v2(self) -> None:
         repository_root = Path(__file__).resolve().parents[2]
         executable = Path("/Applications/ChatGPT.app/Contents/Resources/codex")
@@ -229,6 +228,12 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
         )
         self.assertTrue(
             application.model_port.adapter.capability_profile.real_provider_validation_eligible
+        )
+        session = application.model_port.adapter.session_factory("project:codex-test")
+        backend = session.gateway.backends.resolve("codex-cli")
+        self.assertEqual(
+            backend.capability_profile.qualification_ref,
+            next(iter(routes.values())).model_profile.capability_probe_ref,
         )
 
 

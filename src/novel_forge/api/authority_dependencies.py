@@ -685,6 +685,7 @@ def build_chapter_authority_application(
                     reasoning_effort=codex_reasoning_effort,
                     pricing=codex_pricing,
                     structured_result_validator=validate_codex_result,
+                    qualification_ref="capability-probe:codex-cli:real-runtime-v1",
                 )
             )
         for backend_id, adapter in provider_adapters.items():
