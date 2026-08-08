@@ -49,8 +49,19 @@ def build_canon_change_proposal(*, project_id: str, extraction: dict[str, Any], 
             previous_project = str(evidence.get("previous_state_project_id") or project_id)
             if previous_project != project_id:
                 raise KernelError("CROSS_PROJECT_REFERENCE", "previous Canon state belongs to another project")
+            predicate = str(item.get("predicate") or "")
+            semantic_slot = (
+                {"predicate": predicate}
+                if predicate
+                else {"evidence_span": span}
+            )
             semantic_identity = json.dumps(
-                {"field": field, "entity_id": entity_id, "impact": impact},
+                {
+                    "field": field,
+                    "entity_id": entity_id,
+                    "impact": impact,
+                    "semantic_slot": semantic_slot,
+                },
                 sort_keys=True,
                 separators=(",", ":"),
             )

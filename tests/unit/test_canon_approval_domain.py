@@ -91,6 +91,59 @@ class CanonApprovalDomainTests(unittest.TestCase):
                 extraction_asset_version_id="extraction-v2",
             )
 
+    def test_distinct_fact_predicates_and_event_spans_are_not_contradictions(self) -> None:
+        candidate = extraction()
+        candidate["canon_assertion_candidates"] = [
+            {
+                "subject": "hero", "predicate": "owns", "object": "sword",
+                "impact_type": "REVEAL", "confidence": .9,
+                "extraction_evidence": {"span": {"start": 10, "end": 20}},
+            },
+            {
+                "subject": "hero", "predicate": "visits", "object": "city",
+                "impact_type": "REVEAL", "confidence": .9,
+                "extraction_evidence": {"span": {"start": 21, "end": 30}},
+            },
+        ]
+        candidate["timeline_event_candidates"] = [
+            {
+                "summary": "first event", "impact_type": "EVENT", "confidence": .9,
+                "extraction_evidence": {"span": {"start": 31, "end": 40}},
+            },
+            {
+                "summary": "second event", "impact_type": "EVENT", "confidence": .9,
+                "extraction_evidence": {"span": {"start": 41, "end": 50}},
+            },
+        ]
+
+        proposal = build_canon_change_proposal(
+            project_id="project-a", extraction=candidate,
+            extraction_asset_version_id="extraction-v2",
+        )
+
+        self.assertEqual(len(proposal["changes"]), 5)
+
+    def test_same_fact_slot_with_different_objects_is_rejected(self) -> None:
+        candidate = extraction()
+        candidate["canon_assertion_candidates"] = [
+            {
+                "subject": "hero", "predicate": "owns", "object": "sword",
+                "impact_type": "REVEAL", "confidence": .9,
+                "extraction_evidence": {"span": {"start": 10, "end": 20}},
+            },
+            {
+                "subject": "hero", "predicate": "owns", "object": "crown",
+                "impact_type": "REVEAL", "confidence": .9,
+                "extraction_evidence": {"span": {"start": 21, "end": 30}},
+            },
+        ]
+
+        with self.assertRaisesRegex(KernelError, "CANON_EXTRACTION_CONTRADICTION"):
+            build_canon_change_proposal(
+                project_id="project-a", extraction=candidate,
+                extraction_asset_version_id="extraction-v2",
+            )
+
 
 if __name__ == "__main__":
     unittest.main()
