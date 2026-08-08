@@ -202,10 +202,17 @@ def _calibrated_evidence(
                 "HUMAN_CALIBRATED",
                 "GOLDEN_SET_CALIBRATED",
             } and not fixture_protocol
-            if not qualified and not fixture_protocol:
+            real_provider_uncalibrated = (
+                not fixture
+                and provider
+                and calibration == "PROVIDER_UNCALIBRATED"
+            )
+            if not qualified and not fixture_protocol and not real_provider_uncalibrated:
                 continue
             gate_status = entry.get("gate_status")
             if fixture_protocol and str(gate_status).upper() == "PASSED":
+                gate_status = "PASSED_WITH_UNCALIBRATED"
+            if real_provider_uncalibrated and str(gate_status).upper() == "PASSED":
                 gate_status = "PASSED_WITH_UNCALIBRATED"
             return {
                 "gate_status": gate_status, "score": entry.get("score"),

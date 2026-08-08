@@ -90,6 +90,10 @@ class ModelProviderResult:
     currency: str
     real_model_call: bool
     execution_evidence: dict[str, Any] | None = None
+    usage_evidence: dict[str, Any] | None = None
+    cost_evidence: dict[str, Any] | None = None
+    tool_evidence: dict[str, Any] | None = None
+    capability_evidence: dict[str, Any] | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.output, dict) or not self.output:
@@ -120,16 +124,28 @@ class ModelProviderResult:
             "model_id": self.model_id,
             "prompt_version": self.prompt_version,
             "skill_version": self.skill_version,
-            "usage": {
-                "input_tokens": self.input_tokens,
-                "output_tokens": self.output_tokens,
-                "total_tokens": self.total_tokens,
-            },
-            "cost": {"amount": self.cost_amount, "currency": self.currency},
+            "usage": (
+                dict(self.usage_evidence)
+                if self.usage_evidence
+                else {
+                    "input_tokens": self.input_tokens,
+                    "output_tokens": self.output_tokens,
+                    "total_tokens": self.total_tokens,
+                }
+            ),
+            "cost": (
+                dict(self.cost_evidence)
+                if self.cost_evidence
+                else {"amount": self.cost_amount, "currency": self.currency}
+            ),
             "real_model_call": self.real_model_call,
         }
         if self.execution_evidence:
             evidence["production_execution"] = dict(self.execution_evidence)
+        if self.tool_evidence:
+            evidence["tools"] = dict(self.tool_evidence)
+        if self.capability_evidence:
+            evidence["capability_runtime"] = dict(self.capability_evidence)
         return evidence
 
     @classmethod
@@ -157,6 +173,18 @@ class ModelProviderResult:
                 execution_evidence=(
                     dict(evidence["production_execution"])
                     if isinstance(evidence.get("production_execution"), dict)
+                    else None
+                ),
+                usage_evidence=dict(usage) if usage else None,
+                cost_evidence=dict(cost) if cost else None,
+                tool_evidence=(
+                    dict(evidence["tools"])
+                    if isinstance(evidence.get("tools"), dict)
+                    else None
+                ),
+                capability_evidence=(
+                    dict(evidence["capability_runtime"])
+                    if isinstance(evidence.get("capability_runtime"), dict)
                     else None
                 ),
             )
@@ -665,6 +693,44 @@ class ExternalEffectChapterModelPort:
                 ],
             },
         }
+        binder = getattr(self.adapter, "binder", None)
+        if self.agent_binding_required and binder is None:
+            raise KernelError(
+                "CHAPTER_CAPABILITY_PREFLIGHT_REQUIRED",
+                "controlled Chapter model node has no Capability contract binder",
+            )
+        if binder is not None:
+            freeze_capability = getattr(
+                binder, "freeze_before_external_effect", None
+            )
+            if not callable(freeze_capability):
+                raise KernelError(
+                    "CHAPTER_CAPABILITY_PREFLIGHT_REQUIRED",
+                    "Chapter contract binder cannot freeze Capability before effect",
+                )
+            preflight = freeze_capability(
+                capability=f"model.{stage}",
+                request_payload=effect_request_payload,
+                snapshot_fencing_token=request.fencing_token,
+                snapshot_worker_id=request.worker_id or self.worker_id,
+            )
+            if preflight is not None:
+                metadata = dict(effect_request_payload["_production_execution"])
+                frozen_artifacts = list(metadata["input_artifacts"])
+                frozen_artifacts.append(
+                    preflight.materialization_artifact.to_dict()
+                )
+                metadata.update(
+                    {
+                        "input_artifacts": frozen_artifacts,
+                        "capability_runtime": dict(preflight.effect_binding),
+                    }
+                )
+                effect_request_payload = {
+                    **effect_request_payload,
+                    "_production_execution": metadata,
+                }
+                self.fault_injector("after_capability_preflight")
         effect = plan_external_effect(
             self.database_url,
             context,
@@ -741,7 +807,6 @@ class ExternalEffectChapterModelPort:
         )
         execution_binding = None
         frozen_work_order = None
-        binder = getattr(self.adapter, "binder", None)
         if self.agent_binding_recorder is not None:
             if binder is None:
                 raise KernelError(
@@ -847,9 +912,7 @@ class ExternalEffectChapterModelPort:
                 reservation_id=str(reservation["reservation_id"]),
                 project_id=request.project_id,
             )
-            raise KernelError(
-                "MODEL_EFFECT_NOT_FINAL", "model effect did not complete successfully"
-            )
+            _raise_model_effect_failure(dispatched)
         result = ModelProviderResult.from_evidence(
             dict(dispatched["provider_evidence"])
         )
@@ -922,6 +985,12 @@ class ExternalEffectChapterModelPort:
                 "MODEL_EFFECT_EXECUTION_IDENTITY_INVALID",
                 "replayed ExternalEffect has an invalid execution fence",
             ) from exc
+        if (
+            not self.agent_binding_required
+            and fencing_token == 0
+            and request.fencing_token == 0
+        ):
+            return fencing_token, str(metadata.get("worker_id") or self.worker_id)
         if fencing_token <= 0 or fencing_token > request.fencing_token:
             raise KernelError(
                 "MODEL_EFFECT_EXECUTION_IDENTITY_INVALID",
@@ -1064,6 +1133,24 @@ class ExternalEffectChapterModelPort:
                     "provider_id": result.provider_id,
                     "model_id": result.model_id,
                     "total_tokens": result.total_tokens,
+                    "usage": dict(result.usage_evidence or {}),
+                    "cost": dict(result.cost_evidence or {}),
+                    "pricing_ref": str(
+                        (result.cost_evidence or {}).get("pricing_ref") or ""
+                    ),
+                    "pricing_snapshot_hash": str(
+                        (result.cost_evidence or {}).get("pricing_snapshot_hash")
+                        or ""
+                    ),
+                    "calculation_basis": dict(
+                        (result.cost_evidence or {}).get("calculation_basis") or {}
+                    ),
+                    "estimated": bool(
+                        (result.cost_evidence or {}).get("estimated", False)
+                    ),
+                    "provider_billed": bool(
+                        (result.cost_evidence or {}).get("provider_billed", False)
+                    ),
                 },
                 qualification_policy="model-cost-evidence-v1",
                 trace_id=request.trace_id,
@@ -1081,6 +1168,46 @@ def _model_log_ref(operation_id: str, attempt_id: str, stage: str) -> str:
 
 def _cost_log_ref(operation_id: str, attempt_id: str, stage: str) -> str:
     return f"runs/cost_ledgers/{operation_id}-{attempt_id}-{stage}.json"
+
+
+def _raise_model_effect_failure(dispatched: dict[str, Any]) -> None:
+    outcome = str(dispatched.get("outcome") or "unknown")
+    provider_evidence = dispatched.get("provider_evidence")
+    evidence = provider_evidence if isinstance(provider_evidence, dict) else {}
+    production_execution = evidence.get("production_execution")
+    process_evidence = (
+        production_execution.get("process_evidence")
+        if isinstance(production_execution, dict)
+        else None
+    )
+    failure = process_evidence if isinstance(process_evidence, dict) else evidence
+    failure_code = str(failure.get("failure_code") or "PROVIDER_FAILURE").upper()
+    failure_message = str(
+        failure.get("failure_message")
+        or failure.get("message")
+        or "model effect did not complete successfully"
+    )
+    if outcome in {"unknown", "ambiguous"}:
+        raise KernelError(
+            "MODEL_EFFECT_OUTCOME_UNKNOWN",
+            f"{failure_code}: {failure_message}",
+        )
+    if outcome in {"retryable_failure", "not_found"}:
+        code = (
+            "MODEL_EFFECT_TIMEOUT"
+            if failure_code == "PROCESS_TIMEOUT"
+            else f"MODEL_EFFECT_RETRYABLE_{failure_code}"
+        )
+        raise KernelError(code, failure_message)
+    if outcome in {"final_failure", "failed_final", "cancelled"}:
+        raise KernelError(
+            f"MODEL_EFFECT_FINAL_{failure_code}",
+            failure_message,
+        )
+    raise KernelError(
+        "MODEL_EFFECT_OUTCOME_INVALID",
+        f"unexpected ExternalEffect outcome {outcome}: {failure_code}",
+    )
 
 
 def _object(payload: dict[str, Any], key: str) -> dict[str, Any]:

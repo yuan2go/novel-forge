@@ -6,7 +6,7 @@ Attempt lifecycle, approval, budget, or asset activation state.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from decimal import Decimal, InvalidOperation
 import hashlib
@@ -76,6 +76,10 @@ class ResolvedExecutionPayload:
     command: tuple[str, ...] = ()
     result_filename: str = "result.json"
     environment_overrides: Mapping[str, str] | None = None
+    output_schema: Mapping[str, Any] | None = None
+    capability_evidence: Mapping[str, Any] | None = None
+    allowed_tools: tuple[str, ...] = ()
+    denied_tools: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         if not isinstance(self.request_payload, Mapping):
@@ -84,17 +88,218 @@ class ResolvedExecutionPayload:
             raise ValueError("resolved execution payload requires workspace and timeout")
         if not self.output_schema_version:
             raise ValueError("resolved execution payload requires an output schema version")
+        object.__setattr__(
+            self, "allowed_tools", tuple(str(item) for item in self.allowed_tools)
+        )
+        object.__setattr__(
+            self, "denied_tools", tuple(str(item) for item in self.denied_tools)
+        )
+        if self.output_schema is not None and not isinstance(
+            self.output_schema, Mapping
+        ):
+            raise ValueError("resolved execution output schema must be an object")
         assert_no_inline_secrets(
             {
                 "request_payload": self.request_payload,
                 "input_text": self.input_text,
                 "command": self.command,
                 "environment_overrides": self.environment_overrides or {},
+                "output_schema": self.output_schema or {},
+                "capability_evidence": self.capability_evidence or {},
             },
             label="ResolvedExecutionPayload",
         )
 
 
+@dataclass(frozen=True, slots=True)
+class CodexPricingSnapshot:
+    model_id: str
+    pricing_ref: str
+    currency: str
+    input_per_million: str
+    cached_input_per_million: str
+    output_per_million: str
+
+    def __post_init__(self) -> None:
+        if not all(
+            str(value).strip()
+            for value in (
+                self.model_id,
+                self.pricing_ref,
+                self.currency,
+                self.input_per_million,
+                self.cached_input_per_million,
+                self.output_per_million,
+            )
+        ):
+            raise ValueError("Codex pricing snapshot is incomplete")
+        for value in (
+            self.input_per_million,
+            self.cached_input_per_million,
+            self.output_per_million,
+        ):
+            try:
+                rate = Decimal(value)
+            except InvalidOperation as exc:
+                raise ValueError("Codex pricing rate must be decimal") from exc
+            if rate < 0:
+                raise ValueError("Codex pricing rate cannot be negative")
+
+    @property
+    def snapshot_hash(self) -> str:
+        return _sha256(self.to_dict())
+
+    def to_dict(self) -> dict[str, str]:
+        return {
+            "model_id": self.model_id,
+            "pricing_ref": self.pricing_ref,
+            "currency": self.currency,
+            "input_per_million": self.input_per_million,
+            "cached_input_per_million": self.cached_input_per_million,
+            "output_per_million": self.output_per_million,
+        }
+
+
+class CodexStructuredResultValidator(Protocol):
+    def __call__(
+        self,
+        stage: str,
+        output_schema: Mapping[str, Any],
+        value: Mapping[str, Any],
+    ) -> Mapping[str, Any]: ...
+
+
+_CODEX_TOOL_ITEM_TYPES = {
+    "command_execution",
+    "mcp_tool_call",
+    "file_change",
+    "web_search",
+}
+
+
+def parse_codex_jsonl_evidence(
+    stdout: str,
+    *,
+    model_id: str,
+    pricing: CodexPricingSnapshot,
+    allowed_tools: tuple[str, ...],
+    denied_tools: tuple[str, ...] = (),
+) -> dict[str, Any]:
+    """Parse measured terminal usage and observed tool activity from Codex JSONL."""
+
+    events: list[Mapping[str, Any]] = []
+    for line_number, line in enumerate(stdout.splitlines(), start=1):
+        if not line.strip():
+            continue
+        try:
+            event = json.loads(line)
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"invalid Codex JSONL at line {line_number}") from exc
+        if not isinstance(event, Mapping):
+            raise ValueError(f"Codex JSONL line {line_number} is not an object")
+        events.append(event)
+    terminal = next(
+        (event for event in reversed(events) if event.get("type") == "turn.completed"),
+        None,
+    )
+    usage = terminal.get("usage") if isinstance(terminal, Mapping) else None
+    if not isinstance(usage, Mapping):
+        raise ValueError("Codex JSONL has no terminal measured usage")
+
+    def token(name: str) -> int:
+        value = usage.get(name, 0)
+        if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+            raise ValueError(f"Codex usage {name} must be a non-negative integer")
+        return value
+
+    input_tokens = token("input_tokens")
+    cached_input_tokens = token("cached_input_tokens")
+    output_tokens = token("output_tokens")
+    reasoning_output_tokens = token("reasoning_output_tokens")
+    if cached_input_tokens > input_tokens:
+        raise ValueError("Codex cached input tokens exceed total input tokens")
+    if pricing.model_id != model_id:
+        raise ValueError("Codex pricing snapshot model differs from execution model")
+    uncached_input_tokens = input_tokens - cached_input_tokens
+    million = Decimal(1_000_000)
+    amount = (
+        Decimal(uncached_input_tokens) * Decimal(pricing.input_per_million)
+        + Decimal(cached_input_tokens) * Decimal(pricing.cached_input_per_million)
+        + Decimal(output_tokens) * Decimal(pricing.output_per_million)
+    ) / million
+    invocations: list[dict[str, Any]] = [
+        {
+            "tool_ref": "model.provider.invoke",
+            "event": "provider_execution",
+            "call_id": "",
+            "status": "completed",
+        }
+    ]
+    for event in events:
+        if event.get("type") not in {"item.started", "item.completed"}:
+            continue
+        item = event.get("item")
+        item_type = str(item.get("type") or "") if isinstance(item, Mapping) else ""
+        if item_type not in _CODEX_TOOL_ITEM_TYPES:
+            continue
+        invocations.append(
+            {
+                "tool_ref": f"codex.{item_type}",
+                "event": str(event.get("type") or ""),
+                "call_id": str(item.get("id") or "") if isinstance(item, Mapping) else "",
+                "status": str(item.get("status") or "") if isinstance(item, Mapping) else "",
+            }
+        )
+    invoked = tuple(sorted({item["tool_ref"] for item in invocations}))
+    allowed = tuple(sorted(set(allowed_tools)))
+    denied = tuple(sorted(set(denied_tools)))
+    if set(allowed) & set(denied):
+        raise ValueError("Codex Tool policy allows and denies the same Tool")
+    unauthorized = tuple(item for item in invoked if item not in allowed)
+    return {
+        "usage": {
+            "availability": "AVAILABLE",
+            "measurement": "MEASURED",
+            "model": model_id,
+            "input_tokens": input_tokens,
+            "cached_input_tokens": cached_input_tokens,
+            "uncached_input_tokens": uncached_input_tokens,
+            "output_tokens": output_tokens,
+            "reasoning_output_tokens": reasoning_output_tokens,
+            "total_tokens": input_tokens + output_tokens,
+        },
+        "cost": {
+            "availability": "AVAILABLE",
+            "measurement": "ESTIMATED",
+            "model": model_id,
+            "amount": format(amount, "f"),
+            "currency": pricing.currency,
+            "pricing_ref": pricing.pricing_ref,
+            "pricing_snapshot_hash": pricing.snapshot_hash,
+            "pricing_snapshot": pricing.to_dict(),
+            "calculation_basis": {
+                "formula": (
+                    "((input_tokens-cached_input_tokens)*input_rate+"
+                    "cached_input_tokens*cached_rate+output_tokens*output_rate)/1000000"
+                ),
+                "uncached_input_tokens": uncached_input_tokens,
+                "cached_input_tokens": cached_input_tokens,
+                "output_tokens": output_tokens,
+            },
+            "estimated": True,
+            "provider_billed": False,
+        },
+        "tools": {
+            "policy": "DEFAULT_DENY",
+            "allowed": list(allowed),
+            "denied": list(denied),
+            "invoked": list(invoked),
+            "invocations": invocations,
+        },
+        "unauthorized_tools": list(unauthorized),
+        "terminal_event_observed": True,
+        "event_count": len(events),
+    }
 @dataclass(frozen=True, slots=True)
 class LocalProcessExecutionPolicy:
     fixed_working_directory: str
@@ -276,7 +481,7 @@ class ResultValidator:
         output_manifest_ref = self.store.put_evidence(
             "output-manifest", request.execution_id, output_manifest.to_dict()
         )
-        checks = (
+        base_checks = (
             ValidationCheck("structured_object", "PASSED", normalized_ref),
             ValidationCheck(
                 "fencing",
@@ -287,6 +492,17 @@ class ResultValidator:
                 "route_snapshot", "PASSED", request.route_snapshot_id
             ),
         )
+        extra_evidence = record.raw_evidence.get("validation_checks")
+        extra_checks = (
+            tuple(
+                ValidationCheck(str(kind), "PASSED", str(evidence_ref))
+                for kind, evidence_ref in sorted(extra_evidence.items())
+            )
+            if isinstance(extra_evidence, Mapping)
+            else ()
+        )
+        checks = (*base_checks, *extra_checks)
+        required_check_kinds = tuple(item.check_kind for item in checks)
         validation = ValidationManifest(
             manifest_id=f"validation-manifest:{request.execution_id}",
             operation_id=request.operation_id,
@@ -294,7 +510,7 @@ class ResultValidator:
             fencing_token=request.fencing_token,
             output_manifest_ref=output_manifest_ref,
             validation_policy_ref=request.validation_policy_ref,
-            required_check_kinds=("structured_object", "fencing", "route_snapshot"),
+            required_check_kinds=required_check_kinds,
             checks=checks,
             decision="ACCEPTED",
         )
@@ -904,6 +1120,34 @@ class RemoteProviderExecutionBackend:
         return self.reconcile(handle)
 
 
+class _CodexResultFailure(ValueError):
+    def __init__(self, code: str, message: str, *, retryable: bool) -> None:
+        super().__init__(message)
+        self.code = code
+        self.retryable = retryable
+
+
+def _codex_process_failure(
+    status: ProcessReceiptStatus,
+) -> tuple[str, ExecutionOutcome]:
+    if status is ProcessReceiptStatus.START_FAILED:
+        return "PROCESS_START_FAILURE", ExecutionOutcome.RETRYABLE_FAILURE
+    if status is ProcessReceiptStatus.FAILED:
+        return "PROCESS_EXIT_FAILURE", ExecutionOutcome.RETRYABLE_FAILURE
+    if status is ProcessReceiptStatus.TIMED_OUT:
+        return "PROCESS_TIMEOUT", ExecutionOutcome.TIMED_OUT
+    if status is ProcessReceiptStatus.CORRUPT_RESULT:
+        return "INVALID_JSON", ExecutionOutcome.RETRYABLE_FAILURE
+    if status is ProcessReceiptStatus.CANCELLED:
+        return "PROCESS_CANCELLED", ExecutionOutcome.CANCELLED
+    if status is ProcessReceiptStatus.ORPHANED:
+        return "PROCESS_OUTCOME_UNKNOWN", ExecutionOutcome.ORPHANED
+    return (
+        "PROCESS_OUTCOME_UNKNOWN",
+        ExecutionReconciler.PROCESS_OUTCOMES[status],
+    )
+
+
 class CodexCliExecutionBackend:
     backend_id = "codex-cli"
 
@@ -917,12 +1161,35 @@ class CodexCliExecutionBackend:
         execution_policy: LocalProcessExecutionPolicy,
         backend_version: str = "1.0.0",
         qualification_ref: str = "capability-probe:codex-cli:1",
+        codex_executable: str = "",
+        model_id: str = "",
+        reasoning_effort: str = "high",
+        pricing: CodexPricingSnapshot | None = None,
+        structured_result_validator: CodexStructuredResultValidator | None = None,
     ) -> None:
         self.admission = admission
         self.payload_resolver = payload_resolver
         self.record_store = record_store
         self.supervisor = supervisor
         self.execution_policy = execution_policy
+        self.codex_executable = codex_executable
+        self.model_id = model_id
+        self.reasoning_effort = reasoning_effort
+        self.pricing = pricing
+        self.structured_result_validator = structured_result_validator
+        if codex_executable:
+            executable = Path(codex_executable)
+            if not executable.is_absolute() or not executable.is_file():
+                raise ValueError("Codex executable must be an existing absolute file")
+            if (
+                not model_id
+                or pricing is None
+                or structured_result_validator is None
+                or reasoning_effort not in {"low", "medium", "high", "xhigh", "max"}
+            ):
+                raise ValueError(
+                    "real Codex execution requires model, pricing, reasoning, and validation"
+                )
         self.capability_profile = ExecutionCapabilityProfile(
             backend_id=self.backend_id,
             backend_version=backend_version,
@@ -932,8 +1199,8 @@ class CodexCliExecutionBackend:
             supports_query=True,
             supports_cancel=True,
             supports_callback=False,
-            supports_usage_receipt=False,
-            supports_cost_receipt=False,
+            supports_usage_receipt=pricing is not None,
+            supports_cost_receipt=pricing is not None,
             supports_structured_output=True,
             supports_process_group_control=True,
             supports_persistent_execution_directory=True,
@@ -969,8 +1236,9 @@ class CodexCliExecutionBackend:
                 raise ValueError("duplicate execution ID has a different request")
             return existing.handle
         payload = self.payload_resolver.resolve(request, admission)
+        payload = self._prepare_payload(request, payload)
         if not payload.command:
-            raise ValueError("Codex CLI execution requires a frozen command")
+            raise ValueError("Codex CLI execution requires a governed command")
         self.execution_policy.assert_payload(payload)
         launch_request = ProcessLaunchRequest(
             execution_id=request.execution_id,
@@ -1012,6 +1280,11 @@ class CodexCliExecutionBackend:
                 "output_schema_version": payload.output_schema_version,
                 "transport": ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE.value,
                 "provider_request_id": None,
+                "stage": request.stage,
+                "output_schema": dict(payload.output_schema or {}),
+                "capability_evidence": dict(payload.capability_evidence or {}),
+                "allowed_tools": list(payload.allowed_tools),
+                "denied_tools": list(payload.denied_tools),
             },
         )
         self.record_store.put_record(record)
@@ -1047,16 +1320,13 @@ class CodexCliExecutionBackend:
             "transport": ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE.value,
             "local_execution_receipt_id": receipt.receipt_id,
             "provider_request_id": None,
+            "stage": request.stage,
+            "output_schema": dict(payload.output_schema or {}),
+            "capability_evidence": dict(payload.capability_evidence or {}),
+            "allowed_tools": list(payload.allowed_tools),
+            "denied_tools": list(payload.denied_tools),
         }
         if (
-            receipt.status is ProcessReceiptStatus.SUCCEEDED
-            and receipt.result_path
-            and receipt.result_integrity is ResultIntegrity.VALID
-        ):
-            self.execution_policy.assert_result(receipt.result_path)
-            parsed = json.loads(Path(receipt.result_path).read_text(encoding="utf-8"))
-            evidence["result"] = parsed
-        elif (
             receipt.status is ProcessReceiptStatus.CANCELLED
             and receipt.result_integrity is ResultIntegrity.VALID
         ):
@@ -1078,21 +1348,225 @@ class CodexCliExecutionBackend:
         if record.result is not None:
             return record.result
         if recovery.receipt.status is ProcessReceiptStatus.SUCCEEDED:
-            if recovery.receipt.result_path and recovery.receipt.result_integrity is ResultIntegrity.VALID:
-                self.execution_policy.assert_result(recovery.receipt.result_path)
-                record.raw_evidence["result"] = json.loads(
-                    Path(recovery.receipt.result_path).read_text(encoding="utf-8")
+            try:
+                self._validate_successful_process(record, recovery.receipt)
+            except _CodexResultFailure as failure:
+                record.raw_evidence.update(
+                    {
+                        "failure_code": failure.code,
+                        "failure_message": str(failure),
+                        "failure_disposition": (
+                            "RETRYABLE" if failure.retryable else "FINAL"
+                        ),
+                    }
                 )
-            record.result = ResultValidator(self.record_store).successful_result(
-                record, process_receipt_ref=receipt_ref
-            )
+                record.result = ExecutionReconciler.non_success(
+                    record,
+                    (
+                        ExecutionOutcome.RETRYABLE_FAILURE
+                        if failure.retryable
+                        else ExecutionOutcome.FINAL_FAILURE
+                    ),
+                    process_receipt_ref=receipt_ref,
+                )
+            else:
+                record.result = ResultValidator(self.record_store).successful_result(
+                    record, process_receipt_ref=receipt_ref
+                )
         else:
-            outcome = ExecutionReconciler.PROCESS_OUTCOMES[recovery.receipt.status]
+            failure_code, outcome = _codex_process_failure(
+                recovery.receipt.status
+            )
+            record.raw_evidence.update(
+                {
+                    "failure_code": failure_code,
+                    "failure_message": recovery.receipt.failure_reason or failure_code,
+                    "failure_disposition": (
+                        "RETRYABLE"
+                        if outcome
+                        in {
+                            ExecutionOutcome.RETRYABLE_FAILURE,
+                            ExecutionOutcome.TIMED_OUT,
+                        }
+                        else "FINAL"
+                    ),
+                }
+            )
             record.result = ExecutionReconciler.non_success(
                 record, outcome, process_receipt_ref=receipt_ref
             )
         self.record_store.save_record(record)
         return record.result
+
+    def _prepare_payload(
+        self,
+        request: ExecutionRequest,
+        payload: ResolvedExecutionPayload,
+    ) -> ResolvedExecutionPayload:
+        if payload.command:
+            return payload
+        if not self.codex_executable or payload.output_schema is None:
+            return payload
+        layout = self.supervisor.execution_directory.prepare(request.execution_id)
+        schema_path = layout.result_path("output.schema.json")
+        schema_path.write_text(
+            json.dumps(
+                payload.output_schema,
+                ensure_ascii=False,
+                sort_keys=True,
+                indent=2,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        result_filename = "last-message.json"
+        result_path = layout.result_path(result_filename)
+        command = (
+            self.codex_executable,
+            "exec",
+            "--model",
+            self.model_id,
+            "-c",
+            f"model_reasoning_effort={self.reasoning_effort}",
+            "--sandbox",
+            "read-only",
+            "--skip-git-repo-check",
+            "--json",
+            "--output-schema",
+            str(schema_path),
+            "--output-last-message",
+            str(result_path),
+            "--color",
+            "never",
+            "--ignore-user-config",
+            "--ignore-rules",
+            "--ephemeral",
+            "--cd",
+            self.execution_policy.fixed_working_directory,
+            "-",
+        )
+        return replace(
+            payload,
+            command=command,
+            result_filename=result_filename,
+        )
+
+    def _validate_successful_process(
+        self,
+        record: ExecutionRecord,
+        receipt: Any,
+    ) -> None:
+        if (
+            not receipt.result_path
+            or receipt.result_integrity is not ResultIntegrity.VALID
+        ):
+            raise _CodexResultFailure(
+                "INVALID_JSON", "Codex result is missing or corrupt", retryable=True
+            )
+        self.execution_policy.assert_result(receipt.result_path)
+        try:
+            parsed = json.loads(Path(receipt.result_path).read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            raise _CodexResultFailure(
+                "INVALID_JSON", "Codex last message is not valid JSON", retryable=True
+            ) from exc
+        if not isinstance(parsed, Mapping):
+            raise _CodexResultFailure(
+                "OUTPUT_SCHEMA_FAILURE",
+                "Codex result must be a JSON object",
+                retryable=True,
+            )
+        capability_evidence = record.raw_evidence.get("capability_evidence")
+        if isinstance(capability_evidence, Mapping) and capability_evidence:
+            expected_prompt_hash = str(
+                capability_evidence.get("fully_rendered_prompt_hash") or ""
+            ).removeprefix("sha256:")
+            if not expected_prompt_hash or expected_prompt_hash != receipt.input_sha256:
+                raise _CodexResultFailure(
+                    "CAPABILITY_MATERIALIZATION_MISMATCH",
+                    "actual Codex stdin differs from frozen rendered prompt",
+                    retryable=False,
+                )
+        if self.pricing is not None:
+            try:
+                runtime_evidence = parse_codex_jsonl_evidence(
+                    Path(receipt.stdout_path).read_text(encoding="utf-8"),
+                    model_id=self.model_id,
+                    pricing=self.pricing,
+                    allowed_tools=tuple(
+                        str(item)
+                        for item in record.raw_evidence.get("allowed_tools") or ()
+                    ),
+                    denied_tools=tuple(
+                        str(item)
+                        for item in record.raw_evidence.get("denied_tools") or ()
+                    ),
+                )
+            except (OSError, ValueError) as exc:
+                raise _CodexResultFailure(
+                    "CODEX_JSONL_EVIDENCE_INVALID",
+                    str(exc),
+                    retryable=True,
+                ) from exc
+            record.raw_evidence.update(runtime_evidence)
+            if runtime_evidence["unauthorized_tools"]:
+                raise _CodexResultFailure(
+                    "UNAUTHORIZED_TOOL_INVOCATION",
+                    "Codex attempted a Tool outside the frozen Capability policy",
+                    retryable=False,
+                )
+        output_schema = record.raw_evidence.get("output_schema")
+        stage = str(record.raw_evidence.get("stage") or record.request.stage)
+        normalized: Mapping[str, Any] = parsed
+        if self.structured_result_validator is not None:
+            if not isinstance(output_schema, Mapping) or not output_schema:
+                raise _CodexResultFailure(
+                    "OUTPUT_SCHEMA_FAILURE",
+                    "Codex execution has no frozen output schema",
+                    retryable=False,
+                )
+            try:
+                normalized = self.structured_result_validator(
+                    stage,
+                    output_schema,
+                    parsed,
+                )
+            except Exception as exc:
+                code = str(getattr(exc, "code", ""))
+                failure_code = (
+                    "OUTPUT_SCHEMA_FAILURE"
+                    if "SCHEMA" in code
+                    else "OUTPUT_SEMANTIC_FAILURE"
+                )
+                raise _CodexResultFailure(
+                    failure_code,
+                    str(exc),
+                    retryable=True,
+                ) from exc
+        if not isinstance(normalized, Mapping) or not normalized:
+            raise _CodexResultFailure(
+                "OUTPUT_SEMANTIC_FAILURE",
+                "Codex semantic validator returned no structured result",
+                retryable=True,
+            )
+        record.raw_evidence["result"] = json.loads(_canonical_json(normalized))
+        materialization_ref = (
+            str(capability_evidence.get("materialization_hash") or "")
+            if isinstance(capability_evidence, Mapping)
+            else ""
+        )
+        tools = record.raw_evidence.get("tools")
+        record.raw_evidence["validation_checks"] = {
+            "output_schema": str(record.raw_evidence.get("output_schema_version") or ""),
+            "stage_semantics": f"chapter-stage:{stage}:semantic-validation",
+            "capability_materialization": materialization_ref
+            or "capability-materialization:not-applicable",
+            "tool_policy": (
+                f"tool-policy:{_sha256(dict(tools))}"
+                if isinstance(tools, Mapping)
+                else "tool-policy:not-applicable"
+            ),
+        }
 
     def cancel(
         self, handle: ExecutionHandle, reason: str
@@ -1166,7 +1640,9 @@ class CodexCliExecutionBackend:
 
 
 __all__ = [
+    "CodexPricingSnapshot",
     "CodexCliExecutionBackend",
+    "CodexStructuredResultValidator",
     "ExecutionPayloadResolver",
     "ExecutionReconciler",
     "ExecutionRecord",
@@ -1179,4 +1655,5 @@ __all__ = [
     "ResultValidator",
     "ScriptedFixtureExecutionBackend",
     "StaticExecutionPayloadResolver",
+    "parse_codex_jsonl_evidence",
 ]

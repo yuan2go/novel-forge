@@ -12,12 +12,15 @@ from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 from .domain import (
     ApprovalDecision,
+    CapabilityPackArtifactMaterialization,
     CapabilityPackAttemptSnapshot,
     CapabilityPackExecutionSnapshot,
     CapabilityPackScope,
     DeploymentStatus,
     RolloutStatus,
     ScopeType,
+    MaterializedCapabilityArtifact,
+    canonical_hash,
 )
 from .policy import CapabilityPackApprovalScope
 
@@ -176,6 +179,69 @@ class CapabilityPackRuntimeResolver:
             trace_id=str(existing["trace_id"]),
             span_id=str(existing["span_id"]),
             execution_snapshot=existing["snapshot"],
+        )
+
+    def materialize_attempt_artifacts(
+        self,
+        snapshot: CapabilityPackAttemptSnapshot,
+    ) -> CapabilityPackArtifactMaterialization:
+        """Read exact registered content for an existing Attempt Snapshot only."""
+
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            stored = uow.repositories.capability_packs.find_attempt_snapshot(
+                snapshot.attempt_id
+            )
+            if (
+                stored is None
+                or str(stored["snapshot_id"]) != snapshot.snapshot_id
+                or str(stored["snapshot_hash"]) != snapshot.snapshot_hash
+                or stored["snapshot"] != snapshot.execution_snapshot
+            ):
+                raise KernelError(
+                    "CAPABILITY_PACK_SNAPSHOT_INCONSISTENT",
+                    "Attempt Pack Snapshot differs from PostgreSQL Authority",
+                )
+            version = uow.repositories.capability_packs.require_version(
+                snapshot.execution_snapshot.pack_id,
+                snapshot.execution_snapshot.pack_version,
+            )
+        return materialize_registered_pack_version(
+            snapshot.execution_snapshot,
+            version,
+        )
+
+    def require_attempt_snapshot(
+        self,
+        *,
+        attempt_id: str,
+        snapshot_id: str,
+        snapshot_hash: str,
+    ) -> CapabilityPackAttemptSnapshot:
+        """Load a previously frozen Snapshot without resolving current activation."""
+
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            stored = uow.repositories.capability_packs.find_attempt_snapshot(attempt_id)
+        if (
+            stored is None
+            or str(stored["snapshot_id"]) != snapshot_id
+            or str(stored["snapshot_hash"]) != snapshot_hash
+        ):
+            raise KernelError(
+                "CAPABILITY_PACK_SNAPSHOT_INCONSISTENT",
+                "ExternalEffect Capability binding differs from Attempt Snapshot",
+            )
+        return CapabilityPackAttemptSnapshot(
+            snapshot_id=str(stored["snapshot_id"]),
+            operation_id=str(stored["operation_id"]),
+            attempt_id=str(stored["attempt_id"]),
+            execution_fencing_token=int(stored["execution_fencing_token"]),
+            snapshot_creation_fencing_token=int(
+                stored["snapshot_creation_fencing_token"]
+            ),
+            snapshot_hash=str(stored["snapshot_hash"]),
+            trace_id=str(stored["trace_id"]),
+            span_id=str(stored["span_id"]),
+            execution_snapshot=stored["snapshot"],
         )
 
     @staticmethod
@@ -533,6 +599,274 @@ def chapter_node_binding_from_snapshot(
     }
 
 
+def materialize_registered_pack_version(
+    snapshot: CapabilityPackExecutionSnapshot,
+    registered_version: Mapping[str, Any],
+) -> CapabilityPackArtifactMaterialization:
+    """Materialize exact provider inputs without consulting active deployment state."""
+
+    from novel_forge.modules.capability_packs.artifacts import (
+        ArtifactKind,
+        exact_ref_version,
+    )
+    from novel_forge.modules.capability_packs.loader import (
+        load_capability_pack_payload,
+    )
+
+    manifest_payload = registered_version.get("manifest")
+    catalog_payload = registered_version.get("artifact_catalog")
+    if not isinstance(manifest_payload, Mapping) or not isinstance(
+        catalog_payload, Mapping
+    ):
+        raise KernelError(
+            "CAPABILITY_PACK_ASSET_CONTENT_MISSING",
+            "registered Pack Version has no Manifest or Artifact Catalog content",
+        )
+    manifest = load_capability_pack_payload(manifest_payload)
+    version_checks = {
+        "pack_id": (registered_version.get("pack_id"), snapshot.pack_id),
+        "pack_version": (
+            registered_version.get("pack_version"),
+            snapshot.pack_version,
+        ),
+        "manifest_identity_pack_id": (manifest.identity.pack_id, snapshot.pack_id),
+        "manifest_identity_version": (
+            manifest.identity.version,
+            snapshot.pack_version,
+        ),
+        "manifest_hash": (
+            registered_version.get("manifest_hash"),
+            snapshot.manifest_hash,
+        ),
+        "recomputed_manifest_hash": (manifest.manifest_hash, snapshot.manifest_hash),
+    }
+    drift = [
+        name
+        for name, (actual, expected) in version_checks.items()
+        if str(actual or "") != str(expected)
+    ]
+    if drift:
+        raise KernelError(
+            "CAPABILITY_PACK_VERSION_MISMATCH",
+            "registered Pack Version differs from frozen Snapshot: "
+            + ", ".join(drift),
+        )
+    catalog_hash = canonical_hash(catalog_payload)
+    if str(registered_version.get("artifact_catalog_hash") or "") != catalog_hash:
+        raise KernelError(
+            "CAPABILITY_PACK_ARTIFACT_HASH_DRIFT",
+            "registered Artifact Catalog content differs from Authority hash",
+        )
+    resolver = _registered_artifact_resolver(catalog_payload)
+    prompt = manifest.prompt_binding
+    system = _resolve_materialized_artifact(
+        resolver,
+        ArtifactKind.PROMPT_SYSTEM_INSTRUCTION,
+        str(prompt.system_instruction_ref),
+        str(prompt.system_instruction_version),
+    )
+    template = _resolve_materialized_artifact(
+        resolver,
+        ArtifactKind.PROMPT_TEMPLATE,
+        str(prompt.template_ref),
+        str(prompt.template_version),
+    )
+    selected_skills = [
+        item
+        for item in manifest.skill_binding.skills
+        if str(item.skill_ref) == snapshot.skill_ref
+        and str(item.version) == snapshot.skill_version
+    ]
+    if len(selected_skills) != 1:
+        raise KernelError(
+            "CAPABILITY_PACK_REQUIRED_SKILL_MISSING",
+            "frozen Agent Skill is not present exactly once in the Pack Manifest",
+        )
+    skill_binding = selected_skills[0]
+    skill = _resolve_materialized_artifact(
+        resolver,
+        ArtifactKind.SKILL,
+        str(skill_binding.skill_ref),
+        str(skill_binding.version),
+    )
+    context_policy = _resolve_materialized_artifact(
+        resolver,
+        ArtifactKind.CONTEXT_POLICY,
+        str(manifest.context_sources.policy_id),
+        exact_ref_version(str(manifest.context_sources.policy_id)),
+    )
+    tool_policy = _resolve_materialized_artifact(
+        resolver,
+        ArtifactKind.TOOL_POLICY,
+        str(manifest.tool_permissions.policy_id),
+        exact_ref_version(str(manifest.tool_permissions.policy_id)),
+    )
+    input_schema = _resolve_materialized_artifact(
+        resolver,
+        ArtifactKind.SCHEMA,
+        snapshot.input_contract_ref,
+        exact_ref_version(snapshot.input_contract_ref),
+    )
+    output_schema = _resolve_materialized_artifact(
+        resolver,
+        ArtifactKind.SCHEMA,
+        snapshot.output_contract_ref,
+        exact_ref_version(snapshot.output_contract_ref),
+    )
+    knowledge = tuple(
+        _resolve_materialized_artifact(
+            resolver,
+            ArtifactKind.KNOWLEDGE,
+            str(ref),
+            exact_ref_version(str(ref)),
+        )
+        for ref in manifest.assets.knowledge.get("required_packs") or ()
+    )
+    context_payload = json.loads(snapshot.context_policy_payload_json)
+    tool_payload = json.loads(snapshot.tool_policy_payload_json)
+    manifest_payload = manifest.to_dict()
+    if (
+        context_payload != manifest_payload["context_sources"]
+        or tool_payload != manifest_payload["tool_permissions"]
+        or canonical_hash(context_payload) != snapshot.context_policy_hash
+        or canonical_hash(tool_payload) != snapshot.tool_policy_hash
+        or str(context_policy.content.get("policy_id") or "")
+        != snapshot.context_policy_ref
+        or str(tool_policy.content.get("policy_id") or "")
+        != snapshot.tool_policy_ref
+    ):
+        raise KernelError(
+            "CAPABILITY_PACK_ARTIFACT_HASH_DRIFT",
+            "frozen Capability policy differs from Manifest or exact policy content",
+        )
+    expected_hashes = {
+        "prompt_system_instruction": (
+            system.content_hash,
+            snapshot.prompt_system_instruction_hash,
+        ),
+        "prompt_template": (
+            template.content_hash,
+            snapshot.prompt_template_hash,
+        ),
+        "skill": (skill.content_hash, snapshot.skill_content_hash),
+    }
+    hash_drift = [
+        name
+        for name, (actual, expected) in expected_hashes.items()
+        if actual != expected
+    ]
+    ref_drift = [
+        name
+        for name, actual, expected in (
+            (
+                "prompt_system_instruction",
+                f"{system.ref}@{system.version}",
+                snapshot.prompt_system_instruction_ref,
+            ),
+            (
+                "prompt_template",
+                f"{template.ref}@{template.version}",
+                snapshot.prompt_template_ref,
+            ),
+            ("skill", skill.ref, snapshot.skill_ref),
+            ("context_policy", context_policy.ref, snapshot.context_policy_ref),
+            ("tool_policy", tool_policy.ref, snapshot.tool_policy_ref),
+        )
+        if actual != expected
+    ]
+    if hash_drift or ref_drift:
+        raise KernelError(
+            "CAPABILITY_PACK_ARTIFACT_HASH_DRIFT",
+            "frozen Capability binding differs from exact registered content: "
+            + ", ".join(hash_drift + ref_drift),
+        )
+    return CapabilityPackArtifactMaterialization(
+        pack_id=snapshot.pack_id,
+        pack_version=snapshot.pack_version,
+        manifest_hash=snapshot.manifest_hash,
+        artifact_catalog_hash=catalog_hash,
+        system_instruction=system,
+        prompt_template=template,
+        skill=skill,
+        context_policy=context_policy,
+        tool_policy=tool_policy,
+        input_schema=input_schema,
+        output_schema=output_schema,
+        required_knowledge=knowledge,
+    )
+
+
+def _registered_artifact_resolver(
+    catalog: Mapping[str, Any],
+) -> Any:
+    from novel_forge.modules.capability_packs.artifacts import (
+        ArtifactKind,
+        ExplicitArtifactResolver,
+        ResolvedArtifact,
+        canonical_artifact_json,
+    )
+
+    if catalog.get("schema_version") != "novelos.capability_pack.artifact_catalog.v1":
+        raise KernelError(
+            "CAPABILITY_PACK_ARTIFACT_CATALOG_INVALID",
+            "registered Artifact Catalog protocol is unsupported",
+        )
+    entries = catalog.get("artifacts")
+    if not isinstance(entries, list):
+        raise KernelError(
+            "CAPABILITY_PACK_ARTIFACT_CATALOG_INVALID",
+            "registered Artifact Catalog requires an artifacts array",
+        )
+    artifacts: list[ResolvedArtifact] = []
+    try:
+        for raw in entries:
+            if (
+                not isinstance(raw, Mapping)
+                or "content" not in raw
+                or "source_path" in raw
+            ):
+                raise ValueError("registered Artifact content must be inline")
+            artifacts.append(
+                ResolvedArtifact(
+                    kind=ArtifactKind(str(raw.get("kind") or "")),
+                    ref=str(raw.get("ref") or ""),
+                    version=str(raw.get("version") or ""),
+                    content_hash=str(raw.get("content_hash") or ""),
+                    content_json=canonical_artifact_json(raw["content"]),
+                    source_identity=str(raw.get("source_identity") or ""),
+                )
+            )
+        return ExplicitArtifactResolver(artifacts)
+    except (KeyError, TypeError, ValueError) as exc:
+        raise KernelError(
+            "CAPABILITY_PACK_ARTIFACT_CATALOG_INVALID",
+            str(exc),
+        ) from exc
+
+
+def _resolve_materialized_artifact(
+    resolver: Any,
+    kind: Any,
+    ref: str,
+    version: str,
+) -> MaterializedCapabilityArtifact:
+    try:
+        artifact = resolver.resolve(kind, ref, version)
+    except (KeyError, LookupError, TypeError, ValueError) as exc:
+        raise KernelError(
+            "CAPABILITY_PACK_REQUIRED_ASSET_MISSING",
+            f"required {kind.value} Artifact cannot be resolved: {ref}@{version}: {exc}",
+        ) from exc
+    return MaterializedCapabilityArtifact(
+        kind=artifact.kind.value,
+        ref=artifact.ref,
+        version=artifact.version,
+        content_hash=artifact.content_hash,
+        content_json=artifact.content_json,
+        source_identity=artifact.source_identity,
+    )
+
+
 def _scope_precedence(
     request: CapabilityPackResolutionRequest,
 ) -> tuple[CapabilityPackScope, ...]:
@@ -704,4 +1038,5 @@ __all__ = [
     "CapabilityPackResolutionRequest",
     "CapabilityPackRuntimeResolver",
     "chapter_node_binding_from_snapshot",
+    "materialize_registered_pack_version",
 ]

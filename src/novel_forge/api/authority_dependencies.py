@@ -21,6 +21,14 @@ from novel_forge.modules.chapter_authority.execution_gateway import (
     chapter_stage_capability,
     default_chapter_fixture_response,
 )
+from novel_forge.modules.chapter_authority.model_effects import normalize_model_output
+from novel_forge.modules.chapter_authority.provider_output_contracts import (
+    validate_chapter_provider_output_against_schema,
+)
+from novel_forge.modules.capability_packs.artifacts import (
+    ArtifactKind,
+    default_chapter_artifact_resolver,
+)
 from novel_forge.modules.chapter_authority.queries import ChapterAuthorityQuery
 from novel_forge.modules.book_authority.production import (
     ChapterAuthorityCommandAdapter,
@@ -73,6 +81,9 @@ from novel_forge.modules.provider_control.contracts import ProviderControlLevel
 from novel_forge.modules.production_execution import (
     AdmissionController,
     AuthorityExecutionRecoveryStore,
+    CodexCliExecutionBackend,
+    CodexPricingSnapshot,
+    CodexProcessSupervisor,
     CompletionMode,
     ExecutionBackendRegistry,
     ExecutionCapabilityProfile,
@@ -80,6 +91,8 @@ from novel_forge.modules.production_execution import (
     FallbackPolicy,
     ModelProfile,
     ModelProfileStatus,
+    LocalProcessExecutionPolicy,
+    PersistentExecutionDirectory,
     PostgresAttemptFenceVerifier,
     PostgresExecutionContractSource,
     ProductionExecutionGateway,
@@ -88,6 +101,21 @@ from novel_forge.modules.production_execution import (
     ScriptedFixtureExecutionBackend,
     default_capability_registry,
 )
+
+
+_PACK_SKILL_FOR_STAGE = {
+    "draft": "prose-generation",
+    "revision": "prose-generation",
+    "canon_extraction": "canon-continuity-graph",
+    "review": "quality-review",
+    "rereview": "quality-review",
+    "quality_structural": "quality-review",
+    "quality_commercial": "quality-review",
+    "quality_source_originality": "quality-review",
+    "quality_longform": "quality-review",
+    "quality_platform": "quality-review",
+    "reader_outcome": "quality-review",
+}
 
 
 def _execution_content_hash(
@@ -193,6 +221,11 @@ def build_chapter_authority_application(
     routes: dict[str, ChapterExecutionRoute] = {}
     provider_adapters: dict[str, object] = {}
     backend_capabilities: dict[str, ExecutionCapabilityProfile] = {}
+    codex_models: set[str] = set()
+    codex_reasoning_efforts: set[str] = set()
+    repository_artifacts = (
+        default_chapter_artifact_resolver(settings.root) if controlled else None
+    )
     for stage, provider_key, model_key in (
         ("draft", "NOVEL_FORGE_DRAFT_PROVIDER", "NOVEL_FORGE_DRAFT_MODEL"),
         ("review", "NOVEL_FORGE_REVIEW_PROVIDER", "NOVEL_FORGE_REVIEW_MODEL"),
@@ -271,37 +304,74 @@ def build_chapter_authority_application(
             )
             or ""
         ).strip()
-        try:
-            adapter = registry.resolve(normalized_provider)
-        except ValueError as exc:
-            raise RuntimeError(str(exc)) from exc
-        resolved_model = model_name or f"{normalized_provider}-{stage}"
-        qualification = registry.qualify(
-            normalized_provider,
-            resolved_model,
-            environment=environment,
-        )
-        if not qualification.qualified:
-            raise RuntimeError(
-                "provider v2 route qualification failed: "
-                + "; ".join(qualification.reasons)
+        codex_cli = normalized_provider == "codex-cli"
+        if codex_cli:
+            if not model_name:
+                raise RuntimeError(
+                    f"explicit Codex model is required for {stage}"
+                )
+            resolved_model = model_name
+            scripted = False
+            backend_id = "codex-cli"
+            provider_identity = "codex-cli"
+            runtime_class = ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE
+            real_provider_eligible = True
+            qualification_ref = "capability-probe:codex-cli:real-runtime-v1"
+            reasoning_effort = str(
+                values.get(f"NOVEL_FORGE_{stage.upper()}_REASONING_EFFORT")
+                or values.get("NOVEL_FORGE_REASONING_EFFORT")
+                or "high"
             )
-        provider_profile = adapter.capability_profile
-        scripted = (
-            provider_profile.control_level is ProviderControlLevel.FIXTURE_CONTROLLED
-        )
-        backend_id = (
-            "scripted-fixture"
-            if scripted
-            else "remote-provider-" + adapter.provider.replace("_", "-")
-        )
-        qualification_ref = (
-            "capability-probe:scripted-fixture:1"
-            if scripted
-            else f"capability-probe:{adapter.provider}:{provider_profile.contract_version}"
-        )
+            codex_models.add(resolved_model)
+            codex_reasoning_efforts.add(reasoning_effort)
+        else:
+            try:
+                adapter = registry.resolve(normalized_provider)
+            except ValueError as exc:
+                raise RuntimeError(str(exc)) from exc
+            resolved_model = model_name or f"{normalized_provider}-{stage}"
+            qualification = registry.qualify(
+                normalized_provider,
+                resolved_model,
+                environment=environment,
+            )
+            if not qualification.qualified:
+                raise RuntimeError(
+                    "provider v2 route qualification failed: "
+                    + "; ".join(qualification.reasons)
+                )
+            provider_profile = adapter.capability_profile
+            scripted = (
+                provider_profile.control_level
+                is ProviderControlLevel.FIXTURE_CONTROLLED
+            )
+            backend_id = (
+                "scripted-fixture"
+                if scripted
+                else "remote-provider-" + adapter.provider.replace("_", "-")
+            )
+            provider_identity = adapter.provider
+            runtime_class = (
+                ExecutionRuntimeClass.SCRIPTED_FIXTURE
+                if scripted
+                else ExecutionRuntimeClass.REMOTE_PROVIDER_API
+            )
+            real_provider_eligible = (
+                provider_profile.real_provider_validation_eligible
+            )
+            qualification_ref = (
+                "capability-probe:scripted-fixture:1"
+                if scripted
+                else f"capability-probe:{adapter.provider}:"
+                f"{provider_profile.contract_version}"
+            )
+            reasoning_effort = str(
+                values.get(f"NOVEL_FORGE_{stage.upper()}_REASONING_EFFORT")
+                or values.get("NOVEL_FORGE_REASONING_EFFORT")
+                or "high"
+            )
         backend_version = "1.0.0"
-        if not scripted:
+        if not scripted and not codex_cli:
             provider_adapters[backend_id] = adapter
             backend_capabilities[backend_id] = ExecutionCapabilityProfile(
                 backend_id=backend_id,
@@ -332,18 +402,10 @@ def build_chapter_authority_application(
             profile_id=profile_id,
             profile_version=1,
             backend_id=backend_id,
-            runtime_class=(
-                ExecutionRuntimeClass.SCRIPTED_FIXTURE
-                if scripted
-                else ExecutionRuntimeClass.REMOTE_PROVIDER_API
-            ),
-            model_provider=adapter.provider,
+            runtime_class=runtime_class,
+            model_provider=provider_identity,
             model_id=resolved_model,
-            reasoning_effort=str(
-                values.get(f"NOVEL_FORGE_{stage.upper()}_REASONING_EFFORT")
-                or values.get("NOVEL_FORGE_REASONING_EFFORT")
-                or "high"
-            ),
+            reasoning_effort=reasoning_effort,
             timeout_policy_ref=capability_definition.timeout_policy_ref,
             workspace_policy_ref="workspace:chapter-authority:v1",
             output_policy_ref=f"output:chapter:{stage}:json:v1",
@@ -367,14 +429,63 @@ def build_chapter_authority_application(
             policy.fallback_policy_ref,
             policy.fallback_policy_version,
         )
-        prompt_version = str(
-            values.get(f"NOVEL_FORGE_{stage.upper()}_PROMPT_VERSION")
-            or f"chapter-{stage}-prompt-v1"
-        )
-        skill_version = str(
-            values.get(f"NOVEL_FORGE_{stage.upper()}_SKILL_VERSION")
-            or f"chapter-{stage}-skill-v1"
-        )
+        if codex_cli and repository_artifacts is not None:
+            system_artifact = repository_artifacts.resolve(
+                ArtifactKind.PROMPT_SYSTEM_INSTRUCTION,
+                "prompt-system:chapter-generation-pack",
+                "v1",
+            )
+            template_artifact = repository_artifacts.resolve(
+                ArtifactKind.PROMPT_TEMPLATE,
+                "prompt-template:chapter-generation-pack",
+                "v1",
+            )
+            skill_artifact = next(
+                item
+                for item in repository_artifacts.artifacts()
+                if item.kind is ArtifactKind.SKILL
+                and item.ref == _PACK_SKILL_FOR_STAGE[stage]
+            )
+            prompt_version = f"{system_artifact.ref}@{system_artifact.version}"
+            skill_version = f"{skill_artifact.ref}@{skill_artifact.version}"
+            system_instruction_hash = system_artifact.content_hash
+            template_hash = template_artifact.content_hash
+            skill_content_hash = skill_artifact.content_hash
+        else:
+            prompt_version = str(
+                values.get(f"NOVEL_FORGE_{stage.upper()}_PROMPT_VERSION")
+                or f"chapter-{stage}-prompt-v1"
+            )
+            skill_version = str(
+                values.get(f"NOVEL_FORGE_{stage.upper()}_SKILL_VERSION")
+                or f"chapter-{stage}-skill-v1"
+            )
+            system_instruction_hash = _execution_content_hash(
+                values,
+                stage=stage,
+                specific_key=(
+                    f"NOVEL_FORGE_{stage.upper()}_SYSTEM_INSTRUCTION_HASH"
+                ),
+                common_key="NOVEL_FORGE_PROMPT_SYSTEM_INSTRUCTION_HASH",
+                controlled=controlled,
+                fixture_identity=prompt_version + ":system",
+            )
+            template_hash = _execution_content_hash(
+                values,
+                stage=stage,
+                specific_key=f"NOVEL_FORGE_{stage.upper()}_PROMPT_TEMPLATE_HASH",
+                common_key="NOVEL_FORGE_PROMPT_TEMPLATE_HASH",
+                controlled=controlled,
+                fixture_identity=prompt_version + ":template",
+            )
+            skill_content_hash = _execution_content_hash(
+                values,
+                stage=stage,
+                specific_key=f"NOVEL_FORGE_{stage.upper()}_SKILL_BUNDLE_HASH",
+                common_key="NOVEL_FORGE_SKILL_BUNDLE_HASH",
+                controlled=controlled,
+                fixture_identity=skill_version,
+            )
         routes[stage] = ChapterExecutionRoute(
             stage=stage,
             model_profile=profile,
@@ -385,39 +496,16 @@ def build_chapter_authority_application(
             auth_profile_ref=auth_profile_ref,
             prompt_version=prompt_version,
             skill_version=skill_version,
-            system_instruction_hash=_execution_content_hash(
-                values,
-                stage=stage,
-                specific_key=(f"NOVEL_FORGE_{stage.upper()}_SYSTEM_INSTRUCTION_HASH"),
-                common_key="NOVEL_FORGE_PROMPT_SYSTEM_INSTRUCTION_HASH",
-                controlled=controlled,
-                fixture_identity=prompt_version + ":system",
-            ),
-            template_hash=_execution_content_hash(
-                values,
-                stage=stage,
-                specific_key=f"NOVEL_FORGE_{stage.upper()}_PROMPT_TEMPLATE_HASH",
-                common_key="NOVEL_FORGE_PROMPT_TEMPLATE_HASH",
-                controlled=controlled,
-                fixture_identity=prompt_version + ":template",
-            ),
-            skill_content_hash=_execution_content_hash(
-                values,
-                stage=stage,
-                specific_key=f"NOVEL_FORGE_{stage.upper()}_SKILL_BUNDLE_HASH",
-                common_key="NOVEL_FORGE_SKILL_BUNDLE_HASH",
-                controlled=controlled,
-                fixture_identity=skill_version,
-            ),
+            system_instruction_hash=system_instruction_hash,
+            template_hash=template_hash,
+            skill_content_hash=skill_content_hash,
             prompt_compiler_version=str(
                 values.get("NOVEL_FORGE_PROMPT_COMPILER_VERSION")
                 or "chapter-prompt-compiler:v1"
             ),
             output_schema_ref=capability_definition.output_schema_ref,
             release_sha=release_sha,
-            real_provider_validation_eligible=(
-                provider_profile.real_provider_validation_eligible
-            ),
+            real_provider_validation_eligible=real_provider_eligible,
         )
     if controlled:
         _build_id, verified_release_sha = authority_release_identity(env=values)
@@ -440,6 +528,19 @@ def build_chapter_authority_application(
             )
             for stage, route in routes.items()
         }
+    if codex_models:
+        if len(codex_models) != 1 or len(codex_reasoning_efforts) != 1:
+            raise RuntimeError(
+                "this phase requires one explicit Codex model and reasoning effort"
+            )
+        if any(
+            route.model_profile.runtime_class
+            is not ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE
+            for route in routes.values()
+        ):
+            raise RuntimeError(
+                "mixed Codex and alternate Provider routing is not supported in this phase"
+            )
     object_root_value = str(
         values.get("NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT") or ""
     ).strip()
@@ -456,6 +557,76 @@ def build_chapter_authority_application(
     object_root = Path(object_root_value).expanduser()
     if not object_root.is_absolute():
         object_root = settings.root / object_root
+
+    codex_executable = ""
+    codex_workspace: Path | None = None
+    codex_execution_root: Path | None = None
+    codex_pricing: CodexPricingSnapshot | None = None
+    codex_model = next(iter(codex_models), "")
+    codex_reasoning_effort = next(iter(codex_reasoning_efforts), "")
+    if codex_models:
+        codex_executable = str(
+            values.get("NOVEL_FORGE_CODEX_EXECUTABLE") or ""
+        ).strip()
+        workspace_value = str(
+            values.get("NOVEL_FORGE_CODEX_WORKSPACE") or ""
+        ).strip()
+        execution_root_value = str(
+            values.get("NOVEL_FORGE_CODEX_EXECUTION_ROOT") or ""
+        ).strip()
+        executable_path = Path(codex_executable).expanduser()
+        codex_workspace = Path(workspace_value).expanduser()
+        codex_execution_root = Path(execution_root_value).expanduser()
+        if (
+            not codex_executable
+            or not executable_path.is_absolute()
+            or not executable_path.is_file()
+            or not codex_workspace.is_absolute()
+            or not codex_workspace.is_dir()
+            or any(codex_workspace.iterdir())
+            or not codex_execution_root.is_absolute()
+        ):
+            raise RuntimeError(
+                "controlled Codex requires an absolute executable, empty isolated "
+                "workspace, and absolute persistent execution root"
+            )
+        required_pricing = {
+            "pricing_ref": str(
+                values.get("NOVEL_FORGE_CODEX_PRICING_REF") or ""
+            ).strip(),
+            "currency": str(
+                values.get("NOVEL_FORGE_CODEX_PRICING_CURRENCY") or ""
+            ).strip(),
+            "input_per_million": str(
+                values.get("NOVEL_FORGE_CODEX_INPUT_PER_MILLION") or ""
+            ).strip(),
+            "cached_input_per_million": str(
+                values.get("NOVEL_FORGE_CODEX_CACHED_INPUT_PER_MILLION") or ""
+            ).strip(),
+            "output_per_million": str(
+                values.get("NOVEL_FORGE_CODEX_OUTPUT_PER_MILLION") or ""
+            ).strip(),
+        }
+        if any(not value for value in required_pricing.values()):
+            raise RuntimeError(
+                "controlled Codex requires an explicit immutable pricing snapshot"
+            )
+        codex_pricing = CodexPricingSnapshot(
+            model_id=codex_model,
+            **required_pricing,
+        )
+
+    def validate_codex_result(
+        stage: str,
+        output_schema: Mapping[str, object],
+        value: Mapping[str, object],
+    ) -> Mapping[str, object]:
+        validated = validate_chapter_provider_output_against_schema(
+            stage,
+            output_schema,
+            value,
+        )
+        return normalize_model_output(stage, validated)
 
     def execution_session(project_id: str) -> ChapterExecutionGatewaySession:
         contracts = PostgresExecutionContractSource(
@@ -484,6 +655,36 @@ def build_chapter_authority_application(
                         working_directory=settings.root,
                     ),
                     record_store=store,
+                )
+            )
+        if codex_models:
+            assert codex_workspace is not None
+            assert codex_execution_root is not None
+            assert codex_pricing is not None
+            backends.register(
+                CodexCliExecutionBackend(
+                    admission=admission,
+                    payload_resolver=PostgresChapterExecutionPayloadResolver(
+                        settings.database_url,
+                        working_directory=codex_workspace,
+                    ),
+                    record_store=store,
+                    supervisor=CodexProcessSupervisor(
+                        PersistentExecutionDirectory(codex_execution_root)
+                    ),
+                    execution_policy=LocalProcessExecutionPolicy(
+                        fixed_working_directory=str(codex_workspace),
+                        allowed_command_prefixes=((codex_executable, "exec"),),
+                        maximum_result_bytes=int(
+                            values.get("NOVEL_FORGE_CODEX_MAX_RESULT_BYTES")
+                            or 2_000_000
+                        ),
+                    ),
+                    codex_executable=codex_executable,
+                    model_id=codex_model,
+                    reasoning_effort=codex_reasoning_effort,
+                    pricing=codex_pricing,
+                    structured_result_validator=validate_codex_result,
                 )
             )
         for backend_id, adapter in provider_adapters.items():

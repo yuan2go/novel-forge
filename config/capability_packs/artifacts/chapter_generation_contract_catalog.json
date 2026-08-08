@@ -2,6 +2,21 @@
   "schema_version": "novelos.capability_pack.artifact_catalog.v1",
   "artifacts": [
     {
+      "kind": "KNOWLEDGE",
+      "ref": "knowledge:chapter-causal-cost:v1",
+      "version": "v1",
+      "content": {
+        "schema_version": "novelos.capability_knowledge.v1",
+        "knowledge_id": "chapter-causal-cost",
+        "usage_role": "CONSTRAINT",
+        "source_eligibility": "NOT_SOURCE_DERIVED",
+        "rules": [
+          "Every decisive chapter action must expose a concrete consequence or irreversible cost in the chapter text.",
+          "Review evidence must point to the action, consequence, and resulting story-state change."
+        ]
+      }
+    },
+    {
       "kind": "SCHEMA",
       "ref": "chapter-plan-authority.v1",
       "version": "v1",

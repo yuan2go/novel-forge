@@ -176,6 +176,61 @@ class CanonSemanticQualityAuthorityTests(unittest.TestCase):
             originality["calibration_status"], "FIXTURE_UNCALIBRATED"
         )
 
+    def test_real_provider_uncalibrated_evidence_participates_without_claiming_calibration(
+        self,
+    ) -> None:
+        group = build_quality_group_evidence(
+            group="source_originality",
+            project_id="project-1",
+            revision={
+                "chapter": 1,
+                "text": "A complete sentence. Another consequence follows.",
+            },
+            revision_asset_version_id="revision-current",
+            context_bundle={
+                "source_isolation_result": {"passed": True},
+                "copyright_boundary": "abstract_or_project_owned_only",
+                "context_segments": [
+                    {
+                        "asset_version_id": "provider-quality-v1",
+                        "narrative_function": "quality_evidence",
+                        "source_expression_included": False,
+                        "structured_facts": [
+                            {
+                                "key": "dimension_evidence",
+                                "value": [
+                                    {
+                                        "dimension": "originality",
+                                        "gate_status": "PASSED",
+                                        "target_asset_version_id": "revision-current",
+                                        "calibration_status": "PROVIDER_UNCALIBRATED",
+                                        "provider_verified": True,
+                                        "evidence_locations": [
+                                            {"start": 0, "end": 18}
+                                        ],
+                                    }
+                                ],
+                            }
+                        ],
+                    }
+                ],
+            },
+            canon={"gate": "PASSED", "conflicts": []},
+            fixture=False,
+        )
+
+        originality = next(
+            item
+            for item in group["dimensions"]
+            if item["dimension"] == "originality"
+        )
+        self.assertEqual(originality["gate_status"], "PASSED_WITH_UNCALIBRATED")
+        self.assertEqual(
+            originality["calibration_status"], "PROVIDER_UNCALIBRATED"
+        )
+        self.assertTrue(originality["provider_verified"])
+        self.assertFalse(group["production_verified"])
+
     def test_fixture_waiver_requires_versioned_scoped_approval(self) -> None:
         project_id = "project-1"
         common = {

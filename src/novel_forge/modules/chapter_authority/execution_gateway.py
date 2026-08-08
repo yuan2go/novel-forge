@@ -22,7 +22,9 @@ from novel_forge.modules.command_kernel.external_effect_adapters import (
     ProviderResult,
 )
 from novel_forge.modules.capability_pack_authority.domain import (
+    CapabilityPackArtifactMaterialization,
     CapabilityPackAttemptSnapshot,
+    canonical_hash,
 )
 from novel_forge.modules.capability_pack_authority.runtime import (
     CapabilityPackResolutionRequest,
@@ -65,8 +67,12 @@ from novel_forge.modules.provider_control.contracts import (
     ProviderControlLevel,
 )
 from novel_forge.storage.authority_asset_store import (
+    AuthorityAssetDocument,
     AuthorityAssetQuery,
     AuthorityAssetWriter,
+)
+from novel_forge.modules.chapter_authority.provider_output_contracts import (
+    chapter_provider_output_schema,
 )
 
 
@@ -108,7 +114,7 @@ def chapter_stage_capability(stage: str) -> CapabilityId:
         raise ValueError(f"unsupported Chapter execution stage: {stage}") from exc
 
 
-def _canonical(payload: Mapping[str, Any]) -> str:
+def _canonical(payload: Any) -> str:
     return json.dumps(
         payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")
     )
@@ -116,6 +122,43 @@ def _canonical(payload: Mapping[str, Any]) -> str:
 
 def _identity_token(value: str) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()[:20]
+
+
+def _stage_tool_permissions(
+    policy: Mapping[str, Any], stage: str
+) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    if str(policy.get("default") or "").upper() != "DENY":
+        raise KernelError(
+            "CHAPTER_CAPABILITY_TOOL_POLICY_INVALID",
+            "controlled Capability Tool policy must default deny",
+        )
+    tools = policy.get("tools")
+    if not isinstance(tools, list):
+        raise KernelError(
+            "CHAPTER_CAPABILITY_TOOL_POLICY_INVALID",
+            "Capability Tool policy requires explicit tool entries",
+        )
+    allowed: set[str] = set()
+    denied: set[str] = set()
+    for item in tools:
+        if not isinstance(item, Mapping):
+            raise KernelError(
+                "CHAPTER_CAPABILITY_TOOL_POLICY_INVALID",
+                "Capability Tool entry must be an object",
+            )
+        tool_ref = str(item.get("tool_ref") or "")
+        operations = {
+            str(value) for value in item.get("allowed_operations") or ()
+        }
+        if (
+            tool_ref
+            and str(item.get("permission") or "").upper() == "EXECUTE"
+            and stage in operations
+        ):
+            allowed.add(tool_ref)
+        elif tool_ref:
+            denied.add(tool_ref)
+    return tuple(sorted(allowed)), tuple(sorted(denied - allowed))
 
 
 @dataclass(frozen=True, slots=True)
@@ -196,6 +239,14 @@ class ChapterExecutionBinding:
     capability_pack_attempt_snapshot: CapabilityPackAttemptSnapshot | None = None
 
 
+@dataclass(frozen=True, slots=True)
+class ChapterCapabilityPreflight:
+    attempt_snapshot: CapabilityPackAttemptSnapshot
+    materialization: CapabilityPackArtifactMaterialization
+    materialization_artifact: ArtifactPointer
+    effect_binding: Mapping[str, Any]
+
+
 class PostgresChapterExecutionContractBinder:
     """Materialize immutable per-Attempt contracts through Authority AssetVersion."""
 
@@ -225,6 +276,242 @@ class PostgresChapterExecutionContractBinder:
         self.pack_required = pack_required
         self.pack_resolver = CapabilityPackRuntimeResolver(database_url)
 
+    def freeze_before_external_effect(
+        self,
+        *,
+        capability: str,
+        request_payload: Mapping[str, Any],
+        snapshot_fencing_token: int,
+        snapshot_worker_id: str,
+    ) -> ChapterCapabilityPreflight | None:
+        """Freeze and materialize Capability content before planning model I/O."""
+
+        stage = str(request_payload.get("stage") or "")
+        metadata = request_payload.get("_production_execution")
+        if capability != f"model.{stage}" or stage not in self.routes:
+            raise KernelError(
+                "CHAPTER_CAPABILITY_REQUIREMENT_INVALID",
+                "Chapter Capability requirement does not match the model stage",
+            )
+        if not isinstance(metadata, Mapping):
+            raise KernelError(
+                "CHAPTER_CAPABILITY_METADATA_MISSING",
+                "Capability preflight requires Attempt metadata",
+            )
+        operation_id = str(metadata.get("operation_id") or "")
+        attempt_id = str(metadata.get("attempt_id") or "")
+        project_id = str(metadata.get("project_id") or "")
+        workspace_id = str(metadata.get("workspace_id") or "")
+        book_id = str(metadata.get("book_id") or "")
+        worker_id = str(metadata.get("worker_id") or "")
+        try:
+            execution_fencing_token = int(metadata.get("fencing_token") or 0)
+        except (TypeError, ValueError) as exc:
+            raise KernelError(
+                "CHAPTER_CAPABILITY_METADATA_INVALID",
+                "Capability preflight fencing identity is invalid",
+            ) from exc
+        if not all(
+            (
+                operation_id,
+                attempt_id,
+                project_id,
+                workspace_id,
+                book_id,
+                worker_id,
+                snapshot_worker_id,
+            )
+        ) or min(execution_fencing_token, snapshot_fencing_token) <= 0:
+            raise KernelError(
+                "CHAPTER_CAPABILITY_METADATA_INCOMPLETE",
+                "Capability preflight Attempt identity is incomplete",
+            )
+        if not self.capability_pack_id:
+            raise KernelError(
+                "CHAPTER_CAPABILITY_PACK_REQUIRED",
+                "Capability preflight requires a governed Capability Pack",
+            )
+        graph = self._operation_graph(operation_id, project_id)
+        route = self.routes[stage]
+        attempt_snapshot = self._resolve_pack_snapshot(
+            project_id=project_id,
+            workspace_id=workspace_id,
+            book_id=book_id,
+            operation_id=operation_id,
+            attempt_id=attempt_id,
+            execution_fencing_token=execution_fencing_token,
+            worker_id=worker_id,
+            snapshot_creation_fencing_token=snapshot_fencing_token,
+            snapshot_creation_worker_id=snapshot_worker_id,
+            stage=stage,
+            graph=graph,
+            route=route,
+        )
+        if attempt_snapshot is None:
+            if self.pack_required:
+                raise KernelError(
+                    "CHAPTER_CAPABILITY_PACK_REQUIRED",
+                    "Capability Pack resolution did not produce an Attempt Snapshot",
+                )
+            return None
+        materialization = self.pack_resolver.materialize_attempt_artifacts(
+            attempt_snapshot
+        )
+        artifacts = self._artifacts(metadata)
+        selected_inputs = self._materialize_selected_inputs(
+            project_id=project_id,
+            artifacts=artifacts,
+        )
+        context_selection = [
+            item for item in selected_inputs if item["artifact_type"] == "context_bundle"
+        ]
+        if len(context_selection) != 1:
+            raise KernelError(
+                "CHAPTER_CAPABILITY_CONTEXT_INVALID",
+                "controlled Chapter execution requires exactly one frozen Context Bundle",
+            )
+        tool_payload = json.loads(
+            attempt_snapshot.execution_snapshot.tool_policy_payload_json
+        )
+        allowed_tools, denied_tools = _stage_tool_permissions(tool_payload, stage)
+        if "model.provider.invoke" not in allowed_tools:
+            raise KernelError(
+                "CHAPTER_CAPABILITY_TOOL_UNAUTHORIZED",
+                "Capability Pack does not authorize model.provider.invoke for this stage",
+            )
+        provider_schema = chapter_provider_output_schema(stage)
+        provider_schema_ref = f"schema:chapter-provider-output:{stage}:v1"
+        schema_hash = canonical_hash(provider_schema)
+        contract_without_hash: dict[str, Any] = {
+            "schema_version": "novelos.chapter_capability_materialization.v1",
+            "stage": stage,
+            "capability_requirement": capability,
+            "attempt_snapshot": {
+                "snapshot_id": attempt_snapshot.snapshot_id,
+                "snapshot_hash": attempt_snapshot.snapshot_hash,
+                "operation_id": attempt_snapshot.operation_id,
+                "attempt_id": attempt_snapshot.attempt_id,
+                "execution_fencing_token": (
+                    attempt_snapshot.execution_fencing_token
+                ),
+                "snapshot_creation_fencing_token": (
+                    attempt_snapshot.snapshot_creation_fencing_token
+                ),
+            },
+            "pack_identity": {
+                "pack_id": attempt_snapshot.execution_snapshot.pack_id,
+                "pack_version": attempt_snapshot.execution_snapshot.pack_version,
+                "manifest_hash": attempt_snapshot.execution_snapshot.manifest_hash,
+                "compilation_hash": (
+                    attempt_snapshot.execution_snapshot.compilation_hash
+                ),
+                "catalog_snapshot_hash": (
+                    attempt_snapshot.execution_snapshot.catalog_snapshot_hash
+                ),
+                "binding_set_id": (
+                    attempt_snapshot.execution_snapshot.binding_set_id
+                ),
+                "binding_set_hash": (
+                    attempt_snapshot.execution_snapshot.binding_set_hash
+                ),
+            },
+            "pack_artifacts": materialization.to_dict(include_content=True),
+            "pack_artifact_materialization_hash": (
+                materialization.materialization_hash
+            ),
+            "context_selection": context_selection,
+            "knowledge_selection": [
+                item.to_dict(include_content=True)
+                for item in materialization.required_knowledge
+            ]
+            + [
+                item
+                for item in selected_inputs
+                if item["artifact_type"] == "knowledge_pack"
+            ],
+            "tool_permissions": {
+                "default": str(tool_payload.get("default") or ""),
+                "allowed": list(allowed_tools),
+                "denied": list(denied_tools),
+                "invoked": ["model.provider.invoke"],
+                "governing_policy_ref": (
+                    attempt_snapshot.execution_snapshot.tool_policy_ref
+                ),
+                "governing_policy_hash": (
+                    attempt_snapshot.execution_snapshot.tool_policy_hash
+                ),
+            },
+            "output_schema": {
+                "ref": provider_schema_ref,
+                "content_hash": schema_hash,
+                "content": provider_schema,
+            },
+        }
+        materialization_hash = canonical_hash(contract_without_hash)
+        contract = {
+            **contract_without_hash,
+            "materialization_hash": materialization_hash,
+        }
+        token = _identity_token(
+            f"{project_id}:{operation_id}:{attempt_id}:{stage}:capability"
+        )
+        logical_ref = f"production_execution/capability_materializations/{token}"
+        document = self._ensure_contract(
+            operation_id=operation_id,
+            project_id=project_id,
+            logical_ref=logical_ref,
+            asset_type="capability_materialization_manifest",
+            contract=contract,
+            trace_id=str(request_payload.get("trace_id") or ""),
+            correlation_id=str(request_payload.get("correlation_id") or ""),
+        )
+        pointer = ArtifactPointer(
+            artifact_ref=f"asset-version:{document.asset_version_id}",
+            asset_version_id=document.asset_version_id,
+            artifact_type=document.asset_type,
+            content_hash=document.content_hash,
+            schema_version="novelos.chapter_capability_materialization.v1",
+            source_eligibility="NOT_SOURCE_DERIVED",
+        )
+        effect_binding = {
+            "snapshot_id": attempt_snapshot.snapshot_id,
+            "snapshot_hash": attempt_snapshot.snapshot_hash,
+            "pack_ref": (
+                f"{attempt_snapshot.execution_snapshot.pack_id}@"
+                f"{attempt_snapshot.execution_snapshot.pack_version}"
+            ),
+            "manifest_hash": attempt_snapshot.execution_snapshot.manifest_hash,
+            "compilation_hash": (
+                attempt_snapshot.execution_snapshot.compilation_hash
+            ),
+            "binding_set_hash": (
+                attempt_snapshot.execution_snapshot.binding_set_hash
+            ),
+            "materialization_asset_version_id": document.asset_version_id,
+            "materialization_content_hash": document.content_hash,
+            "materialization_hash": materialization_hash,
+            "prompt_system_instruction_hash": (
+                materialization.system_instruction.content_hash
+            ),
+            "prompt_template_hash": materialization.prompt_template.content_hash,
+            "skill_content_hash": materialization.skill.content_hash,
+            "context_asset_version_ids": [
+                item["asset_version_id"] for item in context_selection
+            ],
+            "knowledge_content_hashes": [
+                item.content_hash for item in materialization.required_knowledge
+            ],
+            "allowed_tools": list(allowed_tools),
+            "output_schema_ref": provider_schema_ref,
+            "output_schema_hash": schema_hash,
+        }
+        return ChapterCapabilityPreflight(
+            attempt_snapshot=attempt_snapshot,
+            materialization=materialization,
+            materialization_artifact=pointer,
+            effect_binding=effect_binding,
+        )
+
     def bind(
         self,
         *,
@@ -253,9 +540,6 @@ class PostgresChapterExecutionContractBinder:
         worker_id = str(metadata.get("worker_id") or "")
         try:
             fencing_token = int(metadata.get("fencing_token") or 0)
-            snapshot_fencing_token = int(
-                metadata.get("snapshot_fencing_token") or fencing_token
-            )
             chapter = int(metadata.get("chapter") or 0)
         except (TypeError, ValueError) as exc:
             raise ExternalEffectAdapterError(
@@ -280,22 +564,75 @@ class PostgresChapterExecutionContractBinder:
             "chapter_number": chapter,
         }
         artifacts = self._artifacts(metadata)
-        attempt_pack_snapshot = self._resolve_pack_snapshot(
-            project_id=project_id,
-            workspace_id=workspace_id,
-            book_id=book_id,
-            operation_id=operation_id,
-            attempt_id=attempt_id,
-            execution_fencing_token=fencing_token,
-            worker_id=worker_id,
-            snapshot_creation_fencing_token=snapshot_fencing_token,
-            snapshot_creation_worker_id=str(
-                metadata.get("snapshot_worker_id") or worker_id
-            ),
-            stage=stage,
-            graph=graph,
-            route=route,
-        )
+        capability_runtime = metadata.get("capability_runtime")
+        attempt_pack_snapshot: CapabilityPackAttemptSnapshot | None = None
+        materialization_contract: Mapping[str, Any] | None = None
+        if isinstance(capability_runtime, Mapping):
+            snapshot_id = str(capability_runtime.get("snapshot_id") or "")
+            snapshot_hash = str(capability_runtime.get("snapshot_hash") or "")
+            attempt_pack_snapshot = self.pack_resolver.require_attempt_snapshot(
+                attempt_id=attempt_id,
+                snapshot_id=snapshot_id,
+                snapshot_hash=snapshot_hash,
+            )
+            if attempt_pack_snapshot.operation_id != operation_id:
+                raise KernelError(
+                    "CAPABILITY_PACK_SNAPSHOT_INCONSISTENT",
+                    "frozen Capability Snapshot belongs to another Operation",
+                )
+            materialization_version_id = str(
+                capability_runtime.get("materialization_asset_version_id") or ""
+            )
+            document = self.query.require(
+                project_id=project_id,
+                asset_version_id=materialization_version_id,
+            )
+            if (
+                document.asset_type != "capability_materialization_manifest"
+                or document.content_hash
+                != str(
+                    capability_runtime.get("materialization_content_hash") or ""
+                )
+            ):
+                raise KernelError(
+                    "CAPABILITY_PACK_SNAPSHOT_INCONSISTENT",
+                    "ExternalEffect Capability materialization identity drifted",
+                )
+            frozen = document.content.get("contract", document.content)
+            if (
+                not isinstance(frozen, Mapping)
+                or str(frozen.get("materialization_hash") or "")
+                != str(capability_runtime.get("materialization_hash") or "")
+                or str(
+                    (frozen.get("attempt_snapshot") or {}).get("snapshot_id")
+                    if isinstance(frozen.get("attempt_snapshot"), Mapping)
+                    else ""
+                )
+                != snapshot_id
+            ):
+                raise KernelError(
+                    "CAPABILITY_PACK_SNAPSHOT_INCONSISTENT",
+                    "Capability materialization content differs from ExternalEffect",
+                )
+            materialization_contract = frozen
+            materialization_pointer = ArtifactPointer(
+                artifact_ref=f"asset-version:{document.asset_version_id}",
+                asset_version_id=document.asset_version_id,
+                artifact_type=document.asset_type,
+                content_hash=document.content_hash,
+                schema_version="novelos.chapter_capability_materialization.v1",
+                source_eligibility="NOT_SOURCE_DERIVED",
+            )
+            if all(
+                item.asset_version_id != materialization_pointer.asset_version_id
+                for item in artifacts
+            ):
+                artifacts = (*artifacts, materialization_pointer)
+        elif self.pack_required:
+            raise KernelError(
+                "CHAPTER_CAPABILITY_PREFLIGHT_MISSING",
+                "controlled Chapter execution cannot bypass Capability preflight",
+            )
         pack_snapshot = (
             attempt_pack_snapshot.execution_snapshot
             if attempt_pack_snapshot is not None
@@ -323,6 +660,8 @@ class PostgresChapterExecutionContractBinder:
             )
             context_policy_payload: dict[str, Any] = {}
             tool_policy_payload: dict[str, Any] = {}
+            allowed_tools = ("model.provider.invoke",)
+            denied_tools: tuple[str, ...] = ()
             prompt_version = route.prompt_version
             skill_version = route.skill_version
             system_instruction_hash = route.system_instruction_hash
@@ -353,6 +692,9 @@ class PostgresChapterExecutionContractBinder:
                 pack_snapshot.context_policy_payload_json
             )
             tool_policy_payload = json.loads(pack_snapshot.tool_policy_payload_json)
+            allowed_tools, denied_tools = _stage_tool_permissions(
+                tool_policy_payload, stage
+            )
             prompt_version = pack_snapshot.prompt_bundle_ref
             skill_version = pack_snapshot.skill_version
             system_instruction_hash = (
@@ -387,10 +729,19 @@ class PostgresChapterExecutionContractBinder:
             requires_lineage=True,
             isolation_mode="ABSTRACT_ASSETS_ONLY",
         )
+        provider_output_schema_ref = (
+            str(
+                (materialization_contract.get("output_schema") or {}).get("ref")
+                if materialization_contract is not None
+                and isinstance(materialization_contract.get("output_schema"), Mapping)
+                else ""
+            )
+            or definition.output_schema_ref
+        )
         validation_policy = ValidationPolicy(
             policy_id=definition.validation_policy_ref,
             policy_version="v1",
-            structural_schema_ref=definition.output_schema_ref,
+            structural_schema_ref=provider_output_schema_ref,
             semantic_validator_refs=(
                 "validator:" + definition.capability_id.value.replace(".", "-") + ":v1",
             ),
@@ -435,7 +786,7 @@ class PostgresChapterExecutionContractBinder:
             system_instruction_hash=system_instruction_hash,
             template_hash=template_hash,
             input_schema_ref=definition.input_schema_ref,
-            output_schema_ref=definition.output_schema_ref,
+            output_schema_ref=provider_output_schema_ref,
             skill_bundle_ref=skill_ref,
             context_policy_ref=context_policy_ref,
             source_policy_ref=definition.source_policy_ref,
@@ -533,7 +884,7 @@ class PostgresChapterExecutionContractBinder:
             prompt_bundle_ref=prompt_ref,
             skill_bundle_ref=skill_ref,
             context_bundle_ref=context_ref,
-            output_schema_ref=route.output_schema_ref,
+            output_schema_ref=provider_output_schema_ref,
             release_sha=route.release_sha,
             fallback_policy_ref=route.route_policy.fallback_policy_ref,
             fallback_policy_version=(route.route_policy.fallback_policy_version),
@@ -598,9 +949,8 @@ class PostgresChapterExecutionContractBinder:
             contract={
                 "tool_policy_id": tool_ref,
                 "tool_policy_version": "v1",
-                "allowed_tools": list(
-                    tool_policy_payload.get("explicit_tool_refs") or ()
-                ),
+                "allowed_tools": list(allowed_tools),
+                "denied_tools": list(denied_tools),
                 "direct_http": "FORBIDDEN",
                 "direct_file": "FORBIDDEN",
                 "direct_command": "FORBIDDEN",
@@ -840,6 +1190,39 @@ class PostgresChapterExecutionContractBinder:
                 return None
             raise
 
+    def _materialize_selected_inputs(
+        self,
+        *,
+        project_id: str,
+        artifacts: tuple[ArtifactPointer, ...],
+    ) -> list[dict[str, Any]]:
+        selected: list[dict[str, Any]] = []
+        for pointer in artifacts:
+            document = self.query.require(
+                project_id=project_id,
+                asset_version_id=pointer.asset_version_id,
+            )
+            if (
+                document.asset_type != pointer.artifact_type
+                or document.content_hash != pointer.content_hash
+                or document.eligibility
+                not in {"ELIGIBLE", "PRODUCTION_ELIGIBLE", "NOT_SOURCE_DERIVED"}
+                or document.governance != "CLEAR"
+            ):
+                raise KernelError(
+                    "CHAPTER_CAPABILITY_CONTEXT_INVALID",
+                    "frozen input Artifact differs from PostgreSQL Authority",
+                )
+            selected.append(
+                {
+                    **pointer.to_dict(),
+                    "content": document.content,
+                    "eligibility": document.eligibility,
+                    "governance": document.governance,
+                }
+            )
+        return selected
+
     def _budget_reservation(self, external_effect_id: str, project_id: str) -> str:
         runtime = get_database_runtime(self.database_url)
         with runtime.connection() as connection:
@@ -872,7 +1255,7 @@ class PostgresChapterExecutionContractBinder:
         contract: dict[str, Any],
         trace_id: str,
         correlation_id: str,
-    ) -> None:
+    ) -> AuthorityAssetDocument:
         try:
             existing = self.query.require(
                 project_id=project_id, logical_ref=logical_ref
@@ -888,9 +1271,9 @@ class PostgresChapterExecutionContractBinder:
                     "EXECUTION_CONTRACT_FROZEN_CONFLICT",
                     "an immutable execution contract changed inside one identity",
                 )
-            return
+            return existing
         token = _identity_token(f"{project_id}:{logical_ref}")
-        self.writer.materialize_output(
+        return self.writer.materialize_output(
             AuthorityAssetWriteCommand(
                 operation_id=operation_id,
                 project_id=project_id,
@@ -1141,14 +1524,84 @@ class PostgresChapterExecutionPayloadResolver:
         if stage != request.stage or not isinstance(inputs, Mapping):
             raise ValueError("frozen Chapter ExternalEffect payload changed")
         if self.fixture_response_factory is None:
+            metadata = payload.get("_production_execution")
+            capability_runtime = (
+                metadata.get("capability_runtime")
+                if isinstance(metadata, Mapping)
+                else None
+            )
+            if not isinstance(capability_runtime, Mapping):
+                raise KernelError(
+                    "CHAPTER_CAPABILITY_PREFLIGHT_MISSING",
+                    "Provider payload cannot bypass frozen Capability materialization",
+                )
+            materialization_version_id = str(
+                capability_runtime.get("materialization_asset_version_id") or ""
+            )
+            materialization_document = AuthorityAssetQuery(
+                self.database_url
+            ).require(
+                project_id=request.project_id,
+                asset_version_id=materialization_version_id,
+            )
+            if (
+                materialization_document.asset_type
+                != "capability_materialization_manifest"
+                or materialization_document.content_hash
+                != str(
+                    capability_runtime.get("materialization_content_hash") or ""
+                )
+            ):
+                raise KernelError(
+                    "CAPABILITY_PACK_SNAPSHOT_INCONSISTENT",
+                    "Provider materialization differs from frozen ExternalEffect",
+                )
+            materialization = materialization_document.content.get(
+                "contract", materialization_document.content
+            )
+            if (
+                not isinstance(materialization, Mapping)
+                or str(materialization.get("materialization_hash") or "")
+                != str(capability_runtime.get("materialization_hash") or "")
+            ):
+                raise KernelError(
+                    "CAPABILITY_PACK_SNAPSHOT_INCONSISTENT",
+                    "Provider materialization hash differs from frozen ExternalEffect",
+                )
+            input_text, prompt_evidence = _materialize_chapter_codex_prompt(
+                request=request,
+                stage=stage,
+                inputs=inputs,
+                materialization=materialization,
+            )
+            output_schema = materialization.get("output_schema")
+            if not isinstance(output_schema, Mapping) or not isinstance(
+                output_schema.get("content"), Mapping
+            ):
+                raise KernelError(
+                    "CHAPTER_PROVIDER_OUTPUT_SCHEMA_INVALID",
+                    "frozen Capability materialization has no output schema content",
+                )
+            tool_permissions = materialization.get("tool_permissions")
+            if not isinstance(tool_permissions, Mapping):
+                raise KernelError(
+                    "CHAPTER_CAPABILITY_TOOL_POLICY_INVALID",
+                    "frozen Capability materialization has no Tool policy",
+                )
             resolved_payload: dict[str, Any] = {
                 "stage": stage,
                 "input": dict(inputs),
                 "prompt_bundle_ref": admission.route_snapshot.prompt_bundle_ref,
                 "skill_bundle_ref": admission.route_snapshot.skill_bundle_ref,
-                "output_schema_ref": admission.route_snapshot.output_schema_ref,
+                "output_schema_ref": str(output_schema.get("ref") or ""),
+                "capability_runtime": dict(capability_runtime),
+                "prompt_materialization": prompt_evidence,
             }
         else:
+            input_text = _canonical({"stage": stage, "input": inputs})
+            output_schema = None
+            tool_permissions = {}
+            prompt_evidence = None
             resolved_payload = {
                 "result": self.fixture_response_factory(stage, inputs),
                 "usage": {"input_tokens": 0, "output_tokens": 0},
@@ -1162,12 +1615,140 @@ class PostgresChapterExecutionPayloadResolver:
             }
         return ResolvedExecutionPayload(
             request_payload=resolved_payload,
-            input_text=_canonical({"stage": stage, "input": inputs}),
+            input_text=input_text,
             working_directory=self.working_directory,
             timeout_seconds=int(row[1] or 30),
-            output_schema_version=admission.route_snapshot.output_schema_ref,
+            output_schema_version=(
+                str(output_schema.get("ref") or "")
+                if isinstance(output_schema, Mapping)
+                else admission.route_snapshot.output_schema_ref
+            ),
             command=self.command,
+            output_schema=(
+                dict(output_schema["content"])
+                if isinstance(output_schema, Mapping)
+                and isinstance(output_schema.get("content"), Mapping)
+                else None
+            ),
+            capability_evidence=prompt_evidence,
+            allowed_tools=tuple(
+                str(item) for item in tool_permissions.get("allowed") or ()
+            ),
+            denied_tools=tuple(
+                str(item) for item in tool_permissions.get("denied") or ()
+            ),
         )
+
+
+def _materialize_chapter_codex_prompt(
+    *,
+    request: ExecutionRequest,
+    stage: str,
+    inputs: Mapping[str, Any],
+    materialization: Mapping[str, Any],
+) -> tuple[str, dict[str, Any]]:
+    pack_artifacts = materialization.get("pack_artifacts")
+    if not isinstance(pack_artifacts, Mapping):
+        raise KernelError(
+            "CAPABILITY_PACK_ASSET_CONTENT_MISSING",
+            "Capability materialization has no Pack Artifact content",
+        )
+
+    def required_text(key: str) -> tuple[str, Mapping[str, Any]]:
+        artifact = pack_artifacts.get(key)
+        content = artifact.get("content") if isinstance(artifact, Mapping) else None
+        text = content.get("text") if isinstance(content, Mapping) else None
+        if not isinstance(text, str) or not text.strip():
+            raise KernelError(
+                "CAPABILITY_PACK_ASSET_CONTENT_MISSING",
+                f"Capability {key} has no exact text content",
+            )
+        return text, artifact
+
+    system_text, system = required_text("system_instruction")
+    template_text, template = required_text("prompt_template")
+    skill_text, skill = required_text("skill")
+    context = materialization.get("context_selection")
+    knowledge = materialization.get("knowledge_selection")
+    tools = materialization.get("tool_permissions")
+    schema = materialization.get("output_schema")
+    if (
+        not isinstance(context, list)
+        or len(context) != 1
+        or not isinstance(context[0], Mapping)
+        or not isinstance(knowledge, list)
+        or not knowledge
+        or not isinstance(tools, Mapping)
+        or not isinstance(schema, Mapping)
+        or not isinstance(schema.get("content"), Mapping)
+    ):
+        raise KernelError(
+            "CHAPTER_CAPABILITY_MATERIALIZATION_INVALID",
+            "Capability Context, Knowledge, Tool, or Schema selection is incomplete",
+        )
+    replacements = {
+        "{{stage}}": stage,
+        "{{target_scope}}": _canonical(request.target_scope),
+        "{{input_manifest}}": _canonical(inputs),
+        "{{context_bundle}}": _canonical(context[0].get("content")),
+        "{{output_schema_ref}}": str(schema.get("ref") or ""),
+    }
+    rendered_template = template_text
+    for marker, value in replacements.items():
+        rendered_template = rendered_template.replace(marker, value)
+    if "{{" in rendered_template or "}}" in rendered_template:
+        raise KernelError(
+            "CHAPTER_CAPABILITY_TEMPLATE_INVALID",
+            "frozen Prompt Template contains unresolved placeholders",
+        )
+    allowed = tuple(str(item) for item in tools.get("allowed") or ())
+    if allowed != ("model.provider.invoke",):
+        raise KernelError(
+            "CHAPTER_CAPABILITY_TOOL_UNAUTHORIZED",
+            "Codex execution permits only the governed provider invocation",
+        )
+    prompt = "\n\n".join(
+        (
+            "<system_instruction>\n" + system_text + "\n</system_instruction>",
+            "<governed_skill>\n" + skill_text + "\n</governed_skill>",
+            "<required_knowledge>\n"
+            + _canonical(knowledge)
+            + "\n</required_knowledge>",
+            "<tool_policy>\n"
+            + _canonical(tools)
+            + "\nDo not invoke shell, file, MCP, web, or any other tool.\n</tool_policy>",
+            "<prompt_template>\n" + rendered_template + "\n</prompt_template>",
+            "<output_schema>\n"
+            + _canonical(schema["content"])
+            + "\n</output_schema>",
+        )
+    )
+    prompt_hash = "sha256:" + hashlib.sha256(prompt.encode("utf-8")).hexdigest()
+    evidence = {
+        "materialization_hash": str(materialization.get("materialization_hash") or ""),
+        "fully_rendered_prompt_hash": prompt_hash,
+        "system_instruction": {
+            key: system.get(key) for key in ("ref", "version", "content_hash")
+        },
+        "prompt_template": {
+            key: template.get(key) for key in ("ref", "version", "content_hash")
+        },
+        "skill": {
+            key: skill.get(key) for key in ("ref", "version", "content_hash")
+        },
+        "context_asset_version_ids": [
+            str(item.get("asset_version_id") or "") for item in context
+        ],
+        "knowledge_content_hashes": [
+            str(item.get("content_hash") or "")
+            for item in knowledge
+            if isinstance(item, Mapping)
+        ],
+        "allowed_tools": list(allowed),
+        "output_schema_ref": str(schema.get("ref") or ""),
+        "output_schema_hash": str(schema.get("content_hash") or ""),
+    }
+    return prompt, evidence
 
 
 @dataclass(frozen=True, slots=True)
@@ -1290,10 +1871,10 @@ class ProductionExecutionGatewayExternalEffectAdapter:
         all_real = all(
             item.real_provider_validation_eligible for item in routes.values()
         )
-        all_idempotent = all(
-            item.model_profile.runtime_class.value != "LOCAL_CLI_REMOTE_INFERENCE"
-            for item in routes.values()
-        )
+        # This is the ExternalEffect-facing composite adapter capability.  Its
+        # stable execution id plus persistent local receipt prevents duplicate
+        # submission even though Codex itself exposes no remote idempotency key.
+        gateway_submission_idempotent = True
         self.capability_profile = ProviderCapabilityProfile(
             provider=self.provider,
             control_level=(
@@ -1302,7 +1883,7 @@ class ProductionExecutionGatewayExternalEffectAdapter:
                 else ProviderControlLevel.FIXTURE_CONTROLLED
             ),
             supports_request_timeout=True,
-            supports_provider_idempotency=all_idempotent,
+            supports_provider_idempotency=gateway_submission_idempotent,
             supports_query=True,
             supports_cancel=True,
             supports_callback=False,
@@ -1564,6 +2145,9 @@ class ProductionExecutionGatewayExternalEffectAdapter:
                 "PROVIDER_INVOKING",
                 "PROVIDER_OUTCOME_UNKNOWN",
                 "PROVIDER_RESULT_RECORDED",
+                "PROCESS_STARTING",
+                "PROCESS_OUTCOME_UNKNOWN",
+                "PROCESS_RESULT_RECORDED",
             }
             raise ExternalEffectAdapterError(
                 f"gateway execution failed: {type(exc).__name__}: {exc}",
@@ -1665,11 +2249,14 @@ class ProductionExecutionGatewayExternalEffectAdapter:
         result: Any,
     ) -> dict[str, Any]:
         route = self.routes[binding.request.stage]
+        execution_record = session.evidence_store.get_record(
+            binding.request.execution_id
+        )
         evidence: dict[str, Any] = {
             "provider_id": route.model_profile.model_provider,
             "model_id": route.model_profile.model_id,
-            "prompt_version": route.prompt_version,
-            "skill_version": route.skill_version,
+            "prompt_version": binding.input_manifest.prompt_bundle_version,
+            "skill_version": binding.input_manifest.skill_bundle_version,
             "real_model_call": (
                 route.real_provider_validation_eligible
                 and handle.transport.value != "SCRIPTED_FIXTURE"
@@ -1684,8 +2271,17 @@ class ProductionExecutionGatewayExternalEffectAdapter:
                 "input_manifest": binding.input_manifest.to_dict(),
                 "validation_manifest_ref": result.validation_report_ref or "",
                 "commit_manifest_required": True,
+                "process_evidence": dict(execution_record.raw_evidence),
             },
         }
+        capability_evidence = execution_record.raw_evidence.get(
+            "capability_evidence"
+        )
+        if isinstance(capability_evidence, Mapping):
+            evidence["capability_runtime"] = dict(capability_evidence)
+        tool_evidence = execution_record.raw_evidence.get("tools")
+        if isinstance(tool_evidence, Mapping):
+            evidence["tools"] = dict(tool_evidence)
         if result.normalized_output_ref:
             raw = session.evidence_store.read_evidence(result.normalized_output_ref)
             evidence["result"] = normalize_model_output(binding.request.stage, raw)
@@ -1721,7 +2317,11 @@ class ProductionExecutionGatewayExternalEffectAdapter:
     def _external_outcome(outcome: ExecutionOutcome, *, reconciliation: bool) -> str:
         if outcome is ExecutionOutcome.SUCCEEDED:
             return "success"
-        if outcome is ExecutionOutcome.RETRYABLE_FAILURE:
+        if outcome in {
+            ExecutionOutcome.RETRYABLE_FAILURE,
+            ExecutionOutcome.TIMED_OUT,
+            ExecutionOutcome.CORRUPT_RESULT,
+        }:
             return "not_found" if reconciliation else "retryable_failure"
         if outcome is ExecutionOutcome.FINAL_FAILURE:
             return "failed_final" if reconciliation else "final_failure"
@@ -1731,6 +2331,7 @@ class ProductionExecutionGatewayExternalEffectAdapter:
             ExecutionOutcome.ACCEPTED,
             ExecutionOutcome.RUNNING,
             ExecutionOutcome.UNKNOWN,
+            ExecutionOutcome.ORPHANED,
         }:
             return "ambiguous" if reconciliation else "unknown"
         return "failed_final" if reconciliation else "final_failure"

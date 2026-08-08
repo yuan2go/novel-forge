@@ -174,6 +174,63 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
             application.model_port.adapter.capability_profile.real_provider_validation_eligible
         )
 
+    def test_provider_validation_composes_codex_directly_without_provider_v2(self) -> None:
+        repository_root = Path(__file__).resolve().parents[2]
+        executable = Path("/Applications/ChatGPT.app/Contents/Resources/codex")
+        if not executable.is_file():
+            self.skipTest("application Codex CLI is not installed")
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            workspace = root / "isolated-workspace"
+            workspace.mkdir()
+            environment = {
+                "NOVEL_FORGE_ENVIRONMENT": "provider-validation",
+                "NOVEL_FORGE_MODEL_PROVIDER": "codex-cli",
+                "NOVEL_FORGE_DRAFT_MODEL": "gpt-5.4",
+                "NOVEL_FORGE_REVIEW_MODEL": "gpt-5.4",
+                "NOVEL_FORGE_REVISION_MODEL": "gpt-5.4",
+                "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": str(root / "objects"),
+                "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_BACKEND": "minio",
+                "NOVEL_FORGE_PROVIDER_MAX_COST_PER_CALL": "1.00",
+                "NOVEL_FORGE_APPLICATION_BUILD_ID": "codex-composition-test",
+                "NOVEL_FORGE_COMMIT_SHA": "a" * 40,
+                "NOVEL_FORGE_RUNTIME_HOST_ID": "host:codex-test",
+                "NOVEL_FORGE_PROVIDER_AUTH_PROFILE": "auth:codex-test",
+                "NOVEL_FORGE_CODEX_EXECUTABLE": str(executable),
+                "NOVEL_FORGE_CODEX_WORKSPACE": str(workspace),
+                "NOVEL_FORGE_CODEX_EXECUTION_ROOT": str(root / "executions"),
+                "NOVEL_FORGE_CODEX_PRICING_REF": "pricing:gpt-5.4:test",
+                "NOVEL_FORGE_CODEX_PRICING_CURRENCY": "USD",
+                "NOVEL_FORGE_CODEX_INPUT_PER_MILLION": "1",
+                "NOVEL_FORGE_CODEX_CACHED_INPUT_PER_MILLION": "0.1",
+                "NOVEL_FORGE_CODEX_OUTPUT_PER_MILLION": "2",
+            }
+            with patch(
+                "novel_forge.storage.object_store.MinioObjectStore",
+                return_value=SimpleNamespace(client=object()),
+            ):
+                application = build_chapter_authority_application(
+                    IndustrialSettings(
+                        root=repository_root,
+                        database_url="postgresql://authority",
+                    ),
+                    provider_registry=ProviderAdapterRegistry(),
+                    env=environment,
+                )
+
+        routes = application.model_port.adapter.routes
+        self.assertEqual(
+            {route.model_profile.backend_id for route in routes.values()},
+            {"codex-cli"},
+        )
+        self.assertEqual(
+            {route.model_profile.runtime_class.value for route in routes.values()},
+            {"LOCAL_CLI_REMOTE_INFERENCE"},
+        )
+        self.assertTrue(
+            application.model_port.adapter.capability_profile.real_provider_validation_eligible
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

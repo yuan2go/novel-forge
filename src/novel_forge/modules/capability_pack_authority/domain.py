@@ -300,6 +300,121 @@ class CapabilityPackAttemptSnapshot:
             raise ValueError("Attempt Snapshot hash differs from frozen execution content")
 
 
+@dataclass(frozen=True, slots=True)
+class MaterializedCapabilityArtifact:
+    """Exact immutable Authority content selected by one Pack snapshot."""
+
+    kind: str
+    ref: str
+    version: str
+    content_hash: str
+    content_json: str
+    source_identity: str
+
+    def __post_init__(self) -> None:
+        if not all(
+            str(value).strip()
+            for value in (
+                self.kind,
+                self.ref,
+                self.version,
+                self.content_hash,
+                self.content_json,
+                self.source_identity,
+            )
+        ):
+            raise ValueError("materialized Capability Artifact is incomplete")
+        if not _CONTENT_HASH.fullmatch(self.content_hash):
+            raise ValueError("materialized Capability Artifact hash is invalid")
+        content = json.loads(self.content_json)
+        if canonical_hash(content) != self.content_hash:
+            raise ValueError("materialized Capability Artifact content hash drift")
+
+    @property
+    def content(self) -> Any:
+        return json.loads(self.content_json)
+
+    def to_dict(self, *, include_content: bool = True) -> dict[str, Any]:
+        value = {
+            "kind": self.kind,
+            "ref": self.ref,
+            "version": self.version,
+            "content_hash": self.content_hash,
+            "source_identity": self.source_identity,
+        }
+        if include_content:
+            value["content"] = self.content
+        return value
+
+
+@dataclass(frozen=True, slots=True)
+class CapabilityPackArtifactMaterialization:
+    """Provider-relevant exact content resolved from one registered Pack Version."""
+
+    pack_id: str
+    pack_version: str
+    manifest_hash: str
+    artifact_catalog_hash: str
+    system_instruction: MaterializedCapabilityArtifact
+    prompt_template: MaterializedCapabilityArtifact
+    skill: MaterializedCapabilityArtifact
+    context_policy: MaterializedCapabilityArtifact
+    tool_policy: MaterializedCapabilityArtifact
+    input_schema: MaterializedCapabilityArtifact
+    output_schema: MaterializedCapabilityArtifact
+    required_knowledge: tuple[MaterializedCapabilityArtifact, ...] = ()
+
+    def __post_init__(self) -> None:
+        if not all(
+            str(value).strip()
+            for value in (
+                self.pack_id,
+                self.pack_version,
+                self.manifest_hash,
+                self.artifact_catalog_hash,
+            )
+        ):
+            raise ValueError("Capability Pack materialization identity is incomplete")
+        require_content_hashes(
+            {
+                "manifest_hash": self.manifest_hash,
+                "artifact_catalog_hash": self.artifact_catalog_hash,
+            }
+        )
+
+    @property
+    def materialization_hash(self) -> str:
+        return canonical_hash(self.to_dict(include_content=True))
+
+    def to_dict(self, *, include_content: bool = True) -> dict[str, Any]:
+        return {
+            "pack_id": self.pack_id,
+            "pack_version": self.pack_version,
+            "manifest_hash": self.manifest_hash,
+            "artifact_catalog_hash": self.artifact_catalog_hash,
+            "system_instruction": self.system_instruction.to_dict(
+                include_content=include_content
+            ),
+            "prompt_template": self.prompt_template.to_dict(
+                include_content=include_content
+            ),
+            "skill": self.skill.to_dict(include_content=include_content),
+            "context_policy": self.context_policy.to_dict(
+                include_content=include_content
+            ),
+            "tool_policy": self.tool_policy.to_dict(include_content=include_content),
+            "input_schema": self.input_schema.to_dict(
+                include_content=include_content
+            ),
+            "output_schema": self.output_schema.to_dict(
+                include_content=include_content
+            ),
+            "required_knowledge": [
+                item.to_dict(include_content=include_content)
+                for item in self.required_knowledge
+            ],
+        }
+
 def require_content_hashes(values: Mapping[str, str]) -> None:
     invalid = [
         name for name, value in values.items() if not _CONTENT_HASH.fullmatch(value)
@@ -311,12 +426,14 @@ def require_content_hashes(values: Mapping[str, str]) -> None:
 __all__ = [
     "ApprovalDecision",
     "CapabilityPackAttemptSnapshot",
+    "CapabilityPackArtifactMaterialization",
     "CapabilityPackExecutionSnapshot",
     "CapabilityPackScope",
     "DeploymentStatus",
     "DriftClassification",
     "RolloutStatus",
     "ScopeType",
+    "MaterializedCapabilityArtifact",
     "canonical_hash",
     "canonical_json",
     "require_content_hashes",

@@ -25,6 +25,24 @@ class AuthorityWorkerExecutionTests(unittest.TestCase):
             (KernelError("OPERATION_CANCELLED", "cancelled"), WorkerFailureClass.CANCELLATION),
             (KernelError("ATTEMPT_RETRY_EXHAUSTED", "dead"), WorkerFailureClass.DEAD_LETTER),
             (KernelError("WAITING_GATE", "human"), WorkerFailureClass.MANUAL_INTERVENTION),
+            (
+                KernelError("MODEL_EFFECT_TIMEOUT", "provider timed out"),
+                WorkerFailureClass.RETRYABLE,
+            ),
+            (
+                KernelError(
+                    "MODEL_EFFECT_RETRYABLE_OUTPUT_SCHEMA_FAILURE",
+                    "retry structured output",
+                ),
+                WorkerFailureClass.RETRYABLE,
+            ),
+            (
+                KernelError(
+                    "MODEL_EFFECT_FINAL_UNAUTHORIZED_TOOL_INVOCATION",
+                    "tool denied",
+                ),
+                WorkerFailureClass.FINAL_FAILURE,
+            ),
             (TypeError("bug"), WorkerFailureClass.PROGRAMMING_BUG),
         )
         for error, expected in cases:

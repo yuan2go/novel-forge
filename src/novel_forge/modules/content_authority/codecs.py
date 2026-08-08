@@ -329,6 +329,92 @@ def _state_initialize_empty(request: AuthorityHandlerRequest) -> dict[str, Any]:
     )
 
 
+def _operator_authored_input(
+    request: AuthorityHandlerRequest,
+    *,
+    asset_type: str,
+    required_fields: tuple[str, ...],
+) -> dict[str, Any]:
+    if request.inputs:
+        raise ValueError("operator-authored production inputs cannot inherit assets")
+    payload = _payload(request)
+    content = payload.get("content")
+    if not isinstance(content, dict):
+        raise ValueError("operator-authored input content must be an object")
+    declared_type = str(content.get("type") or asset_type)
+    if declared_type != asset_type:
+        raise ValueError(f"operator-authored input must declare type {asset_type}")
+    declared_project = str(content.get("project_id") or request.project_id)
+    if declared_project != request.project_id:
+        raise ValueError("operator-authored input belongs to another project")
+    missing = [field for field in required_fields if not content.get(field)]
+    if missing:
+        raise ValueError(
+            "operator-authored input is missing required fields: "
+            + ", ".join(missing)
+        )
+    if content.get("raw_source") is True or content.get(
+        "source_expression_included"
+    ) is True:
+        raise ValueError("operator-authored production inputs cannot contain raw source")
+    safe_summary = str(content.get("safe_summary") or "").strip()
+    structured_facts = content.get("structured_facts")
+    if not safe_summary or not isinstance(structured_facts, list):
+        raise ValueError(
+            "operator-authored input requires safe_summary and structured_facts"
+        )
+    return {
+        **content,
+        "type": asset_type,
+        "project_id": request.project_id,
+        "allowed_use": "generation",
+        "raw_source": False,
+        "source_expression_included": False,
+        "governance_status": "CLEAR",
+        "operator_authored": True,
+        "evidence_level": "OPERATOR_AUTHORED",
+    }
+
+
+def author_chapter_plan(request: AuthorityHandlerRequest) -> dict[str, Any]:
+    return _operator_authored_input(
+        request,
+        asset_type="chapter_plan",
+        required_fields=(
+            "chapter",
+            "title",
+            "premise",
+            "chapter_objective",
+            "scene_sequence",
+            "chapter_hook",
+        ),
+    )
+
+
+def author_style_policy(request: AuthorityHandlerRequest) -> dict[str, Any]:
+    return _operator_authored_input(
+        request,
+        asset_type="style_policy",
+        required_fields=("profile_id", "constraints"),
+    )
+
+
+def author_quality_rubric(request: AuthorityHandlerRequest) -> dict[str, Any]:
+    return _operator_authored_input(
+        request,
+        asset_type="quality_rubric",
+        required_fields=("profile_id", "dimensions"),
+    )
+
+
+def author_platform_profile(request: AuthorityHandlerRequest) -> dict[str, Any]:
+    return _operator_authored_input(
+        request,
+        asset_type="platform_profile",
+        required_fields=("profile_id", "constraints"),
+    )
+
+
 def _human_decision_record(request: AuthorityHandlerRequest) -> dict[str, Any]:
     sample = _one(request, "quality_golden_sample")
     payload = dict(_payload(request)["decision"])
@@ -489,8 +575,19 @@ CONTENT_CODECS: dict[str, ContentHandlerCodec] = {
         ("quality.calibration.profile.promote", "quality_calibration_profile", "quality.calibration.profile", _calibration_profile_promote),
         ("quality.calibration.profile.revoke", "quality_calibration_profile", "quality.calibration.profile_revocation", _calibration_profile_revoke),
         ("chapter.state.initialize_empty", "typed_empty_state_snapshot", "chapter.state.empty_snapshot", _state_initialize_empty),
+        ("chapter.plan.author", "chapter_plan", "chapter.plan", author_chapter_plan),
+        ("chapter.style_policy.author", "style_policy", "chapter.style_policy", author_style_policy),
+        ("chapter.quality_rubric.author", "quality_rubric", "chapter.quality_rubric", author_quality_rubric),
+        ("chapter.platform_profile.author", "platform_profile", "chapter.platform_profile", author_platform_profile),
         ("creative.candidates.generate", "creative_candidate_pool", "creative.candidates.pool", _creative_candidates_generate),
     )
 }
 
-__all__ = ["CONTENT_CODECS", "ContentHandlerCodec"]
+__all__ = [
+    "CONTENT_CODECS",
+    "ContentHandlerCodec",
+    "author_chapter_plan",
+    "author_platform_profile",
+    "author_quality_rubric",
+    "author_style_policy",
+]

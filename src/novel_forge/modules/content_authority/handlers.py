@@ -11,6 +11,12 @@ from novel_forge.modules.chapter_quality_authority.calibration import (
 )
 from novel_forge.modules.production_preparation.empty_state import initialize_typed_empty_state
 from novel_forge.modules.creative.generator_boundary import build_candidate_pool
+from novel_forge.modules.content_authority.codecs import (
+    author_chapter_plan,
+    author_platform_profile,
+    author_quality_rubric,
+    author_style_policy,
+)
 
 CONTENT_DOMAIN_HANDLERS = {
     "creative.brief.create": validate_creative_brief,
@@ -41,5 +47,9 @@ CONTENT_DOMAIN_HANDLERS = {
     "quality.calibration.profile.promote": promote_calibration_profile,
     "quality.calibration.profile.revoke": promote_calibration_profile,
     "chapter.state.initialize_empty": initialize_typed_empty_state,
+    "chapter.plan.author": author_chapter_plan,
+    "chapter.style_policy.author": author_style_policy,
+    "chapter.quality_rubric.author": author_quality_rubric,
+    "chapter.platform_profile.author": author_platform_profile,
     "creative.candidates.generate": build_candidate_pool,
 }

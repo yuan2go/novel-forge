@@ -196,7 +196,7 @@ class AuthorityAssetDocumentRepository:
         if asset_version_id is not None:
             self.cursor.execute(
                 _VERSION_DOCUMENT_SELECT
-                + " WHERE locator.project_id = %s AND version.asset_version_id = %s",
+                + " WHERE asset.project_id = %s AND version.asset_version_id = %s",
                 [project_id, asset_version_id],
             )
             row = self.cursor.fetchone()
@@ -443,14 +443,18 @@ JOIN authority_asset_version AS version
 """
 
 _VERSION_DOCUMENT_SELECT = """
-SELECT locator.project_id, locator.logical_ref, locator.category,
+SELECT asset.project_id,
+       COALESCE(locator.logical_ref, 'asset-version:' || version.asset_version_id),
+       COALESCE(locator.category, asset.asset_type),
        asset.asset_id, asset.asset_type, version.asset_version_id,
        version.version_number, version.lifecycle, version.eligibility,
        version.governance, version.content_hash, version.content,
-       locator.updated_at
+       COALESCE(locator.updated_at, version.created_at)
 FROM authority_asset_version AS version
 JOIN authority_asset AS asset ON asset.asset_id = version.asset_id
-JOIN authority_asset_locator AS locator ON locator.asset_id = asset.asset_id
+LEFT JOIN authority_asset_locator AS locator
+  ON locator.asset_id = asset.asset_id
+ AND locator.current_asset_version_id = version.asset_version_id
 """
 
 

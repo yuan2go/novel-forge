@@ -539,7 +539,9 @@
   },
   "assets": {
     "knowledge": {
-      "required_packs": [],
+      "required_packs": [
+        "knowledge:chapter-causal-cost:v1"
+      ],
       "allowed_usage_roles": ["PRINCIPLE", "CONSTRAINT", "CHECK", "REFERENCE"]
     },
     "rules": [

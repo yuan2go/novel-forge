@@ -211,6 +211,12 @@ class WorkerFailureClassifier:
             return WorkerFailureClass.UNKNOWN_EXTERNAL_STATE
         if "MANUAL" in code or "WAITING_GATE" in code or "APPROVAL" in code:
             return WorkerFailureClass.MANUAL_INTERVENTION
+        if code == "MODEL_EFFECT_TIMEOUT" or code.startswith(
+            "MODEL_EFFECT_RETRYABLE_"
+        ):
+            return WorkerFailureClass.RETRYABLE
+        if code.startswith("MODEL_EFFECT_FINAL_"):
+            return WorkerFailureClass.FINAL_FAILURE
         if any(
             marker in code
             for marker in (

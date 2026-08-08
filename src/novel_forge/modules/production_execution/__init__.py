@@ -42,6 +42,8 @@ from .contracts import (
 )
 from .backends import (
     CodexCliExecutionBackend,
+    CodexPricingSnapshot,
+    CodexStructuredResultValidator,
     ExecutionReconciler,
     InMemoryExecutionRecordStore,
     LocalProcessExecutionPolicy,
@@ -51,6 +53,7 @@ from .backends import (
     ResultValidator,
     ScriptedFixtureExecutionBackend,
     StaticExecutionPayloadResolver,
+    parse_codex_jsonl_evidence,
 )
 from .agent_workspace_backend import (
     AgentWorkspaceExecutionBackend,
@@ -180,6 +183,8 @@ __all__ = [
     "CapabilityProbe",
     "CancellationOutcome",
     "CodexCliExecutionBackend",
+    "CodexPricingSnapshot",
+    "CodexStructuredResultValidator",
     "CommitManifest",
     "CommitPolicy",
     "CompletionMode",
@@ -259,6 +264,7 @@ __all__ = [
     "ResolvedExecutionPayload",
     "ResultNormalizer",
     "ResultValidator",
+    "parse_codex_jsonl_evidence",
     "RoutePolicy",
     "RoutePolicyRegistry",
     "RouteRecommendation",
