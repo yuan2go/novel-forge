@@ -905,7 +905,9 @@ def _execution_contracts(
         "prompt_bundle_ref": binding.route_snapshot.prompt_bundle_ref,
         "skill_bundle_ref": binding.route_snapshot.skill_bundle_ref,
         "tool_permission_snapshot_ref": f"production_execution/tool_permissions/{suffix}",
-        "evaluation_policy_ref": binding.request.validation_policy_ref,
+        "evaluation_policy_ref": (
+            f"production_execution/validation_policies/{suffix}"
+        ),
     }
     frozen: dict[str, str] = {}
     documents: dict[str, Any] = {}
