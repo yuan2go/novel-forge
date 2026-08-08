@@ -10,6 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 import hashlib
 import json
+import re
 from pathlib import Path
 from threading import Lock
 from typing import Any, Callable, Mapping, Protocol
@@ -1696,7 +1697,7 @@ def _materialize_chapter_codex_prompt(
     rendered_template = template_text
     for marker, value in replacements.items():
         rendered_template = rendered_template.replace(marker, value)
-    if "{{" in rendered_template or "}}" in rendered_template:
+    if re.search(r"\{\{[a-zA-Z0-9_]+\}\}", rendered_template):
         raise KernelError(
             "CHAPTER_CAPABILITY_TEMPLATE_INVALID",
             "frozen Prompt Template contains unresolved placeholders",

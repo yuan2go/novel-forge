@@ -203,7 +203,7 @@ def test_codex_prompt_materializes_typed_target_scope_as_json() -> None:
     prompt, evidence = _materialize_chapter_codex_prompt(
         request=request,
         stage="draft",
-        inputs={"chapter": 1},
+        inputs={"chapter": 1, "nested": {"value": "consecutive JSON braces"}},
         materialization={
             "materialization_hash": HASH,
             "pack_artifacts": {
