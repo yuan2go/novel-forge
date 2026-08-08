@@ -1,4 +1,5 @@
 """Versioned OperationDefinitions for the PostgreSQL-only chapter slice."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -11,6 +12,25 @@ CHAPTER_MODEL_EFFECT_DEFINITION_VERSION = "2.2.0"
 CHAPTER_SLICE_HANDLER_CONTRACT_VERSION = "2.0.9"
 CHAPTER_SLICE_ROOT_DEFINITION_NAME = "chapter.slice.run"
 CHAPTER_SLICE_ROOT_HANDLER_KEY = "novel_forge.chapter_authority.root"
+CHAPTER_MODEL_OPERATION_TIMEOUT_SECONDS = 600
+CHAPTER_MODEL_ROOT_TIMEOUT_SECONDS = 3_600
+CHAPTER_LONG_TIMEOUT_POLICY_NODES = frozenset(
+    {
+        ChapterNode.DRAFT,
+        ChapterNode.REVIEW,
+        ChapterNode.REVISION,
+        ChapterNode.REREVIEW,
+        ChapterNode.CANON_EXTRACTION,
+        ChapterNode.CANON_PROPOSAL,
+        ChapterNode.CANON,
+        ChapterNode.QUALITY_STRUCTURAL,
+        ChapterNode.QUALITY_COMMERCIAL,
+        ChapterNode.QUALITY_SOURCE_ORIGINALITY,
+        ChapterNode.QUALITY_LONGFORM,
+        ChapterNode.QUALITY_PLATFORM,
+        ChapterNode.QUALITY,
+    }
+)
 CHAPTER_PROJECTION_CONSUMERS = [
     "chapter_production_run",
     "operation_timeline",
@@ -25,7 +45,9 @@ def chapter_operation_definitions(
     model_effects_required: bool = False,
 ) -> tuple[dict[str, Any], ...]:
     if not application_build_id or len(commit_sha) != 40:
-        raise ValueError("application_build_id and a 40-character commit_sha are required")
+        raise ValueError(
+            "application_build_id and a 40-character commit_sha are required"
+        )
     return tuple(
         _definition(
             node,
@@ -44,7 +66,9 @@ def chapter_root_operation_definition(
     model_effects_required: bool = False,
 ) -> dict[str, Any]:
     if not application_build_id or len(commit_sha) != 40:
-        raise ValueError("application_build_id and a 40-character commit_sha are required")
+        raise ValueError(
+            "application_build_id and a 40-character commit_sha are required"
+        )
     command_schema = _chapter_command_schema()
     result_schema = {"type": "object"}
     return {
@@ -66,7 +90,11 @@ def chapter_root_operation_definition(
         "idempotency_scope": "project:chapter-slice",
         "concurrency_key_template": "project:{project_id}:chapter-slice:root",
         "retry_policy": {"max_attempts": 1},
-        "timeout_policy": {"operation_timeout_seconds": 600},
+        "timeout_policy": {
+            "operation_timeout_seconds": (
+                CHAPTER_MODEL_ROOT_TIMEOUT_SECONDS if model_effects_required else 600
+            )
+        },
         "cancellation_policy": {"mode": "cancel_children"},
         "compensation_policy": {"supported": False, "reason": "append_only_evidence"},
         "irreversible_effect_policy": {"allowed": False},
@@ -82,7 +110,10 @@ def chapter_root_operation_definition(
         "completion_contract": {
             "version": "chapter.slice.run.completion.v1",
             "required_child_operations": [
-                {"definition_name": node.definition_name, "allowed_states": ["SUCCEEDED"]}
+                {
+                    "definition_name": node.definition_name,
+                    "allowed_states": ["SUCCEEDED"],
+                }
                 for node in ChapterNode
             ],
             "required_evidence": ["trace", "audit"],
@@ -148,24 +179,26 @@ def _definition(
             for state_kind, asset_type in SNAPSHOT_ASSET_TYPES.items()
         )
     if node is ChapterNode.PLAN:
-        completion["required_asset_selectors"].extend((
-            {
-                "selector": "production_input_manifest",
-                "output_key": "chapter.production_input_manifest",
-                "role": "production_input_manifest",
-                "lifecycle": "ACTIVE",
-                "eligibility": "ELIGIBLE",
-                "governance": "CLEAR",
-            },
-            {
-                "selector": "chapter_plan_qualification_report",
-                "output_key": "chapter.plan.qualification",
-                "role": "completion_evidence",
-                "lifecycle": "ACTIVE",
-                "eligibility": "ELIGIBLE",
-                "governance": "CLEAR",
-            },
-        ))
+        completion["required_asset_selectors"].extend(
+            (
+                {
+                    "selector": "production_input_manifest",
+                    "output_key": "chapter.production_input_manifest",
+                    "role": "production_input_manifest",
+                    "lifecycle": "ACTIVE",
+                    "eligibility": "ELIGIBLE",
+                    "governance": "CLEAR",
+                },
+                {
+                    "selector": "chapter_plan_qualification_report",
+                    "output_key": "chapter.plan.qualification",
+                    "role": "completion_evidence",
+                    "lifecycle": "ACTIVE",
+                    "eligibility": "ELIGIBLE",
+                    "governance": "CLEAR",
+                },
+            )
+        )
     if node is ChapterNode.CONTEXT:
         completion["required_asset_selectors"].append(
             {
@@ -226,7 +259,9 @@ def _definition(
         "output_contract": result_schema,
         "handler_key": node.handler_key,
         "handler_contract_version": (
-            "2.2.0" if model_effects_required else CHAPTER_SLICE_HANDLER_CONTRACT_VERSION
+            "2.2.0"
+            if model_effects_required
+            else CHAPTER_SLICE_HANDLER_CONTRACT_VERSION
         ),
         "application_build_id": application_build_id,
         "commit_sha": commit_sha,
@@ -236,7 +271,13 @@ def _definition(
         "idempotency_scope": "project:chapter-slice",
         "concurrency_key_template": "project:{project_id}:chapter-slice",
         "retry_policy": {"max_attempts": 2},
-        "timeout_policy": {"operation_timeout_seconds": 60},
+        "timeout_policy": {
+            "operation_timeout_seconds": (
+                CHAPTER_MODEL_OPERATION_TIMEOUT_SECONDS
+                if model_effects_required and node in CHAPTER_LONG_TIMEOUT_POLICY_NODES
+                else 60
+            )
+        },
         "cancellation_policy": {"mode": "cancel_active_attempt"},
         "compensation_policy": {"supported": False, "reason": "append_only_evidence"},
         "irreversible_effect_policy": {"allowed": False},
@@ -287,7 +328,11 @@ def chapter_definition_version(model_effects_required: bool) -> str:
 def _chapter_command_schema() -> dict[str, Any]:
     return {
         "type": "object",
-        "required": ["chapter", "chapter_plan_asset_version_id", "chapter_plan_content_hash"],
+        "required": [
+            "chapter",
+            "chapter_plan_asset_version_id",
+            "chapter_plan_content_hash",
+        ],
         "properties": {
             "chapter": {"type": "integer"},
             "premise": {"type": "string"},

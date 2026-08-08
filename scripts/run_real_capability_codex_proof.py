@@ -1068,7 +1068,12 @@ def _evaluate_proof(
         )
         if not isinstance(runtime, Mapping):
             continue
-        snapshot = snapshot_by_attempt.get(str(effect.get("attempt_id") or ""))
+        attempt_id = (
+            str(metadata.get("attempt_id") or "")
+            if isinstance(metadata, Mapping)
+            else ""
+        )
+        snapshot = snapshot_by_attempt.get(attempt_id)
         if (
             snapshot is None
             or runtime.get("snapshot_id") != snapshot.get("snapshot_id")

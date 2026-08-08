@@ -9,7 +9,10 @@ from novel_forge.modules.chapter_authority.contracts import (
     ChapterNode,
 )
 from novel_forge.modules.chapter_authority.definitions import (
+    CHAPTER_LONG_TIMEOUT_POLICY_NODES,
     CHAPTER_MODEL_EFFECT_DEFINITION_VERSION,
+    CHAPTER_MODEL_OPERATION_TIMEOUT_SECONDS,
+    CHAPTER_MODEL_ROOT_TIMEOUT_SECONDS,
     CHAPTER_SLICE_HANDLER_CONTRACT_VERSION,
     CHAPTER_SLICE_DEFINITION_VERSION,
     CHAPTER_SLICE_ROOT_DEFINITION_NAME,
@@ -46,7 +49,9 @@ class ChapterAuthorityDefinitionTests(unittest.TestCase):
         self.assertEqual(
             [
                 item["definition_name"]
-                for item in definition["completion_contract"]["required_child_operations"]
+                for item in definition["completion_contract"][
+                    "required_child_operations"
+                ]
             ],
             [node.definition_name for node in ChapterNode],
         )
@@ -66,7 +71,9 @@ class ChapterAuthorityDefinitionTests(unittest.TestCase):
             {definition["definition_version"] for definition in definitions},
             {CHAPTER_SLICE_DEFINITION_VERSION},
         )
-        self.assertEqual(len({item["handler_key"] for item in definitions}), len(ChapterNode))
+        self.assertEqual(
+            len({item["handler_key"] for item in definitions}), len(ChapterNode)
+        )
         self.assertEqual(definitions[-3]["name"], "chapter.publishing.prepare_release")
         self.assertEqual(definitions[-1]["name"], "chapter.publishing.finalize_release")
         for node, definition in zip(ChapterNode, definitions, strict=True):
@@ -76,14 +83,20 @@ class ChapterAuthorityDefinitionTests(unittest.TestCase):
                 self.assertFalse(schema["additionalProperties"])
                 self.assertIn("chapter", schema["required"])
                 self.assertEqual(definition["family"], "chapter_authority")
-                self.assertEqual(definition["idempotency_scope"], "project:chapter-slice")
+                self.assertEqual(
+                    definition["idempotency_scope"], "project:chapter-slice"
+                )
                 self.assertEqual(
                     definition["handler_contract_version"],
                     CHAPTER_SLICE_HANDLER_CONTRACT_VERSION,
                 )
                 self.assertEqual(definition["definition_status"], "enabled")
-                self.assertEqual(definition["input_contract"], definition["command_schema"])
-                self.assertEqual(definition["output_contract"], definition["result_schema"])
+                self.assertEqual(
+                    definition["input_contract"], definition["command_schema"]
+                )
+                self.assertEqual(
+                    definition["output_contract"], definition["result_schema"]
+                )
                 self.assertEqual(
                     definition["completion_contract"]["required_asset_selectors"][0],
                     {
@@ -104,7 +117,9 @@ class ChapterAuthorityDefinitionTests(unittest.TestCase):
                     [node.completion_topic],
                 )
         self.assertEqual(
-            definitions[list(ChapterNode).index(ChapterNode.EXPORT)]["completion_contract"]["required_blobs"],
+            definitions[list(ChapterNode).index(ChapterNode.EXPORT)][
+                "completion_contract"
+            ]["required_blobs"],
             [{"status": "AVAILABLE", "role": "content", "min_count": 1}],
         )
         canon_definition = definitions[list(ChapterNode).index(ChapterNode.CANON)]
@@ -113,11 +128,15 @@ class ChapterAuthorityDefinitionTests(unittest.TestCase):
             10,
         )
         self.assertEqual(
-            definitions[list(ChapterNode).index(ChapterNode.EXPORT)]["completion_contract"]["required_external_effects"],
+            definitions[list(ChapterNode).index(ChapterNode.EXPORT)][
+                "completion_contract"
+            ]["required_external_effects"],
             [{"capability": "object_store.put", "allowed_states": ["SUCCEEDED"]}],
         )
 
-    def test_model_effect_profile_versions_and_requires_each_model_capability(self) -> None:
+    def test_model_effect_profile_versions_and_requires_each_model_capability(
+        self,
+    ) -> None:
         definitions = chapter_operation_definitions(
             application_build_id="unit-test-build",
             commit_sha="a" * 40,
@@ -128,6 +147,15 @@ class ChapterAuthorityDefinitionTests(unittest.TestCase):
             {item["definition_version"] for item in definitions},
             {CHAPTER_MODEL_EFFECT_DEFINITION_VERSION},
         )
+        root = chapter_root_operation_definition(
+            application_build_id="unit-test-build",
+            commit_sha="a" * 40,
+            model_effects_required=True,
+        )
+        self.assertEqual(
+            root["timeout_policy"]["operation_timeout_seconds"],
+            CHAPTER_MODEL_ROOT_TIMEOUT_SECONDS,
+        )
         for node, capability in (
             (ChapterNode.DRAFT, "model.draft"),
             (ChapterNode.REVIEW, "model.review"),
@@ -135,10 +163,20 @@ class ChapterAuthorityDefinitionTests(unittest.TestCase):
             (ChapterNode.REREVIEW, "model.rereview"),
         ):
             definition = definitions[list(ChapterNode).index(node)]
+            self.assertEqual(
+                definition["timeout_policy"]["operation_timeout_seconds"],
+                CHAPTER_MODEL_OPERATION_TIMEOUT_SECONDS,
+            )
             self.assertIn(capability, definition["external_capabilities"])
             self.assertIn(
                 {"capability": capability, "allowed_states": ["SUCCEEDED"]},
                 definition["completion_contract"]["required_external_effects"],
+            )
+        for node in CHAPTER_LONG_TIMEOUT_POLICY_NODES:
+            definition = definitions[list(ChapterNode).index(node)]
+            self.assertEqual(
+                definition["timeout_policy"]["operation_timeout_seconds"],
+                CHAPTER_MODEL_OPERATION_TIMEOUT_SECONDS,
             )
 
     def test_registry_is_explicit_and_fails_closed(self) -> None:
@@ -153,13 +191,16 @@ class ChapterAuthorityDefinitionTests(unittest.TestCase):
             registry.require(ChapterNode.CONTEXT)
         self.assertEqual(missing.exception.code, "CHAPTER_HANDLER_NOT_REGISTERED")
 
-    def test_authority_slice_does_not_import_local_storage_or_legacy_projection(self) -> None:
+    def test_authority_slice_does_not_import_local_storage_or_legacy_projection(
+        self,
+    ) -> None:
         module_root = (
             Path(__file__).resolve().parents[2]
             / "src/novel_forge/modules/chapter_authority"
         )
         source = "\n".join(
-            path.read_text(encoding="utf-8") for path in sorted(module_root.glob("*.py"))
+            path.read_text(encoding="utf-8")
+            for path in sorted(module_root.glob("*.py"))
         )
 
         self.assertNotIn("novel_forge.storage.local", source)
