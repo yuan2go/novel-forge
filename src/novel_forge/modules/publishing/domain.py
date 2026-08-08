@@ -52,10 +52,21 @@ def prepare_internal_release(
         )
     )
     approval_required = bool(approval_requirements)
+    def real_provider_uncalibrated_pass(item: dict[str, Any]) -> bool:
+        return (
+            quality.get("fixture") is False
+            and item.get("gate_status") == "PASSED_WITH_UNCALIBRATED"
+            and item.get("provider_verified") is True
+            and item.get("calibration_status") == "PROVIDER_UNCALIBRATED"
+        )
+
     def cleared(dimension: str) -> bool:
         item = by_dimension.get(dimension, {})
         status = item.get("gate_status")
-        return status in {"PASSED", "PASSED_WITH_WARNINGS"} or (
+        return (
+            status in {"PASSED", "PASSED_WITH_WARNINGS"}
+            or real_provider_uncalibrated_pass(item)
+            or (
             status == "WAIVED_BY_APPROVAL"
             and _fixture_waiver_is_valid(
                 item,
@@ -63,6 +74,7 @@ def prepare_internal_release(
                 project_id=project_id,
                 target_asset_version_id=revision_asset_version_id,
             )
+        )
         )
 
     checks = {
@@ -90,6 +102,7 @@ def prepare_internal_release(
         ),
         "all_blocking_dimensions_passed": all(
             item.get("gate_status") in {"PASSED", "PASSED_WITH_WARNINGS"}
+            or real_provider_uncalibrated_pass(item)
             or (
                 item.get("gate_status") == "WAIVED_BY_APPROVAL"
                 and _fixture_waiver_is_valid(

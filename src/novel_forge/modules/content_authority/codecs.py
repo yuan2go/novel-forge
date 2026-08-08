@@ -415,6 +415,29 @@ def author_platform_profile(request: AuthorityHandlerRequest) -> dict[str, Any]:
     )
 
 
+def author_operator_checklist(request: AuthorityHandlerRequest) -> dict[str, Any]:
+    content = _operator_authored_input(
+        request,
+        asset_type="operator_checklist",
+        required_fields=("chapter", "completed", "contract_version"),
+    )
+    facts = [
+        item
+        for item in content["structured_facts"]
+        if isinstance(item, dict)
+        and str(item.get("key") or "") not in {"completed", "contract_version"}
+    ]
+    return {
+        **content,
+        "allowed_use": "evidence_only",
+        "structured_facts": [
+            *facts,
+            {"key": "completed", "value": True},
+            {"key": "contract_version", "value": content["contract_version"]},
+        ],
+    }
+
+
 def _human_decision_record(request: AuthorityHandlerRequest) -> dict[str, Any]:
     sample = _one(request, "quality_golden_sample")
     payload = dict(_payload(request)["decision"])
@@ -579,6 +602,7 @@ CONTENT_CODECS: dict[str, ContentHandlerCodec] = {
         ("chapter.style_policy.author", "style_policy", "chapter.style_policy", author_style_policy),
         ("chapter.quality_rubric.author", "quality_rubric", "chapter.quality_rubric", author_quality_rubric),
         ("chapter.platform_profile.author", "platform_profile", "chapter.platform_profile", author_platform_profile),
+        ("chapter.operator_checklist.author", "operator_checklist", "chapter.operator_checklist", author_operator_checklist),
         ("creative.candidates.generate", "creative_candidate_pool", "creative.candidates.pool", _creative_candidates_generate),
     )
 }
@@ -588,6 +612,7 @@ __all__ = [
     "ContentHandlerCodec",
     "author_chapter_plan",
     "author_platform_profile",
+    "author_operator_checklist",
     "author_quality_rubric",
     "author_style_policy",
 ]

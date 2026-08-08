@@ -618,7 +618,36 @@ def _author_inputs(
             ],
             "safe_summary": "Web-serial readability constraints with an evidence hook.",
             "structured_facts": [
+                {
+                    "key": "platform_rules",
+                    "value": {
+                        "chapter_length": {"minimum": 1_500, "maximum": 5_000},
+                        "format": {"paragraph_max": 500},
+                        "sensitive_content": ["no prohibited sensitive content"],
+                        "ai_content": {"release_mode": "internal_review_only"},
+                        "opening": ["open with an observable anomaly"],
+                        "rhythm": ["maintain short scene-level pressure cycles"],
+                        "publish_metadata": {
+                            "required": ["chapter", "title", "summary"],
+                        },
+                    },
+                },
                 {"kind": "reader_promise", "value": "truth has escalating social cost"},
+            ],
+        },
+        "chapter.operator_checklist.author": {
+            **common,
+            "type": "operator_checklist",
+            "chapter": 1,
+            "completed": True,
+            "contract_version": "internal-release-checklist-v1",
+            "safe_summary": (
+                "Operator verified source isolation, internal-only release scope, "
+                "and required production inputs for this provider-validation run."
+            ),
+            "structured_facts": [
+                {"key": "source_isolation_reviewed", "value": True},
+                {"key": "release_scope", "value": "INTERNAL_REVIEW_ONLY"},
             ],
         },
     }
@@ -771,6 +800,9 @@ def _seed_authorities(
                 "style_policy": inputs["chapter.style_policy.author"],
                 "quality_rubric": inputs["chapter.quality_rubric.author"],
                 "platform_profile": inputs["chapter.platform_profile.author"],
+                "operator_checklist": inputs[
+                    "chapter.operator_checklist.author"
+                ],
             },
             requested_quality_profile="quality:codex-proof",
             requested_platform_profile="platform:codex-proof",
@@ -1273,6 +1305,7 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
         "content.operation:chapter.style_policy.author",
         "content.operation:chapter.quality_rubric.author",
         "content.operation:chapter.platform_profile.author",
+        "content.operation:chapter.operator_checklist.author",
         "chapter.authority.execute",
     )
     compiler = _principal(

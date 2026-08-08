@@ -13,6 +13,7 @@ from novel_forge.modules.production_preparation.empty_state import initialize_ty
 from novel_forge.modules.creative.generator_boundary import build_candidate_pool
 from novel_forge.modules.content_authority.codecs import (
     author_chapter_plan,
+    author_operator_checklist,
     author_platform_profile,
     author_quality_rubric,
     author_style_policy,
@@ -51,5 +52,6 @@ CONTENT_DOMAIN_HANDLERS = {
     "chapter.style_policy.author": author_style_policy,
     "chapter.quality_rubric.author": author_quality_rubric,
     "chapter.platform_profile.author": author_platform_profile,
+    "chapter.operator_checklist.author": author_operator_checklist,
     "creative.candidates.generate": build_candidate_pool,
 }

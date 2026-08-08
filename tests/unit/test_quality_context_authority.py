@@ -70,10 +70,16 @@ def _bundle() -> dict:
 def _view(group: str, bundle: dict | None = None, *, token_budget: int = 6000) -> dict:
     return build_quality_context_view(
         group=group,
-        revision={"chapter": 2, "text": "A governed revision with an explicit cost."},
+        revision={
+            "chapter": 2,
+            "title": "The Cost of Memory",
+            "text": "A governed revision with an explicit cost.",
+        },
         revision_asset_version_id="revision-v2",
         chapter_plan={
             "chapter": 2,
+            "title": "The Cost of Memory",
+            "safe_summary": "A clerk preserves evidence at a personal cost.",
             "chapter_function": "promise payoff",
             "chapter_objective": "make the cost visible",
             "reader_promise_actions": [{"promise_id": "p1", "action": "pay"}],
@@ -109,6 +115,14 @@ class QualityContextAuthorityTests(unittest.TestCase):
         self.assertEqual(
             views["platform"]["compiled_platform_policy"]["chapter_length_rules"]["minimum"],
             1500,
+        )
+        self.assertEqual(
+            views["platform"]["publish_metadata_candidate"],
+            {
+                "chapter": 2,
+                "title": "The Cost of Memory",
+                "summary": "A clerk preserves evidence at a personal cost.",
+            },
         )
 
     def test_source_view_contains_identity_not_source_expression(self) -> None:

@@ -5,6 +5,7 @@ import unittest
 from novel_forge.modules.canon_graph.domain import build_canon_update
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.chapter_authority.domain_handlers import build_quality_report
+from novel_forge.modules.chapter_quality_authority import QUALITY_GROUPS
 from novel_forge.modules.content_quality_loop.domain import evaluate_quality_evidence
 from novel_forge.modules.publishing.domain import prepare_internal_release
 from novel_forge.modules.review.domain import evaluate_rereview_result, evaluate_review_result
@@ -159,6 +160,84 @@ class ChapterAuthorityBusinessDomainTests(unittest.TestCase):
                 review_asset_version_id="rereview-v1", canon=canon,
                 canon_asset_version_id="canon-v1", context_bundle_version_id="context-v1",
             )
+
+    def test_internal_publish_accepts_only_real_provider_uncalibrated_passes(self) -> None:
+        gate_types = {
+            "structural": "structural_quality_gate",
+            "commercial": "commercial_quality_gate",
+            "source_originality": "source_originality_quality_gate",
+            "longform": "longform_quality_gate",
+            "platform": "platform_quality_gate",
+        }
+        dimensions = [
+            {
+                "dimension": dimension,
+                "gate_type": gate_types[group],
+                "gate_status": "PASSED_WITH_UNCALIBRATED",
+                "blocking": True,
+                "provider_verified": True,
+                "calibration_status": "PROVIDER_UNCALIBRATED",
+            }
+            for group, members in QUALITY_GROUPS.items()
+            for dimension in members
+        ]
+        revision = {"chapter": 1, "source_draft_version_id": "draft-v1"}
+        review = {
+            "report_type": "ReReviewReport",
+            "decision": "PASSED",
+            "blocking_issue_count": 0,
+        }
+        canon = {"gate": "PASSED", "conflicts": []}
+        context = {
+            "production_input_manifest": {"approval_requirements": []},
+            "context_segments": [
+                {
+                    "asset_type": "operator_checklist",
+                    "asset_version_id": "checklist-v1",
+                    "structured_facts": [{"key": "completed", "value": True}],
+                }
+            ],
+        }
+        quality = {
+            "gate": "PASSED_WITH_UNCALIBRATED",
+            "target_asset_version_id": "revision-v1",
+            "dimensions": dimensions,
+            "fixture": False,
+        }
+
+        passed = prepare_internal_release(
+            project_id="project-a",
+            revision=revision,
+            revision_asset_version_id="revision-v1",
+            quality=quality,
+            quality_asset_version_id="quality-v1",
+            review=review,
+            review_asset_version_id="rereview-v1",
+            canon=canon,
+            canon_asset_version_id="canon-v1",
+            context_bundle=context,
+            context_bundle_version_id="context-v1",
+        )
+
+        self.assertEqual(passed["gate"], "PASSED")
+        self.assertFalse(passed["external_publish_permitted"])
+        self.assertFalse(passed["production_verified"])
+
+        fixture_quality = {**quality, "fixture": True}
+        blocked = prepare_internal_release(
+            project_id="project-a",
+            revision=revision,
+            revision_asset_version_id="revision-v1",
+            quality=fixture_quality,
+            quality_asset_version_id="quality-v1",
+            review=review,
+            review_asset_version_id="rereview-v1",
+            canon=canon,
+            canon_asset_version_id="canon-v1",
+            context_bundle=context,
+            context_bundle_version_id="context-v1",
+        )
+        self.assertEqual(blocked["gate"], "PUBLISH_GATE_BLOCKED")
 
 
 if __name__ == "__main__":

@@ -236,11 +236,29 @@ def build_quality_context_view(
             ),
         }
     else:
+        source_extensions = chapter_plan.get("source_extensions")
+        summary = (
+            chapter_plan.get("safe_summary")
+            or (
+                source_extensions.get("safe_summary")
+                if isinstance(source_extensions, dict)
+                else ""
+            )
+            or chapter_plan.get("premise")
+            or ""
+        )
         body = {
             "type": "PlatformQualityContextView",
             **common,
             "revision_text": str(revision.get("text") or ""),
             "compiled_platform_policy": asdict(platform_policy),
+            "publish_metadata_candidate": {
+                "chapter": revision.get("chapter"),
+                "title": str(
+                    revision.get("title") or chapter_plan.get("title") or ""
+                ),
+                "summary": str(summary),
+            },
         }
     body["token_budget"] = token_budget
     coverage = _fit_quality_context(

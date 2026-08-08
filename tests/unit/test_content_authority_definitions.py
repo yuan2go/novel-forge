@@ -5,7 +5,7 @@ from novel_forge.modules.content_authority import CONTENT_DOMAIN_HANDLERS, conte
 class ContentAuthorityDefinitionTests(unittest.TestCase):
     def test_every_definition_has_a_codec_handler_and_postgresql_proof_maturity(self):
         definitions = content_operation_definitions(application_build_id="test", commit_sha="a" * 40)
-        self.assertEqual(len(definitions), 33)
+        self.assertEqual(len(definitions), 34)
         self.assertEqual({item["name"] for item in definitions}, set(CONTENT_DOMAIN_HANDLERS))
         for item in definitions:
             self.assertTrue(callable(CONTENT_DOMAIN_HANDLERS[item["name"]]))

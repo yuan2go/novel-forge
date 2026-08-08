@@ -56,6 +56,15 @@ def _request(name: str, content: dict) -> AuthorityHandlerRequest:
             "platform_profile",
             {"profile_id": "platform:proof", "constraints": ["strong hook"]},
         ),
+        (
+            "chapter.operator_checklist.author",
+            "operator_checklist",
+            {
+                "chapter": 1,
+                "completed": True,
+                "contract_version": "internal-release-checklist-v1",
+            },
+        ),
     ),
 )
 def test_operator_authored_production_input_is_typed_and_source_safe(
@@ -79,6 +88,8 @@ def test_operator_authored_production_input_is_typed_and_source_safe(
     assert output.content["evidence_level"] == "OPERATOR_AUTHORED"
     assert output.content["raw_source"] is False
     assert output.content["source_expression_included"] is False
+    if asset_type == "operator_checklist":
+        assert output.content["allowed_use"] == "evidence_only"
 
 
 def test_operator_authored_input_rejects_raw_source() -> None:
