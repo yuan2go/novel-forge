@@ -854,7 +854,7 @@ def _collect_evidence(
         JOIN authority_operation AS operation
           ON operation.operation_id=attempt.operation_id
         WHERE operation.project_id=%s AND operation.root_operation_id=%s
-        ORDER BY attempt.created_at, attempt.attempt_id
+        ORDER BY attempt.queued_at, attempt.attempt_id
         """,
         (project_id, root_operation_id),
     )
@@ -967,12 +967,12 @@ def _collect_evidence(
     recovery_authorizations = _query_rows(
         database_url,
         """
-        SELECT authorization.*
-        FROM authority_execution_recovery_authorization AS authorization
+        SELECT recovery.*
+        FROM authority_execution_recovery_authorization AS recovery
         JOIN authority_operation AS operation
-          ON operation.operation_id=authorization.operation_id
+          ON operation.operation_id=recovery.operation_id
         WHERE operation.project_id=%s AND operation.root_operation_id=%s
-        ORDER BY authorization.created_at
+        ORDER BY recovery.created_at
         """,
         (project_id, root_operation_id),
     )
