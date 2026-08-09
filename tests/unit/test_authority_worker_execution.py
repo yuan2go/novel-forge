@@ -17,14 +17,39 @@ from novel_forge.modules.command_kernel.worker_execution import (
 class AuthorityWorkerExecutionTests(unittest.TestCase):
     def test_classifier_covers_runtime_failure_classes(self) -> None:
         cases = (
-            (KernelError("TEMPORARY_PROVIDER_FAILURE", "retry"), WorkerFailureClass.RETRYABLE),
+            (
+                KernelError("TEMPORARY_PROVIDER_FAILURE", "retry"),
+                WorkerFailureClass.RETRYABLE,
+            ),
             (KernelError("INPUT_INVALID", "bad"), WorkerFailureClass.FINAL_FAILURE),
-            (KernelError("EFFECT_STATE_UNKNOWN", "unknown"), WorkerFailureClass.UNKNOWN_EXTERNAL_STATE),
-            (KernelError("LEASE_NOT_AVAILABLE", "leased"), WorkerFailureClass.LEASE_CONFLICT),
-            (KernelError("ATTEMPT_FENCING_TOKEN_STALE", "stale"), WorkerFailureClass.FENCING_CONFLICT),
-            (KernelError("OPERATION_CANCELLED", "cancelled"), WorkerFailureClass.CANCELLATION),
-            (KernelError("ATTEMPT_RETRY_EXHAUSTED", "dead"), WorkerFailureClass.DEAD_LETTER),
-            (KernelError("WAITING_GATE", "human"), WorkerFailureClass.MANUAL_INTERVENTION),
+            (
+                KernelError("EFFECT_STATE_UNKNOWN", "unknown"),
+                WorkerFailureClass.UNKNOWN_EXTERNAL_STATE,
+            ),
+            (
+                KernelError("LEASE_NOT_AVAILABLE", "leased"),
+                WorkerFailureClass.LEASE_CONFLICT,
+            ),
+            (
+                KernelError("ATTEMPT_FENCING_TOKEN_STALE", "stale"),
+                WorkerFailureClass.FENCING_CONFLICT,
+            ),
+            (
+                KernelError("OPERATION_CANCELLED", "cancelled"),
+                WorkerFailureClass.CANCELLATION,
+            ),
+            (
+                KernelError("ATTEMPT_RETRY_EXHAUSTED", "dead"),
+                WorkerFailureClass.DEAD_LETTER,
+            ),
+            (
+                KernelError("WAITING_GATE", "human"),
+                WorkerFailureClass.MANUAL_INTERVENTION,
+            ),
+            (
+                KernelError("CHAPTER_QUALITY_GATE_BLOCKED", "quality evidence failed"),
+                WorkerFailureClass.MANUAL_INTERVENTION,
+            ),
             (
                 KernelError("MODEL_EFFECT_TIMEOUT", "provider timed out"),
                 WorkerFailureClass.RETRYABLE,

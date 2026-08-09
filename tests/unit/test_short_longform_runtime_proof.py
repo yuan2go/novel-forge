@@ -55,6 +55,17 @@ def test_proof_script_only_references_defined_longform_checkpoint_members() -> N
     assert referenced <= set(proof.LongformCheckpointType.__members__)
 
 
+def test_proof_world_bible_exposes_governed_rules_and_power_boundaries() -> None:
+    proof = _load_script()
+
+    content = proof._proof_world_bible_content()
+    facts = {str(item["key"]): item["value"] for item in content["structured_facts"]}
+
+    assert content["safe_summary"]
+    assert facts["world_rules"]
+    assert facts["institutional_power_state"]
+
+
 def test_resume_returns_existing_active_chapter_before_supervisor_polling() -> None:
     proof = _load_script()
     calls = []

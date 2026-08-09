@@ -225,6 +225,42 @@ def _bootstrap_definition(build_id: str, commit_sha: str) -> dict[str, Any]:
     }
 
 
+def _proof_world_bible_content() -> dict[str, Any]:
+    world_rules = [
+        "Official archive entries preserve physical revision traces after alteration.",
+        "A lawful recall transfers physical custody only; it does not authorize amendment, disclosure, or compelled testimony.",
+        "Exceptional custody preserves disputed evidence and creates a named, auditable obligation for the custodian.",
+    ]
+    institutional_power_state = {
+        "archive_director": {
+            "allowed": ["request lawful recall"],
+            "forbidden": ["erase revision traces", "compel witness testimony"],
+        },
+        "archive_clerk": {
+            "allowed": ["invoke exceptional custody", "preserve disputed evidence"],
+            "forbidden": ["amend the public record", "publish disputed evidence"],
+        },
+        "audit_office": {
+            "allowed": ["record the named custodian", "demand an evidence audit"],
+            "forbidden": ["silently alter the archived entry"],
+        },
+    }
+    return {
+        "rules": world_rules,
+        "safe_summary": (
+            "Governed civic-archive rules distinguish recall, exceptional custody, "
+            "audit, amendment, disclosure, and witness consent."
+        ),
+        "structured_facts": [
+            {"key": "world_rules", "value": world_rules},
+            {
+                "key": "institutional_power_state",
+                "value": institutional_power_state,
+            },
+        ],
+    }
+
+
 def _bootstrap_assets(
     database_url: str,
     *,
@@ -238,7 +274,7 @@ def _bootstrap_assets(
     rows: dict[str, tuple[str, dict[str, Any]]] = {
         "world_bible": (
             "world_bible",
-            {"rules": ["public records preserve physical revision traces"]},
+            _proof_world_bible_content(),
         ),
         "character_cast": (
             "character_cast",

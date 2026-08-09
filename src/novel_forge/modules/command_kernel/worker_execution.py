@@ -1,4 +1,5 @@
 """Shared isolation boundary for long-running Authority worker batches."""
+
 from __future__ import annotations
 
 import json
@@ -40,6 +41,7 @@ _DEAD_LETTER_CODES = frozenset(
         "CONTENT_RECOVERY_TERMINAL",
     }
 )
+_MANUAL_INTERVENTION_CODES = frozenset({"CHAPTER_QUALITY_GATE_BLOCKED"})
 
 
 class WorkerProgrammingError(RuntimeError):
@@ -209,11 +211,14 @@ class WorkerFailureClassifier:
             return WorkerFailureClass.DEAD_LETTER
         if "UNKNOWN" in code or "RECONCILIATION" in code:
             return WorkerFailureClass.UNKNOWN_EXTERNAL_STATE
-        if "MANUAL" in code or "WAITING_GATE" in code or "APPROVAL" in code:
-            return WorkerFailureClass.MANUAL_INTERVENTION
-        if code == "MODEL_EFFECT_TIMEOUT" or code.startswith(
-            "MODEL_EFFECT_RETRYABLE_"
+        if (
+            code in _MANUAL_INTERVENTION_CODES
+            or "MANUAL" in code
+            or "WAITING_GATE" in code
+            or "APPROVAL" in code
         ):
+            return WorkerFailureClass.MANUAL_INTERVENTION
+        if code == "MODEL_EFFECT_TIMEOUT" or code.startswith("MODEL_EFFECT_RETRYABLE_"):
             return WorkerFailureClass.RETRYABLE
         if code.startswith("MODEL_EFFECT_FINAL_"):
             return WorkerFailureClass.FINAL_FAILURE
@@ -250,9 +255,13 @@ T = TypeVar("T")
 class AuthorityWorkerExecutionBoundary:
     """Runs every task in a polled batch even when an earlier task fails."""
 
-    def __init__(self, *, worker_kind: str, logger: logging.Logger | None = None) -> None:
+    def __init__(
+        self, *, worker_kind: str, logger: logging.Logger | None = None
+    ) -> None:
         self.worker_kind = worker_kind
-        self.logger = logger or logging.getLogger(f"novel_forge.authority.{worker_kind}")
+        self.logger = logger or logging.getLogger(
+            f"novel_forge.authority.{worker_kind}"
+        )
 
     def execute_batch(
         self,
@@ -271,14 +280,18 @@ class AuthorityWorkerExecutionBoundary:
                 on_task_start(task_id)
             try:
                 execute(task)
-            except Exception as exc:  # signals and explicit process exits must propagate
+            except (
+                Exception
+            ) as exc:  # signals and explicit process exits must propagate
                 classification = WorkerFailureClassifier.classify(exc)
                 failure = WorkerTaskFailure(
                     task_id=task_id,
                     project_id=project_id,
                     classification=classification,
                     error_type=type(exc).__name__,
-                    error_code=exc.code if isinstance(exc, KernelError) else "PROGRAMMING_BUG",
+                    error_code=exc.code
+                    if isinstance(exc, KernelError)
+                    else "PROGRAMMING_BUG",
                     message=str(exc),
                 )
                 failures.append(failure)
