@@ -1,4 +1,5 @@
 """Governed capability identifiers and immutable execution definitions."""
+
 from __future__ import annotations
 
 import hashlib
@@ -27,6 +28,7 @@ class CapabilityId(StrEnum):
     PLANNING_ARC_GENERATE = "planning.arc.generate"
     PLANNING_CHAPTER_GROUP_GENERATE = "planning.chapter_group.generate"
     PLANNING_CHAPTER_GENERATE = "planning.chapter.generate"
+    PLANNING_STORY_CHAPTER_GENERATE = "planning.story_chapter.generate"
     PROSE_CHAPTER_DRAFT = "prose.chapter.draft"
     REVIEW_CHAPTER_EVALUATE = "review.chapter.evaluate"
     REVISION_CHAPTER_REVISE = "revision.chapter.revise"
@@ -160,18 +162,24 @@ class CapabilityDefinition:
         if not all(value.strip() for value in required):
             raise ValueError("capability definition has an empty governance reference")
         if not runtimes or not backends:
-            raise ValueError("capability definition requires runtime and backend allowlists")
+            raise ValueError(
+                "capability definition requires runtime and backend allowlists"
+            )
         if any(not _BACKEND_ID.fullmatch(item) for item in backends):
             raise ValueError("capability definition has an invalid backend allowlist")
         if not self.fixture_allowed and not self.production_allowed:
-            raise ValueError("capability must be admitted in at least one environment class")
+            raise ValueError(
+                "capability must be admitted in at least one environment class"
+            )
         if (
             ExecutionRuntimeClass.SCRIPTED_FIXTURE in runtimes
             and not self.fixture_allowed
         ):
             raise ValueError("fixture runtime requires fixture_allowed")
         if self.requires_provider_idempotency and not self.production_allowed:
-            raise ValueError("Provider idempotency has no meaning on a fixture-only capability")
+            raise ValueError(
+                "Provider idempotency has no meaning on a fixture-only capability"
+            )
 
     def to_dict(self) -> dict[str, Any]:
         return {

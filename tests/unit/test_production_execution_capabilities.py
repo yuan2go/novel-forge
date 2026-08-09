@@ -29,6 +29,7 @@ REQUIRED_CAPABILITIES = {
     "planning.arc.generate",
     "planning.chapter_group.generate",
     "planning.chapter.generate",
+    "planning.story_chapter.generate",
     "prose.chapter.draft",
     "review.chapter.evaluate",
     "revision.chapter.revise",
@@ -114,7 +115,7 @@ class ProductionExecutionCapabilityTests(unittest.TestCase):
             "planning.volume.generate",
             "planning.arc.generate",
             "planning.chapter_group.generate",
-            "planning.chapter.generate",
+            "planning.story_chapter.generate",
         ):
             self.assertTrue(
                 registry.resolve(capability_id).timeout_policy_ref.endswith(
@@ -126,6 +127,12 @@ class ProductionExecutionCapabilityTests(unittest.TestCase):
             registry.resolve("prose.chapter.draft").timeout_policy_ref.endswith(":v1")
         )
         self.assertEqual(capability_contract_version("prose.chapter.draft"), 1)
+        self.assertTrue(
+            registry.resolve("planning.chapter.generate").timeout_policy_ref.endswith(
+                ":v1"
+            )
+        )
+        self.assertEqual(capability_contract_version("planning.chapter.generate"), 1)
 
     def test_every_definition_has_a_complete_serializable_governance_contract(
         self,

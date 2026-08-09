@@ -128,7 +128,7 @@ def _activate_planning_pack(harness: CapabilityPackPostgresHarness) -> str:
         "planning.volume.generate",
         "planning.arc.generate",
         "planning.chapter_group.generate",
-        "planning.chapter.generate",
+        "planning.story_chapter.generate",
     ]
     template = next(
         node

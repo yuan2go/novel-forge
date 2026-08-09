@@ -1,4 +1,5 @@
 """Shared lifecycle and generator contracts for authoritative story design."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -107,6 +108,7 @@ def _generator(
     output_type: str,
     *,
     risk: str,
+    definition_version: str = "1.0.0",
 ) -> GeneratorDefinition:
     key = operation_name.replace(".", "-")
     return GeneratorDefinition(
@@ -129,6 +131,7 @@ def _generator(
         maximum_semantic_repairs=2,
         maximum_structural_regenerations=1,
         risk_class=risk,
+        definition_version=definition_version,
     )
 
 
@@ -189,15 +192,14 @@ GENERATOR_DEFINITIONS = (
     ),
     _generator(
         "chapter_plan.generate",
-        "planning.chapter.generate",
+        "planning.story_chapter.generate",
         "chapter_plan_candidate",
         risk="MEDIUM",
+        definition_version="1.1.0",
     ),
 )
 
-GENERATOR_CATALOG = {
-    item.operation_name: item for item in GENERATOR_DEFINITIONS
-}
+GENERATOR_CATALOG = {item.operation_name: item for item in GENERATOR_DEFINITIONS}
 
 
 __all__ = [

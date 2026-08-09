@@ -10,7 +10,9 @@ from novel_forge.modules.story_design_authority.validators import (
 
 
 class StoryDesignValidatorTests(unittest.TestCase):
-    def test_schema_structural_semantic_generator_and_scope_validators_bind_results(self) -> None:
+    def test_schema_structural_semantic_generator_and_scope_validators_bind_results(
+        self,
+    ) -> None:
         result = validate_story_design_candidate(
             content={
                 "schema_version": "story_design.authority.v1",
@@ -61,6 +63,34 @@ class StoryDesignValidatorTests(unittest.TestCase):
             )
 
         self.assertEqual(raised.exception.code, "STORY_DESIGN_SCOPE_INVALID")
+
+    def test_versioned_story_chapter_generator_remains_validation_complete(
+        self,
+    ) -> None:
+        result = validate_story_design_candidate(
+            content={
+                "schema_version": "story_design.authority.v1",
+                "project_id": "project-1",
+                "generator_operation_name": "chapter_plan.generate",
+                "planning_scope": "CHAPTER",
+                "logical_key": "chapter:1",
+                "candidate_payload": {"objective": "A chapter objective"},
+            },
+            project_id="project-1",
+            generator_operation_name="chapter_plan.generate",
+            planning_scope="CHAPTER",
+            logical_key="chapter:1",
+        )
+
+        generator_receipt = next(
+            receipt
+            for receipt in result.receipts
+            if receipt.validation_kind == "GENERATOR_CONTRACT"
+        )
+        self.assertEqual(
+            generator_receipt.evidence["generator_definition_version"],
+            "1.1.0",
+        )
 
     def test_empty_candidate_payload_cannot_be_declared_passing(self) -> None:
         with self.assertRaises(KernelError) as raised:

@@ -1,8 +1,10 @@
 """Versioned, deterministic validators for Story Design candidates."""
+
 from __future__ import annotations
 
 import hashlib
 import json
+import re
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Mapping
@@ -13,6 +15,7 @@ from .domain import GENERATOR_CATALOG, PlanningScope
 
 
 STORY_DESIGN_VALIDATOR_VERSION = "1.0.0"
+_GENERATOR_DEFINITION_VERSION = re.compile(r"^[1-9][0-9]*\.[0-9]+\.[0-9]+$")
 
 
 @dataclass(frozen=True, slots=True)
@@ -150,8 +153,10 @@ def validate_story_design_candidate(
             "STORY_DESIGN_STRUCTURAL_INVALID",
             "Story Design identity differs from the validated activation identity",
         )
-    if not logical_key or logical_key.strip() != logical_key or any(
-        character.isspace() for character in logical_key
+    if (
+        not logical_key
+        or logical_key.strip() != logical_key
+        or any(character.isspace() for character in logical_key)
     ):
         raise KernelError(
             "STORY_DESIGN_STRUCTURAL_INVALID",
@@ -178,7 +183,7 @@ def validate_story_design_candidate(
         not generator.structural_validator_keys
         or not generator.semantic_validator_keys
         or not generator.output_schema_version
-        or generator.definition_version != "1.0.0"
+        or not _GENERATOR_DEFINITION_VERSION.fullmatch(generator.definition_version)
     ):
         raise KernelError(
             "GENERATOR_CONTRACT_INVALID",
@@ -237,9 +242,9 @@ def validate_story_design_candidate(
         generator_receipt,
         scope_receipt,
     )
-    implementation_hash = "sha256:" + hashlib.sha256(
-        Path(__file__).read_bytes()
-    ).hexdigest()
+    implementation_hash = (
+        "sha256:" + hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
+    )
     result_without_hash = {
         "status": "PASS",
         "validator_version": STORY_DESIGN_VALIDATOR_VERSION,

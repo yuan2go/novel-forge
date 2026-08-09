@@ -280,7 +280,7 @@ def story_planning_workflow_binding_catalog() -> WorkflowBindingCatalog:
         ("volume_plan.generate", "planning.volume.generate"),
         ("arc_plan.generate", "planning.arc.generate"),
         ("chapter_group_plan.generate", "planning.chapter_group.generate"),
-        ("chapter_plan.generate", "planning.chapter.generate"),
+        ("chapter_plan.generate", "planning.story_chapter.generate"),
     )
     return WorkflowBindingCatalog(
         "story_planning_generators",

@@ -48,7 +48,7 @@ def build_story_planning_pack_profile(
         ("volume_plan.generate", "planning.volume.generate"),
         ("arc_plan.generate", "planning.arc.generate"),
         ("chapter_group_plan.generate", "planning.chapter_group.generate"),
-        ("chapter_plan.generate", "planning.chapter.generate"),
+        ("chapter_plan.generate", "planning.story_chapter.generate"),
     )
     _require_hash(operation_definition_hash)
     template = next(
