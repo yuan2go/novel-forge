@@ -8,7 +8,7 @@ from novel_forge.modules.chapter_authority.contracts import ChapterNode
 
 
 CHAPTER_SLICE_DEFINITION_VERSION = "2.0.11"
-CHAPTER_MODEL_EFFECT_DEFINITION_VERSION = "2.2.0"
+CHAPTER_MODEL_EFFECT_DEFINITION_VERSION = "2.3.0"
 CHAPTER_SLICE_HANDLER_CONTRACT_VERSION = "2.0.9"
 CHAPTER_SLICE_ROOT_DEFINITION_NAME = "chapter.slice.run"
 CHAPTER_SLICE_ROOT_HANDLER_KEY = "novel_forge.chapter_authority.root"

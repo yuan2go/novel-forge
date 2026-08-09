@@ -190,6 +190,7 @@ def _quality_schema() -> dict[str, Any]:
             "confidence": {"type": "number", "minimum": 0, "maximum": 1},
             "evidence_locations": {
                 "type": "array",
+                "minItems": 1,
                 "items": location,
             },
             "issue_codes": {
@@ -266,6 +267,12 @@ def chapter_provider_output_schema(stage: str) -> dict[str, Any]:
             f"Chapter Provider output schema is not defined for stage {stage}",
         )
     return {"$schema": _SCHEMA_DIALECT, **schema}
+
+
+def chapter_provider_output_schema_ref(stage: str) -> str:
+    chapter_provider_output_schema(stage)
+    version = "v2" if stage in _QUALITY_STAGES else "v1"
+    return f"schema:chapter-provider-output:{stage}:{version}"
 
 
 def validate_chapter_provider_output_schema(

@@ -74,6 +74,7 @@ from novel_forge.storage.authority_asset_store import (
 )
 from novel_forge.modules.chapter_authority.provider_output_contracts import (
     chapter_provider_output_schema,
+    chapter_provider_output_schema_ref,
 )
 
 
@@ -384,7 +385,7 @@ class PostgresChapterExecutionContractBinder:
                 "Capability Pack does not authorize model.provider.invoke for this stage",
             )
         provider_schema = chapter_provider_output_schema(stage)
-        provider_schema_ref = f"schema:chapter-provider-output:{stage}:v1"
+        provider_schema_ref = chapter_provider_output_schema_ref(stage)
         schema_hash = canonical_hash(provider_schema)
         contract_without_hash: dict[str, Any] = {
             "schema_version": "novelos.chapter_capability_materialization.v1",
@@ -1683,6 +1684,14 @@ def _stage_semantic_contract(stage: str) -> str:
             "facts as authorizes_testimony and authorizes_public_identification instead "
             "of repeating authorizes with two objects. Never emit two different objects "
             "for the same semantic tuple."
+        )
+    if stage.startswith("quality_"):
+        return (
+            "Evaluate only the requested dimensions. Every returned dimension must "
+            "include at least one concrete evidence location, including policy-"
+            "compliance dimensions. Use PASSED only when the supplied chapter or "
+            "governed context directly supports the claim; otherwise use "
+            "INSUFFICIENT_EVIDENCE, REQUIRES_HUMAN_REVIEW, or FAILED as appropriate."
         )
     return "Return only the stage result defined by the frozen output schema."
 

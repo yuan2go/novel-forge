@@ -537,14 +537,16 @@ class ChapterModelExternalEffectAdapter:
                 "Evaluate only the requested chapter quality dimensions. Return JSON "
                 "{dimensions:[{dimension,gate_status,score,evidence_locations,confidence,"
                 "issue_codes,revision_strategies}]}. Use PASSED only when the chapter "
-                "contains direct evidence; otherwise use INSUFFICIENT_EVIDENCE or FAILED.\n"
+                "contains direct evidence; otherwise use INSUFFICIENT_EVIDENCE or FAILED. "
+                "Every dimension must include at least one concrete evidence location, "
+                "including policy-compliance dimensions.\n"
                 f"Group: {group}\nDimensions: {dimensions}\nGoverned context:\n"
                 + str(quality_context)
             )
             return adapter.generate(
                 prompt,
                 {
-                    "contract_version": "chapter-quality-provider-evidence-v1",
+                    "contract_version": "chapter-quality-provider-evidence-v2",
                     "group": group,
                     "dimensions": dimensions,
                     "quality_context": quality_context,

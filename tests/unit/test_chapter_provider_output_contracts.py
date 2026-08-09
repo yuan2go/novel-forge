@@ -9,6 +9,7 @@ from novel_forge.modules.chapter_authority.execution_gateway import (
 )
 from novel_forge.modules.chapter_authority.provider_output_contracts import (
     chapter_provider_output_schema,
+    chapter_provider_output_schema_ref,
     validate_chapter_provider_output_against_schema,
     validate_chapter_provider_output_semantics,
     validate_chapter_provider_output_schema,
@@ -46,6 +47,21 @@ def test_rereview_prompt_reports_only_acceptance_blocking_defects() -> None:
     assert "acceptance-blocking" in contract
     assert "minor polish" in contract
     assert "issues=[]" in contract
+
+
+def test_quality_prompt_and_schema_version_require_dimension_evidence() -> None:
+    contract = _stage_semantic_contract("quality_platform")
+
+    assert "Every returned dimension" in contract
+    assert "at least one concrete evidence location" in contract
+    assert (
+        chapter_provider_output_schema_ref("quality_platform")
+        == "schema:chapter-provider-output:quality_platform:v2"
+    )
+    assert (
+        chapter_provider_output_schema_ref("draft")
+        == "schema:chapter-provider-output:draft:v1"
+    )
 
 
 def test_canon_prompt_explains_unique_semantic_slot_encoding() -> None:
@@ -195,6 +211,22 @@ def test_schema_validation_does_not_treat_boolean_as_number() -> None:
 
     assert raised.value.code == "CHAPTER_PROVIDER_OUTPUT_SCHEMA_INVALID"
     assert "confidence" in str(raised.value)
+
+
+def test_quality_schema_requires_evidence_for_every_dimension() -> None:
+    schema = chapter_provider_output_schema("quality_platform")
+    locations = schema["properties"]["dimensions"]["items"]["properties"][
+        "evidence_locations"
+    ]
+    assert locations["minItems"] == 1
+    value = deepcopy(_valid("quality_platform"))
+    value["dimensions"][0]["evidence_locations"] = []  # type: ignore[index]
+
+    with pytest.raises(KernelError) as raised:
+        validate_chapter_provider_output_schema("quality_platform", value)
+
+    assert raised.value.code == "CHAPTER_PROVIDER_OUTPUT_SCHEMA_INVALID"
+    assert "at least 1 items" in str(raised.value)
 
 
 def test_shared_schema_validation_supports_integer_const_and_max_items() -> None:
