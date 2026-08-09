@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 import importlib.util
 from pathlib import Path
 import sys
@@ -37,6 +38,21 @@ def test_proof_object_store_buckets_are_stable_and_run_isolated(tmp_path: Path) 
     assert set(first) == {"raw", "artifact", "export"}
     assert all(name.startswith("novel-forge-proof-") for name in first.values())
     assert all(len(name) <= 63 for name in first.values())
+
+
+def test_proof_script_only_references_defined_longform_checkpoint_members() -> None:
+    proof = _load_script()
+    script_path = Path(proof.__file__)
+    tree = ast.parse(script_path.read_text(encoding="utf-8"))
+    referenced = {
+        node.attr
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Attribute)
+        and isinstance(node.value, ast.Name)
+        and node.value.id == "LongformCheckpointType"
+    }
+
+    assert referenced <= set(proof.LongformCheckpointType.__members__)
 
 
 def test_resume_returns_existing_active_chapter_before_supervisor_polling() -> None:

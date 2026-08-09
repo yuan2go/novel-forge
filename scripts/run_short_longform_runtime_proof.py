@@ -2680,7 +2680,7 @@ def _controlled_recap(
         principal=principal,
         payload={
             "book_id": book["book_id"],
-            "checkpoint_type": LongformCheckpointType.LIGHT.value,
+            "checkpoint_type": LongformCheckpointType.CHAPTER_CADENCE.value,
             "chapter_range": [1, int(request["chapter_number"])],
             "book_design_version": book["book_design_version"],
             "book_plan_version": book["book_plan_version"],
