@@ -479,6 +479,24 @@ def planning_provider_output_schema(
             if parent_version_id
             else string
         )
+    if contract_type is PlanContractType.CHAPTER:
+        properties["title"] = {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "description": (
+                "Concise reader-facing chapter title; never a planning instruction."
+            ),
+        }
+        properties["premise"] = {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 320,
+            "description": (
+                "Concise reader-facing chapter synopsis; never a planning, review, "
+                "or Authority instruction."
+            ),
+        }
     return {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
@@ -931,7 +949,7 @@ class PostgresPlanningExecutionPreparer:
             "schema:planning-provider-output:"
             + command.planning_scope.value.lower()
             + (
-                ":v2"
+                ":v3"
                 if command.planning_scope.value == PlanContractType.CHAPTER.value
                 else ":v1"
             )

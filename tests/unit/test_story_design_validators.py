@@ -74,7 +74,11 @@ class StoryDesignValidatorTests(unittest.TestCase):
                 "generator_operation_name": "chapter_plan.generate",
                 "planning_scope": "CHAPTER",
                 "logical_key": "chapter:1",
-                "candidate_payload": {"objective": "A chapter objective"},
+                "candidate_payload": {
+                    "objective": "A chapter objective",
+                    "title": "The Name in the Ledger",
+                    "premise": "A clerk preserves an altered ledger at a visible cost.",
+                },
             },
             project_id="project-1",
             generator_operation_name="chapter_plan.generate",
@@ -89,8 +93,34 @@ class StoryDesignValidatorTests(unittest.TestCase):
         )
         self.assertEqual(
             generator_receipt.evidence["generator_definition_version"],
-            "1.2.0",
+            "1.3.0",
         )
+
+    def test_chapter_publish_metadata_rejects_internal_planning_instructions(
+        self,
+    ) -> None:
+        with self.assertRaises(KernelError) as raised:
+            validate_story_design_candidate(
+                content={
+                    "schema_version": "story_design.authority.v1",
+                    "project_id": "project-1",
+                    "generator_operation_name": "chapter_plan.generate",
+                    "planning_scope": "CHAPTER",
+                    "logical_key": "chapter:1",
+                    "candidate_payload": {
+                        "objective": "A chapter objective",
+                        "title": "Chapter 1: Reveal the contradiction and force the first accountable choice",
+                        "premise": "Plan Chapter 1 as a future-only candidate.",
+                    },
+                },
+                project_id="project-1",
+                generator_operation_name="chapter_plan.generate",
+                planning_scope="CHAPTER",
+                logical_key="chapter:1",
+            )
+
+        self.assertEqual(raised.exception.code, "STORY_DESIGN_SEMANTIC_INVALID")
+        self.assertIn("publish metadata", raised.exception.message)
 
     def test_empty_candidate_payload_cannot_be_declared_passing(self) -> None:
         with self.assertRaises(KernelError) as raised:

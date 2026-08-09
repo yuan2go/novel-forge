@@ -117,6 +117,9 @@ def test_planning_provider_schema_is_codex_strict(
         assert schema["properties"]["chapter_range"]["maxItems"] == 2
     if contract_type is PlanContractType.CHAPTER:
         assert schema["properties"]["required_arc_contributions"]["maxItems"] == 1
+        assert schema["properties"]["title"]["maxLength"] == 120
+        assert schema["properties"]["premise"]["maxLength"] == 320
+        assert "reader-facing" in schema["properties"]["title"]["description"]
 
 
 def test_chapter_group_contract_rejects_non_pair_range_as_governed_error() -> None:

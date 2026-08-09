@@ -119,8 +119,8 @@ ROOT = Path(__file__).resolve().parents[1]
 BRANCH = "feat/v7-content-intelligence-and-longform-proof"
 PLANNING_PACK_ID = "story_planning_pack"
 READER_PACK_ID = "reader_outcome_pack"
-PLANNING_PACK_INITIAL_VERSION = "1.1.0"
-PLANNING_PACK_RECOVERY_VERSION = "1.2.0"
+PLANNING_PACK_INITIAL_VERSION = "1.3.0"
+PLANNING_PACK_RECOVERY_VERSION = "1.4.0"
 BOOTSTRAP_DEFINITION = "short_longform.proof.bootstrap"
 BOOTSTRAP_HANDLER = "novel_forge.proof.short_longform.bootstrap"
 

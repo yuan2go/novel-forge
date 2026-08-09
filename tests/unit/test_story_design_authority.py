@@ -55,11 +55,15 @@ class StoryDesignAuthorityContractTests(unittest.TestCase):
         )
         self.assertEqual(
             definitions["chapter_plan.generate"].definition_version,
-            "1.2.0",
+            "1.3.0",
         )
         self.assertEqual(
             definitions["chapter_plan.generate"].output_schema_version,
-            "chapter-plan-generate-output-v2",
+            "chapter-plan-generate-output-v3",
+        )
+        self.assertEqual(
+            definitions["chapter_plan.generate"].prompt_contract_version,
+            "chapter-plan-generate-prompt-v2",
         )
         self.assertEqual(definitions["book_plan.generate"].definition_version, "1.0.0")
 

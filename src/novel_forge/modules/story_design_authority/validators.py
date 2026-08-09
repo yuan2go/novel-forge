@@ -14,8 +14,16 @@ from novel_forge.modules.command_kernel.errors import KernelError
 from .domain import GENERATOR_CATALOG, PlanningScope
 
 
-STORY_DESIGN_VALIDATOR_VERSION = "1.0.0"
+STORY_DESIGN_VALIDATOR_VERSION = "1.1.0"
 _GENERATOR_DEFINITION_VERSION = re.compile(r"^[1-9][0-9]*\.[0-9]+\.[0-9]+$")
+_PLANNING_METADATA_MARKERS = (
+    "plan chapter",
+    "planning task",
+    "planning candidate",
+    "future-only",
+    "authority state",
+    "review evidence",
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -225,6 +233,8 @@ def validate_story_design_candidate(
             "STORY_DESIGN_SEMANTIC_INVALID",
             "Story Design candidate requires a non-empty objective",
         )
+    if generator_operation_name == "chapter_plan.generate":
+        _validate_chapter_publish_metadata(candidate_payload)
     semantic = _receipt(
         validation_kind="SEMANTIC",
         validator_name="story-design-semantic-validator",
@@ -260,6 +270,36 @@ def validate_story_design_candidate(
         result_hash=_canonical_hash(result_without_hash),
         receipts=receipts,
     )
+
+
+def _validate_chapter_publish_metadata(candidate_payload: Mapping[str, Any]) -> None:
+    title = candidate_payload.get("title")
+    premise = candidate_payload.get("premise")
+    if (
+        not isinstance(title, str)
+        or not title.strip()
+        or len(title.strip()) > 120
+        or "\n" in title
+    ):
+        raise KernelError(
+            "STORY_DESIGN_SEMANTIC_INVALID",
+            "Chapter title must be concise reader-facing publish metadata",
+        )
+    if (
+        not isinstance(premise, str)
+        or not premise.strip()
+        or len(premise.strip()) > 320
+    ):
+        raise KernelError(
+            "STORY_DESIGN_SEMANTIC_INVALID",
+            "Chapter premise must be concise reader-facing publish metadata",
+        )
+    metadata = f"{title}\n{premise}".casefold()
+    if any(marker in metadata for marker in _PLANNING_METADATA_MARKERS):
+        raise KernelError(
+            "STORY_DESIGN_SEMANTIC_INVALID",
+            "Chapter publish metadata cannot contain planning or Authority instructions",
+        )
 
 
 __all__ = [

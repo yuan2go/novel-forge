@@ -25,6 +25,7 @@ from novel_forge.modules.story_planning_runtime.domain import (
 
 
 _BASE_PACK = "config/capability_packs/chapter_generation_pack.json"
+STORY_PLANNING_PROMPT_VERSION = "v2"
 
 
 @dataclass(frozen=True, slots=True)
@@ -138,6 +139,7 @@ def build_story_planning_pack_profile(
         template_path=("config/capability_packs/artifacts/story_planning_template.md"),
         input_schema_ref="schema:story-planning-pack-input:v1",
         output_schema_ref="schema:story-planning-pack-output:v1",
+        system_version=STORY_PLANNING_PROMPT_VERSION,
     )
     _update_policy_artifacts(manifest, artifacts)
     for _stage, capability in capabilities:
@@ -301,6 +303,8 @@ def _bind_domain_artifacts(
     template_path: str,
     input_schema_ref: str,
     output_schema_ref: str,
+    system_version: str = "v1",
+    template_version: str = "v1",
 ) -> list[dict[str, Any]]:
     skill_content = {"text": _text(root, skill_path)}
     system_content = {"text": _text(root, system_path)}
@@ -317,7 +321,7 @@ def _bind_domain_artifacts(
         artifacts,
         ArtifactKind.PROMPT_SYSTEM_INSTRUCTION,
         system_ref,
-        "v1",
+        system_version,
         system_content,
         system_path,
     )
@@ -325,7 +329,7 @@ def _bind_domain_artifacts(
         artifacts,
         ArtifactKind.PROMPT_TEMPLATE,
         template_ref,
-        "v1",
+        template_version,
         template_content,
         template_path,
     )
@@ -364,10 +368,10 @@ def _bind_domain_artifacts(
     ]
     manifest["prompt_binding"].update(
         system_instruction_ref=system_ref,
-        system_instruction_version="v1",
+        system_instruction_version=system_version,
         system_instruction_hash=artifact_content_hash(system_content),
         template_ref=template_ref,
-        template_version="v1",
+        template_version=template_version,
         template_hash=artifact_content_hash(template_content),
         input_schema_ref=input_schema_ref,
         output_schema_ref=output_schema_ref,
@@ -453,6 +457,7 @@ def _require_hash(value: str) -> None:
 
 __all__ = [
     "LongformCapabilityPackProfile",
+    "STORY_PLANNING_PROMPT_VERSION",
     "build_reader_outcome_pack_profile",
     "build_story_planning_pack_profile",
 ]

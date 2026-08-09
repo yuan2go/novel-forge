@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from novel_forge.modules.capability_packs.longform_profiles import (
+    STORY_PLANNING_PROMPT_VERSION,
     build_reader_outcome_pack_profile,
     build_story_planning_pack_profile,
 )
@@ -36,6 +37,17 @@ def test_story_planning_profile_is_domain_owned_and_five_stage() -> None:
     assert profile.manifest["prompt_binding"]["system_instruction_ref"] == (
         "prompt-system:story-planning-pack"
     )
+    assert profile.manifest["prompt_binding"]["system_instruction_version"] == (
+        STORY_PLANNING_PROMPT_VERSION
+    )
+    planning_instruction = next(
+        item
+        for item in profile.artifact_catalog["artifacts"]
+        if item["kind"] == "PROMPT_SYSTEM_INSTRUCTION"
+        and item["ref"] == "prompt-system:story-planning-pack"
+    )
+    assert planning_instruction["version"] == STORY_PLANNING_PROMPT_VERSION
+    assert "publish-metadata inputs" in planning_instruction["content"]["text"]
     assert {
         node["node_id"] for node in profile.manifest["workflow_template"]["nodes"]
     } == {
