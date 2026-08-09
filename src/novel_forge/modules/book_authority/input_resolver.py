@@ -22,7 +22,7 @@ from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 
 BOOK_INPUT_RESOLVE_DEFINITION = "book.production_input.resolve"
-BOOK_INPUT_RESOLVE_VERSION = "1.0.0"
+BOOK_INPUT_RESOLVE_VERSION = "1.1.0"
 BOOK_INPUT_RESOLVE_HANDLER = "novel_forge.book_authority.production_input.resolve"
 
 
@@ -56,6 +56,7 @@ class ResolveBookProductionInputCommand:
     idempotency_key: str
     trace_id: str
     correlation_id: str
+    role_asset_version_overrides: tuple[tuple[str, str], ...] = ()
 
     def __post_init__(self) -> None:
         values = (
@@ -73,6 +74,18 @@ class ResolveBookProductionInputCommand:
             or self.expected_book_version <= 0
         ):
             raise ValueError("Book Production input resolution command is incomplete")
+        override_roles = [
+            role for role, _version_id in self.role_asset_version_overrides
+        ]
+        if (
+            len(override_roles) != len(set(override_roles))
+            or any(role not in _ACTIVE_ROLE_TYPES for role in override_roles)
+            or any(
+                not role.strip() or not version_id.strip()
+                for role, version_id in self.role_asset_version_overrides
+            )
+        ):
+            raise ValueError("Book Production role overrides are invalid")
 
 
 @dataclass(frozen=True, slots=True)
@@ -160,6 +173,9 @@ class BookProductionInputResolver:
                     "production_profile": command.production_profile,
                     "expected_book_version": command.expected_book_version,
                     "expected_snapshot_hash": preview["snapshot_hash"],
+                    "role_asset_version_overrides": [
+                        list(item) for item in command.role_asset_version_overrides
+                    ],
                 },
                 "input_assets": list(input_assets),
             },
@@ -235,6 +251,10 @@ class BookProductionInputResolver:
             production_profile=str(payload["production_profile"]),
             expected_book_version=int(payload["expected_book_version"]),
             idempotency_key=str(payload.get("idempotency_key") or operation_id),
+            role_asset_version_overrides=tuple(
+                (str(item[0]), str(item[1]))
+                for item in payload.get("role_asset_version_overrides") or ()
+            ),
         )
         resolved = self._resolve_in_cursor(uow.cursor, command)
         if resolved["snapshot_hash"] != str(payload["expected_snapshot_hash"]):
@@ -525,20 +545,46 @@ class BookProductionInputResolver:
         asset_types: tuple[str, ...],
         requested_profile: str,
     ) -> dict[str, Any]:
-        cursor.execute(
-            """
-            SELECT version.asset_version_id, asset.asset_id,
-                   version.content_hash, version.content
-            FROM authority_asset AS asset
-            JOIN authority_asset_version AS version ON version.asset_id=asset.asset_id
-            WHERE asset.project_id=%s AND asset.asset_type=ANY(%s)
-              AND version.lifecycle='ACTIVE' AND version.eligibility='ELIGIBLE'
-              AND version.governance='CLEAR'
-              AND (COALESCE(version.content->>'book_id', '') IN ('', %s))
-            ORDER BY version.created_at DESC, version.version_number DESC
-            """,
-            [command.project_id, list(asset_types), command.book_id],
-        )
+        override_version = dict(command.role_asset_version_overrides).get(role, "")
+        if override_version:
+            cursor.execute(
+                """
+                SELECT version.asset_version_id, asset.asset_id,
+                       version.content_hash, version.content
+                FROM authority_asset AS asset
+                JOIN authority_asset_version AS version
+                  ON version.asset_id=asset.asset_id
+                WHERE asset.project_id=%s AND asset.asset_type=ANY(%s)
+                  AND version.asset_version_id=%s
+                  AND version.lifecycle='ACTIVE'
+                  AND version.eligibility='ELIGIBLE'
+                  AND version.governance='CLEAR'
+                  AND (COALESCE(version.content->>'book_id', '') IN ('', %s))
+                """,
+                [
+                    command.project_id,
+                    list(asset_types),
+                    override_version,
+                    command.book_id,
+                ],
+            )
+        else:
+            cursor.execute(
+                """
+                SELECT version.asset_version_id, asset.asset_id,
+                       version.content_hash, version.content
+                FROM authority_asset AS asset
+                JOIN authority_asset_version AS version
+                  ON version.asset_id=asset.asset_id
+                WHERE asset.project_id=%s AND asset.asset_type=ANY(%s)
+                  AND version.lifecycle='ACTIVE'
+                  AND version.eligibility='ELIGIBLE'
+                  AND version.governance='CLEAR'
+                  AND (COALESCE(version.content->>'book_id', '') IN ('', %s))
+                ORDER BY version.created_at DESC, version.version_number DESC
+                """,
+                [command.project_id, list(asset_types), command.book_id],
+            )
         rows = cursor.fetchall()
         if requested_profile:
             rows = [
@@ -695,6 +741,7 @@ def book_production_input_definition(
             "production_profile",
             "expected_book_version",
             "expected_snapshot_hash",
+            "role_asset_version_overrides",
         ],
         "properties": {
             "project_id": {"type": "string"},
@@ -703,6 +750,7 @@ def book_production_input_definition(
             "production_profile": {"type": "string"},
             "expected_book_version": {"type": "integer"},
             "expected_snapshot_hash": {"type": "string"},
+            "role_asset_version_overrides": {"type": "array"},
         },
         "additionalProperties": False,
     }
@@ -712,14 +760,14 @@ def book_production_input_definition(
         "family": "book_authority",
         "enabled": True,
         "definition_status": "implemented_validation_pending",
-        "command_schema_version": "book-production-input-resolve-command-v1",
+        "command_schema_version": "book-production-input-resolve-command-v2",
         "result_schema_version": "book-production-input-snapshot-v1",
         "command_schema": schema,
         "result_schema": {"type": "object"},
         "input_contract": schema,
         "output_contract": {"type": "BookProductionInputSnapshot"},
         "handler_key": BOOK_INPUT_RESOLVE_HANDLER,
-        "handler_contract_version": "book-production-input-resolver-v1",
+        "handler_contract_version": "book-production-input-resolver-v2",
         "application_build_id": application_build_id,
         "commit_sha": commit_sha,
         "execution_mode": "transactional",

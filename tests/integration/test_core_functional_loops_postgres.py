@@ -715,6 +715,82 @@ def _seed_recap_lineage(project_id: str, book_id: str) -> tuple[str, str]:
     return outputs[0][2], outputs[1][2]
 
 
+def _seed_current_canon_role_outputs(
+    *, project_id: str, book_id: str, book_run_id: str
+) -> dict[str, str]:
+    definition_name = identifier("current-canon-role-fixture-definition")
+    operation_id = identifier("current-canon-role-fixture-operation")
+    versions: dict[str, str] = {}
+    with transaction() as connection, connection.cursor() as cursor:
+        insert_definition(cursor, definition_name)
+        insert_operation(
+            cursor,
+            operation_id=operation_id,
+            definition_name=definition_name,
+            project_id=project_id,
+            status="SUCCEEDED",
+        )
+        for asset_type in (
+            "canon_snapshot",
+            "character_state_snapshot",
+            "foreshadow_snapshot",
+            "reward_ledger_snapshot",
+            "promise_ledger_snapshot",
+        ):
+            asset_id = identifier(f"current-{asset_type}-asset")
+            version_id = f"{asset_id}:v1"
+            content = {
+                "book_id": book_id,
+                "chapter_number": 1,
+                "role": asset_type,
+            }
+            digest = canonical_hash(content)
+            cursor.execute(
+                "INSERT INTO authority_asset(asset_id,project_id,asset_type) VALUES (%s,%s,%s)",
+                [asset_id, project_id, asset_type],
+            )
+            cursor.execute(
+                """
+                INSERT INTO authority_asset_version(
+                    asset_version_id,asset_id,version_number,lifecycle,
+                    eligibility,governance,content,content_hash,schema_version
+                ) VALUES (%s,%s,1,'ACTIVE','ELIGIBLE','CLEAR',%s,%s,%s)
+                """,
+                [
+                    version_id,
+                    asset_id,
+                    Jsonb(content),
+                    digest,
+                    f"{asset_type}.v1",
+                ],
+            )
+            cursor.execute(
+                """
+                INSERT INTO authority_operation_output_asset(
+                    operation_id,asset_id,asset_version_id,output_key,role,content_hash
+                ) VALUES (%s,%s,%s,%s,'state_snapshot',%s)
+                """,
+                [
+                    operation_id,
+                    asset_id,
+                    version_id,
+                    f"chapter.canon.snapshot.{asset_type}",
+                    digest,
+                ],
+            )
+            versions[asset_type] = version_id
+        cursor.execute(
+            """
+            UPDATE authority_book_production
+            SET active_canon_snapshot_version_id=%s
+            WHERE book_run_id=%s
+            """,
+            [versions["canon_snapshot"], book_run_id],
+        )
+        assert cursor.rowcount == 1
+    return versions
+
+
 def _seed_chapter_acceptance_for_checkpoint(
     *,
     project_id: str,
@@ -1566,6 +1642,11 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack() -> N
             [checkpoint_request_id],
         )
         assert uow.cursor.fetchone() == (1, 1, 1, 1, 1)
+    current_canon_roles = _seed_current_canon_role_outputs(
+        project_id=project_id,
+        book_id=book_id,
+        book_run_id=book.book_run_id,
+    )
     recap_version, replan_request_version = _seed_recap_lineage(project_id, book_id)
     plan_change = PostgresPlanChangeAuthority(
         DATABASE_URL,
@@ -1616,6 +1697,23 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack() -> N
     assert resumed["replacement_child_candidate"]
     assert replayed_resume["replan_id"] == resumed["replan_id"]
     assert resumed["input_snapshot_id"] != snapshot.snapshot_id
+    resumed_snapshot = resolver.require(resumed["input_snapshot_id"])
+    assert (
+        resumed_snapshot.character_state_version
+        == current_canon_roles["character_state_snapshot"]
+    )
+    assert (
+        resumed_snapshot.foreshadowing_state_version
+        == current_canon_roles["foreshadow_snapshot"]
+    )
+    assert (
+        resumed_snapshot.reward_ledger_version
+        == current_canon_roles["reward_ledger_snapshot"]
+    )
+    assert (
+        resumed_snapshot.promise_ledger_version
+        == current_canon_roles["promise_ledger_snapshot"]
+    )
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
         uow.cursor.execute(
             """
