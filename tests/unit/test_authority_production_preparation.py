@@ -334,6 +334,85 @@ class ProductionPreparationTests(unittest.TestCase):
             ["pair-1", "pair-2"],
         )
 
+    def test_current_collection_snapshot_is_not_blocked_by_historical_versions(self) -> None:
+        state_types = (
+            "story_state_snapshot",
+            "canon_snapshot",
+            "character_state_snapshot",
+            "relationship_state_snapshot",
+            "timeline_snapshot",
+            "foreshadow_snapshot",
+            "promise_ledger_snapshot",
+            "reward_ledger_snapshot",
+            "world_rule_snapshot",
+            "power_state_snapshot",
+        )
+        collections = {
+            kind: [_asset(kind)]
+            for kind in (
+                "chapter_plan",
+                "style_policy",
+                "quality_rubric",
+                "platform_profile",
+                *state_types,
+            )
+        }
+        collections["chapter_plan"][0] = replace(
+            collections["chapter_plan"][0],
+            content={**collections["chapter_plan"][0].content, "chapter": 3},
+        )
+        for state_type in state_types:
+            current = collections[state_type][0]
+            collections[state_type][0] = replace(
+                current,
+                asset_id=f"asset:{state_type}:chapter-2",
+                asset_version_id=f"version:{state_type}:chapter-2",
+                content={**current.content, "chapter": 2},
+            )
+        for state_type in (
+            "character_state_snapshot",
+            "relationship_state_snapshot",
+            "foreshadow_snapshot",
+        ):
+            historical = _asset(state_type)
+            collections[state_type].append(
+                replace(
+                    historical,
+                    asset_id=f"asset:{state_type}:chapter-1",
+                    asset_version_id=f"version:{state_type}:chapter-1",
+                    content={**historical.content, "chapter": 1},
+                )
+            )
+
+        result = ProductionPreparationService(_MultiResolver(collections)).prepare(
+            ProductionPreparationRequest(
+                project_id="project-1",
+                workspace_id="workspace-1",
+                chapter=3,
+                title_override="Chapter Three",
+                premise_override="Current state carries forward after replan.",
+                idempotency_key="chapter-3-current-state",
+            )
+        )
+
+        self.assertEqual(result.report.decision, "READY")
+        self.assertEqual(result.report.blocked_assets, ())
+        for state_type in (
+            "character_state_snapshot",
+            "relationship_state_snapshot",
+            "foreshadow_snapshot",
+        ):
+            self.assertIn(
+                f"version:{state_type}:chapter-2",
+                result.report.selected_asset_version_ids,
+            )
+            self.assertEqual(
+                result.report.production_input_manifest["rejection_reasons"][
+                    f"version:{state_type}:chapter-1"
+                ],
+                "HISTORICAL_SNAPSHOT_CHAPTER_MISMATCH",
+            )
+
     def test_relationship_snapshot_is_required_for_continuing_chapter(self) -> None:
         assets = {
             kind: _asset(kind)

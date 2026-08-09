@@ -60,6 +60,7 @@ class ProductionPreparationService:
         for requirement in requirements:
             candidates = self._candidates(request, requirement.asset_type)
             accepted: list[ResolvedProductionAsset] = []
+            fit_issues: list[str] = []
             for candidate in candidates:
                 issue = self._asset_fit_issue(
                     asset_type=requirement.asset_type,
@@ -77,8 +78,7 @@ class ProductionPreparationService:
                             reason="candidate violates stage, state, or governance policy",
                         )
                     )
-                    if requirement.required:
-                        blocked.append({"asset_type": requirement.asset_type, "code": issue})
+                    fit_issues.append(issue)
                     continue
                 scope_issue = self._selection_scope_issue(
                     request=request,
@@ -119,6 +119,13 @@ class ProductionPreparationService:
                         entity_id=str(item.content.get("entity_id") or ""),
                     )
                     for item in accepted
+                )
+            elif requirement.required and fit_issues:
+                blocked.append(
+                    {
+                        "asset_type": requirement.asset_type,
+                        "code": fit_issues[0],
+                    }
                 )
 
         missing: list[str] = []
