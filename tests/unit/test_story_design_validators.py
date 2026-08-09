@@ -89,7 +89,7 @@ class StoryDesignValidatorTests(unittest.TestCase):
         )
         self.assertEqual(
             generator_receipt.evidence["generator_definition_version"],
-            "1.1.0",
+            "1.2.0",
         )
 
     def test_empty_candidate_payload_cannot_be_declared_passing(self) -> None:

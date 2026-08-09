@@ -198,6 +198,8 @@ def validate_planning_contract(
             list(content["chapter_function_matrix"]),
             group_objective=str(content["local_objective"]),
         )
+    if contract_type is PlanContractType.CHAPTER:
+        _validate_chapter_arc_contributions(content["required_arc_contributions"])
     return PlanningContract(
         project_id=project_id,
         book_id=book_id,
@@ -209,6 +211,37 @@ def validate_planning_contract(
         execution_scope=execution_scope,
         content=dict(content),
     )
+
+
+def _validate_chapter_arc_contributions(value: Any) -> None:
+    if not isinstance(value, (list, tuple)) or not value:
+        raise KernelError(
+            "PLANNING_ARC_CONTRIBUTION_INVALID",
+            "Chapter required Arc contributions must be a non-empty list",
+        )
+    seen: set[str] = set()
+    for contribution in value:
+        if not isinstance(contribution, dict):
+            raise KernelError(
+                "PLANNING_ARC_CONTRIBUTION_INVALID",
+                "Chapter required Arc contribution must be an object",
+            )
+        arc_version = str(
+            contribution.get("arc_plan_version_id")
+            or contribution.get("arc_id")
+            or ""
+        )
+        if not arc_version:
+            raise KernelError(
+                "PLANNING_ARC_CONTRIBUTION_INVALID",
+                "Chapter required Arc contribution must bind an Arc identity",
+            )
+        if arc_version in seen:
+            raise KernelError(
+                "PLANNING_ARC_CONTRIBUTION_IDENTITY_DUPLICATE",
+                "Chapter may declare at most one required contribution per Arc",
+            )
+        seen.add(arc_version)
 
 
 def validate_chapter_function_matrix(

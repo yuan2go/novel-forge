@@ -431,6 +431,8 @@ def planning_provider_output_schema(
                     {"arc_plan_version_id": arc_ref, "contribution": string}
                 ),
             }
+            if arc_plan_version_id:
+                properties[field]["maxItems"] = 1
         elif field in integer_arrays:
             properties[field] = {
                 "type": "array",
@@ -928,7 +930,11 @@ class PostgresPlanningExecutionPreparer:
         output_schema_ref = (
             "schema:planning-provider-output:"
             + command.planning_scope.value.lower()
-            + ":v1"
+            + (
+                ":v2"
+                if command.planning_scope.value == PlanContractType.CHAPTER.value
+                else ":v1"
+            )
         )
         materialization = {
             "schema_version": "novelos.planning_capability_materialization.v1",

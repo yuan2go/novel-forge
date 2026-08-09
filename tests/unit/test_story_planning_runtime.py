@@ -115,6 +115,8 @@ def test_planning_provider_schema_is_codex_strict(
     if contract_type in {PlanContractType.VOLUME, PlanContractType.CHAPTER_GROUP}:
         assert schema["properties"]["chapter_range"]["minItems"] == 2
         assert schema["properties"]["chapter_range"]["maxItems"] == 2
+    if contract_type is PlanContractType.CHAPTER:
+        assert schema["properties"]["required_arc_contributions"]["maxItems"] == 1
 
 
 def test_chapter_group_contract_rejects_non_pair_range_as_governed_error() -> None:
@@ -137,6 +139,36 @@ def test_chapter_group_contract_rejects_non_pair_range_as_governed_error() -> No
             contract_type=PlanContractType.CHAPTER_GROUP,
             asset_version_id="chapter-group:v1",
             parent_version_id="volume:v1",
+            execution_scope=PlanExecutionScope.PLANNED,
+            content=content,
+        )
+
+
+def test_chapter_contract_rejects_duplicate_arc_contribution_identity() -> None:
+    content = planning_fixture_response(
+        "chapter_plan.generate",
+        {
+            "planning_command": {
+                "logical_key": "chapter:2",
+                "parent_version_id": "chapter-group:v1",
+                "input_versions": {"arc_plans": "arc:v1"},
+            }
+        },
+    )
+    content["required_arc_contributions"] = [
+        {"arc_plan_version_id": "arc:v1", "contribution": "advance choice"},
+        {"arc_plan_version_id": "arc:v1", "contribution": "accept cost"},
+    ]
+
+    with pytest.raises(
+        KernelError, match="PLANNING_ARC_CONTRIBUTION_IDENTITY_DUPLICATE"
+    ):
+        validate_planning_contract(
+            project_id="project-1",
+            book_id="book-1",
+            contract_type=PlanContractType.CHAPTER,
+            asset_version_id="chapter:v2",
+            parent_version_id="chapter-group:v1",
             execution_scope=PlanExecutionScope.PLANNED,
             content=content,
         )

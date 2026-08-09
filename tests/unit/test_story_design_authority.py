@@ -44,7 +44,7 @@ class StoryDesignAuthorityContractTests(unittest.TestCase):
         }
         self.assertEqual(len(identities), len(GENERATOR_DEFINITIONS))
 
-    def test_story_chapter_capability_change_is_a_versioned_generator_contract(
+    def test_story_chapter_schema_change_is_a_versioned_generator_contract(
         self,
     ) -> None:
         definitions = {item.operation_name: item for item in GENERATOR_DEFINITIONS}
@@ -55,7 +55,11 @@ class StoryDesignAuthorityContractTests(unittest.TestCase):
         )
         self.assertEqual(
             definitions["chapter_plan.generate"].definition_version,
-            "1.1.0",
+            "1.2.0",
+        )
+        self.assertEqual(
+            definitions["chapter_plan.generate"].output_schema_version,
+            "chapter-plan-generate-output-v2",
         )
         self.assertEqual(definitions["book_plan.generate"].definition_version, "1.0.0")
 

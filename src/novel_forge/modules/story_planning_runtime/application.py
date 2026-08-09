@@ -991,7 +991,10 @@ class StoryPlanningGenerationApplication:
         definition: Any,
         error: KernelError,
     ) -> PlanningGenerationResult:
-        semantic = error.code == "STORY_DESIGN_SEMANTIC_INVALID"
+        semantic = error.code in {
+            "STORY_DESIGN_SEMANTIC_INVALID",
+            "PLANNING_ARC_CONTRIBUTION_IDENTITY_DUPLICATE",
+        }
         validation_kind = "SEMANTIC" if semantic else "STRUCTURAL"
         report = {
             "status": "FAIL",

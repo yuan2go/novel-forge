@@ -109,6 +109,7 @@ def _generator(
     *,
     risk: str,
     definition_version: str = "1.0.0",
+    output_schema_version: str = "",
 ) -> GeneratorDefinition:
     key = operation_name.replace(".", "-")
     return GeneratorDefinition(
@@ -116,7 +117,7 @@ def _generator(
         capability=capability,
         input_contract_version=f"{key}-input-v1",
         output_candidate_type=output_type,
-        output_schema_version=f"{key}-output-v1",
+        output_schema_version=(output_schema_version or f"{key}-output-v1"),
         prompt_contract_version=f"{key}-prompt-v1",
         skill_version=f"{key}-skill-v1",
         route_policy_ref=f"route-policy:{capability}:v1",
@@ -195,7 +196,8 @@ GENERATOR_DEFINITIONS = (
         "planning.story_chapter.generate",
         "chapter_plan_candidate",
         risk="MEDIUM",
-        definition_version="1.1.0",
+        definition_version="1.2.0",
+        output_schema_version="chapter-plan-generate-output-v2",
     ),
 )
 
