@@ -61,23 +61,15 @@ class AgentCollaborationPepTests(unittest.TestCase):
             ParticipantSnapshot.freeze(
                 snapshot_id="participants:book-design:1",
                 participants=(
-                    Participant(
-                        "character-design-agent", 1, "PROPOSAL_OWNER"
-                    ),
-                    Participant(
-                        "plot-architecture-agent", 1, "CHALLENGER"
-                    ),
-                    Participant(
-                        "reader-outcome-judge", 1, "JUDGE"
-                    ),
+                    Participant("character-design-agent", 1, "PROPOSAL_OWNER"),
+                    Participant("plot-architecture-agent", 1, "CHALLENGER"),
+                    Participant("reader-outcome-judge", 1, "JUDGE"),
                 ),
             ),
         )
 
     def test_agent_turn_traverses_gateway_and_freezes_route_evidence(self) -> None:
-        work_order = _work_order(
-            1, AgentMessageType.PROPOSAL, "character-design-agent"
-        )
+        work_order = _work_order(1, AgentMessageType.PROPOSAL, "character-design-agent")
         envelope = _envelope(
             1,
             AgentMessageType.PROPOSAL,
@@ -87,9 +79,7 @@ class AgentCollaborationPepTests(unittest.TestCase):
             content_ref="content:candidate:v1",
             structured_diff={"op": "create", "path": "/core_advantage"},
         )
-        port, store, route = _gateway_port(
-            work_order, envelope.to_dict()
-        )
+        port, store, route = _gateway_port(work_order, envelope.to_dict())
 
         result = self.application.execute_turn(work_order, port)
         replay = self.application.execute_turn(work_order, port)
@@ -102,15 +92,14 @@ class AgentCollaborationPepTests(unittest.TestCase):
         validation = store.read_evidence(persisted.execution_evidence_ref)
         self.assertIn(route.route_snapshot_id, str(validation["checks"]))
         self.assertEqual(
-            store.get_record(f"execution:{work_order.turn_id}")
-            .request.route_snapshot_id,
+            store.get_record(
+                f"execution:{work_order.turn_id}"
+            ).request.route_snapshot_id,
             route.route_snapshot_id,
         )
 
     def test_backend_success_can_still_be_rejected_by_scope_policy(self) -> None:
-        work_order = _work_order(
-            1, AgentMessageType.PROPOSAL, "character-design-agent"
-        )
+        work_order = _work_order(1, AgentMessageType.PROPOSAL, "character-design-agent")
         envelope = _envelope(
             1,
             AgentMessageType.PROPOSAL,
@@ -123,9 +112,7 @@ class AgentCollaborationPepTests(unittest.TestCase):
                 ProposedAssetChange(
                     asset_type="book_design_candidate",
                     asset_version_id="",
-                    narrative_scope=NarrativeScope(
-                        kind="BOOK", book_id="book:1"
-                    ),
+                    narrative_scope=NarrativeScope(kind="BOOK", book_id="book:1"),
                     change_type="ending.replace",
                     knowledge_visibility=KnowledgeVisibility.HIDDEN_PLANNING,
                 ),
@@ -147,9 +134,7 @@ class AgentCollaborationPepTests(unittest.TestCase):
 
 
 def _gateway_port(work_order, result):
-    definition = default_capability_registry().resolve(
-        work_order.execution_capability
-    )
+    definition = default_capability_registry().resolve(work_order.execution_capability)
     capability = ExecutionCapabilityProfile(
         backend_id="scripted-fixture",
         backend_version="1.0.0",
@@ -211,6 +196,8 @@ def _gateway_port(work_order, result):
         auth_profile_ref="auth:fixture",
         model_profile_id=profile.profile_id,
         model_profile_version=profile.profile_version,
+        model_profile_hash=profile.contract_hash,
+        route_policy_hash=policy.contract_hash,
         model_provider=profile.model_provider,
         model_id=profile.model_id,
         requested_reasoning_effort="xhigh",
@@ -227,12 +214,9 @@ def _gateway_port(work_order, result):
         ArtifactPointer(
             artifact_ref=version_id,
             artifact_type=(
-                "character_card"
-                if "character" in version_id
-                else "plot_plan"
+                "character_card" if "character" in version_id else "plot_plan"
             ),
-            content_hash="sha256:"
-            + hashlib.sha256(version_id.encode()).hexdigest(),
+            content_hash="sha256:" + hashlib.sha256(version_id.encode()).hexdigest(),
             schema_version="agent-input.v1",
             source_eligibility="FIXTURE_ELIGIBLE",
         )

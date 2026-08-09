@@ -143,6 +143,8 @@ def _contracts(
         auth_profile_ref="auth-profile:fixture",
         model_profile_id=model_profile.profile_id,
         model_profile_version=model_profile.profile_version,
+        model_profile_hash=model_profile.contract_hash,
+        route_policy_hash=policy.contract_hash,
         model_provider=model_profile.model_provider,
         model_id=model_profile.model_id,
         requested_reasoning_effort="none",
@@ -449,7 +451,9 @@ class QualifiedBackendConformanceTests(unittest.TestCase):
         )
         return backend, store, request
 
-    def test_external_action_duplicate_submit_contract_conflict_and_receipts(self) -> None:
+    def test_external_action_duplicate_submit_contract_conflict_and_receipts(
+        self,
+    ) -> None:
         backend, adapter, store, request = self._external_backend()
 
         first = backend.submit(request)
@@ -490,9 +494,7 @@ class QualifiedBackendConformanceTests(unittest.TestCase):
         candidate = port.execute(
             ExternalActionCommand(
                 capability=request.capability,
-                request_payload={
-                    "release_package_ref": "asset-version:release:1"
-                },
+                request_payload={"release_package_ref": "asset-version:release:1"},
                 stable_idempotency_key=request.stable_idempotency_key,
                 data_classification="CONFIDENTIAL_MANUSCRIPT",
                 privacy_policy_ref="privacy-policy:publishing:v1",
@@ -514,7 +516,9 @@ class QualifiedBackendConformanceTests(unittest.TestCase):
         self.assertFalse(candidate.evidence.production_verified)
         self.assertEqual(candidate.raw_output["external_action"], "fixture")
 
-    def test_external_action_unknown_is_queried_and_callbacks_are_deduplicated(self) -> None:
+    def test_external_action_unknown_is_queried_and_callbacks_are_deduplicated(
+        self,
+    ) -> None:
         backend, _adapter, _store, request = self._external_backend("unknown")
         handle = backend.submit(request)
         callback = ExternalActionCallbackReceipt(
@@ -549,9 +553,7 @@ class QualifiedBackendConformanceTests(unittest.TestCase):
 
         self.assertEqual(cancellation.outcome, "CANCELLED")
         self.assertIsNone(cancellation.provider_request_id)
-        self.assertEqual(
-            cancellation.external_request_id, handle.external_request_id
-        )
+        self.assertEqual(cancellation.external_request_id, handle.external_request_id)
         self.assertIsNotNone(cancellation.external_cancellation_receipt_ref)
         with self.assertRaisesRegex(ValueError, "late external callback"):
             backend.accept_callback(
@@ -566,7 +568,9 @@ class QualifiedBackendConformanceTests(unittest.TestCase):
                 ),
             )
 
-    def test_controlled_environment_rejects_external_action_fixture_adapter(self) -> None:
+    def test_controlled_environment_rejects_external_action_fixture_adapter(
+        self,
+    ) -> None:
         with self.assertRaisesRegex(ValueError, "prohibited"):
             self._external_backend(environment="production")
 
@@ -636,8 +640,8 @@ class QualifiedBackendConformanceTests(unittest.TestCase):
             backend_id="scripted-fixture",
             runtime=ExecutionRuntimeClass.SCRIPTED_FIXTURE,
         )
-        _capability, scripted_admission, scripted_request = (
-            self._model_admission(scripted_contracts)
+        _capability, scripted_admission, scripted_request = self._model_admission(
+            scripted_contracts
         )
         scripted_store = InMemoryExecutionRecordStore()
         scripted = ScriptedFixtureExecutionBackend(
@@ -665,8 +669,8 @@ class QualifiedBackendConformanceTests(unittest.TestCase):
             backend_id="remote-provider",
             runtime=ExecutionRuntimeClass.REMOTE_PROVIDER_API,
         )
-        remote_capability, remote_admission, remote_request = (
-            self._model_admission(remote_contracts)
+        remote_capability, remote_admission, remote_request = self._model_admission(
+            remote_contracts
         )
         remote_adapter, _transport = _remote_adapter("success")
         remote = RemoteProviderExecutionBackend(
@@ -698,12 +702,10 @@ class QualifiedBackendConformanceTests(unittest.TestCase):
                 backend_id="codex-cli",
                 runtime=ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE,
             )
-            _codex_capability, codex_admission, codex_request = (
-                self._model_admission(codex_contracts)
+            _codex_capability, codex_admission, codex_request = self._model_admission(
+                codex_contracts
             )
-            execution_directory = PersistentExecutionDirectory(
-                Path(tmp) / "executions"
-            )
+            execution_directory = PersistentExecutionDirectory(Path(tmp) / "executions")
             result_path = execution_directory.prepare(
                 codex_request.execution_id
             ).result_path("result.json")

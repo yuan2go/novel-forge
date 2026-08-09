@@ -73,7 +73,22 @@ def capability_profile() -> ExecutionCapabilityProfile:
     )
 
 
-def route_snapshot(*, snapshot_id: str = "route-snapshot:1", effort: str = "xhigh") -> RouteSnapshot:
+def route_snapshot(
+    *, snapshot_id: str = "route-snapshot:1", effort: str = "xhigh"
+) -> RouteSnapshot:
+    profile = model_profile()
+    policy = RoutePolicy(
+        policy_id="chapter-production",
+        policy_version=1,
+        default_model_profile_id=profile.profile_id,
+        allowed_model_profile_ids=(profile.profile_id,),
+        rule_set_ref="route-rules:chapter:v1",
+        fallback_policy="FAIL_CLOSED",
+        fallback_policy_ref="chapter-production.fail-closed",
+        fallback_policy_version=1,
+        reasoning_downgrade_policy="PROHIBITED",
+        status="ACTIVE",
+    )
     return RouteSnapshot(
         route_snapshot_id=snapshot_id,
         route_decision_id="route-decision:1",
@@ -87,6 +102,8 @@ def route_snapshot(*, snapshot_id: str = "route-snapshot:1", effort: str = "xhig
         auth_profile_ref="auth:codex-subscription",
         model_profile_id="codex.sol.xhigh",
         model_profile_version=1,
+        model_profile_hash=profile.contract_hash,
+        route_policy_hash=policy.contract_hash,
         model_provider="openai",
         model_id="gpt-5.6-sol",
         requested_reasoning_effort="xhigh",
@@ -170,7 +187,9 @@ class ProductionExecutionContractTests(unittest.TestCase):
             request.contract_hash,
         )
 
-    def test_execution_request_rejects_missing_attempt_or_non_positive_fence(self) -> None:
+    def test_execution_request_rejects_missing_attempt_or_non_positive_fence(
+        self,
+    ) -> None:
         common = dict(
             execution_id="execution:1",
             operation_id="operation:1",
@@ -285,7 +304,9 @@ class ProductionExecutionContractTests(unittest.TestCase):
         )
         versioned.require_new_identity_for_change(previous)
 
-    def test_route_policy_uses_stable_profiles_and_prohibits_reasoning_downgrade(self) -> None:
+    def test_route_policy_uses_stable_profiles_and_prohibits_reasoning_downgrade(
+        self,
+    ) -> None:
         policy = RoutePolicy(
             policy_id="chapter-draft",
             policy_version=1,
@@ -330,7 +351,9 @@ class ProductionExecutionContractTests(unittest.TestCase):
         )
         self.assertIsNone(result.provider_receipt_ref)
 
-    def test_cancellation_result_distinguishes_local_and_provider_evidence(self) -> None:
+    def test_cancellation_result_distinguishes_local_and_provider_evidence(
+        self,
+    ) -> None:
         result = ExecutionCancellationResult(
             execution_id="execution:1",
             operation_id="operation:1",
@@ -351,7 +374,9 @@ class ProductionExecutionContractTests(unittest.TestCase):
         self.assertIsNone(result.provider_request_id)
         self.assertEqual(result.outcome, CancellationOutcome.CANCELLED)
 
-    def test_cancellation_cannot_claim_upstream_cancel_without_provider_evidence(self) -> None:
+    def test_cancellation_cannot_claim_upstream_cancel_without_provider_evidence(
+        self,
+    ) -> None:
         with self.assertRaisesRegex(ValueError, "upstream"):
             ExecutionCancellationResult(
                 execution_id="execution:1",
@@ -528,7 +553,10 @@ class ProductionExecutionContractTests(unittest.TestCase):
         )
         self.assertTrue(all(item.attempt_id == "attempt:1" for item in manifests))
         self.assertTrue(all(len(item.content_hash) == 64 for item in manifests))
-        self.assertEqual(input_manifest.content_hash, InputManifest.from_dict(input_manifest.to_dict()).content_hash)
+        self.assertEqual(
+            input_manifest.content_hash,
+            InputManifest.from_dict(input_manifest.to_dict()).content_hash,
+        )
 
     def test_validation_acceptance_requires_every_frozen_policy_check(self) -> None:
         with self.assertRaisesRegex(ValueError, "required checks"):
@@ -592,7 +620,9 @@ class ProductionExecutionContractTests(unittest.TestCase):
             request.target_scope["scope_kind"] = "chapter"  # type: ignore[index]
         self.assertEqual(request.target_scope["book_id"], "book:1")
 
-    def test_commit_manifest_rejects_commit_without_asset_or_authority_receipt(self) -> None:
+    def test_commit_manifest_rejects_commit_without_asset_or_authority_receipt(
+        self,
+    ) -> None:
         common = dict(
             manifest_id="commit-manifest:1",
             operation_id="operation:1",

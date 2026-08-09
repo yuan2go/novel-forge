@@ -86,6 +86,43 @@ _PLANNING_STAGES = frozenset(
 )
 
 
+@dataclass(frozen=True, slots=True)
+class PlanningExecutionRoute:
+    """Authority-selected Planning route carried into each frozen attempt."""
+
+    model_profile: ModelProfile
+    route_policy: RoutePolicy
+    fallback_policy: FallbackPolicy
+    backend_version: str
+    runtime_host_id: str
+    auth_profile_ref: str
+    release_sha: str
+
+    def __post_init__(self) -> None:
+        if (
+            self.model_profile.profile_id
+            not in self.route_policy.allowed_model_profile_ids
+        ):
+            raise ValueError("Planning RoutePolicy does not allow its ModelProfile")
+        if (
+            self.route_policy.fallback_policy_ref != self.fallback_policy.policy_id
+            or self.route_policy.fallback_policy_version
+            != self.fallback_policy.policy_version
+            or self.route_policy.fallback_policy != self.fallback_policy.mode.value
+        ):
+            raise ValueError("Planning RoutePolicy does not bind its FallbackPolicy")
+        if not all(
+            (
+                self.backend_version,
+                self.runtime_host_id,
+                self.auth_profile_ref,
+            )
+        ):
+            raise ValueError("Planning execution route is incomplete")
+        if len(self.release_sha) != 40:
+            raise ValueError("Planning execution route requires a full release SHA")
+
+
 def _canonical(value: Any) -> str:
     return json.dumps(
         value,
@@ -276,7 +313,9 @@ def planning_provider_output_schema(
         canon_dependencies["maxItems"] = 0
     properties: dict[str, Any] = {
         "contract_id": string,
-        "logical_key": ({"type": "string", "const": logical_key} if logical_key else string),
+        "logical_key": (
+            {"type": "string", "const": logical_key} if logical_key else string
+        ),
         "objective": string,
         "entry_state_ref": string,
         "exit_state_spec": _strict_object({"summary": string}),
@@ -411,9 +450,7 @@ def planning_provider_output_schema(
                         "chapter_number": {"type": "integer", "minimum": 1},
                         "primary_function": string,
                         "secondary_functions": string_array,
-                        "required_state_delta": _strict_object(
-                            {"summary": string}
-                        ),
+                        "required_state_delta": _strict_object({"summary": string}),
                         "required_arc_contributions": {
                             "type": "array",
                             "minItems": 1,
@@ -704,7 +741,9 @@ class _PlanningPepPort:
             )
         request = self.binding.request
         handle = production.get("execution_handle")
-        backend_id = str(handle.get("backend_id") or "") if isinstance(handle, Mapping) else ""
+        backend_id = (
+            str(handle.get("backend_id") or "") if isinstance(handle, Mapping) else ""
+        )
         return DomainExecutionCandidate(
             candidate_kind=CandidateKind.GENERATION,
             raw_output=dict(raw),
@@ -779,7 +818,9 @@ class _PlanningPepPort:
                 logical_ref=logical_ref,
                 category="runs",
                 output_key=f"{asset_type}.{request.stage}",
-                role="model_evidence" if asset_type == "model_call_log" else "cost_evidence",
+                role="model_evidence"
+                if asset_type == "model_call_log"
+                else "cost_evidence",
                 content={
                     "type": asset_type,
                     "operation_id": request.operation_id,
@@ -804,6 +845,7 @@ class PostgresPlanningExecutionPreparer:
         database_url: str,
         *,
         execution_transport: Any,
+        planning_route: PlanningExecutionRoute,
         worker_id: str,
         max_cost_per_call: str = "0",
         budget_caps: Mapping[str, str] | None = None,
@@ -811,19 +853,22 @@ class PostgresPlanningExecutionPreparer:
         post_provider_fault_injector: Callable[[str], None] | None = None,
     ) -> None:
         if not database_url or not worker_id or lease_seconds <= 0:
-            raise ValueError("Planning execution requires PostgreSQL and worker identity")
+            raise ValueError(
+                "Planning execution requires PostgreSQL and worker identity"
+            )
         if not getattr(
             execution_transport, "production_execution_gateway_backed", False
         ):
             raise ValueError("Planning execution requires the Production Gateway")
         self.database_url = database_url
         self.execution_transport = execution_transport
+        self.planning_route = planning_route
         self.worker_id = worker_id
         self.max_cost_per_call = max_cost_per_call
         self.budget_caps = dict(budget_caps or {})
         self.lease_seconds = lease_seconds
-        self.post_provider_fault_injector = (
-            post_provider_fault_injector or (lambda _checkpoint: None)
+        self.post_provider_fault_injector = post_provider_fault_injector or (
+            lambda _checkpoint: None
         )
         self.query = AuthorityAssetQuery(database_url)
         self.writer = AuthorityAssetWriter(database_url)
@@ -962,7 +1007,7 @@ class PostgresPlanningExecutionPreparer:
         stable_key = (
             f"{operation_id}:{attempt_id}:{definition.capability}:planning-pep-v1"
         )
-        base_route = self.execution_transport.routes["draft"]
+        planning_route = self.planning_route
         request_payload = {
             "stage": command.generator_operation_name,
             "input": {
@@ -1018,7 +1063,7 @@ class PostgresPlanningExecutionPreparer:
             max_attempts=1,
             reversible=False,
             completion_policy="synchronous_final",
-            model_id=base_route.model_profile.model_id,
+            model_id=planning_route.model_profile.model_id,
             request_timeout_seconds=self.lease_seconds * 5,
             reconciliation_mode=self.execution_transport.reconciliation_mode,
             provider_capability_profile=(
@@ -1048,7 +1093,7 @@ class PostgresPlanningExecutionPreparer:
             command=command,
             definition=definition,
             capability=capability,
-            base_route=base_route,
+            planning_route=planning_route,
             context_document=context_document,
             input_documents=input_documents,
             effect_id=effect_id,
@@ -1105,7 +1150,7 @@ class PostgresPlanningExecutionPreparer:
         command: StoryPlanningGenerationCommand,
         definition: GeneratorDefinition,
         capability: Any,
-        base_route: Any,
+        planning_route: PlanningExecutionRoute,
         context_document: AuthorityAssetDocument,
         input_documents: tuple[AuthorityAssetDocument, ...],
         effect_id: str,
@@ -1120,17 +1165,17 @@ class PostgresPlanningExecutionPreparer:
         profile = ModelProfile(
             profile_id=profile_id,
             profile_version=1,
-            backend_id=base_route.model_profile.backend_id,
-            runtime_class=base_route.model_profile.runtime_class,
-            model_provider=base_route.model_profile.model_provider,
-            model_id=base_route.model_profile.model_id,
-            reasoning_effort=base_route.model_profile.reasoning_effort,
+            backend_id=planning_route.model_profile.backend_id,
+            runtime_class=planning_route.model_profile.runtime_class,
+            model_provider=planning_route.model_profile.model_provider,
+            model_id=planning_route.model_profile.model_id,
+            reasoning_effort=planning_route.model_profile.reasoning_effort,
             timeout_policy_ref=capability.timeout_policy_ref,
             workspace_policy_ref="workspace:story-planning:v1",
             output_policy_ref=output_schema_ref,
             fallback_policy="FAIL_CLOSED",
-            status=base_route.model_profile.status,
-            capability_probe_ref=base_route.model_profile.capability_probe_ref,
+            status=planning_route.model_profile.status,
+            capability_probe_ref=planning_route.model_profile.capability_probe_ref,
         )
         policy = RoutePolicy(
             policy_id=f"planning.{suffix}.route",
@@ -1154,13 +1199,11 @@ class PostgresPlanningExecutionPreparer:
             book_id=command.book_id,
         )
         context_ref = f"asset-version:{context_document.asset_version_id}"
-        route_ref = (
-            "production_execution/routes/"
-            + _token(f"{command.project_id}:{operation_id}:{attempt_id}:planning")
+        route_ref = "production_execution/routes/" + _token(
+            f"{command.project_id}:{operation_id}:{attempt_id}:planning"
         )
-        input_ref = (
-            "production_execution/inputs/"
-            + _token(f"{command.project_id}:{operation_id}:{attempt_id}:planning")
+        input_ref = "production_execution/inputs/" + _token(
+            f"{command.project_id}:{operation_id}:{attempt_id}:planning"
         )
         pointers = (
             ArtifactPointer(
@@ -1197,10 +1240,16 @@ class PostgresPlanningExecutionPreparer:
             context_bundle_version=context_document.asset_version_id,
             prompt_bundle_version=frozen.prompt_bundle_ref,
             skill_bundle_version=frozen.skill_bundle_ref,
-            canon_snapshot_version=str(command.input_versions.get("canon_snapshot") or "none"),
-            story_state_version=str(command.input_versions.get("story_state") or "none"),
+            canon_snapshot_version=str(
+                command.input_versions.get("canon_snapshot") or "none"
+            ),
+            story_state_version=str(
+                command.input_versions.get("story_state") or "none"
+            ),
             planning_version=command.parent_version_id or command.logical_key,
-            quality_profile_version=str(command.input_versions.get("quality_trend") or "none"),
+            quality_profile_version=str(
+                command.input_versions.get("quality_trend") or "none"
+            ),
             source_policy_ref=capability.source_policy_ref,
             source_eligibility="PRODUCTION_ELIGIBLE",
             canon_version_refs=tuple(
@@ -1224,11 +1273,13 @@ class PostgresPlanningExecutionPreparer:
             policy_id=policy.policy_id,
             policy_version=policy.policy_version,
             backend_id=profile.backend_id,
-            backend_version=base_route.backend_version,
-            runtime_host_id=base_route.runtime_host_id,
-            auth_profile_ref=base_route.auth_profile_ref,
+            backend_version=planning_route.backend_version,
+            runtime_host_id=planning_route.runtime_host_id,
+            auth_profile_ref=planning_route.auth_profile_ref,
             model_profile_id=profile.profile_id,
             model_profile_version=profile.profile_version,
+            model_profile_hash=profile.contract_hash,
+            route_policy_hash=policy.contract_hash,
             model_provider=profile.model_provider,
             model_id=profile.model_id,
             requested_reasoning_effort=profile.reasoning_effort,
@@ -1237,7 +1288,7 @@ class PostgresPlanningExecutionPreparer:
             skill_bundle_ref=frozen.skill_bundle_ref,
             context_bundle_ref=context_ref,
             output_schema_ref=output_schema_ref,
-            release_sha=base_route.release_sha,
+            release_sha=planning_route.release_sha,
             fallback_policy_ref=fallback.policy_id,
             fallback_policy_version=fallback.policy_version,
         )
@@ -1410,7 +1461,9 @@ class PostgresPlanningExecutionPreparer:
                     qualification_policy="planning-context-source-isolation-v1",
                     trace_id=command.trace_id,
                     correlation_id=command.correlation_id,
-                    reference_asset_ids=tuple(document.asset_id for document in documents),
+                    reference_asset_ids=tuple(
+                        document.asset_id for document in documents
+                    ),
                 )
             )
         return context, tuple(documents)
@@ -1471,15 +1524,18 @@ class PostgresPlanningExecutionPreparer:
         correlation_id: str,
     ) -> AuthorityAssetDocument:
         try:
-            existing = self.query.require(project_id=project_id, logical_ref=logical_ref)
+            existing = self.query.require(
+                project_id=project_id, logical_ref=logical_ref
+            )
         except KernelError as exc:
             if exc.code != "AUTHORITY_ASSET_NOT_FOUND":
                 raise
             existing = None
         if existing is not None:
-            if existing.asset_type != asset_type or existing.content.get(
-                "contract", existing.content
-            ) != contract:
+            if (
+                existing.asset_type != asset_type
+                or existing.content.get("contract", existing.content) != contract
+            ):
                 raise KernelError(
                     "EXECUTION_CONTRACT_FROZEN_CONFLICT",
                     "Planning execution contract changed inside one identity",

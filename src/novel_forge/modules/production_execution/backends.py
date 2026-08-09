@@ -59,11 +59,15 @@ def _utc_now() -> str:
 
 
 def _canonical_json(payload: Mapping[str, Any]) -> str:
-    return json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return json.dumps(
+        payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    )
 
 
 def _sha256(payload: Mapping[str, Any]) -> str:
-    return "sha256:" + hashlib.sha256(_canonical_json(payload).encode("utf-8")).hexdigest()
+    return (
+        "sha256:" + hashlib.sha256(_canonical_json(payload).encode("utf-8")).hexdigest()
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -85,9 +89,13 @@ class ResolvedExecutionPayload:
         if not isinstance(self.request_payload, Mapping):
             raise ValueError("resolved execution request payload must be an object")
         if not self.working_directory or self.timeout_seconds <= 0:
-            raise ValueError("resolved execution payload requires workspace and timeout")
+            raise ValueError(
+                "resolved execution payload requires workspace and timeout"
+            )
         if not self.output_schema_version:
-            raise ValueError("resolved execution payload requires an output schema version")
+            raise ValueError(
+                "resolved execution payload requires an output schema version"
+            )
         object.__setattr__(
             self, "allowed_tools", tuple(str(item) for item in self.allowed_tools)
         )
@@ -246,8 +254,12 @@ def parse_codex_jsonl_evidence(
             {
                 "tool_ref": f"codex.{item_type}",
                 "event": str(event.get("type") or ""),
-                "call_id": str(item.get("id") or "") if isinstance(item, Mapping) else "",
-                "status": str(item.get("status") or "") if isinstance(item, Mapping) else "",
+                "call_id": str(item.get("id") or "")
+                if isinstance(item, Mapping)
+                else "",
+                "status": str(item.get("status") or "")
+                if isinstance(item, Mapping)
+                else "",
             }
         )
     invoked = tuple(sorted({item["tool_ref"] for item in invocations}))
@@ -300,6 +312,8 @@ def parse_codex_jsonl_evidence(
         "terminal_event_observed": True,
         "event_count": len(events),
     }
+
+
 @dataclass(frozen=True, slots=True)
 class LocalProcessExecutionPolicy:
     fixed_working_directory: str
@@ -323,15 +337,12 @@ class LocalProcessExecutionPolicy:
         object.__setattr__(self, "allowed_command_prefixes", prefixes)
 
     def assert_payload(self, payload: ResolvedExecutionPayload) -> None:
-        working_directory = str(
-            Path(payload.working_directory).expanduser().resolve()
-        )
+        working_directory = str(Path(payload.working_directory).expanduser().resolve())
         if working_directory != self.fixed_working_directory:
             raise ValueError("local process working directory is not fixed by policy")
         command = tuple(payload.command)
         if not any(
-            command[: len(prefix)] == prefix
-            for prefix in self.allowed_command_prefixes
+            command[: len(prefix)] == prefix for prefix in self.allowed_command_prefixes
         ):
             raise ValueError("local process command is not allowlisted")
 
@@ -398,7 +409,9 @@ class InMemoryExecutionRecordStore:
         try:
             return self._records[execution_id]
         except KeyError as exc:
-            raise ValueError(f"execution record is not available: {execution_id}") from exc
+            raise ValueError(
+                f"execution record is not available: {execution_id}"
+            ) from exc
 
     def find_record(self, execution_id: str) -> ExecutionRecord | None:
         return self._records.get(execution_id)
@@ -470,11 +483,16 @@ class ResultValidator:
             fencing_token=request.fencing_token,
             raw_output_ref=raw_ref,
             normalized_output_ref=normalized_ref,
-            stdout_ref=(record.process_receipt.stdout_path if record.process_receipt else None),
-            stderr_ref=(record.process_receipt.stderr_path if record.process_receipt else None),
+            stdout_ref=(
+                record.process_receipt.stdout_path if record.process_receipt else None
+            ),
+            stderr_ref=(
+                record.process_receipt.stderr_path if record.process_receipt else None
+            ),
             output_hash=_sha256(normalized),
             schema_version=str(
-                record.raw_evidence.get("output_schema_version") or "structured-output.v1"
+                record.raw_evidence.get("output_schema_version")
+                or "structured-output.v1"
             ),
             files=(),
         )
@@ -488,9 +506,7 @@ class ResultValidator:
                 "PASSED",
                 f"authority-attempt:{request.attempt_id}:fence:{request.fencing_token}",
             ),
-            ValidationCheck(
-                "route_snapshot", "PASSED", request.route_snapshot_id
-            ),
+            ValidationCheck("route_snapshot", "PASSED", request.route_snapshot_id),
         )
         extra_evidence = record.raw_evidence.get("validation_checks")
         extra_checks = (
@@ -641,7 +657,10 @@ class ScriptedFixtureExecutionBackend:
             backend_id=self.backend_id,
             backend_version="1.0.0",
             runtime_class=ExecutionRuntimeClass.SCRIPTED_FIXTURE,
-            supported_completion_modes=(CompletionMode.SYNCHRONOUS, CompletionMode.POLL),
+            supported_completion_modes=(
+                CompletionMode.SYNCHRONOUS,
+                CompletionMode.POLL,
+            ),
             supported_reasoning_efforts=("high", "xhigh"),
             supports_query=True,
             supports_cancel=True,
@@ -768,7 +787,10 @@ class RemoteProviderExecutionBackend:
     ) -> None:
         if capability_profile.backend_id != backend_id:
             raise ValueError("remote backend capability identity mismatch")
-        if capability_profile.runtime_class is not ExecutionRuntimeClass.REMOTE_PROVIDER_API:
+        if (
+            capability_profile.runtime_class
+            is not ExecutionRuntimeClass.REMOTE_PROVIDER_API
+        ):
             raise ValueError("remote backend requires REMOTE_PROVIDER_API capability")
         provider_profile = provider_adapter.capability_profile
         if provider_profile.control_level is not ProviderControlLevel.V2_CONTROLLED:
@@ -776,27 +798,54 @@ class RemoteProviderExecutionBackend:
                 "RemoteProviderExecutionBackend requires a V2_CONTROLLED adapter"
             )
         capability_pairs = (
-            (capability_profile.supports_query, provider_profile.supports_query, "query"),
-            (capability_profile.supports_cancel, provider_profile.supports_cancel, "cancel"),
-            (capability_profile.supports_callback, provider_profile.supports_callback, "callback"),
-            (capability_profile.supports_usage_receipt, provider_profile.supports_usage_receipt, "usage receipt"),
-            (capability_profile.supports_cost_receipt, provider_profile.supports_cost_receipt, "cost receipt"),
-            (capability_profile.supports_provider_idempotency, provider_profile.supports_provider_idempotency, "provider idempotency"),
+            (
+                capability_profile.supports_query,
+                provider_profile.supports_query,
+                "query",
+            ),
+            (
+                capability_profile.supports_cancel,
+                provider_profile.supports_cancel,
+                "cancel",
+            ),
+            (
+                capability_profile.supports_callback,
+                provider_profile.supports_callback,
+                "callback",
+            ),
+            (
+                capability_profile.supports_usage_receipt,
+                provider_profile.supports_usage_receipt,
+                "usage receipt",
+            ),
+            (
+                capability_profile.supports_cost_receipt,
+                provider_profile.supports_cost_receipt,
+                "cost receipt",
+            ),
+            (
+                capability_profile.supports_provider_idempotency,
+                provider_profile.supports_provider_idempotency,
+                "provider idempotency",
+            ),
         )
-        missing = [name for required, actual, name in capability_pairs if required and not actual]
+        missing = [
+            name
+            for required, actual, name in capability_pairs
+            if required and not actual
+        ]
         if missing:
             raise ValueError(
                 "remote backend capability exceeds Provider v2 adapter: "
                 + ", ".join(missing)
             )
-        if (
-            capability_profile.real_provider_validation_eligible
-            and (
-                provider_profile.control_level is not ProviderControlLevel.V2_CONTROLLED
-                or not provider_profile.real_provider_validation_eligible
-            )
+        if capability_profile.real_provider_validation_eligible and (
+            provider_profile.control_level is not ProviderControlLevel.V2_CONTROLLED
+            or not provider_profile.real_provider_validation_eligible
         ):
-            raise ValueError("remote backend cannot elevate an unqualified provider adapter")
+            raise ValueError(
+                "remote backend cannot elevate an unqualified provider adapter"
+            )
         self.backend_id = backend_id
         self.capability_profile = capability_profile
         self.provider_adapter = provider_adapter
@@ -833,7 +882,9 @@ class RemoteProviderExecutionBackend:
                 raise ValueError("duplicate execution ID has a different request")
             return existing.handle
         payload = self.payload_resolver.resolve(request, admission)
-        from novel_forge.modules.provider_control.contracts import ProviderInvocationRequest
+        from novel_forge.modules.provider_control.contracts import (
+            ProviderInvocationRequest,
+        )
 
         provider_request = ProviderInvocationRequest(
             provider=admission.route_snapshot.model_provider,
@@ -902,7 +953,10 @@ class RemoteProviderExecutionBackend:
             raise
         provider_handle = provider_result.handle
         completion_mode = CompletionMode.SYNCHRONOUS
-        if provider_handle and provider_handle.completion_mode not in {"synchronous", "sync"}:
+        if provider_handle and provider_handle.completion_mode not in {
+            "synchronous",
+            "sync",
+        }:
             completion_mode = CompletionMode.POLL
         handle = ExecutionHandle(
             execution_id=request.execution_id,
@@ -920,7 +974,9 @@ class RemoteProviderExecutionBackend:
             local_process_id=None,
             local_process_group_id=None,
             local_process_start_time=None,
-            provider_request_id=(provider_handle.provider_request_id if provider_handle else None),
+            provider_request_id=(
+                provider_handle.provider_request_id if provider_handle else None
+            ),
             completion_mode=completion_mode,
             query_capability=(
                 CapabilityAvailability.SUPPORTED
@@ -965,7 +1021,10 @@ class RemoteProviderExecutionBackend:
         provider_result = record.provider_result
         if provider_result is None:
             raise ValueError("remote execution record has no Provider v2 result")
-        if provider_result.outcome in {"unknown", "ambiguous"} and handle.provider_request_id:
+        if (
+            provider_result.outcome in {"unknown", "ambiguous"}
+            and handle.provider_request_id
+        ):
             if self.capability_profile.supports_query:
                 provider_result = self.provider_adapter.query_v2(
                     ProviderQueryRequest(
@@ -1003,7 +1062,10 @@ class RemoteProviderExecutionBackend:
         self, handle: ExecutionHandle, reason: str
     ) -> ExecutionCancellationResult:
         requested_at = _utc_now()
-        if not self.capability_profile.supports_cancel or not handle.provider_request_id:
+        if (
+            not self.capability_profile.supports_cancel
+            or not handle.provider_request_id
+        ):
             return ExecutionCancellationResult(
                 execution_id=handle.execution_id,
                 operation_id=handle.operation_id,
@@ -1059,14 +1121,19 @@ class RemoteProviderExecutionBackend:
             local_execution_receipt_id=None,
             provider_request_id=handle.provider_request_id,
             provider_cancellation_receipt_ref=(
-                receipt_ref if upstream is UpstreamCancellationOutcome.CANCELLED else None
+                receipt_ref
+                if upstream is UpstreamCancellationOutcome.CANCELLED
+                else None
             ),
             reason=reason,
             requested_at=requested_at,
-            completed_at=_utc_now() if outcome in {
+            completed_at=_utc_now()
+            if outcome
+            in {
                 CancellationOutcome.CANCELLED,
                 CancellationOutcome.ALREADY_COMPLETED,
-            } else None,
+            }
+            else None,
         )
         record.cancellation = cancellation
         self.record_store.save_record(record)
@@ -1094,7 +1161,9 @@ class RemoteProviderExecutionBackend:
                     "evidence": receipt.evidence,
                 },
             )
-            raise ValueError("late provider callback arrived after confirmed cancellation")
+            raise ValueError(
+                "late provider callback arrived after confirmed cancellation"
+            )
         callback_identity = (receipt.payload_hash, receipt.outcome)
         existing_callback = record.callback_receipts.get(receipt.message_id)
         if existing_callback is not None and existing_callback != callback_identity:
@@ -1162,8 +1231,6 @@ class CodexCliExecutionBackend:
         backend_version: str = "1.0.0",
         qualification_ref: str = "capability-probe:codex-cli:1",
         codex_executable: str = "",
-        model_id: str = "",
-        reasoning_effort: str = "high",
         pricing: CodexPricingSnapshot | None = None,
         structured_result_validator: CodexStructuredResultValidator | None = None,
     ) -> None:
@@ -1173,23 +1240,14 @@ class CodexCliExecutionBackend:
         self.supervisor = supervisor
         self.execution_policy = execution_policy
         self.codex_executable = codex_executable
-        self.model_id = model_id
-        self.reasoning_effort = reasoning_effort
         self.pricing = pricing
         self.structured_result_validator = structured_result_validator
         if codex_executable:
             executable = Path(codex_executable)
             if not executable.is_absolute() or not executable.is_file():
                 raise ValueError("Codex executable must be an existing absolute file")
-            if (
-                not model_id
-                or pricing is None
-                or structured_result_validator is None
-                or reasoning_effort not in {"low", "medium", "high", "xhigh", "max"}
-            ):
-                raise ValueError(
-                    "real Codex execution requires model, pricing, reasoning, and validation"
-                )
+            if pricing is None or structured_result_validator is None:
+                raise ValueError("real Codex execution requires pricing and validation")
         self.capability_profile = ExecutionCapabilityProfile(
             backend_id=self.backend_id,
             backend_version=backend_version,
@@ -1236,9 +1294,14 @@ class CodexCliExecutionBackend:
                 raise ValueError("duplicate execution ID has a different request")
             return existing.handle
         payload = self.payload_resolver.resolve(request, admission)
-        payload = self._prepare_payload(request, payload)
+        payload = self._prepare_payload(request, payload, admission)
         if not payload.command:
             raise ValueError("Codex CLI execution requires a governed command")
+        model_authority = self._model_authority_evidence(
+            admission,
+            payload.command,
+            require_codex_invocation=bool(self.codex_executable),
+        )
         self.execution_policy.assert_payload(payload)
         launch_request = ProcessLaunchRequest(
             execution_id=request.execution_id,
@@ -1285,6 +1348,7 @@ class CodexCliExecutionBackend:
                 "capability_evidence": dict(payload.capability_evidence or {}),
                 "allowed_tools": list(payload.allowed_tools),
                 "denied_tools": list(payload.denied_tools),
+                "model_authority": model_authority,
             },
         )
         self.record_store.put_record(record)
@@ -1325,6 +1389,7 @@ class CodexCliExecutionBackend:
             "capability_evidence": dict(payload.capability_evidence or {}),
             "allowed_tools": list(payload.allowed_tools),
             "denied_tools": list(payload.denied_tools),
+            "model_authority": model_authority,
         }
         if (
             receipt.status is ProcessReceiptStatus.CANCELLED
@@ -1374,9 +1439,7 @@ class CodexCliExecutionBackend:
                     record, process_receipt_ref=receipt_ref
                 )
         else:
-            failure_code, outcome = _codex_process_failure(
-                recovery.receipt.status
-            )
+            failure_code, outcome = _codex_process_failure(recovery.receipt.status)
             record.raw_evidence.update(
                 {
                     "failure_code": failure_code,
@@ -1402,11 +1465,17 @@ class CodexCliExecutionBackend:
         self,
         request: ExecutionRequest,
         payload: ResolvedExecutionPayload,
+        admission: ExecutionAdmission,
     ) -> ResolvedExecutionPayload:
         if payload.command:
+            if self.codex_executable:
+                raise ValueError(
+                    "real Codex invocation must be generated from the frozen RouteSnapshot"
+                )
             return payload
         if not self.codex_executable or payload.output_schema is None:
             return payload
+        route = admission.route_snapshot
         layout = self.supervisor.execution_directory.prepare(request.execution_id)
         schema_path = layout.result_path("output.schema.json")
         schema_path.write_text(
@@ -1425,9 +1494,9 @@ class CodexCliExecutionBackend:
             self.codex_executable,
             "exec",
             "--model",
-            self.model_id,
+            route.model_id,
             "-c",
-            f"model_reasoning_effort={self.reasoning_effort}",
+            f"model_reasoning_effort={route.reasoning_effort}",
             "--sandbox",
             "read-only",
             "--skip-git-repo-check",
@@ -1450,6 +1519,71 @@ class CodexCliExecutionBackend:
             command=command,
             result_filename=result_filename,
         )
+
+    @staticmethod
+    def _model_authority_evidence(
+        admission: ExecutionAdmission,
+        command: tuple[str, ...],
+        *,
+        require_codex_invocation: bool,
+    ) -> dict[str, Any]:
+        route = admission.route_snapshot
+        profile = admission.model_profile
+        invocation_model = "unavailable"
+        invocation_effort = "unavailable"
+        model_positions = [
+            index for index, value in enumerate(command) if value == "--model"
+        ]
+        effort_values = [
+            value.removeprefix("model_reasoning_effort=")
+            for index, value in enumerate(command)
+            if index > 0
+            and command[index - 1] == "-c"
+            and value.startswith("model_reasoning_effort=")
+        ]
+        if len(model_positions) == 1 and model_positions[0] + 1 < len(command):
+            invocation_model = command[model_positions[0] + 1]
+        if len(effort_values) == 1:
+            invocation_effort = effort_values[0]
+        ignores_user_config = command.count("--ignore-user-config") == 1
+        if require_codex_invocation:
+            if invocation_model != route.model_id:
+                raise ValueError(
+                    "Codex invocation model differs from the frozen RouteSnapshot"
+                )
+            if invocation_effort != route.reasoning_effort:
+                raise ValueError(
+                    "Codex invocation reasoning effort differs from the frozen RouteSnapshot"
+                )
+            if not ignores_user_config:
+                raise ValueError(
+                    "Codex invocation must ignore local user configuration"
+                )
+        return {
+            "schema_version": "novelos.model_authority_evidence.v1",
+            "policy_requested_model": profile.model_id,
+            "frozen_route_model": route.model_id,
+            "invocation_model": invocation_model,
+            "provider_observed_model": "unavailable",
+            "policy_requested_reasoning_effort": profile.reasoning_effort,
+            "frozen_route_reasoning_effort": route.reasoning_effort,
+            "invocation_reasoning_effort": invocation_effort,
+            "provider_observed_reasoning_effort": "unavailable",
+            "model_profile_id": route.model_profile_id,
+            "model_profile_version": route.model_profile_version,
+            "model_profile_hash": route.model_profile_hash,
+            "route_policy_id": route.policy_id,
+            "route_policy_version": route.policy_version,
+            "route_policy_hash": route.route_policy_hash,
+            "route_snapshot_id": route.route_snapshot_id,
+            "route_snapshot_hash": route.contract_hash,
+            "invocation_command_hash": "sha256:"
+            + hashlib.sha256(
+                json.dumps(command, separators=(",", ":")).encode("utf-8")
+            ).hexdigest(),
+            "local_user_config_ignored": ignores_user_config,
+            "local_user_config_is_model_authority": False,
+        }
 
     def _validate_successful_process(
         self,
@@ -1488,10 +1622,24 @@ class CodexCliExecutionBackend:
                     retryable=False,
                 )
         if self.pricing is not None:
+            authority = record.raw_evidence.get("model_authority")
+            if not isinstance(authority, Mapping):
+                raise _CodexResultFailure(
+                    "MODEL_AUTHORITY_EVIDENCE_MISSING",
+                    "Codex execution has no frozen model authority evidence",
+                    retryable=False,
+                )
+            frozen_model = str(authority.get("frozen_route_model") or "")
+            if not frozen_model:
+                raise _CodexResultFailure(
+                    "MODEL_AUTHORITY_EVIDENCE_MISSING",
+                    "Codex execution has no frozen route model",
+                    retryable=False,
+                )
             try:
                 runtime_evidence = parse_codex_jsonl_evidence(
                     Path(receipt.stdout_path).read_text(encoding="utf-8"),
-                    model_id=self.model_id,
+                    model_id=frozen_model,
                     pricing=self.pricing,
                     allowed_tools=tuple(
                         str(item)
@@ -1557,7 +1705,9 @@ class CodexCliExecutionBackend:
         )
         tools = record.raw_evidence.get("tools")
         record.raw_evidence["validation_checks"] = {
-            "output_schema": str(record.raw_evidence.get("output_schema_version") or ""),
+            "output_schema": str(
+                record.raw_evidence.get("output_schema_version") or ""
+            ),
             "stage_semantics": f"chapter-stage:{stage}:semantic-validation",
             "capability_materialization": materialization_ref
             or "capability-materialization:not-applicable",
@@ -1609,7 +1759,9 @@ class CodexCliExecutionBackend:
             local_termination_outcome=local_outcome,
             upstream_cancellation_outcome=UpstreamCancellationOutcome.NOT_APPLICABLE,
             local_execution_receipt_id=(
-                receipt.receipt_id if receipt is not None else handle.local_execution_receipt_id
+                receipt.receipt_id
+                if receipt is not None
+                else handle.local_execution_receipt_id
             ),
             provider_request_id=None,
             provider_cancellation_receipt_ref=None,

@@ -131,19 +131,25 @@ class StaticExecutionContractSource:
         try:
             return self._routes[route_snapshot_id]
         except KeyError as exc:
-            raise ValueError(f"RouteSnapshot is not available: {route_snapshot_id}") from exc
+            raise ValueError(
+                f"RouteSnapshot is not available: {route_snapshot_id}"
+            ) from exc
 
     def model_profile(self, profile_id: str, version: int) -> ModelProfile:
         try:
             return self._profiles[(profile_id, version)]
         except KeyError as exc:
-            raise ValueError(f"ModelProfile is not available: {profile_id}@{version}") from exc
+            raise ValueError(
+                f"ModelProfile is not available: {profile_id}@{version}"
+            ) from exc
 
     def route_policy(self, policy_id: str, version: int) -> RoutePolicy:
         try:
             return self._policies[(policy_id, version)]
         except KeyError as exc:
-            raise ValueError(f"RoutePolicy is not available: {policy_id}@{version}") from exc
+            raise ValueError(
+                f"RoutePolicy is not available: {policy_id}@{version}"
+            ) from exc
 
     def input_manifest(self, manifest_ref: str) -> InputManifest:
         try:
@@ -181,9 +187,7 @@ class AdmissionController:
         self.contracts = contracts
         self.attempt_fence = attempt_fence
         self.require_external_effect = require_external_effect
-        self.capability_registry = (
-            capability_registry or default_capability_registry()
-        )
+        self.capability_registry = capability_registry or default_capability_registry()
         self.environment = environment.strip().lower()
 
     def resolve_route(self, request: ExecutionRequest) -> RouteSnapshot:
@@ -192,7 +196,9 @@ class AdmissionController:
             request.operation_id,
             request.attempt_id,
         ):
-            raise ValueError("RouteSnapshot does not bind the requested Authority Attempt")
+            raise ValueError(
+                "RouteSnapshot does not bind the requested Authority Attempt"
+            )
         return route
 
     def admit(
@@ -245,7 +251,9 @@ class AdmissionController:
         if self.require_external_effect and not all(
             (request.trace_id, request.correlation_id, request.external_effect_id)
         ):
-            raise ValueError("production execution requires trace and ExternalEffect binding")
+            raise ValueError(
+                "production execution requires trace and ExternalEffect binding"
+            )
         definition = self.capability_registry.require_backend(
             request.capability,
             capability,
@@ -285,9 +293,7 @@ class AdmissionController:
             ),
         )
         mismatched_policies = [
-            label
-            for actual, expected, label in policy_bindings
-            if actual != expected
+            label for actual, expected, label in policy_bindings if actual != expected
         ]
         if mismatched_policies:
             raise ValueError(
@@ -307,14 +313,12 @@ class AdmissionController:
             raise ValueError("ModelProfile is not allowed by RoutePolicy")
         if route.policy_id != policy.policy_id:
             raise ValueError("RouteSnapshot policy binding is invalid")
+        route.require_frozen_policy(policy)
         if (
             route.fallback_policy_ref != policy.fallback_policy_ref
-            or route.fallback_policy_version
-            != policy.fallback_policy_version
+            or route.fallback_policy_version != policy.fallback_policy_version
         ):
-            raise ValueError(
-                "RouteSnapshot fallback policy binding is invalid"
-            )
+            raise ValueError("RouteSnapshot fallback policy binding is invalid")
         CapabilityProbe.verify(route, profile, capability)
         expected_identity = (
             request.operation_id,
@@ -331,7 +335,9 @@ class AdmissionController:
             manifest.book_id,
         )
         if manifest_identity != expected_identity:
-            raise ValueError("InputManifest does not bind the requested Authority Attempt")
+            raise ValueError(
+                "InputManifest does not bind the requested Authority Attempt"
+            )
         if manifest.source_policy_ref != definition.source_policy_ref:
             raise ValueError(
                 "InputManifest source policy differs from governed capability"
@@ -351,7 +357,9 @@ class AdmissionController:
         if route_refs != manifest_refs:
             raise ValueError("InputManifest does not match the frozen RouteSnapshot")
         if request.timeout_policy_ref != profile.timeout_policy_ref:
-            raise ValueError("ExecutionRequest timeout policy differs from ModelProfile")
+            raise ValueError(
+                "ExecutionRequest timeout policy differs from ModelProfile"
+            )
         return ExecutionAdmission(
             request,
             route,
@@ -375,7 +383,9 @@ class ExecutionBackendRegistry:
     def register(self, backend: ExecutionBackend) -> None:
         backend_id = backend.backend_id.strip().lower()
         if not backend_id or backend_id in self._backends:
-            raise ValueError(f"execution backend is missing or already registered: {backend_id}")
+            raise ValueError(
+                f"execution backend is missing or already registered: {backend_id}"
+            )
         if backend.capability_profile.backend_id != backend.backend_id:
             raise ValueError("backend identity and capability profile disagree")
         self._backends[backend_id] = backend
@@ -384,7 +394,9 @@ class ExecutionBackendRegistry:
         try:
             return self._backends[backend_id.strip().lower()]
         except KeyError as exc:
-            raise ValueError(f"execution backend is not registered: {backend_id}") from exc
+            raise ValueError(
+                f"execution backend is not registered: {backend_id}"
+            ) from exc
 
 
 class ProductionExecutionGateway:
@@ -561,9 +573,13 @@ class ProductionExecutionGateway:
             request.fencing_token,
             route.backend_id,
         ):
-            raise ValueError("execution backend returned a handle for a different Attempt")
+            raise ValueError(
+                "execution backend returned a handle for a different Attempt"
+            )
         if handle.transport is not expected_runtime:
-            raise ValueError("execution backend transport differs from capability profile")
+            raise ValueError(
+                "execution backend transport differs from capability profile"
+            )
 
     @staticmethod
     def _validate_result(handle: ExecutionHandle, result: ExecutionResult) -> None:
@@ -578,7 +594,11 @@ class ProductionExecutionGateway:
             handle.attempt_id,
             handle.fencing_token,
         ):
-            raise ValueError("execution backend returned a result for a different Attempt")
+            raise ValueError(
+                "execution backend returned a result for a different Attempt"
+            )
+
+
 __all__ = [
     "AdmissionController",
     "AttemptFenceVerifier",

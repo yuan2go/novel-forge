@@ -64,6 +64,8 @@ class ProductionExecutionSecurityBoundaryTests(unittest.TestCase):
             auth_profile_ref="Bearer abcdefghijklmnop",
             model_profile_id="model.profile.security",
             model_profile_version=1,
+            model_profile_hash="a" * 64,
+            route_policy_hash="b" * 64,
             model_provider="fixture-provider",
             model_id="fixture-model",
             requested_reasoning_effort="medium",
@@ -91,9 +93,7 @@ class ProductionExecutionSecurityBoundaryTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "inline secret material"):
             ExternalActionCommand(
                 capability="notification.send",
-                request_payload={
-                    "notification": {"authorization": "opaque-value"}
-                },
+                request_payload={"notification": {"authorization": "opaque-value"}},
                 stable_idempotency_key="notification:security:1",
                 data_classification="INTERNAL",
                 privacy_policy_ref="privacy-policy:internal:1",

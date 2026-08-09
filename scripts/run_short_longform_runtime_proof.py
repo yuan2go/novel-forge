@@ -9,6 +9,7 @@ from dataclasses import asdict
 from datetime import datetime
 import hashlib
 import json
+import os
 from pathlib import Path
 import subprocess
 from types import SimpleNamespace
@@ -68,6 +69,10 @@ from novel_forge.modules.chapter_authority.definitions import (
 from novel_forge.modules.command_kernel.asset_commands import (
     AuthorityAssetWriteCommand,
 )
+from novel_forge.modules.command_kernel.attempt_runtime import (
+    WorkerResultCommand,
+    submit_attempt_result,
+)
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.command_kernel.service import (
     AdmissionContext,
@@ -87,6 +92,7 @@ from novel_forge.modules.story_planning_runtime import (
 from novel_forge.modules.story_planning_runtime.application import (
     story_planning_generation_definition,
 )
+from novel_forge.modules.runtime_proof import evaluate_short_longform_evidence
 from novel_forge.storage.authority_repositories import definition_hash
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from novel_forge.storage.migrations import run_migrations
@@ -134,13 +140,30 @@ class OneShotMeasuredProviderFailure:
 def _proof_bucket_names(runtime_root: Path) -> dict[str, str]:
     """Return deterministic, per-run MinIO buckets for immutable proof artifacts."""
 
-    identity = hashlib.sha256(str(runtime_root.resolve()).encode("utf-8")).hexdigest()[:16]
+    resolved_root = runtime_root.resolve()
+    proof_run_root = (
+        resolved_root.parent
+        if resolved_root.name in {"planning-process", "book-process"}
+        else resolved_root
+    )
+    identity = hashlib.sha256(str(proof_run_root).encode("utf-8")).hexdigest()[:16]
     prefix = f"novel-forge-proof-{identity}"
     return {
         "raw": f"{prefix}-raw",
         "artifact": f"{prefix}-artifact",
         "export": f"{prefix}-export",
     }
+
+
+def _codex_version(executable: str) -> str:
+    result = subprocess.run(
+        (executable, "--version"),
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return (result.stdout or result.stderr).strip()
 
 
 def _bootstrap_definition(build_id: str, commit_sha: str) -> dict[str, Any]:
@@ -313,7 +336,11 @@ def _bootstrap_assets(
         ),
         "chapter_row_2": (
             "chapter_function_matrix_row",
-            {"chapter_number": 2, "function": "reversal", "hook": "the witness refuses"},
+            {
+                "chapter_number": 2,
+                "function": "reversal",
+                "hook": "the witness refuses",
+            },
         ),
         "chapter_row_3": (
             "chapter_function_matrix_row",
@@ -321,7 +348,9 @@ def _bootstrap_assets(
         ),
     }
     with AuthorityUnitOfWork(database_url) as uow:
-        uow.repositories.definitions.register(_bootstrap_definition(build_id, commit_sha))
+        uow.repositories.definitions.register(
+            _bootstrap_definition(build_id, commit_sha)
+        )
         uow.commit()
 
     def handler(
@@ -733,7 +762,9 @@ def _install_profile(
     for node in manifest["workflow_template"]["nodes"]:
         agent_ref = str(node.get("agent_definition_ref") or "")
         if agent_ref:
-            node["agent_definition_ref"] = f"{agent_ref.rpartition('@')[0]}@{generation}"
+            node["agent_definition_ref"] = (
+                f"{agent_ref.rpartition('@')[0]}@{generation}"
+            )
     app = CapabilityPackAuthorityApplication(
         database_url, application_build_id=build_id, commit_sha=commit_sha
     )
@@ -995,6 +1026,66 @@ def _run_planning(
     _approve_activate(planning, generated, principal=principal, key=retry_key)
     activated["book_plan.generate"] = generated.candidate_asset_version_id
 
+    retry_attempts = _query_rows(
+        database_url,
+        """
+        SELECT attempt.attempt_id, attempt.attempt_number,
+               lease.lease_id, lease.owner, lease.fencing_token
+        FROM authority_attempt AS attempt
+        JOIN authority_lease_acquisition AS lease
+          ON lease.attempt_id=attempt.attempt_id
+         AND lease.fencing_token=(
+             SELECT MAX(current.fencing_token)
+             FROM authority_lease_acquisition AS current
+             WHERE current.attempt_id=attempt.attempt_id
+         )
+        WHERE attempt.operation_id=%s
+        ORDER BY attempt.attempt_number
+        """,
+        (generated.generation_operation_id,),
+    )
+    if len(retry_attempts) != 2:
+        raise RuntimeError("controlled retry did not persist exactly two Attempts")
+    stale = retry_attempts[0]
+    try:
+        submit_attempt_result(
+            database_url,
+            WorkerResultCommand(
+                attempt_id=str(stale["attempt_id"]),
+                project_id=project_id,
+                worker_id=str(stale["owner"]),
+                fencing_token=int(stale["fencing_token"]),
+                trace_id=f"trace:{retry_key}:stale-result",
+                correlation_id=f"correlation:{project_id}",
+                causation_id=str(generated.generation_operation_id),
+            ),
+            outcome="success",
+            result={
+                "candidate_asset_version_id": "forbidden-stale-proof-candidate",
+                "evidence_level": "CONTROLLED_STALE_FENCE_PROOF",
+            },
+        )
+    except KernelError as exc:
+        if exc.code != "ATTEMPT_FENCING_TOKEN_STALE":
+            raise
+    else:
+        raise RuntimeError("stale retry fence unexpectedly committed a result")
+    stale_rows = _query_rows(
+        database_url,
+        """
+        SELECT evidence_id, attempt_id, operation_id, command_type,
+               presented_fencing_token, current_fencing_token,
+               authoritative_attempt_status, current_worker_id,
+               current_lease_id
+        FROM authority_late_result_evidence
+        WHERE attempt_id=%s
+        ORDER BY created_at DESC
+        """,
+        (str(stale["attempt_id"]),),
+    )
+    if len(stale_rows) != 1:
+        raise RuntimeError("stale fence rejection evidence was not persisted")
+
     sequence = (
         ("volume_plan.generate", "volume:1", activated["book_plan.generate"]),
         ("arc_plan.generate", "arc:primary", ""),
@@ -1033,9 +1124,7 @@ def _run_planning(
             correlation_id=f"correlation:{project_id}",
         )
         item = planning.generate(command, principal=principal)
-        activation = _approve_activate(
-            planning, item, principal=principal, key=key
-        )
+        activation = _approve_activate(planning, item, principal=principal, key=key)
         activated[generator] = item.candidate_asset_version_id
         if generator == "chapter_plan.generate":
             projections[1] = dict(activation["chapter_plan_projection"])
@@ -1043,13 +1132,12 @@ def _run_planning(
         "fault_injection_triggered": failure.triggered,
         "retry_operation_id": generated.generation_operation_id,
         "replacement_pack": replacement_pack,
+        "stale_fence_rejection": stale_rows[0],
     }
     return planning, activated, projections, evidence
 
 
-def _collect_planning_evidence(
-    database_url: str, *, project_id: str
-) -> dict[str, Any]:
+def _collect_planning_evidence(database_url: str, *, project_id: str) -> dict[str, Any]:
     return {
         "operations": _query_rows(
             database_url,
@@ -1129,6 +1217,1157 @@ def _collect_planning_evidence(
     }
 
 
+def _mapping(value: Any) -> dict[str, Any]:
+    return dict(value) if isinstance(value, Mapping) else {}
+
+
+def _provider_evidence(content: Mapping[str, Any]) -> dict[str, Any]:
+    production = _mapping(content.get("production_execution"))
+    process = _mapping(production.get("process_evidence"))
+    usage = _mapping(content.get("usage")) or _mapping(process.get("usage"))
+    cost = _mapping(content.get("cost")) or _mapping(process.get("cost"))
+    return {
+        "real_provider_call": content.get("real_model_call") is True
+        and process.get("real_model_call") is True,
+        "fixture_protocol_only": process.get("fixture_protocol_only"),
+        "usage": usage,
+        "cost": cost,
+        "model_authority": _mapping(process.get("model_authority")),
+    }
+
+
+def _load_persisted_bootstrap(database_url: str, *, project_id: str) -> dict[str, str]:
+    rows = _query_rows(
+        database_url,
+        """
+        SELECT asset.asset_id, version.asset_version_id
+        FROM authority_asset AS asset
+        JOIN authority_asset_version AS version ON version.asset_id=asset.asset_id
+        WHERE asset.project_id=%s
+          AND asset.asset_id LIKE 'proof-bootstrap:' || %s || ':%%'
+          AND version.lifecycle='ACTIVE'
+        ORDER BY version.created_at
+        """,
+        (project_id, project_id),
+    )
+    prefix = f"proof-bootstrap:{project_id}:"
+    result = {
+        str(row["asset_id"])[len(prefix) :]: str(row["asset_version_id"])
+        for row in rows
+        if str(row.get("asset_id") or "").startswith(prefix)
+    }
+    required = {
+        "production_profile",
+        "character_state",
+        "foreshadowing_state",
+        "quality_trend",
+        "reward_ledger",
+        "promise_ledger",
+        "reader_segment",
+        "reader_contract",
+        "platform_profile",
+        "chapter_row_1",
+        "chapter_row_2",
+        "chapter_row_3",
+    }
+    missing = sorted(required - set(result))
+    if missing:
+        raise RuntimeError("persisted bootstrap is incomplete: " + ", ".join(missing))
+    return result
+
+
+def _load_active_plans(database_url: str, *, project_id: str) -> dict[str, str]:
+    rows = _query_rows(
+        database_url,
+        """
+        SELECT state.generator_operation_name, active.logical_key,
+               active.asset_version_id
+        FROM authority_story_design_active_version AS active
+        JOIN authority_story_design_version_state AS state
+          ON state.project_id=active.project_id
+         AND state.asset_version_id=active.asset_version_id
+        WHERE active.project_id=%s
+        ORDER BY active.activated_at
+        """,
+        (project_id,),
+    )
+    result: dict[str, str] = {}
+    for row in rows:
+        generator = str(row["generator_operation_name"])
+        logical_key = str(row["logical_key"])
+        asset_version_id = str(row["asset_version_id"])
+        if generator == "chapter_plan.generate" and logical_key != "chapter:1":
+            result[f"{generator}:{logical_key}"] = asset_version_id
+        else:
+            result[generator] = asset_version_id
+    required = {
+        "book_plan.generate",
+        "volume_plan.generate",
+        "arc_plan.generate",
+        "chapter_group_plan.generate",
+        "chapter_plan.generate",
+    }
+    missing = sorted(required - set(result))
+    if missing:
+        raise RuntimeError("active Planning chain is incomplete: " + ", ".join(missing))
+    return result
+
+
+def _collect_normalized_planning(
+    database_url: str, *, project_id: str
+) -> list[dict[str, Any]]:
+    rows = _query_rows(
+        database_url,
+        """
+        WITH chosen AS (
+            SELECT DISTINCT ON (generation.generator_operation_name)
+                   generation.*
+            FROM authority_story_planning_generation AS generation
+            WHERE generation.project_id=%s
+              AND generation.status='ACTIVE'
+            ORDER BY generation.generator_operation_name, generation.created_at
+        )
+        SELECT chosen.generator_operation_name AS stage,
+               chosen.candidate_asset_version_id,
+               operation.operation_id, operation.status AS operation_status,
+               attempt.attempt_id, attempt.status AS attempt_status,
+               lease.lease_id, lease.fencing_token,
+               snapshot.snapshot_id, snapshot.snapshot_hash,
+               snapshot.pack_id, snapshot.pack_version,
+               snapshot.deployment_id, deployment.deployment_status,
+               work_order.work_order_id, binding.binding_id AS runtime_binding_id,
+               binding.commit_authority, capability.qualification_status,
+               binding.prompt_bundle_ref, binding.prompt_bundle_hash,
+               binding.skill_bundle_ref, binding.skill_bundle_hash,
+               binding.context_bundle_asset_version_id,
+               binding.context_bundle_hash, binding.route_snapshot_ref,
+               binding.route_snapshot_hash, binding.input_manifest_ref,
+               binding.input_manifest_hash,
+               log.asset_version_id AS model_call_log_asset_version_id,
+               log.content AS model_call_log,
+               effect.external_effect_id,
+               receipt.receipt_id AS provider_receipt_id
+        FROM chosen
+        JOIN authority_operation AS operation
+          ON operation.operation_id=chosen.operation_id
+        JOIN authority_attempt AS attempt
+          ON attempt.operation_id=operation.operation_id
+        JOIN LATERAL (
+            SELECT version.asset_version_id, version.content
+            FROM authority_operation_output_asset AS output
+            JOIN authority_asset AS asset ON asset.asset_id=output.asset_id
+            JOIN authority_asset_version AS version
+              ON version.asset_version_id=output.asset_version_id
+            WHERE output.operation_id=operation.operation_id
+              AND asset.asset_type='model_call_log'
+              AND version.content->>'candidate_accepted'='true'
+              AND version.content#>>'{production_execution,execution_request,attempt_id}'
+                  =attempt.attempt_id
+            ORDER BY version.created_at DESC LIMIT 1
+        ) AS log ON TRUE
+        JOIN LATERAL (
+            SELECT lease_id, fencing_token
+            FROM authority_lease_acquisition
+            WHERE attempt_id=attempt.attempt_id
+            ORDER BY fencing_token DESC LIMIT 1
+        ) AS lease ON TRUE
+        JOIN authority_attempt_capability_pack_snapshot AS snapshot
+          ON snapshot.attempt_id=attempt.attempt_id
+        JOIN authority_capability_pack_deployment AS deployment
+          ON deployment.deployment_id=snapshot.deployment_id
+        JOIN authority_agent_work_order AS work_order
+          ON work_order.attempt_id=attempt.attempt_id
+        JOIN authority_agent_runtime_binding AS binding
+          ON binding.attempt_id=attempt.attempt_id
+        JOIN authority_agent_capability AS capability
+          ON capability.capability_id=binding.capability_id
+         AND capability.capability_version=binding.capability_version
+        LEFT JOIN authority_external_effect AS effect
+          ON effect.external_effect_id=
+             log.content#>>'{production_execution,execution_request,external_effect_id}'
+        LEFT JOIN LATERAL (
+            SELECT receipt.receipt_id
+            FROM authority_external_effect_dispatch AS dispatch
+            JOIN authority_external_receipt AS receipt
+              ON receipt.dispatch_id=dispatch.dispatch_id
+            WHERE dispatch.external_effect_id=effect.external_effect_id
+            ORDER BY receipt.received_at DESC LIMIT 1
+        ) AS receipt ON TRUE
+        ORDER BY chosen.created_at
+        """,
+        (project_id,),
+    )
+    normalized: list[dict[str, Any]] = []
+    for row in rows:
+        content = _mapping(row["model_call_log"])
+        normalized.append(
+            {
+                "stage": row["stage"],
+                "operation_status": row["operation_status"],
+                "attempt_status": row["attempt_status"],
+                "lease_id": row["lease_id"],
+                "fencing_token": row["fencing_token"],
+                "capability_pack_snapshot_ref": row["snapshot_id"],
+                "capability_pack_snapshot_hash": row["snapshot_hash"],
+                "active_deployment_id": row["deployment_id"],
+                "deployment_status_at_collection": row["deployment_status"],
+                "capability_pack_id": row["pack_id"],
+                "capability_pack_version": row["pack_version"],
+                "agent_runtime_qualification": row["qualification_status"],
+                "work_order_id": row["work_order_id"],
+                "runtime_binding_id": row["runtime_binding_id"],
+                "external_effect_id": row["external_effect_id"],
+                "provider_receipt_id": row["provider_receipt_id"],
+                "candidate_asset_version_id": row["candidate_asset_version_id"],
+                "candidate_accepted": content.get("candidate_accepted") is True,
+                "commit_authority": row["commit_authority"],
+                "frozen_materialization": {
+                    key: row[key]
+                    for key in (
+                        "prompt_bundle_ref",
+                        "prompt_bundle_hash",
+                        "skill_bundle_ref",
+                        "skill_bundle_hash",
+                        "context_bundle_asset_version_id",
+                        "context_bundle_hash",
+                        "route_snapshot_ref",
+                        "route_snapshot_hash",
+                        "input_manifest_ref",
+                        "input_manifest_hash",
+                    )
+                },
+                "evidence_refs": [
+                    f"operation:{row['operation_id']}",
+                    f"attempt:{row['attempt_id']}",
+                    f"lease:{row['lease_id']}",
+                    f"pack-snapshot:{row['snapshot_id']}",
+                    f"agent-work-order:{row['work_order_id']}",
+                    f"runtime-binding:{row['runtime_binding_id']}",
+                    f"external-effect:{row['external_effect_id']}",
+                    f"asset-version:{row['model_call_log_asset_version_id']}",
+                    f"asset-version:{row['candidate_asset_version_id']}",
+                ],
+                **_provider_evidence(content),
+            }
+        )
+    return normalized
+
+
+def _collect_retry_evidence(database_url: str, *, project_id: str) -> dict[str, Any]:
+    operations = _query_rows(
+        database_url,
+        """
+        SELECT operation.operation_id
+        FROM authority_operation AS operation
+        JOIN authority_attempt AS attempt ON attempt.operation_id=operation.operation_id
+        WHERE operation.project_id=%s
+          AND operation.definition_name='story_planning.generate'
+        GROUP BY operation.operation_id
+        HAVING COUNT(*)=2
+        ORDER BY MIN(operation.created_at)
+        """,
+        (project_id,),
+    )
+    if len(operations) != 1:
+        return {
+            "fault_injection": "not-proven",
+            "evidence_refs": [],
+        }
+    operation_id = str(operations[0]["operation_id"])
+    attempts = _query_rows(
+        database_url,
+        """
+        SELECT attempt.attempt_id, attempt.attempt_number, attempt.status,
+               lease.lease_id, lease.owner, lease.fencing_token,
+               snapshot.snapshot_id, snapshot.snapshot_hash,
+               snapshot.pack_id, snapshot.pack_version,
+               snapshot.deployment_id, snapshot.binding_set_hash,
+               binding.prompt_bundle_ref, binding.prompt_bundle_hash,
+               binding.skill_bundle_ref, binding.skill_bundle_hash,
+               binding.context_bundle_hash, binding.tool_policy_hash,
+               log.asset_version_id AS model_call_log_asset_version_id,
+               log.content AS model_call_log
+        FROM authority_attempt AS attempt
+        JOIN LATERAL (
+            SELECT lease_id, owner, fencing_token
+            FROM authority_lease_acquisition
+            WHERE attempt_id=attempt.attempt_id
+            ORDER BY fencing_token DESC LIMIT 1
+        ) AS lease ON TRUE
+        JOIN authority_attempt_capability_pack_snapshot AS snapshot
+          ON snapshot.attempt_id=attempt.attempt_id
+        JOIN authority_agent_runtime_binding AS binding
+          ON binding.attempt_id=attempt.attempt_id
+        JOIN LATERAL (
+            SELECT version.asset_version_id, version.content
+            FROM authority_operation_output_asset AS output
+            JOIN authority_asset AS asset ON asset.asset_id=output.asset_id
+            JOIN authority_asset_version AS version
+              ON version.asset_version_id=output.asset_version_id
+            WHERE output.operation_id=attempt.operation_id
+              AND asset.asset_type='model_call_log'
+              AND version.content#>>'{production_execution,execution_request,attempt_id}'
+                  =attempt.attempt_id
+            ORDER BY version.created_at DESC LIMIT 1
+        ) AS log ON TRUE
+        WHERE attempt.operation_id=%s
+        ORDER BY attempt.attempt_number
+        """,
+        (operation_id,),
+    )
+    if len(attempts) != 2:
+        return {
+            "fault_injection": "not-proven",
+            "evidence_refs": [f"operation:{operation_id}"],
+        }
+    normalized: list[dict[str, Any]] = []
+    for row in attempts:
+        content = _mapping(row["model_call_log"])
+        production = _mapping(content.get("production_execution"))
+        input_manifest = _mapping(production.get("input_manifest"))
+        normalized.append(
+            {
+                "operation_id": operation_id,
+                "attempt_id": row["attempt_id"],
+                "attempt_number": row["attempt_number"],
+                "attempt_status": row["status"],
+                "lease_id": row["lease_id"],
+                "fencing_token": row["fencing_token"],
+                "fence_identity": (f"{row['attempt_id']}:{row['fencing_token']}"),
+                "candidate_accepted": content.get("candidate_accepted") is True,
+                "snapshot": {
+                    key: row[key]
+                    for key in (
+                        "snapshot_id",
+                        "snapshot_hash",
+                        "pack_id",
+                        "pack_version",
+                        "deployment_id",
+                        "binding_set_hash",
+                    )
+                },
+                "materialization": {
+                    key: row[key]
+                    for key in (
+                        "prompt_bundle_ref",
+                        "prompt_bundle_hash",
+                        "skill_bundle_ref",
+                        "skill_bundle_hash",
+                        "context_bundle_hash",
+                        "tool_policy_hash",
+                    )
+                }
+                | {
+                    "input_read_set": sorted(
+                        str(item) for item in input_manifest.get("read_set") or []
+                    )
+                },
+                "evidence_refs": [
+                    f"operation:{operation_id}",
+                    f"attempt:{row['attempt_id']}",
+                    f"lease:{row['lease_id']}",
+                    f"pack-snapshot:{row['snapshot_id']}",
+                    f"asset-version:{row['model_call_log_asset_version_id']}",
+                ],
+                **_provider_evidence(content),
+            }
+        )
+    stale = _query_rows(
+        database_url,
+        """
+        SELECT evidence_id FROM authority_late_result_evidence
+        WHERE operation_id=%s AND command_type='result'
+        ORDER BY created_at
+        """,
+        (operation_id,),
+    )
+    candidate = _query_rows(
+        database_url,
+        """
+        SELECT COUNT(*) AS count
+        FROM authority_operation_output_asset
+        WHERE operation_id=%s AND role='primary'
+          AND output_key='story_planning.candidate'
+        """,
+        (operation_id,),
+    )
+    first, second = normalized
+    identity_keys = (
+        "snapshot_hash",
+        "pack_id",
+        "pack_version",
+        "deployment_id",
+        "binding_set_hash",
+    )
+    frozen_identity_equal = all(
+        first["snapshot"].get(key) == second["snapshot"].get(key)
+        for key in identity_keys
+    )
+    materialization_equal = first["materialization"] == second["materialization"]
+    for key in (
+        "frozen_route_model",
+        "frozen_route_reasoning_effort",
+        "model_profile_hash",
+        "route_policy_hash",
+    ):
+        materialization_equal = materialization_equal and (
+            first["model_authority"].get(key) == second["model_authority"].get(key)
+        )
+    return {
+        "fault_injection": "after_measured_usage_before_candidate_acceptance",
+        "attempt_1": first,
+        "attempt_2": second,
+        "frozen_governance_identity_equal": frozen_identity_equal,
+        "frozen_materialization_equal": materialization_equal,
+        "stale_fence_commit_rejected": len(stale) == 1,
+        "accepted_candidate_count": int(candidate[0]["count"]),
+        "provider_execution_count": sum(
+            1 for item in normalized if item["real_provider_call"] is True
+        ),
+        "evidence_refs": [
+            f"operation:{operation_id}",
+            *[f"late-result-evidence:{row['evidence_id']}" for row in stale],
+        ],
+    }
+
+
+def _collect_reader_evidence(database_url: str, *, project_id: str) -> dict[str, Any]:
+    rows = _query_rows(
+        database_url,
+        """
+        SELECT request.chapter_number, followup.operation_id,
+               report.asset_version_id AS report_asset_version_id,
+               report.content AS report,
+               state.asset_version_id AS state_transition_asset_version_id,
+               issues.asset_version_id AS issue_set_asset_version_id,
+               snapshot.pack_id, snapshot.snapshot_id,
+               effect.external_effect_id,
+               receipt.receipt_id AS provider_receipt_id
+        FROM authority_book_followup_operation AS followup
+        JOIN authority_book_chapter_request AS request
+          ON request.chapter_request_id=followup.chapter_request_id
+        JOIN authority_operation AS operation
+          ON operation.operation_id=followup.operation_id
+         AND operation.status='SUCCEEDED'
+        JOIN authority_attempt AS attempt
+          ON attempt.operation_id=followup.operation_id
+        JOIN authority_attempt_capability_pack_snapshot AS snapshot
+          ON snapshot.attempt_id=attempt.attempt_id
+        JOIN LATERAL (
+            SELECT version.asset_version_id, version.content
+            FROM authority_operation_output_asset AS output
+            JOIN authority_asset_version AS version
+              ON version.asset_version_id=output.asset_version_id
+            WHERE output.operation_id=followup.operation_id
+              AND output.output_key='reader_outcome.report'
+            LIMIT 1
+        ) AS report ON TRUE
+        JOIN LATERAL (
+            SELECT version.asset_version_id
+            FROM authority_operation_output_asset AS output
+            JOIN authority_asset_version AS version
+              ON version.asset_version_id=output.asset_version_id
+            WHERE output.operation_id=followup.operation_id
+              AND output.output_key='reader_outcome.state_transition'
+            LIMIT 1
+        ) AS state ON TRUE
+        JOIN LATERAL (
+            SELECT version.asset_version_id
+            FROM authority_operation_output_asset AS output
+            JOIN authority_asset_version AS version
+              ON version.asset_version_id=output.asset_version_id
+            WHERE output.operation_id=followup.operation_id
+              AND output.output_key='reader_outcome.issue_set'
+            LIMIT 1
+        ) AS issues ON TRUE
+        LEFT JOIN authority_external_effect AS effect
+          ON effect.external_effect_id=
+             report.content#>>'{model_evidence,production_execution,execution_request,external_effect_id}'
+        LEFT JOIN LATERAL (
+            SELECT external_receipt.receipt_id
+            FROM authority_external_effect_dispatch AS dispatch
+            JOIN authority_external_receipt AS external_receipt
+              ON external_receipt.dispatch_id=dispatch.dispatch_id
+            WHERE dispatch.external_effect_id=effect.external_effect_id
+            ORDER BY external_receipt.received_at DESC LIMIT 1
+        ) AS receipt ON TRUE
+        WHERE followup.project_id=%s
+          AND followup.followup_type='READER_OUTCOME'
+        ORDER BY request.chapter_number
+        """,
+        (project_id,),
+    )
+    reports: list[dict[str, Any]] = []
+    judge: dict[str, Any] = {}
+    for row in rows:
+        report = _mapping(row["report"])
+        model = _mapping(report.get("model_evidence"))
+        snapshot = _mapping(report.get("reader_judge_execution_snapshot"))
+        if not judge:
+            judge = {
+                "mode": snapshot.get("mode"),
+                "publish_blocking": snapshot.get("publish_blocking"),
+                "authority_commit_allowed": snapshot.get("authority_commit_allowed"),
+                "direct_plan_mutation_allowed": snapshot.get(
+                    "plan_adjustment_candidate_allowed"
+                ),
+                "evidence_refs": [
+                    f"reader-judge-snapshot:{snapshot.get('snapshot_id')}"
+                ],
+            }
+        reports.append(
+            {
+                "chapter_number": row["chapter_number"],
+                "capability_pack_id": row["pack_id"],
+                "capability_pack_snapshot_ref": row["snapshot_id"],
+                "external_effect_id": row["external_effect_id"],
+                "provider_receipt_id": row["provider_receipt_id"],
+                "report_asset_version_id": row["report_asset_version_id"],
+                "state_transition_asset_version_id": row[
+                    "state_transition_asset_version_id"
+                ],
+                "issue_set_asset_version_id": row["issue_set_asset_version_id"],
+                "evidence_refs": [
+                    f"operation:{row['operation_id']}",
+                    f"pack-snapshot:{row['snapshot_id']}",
+                    f"external-effect:{row['external_effect_id']}",
+                    f"asset-version:{row['report_asset_version_id']}",
+                    f"asset-version:{row['state_transition_asset_version_id']}",
+                    f"asset-version:{row['issue_set_asset_version_id']}",
+                ],
+                **_provider_evidence(model),
+            }
+        )
+    chapter_packs = _query_rows(
+        database_url,
+        """
+        SELECT DISTINCT snapshot.pack_id
+        FROM authority_attempt_capability_pack_snapshot AS snapshot
+        JOIN authority_operation AS operation
+          ON operation.operation_id=snapshot.operation_id
+        WHERE operation.project_id=%s
+          AND operation.definition_name LIKE 'chapter.%%'
+        """,
+        (project_id,),
+    )
+    return {
+        "chapter_pack_id": (
+            str(chapter_packs[0]["pack_id"]) if len(chapter_packs) == 1 else ""
+        ),
+        "reports": reports,
+        "judge": judge,
+    }
+
+
+def _collect_chapter_continuity(
+    database_url: str, *, project_id: str
+) -> dict[str, Any]:
+    chapters = _query_rows(
+        database_url,
+        """
+        SELECT acceptance.chapter_number, acceptance.acceptance_id,
+               acceptance.status, acceptance.story_state_asset_version_id,
+               acceptance.canon_snapshot_asset_version_id,
+               request.chapter_request_id, request.chapter_root_operation_id,
+               root.command_payload
+        FROM authority_book_chapter_acceptance AS acceptance
+        JOIN authority_book_chapter_request AS request
+          ON request.chapter_request_id=acceptance.chapter_request_id
+        JOIN authority_operation AS root
+          ON root.operation_id=request.chapter_root_operation_id
+        WHERE acceptance.project_id=%s
+        ORDER BY acceptance.chapter_number
+        """,
+        (project_id,),
+    )
+    output_rows = _query_rows(
+        database_url,
+        """
+        SELECT request.chapter_number, asset.asset_type,
+               version.asset_version_id
+        FROM authority_book_chapter_request AS request
+        JOIN authority_operation AS operation
+          ON operation.project_id=request.project_id
+         AND (operation.root_operation_id=request.chapter_root_operation_id
+              OR operation.operation_id=request.chapter_root_operation_id)
+        JOIN authority_operation_output_asset AS output
+          ON output.operation_id=operation.operation_id
+         AND output.role='state_snapshot'
+        JOIN authority_asset AS asset ON asset.asset_id=output.asset_id
+        JOIN authority_asset_version AS version
+          ON version.asset_version_id=output.asset_version_id
+        WHERE request.project_id=%s
+        ORDER BY request.chapter_number, asset.asset_type
+        """,
+        (project_id,),
+    )
+    provider_rows = _query_rows(
+        database_url,
+        """
+        SELECT request.chapter_number, operation.operation_id,
+               version.asset_version_id, version.content
+        FROM authority_book_chapter_request AS request
+        JOIN authority_operation AS operation
+          ON operation.project_id=request.project_id
+         AND (operation.root_operation_id=request.chapter_root_operation_id
+              OR operation.operation_id=request.chapter_root_operation_id)
+        JOIN authority_operation_output_asset AS output
+          ON output.operation_id=operation.operation_id
+        JOIN authority_asset AS asset ON asset.asset_id=output.asset_id
+         AND asset.asset_type='model_call_log'
+        JOIN authority_asset_version AS version
+          ON version.asset_version_id=output.asset_version_id
+        WHERE request.project_id=%s
+        ORDER BY request.chapter_number, version.created_at
+        """,
+        (project_id,),
+    )
+    outputs_by_chapter: dict[int, dict[str, str]] = {}
+    for row in output_rows:
+        outputs_by_chapter.setdefault(int(row["chapter_number"]), {})[
+            str(row["asset_type"])
+        ] = str(row["asset_version_id"])
+    providers_by_chapter: dict[int, list[dict[str, Any]]] = {}
+    for row in provider_rows:
+        content = _mapping(row["content"])
+        providers_by_chapter.setdefault(int(row["chapter_number"]), []).append(
+            {
+                "stage": content.get("stage"),
+                "evidence_refs": [
+                    f"operation:{row['operation_id']}",
+                    f"asset-version:{row['asset_version_id']}",
+                ],
+                **_provider_evidence(content),
+            }
+        )
+    normalized: list[dict[str, Any]] = []
+    for row in chapters:
+        chapter = int(row["chapter_number"])
+        command = _mapping(row["command_payload"])
+        candidates = command.get("context_candidates")
+        input_refs: dict[str, str] = {}
+        if isinstance(candidates, list):
+            for item in candidates:
+                if not isinstance(item, Mapping):
+                    continue
+                asset_type = str(
+                    item.get("physical_asset_type") or item.get("asset_type") or ""
+                )
+                if asset_type:
+                    input_refs[asset_type] = str(item.get("asset_version_id") or "")
+        output_refs = outputs_by_chapter.get(chapter, {})
+        output_refs["story_state_snapshot"] = str(row["story_state_asset_version_id"])
+        output_refs["canon_snapshot"] = str(row["canon_snapshot_asset_version_id"])
+        normalized.append(
+            {
+                "chapter_number": chapter,
+                "accepted": row["status"] == "COMMITTED",
+                "input_state_refs": input_refs,
+                "output_state_refs": output_refs,
+                "provider_calls": providers_by_chapter.get(chapter, []),
+                "evidence_refs": [
+                    f"chapter-acceptance:{row['acceptance_id']}",
+                    f"chapter-request:{row['chapter_request_id']}",
+                    f"operation:{row['chapter_root_operation_id']}",
+                ],
+            }
+        )
+    return {"chapters": normalized}
+
+
+def _collect_book_boundary(database_url: str, *, project_id: str) -> dict[str, Any]:
+    books = _query_rows(
+        database_url,
+        """
+        SELECT book_run_id, state, accepted_through_chapter
+        FROM authority_book_production WHERE project_id=%s
+        """,
+        (project_id,),
+    )
+    if len(books) != 1:
+        return {"state": "MISSING", "accepted_through_chapter": 0, "mutations": []}
+    book = books[0]
+    mutations = _query_rows(
+        database_url,
+        """
+        SELECT operation.operation_id, operation.definition_name,
+               operation.status, event.event_id, event.event_type,
+               event.payload->>'action' AS action,
+               audit.audit_id, outbox.outbox_id
+        FROM state_event AS event
+        JOIN authority_operation AS operation
+          ON operation.operation_id=event.payload->>'operation_id'
+        LEFT JOIN audit_log AS audit
+          ON audit.operation_id=operation.operation_id
+        LEFT JOIN outbox_event AS outbox ON outbox.event_id=event.event_id
+        WHERE event.project_id=%s
+          AND event.aggregate_type='book_production'
+          AND event.aggregate_id=%s
+          AND operation.definition_name='book.authority.mutate'
+        ORDER BY event.sequence_number
+        """,
+        (project_id, str(book["book_run_id"])),
+    )
+    return {
+        "book_run_id": book["book_run_id"],
+        "state": book["state"],
+        "accepted_through_chapter": book["accepted_through_chapter"],
+        "mutations": [
+            {
+                "command_name": row["action"] or row["event_type"],
+                "transaction_command": row["definition_name"] == "book.authority.mutate"
+                and row["status"] == "SUCCEEDED",
+                "state_event_id": row["event_id"],
+                "audit_log_id": row["audit_id"],
+                "outbox_id": row["outbox_id"],
+                "evidence_refs": [
+                    f"operation:{row['operation_id']}",
+                    f"state-event:{row['event_id']}",
+                    f"audit-log:{row['audit_id']}",
+                    f"outbox:{row['outbox_id']}",
+                ],
+            }
+            for row in mutations
+        ],
+        "evidence_refs": [f"book-run:{book['book_run_id']}"],
+    }
+
+
+def _collect_recap_and_replan(
+    database_url: str, *, project_id: str
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    recaps = _query_rows(
+        database_url,
+        """
+        SELECT request.chapter_request_id, followup.operation_id,
+               report.asset_version_id AS recap_asset_version_id,
+               report.content AS recap,
+               deviation.asset_version_id AS deviation_asset_version_id,
+               replan.asset_version_id AS replan_request_asset_version_id,
+               reader.asset_version_id AS reader_outcome_asset_version_id
+        FROM authority_book_followup_operation AS followup
+        JOIN authority_book_chapter_request AS request
+          ON request.chapter_request_id=followup.chapter_request_id
+        JOIN LATERAL (
+            SELECT version.asset_version_id, version.content
+            FROM authority_operation_output_asset AS output
+            JOIN authority_asset_version AS version
+              ON version.asset_version_id=output.asset_version_id
+            WHERE output.operation_id=followup.operation_id
+              AND output.output_key='longform.recap.report' LIMIT 1
+        ) AS report ON TRUE
+        JOIN LATERAL (
+            SELECT output.asset_version_id
+            FROM authority_operation_output_asset AS output
+            WHERE output.operation_id=followup.operation_id
+              AND output.output_key='longform.recap.deviation_report' LIMIT 1
+        ) AS deviation ON TRUE
+        JOIN LATERAL (
+            SELECT output.asset_version_id
+            FROM authority_operation_output_asset AS output
+            WHERE output.operation_id=followup.operation_id
+              AND output.output_key='longform.recap.replan_request' LIMIT 1
+        ) AS replan ON TRUE
+        JOIN authority_book_followup_operation AS reader_link
+          ON reader_link.chapter_request_id=request.chapter_request_id
+         AND reader_link.followup_type='READER_OUTCOME'
+        JOIN LATERAL (
+            SELECT output.asset_version_id
+            FROM authority_operation_output_asset AS output
+            WHERE output.operation_id=reader_link.operation_id
+              AND output.output_key='reader_outcome.report' LIMIT 1
+        ) AS reader ON TRUE
+        WHERE followup.project_id=%s
+          AND followup.followup_type='LONGFORM_RECAP'
+        ORDER BY request.chapter_number
+        """,
+        (project_id,),
+    )
+    controlled = next(
+        (
+            row
+            for row in recaps
+            if _mapping(_mapping(row["recap"]).get("observation_snapshot")).get(
+                "controlled_proof_runtime_claim"
+            )
+            == "CONTROL_FLOW_ONLY"
+        ),
+        {},
+    )
+    recap = {
+        "accepted_chapter_request_id": controlled.get("chapter_request_id"),
+        "reader_outcome_asset_version_id": controlled.get(
+            "reader_outcome_asset_version_id"
+        ),
+        "checkpoint_operation_id": controlled.get("operation_id"),
+        "recap_asset_version_id": controlled.get("recap_asset_version_id"),
+        "immutable": bool(controlled.get("recap_asset_version_id")),
+        "deviation_asset_version_id": controlled.get("deviation_asset_version_id"),
+        "replan_request_asset_version_id": controlled.get(
+            "replan_request_asset_version_id"
+        ),
+        "control_flow_proof": bool(controlled),
+        "reader_intelligence_effectiveness_proven": False,
+        "evidence_refs": [
+            f"operation:{controlled.get('operation_id')}",
+            f"asset-version:{controlled.get('recap_asset_version_id')}",
+            f"asset-version:{controlled.get('deviation_asset_version_id')}",
+            f"asset-version:{controlled.get('replan_request_asset_version_id')}",
+        ]
+        if controlled
+        else [],
+    }
+    replans = _query_rows(
+        database_url,
+        """
+        SELECT replan.*, proposal.status AS proposal_status,
+               proposal.target_execution_scope,
+               decision.decision_id, decision.decision,
+               active.asset_version_id AS active_asset_version_id,
+               target.execution_scope AS target_execution_scope_after,
+               target.freshness AS target_freshness_after,
+               replacement.execution_scope AS replacement_execution_scope,
+               replacement.freshness AS replacement_freshness,
+               book.input_snapshot_id AS old_input_snapshot_id
+        FROM authority_book_replan AS replan
+        JOIN authority_plan_change_proposal AS proposal
+          ON proposal.proposal_id=replan.plan_change_proposal_id
+        JOIN authority_plan_change_decision AS decision
+          ON decision.proposal_id=proposal.proposal_id
+        LEFT JOIN active_story_plan_version AS active
+          ON active.project_id=replan.project_id
+         AND active.book_id=replan.book_id
+         AND active.logical_key=proposal.target_logical_key
+        JOIN story_plan_binding AS target
+          ON target.project_id=replan.project_id
+         AND target.asset_version_id=replan.target_asset_version_id
+        JOIN story_plan_binding AS replacement
+          ON replacement.project_id=replan.project_id
+         AND replacement.asset_version_id=
+             replan.replacement_candidate_asset_version_id
+        JOIN authority_book_production AS book
+          ON book.book_run_id=replan.book_run_id
+        WHERE replan.project_id=%s
+        """,
+        (project_id,),
+    )
+    if len(replans) != 1:
+        return recap, {"status": "MISSING", "evidence_refs": []}
+    row = replans[0]
+    executed = _query_rows(
+        database_url,
+        """
+        SELECT COUNT(*) AS count
+        FROM story_plan_binding
+        WHERE project_id=%s AND book_id=%s
+          AND contract_type='CHAPTER' AND execution_scope='EXECUTED'
+        """,
+        (project_id, str(row["book_id"])),
+    )
+    old_snapshots = _query_rows(
+        database_url,
+        """
+        SELECT snapshot_id FROM authority_book_production_input_snapshot
+        WHERE project_id=%s AND book_id=%s
+        ORDER BY created_at
+        """,
+        (project_id, str(row["book_id"])),
+    )
+    old_snapshot_id = str(old_snapshots[0]["snapshot_id"]) if old_snapshots else ""
+    resumed_chapter = _query_rows(
+        database_url,
+        """
+        SELECT chapter_plan_version, chapter_request_id
+        FROM authority_book_chapter_request
+        WHERE project_id=%s AND book_run_id=%s AND chapter_number=3
+        """,
+        (project_id, str(row["book_run_id"])),
+    )
+    replan = {
+        "source_recap_asset_version_id": row["source_recap_asset_version_id"],
+        "replan_request_asset_version_id": row["replan_request_asset_version_id"],
+        "replacement_candidate_asset_version_id": row[
+            "replacement_candidate_asset_version_id"
+        ],
+        "plan_change_proposal_id": row["plan_change_proposal_id"],
+        "approval_decision_id": row["decision_id"],
+        "status": row["status"],
+        "future_only": row["future_only"],
+        "executed_plan_preserved": int(executed[0]["count"]) >= 2
+        and row["target_execution_scope"] != "EXECUTED",
+        "future_plan_superseded": row["active_asset_version_id"]
+        == row["replacement_candidate_asset_version_id"]
+        and row["target_freshness_after"] in {"IMPACTED", "STALE"},
+        "old_input_snapshot_id": old_snapshot_id,
+        "new_input_snapshot_id": row["input_snapshot_id"],
+        "resumed_chapter_plan_version": (
+            resumed_chapter[0]["chapter_plan_version"]
+            if len(resumed_chapter) == 1
+            else ""
+        ),
+        "evidence_refs": [
+            f"book-replan:{row['replan_id']}",
+            f"plan-change-proposal:{row['plan_change_proposal_id']}",
+            f"plan-change-decision:{row['decision_id']}",
+            f"asset-version:{row['target_asset_version_id']}",
+            f"asset-version:{row['replacement_candidate_asset_version_id']}",
+            f"book-input-snapshot:{old_snapshot_id}",
+            f"book-input-snapshot:{row['input_snapshot_id']}",
+            *(
+                [f"chapter-request:{resumed_chapter[0]['chapter_request_id']}"]
+                if len(resumed_chapter) == 1
+                else []
+            ),
+        ],
+    }
+    return recap, replan
+
+
+def _collect_resume_evidence(
+    database_url: str,
+    *,
+    project_id: str,
+    planning_process_id: int | None,
+    object_storage_namespace_preserved: bool,
+    checkpoint_business_state_used: bool,
+) -> dict[str, Any]:
+    duplicates = _query_rows(
+        database_url,
+        """
+        SELECT
+          (SELECT COUNT(*) FROM (
+             SELECT stable_idempotency_key FROM authority_external_effect
+             WHERE project_id=%s GROUP BY stable_idempotency_key HAVING COUNT(*)>1
+           ) AS duplicate_effects) AS duplicate_provider_effect_count,
+          (SELECT COUNT(*) FROM (
+             SELECT chapter_number FROM authority_book_chapter_acceptance
+             WHERE project_id=%s GROUP BY chapter_number HAVING COUNT(*)>1
+           ) AS duplicate_chapters) AS duplicate_chapter_count,
+          (SELECT COUNT(*) FROM (
+             SELECT chapter_number FROM authority_book_chapter_acceptance
+             WHERE project_id=%s GROUP BY chapter_number
+             HAVING COUNT(DISTINCT canon_snapshot_asset_version_id)>1
+           ) AS duplicate_canon) AS duplicate_canon_commit_count,
+          (SELECT COUNT(*) FROM (
+             SELECT chapter_request_id FROM authority_book_followup_operation
+             WHERE project_id=%s AND followup_type='READER_OUTCOME'
+             GROUP BY chapter_request_id HAVING COUNT(*)>1
+           ) AS duplicate_reader) AS duplicate_reader_sidecar_count
+        """,
+        (project_id, project_id, project_id, project_id),
+    )[0]
+    books = _query_rows(
+        database_url,
+        """
+        SELECT book_run_id, state FROM authority_book_production
+        WHERE project_id=%s
+        """,
+        (project_id,),
+    )
+    crossed_process_boundary = (
+        planning_process_id is not None and planning_process_id != os.getpid()
+    )
+    return {
+        "planning_process_id": planning_process_id,
+        "book_process_id": os.getpid(),
+        "fresh_composition_root": crossed_process_boundary,
+        "persisted_state_only": crossed_process_boundary
+        and not checkpoint_business_state_used,
+        "checkpoint_business_state_used": checkpoint_business_state_used,
+        "checkpoint_usage": "release-and-project-identity-locator-only",
+        "object_storage_namespace_preserved": object_storage_namespace_preserved,
+        "planning_checkpoint_ref": f"postgresql:project:{project_id}:planning-active",
+        "book_phase_resumed": len(books) == 1 and books[0]["state"] == "COMPLETED",
+        **duplicates,
+        "evidence_refs": [
+            f"process:{planning_process_id}",
+            f"process:{os.getpid()}",
+            f"postgresql:project:{project_id}",
+            *([f"book-run:{books[0]['book_run_id']}"] if len(books) == 1 else []),
+        ],
+    }
+
+
+def _collect_usage_summary(database_url: str, *, project_id: str) -> dict[str, Any]:
+    rows = _query_rows(
+        database_url,
+        """
+        SELECT version.asset_version_id, version.content
+        FROM authority_asset AS asset
+        JOIN authority_asset_version AS version ON version.asset_id=asset.asset_id
+        WHERE asset.project_id=%s AND asset.asset_type='model_call_log'
+        ORDER BY version.created_at
+        """,
+        (project_id,),
+    )
+    total_tokens = 0
+    estimated_cost = 0.0
+    real_calls = 0
+    for row in rows:
+        provider = _provider_evidence(_mapping(row["content"]))
+        usage = _mapping(provider["usage"])
+        cost = _mapping(provider["cost"])
+        total_tokens += int(usage.get("total_tokens") or 0)
+        try:
+            estimated_cost += float(cost.get("amount") or 0)
+        except (TypeError, ValueError):
+            pass
+        if provider["real_provider_call"] is True:
+            real_calls += 1
+    return {
+        "real_provider_calls": real_calls,
+        "measured_total_tokens": total_tokens,
+        "estimated_cost_amount": format(estimated_cost, ".8f"),
+        "currency": "USD",
+        "estimated": True,
+        "provider_billed": False,
+        "model_call_log_count": len(rows),
+        "evidence_refs": [f"asset-version:{row['asset_version_id']}" for row in rows],
+    }
+
+
+def _collect_runtime_inventory(database_url: str, *, project_id: str) -> dict[str, Any]:
+    return {
+        "operations": _query_rows(
+            database_url,
+            """
+            SELECT operation_id, definition_name, definition_version,
+                   status, root_operation_id, parent_operation_id,
+                   trace_id, correlation_id, created_at, updated_at
+            FROM authority_operation
+            WHERE project_id=%s ORDER BY created_at
+            """,
+            (project_id,),
+        ),
+        "attempts_and_leases": _query_rows(
+            database_url,
+            """
+            SELECT attempt.operation_id, attempt.attempt_id,
+                   attempt.attempt_number, attempt.status,
+                   lease.lease_id, lease.owner, lease.fencing_token,
+                   lease.status AS lease_status
+            FROM authority_attempt AS attempt
+            JOIN authority_operation AS operation
+              ON operation.operation_id=attempt.operation_id
+            LEFT JOIN authority_lease_acquisition AS lease
+              ON lease.attempt_id=attempt.attempt_id
+            WHERE operation.project_id=%s
+            ORDER BY operation.created_at, attempt.attempt_number,
+                     lease.fencing_token
+            """,
+            (project_id,),
+        ),
+        "external_effects_and_receipts": _query_rows(
+            database_url,
+            """
+            SELECT effect.operation_id, effect.external_effect_id,
+                   effect.capability, effect.provider, effect.model_id,
+                   effect.status, effect.provider_control_level,
+                   dispatch.dispatch_id, dispatch.generation,
+                   dispatch.status AS dispatch_status,
+                   receipt.receipt_id, receipt.status AS receipt_status
+            FROM authority_external_effect AS effect
+            LEFT JOIN authority_external_effect_dispatch AS dispatch
+              ON dispatch.external_effect_id=effect.external_effect_id
+            LEFT JOIN authority_external_receipt AS receipt
+              ON receipt.dispatch_id=dispatch.dispatch_id
+            WHERE effect.project_id=%s
+            ORDER BY effect.created_at, dispatch.generation
+            """,
+            (project_id,),
+        ),
+        "capability_snapshots": _query_rows(
+            database_url,
+            """
+            SELECT snapshot.operation_id, snapshot.attempt_id,
+                   snapshot.snapshot_id, snapshot.snapshot_hash,
+                   snapshot.execution_fencing_token, snapshot.pack_id,
+                   snapshot.pack_version, snapshot.deployment_id,
+                   snapshot.binding_set_hash, snapshot.release_sha
+            FROM authority_attempt_capability_pack_snapshot AS snapshot
+            JOIN authority_operation AS operation
+              ON operation.operation_id=snapshot.operation_id
+            WHERE operation.project_id=%s ORDER BY snapshot.created_at
+            """,
+            (project_id,),
+        ),
+        "agent_work_orders_and_bindings": _query_rows(
+            database_url,
+            """
+            SELECT work_order.operation_id, work_order.attempt_id,
+                   work_order.work_order_id, binding.binding_id,
+                   binding.agent_id, binding.capability_id,
+                   binding.commit_authority,
+                   binding.prompt_bundle_ref, binding.prompt_bundle_hash,
+                   binding.skill_bundle_ref, binding.skill_bundle_hash,
+                   binding.context_bundle_asset_version_id,
+                   binding.context_bundle_hash, binding.route_snapshot_ref,
+                   binding.route_snapshot_hash, binding.input_manifest_ref,
+                   binding.input_manifest_hash
+            FROM authority_agent_work_order AS work_order
+            JOIN authority_agent_runtime_binding AS binding
+              ON binding.work_order_id=work_order.work_order_id
+            WHERE work_order.project_id=%s ORDER BY work_order.created_at
+            """,
+            (project_id,),
+        ),
+    }
+
+
+def _collect_proof_evidence(
+    database_url: str,
+    *,
+    project_id: str,
+    commit_sha: str,
+    worktree_clean: bool,
+    planning_process_id: int | None,
+    object_storage_namespace_preserved: bool = False,
+    checkpoint_business_state_used: bool = False,
+) -> dict[str, Any]:
+    recap, replan = _collect_recap_and_replan(database_url, project_id=project_id)
+    return {
+        "release": {
+            "commit_sha": commit_sha,
+            "worktree_clean": worktree_clean,
+            "evidence_refs": [f"git-commit:{commit_sha}"],
+        },
+        "environment": {
+            "postgresql": "REAL",
+            "object_storage": "MINIO_REAL",
+            "provider": "CODEX_CLI_REAL",
+            "evidence_refs": [
+                f"postgresql:project:{project_id}",
+                "object-storage:minio",
+                "provider:codex-cli",
+            ],
+        },
+        "planning": {
+            "generators": _collect_normalized_planning(
+                database_url, project_id=project_id
+            )
+        },
+        "reader_outcome": _collect_reader_evidence(database_url, project_id=project_id),
+        "retry": _collect_retry_evidence(database_url, project_id=project_id),
+        "book_authority": _collect_book_boundary(database_url, project_id=project_id),
+        "continuity": _collect_chapter_continuity(database_url, project_id=project_id),
+        "longform_recap": recap,
+        "replan": replan,
+        "resume": _collect_resume_evidence(
+            database_url,
+            project_id=project_id,
+            planning_process_id=planning_process_id,
+            object_storage_namespace_preserved=object_storage_namespace_preserved,
+            checkpoint_business_state_used=checkpoint_business_state_used,
+        ),
+        "usage_cost_summary": _collect_usage_summary(
+            database_url, project_id=project_id
+        ),
+        "runtime_inventory": _collect_runtime_inventory(
+            database_url, project_id=project_id
+        ),
+    }
+
+
 def _chapter_outputs(evidence: Mapping[str, Any]) -> dict[str, dict[str, Any]]:
     outputs = evidence.get("outputs")
     if not isinstance(outputs, list):
@@ -1170,9 +2409,7 @@ def _run_chapter_scheduler(
         if tick.saga_status == "WAITING_GATE":
             pending = [
                 item
-                for item in list_canon_approvals(
-                    database_url, project_id=project_id
-                )
+                for item in list_canon_approvals(database_url, project_id=project_id)
                 if item["root_operation_id"] == root_operation_id
                 and item["status"]
                 not in {
@@ -1285,7 +2522,9 @@ def _complete_reader_sidecar(
                 output_key="reader_outcome.report",
             )
             return report, ticks
-    raise RuntimeError("Reader Outcome sidecar did not succeed in five Supervisor ticks")
+    raise RuntimeError(
+        "Reader Outcome sidecar did not succeed in five Supervisor ticks"
+    )
 
 
 def _generate_chapter_plan(
@@ -1330,9 +2569,7 @@ def _generate_chapter_plan(
         ),
         principal=principal,
     )
-    activation = _approve_activate(
-        planning, generated, principal=principal, key=key
-    )
+    activation = _approve_activate(planning, generated, principal=principal, key=key)
     projection = activation.get("chapter_plan_projection")
     if not isinstance(projection, Mapping):
         raise RuntimeError("activated Chapter plan has no typed projection")
@@ -1364,16 +2601,10 @@ def _runtime_planning_inputs(
         "previous_chapter_outcome": str(book["last_chapter_outcome_version_id"]),
         "story_state": str(book["active_story_state_version_id"]),
         "canon_snapshot": str(outputs["canon_snapshot"]["asset_version_id"]),
-        "character_state": str(
-            outputs["character_state_snapshot"]["asset_version_id"]
-        ),
-        "foreshadowing_state": str(
-            outputs["foreshadow_snapshot"]["asset_version_id"]
-        ),
+        "character_state": str(outputs["character_state_snapshot"]["asset_version_id"]),
+        "foreshadowing_state": str(outputs["foreshadow_snapshot"]["asset_version_id"]),
         "reward_ledger": str(outputs["reward_ledger_snapshot"]["asset_version_id"]),
-        "promise_ledger": str(
-            outputs["promise_ledger_snapshot"]["asset_version_id"]
-        ),
+        "promise_ledger": str(outputs["promise_ledger_snapshot"]["asset_version_id"]),
         "reader_state": str(reader_state["asset_version_id"]),
     }
 
@@ -1529,9 +2760,8 @@ def _drive_to_chapter_dispatch(
     active_request_id = str(book.get("active_chapter_request_id") or "")
     if active_request_id:
         request = supervisor.authority.require_chapter_request(active_request_id)
-        if (
-            int(request["chapter_number"]) != chapter_number
-            or not str(request.get("chapter_root_operation_id") or "")
+        if int(request["chapter_number"]) != chapter_number or not str(
+            request.get("chapter_root_operation_id") or ""
         ):
             raise RuntimeError("active Book Chapter request differs from resume target")
         return request, ticks
@@ -1835,7 +3065,9 @@ def _run_book_phase(
         workspace_id=workspace_id,
         book_id=book_id,
         book_run_id=admission.book_run_id,
-        source_recap_asset_version_id=str(controlled_recap["recap"]["asset_version_id"]),
+        source_recap_asset_version_id=str(
+            controlled_recap["recap"]["asset_version_id"]
+        ),
         replan_request_asset_version_id=str(
             controlled_recap["replan_request"]["asset_version_id"]
         ),
@@ -2039,23 +3271,19 @@ def _resume_book_phase(args: argparse.Namespace) -> dict[str, Any]:
     planning = build_story_planning_generation_application(
         settings, env=env, chapter_application=chapter
     )
-    activated = dict(authority_source["activated_plans"])
-    projections = {
-        int(key): dict(value)
-        for key, value in authority_source["chapter_plan_projections"].items()
-    }
+    planning_process_id = int(source["runtime"]["process_id"])
+    if planning_process_id == os.getpid():
+        raise RuntimeError("resume proof did not cross an OS/Python process boundary")
+    activated = _load_active_plans(args.database_url, project_id=project_id)
+    projections: dict[int, dict[str, Any]] = {}
+    bootstrap = _load_persisted_bootstrap(args.database_url, project_id=project_id)
     book_record = BookDesignAuthorityQuery(args.database_url).require_book(
         project_id=project_id, book_id=book_id
     )
-    chapter_profiles = _bootstrap_chapter_profiles(
-        args.database_url,
-        project_id=project_id,
-        workspace_id=workspace_id,
-        book_id=book_id,
-        build_id=env["NOVEL_FORGE_APPLICATION_BUILD_ID"],
-        commit_sha=commit_sha,
-        principal=operator,
-    )
+    chapter_profiles = {
+        key: bootstrap[key]
+        for key in ("quality_rubric", "style_policy", "operator_checklist")
+    }
     try:
         book_phase = _run_book_phase(
             database_url=args.database_url,
@@ -2067,7 +3295,7 @@ def _resume_book_phase(args: argparse.Namespace) -> dict[str, Any]:
             workspace_id=workspace_id,
             book_id=book_id,
             book_design_version=str(book_record["active_book_design_version_id"]),
-            bootstrap=dict(authority_source["bootstrap"]),
+            bootstrap=bootstrap,
             activated=activated,
             projections=projections,
             operator=operator,
@@ -2084,9 +3312,12 @@ def _resume_book_phase(args: argparse.Namespace) -> dict[str, Any]:
         "worktree_clean": not bool(dirty),
         "allow_dirty": bool(args.allow_dirty),
     }
-    source["runtime"]["codex_login_status"] = (
-        login.stdout or login.stderr
-    ).strip()
+    source["runtime"]["codex_login_status"] = (login.stdout or login.stderr).strip()
+    source["runtime"]["codex_executable"] = executable
+    source["runtime"]["codex_version"] = _codex_version(executable)
+    source["runtime"]["book_process_id"] = os.getpid()
+    source["runtime"]["book_process_runtime_root"] = str(runtime_root)
+    source["runtime"]["book_process_minio_buckets"] = proof_buckets
     source["authority"]["activated_plans"] = activated
     source["authority"]["chapter_plan_projections"] = projections
     source["authority"]["chapter_profiles"] = chapter_profiles
@@ -2095,6 +3326,21 @@ def _resume_book_phase(args: argparse.Namespace) -> dict[str, Any]:
         _collect_planning_evidence(args.database_url, project_id=project_id)
     )
     source["phase"] = "SHORT_LONGFORM_COMPLETE"
+    proof_evidence = _collect_proof_evidence(
+        args.database_url,
+        project_id=project_id,
+        commit_sha=commit_sha,
+        worktree_clean=not bool(dirty),
+        planning_process_id=planning_process_id,
+        object_storage_namespace_preserved=(
+            source["runtime"].get("minio_buckets") == proof_buckets
+        ),
+        checkpoint_business_state_used=False,
+    )
+    evaluation = evaluate_short_longform_evidence(proof_evidence)
+    source["evidence_snapshot"] = _jsonable(proof_evidence)
+    source["proof_evaluation"] = evaluation.to_dict()
+    source["proof_flags"] = evaluation.proof_flags
     return source
 
 
@@ -2306,6 +3552,24 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
             "provider": "codex-cli",
             "model": args.model,
             "reasoning_effort": args.reasoning_effort,
+            "process_id": os.getpid(),
+            "storage_authority": "postgresql",
+            "object_storage": "minio",
+            "minio_endpoint": args.minio_endpoint,
+            "minio_buckets": proof_buckets,
+            "runtime_root": str(runtime_root),
+            "codex_executable": executable,
+            "codex_version": _codex_version(executable),
+            "model_strategy": {
+                "planning_replan": {
+                    "model": env["NOVEL_FORGE_PLANNING_MODEL"],
+                    "reasoning_effort": env["NOVEL_FORGE_PLANNING_REASONING_EFFORT"],
+                },
+                "chapter_reader_quality": {
+                    "model": args.model,
+                    "reasoning_effort": args.reasoning_effort,
+                },
+            },
             "codex_login_status": (login.stdout or login.stderr).strip(),
             "cost_semantics": "MEASURED usage, ESTIMATED cost, not provider billed",
         },
@@ -2338,13 +3602,27 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
         },
         "non_claims": {
             "quality_calibrated": False,
+            "reader_judge_calibrated": False,
+            "reader_intelligence_effectiveness_proven": False,
             "longform_proven": False,
             "production_verified": False,
             "multi_book_proven": False,
+            "provider_billed_cost": False,
         },
     }
     if args.stop_after_planning:
         chapter.close()
+        proof_evidence = _collect_proof_evidence(
+            args.database_url,
+            project_id=project_id,
+            commit_sha=commit_sha,
+            worktree_clean=not bool(dirty),
+            planning_process_id=os.getpid(),
+        )
+        evaluation = evaluate_short_longform_evidence(proof_evidence)
+        planning_result["evidence_snapshot"] = _jsonable(proof_evidence)
+        planning_result["proof_evaluation"] = evaluation.to_dict()
+        planning_result["proof_flags"] = evaluation.proof_flags
         return planning_result
     try:
         book_phase = _run_book_phase(
@@ -2371,6 +3649,17 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
     planning_result["authority"]["activated_plans"] = activated
     planning_result["authority"]["chapter_plan_projections"] = projections
     planning_result["phase"] = "SHORT_LONGFORM_COMPLETE"
+    proof_evidence = _collect_proof_evidence(
+        args.database_url,
+        project_id=project_id,
+        commit_sha=commit_sha,
+        worktree_clean=not bool(dirty),
+        planning_process_id=os.getpid(),
+    )
+    evaluation = evaluate_short_longform_evidence(proof_evidence)
+    planning_result["evidence_snapshot"] = _jsonable(proof_evidence)
+    planning_result["proof_evaluation"] = evaluation.to_dict()
+    planning_result["proof_flags"] = evaluation.proof_flags
     return planning_result
 
 
@@ -2383,8 +3672,8 @@ def main() -> int:
         "--codex-executable",
         default="/Applications/ChatGPT.app/Contents/Resources/codex",
     )
-    parser.add_argument("--model", default="gpt-5.4")
-    parser.add_argument("--reasoning-effort", default="medium")
+    parser.add_argument("--model", default="gpt-5.6-sol")
+    parser.add_argument("--reasoning-effort", default="high")
     parser.add_argument("--minio-endpoint", default="127.0.0.1:59039")
     parser.add_argument("--minio-access-key", default="novel_forge")
     parser.add_argument("--minio-secret-key", default="novel_forge_secret")
@@ -2428,7 +3717,11 @@ def main() -> int:
         encoding="utf-8",
     )
     print(json.dumps(result["proof_flags"], ensure_ascii=False), flush=True)
-    return 0
+    if result.get("phase") == "PLANNING_COMPLETE" or result.get("authority", {}).get(
+        "book_phase", {}
+    ).get("stopped_after_chapter"):
+        return 0
+    return 0 if result["proof_flags"]["short_longform_runtime_proven"] else 2
 
 
 if __name__ == "__main__":

@@ -1114,6 +1114,9 @@ def test_production_composition_executes_five_planning_generators_via_pep() -> N
             "NOVEL_FORGE_APPLICATION_BUILD_ID": "planning-production-composition",
             "NOVEL_FORGE_COMMIT_SHA": RELEASE_SHA,
             "NOVEL_FORGE_MODEL_PROVIDER": "scripted_provider_v2",
+            "NOVEL_FORGE_PLANNING_PROVIDER": "scripted_provider_v2",
+            "NOVEL_FORGE_PLANNING_MODEL": "scripted-planning-fixture",
+            "NOVEL_FORGE_PLANNING_REASONING_EFFORT": "xhigh",
             "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": root,
             "NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID": harness.pack_id,
         }
@@ -1151,6 +1154,21 @@ def test_production_composition_executes_five_planning_generators_via_pep() -> N
             [harness.project_id],
         )
         assert uow.cursor.fetchone() == (5, 5)
+        uow.cursor.execute(
+            """
+            SELECT DISTINCT version.content->'contract'->>'model_id',
+                            version.content->'contract'->>'reasoning_effort'
+            FROM authority_asset AS asset
+            JOIN authority_asset_version AS version
+              ON version.asset_id=asset.asset_id
+            WHERE asset.project_id=%s
+              AND asset.asset_type='model_profile'
+              AND version.content->'contract'->>'profile_id'
+                    LIKE 'planning.%%.default'
+            """,
+            [harness.project_id],
+        )
+        assert uow.cursor.fetchall() == [("scripted-planning-fixture", "xhigh")]
 
 
 def test_planning_retry_reuses_frozen_pack_after_measured_provider_result() -> None:
@@ -1208,9 +1226,7 @@ def test_planning_retry_reuses_frozen_pack_after_measured_provider_result() -> N
             trace_id=f"trace:{harness.project_id}:planning-retry-proof",
             correlation_id=f"correlation:{harness.project_id}",
         )
-        with pytest.raises(
-            KernelError, match="MODEL_EFFECT_RETRYABLE_PLANNING_PROOF"
-        ):
+        with pytest.raises(KernelError, match="MODEL_EFFECT_RETRYABLE_PLANNING_PROOF"):
             planning.generate(command, principal=principal)
 
         replacement_scope = harness.approval_scope()
@@ -1519,14 +1535,8 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack() -> N
     assert checkpoint_replay["replayed"] is True
     assert checkpoint_result["operation_id"] == checkpoint_replay["operation_id"]
     assert {
-        key: value
-        for key, value in checkpoint_result.items()
-        if key != "replayed"
-    } == {
-        key: value
-        for key, value in checkpoint_replay.items()
-        if key != "replayed"
-    }
+        key: value for key, value in checkpoint_result.items() if key != "replayed"
+    } == {key: value for key, value in checkpoint_replay.items() if key != "replayed"}
     assert checkpoint_result["contribution_count"] == 1
     assert checkpoint_result["ending_reachability"]["status"] in {
         "REACHABLE",

@@ -60,7 +60,10 @@ class ProductionExecutionGatewayPostgresTests(unittest.TestCase):
             backend_id="scripted-fixture",
             backend_version="1.0.0",
             runtime_class=ExecutionRuntimeClass.SCRIPTED_FIXTURE,
-            supported_completion_modes=(CompletionMode.SYNCHRONOUS, CompletionMode.POLL),
+            supported_completion_modes=(
+                CompletionMode.SYNCHRONOUS,
+                CompletionMode.POLL,
+            ),
             supported_reasoning_efforts=("high", "xhigh"),
             supports_query=True,
             supports_cancel=True,
@@ -114,6 +117,8 @@ class ProductionExecutionGatewayPostgresTests(unittest.TestCase):
             auth_profile_ref="auth:fixture",
             model_profile_id=profile_id,
             model_profile_version=1,
+            model_profile_hash=profile.contract_hash,
+            route_policy_hash=policy.contract_hash,
             model_provider=profile.model_provider,
             model_id=profile.model_id,
             requested_reasoning_effort="xhigh",
@@ -288,15 +293,19 @@ class ProductionExecutionGatewayPostgresTests(unittest.TestCase):
         admission = AdmissionController(source, verifier)
         backend = ScriptedFixtureExecutionBackend(
             admission=admission,
-            payload_resolver=StaticExecutionPayloadResolver({
-                request.execution_id: ResolvedExecutionPayload(
-                    request_payload={"result": {"text": "postgres admitted fixture"}},
-                    input_text="fixture",
-                    working_directory=".",
-                    timeout_seconds=5,
-                    output_schema_version="chapter-draft.v1",
-                )
-            }),
+            payload_resolver=StaticExecutionPayloadResolver(
+                {
+                    request.execution_id: ResolvedExecutionPayload(
+                        request_payload={
+                            "result": {"text": "postgres admitted fixture"}
+                        },
+                        input_text="fixture",
+                        working_directory=".",
+                        timeout_seconds=5,
+                        output_schema_version="chapter-draft.v1",
+                    )
+                }
+            ),
             record_store=InMemoryExecutionRecordStore(),
         )
         registry = ExecutionBackendRegistry()

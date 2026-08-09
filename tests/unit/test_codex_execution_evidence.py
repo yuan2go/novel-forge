@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import inspect
 import json
 import sys
 import tempfile
@@ -142,6 +143,77 @@ def test_codex_jsonl_requires_terminal_measured_usage() -> None:
         )
 
 
+def test_codex_invocation_is_derived_from_frozen_route_not_backend_defaults() -> None:
+    _capability, profile, policy, route, manifest, request = contracts(
+        backend_id="codex-cli",
+        runtime=ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE,
+    )
+    source = StaticExecutionContractSource(
+        route_snapshots=(route,),
+        model_profiles=(profile,),
+        route_policies=(policy,),
+        input_manifests=(manifest,),
+    )
+    admission = AdmissionController(
+        source,
+        StaticAttemptFenceVerifier({("operation:1", "attempt:1"): 7}),
+    )
+    assert "model_id" not in inspect.signature(CodexCliExecutionBackend).parameters
+    assert (
+        "reasoning_effort" not in inspect.signature(CodexCliExecutionBackend).parameters
+    )
+
+    with tempfile.TemporaryDirectory() as tmp:
+        directory = PersistentExecutionDirectory(Path(tmp) / "executions")
+        payload = ResolvedExecutionPayload(
+            request_payload={"stage": "draft"},
+            input_text="frozen prompt",
+            working_directory=tmp,
+            timeout_seconds=5,
+            output_schema_version="schema:test:v1",
+            output_schema={"type": "object"},
+        )
+        backend = CodexCliExecutionBackend(
+            admission=admission,
+            payload_resolver=StaticExecutionPayloadResolver(
+                {request.execution_id: payload}
+            ),
+            record_store=InMemoryExecutionRecordStore(),
+            supervisor=CodexProcessSupervisor(directory),
+            execution_policy=LocalProcessExecutionPolicy(
+                fixed_working_directory=tmp,
+                allowed_command_prefixes=((sys.executable, "exec"),),
+                maximum_result_bytes=1_000_000,
+            ),
+            codex_executable=sys.executable,
+            pricing=_pricing(),
+            structured_result_validator=lambda _stage, _schema, value: value,
+        )
+        frozen = admission.admit(request, backend.capability_profile)
+        prepared = backend._prepare_payload(request, payload, frozen)
+        evidence = backend._model_authority_evidence(
+            frozen,
+            prepared.command,
+            require_codex_invocation=True,
+        )
+
+    assert prepared.command[prepared.command.index("--model") + 1] == route.model_id
+    assert f"model_reasoning_effort={route.reasoning_effort}" in prepared.command
+    assert "--ignore-user-config" in prepared.command
+    assert evidence["policy_requested_model"] == profile.model_id
+    assert evidence["frozen_route_model"] == route.model_id
+    assert evidence["invocation_model"] == route.model_id
+    assert evidence["provider_observed_model"] == "unavailable"
+    assert evidence["policy_requested_reasoning_effort"] == profile.reasoning_effort
+    assert evidence["frozen_route_reasoning_effort"] == route.reasoning_effort
+    assert evidence["invocation_reasoning_effort"] == route.reasoning_effort
+    assert evidence["provider_observed_reasoning_effort"] == "unavailable"
+    assert evidence["model_profile_hash"] == profile.contract_hash
+    assert evidence["route_policy_hash"] == policy.contract_hash
+    assert evidence["local_user_config_ignored"] is True
+    assert evidence["local_user_config_is_model_authority"] is False
+
+
 def test_codex_backend_validates_schema_and_semantics_before_success() -> None:
     contract_set = contracts(
         backend_id="codex-cli",
@@ -220,7 +292,6 @@ def test_codex_backend_validates_schema_and_semantics_before_success() -> None:
                 allowed_command_prefixes=((sys.executable,),),
                 maximum_result_bytes=1_000_000,
             ),
-            model_id="codex-test",
             pricing=_pricing(),
             structured_result_validator=validator,
         )

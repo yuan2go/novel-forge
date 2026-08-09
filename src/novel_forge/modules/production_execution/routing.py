@@ -29,9 +29,7 @@ class FallbackPolicyRegistry:
         existing = self._policies.get(key)
         if existing is not None:
             if existing.contract_hash != policy.contract_hash:
-                raise ValueError(
-                    f"FallbackPolicy has a different contract: {key}"
-                )
+                raise ValueError(f"FallbackPolicy has a different contract: {key}")
             return
         self._policies[key] = policy
         if policy.status == "ACTIVE":
@@ -41,16 +39,12 @@ class FallbackPolicyRegistry:
                 )
             self._active[policy.policy_id] = policy.policy_version
 
-    def resolve(
-        self, policy_id: str, version: int | None = None
-    ) -> FallbackPolicy:
+    def resolve(self, policy_id: str, version: int | None = None) -> FallbackPolicy:
         resolved_version = (
             version if version is not None else self._active.get(policy_id)
         )
         if resolved_version is None:
-            raise ValueError(
-                f"ACTIVE FallbackPolicy is not registered: {policy_id}"
-            )
+            raise ValueError(f"ACTIVE FallbackPolicy is not registered: {policy_id}")
         try:
             return self._policies[(policy_id, resolved_version)]
         except KeyError as exc:
@@ -82,7 +76,9 @@ class ModelProfileRegistry:
             self._active[profile.profile_id] = profile.profile_version
 
     def resolve(self, profile_id: str, version: int | None = None) -> ModelProfile:
-        resolved_version = version if version is not None else self._active.get(profile_id)
+        resolved_version = (
+            version if version is not None else self._active.get(profile_id)
+        )
         if resolved_version is None:
             raise ValueError(f"ACTIVE ModelProfile is not registered: {profile_id}")
         try:
@@ -112,9 +108,7 @@ class RoutePolicyRegistry:
             policy.fallback_policy_version,
         )
         if fallback.mode.value != policy.fallback_policy:
-            raise ValueError(
-                "RoutePolicy fallback mode differs from FallbackPolicy"
-            )
+            raise ValueError("RoutePolicy fallback mode differs from FallbackPolicy")
         key = (policy.policy_id, policy.policy_version)
         if key in self._policies:
             raise ValueError(f"RoutePolicy is already registered: {key}")
@@ -127,7 +121,9 @@ class RoutePolicyRegistry:
             self._active[policy.policy_id] = policy.policy_version
 
     def resolve(self, policy_id: str, version: int | None = None) -> RoutePolicy:
-        resolved_version = version if version is not None else self._active.get(policy_id)
+        resolved_version = (
+            version if version is not None else self._active.get(policy_id)
+        )
         if resolved_version is None:
             raise ValueError(f"ACTIVE RoutePolicy is not registered: {policy_id}")
         try:
@@ -157,25 +153,19 @@ class RouteSnapshotRegistry:
         existing = self._by_id.get(snapshot.route_snapshot_id)
         if existing is not None:
             if existing.contract_hash != snapshot.contract_hash:
-                raise ValueError(
-                    "RouteSnapshot ID has a different contract"
-                )
+                raise ValueError("RouteSnapshot ID has a different contract")
             return existing
         attempt_key = (snapshot.operation_id, snapshot.attempt_id)
         attempt_snapshot = self._by_attempt.get(attempt_key)
         if attempt_snapshot is not None:
             if attempt_snapshot.contract_hash != snapshot.contract_hash:
-                raise ValueError(
-                    "Authority Attempt already has a RouteSnapshot"
-                )
+                raise ValueError("Authority Attempt already has a RouteSnapshot")
             return attempt_snapshot
         self._by_id[snapshot.route_snapshot_id] = snapshot
         self._by_attempt[attempt_key] = snapshot
         return snapshot
 
-    def require_for_attempt(
-        self, operation_id: str, attempt_id: str
-    ) -> RouteSnapshot:
+    def require_for_attempt(self, operation_id: str, attempt_id: str) -> RouteSnapshot:
         try:
             return self._by_attempt[(operation_id, attempt_id)]
         except KeyError as exc:
@@ -278,6 +268,8 @@ class RouteResolver:
             auth_profile_ref=auth_profile_ref,
             model_profile_id=profile.profile_id,
             model_profile_version=profile.profile_version,
+            model_profile_hash=profile.contract_hash,
+            route_policy_hash=policy.contract_hash,
             model_provider=profile.model_provider,
             model_id=profile.model_id,
             requested_reasoning_effort=requested_reasoning_effort,
@@ -311,9 +303,7 @@ class RouteResolver:
         credential_scope: str | None = None,
         secret_version_ref: str | None = None,
     ) -> RouteSnapshot:
-        policy = self.policies.resolve(
-            previous.policy_id, previous.policy_version
-        )
+        policy = self.policies.resolve(previous.policy_id, previous.policy_version)
         fallback = self.policies.fallback_for(policy)
         if fallback.mode is FallbackMode.FAIL_CLOSED:
             raise ValueError("FallbackPolicy is FAIL_CLOSED")
@@ -334,16 +324,11 @@ class RouteResolver:
             raise ValueError("maximum fallback route changes exceeded")
         if fallback.approval_required and not approval_ref:
             raise ValueError("fallback route requires approval evidence")
-        if (
-            fallback.quality_revalidation_required
-            and not quality_revalidation_ref
-        ):
+        if fallback.quality_revalidation_required and not quality_revalidation_ref:
             raise ValueError("fallback route requires quality revalidation")
         profile = self.profiles.resolve(fallback_route_id)
         if profile.reasoning_effort != previous.requested_reasoning_effort:
-            raise ValueError(
-                "fallback cannot silently change reasoning effort"
-            )
+            raise ValueError("fallback cannot silently change reasoning effort")
         try:
             capability = self.capabilities[profile.backend_id]
         except KeyError as exc:
@@ -363,6 +348,8 @@ class RouteResolver:
             auth_profile_ref=auth_profile_ref,
             model_profile_id=profile.profile_id,
             model_profile_version=profile.profile_version,
+            model_profile_hash=profile.contract_hash,
+            route_policy_hash=policy.contract_hash,
             model_provider=profile.model_provider,
             model_id=profile.model_id,
             requested_reasoning_effort=previous.requested_reasoning_effort,

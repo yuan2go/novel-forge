@@ -87,7 +87,9 @@ class _RemoteTransport:
             "request_sent": True,
             "provider_request_id": f"provider-request:{request.stable_idempotency_key}",
             "provider_correlation_id": f"provider-correlation:{request.correlation_id}",
-            "completion_mode": "synchronous" if self.scenario == "success" else "background",
+            "completion_mode": "synchronous"
+            if self.scenario == "success"
+            else "background",
             "evidence": {
                 "result": {"text": "remote result"},
                 "usage": {"input_tokens": 2, "output_tokens": 3},
@@ -138,9 +140,7 @@ def _remote_adapter(scenario: str):
 
 
 def contracts(*, backend_id: str, runtime: ExecutionRuntimeClass):
-    definition = default_capability_registry().resolve(
-        CapabilityId.PROSE_CHAPTER_DRAFT
-    )
+    definition = default_capability_registry().resolve(CapabilityId.PROSE_CHAPTER_DRAFT)
     completion_modes = (
         (CompletionMode.PROCESS_EXIT,)
         if runtime is ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE
@@ -159,12 +159,17 @@ def contracts(*, backend_id: str, runtime: ExecutionRuntimeClass):
         supports_query=True,
         supports_cancel=True,
         supports_callback=runtime is ExecutionRuntimeClass.REMOTE_PROVIDER_API,
-        supports_usage_receipt=runtime is not ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE,
-        supports_cost_receipt=runtime is not ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE,
+        supports_usage_receipt=runtime
+        is not ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE,
+        supports_cost_receipt=runtime
+        is not ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE,
         supports_structured_output=True,
-        supports_process_group_control=runtime is ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE,
-        supports_persistent_execution_directory=runtime is ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE,
-        supports_provider_idempotency=runtime is not ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE,
+        supports_process_group_control=runtime
+        is ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE,
+        supports_persistent_execution_directory=runtime
+        is ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE,
+        supports_provider_idempotency=runtime
+        is not ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE,
         real_provider_validation_eligible=False,
         qualification_ref=f"capability-probe:{backend_id}:1",
     )
@@ -174,13 +179,17 @@ def contracts(*, backend_id: str, runtime: ExecutionRuntimeClass):
         backend_id=backend_id,
         runtime_class=runtime,
         model_provider=(
-            "openai" if runtime is ExecutionRuntimeClass.REMOTE_PROVIDER_API
-            else "codex" if runtime is ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE
+            "openai"
+            if runtime is ExecutionRuntimeClass.REMOTE_PROVIDER_API
+            else "codex"
+            if runtime is ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE
             else "fixture"
         ),
         model_id=(
-            "gpt-test" if runtime is ExecutionRuntimeClass.REMOTE_PROVIDER_API
-            else "codex-test" if runtime is ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE
+            "gpt-test"
+            if runtime is ExecutionRuntimeClass.REMOTE_PROVIDER_API
+            else "codex-test"
+            if runtime is ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE
             else "scripted-model"
         ),
         reasoning_effort="xhigh",
@@ -216,6 +225,8 @@ def contracts(*, backend_id: str, runtime: ExecutionRuntimeClass):
         auth_profile_ref="auth:test",
         model_profile_id=profile.profile_id,
         model_profile_version=profile.profile_version,
+        model_profile_hash=profile.contract_hash,
+        route_policy_hash=policy.contract_hash,
         model_provider=profile.model_provider,
         model_id=profile.model_id,
         requested_reasoning_effort="xhigh",
@@ -314,24 +325,30 @@ class ProductionExecutionGatewayTests(unittest.TestCase):
         registry.register(backend)
         return ProductionExecutionGateway(registry, admission), request
 
-    def test_scripted_fixture_is_attempt_bound_and_never_claims_provider_request(self) -> None:
+    def test_scripted_fixture_is_attempt_bound_and_never_claims_provider_request(
+        self,
+    ) -> None:
         contract_set = contracts(
             backend_id="scripted-fixture",
             runtime=ExecutionRuntimeClass.SCRIPTED_FIXTURE,
         )
         capability, profile, policy, route, manifest, request = contract_set
-        resolver = StaticExecutionPayloadResolver({
-            request.execution_id: ResolvedExecutionPayload(
-                request_payload={"result": {"text": "fixture"}},
-                input_text="fixture input",
-                working_directory=".",
-                timeout_seconds=5,
-                output_schema_version="chapter-draft.v1",
-            )
-        })
+        resolver = StaticExecutionPayloadResolver(
+            {
+                request.execution_id: ResolvedExecutionPayload(
+                    request_payload={"result": {"text": "fixture"}},
+                    input_text="fixture input",
+                    working_directory=".",
+                    timeout_seconds=5,
+                    output_schema_version="chapter-draft.v1",
+                )
+            }
+        )
         source = StaticExecutionContractSource(
-            route_snapshots=(route,), model_profiles=(profile,),
-            route_policies=(policy,), input_manifests=(manifest,),
+            route_snapshots=(route,),
+            model_profiles=(profile,),
+            route_policies=(policy,),
+            input_manifests=(manifest,),
         )
         verifier = StaticAttemptFenceVerifier({("operation:1", "attempt:1"): 7})
         admission = AdmissionController(source, verifier)
@@ -348,7 +365,10 @@ class ProductionExecutionGatewayTests(unittest.TestCase):
         self.assertEqual(handle.transport, ExecutionRuntimeClass.SCRIPTED_FIXTURE)
         self.assertIsNone(handle.provider_request_id)
         self.assertEqual(result.outcome, ExecutionOutcome.SUCCEEDED)
-        self.assertEqual((result.operation_id, result.attempt_id, result.fencing_token), ("operation:1", "attempt:1", 7))
+        self.assertEqual(
+            (result.operation_id, result.attempt_id, result.fencing_token),
+            ("operation:1", "attempt:1", 7),
+        )
         self.assertIsNotNone(result.output_manifest_ref)
         self.assertIsNotNone(result.validation_report_ref)
 
@@ -359,8 +379,10 @@ class ProductionExecutionGatewayTests(unittest.TestCase):
         )
         capability, profile, policy, route, manifest, request = contract_set
         source = StaticExecutionContractSource(
-            route_snapshots=(route,), model_profiles=(profile,),
-            route_policies=(policy,), input_manifests=(manifest,),
+            route_snapshots=(route,),
+            model_profiles=(profile,),
+            route_policies=(policy,),
+            input_manifests=(manifest,),
         )
         admission = AdmissionController(
             source,
@@ -368,13 +390,17 @@ class ProductionExecutionGatewayTests(unittest.TestCase):
         )
         backend = ScriptedFixtureExecutionBackend(
             admission=admission,
-            payload_resolver=StaticExecutionPayloadResolver({
-                request.execution_id: ResolvedExecutionPayload(
-                    request_payload={"result": {"text": "must not run"}},
-                    input_text="fixture", working_directory=".", timeout_seconds=5,
-                    output_schema_version="chapter-draft.v1",
-                )
-            }),
+            payload_resolver=StaticExecutionPayloadResolver(
+                {
+                    request.execution_id: ResolvedExecutionPayload(
+                        request_payload={"result": {"text": "must not run"}},
+                        input_text="fixture",
+                        working_directory=".",
+                        timeout_seconds=5,
+                        output_schema_version="chapter-draft.v1",
+                    )
+                }
+            ),
             record_store=InMemoryExecutionRecordStore(),
         )
         registry = ExecutionBackendRegistry()
@@ -384,7 +410,9 @@ class ProductionExecutionGatewayTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "stale Authority fencing token"):
             gateway.submit(request)
 
-    def test_recovery_authorization_keeps_original_execution_fence_immutable(self) -> None:
+    def test_recovery_authorization_keeps_original_execution_fence_immutable(
+        self,
+    ) -> None:
         contract_set = contracts(
             backend_id="scripted-fixture",
             runtime=ExecutionRuntimeClass.SCRIPTED_FIXTURE,
@@ -454,9 +482,13 @@ class ProductionExecutionGatewayTests(unittest.TestCase):
 
         self.assertEqual(result.outcome, ExecutionOutcome.SUCCEEDED)
         self.assertEqual(result.fencing_token, 7)
-        self.assertEqual(store.get_record(request.execution_id).request.fencing_token, 7)
+        self.assertEqual(
+            store.get_record(request.execution_id).request.fencing_token, 7
+        )
 
-    def test_planned_recovery_dispatches_once_under_current_recovery_fence(self) -> None:
+    def test_planned_recovery_dispatches_once_under_current_recovery_fence(
+        self,
+    ) -> None:
         contract_set = contracts(
             backend_id="scripted-fixture",
             runtime=ExecutionRuntimeClass.SCRIPTED_FIXTURE,
@@ -512,17 +544,23 @@ class ProductionExecutionGatewayTests(unittest.TestCase):
         second = gateway.resume_planned_execution(request, authorization)
 
         self.assertEqual(first.contract_hash, second.contract_hash)
-        self.assertEqual(store.get_record(request.execution_id).request.fencing_token, 7)
+        self.assertEqual(
+            store.get_record(request.execution_id).request.fencing_token, 7
+        )
 
-    def test_structurally_corrupt_fixture_result_is_not_materialized_as_success(self) -> None:
+    def test_structurally_corrupt_fixture_result_is_not_materialized_as_success(
+        self,
+    ) -> None:
         contract_set = contracts(
             backend_id="scripted-fixture",
             runtime=ExecutionRuntimeClass.SCRIPTED_FIXTURE,
         )
         capability, profile, policy, route, manifest, request = contract_set
         source = StaticExecutionContractSource(
-            route_snapshots=(route,), model_profiles=(profile,),
-            route_policies=(policy,), input_manifests=(manifest,),
+            route_snapshots=(route,),
+            model_profiles=(profile,),
+            route_policies=(policy,),
+            input_manifests=(manifest,),
         )
         admission = AdmissionController(
             source,
@@ -530,13 +568,17 @@ class ProductionExecutionGatewayTests(unittest.TestCase):
         )
         backend = ScriptedFixtureExecutionBackend(
             admission=admission,
-            payload_resolver=StaticExecutionPayloadResolver({
-                request.execution_id: ResolvedExecutionPayload(
-                    request_payload={"result": {}}, input_text="fixture",
-                    working_directory=".", timeout_seconds=5,
-                    output_schema_version="chapter-draft.v1",
-                )
-            }),
+            payload_resolver=StaticExecutionPayloadResolver(
+                {
+                    request.execution_id: ResolvedExecutionPayload(
+                        request_payload={"result": {}},
+                        input_text="fixture",
+                        working_directory=".",
+                        timeout_seconds=5,
+                        output_schema_version="chapter-draft.v1",
+                    )
+                }
+            ),
             record_store=InMemoryExecutionRecordStore(),
         )
         registry = ExecutionBackendRegistry()
@@ -546,15 +588,19 @@ class ProductionExecutionGatewayTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "non-empty structured result"):
             gateway.reconcile(gateway.submit(request))
 
-    def test_remote_backend_adapts_provider_v2_without_losing_provider_handle(self) -> None:
+    def test_remote_backend_adapts_provider_v2_without_losing_provider_handle(
+        self,
+    ) -> None:
         contract_set = contracts(
             backend_id="remote-provider",
             runtime=ExecutionRuntimeClass.REMOTE_PROVIDER_API,
         )
         capability, profile, policy, route, manifest, request = contract_set
         source = StaticExecutionContractSource(
-            route_snapshots=(route,), model_profiles=(profile,),
-            route_policies=(policy,), input_manifests=(manifest,),
+            route_snapshots=(route,),
+            model_profiles=(profile,),
+            route_policies=(policy,),
+            input_manifests=(manifest,),
         )
         admission = AdmissionController(
             source,
@@ -566,13 +612,17 @@ class ProductionExecutionGatewayTests(unittest.TestCase):
             capability_profile=capability,
             provider_adapter=adapter,
             admission=admission,
-            payload_resolver=StaticExecutionPayloadResolver({
-                request.execution_id: ResolvedExecutionPayload(
-                    request_payload={"input": {"chapter": 1}},
-                    input_text="provider payload", working_directory=".", timeout_seconds=30,
-                    output_schema_version="chapter-draft.v1",
-                )
-            }),
+            payload_resolver=StaticExecutionPayloadResolver(
+                {
+                    request.execution_id: ResolvedExecutionPayload(
+                        request_payload={"input": {"chapter": 1}},
+                        input_text="provider payload",
+                        working_directory=".",
+                        timeout_seconds=30,
+                        output_schema_version="chapter-draft.v1",
+                    )
+                }
+            ),
             record_store=InMemoryExecutionRecordStore(),
         )
         registry = ExecutionBackendRegistry()
@@ -586,8 +636,12 @@ class ProductionExecutionGatewayTests(unittest.TestCase):
         self.assertEqual(handle.transport, ExecutionRuntimeClass.REMOTE_PROVIDER_API)
         self.assertEqual(result.outcome, ExecutionOutcome.SUCCEEDED)
         self.assertEqual(transport.last_request.operation_id, request.operation_id)
-        self.assertEqual(transport.last_request.external_effect_id, request.external_effect_id)
-        self.assertEqual(transport.last_request.budget_reservation_id, request.budget_reservation_id)
+        self.assertEqual(
+            transport.last_request.external_effect_id, request.external_effect_id
+        )
+        self.assertEqual(
+            transport.last_request.budget_reservation_id, request.budget_reservation_id
+        )
 
         duplicate = gateway.submit(request)
         self.assertEqual(duplicate.contract_hash, handle.contract_hash)
@@ -705,18 +759,27 @@ class ProductionExecutionGatewayTests(unittest.TestCase):
         )
         capability, profile, policy, route, manifest, request = contract_set
         source = StaticExecutionContractSource(
-            route_snapshots=(route,), model_profiles=(profile,),
-            route_policies=(policy,), input_manifests=(manifest,),
+            route_snapshots=(route,),
+            model_profiles=(profile,),
+            route_policies=(policy,),
+            input_manifests=(manifest,),
         )
-        admission = AdmissionController(source, StaticAttemptFenceVerifier({("operation:1", "attempt:1"): 7}))
+        admission = AdmissionController(
+            source, StaticAttemptFenceVerifier({("operation:1", "attempt:1"): 7})
+        )
         backend = ScriptedFixtureExecutionBackend(
             admission=admission,
-            payload_resolver=StaticExecutionPayloadResolver({
-                request.execution_id: ResolvedExecutionPayload(
-                    request_payload={"result": {"text": "fixture"}}, input_text="fixture",
-                    working_directory=".", timeout_seconds=5, output_schema_version="v1",
-                )
-            }),
+            payload_resolver=StaticExecutionPayloadResolver(
+                {
+                    request.execution_id: ResolvedExecutionPayload(
+                        request_payload={"result": {"text": "fixture"}},
+                        input_text="fixture",
+                        working_directory=".",
+                        timeout_seconds=5,
+                        output_schema_version="v1",
+                    )
+                }
+            ),
             record_store=InMemoryExecutionRecordStore(),
         )
         registry = ExecutionBackendRegistry()
@@ -724,15 +787,49 @@ class ProductionExecutionGatewayTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "already registered"):
             registry.register(backend)
 
-    def test_codex_cli_backend_uses_persistent_process_receipt_without_provider_id(self) -> None:
+    def test_admission_rejects_version_alias_content_drift_by_frozen_hash(self) -> None:
+        capability, profile, policy, route, manifest, request = contracts(
+            backend_id="scripted-fixture",
+            runtime=ExecutionRuntimeClass.SCRIPTED_FIXTURE,
+        )
+        fence = StaticAttemptFenceVerifier({("operation:1", "attempt:1"): 7})
+        drifted_profile = replace(profile, model_id="same-version-drifted-model")
+        with self.assertRaisesRegex(ValueError, "ModelProfile hash"):
+            AdmissionController(
+                StaticExecutionContractSource(
+                    route_snapshots=(route,),
+                    model_profiles=(drifted_profile,),
+                    route_policies=(policy,),
+                    input_manifests=(manifest,),
+                ),
+                fence,
+            ).admit(request, capability)
+
+        drifted_policy = replace(policy, rule_set_ref="route-rules:drifted:v9")
+        with self.assertRaisesRegex(ValueError, "RoutePolicy hash"):
+            AdmissionController(
+                StaticExecutionContractSource(
+                    route_snapshots=(route,),
+                    model_profiles=(profile,),
+                    route_policies=(drifted_policy,),
+                    input_manifests=(manifest,),
+                ),
+                fence,
+            ).admit(request, capability)
+
+    def test_codex_cli_backend_uses_persistent_process_receipt_without_provider_id(
+        self,
+    ) -> None:
         contract_set = contracts(
             backend_id="codex-cli",
             runtime=ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE,
         )
         capability, profile, policy, route, manifest, request = contract_set
         source = StaticExecutionContractSource(
-            route_snapshots=(route,), model_profiles=(profile,),
-            route_policies=(policy,), input_manifests=(manifest,),
+            route_snapshots=(route,),
+            model_profiles=(profile,),
+            route_policies=(policy,),
+            input_manifests=(manifest,),
         )
         admission = AdmissionController(
             source,
@@ -741,7 +838,9 @@ class ProductionExecutionGatewayTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             directory = PersistentExecutionDirectory(Path(tmp) / "executions")
             record_store = InMemoryExecutionRecordStore()
-            result_path = directory.prepare(request.execution_id).result_path("result.json")
+            result_path = directory.prepare(request.execution_id).result_path(
+                "result.json"
+            )
             command = (
                 sys.executable,
                 "-c",
@@ -750,16 +849,18 @@ class ProductionExecutionGatewayTests(unittest.TestCase):
             )
             backend = CodexCliExecutionBackend(
                 admission=admission,
-                payload_resolver=StaticExecutionPayloadResolver({
-                    request.execution_id: ResolvedExecutionPayload(
-                        request_payload={"input": {"chapter": 1}},
-                        input_text="bounded prompt",
-                        working_directory=tmp,
-                        timeout_seconds=5,
-                        output_schema_version="chapter-draft.v1",
-                        command=command,
-                    )
-                }),
+                payload_resolver=StaticExecutionPayloadResolver(
+                    {
+                        request.execution_id: ResolvedExecutionPayload(
+                            request_payload={"input": {"chapter": 1}},
+                            input_text="bounded prompt",
+                            working_directory=tmp,
+                            timeout_seconds=5,
+                            output_schema_version="chapter-draft.v1",
+                            command=command,
+                        )
+                    }
+                ),
                 record_store=record_store,
                 supervisor=CodexProcessSupervisor(directory),
                 execution_policy=LocalProcessExecutionPolicy(
@@ -777,7 +878,9 @@ class ProductionExecutionGatewayTests(unittest.TestCase):
 
             self.assertIsNotNone(handle.local_execution_receipt_id)
             self.assertIsNone(handle.provider_request_id)
-            self.assertEqual(handle.transport, ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE)
+            self.assertEqual(
+                handle.transport, ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE
+            )
             self.assertEqual(result.outcome, ExecutionOutcome.SUCCEEDED)
             self.assertEqual(
                 record_store.read_evidence(result.usage_receipt_ref)["availability"],
@@ -871,18 +974,14 @@ class ProductionExecutionGatewayTests(unittest.TestCase):
                 handle = submitted.result(timeout=3)
 
             self.assertEqual(cancellation.outcome, CancellationOutcome.CANCELLED)
-            self.assertEqual(
-                cancellation.local_termination_outcome, "TERMINATED"
-            )
+            self.assertEqual(cancellation.local_termination_outcome, "TERMINATED")
             self.assertEqual(
                 cancellation.upstream_cancellation_outcome, "NOT_APPLICABLE"
             )
             self.assertIsNone(cancellation.provider_request_id)
             self.assertIsNotNone(cancellation.local_execution_receipt_id)
             persisted_record = record_store.get_record(request.execution_id)
-            self.assertTrue(
-                persisted_record.raw_evidence["late_result_quarantined"]
-            )
+            self.assertTrue(persisted_record.raw_evidence["late_result_quarantined"])
             self.assertNotIn("result", persisted_record.raw_evidence)
             self.assertEqual(
                 backend.reconcile(handle).outcome, ExecutionOutcome.CANCELLED
@@ -895,8 +994,10 @@ class ProductionExecutionGatewayTests(unittest.TestCase):
         )
         capability, profile, policy, route, manifest, request = contract_set
         source = StaticExecutionContractSource(
-            route_snapshots=(route,), model_profiles=(profile,),
-            route_policies=(policy,), input_manifests=(manifest,),
+            route_snapshots=(route,),
+            model_profiles=(profile,),
+            route_policies=(policy,),
+            input_manifests=(manifest,),
         )
         admission = AdmissionController(
             source,
@@ -908,13 +1009,17 @@ class ProductionExecutionGatewayTests(unittest.TestCase):
             capability_profile=capability,
             provider_adapter=adapter,
             admission=admission,
-            payload_resolver=StaticExecutionPayloadResolver({
-                request.execution_id: ResolvedExecutionPayload(
-                    request_payload={"input": {"chapter": 1}}, input_text="provider",
-                    working_directory=".", timeout_seconds=30,
-                    output_schema_version="chapter-draft.v1",
-                )
-            }),
+            payload_resolver=StaticExecutionPayloadResolver(
+                {
+                    request.execution_id: ResolvedExecutionPayload(
+                        request_payload={"input": {"chapter": 1}},
+                        input_text="provider",
+                        working_directory=".",
+                        timeout_seconds=30,
+                        output_schema_version="chapter-draft.v1",
+                    )
+                }
+            ),
             record_store=InMemoryExecutionRecordStore(),
         )
         registry = ExecutionBackendRegistry()
@@ -927,15 +1032,19 @@ class ProductionExecutionGatewayTests(unittest.TestCase):
         self.assertEqual(result.outcome, ExecutionOutcome.SUCCEEDED)
         self.assertIsNotNone(result.provider_receipt_ref)
 
-    def test_remote_callback_is_deduplicated_and_materialized_as_execution_result(self) -> None:
+    def test_remote_callback_is_deduplicated_and_materialized_as_execution_result(
+        self,
+    ) -> None:
         contract_set = contracts(
             backend_id="remote-provider",
             runtime=ExecutionRuntimeClass.REMOTE_PROVIDER_API,
         )
         capability, profile, policy, route, manifest, request = contract_set
         source = StaticExecutionContractSource(
-            route_snapshots=(route,), model_profiles=(profile,),
-            route_policies=(policy,), input_manifests=(manifest,),
+            route_snapshots=(route,),
+            model_profiles=(profile,),
+            route_policies=(policy,),
+            input_manifests=(manifest,),
         )
         admission = AdmissionController(
             source,
@@ -947,13 +1056,17 @@ class ProductionExecutionGatewayTests(unittest.TestCase):
             capability_profile=capability,
             provider_adapter=adapter,
             admission=admission,
-            payload_resolver=StaticExecutionPayloadResolver({
-                request.execution_id: ResolvedExecutionPayload(
-                    request_payload={"input": {"chapter": 1}}, input_text="provider",
-                    working_directory=".", timeout_seconds=30,
-                    output_schema_version="chapter-draft.v1",
-                )
-            }),
+            payload_resolver=StaticExecutionPayloadResolver(
+                {
+                    request.execution_id: ResolvedExecutionPayload(
+                        request_payload={"input": {"chapter": 1}},
+                        input_text="provider",
+                        working_directory=".",
+                        timeout_seconds=30,
+                        output_schema_version="chapter-draft.v1",
+                    )
+                }
+            ),
             record_store=InMemoryExecutionRecordStore(),
         )
         registry = ExecutionBackendRegistry()
@@ -997,8 +1110,10 @@ class ProductionExecutionGatewayTests(unittest.TestCase):
         )
         capability, profile, policy, route, manifest, request = contract_set
         source = StaticExecutionContractSource(
-            route_snapshots=(route,), model_profiles=(profile,),
-            route_policies=(policy,), input_manifests=(manifest,),
+            route_snapshots=(route,),
+            model_profiles=(profile,),
+            route_policies=(policy,),
+            input_manifests=(manifest,),
         )
         admission = AdmissionController(
             source,
@@ -1010,13 +1125,17 @@ class ProductionExecutionGatewayTests(unittest.TestCase):
             capability_profile=capability,
             provider_adapter=adapter,
             admission=admission,
-            payload_resolver=StaticExecutionPayloadResolver({
-                request.execution_id: ResolvedExecutionPayload(
-                    request_payload={"input": {"chapter": 1}}, input_text="provider",
-                    working_directory=".", timeout_seconds=30,
-                    output_schema_version="chapter-draft.v1",
-                )
-            }),
+            payload_resolver=StaticExecutionPayloadResolver(
+                {
+                    request.execution_id: ResolvedExecutionPayload(
+                        request_payload={"input": {"chapter": 1}},
+                        input_text="provider",
+                        working_directory=".",
+                        timeout_seconds=30,
+                        output_schema_version="chapter-draft.v1",
+                    )
+                }
+            ),
             record_store=InMemoryExecutionRecordStore(),
         )
         registry = ExecutionBackendRegistry()
@@ -1066,14 +1185,16 @@ class ProductionExecutionGatewayTests(unittest.TestCase):
                 ),
             ),
             {capability.backend_id: capability},
-            RouteRecommendationReadModel((
-                RouteRecommendation(
-                    task_kind="chapter.slice.run",
-                    risk_class="NORMAL",
-                    model_profile_id=profile.profile_id,
-                    evidence_ref="route-recommendation:1",
-                ),
-            )),
+            RouteRecommendationReadModel(
+                (
+                    RouteRecommendation(
+                        task_kind="chapter.slice.run",
+                        risk_class="NORMAL",
+                        model_profile_id=profile.profile_id,
+                        evidence_ref="route-recommendation:1",
+                    ),
+                )
+            ),
         )
 
         route = resolver.freeze(
@@ -1137,7 +1258,9 @@ class ProductionExecutionGatewayTests(unittest.TestCase):
                 release_sha=SHA,
             )
 
-    def test_legacy_adapter_maps_only_frozen_attempt_bound_request_to_gateway(self) -> None:
+    def test_legacy_adapter_maps_only_frozen_attempt_bound_request_to_gateway(
+        self,
+    ) -> None:
         contract_set = contracts(
             backend_id="scripted-fixture",
             runtime=ExecutionRuntimeClass.SCRIPTED_FIXTURE,
@@ -1145,8 +1268,10 @@ class ProductionExecutionGatewayTests(unittest.TestCase):
         capability, profile, policy, route, manifest, request = contract_set
         request = replace(request, stage="generate")
         source = StaticExecutionContractSource(
-            route_snapshots=(route,), model_profiles=(profile,),
-            route_policies=(policy,), input_manifests=(manifest,),
+            route_snapshots=(route,),
+            model_profiles=(profile,),
+            route_policies=(policy,),
+            input_manifests=(manifest,),
         )
         admission = AdmissionController(
             source,
@@ -1155,13 +1280,17 @@ class ProductionExecutionGatewayTests(unittest.TestCase):
         store = InMemoryExecutionRecordStore()
         backend = ScriptedFixtureExecutionBackend(
             admission=admission,
-            payload_resolver=StaticExecutionPayloadResolver({
-                request.execution_id: ResolvedExecutionPayload(
-                    request_payload={"result": {"text": "through gateway"}},
-                    input_text="frozen prompt", working_directory=".",
-                    timeout_seconds=5, output_schema_version="draft.v1",
-                )
-            }),
+            payload_resolver=StaticExecutionPayloadResolver(
+                {
+                    request.execution_id: ResolvedExecutionPayload(
+                        request_payload={"result": {"text": "through gateway"}},
+                        input_text="frozen prompt",
+                        working_directory=".",
+                        timeout_seconds=5,
+                        output_schema_version="draft.v1",
+                    )
+                }
+            ),
             record_store=store,
         )
         registry = ExecutionBackendRegistry()

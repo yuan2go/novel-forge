@@ -148,9 +148,7 @@ def _stage_tool_permissions(
                 "Capability Tool entry must be an object",
             )
         tool_ref = str(item.get("tool_ref") or "")
-        operations = {
-            str(value) for value in item.get("allowed_operations") or ()
-        }
+        operations = {str(value) for value in item.get("allowed_operations") or ()}
         if (
             tool_ref
             and str(item.get("permission") or "").upper() == "EXECUTE"
@@ -312,17 +310,20 @@ class PostgresChapterExecutionContractBinder:
                 "CHAPTER_CAPABILITY_METADATA_INVALID",
                 "Capability preflight fencing identity is invalid",
             ) from exc
-        if not all(
-            (
-                operation_id,
-                attempt_id,
-                project_id,
-                workspace_id,
-                book_id,
-                worker_id,
-                snapshot_worker_id,
+        if (
+            not all(
+                (
+                    operation_id,
+                    attempt_id,
+                    project_id,
+                    workspace_id,
+                    book_id,
+                    worker_id,
+                    snapshot_worker_id,
+                )
             )
-        ) or min(execution_fencing_token, snapshot_fencing_token) <= 0:
+            or min(execution_fencing_token, snapshot_fencing_token) <= 0
+        ):
             raise KernelError(
                 "CHAPTER_CAPABILITY_METADATA_INCOMPLETE",
                 "Capability preflight Attempt identity is incomplete",
@@ -364,7 +365,9 @@ class PostgresChapterExecutionContractBinder:
             artifacts=artifacts,
         )
         context_selection = [
-            item for item in selected_inputs if item["artifact_type"] == "context_bundle"
+            item
+            for item in selected_inputs
+            if item["artifact_type"] == "context_bundle"
         ]
         if len(context_selection) != 1:
             raise KernelError(
@@ -392,9 +395,7 @@ class PostgresChapterExecutionContractBinder:
                 "snapshot_hash": attempt_snapshot.snapshot_hash,
                 "operation_id": attempt_snapshot.operation_id,
                 "attempt_id": attempt_snapshot.attempt_id,
-                "execution_fencing_token": (
-                    attempt_snapshot.execution_fencing_token
-                ),
+                "execution_fencing_token": (attempt_snapshot.execution_fencing_token),
                 "snapshot_creation_fencing_token": (
                     attempt_snapshot.snapshot_creation_fencing_token
                 ),
@@ -409,9 +410,7 @@ class PostgresChapterExecutionContractBinder:
                 "catalog_snapshot_hash": (
                     attempt_snapshot.execution_snapshot.catalog_snapshot_hash
                 ),
-                "binding_set_id": (
-                    attempt_snapshot.execution_snapshot.binding_set_id
-                ),
+                "binding_set_id": (attempt_snapshot.execution_snapshot.binding_set_id),
                 "binding_set_hash": (
                     attempt_snapshot.execution_snapshot.binding_set_hash
                 ),
@@ -482,12 +481,8 @@ class PostgresChapterExecutionContractBinder:
                 f"{attempt_snapshot.execution_snapshot.pack_version}"
             ),
             "manifest_hash": attempt_snapshot.execution_snapshot.manifest_hash,
-            "compilation_hash": (
-                attempt_snapshot.execution_snapshot.compilation_hash
-            ),
-            "binding_set_hash": (
-                attempt_snapshot.execution_snapshot.binding_set_hash
-            ),
+            "compilation_hash": (attempt_snapshot.execution_snapshot.compilation_hash),
+            "binding_set_hash": (attempt_snapshot.execution_snapshot.binding_set_hash),
             "materialization_asset_version_id": document.asset_version_id,
             "materialization_content_hash": document.content_hash,
             "materialization_hash": materialization_hash,
@@ -591,9 +586,7 @@ class PostgresChapterExecutionContractBinder:
             if (
                 document.asset_type != "capability_materialization_manifest"
                 or document.content_hash
-                != str(
-                    capability_runtime.get("materialization_content_hash") or ""
-                )
+                != str(capability_runtime.get("materialization_content_hash") or "")
             ):
                 raise KernelError(
                     "CAPABILITY_PACK_SNAPSHOT_INCONSISTENT",
@@ -698,22 +691,16 @@ class PostgresChapterExecutionContractBinder:
             )
             prompt_version = pack_snapshot.prompt_bundle_ref
             skill_version = pack_snapshot.skill_version
-            system_instruction_hash = (
-                pack_snapshot.prompt_system_instruction_hash
-            )
+            system_instruction_hash = pack_snapshot.prompt_system_instruction_hash
             template_hash = pack_snapshot.prompt_template_hash
             skill_content_hash = pack_snapshot.skill_content_hash
             prompt_compiler_version = pack_snapshot.prompt_compiler_version
-            context_maximum_tokens = int(
-                context_policy_payload.get("max_tokens") or 0
-            )
+            context_maximum_tokens = int(context_policy_payload.get("max_tokens") or 0)
             context_allowed_asset_types = tuple(
                 str(value)
                 for value in context_policy_payload.get("allowed_asset_types") or ()
             )
-        context_policy_snapshot_ref = (
-            f"production_execution/context_policies/{token}"
-        )
+        context_policy_snapshot_ref = f"production_execution/context_policies/{token}"
         validation_policy_snapshot_ref = (
             f"production_execution/validation_policies/{token}"
         )
@@ -884,6 +871,8 @@ class PostgresChapterExecutionContractBinder:
             auth_profile_ref=route.auth_profile_ref,
             model_profile_id=route.model_profile.profile_id,
             model_profile_version=route.model_profile.profile_version,
+            model_profile_hash=route.model_profile.contract_hash,
+            route_policy_hash=route.route_policy.contract_hash,
             model_provider=route.model_profile.model_provider,
             model_id=route.model_profile.model_id,
             requested_reasoning_effort=route.model_profile.reasoning_effort,
@@ -1052,14 +1041,10 @@ class PostgresChapterExecutionContractBinder:
             contract={
                 **snapshot.to_dict(),
                 "capability_pack_attempt_snapshot_id": (
-                    attempt_pack_snapshot.snapshot_id
-                    if attempt_pack_snapshot
-                    else ""
+                    attempt_pack_snapshot.snapshot_id if attempt_pack_snapshot else ""
                 ),
                 "capability_pack_attempt_snapshot_hash": (
-                    attempt_pack_snapshot.snapshot_hash
-                    if attempt_pack_snapshot
-                    else ""
+                    attempt_pack_snapshot.snapshot_hash if attempt_pack_snapshot else ""
                 ),
             },
             trace_id=str(request_payload.get("trace_id") or ""),
@@ -1187,16 +1172,18 @@ class PostgresChapterExecutionContractBinder:
                 attempt_id=attempt_id,
                 execution_fencing_token=execution_fencing_token,
                 worker_id=worker_id,
-                snapshot_creation_fencing_token=(
-                    snapshot_creation_fencing_token
-                ),
+                snapshot_creation_fencing_token=(snapshot_creation_fencing_token),
                 snapshot_creation_worker_id=snapshot_creation_worker_id,
             )
         except KernelError as exc:
-            if exc.code in {
-                "CAPABILITY_PACK_DEPLOYMENT_NOT_RESOLVED",
-                "CAPABILITY_PACK_SCOPE_NOT_FOUND",
-            } and not self.pack_required:
+            if (
+                exc.code
+                in {
+                    "CAPABILITY_PACK_DEPLOYMENT_NOT_RESOLVED",
+                    "CAPABILITY_PACK_SCOPE_NOT_FOUND",
+                }
+                and not self.pack_required
+            ):
                 return None
             raise
 
@@ -1553,9 +1540,7 @@ class PostgresProductionExecutionPayloadResolver:
             materialization_version_id = str(
                 capability_runtime.get("materialization_asset_version_id") or ""
             )
-            materialization_document = AuthorityAssetQuery(
-                self.database_url
-            ).require(
+            materialization_document = AuthorityAssetQuery(self.database_url).require(
                 project_id=request.project_id,
                 asset_version_id=materialization_version_id,
             )
@@ -1563,9 +1548,7 @@ class PostgresProductionExecutionPayloadResolver:
                 materialization_document.asset_type
                 != "capability_materialization_manifest"
                 or materialization_document.content_hash
-                != str(
-                    capability_runtime.get("materialization_content_hash") or ""
-                )
+                != str(capability_runtime.get("materialization_content_hash") or "")
             ):
                 raise KernelError(
                     "CAPABILITY_PACK_SNAPSHOT_INCONSISTENT",
@@ -1574,11 +1557,9 @@ class PostgresProductionExecutionPayloadResolver:
             materialization = materialization_document.content.get(
                 "contract", materialization_document.content
             )
-            if (
-                not isinstance(materialization, Mapping)
-                or str(materialization.get("materialization_hash") or "")
-                != str(capability_runtime.get("materialization_hash") or "")
-            ):
+            if not isinstance(materialization, Mapping) or str(
+                materialization.get("materialization_hash") or ""
+            ) != str(capability_runtime.get("materialization_hash") or ""):
                 raise KernelError(
                     "CAPABILITY_PACK_SNAPSHOT_INCONSISTENT",
                     "Provider materialization hash differs from frozen ExternalEffect",
@@ -1760,9 +1741,7 @@ def _materialize_production_codex_prompt(
             "<stage_semantic_contract>\n"
             + stage_semantic_contract
             + "\n</stage_semantic_contract>",
-            "<output_schema>\n"
-            + _canonical(schema["content"])
-            + "\n</output_schema>",
+            "<output_schema>\n" + _canonical(schema["content"]) + "\n</output_schema>",
         )
     )
     prompt_hash = "sha256:" + hashlib.sha256(prompt.encode("utf-8")).hexdigest()
@@ -1775,9 +1754,7 @@ def _materialize_production_codex_prompt(
         "prompt_template": {
             key: template.get(key) for key in ("ref", "version", "content_hash")
         },
-        "skill": {
-            key: skill.get(key) for key in ("ref", "version", "content_hash")
-        },
+        "skill": {key: skill.get(key) for key in ("ref", "version", "content_hash")},
         "context_asset_version_ids": [
             str(item.get("asset_version_id") or "") for item in context
         ],
@@ -2141,9 +2118,7 @@ class ProductionExecutionGatewayExternalEffectAdapter:
                     "snapshot_fencing_token": (
                         recovery_authorization.recovery_fencing_token
                     ),
-                    "snapshot_worker_id": (
-                        recovery_authorization.recovery_worker_id
-                    ),
+                    "snapshot_worker_id": (recovery_authorization.recovery_worker_id),
                 },
             }
         binding, session = self._binding_and_session(
@@ -2348,9 +2323,7 @@ class ProductionExecutionGatewayExternalEffectAdapter:
                 "process_evidence": dict(execution_record.raw_evidence),
             },
         }
-        capability_evidence = execution_record.raw_evidence.get(
-            "capability_evidence"
-        )
+        capability_evidence = execution_record.raw_evidence.get("capability_evidence")
         if isinstance(capability_evidence, Mapping):
             evidence["capability_runtime"] = dict(capability_evidence)
         tool_evidence = execution_record.raw_evidence.get("tools")

@@ -23,7 +23,9 @@ from novel_forge.modules.chapter_authority.orchestrator import (
     admit_single_chapter_saga,
 )
 from novel_forge.modules.chapter_authority.scheduler import ChapterAuthorityScheduler
-from novel_forge.modules.command_kernel.external_effect_adapters import FakeDeterministicProvider
+from novel_forge.modules.command_kernel.external_effect_adapters import (
+    FakeDeterministicProvider,
+)
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.content_authority import CONTENT_CODECS
 from novel_forge.modules.content_authority.application import (
@@ -34,6 +36,9 @@ from novel_forge.modules.production_preparation import (
     PostgresProductionAssetResolver,
     ProductionPreparationRequest,
     ProductionPreparationService,
+)
+from novel_forge.modules.production_preparation.policies import (
+    CONTINUING_CHAPTER_REQUIRED_ASSET_TYPES,
 )
 from tests.integration.authority_postgres_support import (
     DATABASE_URL,
@@ -122,18 +127,14 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
         )
         self.assertEqual(quality["gate"], "PASSED_WITH_UNCALIBRATED")
         self.assertEqual(publish_gate["gate"], "PASSED")
-        self.assertEqual(
-            publish_gate["release_readiness"], "INTERNAL_REVIEW_RELEASE"
-        )
+        self.assertEqual(publish_gate["release_readiness"], "INTERNAL_REVIEW_RELEASE")
         self.assertFalse(publish_gate["external_publish_permitted"])
         self.assertFalse(publish_gate["production_verified"])
         self.assertTrue(publish_gate["fixture_protocol_only"])
 
     def test_uncalibrated_fixture_is_a_successful_publish_block(self) -> None:
         project_id = identifier("uncalibrated-publish-block-project")
-        registry = build_chapter_handler_registry(
-            DeterministicFixtureChapterProvider()
-        )
+        registry = build_chapter_handler_registry(DeterministicFixtureChapterProvider())
         admission = admit_single_chapter_saga(
             DATABASE_URL,
             request=SingleChapterRequest(
@@ -199,7 +200,9 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
         self.assertIsNotNone(prepared.command)
         command = prepared.command
         assert command is not None
-        self.assertTrue(all(item["project_id"] == project_id for item in command.context_candidates))
+        self.assertTrue(
+            all(item["project_id"] == project_id for item in command.context_candidates)
+        )
         registry = build_chapter_handler_registry(DeterministicFixtureChapterProvider())
         admission = admit_single_chapter_saga(
             DATABASE_URL,
@@ -231,7 +234,9 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
             permissions=frozenset({"chapter.authority.execute"}),
         )
         for _ in ChapterNode:
-            scheduler.tick(project_id=project_id, root_operation_id=admission.root_operation_id)
+            scheduler.tick(
+                project_id=project_id, root_operation_id=admission.root_operation_id
+            )
         terminal = scheduler.tick(
             project_id=project_id, root_operation_id=admission.root_operation_id
         )
@@ -261,7 +266,9 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
             command.chapter_plan_content_hash,
         )
 
-    def test_chapter_two_consumes_typed_empty_state_assets_as_logical_snapshots(self) -> None:
+    def test_chapter_two_consumes_typed_empty_state_assets_as_logical_snapshots(
+        self,
+    ) -> None:
         project_id = identifier("prepared-typed-empty-project")
         self._preparation_assets(project_id, chapter=2, typed_empty=True)
         prepared = ProductionPreparationService(
@@ -279,10 +286,13 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
         command = prepared.command
         assert command is not None
         typed_candidates = [
-            item for item in command.context_candidates
+            item
+            for item in command.context_candidates
             if item.get("physical_asset_type") == "typed_empty_state_snapshot"
         ]
-        self.assertEqual(len(typed_candidates), 9)
+        self.assertEqual(
+            len(typed_candidates), len(CONTINUING_CHAPTER_REQUIRED_ASSET_TYPES)
+        )
 
         registry = build_chapter_handler_registry(DeterministicFixtureChapterProvider())
         admission = admit_single_chapter_saga(
@@ -341,12 +351,17 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
             )
             bundle = cursor.fetchone()[0]
         typed_segments = [
-            item for item in bundle["context_segments"]
+            item
+            for item in bundle["context_segments"]
             if item.get("physical_asset_type") == "typed_empty_state_snapshot"
         ]
-        self.assertEqual(len(typed_segments), 9)
+        self.assertEqual(
+            len(typed_segments), len(CONTINUING_CHAPTER_REQUIRED_ASSET_TYPES)
+        )
         self.assertTrue(
-            all(item["structured_facts"][0]["declared_empty"] for item in typed_segments)
+            all(
+                item["structured_facts"][0]["declared_empty"] for item in typed_segments
+            )
         )
 
     def test_high_impact_canon_waits_for_approved_decision_asset(self) -> None:
@@ -357,14 +372,26 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
                 if stage != "canon_extraction":
                     return super().invoke(request, stage=stage, payload=payload)
                 return ModelProviderResult(
-                    output={"character_state_changes": [{
-                        "character_id": "protagonist", "status": "dead",
-                        "impact_type": "character_death", "confidence": .9,
-                        "evidence_start": 0, "evidence_end": 12,
-                    }]},
-                    provider_id="deterministic_semantic_fixture", model_id="fixture",
-                    prompt_version="fixture-v1", skill_version="fixture-v1",
-                    input_tokens=0, output_tokens=0, cost_amount="0", currency="USD",
+                    output={
+                        "character_state_changes": [
+                            {
+                                "character_id": "protagonist",
+                                "status": "dead",
+                                "impact_type": "character_death",
+                                "confidence": 0.9,
+                                "evidence_start": 0,
+                                "evidence_end": 12,
+                            }
+                        ]
+                    },
+                    provider_id="deterministic_semantic_fixture",
+                    model_id="fixture",
+                    prompt_version="fixture-v1",
+                    skill_version="fixture-v1",
+                    input_tokens=0,
+                    output_tokens=0,
+                    cost_amount="0",
+                    currency="USD",
                     real_model_call=False,
                 )
 
@@ -372,28 +399,38 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
         candidates = self._release_evidence(project_id)
         registry = build_chapter_handler_registry(HighImpactFixture())
         request = SingleChapterRequest(
-            project_id=project_id, workspace_id=f"workspace:{project_id}",
-            actor_id="trusted-operator", chapter=1, title="A Canon Gate",
+            project_id=project_id,
+            workspace_id=f"workspace:{project_id}",
+            actor_id="trusted-operator",
+            chapter=1,
+            title="A Canon Gate",
             premise="A costly choice changes an identity permanently.",
-            trace_id=identifier("trace"), correlation_id=identifier("correlation"),
-            application_build_id="canon-gate-test", commit_sha="d" * 40,
+            trace_id=identifier("trace"),
+            correlation_id=identifier("correlation"),
+            application_build_id="canon-gate-test",
+            commit_sha="d" * 40,
             idempotency_key=f"{project_id}:chapter:1",
             preparation_report={"decision": "READY", "fixture": True},
             context_candidates=tuple(candidates),
         )
         admission = admit_single_chapter_saga(
-            DATABASE_URL, request=request, registry=registry,
+            DATABASE_URL,
+            request=request,
+            registry=registry,
             permissions=frozenset({"chapter.authority.execute"}),
         )
         scheduler = ChapterAuthorityScheduler(
-            DATABASE_URL, registry=registry,
+            DATABASE_URL,
+            registry=registry,
             object_store_adapter=FakeDeterministicProvider("success"),
             worker_id="configured-chapter-worker",
             permissions=frozenset({"chapter.authority.execute"}),
         )
         waiting = None
         for _ in range(12):
-            tick = scheduler.tick(project_id=project_id, root_operation_id=admission.root_operation_id)
+            tick = scheduler.tick(
+                project_id=project_id, root_operation_id=admission.root_operation_id
+            )
             if tick.saga_status == "WAITING_GATE":
                 waiting = tick
                 break
@@ -401,28 +438,43 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
         approvals = list_canon_approvals(DATABASE_URL, project_id=project_id)
         self.assertEqual(len(approvals), 1)
         with transaction() as connection, connection.cursor() as cursor:
-            cursor.execute("SELECT COUNT(*) FROM authority_operation WHERE root_operation_id = %s AND definition_name = %s", [admission.root_operation_id, ChapterNode.CANON.definition_name])
+            cursor.execute(
+                "SELECT COUNT(*) FROM authority_operation WHERE root_operation_id = %s AND definition_name = %s",
+                [admission.root_operation_id, ChapterNode.CANON.definition_name],
+            )
             self.assertEqual(cursor.fetchone()[0], 0)
         decision = decide_canon_approval(
             DATABASE_URL,
-            CanonApprovalContext(project_id, "local-operator", request.trace_id, request.correlation_id),
+            CanonApprovalContext(
+                project_id, "local-operator", request.trace_id, request.correlation_id
+            ),
             approval_request_id=approvals[0]["approval_request_id"],
-            expected_version=approvals[0]["version"], decision="APPROVE",
-            reason="fixture proves per-change gate recovery", evidence={"fixture": True},
-            edited_payload=None, idempotency_key="approve-once",
+            expected_version=approvals[0]["version"],
+            decision="APPROVE",
+            reason="fixture proves per-change gate recovery",
+            evidence={"fixture": True},
+            edited_payload=None,
+            idempotency_key="approve-once",
         )
         self.assertTrue(decision["gate_resumed"])
         self.assertTrue(decision["decision_operation_id"])
         replay = decide_canon_approval(
             DATABASE_URL,
-            CanonApprovalContext(project_id, "local-operator", request.trace_id, request.correlation_id),
+            CanonApprovalContext(
+                project_id, "local-operator", request.trace_id, request.correlation_id
+            ),
             approval_request_id=approvals[0]["approval_request_id"],
-            expected_version=approvals[0]["version"], decision="APPROVE",
-            reason="fixture proves per-change gate recovery", evidence={"fixture": True},
-            edited_payload=None, idempotency_key="approve-once",
+            expected_version=approvals[0]["version"],
+            decision="APPROVE",
+            reason="fixture proves per-change gate recovery",
+            evidence={"fixture": True},
+            edited_payload=None,
+            idempotency_key="approve-once",
         )
         self.assertTrue(replay["replayed"])
-        self.assertEqual(replay["decision_operation_id"], decision["decision_operation_id"])
+        self.assertEqual(
+            replay["decision_operation_id"], decision["decision_operation_id"]
+        )
         with transaction() as connection, connection.cursor() as cursor:
             cursor.execute(
                 """
@@ -441,16 +493,24 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
             )
         terminal = None
         for _ in range(30):
-            terminal = scheduler.tick(project_id=project_id, root_operation_id=admission.root_operation_id)
+            terminal = scheduler.tick(
+                project_id=project_id, root_operation_id=admission.root_operation_id
+            )
             if terminal.saga_status == "SUCCEEDED":
                 break
         self.assertIsNotNone(terminal)
         self.assertEqual(terminal.saga_status, "SUCCEEDED")
         with transaction() as connection, connection.cursor() as cursor:
-            cursor.execute("SELECT version.content FROM authority_operation_output_asset binding JOIN authority_asset_version version ON version.asset_version_id = binding.asset_version_id JOIN authority_asset asset ON asset.asset_id = version.asset_id WHERE binding.operation_id IN (SELECT operation_id FROM authority_operation WHERE root_operation_id = %s AND definition_name = %s) AND asset.asset_type = 'character_state_snapshot'", [admission.root_operation_id, ChapterNode.CANON.definition_name])
+            cursor.execute(
+                "SELECT version.content FROM authority_operation_output_asset binding JOIN authority_asset_version version ON version.asset_version_id = binding.asset_version_id JOIN authority_asset asset ON asset.asset_id = version.asset_id WHERE binding.operation_id IN (SELECT operation_id FROM authority_operation WHERE root_operation_id = %s AND definition_name = %s) AND asset.asset_type = 'character_state_snapshot'",
+                [admission.root_operation_id, ChapterNode.CANON.definition_name],
+            )
             snapshot = cursor.fetchone()[0]
         self.assertEqual(snapshot["changes"][0]["status"], "dead")
-        self.assertIn(decision["asset_version_id"], snapshot["canon_approval_decision_asset_version_ids"])
+        self.assertIn(
+            decision["asset_version_id"],
+            snapshot["canon_approval_decision_asset_version_ids"],
+        )
 
     def test_deferred_canon_approval_reopens_without_bypassing_gate(self) -> None:
         project_id, request, admission, scheduler = self._high_impact_waiting_fixture(
@@ -463,7 +523,8 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
                 project_id, "local-operator", request.trace_id, request.correlation_id
             ),
             approval_request_id=approval["approval_request_id"],
-            expected_version=approval["version"], decision="DEFER",
+            expected_version=approval["version"],
+            decision="DEFER",
             reason="need a continuity packet",
             evidence={
                 "defer_until": "2999-07-18T00:00:00+00:00",
@@ -471,7 +532,8 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
                 "assigned_operator": "chief-editor",
                 "expiry_policy": "REOPEN",
             },
-            edited_payload=None, idempotency_key="defer-once",
+            edited_payload=None,
+            idempotency_key="defer-once",
         )
         self.assertFalse(deferred["gate_resumed"])
         with transaction() as connection, connection.cursor() as cursor:
@@ -487,7 +549,8 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
             ),
             approval_request_id=approval["approval_request_id"],
             expected_version=approval["version"] + 1,
-            reason="continuity packet supplied", idempotency_key="reopen-once",
+            reason="continuity packet supplied",
+            idempotency_key="reopen-once",
         )
         self.assertEqual(reopened["status"], "PENDING")
         replay = reopen_canon_approval(
@@ -497,19 +560,23 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
             ),
             approval_request_id=approval["approval_request_id"],
             expected_version=approval["version"] + 1,
-            reason="continuity packet supplied", idempotency_key="reopen-once",
+            reason="continuity packet supplied",
+            idempotency_key="reopen-once",
         )
         self.assertTrue(replay["replayed"])
         with self.assertRaisesRegex(KernelError, "CANON_APPROVAL_VERSION_CONFLICT"):
             reopen_canon_approval(
                 DATABASE_URL,
                 CanonApprovalContext(
-                    project_id, "local-operator", request.trace_id,
+                    project_id,
+                    "local-operator",
+                    request.trace_id,
                     request.correlation_id,
                 ),
                 approval_request_id=approval["approval_request_id"],
                 expected_version=approval["version"] + 1,
-                reason="stale reopen", idempotency_key="reopen-stale",
+                reason="stale reopen",
+                idempotency_key="reopen-stale",
             )
         deferred_again = decide_canon_approval(
             DATABASE_URL,
@@ -517,7 +584,8 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
                 project_id, "local-operator", request.trace_id, request.correlation_id
             ),
             approval_request_id=approval["approval_request_id"],
-            expected_version=approval["version"] + 2, decision="DEFER",
+            expected_version=approval["version"] + 2,
+            decision="DEFER",
             reason="wait for automatic expiry",
             evidence={
                 "defer_until": "2999-07-19T00:00:00+00:00",
@@ -525,7 +593,8 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
                 "assigned_operator": "chief-editor",
                 "expiry_policy": "REOPEN",
             },
-            edited_payload=None, idempotency_key="defer-for-expiry",
+            edited_payload=None,
+            idempotency_key="defer-for-expiry",
         )
         self.assertFalse(deferred_again["gate_resumed"])
         with transaction() as connection, connection.cursor() as cursor:
@@ -536,13 +605,17 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
         expired = expire_deferred_canon_approvals(
             DATABASE_URL,
             CanonApprovalContext(
-                project_id, "system-scheduler", request.trace_id,
+                project_id,
+                "system-scheduler",
+                request.trace_id,
                 request.correlation_id,
             ),
         )
         self.assertEqual(expired[0]["status"], "PENDING")
 
-    def test_request_reextraction_supersedes_old_proposal_and_recovers_gate(self) -> None:
+    def test_request_reextraction_supersedes_old_proposal_and_recovers_gate(
+        self,
+    ) -> None:
         project_id, request, admission, scheduler = self._high_impact_waiting_fixture(
             "canon-reextract"
         )
@@ -553,9 +626,11 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
                 project_id, "local-operator", request.trace_id, request.correlation_id
             ),
             approval_request_id=old["approval_request_id"],
-            expected_version=old["version"], decision="REQUEST_REEXTRACTION",
+            expected_version=old["version"],
+            decision="REQUEST_REEXTRACTION",
             reason="evidence needs a clean semantic pass",
-            evidence={"fixture_protocol_only": True}, edited_payload=None,
+            evidence={"fixture_protocol_only": True},
+            edited_payload=None,
             idempotency_key="reextract-once",
         )
         self.assertTrue(decision["reextraction_requested"])
@@ -592,7 +667,9 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
             )
             governance = cursor.fetchone()
             self.assertEqual(governance[0], "canon-reextraction-policy-v1")
-            self.assertTrue(all(str(value).startswith("sha256:") for value in governance[1:4]))
+            self.assertTrue(
+                all(str(value).startswith("sha256:") for value in governance[1:4])
+            )
             self.assertEqual(governance[4], 1)
         approved = decide_canon_approval(
             DATABASE_URL,
@@ -600,9 +677,11 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
                 project_id, "local-operator", request.trace_id, request.correlation_id
             ),
             approval_request_id=new_approval["approval_request_id"],
-            expected_version=new_approval["version"], decision="APPROVE",
+            expected_version=new_approval["version"],
+            decision="APPROVE",
             reason="generation two evidence reviewed",
-            evidence={"fixture_protocol_only": True}, edited_payload=None,
+            evidence={"fixture_protocol_only": True},
+            edited_payload=None,
             idempotency_key="approve-generation-two",
         )
         self.assertTrue(approved["gate_resumed"])
@@ -628,35 +707,55 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
                 if stage != "canon_extraction":
                     return super().invoke(request, stage=stage, payload=payload)
                 return ModelProviderResult(
-                    output={"character_state_changes": [{
-                        "character_id": "protagonist", "status": "dead",
-                        "impact_type": "character_death", "confidence": .9,
-                        "evidence_start": 0, "evidence_end": 12,
-                    }]},
-                    provider_id="deterministic_semantic_fixture", model_id="fixture",
-                    prompt_version="fixture-v1", skill_version="fixture-v1",
-                    input_tokens=0, output_tokens=0, cost_amount="0", currency="USD",
+                    output={
+                        "character_state_changes": [
+                            {
+                                "character_id": "protagonist",
+                                "status": "dead",
+                                "impact_type": "character_death",
+                                "confidence": 0.9,
+                                "evidence_start": 0,
+                                "evidence_end": 12,
+                            }
+                        ]
+                    },
+                    provider_id="deterministic_semantic_fixture",
+                    model_id="fixture",
+                    prompt_version="fixture-v1",
+                    skill_version="fixture-v1",
+                    input_tokens=0,
+                    output_tokens=0,
+                    cost_amount="0",
+                    currency="USD",
                     real_model_call=False,
                 )
 
         project_id = identifier(f"{prefix}-project")
         registry = build_chapter_handler_registry(HighImpactFixture())
         request = SingleChapterRequest(
-            project_id=project_id, workspace_id=f"workspace:{project_id}",
-            actor_id="trusted-operator", chapter=1, title="A Canon Gate",
+            project_id=project_id,
+            workspace_id=f"workspace:{project_id}",
+            actor_id="trusted-operator",
+            chapter=1,
+            title="A Canon Gate",
             premise="A costly choice changes an identity permanently.",
-            trace_id=identifier("trace"), correlation_id=identifier("correlation"),
-            application_build_id=f"{prefix}-test", commit_sha="e" * 40,
+            trace_id=identifier("trace"),
+            correlation_id=identifier("correlation"),
+            application_build_id=f"{prefix}-test",
+            commit_sha="e" * 40,
             idempotency_key=f"{project_id}:chapter:1",
             preparation_report={"decision": "READY", "fixture": True},
             context_candidates=tuple(self._release_evidence(project_id)),
         )
         admission = admit_single_chapter_saga(
-            DATABASE_URL, request=request, registry=registry,
+            DATABASE_URL,
+            request=request,
+            registry=registry,
             permissions=frozenset({"chapter.authority.execute"}),
         )
         scheduler = ChapterAuthorityScheduler(
-            DATABASE_URL, registry=registry,
+            DATABASE_URL,
+            registry=registry,
             object_store_adapter=FakeDeterministicProvider("success"),
             worker_id="configured-chapter-worker",
             permissions=frozenset({"chapter.authority.execute"}),
@@ -674,24 +773,28 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
         project_id: str, *, chapter: int = 1, typed_empty: bool = False
     ) -> None:
         absence_inputs: list[tuple[str, dict[str, str]]] = []
+
         def calibrated(dimensions: tuple[str, ...]) -> dict[str, object]:
             return {
                 "safe_summary": "Fixture-only waived quality evidence.",
                 "allowed_use": "evidence_only",
-                "structured_facts": [{
-                    "key": "dimension_evidence",
-                    "value": [
-                        {
-                            "dimension": item,
-                            "gate_status": "WAIVED_BY_APPROVAL",
-                            "calibration_status": "FIXTURE_UNCALIBRATED",
-                            "human_verified": False,
-                            "fixture_protocol_only": True,
-                        }
-                        for item in dimensions
-                    ],
-                }],
+                "structured_facts": [
+                    {
+                        "key": "dimension_evidence",
+                        "value": [
+                            {
+                                "dimension": item,
+                                "gate_status": "WAIVED_BY_APPROVAL",
+                                "calibration_status": "FIXTURE_UNCALIBRATED",
+                                "human_verified": False,
+                                "fixture_protocol_only": True,
+                            }
+                            for item in dimensions
+                        ],
+                    }
+                ],
             }
+
         assets = {
             "chapter_plan": {
                 "chapter": chapter,
@@ -712,10 +815,12 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
                 "structured_facts": [{"key": "chapter", "value": 1}],
             },
             "style_policy": {
-                "safe_summary": "Project style policy.", "structured_facts": []
+                "safe_summary": "Project style policy.",
+                "structured_facts": [],
             },
             "quality_rubric": {
-                "safe_summary": "Project quality rubric.", "structured_facts": []
+                "safe_summary": "Project quality rubric.",
+                "structured_facts": [],
             },
             "platform_profile": {
                 "safe_summary": "Internal fixture platform profile.",
@@ -760,30 +865,62 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
                     {"key": "fixture_protocol_only", "value": True},
                 ],
             },
-            "commercial_quality_report": calibrated((
-                "golden_opening", "reader_promise", "reward", "protagonist_charm",
-                "antagonist_pressure", "toxic_point", "chapter_hook",
-                "suspense_progression", "emotional_curve", "serialization_function",
-            )),
-            "source_originality_quality_report": calibrated((
-                "originality", "anti_ai", "style_drift",
-            )),
-            "longform_quality_report": calibrated((
-                "character_motivation_drift", "relationship_continuity",
-                "timeline_consistency", "foreshadow_status", "promise_payoff_debt",
-                "world_rule_conflict", "power_state_conflict",
-                "narrative_pattern_repetition", "arc_progress",
-            )),
-            "platform_quality_report": calibrated((
-                "chapter_length", "format", "sensitive_content", "ai_content_policy",
-                "opening_expectations", "platform_rhythm", "publish_metadata",
-            )),
+            "commercial_quality_report": calibrated(
+                (
+                    "golden_opening",
+                    "reader_promise",
+                    "reward",
+                    "protagonist_charm",
+                    "antagonist_pressure",
+                    "toxic_point",
+                    "chapter_hook",
+                    "suspense_progression",
+                    "emotional_curve",
+                    "serialization_function",
+                )
+            ),
+            "source_originality_quality_report": calibrated(
+                (
+                    "originality",
+                    "anti_ai",
+                    "style_drift",
+                )
+            ),
+            "longform_quality_report": calibrated(
+                (
+                    "character_motivation_drift",
+                    "relationship_continuity",
+                    "timeline_consistency",
+                    "foreshadow_status",
+                    "promise_payoff_debt",
+                    "world_rule_conflict",
+                    "power_state_conflict",
+                    "narrative_pattern_repetition",
+                    "arc_progress",
+                )
+            ),
+            "platform_quality_report": calibrated(
+                (
+                    "chapter_length",
+                    "format",
+                    "sensitive_content",
+                    "ai_content_policy",
+                    "opening_expectations",
+                    "platform_rhythm",
+                    "publish_metadata",
+                )
+            ),
         }
         with transaction() as connection, connection.cursor() as cursor:
             for asset_type, content in assets.items():
-                content_hash = "sha256:" + hashlib.sha256(
-                    json.dumps(content, sort_keys=True, separators=(",", ":")).encode()
-                ).hexdigest()
+                content_hash = (
+                    "sha256:"
+                    + hashlib.sha256(
+                        json.dumps(
+                            content, sort_keys=True, separators=(",", ":")
+                        ).encode()
+                    ).hexdigest()
+                )
                 asset_id = identifier(f"{asset_type}-asset")
                 version_id = identifier(asset_type)
                 cursor.execute(
@@ -800,14 +937,7 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
                     [version_id, asset_id, json.dumps(content), content_hash],
                 )
             if typed_empty:
-                state_kinds = (
-                    "canon_snapshot", "character_state_snapshot",
-                    "relationship_state_snapshot", "timeline_snapshot",
-                    "foreshadow_snapshot", "promise_ledger_snapshot",
-                    "reward_ledger_snapshot", "world_rule_snapshot",
-                    "power_state_snapshot",
-                )
-                for state_kind in state_kinds:
+                for state_kind in CONTINUING_CHAPTER_REQUIRED_ASSET_TYPES:
                     content = {
                         "state_kind": state_kind,
                         "previous_chapter": chapter - 1,
@@ -816,9 +946,14 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
                         "previous_final_release_gate_id": f"release-gate:{chapter - 1}",
                         "fixture_protocol_only": True,
                     }
-                    content_hash = "sha256:" + hashlib.sha256(
-                        json.dumps(content, sort_keys=True, separators=(",", ":")).encode()
-                    ).hexdigest()
+                    content_hash = (
+                        "sha256:"
+                        + hashlib.sha256(
+                            json.dumps(
+                                content, sort_keys=True, separators=(",", ":")
+                            ).encode()
+                        ).hexdigest()
+                    )
                     asset_id = identifier(f"state-absence-{state_kind}-asset")
                     version_id = identifier(f"state-absence-{state_kind}")
                     cursor.execute(
@@ -835,7 +970,13 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
                         [version_id, asset_id, json.dumps(content), content_hash],
                     )
                     absence_inputs.append(
-                        (state_kind, {"asset_version_id": version_id, "content_hash": content_hash})
+                        (
+                            state_kind,
+                            {
+                                "asset_version_id": version_id,
+                                "content_hash": content_hash,
+                            },
+                        )
                     )
         if typed_empty:
             app = ContentAuthorityApplication(
@@ -870,27 +1011,51 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
         candidates: list[dict[str, object]] = []
         quality = {
             "commercial_quality_report": (
-                "golden_opening", "reader_promise", "reward", "protagonist_charm",
-                "antagonist_pressure", "toxic_point", "chapter_hook",
-                "suspense_progression", "emotional_curve", "serialization_function",
+                "golden_opening",
+                "reader_promise",
+                "reward",
+                "protagonist_charm",
+                "antagonist_pressure",
+                "toxic_point",
+                "chapter_hook",
+                "suspense_progression",
+                "emotional_curve",
+                "serialization_function",
             ),
-            "source_originality_quality_report": ("originality", "anti_ai", "style_drift"),
+            "source_originality_quality_report": (
+                "originality",
+                "anti_ai",
+                "style_drift",
+            ),
             "longform_quality_report": (
-                "character_motivation_drift", "relationship_continuity",
-                "timeline_consistency", "foreshadow_status", "promise_payoff_debt",
-                "world_rule_conflict", "power_state_conflict",
-                "narrative_pattern_repetition", "arc_progress",
+                "character_motivation_drift",
+                "relationship_continuity",
+                "timeline_consistency",
+                "foreshadow_status",
+                "promise_payoff_debt",
+                "world_rule_conflict",
+                "power_state_conflict",
+                "narrative_pattern_repetition",
+                "arc_progress",
             ),
             "platform_quality_report": (
-                "chapter_length", "format", "sensitive_content", "ai_content_policy",
-                "opening_expectations", "platform_rhythm", "publish_metadata",
+                "chapter_length",
+                "format",
+                "sensitive_content",
+                "ai_content_policy",
+                "opening_expectations",
+                "platform_rhythm",
+                "publish_metadata",
             ),
         }
         evidence = [
             (
-                "chapter_plan", "Complete authoritative ChapterPlan.", [],
+                "chapter_plan",
+                "Complete authoritative ChapterPlan.",
+                [],
                 {
-                    "project_id": project_id, "chapter": 1,
+                    "project_id": project_id,
+                    "chapter": 1,
                     "title": "A Durable Promise",
                     "premise": "A promise creates a visible irreversible cost.",
                     "chapter_objective": "Force a public choice with an irreversible loss.",
@@ -899,18 +1064,29 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
                 },
             ),
             (
-                "quality_rubric", "Versioned quality thresholds.",
-                [{"key": "thresholds", "value": {"readability": 70}}], None,
+                "quality_rubric",
+                "Versioned quality thresholds.",
+                [{"key": "thresholds", "value": {"readability": 70}}],
+                None,
             ),
             (
-                "platform_profile", "Versioned internal platform rules.",
-                [{"key": "platform_rules", "value": {
-                    "chapter_length": {"minimum": 10, "maximum": 10000},
-                    "format": {"paragraph_max": 500}, "sensitive_content": [],
-                    "ai_content": {"mode": "internal"},
-                    "opening": ["visible conflict"], "rhythm": ["payoff"],
-                    "publish_metadata": {"title_required": True},
-                }}], None,
+                "platform_profile",
+                "Versioned internal platform rules.",
+                [
+                    {
+                        "key": "platform_rules",
+                        "value": {
+                            "chapter_length": {"minimum": 10, "maximum": 10000},
+                            "format": {"paragraph_max": 500},
+                            "sensitive_content": [],
+                            "ai_content": {"mode": "internal"},
+                            "opening": ["visible conflict"],
+                            "rhythm": ["payoff"],
+                            "publish_metadata": {"title_required": True},
+                        },
+                    }
+                ],
+                None,
             ),
             (
                 "operator_checklist",
@@ -961,20 +1137,23 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
             (
                 asset_type,
                 "Honest fixture-only quality evidence.",
-                [{"key": "dimension_evidence", "value": [
+                [
                     {
-                        "dimension": dimension,
-                        "gate_status": (
-                            "WAIVED_BY_APPROVAL"
-                            if with_waiver
-                            else "PASSED"
-                        ),
-                        "calibration_status": "FIXTURE_UNCALIBRATED",
-                        "human_verified": False,
-                        "fixture_protocol_only": True,
+                        "key": "dimension_evidence",
+                        "value": [
+                            {
+                                "dimension": dimension,
+                                "gate_status": (
+                                    "WAIVED_BY_APPROVAL" if with_waiver else "PASSED"
+                                ),
+                                "calibration_status": "FIXTURE_UNCALIBRATED",
+                                "human_verified": False,
+                                "fixture_protocol_only": True,
+                            }
+                            for dimension in dimensions
+                        ],
                     }
-                    for dimension in dimensions
-                ]}],
+                ],
                 None,
             )
             for asset_type, dimensions in quality.items()
@@ -988,9 +1167,14 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
                     "safe_summary": summary,
                     "structured_facts": facts,
                 }
-                content_hash = "sha256:" + hashlib.sha256(
-                    json.dumps(content, sort_keys=True, separators=(",", ":")).encode()
-                ).hexdigest()
+                content_hash = (
+                    "sha256:"
+                    + hashlib.sha256(
+                        json.dumps(
+                            content, sort_keys=True, separators=(",", ":")
+                        ).encode()
+                    ).hexdigest()
+                )
                 version_id = identifier(asset_type)
                 asset_id = identifier(f"{asset_type}-asset")
                 cursor.execute(
@@ -1013,7 +1197,9 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
                         "project_id": project_id,
                         "content_hash": content_hash,
                         "estimated_tokens": 20,
-                        "allowed_use": "evidence_only" if asset_type.endswith("quality_report") else "generation",
+                        "allowed_use": "evidence_only"
+                        if asset_type.endswith("quality_report")
+                        else "generation",
                         "source_use_mode": "generation",
                         **content,
                         "narrative_function": "release_evidence",
@@ -1045,10 +1231,7 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
                 """,
                 [root_operation_id],
             )
-            values = {
-                str(name): dict(content)
-                for name, content in cursor.fetchall()
-            }
+            values = {str(name): dict(content) for name, content in cursor.fetchall()}
         return (
             values["chapter.quality.evaluate"],
             values["chapter.publishing.prepare_release"],

@@ -700,6 +700,9 @@ def _runtime_env(
         "NOVEL_FORGE_COMMIT_SHA": commit_sha,
         "NOVEL_FORGE_RELEASE_CHANNEL": "VALIDATION",
         "NOVEL_FORGE_MODEL_PROVIDER": "codex-cli",
+        "NOVEL_FORGE_PLANNING_PROVIDER": "codex-cli",
+        "NOVEL_FORGE_PLANNING_MODEL": model,
+        "NOVEL_FORGE_PLANNING_REASONING_EFFORT": "xhigh",
         "NOVEL_FORGE_DRAFT_MODEL": model,
         "NOVEL_FORGE_REVIEW_MODEL": model,
         "NOVEL_FORGE_REVISION_MODEL": model,
@@ -724,7 +727,7 @@ def _runtime_env(
         "NOVEL_FORGE_DAILY_PROVIDER_CAP": "30.00",
         "NOVEL_FORGE_CHAPTER_PROVIDER_CAP": "20.00",
         "NOVEL_FORGE_CODEX_PRICING_REF": (
-            "https://developers.openai.com/api/docs/models/gpt-5.4@2026-08-08"
+            "proof-estimate:gpt-5.6-sol:2026-08-09:not-provider-billing"
         ),
         "NOVEL_FORGE_CODEX_PRICING_CURRENCY": "USD",
         "NOVEL_FORGE_CODEX_INPUT_PER_MILLION": "2.50",
@@ -1623,8 +1626,8 @@ def main() -> int:
         "--codex-executable",
         default="/Applications/ChatGPT.app/Contents/Resources/codex",
     )
-    parser.add_argument("--model", default="gpt-5.4")
-    parser.add_argument("--reasoning-effort", default="medium")
+    parser.add_argument("--model", default="gpt-5.6-sol")
+    parser.add_argument("--reasoning-effort", default="high")
     parser.add_argument("--minio-endpoint", default="127.0.0.1:59039")
     parser.add_argument("--minio-access-key", default="novel_forge")
     parser.add_argument("--minio-secret-key", default="novel_forge_secret")

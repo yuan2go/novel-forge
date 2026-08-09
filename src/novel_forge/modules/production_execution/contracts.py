@@ -21,7 +21,9 @@ from .security import assert_no_inline_secrets
 _STABLE_ALIAS = re.compile(r"^[a-z0-9][a-z0-9._-]*$")
 _HEX_64 = re.compile(r"^[0-9a-f]{64}$")
 _HEX_40 = re.compile(r"^[0-9a-f]{40}$")
-_VALID_REASONING_EFFORTS = frozenset({"none", "low", "medium", "high", "xhigh", "max", "ultra"})
+_VALID_REASONING_EFFORTS = frozenset(
+    {"none", "low", "medium", "high", "xhigh", "max", "ultra"}
+)
 
 
 class ExecutionRuntimeClass(StrEnum):
@@ -105,9 +107,7 @@ class FallbackMode(StrEnum):
 
 class _Contract:
     def to_dict(self) -> dict[str, Any]:
-        payload = {
-            item.name: _thaw(getattr(self, item.name)) for item in fields(self)
-        }
+        payload = {item.name: _thaw(getattr(self, item.name)) for item in fields(self)}
         assert_no_inline_secrets(payload, label=type(self).__name__)
         return payload
 
@@ -127,7 +127,9 @@ class _HashedContract(_Contract):
 
 def _freeze(value: Any) -> Any:
     if isinstance(value, Mapping):
-        return MappingProxyType({str(key): _freeze(item) for key, item in value.items()})
+        return MappingProxyType(
+            {str(key): _freeze(item) for key, item in value.items()}
+        )
     if isinstance(value, (list, tuple)):
         return tuple(_freeze(item) for item in value)
     return value
@@ -146,7 +148,10 @@ def _thaw(value: Any) -> Any:
 
 
 def _required(label: str, *values: Any) -> None:
-    if any(value is None or (isinstance(value, str) and not value.strip()) for value in values):
+    if any(
+        value is None or (isinstance(value, str) and not value.strip())
+        for value in values
+    ):
         raise ValueError(f"{label} is incomplete")
 
 
@@ -158,7 +163,11 @@ def _validate_attempt(operation_id: str, attempt_id: str, fencing_token: int) ->
 
 
 def _as_runtime(value: Any) -> ExecutionRuntimeClass:
-    return value if isinstance(value, ExecutionRuntimeClass) else ExecutionRuntimeClass(str(value))
+    return (
+        value
+        if isinstance(value, ExecutionRuntimeClass)
+        else ExecutionRuntimeClass(str(value))
+    )
 
 
 def _as_completion(value: Any) -> CompletionMode:
@@ -166,27 +175,49 @@ def _as_completion(value: Any) -> CompletionMode:
 
 
 def _as_capability(value: Any) -> CapabilityAvailability:
-    return value if isinstance(value, CapabilityAvailability) else CapabilityAvailability(str(value))
+    return (
+        value
+        if isinstance(value, CapabilityAvailability)
+        else CapabilityAvailability(str(value))
+    )
 
 
 def _as_model_status(value: Any) -> ModelProfileStatus:
-    return value if isinstance(value, ModelProfileStatus) else ModelProfileStatus(str(value))
+    return (
+        value
+        if isinstance(value, ModelProfileStatus)
+        else ModelProfileStatus(str(value))
+    )
 
 
 def _as_execution_outcome(value: Any) -> ExecutionOutcome:
-    return value if isinstance(value, ExecutionOutcome) else ExecutionOutcome(str(value))
+    return (
+        value if isinstance(value, ExecutionOutcome) else ExecutionOutcome(str(value))
+    )
 
 
 def _as_cancellation_outcome(value: Any) -> CancellationOutcome:
-    return value if isinstance(value, CancellationOutcome) else CancellationOutcome(str(value))
+    return (
+        value
+        if isinstance(value, CancellationOutcome)
+        else CancellationOutcome(str(value))
+    )
 
 
 def _as_local_termination(value: Any) -> LocalTerminationOutcome:
-    return value if isinstance(value, LocalTerminationOutcome) else LocalTerminationOutcome(str(value))
+    return (
+        value
+        if isinstance(value, LocalTerminationOutcome)
+        else LocalTerminationOutcome(str(value))
+    )
 
 
 def _as_upstream_cancellation(value: Any) -> UpstreamCancellationOutcome:
-    return value if isinstance(value, UpstreamCancellationOutcome) else UpstreamCancellationOutcome(str(value))
+    return (
+        value
+        if isinstance(value, UpstreamCancellationOutcome)
+        else UpstreamCancellationOutcome(str(value))
+    )
 
 
 def _strict_bool(value: Any, field_name: str) -> bool:
@@ -358,7 +389,9 @@ class ArtifactPointer(_Contract):
             "NOT_SOURCE_DERIVED",
             "FIXTURE_ELIGIBLE",
         }:
-            raise ValueError("artifact pointer source eligibility is not execution-safe")
+            raise ValueError(
+                "artifact pointer source eligibility is not execution-safe"
+            )
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -372,10 +405,19 @@ class ArtifactPointer(_Contract):
 
     @classmethod
     def from_dict(cls, payload: Mapping[str, Any]) -> ArtifactPointer:
-        return cls(**{key: str(payload.get(key) or "") for key in (
-            "artifact_ref", "artifact_type", "content_hash", "schema_version",
-            "source_eligibility", "asset_version_id",
-        )})
+        return cls(
+            **{
+                key: str(payload.get(key) or "")
+                for key in (
+                    "artifact_ref",
+                    "artifact_type",
+                    "content_hash",
+                    "schema_version",
+                    "source_eligibility",
+                    "asset_version_id",
+                )
+            }
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -420,10 +462,14 @@ class ExecutionCapabilityProfile(_Contract):
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "runtime_class", _as_runtime(self.runtime_class))
-        object.__setattr__(self, "supported_completion_modes", tuple(
-            _as_completion(item) for item in self.supported_completion_modes
-        ))
-        efforts = tuple(str(item).strip().lower() for item in self.supported_reasoning_efforts)
+        object.__setattr__(
+            self,
+            "supported_completion_modes",
+            tuple(_as_completion(item) for item in self.supported_completion_modes),
+        )
+        efforts = tuple(
+            str(item).strip().lower() for item in self.supported_reasoning_efforts
+        )
         object.__setattr__(self, "supported_reasoning_efforts", efforts)
         _required(
             "execution capability profile",
@@ -435,12 +481,16 @@ class ExecutionCapabilityProfile(_Contract):
         if not self.supported_completion_modes:
             raise ValueError("execution capability profile requires a completion mode")
         if not efforts or any(item not in _VALID_REASONING_EFFORTS for item in efforts):
-            raise ValueError("execution capability profile has an invalid reasoning effort")
+            raise ValueError(
+                "execution capability profile has an invalid reasoning effort"
+            )
         if self.real_provider_validation_eligible:
             if not self.supports_structured_output:
                 raise ValueError("real provider validation requires structured output")
             if self.runtime_class is ExecutionRuntimeClass.SCRIPTED_FIXTURE:
-                raise ValueError("scripted fixtures are not real-provider validation eligible")
+                raise ValueError(
+                    "scripted fixtures are not real-provider validation eligible"
+                )
 
     def require_model_profile(self, profile: ModelProfile) -> None:
         if profile.status is not ModelProfileStatus.ACTIVE:
@@ -448,7 +498,9 @@ class ExecutionCapabilityProfile(_Contract):
         if profile.backend_id != self.backend_id:
             raise ValueError("ModelProfile backend does not match capability profile")
         if profile.runtime_class is not self.runtime_class:
-            raise ValueError("ModelProfile runtime class does not match capability profile")
+            raise ValueError(
+                "ModelProfile runtime class does not match capability profile"
+            )
         if profile.reasoning_effort not in self.supported_reasoning_efforts:
             raise ValueError("requested reasoning effort is unsupported by backend")
         if profile.output_policy_ref and not self.supports_structured_output:
@@ -456,7 +508,9 @@ class ExecutionCapabilityProfile(_Contract):
         if not profile.capability_probe_ref:
             raise ValueError("ModelProfile has no Capability Probe evidence")
         if profile.capability_probe_ref != self.qualification_ref:
-            raise ValueError("ModelProfile Capability Probe does not match backend qualification")
+            raise ValueError(
+                "ModelProfile Capability Probe does not match backend qualification"
+            )
 
     @classmethod
     def from_dict(cls, payload: Mapping[str, Any]) -> ExecutionCapabilityProfile:
@@ -465,21 +519,50 @@ class ExecutionCapabilityProfile(_Contract):
             backend_version=str(payload.get("backend_version") or ""),
             runtime_class=_as_runtime(payload.get("runtime_class")),
             supported_completion_modes=tuple(
-                _as_completion(item) for item in payload.get("supported_completion_modes") or ()
+                _as_completion(item)
+                for item in payload.get("supported_completion_modes") or ()
             ),
-            supported_reasoning_efforts=_string_tuple(payload.get("supported_reasoning_efforts")),
-            supports_query=_strict_bool(payload.get("supports_query"), "supports_query"),
-            supports_cancel=_strict_bool(payload.get("supports_cancel"), "supports_cancel"),
-            supports_callback=_strict_bool(payload.get("supports_callback"), "supports_callback"),
-            supports_usage_receipt=_strict_bool(payload.get("supports_usage_receipt"), "supports_usage_receipt"),
-            supports_cost_receipt=_strict_bool(payload.get("supports_cost_receipt"), "supports_cost_receipt"),
-            supports_structured_output=_strict_bool(payload.get("supports_structured_output"), "supports_structured_output"),
-            supports_process_group_control=_strict_bool(payload.get("supports_process_group_control"), "supports_process_group_control"),
-            supports_persistent_execution_directory=_strict_bool(payload.get("supports_persistent_execution_directory"), "supports_persistent_execution_directory"),
-            supports_provider_idempotency=_strict_bool(payload.get("supports_provider_idempotency"), "supports_provider_idempotency"),
-            real_provider_validation_eligible=_strict_bool(payload.get("real_provider_validation_eligible"), "real_provider_validation_eligible"),
+            supported_reasoning_efforts=_string_tuple(
+                payload.get("supported_reasoning_efforts")
+            ),
+            supports_query=_strict_bool(
+                payload.get("supports_query"), "supports_query"
+            ),
+            supports_cancel=_strict_bool(
+                payload.get("supports_cancel"), "supports_cancel"
+            ),
+            supports_callback=_strict_bool(
+                payload.get("supports_callback"), "supports_callback"
+            ),
+            supports_usage_receipt=_strict_bool(
+                payload.get("supports_usage_receipt"), "supports_usage_receipt"
+            ),
+            supports_cost_receipt=_strict_bool(
+                payload.get("supports_cost_receipt"), "supports_cost_receipt"
+            ),
+            supports_structured_output=_strict_bool(
+                payload.get("supports_structured_output"), "supports_structured_output"
+            ),
+            supports_process_group_control=_strict_bool(
+                payload.get("supports_process_group_control"),
+                "supports_process_group_control",
+            ),
+            supports_persistent_execution_directory=_strict_bool(
+                payload.get("supports_persistent_execution_directory"),
+                "supports_persistent_execution_directory",
+            ),
+            supports_provider_idempotency=_strict_bool(
+                payload.get("supports_provider_idempotency"),
+                "supports_provider_idempotency",
+            ),
+            real_provider_validation_eligible=_strict_bool(
+                payload.get("real_provider_validation_eligible"),
+                "real_provider_validation_eligible",
+            ),
             qualification_ref=str(payload.get("qualification_ref") or ""),
-            contract_version=str(payload.get("contract_version") or "execution-capability-v1"),
+            contract_version=str(
+                payload.get("contract_version") or "execution-capability-v1"
+            ),
         )
 
 
@@ -522,7 +605,9 @@ class ModelProfile(_Contract):
         if effort not in _VALID_REASONING_EFFORTS:
             raise ValueError("ModelProfile reasoning effort is invalid")
         if self.fallback_policy not in {"FAIL_CLOSED", "EXPLICIT_ONLY"}:
-            raise ValueError("ModelProfile fallback policy must fail closed or be explicit")
+            raise ValueError(
+                "ModelProfile fallback policy must fail closed or be explicit"
+            )
         if self.status is ModelProfileStatus.ACTIVE and not self.capability_probe_ref:
             raise ValueError("ACTIVE ModelProfile requires Capability Probe evidence")
 
@@ -594,19 +679,12 @@ class FallbackPolicy(_Contract):
                     "FallbackPolicy requires triggers and positive route changes"
                 )
             if not self.quality_revalidation_required:
-                raise ValueError(
-                    "fallback route changes require quality revalidation"
-                )
-        if (
-            mode is FallbackMode.APPROVAL_REQUIRED
-            and not self.approval_required
-        ):
+                raise ValueError("fallback route changes require quality revalidation")
+        if mode is FallbackMode.APPROVAL_REQUIRED and not self.approval_required:
             raise ValueError("APPROVAL_REQUIRED fallback requires approval")
 
     @classmethod
-    def fail_closed(
-        cls, policy_id: str, policy_version: int
-    ) -> FallbackPolicy:
+    def fail_closed(cls, policy_id: str, policy_version: int) -> FallbackPolicy:
         return cls(
             policy_id=policy_id,
             policy_version=policy_version,
@@ -623,9 +701,7 @@ class FallbackPolicy(_Contract):
     def from_dict(cls, payload: Mapping[str, Any]) -> FallbackPolicy:
         return cls(
             policy_id=str(payload.get("policy_id") or ""),
-            policy_version=_strict_int(
-                payload.get("policy_version"), "policy_version"
-            ),
+            policy_version=_strict_int(payload.get("policy_version"), "policy_version"),
             mode=FallbackMode(str(payload.get("mode") or "")),
             allowed_route_ids=_string_tuple(payload.get("allowed_route_ids")),
             triggers=_string_tuple(payload.get("triggers")),
@@ -691,7 +767,9 @@ class RoutePolicy(_Contract):
             policy_id=str(payload.get("policy_id") or ""),
             policy_version=int(payload.get("policy_version") or 0),
             default_model_profile_id=str(payload.get("default_model_profile_id") or ""),
-            allowed_model_profile_ids=_string_tuple(payload.get("allowed_model_profile_ids")),
+            allowed_model_profile_ids=_string_tuple(
+                payload.get("allowed_model_profile_ids")
+            ),
             rule_set_ref=str(payload.get("rule_set_ref") or ""),
             fallback_policy=str(payload.get("fallback_policy") or ""),
             fallback_policy_ref=str(payload.get("fallback_policy_ref") or ""),
@@ -699,7 +777,9 @@ class RoutePolicy(_Contract):
                 payload.get("fallback_policy_version"),
                 "fallback_policy_version",
             ),
-            reasoning_downgrade_policy=str(payload.get("reasoning_downgrade_policy") or ""),
+            reasoning_downgrade_policy=str(
+                payload.get("reasoning_downgrade_policy") or ""
+            ),
             status=str(payload.get("status") or ""),
         )
 
@@ -718,6 +798,8 @@ class RouteSnapshot(_HashedContract):
     auth_profile_ref: str
     model_profile_id: str
     model_profile_version: int
+    model_profile_hash: str
+    route_policy_hash: str
     model_provider: str
     model_id: str
     requested_reasoning_effort: str
@@ -755,6 +837,8 @@ class RouteSnapshot(_HashedContract):
             self.runtime_host_id,
             self.auth_profile_ref,
             self.model_profile_id,
+            self.model_profile_hash,
+            self.route_policy_hash,
             self.model_provider,
             self.model_id,
             self.prompt_bundle_ref,
@@ -788,19 +872,30 @@ class RouteSnapshot(_HashedContract):
             )
             if self.route_change_index != self.route_generation - 1:
                 raise ValueError("RouteSnapshot route change index is invalid")
-        if requested not in _VALID_REASONING_EFFORTS or actual not in _VALID_REASONING_EFFORTS:
+        if (
+            requested not in _VALID_REASONING_EFFORTS
+            or actual not in _VALID_REASONING_EFFORTS
+        ):
             raise ValueError("RouteSnapshot reasoning effort is invalid")
         if requested != actual:
             raise ValueError("requested reasoning effort cannot be silently changed")
+        if not _HEX_64.fullmatch(self.model_profile_hash.lower()):
+            raise ValueError("RouteSnapshot ModelProfile hash must be SHA-256")
+        if not _HEX_64.fullmatch(self.route_policy_hash.lower()):
+            raise ValueError("RouteSnapshot RoutePolicy hash must be SHA-256")
         if not _HEX_40.fullmatch(self.release_sha.lower()):
-            raise ValueError("RouteSnapshot release SHA must be a full 40-character hexadecimal value")
+            raise ValueError(
+                "RouteSnapshot release SHA must be a full 40-character hexadecimal value"
+            )
 
     @property
     def routing_fingerprint(self) -> str:
         payload = self.to_dict()
         payload.pop("route_snapshot_id", None)
         payload.pop("route_decision_id", None)
-        encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode(
+            "utf-8"
+        )
         return hashlib.sha256(encoded).hexdigest()
 
     def require_new_identity_for_change(self, previous: RouteSnapshot) -> None:
@@ -821,14 +916,33 @@ class RouteSnapshot(_HashedContract):
             (self.backend_id, profile.backend_id, "backend"),
             (self.backend_version, capability.backend_version, "backend version"),
             (self.model_profile_id, profile.profile_id, "ModelProfile ID"),
-            (self.model_profile_version, profile.profile_version, "ModelProfile version"),
+            (
+                self.model_profile_version,
+                profile.profile_version,
+                "ModelProfile version",
+            ),
+            (self.model_profile_hash, profile.contract_hash, "ModelProfile hash"),
             (self.model_provider, profile.model_provider, "model provider"),
             (self.model_id, profile.model_id, "model ID"),
             (self.reasoning_effort, profile.reasoning_effort, "reasoning effort"),
         )
         mismatch = [label for actual, expected, label in bindings if actual != expected]
         if mismatch:
-            raise ValueError("RouteSnapshot does not match qualified " + ", ".join(mismatch))
+            raise ValueError(
+                "RouteSnapshot does not match qualified " + ", ".join(mismatch)
+            )
+
+    def require_frozen_policy(self, policy: RoutePolicy) -> None:
+        bindings = (
+            (self.policy_id, policy.policy_id, "RoutePolicy ID"),
+            (self.policy_version, policy.policy_version, "RoutePolicy version"),
+            (self.route_policy_hash, policy.contract_hash, "RoutePolicy hash"),
+        )
+        mismatch = [label for actual, expected, label in bindings if actual != expected]
+        if mismatch:
+            raise ValueError(
+                "RouteSnapshot does not match frozen " + ", ".join(mismatch)
+            )
 
     @classmethod
     def from_dict(cls, payload: Mapping[str, Any]) -> RouteSnapshot:
@@ -1006,9 +1120,7 @@ class ExecutionRecoveryAuthorization(_Contract):
         )
 
     @classmethod
-    def from_dict(
-        cls, payload: Mapping[str, Any]
-    ) -> ExecutionRecoveryAuthorization:
+    def from_dict(cls, payload: Mapping[str, Any]) -> ExecutionRecoveryAuthorization:
         values = dict(payload)
         values["execution_fencing_token"] = int(
             values.get("execution_fencing_token") or 0
@@ -1043,10 +1155,18 @@ class ExecutionHandle(_Contract):
     def __post_init__(self) -> None:
         _validate_attempt(self.operation_id, self.attempt_id, self.fencing_token)
         object.__setattr__(self, "transport", _as_runtime(self.transport))
-        object.__setattr__(self, "completion_mode", _as_completion(self.completion_mode))
-        object.__setattr__(self, "query_capability", _as_capability(self.query_capability))
-        object.__setattr__(self, "cancel_capability", _as_capability(self.cancel_capability))
-        object.__setattr__(self, "callback_capability", _as_capability(self.callback_capability))
+        object.__setattr__(
+            self, "completion_mode", _as_completion(self.completion_mode)
+        )
+        object.__setattr__(
+            self, "query_capability", _as_capability(self.query_capability)
+        )
+        object.__setattr__(
+            self, "cancel_capability", _as_capability(self.cancel_capability)
+        )
+        object.__setattr__(
+            self, "callback_capability", _as_capability(self.callback_capability)
+        )
         _required(
             "ExecutionHandle",
             self.execution_id,
@@ -1061,7 +1181,9 @@ class ExecutionHandle(_Contract):
         if any(item is not None for item in process_fields) and not all(
             item is not None and item != "" for item in process_fields
         ):
-            raise ValueError("local process identity requires PID, PGID, and start time")
+            raise ValueError(
+                "local process identity requires PID, PGID, and start time"
+            )
         if self.transport is ExecutionRuntimeClass.SCRIPTED_FIXTURE and (
             self.provider_request_id or self.external_request_id
         ):
@@ -1108,14 +1230,18 @@ class ExecutionResult(_Contract):
                 self.validation_report_ref,
                 self.completed_at,
             )
-        if self.outcome in {
-            ExecutionOutcome.RETRYABLE_FAILURE,
-            ExecutionOutcome.FINAL_FAILURE,
-            ExecutionOutcome.CANCELLED,
-            ExecutionOutcome.TIMED_OUT,
-            ExecutionOutcome.ORPHANED,
-            ExecutionOutcome.CORRUPT_RESULT,
-        } and not self.completed_at:
+        if (
+            self.outcome
+            in {
+                ExecutionOutcome.RETRYABLE_FAILURE,
+                ExecutionOutcome.FINAL_FAILURE,
+                ExecutionOutcome.CANCELLED,
+                ExecutionOutcome.TIMED_OUT,
+                ExecutionOutcome.ORPHANED,
+                ExecutionOutcome.CORRUPT_RESULT,
+            }
+            and not self.completed_at
+        ):
             raise ValueError("terminal ExecutionResult requires completed_at")
 
     @classmethod
@@ -1151,8 +1277,16 @@ class ExecutionCancellationResult(_Contract):
         _validate_attempt(self.operation_id, self.attempt_id, self.fencing_token)
         object.__setattr__(self, "transport", _as_runtime(self.transport))
         object.__setattr__(self, "outcome", _as_cancellation_outcome(self.outcome))
-        object.__setattr__(self, "local_termination_outcome", _as_local_termination(self.local_termination_outcome))
-        object.__setattr__(self, "upstream_cancellation_outcome", _as_upstream_cancellation(self.upstream_cancellation_outcome))
+        object.__setattr__(
+            self,
+            "local_termination_outcome",
+            _as_local_termination(self.local_termination_outcome),
+        )
+        object.__setattr__(
+            self,
+            "upstream_cancellation_outcome",
+            _as_upstream_cancellation(self.upstream_cancellation_outcome),
+        )
         _required(
             "ExecutionCancellationResult",
             self.execution_id,
@@ -1165,7 +1299,10 @@ class ExecutionCancellationResult(_Contract):
         if self.local_termination_outcome is not LocalTerminationOutcome.NOT_APPLICABLE:
             if not self.local_execution_receipt_id:
                 raise ValueError("local termination requires a local execution receipt")
-        if self.upstream_cancellation_outcome is not UpstreamCancellationOutcome.NOT_APPLICABLE:
+        if (
+            self.upstream_cancellation_outcome
+            is not UpstreamCancellationOutcome.NOT_APPLICABLE
+        ):
             if not (self.provider_request_id or self.external_request_id):
                 raise ValueError(
                     "upstream cancellation requires a real Provider or external request ID"
@@ -1181,20 +1318,35 @@ class ExecutionCancellationResult(_Contract):
                 "upstream cancellation requires a Provider or external cancellation receipt"
             )
         if self.outcome is CancellationOutcome.CANCELLED:
-            if self.upstream_cancellation_outcome is UpstreamCancellationOutcome.ALREADY_COMPLETED:
-                raise ValueError("upstream ALREADY_COMPLETED cannot be reported as CANCELLED")
-            local_cancelled = self.local_termination_outcome is LocalTerminationOutcome.TERMINATED
-            upstream_cancelled = self.upstream_cancellation_outcome is UpstreamCancellationOutcome.CANCELLED
+            if (
+                self.upstream_cancellation_outcome
+                is UpstreamCancellationOutcome.ALREADY_COMPLETED
+            ):
+                raise ValueError(
+                    "upstream ALREADY_COMPLETED cannot be reported as CANCELLED"
+                )
+            local_cancelled = (
+                self.local_termination_outcome is LocalTerminationOutcome.TERMINATED
+            )
+            upstream_cancelled = (
+                self.upstream_cancellation_outcome
+                is UpstreamCancellationOutcome.CANCELLED
+            )
             if not local_cancelled and not upstream_cancelled:
-                raise ValueError("cancelled execution requires terminal local or upstream evidence")
+                raise ValueError(
+                    "cancelled execution requires terminal local or upstream evidence"
+                )
         if self.outcome is CancellationOutcome.ALREADY_COMPLETED:
             already_complete = (
                 self.local_termination_outcome is LocalTerminationOutcome.ALREADY_EXITED
-                or self.upstream_cancellation_outcome is UpstreamCancellationOutcome.ALREADY_COMPLETED
+                or self.upstream_cancellation_outcome
+                is UpstreamCancellationOutcome.ALREADY_COMPLETED
                 or bool(self.backend_completion_receipt_ref)
             )
             if not already_complete:
-                raise ValueError("ALREADY_COMPLETED requires matching local or upstream evidence")
+                raise ValueError(
+                    "ALREADY_COMPLETED requires matching local or upstream evidence"
+                )
 
     @classmethod
     def from_dict(cls, payload: Mapping[str, Any]) -> ExecutionCancellationResult:
@@ -1202,8 +1354,12 @@ class ExecutionCancellationResult(_Contract):
         values["fencing_token"] = int(values.get("fencing_token") or 0)
         values["transport"] = _as_runtime(values.get("transport"))
         values["outcome"] = _as_cancellation_outcome(values.get("outcome"))
-        values["local_termination_outcome"] = _as_local_termination(values.get("local_termination_outcome"))
-        values["upstream_cancellation_outcome"] = _as_upstream_cancellation(values.get("upstream_cancellation_outcome"))
+        values["local_termination_outcome"] = _as_local_termination(
+            values.get("local_termination_outcome")
+        )
+        values["upstream_cancellation_outcome"] = _as_upstream_cancellation(
+            values.get("upstream_cancellation_outcome")
+        )
         return cls(**{item.name: values.get(item.name) for item in fields(cls)})
 
 
@@ -1255,8 +1411,12 @@ class InputManifest(_HashedContract):
 
     def __post_init__(self) -> None:
         _validate_attempt(self.operation_id, self.attempt_id, self.fencing_token)
-        object.__setattr__(self, "canon_version_refs", _string_tuple(self.canon_version_refs))
-        object.__setattr__(self, "arc_version_refs", _string_tuple(self.arc_version_refs))
+        object.__setattr__(
+            self, "canon_version_refs", _string_tuple(self.canon_version_refs)
+        )
+        object.__setattr__(
+            self, "arc_version_refs", _string_tuple(self.arc_version_refs)
+        )
         object.__setattr__(self, "input_artifacts", tuple(self.input_artifacts))
         object.__setattr__(self, "read_set", _string_tuple(self.read_set))
         scope = (
@@ -1288,7 +1448,9 @@ class InputManifest(_HashedContract):
             self.source_eligibility,
         )
         if not self.input_artifacts or not self.read_set:
-            raise ValueError("InputManifest requires artifacts and an explicit read set")
+            raise ValueError(
+                "InputManifest requires artifacts and an explicit read set"
+            )
         if self.source_eligibility not in {
             "PRODUCTION_ELIGIBLE",
             "NOT_SOURCE_DERIVED",
@@ -1296,7 +1458,8 @@ class InputManifest(_HashedContract):
         }:
             raise ValueError("InputManifest source eligibility is not execution-safe")
         if any(
-            item.source_eligibility not in {
+            item.source_eligibility
+            not in {
                 self.source_eligibility,
                 "NOT_SOURCE_DERIVED",
             }
@@ -1330,7 +1493,9 @@ class InputManifest(_HashedContract):
         values["canon_version_refs"] = _string_tuple(values.get("canon_version_refs"))
         values["arc_version_refs"] = _string_tuple(values.get("arc_version_refs"))
         values["input_artifacts"] = tuple(
-            item if isinstance(item, ArtifactPointer) else ArtifactPointer.from_dict(item)
+            item
+            if isinstance(item, ArtifactPointer)
+            else ArtifactPointer.from_dict(item)
             for item in values.get("input_artifacts") or ()
         )
         values["read_set"] = _string_tuple(values.get("read_set"))
@@ -1407,7 +1572,9 @@ class OutputManifest(_HashedContract):
     def __post_init__(self) -> None:
         _validate_attempt(self.operation_id, self.attempt_id, self.fencing_token)
         object.__setattr__(self, "files", tuple(self.files))
-        _required("OutputManifest", self.manifest_id, self.output_hash, self.schema_version)
+        _required(
+            "OutputManifest", self.manifest_id, self.output_hash, self.schema_version
+        )
         if not _is_sha256(self.output_hash):
             raise ValueError("OutputManifest output hash must be SHA-256")
         if not self.raw_output_ref and not self.normalized_output_ref:
@@ -1418,7 +1585,9 @@ class OutputManifest(_HashedContract):
         values = dict(payload)
         values["fencing_token"] = int(values.get("fencing_token") or 0)
         values["files"] = tuple(
-            item if isinstance(item, ArtifactPointer) else ArtifactPointer.from_dict(item)
+            item
+            if isinstance(item, ArtifactPointer)
+            else ArtifactPointer.from_dict(item)
             for item in values.get("files") or ()
         )
         return cls(**{item.name: values.get(item.name) for item in fields(cls)})
@@ -1439,7 +1608,9 @@ class ValidationManifest(_HashedContract):
     def __post_init__(self) -> None:
         _validate_attempt(self.operation_id, self.attempt_id, self.fencing_token)
         object.__setattr__(self, "checks", tuple(self.checks))
-        object.__setattr__(self, "required_check_kinds", _string_tuple(self.required_check_kinds))
+        object.__setattr__(
+            self, "required_check_kinds", _string_tuple(self.required_check_kinds)
+        )
         _required(
             "ValidationManifest",
             self.manifest_id,
@@ -1458,7 +1629,9 @@ class ValidationManifest(_HashedContract):
             raise ValueError("ValidationManifest is missing required checks")
         statuses = {item.status for item in self.checks}
         if self.decision == "ACCEPTED" and statuses - {"PASSED", "NOT_APPLICABLE"}:
-            raise ValueError("ValidationManifest cannot accept failed or review-required checks")
+            raise ValueError(
+                "ValidationManifest cannot accept failed or review-required checks"
+            )
         if not any(item.check_kind == "fencing" for item in self.checks):
             raise ValueError("ValidationManifest requires fencing validation")
 
@@ -1467,10 +1640,14 @@ class ValidationManifest(_HashedContract):
         values = dict(payload)
         values["fencing_token"] = int(values.get("fencing_token") or 0)
         values["checks"] = tuple(
-            item if isinstance(item, ValidationCheck) else ValidationCheck.from_dict(item)
+            item
+            if isinstance(item, ValidationCheck)
+            else ValidationCheck.from_dict(item)
             for item in values.get("checks") or ()
         )
-        values["required_check_kinds"] = _string_tuple(values.get("required_check_kinds"))
+        values["required_check_kinds"] = _string_tuple(
+            values.get("required_check_kinds")
+        )
         return cls(**{item.name: values.get(item.name) for item in fields(cls)})
 
 
@@ -1490,9 +1667,19 @@ class CommitManifest(_HashedContract):
 
     def __post_init__(self) -> None:
         _validate_attempt(self.operation_id, self.attempt_id, self.fencing_token)
-        object.__setattr__(self, "committed_asset_version_refs", _string_tuple(self.committed_asset_version_refs))
-        object.__setattr__(self, "projection_materialization_refs", _string_tuple(self.projection_materialization_refs))
-        object.__setattr__(self, "rejected_output_refs", _string_tuple(self.rejected_output_refs))
+        object.__setattr__(
+            self,
+            "committed_asset_version_refs",
+            _string_tuple(self.committed_asset_version_refs),
+        )
+        object.__setattr__(
+            self,
+            "projection_materialization_refs",
+            _string_tuple(self.projection_materialization_refs),
+        )
+        object.__setattr__(
+            self, "rejected_output_refs", _string_tuple(self.rejected_output_refs)
+        )
         _required(
             "CommitManifest",
             self.manifest_id,
@@ -1508,7 +1695,9 @@ class CommitManifest(_HashedContract):
             if not self.authority_commit_ref:
                 raise ValueError("Authority commit evidence is required")
         if self.decision == "REJECTED" and not self.rejected_output_refs:
-            raise ValueError("rejected CommitManifest requires rejected output evidence")
+            raise ValueError(
+                "rejected CommitManifest requires rejected output evidence"
+            )
 
     @classmethod
     def from_dict(cls, payload: Mapping[str, Any]) -> CommitManifest:

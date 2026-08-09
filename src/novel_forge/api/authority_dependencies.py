@@ -50,6 +50,7 @@ from novel_forge.modules.book_followup_authority.execution import (
 )
 from novel_forge.modules.story_planning_runtime import (
     CapabilityPackBackedPlanningExecutionBinder,
+    PlanningExecutionRoute,
     PostgresPlanningExecutionBundleResolver,
     PostgresPlanningExecutionPreparer,
     StoryPlanningGenerationApplication,
@@ -238,7 +239,6 @@ def build_chapter_authority_application(
     provider_adapters: dict[str, object] = {}
     backend_capabilities: dict[str, ExecutionCapabilityProfile] = {}
     codex_models: set[str] = set()
-    codex_reasoning_efforts: set[str] = set()
     repository_artifacts = (
         default_chapter_artifact_resolver(settings.root) if controlled else None
     )
@@ -323,9 +323,7 @@ def build_chapter_authority_application(
         codex_cli = normalized_provider == "codex-cli"
         if codex_cli:
             if not model_name:
-                raise RuntimeError(
-                    f"explicit Codex model is required for {stage}"
-                )
+                raise RuntimeError(f"explicit Codex model is required for {stage}")
             resolved_model = model_name
             scripted = False
             backend_id = "codex-cli"
@@ -339,7 +337,6 @@ def build_chapter_authority_application(
                 or "high"
             )
             codex_models.add(resolved_model)
-            codex_reasoning_efforts.add(reasoning_effort)
         else:
             try:
                 adapter = registry.resolve(normalized_provider)
@@ -372,9 +369,7 @@ def build_chapter_authority_application(
                 if scripted
                 else ExecutionRuntimeClass.REMOTE_PROVIDER_API
             )
-            real_provider_eligible = (
-                provider_profile.real_provider_validation_eligible
-            )
+            real_provider_eligible = provider_profile.real_provider_validation_eligible
             qualification_ref = (
                 "capability-probe:scripted-fixture:1"
                 if scripted
@@ -479,9 +474,7 @@ def build_chapter_authority_application(
             system_instruction_hash = _execution_content_hash(
                 values,
                 stage=stage,
-                specific_key=(
-                    f"NOVEL_FORGE_{stage.upper()}_SYSTEM_INSTRUCTION_HASH"
-                ),
+                specific_key=(f"NOVEL_FORGE_{stage.upper()}_SYSTEM_INSTRUCTION_HASH"),
                 common_key="NOVEL_FORGE_PROMPT_SYSTEM_INSTRUCTION_HASH",
                 controlled=controlled,
                 fixture_identity=prompt_version + ":system",
@@ -545,10 +538,8 @@ def build_chapter_authority_application(
             for stage, route in routes.items()
         }
     if codex_models:
-        if len(codex_models) != 1 or len(codex_reasoning_efforts) != 1:
-            raise RuntimeError(
-                "this phase requires one explicit Codex model and reasoning effort"
-            )
+        if len(codex_models) != 1:
+            raise RuntimeError("this phase requires one explicit Codex model")
         if any(
             route.model_profile.runtime_class
             is not ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE
@@ -579,14 +570,9 @@ def build_chapter_authority_application(
     codex_execution_root: Path | None = None
     codex_pricing: CodexPricingSnapshot | None = None
     codex_model = next(iter(codex_models), "")
-    codex_reasoning_effort = next(iter(codex_reasoning_efforts), "")
     if codex_models:
-        codex_executable = str(
-            values.get("NOVEL_FORGE_CODEX_EXECUTABLE") or ""
-        ).strip()
-        workspace_value = str(
-            values.get("NOVEL_FORGE_CODEX_WORKSPACE") or ""
-        ).strip()
+        codex_executable = str(values.get("NOVEL_FORGE_CODEX_EXECUTABLE") or "").strip()
+        workspace_value = str(values.get("NOVEL_FORGE_CODEX_WORKSPACE") or "").strip()
         execution_root_value = str(
             values.get("NOVEL_FORGE_CODEX_EXECUTION_ROOT") or ""
         ).strip()
@@ -717,8 +703,6 @@ def build_chapter_authority_application(
                         ),
                     ),
                     codex_executable=codex_executable,
-                    model_id=codex_model,
-                    reasoning_effort=codex_reasoning_effort,
                     pricing=codex_pricing,
                     structured_result_validator=validate_codex_result,
                     qualification_ref="capability-probe:codex-cli:real-runtime-v1",
@@ -1009,9 +993,11 @@ def build_reader_outcome_model_port(
     if not settings.database_url:
         raise RuntimeError("PostgreSQL database is required for Reader Outcome")
     values = env or os.environ
-    environment = str(
-        values.get("NOVEL_FORGE_ENVIRONMENT") or settings.environment
-    ).strip().lower()
+    environment = (
+        str(values.get("NOVEL_FORGE_ENVIRONMENT") or settings.environment)
+        .strip()
+        .lower()
+    )
     transport = chapter_application.model_port.adapter
     if not isinstance(transport, ProductionExecutionGatewayExternalEffectAdapter):
         raise RuntimeError("Reader Outcome requires the Production Execution Gateway")
@@ -1072,12 +1058,80 @@ def build_story_planning_generation_application(
         values.get("NOVEL_FORGE_STORY_PLANNING_WORKER_ID")
         or "story-planning-generation-worker"
     )
-    environment = str(
-        values.get("NOVEL_FORGE_ENVIRONMENT") or settings.environment
-    ).strip().lower()
+    environment = (
+        str(values.get("NOVEL_FORGE_ENVIRONMENT") or settings.environment)
+        .strip()
+        .lower()
+    )
+    base_route = transport.routes["draft"]
+    planning_model = str(values.get("NOVEL_FORGE_PLANNING_MODEL") or "").strip()
+    planning_reasoning_effort = (
+        str(values.get("NOVEL_FORGE_PLANNING_REASONING_EFFORT") or "").strip().lower()
+    )
+    planning_provider = (
+        str(values.get("NOVEL_FORGE_PLANNING_PROVIDER") or "").strip().lower()
+    )
+    if environment in {"validation", "provider-validation", "production"}:
+        if not planning_model or not planning_reasoning_effort or not planning_provider:
+            raise RuntimeError(
+                "controlled Planning requires explicit Provider, model, and reasoning effort"
+            )
+    planning_model = planning_model or base_route.model_profile.model_id
+    planning_reasoning_effort = (
+        planning_reasoning_effort or base_route.model_profile.reasoning_effort
+    )
+    planning_provider = planning_provider or base_route.model_profile.model_provider
+    if planning_provider != base_route.model_profile.model_provider:
+        raise RuntimeError(
+            "Planning Provider must use the shared Production Execution Gateway backend"
+        )
+    planning_definition = default_capability_registry().resolve(
+        "planning.book.generate"
+    )
+    planning_profile = ModelProfile(
+        profile_id="story-planning.default",
+        profile_version=1,
+        backend_id=base_route.model_profile.backend_id,
+        runtime_class=base_route.model_profile.runtime_class,
+        model_provider=planning_provider,
+        model_id=planning_model,
+        reasoning_effort=planning_reasoning_effort,
+        timeout_policy_ref=planning_definition.timeout_policy_ref,
+        workspace_policy_ref="workspace:story-planning:v1",
+        output_policy_ref="output:story-planning:structured:v1",
+        fallback_policy="FAIL_CLOSED",
+        status=ModelProfileStatus.ACTIVE,
+        capability_probe_ref=base_route.model_profile.capability_probe_ref,
+    )
+    planning_policy = RoutePolicy(
+        policy_id="story-planning.route",
+        policy_version=1,
+        default_model_profile_id=planning_profile.profile_id,
+        allowed_model_profile_ids=(planning_profile.profile_id,),
+        rule_set_ref="route-rules:story-planning:v1",
+        fallback_policy="FAIL_CLOSED",
+        fallback_policy_ref="story-planning.fail-closed",
+        fallback_policy_version=1,
+        reasoning_downgrade_policy="PROHIBITED",
+        status="ACTIVE",
+    )
+    planning_fallback = FallbackPolicy.fail_closed(
+        planning_policy.fallback_policy_ref,
+        planning_policy.fallback_policy_version,
+    )
+    planning_route = PlanningExecutionRoute(
+        model_profile=planning_profile,
+        route_policy=planning_policy,
+        fallback_policy=planning_fallback,
+        backend_version=base_route.backend_version,
+        runtime_host_id=base_route.runtime_host_id,
+        auth_profile_ref=base_route.auth_profile_ref,
+        release_sha=base_route.release_sha,
+    )
     preparer = PostgresPlanningExecutionPreparer(
         settings.database_url,
         execution_transport=transport,
+        planning_route=planning_route,
         worker_id=worker_id,
         max_cost_per_call=chapter.model_port.max_cost_per_call,
         budget_caps={
