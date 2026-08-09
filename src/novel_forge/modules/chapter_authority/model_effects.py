@@ -593,6 +593,8 @@ class ExternalEffectChapterModelPort:
         agent_binding_recorder: ChapterAgentBindingRecorder | None = None,
         agent_binding_required: bool = False,
         fault_injector: Callable[[str], None] | None = None,
+        capability_binder: Any | None = None,
+        execution_binding_domain: str = "chapter",
     ) -> None:
         if not database_url or not worker_id or lease_seconds <= 0:
             raise ValueError("model effect database, worker, and lease are required")
@@ -612,6 +614,10 @@ class ExternalEffectChapterModelPort:
         self.agent_binding_recorder = agent_binding_recorder
         self.agent_binding_required = agent_binding_required
         self.fault_injector = fault_injector or (lambda _checkpoint: None)
+        self.capability_binder = capability_binder
+        self.execution_binding_domain = execution_binding_domain.strip().lower()
+        if not self.execution_binding_domain:
+            raise ValueError("model execution binding domain is required")
         if agent_binding_required and agent_binding_recorder is None:
             raise ValueError(
                 "production Chapter model execution requires Agent Binding"
@@ -676,6 +682,7 @@ class ExternalEffectChapterModelPort:
                         lambda _stage: self.adapter.provider,
                     )(stage)
                 ),
+                "execution_binding_domain": self.execution_binding_domain,
                 "input_artifacts": [
                     {
                         "artifact_ref": f"asset-version:{item.asset_version_id}",
@@ -693,7 +700,7 @@ class ExternalEffectChapterModelPort:
                 ],
             },
         }
-        binder = getattr(self.adapter, "binder", None)
+        binder = self.capability_binder or getattr(self.adapter, "binder", None)
         if self.agent_binding_required and binder is None:
             raise KernelError(
                 "CHAPTER_CAPABILITY_PREFLIGHT_REQUIRED",

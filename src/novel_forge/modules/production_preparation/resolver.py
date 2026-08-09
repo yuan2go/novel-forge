@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from dataclasses import replace
+
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.production_preparation.contracts import ResolvedProductionAsset
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
@@ -151,7 +153,56 @@ class PostgresProductionAssetResolver:
                 "PREPARATION_OVERRIDE_NOT_ELIGIBLE",
                 "override AssetVersion is stale, revoked, or quarantined",
             )
-        return self._asset(row[:10], "explicit audited AssetVersion override")
+        asset = self._asset(row[:10], "explicit audited AssetVersion override")
+        accepted_chapter = self._accepted_snapshot_chapter(
+            project_id=project_id,
+            asset_version_id=asset_version_id,
+        )
+        if accepted_chapter is not None:
+            asset = self._bind_acceptance_chapter(asset, accepted_chapter)
+        return asset
+
+    def _accepted_snapshot_chapter(
+        self, *, project_id: str, asset_version_id: str
+    ) -> int | None:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT chapter_number
+                FROM authority_book_chapter_acceptance
+                WHERE project_id=%s
+                  AND status='COMMITTED'
+                  AND (
+                    story_state_asset_version_id=%s
+                    OR canon_snapshot_asset_version_id=%s
+                  )
+                ORDER BY chapter_number DESC
+                LIMIT 1
+                """,
+                [project_id, asset_version_id, asset_version_id],
+            )
+            row = uow.cursor.fetchone()
+        return int(row[0]) if row is not None else None
+
+    @staticmethod
+    def _bind_acceptance_chapter(
+        asset: ResolvedProductionAsset, accepted_chapter: int
+    ) -> ResolvedProductionAsset:
+        content = dict(asset.content)
+        declared = content.get("chapter", content.get("chapter_number"))
+        if declared is not None and int(declared) != accepted_chapter:
+            raise KernelError(
+                "PREPARATION_ACCEPTANCE_CHAPTER_MISMATCH",
+                "accepted snapshot chapter metadata conflicts with Book Authority",
+            )
+        content.update(
+            {
+                "chapter": accepted_chapter,
+                "chapter_number": accepted_chapter,
+                "_authority_acceptance_bound": True,
+            }
+        )
+        return replace(asset, content=content)
 
     @staticmethod
     def _asset(row: tuple[object, ...], reason: str) -> ResolvedProductionAsset:

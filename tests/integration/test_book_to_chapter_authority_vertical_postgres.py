@@ -15,6 +15,7 @@ from novel_forge.modules.book_authority.production import (
     PostgresBookAuthority,
     StartBookProductionCommand,
     SubmitBookChapterCommand,
+    _validate_chapter_acceptance_evidence,
 )
 from novel_forge.modules.book_authority.governed_scheduler import (
     PostgresBookAuthorityScheduler,
@@ -83,6 +84,78 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         ensure_migrated()
+
+    def test_acceptance_freezes_typed_execution_plan_for_chapter_outcome(self) -> None:
+        logical_plan = "story-planning-candidate:chapter-1"
+        execution_plan = "typed-chapter-plan:chapter-1"
+        execution_hash = "sha256:typed-plan"
+        contents = {
+            "chapter_plan": {
+                "chapter": 1,
+                "source_chapter_plan_asset_version_id": execution_plan,
+                "source_chapter_plan_content_hash": execution_hash,
+            },
+            "draft_version": {},
+            "re_review_report": {"decision": "PASSED", "blocking_issue_count": 0},
+            "canon_patch": {"gate": "PASSED", "conflicts": []},
+            "canon_snapshot": {},
+            "quality_score_report": {"gate": "PASSED_WITH_UNCALIBRATED"},
+            "release_package": {
+                "release_status": "READY_FOR_BLOB_VERIFICATION"
+            },
+            "final_release_gate_report": {
+                "gate": "PASSED",
+                "release_status": "INTERNAL_RELEASE_FINALIZED",
+                "blob_receipt": {"receipt_id": "receipt:chapter-1"},
+            },
+        }
+        outputs = [
+            {
+                "asset_type": asset_type,
+                "asset_version_id": (
+                    execution_plan if asset_type == "chapter_plan" else f"{asset_type}:v1"
+                ),
+                "content_hash": (
+                    execution_hash if asset_type == "chapter_plan" else f"sha256:{asset_type}"
+                ),
+                "content": content,
+                "lifecycle": "ACTIVE",
+                "eligibility": "ELIGIBLE",
+                "governance": "CLEAR",
+            }
+            for asset_type, content in contents.items()
+        ]
+
+        frozen = _validate_chapter_acceptance_evidence(
+            request={
+                "chapter_number": 1,
+                "chapter_plan_version": logical_plan,
+                "chapter_plan_content_hash": "sha256:logical-plan",
+                "command_payload": {
+                    "execution_chapter_plan_asset_version_id": execution_plan,
+                    "execution_chapter_plan_content_hash": execution_hash,
+                },
+            },
+            evidence={
+                "status": "SUCCEEDED",
+                "saga": {"status": "SUCCEEDED"},
+                "outputs": outputs,
+                "model_effects": [],
+                "budgets": [],
+            },
+        )
+
+        self.assertIn(
+            {"asset_version_id": execution_plan, "content_hash": execution_hash},
+            frozen,
+        )
+        self.assertNotIn(
+            {
+                "asset_version_id": logical_plan,
+                "content_hash": "sha256:logical-plan",
+            },
+            frozen,
+        )
 
     def test_book_chapter_reader_outcome_recap_and_checkpoint_are_one_governed_chain(
         self,
@@ -603,6 +676,55 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                 self._chapter_command(fixture, chapter_number=1),
                 principal=fixture["principal"],
             )
+
+    def test_book_mutations_are_transaction_commands_with_business_events(self) -> None:
+        fixture = self._new_book_fixture(target_chapter_count=2)
+        fixture["authority"].pause(
+            fixture["book"].book_run_id,
+            reason="command boundary proof",
+            principal=fixture["principal"],
+        )
+        fixture["authority"].resume(
+            fixture["book"].book_run_id,
+            reason="command boundary proof",
+            principal=fixture["principal"],
+        )
+
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                """
+                SELECT COUNT(*)
+                FROM authority_operation
+                WHERE project_id=%s
+                  AND definition_name='book.authority.mutate'
+                  AND status='SUCCEEDED'
+                """,
+                [fixture["project_id"]],
+            )
+            commands = int(uow.cursor.fetchone()[0])
+            uow.cursor.execute(
+                """
+                SELECT event_type
+                FROM state_event
+                WHERE project_id=%s
+                  AND event_type IN (
+                    'book.production.started',
+                    'book.production.paused',
+                    'book.production.resumed'
+                  )
+                """,
+                [fixture["project_id"]],
+            )
+            events = {str(row[0]) for row in uow.cursor.fetchall()}
+        self.assertEqual(commands, 3)
+        self.assertEqual(
+            events,
+            {
+                "book.production.started",
+                "book.production.paused",
+                "book.production.resumed",
+            },
+        )
 
     def test_book_accept_requires_all_evidence(self) -> None:
         fixture = self._new_book_fixture(target_chapter_count=1)

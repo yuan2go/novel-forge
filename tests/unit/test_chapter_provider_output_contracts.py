@@ -4,8 +4,12 @@ from copy import deepcopy
 
 import pytest
 
+from novel_forge.modules.chapter_authority.execution_gateway import (
+    _stage_semantic_contract,
+)
 from novel_forge.modules.chapter_authority.provider_output_contracts import (
     chapter_provider_output_schema,
+    validate_chapter_provider_output_against_schema,
     validate_chapter_provider_output_semantics,
     validate_chapter_provider_output_schema,
 )
@@ -26,6 +30,22 @@ CANON_FIELDS = (
     "theme_movements",
     "antagonist_pressure_changes",
 )
+
+
+def test_revision_prompt_requires_issue_resolution_and_language_continuity() -> None:
+    contract = _stage_semantic_contract("revision")
+
+    assert "Resolve every supplied review issue" in contract
+    assert "Preserve the reader-facing language" in contract
+    assert "resolved_issue_codes" in contract
+
+
+def test_rereview_prompt_reports_only_acceptance_blocking_defects() -> None:
+    contract = _stage_semantic_contract("rereview")
+
+    assert "acceptance-blocking" in contract
+    assert "minor polish" in contract
+    assert "issues=[]" in contract
 
 
 def _valid(stage: str) -> dict[str, object]:
@@ -168,6 +188,37 @@ def test_schema_validation_does_not_treat_boolean_as_number() -> None:
     assert "confidence" in str(raised.value)
 
 
+def test_shared_schema_validation_supports_integer_const_and_max_items() -> None:
+    schema = {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+            "chapter": {"type": "integer", "minimum": 1, "maximum": 3},
+            "scope": {"type": "string", "const": "chapter:3"},
+            "beats": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 2,
+                "items": {"type": "string"},
+            },
+        },
+        "required": ["chapter", "scope", "beats"],
+        "additionalProperties": False,
+    }
+
+    assert validate_chapter_provider_output_against_schema(
+        "planning-proof",
+        schema,
+        {"chapter": 3, "scope": "chapter:3", "beats": ["choice"]},
+    )["chapter"] == 3
+    with pytest.raises(KernelError, match="frozen constant"):
+        validate_chapter_provider_output_against_schema(
+            "planning-proof",
+            schema,
+            {"chapter": 3, "scope": "chapter:2", "beats": ["choice"]},
+        )
+
+
 @pytest.mark.parametrize(
     "text",
     (
@@ -194,6 +245,28 @@ def test_revision_semantics_accepts_clean_reader_facing_prose() -> None:
     }
 
     assert validate_chapter_provider_output_semantics("revision", value) == value
+
+
+def test_canon_semantics_rejects_contradictory_subject_predicate_slot() -> None:
+    value = _valid("canon_extraction")
+    value["canon_facts"].append(
+        {
+            **value["canon_facts"][0],
+            "object": "concealed_record",
+        }
+    )
+
+    with pytest.raises(KernelError) as raised:
+        validate_chapter_provider_output_semantics("canon_extraction", value)
+
+    assert raised.value.code == "CHAPTER_PROVIDER_OUTPUT_SEMANTIC_INVALID"
+
+
+def test_canon_semantics_accepts_exact_duplicate_for_authority_deduplication() -> None:
+    value = _valid("canon_extraction")
+    value["canon_facts"].append(dict(value["canon_facts"][0]))
+
+    assert validate_chapter_provider_output_semantics("canon_extraction", value) == value
 
 
 def test_revision_schema_tells_provider_text_is_reader_facing_prose_only() -> None:

@@ -138,6 +138,10 @@ def _canon_schema() -> dict[str, Any]:
             *evidence_fields,
         ),
     )
+    fact["description"] = (
+        "Canonical facts only. Emit at most one item for each "
+        "subject/predicate/impact_type semantic slot; never emit contradictory values."
+    )
     change = _object_schema(
         {
             "summary": {"type": "string", "minLength": 1},
@@ -300,6 +304,37 @@ def validate_chapter_provider_output_semantics(
     """Reject structurally legal results that are not eligible stage outputs."""
 
     normalized = json.loads(json.dumps(value, ensure_ascii=False))
+    if stage == "canon_extraction":
+        fingerprints: dict[tuple[object, ...], str] = {}
+        for field in _CANON_FIELDS:
+            for item in normalized.get(field, []):
+                impact = str(item.get("impact_type") or field)
+                if field == "canon_facts":
+                    slot: tuple[object, ...] = (
+                        field,
+                        str(item.get("subject") or ""),
+                        impact,
+                        str(item.get("predicate") or ""),
+                    )
+                else:
+                    slot = (
+                        field,
+                        "",
+                        impact,
+                        float(item.get("evidence_start") or 0),
+                        float(item.get("evidence_end") or 0),
+                    )
+                fingerprint = json.dumps(
+                    item, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+                )
+                previous = fingerprints.get(slot)
+                if previous is not None and previous != fingerprint:
+                    raise KernelError(
+                        "CHAPTER_PROVIDER_OUTPUT_SEMANTIC_INVALID",
+                        "Canon extraction contains contradictory changes for one semantic slot",
+                    )
+                fingerprints[slot] = fingerprint
+        return normalized
     if stage != "revision":
         return normalized
 
@@ -381,6 +416,9 @@ def _validate(
         minimum = schema.get("minItems")
         if isinstance(minimum, int) and len(value) < minimum:
             raise ValueError(f"{path} must contain at least {minimum} items")
+        maximum = schema.get("maxItems")
+        if isinstance(maximum, int) and len(value) > maximum:
+            raise ValueError(f"{path} must contain at most {maximum} items")
         item_schema = schema.get("items")
         if isinstance(item_schema, dict):
             for index, item in enumerate(value):
@@ -400,7 +438,18 @@ def _validate(
             raise ValueError(f"{path} must be at least {minimum}")
         if maximum is not None and value > maximum:
             raise ValueError(f"{path} must be at most {maximum}")
+    elif expected == "integer":
+        if isinstance(value, bool) or not isinstance(value, int):
+            raise ValueError(f"{path} must be an integer")
+        minimum = schema.get("minimum")
+        maximum = schema.get("maximum")
+        if minimum is not None and value < minimum:
+            raise ValueError(f"{path} must be at least {minimum}")
+        if maximum is not None and value > maximum:
+            raise ValueError(f"{path} must be at most {maximum}")
     elif expected is not None:
         raise ValueError(f"{path} uses unsupported schema type {expected}")
     if "enum" in schema and value not in schema["enum"]:
         raise ValueError(f"{path} is not one of the allowed values")
+    if "const" in schema and value != schema["const"]:
+        raise ValueError(f"{path} must equal the frozen constant")

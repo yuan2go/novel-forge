@@ -16,6 +16,10 @@ from novel_forge.modules.chapter_authority.execution_gateway import (
     chapter_stage_capability,
 )
 from novel_forge.modules.chapter_authority.scheduler import _admission_dependencies
+from novel_forge.modules.book_followup_authority.contracts import (
+    BOOK_FOLLOWUP_DEFINITION_VERSION,
+    READER_OUTCOME_DEFINITION,
+)
 from novel_forge.storage.authority_repositories import definition_hash
 
 
@@ -296,12 +300,34 @@ def story_planning_workflow_binding_catalog() -> WorkflowBindingCatalog:
     )
 
 
+def reader_outcome_workflow_binding_catalog() -> WorkflowBindingCatalog:
+    return WorkflowBindingCatalog(
+        "book_followup_reader_outcome",
+        BOOK_FOLLOWUP_DEFINITION_VERSION,
+        (
+            WorkflowBinding(
+                node_id="reader_outcome",
+                operation_name=READER_OUTCOME_DEFINITION,
+                stage="reader_outcome",
+                handler_key=(
+                    "novel_forge.book_followup_authority."
+                    f"{READER_OUTCOME_DEFINITION}"
+                ),
+                capability_id="quality.reader_outcome.judge",
+                depends_on=(),
+                primary_output_asset_type="reader_outcome_report",
+            ),
+        ),
+    )
+
+
 def governed_workflow_binding_catalog(
     workflow_id: str, workflow_version: str
 ) -> WorkflowBindingCatalog:
     catalogs = (
         chapter_workflow_binding_catalog(),
         story_planning_workflow_binding_catalog(),
+        reader_outcome_workflow_binding_catalog(),
     )
     for catalog in catalogs:
         if (catalog.workflow_id, catalog.workflow_version) == (
@@ -337,5 +363,6 @@ __all__ = [
     "chapter_operation_definition_catalog",
     "chapter_workflow_binding_catalog",
     "governed_workflow_binding_catalog",
+    "reader_outcome_workflow_binding_catalog",
     "story_planning_workflow_binding_catalog",
 ]

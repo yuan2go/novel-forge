@@ -67,6 +67,7 @@ class BookAuthorityRepository:
         book_run_id: str,
         chapter_request_id: str,
         chapter_number: int,
+        expected_version: int,
     ) -> bool:
         self.cursor.execute(
             """
@@ -74,9 +75,9 @@ class BookAuthorityRepository:
             SET active_chapter_request_id=%s, state='CHAPTER_SUBMITTED',
                 version=version+1, updated_at=NOW()
             WHERE book_run_id=%s AND state='READY'
-              AND current_chapter=%s
+              AND current_chapter=%s AND version=%s
             """,
-            [chapter_request_id, book_run_id, chapter_number - 1],
+            [chapter_request_id, book_run_id, chapter_number - 1, expected_version],
         )
         return self.cursor.rowcount == 1
 
@@ -92,6 +93,7 @@ class BookAuthorityRepository:
         delegation_id: str,
         root_operation_id: str,
         saga_id: str,
+        expected_book_version: int,
     ) -> None:
         self.cursor.execute(
             """
@@ -133,7 +135,7 @@ class BookAuthorityRepository:
             SET active_chapter_request_id=%s, active_child_delegation_id=%s,
                 active_chapter_number=%s, active_plan_version_id=%s,
                 state='CHAPTER_SUBMITTED', version=version+1, updated_at=NOW()
-            WHERE book_run_id=%s
+            WHERE book_run_id=%s AND version=%s
             """,
             [
                 chapter_request_id,
@@ -141,8 +143,11 @@ class BookAuthorityRepository:
                 chapter_number,
                 chapter_plan_version,
                 book_run_id,
+                expected_book_version,
             ],
         )
+        if self.cursor.rowcount != 1:
+            raise ValueError("Book checkpoint changed before Chapter link")
 
     def record_chapter_status(
         self,
@@ -151,23 +156,29 @@ class BookAuthorityRepository:
         book_run_id: str,
         request_status: str,
         book_state: str,
+        expected_request_status: str,
+        expected_book_version: int,
     ) -> None:
         self.cursor.execute(
             """
             UPDATE authority_book_chapter_request
             SET status_reference=%s, updated_at=NOW()
-            WHERE chapter_request_id=%s
+            WHERE chapter_request_id=%s AND status_reference=%s
             """,
-            [request_status, chapter_request_id],
+            [request_status, chapter_request_id, expected_request_status],
         )
+        if self.cursor.rowcount != 1:
+            raise ValueError("Chapter request changed before status reconciliation")
         self.cursor.execute(
             """
             UPDATE authority_book_production
             SET state=%s, version=version+1, updated_at=NOW()
-            WHERE book_run_id=%s
+            WHERE book_run_id=%s AND version=%s
             """,
-            [book_state, book_run_id],
+            [book_state, book_run_id, expected_book_version],
         )
+        if self.cursor.rowcount != 1:
+            raise ValueError("Book checkpoint changed before status reconciliation")
         self.cursor.execute(
             """
             UPDATE authority_child_delegation
@@ -204,6 +215,7 @@ class BookAuthorityRepository:
         story_state_asset_version_id: str,
         canon_snapshot_asset_version_id: str,
         evidence: dict[str, Any],
+        expected_book_version: int,
         before_cursor_advance: Callable[[], None] | None = None,
     ) -> bool:
         self.cursor.execute(
@@ -269,6 +281,7 @@ class BookAuthorityRepository:
                 version=version+1, updated_at=NOW()
             WHERE book_run_id=%s
               AND accepted_through_chapter IN (%s, %s)
+              AND version=%s
             """,
             [
                 chapter_number,
@@ -280,6 +293,7 @@ class BookAuthorityRepository:
                 book_run_id,
                 chapter_number - 1,
                 chapter_number,
+                expected_book_version,
             ],
         )
         if self.cursor.rowcount != 1:
@@ -321,6 +335,7 @@ class BookAuthorityRepository:
         followup_type: str,
         operation_id: str,
         stable_idempotency_key: str,
+        expected_book_version: int,
     ) -> None:
         self.cursor.execute(
             """
@@ -349,10 +364,12 @@ class BookAuthorityRepository:
             f"""
             UPDATE authority_book_production
             SET {column}=%s, version=version+1, updated_at=NOW()
-            WHERE book_run_id=%s
+            WHERE book_run_id=%s AND version=%s
             """,
-            [operation_id, book_run_id],
+            [operation_id, book_run_id, expected_book_version],
         )
+        if self.cursor.rowcount != 1:
+            raise ValueError("Book checkpoint changed before follow-up link")
 
     def advance(
         self,

@@ -92,6 +92,8 @@ class ChapterOutcomeStoryStateTests(unittest.TestCase):
             [{"event_id": "earlier"}, {"event_id": "event-1"}],
         )
         self.assertEqual(first["state_version"], 2)
+        self.assertEqual(first["chapter"], 1)
+        self.assertEqual(first["chapter_number"], 1)
 
     def test_story_state_reducer_is_idempotent(self) -> None:
         first = reduce_story_state(

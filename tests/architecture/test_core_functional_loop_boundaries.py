@@ -53,6 +53,7 @@ def test_planning_candidate_and_commit_authority_boundaries_are_explicit() -> No
         "HIERARCHICAL_PLANNING_AUTHORITY",
         "CHAPTER_AUTHORITY",
         "READER_JUDGE_AUTHORITY",
+        "BOOK_FOLLOWUP_AUTHORITY",
         "PLAN_CHANGE_AUTHORITY",
     ):
         assert authority in _read(
@@ -87,6 +88,30 @@ def test_book_run_and_replan_bind_immutable_input_snapshots() -> None:
     assert "bind_replanned_input_snapshot" in replan
     assert "book.production_input.replan_bind" in production
     assert "execute_transaction_command" in replan
+
+
+def test_book_durable_mutations_use_transaction_commands_not_attempt_runtime() -> None:
+    production = _read("src/novel_forge/modules/book_authority/production.py")
+    assert 'BOOK_MUTATION_DEFINITION = "book.authority.mutate"' in production
+    assert "def _execute_mutation(" in production
+    assert "execute_transaction_command(" in production
+    assert '"cas_required": True' in production
+    assert '"business_event_required": True' in production
+    assert '"attempt_runtime_forbidden": True' in production
+    for event_type in (
+        "book.production.started",
+        "book.chapter_request.reserved",
+        "book.chapter_request.linked",
+        "book.chapter.accepted",
+        "book.chapter.status_reconciled",
+        "book.production.paused",
+        "book.production.resumed",
+        "book.production.aborted",
+        "book.followup.linked",
+        "book.followup.completed",
+        "book.checkpoint.advanced",
+    ):
+        assert event_type in production
 
 
 def test_chapter_group_arc_and_ending_business_evidence_is_acceptance_bound() -> None:

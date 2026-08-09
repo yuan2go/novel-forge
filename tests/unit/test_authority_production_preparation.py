@@ -102,6 +102,32 @@ def _asset(asset_type: str, *, project_id: str = "project-1") -> ResolvedProduct
 
 
 class ProductionPreparationTests(unittest.TestCase):
+    def test_previous_production_manifest_is_not_recursive_chapter_context(self) -> None:
+        assets = {
+            kind: _asset(kind)
+            for kind in (
+                "chapter_plan",
+                "style_policy",
+                "quality_rubric",
+                "platform_profile",
+                "production_input_manifest",
+            )
+        }
+        result = ProductionPreparationService(_Resolver(assets)).prepare(
+            ProductionPreparationRequest(
+                project_id="project-1",
+                workspace_id="workspace-1",
+                chapter=1,
+                idempotency_key="non-recursive-manifest",
+            )
+        )
+
+        self.assertEqual(result.report.decision, "READY")
+        self.assertNotIn(
+            "production_input_manifest",
+            {item["asset_type"] for item in result.command.context_candidates},
+        )
+
     def test_ready_report_freezes_context_and_versions(self) -> None:
         assets = {
             kind: _asset(kind)
@@ -189,6 +215,43 @@ class ProductionPreparationTests(unittest.TestCase):
         self.assertTrue(any("Canon" in action for action in result.report.repair_actions))
         self.assertIsNone(result.command)
 
+    def test_story_state_snapshot_is_required_for_continuing_chapter(self) -> None:
+        assets = {
+            kind: _asset(kind)
+            for kind in (
+                "chapter_plan",
+                "style_policy",
+                "quality_rubric",
+                "platform_profile",
+                "canon_snapshot",
+                "character_state_snapshot",
+                "relationship_state_snapshot",
+                "timeline_snapshot",
+                "foreshadow_snapshot",
+                "promise_ledger_snapshot",
+                "reward_ledger_snapshot",
+                "world_rule_snapshot",
+                "power_state_snapshot",
+            )
+        }
+        assets["chapter_plan"] = replace(
+            assets["chapter_plan"],
+            content={**assets["chapter_plan"].content, "chapter": 2},
+        )
+
+        result = ProductionPreparationService(_Resolver(assets)).prepare(
+            ProductionPreparationRequest(
+                project_id="project-1",
+                workspace_id="workspace-1",
+                chapter=2,
+                idempotency_key="missing-story-state",
+            )
+        )
+
+        self.assertIn(
+            "story_state_snapshot", result.report.missing_required_asset_types
+        )
+
     def test_cross_project_override_fails_closed(self) -> None:
         assets = {"chapter_plan": _asset("chapter_plan", project_id="project-2")}
         with self.assertRaisesRegex(ValueError, "cross-project"):
@@ -225,7 +288,8 @@ class ProductionPreparationTests(unittest.TestCase):
     def test_v2_selects_multiple_character_and_relationship_states(self) -> None:
         required = (
             "chapter_plan", "style_policy", "quality_rubric", "platform_profile",
-            "canon_snapshot", "timeline_snapshot", "foreshadow_snapshot",
+            "story_state_snapshot", "canon_snapshot", "timeline_snapshot",
+            "foreshadow_snapshot",
             "promise_ledger_snapshot", "reward_ledger_snapshot", "world_rule_snapshot",
             "power_state_snapshot",
         )

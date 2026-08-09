@@ -1,12 +1,16 @@
 from __future__ import annotations
 
+from copy import deepcopy
 import hashlib
 import json
 from pathlib import Path
 import tempfile
 import unittest
 
-from novel_forge.api.authority_dependencies import build_chapter_authority_application
+from novel_forge.api.authority_dependencies import (
+    build_chapter_authority_application,
+    build_reader_outcome_model_port,
+)
 from novel_forge.infrastructure.settings import IndustrialSettings
 from novel_forge.modules.authority_security import Principal, PrincipalType
 from novel_forge.modules.book_followup_authority.application import (
@@ -17,15 +21,159 @@ from novel_forge.modules.book_followup_authority.contracts import (
     LONGFORM_RECAP_DEFINITION,
     READER_OUTCOME_DEFINITION,
 )
+from novel_forge.modules.book_followup_authority.definitions import (
+    book_followup_operation_definitions,
+)
 from novel_forge.modules.book_followup_authority.query import (
     BookFollowupProjectionQuery,
 )
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+from novel_forge.modules.capability_pack_authority.domain import canonical_hash
+from novel_forge.modules.production_execution.capability_registry import (
+    default_capability_registry,
+)
 from tests.integration.authority_postgres_support import (
     DATABASE_URL,
     ensure_migrated,
     identifier,
 )
+from tests.integration.capability_pack_postgres_support import (
+    RELEASE_SHA,
+    CapabilityPackPostgresHarness,
+)
+
+
+def _activate_reader_outcome_pack(harness: CapabilityPackPostgresHarness) -> None:
+    definition = next(
+        item
+        for item in book_followup_operation_definitions(
+            application_build_id="reader-outcome-pack-fixture",
+            commit_sha=RELEASE_SHA,
+        )
+        if item["name"] == READER_OUTCOME_DEFINITION
+    )
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.repositories.definitions.register(definition)
+        uow.cursor.execute(
+            """
+            SELECT definition_hash
+            FROM authority_operation_definition
+            WHERE name=%s AND definition_version='1.0.0'
+            """,
+            [READER_OUTCOME_DEFINITION],
+        )
+        definition_hash = str(uow.cursor.fetchone()[0])
+        uow.commit()
+    manifest = harness._base_manifest
+    template = next(
+        node
+        for node in manifest["workflow_template"]["nodes"]
+        if node.get("agent_definition_ref")
+    )
+    capability_id = "quality.reader_outcome.judge"
+    node = deepcopy(template)
+    node.update(
+        node_id="reader_outcome",
+        operation_name=READER_OUTCOME_DEFINITION,
+        operation_definition_ref=f"{READER_OUTCOME_DEFINITION}@1.0.0",
+        operation_definition_hash=definition_hash,
+        handler_key=(
+            "novel_forge.book_followup_authority."
+            f"{READER_OUTCOME_DEFINITION}"
+        ),
+        stage="reader_outcome",
+        capability_id=capability_id,
+        agent_definition_ref="reader-outcome-agent@1",
+        input_asset_types=["draft_version", "canon_snapshot"],
+        output_asset_types=["reader_outcome_report"],
+        depends_on=[],
+        commit_authority="BOOK_FOLLOWUP_AUTHORITY",
+        timeout_policy_ref="timeout:quality-reader_outcome-judge:v1",
+    )
+    manifest["identity"].update(
+        name="Reader Outcome Pack",
+        domain="book_followup",
+        description="Governed Reader Outcome SHADOW execution.",
+    )
+    manifest["compatibility"]["required_capabilities"] = [
+        capability_id,
+        "quality.originality.judge",
+    ]
+    manifest["workflow_template"].update(
+        workflow_id="book_followup_reader_outcome",
+        workflow_version="1.0.0",
+        nodes=[node],
+        completion={
+            "required_terminal_nodes": ["reader_outcome"],
+            "required_evidence": ["trace", "audit"],
+            "required_output_asset_types": ["reader_outcome_report"],
+        },
+    )
+    manifest["context_sources"]["allowed_asset_types"] = [
+        "draft_version",
+        "canon_snapshot",
+        "context_bundle",
+    ]
+    manifest["tool_permissions"]["tools"] = [
+        {
+            **manifest["tool_permissions"]["tools"][0],
+            "allowed_operations": ["reader_outcome"],
+        }
+    ]
+    manifest["evaluation"]["required_gates"] = [
+        {
+            "gate_id": "reader_outcome_source_isolation",
+            "judge_capability_id": "quality.originality.judge",
+            "blocking": True,
+            "threshold": 1,
+            "required_evidence": ["reader_outcome_report"],
+        }
+    ]
+    manifest["evaluation"]["metrics"] = []
+    for artifact in harness._base_catalog["artifacts"]:
+        if artifact["ref"] == manifest["context_sources"]["policy_id"]:
+            artifact["content"]["allowed_asset_types"] = list(
+                manifest["context_sources"]["allowed_asset_types"]
+            )
+            artifact["content_hash"] = canonical_hash(artifact["content"])
+        elif artifact["ref"] == manifest["tool_permissions"]["policy_id"]:
+            artifact["content"]["explicit_tool_refs"] = ["model.provider.invoke"]
+            artifact["content_hash"] = canonical_hash(artifact["content"])
+    contract = default_capability_registry().resolve(capability_id)
+    for schema_ref in (contract.input_schema_ref, contract.output_schema_ref):
+        harness._base_catalog["artifacts"].append(
+            {
+                "kind": "SCHEMA",
+                "ref": schema_ref,
+                "version": "v1",
+                "content": {
+                    "$schema": "https://json-schema.org/draft/2020-12/schema",
+                    "type": "object",
+                    "additionalProperties": True,
+                },
+            }
+        )
+    harness._base_catalog["artifacts"].append(
+        {
+            "kind": "TIMEOUT_POLICY",
+            "ref": "timeout:quality-reader_outcome-judge:v1",
+            "version": "v1",
+            "content": {
+                "policy_id": "timeout:quality-reader_outcome-judge:v1",
+                "operation_timeout_seconds": 180,
+                "timeout_action": "FAIL_ATTEMPT",
+                "authority_binding": f"{READER_OUTCOME_DEFINITION}@1.0.0",
+            },
+        }
+    )
+    scope = harness.approval_scope()
+    scope["allowed_workflow_definition_refs"] = [
+        "book_followup_reader_outcome@1.0.0"
+    ]
+    pack = harness.register_compile_approve(
+        "1.0.0", generation=1, approval_scope=scope
+    )
+    harness.activate(harness.deploy(pack))
 
 
 class BookFollowupAuthorityPostgresTests(unittest.TestCase):
@@ -44,7 +192,7 @@ class BookFollowupAuthorityPostgresTests(unittest.TestCase):
         )
         env = {
             "NOVEL_FORGE_ENVIRONMENT": "test",
-            "NOVEL_FORGE_COMMIT_SHA": "f" * 40,
+            "NOVEL_FORGE_COMMIT_SHA": RELEASE_SHA,
             "NOVEL_FORGE_MODEL_PROVIDER": "scripted_provider_v2",
             "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": str(
                 Path(self.temp.name) / "objects"
@@ -55,11 +203,16 @@ class BookFollowupAuthorityPostgresTests(unittest.TestCase):
         self.assertTrue(
             chapter.model_port.adapter.production_execution_gateway_backed
         )
+        reader_port = build_reader_outcome_model_port(
+            settings,
+            env=env,
+            chapter_application=chapter,
+        )
         self.app = BookFollowupAuthorityApplication(
             DATABASE_URL,
             application_build_id="book-followup-integration",
-            commit_sha="f" * 40,
-            model_port=chapter.model_port,
+            commit_sha=RELEASE_SHA,
+            model_port=reader_port,
             worker_id="book-followup-worker",
         )
         self.principal = Principal(
@@ -162,7 +315,8 @@ class BookFollowupAuthorityPostgresTests(unittest.TestCase):
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
             uow.cursor.execute(
                 """
-                SELECT COUNT(*), MIN(capability), MIN(status)
+                SELECT COUNT(*), MIN(capability), MIN(status),
+                       MIN(request_payload #>> '{_production_execution,execution_binding_domain}')
                 FROM authority_external_effect
                 WHERE operation_id=%s
                 """,
@@ -177,9 +331,116 @@ class BookFollowupAuthorityPostgresTests(unittest.TestCase):
                 [admission.operation_id],
             )
             attempts = int(uow.cursor.fetchone()[0])
-        self.assertEqual(effect, (1, "model.reader_outcome", "SUCCEEDED"))
+        self.assertEqual(
+            effect,
+            (1, "model.reader_outcome", "SUCCEEDED", "reader_outcome"),
+        )
         self.assertEqual(attempts, 1)
         self.assertTrue(projection)  # query type is production-wired; link view is Book-owned
+
+    def test_reader_outcome_freezes_its_own_governed_pack_snapshot(self) -> None:
+        harness = CapabilityPackPostgresHarness("reader_outcome")
+        _activate_reader_outcome_pack(harness)
+        self.project_id = harness.project_id
+        draft = self.seed(
+            "draft_version",
+            {
+                "contract_version": "draft-version-v1",
+                "text": "The accepted chapter converts trust into a public cost.",
+            },
+            "governed-reader-draft",
+        )
+        canon = self.seed(
+            "canon_snapshot",
+            {"contract_version": "canon-snapshot-v1", "facts": []},
+            "governed-reader-canon",
+        )
+        settings = IndustrialSettings(
+            root=Path(self.temp.name),
+            environment="development",
+            storage_authority="postgresql",
+            database_url=DATABASE_URL,
+        )
+        env = {
+            "NOVEL_FORGE_ENVIRONMENT": "development",
+            "NOVEL_FORGE_COMMIT_SHA": RELEASE_SHA,
+            "NOVEL_FORGE_MODEL_PROVIDER": "scripted_provider_v2",
+            "NOVEL_FORGE_READER_OUTCOME_CAPABILITY_PACK_ID": harness.pack_id,
+            "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": str(
+                Path(self.temp.name) / "governed-reader-objects"
+            ),
+        }
+        chapter = build_chapter_authority_application(settings, env=env)
+        reader_port = build_reader_outcome_model_port(
+            settings, env=env, chapter_application=chapter
+        )
+        app = BookFollowupAuthorityApplication(
+            DATABASE_URL,
+            application_build_id="reader-outcome-pack-fixture",
+            commit_sha=RELEASE_SHA,
+            model_port=reader_port,
+            worker_id="governed-reader-worker",
+        )
+        principal = harness.principal(
+            "reader-operator",
+            "book.authority.execute",
+            "book.followup:*",
+        )
+        payload = self.reader_payload(draft, canon)
+        payload["book_id"] = harness.book_ids[0]
+        admission = app.admit(
+            BookFollowupCommand(
+                definition_name=READER_OUTCOME_DEFINITION,
+                project_id=harness.project_id,
+                workspace_id=harness.workspace_id,
+                actor_id=principal.principal_id,
+                trace_id=identifier("governed-reader-trace"),
+                correlation_id=identifier("governed-reader-correlation"),
+                idempotency_key=f"{harness.project_id}:reader-outcome:governed",
+                payload=payload,
+                input_assets=(draft, canon),
+            ),
+            principal=principal,
+        )
+
+        result = app.run_or_recover(admission)
+
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                """
+                SELECT snapshot.pack_id,
+                       snapshot.snapshot_payload->>'workflow_definition_ref',
+                       snapshot.workflow_node_id, snapshot.snapshot_hash,
+                       effect.status
+                FROM authority_attempt_capability_pack_snapshot AS snapshot
+                JOIN authority_external_effect AS effect
+                  ON effect.operation_id=snapshot.operation_id
+                 AND effect.request_payload #>>
+                     '{_production_execution,attempt_id}'=snapshot.attempt_id
+                WHERE snapshot.operation_id=%s
+                """,
+                [admission.operation_id],
+            )
+            evidence = uow.cursor.fetchone()
+            uow.cursor.execute(
+                """
+                SELECT version.content
+                FROM authority_operation_output_asset AS binding
+                JOIN authority_asset_version AS version
+                  ON version.asset_version_id=binding.asset_version_id
+                WHERE binding.operation_id=%s
+                  AND binding.output_key='reader_outcome.report'
+                """,
+                [admission.operation_id],
+            )
+            report = dict(uow.cursor.fetchone()[0])
+        self.assertEqual(evidence[0], harness.pack_id)
+        self.assertEqual(evidence[1:3], ("book_followup_reader_outcome@1.0.0", "reader_outcome"))
+        self.assertTrue(str(evidence[3]).startswith("sha256:"))
+        self.assertEqual(evidence[4], "SUCCEEDED")
+        self.assertEqual(report["mode"], "SHADOW")
+        self.assertFalse(report["publish_blocking"])
+        self.assertTrue(result.output.asset_version_id)
 
     def test_longform_recap_materializes_deviation_and_authority_proposals(self) -> None:
         reader = self.seed(

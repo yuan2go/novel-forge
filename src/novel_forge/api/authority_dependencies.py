@@ -16,12 +16,15 @@ from novel_forge.modules.chapter_authority.application import (
 from novel_forge.modules.chapter_authority.execution_gateway import (
     ChapterExecutionGatewaySession,
     ChapterExecutionRoute,
-    PostgresChapterExecutionPayloadResolver,
+    PostgresProductionExecutionPayloadResolver,
     ProductionExecutionGatewayExternalEffectAdapter,
     chapter_stage_capability,
     default_chapter_fixture_response,
 )
-from novel_forge.modules.chapter_authority.model_effects import normalize_model_output
+from novel_forge.modules.chapter_authority.model_effects import (
+    ExternalEffectChapterModelPort,
+    normalize_model_output,
+)
 from novel_forge.modules.chapter_authority.provider_output_contracts import (
     validate_chapter_provider_output_against_schema,
     validate_chapter_provider_output_semantics,
@@ -41,6 +44,18 @@ from novel_forge.modules.book_design_authority import (
 )
 from novel_forge.modules.book_followup_authority.application import (
     BookFollowupAuthorityApplication,
+)
+from novel_forge.modules.book_followup_authority.execution import (
+    PostgresReaderOutcomeExecutionContractBinder,
+)
+from novel_forge.modules.story_planning_runtime import (
+    CapabilityPackBackedPlanningExecutionBinder,
+    PostgresPlanningExecutionBundleResolver,
+    PostgresPlanningExecutionPreparer,
+    StoryPlanningGenerationApplication,
+)
+from novel_forge.modules.story_planning_runtime.execution import (
+    planning_fixture_response,
 )
 from novel_forge.modules.agent_runtime.application import (
     AgentRuntimeAuthorityApplication,
@@ -627,8 +642,27 @@ def build_chapter_authority_application(
             output_schema,
             value,
         )
+        if stage in {
+            "book_plan.generate",
+            "volume_plan.generate",
+            "arc_plan.generate",
+            "chapter_group_plan.generate",
+            "chapter_plan.generate",
+        }:
+            return validated
         semantic = validate_chapter_provider_output_semantics(stage, validated)
         return normalize_model_output(stage, semantic)
+
+    def fixture_response(stage: str, inputs: Mapping[str, object]) -> dict[str, object]:
+        if stage in {
+            "book_plan.generate",
+            "volume_plan.generate",
+            "arc_plan.generate",
+            "chapter_group_plan.generate",
+            "chapter_plan.generate",
+        }:
+            return planning_fixture_response(stage, inputs)
+        return default_chapter_fixture_response(stage, inputs)
 
     def execution_session(project_id: str) -> ChapterExecutionGatewaySession:
         contracts = PostgresExecutionContractSource(
@@ -651,9 +685,9 @@ def build_chapter_authority_application(
             backends.register(
                 ScriptedFixtureExecutionBackend(
                     admission=admission,
-                    payload_resolver=PostgresChapterExecutionPayloadResolver(
+                    payload_resolver=PostgresProductionExecutionPayloadResolver(
                         settings.database_url,
-                        fixture_response_factory=default_chapter_fixture_response,
+                        fixture_response_factory=fixture_response,
                         working_directory=settings.root,
                     ),
                     record_store=store,
@@ -666,7 +700,7 @@ def build_chapter_authority_application(
             backends.register(
                 CodexCliExecutionBackend(
                     admission=admission,
-                    payload_resolver=PostgresChapterExecutionPayloadResolver(
+                    payload_resolver=PostgresProductionExecutionPayloadResolver(
                         settings.database_url,
                         working_directory=codex_workspace,
                     ),
@@ -697,7 +731,7 @@ def build_chapter_authority_application(
                     capability_profile=backend_capabilities[backend_id],
                     provider_adapter=adapter,
                     admission=admission,
-                    payload_resolver=PostgresChapterExecutionPayloadResolver(
+                    payload_resolver=PostgresProductionExecutionPayloadResolver(
                         settings.database_url,
                         working_directory=settings.root,
                     ),
@@ -934,11 +968,16 @@ def build_book_authority_application(
     chapter = chapter_application or build_chapter_authority_application(
         settings, env=env
     )
+    reader_model_port = build_reader_outcome_model_port(
+        settings,
+        env=env,
+        chapter_application=chapter,
+    )
     followup = BookFollowupAuthorityApplication(
         settings.database_url,
         application_build_id=build_id,
         commit_sha=commit_sha,
-        model_port=chapter.model_port,
+        model_port=reader_model_port,
         worker_id=str(
             (env or os.environ).get("NOVEL_FORGE_BOOK_FOLLOWUP_WORKER_ID")
             or "book-followup-authority-worker"
@@ -959,6 +998,119 @@ def build_book_authority_application(
     )
 
 
+def build_reader_outcome_model_port(
+    settings: IndustrialSettings,
+    *,
+    env: Mapping[str, str] | None = None,
+    chapter_application: ChapterAuthorityApplication,
+) -> ExternalEffectChapterModelPort:
+    """Compose Reader Outcome with a Reader-owned Pack binder and shared PEP."""
+
+    if not settings.database_url:
+        raise RuntimeError("PostgreSQL database is required for Reader Outcome")
+    values = env or os.environ
+    environment = str(
+        values.get("NOVEL_FORGE_ENVIRONMENT") or settings.environment
+    ).strip().lower()
+    transport = chapter_application.model_port.adapter
+    if not isinstance(transport, ProductionExecutionGatewayExternalEffectAdapter):
+        raise RuntimeError("Reader Outcome requires the Production Execution Gateway")
+    binder = PostgresReaderOutcomeExecutionContractBinder(
+        settings.database_url,
+        transport.routes,
+        capability_pack_id=str(
+            values.get("NOVEL_FORGE_READER_OUTCOME_CAPABILITY_PACK_ID")
+            or "reader_outcome_pack"
+        ),
+        pack_environment=environment,
+        pack_runtime_profile=environment,
+        pack_release_channel=str(
+            values.get("NOVEL_FORGE_RELEASE_CHANNEL") or "VALIDATION"
+        ).upper(),
+        pack_required=environment
+        in {"validation", "provider-validation", "production"},
+    )
+    transport.register_execution_binder("reader_outcome", binder)
+    return ExternalEffectChapterModelPort(
+        settings.database_url,
+        adapter=transport,
+        worker_id=str(
+            values.get("NOVEL_FORGE_BOOK_FOLLOWUP_WORKER_ID")
+            or "book-followup-authority-worker"
+        ),
+        max_cost_per_call=chapter_application.model_port.max_cost_per_call,
+        budget_caps={
+            key: value
+            for key, value in chapter_application.model_port.budget_caps.items()
+            if key != "chapter_total"
+        },
+        capability_binder=binder,
+        execution_binding_domain="reader_outcome",
+    )
+
+
+def build_story_planning_generation_application(
+    settings: IndustrialSettings,
+    *,
+    env: Mapping[str, str] | None = None,
+    chapter_application: ChapterAuthorityApplication | None = None,
+    post_provider_fault_injector: Callable[[str], None] | None = None,
+) -> StoryPlanningGenerationApplication:
+    """Compose Story Planning over the existing Production Execution Plane."""
+
+    if not settings.database_url:
+        raise RuntimeError("PostgreSQL database is required for Story Planning")
+    values = env or os.environ
+    build_id, commit_sha = authority_release_identity(env=values)
+    chapter = chapter_application or build_chapter_authority_application(
+        settings, env=values
+    )
+    transport = chapter.model_port.adapter
+    if not isinstance(transport, ProductionExecutionGatewayExternalEffectAdapter):
+        raise RuntimeError("Story Planning requires the Production Execution Gateway")
+    worker_id = str(
+        values.get("NOVEL_FORGE_STORY_PLANNING_WORKER_ID")
+        or "story-planning-generation-worker"
+    )
+    environment = str(
+        values.get("NOVEL_FORGE_ENVIRONMENT") or settings.environment
+    ).strip().lower()
+    preparer = PostgresPlanningExecutionPreparer(
+        settings.database_url,
+        execution_transport=transport,
+        worker_id=worker_id,
+        max_cost_per_call=chapter.model_port.max_cost_per_call,
+        budget_caps={
+            key: value
+            for key, value in chapter.model_port.budget_caps.items()
+            if key != "chapter_total"
+        },
+        post_provider_fault_injector=post_provider_fault_injector,
+    )
+    resolver = PostgresPlanningExecutionBundleResolver(
+        settings.database_url,
+        execution_preparer=preparer,
+        workflow_definition_ref="story_planning_generators@1.0.0",
+        pack_id=str(
+            values.get("NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID")
+            or "story_planning_pack"
+        ),
+        environment=environment,
+        runtime_profile=environment,
+        release_channel=str(
+            values.get("NOVEL_FORGE_RELEASE_CHANNEL") or "VALIDATION"
+        ).upper(),
+        release_sha=commit_sha,
+    )
+    return StoryPlanningGenerationApplication(
+        settings.database_url,
+        execution_binder=CapabilityPackBackedPlanningExecutionBinder(resolver),
+        application_build_id=build_id,
+        commit_sha=commit_sha,
+        worker_id=worker_id,
+    )
+
+
 __all__ = [
     "authority_release_identity",
     "build_chapter_authority_application",
@@ -968,6 +1120,8 @@ __all__ = [
     "build_content_authority_application",
     "build_content_authority_query",
     "build_book_authority_application",
+    "build_reader_outcome_model_port",
+    "build_story_planning_generation_application",
     "build_capability_pack_authority_application",
     "build_capability_pack_authority_query",
 ]

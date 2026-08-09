@@ -165,6 +165,7 @@ def _pack_command(
     compilation_id: str = "",
     deployment_id: str = "",
     expected_activation_version: int = 0,
+    pack_id: str = PACK_ID,
 ) -> dict[str, Any]:
     token = uuid4().hex
     return app.execute(
@@ -173,7 +174,7 @@ def _pack_command(
             project_id=project_id,
             workspace_id=workspace_id,
             actor_id=principal.principal_id,
-            pack_id=PACK_ID,
+            pack_id=pack_id,
             pack_version=pack_version,
             compilation_id=compilation_id,
             deployment_id=deployment_id,
@@ -196,6 +197,9 @@ def _register_agents(
     build_id: str,
     commit_sha: str,
     principal: Principal,
+    agent_skill_ref: str | None = None,
+    agent_domain: str = "chapter",
+    agent_scope_type: str = "CHAPTER",
 ) -> None:
     artifacts = list(compiled["resolved_artifacts"])
     prompt = next(
@@ -218,7 +222,7 @@ def _register_agents(
             continue
         registered.add(agent_ref)
         stage = str(node["node_id"])
-        skill_name = (
+        skill_name = agent_skill_ref or (
             "prose-generation"
             if stage in {"draft", "revision"}
             else "canon-continuity-graph"
@@ -245,7 +249,7 @@ def _register_agents(
             input_schema_ref=capability_definition.input_schema_ref,
             output_schema_ref=capability_definition.output_schema_ref,
             supported_message_types=(AgentMessageType.PROPOSAL,),
-            supported_scope_types=("CHAPTER",),
+            supported_scope_types=(agent_scope_type,),
             risk_class=capability_definition.risk_class.value.upper(),
             execution_requirements={"production_execution_gateway_required": True},
             qualification_status="QUALIFIED_REAL_RUNTIME",
@@ -253,9 +257,9 @@ def _register_agents(
         definition = AgentDefinition(
             agent_id=agent_id,
             version=definition_version,
-            agent_type="CHAPTER_STAGE",
-            domain="chapter",
-            role="CHAPTER_STAGE_AGENT",
+            agent_type=f"{agent_domain.upper()}_STAGE",
+            domain=agent_domain,
+            role=f"{agent_domain.upper()}_STAGE_AGENT",
             capability_refs=(f"{capability.capability_id}@1",),
             input_contract_ref=capability.input_schema_ref,
             output_contract_ref=capability.output_schema_ref,

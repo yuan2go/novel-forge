@@ -66,6 +66,9 @@ from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 BOOK_COORDINATE_DEFINITION = "book.production.coordinate"
 BOOK_COORDINATE_DEFINITION_VERSION = "1.0.0"
 BOOK_COORDINATE_HANDLER = "novel_forge.book_authority.coordinator"
+BOOK_MUTATION_DEFINITION = "book.authority.mutate"
+BOOK_MUTATION_DEFINITION_VERSION = "1.0.0"
+BOOK_MUTATION_HANDLER = "novel_forge.book_authority.mutate"
 LONGFORM_CONTEXT_VERSION_KEYS = frozenset(
     {
         "volume_plan_version",
@@ -139,6 +142,8 @@ class SubmitBookChapterCommand:
     chapter_plan_asset_version_id: str
     chapter_plan_content_hash: str
     context_candidates: tuple[dict[str, Any], ...]
+    execution_chapter_plan_asset_version_id: str = ""
+    execution_chapter_plan_content_hash: str = ""
     parent_group_version_id: str = ""
     context_version_refs: dict[str, Any] | None = None
     context_token_budget: int = 6000
@@ -400,7 +405,11 @@ class PostgresBookAuthority:
             )["saga_id"]
         )
         book_run_id = f"book-run:{root_operation_id}"
-        with AuthorityUnitOfWork(self.database_url) as uow:
+        def commit_start(
+            uow: AuthorityUnitOfWork,
+            _operation_id: str,
+            checkpoint: TransactionCheckpoint,
+        ) -> dict[str, Any]:
             uow.repositories.book_authority.create_run(
                 {
                     "book_run_id": book_run_id,
@@ -421,6 +430,7 @@ class PostgresBookAuthority:
                     "input_mode": command.input_mode,
                 }
             )
+            checkpoint("after_book_run_insert")
             if command.input_mode == "RESOLVED_AUTHORITY_INPUT":
                 binding_id = (
                     "book-input-binding:"
@@ -446,6 +456,7 @@ class PostgresBookAuthority:
                         root_operation_id,
                     ],
                 )
+                checkpoint("after_input_binding_insert")
             uow.cursor.execute(
                 """
                 SELECT book_run_id, root_operation_id, saga_id
@@ -455,7 +466,46 @@ class PostgresBookAuthority:
                 [command.project_id, command.stable_idempotency_key],
             )
             row = uow.cursor.fetchone()
-            uow.commit()
+            if row is None or row[1] != root_operation_id:
+                raise KernelError(
+                    "BOOK_AUTHORITY_IDEMPOTENCY_CONFLICT",
+                    "Book command replay resolved to a different root Operation",
+                )
+            return {
+                "book_run_id": str(row[0]),
+                "root_operation_id": str(row[1]),
+                "saga_id": str(row[2]),
+                "state": BookProductionState.READY.value,
+            }
+
+        committed = self._execute_mutation(
+            book={
+                "book_run_id": book_run_id,
+                "project_id": command.project_id,
+                "workspace_id": command.workspace_id,
+                "book_id": command.book_id,
+                "root_operation_id": root_operation_id,
+                "stable_idempotency_key": command.stable_idempotency_key,
+            },
+            action="start",
+            event_type="book.production.started",
+            idempotency_key=f"{command.stable_idempotency_key}:start-commit",
+            actor_id=principal.principal_id,
+            trace_id=command.trace_id,
+            correlation_id=command.correlation_id,
+            causation_id=root_operation_id,
+            payload={
+                "input_snapshot_id": command.input_snapshot_id,
+                "input_mode": command.input_mode,
+                "target_chapter_count": command.target_chapter_count,
+            },
+            handler=commit_start,
+        )
+        row = (
+            committed["book_run_id"],
+            committed["root_operation_id"],
+            committed["saga_id"],
+        )
         if row is None or row[1] != root_operation_id:
             raise KernelError(
                 "BOOK_AUTHORITY_IDEMPOTENCY_CONFLICT",
@@ -485,7 +535,26 @@ class PostgresBookAuthority:
                 "BOOK_CHAPTER_OUT_OF_RANGE", "chapter exceeds Book target count"
             )
         request_id = f"chapter-request:{stable_key.removeprefix('book-chapter:')}"
-        with AuthorityUnitOfWork(self.database_url) as uow:
+
+        def commit_reservation(
+            uow: AuthorityUnitOfWork,
+            _operation_id: str,
+            checkpoint: TransactionCheckpoint,
+        ) -> dict[str, Any]:
+            uow.cursor.execute(
+                """
+                SELECT version, state, current_chapter
+                FROM authority_book_production
+                WHERE book_run_id=%s FOR UPDATE
+                """,
+                [command.book_run_id],
+            )
+            locked = uow.cursor.fetchone()
+            if locked is None or int(locked[0]) != int(book["version"]):
+                raise KernelError(
+                    "BOOK_CHAPTER_RESERVATION_CONFLICT",
+                    "Book checkpoint changed before Chapter reservation",
+                )
             uow.cursor.execute(
                 """
                 SELECT chapter_request_id, chapter_root_operation_id
@@ -516,20 +585,51 @@ class PostgresBookAuthority:
                     book_run_id=command.book_run_id,
                     chapter_request_id=request_id,
                     chapter_number=command.chapter_number,
+                    expected_version=int(book["version"]),
                 ):
                     raise KernelError(
                         "BOOK_CHAPTER_SUBMISSION_NOT_READY",
                         "Book is not READY for the next sequential Chapter",
                     )
                 existing = (request_id, None)
-            uow.commit()
+            checkpoint("after_chapter_reservation")
+            return {
+                "chapter_request_id": str(existing[0]),
+                "chapter_root_operation_id": str(existing[1] or ""),
+                "chapter_number": command.chapter_number,
+                "state": BookProductionState.CHAPTER_SUBMITTED.value,
+            }
+
+        reservation = self._execute_mutation(
+            book=book,
+            action="chapter_reserve",
+            event_type="book.chapter_request.reserved",
+            idempotency_key=f"{stable_key}:reserve",
+            actor_id=principal.principal_id,
+            trace_id=(
+                f"{book['root_operation_id']}:chapter:{command.chapter_number}:reserve"
+            ),
+            correlation_id=str(book["root_operation_id"]),
+            causation_id=str(book["root_operation_id"]),
+            payload={
+                "chapter_request_id": request_id,
+                "chapter_number": command.chapter_number,
+                "chapter_plan_version": command.chapter_plan_asset_version_id,
+            },
+            handler=commit_reservation,
+        )
+        existing = (
+            reservation["chapter_request_id"],
+            reservation["chapter_root_operation_id"] or None,
+        )
         if existing is None:
             raise KernelError(
                 "BOOK_CHAPTER_REQUEST_MISSING", "chapter request was not persisted"
             )
         request_id = str(existing[0])
-        if existing[1]:
-            return self.require_chapter_request(request_id)
+        persisted_request = self.require_chapter_request(request_id)
+        if persisted_request["chapter_root_operation_id"]:
+            return persisted_request
         context_candidates = self._context_candidates_for_dispatch(
             book_run_id=command.book_run_id,
             project_id=book["project_id"],
@@ -549,8 +649,14 @@ class PostgresBookAuthority:
                 correlation_id=book["root_operation_id"],
                 application_build_id=self.application_build_id,
                 commit_sha=self.commit_sha,
-                chapter_plan_asset_version_id=command.chapter_plan_asset_version_id,
-                chapter_plan_content_hash=command.chapter_plan_content_hash,
+                chapter_plan_asset_version_id=(
+                    command.execution_chapter_plan_asset_version_id
+                    or command.chapter_plan_asset_version_id
+                ),
+                chapter_plan_content_hash=(
+                    command.execution_chapter_plan_content_hash
+                    or command.chapter_plan_content_hash
+                ),
                 context_candidates=context_candidates,
                 context_version_refs=command.context_version_refs,
                 context_token_budget=command.context_token_budget,
@@ -565,7 +671,13 @@ class PostgresBookAuthority:
             "child-delegation:"
             + hashlib.sha256(f"{stable_key}:chapter".encode()).hexdigest()
         )
-        with AuthorityUnitOfWork(self.database_url) as uow:
+        current = self.require(command.book_run_id)
+
+        def commit_link(
+            uow: AuthorityUnitOfWork,
+            _operation_id: str,
+            checkpoint: TransactionCheckpoint,
+        ) -> dict[str, Any]:
             uow.repositories.book_authority.link_chapter(
                 chapter_request_id=request_id,
                 book_run_id=command.book_run_id,
@@ -576,8 +688,33 @@ class PostgresBookAuthority:
                 delegation_id=delegation_id,
                 root_operation_id=admission.root_operation_id,
                 saga_id=admission.saga_id,
+                expected_book_version=int(current["version"]),
             )
-            uow.commit()
+            checkpoint("after_chapter_link")
+            return {
+                "chapter_request_id": request_id,
+                "chapter_root_operation_id": admission.root_operation_id,
+                "chapter_saga_id": admission.saga_id,
+                "state": BookProductionState.CHAPTER_SUBMITTED.value,
+            }
+
+        self._execute_mutation(
+            book=current,
+            action="chapter_link",
+            event_type="book.chapter_request.linked",
+            idempotency_key=f"{stable_key}:link",
+            actor_id=principal.principal_id,
+            trace_id=(
+                f"{book['root_operation_id']}:chapter:{command.chapter_number}:link"
+            ),
+            correlation_id=str(book["root_operation_id"]),
+            causation_id=admission.root_operation_id,
+            payload={
+                "chapter_request_id": request_id,
+                "chapter_number": command.chapter_number,
+            },
+            handler=commit_link,
+        )
         self._probe("after_delegation_persist")
         return self.require_chapter_request(request_id)
 
@@ -619,13 +756,6 @@ class PostgresBookAuthority:
         acceptance_inputs = _validate_chapter_acceptance_evidence(
             request=request,
             evidence=evidence,
-        )
-        acceptance_inputs = (
-            *self.resolve_asset_refs(
-                project_id=request["project_id"],
-                asset_version_ids=(str(request["chapter_plan_version"]),),
-            ),
-            *acceptance_inputs,
         )
         if book["active_story_state_version_id"]:
             acceptance_inputs = (
@@ -688,7 +818,13 @@ class PostgresBookAuthority:
         acceptance_id = (
             "chapter-acceptance:" + hashlib.sha256(stable_key.encode()).hexdigest()
         )
-        with AuthorityUnitOfWork(self.database_url) as uow:
+        current = self.require(request["book_run_id"])
+
+        def commit_acceptance(
+            uow: AuthorityUnitOfWork,
+            _operation_id: str,
+            checkpoint: TransactionCheckpoint,
+        ) -> dict[str, Any]:
             uow.cursor.execute(
                 """
                 SELECT delegation_id
@@ -727,8 +863,36 @@ class PostgresBookAuthority:
                 before_cursor_advance=lambda: self._probe(
                     "after_acceptance_before_cursor"
                 ),
+                expected_book_version=int(current["version"]),
             )
-            uow.commit()
+            checkpoint("after_chapter_acceptance")
+            return {
+                "acceptance_id": acceptance_id,
+                "chapter_request_id": chapter_request_id,
+                "chapter_number": int(request["chapter_number"]),
+                "chapter_outcome_asset_version_id": outcome.asset_version_id,
+                "story_state_asset_version_id": story_state.asset_version_id,
+                "canon_snapshot_asset_version_id": str(
+                    canon_snapshot["asset_version_id"]
+                ),
+            }
+
+        self._execute_mutation(
+            book=current,
+            action="chapter_accept",
+            event_type="book.chapter.accepted",
+            idempotency_key=f"{stable_key}:book-commit",
+            actor_id=principal.principal_id,
+            trace_id=f"{request['chapter_root_operation_id']}:book-accept",
+            correlation_id=str(book["root_operation_id"]),
+            causation_id=admission.operation_id,
+            payload={
+                "chapter_request_id": chapter_request_id,
+                "chapter_number": int(request["chapter_number"]),
+                "acceptance_operation_id": admission.operation_id,
+            },
+            handler=commit_acceptance,
+        )
         self._probe("after_acceptance_commit")
         result = self.require(request["book_run_id"])
         if result["state"] == BookProductionState.COMPLETED.value:
@@ -765,13 +929,39 @@ class PostgresBookAuthority:
             target_status="WAITING_GATE",
             reason=reason or "operator pause",
         )
-        with AuthorityUnitOfWork(self.database_url) as uow:
-            uow.repositories.book_authority.set_gate_state(
+        expected_version = int(book["version"])
+
+        def commit_pause(
+            uow: AuthorityUnitOfWork,
+            _operation_id: str,
+            _checkpoint: TransactionCheckpoint,
+        ) -> dict[str, Any]:
+            self._cas_book_state(
+                uow,
                 book_run_id=book_run_id,
-                state=BookProductionState.PAUSED.value,
-                reason=reason or "operator pause",
+                expected_version=expected_version,
+                target_state=BookProductionState.PAUSED,
+                paused_reason=reason or "operator pause",
             )
-            uow.commit()
+            return {
+                "book_run_id": book_run_id,
+                "state": BookProductionState.PAUSED.value,
+            }
+
+        self._execute_mutation(
+            book=book,
+            action="pause",
+            event_type="book.production.paused",
+            idempotency_key=(
+                f"{book['stable_idempotency_key']}:pause:v{expected_version}"
+            ),
+            actor_id=principal.principal_id,
+            trace_id=context.trace_id,
+            correlation_id=context.correlation_id,
+            causation_id=str(book["root_operation_id"]),
+            payload={"reason": reason or "operator pause"},
+            handler=commit_pause,
+        )
         return self.require(book_run_id)
 
     def cancel(
@@ -823,12 +1013,55 @@ class PostgresBookAuthority:
                     correlation_id=context.correlation_id,
                 ),
             )
-        with AuthorityUnitOfWork(self.database_url) as uow:
-            uow.repositories.book_authority.abort(
-                book_run_id=book_run_id,
-                reason=reason or "Book production cancelled",
+        current = self.require(book_run_id)
+        expected_version = int(current["version"])
+
+        def commit_abort(
+            uow: AuthorityUnitOfWork,
+            _operation_id: str,
+            _checkpoint: TransactionCheckpoint,
+        ) -> dict[str, Any]:
+            uow.cursor.execute(
+                """
+                UPDATE authority_child_delegation
+                SET status=CASE
+                        WHEN status IN ('DISPATCHED', 'RUNNING', 'WAITING_RETRY',
+                                        'SUCCEEDED', 'UNKNOWN')
+                        THEN 'CANCELLATION_REQUESTED'
+                        ELSE status
+                    END,
+                    version=version+1, updated_at=NOW()
+                WHERE owner_id=%s AND status <> 'ACCEPTED'
+                """,
+                [book_run_id],
             )
-            uow.commit()
+            self._cas_book_state(
+                uow,
+                book_run_id=book_run_id,
+                expected_version=expected_version,
+                target_state=BookProductionState.ABORTED,
+                paused_reason=reason or "Book production cancelled",
+                failure_reason=reason or "Book production cancelled",
+            )
+            return {
+                "book_run_id": book_run_id,
+                "state": BookProductionState.ABORTED.value,
+            }
+
+        self._execute_mutation(
+            book=current,
+            action="abort",
+            event_type="book.production.aborted",
+            idempotency_key=(
+                f"{book['stable_idempotency_key']}:abort:v{expected_version}"
+            ),
+            actor_id=principal.principal_id,
+            trace_id=context.trace_id,
+            correlation_id=context.correlation_id,
+            causation_id=str(book["root_operation_id"]),
+            payload={"reason": reason or "Book production cancelled"},
+            handler=commit_abort,
+        )
         return self.require(book_run_id)
 
     def resume(
@@ -861,12 +1094,36 @@ class PostgresBookAuthority:
                 "FAILED_RETRYABLE": BookProductionState.CHAPTER_FAILED_RETRYABLE,
                 "FAILED_TERMINAL": BookProductionState.CHAPTER_FAILED_TERMINAL,
             }.get(str(request["status_reference"]), BookProductionState.READY)
-        with AuthorityUnitOfWork(self.database_url) as uow:
-            uow.repositories.book_authority.set_gate_state(
+        current = self.require(book_run_id)
+        expected_version = int(current["version"])
+
+        def commit_resume(
+            uow: AuthorityUnitOfWork,
+            _operation_id: str,
+            _checkpoint: TransactionCheckpoint,
+        ) -> dict[str, Any]:
+            self._cas_book_state(
+                uow,
                 book_run_id=book_run_id,
-                state=next_state.value,
+                expected_version=expected_version,
+                target_state=next_state,
             )
-            uow.commit()
+            return {"book_run_id": book_run_id, "state": next_state.value}
+
+        self._execute_mutation(
+            book=current,
+            action="resume",
+            event_type="book.production.resumed",
+            idempotency_key=(
+                f"{book['stable_idempotency_key']}:resume:v{expected_version}"
+            ),
+            actor_id=principal.principal_id,
+            trace_id=context.trace_id,
+            correlation_id=context.correlation_id,
+            causation_id=str(book["root_operation_id"]),
+            payload={"reason": reason or "operator resume", "state": next_state.value},
+            handler=commit_resume,
+        )
         return self.require(book_run_id)
 
     def bind_replanned_input_snapshot(
@@ -1078,6 +1335,12 @@ class PostgresBookAuthority:
                 ),
                 chapter_plan_content_hash=str(payload["chapter_plan_content_hash"]),
                 context_candidates=tuple(payload["context_candidates"]),
+                execution_chapter_plan_asset_version_id=str(
+                    payload.get("execution_chapter_plan_asset_version_id") or ""
+                ),
+                execution_chapter_plan_content_hash=str(
+                    payload.get("execution_chapter_plan_content_hash") or ""
+                ),
                 parent_group_version_id=str(
                     payload.get("parent_group_version_id") or ""
                 ),
@@ -1117,14 +1380,62 @@ class PostgresBookAuthority:
             request_status, book_state = "CANCELLED", BookProductionState.PAUSED
         else:
             request_status, book_state = "RUNNING", BookProductionState.CHAPTER_RUNNING
+        book = self.require(request["book_run_id"])
         with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT actor_id, trace_id, correlation_id
+                FROM authority_operation
+                WHERE operation_id=%s AND project_id=%s
+                """,
+                [book["root_operation_id"], book["project_id"]],
+            )
+            root_identity = uow.cursor.fetchone()
+        if root_identity is None:
+            raise KernelError(
+                "BOOK_ROOT_OPERATION_MISSING",
+                "Book root Operation is missing during child reconciliation",
+            )
+
+        def commit_reconciliation(
+            uow: AuthorityUnitOfWork,
+            _operation_id: str,
+            checkpoint: TransactionCheckpoint,
+        ) -> dict[str, Any]:
             uow.repositories.book_authority.record_chapter_status(
                 chapter_request_id=chapter_request_id,
                 book_run_id=request["book_run_id"],
                 request_status=request_status,
                 book_state=book_state.value,
+                expected_request_status=str(request["status_reference"]),
+                expected_book_version=int(book["version"]),
             )
-            uow.commit()
+            checkpoint("after_chapter_status_reconciliation")
+            return {
+                "chapter_request_id": chapter_request_id,
+                "request_status": request_status,
+                "state": book_state.value,
+            }
+
+        self._execute_mutation(
+            book=book,
+            action="chapter_reconcile",
+            event_type="book.chapter.status_reconciled",
+            idempotency_key=(
+                f"{request['stable_idempotency_key']}:reconcile:"
+                f"{request['status_reference']}:{request_status}"
+            ),
+            actor_id=str(root_identity[0]),
+            trace_id=str(root_identity[1]),
+            correlation_id=str(root_identity[2]),
+            causation_id=str(root),
+            payload={
+                "chapter_request_id": chapter_request_id,
+                "child_operation_status": operation_status,
+                "child_saga_status": saga_status,
+            },
+            handler=commit_reconciliation,
+        )
         return self.require_chapter_request(chapter_request_id)
 
     def schedule_reader_outcome(
@@ -1193,20 +1504,58 @@ class PostgresBookAuthority:
                 raise KernelError(
                     "BOOK_FOLLOWUP_NOT_COMPLETE", f"follow-up Operation is {row[2]}"
                 )
-            if replan_required:
-                state = BookProductionState.REPLAN_REQUIRED
-            elif row[1] == "READER_OUTCOME":
-                state = BookProductionState.CHAPTER_COMPLETED
-            elif int(row[3]) >= int(row[4]):
-                state = BookProductionState.COMPLETED
-            else:
-                state = BookProductionState.READY
-            uow.repositories.book_authority.advance(
-                book_run_id=str(row[0]),
-                chapter_number=int(row[3]),
-                state=state.value,
+        if replan_required:
+            state = BookProductionState.REPLAN_REQUIRED
+        elif row[1] == "READER_OUTCOME":
+            state = BookProductionState.CHAPTER_COMPLETED
+        elif int(row[3]) >= int(row[4]):
+            state = BookProductionState.COMPLETED
+        else:
+            state = BookProductionState.READY
+        book = self.require(str(row[0]))
+        expected_version = int(book["version"])
+
+        def commit_followup(
+            uow: AuthorityUnitOfWork,
+            _command_operation_id: str,
+            _checkpoint: TransactionCheckpoint,
+        ) -> dict[str, Any]:
+            uow.cursor.execute(
+                """
+                UPDATE authority_book_production
+                SET state=%s, current_chapter=GREATEST(current_chapter, %s),
+                    version=version+1, updated_at=NOW()
+                WHERE book_run_id=%s AND version=%s
+                """,
+                [state.value, int(row[3]), str(row[0]), expected_version],
             )
-            uow.commit()
+            if uow.cursor.rowcount != 1:
+                raise KernelError(
+                    "BOOK_FOLLOWUP_CHECKPOINT_CONFLICT",
+                    "Book checkpoint changed before follow-up completion",
+                )
+            return {
+                "book_run_id": str(row[0]),
+                "followup_operation_id": operation_id,
+                "chapter_number": int(row[3]),
+                "state": state.value,
+            }
+
+        self._execute_mutation(
+            book=book,
+            action="followup_complete",
+            event_type="book.followup.completed",
+            idempotency_key=(
+                f"{book['stable_idempotency_key']}:followup:{operation_id}:"
+                f"replan:{str(replan_required).lower()}"
+            ),
+            actor_id=str(row[7]),
+            trace_id=str(row[8]),
+            correlation_id=str(row[9]),
+            causation_id=operation_id,
+            payload={"followup_type": str(row[1])},
+            handler=commit_followup,
+        )
         if state is BookProductionState.COMPLETED:
             coordinate_saga(
                 self.database_url,
@@ -1236,17 +1585,53 @@ class PostgresBookAuthority:
                 raise KernelError(
                     "BOOK_RUN_NOT_FOUND", "Book Authority run does not exist"
                 )
-            state = (
-                BookProductionState.COMPLETED
-                if chapter_number >= int(row[0])
-                else BookProductionState.READY
+        state = (
+            BookProductionState.COMPLETED
+            if chapter_number >= int(row[0])
+            else BookProductionState.READY
+        )
+        book = self.require(book_run_id)
+        expected_version = int(book["version"])
+
+        def commit_checkpoint(
+            uow: AuthorityUnitOfWork,
+            _operation_id: str,
+            _checkpoint: TransactionCheckpoint,
+        ) -> dict[str, Any]:
+            uow.cursor.execute(
+                """
+                UPDATE authority_book_production
+                SET state=%s, current_chapter=GREATEST(current_chapter, %s),
+                    version=version+1, updated_at=NOW()
+                WHERE book_run_id=%s AND version=%s
+                """,
+                [state.value, chapter_number, book_run_id, expected_version],
             )
-            uow.repositories.book_authority.advance(
-                book_run_id=book_run_id,
-                chapter_number=chapter_number,
-                state=state.value,
-            )
-            uow.commit()
+            if uow.cursor.rowcount != 1:
+                raise KernelError(
+                    "BOOK_CHECKPOINT_CONFLICT",
+                    "Book checkpoint changed before advancement",
+                )
+            return {
+                "book_run_id": book_run_id,
+                "chapter_number": chapter_number,
+                "state": state.value,
+            }
+
+        self._execute_mutation(
+            book=book,
+            action="checkpoint_advance",
+            event_type="book.checkpoint.advanced",
+            idempotency_key=(
+                f"{book['stable_idempotency_key']}:checkpoint:{chapter_number}"
+            ),
+            actor_id=str(row[3]),
+            trace_id=str(row[4]),
+            correlation_id=str(row[5]),
+            causation_id=str(book["root_operation_id"]),
+            payload={"chapter_number": chapter_number},
+            handler=commit_checkpoint,
+        )
         if state is BookProductionState.COMPLETED:
             coordinate_saga(
                 self.database_url,
@@ -1520,7 +1905,13 @@ class PostgresBookAuthority:
             principal=principal,
         )
         followup_id = "book-followup:" + hashlib.sha256(stable_key.encode()).hexdigest()
-        with AuthorityUnitOfWork(self.database_url) as uow:
+        current = self.require(request["book_run_id"])
+
+        def commit_followup_link(
+            uow: AuthorityUnitOfWork,
+            _operation_id: str,
+            checkpoint: TransactionCheckpoint,
+        ) -> dict[str, Any]:
             uow.repositories.book_authority.link_followup(
                 followup_id=followup_id,
                 book_run_id=request["book_run_id"],
@@ -1529,8 +1920,30 @@ class PostgresBookAuthority:
                 followup_type=followup_type,
                 operation_id=admission.operation_id,
                 stable_idempotency_key=stable_key,
+                expected_book_version=int(current["version"]),
             )
-            uow.commit()
+            checkpoint("after_followup_link")
+            return {
+                "followup_id": followup_id,
+                "followup_operation_id": admission.operation_id,
+                "followup_type": followup_type,
+            }
+
+        self._execute_mutation(
+            book=current,
+            action="followup_link",
+            event_type="book.followup.linked",
+            idempotency_key=f"{stable_key}:book-link",
+            actor_id=principal.principal_id,
+            trace_id=f"{request['chapter_root_operation_id']}:followup-link",
+            correlation_id=str(request["chapter_root_operation_id"]),
+            causation_id=admission.operation_id,
+            payload={
+                "chapter_request_id": chapter_request_id,
+                "followup_type": followup_type,
+            },
+            handler=commit_followup_link,
+        )
         return admission
 
     def _book_graph_context(
@@ -1671,9 +2084,184 @@ class PostgresBookAuthority:
             merged.setdefault(str(item["asset_version_id"]), item)
         return tuple(merged.values())
 
+    def _execute_mutation(
+        self,
+        *,
+        book: dict[str, Any],
+        action: str,
+        event_type: str,
+        idempotency_key: str,
+        actor_id: str,
+        trace_id: str,
+        correlation_id: str,
+        causation_id: str,
+        payload: dict[str, Any],
+        handler: Callable[
+            [AuthorityUnitOfWork, str, TransactionCheckpoint], dict[str, Any]
+        ],
+    ) -> dict[str, Any]:
+        """Run one deterministic Book mutation through Command Kernel authority."""
+
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.repositories.definitions.register(
+                book_authority_mutation_definition(
+                    application_build_id=self.application_build_id,
+                    commit_sha=self.commit_sha,
+                )
+            )
+            uow.commit()
+
+        def governed_handler(
+            uow: AuthorityUnitOfWork,
+            operation_id: str,
+            checkpoint: TransactionCheckpoint,
+        ) -> dict[str, Any]:
+            result = handler(uow, operation_id, checkpoint)
+            event_payload = {
+                "operation_id": operation_id,
+                "action": action,
+                "book_run_id": str(book["book_run_id"]),
+                "book_id": str(book["book_id"]),
+                **payload,
+                **result,
+            }
+            uow.repositories.operation_graph.record_event(
+                {
+                    "event_id": str(uuid4()),
+                    "audit_id": str(uuid4()),
+                    "outbox_id": str(uuid4()),
+                    "aggregate_type": "book_production",
+                    "aggregate_id": str(book["book_run_id"]),
+                    "operation_id": operation_id,
+                    "project_id": str(book["project_id"]),
+                    "event_type": event_type,
+                    "correlation_id": correlation_id,
+                    "causation_id": causation_id,
+                    "payload": event_payload,
+                }
+            )
+            checkpoint("after_business_event")
+            return result
+
+        return execute_transaction_command(
+            self.database_url,
+            {
+                "definition_name": BOOK_MUTATION_DEFINITION,
+                "definition_version": BOOK_MUTATION_DEFINITION_VERSION,
+                "project_id": str(book["project_id"]),
+                "workspace_id": str(book["workspace_id"]),
+                "book_id": str(book["book_id"]),
+                "actor_id": actor_id,
+                "idempotency_scope": "book:authority-mutation",
+                "idempotency_key": idempotency_key,
+                "trace_id": trace_id,
+                "span_id": str(uuid4()),
+                "correlation_id": correlation_id,
+                "causation_id": causation_id,
+                "causation_operation_id": causation_id,
+                "input": {
+                    "project_id": str(book["project_id"]),
+                    "input_asset_version_ids": [],
+                    "payload": {
+                        "action": action,
+                        "book_run_id": str(book["book_run_id"]),
+                        **payload,
+                    },
+                },
+                "input_assets": [],
+            },
+            context=AdmissionContext(
+                actor_id=actor_id,
+                permissions=frozenset({"book.authority.execute"}),
+                available_handlers=frozenset({BOOK_MUTATION_HANDLER}),
+                application_build_id=self.application_build_id,
+                commit_sha=self.commit_sha,
+            ),
+            handler=governed_handler,
+            fault_injector=self.failure_injector,
+        )
+
+    @staticmethod
+    def _cas_book_state(
+        uow: AuthorityUnitOfWork,
+        *,
+        book_run_id: str,
+        expected_version: int,
+        target_state: BookProductionState,
+        paused_reason: str = "",
+        failure_reason: str = "",
+    ) -> None:
+        uow.cursor.execute(
+            """
+            UPDATE authority_book_production
+            SET state=%s, paused_reason=%s, failure_reason=%s,
+                version=version+1, updated_at=NOW()
+            WHERE book_run_id=%s AND version=%s
+            """,
+            [
+                target_state.value,
+                paused_reason,
+                failure_reason,
+                book_run_id,
+                expected_version,
+            ],
+        )
+        if uow.cursor.rowcount != 1:
+            raise KernelError(
+                "BOOK_MUTATION_CONFLICT",
+                "Book Authority checkpoint changed before mutation commit",
+            )
+
     def _probe(self, point: str) -> None:
         if self.failure_injector is not None:
             self.failure_injector(point)
+
+
+def book_authority_mutation_definition(
+    *, application_build_id: str, commit_sha: str
+) -> dict[str, Any]:
+    schema = {"type": "object"}
+    return {
+        "name": BOOK_MUTATION_DEFINITION,
+        "definition_version": BOOK_MUTATION_DEFINITION_VERSION,
+        "family": "book_authority",
+        "enabled": True,
+        "definition_status": "integration_proven",
+        "command_schema_version": "book.authority.mutate.command.v1",
+        "result_schema_version": "book.authority.mutate.result.v1",
+        "command_schema": schema,
+        "result_schema": schema,
+        "input_contract": schema,
+        "output_contract": {"type": "BookAuthorityMutationResult"},
+        "handler_key": BOOK_MUTATION_HANDLER,
+        "handler_contract_version": "book-authority-mutation-v1",
+        "application_build_id": application_build_id,
+        "commit_sha": commit_sha,
+        "execution_mode": "transactional",
+        "permissions": ["book.authority.execute"],
+        "approval_policy": {"required": False},
+        "idempotency_scope": "book:authority-mutation",
+        "concurrency_key_template": "book:{book_id}:authority-mutation",
+        "retry_policy": {"max_attempts": 1},
+        "timeout_policy": {"operation_timeout_seconds": 30},
+        "cancellation_policy": {"mode": "not_applicable"},
+        "compensation_policy": {
+            "supported": False,
+            "reason": "CAS-protected deterministic Authority mutation",
+        },
+        "irreversible_effect_policy": {"allowed": False},
+        "external_capabilities": [],
+        "policy": {
+            "execution_classification": "transaction_command",
+            "cas_required": True,
+            "business_event_required": True,
+            "attempt_runtime_forbidden": True,
+        },
+        "completion_contract": {
+            "version": "book-authority-mutation-completion-v1",
+            "required_evidence": ["trace", "audit"],
+        },
+    }
 
 
 def book_replan_input_binding_definition(
@@ -1816,6 +2404,15 @@ def _validate_chapter_acceptance_evidence(
     canon = selected["canon_patch"]["content"]
     release = selected["release_package"]["content"]
     plan = selected["chapter_plan"]["content"]
+    submitted = dict(request.get("command_payload") or {})
+    execution_plan_version = str(
+        submitted.get("execution_chapter_plan_asset_version_id")
+        or request["chapter_plan_version"]
+    )
+    execution_plan_hash = str(
+        submitted.get("execution_chapter_plan_content_hash")
+        or request["chapter_plan_content_hash"]
+    )
     checks = {
         "final_release": (
             final_gate.get("gate") == "PASSED"
@@ -1831,9 +2428,9 @@ def _validate_chapter_acceptance_evidence(
         "export": release.get("release_status") == "READY_FOR_BLOB_VERIFICATION",
         "plan_binding": (
             plan.get("source_chapter_plan_asset_version_id")
-            == request["chapter_plan_version"]
+            == execution_plan_version
             and plan.get("source_chapter_plan_content_hash")
-            == request["chapter_plan_content_hash"]
+            == execution_plan_hash
             and int(plan.get("chapter") or 0) == int(request["chapter_number"])
         ),
         "assets_current": all(
@@ -1863,7 +2460,6 @@ def _validate_chapter_acceptance_evidence(
             "content_hash": str(selected[asset_type]["content_hash"]),
         }
         for asset_type in required_types
-        if asset_type != "chapter_plan"
     )
 
 

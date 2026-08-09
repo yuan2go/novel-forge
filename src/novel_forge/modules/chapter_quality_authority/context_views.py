@@ -230,7 +230,7 @@ def build_quality_context_view(
             "volume_arc": _segments_of_type(segments, "volume_arc"),
             "arc_progress": _segments_of_type(segments, "arc_progress_report"),
             "previous_recap": _segments_of_type(segments, "longform_recap_report"),
-            "chapter_plan": chapter_plan,
+            "chapter_plan": _longform_chapter_plan_view(chapter_plan),
             "canon_change_proposal_asset_version_id": canon.get(
                 "canon_change_proposal_asset_version_id", ""
             ),
@@ -408,11 +408,38 @@ def _state_identity(item: dict[str, Any], state_type: str) -> str:
     return f"{state_type}:project"
 
 
+def _longform_chapter_plan_view(chapter_plan: dict[str, Any]) -> dict[str, Any]:
+    """Freeze only long-form obligations, never the full provider/source envelope."""
+
+    fields = (
+        "chapter",
+        "title",
+        "premise",
+        "objective",
+        "chapter_objective",
+        "primary_function",
+        "secondary_functions",
+        "required_state_delta",
+        "required_arc_contributions",
+        "actual_arc_contributions",
+        "reader_promise_actions",
+        "promise_action",
+        "foreshadow_action",
+        "reward_setup",
+        "reward_payoff",
+        "reward_action",
+        "chapter_hook",
+        "ending_hook",
+        "prohibited_outcomes",
+        "next_chapter_bridge",
+    )
+    return {field: chapter_plan[field] for field in fields if field in chapter_plan}
+
+
 def _fit_quality_context(
     body: dict[str, Any], *, estimator: TokenEstimator, token_budget: int
 ) -> dict[str, Any]:
     rows = list(_state_rows(body))
-    original_counts = {id(row): len(row.get("structured_facts") or []) for row in rows}
     report_reserve = min(512, max(128, token_budget // 8))
     content_budget = max(1, token_budget - report_reserve)
     while _estimate_payload(body, estimator) > content_budget:
@@ -424,6 +451,9 @@ def _fit_quality_context(
             None,
         )
         if candidate is None:
+            if _compact_noncritical_current_candidate_rows(body):
+                rows = list(_state_rows(body))
+                continue
             raise KernelError(
                 "QUALITY_CONTEXT_CRITICAL_OVERFLOW",
                 "quality context identity and critical evidence exceed the frozen token budget",
@@ -435,7 +465,9 @@ def _fit_quality_context(
         facts.pop(remove_index)
         candidate["structured_facts"] = facts
         candidate["compressed"] = True
-        candidate["omitted_fact_count"] = original_counts[id(candidate)] - len(facts)
+        candidate["omitted_fact_count"] = int(
+            candidate.get("omitted_fact_count") or 0
+        ) + 1
     selected_versions = sorted(
         str(row.get("asset_version_id") or "") for row in rows if row.get("asset_version_id")
     )
@@ -460,6 +492,68 @@ def _fit_quality_context(
         "repair_actions": [],
         "contract_version": "quality-context-coverage-v1",
     }
+
+
+def _compact_noncritical_current_candidate_rows(body: dict[str, Any]) -> bool:
+    """Collapse empty noncritical rows while retaining every semantic identity."""
+
+    changed = False
+    for state in body.get("current_state_candidates", {}).values():
+        compactable: list[tuple[str, dict[str, Any]]] = []
+        retained: dict[str, list[dict[str, Any]]] = {}
+        for identity, identity_rows in state.items():
+            if identity == "compressed:noncritical":
+                retained[identity] = identity_rows
+                continue
+            empty_rows = [
+                row
+                for row in identity_rows
+                if not list(row.get("structured_facts") or [])
+            ]
+            nonempty_rows = [row for row in identity_rows if row not in empty_rows]
+            if nonempty_rows:
+                retained[identity] = nonempty_rows
+            compactable.extend((identity, row) for row in empty_rows)
+        if len(compactable) < 2:
+            continue
+        identities = list(dict.fromkeys(identity for identity, _row in compactable))
+        rows = [row for _identity, row in compactable]
+        previous_versions = sorted(
+            {
+                str(version)
+                for row in rows
+                for version in row.get("previous_asset_version_ids", [])
+                if version
+            }
+        )
+        candidate_digests = sorted(
+            {
+                str(row.get("candidate_digest") or "")
+                for row in rows
+                if row.get("candidate_digest")
+            }
+        )
+        retained["compressed:noncritical"] = [
+            {
+                "asset_version_id": "",
+                "candidate_digests": candidate_digests,
+                "included_identities": identities,
+                "identity_count": len(identities),
+                "chapter": max(int(row.get("chapter") or 0) for row in rows),
+                "qualification": "CANDIDATE",
+                "previous_asset_version_ids": previous_versions,
+                "structured_facts": [],
+                "declared_empty": False,
+                "compressed": True,
+                "omitted_fact_count": sum(
+                    int(row.get("omitted_fact_count") or 0) for row in rows
+                ),
+            }
+        ]
+        state.clear()
+        state.update(retained)
+        changed = True
+    return changed
 
 
 def _state_rows(body: dict[str, Any]):

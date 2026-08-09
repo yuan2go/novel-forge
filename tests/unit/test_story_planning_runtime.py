@@ -5,6 +5,11 @@ from types import SimpleNamespace
 import pytest
 
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.hierarchical_planning import (
+    PlanContractType,
+    PlanExecutionScope,
+    validate_planning_contract,
+)
 from novel_forge.modules.production_execution.domain_execution import (
     CandidateKind,
     DomainExecutionCandidate,
@@ -18,9 +23,106 @@ from novel_forge.modules.story_planning_runtime import (
     PlanningExecutionBundle,
     StoryPlanningGenerationCommand,
 )
+from novel_forge.modules.story_planning_runtime.execution import (
+    planning_fixture_response,
+    planning_provider_output_schema,
+)
+from novel_forge.modules.story_planning_runtime.application import (
+    _AUTHORITY_INPUT_ASSET_TYPES,
+)
 
 
 HASH = "sha256:" + "a" * 64
+
+
+@pytest.mark.parametrize(
+    ("role", "runtime_asset_type"),
+    (
+        ("character_state", "character_state_snapshot"),
+        ("foreshadowing_state", "foreshadow_snapshot"),
+        ("reward_ledger", "reward_ledger_snapshot"),
+        ("promise_ledger", "promise_ledger_snapshot"),
+    ),
+)
+def test_chapter_planning_accepts_authoritative_runtime_snapshot_types(
+    role: str, runtime_asset_type: str
+) -> None:
+    assert runtime_asset_type in _AUTHORITY_INPUT_ASSET_TYPES[role]
+
+
+def test_production_planning_composition_is_available_at_the_authority_boundary() -> None:
+    from novel_forge.api.authority_dependencies import (
+        build_story_planning_generation_application,
+    )
+    from novel_forge.modules.story_planning_runtime import (
+        PostgresPlanningExecutionPreparer,
+    )
+
+    assert callable(build_story_planning_generation_application)
+    assert PostgresPlanningExecutionPreparer.production_execution_gateway_backed is True
+
+
+@pytest.mark.parametrize("contract_type", list(PlanContractType))
+def test_planning_provider_schema_is_codex_strict(
+    contract_type: PlanContractType,
+) -> None:
+    schema = planning_provider_output_schema(
+        contract_type,
+        logical_key="logical:proof",
+        parent_version_id="parent:v1",
+        arc_plan_version_id="arc:v1",
+        dependency_version_ids=("input:a", "input:b"),
+    )
+
+    def assert_strict(value: object) -> None:
+        if isinstance(value, dict):
+            if value.get("type") == "object":
+                assert value.get("additionalProperties") is False
+                assert set(value.get("required") or ()) == set(
+                    (value.get("properties") or {}).keys()
+                )
+            for child in value.values():
+                assert_strict(child)
+        elif isinstance(value, list):
+            for child in value:
+                assert_strict(child)
+
+    assert_strict(schema)
+    assert schema["properties"]["logical_key"]["const"] == "logical:proof"
+    assert schema["properties"]["canon_dependencies"]["items"]["enum"] == [
+        "input:a",
+        "input:b",
+    ]
+    if contract_type is not PlanContractType.BOOK:
+        assert schema["properties"]["parent_version_id"]["const"] == "parent:v1"
+    if contract_type in {PlanContractType.VOLUME, PlanContractType.CHAPTER_GROUP}:
+        assert schema["properties"]["chapter_range"]["minItems"] == 2
+        assert schema["properties"]["chapter_range"]["maxItems"] == 2
+
+
+def test_chapter_group_contract_rejects_non_pair_range_as_governed_error() -> None:
+    content = planning_fixture_response(
+        "chapter_group_plan.generate",
+        {
+            "planning_command": {
+                "logical_key": "chapter-group:1-3",
+                "parent_version_id": "volume:v1",
+                "input_versions": {"arc_plans": "arc:v1"},
+            }
+        },
+    )
+    content["chapter_range"] = [1, 2, 3]
+
+    with pytest.raises(KernelError, match="CHAPTER_GROUP_RANGE_INVALID"):
+        validate_planning_contract(
+            project_id="project-1",
+            book_id="book-1",
+            contract_type=PlanContractType.CHAPTER_GROUP,
+            asset_version_id="chapter-group:v1",
+            parent_version_id="volume:v1",
+            execution_scope=PlanExecutionScope.PLANNED,
+            content=content,
+        )
 
 
 def _command(generator: str) -> StoryPlanningGenerationCommand:

@@ -2,12 +2,19 @@ from __future__ import annotations
 
 from copy import deepcopy
 import hashlib
+import tempfile
 from typing import Any
 from uuid import uuid4
 
 import psycopg
 from psycopg.types.json import Jsonb
 import pytest
+
+from novel_forge.api.authority_dependencies import (
+    build_chapter_authority_application,
+    build_story_planning_generation_application,
+)
+from novel_forge.infrastructure.settings import IndustrialSettings
 
 from novel_forge.modules.authority_security import Principal, PrincipalType
 from novel_forge.modules.command_kernel.external_effect_adapters import (
@@ -18,6 +25,7 @@ from novel_forge.modules.command_kernel.external_effect_runtime import (
     dispatch_external_effect,
     plan_external_effect,
 )
+from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.book_authority.input_resolver import (
     BookProductionInputResolver,
     ResolveBookProductionInputCommand,
@@ -73,6 +81,9 @@ from novel_forge.modules.production_execution.domain_execution import (
     CandidateKind,
     DomainExecutionCandidate,
     DomainExecutionEvidence,
+)
+from novel_forge.modules.production_execution.capability_registry import (
+    default_capability_registry,
 )
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from tests.integration.authority_postgres_support import (
@@ -211,6 +222,20 @@ def _activate_planning_pack(harness: CapabilityPackPostgresHarness) -> str:
             artifact["content"]["explicit_tool_refs"] = ["model.provider.invoke"]
             artifact["content_hash"] = canonical_hash(artifact["content"])
     for capability in capabilities:
+        contract = default_capability_registry().resolve(capability)
+        for schema_ref in (contract.input_schema_ref, contract.output_schema_ref):
+            harness._base_catalog["artifacts"].append(
+                {
+                    "kind": "SCHEMA",
+                    "ref": schema_ref,
+                    "version": "v1",
+                    "content": {
+                        "$schema": "https://json-schema.org/draft/2020-12/schema",
+                        "type": "object",
+                        "additionalProperties": True,
+                    },
+                }
+            )
         harness._base_catalog["artifacts"].append(
             {
                 "kind": "TIMEOUT_POLICY",
@@ -1024,6 +1049,33 @@ def test_five_planning_generators_repair_activate_and_replay_in_postgres() -> No
         }
         uow.cursor.execute(
             """
+            SELECT asset.asset_type,
+                   version.content->>'source_planning_candidate_asset_version_id',
+                   operation.definition_name, operation.status,
+                   version.content->>'title', version.content->>'premise'
+            FROM authority_operation_output_asset AS output
+            JOIN authority_asset AS asset ON asset.asset_id=output.asset_id
+            JOIN authority_asset_version AS version
+              ON version.asset_version_id=output.asset_version_id
+            JOIN authority_operation AS operation
+              ON operation.operation_id=output.operation_id
+            WHERE operation.project_id=%s
+              AND output.output_key='story_planning.chapter_plan_projection'
+            """,
+            [project_id],
+        )
+        assert uow.cursor.fetchall() == [
+            (
+                "chapter_plan",
+                activated["chapter_plan.generate"],
+                "story_planning.chapter_plan.materialize",
+                "SUCCEEDED",
+                "The Door Closes",
+                "The protagonist makes a witnessed choice.",
+            )
+        ]
+        uow.cursor.execute(
+            """
             SELECT generation_id
             FROM authority_story_planning_generation
             WHERE project_id=%s
@@ -1043,6 +1095,207 @@ def test_five_planning_generators_repair_activate_and_replay_in_postgres() -> No
                 """,
                 [generation_id],
             )
+
+
+def test_production_composition_executes_five_planning_generators_via_pep() -> None:
+    harness = CapabilityPackPostgresHarness("planning-production-composition")
+    _activate_planning_pack(harness)
+    generic = _seed_inputs(harness.project_id, harness.book_ids[0])
+    principal = _principal(harness.project_id)
+    with tempfile.TemporaryDirectory(prefix="planning-production-pep-") as root:
+        settings = IndustrialSettings(
+            root=root,
+            environment="development",
+            storage_authority="postgresql",
+            database_url=DATABASE_URL,
+        )
+        env = {
+            "NOVEL_FORGE_ENVIRONMENT": "development",
+            "NOVEL_FORGE_APPLICATION_BUILD_ID": "planning-production-composition",
+            "NOVEL_FORGE_COMMIT_SHA": RELEASE_SHA,
+            "NOVEL_FORGE_MODEL_PROVIDER": "scripted_provider_v2",
+            "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": root,
+            "NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID": harness.pack_id,
+        }
+        chapter = build_chapter_authority_application(settings, env=env)
+        planning = build_story_planning_generation_application(
+            settings,
+            env=env,
+            chapter_application=chapter,
+        )
+        activated = _activate_plan_chain(
+            project_id=harness.project_id,
+            workspace_id=harness.workspace_id,
+            book_id=harness.book_ids[0],
+            generic=generic,
+            principal=principal,
+            application=planning,
+        )
+        chapter.close()
+
+    assert set(activated) == set(GENERATOR_INPUT_ROLES)
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute(
+            """
+            SELECT COUNT(DISTINCT snapshot.attempt_id),
+                   COUNT(DISTINCT effect.external_effect_id)
+            FROM authority_attempt_capability_pack_snapshot AS snapshot
+            JOIN authority_operation AS operation
+              ON operation.operation_id=snapshot.operation_id
+            JOIN authority_external_effect AS effect
+              ON effect.operation_id=operation.operation_id
+            WHERE operation.project_id=%s
+              AND operation.definition_name='story_planning.generate'
+              AND effect.provider='production_execution_gateway'
+            """,
+            [harness.project_id],
+        )
+        assert uow.cursor.fetchone() == (5, 5)
+
+
+def test_planning_retry_reuses_frozen_pack_after_measured_provider_result() -> None:
+    harness = CapabilityPackPostgresHarness("planning-attempt-retry")
+    baseline_deployment_id = _activate_planning_pack(harness)
+    generic = _seed_inputs(harness.project_id, harness.book_ids[0])
+    principal = _principal(harness.project_id)
+    injected = {"done": False}
+
+    def fail_once(checkpoint: str) -> None:
+        if (
+            checkpoint == "after_measured_usage_before_candidate_acceptance"
+            and not injected["done"]
+        ):
+            injected["done"] = True
+            raise KernelError(
+                "MODEL_EFFECT_RETRYABLE_PLANNING_PROOF",
+                "controlled proof failure after measured Provider usage",
+            )
+
+    with tempfile.TemporaryDirectory(prefix="planning-attempt-retry-") as root:
+        settings = IndustrialSettings(
+            root=root,
+            environment="development",
+            storage_authority="postgresql",
+            database_url=DATABASE_URL,
+        )
+        env = {
+            "NOVEL_FORGE_ENVIRONMENT": "development",
+            "NOVEL_FORGE_APPLICATION_BUILD_ID": "planning-attempt-retry",
+            "NOVEL_FORGE_COMMIT_SHA": RELEASE_SHA,
+            "NOVEL_FORGE_MODEL_PROVIDER": "scripted_provider_v2",
+            "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": root,
+            "NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID": harness.pack_id,
+        }
+        chapter = build_chapter_authority_application(settings, env=env)
+        planning = build_story_planning_generation_application(
+            settings,
+            env=env,
+            chapter_application=chapter,
+            post_provider_fault_injector=fail_once,
+        )
+        command = StoryPlanningGenerationCommand(
+            project_id=harness.project_id,
+            workspace_id=harness.workspace_id,
+            book_id=harness.book_ids[0],
+            actor_id=principal.principal_id,
+            generator_operation_name="book_plan.generate",
+            logical_key=f"{harness.book_ids[0]}:retry-proof",
+            input_versions={
+                role: generic[role]
+                for role in GENERATOR_INPUT_ROLES["book_plan.generate"]
+            },
+            idempotency_key=f"{harness.project_id}:planning-retry-proof",
+            trace_id=f"trace:{harness.project_id}:planning-retry-proof",
+            correlation_id=f"correlation:{harness.project_id}",
+        )
+        with pytest.raises(
+            KernelError, match="MODEL_EFFECT_RETRYABLE_PLANNING_PROOF"
+        ):
+            planning.generate(command, principal=principal)
+
+        replacement_scope = harness.approval_scope()
+        replacement_scope["allowed_workflow_definition_refs"] = [
+            "story_planning_generators@1.0.0"
+        ]
+        replacement_pack = harness.register_compile_approve(
+            "1.1.0", generation=2, approval_scope=replacement_scope
+        )
+        replacement_deployment = harness.deploy(replacement_pack)
+        harness.activate(replacement_deployment, expected_activation_version=1)
+
+        result = planning.generate(command, principal=principal)
+        chapter.close()
+
+    assert result.status is PlanningGenerationStatus.APPROVAL_PENDING
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute(
+            """
+            SELECT attempt.attempt_number, attempt.status,
+                   snapshot.snapshot_id, snapshot.snapshot_hash,
+                   snapshot.pack_version, snapshot.deployment_id
+            FROM authority_attempt AS attempt
+            JOIN authority_attempt_capability_pack_snapshot AS snapshot
+              ON snapshot.attempt_id=attempt.attempt_id
+            WHERE attempt.operation_id=%s
+            ORDER BY attempt.attempt_number
+            """,
+            [result.generation_operation_id],
+        )
+        attempts = uow.cursor.fetchall()
+        uow.cursor.execute(
+            """
+            SELECT asset.asset_type, version.content->>'candidate_accepted'
+            FROM authority_operation_output_asset AS binding
+            JOIN authority_asset_version AS version
+              ON version.asset_version_id=binding.asset_version_id
+            JOIN authority_asset AS asset ON asset.asset_id=version.asset_id
+            WHERE binding.operation_id=%s
+              AND asset.asset_type IN ('model_call_log', 'cost_ledger')
+              AND version.content ? 'candidate_accepted'
+            ORDER BY asset.asset_type, version.created_at
+            """,
+            [result.generation_operation_id],
+        )
+        evidence = uow.cursor.fetchall()
+        uow.cursor.execute(
+            """
+            SELECT COUNT(*)
+            FROM authority_operation_output_asset
+            WHERE operation_id=%s AND role='primary'
+              AND output_key='story_planning.candidate'
+            """,
+            [result.generation_operation_id],
+        )
+        candidate_count = int(uow.cursor.fetchone()[0])
+        uow.cursor.execute(
+            """
+            SELECT status
+            FROM authority_operation
+            WHERE operation_id=%s
+            """,
+            [result.generation_operation_id],
+        )
+        operation_status = str(uow.cursor.fetchone()[0])
+    assert [(row[0], row[1]) for row in attempts] == [
+        (1, "FAILED_RETRYABLE"),
+        # Planning remains approval-gated after Provider success, so the
+        # successful Attempt is deliberately held at RESULT_SUBMITTED while
+        # the Operation waits for Planning Authority approval.
+        (2, "RESULT_SUBMITTED"),
+    ]
+    assert operation_status == "WAITING_GATE"
+    assert attempts[0][2] != attempts[1][2]
+    assert attempts[0][3] == attempts[1][3]
+    assert attempts[0][4] == attempts[1][4] == "1.0.0"
+    assert attempts[0][5] == attempts[1][5] == baseline_deployment_id
+    assert attempts[1][5] != replacement_deployment.deployment_id
+    assert evidence == [
+        ("cost_ledger", "false"),
+        ("cost_ledger", "true"),
+        ("model_call_log", "false"),
+        ("model_call_log", "true"),
+    ]
+    assert candidate_count == 1
 
 
 def test_book_input_resolver_freezes_active_authorities_and_planning_pack() -> None:

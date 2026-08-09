@@ -25,6 +25,7 @@ from novel_forge.modules.capability_packs.operation_catalog import (
     RepositoryOperationDefinitionLoader,
     chapter_operation_definition_catalog,
     chapter_workflow_binding_catalog,
+    governed_workflow_binding_catalog,
 )
 from novel_forge.modules.capability_packs.type_catalog import (
     default_capability_type_catalog,
@@ -50,6 +51,18 @@ FIXTURE_RELEASE_SHA = "dcaf300057b997ac49099bcb4839f063774320ce"
 
 
 class CapabilityPackP1ATests(unittest.TestCase):
+    def test_reader_outcome_has_a_governed_workflow_binding(self) -> None:
+        catalog = governed_workflow_binding_catalog(
+            "book_followup_reader_outcome", "1.0.0"
+        )
+
+        binding = catalog.resolve("reader_outcome")
+
+        self.assertEqual(binding.operation_name, "reader_outcome.evaluate")
+        self.assertEqual(binding.stage, "reader_outcome")
+        self.assertEqual(binding.capability_id, "quality.reader_outcome.judge")
+        self.assertEqual(binding.primary_output_asset_type, "reader_outcome_report")
+
     def payload(self) -> dict:
         return json.loads(PACK_PATH.read_text(encoding="utf-8"))
 

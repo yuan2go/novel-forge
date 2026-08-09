@@ -112,6 +112,40 @@ class ChapterAuthorityDomainHandlerTests(unittest.TestCase):
                 canon_asset_version_id="canon-version-1",
             )
 
+    def test_context_bundle_accounts_for_optional_inputs_rejected_by_budget(self) -> None:
+        plan = build_chapter_plan(
+            chapter=1,
+            title="A bounded context",
+            premise="Required plans survive while oversized optional context is traced.",
+            trace_id="trace-context-budget",
+        )
+        bundle = build_context_bundle(
+            plan=plan,
+            plan_asset_version_id="plan-version-budget",
+            plan_content_hash="sha256:plan-budget",
+            project_id="project-a",
+            governed_candidates=[
+                {
+                    "asset_version_id": "world-version-large",
+                    "asset_type": "world_bible",
+                    "physical_asset_type": "world_bible",
+                    "project_id": "project-a",
+                    "estimated_tokens": 16_000,
+                    "safe_summary": "Optional governed world context.",
+                    "allowed_use": "generation",
+                }
+            ],
+            token_budget=16_000,
+        )
+
+        selected = set(bundle["selected_asset_version_ids"])
+        rejected = {
+            item["asset_version_id"] for item in bundle["rejected_asset_versions"]
+        }
+        self.assertIn("plan-version-budget", selected)
+        self.assertEqual(rejected, {"world-version-large"})
+        self.assertTrue(selected.isdisjoint(rejected))
+
     def test_post_blob_final_release_fails_closed_and_binds_receipt(self) -> None:
         common = {
             "project_id": "project-a",

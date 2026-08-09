@@ -101,7 +101,7 @@ def _base_rows() -> dict[str, list[ResolvedProductionAsset]]:
 
 
 class TypedEmptyStateSnapshotTests(unittest.TestCase):
-    def test_all_nine_typed_empty_states_are_logical_manifest_inputs(self) -> None:
+    def test_all_ten_typed_empty_states_are_logical_manifest_inputs(self) -> None:
         rows = _base_rows()
         rows[TYPED_EMPTY_STATE_ASSET_TYPE] = [
             _empty(kind) for kind in CONTINUING_CHAPTER_REQUIRED_ASSET_TYPES
@@ -130,7 +130,7 @@ class TypedEmptyStateSnapshotTests(unittest.TestCase):
             item for item in manifest_rows
             if item["physical_asset_type"] == TYPED_EMPTY_STATE_ASSET_TYPE
         ]
-        self.assertEqual(len(typed_rows), 9)
+        self.assertEqual(len(typed_rows), 10)
         self.assertNotIn(
             TYPED_EMPTY_STATE_ASSET_TYPE,
             {item["asset_type"] for item in typed_rows},

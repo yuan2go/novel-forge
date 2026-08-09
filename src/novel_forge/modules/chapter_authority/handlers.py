@@ -185,7 +185,8 @@ class _PlanHandler:
                 "chapter": chapter,
                 "stage": "draft",
                 "selected_asset_versions": selected,
-                "fixture": True,
+                "manifest_source": "FROZEN_COMMAND_CANDIDATES",
+                "fixture_protocol_only": False,
             }
             manifest = {
                 **payload,
@@ -334,16 +335,34 @@ class _ContextHandler:
             for item in bundle.get("context_segments", [])
             if str(item.get("asset_version_id")) != plan.asset_version_id
         }
-        consistent = bool(manifest) and manifest_ids == frozen_ids == segment_ids
+        context_selected_ids = {
+            str(item)
+            for item in bundle.get("selected_asset_version_ids", [])
+            if str(item) != plan.asset_version_id
+        }
+        context_rejected_ids = {
+            str(item.get("asset_version_id") or "")
+            for item in bundle.get("rejected_asset_versions", [])
+            if str(item.get("asset_version_id") or "")
+            != plan.asset_version_id
+        }
+        consistent = (
+            bool(manifest)
+            and manifest_ids == frozen_ids
+            and context_selected_ids == segment_ids
+            and not context_selected_ids.intersection(context_rejected_ids)
+            and context_selected_ids.union(context_rejected_ids) == frozen_ids
+        )
         if not consistent:
             from novel_forge.modules.command_kernel.errors import KernelError
             raise KernelError(
                 "CONTEXT_MANIFEST_CONSISTENCY_FAILED",
-                "Manifest, frozen inputs, and Context segments differ: "
+                "Manifest, frozen inputs, and Context selection partition differ: "
                 f"manifest_only={sorted(manifest_ids - frozen_ids)}; "
                 f"frozen_only={sorted(frozen_ids - manifest_ids)}; "
-                f"segment_only={sorted(segment_ids - frozen_ids)}; "
-                f"frozen_without_segment={sorted(frozen_ids - segment_ids)}",
+                f"selected_only={sorted(context_selected_ids - frozen_ids)}; "
+                f"segment_only={sorted(segment_ids - context_selected_ids)}; "
+                f"unaccounted={sorted(frozen_ids - context_selected_ids - context_rejected_ids)}",
             )
         report = {
             "type": "ContextManifestConsistencyReport",
@@ -355,8 +374,9 @@ class _ContextHandler:
             "selected_asset_version_ids": sorted(manifest_ids),
             "frozen_input_asset_version_ids": sorted(frozen_ids),
             "context_segment_asset_version_ids": sorted(segment_ids),
+            "context_rejected_asset_version_ids": sorted(context_rejected_ids),
             "consistent": True,
-            "contract_version": "context-manifest-consistency-v1",
+            "contract_version": "context-manifest-consistency-v2",
         }
         return ChapterHandlerOutput(
             asset_type=ChapterNode.CONTEXT.asset_type,

@@ -253,6 +253,8 @@ def reduce_story_state(
             "contract_version": "story-state-snapshot-v1",
             "project_id": chapter_outcome["project_id"],
             "book_id": chapter_outcome["book_id"],
+            "chapter": int(chapter_outcome["chapter_number"]),
+            "chapter_number": int(chapter_outcome["chapter_number"]),
             "state_version": len(applied),
             "based_on_chapter_outcome": chapter_outcome_asset_version_id,
             "applied_chapter_outcome_versions": applied,

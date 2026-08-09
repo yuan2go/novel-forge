@@ -176,7 +176,19 @@ def validate_planning_contract(
             "planning content does not bind the supplied parent version",
         )
     if contract_type is PlanContractType.CHAPTER_GROUP:
-        start, end = map(int, content["chapter_range"])
+        chapter_range = content["chapter_range"]
+        if not isinstance(chapter_range, (list, tuple)) or len(chapter_range) != 2:
+            raise KernelError(
+                "CHAPTER_GROUP_RANGE_INVALID",
+                "ChapterGroup chapter_range must contain exactly start and end",
+            )
+        try:
+            start, end = map(int, chapter_range)
+        except (TypeError, ValueError) as exc:
+            raise KernelError(
+                "CHAPTER_GROUP_RANGE_INVALID",
+                "ChapterGroup chapter_range must contain integer boundaries",
+            ) from exc
         if start <= 0 or end < start or not 3 <= end - start + 1 <= 8:
             raise KernelError(
                 "CHAPTER_GROUP_RANGE_INVALID",

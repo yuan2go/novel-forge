@@ -1491,8 +1491,13 @@ def default_chapter_fixture_response(
     raise ValueError(f"unsupported fixture stage: {stage}")
 
 
-class PostgresChapterExecutionPayloadResolver:
-    """Resolve the frozen ExternalEffect payload; optionally materialize a fixture reply."""
+class PostgresProductionExecutionPayloadResolver:
+    """Resolve one frozen ExternalEffect into backend-neutral execution payload.
+
+    The resolver intentionally owns no Chapter, Planning, or Reader business
+    semantics.  Domain binders freeze those contracts before this shared
+    Production Execution bridge validates and renders the governed payload.
+    """
 
     def __init__(
         self,
@@ -1578,7 +1583,7 @@ class PostgresChapterExecutionPayloadResolver:
                     "CAPABILITY_PACK_SNAPSHOT_INCONSISTENT",
                     "Provider materialization hash differs from frozen ExternalEffect",
                 )
-            input_text, prompt_evidence = _materialize_chapter_codex_prompt(
+            input_text, prompt_evidence = _materialize_production_codex_prompt(
                 request=request,
                 stage=stage,
                 inputs=inputs,
@@ -1650,7 +1655,30 @@ class PostgresChapterExecutionPayloadResolver:
         )
 
 
-def _materialize_chapter_codex_prompt(
+def _stage_semantic_contract(stage: str) -> str:
+    if stage == "revision":
+        return (
+            "Return text as final reader-facing revised chapter prose only. "
+            "Resolve every supplied review issue in the prose, prioritizing blocking and "
+            "major issues; list a code in resolved_issue_codes only after the edit is "
+            "actually present. Preserve the reader-facing language of the input chapter "
+            "and do not introduce unexplained code-switching. Do not put a serialized "
+            "JSON object inside text. Do not include analysis, self-checks, change logs, "
+            "revision evidence, or operator-facing appendices in text."
+        )
+    if stage == "rereview":
+        return (
+            "Independently verify the revised chapter against the supplied review. "
+            "Report in issues only defects that remain acceptance-blocking: an unresolved "
+            "blocking or major issue, or a material regression that prevents acceptance. "
+            "Do not report optional minor polish or taste preferences in issues. If no "
+            "acceptance-blocking defect remains, return issues=[] and an evidence-based "
+            "score. Never suppress an actual blocking or major defect."
+        )
+    return "Return only the stage result defined by the frozen output schema."
+
+
+def _materialize_production_codex_prompt(
     *,
     request: ExecutionRequest,
     stage: str,
@@ -1717,14 +1745,7 @@ def _materialize_chapter_codex_prompt(
             "CHAPTER_CAPABILITY_TOOL_UNAUTHORIZED",
             "Codex execution permits only the governed provider invocation",
         )
-    stage_semantic_contract = (
-        "Return text as final reader-facing revised chapter prose only. "
-        "Do not put a serialized JSON object inside text. Do not include analysis, "
-        "self-checks, change logs, revision evidence, or operator-facing appendices "
-        "in text. Record only issue identifiers in resolved_issue_codes."
-        if stage == "revision"
-        else "Return only the stage result defined by the frozen output schema."
-    )
+    stage_semantic_contract = _stage_semantic_contract(stage)
     prompt = "\n\n".join(
         (
             "<system_instruction>\n" + system_text + "\n</system_instruction>",
@@ -1770,6 +1791,12 @@ def _materialize_chapter_codex_prompt(
         "output_schema_hash": str(schema.get("content_hash") or ""),
     }
     return prompt, evidence
+
+
+# Compatibility names for Chapter callers and existing evidence/tests.  New
+# cross-domain composition uses the production-semantic name above.
+PostgresChapterExecutionPayloadResolver = PostgresProductionExecutionPayloadResolver
+_materialize_chapter_codex_prompt = _materialize_production_codex_prompt
 
 
 @dataclass(frozen=True, slots=True)
@@ -1887,6 +1914,7 @@ class ProductionExecutionGatewayExternalEffectAdapter:
         )
         self.session_factory = session_factory
         self.provider_adapters = dict(provider_adapters or {})
+        self.execution_binders: dict[str, Any] = {}
         self._sessions: dict[str, ChapterExecutionGatewaySession] = {}
         self._lock = Lock()
         all_real = all(
@@ -2026,6 +2054,25 @@ class ProductionExecutionGatewayExternalEffectAdapter:
     def model_id_for_stage(self, stage: str) -> str:
         route = self.routes.get(stage)
         return "" if route is None else route.model_profile.model_id
+
+    def session_for_project(self, project_id: str) -> ChapterExecutionGatewaySession:
+        """Return the shared backend-neutral PEP session for a project."""
+
+        return self._session(project_id)
+
+    def register_execution_binder(self, domain: str, binder: Any) -> None:
+        """Register a domain-owned binder without importing its semantics here."""
+
+        normalized = domain.strip().lower()
+        if (
+            not normalized
+            or normalized == "chapter"
+            or normalized in self.execution_binders
+        ):
+            raise ValueError("execution binder domain is missing or already registered")
+        if not callable(getattr(binder, "bind", None)):
+            raise ValueError("execution binder must materialize a frozen request")
+        self.execution_binders[normalized] = binder
 
     def provider_id_for_stage(self, stage: str) -> str:
         route = self.routes.get(stage)
@@ -2220,7 +2267,13 @@ class ProductionExecutionGatewayExternalEffectAdapter:
             raise ExternalEffectAdapterError(
                 "gateway ExternalEffect identity is incomplete", request_sent=False
             )
-        binding = self.binder.bind(
+        binding_domain = (
+            str(metadata.get("execution_binding_domain") or "chapter").strip().lower()
+            if isinstance(metadata, Mapping)
+            else "chapter"
+        )
+        binder = self.execution_binders.get(binding_domain, self.binder)
+        binding = binder.bind(
             stable_idempotency_key=stable_idempotency_key,
             capability=capability,
             request_payload=request_payload,
@@ -2365,6 +2418,7 @@ __all__ = [
     "ExternalEffectExecutionSessionStore",
     "PostgresChapterExecutionContractBinder",
     "PostgresChapterExecutionPayloadResolver",
+    "PostgresProductionExecutionPayloadResolver",
     "ProductionExecutionGatewayExternalEffectAdapter",
     "chapter_stage_capability",
     "default_chapter_fixture_response",

@@ -28,6 +28,7 @@ from .domain import (
     StoryPlanningGenerationCommand,
     canonical_hash,
 )
+from .execution import PostgresPlanningExecutionPreparer
 
 __all__ = [
     "GENERATOR_INPUT_ROLES",
@@ -48,6 +49,7 @@ __all__ = [
     "PlanningRepairRequest",
     "PlanningValidationReport",
     "PostgresPlanningExecutionBundleResolver",
+    "PostgresPlanningExecutionPreparer",
     "PreparedPlanningExecution",
     "StoryPlanningGenerationCommand",
     "StoryPlanningGenerationApplication",

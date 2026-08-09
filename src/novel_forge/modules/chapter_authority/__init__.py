@@ -38,6 +38,7 @@ from novel_forge.modules.chapter_authority.execution_gateway import (
     ChapterExecutionRoute,
     PostgresChapterExecutionContractBinder,
     PostgresChapterExecutionPayloadResolver,
+    PostgresProductionExecutionPayloadResolver,
     ProductionExecutionGatewayExternalEffectAdapter,
 )
 from novel_forge.modules.chapter_authority.orchestrator import (
@@ -70,6 +71,7 @@ __all__ = [
     "ModelProviderResult",
     "PostgresChapterExecutionContractBinder",
     "PostgresChapterExecutionPayloadResolver",
+    "PostgresProductionExecutionPayloadResolver",
     "ProductionExecutionGatewayExternalEffectAdapter",
     "SingleChapterRequest",
     "build_chapter_handler_registry",

@@ -67,7 +67,13 @@ def _bundle() -> dict:
     }
 
 
-def _view(group: str, bundle: dict | None = None, *, token_budget: int = 6000) -> dict:
+def _view(
+    group: str,
+    bundle: dict | None = None,
+    *,
+    token_budget: int = 6000,
+    canon: dict | None = None,
+) -> dict:
     return build_quality_context_view(
         group=group,
         revision={
@@ -92,7 +98,7 @@ def _view(group: str, bundle: dict | None = None, *, token_budget: int = 6000) -
         chapter_plan_asset_version_id="plan-v2",
         context_bundle=bundle or _bundle(),
         context_bundle_asset_version_id="context-v2",
-        canon={"conflicts": [], "snapshot_candidates": []},
+        canon=canon or {"conflicts": [], "snapshot_candidates": []},
         canon_asset_version_id="canon-v2",
         token_budget=token_budget,
     )
@@ -147,6 +153,30 @@ class QualityContextAuthorityTests(unittest.TestCase):
         self.assertTrue(row["compressed"])
         self.assertGreater(row["omitted_fact_count"], 0)
 
+    def test_longform_view_excludes_full_planning_provider_envelope(self) -> None:
+        view = build_quality_context_view(
+            group="longform",
+            revision={"chapter": 2, "title": "Cost", "text": "A concise revision."},
+            revision_asset_version_id="revision-v2",
+            chapter_plan={
+                "chapter": 2,
+                "title": "Cost",
+                "premise": "A choice becomes irreversible.",
+                "chapter_objective": "make the cost visible",
+                "required_arc_contributions": [{"arc": "accountability"}],
+                "source_extensions": {"provider_envelope": "x" * 60_000},
+            },
+            chapter_plan_asset_version_id="plan-v2",
+            context_bundle=_bundle(),
+            context_bundle_asset_version_id="context-v2",
+            canon={"conflicts": [], "snapshot_candidates": []},
+            canon_asset_version_id="canon-v2",
+            token_budget=6_000,
+        )
+
+        self.assertNotIn("source_extensions", view["chapter_plan"])
+        self.assertEqual(view["chapter_plan"]["chapter"], 2)
+
     def test_longform_preserves_multiple_entities_and_emits_coverage(self) -> None:
         bundle = _bundle()
         bundle["context_segments"].extend(
@@ -183,6 +213,41 @@ class QualityContextAuthorityTests(unittest.TestCase):
     def test_critical_identity_overflow_fails_closed(self) -> None:
         with self.assertRaisesRegex(KernelError, "CRITICAL_OVERFLOW"):
             _view("longform", token_budget=50)
+
+    def test_longform_compacts_noncritical_candidate_rows_but_keeps_identities(self) -> None:
+        identities = [f"character-{index}" for index in range(60)]
+        canon = {
+            "conflicts": [],
+            "snapshot_candidates": [
+                {
+                    "asset_type": "character_state_snapshot",
+                    "previous_asset_version_ids": ["character-state-v1"],
+                    "changes": [
+                        {
+                            "entity_id": identity,
+                            "description": "noncritical detail " * 20,
+                        }
+                        for identity in identities
+                    ],
+                }
+            ],
+        }
+
+        view = _view("longform", token_budget=2500, canon=canon)
+
+        compacted = view["current_state_candidates"][
+            "character_state_snapshot"
+        ]["compressed:noncritical"][0]
+        self.assertEqual(
+            compacted["included_identities"],
+            [f"entity_id:{identity}" for identity in identities],
+        )
+        self.assertEqual(compacted["identity_count"], len(identities))
+        self.assertTrue(view["coverage_report"]["critical_facts_preserved"])
+        self.assertLessEqual(
+            view["coverage_report"]["token_estimate"],
+            view["coverage_report"]["token_budget"],
+        )
 
 
 if __name__ == "__main__":

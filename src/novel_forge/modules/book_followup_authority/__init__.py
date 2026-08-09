@@ -8,6 +8,7 @@ from .domain import (
     should_trigger_longform_recap,
 )
 from .query import BookFollowupProjectionQuery
+from .execution import PostgresReaderOutcomeExecutionContractBinder
 
 __all__ = [
     "LongformCheckpointType",
@@ -16,4 +17,5 @@ __all__ = [
     "evaluate_reader_outcome",
     "should_trigger_longform_recap",
     "BookFollowupProjectionQuery",
+    "PostgresReaderOutcomeExecutionContractBinder",
 ]

@@ -15,6 +15,9 @@ from novel_forge.modules.authority_handler_runtime import (
 )
 from novel_forge.modules.authority_security import Principal
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.command_kernel.asset_commands import (
+    AuthorityAssetWriteCommand,
+)
 from novel_forge.modules.command_kernel.operation_graph import (
     GraphCommandContext,
     start_saga,
@@ -23,7 +26,12 @@ from novel_forge.modules.command_kernel.runtime import (
     OperationTransitionCommand,
     transition_operation,
 )
-from novel_forge.modules.command_kernel.service import AdmissionContext, admit_command
+from novel_forge.modules.command_kernel.service import (
+    AdmissionContext,
+    TransactionCheckpoint,
+    admit_command,
+    execute_transaction_command,
+)
 from novel_forge.modules.content_authority.scheduler import ContentAuthorityScheduler
 from novel_forge.modules.hierarchical_planning import (
     PlanContractType,
@@ -55,6 +63,10 @@ from .domain import (
 STORY_PLANNING_GENERATION_DEFINITION = "story_planning.generate"
 STORY_PLANNING_GENERATION_VERSION = "1.0.0"
 STORY_PLANNING_GENERATION_HANDLER = "novel_forge.story_planning.generate"
+CHAPTER_PLAN_PROJECTION_DEFINITION = "story_planning.chapter_plan.materialize"
+CHAPTER_PLAN_PROJECTION_HANDLER = (
+    "novel_forge.story_planning.chapter_plan.materialize"
+)
 
 
 _PLAN_INPUT_CONTRACTS = {
@@ -67,6 +79,14 @@ _PLAN_INPUT_CONTRACTS = {
 _AUTHORITY_INPUT_ASSET_TYPES = {
     "story_state": frozenset({"story_state", "story_state_snapshot"}),
     "reader_state": frozenset({"reader_state", "reader_state_transition"}),
+    "character_state": frozenset(
+        {"character_state", "character_state_snapshot"}
+    ),
+    "foreshadowing_state": frozenset(
+        {"foreshadowing_state", "foreshadow_snapshot"}
+    ),
+    "reward_ledger": frozenset({"reward_ledger", "reward_ledger_snapshot"}),
+    "promise_ledger": frozenset({"promise_ledger", "promise_ledger_snapshot"}),
     "previous_volume_outcome": frozenset(
         {"previous_volume_outcome", "volume_outcome"}
     ),
@@ -479,8 +499,203 @@ class StoryPlanningGenerationApplication:
             causation_operation_id=generation["generation_operation_id"],
             principal=principal,
         )
+        chapter_plan_projection = None
+        if generation["planning_scope"].value == PlanContractType.CHAPTER.value:
+            chapter_plan_projection = self._materialize_chapter_plan_projection(
+                generation=generation,
+                candidate_asset_version_id=candidate_asset_version_id,
+                principal=principal,
+                idempotency_key=f"{idempotency_key}:chapter-plan-projection",
+                trace_id=trace_id,
+                correlation_id=correlation_id,
+            )
         self._update_generation_status(generation["generation_operation_id"], "ACTIVE")
-        return {"story_design": state, "planning_binding": binding}
+        return {
+            "story_design": state,
+            "planning_binding": binding,
+            "chapter_plan_projection": chapter_plan_projection,
+        }
+
+    def _materialize_chapter_plan_projection(
+        self,
+        *,
+        generation: dict[str, Any],
+        candidate_asset_version_id: str,
+        principal: Principal,
+        idempotency_key: str,
+        trace_id: str,
+        correlation_id: str,
+    ) -> dict[str, Any]:
+        """Materialize the activated candidate as Chapter Runtime input.
+
+        The generic candidate and typed Planning binding remain authoritative.
+        This deterministic projection only gives the existing Chapter Runtime
+        its strict physical ``chapter_plan`` input contract with explicit
+        candidate and activation lineage.
+        """
+
+        definition = chapter_plan_projection_definition(
+            application_build_id=self.application_build_id,
+            commit_sha=self.commit_sha,
+        )
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.repositories.definitions.register(definition)
+            candidate = self._require_asset(
+                project_id=generation["project_id"],
+                asset_version_id=candidate_asset_version_id,
+            )
+            uow.commit()
+
+        def materialize(
+            uow: AuthorityUnitOfWork,
+            operation_id: str,
+            checkpoint: TransactionCheckpoint,
+        ) -> dict[str, Any]:
+            checkpoint("after_domain_validation")
+            content = {
+                **_chapter_runtime_projection(dict(candidate["content"])),
+                "source_planning_candidate_asset_version_id": (
+                    candidate_asset_version_id
+                ),
+                "source_planning_generation_operation_id": generation[
+                    "generation_operation_id"
+                ],
+                "planning_activation": "ACTIVE",
+                "physical_contract_type": "chapter_plan",
+            }
+            document = uow.repositories.asset_documents.materialize_output(
+                AuthorityAssetWriteCommand(
+                    operation_id=operation_id,
+                    project_id=generation["project_id"],
+                    asset_id=f"chapter-plan:{candidate_asset_version_id}",
+                    asset_type="chapter_plan",
+                    schema_version="activated-chapter-plan.v1",
+                    logical_ref=(
+                        "story_planning/chapter_plans/"
+                        f"{candidate_asset_version_id}.json"
+                    ),
+                    category="planning",
+                    output_key="story_planning.chapter_plan_projection",
+                    role="primary",
+                    content=content,
+                    qualification_policy="activated-planning-chapter-contract-v1",
+                    trace_id=trace_id,
+                    correlation_id=correlation_id,
+                    reference_asset_ids=(str(candidate["asset_id"]),),
+                )
+            )
+            checkpoint("after_business_projection_update")
+            uow.repositories.operation_graph.record_event(
+                {
+                    "event_id": str(uuid4()),
+                    "audit_id": str(uuid4()),
+                    "outbox_id": str(uuid4()),
+                    "aggregate_type": "chapter_plan",
+                    "aggregate_id": document.asset_version_id,
+                    "operation_id": operation_id,
+                    "project_id": generation["project_id"],
+                    "event_type": "story_planning.chapter_plan.materialized",
+                    "correlation_id": correlation_id,
+                    "causation_id": generation["generation_operation_id"],
+                    "payload": {
+                        "operation_id": operation_id,
+                        "asset_version_id": document.asset_version_id,
+                        "source_planning_candidate_asset_version_id": (
+                            candidate_asset_version_id
+                        ),
+                    },
+                }
+            )
+            checkpoint("after_outbox_insert")
+            return {
+                "asset_version_id": document.asset_version_id,
+                "content_hash": document.content_hash,
+                "source_planning_candidate_asset_version_id": (
+                    candidate_asset_version_id
+                ),
+            }
+
+        return dict(
+            execute_transaction_command(
+                self.database_url,
+                {
+                    "definition_name": CHAPTER_PLAN_PROJECTION_DEFINITION,
+                    "definition_version": "1.0.0",
+                    "project_id": generation["project_id"],
+                    "workspace_id": generation["workspace_id"],
+                    "book_id": generation["book_id"],
+                    "actor_id": principal.principal_id,
+                    "idempotency_scope": "book:activated-chapter-plan",
+                    "idempotency_key": idempotency_key,
+                    "trace_id": trace_id,
+                    "span_id": str(uuid4()),
+                    "correlation_id": correlation_id,
+                    "causation_id": generation["generation_operation_id"],
+                    "causation_operation_id": generation[
+                        "generation_operation_id"
+                    ],
+                    "input": {
+                        "project_id": generation["project_id"],
+                        "candidate_asset_version_id": candidate_asset_version_id,
+                    },
+                    "input_assets": [
+                        {
+                            "asset_version_id": candidate_asset_version_id,
+                            "content_hash": candidate["content_hash"],
+                        }
+                    ],
+                },
+                context=AdmissionContext(
+                    actor_id=principal.principal_id,
+                    permissions=frozenset(
+                        {"story_planning.authority.activate"}
+                    ),
+                    available_handlers=frozenset(
+                        {CHAPTER_PLAN_PROJECTION_HANDLER}
+                    ),
+                    application_build_id=self.application_build_id,
+                    commit_sha=self.commit_sha,
+                ),
+                handler=materialize,
+            )
+        )
+
+    def materialize_activated_chapter_plan_projection(
+        self,
+        candidate_asset_version_id: str,
+        *,
+        principal: Principal,
+        idempotency_key: str,
+        trace_id: str,
+        correlation_id: str,
+    ) -> dict[str, Any]:
+        """Use the same typed projection after PlanChange-owned activation."""
+
+        generation = self.require_candidate(candidate_asset_version_id)
+        if generation["planning_scope"].value != PlanContractType.CHAPTER.value:
+            raise KernelError(
+                "PLANNING_CHAPTER_PROJECTION_SCOPE_INVALID",
+                "typed ChapterPlan projection requires a Chapter candidate",
+            )
+        state = self.story_design.require(
+            project_id=generation["project_id"],
+            asset_version_id=candidate_asset_version_id,
+        )
+        if state["lifecycle"] != "ACTIVE":
+            raise KernelError(
+                "PLANNING_CHAPTER_PROJECTION_ACTIVATION_REQUIRED",
+                "typed ChapterPlan projection requires an Active candidate",
+            )
+        projection = self._materialize_chapter_plan_projection(
+            generation=generation,
+            candidate_asset_version_id=candidate_asset_version_id,
+            principal=principal,
+            idempotency_key=idempotency_key,
+            trace_id=trace_id,
+            correlation_id=correlation_id,
+        )
+        self._update_generation_status(generation["generation_operation_id"], "ACTIVE")
+        return projection
 
     def require_generation(self, operation_id: str) -> dict[str, Any]:
         with AuthorityUnitOfWork(self.database_url) as uow:
@@ -1210,7 +1425,7 @@ class StoryPlanningGenerationApplication:
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
-                SELECT version.asset_version_id, asset.project_id,
+                SELECT version.asset_version_id, version.asset_id, asset.project_id,
                        asset.asset_type, version.content_hash, version.content
                 FROM authority_asset_version AS version
                 JOIN authority_asset AS asset ON asset.asset_id=version.asset_id
@@ -1227,6 +1442,7 @@ class StoryPlanningGenerationApplication:
             zip(
                 (
                     "asset_version_id",
+                    "asset_id",
                     "project_id",
                     "asset_type",
                     "content_hash",
@@ -1248,6 +1464,149 @@ class StoryPlanningGenerationApplication:
             for definition in GENERATOR_CATALOG.values():
                 uow.repositories.story_design.register_generator(asdict(definition))
             uow.commit()
+
+
+def chapter_plan_projection_definition(
+    *, application_build_id: str, commit_sha: str
+) -> dict[str, Any]:
+    command = {
+        "type": "object",
+        "required": ["project_id", "candidate_asset_version_id"],
+        "properties": {
+            "project_id": {"type": "string", "minLength": 1},
+            "candidate_asset_version_id": {"type": "string", "minLength": 1},
+        },
+        "additionalProperties": False,
+    }
+    result = {
+        "type": "object",
+        "required": [
+            "asset_version_id",
+            "content_hash",
+            "source_planning_candidate_asset_version_id",
+        ],
+        "properties": {
+            "asset_version_id": {"type": "string", "minLength": 1},
+            "content_hash": {"type": "string", "minLength": 1},
+            "source_planning_candidate_asset_version_id": {
+                "type": "string",
+                "minLength": 1,
+            },
+        },
+        "additionalProperties": False,
+    }
+    return {
+        "name": CHAPTER_PLAN_PROJECTION_DEFINITION,
+        "definition_version": "1.0.0",
+        "family": "story_planning",
+        "command_schema_version": "story-planning-chapter-plan-projection.command.v1",
+        "result_schema_version": "story-planning-chapter-plan-projection.result.v1",
+        "enabled": True,
+        "command_schema": command,
+        "result_schema": result,
+        "input_contract": command,
+        "output_contract": {
+            **result,
+            "asset_type": "chapter_plan",
+            "output_key": "story_planning.chapter_plan_projection",
+            "role": "primary",
+        },
+        "handler_key": CHAPTER_PLAN_PROJECTION_HANDLER,
+        "handler_contract_version": "story-planning-chapter-plan-projection-v1",
+        "application_build_id": application_build_id,
+        "commit_sha": commit_sha,
+        "execution_mode": "transactional",
+        "permissions": ["story_planning.authority.activate"],
+        "approval_policy": {"required": False},
+        "policy": {
+            "execution_classification": "transaction_command",
+            "candidate_activation_required": True,
+            "lineage_required": True,
+        },
+        "idempotency_scope": "book:activated-chapter-plan",
+        "concurrency_key_template": "book:{book_id}:chapter-plan-projection",
+        "retry_policy": {"max_attempts": 1},
+        "timeout_policy": {"operation_timeout_seconds": 30},
+        "cancellation_policy": {"mode": "not_applicable_atomic"},
+        "compensation_policy": {
+            "supported": False,
+            "reason": "append-only typed planning projection",
+        },
+        "irreversible_effect_policy": {"allowed": False},
+        "external_capabilities": [],
+        "projection_consumers": ["chapter_authority"],
+        "migration_owner": "story-planning-runtime",
+        "completion_contract": {
+            "version": "story-planning-chapter-plan-projection-completion-v1",
+            "required_asset_selectors": [
+                {
+                    "selector": "chapter_plan",
+                    "output_key": "story_planning.chapter_plan_projection",
+                    "role": "primary",
+                    "lifecycle": "ACTIVE",
+                    "eligibility": "ELIGIBLE",
+                    "governance": "CLEAR",
+                }
+            ],
+            "required_qualifications": [{"decision": "ELIGIBLE"}],
+            "required_evidence": ["trace", "audit"],
+            "required_outbox_events": [
+                "story_planning.chapter_plan.materialized"
+            ],
+        },
+    }
+
+
+def _chapter_runtime_projection(candidate: dict[str, Any]) -> dict[str, Any]:
+    """Adapt the typed Planning contract to ChapterPlan v3 without model I/O."""
+
+    primary = str(candidate.get("primary_function") or "progression")
+    objective = str(candidate.get("objective") or candidate.get("premise") or "")
+    hook = str(candidate.get("ending_hook") or "the choice creates a new obligation")
+    required_events = list(candidate.get("required_events") or ())
+    required_payoffs = list(candidate.get("required_payoffs") or ())
+    hard_constraints = list(candidate.get("hard_constraints") or ())
+    return {
+        **candidate,
+        "chapter": int(candidate.get("chapter_number") or candidate.get("chapter") or 0),
+        "title": str(
+            candidate.get("title")
+            or (
+                f"Chapter {int(candidate.get('chapter_number') or 0)}: "
+                f"{primary}"
+            )
+        ),
+        "premise": str(candidate.get("premise") or objective),
+        "chapter_function": primary,
+        "chapter_objective": objective,
+        "scene_sequence": required_events
+        or [
+            {
+                "goal": objective,
+                "conflict": hard_constraints[0]
+                if hard_constraints
+                else "the objective demands a visible cost",
+                "turn": hook,
+            }
+        ],
+        "chapter_hook": hook,
+        "conflict_chain": hard_constraints
+        or ["the objective meets escalating resistance"],
+        "emotional_curve": ["pressure", "choice", "consequence"],
+        "suspense_curve": ["question", "complication", "earned hook"],
+        "reader_promise_actions": required_payoffs
+        or [str(candidate.get("promise_action") or "advance the central promise")],
+        "protagonist_charm_mechanism": (
+            "the protagonist accepts a visible cost to preserve agency"
+        ),
+        "information_reveals": required_events
+        or ["the choice exposes a consequence hidden at entry"],
+        "antagonist_pressure": "resistance intensifies before the chapter turn",
+        "next_chapter_bridge": hook,
+        "reward_setup": required_payoffs or ["the promised consequence is prepared"],
+        "reward_payoff": required_payoffs or ["the chapter pays a local consequence"],
+        "conflict_escalation": ["resistance", "choice", "irreversible cost"],
+    }
 
 
 def story_planning_generation_definition(
@@ -1371,10 +1730,12 @@ def _command_from_payload(payload: dict[str, Any]) -> StoryPlanningGenerationCom
 
 
 __all__ = [
+    "CHAPTER_PLAN_PROJECTION_DEFINITION",
     "STORY_PLANNING_GENERATION_DEFINITION",
     "STORY_PLANNING_GENERATION_HANDLER",
     "STORY_PLANNING_GENERATION_VERSION",
     "StoryPlanningGenerationApplication",
     "StoryPlanningGenerationHandlerRegistry",
+    "chapter_plan_projection_definition",
     "story_planning_generation_definition",
 ]

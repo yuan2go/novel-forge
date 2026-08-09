@@ -503,6 +503,19 @@ class BookReplanCoordinator:
             payload={"transition": "REGENERATING", "replan_id": replan_id},
             handler=record_regenerating,
         )
+        chapter_plan_projection: dict[str, Any] | None = None
+        if replan["affected_scope"] == "CHAPTER":
+            chapter_plan_projection = (
+                self.planning.materialize_activated_chapter_plan_projection(
+                    replan["replacement_candidate_asset_version_id"],
+                    principal=self.principal,
+                    idempotency_key=(
+                        f"{replan['stable_idempotency_key']}:chapter-plan-projection"
+                    ),
+                    trace_id=f"{replan_id}:chapter-plan-projection",
+                    correlation_id=str(proposal["activation_operation_id"]),
+                )
+            )
         replacement_child = self._regenerate_future_plan(replan, proposal)
         book = self.book.require(replan["book_run_id"])
         snapshot = self._resolve_new_snapshot(book, proposal["activation_operation_id"])
@@ -544,6 +557,7 @@ class BookReplanCoordinator:
                 payload={
                     "input_snapshot_id": snapshot.snapshot_id,
                     "replacement_child_candidate": replacement_child,
+                    "chapter_plan_projection": chapter_plan_projection,
                 },
             )
             checkpoint("after_outbox_insert")
@@ -568,6 +582,7 @@ class BookReplanCoordinator:
             **self.require(replan_id),
             "book_state": resumed["state"],
             "replacement_child_candidate": replacement_child,
+            "chapter_plan_projection": chapter_plan_projection,
         }
 
     def require(self, replan_id: str) -> dict[str, Any]:
