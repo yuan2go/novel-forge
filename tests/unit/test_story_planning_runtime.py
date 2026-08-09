@@ -174,6 +174,32 @@ def test_chapter_contract_rejects_duplicate_arc_contribution_identity() -> None:
         )
 
 
+def test_chapter_contract_preserves_explicit_empty_arc_contribution_policy() -> None:
+    content = planning_fixture_response(
+        "chapter_plan.generate",
+        {
+            "planning_command": {
+                "logical_key": "chapter:2",
+                "parent_version_id": "chapter-group:v1",
+                "input_versions": {"arc_plans": "arc:v1"},
+            }
+        },
+    )
+    content["required_arc_contributions"] = []
+
+    contract = validate_planning_contract(
+        project_id="project-1",
+        book_id="book-1",
+        contract_type=PlanContractType.CHAPTER,
+        asset_version_id="chapter:v2",
+        parent_version_id="chapter-group:v1",
+        execution_scope=PlanExecutionScope.PLANNED,
+        content=content,
+    )
+
+    assert contract.content["required_arc_contributions"] == []
+
+
 def _command(generator: str) -> StoryPlanningGenerationCommand:
     return StoryPlanningGenerationCommand(
         project_id="project-1",

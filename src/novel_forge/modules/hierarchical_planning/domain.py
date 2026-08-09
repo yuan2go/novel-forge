@@ -214,10 +214,10 @@ def validate_planning_contract(
 
 
 def _validate_chapter_arc_contributions(value: Any) -> None:
-    if not isinstance(value, (list, tuple)) or not value:
+    if not isinstance(value, (list, tuple)):
         raise KernelError(
             "PLANNING_ARC_CONTRIBUTION_INVALID",
-            "Chapter required Arc contributions must be a non-empty list",
+            "Chapter required Arc contributions must be a list",
         )
     seen: set[str] = set()
     for contribution in value:
