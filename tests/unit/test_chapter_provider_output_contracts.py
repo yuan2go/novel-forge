@@ -48,6 +48,15 @@ def test_rereview_prompt_reports_only_acceptance_blocking_defects() -> None:
     assert "issues=[]" in contract
 
 
+def test_canon_prompt_explains_unique_semantic_slot_encoding() -> None:
+    contract = _stage_semantic_contract("canon_extraction")
+
+    assert "(subject, predicate, impact_type)" in contract
+    assert "at most once" in contract
+    assert "authorizes_testimony" in contract
+    assert "authorizes_public_identification" in contract
+
+
 def _valid(stage: str) -> dict[str, object]:
     if stage == "draft":
         return {"text": "The choice closes the only safe road home."}

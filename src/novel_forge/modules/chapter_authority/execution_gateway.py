@@ -1673,6 +1673,17 @@ def _stage_semantic_contract(stage: str) -> str:
             "acceptance-blocking defect remains, return issues=[] and an evidence-based "
             "score. Never suppress an actual blocking or major defect."
         )
+    if stage == "canon_extraction":
+        return (
+            "Extract only facts and state changes supported by the revised chapter. "
+            "Within canon_facts, each (subject, predicate, impact_type) tuple may occur "
+            "at most once. When one subject has multiple objects for a broad relation, "
+            "either combine them into one object when they are one bundled fact, or use "
+            "precise relation-specific predicates. For example, encode separate consent "
+            "facts as authorizes_testimony and authorizes_public_identification instead "
+            "of repeating authorizes with two objects. Never emit two different objects "
+            "for the same semantic tuple."
+        )
     return "Return only the stage result defined by the frozen output schema."
 
 

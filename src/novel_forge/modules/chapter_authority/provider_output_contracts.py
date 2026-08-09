@@ -140,7 +140,9 @@ def _canon_schema() -> dict[str, Any]:
     )
     fact["description"] = (
         "Canonical facts only. Emit at most one item for each "
-        "subject/predicate/impact_type semantic slot; never emit contradictory values."
+        "subject/predicate/impact_type semantic slot. For multiple objects, combine a "
+        "bundled fact or use precise relation-specific predicates; never emit different "
+        "objects in the same semantic slot."
     )
     change = _object_schema(
         {
