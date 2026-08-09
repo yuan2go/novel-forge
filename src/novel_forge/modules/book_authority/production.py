@@ -405,6 +405,7 @@ class PostgresBookAuthority:
             )["saga_id"]
         )
         book_run_id = f"book-run:{root_operation_id}"
+
         def commit_start(
             uow: AuthorityUnitOfWork,
             _operation_id: str,
@@ -438,23 +439,18 @@ class PostgresBookAuthority:
                         f"{book_run_id}:1:{command.input_snapshot_id}".encode()
                     ).hexdigest()
                 )
-                uow.cursor.execute(
-                    """
-                    INSERT INTO authority_book_production_input_binding(
-                        binding_id, project_id, book_id, book_run_id,
-                        binding_version, snapshot_id, reason,
-                        bound_by_operation_id
-                    ) VALUES (%s,%s,%s,%s,1,%s,'BOOK_START',%s)
-                    ON CONFLICT(book_run_id, snapshot_id) DO NOTHING
-                    """,
-                    [
-                        binding_id,
-                        command.project_id,
-                        command.book_id,
-                        book_run_id,
-                        command.input_snapshot_id,
-                        root_operation_id,
-                    ],
+                uow.repositories.book_authority.create_input_binding(
+                    {
+                        "binding_id": binding_id,
+                        "project_id": command.project_id,
+                        "book_id": command.book_id,
+                        "book_run_id": book_run_id,
+                        "binding_version": 1,
+                        "snapshot_id": command.input_snapshot_id,
+                        "reason": "BOOK_START",
+                        "bound_by_operation_id": root_operation_id,
+                    },
+                    ignore_replay_conflict=True,
                 )
                 checkpoint("after_input_binding_insert")
             uow.cursor.execute(
@@ -1021,19 +1017,8 @@ class PostgresBookAuthority:
             _operation_id: str,
             _checkpoint: TransactionCheckpoint,
         ) -> dict[str, Any]:
-            uow.cursor.execute(
-                """
-                UPDATE authority_child_delegation
-                SET status=CASE
-                        WHEN status IN ('DISPATCHED', 'RUNNING', 'WAITING_RETRY',
-                                        'SUCCEEDED', 'UNKNOWN')
-                        THEN 'CANCELLATION_REQUESTED'
-                        ELSE status
-                    END,
-                    version=version+1, updated_at=NOW()
-                WHERE owner_id=%s AND status <> 'ACCEPTED'
-                """,
-                [book_run_id],
+            uow.repositories.book_authority.request_delegation_cancellation(
+                book_run_id=book_run_id
             )
             self._cas_book_state(
                 uow,
@@ -1216,34 +1201,25 @@ class PostgresBookAuthority:
                     f"{book_run_id}:{binding_version}:{snapshot_id}".encode()
                 ).hexdigest()
             )
-            uow.cursor.execute(
-                """
-                INSERT INTO authority_book_production_input_binding(
-                    binding_id, project_id, book_id, book_run_id,
-                    binding_version, snapshot_id, reason,
-                    bound_by_operation_id
-                ) VALUES (%s,%s,%s,%s,%s,%s,'PLAN_CHANGE_ACTIVATED',%s)
-                """,
-                [
-                    binding_id,
-                    book["project_id"],
-                    book["book_id"],
-                    book_run_id,
-                    binding_version,
-                    snapshot_id,
-                    operation_id,
-                ],
+            uow.repositories.book_authority.create_input_binding(
+                {
+                    "binding_id": binding_id,
+                    "project_id": book["project_id"],
+                    "book_id": book["book_id"],
+                    "book_run_id": book_run_id,
+                    "binding_version": binding_version,
+                    "snapshot_id": snapshot_id,
+                    "reason": "PLAN_CHANGE_ACTIVATED",
+                    "bound_by_operation_id": operation_id,
+                },
+                ignore_replay_conflict=False,
             )
-            uow.cursor.execute(
-                """
-                UPDATE authority_book_production
-                SET input_snapshot_id=%s, state=%s, version=version+1,
-                    updated_at=NOW()
-                WHERE book_run_id=%s AND version=%s
-                """,
-                [snapshot_id, target_state.value, book_run_id, expected_version],
-            )
-            if uow.cursor.rowcount != 1:
+            if not uow.repositories.book_authority.bind_input_snapshot(
+                book_run_id=book_run_id,
+                snapshot_id=snapshot_id,
+                state=target_state.value,
+                expected_version=expected_version,
+            ):
                 raise KernelError(
                     "BOOK_REPLAN_CHECKPOINT_CONFLICT",
                     "Book checkpoint changed before replacement input binding",
@@ -1520,16 +1496,12 @@ class PostgresBookAuthority:
             _command_operation_id: str,
             _checkpoint: TransactionCheckpoint,
         ) -> dict[str, Any]:
-            uow.cursor.execute(
-                """
-                UPDATE authority_book_production
-                SET state=%s, current_chapter=GREATEST(current_chapter, %s),
-                    version=version+1, updated_at=NOW()
-                WHERE book_run_id=%s AND version=%s
-                """,
-                [state.value, int(row[3]), str(row[0]), expected_version],
-            )
-            if uow.cursor.rowcount != 1:
+            if not uow.repositories.book_authority.advance_if_version(
+                book_run_id=str(row[0]),
+                chapter_number=int(row[3]),
+                state=state.value,
+                expected_version=expected_version,
+            ):
                 raise KernelError(
                     "BOOK_FOLLOWUP_CHECKPOINT_CONFLICT",
                     "Book checkpoint changed before follow-up completion",
@@ -1598,16 +1570,12 @@ class PostgresBookAuthority:
             _operation_id: str,
             _checkpoint: TransactionCheckpoint,
         ) -> dict[str, Any]:
-            uow.cursor.execute(
-                """
-                UPDATE authority_book_production
-                SET state=%s, current_chapter=GREATEST(current_chapter, %s),
-                    version=version+1, updated_at=NOW()
-                WHERE book_run_id=%s AND version=%s
-                """,
-                [state.value, chapter_number, book_run_id, expected_version],
-            )
-            if uow.cursor.rowcount != 1:
+            if not uow.repositories.book_authority.advance_if_version(
+                book_run_id=book_run_id,
+                chapter_number=chapter_number,
+                state=state.value,
+                expected_version=expected_version,
+            ):
                 raise KernelError(
                     "BOOK_CHECKPOINT_CONFLICT",
                     "Book checkpoint changed before advancement",
@@ -2191,22 +2159,13 @@ class PostgresBookAuthority:
         paused_reason: str = "",
         failure_reason: str = "",
     ) -> None:
-        uow.cursor.execute(
-            """
-            UPDATE authority_book_production
-            SET state=%s, paused_reason=%s, failure_reason=%s,
-                version=version+1, updated_at=NOW()
-            WHERE book_run_id=%s AND version=%s
-            """,
-            [
-                target_state.value,
-                paused_reason,
-                failure_reason,
-                book_run_id,
-                expected_version,
-            ],
-        )
-        if uow.cursor.rowcount != 1:
+        if not uow.repositories.book_authority.compare_and_set_state(
+            book_run_id=book_run_id,
+            expected_version=expected_version,
+            state=target_state.value,
+            paused_reason=paused_reason,
+            failure_reason=failure_reason,
+        ):
             raise KernelError(
                 "BOOK_MUTATION_CONFLICT",
                 "Book Authority checkpoint changed before mutation commit",
@@ -2427,10 +2386,8 @@ def _validate_chapter_acceptance_evidence(
         "canon": canon.get("gate") == "PASSED" and not canon.get("conflicts"),
         "export": release.get("release_status") == "READY_FOR_BLOB_VERIFICATION",
         "plan_binding": (
-            plan.get("source_chapter_plan_asset_version_id")
-            == execution_plan_version
-            and plan.get("source_chapter_plan_content_hash")
-            == execution_plan_hash
+            plan.get("source_chapter_plan_asset_version_id") == execution_plan_version
+            and plan.get("source_chapter_plan_content_hash") == execution_plan_hash
             and int(plan.get("chapter") or 0) == int(request["chapter_number"])
         ),
         "assets_current": all(

@@ -40,6 +40,110 @@ class BookAuthorityRepository:
             },
         )
 
+    def create_input_binding(
+        self, row: dict[str, Any], *, ignore_replay_conflict: bool
+    ) -> None:
+        conflict = (
+            "ON CONFLICT(book_run_id, snapshot_id) DO NOTHING"
+            if ignore_replay_conflict
+            else ""
+        )
+        self.cursor.execute(
+            f"""
+            INSERT INTO authority_book_production_input_binding(
+                binding_id, project_id, book_id, book_run_id,
+                binding_version, snapshot_id, reason,
+                bound_by_operation_id
+            ) VALUES (
+                %(binding_id)s, %(project_id)s, %(book_id)s, %(book_run_id)s,
+                %(binding_version)s, %(snapshot_id)s, %(reason)s,
+                %(bound_by_operation_id)s
+            )
+            {conflict}
+            """,
+            row,
+        )
+
+    def request_delegation_cancellation(self, *, book_run_id: str) -> None:
+        self.cursor.execute(
+            """
+            UPDATE authority_child_delegation
+            SET status=CASE
+                    WHEN status IN ('DISPATCHED', 'RUNNING', 'WAITING_RETRY',
+                                    'SUCCEEDED', 'UNKNOWN')
+                    THEN 'CANCELLATION_REQUESTED'
+                    ELSE status
+                END,
+                version=version+1, updated_at=NOW()
+            WHERE owner_id=%s AND status <> 'ACCEPTED'
+            """,
+            [book_run_id],
+        )
+
+    def bind_input_snapshot(
+        self,
+        *,
+        book_run_id: str,
+        snapshot_id: str,
+        state: str,
+        expected_version: int,
+    ) -> bool:
+        self.cursor.execute(
+            """
+            UPDATE authority_book_production
+            SET input_snapshot_id=%s, state=%s, version=version+1,
+                updated_at=NOW()
+            WHERE book_run_id=%s AND version=%s
+            """,
+            [snapshot_id, state, book_run_id, expected_version],
+        )
+        return self.cursor.rowcount == 1
+
+    def advance_if_version(
+        self,
+        *,
+        book_run_id: str,
+        chapter_number: int,
+        state: str,
+        expected_version: int,
+    ) -> bool:
+        self.cursor.execute(
+            """
+            UPDATE authority_book_production
+            SET state=%s, current_chapter=GREATEST(current_chapter, %s),
+                version=version+1, updated_at=NOW()
+            WHERE book_run_id=%s AND version=%s
+            """,
+            [state, chapter_number, book_run_id, expected_version],
+        )
+        return self.cursor.rowcount == 1
+
+    def compare_and_set_state(
+        self,
+        *,
+        book_run_id: str,
+        expected_version: int,
+        state: str,
+        paused_reason: str,
+        failure_reason: str,
+    ) -> bool:
+        self.cursor.execute(
+            """
+            UPDATE authority_book_production
+            SET state=%s, paused_reason=%s, failure_reason=%s,
+                version=version+1, updated_at=NOW()
+            WHERE book_run_id=%s AND version=%s
+            """,
+            [
+                state,
+                paused_reason,
+                failure_reason,
+                book_run_id,
+                expected_version,
+            ],
+        )
+        return self.cursor.rowcount == 1
+
     def create_chapter_request(self, row: dict[str, Any]) -> None:
         self.cursor.execute(
             """
