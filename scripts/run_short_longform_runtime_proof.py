@@ -119,6 +119,8 @@ ROOT = Path(__file__).resolve().parents[1]
 BRANCH = "feat/v7-content-intelligence-and-longform-proof"
 PLANNING_PACK_ID = "story_planning_pack"
 READER_PACK_ID = "reader_outcome_pack"
+PLANNING_PACK_INITIAL_VERSION = "1.1.0"
+PLANNING_PACK_RECOVERY_VERSION = "1.2.0"
 BOOTSTRAP_DEFINITION = "short_longform.proof.bootstrap"
 BOOTSTRAP_HANDLER = "novel_forge.proof.short_longform.bootstrap"
 
@@ -1048,7 +1050,7 @@ def _run_planning(
     replacement_pack = _install_profile(
         database_url,
         profile=planning_profile,
-        version="1.1.0",
+        version=PLANNING_PACK_RECOVERY_VERSION,
         generation=2,
         expected_activation_version=1,
         project_id=project_id,
@@ -3534,7 +3536,7 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
     planning_pack = _install_profile(
         args.database_url,
         profile=planning_profile,
-        version="1.1.0",
+        version=PLANNING_PACK_INITIAL_VERSION,
         generation=1,
         expected_activation_version=0,
         project_id=project_id,

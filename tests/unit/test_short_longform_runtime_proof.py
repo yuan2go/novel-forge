@@ -40,6 +40,14 @@ def test_proof_object_store_buckets_are_stable_and_run_isolated(tmp_path: Path) 
     assert all(len(name) <= 63 for name in first.values())
 
 
+def test_retry_installs_a_new_immutable_planning_pack_version() -> None:
+    proof = _load_script()
+
+    assert proof.PLANNING_PACK_INITIAL_VERSION == "1.1.0"
+    assert proof.PLANNING_PACK_RECOVERY_VERSION == "1.2.0"
+    assert proof.PLANNING_PACK_INITIAL_VERSION != proof.PLANNING_PACK_RECOVERY_VERSION
+
+
 def test_proof_script_only_references_defined_longform_checkpoint_members() -> None:
     proof = _load_script()
     script_path = Path(proof.__file__)
