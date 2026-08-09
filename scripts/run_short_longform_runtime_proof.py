@@ -263,6 +263,61 @@ def _proof_world_bible_content() -> dict[str, Any]:
     }
 
 
+def _proof_platform_profile_content() -> dict[str, Any]:
+    platform_rules = {
+        "chapter_length": {"minimum": 1200, "maximum": 4000},
+        "format": {
+            "mobile_paragraphs": True,
+            "reader_facing_prose_only": True,
+        },
+        "sensitive_content": [
+            "no graphic violence",
+            "no sexual content",
+        ],
+        "ai_content": {
+            "mode": "GOVERNED_ASSISTED_CONTENT_ALLOWED",
+            "release_scope": "INTERNAL_PROVIDER_VALIDATION",
+            "chapter_content_requirements": [
+                "reader-facing narrative prose only",
+                "no embedded prompts, JSON, self-analysis, or process metadata",
+                "no copied source expression or protected story combinations",
+            ],
+            "authority_publish_gate_required": True,
+            "external_publication_requires_separate_human_approval": True,
+        },
+        "opening": [
+            "ground the viewpoint and immediate contradiction",
+            "establish a concrete reader question",
+        ],
+        "rhythm": [
+            "escalate pressure through causal choices",
+            "end with a consequential forward hook",
+        ],
+        "publish_metadata": {
+            "reader_facing_title_required": True,
+            "reader_facing_summary_required": True,
+            "operator_or_planning_language_forbidden": True,
+        },
+    }
+    return {
+        "profile_id": "platform:short-longform-proof",
+        "business_model": "custom",
+        "chapter_length_range": {"min": 1200, "ideal": 2200, "max": 4000},
+        "reader_expectation": ["causal escalation", "visible consequence"],
+        "review_risks": ["source leakage", "operator metadata in prose"],
+        "genre_fit": ["institutional mystery"],
+        "style_tendency": ["mobile-readable paragraphs"],
+        "chapter_length": {"minimum": 1200, "maximum": 4000},
+        "safe_summary": (
+            "Internal provider-validation platform constraints with an explicit "
+            "AI-assisted content policy; external publication remains out of scope."
+        ),
+        "structured_facts": [
+            {"key": "platform_rules", "value": platform_rules},
+        ],
+    }
+
+
 def _bootstrap_assets(
     database_url: str,
     *,
@@ -296,20 +351,7 @@ def _bootstrap_assets(
         ),
         "platform_profile": (
             "platform_profile",
-            {
-                "profile_id": "platform:short-longform-proof",
-                "chapter_length": {"minimum": 1200, "maximum": 4000},
-                "safe_summary": "Provider-validation platform constraints.",
-                "structured_facts": [
-                    {
-                        "key": "platform_rules",
-                        "value": {
-                            "chapter_length": {"minimum": 1200, "maximum": 4000},
-                            "format": {"mobile_paragraphs": True},
-                        },
-                    }
-                ],
-            },
+            _proof_platform_profile_content(),
         ),
         "production_profile": (
             "production_profile",

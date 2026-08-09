@@ -74,6 +74,26 @@ def test_proof_world_bible_exposes_governed_rules_and_power_boundaries() -> None
     assert facts["institutional_power_state"]
 
 
+def test_proof_platform_profile_freezes_explicit_ai_content_policy() -> None:
+    proof = _load_script()
+
+    content = proof._proof_platform_profile_content()
+    facts = {str(item["key"]): item["value"] for item in content["structured_facts"]}
+    ai_policy = facts["platform_rules"]["ai_content"]
+
+    assert content["business_model"] == "custom"
+    assert content["chapter_length_range"] == {
+        "min": 1200,
+        "ideal": 2200,
+        "max": 4000,
+    }
+    assert ai_policy["mode"] == "GOVERNED_ASSISTED_CONTENT_ALLOWED"
+    assert ai_policy["release_scope"] == "INTERNAL_PROVIDER_VALIDATION"
+    assert ai_policy["chapter_content_requirements"]
+    assert ai_policy["authority_publish_gate_required"] is True
+    assert ai_policy["external_publication_requires_separate_human_approval"] is True
+
+
 def test_resume_returns_existing_active_chapter_before_supervisor_polling() -> None:
     proof = _load_script()
     calls = []
