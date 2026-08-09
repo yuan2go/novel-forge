@@ -1478,6 +1478,20 @@ def default_chapter_fixture_response(
     raise ValueError(f"unsupported fixture stage: {stage}")
 
 
+def _provider_process_timeout_seconds(external_effect_timeout_seconds: int) -> int:
+    """Keep a frozen margin for receipt persistence before the Effect deadline."""
+
+    if external_effect_timeout_seconds <= 1:
+        raise ValueError(
+            "ExternalEffect timeout must leave time to persist Provider evidence"
+        )
+    settlement_headroom = max(
+        1,
+        min(30, external_effect_timeout_seconds // 10),
+    )
+    return external_effect_timeout_seconds - settlement_headroom
+
+
 class PostgresProductionExecutionPayloadResolver:
     """Resolve one frozen ExternalEffect into backend-neutral execution payload.
 
@@ -1609,11 +1623,14 @@ class PostgresProductionExecutionPayloadResolver:
                 "real_model_call": False,
                 "production_verified": False,
             }
+        external_effect_timeout_seconds = int(row[1] or 30)
         return ResolvedExecutionPayload(
             request_payload=resolved_payload,
             input_text=input_text,
             working_directory=self.working_directory,
-            timeout_seconds=int(row[1] or 30),
+            timeout_seconds=_provider_process_timeout_seconds(
+                external_effect_timeout_seconds
+            ),
             output_schema_version=(
                 str(output_schema.get("ref") or "")
                 if isinstance(output_schema, Mapping)

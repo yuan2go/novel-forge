@@ -1,4 +1,5 @@
 """Durable Chapter Saga scheduler over the shared Command Kernel primitives."""
+
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -42,7 +43,9 @@ from novel_forge.modules.command_kernel.worker_execution import (
     WorkerFailureClass,
     WorkerFailureClassifier,
 )
-from novel_forge.modules.command_kernel.external_effect_adapters import ExternalEffectAdapter
+from novel_forge.modules.command_kernel.external_effect_adapters import (
+    ExternalEffectAdapter,
+)
 from novel_forge.modules.command_kernel.external_effect_runtime import (
     EffectRecoveryDisposition,
     EffectCommandContext,
@@ -50,7 +53,9 @@ from novel_forge.modules.command_kernel.external_effect_runtime import (
     reconcile_external_effect,
     resume_operation_from_completed_effect,
 )
-from novel_forge.modules.command_kernel.cancellation import acknowledge_worker_cancellation
+from novel_forge.modules.command_kernel.cancellation import (
+    acknowledge_worker_cancellation,
+)
 from novel_forge.modules.canon_graph.approval_authority import (
     advance_canon_reextraction,
     CanonApprovalContext,
@@ -58,7 +63,9 @@ from novel_forge.modules.canon_graph.approval_authority import (
     ensure_canon_approval_requests,
     pending_canon_reextraction,
 )
-from novel_forge.modules.command_kernel.deadline_runtime import probe_operation_execution
+from novel_forge.modules.command_kernel.deadline_runtime import (
+    probe_operation_execution,
+)
 from novel_forge.modules.command_kernel.operation_graph import (
     GraphCommandContext,
     add_operation_dependency,
@@ -113,7 +120,9 @@ class ChapterAuthorityScheduler:
         model_effect_adapter: ExternalEffectAdapter | None = None,
     ) -> None:
         if not worker_id or lease_seconds <= 0:
-            raise ValueError("configured worker identity and positive lease are required")
+            raise ValueError(
+                "configured worker identity and positive lease are required"
+            )
         self.database_url = database_url
         self.registry = registry
         self.object_store_adapter = object_store_adapter
@@ -134,8 +143,12 @@ class ChapterAuthorityScheduler:
         )
         coordinated = coordinate_saga(self.database_url, context, saga["saga_id"])
         if coordinated["status"] in {
-            "SUCCEEDED", "FAILED_FINAL", "DEAD_LETTER", "CANCELLED",
-            "COMPENSATED", "COMPENSATION_FAILED",
+            "SUCCEEDED",
+            "FAILED_FINAL",
+            "DEAD_LETTER",
+            "CANCELLED",
+            "COMPENSATED",
+            "COMPENSATION_FAILED",
         }:
             return ChapterSchedulerTick(
                 root_operation_id=root_operation_id,
@@ -177,9 +190,7 @@ class ChapterAuthorityScheduler:
             proposal_ref = self._primary_output(
                 str(proposal_operation["operation_id"]), project_id
             )
-            proposal = self._asset_content(
-                proposal_ref["asset_version_id"], project_id
-            )
+            proposal = self._asset_content(proposal_ref["asset_version_id"], project_id)
             gate = ensure_canon_approval_requests(
                 self.database_url,
                 CanonApprovalContext(
@@ -276,7 +287,9 @@ class ChapterAuthorityScheduler:
             if operation["status"] != "SUCCEEDED":
                 return node, operation
         # coordinate_saga should have made the Saga terminal after all children succeeded.
-        raise KernelError("CHAPTER_SAGA_COORDINATION_LAG", "completed graph is not terminal")
+        raise KernelError(
+            "CHAPTER_SAGA_COORDINATION_LAG", "completed graph is not terminal"
+        )
 
     def _admit_node(
         self,
@@ -303,7 +316,11 @@ class ChapterAuthorityScheduler:
                     "CHAPTER_INPUT_NOT_COMPLETE",
                     f"{node.value} input {source.value} has not completed",
                 )
-            inputs.append(self._primary_output(str(source_operation["operation_id"]), root["project_id"]))
+            inputs.append(
+                self._primary_output(
+                    str(source_operation["operation_id"]), root["project_id"]
+                )
+            )
             if node is ChapterNode.CONTEXT and source is ChapterNode.PLAN:
                 inputs.append(
                     self._output_by_key(
@@ -341,10 +358,7 @@ class ChapterAuthorityScheduler:
             f"{request.project_id}:chapter:{request.chapter}:root"
         )
         dependencies = _admission_dependencies(node)
-        dependency_ids = [
-            str(children[item]["operation_id"])
-            for item in dependencies
-        ]
+        dependency_ids = [str(children[item]["operation_id"]) for item in dependencies]
         if dependency_operation_ids is not None:
             dependency_ids = list(dependency_operation_ids)
         previous_id = dependency_ids[-1] if dependency_ids else root["operation_id"]
@@ -424,7 +438,10 @@ class ChapterAuthorityScheduler:
             project_id=request.project_id,
             root_operation_id=str(root["operation_id"]),
         )
-        if generation is None or generation["status"] in {"WAITING_APPROVAL", "WAITING_OPERATOR"}:
+        if generation is None or generation["status"] in {
+            "WAITING_APPROVAL",
+            "WAITING_OPERATOR",
+        }:
             return None
         context = CanonApprovalContext(
             project_id=request.project_id,
@@ -436,8 +453,11 @@ class ChapterAuthorityScheduler:
         number = int(generation["generation"])
         if generation["status"] == "REEXTRACTION_PENDING":
             operation = self._admit_node(
-                request=request, root=root, saga_id=str(saga["saga_id"]),
-                children=children, node=ChapterNode.CANON_EXTRACTION,
+                request=request,
+                root=root,
+                saga_id=str(saga["saga_id"]),
+                children=children,
+                node=ChapterNode.CANON_EXTRACTION,
                 idempotency_suffix=f":generation:{number}",
                 input_overrides={"canon_reextraction_generation": number},
                 timeline_step_key=f"canon_extraction:g{number}",
@@ -445,33 +465,68 @@ class ChapterAuthorityScheduler:
                 activate_immediately=True,
             )
             advance_canon_reextraction(
-                self.database_url, context, generation_id=generation_id,
-                expected_status="REEXTRACTION_PENDING", target_status="EXTRACTION_RUNNING",
+                self.database_url,
+                context,
+                generation_id=generation_id,
+                expected_status="REEXTRACTION_PENDING",
+                target_status="EXTRACTION_RUNNING",
                 extraction_operation_id=str(operation["operation_id"]),
             )
-            return self._generation_tick(root, saga, operation, ChapterNode.CANON_EXTRACTION, "reextraction_admitted")
+            return self._generation_tick(
+                root,
+                saga,
+                operation,
+                ChapterNode.CANON_EXTRACTION,
+                "reextraction_admitted",
+            )
         if generation["status"] == "EXTRACTION_RUNNING":
-            operation = self._child(str(generation["extraction_operation_id"]), request.project_id)
+            operation = self._child(
+                str(generation["extraction_operation_id"]), request.project_id
+            )
             if operation["status"] != "SUCCEEDED":
-                recovery = self._execute_node(request, ChapterNode.CANON_EXTRACTION, operation)
-                operation = self._child(str(operation["operation_id"]), request.project_id)
-                return self._generation_tick(root, saga, operation, ChapterNode.CANON_EXTRACTION, recovery)
-            output = self._primary_output(str(operation["operation_id"]), request.project_id)
+                recovery = self._execute_node(
+                    request, ChapterNode.CANON_EXTRACTION, operation
+                )
+                operation = self._child(
+                    str(operation["operation_id"]), request.project_id
+                )
+                return self._generation_tick(
+                    root, saga, operation, ChapterNode.CANON_EXTRACTION, recovery
+                )
+            output = self._primary_output(
+                str(operation["operation_id"]), request.project_id
+            )
             advance_canon_reextraction(
-                self.database_url, context, generation_id=generation_id,
-                expected_status="EXTRACTION_RUNNING", target_status="PROPOSAL_PENDING",
+                self.database_url,
+                context,
+                generation_id=generation_id,
+                expected_status="EXTRACTION_RUNNING",
+                target_status="PROPOSAL_PENDING",
                 extraction_asset_version_id=output["asset_version_id"],
             )
-            return self._generation_tick(root, saga, operation, ChapterNode.CANON_EXTRACTION, "reextraction_completed")
+            return self._generation_tick(
+                root,
+                saga,
+                operation,
+                ChapterNode.CANON_EXTRACTION,
+                "reextraction_completed",
+            )
         if generation["status"] == "PROPOSAL_PENDING":
-            _, _, refreshed = self._graph_state(request.project_id, str(root["operation_id"]))
+            _, _, refreshed = self._graph_state(
+                request.project_id, str(root["operation_id"])
+            )
             operation = self._admit_node(
-                request=request, root=root, saga_id=str(saga["saga_id"]),
-                children=refreshed, node=ChapterNode.CANON_PROPOSAL,
+                request=request,
+                root=root,
+                saga_id=str(saga["saga_id"]),
+                children=refreshed,
+                node=ChapterNode.CANON_PROPOSAL,
                 idempotency_suffix=f":generation:{number}",
                 input_overrides={
                     "canon_reextraction_generation": number,
-                    "supersedes_proposal_asset_version_id": generation["supersedes_proposal_asset_version_id"],
+                    "supersedes_proposal_asset_version_id": generation[
+                        "supersedes_proposal_asset_version_id"
+                    ],
                 },
                 explicit_inputs=[
                     self._primary_output(
@@ -484,46 +539,86 @@ class ChapterAuthorityScheduler:
                 activate_immediately=True,
             )
             advance_canon_reextraction(
-                self.database_url, context, generation_id=generation_id,
-                expected_status="PROPOSAL_PENDING", target_status="PROPOSAL_RUNNING",
+                self.database_url,
+                context,
+                generation_id=generation_id,
+                expected_status="PROPOSAL_PENDING",
+                target_status="PROPOSAL_RUNNING",
                 proposal_operation_id=str(operation["operation_id"]),
             )
-            return self._generation_tick(root, saga, operation, ChapterNode.CANON_PROPOSAL, "reproposal_admitted")
+            return self._generation_tick(
+                root, saga, operation, ChapterNode.CANON_PROPOSAL, "reproposal_admitted"
+            )
         if generation["status"] == "PROPOSAL_RUNNING":
-            operation = self._child(str(generation["proposal_operation_id"]), request.project_id)
+            operation = self._child(
+                str(generation["proposal_operation_id"]), request.project_id
+            )
             if operation["status"] != "SUCCEEDED":
-                recovery = self._execute_node(request, ChapterNode.CANON_PROPOSAL, operation)
-                operation = self._child(str(operation["operation_id"]), request.project_id)
-                return self._generation_tick(root, saga, operation, ChapterNode.CANON_PROPOSAL, recovery)
-            output = self._primary_output(str(operation["operation_id"]), request.project_id)
-            proposal = self._asset_content(output["asset_version_id"], request.project_id)
+                recovery = self._execute_node(
+                    request, ChapterNode.CANON_PROPOSAL, operation
+                )
+                operation = self._child(
+                    str(operation["operation_id"]), request.project_id
+                )
+                return self._generation_tick(
+                    root, saga, operation, ChapterNode.CANON_PROPOSAL, recovery
+                )
+            output = self._primary_output(
+                str(operation["operation_id"]), request.project_id
+            )
+            proposal = self._asset_content(
+                output["asset_version_id"], request.project_id
+            )
             progress_status = advance_canon_reextraction(
-                self.database_url, context, generation_id=generation_id,
-                expected_status="PROPOSAL_RUNNING", target_status="WAITING_APPROVAL",
+                self.database_url,
+                context,
+                generation_id=generation_id,
+                expected_status="PROPOSAL_RUNNING",
+                target_status="WAITING_APPROVAL",
                 proposal_asset_version_id=output["asset_version_id"],
             )
             if progress_status == "WAITING_OPERATOR":
                 return self._generation_tick(
-                    root, saga, operation, ChapterNode.CANON_PROPOSAL,
+                    root,
+                    saga,
+                    operation,
+                    ChapterNode.CANON_PROPOSAL,
                     "reproposal_waiting_operator",
                 )
             ensure_canon_approval_requests(
-                self.database_url, context,
-                root_operation_id=str(root["operation_id"]), saga_id=str(saga["saga_id"]),
-                proposal_asset_version_id=output["asset_version_id"], proposal=proposal,
+                self.database_url,
+                context,
+                root_operation_id=str(root["operation_id"]),
+                saga_id=str(saga["saga_id"]),
+                proposal_asset_version_id=output["asset_version_id"],
+                proposal=proposal,
             )
-            return self._generation_tick(root, saga, operation, ChapterNode.CANON_PROPOSAL, "reproposal_waiting_gate")
-        raise KernelError("CANON_REEXTRACTION_STATE_CONFLICT", "unknown re-extraction state")
+            return self._generation_tick(
+                root,
+                saga,
+                operation,
+                ChapterNode.CANON_PROPOSAL,
+                "reproposal_waiting_gate",
+            )
+        raise KernelError(
+            "CANON_REEXTRACTION_STATE_CONFLICT", "unknown re-extraction state"
+        )
 
     @staticmethod
     def _generation_tick(
-        root: dict[str, Any], saga: dict[str, Any], operation: dict[str, Any],
-        node: ChapterNode, recovery: str,
+        root: dict[str, Any],
+        saga: dict[str, Any],
+        operation: dict[str, Any],
+        node: ChapterNode,
+        recovery: str,
     ) -> ChapterSchedulerTick:
         return ChapterSchedulerTick(
-            root_operation_id=str(root["operation_id"]), saga_id=str(saga["saga_id"]),
-            saga_status="WAITING_GATE", operation_id=str(operation["operation_id"]),
-            node=node.value, operation_status=str(operation["status"]),
+            root_operation_id=str(root["operation_id"]),
+            saga_id=str(saga["saga_id"]),
+            saga_status="WAITING_GATE",
+            operation_id=str(operation["operation_id"]),
+            node=node.value,
+            operation_status=str(operation["status"]),
             recovery_mode=recovery,
         )
 
@@ -538,7 +633,11 @@ class ChapterAuthorityScheduler:
         active = self._active_attempt(operation_id, project_id)
         recovery_mode = "fresh_attempt"
         if operation["status"] in {"READY", "FAILED_RETRYABLE"}:
-            recovery_mode = "retry_attempt" if operation["status"] == "FAILED_RETRYABLE" else recovery_mode
+            recovery_mode = (
+                "retry_attempt"
+                if operation["status"] == "FAILED_RETRYABLE"
+                else recovery_mode
+            )
             created = create_attempt(
                 self.database_url,
                 operation_id=operation_id,
@@ -548,7 +647,9 @@ class ChapterAuthorityScheduler:
                 correlation_id=request.correlation_id,
             )
             if created["dead_letter"] or created["attempt_id"] is None:
-                raise KernelError("CHAPTER_ATTEMPT_EXHAUSTED", "chapter Attempt policy is exhausted")
+                raise KernelError(
+                    "CHAPTER_ATTEMPT_EXHAUSTED", "chapter Attempt policy is exhausted"
+                )
             attempt_id = str(created["attempt_id"])
             queue_attempt(
                 self.database_url,
@@ -558,12 +659,16 @@ class ChapterAuthorityScheduler:
                 correlation_id=request.correlation_id,
             )
             attempt_status = "QUEUED"
-        elif operation["status"] in {
-            "EXECUTING",
-            "WAITING_EXTERNAL_RESULT",
-            "RECONCILIATION_REQUIRED",
-            "CANCELLATION_REQUESTED",
-        } and active is not None:
+        elif (
+            operation["status"]
+            in {
+                "EXECUTING",
+                "WAITING_EXTERNAL_RESULT",
+                "RECONCILIATION_REQUIRED",
+                "CANCELLATION_REQUESTED",
+            }
+            and active is not None
+        ):
             attempt_id = active["attempt_id"]
             attempt_status = active["status"]
             recovery_mode = "lease_takeover"
@@ -614,8 +719,17 @@ class ChapterAuthorityScheduler:
                         },
                     )
                     return recovery_mode
+                if recovered["status"] in {
+                    "FAILED_RETRYABLE",
+                    "FAILED_FINAL",
+                    "CANCELLED",
+                    "DEAD_LETTER",
+                }:
+                    return recovery_mode
             with LeaseHeartbeatGuard(
-                lambda: heartbeat_attempt(self.database_url, worker, self.lease_seconds),
+                lambda: heartbeat_attempt(
+                    self.database_url, worker, self.lease_seconds
+                ),
                 lease_seconds=self.lease_seconds,
                 label=f"attempt:{attempt_id}",
                 probe=lambda: probe_operation_execution(
@@ -664,7 +778,9 @@ class ChapterAuthorityScheduler:
                         exercise_unknown_reconciliation=False,
                     )
             with AuthorityUnitOfWork(self.database_url) as uow:
-                state = uow.repositories.attempt_runtime.operation_state(operation_id, project_id)
+                state = uow.repositories.attempt_runtime.operation_state(
+                    operation_id, project_id
+                )
             self.fault_injector("before_attempt_result_submission")
             submit_attempt_result(
                 self.database_url,
@@ -710,7 +826,9 @@ class ChapterAuthorityScheduler:
                     worker,
                     {
                         "reason": "external_state_unknown",
-                        "error_code": exc.code if isinstance(exc, KernelError) else "UNKNOWN",
+                        "error_code": exc.code
+                        if isinstance(exc, KernelError)
+                        else "UNKNOWN",
                         "error_message": str(exc),
                     },
                 )
@@ -722,7 +840,9 @@ class ChapterAuthorityScheduler:
                     self.database_url,
                     worker,
                     retryable=classification is WorkerFailureClass.RETRYABLE,
-                    error_code=exc.code if isinstance(exc, KernelError) else "PROGRAMMING_BUG",
+                    error_code=exc.code
+                    if isinstance(exc, KernelError)
+                    else "PROGRAMMING_BUG",
                     error_message=str(exc),
                     failure_class=classification.value,
                 )
@@ -746,13 +866,22 @@ class ChapterAuthorityScheduler:
             )
             row = uow.cursor.fetchone()
             if row is None:
-                raise KernelError("CHAPTER_RUN_NOT_FOUND", "Chapter root Operation is missing")
+                raise KernelError(
+                    "CHAPTER_RUN_NOT_FOUND", "Chapter root Operation is missing"
+                )
             root = dict(
                 zip(
                     (
-                        "operation_id", "project_id", "workspace_id", "actor_id", "status",
-                        "definition_version", "definition_snapshot", "command_payload",
-                        "trace_id", "correlation_id",
+                        "operation_id",
+                        "project_id",
+                        "workspace_id",
+                        "actor_id",
+                        "status",
+                        "definition_version",
+                        "definition_snapshot",
+                        "command_payload",
+                        "trace_id",
+                        "correlation_id",
                     ),
                     row,
                     strict=True,
@@ -764,7 +893,9 @@ class ChapterAuthorityScheduler:
             )
             saga_row = uow.cursor.fetchone()
             if saga_row is None:
-                raise KernelError("CHAPTER_SAGA_MISSING", "Chapter root has no durable Saga")
+                raise KernelError(
+                    "CHAPTER_SAGA_MISSING", "Chapter root has no durable Saga"
+                )
             uow.cursor.execute(
                 """
                 SELECT operation_id, definition_name, status,
@@ -801,8 +932,10 @@ class ChapterAuthorityScheduler:
             )
             row = uow.cursor.fetchone()
         return {
-            "operation_id": row[0], "definition_name": row[1],
-            "status": row[2], "max_attempts": row[3],
+            "operation_id": row[0],
+            "definition_name": row[1],
+            "status": row[2],
+            "max_attempts": row[3],
         }
 
     def _primary_output(self, operation_id: str, project_id: str) -> dict[str, str]:
@@ -820,7 +953,10 @@ class ChapterAuthorityScheduler:
             )
             row = uow.cursor.fetchone()
         if row is None:
-            raise KernelError("CHAPTER_INPUT_OUTPUT_MISSING", "completed predecessor has no primary output")
+            raise KernelError(
+                "CHAPTER_INPUT_OUTPUT_MISSING",
+                "completed predecessor has no primary output",
+            )
         return {"asset_version_id": str(row[0]), "content_hash": str(row[1])}
 
     def _output_by_key(
@@ -859,10 +995,14 @@ class ChapterAuthorityScheduler:
             )
             row = uow.cursor.fetchone()
         if row is None:
-            raise KernelError("ASSET_VERSION_NOT_FOUND", "Canon proposal AssetVersion is missing")
+            raise KernelError(
+                "ASSET_VERSION_NOT_FOUND", "Canon proposal AssetVersion is missing"
+            )
         return dict(row[0])
 
-    def _active_attempt(self, operation_id: str, project_id: str) -> dict[str, str] | None:
+    def _active_attempt(
+        self, operation_id: str, project_id: str
+    ) -> dict[str, str] | None:
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
@@ -877,7 +1017,9 @@ class ChapterAuthorityScheduler:
                 [operation_id, project_id],
             )
             row = uow.cursor.fetchone()
-        return None if row is None else {"attempt_id": str(row[0]), "status": str(row[1])}
+        return (
+            None if row is None else {"attempt_id": str(row[0]), "status": str(row[1])}
+        )
 
     def _request_from_root(self, root: dict[str, Any]) -> SingleChapterRequest:
         payload = dict(root["command_payload"] or {})
@@ -893,8 +1035,12 @@ class ChapterAuthorityScheduler:
             correlation_id=str(root["correlation_id"]),
             application_build_id=str(snapshot["application_build_id"]),
             commit_sha=str(snapshot["commit_sha"]),
-            chapter_plan_asset_version_id=str(payload.get("chapter_plan_asset_version_id") or ""),
-            chapter_plan_content_hash=str(payload.get("chapter_plan_content_hash") or ""),
+            chapter_plan_asset_version_id=str(
+                payload.get("chapter_plan_asset_version_id") or ""
+            ),
+            chapter_plan_content_hash=str(
+                payload.get("chapter_plan_content_hash") or ""
+            ),
             context_candidates=tuple(payload.get("context_candidates") or ()),
             context_version_refs=dict(payload.get("context_version_refs") or {}),
             context_token_budget=int(payload.get("context_token_budget") or 6000),
@@ -904,7 +1050,9 @@ class ChapterAuthorityScheduler:
 
     def _operation_status(self, operation_id: str, project_id: str) -> str:
         with AuthorityUnitOfWork(self.database_url) as uow:
-            state = uow.repositories.attempt_runtime.operation_state(operation_id, project_id)
+            state = uow.repositories.attempt_runtime.operation_state(
+                operation_id, project_id
+            )
         return str(state["status"])
 
     def _reconcile_agent_effects(
@@ -1023,6 +1171,7 @@ class ChapterAuthorityScheduler:
                         context,
                         effect_id=effect_id,
                         adapter=recovery_adapter,
+                        attempt_command=worker,
                     )["outcome"]
                 )
             )
@@ -1037,10 +1186,16 @@ class ChapterAuthorityScheduler:
 
 
 def _is_domain_validation_failure(error_code: str) -> bool:
-    return error_code.startswith((
-        "CHAPTER_HANDLER_", "PUBLISH_GATE_", "QUALITY_", "CANON_",
-        "REVISION_", "REVIEW_",
-    ))
+    return error_code.startswith(
+        (
+            "CHAPTER_HANDLER_",
+            "PUBLISH_GATE_",
+            "QUALITY_",
+            "CANON_",
+            "REVISION_",
+            "REVIEW_",
+        )
+    )
 
 
 __all__ = ["ChapterAuthorityScheduler", "ChapterSchedulerTick"]

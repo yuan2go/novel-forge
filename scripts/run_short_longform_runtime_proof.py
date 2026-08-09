@@ -79,6 +79,10 @@ from novel_forge.modules.command_kernel.service import (
     TransactionCheckpoint,
     execute_transaction_command,
 )
+from novel_forge.modules.command_kernel.worker_execution import (
+    WorkerFailureClass,
+    WorkerFailureClassifier,
+)
 from novel_forge.modules.project_authority import (
     ProjectAuthorityApplication,
     ProjectAuthorityCommand,
@@ -2389,10 +2393,30 @@ def _run_chapter_scheduler(
     ticks: list[dict[str, Any]] = []
     terminal = ""
     for _ in range(100):
-        tick = scheduler.tick(
-            project_id=project_id,
-            root_operation_id=root_operation_id,
-        )
+        try:
+            tick = scheduler.tick(
+                project_id=project_id,
+                root_operation_id=root_operation_id,
+            )
+        except KernelError as exc:
+            classification = WorkerFailureClassifier.classify(exc)
+            failure = {
+                "phase": "chapter_scheduler",
+                "root_operation_id": root_operation_id,
+                "tick_error_code": exc.code,
+                "tick_error_classification": classification.value,
+                "recovery_action": "next_persisted_scheduler_tick",
+            }
+            ticks.append(failure)
+            print(json.dumps(failure, ensure_ascii=False), flush=True)
+            if classification in {
+                WorkerFailureClass.RETRYABLE,
+                WorkerFailureClass.UNKNOWN_EXTERNAL_STATE,
+                WorkerFailureClass.LEASE_CONFLICT,
+                WorkerFailureClass.FENCING_CONFLICT,
+            }:
+                continue
+            raise
         row = _jsonable(asdict(tick))
         ticks.append(row)
         print(

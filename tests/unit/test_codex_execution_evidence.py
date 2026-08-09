@@ -9,6 +9,9 @@ from pathlib import Path
 
 import pytest
 
+from novel_forge.modules.chapter_authority.execution_gateway import (
+    _provider_process_timeout_seconds,
+)
 from novel_forge.modules.chapter_authority.model_effects import normalize_model_output
 from novel_forge.modules.chapter_authority.provider_output_contracts import (
     chapter_provider_output_schema,
@@ -212,6 +215,14 @@ def test_codex_invocation_is_derived_from_frozen_route_not_backend_defaults() ->
     assert evidence["route_policy_hash"] == policy.contract_hash
     assert evidence["local_user_config_ignored"] is True
     assert evidence["local_user_config_is_model_authority"] is False
+
+
+def test_provider_process_timeout_preserves_external_effect_settlement_headroom() -> (
+    None
+):
+    assert _provider_process_timeout_seconds(300) == 270
+    assert _provider_process_timeout_seconds(30) == 27
+    assert _provider_process_timeout_seconds(2) == 1
 
 
 def test_codex_backend_validates_schema_and_semantics_before_success() -> None:
