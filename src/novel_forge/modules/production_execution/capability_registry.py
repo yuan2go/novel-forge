@@ -1,4 +1,5 @@
 """Fail-closed registry for Production Execution capabilities."""
+
 from __future__ import annotations
 
 from collections.abc import Iterable
@@ -12,8 +13,16 @@ from .capabilities import (
 from .contracts import ExecutionCapabilityProfile, ExecutionRuntimeClass
 
 
-CONTROLLED_ENVIRONMENTS = frozenset(
-    {"validation", "provider-validation", "production"}
+CONTROLLED_ENVIRONMENTS = frozenset({"validation", "provider-validation", "production"})
+PLANNING_TIMEOUT_POLICY_VERSION = "v2"
+_PLANNING_CAPABILITIES = frozenset(
+    {
+        CapabilityId.PLANNING_BOOK_GENERATE,
+        CapabilityId.PLANNING_VOLUME_GENERATE,
+        CapabilityId.PLANNING_ARC_GENERATE,
+        CapabilityId.PLANNING_CHAPTER_GROUP_GENERATE,
+        CapabilityId.PLANNING_CHAPTER_GENERATE,
+    }
 )
 
 _MODEL_RUNTIMES = (
@@ -40,16 +49,12 @@ _AGENT_BACKENDS = ("agent-workspace", "scripted-fixture")
 
 
 class CapabilityRegistry:
-    def __init__(
-        self, definitions: Iterable[CapabilityDefinition] = ()
-    ) -> None:
+    def __init__(self, definitions: Iterable[CapabilityDefinition] = ()) -> None:
         self._definitions: dict[CapabilityId, CapabilityDefinition] = {}
         for definition in definitions:
             self.register(definition)
 
-    def register(
-        self, definition: CapabilityDefinition
-    ) -> CapabilityDefinition:
+    def register(self, definition: CapabilityDefinition) -> CapabilityDefinition:
         existing = self._definitions.get(definition.capability_id)
         if existing is not None:
             if existing.contract_hash != definition.contract_hash:
@@ -60,9 +65,7 @@ class CapabilityRegistry:
         self._definitions[definition.capability_id] = definition
         return definition
 
-    def resolve(
-        self, capability_id: CapabilityId | str
-    ) -> CapabilityDefinition:
+    def resolve(self, capability_id: CapabilityId | str) -> CapabilityDefinition:
         try:
             identity = (
                 capability_id
@@ -97,7 +100,9 @@ class CapabilityRegistry:
         controlled = normalized_environment in CONTROLLED_ENVIRONMENTS
         fixture = backend.runtime_class is ExecutionRuntimeClass.SCRIPTED_FIXTURE
         if controlled and fixture:
-            raise ValueError("fixture backend is prohibited in a controlled environment")
+            raise ValueError(
+                "fixture backend is prohibited in a controlled environment"
+            )
         if controlled and not definition.production_allowed:
             raise ValueError("capability is not allowed in production")
         if fixture and not definition.fixture_allowed:
@@ -125,6 +130,15 @@ def _backend_matches(actual: str, allowed: str) -> bool:
     return actual == allowed
 
 
+def capability_contract_version(capability_id: CapabilityId | str) -> int:
+    identity = (
+        capability_id
+        if isinstance(capability_id, CapabilityId)
+        else CapabilityId(str(capability_id))
+    )
+    return 2 if identity in _PLANNING_CAPABILITIES else 1
+
+
 def _definition(
     capability_id: CapabilityId,
     domain: ExecutionDomain,
@@ -138,6 +152,7 @@ def _definition(
     cancel: bool = True,
     callback: bool = True,
     risk: RiskClass = RiskClass.HIGH,
+    timeout_policy_version: str = "v1",
 ) -> CapabilityDefinition:
     policy_key = capability_id.value.replace(".", "-")
     return CapabilityDefinition(
@@ -149,7 +164,7 @@ def _definition(
         allowed_backend_ids=backends,
         prompt_bundle_type=prompt_bundle_type,
         skill_bundle_type=skill_bundle_type,
-        timeout_policy_ref=f"timeout:{policy_key}:v1",
+        timeout_policy_ref=f"timeout:{policy_key}:{timeout_policy_version}",
         budget_policy_ref=f"budget:{policy_key}:v1",
         permission_policy_ref=f"permission:{policy_key}:v1",
         source_policy_ref=f"source:{policy_key}:v1",
@@ -196,7 +211,15 @@ def default_capability_registry() -> CapabilityRegistry:
         CapabilityId.LONGFORM_PLAN_CHANGE_GENERATE: ExecutionDomain.LONGFORM,
     }
     definitions = [
-        _definition(capability_id, domain)
+        _definition(
+            capability_id,
+            domain,
+            timeout_policy_version=(
+                PLANNING_TIMEOUT_POLICY_VERSION
+                if capability_id in _PLANNING_CAPABILITIES
+                else "v1"
+            ),
+        )
         for capability_id, domain in model_domains.items()
     ]
     definitions.extend(
@@ -317,6 +340,8 @@ def default_capability_registry() -> CapabilityRegistry:
 
 __all__ = [
     "CONTROLLED_ENVIRONMENTS",
+    "PLANNING_TIMEOUT_POLICY_VERSION",
     "CapabilityRegistry",
+    "capability_contract_version",
     "default_capability_registry",
 ]

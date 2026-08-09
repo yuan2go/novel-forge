@@ -21,7 +21,10 @@ from novel_forge.modules.story_planning_runtime import (
     CapabilityPackBackedPlanningExecutionBinder,
     FrozenPlanningInput,
     PlanningExecutionBundle,
+    STORY_PLANNING_OPERATION_TIMEOUT_SECONDS,
+    STORY_PLANNING_GENERATION_VERSION,
     StoryPlanningGenerationCommand,
+    story_planning_generation_definition,
 )
 from novel_forge.modules.story_planning_runtime.execution import (
     planning_fixture_response,
@@ -33,6 +36,18 @@ from novel_forge.modules.story_planning_runtime.application import (
 
 
 HASH = "sha256:" + "a" * 64
+
+
+def test_real_planning_definition_versions_the_bounded_xhigh_timeout() -> None:
+    definition = story_planning_generation_definition(
+        application_build_id="unit-test-build",
+        commit_sha="a" * 40,
+    )
+
+    assert definition["definition_version"] == STORY_PLANNING_GENERATION_VERSION
+    assert definition["timeout_policy"] == {
+        "operation_timeout_seconds": STORY_PLANNING_OPERATION_TIMEOUT_SECONDS
+    }
 
 
 @pytest.mark.parametrize(
@@ -50,7 +65,9 @@ def test_chapter_planning_accepts_authoritative_runtime_snapshot_types(
     assert runtime_asset_type in _AUTHORITY_INPUT_ASSET_TYPES[role]
 
 
-def test_production_planning_composition_is_available_at_the_authority_boundary() -> None:
+def test_production_planning_composition_is_available_at_the_authority_boundary() -> (
+    None
+):
     from novel_forge.api.authority_dependencies import (
         build_story_planning_generation_application,
     )

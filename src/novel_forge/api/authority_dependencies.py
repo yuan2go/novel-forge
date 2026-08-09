@@ -53,6 +53,7 @@ from novel_forge.modules.story_planning_runtime import (
     PlanningExecutionRoute,
     PostgresPlanningExecutionBundleResolver,
     PostgresPlanningExecutionPreparer,
+    STORY_PLANNING_WORKFLOW_DEFINITION_REF,
     StoryPlanningGenerationApplication,
 )
 from novel_forge.modules.story_planning_runtime.execution import (
@@ -1144,7 +1145,7 @@ def build_story_planning_generation_application(
     resolver = PostgresPlanningExecutionBundleResolver(
         settings.database_url,
         execution_preparer=preparer,
-        workflow_definition_ref="story_planning_generators@1.0.0",
+        workflow_definition_ref=STORY_PLANNING_WORKFLOW_DEFINITION_REF,
         pack_id=str(
             values.get("NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID")
             or "story_planning_pack"

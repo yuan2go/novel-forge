@@ -4,6 +4,17 @@ from novel_forge.modules.capability_packs.longform_profiles import (
     build_reader_outcome_pack_profile,
     build_story_planning_pack_profile,
 )
+from novel_forge.modules.capability_packs.operation_catalog import (
+    story_planning_workflow_binding_catalog,
+)
+from novel_forge.modules.production_execution.capability_registry import (
+    PLANNING_TIMEOUT_POLICY_VERSION,
+)
+from novel_forge.modules.story_planning_runtime import (
+    STORY_PLANNING_OPERATION_DEFINITION_REF,
+    STORY_PLANNING_OPERATION_TIMEOUT_SECONDS,
+    STORY_PLANNING_WORKFLOW_DEFINITION_REF,
+)
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -16,21 +27,49 @@ def test_story_planning_profile_is_domain_owned_and_five_stage() -> None:
     )
 
     assert profile.pack_id == "story_planning_pack"
-    assert profile.workflow_ref == "story_planning_generators@1.0.0"
+    assert profile.workflow_ref == STORY_PLANNING_WORKFLOW_DEFINITION_REF
+    assert (
+        story_planning_workflow_binding_catalog().workflow_version
+        == profile.workflow_ref.rpartition("@")[2]
+    )
     assert profile.manifest["identity"]["domain"] == "story_planning"
     assert profile.manifest["prompt_binding"]["system_instruction_ref"] == (
         "prompt-system:story-planning-pack"
     )
-    assert {node["node_id"] for node in profile.manifest["workflow_template"]["nodes"]} == {
+    assert {
+        node["node_id"] for node in profile.manifest["workflow_template"]["nodes"]
+    } == {
         "book_plan.generate",
         "volume_plan.generate",
         "arc_plan.generate",
         "chapter_group_plan.generate",
         "chapter_plan.generate",
     }
-    assert {item["skill_ref"] for item in profile.manifest["skill_binding"]["skills"]} == {
-        "long-outline"
+    assert {
+        node["operation_definition_ref"]
+        for node in profile.manifest["workflow_template"]["nodes"]
+    } == {STORY_PLANNING_OPERATION_DEFINITION_REF}
+    assert {
+        node["timeout_policy_ref"].rpartition(":")[2]
+        for node in profile.manifest["workflow_template"]["nodes"]
+    } == {PLANNING_TIMEOUT_POLICY_VERSION}
+    timeout_policies = [
+        item
+        for item in profile.artifact_catalog["artifacts"]
+        if item["kind"] == "TIMEOUT_POLICY"
+        and item["content"].get("authority_binding")
+        == STORY_PLANNING_OPERATION_DEFINITION_REF
+    ]
+    assert len(timeout_policies) == 5
+    assert {
+        item["content"]["operation_timeout_seconds"] for item in timeout_policies
+    } == {STORY_PLANNING_OPERATION_TIMEOUT_SECONDS}
+    assert {item["content"]["authority_binding"] for item in timeout_policies} == {
+        STORY_PLANNING_OPERATION_DEFINITION_REF
     }
+    assert {
+        item["skill_ref"] for item in profile.manifest["skill_binding"]["skills"]
+    } == {"long-outline"}
     assert {
         item["ref"]
         for item in profile.artifact_catalog["artifacts"]
@@ -58,9 +97,9 @@ def test_reader_outcome_profile_is_independent_shadow_domain_pack() -> None:
     assert [
         item["node_id"] for item in profile.manifest["workflow_template"]["nodes"]
     ] == ["reader_outcome"]
-    assert {item["skill_ref"] for item in profile.manifest["skill_binding"]["skills"]} == {
-        "reader-feedback"
-    }
+    assert {
+        item["skill_ref"] for item in profile.manifest["skill_binding"]["skills"]
+    } == {"reader-feedback"}
     assert profile.manifest["workflow_template"]["nodes"][0]["commit_authority"] == (
         "BOOK_FOLLOWUP_AUTHORITY"
     )

@@ -3534,7 +3534,7 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
     planning_pack = _install_profile(
         args.database_url,
         profile=planning_profile,
-        version="1.0.0",
+        version="1.1.0",
         generation=1,
         expected_activation_version=0,
         project_id=project_id,

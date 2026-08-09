@@ -41,6 +41,7 @@ from novel_forge.modules.chapter_authority.definitions import (
 )
 from novel_forge.modules.chapter_authority.orchestrator import SingleChapterRequest
 from novel_forge.modules.production_execution.capability_registry import (
+    capability_contract_version,
     default_capability_registry,
 )
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
@@ -101,10 +102,7 @@ class CapabilityPackPostgresHarness:
         self.workspace_id = f"workspace-{suffix}"
         self.book_ids = (
             f"book:{self.project_id}",
-            *tuple(
-                f"book-{index:03d}-{suffix}"
-                for index in range(1, book_count)
-            ),
+            *tuple(f"book-{index:03d}-{suffix}" for index in range(1, book_count)),
         )
         seed_authority_project_book(
             project_id=self.project_id,
@@ -179,16 +177,12 @@ class CapabilityPackPostgresHarness:
                 project_ids if project_ids is not None else (self.project_id,)
             ),
             "allowed_workspace_ids": list(
-                workspace_ids
-                if workspace_ids is not None
-                else (self.workspace_id,)
+                workspace_ids if workspace_ids is not None else (self.workspace_id,)
             ),
             "allowed_book_ids": list(
                 book_ids if book_ids is not None else self.book_ids
             ),
-            "allowed_workflow_definition_refs": [
-                "chapter_authority_slice@2.2.0"
-            ],
+            "allowed_workflow_definition_refs": ["chapter_authority_slice@2.2.0"],
             "allow_canary": allow_canary,
             "allow_percentage_rollout": allow_percentage_rollout,
             "allow_full_rollout": allow_full_rollout,
@@ -214,9 +208,7 @@ class CapabilityPackPostgresHarness:
             agent_ref = str(node.get("agent_definition_ref") or "")
             if agent_ref:
                 agent_id, _, _ = agent_ref.rpartition("@")
-                node["agent_definition_ref"] = (
-                    f"{agent_id}-{agent_namespace}@1"
-                )
+                node["agent_definition_ref"] = f"{agent_id}-{agent_namespace}@1"
         manifest["role"]["upstream_packs"] = [
             str(item["pack_id"]) for item in dependencies
         ]
@@ -322,9 +314,7 @@ class CapabilityPackPostgresHarness:
         book_id: str | None = None,
         environment: str = "development",
     ) -> DeploymentProof:
-        deployment_id = identifier(
-            f"deployment-{pack.pack_version.replace('.', '-')}"
-        )
+        deployment_id = identifier(f"deployment-{pack.pack_version.replace('.', '-')}")
         payload = {
             "target_scope_type": scope_type,
             "project_id": project_id if project_id is not None else self.project_id,
@@ -465,18 +455,19 @@ class CapabilityPackPostgresHarness:
             capability_definition = default_capability_registry().resolve(
                 str(node["capability_id"])
             )
+            capability_version = capability_contract_version(
+                capability_definition.capability_id
+            )
             capability = AgentCapability(
                 capability_id=str(node["capability_id"]),
-                version=1,
+                version=capability_version,
                 domain=capability_definition.domain.value,
                 input_schema_ref=capability_definition.input_schema_ref,
                 output_schema_ref=capability_definition.output_schema_ref,
                 supported_message_types=(AgentMessageType.PROPOSAL,),
                 supported_scope_types=("CHAPTER",),
                 risk_class=capability_definition.risk_class.value.upper(),
-                execution_requirements={
-                    "production_execution_gateway_required": True
-                },
+                execution_requirements={"production_execution_gateway_required": True},
                 qualification_status="QUALIFIED_FIXTURE",
             )
             definition = AgentDefinition(
@@ -485,7 +476,7 @@ class CapabilityPackPostgresHarness:
                 agent_type="CHAPTER_STAGE",
                 domain="chapter",
                 role="CHAPTER_STAGE_AGENT",
-                capability_refs=(f"{capability.capability_id}@1",),
+                capability_refs=(f"{capability.capability_id}@{capability_version}",),
                 input_contract_ref=capability.input_schema_ref,
                 output_contract_ref=capability.output_schema_ref,
                 authority_scope_ref="scope:chapter@1",
@@ -541,9 +532,7 @@ class CapabilityPackPostgresHarness:
                             definition.default_scope_policy_ref
                         ),
                         "allowed_tools": list(definition.allowed_tools),
-                        "allowed_context_types": list(
-                            definition.allowed_context_types
-                        ),
+                        "allowed_context_types": list(definition.allowed_context_types),
                         "execution_policy_ref": definition.execution_policy_ref,
                         "approval_policy_ref": definition.approval_policy_ref,
                         "quality_policy_ref": definition.quality_policy_ref,
@@ -551,11 +540,9 @@ class CapabilityPackPostgresHarness:
                     },
                     "execution_mapping": {
                         "capability_id": capability.capability_id,
-                        "capability_version": 1,
+                        "capability_version": capability_version,
                         "execution_capability_id": node["capability_id"],
-                        "execution_capability_hash": node[
-                            "capability_contract_hash"
-                        ],
+                        "execution_capability_hash": node["capability_contract_hash"],
                     },
                     "runtime_contract": {
                         "agent_id": agent_id,
@@ -596,9 +583,7 @@ class CapabilityPackPostgresHarness:
 
     def run_draft_attempt(self, *, chapter_number: int = 1) -> dict[str, Any]:
         chapter_plan = self._chapter_plan_candidate(chapter_number)
-        with tempfile.TemporaryDirectory(
-            prefix="novel-forge-pack-snapshot-"
-        ) as root:
+        with tempfile.TemporaryDirectory(prefix="novel-forge-pack-snapshot-") as root:
             settings = IndustrialSettings(
                 root=Path(root),
                 environment="development",
@@ -615,9 +600,7 @@ class CapabilityPackPostgresHarness:
                     "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": root,
                 },
             )
-            operator = self.principal(
-                "chapter-operator", "chapter.authority.execute"
-            )
+            operator = self.principal("chapter-operator", "chapter.authority.execute")
             admission = chapter.admit(
                 SingleChapterRequest(
                     project_id=self.project_id,
@@ -758,9 +741,7 @@ class CapabilityPackPostgresHarness:
             prompt[version_key] = new_version
             prompt[hash_key] = original["content_hash"]
         for binding in manifest["skill_binding"]["skills"]:
-            original = by_identity[
-                ("SKILL", binding["skill_ref"], binding["version"])
-            ]
+            original = by_identity[("SKILL", binding["skill_ref"], binding["version"])]
             new_version = f"{binding['skill_ref']}-v{generation}"
             original["version"] = new_version
             original["content"]["text"] += f"\nFixture generation {generation}."

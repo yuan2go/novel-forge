@@ -17,7 +17,10 @@ from novel_forge.modules.command_kernel.service import (
     execute_transaction_command,
 )
 from novel_forge.modules.story_design_authority import GENERATOR_CATALOG
-from novel_forge.modules.story_planning_runtime import canonical_hash
+from novel_forge.modules.story_planning_runtime import (
+    STORY_PLANNING_OPERATION_DEFINITION_REF,
+    canonical_hash,
+)
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 
@@ -662,7 +665,7 @@ class BookProductionInputResolver:
                 if (
                     str(item.get("execution_capability_id") or "") != expected[node_id]
                     or str(item.get("operation_definition_ref") or "")
-                    != "story_planning.generate@1.0.0"
+                    != STORY_PLANNING_OPERATION_DEFINITION_REF
                     or str(item.get("commit_authority") or "")
                     != "STORY_DESIGN_AUTHORITY"
                     or not str(item.get("agent_definition_ref") or "")

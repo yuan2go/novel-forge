@@ -54,6 +54,7 @@ from novel_forge.modules.canon_graph.approval_authority import (
     list_canon_approvals,
 )
 from novel_forge.modules.production_execution.capability_registry import (
+    capability_contract_version,
     default_capability_registry,
 )
 from novel_forge.modules.production_preparation import (
@@ -242,9 +243,12 @@ def _register_agents(
         capability_definition = default_capability_registry().resolve(
             str(node["capability_id"])
         )
+        capability_version = capability_contract_version(
+            capability_definition.capability_id
+        )
         capability = AgentCapability(
             capability_id=str(node["capability_id"]),
-            version=1,
+            version=capability_version,
             domain=capability_definition.domain.value,
             input_schema_ref=capability_definition.input_schema_ref,
             output_schema_ref=capability_definition.output_schema_ref,
@@ -260,7 +264,7 @@ def _register_agents(
             agent_type=f"{agent_domain.upper()}_STAGE",
             domain=agent_domain,
             role=f"{agent_domain.upper()}_STAGE_AGENT",
-            capability_refs=(f"{capability.capability_id}@1",),
+            capability_refs=(f"{capability.capability_id}@{capability_version}",),
             input_contract_ref=capability.input_schema_ref,
             output_contract_ref=capability.output_schema_ref,
             authority_scope_ref="scope:chapter@1",
@@ -321,7 +325,7 @@ def _register_agents(
                     },
                     "execution_mapping": {
                         "capability_id": capability.capability_id,
-                        "capability_version": 1,
+                        "capability_version": capability_version,
                         "execution_capability_id": node["capability_id"],
                         "execution_capability_hash": node["capability_contract_hash"],
                     },

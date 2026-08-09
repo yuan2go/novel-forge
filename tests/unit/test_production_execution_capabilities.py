@@ -11,6 +11,10 @@ from novel_forge.modules.production_execution import (
     ExecutionRuntimeClass,
     default_capability_registry,
 )
+from novel_forge.modules.production_execution.capability_registry import (
+    PLANNING_TIMEOUT_POLICY_VERSION,
+    capability_contract_version,
+)
 
 
 REQUIRED_CAPABILITIES = {
@@ -93,12 +97,39 @@ class ProductionExecutionCapabilityTests(unittest.TestCase):
         registry = default_capability_registry()
 
         self.assertTrue(REQUIRED_CAPABILITIES.issubset(set(registry.capability_ids())))
-        self.assertEqual(len(registry.capability_ids()), len(set(registry.capability_ids())))
+        self.assertEqual(
+            len(registry.capability_ids()), len(set(registry.capability_ids()))
+        )
         self.assertTrue(
             REQUIRED_CAPABILITIES.issubset({item.value for item in CapabilityId})
         )
 
-    def test_every_definition_has_a_complete_serializable_governance_contract(self) -> None:
+    def test_planning_capabilities_use_versioned_long_running_timeout_policy(
+        self,
+    ) -> None:
+        registry = default_capability_registry()
+
+        for capability_id in (
+            "planning.book.generate",
+            "planning.volume.generate",
+            "planning.arc.generate",
+            "planning.chapter_group.generate",
+            "planning.chapter.generate",
+        ):
+            self.assertTrue(
+                registry.resolve(capability_id).timeout_policy_ref.endswith(
+                    f":{PLANNING_TIMEOUT_POLICY_VERSION}"
+                )
+            )
+            self.assertEqual(capability_contract_version(capability_id), 2)
+        self.assertTrue(
+            registry.resolve("prose.chapter.draft").timeout_policy_ref.endswith(":v1")
+        )
+        self.assertEqual(capability_contract_version("prose.chapter.draft"), 1)
+
+    def test_every_definition_has_a_complete_serializable_governance_contract(
+        self,
+    ) -> None:
         registry = default_capability_registry()
 
         hashes: set[str] = set()
@@ -130,23 +161,28 @@ class ProductionExecutionCapabilityTests(unittest.TestCase):
                     "risk_class",
                 },
             )
-            self.assertTrue(all(payload[key] for key in (
-                "capability_id",
-                "domain",
-                "input_schema_ref",
-                "output_schema_ref",
-                "allowed_runtime_classes",
-                "allowed_backend_ids",
-                "prompt_bundle_type",
-                "skill_bundle_type",
-                "timeout_policy_ref",
-                "budget_policy_ref",
-                "permission_policy_ref",
-                "source_policy_ref",
-                "validation_policy_ref",
-                "commit_policy_ref",
-                "risk_class",
-            )))
+            self.assertTrue(
+                all(
+                    payload[key]
+                    for key in (
+                        "capability_id",
+                        "domain",
+                        "input_schema_ref",
+                        "output_schema_ref",
+                        "allowed_runtime_classes",
+                        "allowed_backend_ids",
+                        "prompt_bundle_type",
+                        "skill_bundle_type",
+                        "timeout_policy_ref",
+                        "budget_policy_ref",
+                        "permission_policy_ref",
+                        "source_policy_ref",
+                        "validation_policy_ref",
+                        "commit_policy_ref",
+                        "risk_class",
+                    )
+                )
+            )
             self.assertEqual(
                 CapabilityDefinition.from_dict(payload).contract_hash,
                 definition.contract_hash,
@@ -154,7 +190,9 @@ class ProductionExecutionCapabilityTests(unittest.TestCase):
             hashes.add(definition.contract_hash)
         self.assertEqual(len(hashes), len(registry.capability_ids()))
 
-    def test_duplicate_registration_is_idempotent_but_contract_drift_fails(self) -> None:
+    def test_duplicate_registration_is_idempotent_but_contract_drift_fails(
+        self,
+    ) -> None:
         definition = default_capability_registry().resolve(
             CapabilityId.PROSE_CHAPTER_DRAFT
         )
@@ -193,7 +231,9 @@ class ProductionExecutionCapabilityTests(unittest.TestCase):
         )
         self.assertEqual(admitted.capability_id, CapabilityId.PROSE_CHAPTER_DRAFT)
 
-    def test_backend_qualification_checks_runtime_backend_and_provider_idempotency(self) -> None:
+    def test_backend_qualification_checks_runtime_backend_and_provider_idempotency(
+        self,
+    ) -> None:
         registry = default_capability_registry()
 
         with self.assertRaisesRegex(ValueError, "backend"):

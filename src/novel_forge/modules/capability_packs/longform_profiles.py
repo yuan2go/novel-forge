@@ -14,7 +14,13 @@ from novel_forge.modules.capability_packs.artifacts import (
     default_chapter_artifact_resolver,
 )
 from novel_forge.modules.production_execution.capability_registry import (
+    PLANNING_TIMEOUT_POLICY_VERSION,
     default_capability_registry,
+)
+from novel_forge.modules.story_planning_runtime.domain import (
+    STORY_PLANNING_OPERATION_DEFINITION_REF,
+    STORY_PLANNING_OPERATION_TIMEOUT_SECONDS,
+    STORY_PLANNING_WORKFLOW_DEFINITION_REF,
 )
 
 
@@ -56,7 +62,7 @@ def build_story_planning_pack_profile(
         node.update(
             node_id=stage,
             operation_name="story_planning.generate",
-            operation_definition_ref="story_planning.generate@1.0.0",
+            operation_definition_ref=STORY_PLANNING_OPERATION_DEFINITION_REF,
             operation_definition_hash=operation_definition_hash,
             handler_key="novel_forge.story_planning.generate",
             stage=stage,
@@ -71,7 +77,9 @@ def build_story_planning_pack_profile(
                 "retryable_errors": [],
                 "dead_letter_on_exhausted": True,
             },
-            timeout_policy_ref=f"timeout:{capability.replace('.', '-')}:v1",
+            timeout_policy_ref=(
+                f"timeout:{capability.replace('.', '-')}:{PLANNING_TIMEOUT_POLICY_VERSION}"
+            ),
         )
         nodes.append(node)
     manifest["identity"].update(
@@ -85,7 +93,7 @@ def build_story_planning_pack_profile(
     ]
     manifest["workflow_template"].update(
         workflow_id="story_planning_generators",
-        workflow_version="1.0.0",
+        workflow_version=STORY_PLANNING_WORKFLOW_DEFINITION_REF.rpartition("@")[2],
         nodes=nodes,
         completion={
             "required_terminal_nodes": [item[0] for item in capabilities],
@@ -124,13 +132,10 @@ def build_story_planning_pack_profile(
         skill_path="skills/long-outline/SKILL.md",
         system_ref="prompt-system:story-planning-pack",
         system_path=(
-            "config/capability_packs/artifacts/"
-            "story_planning_system_instruction.md"
+            "config/capability_packs/artifacts/story_planning_system_instruction.md"
         ),
         template_ref="prompt-template:story-planning-pack",
-        template_path=(
-            "config/capability_packs/artifacts/story_planning_template.md"
-        ),
+        template_path=("config/capability_packs/artifacts/story_planning_template.md"),
         input_schema_ref="schema:story-planning-pack-input:v1",
         output_schema_ref="schema:story-planning-pack-output:v1",
     )
@@ -140,19 +145,21 @@ def build_story_planning_pack_profile(
         _append_artifact(
             artifacts,
             ArtifactKind.TIMEOUT_POLICY,
-            f"timeout:{capability.replace('.', '-')}:v1",
-            "v1",
+            f"timeout:{capability.replace('.', '-')}:{PLANNING_TIMEOUT_POLICY_VERSION}",
+            PLANNING_TIMEOUT_POLICY_VERSION,
             {
-                "policy_id": f"timeout:{capability.replace('.', '-')}:v1",
-                "operation_timeout_seconds": 300,
+                "policy_id": (
+                    f"timeout:{capability.replace('.', '-')}:{PLANNING_TIMEOUT_POLICY_VERSION}"
+                ),
+                "operation_timeout_seconds": STORY_PLANNING_OPERATION_TIMEOUT_SECONDS,
                 "timeout_action": "FAIL_ATTEMPT",
-                "authority_binding": "story_planning.generate@1.0.0",
+                "authority_binding": STORY_PLANNING_OPERATION_DEFINITION_REF,
             },
             "generated:story-planning-pack-profile",
         )
     return LongformCapabilityPackProfile(
         pack_id,
-        "story_planning_generators@1.0.0",
+        STORY_PLANNING_WORKFLOW_DEFINITION_REF,
         manifest,
         _catalog(artifacts),
         "long-outline",
@@ -178,9 +185,7 @@ def build_reader_outcome_pack_profile(
         operation_name="reader_outcome.evaluate",
         operation_definition_ref="reader_outcome.evaluate@1.0.0",
         operation_definition_hash=operation_definition_hash,
-        handler_key=(
-            "novel_forge.book_followup_authority.reader_outcome.evaluate"
-        ),
+        handler_key=("novel_forge.book_followup_authority.reader_outcome.evaluate"),
         stage="reader_outcome",
         capability_id="quality.reader_outcome.judge",
         agent_definition_ref="reader-outcome-agent@1",
@@ -242,9 +247,7 @@ def build_reader_outcome_pack_profile(
             "config/capability_packs/artifacts/reader_outcome_system_instruction.md"
         ),
         template_ref="prompt-template:reader-outcome-pack",
-        template_path=(
-            "config/capability_packs/artifacts/reader_outcome_template.md"
-        ),
+        template_path=("config/capability_packs/artifacts/reader_outcome_template.md"),
         input_schema_ref="schema:reader-outcome-pack-input:v1",
         output_schema_ref="schema:reader-outcome-pack-output:v1",
     )

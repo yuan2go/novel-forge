@@ -284,7 +284,7 @@ def story_planning_workflow_binding_catalog() -> WorkflowBindingCatalog:
     )
     return WorkflowBindingCatalog(
         "story_planning_generators",
-        "1.0.0",
+        "1.1.0",
         (
             WorkflowBinding(
                 node_id=node_id,
@@ -310,8 +310,7 @@ def reader_outcome_workflow_binding_catalog() -> WorkflowBindingCatalog:
                 operation_name=READER_OUTCOME_DEFINITION,
                 stage="reader_outcome",
                 handler_key=(
-                    "novel_forge.book_followup_authority."
-                    f"{READER_OUTCOME_DEFINITION}"
+                    f"novel_forge.book_followup_authority.{READER_OUTCOME_DEFINITION}"
                 ),
                 capability_id="quality.reader_outcome.judge",
                 depends_on=(),

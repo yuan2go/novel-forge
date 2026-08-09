@@ -72,6 +72,9 @@ from novel_forge.modules.story_planning_runtime import (
     PlanningExecutionEvidence,
     PlanningGenerationCandidate,
     PlanningGenerationStatus,
+    STORY_PLANNING_OPERATION_DEFINITION_REF,
+    STORY_PLANNING_OPERATION_TIMEOUT_SECONDS,
+    STORY_PLANNING_WORKFLOW_DEFINITION_REF,
     StoryPlanningGenerationApplication,
     StoryPlanningGenerationCommand,
     canonical_hash,
@@ -83,6 +86,7 @@ from novel_forge.modules.production_execution.domain_execution import (
     DomainExecutionEvidence,
 )
 from novel_forge.modules.production_execution.capability_registry import (
+    PLANNING_TIMEOUT_POLICY_VERSION,
     default_capability_registry,
 )
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
@@ -114,7 +118,7 @@ def _activate_planning_pack(harness: CapabilityPackPostgresHarness) -> str:
             """
             SELECT definition_hash
             FROM authority_operation_definition
-            WHERE name='story_planning.generate' AND definition_version='1.0.0'
+            WHERE name='story_planning.generate' AND definition_version='1.1.0'
             """
         )
         definition_hash = str(uow.cursor.fetchone()[0])
@@ -147,7 +151,7 @@ def _activate_planning_pack(harness: CapabilityPackPostgresHarness) -> str:
         node.update(
             node_id=generator,
             operation_name="story_planning.generate",
-            operation_definition_ref="story_planning.generate@1.0.0",
+            operation_definition_ref=STORY_PLANNING_OPERATION_DEFINITION_REF,
             operation_definition_hash=definition_hash,
             handler_key="novel_forge.story_planning.generate",
             stage=generator,
@@ -162,7 +166,9 @@ def _activate_planning_pack(harness: CapabilityPackPostgresHarness) -> str:
                 "retryable_errors": [],
                 "dead_letter_on_exhausted": True,
             },
-            timeout_policy_ref=(f"timeout:{capability.replace('.', '-')}:v1"),
+            timeout_policy_ref=(
+                f"timeout:{capability.replace('.', '-')}:{PLANNING_TIMEOUT_POLICY_VERSION}"
+            ),
         )
         nodes.append(node)
     manifest = harness._base_manifest
@@ -177,7 +183,7 @@ def _activate_planning_pack(harness: CapabilityPackPostgresHarness) -> str:
     ]
     manifest["workflow_template"].update(
         workflow_id="story_planning_generators",
-        workflow_version="1.0.0",
+        workflow_version=STORY_PLANNING_WORKFLOW_DEFINITION_REF.rpartition("@")[2],
         nodes=nodes,
     )
     manifest["workflow_template"]["completion"] = {
@@ -205,7 +211,8 @@ def _activate_planning_pack(harness: CapabilityPackPostgresHarness) -> str:
     ]
     manifest["evaluation"]["metrics"] = []
     timeout_refs = {
-        f"timeout:{capability.replace('.', '-')}:v1" for capability in capabilities
+        f"timeout:{capability.replace('.', '-')}:{PLANNING_TIMEOUT_POLICY_VERSION}"
+        for capability in capabilities
     }
     harness._base_catalog["artifacts"] = [
         artifact
@@ -239,19 +246,19 @@ def _activate_planning_pack(harness: CapabilityPackPostgresHarness) -> str:
         harness._base_catalog["artifacts"].append(
             {
                 "kind": "TIMEOUT_POLICY",
-                "ref": f"timeout:{capability.replace('.', '-')}:v1",
-                "version": "v1",
+                "ref": f"timeout:{capability.replace('.', '-')}:{PLANNING_TIMEOUT_POLICY_VERSION}",
+                "version": PLANNING_TIMEOUT_POLICY_VERSION,
                 "content": {
-                    "policy_id": f"timeout:{capability.replace('.', '-')}:v1",
-                    "operation_timeout_seconds": 300,
+                    "policy_id": f"timeout:{capability.replace('.', '-')}:{PLANNING_TIMEOUT_POLICY_VERSION}",
+                    "operation_timeout_seconds": STORY_PLANNING_OPERATION_TIMEOUT_SECONDS,
                     "timeout_action": "FAIL_ATTEMPT",
-                    "authority_binding": "story_planning.generate@1.0.0",
+                    "authority_binding": STORY_PLANNING_OPERATION_DEFINITION_REF,
                 },
             }
         )
     scope = harness.approval_scope()
-    scope["allowed_workflow_definition_refs"] = ["story_planning_generators@1.0.0"]
-    pack = harness.register_compile_approve("1.0.0", generation=1, approval_scope=scope)
+    scope["allowed_workflow_definition_refs"] = [STORY_PLANNING_WORKFLOW_DEFINITION_REF]
+    pack = harness.register_compile_approve("1.1.0", generation=1, approval_scope=scope)
     deployment = harness.deploy(pack)
     harness.activate(deployment)
     return deployment.deployment_id
@@ -1307,10 +1314,10 @@ def test_planning_retry_reuses_frozen_pack_after_measured_provider_result() -> N
 
         replacement_scope = harness.approval_scope()
         replacement_scope["allowed_workflow_definition_refs"] = [
-            "story_planning_generators@1.0.0"
+            STORY_PLANNING_WORKFLOW_DEFINITION_REF
         ]
         replacement_pack = harness.register_compile_approve(
-            "1.1.0", generation=2, approval_scope=replacement_scope
+            "1.2.0", generation=2, approval_scope=replacement_scope
         )
         replacement_deployment = harness.deploy(replacement_pack)
         harness.activate(replacement_deployment, expected_activation_version=1)
@@ -1378,7 +1385,7 @@ def test_planning_retry_reuses_frozen_pack_after_measured_provider_result() -> N
     assert operation_status == "WAITING_GATE"
     assert attempts[0][2] != attempts[1][2]
     assert attempts[0][3] == attempts[1][3]
-    assert attempts[0][4] == attempts[1][4] == "1.0.0"
+    assert attempts[0][4] == attempts[1][4] == "1.1.0"
     assert attempts[0][5] == attempts[1][5] == baseline_deployment_id
     assert attempts[1][5] != replacement_deployment.deployment_id
     assert evidence == [
@@ -1401,7 +1408,7 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack() -> N
     execution_resolver = PostgresPlanningExecutionBundleResolver(
         DATABASE_URL,
         execution_preparer=_PlanningExternalEffectPreparer(),
-        workflow_definition_ref="story_planning_generators@1.0.0",
+        workflow_definition_ref=STORY_PLANNING_WORKFLOW_DEFINITION_REF,
         pack_id=harness.pack_id,
         environment="development",
         runtime_profile="development",

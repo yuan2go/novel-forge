@@ -49,6 +49,7 @@ from .domain import (
     FrozenPlanningInput,
     PlanningExecutionEvidence,
     PlanningGenerationCandidate,
+    STORY_PLANNING_OPERATION_DEFINITION_REF,
     StoryPlanningGenerationCommand,
     canonical_hash,
 )
@@ -215,7 +216,7 @@ class PostgresPlanningExecutionBundleResolver:
                 runtime_profile=self.runtime_profile,
                 release_channel=self.release_channel,
                 release_sha=self.release_sha,
-                operation_definition_ref="story_planning.generate@1.0.0",
+                operation_definition_ref=STORY_PLANNING_OPERATION_DEFINITION_REF,
                 pack_id=self.pack_id,
             ),
             operation_id=operation_id,

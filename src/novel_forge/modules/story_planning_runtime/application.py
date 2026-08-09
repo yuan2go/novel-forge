@@ -55,18 +55,20 @@ from .domain import (
     FrozenPlanningInput,
     PlanningGenerationResult,
     PlanningGenerationStatus,
+    STORY_PLANNING_OPERATION_DEFINITION_REF,
+    STORY_PLANNING_OPERATION_TIMEOUT_SECONDS,
     StoryPlanningGenerationCommand,
     canonical_hash,
 )
 
 
 STORY_PLANNING_GENERATION_DEFINITION = "story_planning.generate"
-STORY_PLANNING_GENERATION_VERSION = "1.0.0"
+STORY_PLANNING_GENERATION_VERSION = STORY_PLANNING_OPERATION_DEFINITION_REF.rpartition(
+    "@"
+)[2]
 STORY_PLANNING_GENERATION_HANDLER = "novel_forge.story_planning.generate"
 CHAPTER_PLAN_PROJECTION_DEFINITION = "story_planning.chapter_plan.materialize"
-CHAPTER_PLAN_PROJECTION_HANDLER = (
-    "novel_forge.story_planning.chapter_plan.materialize"
-)
+CHAPTER_PLAN_PROJECTION_HANDLER = "novel_forge.story_planning.chapter_plan.materialize"
 
 
 _PLAN_INPUT_CONTRACTS = {
@@ -79,17 +81,11 @@ _PLAN_INPUT_CONTRACTS = {
 _AUTHORITY_INPUT_ASSET_TYPES = {
     "story_state": frozenset({"story_state", "story_state_snapshot"}),
     "reader_state": frozenset({"reader_state", "reader_state_transition"}),
-    "character_state": frozenset(
-        {"character_state", "character_state_snapshot"}
-    ),
-    "foreshadowing_state": frozenset(
-        {"foreshadowing_state", "foreshadow_snapshot"}
-    ),
+    "character_state": frozenset({"character_state", "character_state_snapshot"}),
+    "foreshadowing_state": frozenset({"foreshadowing_state", "foreshadow_snapshot"}),
     "reward_ledger": frozenset({"reward_ledger", "reward_ledger_snapshot"}),
     "promise_ledger": frozenset({"promise_ledger", "promise_ledger_snapshot"}),
-    "previous_volume_outcome": frozenset(
-        {"previous_volume_outcome", "volume_outcome"}
-    ),
+    "previous_volume_outcome": frozenset({"previous_volume_outcome", "volume_outcome"}),
     "previous_chapter_group_outcome": frozenset(
         {"previous_chapter_group_outcome", "chapter_group_outcome"}
     ),
@@ -631,9 +627,7 @@ class StoryPlanningGenerationApplication:
                     "span_id": str(uuid4()),
                     "correlation_id": correlation_id,
                     "causation_id": generation["generation_operation_id"],
-                    "causation_operation_id": generation[
-                        "generation_operation_id"
-                    ],
+                    "causation_operation_id": generation["generation_operation_id"],
                     "input": {
                         "project_id": generation["project_id"],
                         "candidate_asset_version_id": candidate_asset_version_id,
@@ -647,12 +641,8 @@ class StoryPlanningGenerationApplication:
                 },
                 context=AdmissionContext(
                     actor_id=principal.principal_id,
-                    permissions=frozenset(
-                        {"story_planning.authority.activate"}
-                    ),
-                    available_handlers=frozenset(
-                        {CHAPTER_PLAN_PROJECTION_HANDLER}
-                    ),
+                    permissions=frozenset({"story_planning.authority.activate"}),
+                    available_handlers=frozenset({CHAPTER_PLAN_PROJECTION_HANDLER}),
                     application_build_id=self.application_build_id,
                     commit_sha=self.commit_sha,
                 ),
@@ -1202,7 +1192,9 @@ class StoryPlanningGenerationApplication:
                     asset_version_id not in plan_by_id
                     or plan_by_id[asset_version_id]["contract_type"]
                     is not PlanContractType.CHAPTER_GROUP
-                    or not isinstance(item["content"].get("chapter_function_matrix"), list)
+                    or not isinstance(
+                        item["content"].get("chapter_function_matrix"), list
+                    )
                 )
             ):
                 raise KernelError(
@@ -1245,10 +1237,7 @@ class StoryPlanningGenerationApplication:
                     "PLANNING_GENERATION_PARENT_INVALID",
                     "BookPlan generation cannot declare a parent Plan",
                 )
-        elif (
-            command.parent_version_id
-            != command.input_versions[expected_parent_role]
-        ):
+        elif command.parent_version_id != command.input_versions[expected_parent_role]:
             raise KernelError(
                 "PLANNING_GENERATION_PARENT_INVALID",
                 f"{command.planning_scope.value} parent must equal the frozen "
@@ -1550,9 +1539,7 @@ def chapter_plan_projection_definition(
             ],
             "required_qualifications": [{"decision": "ELIGIBLE"}],
             "required_evidence": ["trace", "audit"],
-            "required_outbox_events": [
-                "story_planning.chapter_plan.materialized"
-            ],
+            "required_outbox_events": ["story_planning.chapter_plan.materialized"],
         },
     }
 
@@ -1568,13 +1555,12 @@ def _chapter_runtime_projection(candidate: dict[str, Any]) -> dict[str, Any]:
     hard_constraints = list(candidate.get("hard_constraints") or ())
     return {
         **candidate,
-        "chapter": int(candidate.get("chapter_number") or candidate.get("chapter") or 0),
+        "chapter": int(
+            candidate.get("chapter_number") or candidate.get("chapter") or 0
+        ),
         "title": str(
             candidate.get("title")
-            or (
-                f"Chapter {int(candidate.get('chapter_number') or 0)}: "
-                f"{primary}"
-            )
+            or (f"Chapter {int(candidate.get('chapter_number') or 0)}: {primary}")
         ),
         "premise": str(candidate.get("premise") or objective),
         "chapter_function": primary,
@@ -1655,7 +1641,9 @@ def story_planning_generation_definition(
         "idempotency_scope": "book:story-planning-generation",
         "concurrency_key_template": "book:{book_id}:planning:{logical_key}",
         "retry_policy": {"max_attempts": 3, "dead_letter_on_exhausted": True},
-        "timeout_policy": {"operation_timeout_seconds": 300},
+        "timeout_policy": {
+            "operation_timeout_seconds": STORY_PLANNING_OPERATION_TIMEOUT_SECONDS
+        },
         "cancellation_policy": {"mode": "cancel_active_attempt"},
         "compensation_policy": {
             "supported": False,
