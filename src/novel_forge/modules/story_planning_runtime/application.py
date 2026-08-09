@@ -733,15 +733,26 @@ class StoryPlanningGenerationApplication:
                        generation.workspace_id, generation.book_id,
                        generation.generator_operation_name,
                        generation.planning_scope, generation.logical_key,
-                       generation.parent_version_id, candidate.content_hash,
+                       generation.parent_version_id,
+                       design_state.generator_definition_version,
+                       candidate.content_hash,
                        definition.definition->>'approval_policy_key',
                        definition.definition->>'activation_policy_key'
                 FROM authority_story_planning_candidate AS candidate
                 JOIN authority_story_planning_generation AS generation
                   ON generation.generation_id=candidate.generation_id
+                JOIN authority_story_design_version_state AS design_state
+                  ON design_state.project_id=generation.project_id
+                 AND design_state.asset_version_id=
+                     candidate.candidate_asset_version_id
+                 AND design_state.logical_key=generation.logical_key
+                 AND design_state.generator_operation_name=
+                     generation.generator_operation_name
                 JOIN authority_story_design_generator_definition AS definition
-                  ON definition.operation_name=generation.generator_operation_name
-                 AND definition.definition_version='1.0.0'
+                  ON definition.operation_name=
+                     design_state.generator_operation_name
+                 AND definition.definition_version=
+                     design_state.generator_definition_version
                 WHERE candidate.candidate_asset_version_id=%s
                 """,
                 [candidate_asset_version_id],
@@ -760,6 +771,7 @@ class StoryPlanningGenerationApplication:
             "planning_scope",
             "logical_key",
             "parent_version_id",
+            "generator_definition_version",
             "content_hash",
             "approval_policy_key",
             "activation_policy_key",

@@ -80,6 +80,7 @@ from novel_forge.modules.story_planning_runtime import (
     canonical_hash,
     story_planning_generation_definition,
 )
+from novel_forge.modules.story_design_authority import GENERATOR_CATALOG
 from novel_forge.modules.production_execution.domain_execution import (
     CandidateKind,
     DomainExecutionCandidate,
@@ -1020,6 +1021,12 @@ def _activate_plan_chain(
         )
         generated = application.generate(command, principal=principal)
         assert generated.status is PlanningGenerationStatus.APPROVAL_PENDING
+        candidate = application.require_candidate(
+            generated.candidate_asset_version_id
+        )
+        assert candidate["generator_definition_version"] == (
+            GENERATOR_CATALOG[generator].definition_version
+        )
         application.approve_candidate(
             generated.candidate_asset_version_id,
             principal=principal,
