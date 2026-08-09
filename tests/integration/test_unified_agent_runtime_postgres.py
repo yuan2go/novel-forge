@@ -243,7 +243,7 @@ class UnifiedAgentRuntimePostgresTests(unittest.TestCase):
                        retry_policy, timeout_policy, approval_policy,
                        compensation_policy, completion_contract
                 FROM authority_operation_definition
-                WHERE name='chapter.draft.generate' AND definition_version='2.2.0'
+                WHERE name='chapter.draft.generate' AND definition_version='2.3.0'
                 """
             ).fetchone()
         assert authority is not None
@@ -335,7 +335,7 @@ class UnifiedAgentRuntimePostgresTests(unittest.TestCase):
                     "runtime_contract": {
                         "agent_id": definition.agent_id,
                         "definition_version": 1,
-                        "capability_pack_ref": "chapter_generation_pack@1.0.0",
+                        "capability_pack_ref": "chapter_generation_pack@1.1.0",
                         "prompt_bundle_ref": "prompt:chapter:draft@1",
                         "prompt_bundle_hash": hash_a,
                         "skill_bundle_ref": "skill:chapter:draft@1",
@@ -363,7 +363,7 @@ class UnifiedAgentRuntimePostgresTests(unittest.TestCase):
 
         node = CompiledWorkflowNode(
             ordinal=3, node_id="draft",
-            definition_name="chapter.draft.generate", definition_version="2.2.0",
+            definition_name="chapter.draft.generate", definition_version="2.3.0",
             definition_hash=str(authority[0]), handler_key=str(authority[1]),
             handler_contract_version=str(authority[2]),
             capability_id=capability.capability_id,
@@ -377,7 +377,7 @@ class UnifiedAgentRuntimePostgresTests(unittest.TestCase):
         )
         compiled = CompiledCapabilityPack(
             schema_version="novelos.capability_pack.compiled.v1",
-            pack_id="chapter_generation_pack", pack_version="1.0.0",
+            pack_id="chapter_generation_pack", pack_version="1.1.0",
             manifest_hash=hash_a, protocol_version="novelos.capability_pack.v1",
             target_runtime_profile="fixture", novel_forge_version="7.0.0",
             release_channel="fixture", release_sha=RELEASE_SHA,
@@ -399,7 +399,7 @@ class UnifiedAgentRuntimePostgresTests(unittest.TestCase):
                     """
                     SELECT COALESCE(MAX(binding_version), 0) + 1
                     FROM authority_chapter_node_agent_binding
-                    WHERE workflow_definition_ref='chapter_authority_slice@2.2.0'
+                    WHERE workflow_definition_ref='chapter_authority_slice@2.3.0'
                       AND workflow_node_id='draft'
                     """
                 ).fetchone()[0]
@@ -408,7 +408,7 @@ class UnifiedAgentRuntimePostgresTests(unittest.TestCase):
                 """
                 SELECT activation_version
                 FROM authority_chapter_node_agent_binding_activation
-                WHERE workflow_definition_ref='chapter_authority_slice@2.2.0'
+                WHERE workflow_definition_ref='chapter_authority_slice@2.3.0'
                   AND workflow_node_id='draft'
                 """
             ).fetchone()
@@ -426,16 +426,16 @@ class UnifiedAgentRuntimePostgresTests(unittest.TestCase):
                 payload={
                     "authority_mode": "DEVELOPMENT_FIXTURE",
                     "binding_id": binding_id, "binding_version": binding_version,
-                    "workflow_definition_ref": "chapter_authority_slice@2.2.0",
+                    "workflow_definition_ref": "chapter_authority_slice@2.3.0",
                     "workflow_node_id": "draft",
-                    "operation_definition_ref": "chapter.draft.generate@2.2.0",
+                    "operation_definition_ref": "chapter.draft.generate@2.3.0",
                     "operation_definition_hash": str(authority[0]),
                     "agent_definition_ref": f"{definition.agent_id}@1",
                     "agent_definition_hash": definition.definition_hash,
                     "capability_ref": f"{capability.capability_id}@1",
                     "capability_hash": capability.capability_hash,
                     "execution_capability_id": "prose.chapter.draft",
-                    "capability_pack_ref": "chapter_generation_pack@1.0.0",
+                    "capability_pack_ref": "chapter_generation_pack@1.1.0",
                     "capability_pack_compilation_hash": compiled_payload["compilation_hash"],
                     "input_contract_ref": capability.input_schema_ref,
                     "output_contract_ref": capability.output_schema_ref,
@@ -458,7 +458,7 @@ class UnifiedAgentRuntimePostgresTests(unittest.TestCase):
                 expected_activation_version=expected_activation_version,
                 payload={
                     "authority_mode": "DEVELOPMENT_FIXTURE",
-                    "workflow_definition_ref": "chapter_authority_slice@2.2.0",
+                    "workflow_definition_ref": "chapter_authority_slice@2.3.0",
                     "workflow_node_id": "draft", "binding_id": binding_id,
                     "binding_version": binding_version, "status": "ACTIVE",
                     "reason": "fixture activation",

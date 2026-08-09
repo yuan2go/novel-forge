@@ -11,6 +11,9 @@ from novel_forge.modules.chapter_authority.contracts import (
 from novel_forge.modules.chapter_authority.definitions import (
     CHAPTER_LONG_TIMEOUT_POLICY_NODES,
     CHAPTER_MODEL_EFFECT_DEFINITION_VERSION,
+    CHAPTER_MODEL_WORKFLOW_DEFINITION_ID,
+    CHAPTER_MODEL_WORKFLOW_DEFINITION_REF,
+    CHAPTER_MODEL_WORKFLOW_DEFINITION_VERSION,
     CHAPTER_MODEL_OPERATION_TIMEOUT_SECONDS,
     CHAPTER_MODEL_ROOT_TIMEOUT_SECONDS,
     CHAPTER_SLICE_HANDLER_CONTRACT_VERSION,
@@ -146,6 +149,21 @@ class ChapterAuthorityDefinitionTests(unittest.TestCase):
         self.assertEqual(
             {item["definition_version"] for item in definitions},
             {CHAPTER_MODEL_EFFECT_DEFINITION_VERSION},
+        )
+        self.assertEqual(
+            {item["handler_contract_version"] for item in definitions},
+            {CHAPTER_MODEL_EFFECT_DEFINITION_VERSION},
+        )
+        self.assertEqual(
+            CHAPTER_MODEL_WORKFLOW_DEFINITION_VERSION,
+            CHAPTER_MODEL_EFFECT_DEFINITION_VERSION,
+        )
+        self.assertEqual(
+            CHAPTER_MODEL_WORKFLOW_DEFINITION_REF,
+            (
+                f"{CHAPTER_MODEL_WORKFLOW_DEFINITION_ID}@"
+                f"{CHAPTER_MODEL_EFFECT_DEFINITION_VERSION}"
+            ),
         )
         root = chapter_root_operation_definition(
             application_build_id="unit-test-build",

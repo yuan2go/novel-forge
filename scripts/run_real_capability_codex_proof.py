@@ -42,6 +42,9 @@ from novel_forge.modules.capability_packs.artifacts import (
 )
 from novel_forge.modules.chapter_authority import SingleChapterRequest
 from novel_forge.modules.chapter_authority.contracts import ChapterNode
+from novel_forge.modules.chapter_authority.definitions import (
+    CHAPTER_MODEL_WORKFLOW_DEFINITION_REF,
+)
 from novel_forge.modules.content_authority import ContentOperationRequest
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.command_kernel.worker_execution import (
@@ -74,8 +77,8 @@ from novel_forge.storage.object_store import MinioObjectStore
 ROOT = Path(__file__).resolve().parents[1]
 PACK_PATH = ROOT / "config/capability_packs/chapter_generation_pack.json"
 PACK_ID = "chapter_generation_pack"
-PACK_VERSION = "1.0.0"
-WORKFLOW_REF = "chapter_authority_slice@2.2.0"
+PACK_VERSION = "1.1.0"
+WORKFLOW_REF = CHAPTER_MODEL_WORKFLOW_DEFINITION_REF
 MODEL_STAGES = (
     "draft",
     "review",

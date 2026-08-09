@@ -218,7 +218,7 @@ class CapabilityPackP1ATests(unittest.TestCase):
     def test_current_chapter_operations_all_resolve(self) -> None:
         catalog = chapter_operation_definition_catalog(release_sha=FIXTURE_RELEASE_SHA)
         for node in ChapterNode:
-            definition = catalog.resolve(node.definition_name, "2.2.0")
+            definition = catalog.resolve(node.definition_name, "2.3.0")
             self.assertEqual(definition.handler_key, node.handler_key)
             self.assertTrue(definition.definition_hash.startswith("sha256:"))
 
@@ -691,6 +691,7 @@ class CapabilityPackP1ATests(unittest.TestCase):
         dependency_payload = self.payload()
         dependency_payload["identity"]["pack_id"] = "chapter.dependency"
         dependency_payload["identity"]["name"] = "Chapter Dependency"
+        dependency_payload["identity"]["version"] = "1.0.0"
         dependency_payload["role"]["upstream_packs"] = []
         dependency_v1 = self.manifest(dependency_payload)
         dependency_payload_v2 = copy.deepcopy(dependency_payload)

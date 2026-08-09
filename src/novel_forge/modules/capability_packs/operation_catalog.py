@@ -10,6 +10,8 @@ from typing import Any, Protocol
 
 from novel_forge.modules.chapter_authority.contracts import ChapterNode
 from novel_forge.modules.chapter_authority.definitions import (
+    CHAPTER_MODEL_WORKFLOW_DEFINITION_ID,
+    CHAPTER_MODEL_WORKFLOW_DEFINITION_VERSION,
     chapter_operation_definitions,
 )
 from novel_forge.modules.chapter_authority.execution_gateway import (
@@ -271,7 +273,11 @@ def chapter_workflow_binding_catalog() -> WorkflowBindingCatalog:
                 primary_output_asset_type=node.asset_type,
             )
         )
-    return WorkflowBindingCatalog("chapter_authority_slice", "2.2.0", bindings)
+    return WorkflowBindingCatalog(
+        CHAPTER_MODEL_WORKFLOW_DEFINITION_ID,
+        CHAPTER_MODEL_WORKFLOW_DEFINITION_VERSION,
+        bindings,
+    )
 
 
 def story_planning_workflow_binding_catalog() -> WorkflowBindingCatalog:

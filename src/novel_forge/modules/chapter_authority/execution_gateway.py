@@ -76,6 +76,9 @@ from novel_forge.modules.chapter_authority.provider_output_contracts import (
     chapter_provider_output_schema,
     chapter_provider_output_schema_ref,
 )
+from novel_forge.modules.chapter_authority.definitions import (
+    CHAPTER_MODEL_WORKFLOW_DEFINITION_REF,
+)
 
 
 _STAGES = frozenset(
@@ -1158,7 +1161,7 @@ class PostgresChapterExecutionContractBinder:
                     project_id=project_id,
                     workspace_id=workspace_id,
                     book_id=book_id,
-                    workflow_definition_ref="chapter_authority_slice@2.2.0",
+                    workflow_definition_ref=CHAPTER_MODEL_WORKFLOW_DEFINITION_REF,
                     workflow_node_id=stage,
                     environment=self.pack_environment,
                     runtime_profile=self.pack_runtime_profile,

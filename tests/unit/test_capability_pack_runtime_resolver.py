@@ -30,7 +30,7 @@ def _approval_scope() -> dict[str, object]:
         "allowed_project_ids": ["project-1"],
         "allowed_workspace_ids": ["workspace-1"],
         "allowed_book_ids": ["book-1"],
-        "allowed_workflow_definition_refs": ["chapter_authority_slice@2.2.0"],
+        "allowed_workflow_definition_refs": ["chapter_authority_slice@2.3.0"],
         "allow_canary": True,
         "allow_percentage_rollout": True,
         "allow_full_rollout": True,
@@ -90,7 +90,7 @@ class _AgentRuntime:
         return {
             "definition_version": 1,
             "definition_hash": HASH_B,
-            "capability_pack_ref": "chapter_generation_pack@1.0.0",
+            "capability_pack_ref": "chapter_generation_pack@1.1.0",
             "prompt_bundle_ref": "prompt@1",
             "prompt_bundle_hash": HASH_A,
             "skill_bundle_ref": "skill@1",
@@ -127,7 +127,7 @@ def _deployment(deployment_id: str):
     return {
         "deployment_id": deployment_id,
         "pack_id": "chapter_generation_pack",
-        "pack_version": "1.0.0",
+        "pack_version": "1.1.0",
         "compilation_id": "compilation-1",
         "compilation_hash": HASH_B,
         "manifest_hash": HASH_A,
@@ -139,11 +139,11 @@ def _deployment(deployment_id: str):
         "release_sha": RELEASE_SHA,
         "runtime_profile": "validation",
         "release_channel": "VALIDATION",
-        "workflow_definition_ref": "chapter_authority_slice@2.2.0",
+        "workflow_definition_ref": "chapter_authority_slice@2.3.0",
         "node_bindings": [
             {
                 "workflow_node_id": "draft",
-                "operation_definition_ref": "chapter.draft.generate@2.2.0",
+                "operation_definition_ref": "chapter.draft.generate@2.3.0",
                 "operation_definition_hash": HASH_A,
                 "agent_definition_ref": "chapter-draft-agent@1",
                 "agent_definition_hash": HASH_B,
@@ -192,13 +192,13 @@ def _request(*, workspace_id: str = "workspace-1", book_id: str = "book-1"):
         project_id="project-1",
         workspace_id=workspace_id,
         book_id=book_id,
-        workflow_definition_ref="chapter_authority_slice@2.2.0",
+        workflow_definition_ref="chapter_authority_slice@2.3.0",
         workflow_node_id="draft",
         environment="validation",
         runtime_profile="validation",
         release_channel="VALIDATION",
         release_sha=RELEASE_SHA,
-        operation_definition_ref="chapter.draft.generate@2.2.0",
+        operation_definition_ref="chapter.draft.generate@2.3.0",
         pack_id="chapter_generation_pack",
     )
 

@@ -44,6 +44,9 @@ from novel_forge.modules.agent_runtime.coordinator import (
     ExistingDomainAssetCommit,
 )
 from novel_forge.modules.chapter_authority.contracts import ChapterHandlerRequest
+from novel_forge.modules.chapter_authority.definitions import (
+    CHAPTER_MODEL_WORKFLOW_DEFINITION_REF,
+)
 from novel_forge.modules.chapter_authority.execution_gateway import (
     ChapterExecutionBinding,
 )
@@ -83,7 +86,7 @@ class PostgresChapterAgentBindingRecorder:
         self,
         database_url: str,
         *,
-        workflow_definition_ref: str = "chapter_authority_slice@2.2.0",
+        workflow_definition_ref: str = CHAPTER_MODEL_WORKFLOW_DEFINITION_REF,
         bound_stages: frozenset[str] = AGENT_BOUND_CHAPTER_STAGES,
         required_stages: frozenset[str] = frozenset(),
         compatibility_allowed: bool = True,

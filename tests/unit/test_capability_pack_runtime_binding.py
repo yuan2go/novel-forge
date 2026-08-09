@@ -28,7 +28,7 @@ def _node() -> CompiledWorkflowNode:
         ordinal=3,
         node_id="draft",
         definition_name="chapter.draft.generate",
-        definition_version="2.2.0",
+        definition_version="2.3.0",
         definition_hash=HASH_A,
         handler_key="novel_forge.chapter_authority.draft",
         handler_contract_version="1.0.0",
@@ -48,16 +48,16 @@ def _binding() -> ChapterNodeExecutionBinding:
     return ChapterNodeExecutionBinding(
         binding_id="chapter-binding:draft",
         binding_version=1,
-        workflow_definition_ref="chapter_authority_slice@2.2.0",
+        workflow_definition_ref="chapter_authority_slice@2.3.0",
         workflow_node_id="draft",
-        operation_definition_ref="chapter.draft.generate@2.2.0",
+        operation_definition_ref="chapter.draft.generate@2.3.0",
         operation_definition_hash=HASH_A,
         agent_definition_ref="chapter-draft-agent@1",
         agent_definition_hash=HASH_B,
         capability_ref="prose.chapter.draft@1",
         capability_hash=HASH_C,
         execution_capability_id="prose.chapter.draft",
-        capability_pack_ref="chapter_generation_pack@1.0.0",
+        capability_pack_ref="chapter_generation_pack@1.1.0",
         capability_pack_compilation_hash=HASH_B,
         input_contract_ref="schema:draft-input@1",
         output_contract_ref="schema:draft-candidate@1",
@@ -72,7 +72,7 @@ def _binding() -> ChapterNodeExecutionBinding:
 def _authority() -> dict[str, object]:
     return {
         "name": "chapter.draft.generate",
-        "definition_version": "2.2.0",
+        "definition_version": "2.3.0",
         "definition_hash": HASH_A,
         "handler_key": "novel_forge.chapter_authority.draft",
         "handler_contract_version": "1.0.0",
@@ -87,7 +87,7 @@ def _authority() -> dict[str, object]:
 def test_compiled_pack_binds_configuration_to_existing_authority() -> None:
     compiled = SimpleNamespace(
         pack_id="chapter_generation_pack",
-        pack_version="1.0.0",
+        pack_version="1.1.0",
         compilation_hash=HASH_B,
         release_sha="a" * 40,
         workflow_nodes=(_node(),),
@@ -102,13 +102,13 @@ def test_compiled_pack_binds_configuration_to_existing_authority() -> None:
 
     assert result.capability_pack_compilation_hash == HASH_B
     assert result.agent_definition_ref == "chapter-draft-agent@1"
-    assert result.operation_definition_ref == "chapter.draft.generate@2.2.0"
+    assert result.operation_definition_ref == "chapter.draft.generate@2.3.0"
 
 
 def test_pack_cannot_override_authority_retry_policy() -> None:
     compiled = SimpleNamespace(
         pack_id="chapter_generation_pack",
-        pack_version="1.0.0",
+        pack_version="1.1.0",
         compilation_hash=HASH_B,
         release_sha="a" * 40,
         workflow_nodes=(_node(),),
@@ -131,7 +131,7 @@ def _compiled_payload() -> dict[str, object]:
     compiled = CompiledCapabilityPack(
         schema_version="novelos.capability_pack.compiled.v1",
         pack_id="chapter_generation_pack",
-        pack_version="1.0.0",
+        pack_version="1.1.0",
         manifest_hash=HASH_A,
         protocol_version="novelos.capability_pack.v1",
         target_runtime_profile="controlled",
