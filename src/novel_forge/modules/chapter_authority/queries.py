@@ -147,12 +147,23 @@ class ChapterAuthorityQuery:
             ]
             cursor.execute(
                 """
-                SELECT external_effect_id, operation_id, capability, provider,
-                       status, completion_policy, stable_idempotency_key,
-                       created_at
-                FROM authority_external_effect
-                WHERE operation_id = ANY(%s) AND effect_type = 'model.invoke'
-                ORDER BY created_at, external_effect_id
+                SELECT effect.external_effect_id, effect.operation_id,
+                       effect.capability, effect.provider, effect.status,
+                       effect.completion_policy, effect.stable_idempotency_key,
+                       effect.created_at,
+                       effect.request_payload #>>
+                           '{_production_execution,attempt_id}' AS attempt_id,
+                       attempt.status AS attempt_status
+                FROM authority_external_effect AS effect
+                LEFT JOIN authority_attempt AS attempt
+                  ON attempt.operation_id=effect.operation_id
+                 AND attempt.attempt_id=(
+                     effect.request_payload #>>
+                         '{_production_execution,attempt_id}'
+                 )
+                WHERE effect.operation_id = ANY(%s)
+                  AND effect.effect_type = 'model.invoke'
+                ORDER BY effect.created_at, effect.external_effect_id
                 """,
                 [operation_ids],
             )
@@ -166,6 +177,8 @@ class ChapterAuthorityQuery:
                     "completion_policy": row[5],
                     "stable_idempotency_key": row[6],
                     "created_at": str(row[7]),
+                    "attempt_id": row[8] or "",
+                    "attempt_status": row[9] or "",
                 }
                 for row in cursor.fetchall()
             ]

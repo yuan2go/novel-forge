@@ -2372,6 +2372,16 @@ def _validate_chapter_acceptance_evidence(
         submitted.get("execution_chapter_plan_content_hash")
         or request["chapter_plan_content_hash"]
     )
+    model_effects = list(evidence.get("model_effects") or ())
+    effect_operation_ids = {
+        str(item.get("operation_id") or "") for item in model_effects
+    }
+    succeeded_effect_operation_ids = {
+        str(item.get("operation_id") or "")
+        for item in model_effects
+        if item.get("attempt_status") == "SUCCEEDED"
+        and item.get("status") == "SUCCEEDED"
+    }
     checks = {
         "final_release": (
             final_gate.get("gate") == "PASSED"
@@ -2396,9 +2406,22 @@ def _validate_chapter_acceptance_evidence(
             and item.get("governance") == "CLEAR"
             for item in selected.values()
         ),
-        "effects_terminal": all(
-            item.get("status") == "SUCCEEDED"
-            for item in evidence.get("model_effects") or ()
+        "effects_attempt_bound": all(
+            bool(item.get("operation_id"))
+            and bool(item.get("attempt_id"))
+            and bool(item.get("attempt_status"))
+            for item in model_effects
+        ),
+        "effects_terminal": (
+            not model_effects
+            or (
+                effect_operation_ids == succeeded_effect_operation_ids
+                and all(
+                    item.get("status") == "SUCCEEDED"
+                    for item in model_effects
+                    if item.get("attempt_status") == "SUCCEEDED"
+                )
+            )
         ),
         "budget_settled": all(
             item.get("status") in {"SETTLED", "RELEASED"}

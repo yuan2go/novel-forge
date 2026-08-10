@@ -157,6 +157,69 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
             frozen,
         )
 
+        recovered = _validate_chapter_acceptance_evidence(
+            request={
+                "chapter_number": 1,
+                "chapter_plan_version": logical_plan,
+                "chapter_plan_content_hash": "sha256:logical-plan",
+                "command_payload": {
+                    "execution_chapter_plan_asset_version_id": execution_plan,
+                    "execution_chapter_plan_content_hash": execution_hash,
+                },
+            },
+            evidence={
+                "status": "SUCCEEDED",
+                "saga": {"status": "SUCCEEDED"},
+                "outputs": outputs,
+                "model_effects": [
+                    {
+                        "operation_id": "operation:draft",
+                        "external_effect_id": "effect:draft:attempt:1",
+                        "attempt_id": "attempt:draft:1",
+                        "attempt_status": "FAILED_RETRYABLE",
+                        "status": "FAILED_RETRYABLE",
+                    },
+                    {
+                        "operation_id": "operation:draft",
+                        "external_effect_id": "effect:draft:attempt:2",
+                        "attempt_id": "attempt:draft:2",
+                        "attempt_status": "SUCCEEDED",
+                        "status": "SUCCEEDED",
+                    },
+                ],
+                "budgets": [],
+            },
+        )
+        self.assertEqual(recovered, frozen)
+
+        with self.assertRaisesRegex(KernelError, "effects_terminal"):
+            _validate_chapter_acceptance_evidence(
+                request={
+                    "chapter_number": 1,
+                    "chapter_plan_version": logical_plan,
+                    "chapter_plan_content_hash": "sha256:logical-plan",
+                    "command_payload": {
+                        "execution_chapter_plan_asset_version_id": execution_plan,
+                        "execution_chapter_plan_content_hash": execution_hash,
+                    },
+                },
+                evidence={
+                    "status": "SUCCEEDED",
+                    "saga": {"status": "SUCCEEDED"},
+                    "outputs": outputs,
+                    "model_effects": [
+                        {
+                            "operation_id": "operation:draft",
+                            "external_effect_id": "effect:draft:attempt:1",
+                            "attempt_id": "attempt:draft:1",
+                            "attempt_status": "FAILED_RETRYABLE",
+                            "status": "FAILED_RETRYABLE",
+                        }
+                    ],
+                    "budgets": [],
+                },
+            )
+
     def test_book_chapter_reader_outcome_recap_and_checkpoint_are_one_governed_chain(
         self,
     ) -> None:
