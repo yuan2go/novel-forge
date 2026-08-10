@@ -47,23 +47,21 @@ idempotently; API and Worker do not carry transient activation state.
 
 ## Capability Pack Contract
 
-Capability Packs describe governed external execution capabilities, not every
-in-process workflow function. The final Chapter `quality` node is a deterministic
-fan-in over five independently produced quality reports. It has no Provider call
-and its OperationDefinition has no required external effect.
+Capability Packs freeze an execution identity for every governed workflow node.
+The final Chapter `quality` node is a deterministic in-process Authority fan-in
+over five independently produced quality reports. It has no Provider call and its
+OperationDefinition has no required external effect.
 
 Therefore:
 
-- a workflow node's execution capability is optional when its authoritative
-  OperationDefinition declares no external execution;
-- the final `quality` Pack node has no capability binding;
+- the final `quality` Pack node binds `quality.aggregate`, whose only allowed
+  runtime is the in-process Chapter Authority;
 - its timeout remains the deterministic aggregate operation timeout;
-- compiler and validator reject both missing capabilities for external-effect
-  operations and invented capabilities for deterministic operations;
+- compiler and validator distinguish this aggregate from Provider-backed judges;
 - the five provider-backed quality group nodes retain their actual capabilities.
 
-This removes the false `quality.intrinsic.judge` binding instead of adding a fake
-in-process Provider runtime or weakening timeout validation.
+This removes the false `quality.intrinsic.judge` binding without weakening timeout
+validation or claiming that the aggregate creates an ExternalEffect.
 
 ## Test Gate
 

@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted.
+Superseded on 2026-08-10 by the repository's pytest-first test gate.
 
 ## Context
 
@@ -14,4 +14,7 @@ Use Python stdlib `unittest` for Phase 1-7 acceptance. Keep `pyproject.toml` dep
 
 ## Consequences
 
-The suite is immediately runnable. Pytest can be added later through a dependency ADR.
+This decision was valid for the dependency-free rebuild. It is no longer the
+active runner policy because the repository now contains pytest-style tests and a
+declared pytest test dependency. Pytest is canonical and continues to execute
+existing unittest classes.

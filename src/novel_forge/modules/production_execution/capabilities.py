@@ -34,6 +34,7 @@ class CapabilityId(StrEnum):
     REVISION_CHAPTER_REVISE = "revision.chapter.revise"
     CANON_EXTRACT = "canon.extract"
     QUALITY_INTRINSIC_JUDGE = "quality.intrinsic.judge"
+    QUALITY_AGGREGATE = "quality.aggregate"
     QUALITY_ORIGINALITY_JUDGE = "quality.originality.judge"
     QUALITY_PLATFORM_JUDGE = "quality.platform.judge"
     QUALITY_READER_OUTCOME_JUDGE = "quality.reader_outcome.judge"

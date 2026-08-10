@@ -115,55 +115,67 @@ def check_workers(root: Path) -> dict[str, Any]:
 
 def check_tests(root: Path) -> dict[str, Any]:
     manifest = _load(root, "test-manifest.yaml")
-
-    results: list[dict[str, Any]] = []
-    for item in manifest.get("collections", []):
-        start = root / str(item["start_dir"])
-        pattern = str(item["pattern"])
+    collections = list(manifest.get("collections", []))
+    required_modules = [str(item) for item in manifest.get("required_modules", [])]
+    collection_paths: list[str] = []
+    for item in collections:
+        relative = str(item["start_dir"])
+        start = root / relative
         if not start.is_dir():
             raise ValueError(f"test directory does not exist: {start.relative_to(root)}")
-        discovery = subprocess.run(
-            [
-                sys.executable,
-                "-c",
-                (
-                    "import sys, unittest; "
-                    "loader=unittest.TestLoader(); "
-                    "suite=loader.discover("
-                    "sys.argv[1], pattern=sys.argv[2], top_level_dir=sys.argv[1]); "
-                    "sys.stderr.write('\\n'.join(loader.errors)); "
-                    "sys.exit(2) if loader.errors else print(suite.countTestCases())"
-                ),
-                str(start),
-                pattern,
-            ],
-            cwd=root,
-            check=False,
-            capture_output=True,
-            text=True,
-        )
-        if discovery.returncode:
-            raise ValueError(
-                f"required test collection {item['name']} cannot be discovered: "
-                f"{discovery.stderr.strip()}"
-            )
-        try:
-            count = int(discovery.stdout.strip())
-        except ValueError as exc:
-            raise ValueError(
-                f"required test collection {item['name']} returned no count"
-            ) from exc
+        collection_paths.append(relative)
+    for relative in required_modules:
+        if not (root / relative).is_file():
+            raise ValueError(f"required test module is missing: {relative}")
+
+    discovery = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "pytest",
+            "--collect-only",
+            "-q",
+            "--disable-warnings",
+            *collection_paths,
+        ],
+        cwd=root,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if discovery.returncode:
+        detail = discovery.stderr.strip() or discovery.stdout.strip()
+        raise ValueError(f"required pytest collection failed: {detail}")
+    node_ids = tuple(
+        line.strip()
+        for line in discovery.stdout.splitlines()
+        if "::" in line and not line.startswith(" ")
+    )
+
+    results: list[dict[str, Any]] = []
+    for item in collections:
+        prefix = str(item["start_dir"]).rstrip("/") + "/"
+        count = sum(node_id.startswith(prefix) for node_id in node_ids)
         minimum = int(item.get("minimum_count", 1))
         if count < minimum:
             raise ValueError(
                 f"required test collection {item['name']} found {count}; minimum is {minimum}"
             )
         results.append({"name": item["name"], "count": count})
-    for relative in manifest.get("required_modules", []):
-        path = root / str(relative)
-        if not path.is_file():
-            raise ValueError(f"required test module is missing: {relative}")
-    return {"kind": "tests", "checked": len(results), "collections": results}
+
+    module_results: list[dict[str, Any]] = []
+    for relative in required_modules:
+        prefix = relative + "::"
+        count = sum(node_id.startswith(prefix) for node_id in node_ids)
+        if count < 1:
+            raise ValueError(f"required test module collected zero tests: {relative}")
+        module_results.append({"path": relative, "count": count})
+    return {
+        "kind": "tests",
+        "checked": len(results),
+        "collections": results,
+        "module_collections": module_results,
+    }
 
 
 def check_console_scripts(root: Path) -> dict[str, Any]:

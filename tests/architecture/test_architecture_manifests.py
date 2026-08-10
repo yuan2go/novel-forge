@@ -31,6 +31,15 @@ class ArchitectureManifestTests(unittest.TestCase):
         }
         self.assertEqual(set(counts), {"architecture", "unit", "acceptance", "integration"})
         self.assertTrue(all(count > 0 for count in counts.values()))
+        module_counts = {
+            str(item["path"]): int(item["count"])
+            for item in report["module_collections"]
+        }
+        self.assertGreater(
+            module_counts["tests/integration/test_core_functional_loops_postgres.py"],
+            0,
+        )
+        self.assertTrue(all(count > 0 for count in module_counts.values()))
 
     def test_ci_regenerates_ignored_runtime_skills_before_drift_check(self) -> None:
         workflow = (ROOT / ".github/workflows/core-os-ci.yml").read_text(encoding="utf-8")

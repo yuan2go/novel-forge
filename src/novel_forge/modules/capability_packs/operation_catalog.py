@@ -249,7 +249,7 @@ _NON_PROVIDER_CAPABILITIES = {
     "context": "retrieval.index.query",
     "canon_proposal": "canon.extract",
     "canon": "canon.extract",
-    "quality": "quality.intrinsic.judge",
+    "quality": "quality.aggregate",
     "publish_gate": "publishing.release.query",
     "export": "storage.object.put",
     "final_release_gate": "publishing.release.query",

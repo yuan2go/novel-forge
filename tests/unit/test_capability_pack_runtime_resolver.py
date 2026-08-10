@@ -40,7 +40,7 @@ def _approval_scope() -> dict[str, object]:
 
 class _Definitions:
     def get(self, name: str, version: str):
-        assert (name, version) == ("chapter.draft.generate", "2.2.0")
+        assert (name, version) == ("chapter.draft.generate", "2.3.1")
         return {"definition_hash": HASH_A, "enabled": True}
 
 

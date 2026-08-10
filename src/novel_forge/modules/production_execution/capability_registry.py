@@ -223,6 +223,20 @@ def default_capability_registry() -> CapabilityRegistry:
         )
         for capability_id, domain in model_domains.items()
     ]
+    definitions.append(
+        _definition(
+            CapabilityId.QUALITY_AGGREGATE,
+            ExecutionDomain.QUALITY,
+            runtimes=(ExecutionRuntimeClass.AUTHORITY_IN_PROCESS,),
+            backends=("chapter-authority",),
+            prompt_bundle_type="NO_PROMPT_BUNDLE",
+            skill_bundle_type="NO_SKILL_BUNDLE",
+            query=False,
+            cancel=False,
+            callback=False,
+            risk=RiskClass.LOW,
+        )
+    )
     definitions.extend(
         (
             _definition(

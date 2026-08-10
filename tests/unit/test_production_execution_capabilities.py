@@ -35,6 +35,7 @@ REQUIRED_CAPABILITIES = {
     "revision.chapter.revise",
     "canon.extract",
     "quality.intrinsic.judge",
+    "quality.aggregate",
     "quality.originality.judge",
     "quality.platform.judge",
     "quality.reader_outcome.judge",
@@ -133,6 +134,19 @@ class ProductionExecutionCapabilityTests(unittest.TestCase):
             )
         )
         self.assertEqual(capability_contract_version("planning.chapter.generate"), 1)
+
+    def test_quality_aggregate_is_an_in_process_authority_capability(self) -> None:
+        definition = default_capability_registry().resolve("quality.aggregate")
+
+        self.assertEqual(
+            definition.allowed_runtime_classes,
+            (ExecutionRuntimeClass.AUTHORITY_IN_PROCESS,),
+        )
+        self.assertEqual(definition.allowed_backend_ids, ("chapter-authority",))
+        self.assertEqual(
+            definition.timeout_policy_ref,
+            "timeout:quality-aggregate:v1",
+        )
 
     def test_every_definition_has_a_complete_serializable_governance_contract(
         self,

@@ -51,6 +51,21 @@ FIXTURE_RELEASE_SHA = "dcaf300057b997ac49099bcb4839f063774320ce"
 
 
 class CapabilityPackP1ATests(unittest.TestCase):
+    def test_final_quality_binding_is_deterministic_aggregate(self) -> None:
+        manifest = self.manifest()
+        quality = next(
+            node
+            for node in manifest.workflow_template.nodes
+            if node.node_id == "quality"
+        )
+
+        self.assertEqual(
+            chapter_workflow_binding_catalog().resolve("quality").capability_id,
+            "quality.aggregate",
+        )
+        self.assertEqual(quality.capability_id, "quality.aggregate")
+        self.assertEqual(quality.timeout_policy_ref, "timeout:quality-aggregate:v1")
+
     def test_reader_outcome_has_a_governed_workflow_binding(self) -> None:
         catalog = governed_workflow_binding_catalog(
             "book_followup_reader_outcome", "1.0.0"

@@ -1,13 +1,27 @@
 from __future__ import annotations
 
 import sys
-import unittest
 from pathlib import Path
+
+import pytest
+
+
+class _NoSkipPlugin:
+    def __init__(self) -> None:
+        self.skipped: list[str] = []
+
+    def pytest_runtest_logreport(self, report: pytest.TestReport) -> None:
+        if report.skipped:
+            self.skipped.append(report.nodeid)
+
+    def pytest_collectreport(self, report: pytest.CollectReport) -> None:
+        if report.skipped:
+            self.skipped.append(report.nodeid)
 
 
 def main() -> int:
     root = Path(__file__).resolve().parents[1]
-    suite = unittest.TestSuite()
+    paths: set[Path] = set()
     for pattern in (
         "test_authority_*_postgres.py",
         "test_asset_blob_*_postgres.py",
@@ -23,19 +37,17 @@ def main() -> int:
         "test_postgresql_only_chapter_slice.py",
         "test_core_functional_loops_postgres.py",
     ):
-        suite.addTests(
-            unittest.defaultTestLoader.discover(
-                str(root / "tests" / "integration"),
-                pattern=pattern,
-                top_level_dir=str(root),
-            )
-        )
-    result = unittest.TextTestRunner(verbosity=2).run(suite)
-    if result.skipped:
-        for test, reason in result.skipped:
-            print(f"CORE_POSTGRES_SKIP_FORBIDDEN: {test}: {reason}", file=sys.stderr)
+        paths.update((root / "tests" / "integration").glob(pattern))
+    plugin = _NoSkipPlugin()
+    result = pytest.main(
+        ["-v", *(str(path.relative_to(root)) for path in sorted(paths))],
+        plugins=[plugin],
+    )
+    if plugin.skipped:
+        for node_id in plugin.skipped:
+            print(f"CORE_POSTGRES_SKIP_FORBIDDEN: {node_id}", file=sys.stderr)
         return 1
-    return 0 if result.wasSuccessful() else 1
+    return 0 if result == pytest.ExitCode.OK else 1
 
 
 if __name__ == "__main__":

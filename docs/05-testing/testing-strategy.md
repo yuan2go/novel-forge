@@ -8,7 +8,9 @@ A change is complete only when schema-backed assets, workflow/run records, copyr
 
 ## Current Runner
 
-v6 uses Python stdlib `unittest` because dependency installation is intentionally avoided during rebuild. Do not introduce pytest or other test dependencies without an ADR or explicit task.
+Pytest is the canonical Python runner. Existing `unittest.TestCase` suites remain
+supported because pytest collects them. Required test modules must collect at
+least one test; a tracked file or unittest discovery of zero cases is not evidence.
 
 ## Commands
 
@@ -236,7 +238,3 @@ Verification:
 ```
 
 If verification was not possible, state why. Do not imply unrun tests passed.
-
-## Future ADR
-
-Introduce pytest only after dependency policy is approved.

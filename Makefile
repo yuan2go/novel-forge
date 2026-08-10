@@ -1,5 +1,6 @@
 PYTHON ?= $(if $(wildcard .venv/bin/python),.venv/bin/python,python3)
 PYTHONPATH := src
+PYTEST := $(PYTHON) -m pytest
 WEB_DIR ?= web/admin
 LOCAL_WORKSPACE ?= .local/workspace
 DEMO_WORKSPACE ?= .local/demo-workspace
@@ -17,7 +18,7 @@ AUTHORITY_RUFF_PATHS := \
 	src/novel_forge/modules/chapter_authority
 
 help:
-	@echo "make test      - run stdlib unittest suite"
+	@echo "make test      - run the canonical pytest suite"
 	@echo "make lint      - compile Python sources"
 	@echo "make lint-authority - require Ruff-clean Authority production surfaces"
 	@echo "make lint-ratchet - reject new or increased repository Ruff debt"
@@ -60,7 +61,7 @@ help:
 	@echo "make d0-provider-probe - run the fail-closed D0 Provider qualification probe"
 
 test:
-	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m unittest discover -s tests -p 'test_*.py'
+	PYTHONPATH=$(PYTHONPATH) $(PYTEST) tests
 	npm --prefix $(WEB_DIR) test
 
 lint:
@@ -121,8 +122,7 @@ authority-logs:
 	$(AUTHORITY_COMPOSE) logs -f authority-api agent-authority-worker chapter-authority-worker content-authority-worker source-authority-worker mkaos-authority-worker book-authority-worker outbox-worker maintenance-worker
 
 authority-test: lint lint-authority lint-ratchet architecture-manifests-check architecture-fitness-check head-integrity-check
-	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m unittest discover -s tests/unit -p 'test_*.py'
-	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m unittest discover -s tests/acceptance -p 'test_*.py'
+	PYTHONPATH=$(PYTHONPATH) $(PYTEST) tests/unit tests/architecture tests/acceptance
 
 authority-postgres-test: postgres-authority-test
 
