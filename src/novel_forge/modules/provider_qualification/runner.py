@@ -5,7 +5,7 @@ from dataclasses import asdict
 import importlib.util
 import json
 import os
-from typing import Any, Mapping
+from typing import Mapping
 
 from novel_forge.modules.provider_control import (
     ProviderCancellationRequest,
@@ -13,7 +13,7 @@ from novel_forge.modules.provider_control import (
     ProviderQueryRequest,
     ProviderReceipt,
     ScriptedProviderAdapterV2,
-    build_openai_d0_adapter,
+    build_openai_provider_adapter,
 )
 
 from .domain import D0_GATE_NAMES, D0ProbeConfig, D0ProbeReport, request_hash
@@ -155,7 +155,7 @@ def run_fixture_protocol_probe(config: D0ProbeConfig) -> D0ProbeReport:
 def run_d0_probe(
     config: D0ProbeConfig, *, env: Mapping[str, str] | None = None
 ) -> D0ProbeReport:
-    values = env or os.environ
+    values = os.environ if env is None else env
     api_key = str(values.get(config.auth_environment_name) or "").strip()
     model = str(values.get(config.model_env) or "").strip()
     model_version = str(values.get(config.model_version_env) or "").strip()
@@ -171,7 +171,7 @@ def run_d0_probe(
             }
         )
 
-    adapter = build_openai_d0_adapter(api_key)
+    adapter = build_openai_provider_adapter(api_key)
     request = _request(
         provider=config.provider,
         model=model,

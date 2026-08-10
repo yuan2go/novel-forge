@@ -216,7 +216,7 @@ def _register_agents(
         database_url,
         application_build_id=build_id,
         commit_sha=commit_sha,
-        runtime_environment="provider-validation",
+        runtime_environment="validation",
         release_channel="VALIDATION",
     )
     registered: set[str] = set()
@@ -415,7 +415,7 @@ def _install_pack(
         pack_version=PACK_VERSION,
         compilation_id=compilation_id,
         payload={
-            "target_runtime_profile": "provider-validation",
+            "target_runtime_profile": "validation",
             "novel_forge_version": "6.0.0",
             "release_sha": commit_sha,
             "release_channel": "VALIDATION",
@@ -445,8 +445,8 @@ def _install_pack(
             "approval_policy_ref": "capability-pack-approval-scope:v1",
             "scope": {
                 "schema_version": "CapabilityPackApprovalScope.v1",
-                "allowed_environments": ["provider-validation"],
-                "allowed_runtime_profiles": ["provider-validation"],
+                "allowed_environments": ["validation"],
+                "allowed_runtime_profiles": ["validation"],
                 "allowed_release_channels": ["VALIDATION"],
                 "allowed_scope_types": ["BOOK"],
                 "allowed_project_ids": [project_id],
@@ -479,7 +479,7 @@ def _install_pack(
             "project_id": project_id,
             "workspace_id": workspace_id,
             "book_id": book_id,
-            "environment": "provider-validation",
+            "environment": "validation",
             "rollout_policy_ref": "rollout:stable-sha256:v1",
         },
     )
@@ -493,7 +493,7 @@ def _install_pack(
         deployment_id=deployment_id,
         expected_activation_version=0,
         payload={
-            "environment": "provider-validation",
+            "environment": "validation",
             "reason": "activate exact-SHA real Codex proof",
         },
     )
@@ -659,7 +659,7 @@ def _author_inputs(
             "contract_version": "internal-release-checklist-v1",
             "safe_summary": (
                 "Operator verified source isolation, internal-only release scope, "
-                "and required production inputs for this provider-validation run."
+                "and required production inputs for this validation run."
             ),
             "structured_facts": [
                 {"key": "source_isolation_reviewed", "value": True},
@@ -702,7 +702,7 @@ def _runtime_env(
     executions.mkdir(parents=True, exist_ok=True)
     objects.mkdir(parents=True, exist_ok=True)
     return {
-        "NOVEL_FORGE_ENVIRONMENT": "provider-validation",
+        "NOVEL_FORGE_ENVIRONMENT": "validation",
         "NOVEL_FORGE_APPLICATION_BUILD_ID": "real-capability-codex-proof",
         "NOVEL_FORGE_COMMIT_SHA": commit_sha,
         "NOVEL_FORGE_RELEASE_CHANNEL": "VALIDATION",
@@ -787,7 +787,7 @@ def _seed_authorities(
                 "schema_version": "book-authority.v1",
                 "title": "The Ledger Under Rain",
                 "production_profile": {
-                    "environment": "provider-validation",
+                    "environment": "validation",
                     "provider": "codex-cli",
                 },
                 "runtime_policy": {
@@ -1583,7 +1583,7 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
             "allow_dirty": bool(args.allow_dirty),
         },
         "runtime": {
-            "environment": "provider-validation",
+            "environment": "validation",
             "storage_authority": "postgresql",
             "provider": "codex-cli",
             "model": args.model,

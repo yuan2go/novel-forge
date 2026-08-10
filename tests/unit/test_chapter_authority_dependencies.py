@@ -112,7 +112,7 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
 
     def test_production_rejects_mock_model_routes(self) -> None:
         settings = IndustrialSettings(root=Path("."), database_url="postgresql://authority")
-        with self.assertRaisesRegex(RuntimeError, "not registered"):
+        with self.assertRaisesRegex(RuntimeError, "not configured"):
             build_chapter_authority_application(
                 settings,
                 env={
@@ -142,7 +142,7 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
             provider_idempotency_supported=True,
         ))
         controlled_environment = {
-            "NOVEL_FORGE_ENVIRONMENT": "provider-validation",
+            "NOVEL_FORGE_ENVIRONMENT": "validation",
             "NOVEL_FORGE_MODEL_PROVIDER": "openai",
             "NOVEL_FORGE_DRAFT_MODEL": "gpt-test",
             "NOVEL_FORGE_REVIEW_MODEL": "gpt-test",
@@ -201,7 +201,7 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
             workspace = root / "isolated-workspace"
             workspace.mkdir()
             environment = {
-                "NOVEL_FORGE_ENVIRONMENT": "provider-validation",
+                "NOVEL_FORGE_ENVIRONMENT": "validation",
                 "NOVEL_FORGE_MODEL_PROVIDER": "codex-cli",
                 "NOVEL_FORGE_DRAFT_MODEL": "gpt-5.4",
                 "NOVEL_FORGE_REVIEW_MODEL": "gpt-5.4",

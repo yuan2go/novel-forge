@@ -53,7 +53,7 @@ def model_for_explicit_route(provider: str, model_name: str = "") -> ModelAdapte
 
 
 def model_from_env(operation: str = "", env: Mapping[str, str] | None = None) -> ModelAdapter:
-    values = env or os.environ
+    values = os.environ if env is None else env
     explicit_provider = _explicit_provider_name(operation, values)
     route = {} if explicit_provider else _policy_route(operation, values)
     provider = explicit_provider or str(route.get("provider", "")).strip().lower() or DEFAULT_MODEL_PROVIDER
@@ -79,7 +79,7 @@ def model_from_env(operation: str = "", env: Mapping[str, str] | None = None) ->
 
 
 def provider_health(env: Mapping[str, str] | None = None) -> dict[str, dict]:
-    values = env or os.environ
+    values = os.environ if env is None else env
     health = {"mock": MockModelAdapter().health_check()}
     for name, adapter_cls in PROVIDER_ADAPTERS.items():
         adapter = adapter_cls()

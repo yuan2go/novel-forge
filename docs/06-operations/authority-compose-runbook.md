@@ -31,6 +31,20 @@ Production forbids mock providers and fixture MKAOS activation. Never set
 `NOVEL_FORGE_MKAOS_ALLOW_FIXTURE_ACTIVATION=true` outside an explicit non-
 production E2E environment.
 
+Runtime environments are `development`, `test`, `validation`, and `production`.
+The latter two are controlled and reject fixture Provider/MKAOS composition.
+Provider qualification is evidence, not an environment named
+`provider-validation`.
+
+To inspect code-derived deployment reachability before startup:
+
+```bash
+PYTHONPATH=src python -m novel_forge.tools.production_reachability
+```
+
+This is static architecture evidence only. Verify `/runtime/readiness`, worker
+freshness, and the SHA-bound scenarios for runtime evidence.
+
 ## Authority runtime smoke
 
 ```bash
@@ -43,7 +57,7 @@ stale-fence rejection, Outbox/Audit evidence, graceful drain of all eight Worker
 kinds, and connection cleanup. It uses deterministic Provider routes and is not
 real-provider, long-form, or production verification.
 
-## Seven Worker E2E scenarios
+## Seven durable Worker E2E scenarios
 
 Run one isolated scenario:
 
@@ -67,6 +81,10 @@ seven values as independent matrix jobs and builds the fleet summary with:
 
 Do not substitute process health, heartbeat or worker-row existence for the
 scenario's domain and recovery assertions.
+
+The Agent worker is part of the eight-process readiness fleet and has its own
+AgentRuntime integration coverage; it is not one of this seven-scenario script's
+accepted values.
 
 ## PostgreSQL qualification
 

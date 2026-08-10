@@ -193,12 +193,50 @@ def check_console_scripts(root: Path) -> dict[str, Any]:
     return {"kind": "console_scripts", "checked": len(expected), "items": sorted(expected)}
 
 
+def check_reachability(root: Path) -> dict[str, Any]:
+    from novel_forge.tools.production_reachability import (
+        build_production_reachability_manifest,
+    )
+
+    manifest = build_production_reachability_manifest(root)
+    capabilities = list(manifest["capabilities"])
+    if not capabilities:
+        raise ValueError("production reachability manifest has no capabilities")
+    invalid = [
+        item["name"]
+        for item in capabilities
+        if item["runtime_reachable"]
+        and not all(
+            item[field]
+            for field in (
+                "code_exists",
+                "composed",
+                "deployed",
+                "authority_backed",
+            )
+        )
+    ]
+    if invalid:
+        raise ValueError(
+            "production reachability overclaims capabilities: " + ", ".join(invalid)
+        )
+    return {
+        "kind": "reachability",
+        "checked": len(capabilities),
+        "runtime_reachable": sum(
+            1 for item in capabilities if item["runtime_reachable"]
+        ),
+        "proof_sha": manifest["proof_sha"],
+    }
+
+
 CHECKERS: dict[str, Callable[[Path], dict[str, Any]]] = {
     "modules": check_modules,
     "migrations": check_migrations,
     "workers": check_workers,
     "tests": check_tests,
     "console-scripts": check_console_scripts,
+    "reachability": check_reachability,
 }
 
 

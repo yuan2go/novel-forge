@@ -9,6 +9,7 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Mapping
 
+from novel_forge.infrastructure.environment import RuntimeEnvironment
 from novel_forge.infrastructure.settings import IndustrialSettings
 from novel_forge.modules.chapter_authority.application import (
     ChapterAuthorityApplication,
@@ -113,7 +114,9 @@ from novel_forge.modules.content_authority import (
 )
 from novel_forge.modules.provider_control import (
     ProviderAdapterRegistry,
-    ScriptedProviderAdapterV2,
+    build_provider_adapter_registry,
+    configured_chapter_provider_ids,
+    normalize_provider_id,
 )
 from novel_forge.modules.provider_control.contracts import ProviderControlLevel
 from novel_forge.modules.production_execution import (
@@ -188,7 +191,7 @@ def _execution_content_hash(
 def authority_release_identity(
     *, env: Mapping[str, str] | None = None
 ) -> tuple[str, str]:
-    values = env or os.environ
+    values = os.environ if env is None else env
     build_id = str(values.get("NOVEL_FORGE_APPLICATION_BUILD_ID") or "").strip()
     commit_sha = str(values.get("NOVEL_FORGE_COMMIT_SHA") or "").strip().lower()
     if not build_id:
@@ -230,16 +233,19 @@ def build_chapter_authority_application(
     provider_registry: ProviderAdapterRegistry | None = None,
     runtime_fault_injector: Callable[[str], None] | None = None,
 ) -> ChapterAuthorityApplication:
-    values = env or os.environ
+    values = os.environ if env is None else env
     if not settings.database_url:
         raise RuntimeError("PostgreSQL database is required for chapter authority")
-    environment = (
-        str(values.get("NOVEL_FORGE_ENVIRONMENT") or "development").strip().lower()
+    runtime_environment = RuntimeEnvironment.parse(
+        str(values.get("NOVEL_FORGE_ENVIRONMENT") or settings.environment)
     )
-    registry = provider_registry or ProviderAdapterRegistry()
-    if provider_registry is None and environment in {"test", "development"}:
-        registry.register(ScriptedProviderAdapterV2("success"))
-    controlled = environment in {"validation", "provider-validation", "production"}
+    environment = runtime_environment.value
+    registry = provider_registry or build_provider_adapter_registry(
+        environment=runtime_environment,
+        provider_ids=configured_chapter_provider_ids(values),
+        env=values,
+    )
+    controlled = runtime_environment.controlled
     if controlled:
         release_sha = str(values.get("NOVEL_FORGE_COMMIT_SHA") or "0" * 40).lower()
     else:
@@ -325,9 +331,7 @@ def build_chapter_authority_application(
             raise RuntimeError(
                 f"explicit chapter model provider is required for {stage}"
             )
-        normalized_provider = provider.lower()
-        if normalized_provider in {"mock", "local", "offline"}:
-            normalized_provider = "scripted_provider_v2"
+        normalized_provider = normalize_provider_id(provider)
         model_name = str(
             values.get(model_key)
             or (
@@ -577,7 +581,7 @@ def build_chapter_authority_application(
     max_cost_per_call = str(
         values.get("NOVEL_FORGE_PROVIDER_MAX_COST_PER_CALL") or ""
     ).strip()
-    if environment in {"validation", "provider-validation", "production"}:
+    if controlled:
         if not max_cost_per_call:
             raise RuntimeError(
                 "NOVEL_FORGE_PROVIDER_MAX_COST_PER_CALL is required for production providers"
@@ -776,7 +780,7 @@ def build_chapter_authority_application(
         object_store_adapter = MinioObjectStoreExternalEffectAdapter(
             store.client, bucket=settings.minio_artifact_bucket
         )
-    elif object_store_backend == "local" and environment in {"development", "test"}:
+    elif object_store_backend == "local" and runtime_environment.fixture_allowed:
         object_store_adapter = LocalFileObjectStoreAdapter(object_root)
     else:
         raise RuntimeError(
@@ -790,7 +794,7 @@ def build_chapter_authority_application(
         worker_id=str(
             values.get("NOVEL_FORGE_AUTHORITY_WORKER_ID") or "chapter-authority-api"
         ),
-        allow_synchronous_fixture=environment in {"test", "development"}
+        allow_synchronous_fixture=runtime_environment.fixture_allowed
         and str(
             values.get("NOVEL_FORGE_ENABLE_SYNCHRONOUS_AUTHORITY_FIXTURE") or ""
         ).lower()
@@ -836,12 +840,14 @@ def build_agent_runtime_authority_application(
     if settings.storage_authority != "postgresql" or not settings.database_url:
         raise RuntimeError("Agent Runtime Authority requires PostgreSQL authority")
     build_id, commit_sha = authority_release_identity(env=env)
-    values = env or os.environ
+    values = os.environ if env is None else env
     return AgentRuntimeAuthorityApplication(
         settings.database_url,
         application_build_id=build_id,
         commit_sha=commit_sha,
-        runtime_environment=str(values.get("NOVEL_FORGE_ENVIRONMENT") or "development"),
+        runtime_environment=RuntimeEnvironment.parse(
+            str(values.get("NOVEL_FORGE_ENVIRONMENT") or settings.environment)
+        ).value,
         release_channel=str(values.get("NOVEL_FORGE_RELEASE_CHANNEL") or "VALIDATION"),
     )
 
@@ -875,13 +881,13 @@ def build_capability_pack_authority_query(
     if settings.storage_authority != "postgresql" or not settings.database_url:
         raise RuntimeError("Capability Pack Authority query requires PostgreSQL")
     _, commit_sha = authority_release_identity(env=env)
-    values = env or os.environ
+    values = os.environ if env is None else env
     return CapabilityPackAuthorityQuery(
         settings.database_url,
         current_release_sha=commit_sha,
-        current_runtime_profile=str(
-            values.get("NOVEL_FORGE_ENVIRONMENT") or settings.environment
-        ),
+        current_runtime_profile=RuntimeEnvironment.parse(
+            str(values.get("NOVEL_FORGE_ENVIRONMENT") or settings.environment)
+        ).value,
         current_release_channel=str(
             values.get("NOVEL_FORGE_RELEASE_CHANNEL") or "VALIDATION"
         ),
@@ -925,7 +931,9 @@ def build_trusted_principal_resolver(
     *,
     env: Mapping[str, str] | None = None,
 ) -> TrustedPrincipalResolver:
-    return TrustedPrincipalResolver.from_environment(env or os.environ)
+    return TrustedPrincipalResolver.from_environment(
+        os.environ if env is None else env
+    )
 
 
 def build_content_authority_application(
@@ -968,7 +976,7 @@ def chapter_capability_pack_compilation_report(
 ) -> dict[str, object]:
     """Compile the shipped Chapter Pack from repository facts without activation."""
 
-    values = env or os.environ
+    values = os.environ if env is None else env
     _build_id, release_sha = authority_release_identity(env=values)
     manifest = load_capability_pack(
         settings.root / "config/capability_packs/chapter_generation_pack.json"
@@ -1032,7 +1040,9 @@ def build_book_authority_application(
         commit_sha=commit_sha,
         model_port=reader_model_port,
         worker_id=str(
-            (env or os.environ).get("NOVEL_FORGE_BOOK_FOLLOWUP_WORKER_ID")
+            (os.environ if env is None else env).get(
+                "NOVEL_FORGE_BOOK_FOLLOWUP_WORKER_ID"
+            )
             or "book-followup-authority-worker"
         ),
     )
@@ -1042,12 +1052,14 @@ def build_book_authority_application(
         followup_application=followup,
         application_build_id=build_id,
         commit_sha=commit_sha,
-        legacy_fixture_input_allowed=(
-            str((env or os.environ).get("NOVEL_FORGE_ENVIRONMENT") or "development")
-            .strip()
-            .lower()
-            not in {"validation", "provider-validation", "production"}
-        ),
+        legacy_fixture_input_allowed=RuntimeEnvironment.parse(
+            str(
+                (os.environ if env is None else env).get(
+                    "NOVEL_FORGE_ENVIRONMENT"
+                )
+                or settings.environment
+            )
+        ).fixture_allowed,
     )
 
 
@@ -1062,7 +1074,7 @@ def build_book_production_composition(
 
     if not settings.database_url:
         raise RuntimeError("PostgreSQL database is required for Book production")
-    values = env or os.environ
+    values = os.environ if env is None else env
     chapter = chapter_application or build_chapter_authority_application(
         settings, env=values
     )
@@ -1151,12 +1163,11 @@ def build_reader_outcome_model_port(
 
     if not settings.database_url:
         raise RuntimeError("PostgreSQL database is required for Reader Outcome")
-    values = env or os.environ
-    environment = (
+    values = os.environ if env is None else env
+    runtime_environment = RuntimeEnvironment.parse(
         str(values.get("NOVEL_FORGE_ENVIRONMENT") or settings.environment)
-        .strip()
-        .lower()
     )
+    environment = runtime_environment.value
     transport = chapter_application.model_port.adapter
     if not isinstance(transport, ProductionExecutionGatewayExternalEffectAdapter):
         raise RuntimeError("Reader Outcome requires the Production Execution Gateway")
@@ -1172,8 +1183,7 @@ def build_reader_outcome_model_port(
         pack_release_channel=str(
             values.get("NOVEL_FORGE_RELEASE_CHANNEL") or "VALIDATION"
         ).upper(),
-        pack_required=environment
-        in {"validation", "provider-validation", "production"},
+        pack_required=runtime_environment.controlled,
     )
     transport.register_execution_binder("reader_outcome", binder)
     return ExternalEffectChapterModelPort(
@@ -1205,7 +1215,7 @@ def build_story_planning_generation_application(
 
     if not settings.database_url:
         raise RuntimeError("PostgreSQL database is required for Story Planning")
-    values = env or os.environ
+    values = os.environ if env is None else env
     build_id, commit_sha = authority_release_identity(env=values)
     chapter = chapter_application or build_chapter_authority_application(
         settings, env=values
@@ -1217,11 +1227,10 @@ def build_story_planning_generation_application(
         values.get("NOVEL_FORGE_STORY_PLANNING_WORKER_ID")
         or "story-planning-generation-worker"
     )
-    environment = (
+    runtime_environment = RuntimeEnvironment.parse(
         str(values.get("NOVEL_FORGE_ENVIRONMENT") or settings.environment)
-        .strip()
-        .lower()
     )
+    environment = runtime_environment.value
     base_route = transport.routes["draft"]
     planning_model = str(values.get("NOVEL_FORGE_PLANNING_MODEL") or "").strip()
     planning_reasoning_effort = (
@@ -1230,7 +1239,7 @@ def build_story_planning_generation_application(
     planning_provider = (
         str(values.get("NOVEL_FORGE_PLANNING_PROVIDER") or "").strip().lower()
     )
-    if environment in {"validation", "provider-validation", "production"}:
+    if runtime_environment.controlled:
         if not planning_model or not planning_reasoning_effort or not planning_provider:
             raise RuntimeError(
                 "controlled Planning requires explicit Provider, model, and reasoning effort"

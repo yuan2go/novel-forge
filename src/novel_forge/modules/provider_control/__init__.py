@@ -15,7 +15,13 @@ from .openai_v2 import (
     OpenAIProviderAdapterV2,
     OpenAISdkTransport,
     OpenAITransportV2,
-    build_openai_d0_adapter,
+    build_openai_provider_adapter,
+)
+from .composition import (
+    CHAPTER_PROVIDER_ENVIRONMENT_KEYS,
+    build_provider_adapter_registry,
+    configured_chapter_provider_ids,
+    normalize_provider_id,
 )
 from .registry import (
     ChapterProviderV2Gateway,
@@ -42,7 +48,11 @@ __all__ = [
     "OpenAIProviderAdapterV2",
     "OpenAISdkTransport",
     "OpenAITransportV2",
-    "build_openai_d0_adapter",
+    "build_openai_provider_adapter",
+    "CHAPTER_PROVIDER_ENVIRONMENT_KEYS",
+    "build_provider_adapter_registry",
+    "configured_chapter_provider_ids",
+    "normalize_provider_id",
     "ChapterProviderV2Gateway",
     "ChapterProviderV2Route",
     "ProviderAdapterFactory",

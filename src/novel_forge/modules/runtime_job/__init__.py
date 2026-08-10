@@ -9,6 +9,7 @@ from .application import (
     RuntimeJobSpec,
     canonical_payload_hash,
     deterministic_runtime_job_id,
+    OPERATIONAL_RUNTIME_JOB_CONTRACTS,
 )
 
 __all__ = [
@@ -17,4 +18,5 @@ __all__ = [
     "RuntimeJobSpec",
     "canonical_payload_hash",
     "deterministic_runtime_job_id",
+    "OPERATIONAL_RUNTIME_JOB_CONTRACTS",
 ]

@@ -51,7 +51,13 @@ class ProductionPreparationService:
     def prepare(self, request: ProductionPreparationRequest) -> ProductionPreparationResult:
         self._validate(request)
         profile = STAGE_PROFILES[request.stage]
-        requirements = requirements_for(request.stage, request.chapter)
+        requirements = requirements_for(
+            request.stage,
+            request.chapter,
+            capability_required_asset_types=(
+                request.capability_required_asset_types
+            ),
+        )
         selected_by_type: dict[str, list[ResolvedProductionAsset]] = {}
         selections: list[ProductionInputSelection] = []
         rejections: list[ProductionInputRejection] = []

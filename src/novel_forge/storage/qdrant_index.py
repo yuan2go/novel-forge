@@ -424,11 +424,7 @@ def _require_controlled_retrieval_port(
     execution_port: RetrievalExecutionPort | None,
     external_action_execution_port: ExternalActionExecutionPort | None,
 ) -> None:
-    if execution_environment(environment) in {
-        "production",
-        "validation",
-        "provider-validation",
-    } and (
+    if execution_environment(environment).controlled and (
         execution_port is None or external_action_execution_port is None
     ):
         raise RuntimeError(

@@ -18,6 +18,8 @@ import re
 from typing import Any, Callable
 import uuid
 
+from novel_forge.infrastructure.environment import RuntimeEnvironment
+
 
 _ALLOWED_CREDENTIAL_REFERENCE_KEYS = frozenset(
     {
@@ -27,7 +29,9 @@ _ALLOWED_CREDENTIAL_REFERENCE_KEYS = frozenset(
     }
 )
 CONTROLLED_EXECUTION_ENVIRONMENTS = frozenset(
-    {"validation", "provider-validation", "production"}
+    environment.value
+    for environment in RuntimeEnvironment
+    if environment.controlled
 )
 _ALLOWED_TOKEN_EVIDENCE_KEYS = frozenset(
     {
@@ -168,10 +172,24 @@ def assert_no_inline_secrets(
     visit(payload, "$")
 
 
-def execution_environment(value: str = "") -> str:
-    return str(
+def execution_environment(value: str = "") -> RuntimeEnvironment:
+    raw = str(
         value or os.environ.get("NOVEL_FORGE_ENVIRONMENT") or "development"
     ).strip().lower()
+    # Compatibility callers still emit the former local OS-envelope vocabulary.
+    # Normalize it once at the production-execution boundary; every downstream
+    # policy receives the canonical typed environment.
+    normalized = {
+        "dev": "development",
+        "local": "development",
+        "sample": "development",
+        "fixture": "development",
+        "compat": "development",
+        "prod": "production",
+        "operating_system": "production",
+        "strict": "production",
+    }.get(raw, raw)
+    return RuntimeEnvironment.parse(normalized)
 
 
 def assert_legacy_execution_allowed(
@@ -185,7 +203,7 @@ def assert_legacy_execution_allowed(
 
     normalized = execution_environment(environment)
     blocked = (
-        normalized in CONTROLLED_EXECUTION_ENVIRONMENTS
+        normalized.controlled
         and not gateway_backed
     )
     event = LegacyUsageEvent(

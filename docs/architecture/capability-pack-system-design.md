@@ -520,7 +520,7 @@ compatibility:
   compatible_runtime_profiles:
     - development
     - validation
-    - provider-validation
+    - validation
     - production
 ```
 

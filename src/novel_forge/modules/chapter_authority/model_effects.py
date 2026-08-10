@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 from typing import Any, Mapping, Protocol
 
+from novel_forge.infrastructure.environment import RuntimeEnvironment
 from novel_forge.modules.chapter_authority.contracts import (
     ChapterHandlerRequest,
     resolve_stage_context_token_budget,
@@ -461,7 +462,7 @@ class ChapterModelExternalEffectAdapter:
         return "" if route is None else route.model_id
 
     def _assert_legacy_execution_allowed(self) -> None:
-        if self.environment in {"validation", "provider-validation", "production"}:
+        if RuntimeEnvironment.parse(self.environment).controlled:
             raise ExternalEffectAdapterError(
                 "legacy Chapter model execution is blocked in controlled environments; "
                 "use ProductionExecutionGatewayExternalEffectAdapter",

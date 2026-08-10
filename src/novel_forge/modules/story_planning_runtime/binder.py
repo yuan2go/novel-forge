@@ -7,6 +7,7 @@ from decimal import Decimal
 from typing import Protocol
 from uuid import NAMESPACE_URL, uuid5
 
+from novel_forge.infrastructure.environment import RuntimeEnvironment
 from novel_forge.modules.agent_collaboration.application import (
     AgentCollaborationApplication,
 )
@@ -301,8 +302,7 @@ class PostgresPlanningExecutionBundleResolver:
             )
             capability = self._capability(agent, node)
             if (
-                self.runtime_profile
-                in {"validation", "provider-validation", "production"}
+                RuntimeEnvironment.parse(self.runtime_profile).controlled
                 and capability.get("qualification_status") != "QUALIFIED_REAL_RUNTIME"
             ):
                 raise KernelError(

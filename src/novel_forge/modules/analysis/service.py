@@ -19,6 +19,7 @@ from novel_forge.modules.production_execution import (
     execute_domain_candidate,
     execution_model_name,
 )
+from novel_forge.modules.production_execution.security import execution_environment
 from novel_forge.schemas import (
     AnalysisConversionReport,
     BaseAsset,
@@ -559,11 +560,7 @@ def _semantic_depth_assessment(
             "production_execution": candidate.evidence.to_dict(),
         }
     except (RuntimeError, ValueError) as exc:
-        if environment.strip().lower() in {
-            "production",
-            "validation",
-            "provider-validation",
-        }:
+        if execution_environment(environment).controlled:
             raise
         fallback_reason = str(exc)
         provider_review = {

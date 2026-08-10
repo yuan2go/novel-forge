@@ -1,281 +1,55 @@
-# Autonomous Novel OS Documentation
+# Novel Forge Documentation
 
-Updated: 2026-08-05
+This directory contains current reference documents and historical engineering
+records. Current code and exact-HEAD evidence always outrank prose.
 
-Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`
+## Canonical current documents
 
-Implementation evidence SHA: `8d0c49973ad3f58ca325e3d39941fd89cb5d5f5e`
-
-This directory is the documentation entrypoint for the Autonomous Novel OS target implemented in the `novel-forge` repository.
-
-The repository/package/CLI name remains Novel Forge v6 until an explicit rename migration is approved. Authority API metadata may use a V7 Authority version, but this does not constitute a repository-wide rename.
-
-## Current Status
-
-The repository-integrity warning from the 2026-08-01 remote audit is resolved.
-Track A, the Track B minimum and Track B.5 Transaction Command atomicity are
-verified; D0 is Authority-persisted but real Provider qualification remains
-blocked by missing credentials. The convergence ADR is accepted and C1 has not
-started.
-
-```text
-head_integrity_verified=true
-current_head_import_verified=true
-migration_chain_verified=true
-current_sha_test_baseline_recorded=true
-architecture_fitness_foundation_enabled=true
-minimal_authority_only_runtime_verified=true
-transaction_command_atomicity_proven=true
-inflight_command_recovery_semantics_proven=true
-architecture_fitness_scope_hardened=true
-asset_scope_database_constraints_proven=true
-
-authority_only_runtime_verified=false
-real_provider_proven=false
-longform_proven=false
-multi_book_proven=false
-production_verified=false
-```
-
-`minimal_authority_only_runtime_verified` is deliberately narrower than full production Authority deployment. Do not use historical test counts, document completion, UI presence or Fixture proof to override the remaining false flags.
-
-## Required Reading Order
-
-1. [`../CLAUDE.md`](../CLAUDE.md) — repository operating rules for coding agents.
-2. [`project-current-state.md`](project-current-state.md) — current implementation fact table.
-3. [`reports/current-engineering-state.md`](reports/current-engineering-state.md) — concise current engineering verdict.
-4. [`reports/architecture-closure-current-head-reaudit.md`](reports/architecture-closure-current-head-reaudit.md) — current code facts, conflicts and blockers.
-5. [`reports/track-a-current-sha-validation.md`](reports/track-a-current-sha-validation.md) — exact Current-SHA validation matrix.
-6. [`architecture-closure/autonomous-novel-os-architecture-closure-epic.md`](architecture-closure/autonomous-novel-os-architecture-closure-epic.md) — six-track Architecture Closure Epic.
-7. [`architecture-closure/README.md`](architecture-closure/README.md) — vertical Slice execution index and AC reference map.
-8. [`roadmap/current-roadmap.md`](roadmap/current-roadmap.md) — current six-track delivery order.
-9. [`architecture/module-map.md`](architecture/module-map.md) — current runtime and module boundaries.
-10. [`product/capability-map.md`](product/capability-map.md) — capability maturity map.
-11. [`product/capability-pack-product-design.md`](product/capability-pack-product-design.md) — Capability Pack product definition, lifecycle, governance and rollout.
-12. [`architecture/capability-pack-system-design.md`](architecture/capability-pack-system-design.md) — Capability Pack protocol, runtime mapping, persistence and implementation design.
-13. [`prompts/codex-capability-pack-p0-implementation.md`](prompts/codex-capability-pack-p0-implementation.md) — bounded Codex prompt for the P0 protocol and validator slice.
-14. [`quality/regression-tests.md`](quality/regression-tests.md) — required current-SHA verification matrix.
-15. Relevant active design/blueprint documents for the selected Slice.
-16. Historical reports only when researching lineage or a previous implementation pass.
-
-## Next Stage Epic: Six-track Architecture Closure
-
-The next engineering stage is no longer organized as AC-00 through AC-19 parallel work packages.
-
-The current execution model is:
-
-```text
-Track A — Trusted Baseline And Governance
-→ Track B — Shared Authority Kernel And Storage
-→ D0 — Real Provider Qualification Probe
-→ Track C — Novel Domain And Context
-→ Track D — Intelligence, Execution And Quality
-→ Track E — Autonomous Book Runtime And Operations
-→ Track F — Migration, Long-form And Scale Proof
-```
-
-Primary documents:
-
-- [`architecture-closure/autonomous-novel-os-architecture-closure-epic.md`](architecture-closure/autonomous-novel-os-architecture-closure-epic.md) — target architecture, six Tracks, vertical Slices, Gate definitions and final exit criteria;
-- [`architecture-closure/README.md`](architecture-closure/README.md) — execution index, AC reference mapping, WIP rules and Slice Gate Report template;
-- [`architecture-closure/minimal-stable-contracts.md`](architecture-closure/minimal-stable-contracts.md) — Book Completion、Human Intervention、Judge 晋升、Context 失效、StoryState 更正、Read Model、Object Store 和 Outbox/Worker 最小契约；
-- `architecture-closure/ac-00...ac-19` — architecture references and Reviewer checklists, not independent delivery units.
-
-## Vertical Slice Rule
-
-A valid delivery Slice must cover a complete path:
-
-```text
-API / CLI / Parent Saga
-→ identity and scope
-→ command and idempotency
-→ transaction/job/saga/effect
-→ domain validation
-→ Candidate and Authority Decision
-→ PostgreSQL Authority Commit
-→ Object Store evidence when needed
-→ query projection
-→ recovery and operator visibility
-→ current-SHA tests and Gate report
-```
-
-The following do not count as completed delivery by themselves:
-
-- Schema or database table;
-- interface or abstract class;
-- Web page;
-- Scripted Provider Fixture;
-- LocalStorage-only path;
-- historical test report;
-- document status change.
-
-## AC-00 Through AC-19 Status
-
-The AC files remain active architecture references. They contain ADR material, code locations, migration guidance, test matrices and Acceptance Gate checklists.
-
-They must not be scheduled as twenty parallel implementation streams and must not maintain independent completion percentages.
-
-Their implementation status is derived from the six Track Slices:
-
-| Track | Main AC references |
+| Fact area | Document |
 |---|---|
-| A | AC-00、AC-01、AC-02、AC-18、AC-19 |
-| B | AC-02、AC-03、AC-04、AC-05、AC-06、AC-15、AC-16、AC-17、AC-18 |
-| C | AC-06、AC-07、AC-08、AC-09、AC-10、AC-13、AC-18 |
-| D | AC-09、AC-11、AC-12、AC-13、AC-18 |
-| E | AC-04、AC-05、AC-07、AC-08、AC-09、AC-13、AC-14、AC-15、AC-16、AC-18 |
-| F | AC-03、AC-07、AC-08、AC-10、AC-13、AC-15、AC-16、AC-17、AC-18、AC-19 |
+| Current status and evidence ceiling | [`project-current-state.md`](project-current-state.md) |
+| Current module and runtime architecture | [`01-architecture/current-implementation.md`](01-architecture/current-implementation.md) |
+| Canonical Book workflow | [`../WORKFLOW.md`](../WORKFLOW.md) |
+| Provider / execution architecture | [`architecture/unified-production-execution-plane.md`](architecture/unified-production-execution-plane.md) |
+| Testing | [`05-testing/testing-strategy.md`](05-testing/testing-strategy.md) |
+| Operations | [`06-operations/authority-compose-runbook.md`](06-operations/authority-compose-runbook.md) |
+| Roadmap | [`roadmap/current-roadmap.md`](roadmap/current-roadmap.md) |
+| ADRs | [`adr/`](adr/) |
 
-## Architecture Terminology Update
+The code-derived production reachability manifest is available with:
 
-The current Epic uses narrower terminology to avoid Authority and orchestration overreach:
+```bash
+PYTHONPATH=src python -m novel_forge.tools.production_reachability
+```
 
-- `Context Builder` should be implemented as a `Context Compiler`: domains declare requirements; the compiler selects, assembles, compresses, validates and records evidence.
-- `Book Production Supervisor` should be implemented as a `Book Production Coordinator`: it owns Root Saga/Cursor coordination, not creative state or domain computation.
-- `Quality Authority` is split into `Production Quality Gate` and `Evaluation And Calibration Lab`.
-- `Source`, `Material` and `Knowledge` are separate layers.
-- The shared asset model uses common metadata plus strongly typed domain payloads, not unrestricted generic JSON.
-- Execution is classified as Transaction Command, Durable Job, Saga or External Effect; not every operation becomes a Saga.
-- Event sourcing is selective, primarily for Saga, StoryState reducer, Canon changes, receipts, audit and outbox.
-- Minimal Authority-only Runtime belongs to Track B; Track E hardens deployment, readiness, PITR, SLO, security, capacity and operator control.
-- Critical Legacy Writer cutover is part of every vertical Slice; Track F only retires residual non-critical Legacy.
+It derives `code_exists`, `composed`, `deployed`, `runtime_reachable`,
+`authority_backed`, `worker_backed`, `proof_level`, and `proof_sha` from tracked
+production entries, imports, console scripts, and `compose.yml`.
 
-## Documentation Authority Order
-
-When documents disagree, use this order:
+## Documentation authority order
 
 ```text
 current code and migrations
 → current-SHA runtime/test evidence
-→ accepted ADR and current architecture
-→ project-current-state.md
-→ current engineering/audit reports
-→ six-track Architecture Closure Epic
-→ active implementation plans
-→ blueprints
-→ historical reports
+→ accepted ADRs
+→ canonical current documents above
+→ design references
+→ historical audits, reports, plans, blueprints, prompts
 ```
 
-A blueprint describes the target. A report describes its original baseline. A route, class, page, schema or Fixture does not by itself prove product completion.
+Documents under `reports/`, `superpowers/`, `plans/`, `deliverables/`,
+`architecture-closure/`, and most `blueprint/` paths retain engineering lineage.
+They describe their original baseline and are not Current Truth unless a
+canonical current document links them for a specific invariant.
 
-## Current Entry Documents
+## Maintenance rules
 
-| Area | Current document | Purpose |
-|---|---|---|
-| Current state | [`project-current-state.md`](project-current-state.md) | implemented, partial, unproven and blocked capabilities |
-| Current engineering verdict | [`reports/current-engineering-state.md`](reports/current-engineering-state.md) | concise state and priority summary |
-| Current code re-audit | [`reports/architecture-closure-current-head-reaudit.md`](reports/architecture-closure-current-head-reaudit.md) | current module/entry/migration/worker/test facts, conflicts and blockers |
-| Track A validation | [`reports/track-a-current-sha-validation.md`](reports/track-a-current-sha-validation.md) | exact command/result matrix bound to the implementation evidence SHA |
-| Track B slice | [`reports/track-b-book-design-authority-slice.md`](reports/track-b-book-design-authority-slice.md) | Book/BookDesign vertical chain and minimal runtime evidence |
-| D0 probe | [`reports/d0-provider-qualification-probe.md`](reports/d0-provider-qualification-probe.md) | fixture contract evidence and real-provider blocker |
-| Track B.5 hardening | [`reports/track-b-execution-semantics-hardening.md`](reports/track-b-execution-semantics-hardening.md) | Transaction Command atomicity, recovery semantics and scope constraints |
-| D0 Authority probe | [`reports/d0-authority-provider-qualification.md`](reports/d0-authority-provider-qualification.md) | persisted harness and explicit real-provider blocker |
-| Track C convergence | [`reports/track-c-convergence-review.md`](reports/track-c-convergence-review.md) | BookDesign/StoryDesign/Content/Planning ownership and C1 Gate |
-| Capability Pack product design | [`product/capability-pack-product-design.md`](product/capability-pack-product-design.md) | product purpose, users, lifecycle, governance, metrics and phased rollout |
-| Capability Pack system design | [`architecture/capability-pack-system-design.md`](architecture/capability-pack-system-design.md) | code-based protocol, component, runtime, database, security and test design |
-| Capability Pack P0 Codex prompt | [`prompts/codex-capability-pack-p0-implementation.md`](prompts/codex-capability-pack-p0-implementation.md) | bounded implementation prompt for protocol, loader, validator, sample and unit tests |
-| Historical detailed audit | [`reports/2026-08-01-code-audit-and-documentation-rebaseline.md`](reports/2026-08-01-code-audit-and-documentation-rebaseline.md) | historical code facts and the now-resolved integrity warning |
-| Next-stage Epic | [`architecture-closure/autonomous-novel-os-architecture-closure-epic.md`](architecture-closure/autonomous-novel-os-architecture-closure-epic.md) | six Tracks, vertical Slices, evidence model and final Gate |
-| Execution index | [`architecture-closure/README.md`](architecture-closure/README.md) | Track order, AC reference map, WIP and Gate Report template |
-| Current roadmap | [`roadmap/current-roadmap.md`](roadmap/current-roadmap.md) | current Track and Slice priority |
-| Architecture/module map | [`architecture/module-map.md`](architecture/module-map.md) | Authority/Legacy boundaries and module responsibilities |
-| Product capability map | [`product/capability-map.md`](product/capability-map.md) | evidence-based capability maturity |
-| Verification | [`quality/regression-tests.md`](quality/regression-tests.md) | static, unit, PostgreSQL, Provider, long-form and multi-book gates |
-| Architecture overview | [`architecture/overview.md`](architecture/overview.md) | broader system layers and data flow; validate against current map |
-| Extension guide | [`engineering/extension-guide.md`](engineering/extension-guide.md) | how to extend without bypassing Authority contracts |
-
-## Active Product And Architecture Targets
-
-These documents define target architecture and implementation intent. They are active references, not implementation proof.
-
-- [`architecture-closure/autonomous-novel-os-architecture-closure-epic.md`](architecture-closure/autonomous-novel-os-architecture-closure-epic.md) — current architecture convergence program.
-- [`blueprint/autonomous-novel-os-full-blueprint.md`](blueprint/autonomous-novel-os-full-blueprint.md) — full functional blueprint.
-- [`blueprint/novel-os-project-blueprint.md`](blueprint/novel-os-project-blueprint.md) — project blueprint and phase plan.
-- [`product/capability-pack-product-design.md`](product/capability-pack-product-design.md) — Capability Pack product standard and minimum product closure.
-- [`architecture/capability-pack-system-design.md`](architecture/capability-pack-system-design.md) — Capability Pack architecture and protocol design.
-- [`prompts/codex-capability-pack-p0-implementation.md`](prompts/codex-capability-pack-p0-implementation.md) — P0 implementation prompt; it does not constitute implementation proof.
-- [`architecture/production-execution-plane.md`](architecture/production-execution-plane.md) — unified production execution contracts, routing and recovery target.
-- [`architecture/scoped-conversational-agent-architecture.md`](architecture/scoped-conversational-agent-architecture.md) — frozen-scope Agent collaboration architecture.
-- [`design/hierarchical-story-planning-and-production-authority.md`](design/hierarchical-story-planning-and-production-authority.md) — hierarchical planning design; use the current Epic terminology and constraints when implementing.
-- [`design/book-design-authority-and-longform-closed-loop.md`](design/book-design-authority-and-longform-closed-loop.md) — semantic generators, Book Design, long-form state, feedback and completion design.
-- [`plans/book-design-authority-implementation-plan.md`](plans/book-design-authority-implementation-plan.md) — detailed historical Epics and Work Packages; reconcile with six-track execution before use.
-- [`plans/novel-os-final-blueprint-completion-plan.md`](plans/novel-os-final-blueprint-completion-plan.md) — target completion plan.
-
-## Current Engineering Interpretation
-
-The strongest implemented foundation is:
-
-```text
-PostgreSQL Command Kernel
-Operation / Saga / Attempt
-Lease / Fencing
-AssetVersion
-External Effect / Receipt
-18-node Chapter Authority
-Book coordination slices
-Canon/Story State slices
-Quality evidence
-Provider control contracts
-```
-
-The critical remaining proof is:
-
-```text
-D0 real Provider qualification
-production Authority deployment hardening
-real Provider single Chapter
-real usage and cost
-Admin production dependency security update
-Book Coordinator L3/L10
-Recap and replan recovery
-L30 Arc proof
-critical Legacy Writer retirement
-multi-book and platform proof after closure
-```
-
-Current priority is one validated vertical Slice at a time, not module count, document count or UI count.
-
-## Current Documentation Rules
-
-Every new current-state, architecture or proof document must include:
-
-- date;
-- branch;
-- full baseline commit SHA;
-- code fact versus runtime verification distinction;
-- exact commands and results when tests were run;
-- explicit `NOT_EXECUTED` or `BLOCKED_PRECONDITION` when not run;
-- evidence paths;
-- real Provider, long-form, multi-book and production flags;
-- links from this index when it replaces a current entrypoint.
-
-Do not use `final`, `complete`, `production-ready` or equivalent wording without a defined Gate and current-SHA evidence.
-
-## Historical Documents
-
-The following remain useful for lineage but are not current implementation truth unless explicitly refreshed:
-
-- `docs/00-product/` through `docs/09-skills/`;
-- `docs/new/`;
-- older files under `docs/design/` and `docs/plans/`;
-- V5/V6/V7 phase reports;
-- reports whose baseline predates the current audit;
-- files with `current`, `final`, `complete` or `proof` in the name that are not linked above as current.
-
-Do not delete historical documents during routine cleanup. Preserve them as evidence, mark them historical, or move them only through an explicit archive migration.
-
-## Claude Code Workflow
-
-Before changing production architecture or claiming completion:
-
-1. read this index and the current-state documents;
-2. read the six-track Epic and identify the current Track/Slice;
-3. use AC documents only as architecture and Reviewer references;
-4. inspect relevant code, migrations and tests;
-5. verify that all referenced modules are committed;
-6. complete one vertical path from entrypoint to Authority Commit and query/recovery evidence;
-7. run the Slice-focused tests and required broader Gate;
-8. record exact results against the current SHA;
-9. update only the current state, roadmap, verification matrix and Slice Gate report when maturity changes.
-
-If current code contradicts an older report or design, code wins. Record the conflict instead of copying the older claim.
+- Update current documents only after the code and verification change.
+- Bind test/proof claims to a full commit SHA.
+- Do not promote fixture evidence to real-provider, long-form, or production
+  evidence.
+- Keep PostgreSQL as the only production state authority.
+- Do not document a module, table, interface, route, or class as production
+  reachable without composition/deployment evidence.
+- Keep phase delivery notes historical instead of repeatedly rewriting them as
+  current state.

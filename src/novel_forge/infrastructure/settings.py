@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Mapping
 
+from .environment import RuntimeEnvironment
+
 
 def _env_bool(value: str | None, default: bool = False) -> bool:
     if value is None or value == "":
@@ -22,7 +24,7 @@ def _env_list(value: str | None) -> tuple[str, ...]:
 @dataclass(frozen=True)
 class IndustrialSettings:
     root: Path
-    environment: str = "development"
+    environment: RuntimeEnvironment | str = RuntimeEnvironment.DEVELOPMENT
     storage_authority: str = "postgresql"
     authority_runtime_profile: str = "full"
     legacy_write_enabled: bool = False
@@ -57,17 +59,15 @@ class IndustrialSettings:
     neo4j_enabled: bool = False
 
     def __post_init__(self) -> None:
-        environment = self.environment.strip().lower()
+        environment = RuntimeEnvironment.parse(self.environment)
         authority = self.storage_authority.strip().lower()
         runtime_profile = self.authority_runtime_profile.strip().lower()
-        if environment not in {"development", "test", "production"}:
-            raise ValueError("environment must be development, test, or production")
         if authority not in {"legacy_local", "postgresql"}:
             raise ValueError("storage_authority must be legacy_local or postgresql")
         if runtime_profile not in {"full", "track-b-minimal"}:
             raise ValueError("authority_runtime_profile must be full or track-b-minimal")
-        if environment == "production" and authority != "postgresql":
-            raise ValueError("production storage authority must be postgresql")
+        if environment.controlled and authority != "postgresql":
+            raise ValueError("controlled runtime storage authority must be postgresql")
         if authority == "postgresql" and (
             self.legacy_write_enabled
             or self.silent_legacy_fallback_enabled
@@ -84,9 +84,9 @@ class IndustrialSettings:
             raise ValueError(
                 "track-b-minimal runtime forbids legacy writes and silent fallback"
             )
-        if environment == "production" and self.mkaos_fixture_activation_enabled:
+        if environment.controlled and self.mkaos_fixture_activation_enabled:
             raise ValueError(
-                "production forbids fixture MKAOS activation"
+                "controlled runtime forbids fixture MKAOS activation"
             )
         object.__setattr__(self, "environment", environment)
         object.__setattr__(self, "storage_authority", authority)
@@ -98,7 +98,7 @@ class IndustrialSettings:
         env: Mapping[str, str] | None = None,
         root: str | Path | None = None,
     ) -> "IndustrialSettings":
-        values = env or os.environ
+        values = os.environ if env is None else env
         cwd = Path.cwd().resolve()
         initial_cwd_file_values = _read_dotenv(cwd / ".env") if root is None else {}
         initial_root = Path(root or _get(values, initial_cwd_file_values, "NOVEL_FORGE_ROOT", ".")).resolve()

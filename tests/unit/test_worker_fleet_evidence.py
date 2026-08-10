@@ -50,7 +50,7 @@ class WorkerFleetEvidenceTests(unittest.TestCase):
                 root=Path(root),
             )
             self.assertTrue(settings.mkaos_fixture_activation_enabled)
-            with self.assertRaisesRegex(ValueError, "production forbids"):
+            with self.assertRaisesRegex(ValueError, "controlled runtime forbids"):
                 IndustrialSettings(
                     root=Path(root),
                     environment="production",

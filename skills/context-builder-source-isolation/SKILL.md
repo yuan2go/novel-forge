@@ -19,9 +19,9 @@ description: Use when building, reviewing, or debugging ContextBundle and Knowle
 
 ## Novel OS Runtime Contract
 
-- 所有核心生产动作必须通过 Context Builder 形成 `context_bundle_id` 和 `knowledge_pack_id`。
+- 所有核心生产动作必须通过 Context Builder 形成 `context_bundle_id`；`knowledge_pack_id` 仅在 active Capability Pack / stage 明确要求或本次选择了项目 Knowledge Pack 时存在。
 - ContextBundle 必须记录 source policy、source isolation、selected knowledge ids、review rules、risk warnings、selector policy version。
-- strict / production / operating_system 下缺 context bundle、缺 knowledge pack 或 source isolation 失败必须 fail closed。
+- controlled runtime 下缺 context bundle、缺 Capability 所要求的 knowledge pack 或 source isolation 失败必须 fail closed；Capability 未要求时不得为了形式完整强塞空 Knowledge Pack。
 - compat fallback 只能用于旧 fixture/sample，并必须写 trace、policy warning 和 metadata。
 
 ## 操作流程
@@ -40,7 +40,8 @@ description: Use when building, reviewing, or debugging ContextBundle and Knowle
 
 ## Contract
 - context_bundle_id:
-- knowledge_pack_id:
+- knowledge_pack_id: # optional unless Capability/stage requires it
+- knowledge_requirement: # OPTIONAL / REQUIRED
 - flow:
 - source_policy:
 
@@ -60,7 +61,7 @@ description: Use when building, reviewing, or debugging ContextBundle and Knowle
 
 - ContextBundle 可从 AgentRun、LoopRun、PublishGate、FeedbackBackflow 反查。
 - 所有上下文片段都有来源类型、允许用途和裁剪理由。
-- prose / publish / recap / feedback flow 不允许空 pack 静默通过。
+- 必须记录 `knowledge_requirement`；REQUIRED 不允许空 pack，OPTIONAL 未选择时记录 `NOT_REQUESTED`，不得伪造空 pack。
 
 ## 禁止事项
 

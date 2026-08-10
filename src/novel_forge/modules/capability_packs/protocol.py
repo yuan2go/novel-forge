@@ -332,6 +332,13 @@ CAPABILITY_PACK_V1_CONTRACT = _object(
                     {
                         "required_packs": STRING_ARRAY,
                         "allowed_usage_roles": STRING_ARRAY,
+                        "project_knowledge_pack": _object(
+                            {
+                                "default_requirement": STRING,
+                                "required_stages": STRING_ARRAY,
+                                "required_capability_ids": STRING_ARRAY,
+                            }
+                        ),
                     }
                 ),
                 "rules": _array(RULE_ASSET),

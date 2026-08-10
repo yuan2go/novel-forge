@@ -18,6 +18,16 @@ SCHEDULABLE_JOB_STATUSES = frozenset({"READY", "RETRY_WAIT"})
 TERMINAL_JOB_STATUSES = frozenset(
     {"SUCCEEDED", "FAILED", "DEAD_LETTER", "CANCELLED"}
 )
+OPERATIONAL_RUNTIME_JOB_CONTRACTS = {
+    "BOOK_COORDINATION_TICK": ("book", "BOOK_RUN"),
+    "OPERATION_DEADLINE_SCAN": ("maintenance", "AUTHORITY_MAINTENANCE_SCAN"),
+    "ATTEMPT_LEASE_EXPIRY_SCAN": ("maintenance", "AUTHORITY_MAINTENANCE_SCAN"),
+    "OUTBOX_RECOVERY_SCAN": ("maintenance", "AUTHORITY_MAINTENANCE_SCAN"),
+    "EXTERNAL_EFFECT_RECONCILIATION_SCAN": (
+        "maintenance",
+        "AUTHORITY_MAINTENANCE_SCAN",
+    ),
+}
 
 
 def _canonical_json(value: Any) -> str:
@@ -64,6 +74,16 @@ class RuntimeJobSpec:
         )
         if any(not str(item).strip() for item in required):
             raise ValueError("runtime job execution identity fields are required")
+        expected = OPERATIONAL_RUNTIME_JOB_CONTRACTS.get(self.job_kind)
+        if expected is None:
+            raise ValueError(
+                "RuntimeJob accepts operational scheduling envelopes only; "
+                "business work requires a Command Kernel Operation"
+            )
+        if (self.runtime_group, self.subject_kind) != expected:
+            raise ValueError(
+                "runtime job group and subject do not match its operational contract"
+            )
         if self.max_attempts <= 0:
             raise ValueError("runtime job max_attempts must be positive")
         if self.priority < 0:
@@ -102,7 +122,12 @@ class RuntimeJobClaim:
 
 
 class RuntimeJobAuthority:
-    """Transactional execution coordinator for non-business runtime work."""
+    """Durable scheduling envelope for idempotent Authority ticks and scans.
+
+    RuntimeJob state is operational telemetry. Business durability, provider
+    effects, validation, and commits remain owned by Command Kernel Operations
+    and Domain Authorities invoked by the scheduled handler.
+    """
 
     def __init__(self, database_url: str) -> None:
         if not database_url:
@@ -895,4 +920,5 @@ __all__ = [
     "TERMINAL_JOB_STATUSES",
     "canonical_payload_hash",
     "deterministic_runtime_job_id",
+    "OPERATIONAL_RUNTIME_JOB_CONTRACTS",
 ]

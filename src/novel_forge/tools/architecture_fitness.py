@@ -337,7 +337,7 @@ def build_report(repo_root: str | Path = ".") -> dict[str, Any]:
 
     subordinate = {
         kind: run_manifest(kind, root)
-        for kind in ("migrations", "tests", "console-scripts")
+        for kind in ("migrations", "tests", "console-scripts", "reachability")
     }
     for kind, report in subordinate.items():
         if report["status"] != "PASS":

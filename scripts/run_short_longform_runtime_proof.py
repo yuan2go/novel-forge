@@ -305,7 +305,7 @@ def _proof_platform_profile_content() -> dict[str, Any]:
         "style_tendency": ["mobile-readable paragraphs"],
         "chapter_length": {"minimum": 1200, "maximum": 4000},
         "safe_summary": (
-            "Internal provider-validation platform constraints with an explicit "
+            "Internal validation platform constraints with an explicit "
             "AI-assisted content policy; external publication remains out of scope."
         ),
         "structured_facts": [
@@ -719,7 +719,7 @@ def _seed_project_and_active_design(
             payload={
                 "schema_version": "book-authority.v1",
                 "title": "The Ledger Under Rain",
-                "production_profile": {"environment": "provider-validation"},
+                "production_profile": {"environment": "validation"},
                 "runtime_policy": {"legacy_write": False, "silent_fallback": False},
                 "release_identity": f"{build_id}@{commit_sha}",
             },
@@ -875,7 +875,7 @@ def _install_profile(
         pack_version=version,
         compilation_id=compilation_id,
         payload={
-            "target_runtime_profile": "provider-validation",
+            "target_runtime_profile": "validation",
             "novel_forge_version": "6.0.0",
             "release_sha": commit_sha,
             "release_channel": "VALIDATION",
@@ -909,8 +909,8 @@ def _install_profile(
             "approval_policy_ref": "capability-pack-approval-scope:v1",
             "scope": {
                 "schema_version": "CapabilityPackApprovalScope.v1",
-                "allowed_environments": ["provider-validation"],
-                "allowed_runtime_profiles": ["provider-validation"],
+                "allowed_environments": ["validation"],
+                "allowed_runtime_profiles": ["validation"],
                 "allowed_release_channels": ["VALIDATION"],
                 "allowed_scope_types": ["BOOK"],
                 "allowed_project_ids": [project_id],
@@ -944,7 +944,7 @@ def _install_profile(
             "project_id": project_id,
             "workspace_id": workspace_id,
             "book_id": book_id,
-            "environment": "provider-validation",
+            "environment": "validation",
             "rollout_policy_ref": "rollout:stable-sha256:v1",
         },
     )
@@ -959,7 +959,7 @@ def _install_profile(
         deployment_id=deployment_id,
         expected_activation_version=expected_activation_version,
         payload={
-            "environment": "provider-validation",
+            "environment": "validation",
             "reason": "activate exact-HEAD short long-form proof Pack",
         },
     )
@@ -3641,7 +3641,7 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
             "allow_dirty": bool(args.allow_dirty),
         },
         "runtime": {
-            "environment": "provider-validation",
+            "environment": "validation",
             "provider": "codex-cli",
             "model": args.model,
             "reasoning_effort": args.reasoning_effort,

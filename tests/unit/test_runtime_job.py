@@ -61,6 +61,16 @@ class RuntimeJobContractTests(unittest.TestCase):
                 input_snapshot={},
                 max_attempts=0,
             )
+        with self.assertRaisesRegex(ValueError, "operational scheduling envelopes"):
+            RuntimeJobSpec(
+                job_kind="DRAFT_CHAPTER",
+                runtime_group="execution",
+                subject_kind="CHAPTER",
+                subject_id="chapter:7",
+                project_id="project:7",
+                dedupe_key="draft:7",
+                input_snapshot={},
+            )
 
 
 if __name__ == "__main__":

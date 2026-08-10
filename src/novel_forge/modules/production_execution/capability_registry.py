@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
+from novel_forge.infrastructure.environment import RuntimeEnvironment
+
 from .capabilities import (
     CapabilityDefinition,
     CapabilityId,
@@ -13,7 +15,9 @@ from .capabilities import (
 from .contracts import ExecutionCapabilityProfile, ExecutionRuntimeClass
 
 
-CONTROLLED_ENVIRONMENTS = frozenset({"validation", "provider-validation", "production"})
+CONTROLLED_ENVIRONMENTS = frozenset(
+    item.value for item in RuntimeEnvironment if item.controlled
+)
 PLANNING_TIMEOUT_POLICY_VERSION = "v2"
 _PLANNING_CAPABILITIES = frozenset(
     {
@@ -96,8 +100,8 @@ class CapabilityRegistry:
         environment: str,
     ) -> CapabilityDefinition:
         definition = self.resolve(capability_id)
-        normalized_environment = environment.strip().lower()
-        controlled = normalized_environment in CONTROLLED_ENVIRONMENTS
+        normalized_environment = RuntimeEnvironment.parse(environment)
+        controlled = normalized_environment.controlled
         fixture = backend.runtime_class is ExecutionRuntimeClass.SCRIPTED_FIXTURE
         if controlled and fixture:
             raise ValueError(

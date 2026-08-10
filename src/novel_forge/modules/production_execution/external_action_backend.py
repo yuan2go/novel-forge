@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from threading import Lock
 from typing import Any, Mapping, Protocol
 
+from novel_forge.infrastructure.environment import RuntimeEnvironment
 from .backends import (
     ExecutionPayloadResolver,
     ExecutionReconciler,
@@ -280,7 +281,7 @@ class RemoteExternalActionBackend:
         profile = adapter.capability_profile
         if (
             profile.fixture_protocol_only
-            and admission.environment in {"validation", "provider-validation", "production"}
+            and RuntimeEnvironment.parse(admission.environment).controlled
         ):
             raise ValueError(
                 "fixture external action adapter is prohibited in a controlled environment"

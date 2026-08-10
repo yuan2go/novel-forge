@@ -1,4 +1,4 @@
-"""Integration worker for PostgreSQL-authoritative D0 qualification jobs."""
+"""Development-only worker for the D0 fixture recovery protocol."""
 from __future__ import annotations
 
 import os
@@ -18,6 +18,11 @@ def main() -> int:
     settings = IndustrialSettings.from_env()
     if settings.storage_authority != "postgresql" or not settings.database_url:
         raise RuntimeError("D0 worker requires PostgreSQL authority")
+    if not settings.environment.fixture_allowed:
+        raise RuntimeError(
+            "controlled environments forbid the D0 fixture worker; run the "
+            "credentialed Provider qualification command"
+        )
     build_id, commit_sha = authority_release_identity()
     worker_id = str(os.environ.get("NOVEL_FORGE_D0_WORKER_ID") or "integration-worker:d0")
     scheduler = D0QualificationScheduler(

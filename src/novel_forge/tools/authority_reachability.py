@@ -12,6 +12,7 @@ AUTHORITY_ENTRY_MODULES: dict[str, str] = {
     "api-app": "novel_forge.api.authority_app",
     "authority-dependencies": "novel_forge.api.authority_dependencies",
     "authority-cli": "novel_forge.cli",
+    "agent-worker": "novel_forge.workers.agent_authority",
     "chapter-worker": "novel_forge.workers.chapter_authority",
     "content-worker": "novel_forge.workers.content_authority",
     "source-worker": "novel_forge.workers.source_authority",
@@ -101,7 +102,12 @@ def _dependencies(
             for alias in node.names:
                 _add_known_prefix(alias.name, known_modules, dependencies)
         elif isinstance(node, ast.ImportFrom):
-            base = _resolve_from(current_module, node.level, node.module)
+            base = _resolve_from(
+                current_module,
+                node.level,
+                node.module,
+                current_is_package=path.name == "__init__.py",
+            )
             if base:
                 _add_known_prefix(base, known_modules, dependencies)
                 for alias in node.names:
@@ -115,10 +121,18 @@ def _dependencies(
     return dependencies
 
 
-def _resolve_from(current_module: str, level: int, module: str | None) -> str:
+def _resolve_from(
+    current_module: str,
+    level: int,
+    module: str | None,
+    *,
+    current_is_package: bool = False,
+) -> str:
     if level == 0:
         return str(module or "")
-    package = current_module.split(".")[:-1]
+    package = current_module.split(".")
+    if not current_is_package:
+        package = package[:-1]
     trim = max(0, level - 1)
     if trim:
         package = package[:-trim]

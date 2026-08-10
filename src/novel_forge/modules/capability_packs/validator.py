@@ -73,7 +73,7 @@ _SOURCE_ISOLATION_MODES = frozenset(
     {"ABSTRACT_ASSETS_ONLY", "FROZEN_ASSETS_ONLY", "RAW_ALLOWED_WITH_APPROVAL"}
 )
 _RUNTIME_PROFILES = frozenset(
-    {"development", "validation", "provider-validation", "production"}
+    {"development", "test", "validation", "production"}
 )
 _COMMIT_AUTHORITIES = frozenset(
     {
@@ -1314,6 +1314,51 @@ def _validate_assets(
             seen_rules.add(rule_ref)
     if not capability_type_policy.generation:
         return
+    knowledge = manifest.assets.knowledge
+    project_pack = knowledge.get("project_knowledge_pack")
+    if not isinstance(project_pack, Mapping):
+        issues.error(
+            "CAPABILITY_PACK_KNOWLEDGE_POLICY_REQUIRED",
+            "$.assets.knowledge.project_knowledge_pack",
+            "generation packs must declare the project Knowledge Pack policy",
+        )
+    else:
+        default_requirement = project_pack.get("default_requirement")
+        if not isinstance(default_requirement, str) or default_requirement not in {
+            "OPTIONAL",
+            "REQUIRED",
+        }:
+            issues.error(
+                "CAPABILITY_PACK_KNOWLEDGE_POLICY_INVALID",
+                "$.assets.knowledge.project_knowledge_pack.default_requirement",
+                "default_requirement must be OPTIONAL or REQUIRED",
+            )
+        stages = {
+            str(value)
+            for value in _json_items(project_pack.get("required_stages"))
+        }
+        capability_ids = {
+            str(value)
+            for value in _json_items(project_pack.get("required_capability_ids"))
+        }
+        known_stages = {
+            str(node.stage) for node in manifest.workflow_template.nodes
+        }
+        known_capabilities = {
+            str(node.capability_id) for node in manifest.workflow_template.nodes
+        }
+        if not stages.issubset(known_stages):
+            issues.error(
+                "CAPABILITY_PACK_KNOWLEDGE_POLICY_INVALID",
+                "$.assets.knowledge.project_knowledge_pack.required_stages",
+                "required_stages must reference Pack workflow stages",
+            )
+        if not capability_ids.issubset(known_capabilities):
+            issues.error(
+                "CAPABILITY_PACK_KNOWLEDGE_POLICY_INVALID",
+                "$.assets.knowledge.project_knowledge_pack.required_capability_ids",
+                "required_capability_ids must reference Pack workflow capabilities",
+            )
     source = manifest.assets.source_policy
     if source.get("raw_source_expression_allowed") is not False:
         issues.error(

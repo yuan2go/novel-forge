@@ -60,7 +60,10 @@ from novel_forge.modules.mkaos_authority import (
     MkaosAuthorityQuery,
 )
 from novel_forge.modules.provider_callback_authority import ProviderCallbackAuthorityService
-from novel_forge.modules.provider_control import ProviderAdapterRegistry
+from novel_forge.modules.provider_control import (
+    build_provider_adapter_registry,
+    configured_chapter_provider_ids,
+)
 from novel_forge.storage.database_runtime import (
     authority_role_instances_from_env,
     close_all_database_runtimes,
@@ -170,19 +173,20 @@ def create_authority_app(settings: IndustrialSettings):
     )
     if settings.authority_runtime_profile == "track-b-minimal":
         return _create_track_b_minimal_app(settings, FastAPI, CORSMiddleware)
-    application = build_chapter_authority_application(settings)
+    provider_registry = build_provider_adapter_registry(
+        environment=settings.environment,
+        provider_ids=configured_chapter_provider_ids(os.environ),
+        env=os.environ,
+    )
+    application = build_chapter_authority_application(
+        settings, provider_registry=provider_registry
+    )
     book_principal = build_trusted_principal_resolver().resolve_api_principal()
     book_production = build_book_production_composition(
         settings,
         principal=book_principal,
         chapter_application=application,
     )
-    provider_registry = ProviderAdapterRegistry()
-    registered: set[str] = set()
-    for adapter in application.model_port.adapter.provider_adapters.values():
-        if adapter.provider not in registered:
-            provider_registry.register(adapter)
-            registered.add(adapter.provider)
     build_id, commit_sha = authority_release_identity()
     services = AuthorityApiServices(
         chapter_application=application,
@@ -472,11 +476,7 @@ def create_authority_app(settings: IndustrialSettings):
                     }
                 ],
             }
-        controlled = settings.environment in {
-            "validation",
-            "provider-validation",
-            "production",
-        }
+        controlled = settings.environment.controlled
         pack_activation_ready = not controlled
         pack_activation_error = ""
         if controlled and database_health.get("status") == "ready":

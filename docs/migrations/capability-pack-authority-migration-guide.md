@@ -25,7 +25,7 @@ For each Pack version:
 
 ## Legacy Chapter binding boundary
 
-`agent.chapter_binding.register` and `agent.chapter_binding.activate` are no longer controlled-production Pack authority. In validation, provider-validation, and production they fail with `CAPABILITY_PACK_DEPLOYMENT_REQUIRED`.
+`agent.chapter_binding.register` and `agent.chapter_binding.activate` are no longer controlled-production Pack authority. In validation, validation, and production they fail with `CAPABILITY_PACK_DEPLOYMENT_REQUIRED`.
 
 Development, test, and migration fixtures may temporarily use the old path only with an explicit `authority_mode` of `DEVELOPMENT_FIXTURE`, `LEGACY_MIGRATION`, or `BOOTSTRAP_ADAPTER`. There is no silent fallback. Production migration must create and activate a trusted Deployment. Chapter Attempt admission resolves and persists one immutable `CapabilityPackAttemptSnapshot`; Gateway, PEP contracts, and Agent Binding consume that same typed snapshot. The snapshot preserves the original Attempt execution Fence separately from the currently held Fence that authorizes first persistence; its trace/span and Audit/Event/Outbox are committed in the same Authority Unit of Work. Recovery reuses it without reading the current Activation or assigning the Book again. Pack activation never mutates the global legacy Chapter-node pointer.
 

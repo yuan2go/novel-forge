@@ -80,11 +80,43 @@
     },
     {
       "id": "old-workflow-service",
-      "paths": ["src/novel_forge/workflows"],
-      "classification": "REPLACE_PENDING",
+      "paths": ["src/novel_forge/workflows", "src/novel_forge/modules/workflow_nodes", "src/novel_forge/modules/loop_kernel"],
+      "classification": "LEGACY_ISOLATED",
       "allowed_environments": ["development", "test", "migration"],
       "replacement": "Command Kernel Saga and versioned Workflow Definition",
       "removal_preconditions": ["call graph proves no Authority or migration consumer remains"]
+    },
+    {
+      "id": "legacy-production-kernel",
+      "paths": ["src/novel_forge/modules/production_kernel"],
+      "classification": "LEGACY_ISOLATED",
+      "allowed_environments": ["development", "test", "migration"],
+      "replacement": "Command Kernel Operation/Attempt and Domain Authority",
+      "removal_preconditions": ["legacy product API endpoints are retired"]
+    },
+    {
+      "id": "legacy-agent-scheduler",
+      "paths": ["src/novel_forge/modules/agent_scheduler"],
+      "classification": "LEGACY_ISOLATED",
+      "allowed_environments": ["development", "test", "migration"],
+      "replacement": "PostgreSQL AgentRuntime Authority and agent-authority worker",
+      "removal_preconditions": ["legacy Agent API and registry reports are retired"]
+    },
+    {
+      "id": "legacy-context-builder-services",
+      "paths": ["src/novel_forge/modules/context_builder/service.py", "src/novel_forge/modules/context_builder/runtime_coverage.py"],
+      "classification": "LEGACY_ISOLATED",
+      "allowed_environments": ["development", "test", "migration"],
+      "replacement": "Context Authority plus ProductionPreparation frozen inputs",
+      "removal_preconditions": ["legacy content services stop consuming LocalStorage Context assets"]
+    },
+    {
+      "id": "d0-fixture-worker",
+      "paths": ["src/novel_forge/workers/d0_provider_qualification.py", "src/novel_forge/modules/provider_qualification/scheduler.py"],
+      "classification": "DEVELOPMENT_FIXTURE",
+      "allowed_environments": ["development", "test"],
+      "replacement": "credentialed D0 runner using canonical Provider composition",
+      "removal_preconditions": ["credentialed qualification is attempt-bound and worker-backed"]
     }
   ]
 }

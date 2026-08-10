@@ -6,7 +6,7 @@ from unittest.mock import patch
 import sys
 
 from novel_forge.modules.provider_qualification.definitions import d0_operation_definition
-from novel_forge.modules.provider_control.openai_v2 import build_openai_d0_adapter
+from novel_forge.modules.provider_control.openai_v2 import build_openai_provider_adapter
 
 
 class D0AuthorityDefinitionTests(unittest.TestCase):
@@ -33,7 +33,7 @@ class D0AuthorityDefinitionTests(unittest.TestCase):
 
         module.OpenAI = client  # type: ignore[attr-defined]
         with patch.dict(sys.modules, {"openai": module}):
-            adapter = build_openai_d0_adapter("injected-only-for-construction-test")
+            adapter = build_openai_provider_adapter("injected-only-for-construction-test")
 
         self.assertEqual(captured["max_retries"], 0)
         self.assertNotIn("api_key", adapter.capability_profile.to_dict())

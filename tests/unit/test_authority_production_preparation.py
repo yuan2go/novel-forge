@@ -102,6 +102,41 @@ def _asset(asset_type: str, *, project_id: str = "project-1") -> ResolvedProduct
 
 
 class ProductionPreparationTests(unittest.TestCase):
+    def test_project_knowledge_pack_is_optional_unless_capability_requires_it(self) -> None:
+        assets = {
+            kind: _asset(kind)
+            for kind in (
+                "chapter_plan",
+                "style_policy",
+                "quality_rubric",
+                "platform_profile",
+            )
+        }
+        service = ProductionPreparationService(_Resolver(assets))
+        optional = service.prepare(
+            ProductionPreparationRequest(
+                project_id="project-1",
+                workspace_id="workspace-1",
+                chapter=1,
+                idempotency_key="knowledge-optional",
+            )
+        )
+        required = service.prepare(
+            ProductionPreparationRequest(
+                project_id="project-1",
+                workspace_id="workspace-1",
+                chapter=1,
+                idempotency_key="knowledge-required",
+                capability_required_asset_types=("knowledge_pack",),
+            )
+        )
+
+        self.assertEqual(optional.report.decision, "READY")
+        self.assertEqual(required.report.decision, "BLOCKED")
+        self.assertIn(
+            "knowledge_pack", required.report.missing_required_asset_types
+        )
+
     def test_previous_production_manifest_is_not_recursive_chapter_context(self) -> None:
         assets = {
             kind: _asset(kind)

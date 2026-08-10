@@ -20,7 +20,7 @@ class AuthorityRuntimeJobPostgresTests(unittest.TestCase):
         ensure_migrated()
 
     def setUp(self) -> None:
-        self.runtime_group = identifier("runtime-group")
+        self.runtime_group = "book"
         self.authority = RuntimeJobAuthority(DATABASE_URL)
 
     def spec(self, *, dedupe_key: str, subject_id: str = "subject:1") -> RuntimeJobSpec:
@@ -35,6 +35,15 @@ class AuthorityRuntimeJobPostgresTests(unittest.TestCase):
             max_attempts=2,
         )
 
+    def claim(self, *, subject_id: str, worker_id: str):
+        return self.authority.claim(
+            runtime_group=self.runtime_group,
+            worker_id=worker_id,
+            lease_seconds=30,
+            subject_kind="BOOK_RUN",
+            subject_id=subject_id,
+        )
+
     def test_schedule_claim_checkpoint_and_complete_are_auditable(self) -> None:
         spec = self.spec(dedupe_key="book:1:version:3")
         scheduled = self.authority.schedule(spec)
@@ -42,11 +51,7 @@ class AuthorityRuntimeJobPostgresTests(unittest.TestCase):
         self.assertEqual(replay["runtime_job_id"], scheduled["runtime_job_id"])
         self.assertTrue(replay["deduplicated"])
 
-        claim = self.authority.claim(
-            runtime_group=self.runtime_group,
-            worker_id="book-worker-a",
-            lease_seconds=30,
-        )
+        claim = self.claim(subject_id="subject:1", worker_id="book-worker-a")
         self.assertIsNotNone(claim)
         assert claim is not None
         self.authority.start(claim)
@@ -91,10 +96,8 @@ class AuthorityRuntimeJobPostgresTests(unittest.TestCase):
         scheduled = self.authority.schedule(
             self.spec(dedupe_key="book:2:version:3", subject_id="subject:2")
         )
-        stale = self.authority.claim(
-            runtime_group=self.runtime_group,
-            worker_id="book-worker-stale",
-            lease_seconds=30,
+        stale = self.claim(
+            subject_id="subject:2", worker_id="book-worker-stale"
         )
         assert stale is not None
         self.authority.start(stale)
@@ -109,10 +112,8 @@ class AuthorityRuntimeJobPostgresTests(unittest.TestCase):
             )
             uow.commit()
 
-        replacement = self.authority.claim(
-            runtime_group=self.runtime_group,
-            worker_id="book-worker-replacement",
-            lease_seconds=30,
+        replacement = self.claim(
+            subject_id="subject:2", worker_id="book-worker-replacement"
         )
         assert replacement is not None
         self.assertEqual(replacement.runtime_job_id, scheduled["runtime_job_id"])
@@ -127,20 +128,12 @@ class AuthorityRuntimeJobPostgresTests(unittest.TestCase):
         self.authority.schedule(
             self.spec(dedupe_key="book:3:version:3", subject_id="subject:3")
         )
-        first = self.authority.claim(
-            runtime_group=self.runtime_group,
-            worker_id="book-worker-a",
-            lease_seconds=30,
-        )
+        first = self.claim(subject_id="subject:3", worker_id="book-worker-a")
         assert first is not None
         self.authority.start(first)
         failed = self.authority.fail(first, {"code": "TRANSIENT"})
         self.assertEqual(failed["status"], "RETRY_WAIT")
-        second = self.authority.claim(
-            runtime_group=self.runtime_group,
-            worker_id="book-worker-b",
-            lease_seconds=30,
-        )
+        second = self.claim(subject_id="subject:3", worker_id="book-worker-b")
         assert second is not None
         self.authority.start(second)
         dead = self.authority.fail(second, {"code": "REPEATED"})
@@ -150,18 +143,14 @@ class AuthorityRuntimeJobPostgresTests(unittest.TestCase):
         scheduled = self.authority.schedule(
             self.spec(dedupe_key="book:final-expiry", subject_id="subject:final-expiry")
         )
-        first = self.authority.claim(
-            runtime_group=self.runtime_group,
-            worker_id="book-worker-a",
-            lease_seconds=30,
+        first = self.claim(
+            subject_id="subject:final-expiry", worker_id="book-worker-a"
         )
         assert first is not None
         self.authority.start(first)
         self.authority.fail(first, {"code": "TRANSIENT"})
-        final = self.authority.claim(
-            runtime_group=self.runtime_group,
-            worker_id="book-worker-b",
-            lease_seconds=30,
+        final = self.claim(
+            subject_id="subject:final-expiry", worker_id="book-worker-b"
         )
         assert final is not None
         self.authority.start(final)
@@ -177,10 +166,9 @@ class AuthorityRuntimeJobPostgresTests(unittest.TestCase):
             uow.commit()
 
         self.assertIsNone(
-            self.authority.claim(
-                runtime_group=self.runtime_group,
+            self.claim(
+                subject_id="subject:final-expiry",
                 worker_id="book-worker-recovery",
-                lease_seconds=30,
             )
         )
         job = self.authority.get(scheduled["runtime_job_id"])
@@ -211,10 +199,8 @@ class AuthorityRuntimeJobPostgresTests(unittest.TestCase):
         self.authority.schedule(
             self.spec(dedupe_key="book:expired-heartbeat", subject_id="subject:heartbeat")
         )
-        claim = self.authority.claim(
-            runtime_group=self.runtime_group,
-            worker_id="book-worker-clock",
-            lease_seconds=30,
+        claim = self.claim(
+            subject_id="subject:heartbeat", worker_id="book-worker-clock"
         )
         assert claim is not None
         with AuthorityUnitOfWork(DATABASE_URL) as uow:

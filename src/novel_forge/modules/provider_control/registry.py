@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Callable, Mapping, Protocol
 
+from novel_forge.infrastructure.environment import RuntimeEnvironment
 from novel_forge.modules.command_kernel.external_effect_adapters import (
     ExternalEffectAdapterError,
     ProviderResult,
@@ -116,16 +117,17 @@ class ProviderAdapterRegistry:
         adapter = self.resolve(provider_id)
         profile = adapter.capability_profile
         reasons: list[str] = []
-        controlled_environment = environment in {"validation", "provider-validation", "production"}
+        runtime_environment = RuntimeEnvironment.parse(environment)
+        controlled_environment = runtime_environment.controlled
         if controlled_environment and profile.control_level is not ProviderControlLevel.V2_CONTROLLED:
             reasons.append("controlled environments require V2_CONTROLLED")
         if controlled_environment and not profile.real_provider_validation_eligible:
             reasons.append("route is not eligible for real provider validation")
-        if environment in {"validation", "provider-validation", "production"} and profile.control_level is ProviderControlLevel.FIXTURE_CONTROLLED:
+        if controlled_environment and profile.control_level is ProviderControlLevel.FIXTURE_CONTROLLED:
             reasons.append("fixture providers are forbidden in controlled environments")
         return ProviderRouteQualification(
             qualified=not reasons,
-            environment=environment,
+            environment=runtime_environment.value,
             provider_id=provider_id,
             model_id=model_id,
             control_level=profile.control_level.value,

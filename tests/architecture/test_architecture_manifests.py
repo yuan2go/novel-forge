@@ -17,6 +17,7 @@ class ArchitectureManifestTests(unittest.TestCase):
             "workers",
             "tests",
             "console-scripts",
+            "reachability",
         ):
             with self.subTest(kind=kind):
                 report = run(kind, ROOT)

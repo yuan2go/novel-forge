@@ -6,6 +6,7 @@ from dataclasses import asdict, dataclass
 from typing import Any, Mapping
 from uuid import uuid4
 
+from novel_forge.infrastructure.environment import RuntimeEnvironment
 from novel_forge.modules.agent_collaboration.domain import (
     AgentCapability,
     AgentDefinition,
@@ -221,7 +222,7 @@ class AgentRuntimeAuthorityApplication:
         self.database_url = database_url
         self.application_build_id = application_build_id
         self.commit_sha = commit_sha
-        self.runtime_environment = runtime_environment.strip().lower()
+        self.runtime_environment = RuntimeEnvironment.parse(runtime_environment)
         self.release_channel = release_channel.strip().upper()
         self.pack_resolver = CapabilityPackRuntimeResolver(database_url)
         self.fault_injector = fault_injector
@@ -291,11 +292,7 @@ class AgentRuntimeAuthorityApplication:
         )
         with AuthorityUnitOfWork(self.database_url) as uow:
             snapshot = None
-            if self.runtime_environment in {
-                "validation",
-                "provider-validation",
-                "production",
-            }:
+            if self.runtime_environment.controlled:
                 pack_id, separator, _ = request.capability_pack_ref.rpartition("@")
                 if not separator:
                     raise KernelError(
@@ -310,8 +307,8 @@ class AgentRuntimeAuthorityApplication:
                         book_id=request.book_id,
                         workflow_definition_ref=request.workflow_definition_ref,
                         workflow_node_id=request.workflow_node_id,
-                        environment=self.runtime_environment,
-                        runtime_profile=self.runtime_environment,
+                        environment=self.runtime_environment.value,
+                        runtime_profile=self.runtime_environment.value,
                         release_channel=self.release_channel,
                         release_sha=request.release_sha,
                         operation_definition_ref=request.operation_definition_ref,
@@ -577,11 +574,7 @@ class AgentRuntimeAuthorityApplication:
         return result
 
     def _require_legacy_binding_mode(self, payload: Mapping[str, Any]) -> None:
-        if self.runtime_environment in {
-            "validation",
-            "provider-validation",
-            "production",
-        }:
+        if self.runtime_environment.controlled:
             raise KernelError(
                 "CAPABILITY_PACK_DEPLOYMENT_REQUIRED",
                 "controlled runtime forbids direct Chapter binding administration",

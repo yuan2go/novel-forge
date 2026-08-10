@@ -34,6 +34,7 @@ class ProductionPreparationRequest:
     operator_decision: dict[str, Any] = field(default_factory=dict)
     context_token_budget: int = 6000
     stage: str = "draft"
+    capability_required_asset_types: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)

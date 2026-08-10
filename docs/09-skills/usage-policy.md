@@ -68,6 +68,8 @@ Production-relevant Skill outputs must be:
 
 Markdown output is acceptable for operator handoff, audit reports, and planning docs. It is not sufficient for production generation, revision, publishing, feedback learning, or knowledge mutation unless it is also mapped to an asset schema or documented target path.
 
+Knowledge Pack is capability/stage scoped, not a universal input. Every production Context build records whether project knowledge is `OPTIONAL` or `REQUIRED`; only `REQUIRED` may fail closed on absence. Static Pack knowledge constraints and a project MKAOS `knowledge_pack` are distinct contracts.
+
 ## Source Isolation
 
 Skills may use reference works only for abstract structural learning:

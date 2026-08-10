@@ -140,10 +140,10 @@ def execute_maintenance_runtime_claim(
         raise
 
 
-def _authority_maintenance_loop(worker_kind: str) -> int:
+def _maintenance_loop() -> int:
     settings = IndustrialSettings.from_env()
     if settings.storage_authority != "postgresql" or not settings.database_url:
-        raise RuntimeError(f"{worker_kind} requires PostgreSQL authority")
+        raise RuntimeError("maintenance worker requires PostgreSQL authority")
     if settings.authority_runtime_profile == "track-b-minimal" and (
         settings.legacy_write_enabled or settings.silent_legacy_fallback_enabled
     ):
@@ -154,7 +154,7 @@ def _authority_maintenance_loop(worker_kind: str) -> int:
 
     worker_id = str(
         os.environ.get("NOVEL_FORGE_RUNTIME_GROUP_WORKER_ID")
-        or f"{worker_kind}-worker"
+        or "maintenance-worker"
     ).strip()
     poll_seconds = max(
         0.1, float(os.environ.get("NOVEL_FORGE_AUTHORITY_POLL_SECONDS") or "1")
@@ -163,12 +163,12 @@ def _authority_maintenance_loop(worker_kind: str) -> int:
         1, int(os.environ.get("NOVEL_FORGE_AUTHORITY_BATCH_SIZE") or "100")
     )
     supervisor = WorkerSupervisor(
-        worker_kind=worker_kind,
+        worker_kind="maintenance",
         worker_id=worker_id,
         observer=PostgresWorkerHealthObserver(settings.database_url),
     )
     runtime_jobs = RuntimeJobAuthority(settings.database_url)
-    boundary = AuthorityWorkerExecutionBoundary(worker_kind=worker_kind)
+    boundary = AuthorityWorkerExecutionBoundary(worker_kind="maintenance")
     lease_seconds = max(
         5, int(os.environ.get("NOVEL_FORGE_AUTHORITY_LEASE_SECONDS") or "30")
     )
@@ -181,56 +181,48 @@ def _authority_maintenance_loop(worker_kind: str) -> int:
     signal.signal(signal.SIGINT, stop)
     signal.signal(signal.SIGTERM, stop)
     while not stopping:
-        if worker_kind == "maintenance":
-            schedule_bucket = int(time.time() // max(1.0, poll_seconds))
-            schedule_maintenance_runtime_jobs(
-                runtime_jobs,
-                batch_limit=batch_size,
-                schedule_bucket=schedule_bucket,
+        schedule_bucket = int(time.time() // max(1.0, poll_seconds))
+        schedule_maintenance_runtime_jobs(
+            runtime_jobs,
+            batch_limit=batch_size,
+            schedule_bucket=schedule_bucket,
+        )
+        claims: list[RuntimeJobClaim] = []
+        while len(claims) < len(MAINTENANCE_RUNTIME_JOB_KINDS) and not stopping:
+            claim = runtime_jobs.claim(
+                runtime_group="maintenance",
+                worker_id=worker_id,
+                lease_seconds=lease_seconds,
+                job_kinds=MAINTENANCE_RUNTIME_JOB_KINDS,
             )
-            claims: list[RuntimeJobClaim] = []
-            while len(claims) < len(MAINTENANCE_RUNTIME_JOB_KINDS) and not stopping:
-                claim = runtime_jobs.claim(
-                    runtime_group="maintenance",
-                    worker_id=worker_id,
-                    lease_seconds=lease_seconds,
-                    job_kinds=MAINTENANCE_RUNTIME_JOB_KINDS,
-                )
-                if claim is None:
-                    break
-                claims.append(claim)
-            if not claims:
-                supervisor.polled(idle=True)
-                time.sleep(poll_seconds)
-                continue
-            try:
-                failures = boundary.execute_batch(
-                    claims,
-                    identity=lambda claim: ("", claim.runtime_job_id),
-                    execute=lambda claim: execute_maintenance_runtime_claim(
-                        settings.database_url,
-                        runtime_jobs,
-                        claim,
-                        actor_id=worker_id,
-                        lease_seconds=lease_seconds,
-                    ),
-                    on_task_start=supervisor.operation_started,
-                    on_task_finish=lambda job_id, succeeded: supervisor.operation_finished(
-                        job_id, succeeded=succeeded
-                    ),
-                )
-                supervisor.batch_completed(failures)
-                supervisor.polled(idle=False)
-            except WorkerProgrammingError as error:
-                supervisor.fatal(error)
-                return WorkerSupervisor.FATAL_EXIT_CODE
-        else:
-            scan_expired_operation_deadlines(
-                settings.database_url,
-                actor_id=worker_id,
-                limit=batch_size,
-            )
+            if claim is None:
+                break
+            claims.append(claim)
+        if not claims:
             supervisor.polled(idle=True)
+            time.sleep(poll_seconds)
+            continue
+        try:
+            failures = boundary.execute_batch(
+                claims,
+                identity=lambda claim: ("", claim.runtime_job_id),
+                execute=lambda claim: execute_maintenance_runtime_claim(
+                    settings.database_url,
+                    runtime_jobs,
+                    claim,
+                    actor_id=worker_id,
+                    lease_seconds=lease_seconds,
+                ),
+                on_task_start=supervisor.operation_started,
+                on_task_finish=lambda job_id, succeeded: supervisor.operation_finished(
+                    job_id, succeeded=succeeded
+                ),
+            )
+            supervisor.batch_completed(failures)
+            supervisor.polled(idle=False)
+        except WorkerProgrammingError as error:
+            supervisor.fatal(error)
+            return WorkerSupervisor.FATAL_EXIT_CODE
         time.sleep(poll_seconds)
     supervisor.draining()
     supervisor.stopped()
@@ -238,40 +230,12 @@ def _authority_maintenance_loop(worker_kind: str) -> int:
     return 0
 
 
-def authority_main() -> int:
-    return _authority_maintenance_loop("authority")
-
-
 def maintenance_main() -> int:
-    return _authority_maintenance_loop("maintenance")
-
-
-def execution_main() -> int:
-    from novel_forge.workers.chapter_authority import run_worker
-
-    return run_worker()
-
-
-def integration_main() -> int:
-    from novel_forge.workers.source_authority import main
-
-    return main()
+    return _maintenance_loop()
 
 
 def _cli(target: Callable[[], int]) -> None:
     raise SystemExit(target())
-
-
-def authority_cli() -> None:
-    _cli(authority_main)
-
-
-def execution_cli() -> None:
-    _cli(execution_main)
-
-
-def integration_cli() -> None:
-    _cli(integration_main)
 
 
 def maintenance_cli() -> None:
@@ -279,12 +243,6 @@ def maintenance_cli() -> None:
 
 
 __all__ = [
-    "authority_cli",
-    "authority_main",
-    "execution_cli",
-    "execution_main",
-    "integration_cli",
-    "integration_main",
     "maintenance_cli",
     "maintenance_main",
     "execute_maintenance_runtime_claim",

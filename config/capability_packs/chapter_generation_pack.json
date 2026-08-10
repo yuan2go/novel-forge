@@ -37,8 +37,8 @@
     "incompatible_packs": [],
     "compatible_runtime_profiles": [
       "development",
+      "test",
       "validation",
-      "provider-validation",
       "production"
     ]
   },
@@ -84,7 +84,7 @@
       {
         "skill_ref": "context-builder-source-isolation",
         "version": "context-builder-source-isolation-v1",
-        "content_hash": "sha256:e7ca7b56343381cb7fafe682faaf78b6b2b7aa99c9fd45d40cb9f8a4bb311cde",
+      "content_hash": "sha256:953c21770114b27df36e21273b93106f1d236e968a55cb865b0a26d17df3f341",
         "required": true,
         "input_contract_ref": "schema:chapter-context-input:v1",
         "output_contract_ref": "schema:context-bundle:v1",
@@ -543,7 +543,12 @@
       "required_packs": [
         "knowledge:chapter-causal-cost:v1"
       ],
-      "allowed_usage_roles": ["PRINCIPLE", "CONSTRAINT", "CHECK", "REFERENCE"]
+      "allowed_usage_roles": ["PRINCIPLE", "CONSTRAINT", "CHECK", "REFERENCE"],
+      "project_knowledge_pack": {
+        "default_requirement": "OPTIONAL",
+        "required_stages": [],
+        "required_capability_ids": []
+      }
     },
     "rules": [
       {

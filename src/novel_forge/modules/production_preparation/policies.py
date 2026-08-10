@@ -47,6 +47,7 @@ class ProductionStageProfile:
     review_only_types: tuple[str, ...]
     copyright_mode: str
     compression_policy: str
+    knowledge_pack_policy: str
 
 
 _BASE_ALLOWED = (
@@ -140,14 +141,29 @@ STAGE_PROFILES = {
         review_only_types=("review_rule",),
         copyright_mode="fail_closed",
         compression_policy="safe_summary_then_structured_facts",
+        knowledge_pack_policy="CAPABILITY_OPTIONAL",
     )
     for stage in _STAGE_REQUIRED
 }
 
 
-def requirements_for(stage: str, chapter: int) -> tuple[ProductionInputRequirement, ...]:
+def requirements_for(
+    stage: str,
+    chapter: int,
+    *,
+    capability_required_asset_types: tuple[str, ...] = (),
+) -> tuple[ProductionInputRequirement, ...]:
     profile = STAGE_PROFILES[stage]
     required = list(profile.required_asset_types)
+    unsupported = set(capability_required_asset_types) - set(
+        profile.allowed_asset_types
+    )
+    if unsupported:
+        raise ValueError(
+            "capability requires assets forbidden for this stage: "
+            + ", ".join(sorted(unsupported))
+        )
+    required.extend(capability_required_asset_types)
     if chapter > 1 and stage in {
         "chapter_plan", "draft", "review", "revision", "canon_extraction",
         "quality", "recap", "ending",

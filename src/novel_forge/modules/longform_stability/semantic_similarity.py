@@ -17,6 +17,7 @@ from novel_forge.modules.production_execution import (
     RetrievalExecutionPort,
     execute_similarity_embedding_pair,
 )
+from novel_forge.modules.production_execution.security import execution_environment
 
 
 class SimilarityEmbeddingProvider(Protocol):
@@ -85,11 +86,10 @@ def resolve_similarity_provider(
         }
     if adapter is not None:
         info = _provider_info(adapter, fallback_used=False)
-        if str(environment).strip().lower() in {
-            "production",
-            "validation",
-            "provider-validation",
-        } and info["external_api"]:
+        if (
+            execution_environment(environment).controlled
+            and info["external_api"]
+        ):
             raise RuntimeError(
                 "controlled semantic similarity requires RetrievalExecutionPort"
             )

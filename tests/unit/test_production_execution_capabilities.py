@@ -237,7 +237,7 @@ class ProductionExecutionCapabilityTests(unittest.TestCase):
             callback=False,
         )
 
-        for environment in ("validation", "provider-validation", "production"):
+        for environment in ("validation", "validation", "production"):
             with self.subTest(environment=environment):
                 with self.assertRaisesRegex(ValueError, "fixture"):
                     registry.require_backend(
