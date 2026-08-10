@@ -9,6 +9,7 @@ from novel_forge.modules.content_authority.application import (
     ContentAuthorityApplication,
     ContentOperationRequest,
 )
+from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from tests.integration.authority_postgres_support import DATABASE_URL, ensure_migrated, identifier
 
@@ -77,7 +78,7 @@ class ContentAuthorityRuntimePostgresTests(unittest.TestCase):
         )
         return {"asset_version_id": result.asset_version_id, "content_hash": result.content_hash}
 
-    def test_all_22_codecs_execute_through_postgresql_authority(self) -> None:
+    def test_all_registered_codecs_execute_through_postgresql_authority(self) -> None:
         brief_payload = {
             "target_genre": "fantasy", "subgenre": "mystery", "target_platform": "serial",
             "target_audience": "adult", "reading_promise": "costly public choices",
@@ -270,13 +271,16 @@ class ContentAuthorityRuntimePostgresTests(unittest.TestCase):
                 },
             },
         )
-        promoted = self.run_op(
-            "quality.calibration.profile.promote",
-            [calibration_profile, calibration_report],
-        )
+        with self.assertRaisesRegex(
+            KernelError, "QUALITY_FIXTURE_PROMOTION_FORBIDDEN"
+        ):
+            self.run_op(
+                "quality.calibration.profile.promote",
+                [calibration_profile, calibration_report],
+            )
         self.run_op(
             "quality.calibration.profile.revoke",
-            [promoted],
+            [calibration_profile],
             {"reason": "fixture lifecycle proof"},
         )
         absence_evidence = self.seed(
@@ -300,6 +304,51 @@ class ContentAuthorityRuntimePostgresTests(unittest.TestCase):
                 "reason": "chapter one completed without relationship state entries",
             },
         )
+        authored_inputs = {
+            "chapter.plan.author": {
+                "type": "chapter_plan",
+                "chapter": 1,
+                "title": "The Cost of Memory",
+                "premise": "A clerk must expose a falsified public record.",
+                "chapter_objective": "Make the clerk choose proof over safety.",
+                "scene_sequence": [{"scene_id": "s1", "goal": "find proof"}],
+                "chapter_hook": "The erased witness returns.",
+            },
+            "chapter.style_policy.author": {
+                "type": "style_policy",
+                "profile_id": "style:proof",
+                "constraints": ["close third person"],
+            },
+            "chapter.quality_rubric.author": {
+                "type": "quality_rubric",
+                "profile_id": "quality:proof",
+                "dimensions": ["continuity"],
+            },
+            "chapter.platform_profile.author": {
+                "type": "platform_profile",
+                "profile_id": "platform:proof",
+                "constraints": ["strong hook"],
+            },
+            "chapter.operator_checklist.author": {
+                "type": "operator_checklist",
+                "chapter": 1,
+                "completed": True,
+                "contract_version": "internal-release-checklist-v1",
+            },
+        }
+        for name, content in authored_inputs.items():
+            self.run_op(
+                name,
+                payload={
+                    "content": {
+                        **content,
+                        "safe_summary": f"Safe {content['type']} production input.",
+                        "structured_facts": [
+                            {"kind": content["type"], "value": "proof"}
+                        ],
+                    }
+                },
+            )
 
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
             uow.cursor.execute(
@@ -318,9 +367,17 @@ class ContentAuthorityRuntimePostgresTests(unittest.TestCase):
             )
             outbox = uow.cursor.fetchone()[0]
         self.assertEqual({name for name, _ in operations}, set(CONTENT_CODECS))
-        self.assertTrue(all(status == "SUCCEEDED" for _, status in operations))
-        self.assertGreaterEqual(audits, len(operations))
-        self.assertGreaterEqual(outbox, len(operations))
+        self.assertEqual(
+            {
+                name: status
+                for name, status in operations
+                if status != "SUCCEEDED"
+            },
+            {"quality.calibration.profile.promote": "FAILED_FINAL"},
+        )
+        succeeded = sum(status == "SUCCEEDED" for _, status in operations)
+        self.assertEqual(audits, succeeded)
+        self.assertEqual(outbox, succeeded)
 
 
 if __name__ == "__main__":

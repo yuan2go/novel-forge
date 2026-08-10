@@ -21,6 +21,10 @@ from novel_forge.modules.chapter_authority.model_effects import (
 from novel_forge.modules.chapter_authority.orchestrator import (
     SingleChapterRequest,
 )
+from novel_forge.modules.chapter_quality_authority import (
+    QUALITY_DIMENSIONS,
+    QUALITY_GROUPS,
+)
 from novel_forge.modules.command_kernel.external_effect_adapters import (
     ExternalEffectAdapterError,
     LocalFileObjectStoreAdapter,
@@ -118,7 +122,7 @@ class _StageModelAdapter:
         self.calls += 1
         if (context or {}).get(
             "contract_version"
-        ) == "chapter-quality-provider-evidence-v1":
+        ) == "chapter-quality-provider-evidence-v2":
             quality_context = (context or {}).get("quality_context") or {}
             if not str(quality_context.get("type") or "").endswith(
                 "QualityContextView"
@@ -332,7 +336,13 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                 "asset_type": "operator_checklist",
                 "project_id": project_id,
                 "safe_summary": "Release checklist completed.",
-                "structured_facts": [{"key": "completed", "value": True}],
+                "structured_facts": [
+                    {"key": "completed", "value": True},
+                    {
+                        "key": "contract_version",
+                        "value": "fixture-waiver-checklist-v1",
+                    },
+                ],
                 "estimated_tokens": 8,
                 "narrative_function": "release_evidence",
             },
@@ -341,11 +351,62 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                 "asset_type": "operator_approval",
                 "project_id": project_id,
                 "safe_summary": "Fixture release approval.",
-                "structured_facts": [{"key": "approved", "value": True}],
+                "structured_facts": [
+                    {"key": "approved", "value": True},
+                    {"key": "decision", "value": "APPROVED"},
+                    {
+                        "key": "contract_version",
+                        "value": "fixture-waiver-approval-v1",
+                    },
+                    {"key": "fixture_protocol_only", "value": True},
+                    {
+                        "key": "waiver_reason",
+                        "value": "Deterministic integration fixture release only.",
+                    },
+                    {
+                        "key": "waived_dimensions",
+                        "value": list(QUALITY_DIMENSIONS),
+                    },
+                    {
+                        "key": "scope",
+                        "value": {
+                            "project_id": project_id,
+                            "scope_type": "PROJECT_FIXTURE",
+                            "release_readiness": "INTERNAL_REVIEW_RELEASE",
+                        },
+                    },
+                    {"key": "expiry", "value": "2099-01-01T00:00:00Z"},
+                ],
                 "estimated_tokens": 8,
                 "narrative_function": "release_evidence",
             },
         ]
+        candidates.extend(
+            {
+                "asset_version_id": f"{project_id}:{group}-quality-report-v1",
+                "asset_type": f"{group}_quality_report",
+                "project_id": project_id,
+                "safe_summary": "Approved fixture-only quality evidence.",
+                "structured_facts": [
+                    {
+                        "key": "dimension_evidence",
+                        "value": [
+                            {
+                                "dimension": dimension,
+                                "gate_status": "WAIVED_BY_APPROVAL",
+                                "calibration_status": "HUMAN_CALIBRATED",
+                                "human_verified": True,
+                                "fixture_protocol_only": True,
+                            }
+                            for dimension in dimensions
+                        ],
+                    }
+                ],
+                "estimated_tokens": 40,
+                "narrative_function": "quality_evidence",
+            }
+            for group, dimensions in QUALITY_GROUPS.items()
+        )
         with transaction() as connection, connection.cursor() as cursor:
             for candidate in candidates:
                 content = dict(

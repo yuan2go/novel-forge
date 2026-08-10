@@ -168,8 +168,8 @@ class HierarchicalPlanningPostgresTests(unittest.TestCase):
             parent=group,
             extra={
                 "required_arc_contributions": [
-                    arc1["asset_version_id"],
-                    arc2["asset_version_id"],
+                    {"arc_plan_version_id": arc1["asset_version_id"]},
+                    {"arc_plan_version_id": arc2["asset_version_id"]},
                 ]
             },
         )
