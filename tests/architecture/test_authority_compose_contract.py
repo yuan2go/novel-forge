@@ -13,6 +13,12 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class AuthorityComposeContractTests(unittest.TestCase):
+    def test_authority_image_contains_governed_runtime_assets(self) -> None:
+        source = (ROOT / "Dockerfile").read_text(encoding="utf-8")
+
+        self.assertIn("COPY config ./config", source)
+        self.assertIn("COPY skills ./skills", source)
+
     def test_default_compose_is_complete_backend_only_authority_plane(self) -> None:
         document = yaml.safe_load((ROOT / "compose.yml").read_text(encoding="utf-8"))
         services = document["services"]
