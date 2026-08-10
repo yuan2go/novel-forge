@@ -8,6 +8,29 @@ from typing import Any, Protocol
 from novel_forge.modules.command_kernel.errors import KernelError
 
 
+def resolve_stage_context_token_budget(
+    command: dict[str, Any], stage: str, *, default: int = 6000
+) -> int:
+    """Resolve a stage budget only from the frozen Chapter command."""
+
+    budget = int(command.get("context_token_budget") or default)
+    report = command.get("preparation_report")
+    stage_budgets = (
+        report.get("stage_context_token_budgets")
+        if isinstance(report, dict)
+        else None
+    )
+    if isinstance(stage_budgets, dict):
+        stage_key = "quality" if stage.startswith("quality_") else stage
+        budget = int(stage_budgets.get(stage_key) or budget)
+    if budget < 0:
+        raise KernelError(
+            "CHAPTER_STAGE_CONTEXT_BUDGET_INVALID",
+            "frozen Chapter stage context budget cannot be negative",
+        )
+    return budget
+
+
 class ChapterNode(Enum):
     PLAN = (
         "plan",

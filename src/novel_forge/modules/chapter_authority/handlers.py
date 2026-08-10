@@ -14,6 +14,7 @@ from novel_forge.modules.chapter_authority.contracts import (
     ChapterHandlerRegistry,
     ChapterHandlerRequest,
     ChapterNode,
+    resolve_stage_context_token_budget,
 )
 from novel_forge.modules.chapter_authority.domain_handlers import (
     build_canon_extraction,
@@ -663,7 +664,9 @@ class _QualityGroupHandler:
             context_bundle_asset_version_id=context.asset_version_id,
             canon=canon.content,
             canon_asset_version_id=canon.asset_version_id,
-            token_budget=int(request.command.get("context_token_budget") or 6000),
+            token_budget=resolve_stage_context_token_budget(
+                request.command, f"quality_{self.group}"
+            ),
         )
         if bool(getattr(self.provider, "external_effect_backed", False)):
             generated = self.provider.invoke(

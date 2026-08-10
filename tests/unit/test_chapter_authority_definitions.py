@@ -7,6 +7,7 @@ from novel_forge.modules.chapter_authority.contracts import (
     ChapterHandlerOutput,
     ChapterHandlerRegistry,
     ChapterNode,
+    resolve_stage_context_token_budget,
 )
 from novel_forge.modules.chapter_authority.definitions import (
     CHAPTER_LONG_TIMEOUT_POLICY_NODES,
@@ -208,6 +209,31 @@ class ChapterAuthorityDefinitionTests(unittest.TestCase):
         with self.assertRaises(KernelError) as missing:
             registry.require(ChapterNode.CONTEXT)
         self.assertEqual(missing.exception.code, "CHAPTER_HANDLER_NOT_REGISTERED")
+
+    def test_stage_context_budget_comes_only_from_frozen_chapter_command(
+        self,
+    ) -> None:
+        command = {
+            "context_token_budget": 16_000,
+            "preparation_report": {
+                "stage_context_token_budgets": {
+                    "draft": 16_000,
+                    "quality": 28_000,
+                }
+            },
+        }
+
+        self.assertEqual(
+            resolve_stage_context_token_budget(command, "draft"), 16_000
+        )
+        self.assertEqual(
+            resolve_stage_context_token_budget(command, "quality_longform"),
+            28_000,
+        )
+        self.assertEqual(
+            resolve_stage_context_token_budget(command, "canon_extraction"),
+            16_000,
+        )
 
     def test_authority_slice_does_not_import_local_storage_or_legacy_projection(
         self,

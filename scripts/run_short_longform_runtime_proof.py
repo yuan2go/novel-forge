@@ -123,8 +123,8 @@ PLANNING_PACK_INITIAL_VERSION = "1.3.0"
 PLANNING_PACK_RECOVERY_VERSION = "1.4.0"
 BOOTSTRAP_DEFINITION = "short_longform.proof.bootstrap"
 BOOTSTRAP_HANDLER = "novel_forge.proof.short_longform.bootstrap"
-PROOF_CONTEXT_TOKEN_BUDGET = 28_000
-MAX_PROOF_CONTEXT_TOKEN_BUDGET = 32_000
+PROOF_QUALITY_CONTEXT_TOKEN_BUDGET = 28_000
+MAX_PROOF_QUALITY_CONTEXT_TOKEN_BUDGET = 32_000
 
 
 class OneShotMeasuredProviderFailure:
@@ -2936,7 +2936,7 @@ def _run_book_phase(
     operator: Principal,
     commit_sha: str,
     build_id: str,
-    context_token_budget: int,
+    quality_context_token_budget: int,
     stop_after_chapter: int = 0,
 ) -> dict[str, Any]:
     book_record = BookDesignAuthorityQuery(database_url).require_book(
@@ -3029,7 +3029,7 @@ def _run_book_phase(
         planning=planning,
         chapter_groups=chapter_groups,
         principal=operator,
-        context_token_budget=context_token_budget,
+        quality_context_token_budget=quality_context_token_budget,
     )
     worker = _principal(
         env["NOVEL_FORGE_AUTHORITY_WORKER_ID"],
@@ -3308,12 +3308,12 @@ def _resume_book_phase(args: argparse.Namespace) -> dict[str, Any]:
         raise RuntimeError(f"unexpected proof branch: {branch}")
     if dirty and not args.allow_dirty:
         raise RuntimeError("exact-HEAD proof requires a clean Git worktree")
-    planned_context_budget = int(
-        source["runtime"].get("chapter_context_token_budget") or 0
+    planned_quality_context_budget = int(
+        source["runtime"].get("quality_context_token_budget") or 0
     )
-    if planned_context_budget != args.context_token_budget:
+    if planned_quality_context_budget != args.quality_context_token_budget:
         raise RuntimeError(
-            "resume context token budget differs from the Planning checkpoint"
+            "resume Quality context token budget differs from the Planning checkpoint"
         )
     executable = str(Path(args.codex_executable).expanduser().resolve())
     login = subprocess.run(
@@ -3416,7 +3416,7 @@ def _resume_book_phase(args: argparse.Namespace) -> dict[str, Any]:
             operator=operator,
             commit_sha=commit_sha,
             build_id=env["NOVEL_FORGE_APPLICATION_BUILD_ID"],
-            context_token_budget=args.context_token_budget,
+            quality_context_token_budget=args.quality_context_token_budget,
             stop_after_chapter=args.stop_after_chapter,
         )
     finally:
@@ -3668,7 +3668,8 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
             "provider": "codex-cli",
             "model": args.model,
             "reasoning_effort": args.reasoning_effort,
-            "chapter_context_token_budget": args.context_token_budget,
+            "chapter_context_token_budget": 16_000,
+            "quality_context_token_budget": args.quality_context_token_budget,
             "process_id": os.getpid(),
             "storage_authority": "postgresql",
             "object_storage": "minio",
@@ -3758,7 +3759,7 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
             operator=operator,
             commit_sha=commit_sha,
             build_id=build_id,
-            context_token_budget=args.context_token_budget,
+            quality_context_token_budget=args.quality_context_token_budget,
             stop_after_chapter=args.stop_after_chapter,
         )
     finally:
@@ -3793,12 +3794,12 @@ def main() -> int:
     parser.add_argument("--model", default="gpt-5.6-sol")
     parser.add_argument("--reasoning-effort", default="high")
     parser.add_argument(
-        "--context-token-budget",
+        "--quality-context-token-budget",
         type=int,
-        default=PROOF_CONTEXT_TOKEN_BUDGET,
+        default=PROOF_QUALITY_CONTEXT_TOKEN_BUDGET,
         help=(
-            "Frozen per-Chapter context budget for this proof "
-            f"(1..{MAX_PROOF_CONTEXT_TOKEN_BUDGET})."
+            "Frozen Quality-evidence context budget for this proof "
+            f"(1..{MAX_PROOF_QUALITY_CONTEXT_TOKEN_BUDGET})."
         ),
     )
     parser.add_argument("--minio-endpoint", default="127.0.0.1:59039")
@@ -3824,10 +3825,14 @@ def main() -> int:
         help="Stop after durable Chapter acceptance and Reader sidecar completion.",
     )
     args = parser.parse_args()
-    if not 1 <= args.context_token_budget <= MAX_PROOF_CONTEXT_TOKEN_BUDGET:
+    if not (
+        1
+        <= args.quality_context_token_budget
+        <= MAX_PROOF_QUALITY_CONTEXT_TOKEN_BUDGET
+    ):
         parser.error(
-            "--context-token-budget must be between 1 and "
-            f"{MAX_PROOF_CONTEXT_TOKEN_BUDGET}"
+            "--quality-context-token-budget must be between 1 and "
+            f"{MAX_PROOF_QUALITY_CONTEXT_TOKEN_BUDGET}"
         )
     output = Path(args.output).expanduser().resolve()
     output.parent.mkdir(parents=True, exist_ok=True)

@@ -63,9 +63,10 @@ def test_supervisor_reports_planning_generation_operation_identity(
     assert tick.evidence_ref == "planning-candidate:1"
 
 
-def test_supervisor_freezes_configured_context_budget_in_preparation_request() -> None:
+def test_supervisor_keeps_draft_budget_separate_from_quality_evidence_budget() -> None:
     supervisor = object.__new__(PostgresBookProductionSupervisor)
-    supervisor.context_token_budget = 28_000
+    supervisor.context_token_budget = 16_000
+    supervisor.quality_context_token_budget = 28_000
 
     request = supervisor._chapter_preparation_request(
         book={
@@ -80,10 +81,22 @@ def test_supervisor_freezes_configured_context_budget_in_preparation_request() -
         },
     )
 
-    assert request.context_token_budget == 28_000
+    assert request.context_token_budget == 16_000
+    assert supervisor.quality_context_token_budget == 28_000
     assert request.chapter == 3
     assert request.idempotency_key == "book:1:chapter:3"
     assert request.explicit_asset_version_overrides == {
         "chapter_plan": "chapter-plan:v3",
         "story_state_snapshot": "story-state:v2",
+    }
+
+    report = supervisor._stage_budgeted_preparation_report(
+        SimpleNamespace(
+            preparation_report={"decision": "READY"},
+            context_token_budget=request.context_token_budget,
+        )
+    )
+    assert report == {
+        "decision": "READY",
+        "stage_context_token_budgets": {"draft": 16_000, "quality": 28_000},
     }

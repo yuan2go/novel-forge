@@ -7,7 +7,10 @@ from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 from typing import Any, Mapping, Protocol
 
-from novel_forge.modules.chapter_authority.contracts import ChapterHandlerRequest
+from novel_forge.modules.chapter_authority.contracts import (
+    ChapterHandlerRequest,
+    resolve_stage_context_token_budget,
+)
 from novel_forge.modules.command_kernel.asset_commands import AuthorityAssetWriteCommand
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.command_kernel.external_effect_adapters import (
@@ -800,7 +803,9 @@ class ExternalEffectChapterModelPort:
                 provider=self.adapter.provider,
                 currency="USD",
                 estimated_amount=self.max_cost_per_call,
-                estimated_tokens=int(business_payload.get("context_token_budget") or 0),
+                estimated_tokens=resolve_stage_context_token_budget(
+                    business_payload, stage, default=0
+                ),
                 chapter=int(
                     business_payload.get("chapter_number")
                     or business_payload.get("chapter")

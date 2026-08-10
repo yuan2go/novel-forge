@@ -48,11 +48,14 @@ def test_retry_installs_a_new_immutable_planning_pack_version() -> None:
     assert proof.PLANNING_PACK_INITIAL_VERSION != proof.PLANNING_PACK_RECOVERY_VERSION
 
 
-def test_proof_uses_a_bounded_explicit_context_budget() -> None:
+def test_proof_uses_a_bounded_explicit_quality_context_budget() -> None:
     proof = _load_script()
 
-    assert proof.PROOF_CONTEXT_TOKEN_BUDGET == 28_000
-    assert proof.PROOF_CONTEXT_TOKEN_BUDGET <= proof.MAX_PROOF_CONTEXT_TOKEN_BUDGET
+    assert proof.PROOF_QUALITY_CONTEXT_TOKEN_BUDGET == 28_000
+    assert (
+        proof.PROOF_QUALITY_CONTEXT_TOKEN_BUDGET
+        <= proof.MAX_PROOF_QUALITY_CONTEXT_TOKEN_BUDGET
+    )
 
 
 def test_proof_script_only_references_defined_longform_checkpoint_members() -> None:

@@ -69,14 +69,20 @@ class PostgresBookProductionSupervisor:
         principal: Principal,
         production_preparation: ProductionPreparationService | None = None,
         context_token_budget: int = 16_000,
+        quality_context_token_budget: int | None = None,
     ) -> None:
         if context_token_budget <= 0:
             raise ValueError("context_token_budget must be positive")
+        if quality_context_token_budget is not None and quality_context_token_budget <= 0:
+            raise ValueError("quality_context_token_budget must be positive")
         self.authority = authority
         self.planning = planning
         self.chapter_groups = chapter_groups
         self.principal = principal
         self.context_token_budget = context_token_budget
+        self.quality_context_token_budget = (
+            quality_context_token_budget or context_token_budget
+        )
         self.production_preparation = production_preparation or ProductionPreparationService(
             PostgresProductionAssetResolver(authority.database_url)
         )
@@ -307,6 +313,7 @@ class PostgresBookProductionSupervisor:
             **self._context_version_refs(book, group),
             **dict(prepared.context_version_refs),
         }
+        preparation_report = self._stage_budgeted_preparation_report(prepared)
         dispatched_group = self.chapter_groups.dispatch(
             str(group_run["group_run_id"]),
             SubmitBookChapterCommand(
@@ -326,7 +333,7 @@ class PostgresBookProductionSupervisor:
                 parent_group_version_id=str(group["asset_version_id"]),
                 context_version_refs=context_version_refs,
                 context_token_budget=prepared.context_token_budget,
-                preparation_report=prepared.preparation_report,
+                preparation_report=preparation_report,
             ),
             principal=self.principal,
         )
@@ -358,6 +365,16 @@ class PostgresBookProductionSupervisor:
             explicit_asset_version_overrides=explicit_overrides,
             context_token_budget=self.context_token_budget,
         )
+
+    def _stage_budgeted_preparation_report(self, prepared: Any) -> dict[str, Any]:
+        report = dict(prepared.preparation_report)
+        stage_budgets = dict(report.get("stage_context_token_budgets") or {})
+        report["stage_context_token_budgets"] = {
+            **stage_budgets,
+            "draft": int(prepared.context_token_budget),
+            "quality": self.quality_context_token_budget,
+        }
+        return report
 
     def _generate_plan(
         self, book: dict[str, Any], generator: str, chapter_number: int
