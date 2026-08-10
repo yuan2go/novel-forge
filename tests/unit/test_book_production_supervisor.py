@@ -61,3 +61,29 @@ def test_supervisor_reports_planning_generation_operation_identity(
     assert tick.action is expected_action
     assert tick.operation_id == "planning-operation:1"
     assert tick.evidence_ref == "planning-candidate:1"
+
+
+def test_supervisor_freezes_configured_context_budget_in_preparation_request() -> None:
+    supervisor = object.__new__(PostgresBookProductionSupervisor)
+    supervisor.context_token_budget = 28_000
+
+    request = supervisor._chapter_preparation_request(
+        book={
+            "project_id": "project:1",
+            "workspace_id": "workspace:1",
+            "stable_idempotency_key": "book:1",
+        },
+        next_chapter=3,
+        explicit_overrides={
+            "chapter_plan": "chapter-plan:v3",
+            "story_state_snapshot": "story-state:v2",
+        },
+    )
+
+    assert request.context_token_budget == 28_000
+    assert request.chapter == 3
+    assert request.idempotency_key == "book:1:chapter:3"
+    assert request.explicit_asset_version_overrides == {
+        "chapter_plan": "chapter-plan:v3",
+        "story_state_snapshot": "story-state:v2",
+    }

@@ -54,6 +54,8 @@ def _base_command(args: argparse.Namespace) -> list[str]:
         args.model,
         "--reasoning-effort",
         args.reasoning_effort,
+        "--context-token-budget",
+        str(args.context_token_budget),
         "--minio-endpoint",
         args.minio_endpoint,
         "--minio-access-key",
@@ -78,6 +80,7 @@ def main() -> int:
     )
     parser.add_argument("--model", default="gpt-5.6-sol")
     parser.add_argument("--reasoning-effort", default="high")
+    parser.add_argument("--context-token-budget", type=int, default=28_000)
     parser.add_argument("--minio-endpoint", default="127.0.0.1:59039")
     parser.add_argument("--minio-access-key", default="novel_forge")
     parser.add_argument("--minio-secret-key", default="novel_forge_secret")

@@ -68,11 +68,15 @@ class PostgresBookProductionSupervisor:
         chapter_groups: PostgresChapterGroupAuthority,
         principal: Principal,
         production_preparation: ProductionPreparationService | None = None,
+        context_token_budget: int = 16_000,
     ) -> None:
+        if context_token_budget <= 0:
+            raise ValueError("context_token_budget must be positive")
         self.authority = authority
         self.planning = planning
         self.chapter_groups = chapter_groups
         self.principal = principal
+        self.context_token_budget = context_token_budget
         self.production_preparation = production_preparation or ProductionPreparationService(
             PostgresProductionAssetResolver(authority.database_url)
         )
@@ -259,7 +263,7 @@ class PostgresBookProductionSupervisor:
                 "ChapterPlan must be Frozen before Chapter dispatch",
             )
         execution_plan = self._chapter_execution_plan(chapter_plan)
-        explicit_overrides = {
+        explicit_overrides: dict[str, str | list[str]] = {
             "chapter_plan": str(execution_plan["asset_version_id"])
         }
         if next_chapter > 1:
@@ -281,15 +285,10 @@ class PostgresBookProductionSupervisor:
                 }
             )
         preparation = self.production_preparation.prepare(
-            ProductionPreparationRequest(
-                project_id=str(book["project_id"]),
-                workspace_id=str(book["workspace_id"]),
-                chapter=next_chapter,
-                idempotency_key=(
-                    f"{book['stable_idempotency_key']}:chapter:{next_chapter}"
-                ),
-                explicit_asset_version_overrides=explicit_overrides,
-                context_token_budget=16_000,
+            self._chapter_preparation_request(
+                book=book,
+                next_chapter=next_chapter,
+                explicit_overrides=explicit_overrides,
             )
         )
         prepared = preparation.command
@@ -340,6 +339,24 @@ class PostgresBookProductionSupervisor:
             SupervisorAction.DISPATCH_CHAPTER,
             str(dispatched.get("chapter_root_operation_id") or ""),
             str(dispatched["chapter_request_id"]),
+        )
+
+    def _chapter_preparation_request(
+        self,
+        *,
+        book: dict[str, Any],
+        next_chapter: int,
+        explicit_overrides: dict[str, str | list[str]],
+    ) -> ProductionPreparationRequest:
+        return ProductionPreparationRequest(
+            project_id=str(book["project_id"]),
+            workspace_id=str(book["workspace_id"]),
+            chapter=next_chapter,
+            idempotency_key=(
+                f"{book['stable_idempotency_key']}:chapter:{next_chapter}"
+            ),
+            explicit_asset_version_overrides=explicit_overrides,
+            context_token_budget=self.context_token_budget,
         )
 
     def _generate_plan(
