@@ -140,6 +140,7 @@ class StoryPlanningGenerationCommand:
     trace_id: str
     correlation_id: str
     parent_version_id: str = ""
+    change_evidence_version_ids: tuple[str, ...] = ()
     repair_of_candidate_id: str = ""
     repair_reason: str = ""
     repair_number: int = 0
@@ -179,7 +180,18 @@ class StoryPlanningGenerationCommand:
             self.repair_of_candidate_id
         ):
             raise ValueError("Planning repair number must match repair identity")
+        change_evidence = tuple(
+            str(asset_version_id).strip()
+            for asset_version_id in self.change_evidence_version_ids
+        )
+        if (
+            any(not asset_version_id for asset_version_id in change_evidence)
+            or len(set(change_evidence)) != len(change_evidence)
+            or set(change_evidence) & set(normalized.values())
+        ):
+            raise ValueError("Planning change evidence identity is invalid")
         object.__setattr__(self, "input_versions", MappingProxyType(normalized))
+        object.__setattr__(self, "change_evidence_version_ids", change_evidence)
 
     @property
     def planning_scope(self) -> PlanningScope:

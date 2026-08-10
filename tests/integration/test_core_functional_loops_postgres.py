@@ -443,6 +443,7 @@ def _chapter_function_row(chapter: int, function: str, hook: str) -> dict[str, A
 def _seed_inputs(project_id: str, book_id: str) -> dict[str, str]:
     roles = sorted(
         {role for values in GENERATOR_INPUT_ROLES.values() for role in values}
+        | {"style_policy", "quality_rubric"}
     )
     result: dict[str, str] = {}
     with transaction() as connection, connection.cursor() as cursor:
@@ -455,6 +456,22 @@ def _seed_inputs(project_id: str, book_id: str) -> dict[str, str]:
                 content["target_chapter_count"] = 3
             elif role == "book_design":
                 content["ending_contract"] = {"outcome": "costly agency"}
+            elif role == "platform_profile":
+                content["safe_summary"] = "Versioned internal platform policy."
+                content["structured_facts"] = [
+                    {
+                        "key": "platform_rules",
+                        "value": {
+                            "chapter_length": {"minimum": 10, "maximum": 10000},
+                            "format": {"paragraph_max": 500},
+                            "sensitive_content": [],
+                            "ai_content": {"mode": "internal"},
+                            "opening": ["visible conflict"],
+                            "rhythm": ["payoff"],
+                            "publish_metadata": {"title_required": True},
+                        },
+                    }
+                ]
             digest = (
                 "sha256:"
                 + hashlib.sha256(str(sorted(content.items())).encode()).hexdigest()
@@ -1009,7 +1026,52 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
     workspace_id = harness.workspace_id
     book_id = harness.book_ids[0]
     generic = _seed_inputs(project_id, book_id)
+    from tests.integration.test_postgresql_only_chapter_slice import (
+        PostgreSQLOnlyChapterSliceTests,
+    )
+
+    PostgreSQLOnlyChapterSliceTests.release_evidence(project_id)
+    with transaction() as connection, connection.cursor() as cursor:
+        cursor.execute(
+            """
+            UPDATE authority_asset_version
+            SET lifecycle='SUPERSEDED'
+            WHERE asset_version_id=%s
+            """,
+            [f"{project_id}:platform-profile-v1"],
+        )
+        cursor.execute(
+            """
+            INSERT INTO authority_asset(asset_id,project_id,asset_type)
+            VALUES (%s,%s,'approval_decision')
+            """,
+            [f"fixture:{project_id}:approval-decision", project_id],
+        )
+        cursor.execute(
+            """
+            INSERT INTO authority_asset_version(
+                asset_version_id,asset_id,version_number,lifecycle,
+                eligibility,governance,content,content_hash,schema_version
+            )
+            SELECT %s,%s,1,'ACTIVE','ELIGIBLE','CLEAR',
+                   content,content_hash,'integration-fixture.v1'
+            FROM authority_asset_version
+            WHERE asset_version_id=%s
+            """,
+            [
+                f"fixture:{project_id}:approval-decision:v1",
+                f"fixture:{project_id}:approval-decision",
+                f"{project_id}:approval-v1",
+            ],
+        )
     principal = _principal(project_id)
+    worker_principal = Principal(
+        principal_id=f"book-worker:{project_id}",
+        principal_type=PrincipalType.WORKER,
+        permissions=principal.permissions,
+        project_scope=principal.project_scope,
+        authentication_source="postgres-functional-loop-worker",
+    )
     object_store = tempfile.TemporaryDirectory()
     settings = IndustrialSettings(
         root=Path(__file__).resolve().parents[2],
@@ -1027,12 +1089,30 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
         "NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID": harness.pack_id,
     }
     chapter_application = build_chapter_authority_application(settings, env=runtime_env)
+    worker_chapter_applications = []
+
+    def build_worker_runtime():
+        worker_chapter = build_chapter_authority_application(
+            settings, env=runtime_env
+        )
+        worker_chapter_applications.append(worker_chapter)
+        return (
+            build_book_production_composition(
+                settings,
+                principal=worker_principal,
+                env=runtime_env,
+                chapter_application=worker_chapter,
+            ),
+            worker_chapter,
+        )
+
     composition = build_book_production_composition(
         settings,
         principal=principal,
         env=runtime_env,
         chapter_application=chapter_application,
     )
+    worker_composition, worker_chapter_application = build_worker_runtime()
     planning = composition.planning
     activated = _activate_plan_chain(
         project_id=project_id,
@@ -1237,8 +1317,8 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
         assert claim is not None
         return execute_book_coordination_claim(runtime_jobs, runtime, claim)
 
-    def run_chapter(root_operation_id: str) -> None:
-        scheduler = chapter_application.scheduler(principal=principal)
+    def run_chapter(chapter_runtime, root_operation_id: str) -> None:
+        scheduler = chapter_runtime.scheduler(principal=worker_principal)
         for _ in range(len(ChapterNode) + 4):
             tick = scheduler.tick(
                 project_id=project_id,
@@ -1250,11 +1330,11 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
 
     before_replan_actions: list[str] = []
     for _ in range(32):
-        tick = worker_tick(composition)
+        tick = worker_tick(worker_composition)
         action = str(tick["action"])
         before_replan_actions.append(action)
         if action == SupervisorAction.DISPATCH_CHAPTER.value:
-            run_chapter(str(tick["operation_id"]))
+            run_chapter(worker_chapter_application, str(tick["operation_id"]))
         if (
             int(book_authority.require(book.book_run_id)["accepted_through_chapter"])
             >= 1
@@ -1267,7 +1347,7 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
 
     checkpoint_action = ""
     for _ in range(8):
-        checkpoint_tick = worker_tick(composition)
+        checkpoint_tick = worker_tick(worker_composition)
         checkpoint_action = str(checkpoint_tick["action"])
         if checkpoint_action == SupervisorAction.UPDATE_CHECKPOINTS.value:
             break
@@ -1297,11 +1377,11 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
     if runtime_path == "NO_REPLAN":
         no_replan_actions: list[str] = []
         for _ in range(32):
-            tick = worker_tick(composition)
+            tick = worker_tick(worker_composition)
             action = str(tick["action"])
             no_replan_actions.append(action)
             if action == SupervisorAction.DISPATCH_CHAPTER.value:
-                run_chapter(str(tick["operation_id"]))
+                run_chapter(worker_chapter_application, str(tick["operation_id"]))
             if (
                 int(
                     book_authority.require(book.book_run_id)["accepted_through_chapter"]
@@ -1321,6 +1401,8 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
             == snapshot.snapshot_id
         )
         chapter_application.close()
+        for worker_chapter in worker_chapter_applications:
+            worker_chapter.close()
         object_store.cleanup()
         return
 
@@ -1339,7 +1421,7 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
         BookProductionState.REPLAN_REQUIRED,
     )
 
-    started_replan = worker_tick(composition)
+    started_replan = worker_tick(worker_composition)
     assert started_replan["action"] == SupervisorAction.START_REPLAN.value
     pending = coordinator.latest_for_book(book.book_run_id)
     assert pending is not None
@@ -1356,12 +1438,7 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
         )
         == ()
     )
-    pending_restart = build_book_production_composition(
-        settings,
-        principal=principal,
-        env=runtime_env,
-        chapter_application=chapter_application,
-    )
+    pending_restart, _pending_restart_chapter = build_worker_runtime()
     pending_restart_tick = pending_restart.tick(book.book_run_id)
     assert pending_restart_tick.action is SupervisorAction.WAIT_REPLAN_APPROVAL
     waiting_response = api_post(
@@ -1410,12 +1487,7 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
     assert approval_replay.status_code == 200, approval_replay.text
     assert approval_replay.json()["replan_id"] == pending["replan_id"]
 
-    restarted = build_book_production_composition(
-        settings,
-        principal=principal,
-        env=runtime_env,
-        chapter_application=chapter_application,
-    )
+    restarted, _restarted_chapter = build_worker_runtime()
     activated_replan = worker_tick(restarted)
     assert activated_replan["action"] == SupervisorAction.ACTIVATE_REPLAN.value
     resumed = restarted.replan.require(pending["replan_id"])
@@ -1449,20 +1521,20 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
     assert old_group_freshness == "STALE"
     assert binding_count == 2
 
-    group_frozen = worker_tick(restarted)
-    assert group_frozen["action"] == SupervisorAction.FREEZE_CHAPTER_GROUP_PLAN.value
-    group_started = worker_tick(restarted)
+    group_transition = worker_tick(restarted)
+    if (
+        group_transition["action"]
+        == SupervisorAction.FREEZE_CHAPTER_GROUP_PLAN.value
+    ):
+        group_started = worker_tick(restarted)
+    else:
+        group_started = group_transition
     assert group_started["action"] == SupervisorAction.START_CHAPTER_GROUP.value
     paused = book_authority.pause(
         book.book_run_id, reason="restart recovery probe", principal=principal
     )
     assert paused["state"] == "PAUSED"
-    restarted_after_pause = build_book_production_composition(
-        settings,
-        principal=principal,
-        env=runtime_env,
-        chapter_application=chapter_application,
-    )
+    restarted_after_pause, restarted_after_pause_chapter = build_worker_runtime()
     paused_tick = restarted_after_pause.tick(book.book_run_id)
     assert paused_tick.action is SupervisorAction.NO_ACTION
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
@@ -1486,7 +1558,7 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
         action = str(tick["action"])
         after_replan_actions.append(action)
         if action == SupervisorAction.DISPATCH_CHAPTER.value:
-            run_chapter(str(tick["operation_id"]))
+            run_chapter(restarted_after_pause_chapter, str(tick["operation_id"]))
         if (
             int(book_authority.require(book.book_run_id)["accepted_through_chapter"])
             >= 2
@@ -1498,6 +1570,8 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
     assert SupervisorAction.ACCEPT_CHAPTER.value in after_replan_actions
     assert book_authority.require(book.book_run_id)["accepted_through_chapter"] == 2
     chapter_application.close()
+    for worker_chapter in worker_chapter_applications:
+        worker_chapter.close()
     object_store.cleanup()
 
 

@@ -219,6 +219,29 @@ def test_planning_fixture_preserves_requested_chapter_number() -> None:
     assert content["title"].startswith("Chapter 2:")
 
 
+def test_planning_fixture_applies_frozen_change_evidence() -> None:
+    base = {
+        "logical_key": "chapter-group:1",
+        "parent_version_id": "volume:v1",
+        "input_versions": {},
+    }
+    original = planning_fixture_response(
+        "chapter_group_plan.generate", {"planning_command": base}
+    )
+    replacement = planning_fixture_response(
+        "chapter_group_plan.generate",
+        {
+            "planning_command": {
+                **base,
+                "change_evidence_version_ids": ["recap:v1", "replan-request:v1"],
+            }
+        },
+    )
+
+    assert replacement["objective"] != original["objective"]
+    assert "governed change evidence" in replacement["objective"]
+
+
 def _command(generator: str) -> StoryPlanningGenerationCommand:
     return StoryPlanningGenerationCommand(
         project_id="project-1",
@@ -269,6 +292,25 @@ def test_five_planning_generators_require_exact_authority_input_roles(
             idempotency_key="incomplete",
             trace_id=command.trace_id,
             correlation_id=command.correlation_id,
+        )
+
+
+def test_planning_change_evidence_cannot_alias_generator_input() -> None:
+    command = _command("book_plan.generate")
+
+    with pytest.raises(ValueError, match="change evidence identity"):
+        StoryPlanningGenerationCommand(
+            project_id=command.project_id,
+            workspace_id=command.workspace_id,
+            book_id=command.book_id,
+            actor_id=command.actor_id,
+            generator_operation_name=command.generator_operation_name,
+            logical_key=command.logical_key,
+            input_versions=command.input_versions,
+            idempotency_key=command.idempotency_key,
+            trace_id=command.trace_id,
+            correlation_id=command.correlation_id,
+            change_evidence_version_ids=(next(iter(command.input_versions.values())),),
         )
 
 

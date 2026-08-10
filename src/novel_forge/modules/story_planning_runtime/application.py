@@ -141,6 +141,13 @@ class _PlanningGenerationHandler:
                     asset_type=item.asset_type,
                 )
             )
+        for asset_version_id in command.change_evidence_version_ids:
+            item = by_id.get(asset_version_id)
+            if item is None:
+                raise KernelError(
+                    "PLANNING_GENERATION_CHANGE_EVIDENCE_MISSING",
+                    "admitted Planning input is missing frozen change evidence",
+                )
         candidate = self.binder.execute(
             operation_id=request.operation_id,
             attempt_id=request.attempt_id,
@@ -173,7 +180,10 @@ class _PlanningGenerationHandler:
                 book_id=command.book_id,
             ),
             qualification_policy="story-planning-candidate-only-v1",
-            reference_asset_version_ids=tuple(item.asset_version_id for item in inputs),
+            reference_asset_version_ids=(
+                *(item.asset_version_id for item in inputs),
+                *command.change_evidence_version_ids,
+            ),
             evidence=evidence,
             lifecycle="ACTIVE",
             eligibility="ELIGIBLE",
@@ -259,6 +269,7 @@ class StoryPlanningGenerationApplication:
         definition = GENERATOR_CATALOG[command.generator_operation_name]
         self._register_definitions()
         frozen_inputs = self._resolve_inputs(command)
+        frozen_change_evidence = self._resolve_change_evidence(command)
         input_assets = [
             {
                 "asset_version_id": item.asset_version_id,
@@ -266,6 +277,13 @@ class StoryPlanningGenerationApplication:
             }
             for item in frozen_inputs
         ]
+        input_assets.extend(
+            {
+                "asset_version_id": item.asset_version_id,
+                "content_hash": item.content_hash,
+            }
+            for item in frozen_change_evidence
+        )
         if command.repair_of_candidate_id:
             repair_asset = self._require_asset(
                 project_id=command.project_id,
@@ -315,7 +333,7 @@ class StoryPlanningGenerationApplication:
         self._record_generation(
             operation_id=operation_id,
             command=command,
-            inputs=frozen_inputs,
+            inputs=(*frozen_inputs, *frozen_change_evidence),
         )
         with AuthorityUnitOfWork(self.database_url) as uow:
             state = uow.repositories.attempt_runtime.operation_state(
@@ -1276,6 +1294,61 @@ class StoryPlanningGenerationApplication:
                 )
         return tuple(result)
 
+    def _resolve_change_evidence(
+        self, command: StoryPlanningGenerationCommand
+    ) -> tuple[FrozenPlanningInput, ...]:
+        if not command.change_evidence_version_ids:
+            return ()
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT version.asset_version_id, asset.asset_type,
+                       version.content_hash, version.content
+                FROM authority_asset_version AS version
+                JOIN authority_asset AS asset ON asset.asset_id=version.asset_id
+                WHERE asset.project_id=%s
+                  AND version.asset_version_id=ANY(%s)
+                  AND version.lifecycle='ACTIVE'
+                  AND version.eligibility='ELIGIBLE'
+                  AND version.governance='CLEAR'
+                """,
+                [command.project_id, list(command.change_evidence_version_ids)],
+            )
+            rows = uow.cursor.fetchall()
+        by_id = {str(row[0]): row for row in rows}
+        if set(by_id) != set(command.change_evidence_version_ids):
+            raise KernelError(
+                "PLANNING_GENERATION_CHANGE_EVIDENCE_INVALID",
+                "Planning change evidence is missing or outside Authority scope",
+            )
+        result: list[FrozenPlanningInput] = []
+        for ordinal, asset_version_id in enumerate(
+            command.change_evidence_version_ids, start=1
+        ):
+            row = by_id[asset_version_id]
+            asset_type = str(row[1])
+            content = dict(row[3])
+            if asset_type not in {"longform_recap", "replan_request"}:
+                raise KernelError(
+                    "PLANNING_GENERATION_CHANGE_EVIDENCE_TYPE_INVALID",
+                    "Planning change evidence must be a Recap or ReplanRequest",
+                )
+            declared_book = str(content.get("book_id") or "")
+            if declared_book and declared_book != command.book_id:
+                raise KernelError(
+                    "PLANNING_GENERATION_CHANGE_EVIDENCE_BOOK_INVALID",
+                    "Planning change evidence belongs to another Book",
+                )
+            result.append(
+                FrozenPlanningInput(
+                    role=f"change_evidence:{ordinal}",
+                    asset_version_id=asset_version_id,
+                    content_hash=str(row[2]),
+                    asset_type=asset_type,
+                )
+            )
+        return tuple(result)
+
     def _record_generation(
         self,
         *,
@@ -1705,6 +1778,7 @@ def _command_payload(command: StoryPlanningGenerationCommand) -> dict[str, Any]:
         "trace_id": command.trace_id,
         "correlation_id": command.correlation_id,
         "parent_version_id": command.parent_version_id,
+        "change_evidence_version_ids": list(command.change_evidence_version_ids),
         "repair_of_candidate_id": command.repair_of_candidate_id,
         "repair_reason": command.repair_reason,
         "repair_number": command.repair_number,
@@ -1725,6 +1799,9 @@ def _command_from_payload(payload: dict[str, Any]) -> StoryPlanningGenerationCom
         trace_id=str(payload.get("trace_id") or ""),
         correlation_id=str(payload.get("correlation_id") or ""),
         parent_version_id=str(payload.get("parent_version_id") or ""),
+        change_evidence_version_ids=tuple(
+            str(item) for item in payload.get("change_evidence_version_ids") or ()
+        ),
         repair_of_candidate_id=str(payload.get("repair_of_candidate_id") or ""),
         repair_reason=str(payload.get("repair_reason") or ""),
         repair_number=int(payload.get("repair_number") or 0),

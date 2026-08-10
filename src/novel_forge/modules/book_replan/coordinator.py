@@ -150,6 +150,10 @@ class BookReplanCoordinator:
                 logical_key=target["logical_key"],
                 input_versions=inputs,
                 parent_version_id=target["parent_version_id"],
+                change_evidence_version_ids=(
+                    command.source_recap_asset_version_id,
+                    command.replan_request_asset_version_id,
+                ),
                 idempotency_key=f"{command.idempotency_key}:replacement-candidate",
                 trace_id=command.trace_id,
                 correlation_id=recap_operation_id,
@@ -804,8 +808,13 @@ class BookReplanCoordinator:
                 "BOOK_REPLAN_TARGET_GENERATION_MISSING",
                 "target plan lacks a frozen Planning Generation input snapshot",
             )
-        result = {str(item["role"]): str(item["asset_version_id"]) for item in row[0]}
-        if set(result) != set(GENERATOR_INPUT_ROLES[generator]):
+        expected_roles = set(GENERATOR_INPUT_ROLES[generator])
+        result = {
+            str(item["role"]): str(item["asset_version_id"])
+            for item in row[0]
+            if str(item["role"]) in expected_roles
+        }
+        if set(result) != expected_roles:
             raise KernelError(
                 "BOOK_REPLAN_INPUT_ROLE_MISMATCH",
                 "target plan input roles differ from replacement Generator",

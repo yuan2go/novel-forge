@@ -207,6 +207,10 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
         "budget_policy_ref": "planning-budget:v1",
         "context_profile_ref": "planning-context:v1",
     }
+    if command.get("change_evidence_version_ids"):
+        payload["objective"] = (
+            f"{payload['objective']} adjusted by governed change evidence"
+        )
     by_type: dict[PlanContractType, dict[str, Any]] = {
         PlanContractType.BOOK: {
             "reader_promise": "Escalation with earned payoff",
@@ -1055,6 +1059,9 @@ class PostgresPlanningExecutionPreparer:
                     "planning_scope": command.planning_scope.value,
                     "parent_version_id": command.parent_version_id,
                     "input_versions": dict(command.input_versions),
+                    "change_evidence_version_ids": list(
+                        command.change_evidence_version_ids
+                    ),
                     "repair_number": command.repair_number,
                     "repair_reason": command.repair_reason,
                 },
@@ -1454,6 +1461,33 @@ class PostgresPlanningExecutionPreparer:
             selected.append(
                 {
                     "role": item.role,
+                    "asset_version_id": document.asset_version_id,
+                    "asset_type": document.asset_type,
+                    "content_hash": document.content_hash,
+                    "content": document.content,
+                }
+            )
+        for ordinal, asset_version_id in enumerate(
+            command.change_evidence_version_ids, start=1
+        ):
+            document = self.query.require(
+                project_id=command.project_id,
+                asset_version_id=asset_version_id,
+            )
+            if (
+                document.asset_type not in {"longform_recap", "replan_request"}
+                or document.governance != "CLEAR"
+                or document.eligibility
+                not in {"ELIGIBLE", "PRODUCTION_ELIGIBLE"}
+            ):
+                raise KernelError(
+                    "PLANNING_CONTEXT_CHANGE_EVIDENCE_INVALID",
+                    "Planning change evidence drifted after admission",
+                )
+            documents.append(document)
+            selected.append(
+                {
+                    "role": f"change_evidence:{ordinal}",
                     "asset_version_id": document.asset_version_id,
                     "asset_type": document.asset_type,
                     "content_hash": document.content_hash,
