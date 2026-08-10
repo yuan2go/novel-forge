@@ -27,7 +27,6 @@ from novel_forge.modules.hierarchical_planning import (
     PlanExecutionScope,
 )
 from novel_forge.modules.production_preparation import (
-    PostgresProductionAssetResolver,
     ProductionPreparationRequest,
     ProductionPreparationService,
 )
@@ -67,8 +66,8 @@ class PostgresBookProductionSupervisor:
         planning: StoryPlanningGenerationApplication,
         chapter_groups: PostgresChapterGroupAuthority,
         principal: Principal,
-        replan: Any | None = None,
-        production_preparation: ProductionPreparationService | None = None,
+        replan: Any,
+        production_preparation: ProductionPreparationService,
         context_token_budget: int = 16_000,
         quality_context_token_budget: int | None = None,
     ) -> None:
@@ -88,12 +87,7 @@ class PostgresBookProductionSupervisor:
         self.quality_context_token_budget = (
             quality_context_token_budget or context_token_budget
         )
-        self.production_preparation = (
-            production_preparation
-            or ProductionPreparationService(
-                PostgresProductionAssetResolver(authority.database_url)
-            )
-        )
+        self.production_preparation = production_preparation
         self.scheduler = PostgresBookAuthorityScheduler(authority, principal=principal)
         self.checkpoints = PostgresBookNarrativeCheckpointAuthority(
             authority.database_url,
@@ -122,6 +116,16 @@ class PostgresBookProductionSupervisor:
                 SupervisorAction.WAIT_REPLAN_APPROVAL,
                 evidence_ref=str(replan["replan_id"]),
             )
+        if before == BookProductionState.READY.value:
+            replan = self.replan.latest_for_book(book_run_id)
+            if replan is not None and replan["status"] == "REGENERATING":
+                activated = self.replan.activate(str(replan["replan_id"]))
+                return self._result(
+                    book_run_id,
+                    before,
+                    SupervisorAction.ACTIVATE_REPLAN,
+                    evidence_ref=str(activated["replan_id"]),
+                )
         if before == BookProductionState.REPLAN_GENERATING.value:
             replan = self._latest_replan(book_run_id)
             if replan["affected_scope"] == "CHAPTER_GROUP":
@@ -135,7 +139,7 @@ class PostgresBookProductionSupervisor:
                         ),
                         principal=self.principal,
                     )
-            activated = self._require_replan().activate(str(replan["replan_id"]))
+            activated = self.replan.activate(str(replan["replan_id"]))
             return self._result(
                 book_run_id,
                 before,
@@ -179,20 +183,30 @@ class PostgresBookProductionSupervisor:
             }
             and int(book["accepted_through_chapter"]) > 0
         ):
+            checkpoint = self._checkpoint_if_needed(book)
+            if checkpoint is not None:
+                return self._result(
+                    book_run_id,
+                    before,
+                    SupervisorAction.UPDATE_CHECKPOINTS,
+                    evidence_ref=checkpoint["volume_checkpoint"]["checkpoint_id"],
+                )
             sidecar = self.scheduler.tick(book_run_id)
             action = self._scheduler_action(sidecar.action)
             if action is not SupervisorAction.NO_ACTION:
                 return self._result(book_run_id, before, action, sidecar.operation_id)
-        checkpoint = self._checkpoint_if_needed(book)
-        if checkpoint is not None:
-            if checkpoint["ending_reachability"]["replan_required"]:
+            replan_report_id = self._checkpoint_replan_report(book)
+            if replan_report_id:
+                # A checkpoint finding becomes executable only after the
+                # governed Recap has emitted its Replan Request.
+                self._replan_source(book)
                 self._set_state(book, BookProductionState.REPLAN_REQUIRED)
-            return self._result(
-                book_run_id,
-                before,
-                SupervisorAction.UPDATE_CHECKPOINTS,
-                evidence_ref=checkpoint["volume_checkpoint"]["checkpoint_id"],
-            )
+                return self._result(
+                    book_run_id,
+                    before,
+                    SupervisorAction.UPDATE_CHECKPOINTS,
+                    evidence_ref=replan_report_id,
+                )
         if before == BookProductionState.REPLAN_REQUIRED.value:
             return self._start_replan(book)
         next_chapter = int(book["accepted_through_chapter"]) + 1
@@ -674,12 +688,41 @@ class PostgresBookProductionSupervisor:
             principal=self.principal,
         )
 
+    def _checkpoint_replan_report(self, book: dict[str, Any]) -> str:
+        with AuthorityUnitOfWork(self.authority.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT report_id
+                FROM authority_ending_reachability_report
+                WHERE book_run_id=%s
+                  AND evaluated_through_chapter=%s
+                  AND replan_required=TRUE
+                  AND NOT EXISTS (
+                    SELECT 1
+                    FROM authority_book_replan AS replan
+                    JOIN authority_asset_version AS recap
+                      ON recap.asset_version_id=
+                         replan.source_recap_asset_version_id
+                    WHERE replan.book_run_id=
+                          authority_ending_reachability_report.book_run_id
+                      AND recap.content #>>
+                          '{observation_snapshot,ending_reachability,report_id}' =
+                          authority_ending_reachability_report.report_id
+                  )
+                ORDER BY created_at DESC
+                LIMIT 1
+                """,
+                [book["book_run_id"], book["accepted_through_chapter"]],
+            )
+            row = uow.cursor.fetchone()
+        return str(row[0]) if row is not None else ""
+
     def _start_replan(self, book: dict[str, Any]) -> BookProductionSupervisorTick:
         from novel_forge.modules.book_replan import CoordinateBookReplanCommand
 
         source = self._replan_source(book)
         accepted_chapter = int(book["accepted_through_chapter"])
-        result = self._require_replan().start(
+        result = self.replan.start(
             CoordinateBookReplanCommand(
                 project_id=str(book["project_id"]),
                 workspace_id=str(book["workspace_id"]),
@@ -747,16 +790,8 @@ class PostgresBookProductionSupervisor:
             "affected_scope": str(row[3]),
         }
 
-    def _require_replan(self) -> Any:
-        if self.replan is None:
-            raise KernelError(
-                "BOOK_REPLAN_NOT_CONFIGURED",
-                "Book production composition requires BookReplanCoordinator",
-            )
-        return self.replan
-
     def _latest_replan(self, book_run_id: str) -> dict[str, Any]:
-        result = self._require_replan().latest_for_book(book_run_id)
+        result = self.replan.latest_for_book(book_run_id)
         if result is None:
             raise KernelError(
                 "BOOK_REPLAN_NOT_FOUND",

@@ -91,6 +91,7 @@ class TrustedPrincipalResolver:
                     "content.authority.cancel",
                     "content.authority.recover",
                     "book.authority.execute",
+                    "book.authority.approve_replan",
                     "book.authority.query",
                     "story_planning.authority.execute",
                     "book_design.authority.execute",

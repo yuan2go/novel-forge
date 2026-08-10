@@ -64,6 +64,9 @@ class BookProductionComposition:
                 "BOOK_REPLAN_SCOPE_MISMATCH",
                 "Replan belongs to another Book production run",
             )
+        self.principal.require(
+            "book.authority.approve_replan", str(replan["project_id"])
+        )
         return self.replan.approve(
             replan_id,
             authority_type=authority_type,

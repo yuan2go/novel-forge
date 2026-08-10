@@ -114,6 +114,28 @@ class ReaderOutcomeAndRecapDomainTests(unittest.TestCase):
         self.assertEqual(outputs["adjustment_proposal"]["decision_status"], "AUTHORITY_PENDING")
         self.assertIsNotNone(outputs["replan_request"])
 
+    def test_ending_reachability_checkpoint_is_a_blocking_replan_reason(self) -> None:
+        outputs = build_longform_recap_outputs(
+            project_id="project:1",
+            book_id="book:1",
+            chapter_range=(1, 1),
+            checkpoint_type=LongformCheckpointType.BOOK_AUTHORITY_REQUEST,
+            observations={
+                "ending_reachability": {
+                    "report_id": "ending:1",
+                    "replan_required": True,
+                    "ending_contract_reachable": False,
+                    "reasons": ["CHAPTER_BUDGET_INSUFFICIENT"],
+                }
+            },
+        )
+
+        self.assertIsNotNone(outputs["replan_request"])
+        self.assertEqual(
+            outputs["replan_request"]["reason_refs"],
+            ["ENDING_REACHABILITY_AT_RISK"],
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

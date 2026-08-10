@@ -491,18 +491,22 @@ def create_authority_app(settings: IndustrialSettings):
                         JOIN authority_capability_pack_deployment AS deployment
                           ON deployment.deployment_id=
                              activation.active_deployment_id
+                        JOIN authority_capability_pack_compilation AS compilation
+                          ON compilation.compilation_id=deployment.compilation_id
                         WHERE activation.pack_id=%s
                           AND activation.environment=%s
                           AND deployment.deployment_status='ACTIVE'
+                          AND deployment.pack_version=%s
+                          AND compilation.compilation_hash=%s
+                          AND compilation.manifest_hash=%s
+                          AND compilation.compilation_status='TRUSTED'
                         """,
                         [
-                            str(
-                                os.environ.get(
-                                    "NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID"
-                                )
-                                or "chapter_generation_pack"
-                            ),
+                            str(pack_report["pack_id"]),
                             settings.environment,
+                            str(pack_report["pack_version"]),
+                            str(pack_report["compilation_hash"]),
+                            str(pack_report["manifest_hash"]),
                         ],
                     )
                     pack_activation_ready = int(uow.cursor.fetchone()[0]) > 0

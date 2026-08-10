@@ -101,11 +101,15 @@ class PostgresBookAuthorityScheduler:
                 operation_id,
             )
         reader = self._output(operation_id, book["project_id"], "reader_outcome.report")
+        ending_reachability = self._ending_reachability(
+            book, int(request["chapter_number"])
+        )
         trigger = should_trigger_longform_recap(
             chapter_number=int(request["chapter_number"]),
             light_cadence=int(book["light_recap_cadence"]),
             formal_cadence=int(book["formal_recap_cadence"]),
             chapter_group_complete=self._chapter_group_complete(request),
+            authority_requested=bool(ending_reachability.get("replan_required")),
         )
         if not trigger["should_trigger"]:
             return None
@@ -113,7 +117,9 @@ class PostgresBookAuthorityScheduler:
             request["chapter_request_id"], "LONGFORM_RECAP"
         )
         if not recap_operation:
-            admission = self._schedule_recap(book, request, reader, trigger)
+            admission = self._schedule_recap(
+                book, request, reader, trigger, ending_reachability
+            )
             return self._result(
                 book["book_run_id"],
                 before,
@@ -152,6 +158,33 @@ class PostgresBookAuthorityScheduler:
                 "Chapter request references an invalid ChapterGroup Plan",
             )
         return int(request["chapter_number"]) == int(row[0][1])
+
+    def _ending_reachability(
+        self, book: dict[str, Any], chapter_number: int
+    ) -> dict[str, Any]:
+        with AuthorityUnitOfWork(self.authority.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT report_id, replan_required, ending_contract_reachable,
+                       remaining_chapter_budget, reasons, report_hash
+                FROM authority_ending_reachability_report
+                WHERE book_run_id=%s AND evaluated_through_chapter=%s
+                ORDER BY created_at DESC
+                LIMIT 1
+                """,
+                [book["book_run_id"], chapter_number],
+            )
+            row = uow.cursor.fetchone()
+        if row is None:
+            return {}
+        return {
+            "report_id": str(row[0]),
+            "replan_required": bool(row[1]),
+            "ending_contract_reachable": bool(row[2]),
+            "remaining_chapter_budget": int(row[3]),
+            "reasons": list(row[4]),
+            "report_hash": str(row[5]),
+        }
 
     def _latest_accepted_request(self, book: dict[str, Any]) -> dict[str, Any] | None:
         with AuthorityUnitOfWork(self.authority.database_url) as uow:
@@ -266,6 +299,7 @@ class PostgresBookAuthorityScheduler:
         request: dict[str, Any],
         reader: dict[str, Any],
         trigger: dict[str, Any],
+        ending_reachability: dict[str, Any],
     ) -> BookFollowupAdmission:
         evidence = self.authority.chapter_port.require_acceptance_evidence(
             project_id=book["project_id"],
@@ -331,6 +365,7 @@ class PostgresBookAuthorityScheduler:
                     },
                     "canon": {"conflicts": []},
                     "quality_trend": {"direction": "STABLE"},
+                    "ending_reachability": ending_reachability,
                 },
             },
             input_assets=(

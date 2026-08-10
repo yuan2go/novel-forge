@@ -213,7 +213,15 @@ def build_longform_recap_outputs(
     canon = _mapping(observations.get("canon"))
     rewards = _mapping(observations.get("reward_ledger"))
     promises = _mapping(observations.get("promise_ledger"))
+    ending_reachability = _mapping(observations.get("ending_reachability"))
     _add_if(deviations, bool(canon.get("conflicts")), "CANON_CONFLICT", "BLOCKING", canon)
+    _add_if(
+        deviations,
+        bool(ending_reachability.get("replan_required")),
+        "ENDING_REACHABILITY_AT_RISK",
+        "BLOCKING",
+        ending_reachability,
+    )
     reader_allowed = bool(
         reader_consumption["future_production_influence_allowed"]
     )

@@ -26,6 +26,10 @@ from novel_forge.modules.book_authority.input_resolver import (
     ResolveBookProductionInputCommand,
 )
 from novel_forge.modules.book_authority.production import BookProductionState
+from novel_forge.modules.book_followup_authority import LongformCheckpointType
+from novel_forge.modules.book_followup_authority.application import (
+    BookFollowupAdmission,
+)
 from novel_forge.modules.book_production import SupervisorAction
 from novel_forge.modules.hierarchical_planning.domain import (
     COMMON_FIELDS,
@@ -305,6 +309,7 @@ def _principal(project_id: str) -> Principal:
                 "story_planning.authority.activate",
                 "story_design.authority.execute",
                 "book.authority.execute",
+                "book.authority.approve_replan",
                 "book.followup:*",
                 "chapter.authority.execute",
                 "external_effect.execute",
@@ -493,90 +498,198 @@ def _seed_inputs(project_id: str, book_id: str) -> dict[str, str]:
     return result
 
 
-def _seed_recap_lineage(
-    project_id: str,
-    book_id: str,
+def _followup_output(
     *,
-    book_run_id: str = "",
-    chapter_request_id: str = "",
-) -> tuple[str, str]:
-    definition_name = identifier("longform-recap-fixture-definition")
-    operation_id = identifier("longform-recap-fixture-operation")
-    outputs: list[tuple[str, str, str]] = []
-    with transaction() as connection, connection.cursor() as cursor:
-        insert_definition(cursor, definition_name)
-        insert_operation(
-            cursor,
-            operation_id=operation_id,
-            definition_name=definition_name,
-            project_id=project_id,
-            status="SUCCEEDED",
+    project_id: str,
+    chapter_request_id: str,
+    followup_type: str,
+    output_key: str,
+) -> dict[str, Any]:
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute(
+            """
+            SELECT link.operation_id, operation.status, binding.asset_version_id,
+                   binding.content_hash, version.content
+            FROM authority_book_followup_operation AS link
+            JOIN authority_operation AS operation
+              ON operation.operation_id=link.operation_id
+            JOIN authority_operation_output_asset AS binding
+              ON binding.operation_id=link.operation_id AND binding.output_key=%s
+            JOIN authority_asset_version AS version
+              ON version.asset_version_id=binding.asset_version_id
+            WHERE link.project_id=%s AND link.chapter_request_id=%s
+              AND link.followup_type=%s
+            """,
+            [output_key, project_id, chapter_request_id, followup_type],
         )
-        for asset_type, output_key, content in (
-            (
-                "longform_recap",
-                "longform.recap.report",
-                {"book_id": book_id, "deviations": ["GROUP_OBJECTIVE_DRIFT"]},
-            ),
-            (
-                "replan_request",
-                "longform.recap.replan_request",
-                {
-                    "book_id": book_id,
-                    "affected_scope": "CHAPTER_GROUP",
-                    "future_only": True,
+        rows = uow.cursor.fetchall()
+    assert len(rows) == 1
+    assert str(rows[0][1]) == "SUCCEEDED"
+    return {
+        "operation_id": str(rows[0][0]),
+        "asset_version_id": str(rows[0][2]),
+        "content_hash": str(rows[0][3]),
+        "content": dict(rows[0][4]),
+    }
+
+
+def _followup_output_exists(
+    *, project_id: str, chapter_request_id: str, output_key: str
+) -> bool:
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute(
+            """
+            SELECT EXISTS (
+                SELECT 1
+                FROM authority_book_followup_operation AS link
+                JOIN authority_operation_output_asset AS binding
+                  ON binding.operation_id=link.operation_id
+                JOIN authority_operation AS operation
+                  ON operation.operation_id=link.operation_id
+                WHERE link.project_id=%s
+                  AND link.chapter_request_id=%s
+                  AND binding.output_key=%s
+                  AND operation.status='SUCCEEDED'
+            )
+            """,
+            [project_id, chapter_request_id, output_key],
+        )
+        return bool(uow.cursor.fetchone()[0])
+
+
+def _run_controlled_recap_through_authority(
+    authority: Any,
+    *,
+    project_id: str,
+    chapter_request_id: str,
+    principal: Principal,
+) -> dict[str, Any]:
+    """Produce controlled Replan evidence through the real follow-up Authority."""
+    request = authority.require_chapter_request(chapter_request_id)
+    book = authority.require(request["book_run_id"])
+    evidence = authority.chapter_port.require_acceptance_evidence(
+        project_id=project_id,
+        root_operation_id=request["chapter_root_operation_id"],
+    )
+    outputs = {
+        str(item["asset_type"]): dict(item)
+        for item in list(evidence.get("outputs") or [])
+    }
+    reader = _followup_output(
+        project_id=project_id,
+        chapter_request_id=chapter_request_id,
+        followup_type="READER_OUTCOME",
+        output_key="reader_outcome.report",
+    )
+    frozen = dict(book["longform_context_versions"])
+    authority_inputs = authority.resolve_asset_refs(
+        project_id=project_id,
+        asset_version_ids=(
+            str(book["book_design_version"]),
+            str(book["book_plan_version"]),
+            str(frozen["volume_plan_version"]),
+            str(frozen["arc_plan_version"]),
+            str(frozen["quality_trend_version"]),
+            str(book["last_chapter_outcome_version_id"]),
+            str(book["active_story_state_version_id"]),
+        ),
+    )
+
+    def asset_ref(name: str) -> dict[str, str]:
+        item = outputs[name]
+        return {
+            "asset_version_id": str(item["asset_version_id"]),
+            "content_hash": str(item["content_hash"]),
+        }
+
+    admission = authority.schedule_longform_recap(
+        chapter_request_id,
+        principal=principal,
+        payload={
+            "book_id": book["book_id"],
+            "checkpoint_type": LongformCheckpointType.BOOK_AUTHORITY_REQUEST.value,
+            "chapter_range": [1, int(request["chapter_number"])],
+            "book_design_version": book["book_design_version"],
+            "book_plan_version": book["book_plan_version"],
+            "volume_plan_version": frozen["volume_plan_version"],
+            "arc_plan_version": frozen["arc_plan_version"],
+            "canon_snapshot_version": outputs["canon_snapshot"]["asset_version_id"],
+            "character_state_version": outputs["character_state_snapshot"][
+                "asset_version_id"
+            ],
+            "foreshadowing_state_version": outputs["foreshadow_snapshot"][
+                "asset_version_id"
+            ],
+            "reader_state_version": reader["asset_version_id"],
+            "quality_trend_version": frozen["quality_trend_version"],
+            "reward_ledger_version": outputs["reward_ledger_snapshot"][
+                "asset_version_id"
+            ],
+            "promise_ledger_version": outputs["promise_ledger_snapshot"][
+                "asset_version_id"
+            ],
+            "chapter_outcome_versions": [book["last_chapter_outcome_version_id"]],
+            "story_state_version": book["active_story_state_version_id"],
+            "observations": {
+                "evidence_level": "CONTROLLED_FIXTURE",
+                "fixture_only": True,
+                "production_verified": False,
+                "reader_state": dict(reader["content"].get("reader_state") or {}),
+                "reader_qualification": {
+                    "qualification_status": "SHADOW",
+                    "sample_size": 0,
+                    "confidence": 0,
+                    "disagreement": True,
+                    "position_bias": True,
+                    "ood": True,
+                    "drift_detected": False,
+                    "recent_reports": [],
+                    "last_adjustment_chapter": None,
                 },
-            ),
-        ):
-            asset_id = identifier(f"{asset_type}-asset")
-            version_id = f"{asset_id}:v1"
-            digest = canonical_hash(content)
-            cursor.execute(
-                "INSERT INTO authority_asset(asset_id,project_id,asset_type) VALUES (%s,%s,%s)",
-                [asset_id, project_id, asset_type],
-            )
-            cursor.execute(
-                """
-                INSERT INTO authority_asset_version(
-                    asset_version_id,asset_id,version_number,lifecycle,
-                    eligibility,governance,content,content_hash,schema_version
-                ) VALUES (%s,%s,1,'ACTIVE','ELIGIBLE','CLEAR',%s,%s,%s)
-                """,
-                [
-                    version_id,
-                    asset_id,
-                    Jsonb(content),
-                    digest,
-                    f"{asset_type}.v1",
-                ],
-            )
-            cursor.execute(
-                """
-                INSERT INTO authority_operation_output_asset(
-                    operation_id,asset_id,asset_version_id,output_key,role,content_hash
-                ) VALUES (%s,%s,%s,%s,'PRIMARY',%s)
-                """,
-                [operation_id, asset_id, version_id, output_key, digest],
-            )
-            outputs.append((asset_type, output_key, version_id))
-        if book_run_id and chapter_request_id:
-            cursor.execute(
-                """
-                INSERT INTO authority_book_followup_operation(
-                    followup_id, book_run_id, chapter_request_id, project_id,
-                    followup_type, operation_id, stable_idempotency_key
-                ) VALUES (%s,%s,%s,%s,'LONGFORM_RECAP',%s,%s)
-                """,
-                [
-                    identifier("longform-recap-fixture-followup"),
-                    book_run_id,
-                    chapter_request_id,
-                    project_id,
-                    operation_id,
-                    f"{book_run_id}:{chapter_request_id}:fixture-replan-recap",
-                ],
-            )
-    return outputs[0][2], outputs[1][2]
+                "canon": {
+                    "conflicts": [
+                        {
+                            "type": "FUTURE_PROMISE_PAYOFF_DEVIATION",
+                            "target": "chapter:2",
+                            "executed_content_affected": False,
+                        }
+                    ],
+                    "evidence_level": "CONTROLLED_FIXTURE",
+                },
+                "quality_trend": {"direction": "STABLE"},
+            },
+        },
+        input_assets=(
+            {
+                "asset_version_id": str(reader["asset_version_id"]),
+                "content_hash": str(reader["content_hash"]),
+            },
+            asset_ref("canon_snapshot"),
+            asset_ref("character_state_snapshot"),
+            asset_ref("foreshadow_snapshot"),
+            asset_ref("reward_ledger_snapshot"),
+            asset_ref("promise_ledger_snapshot"),
+            *authority_inputs,
+        ),
+    )
+    authority.followup.run_or_recover(
+        BookFollowupAdmission(admission.operation_id, project_id, True)
+    )
+    return {
+        "operation_id": admission.operation_id,
+        "recap": _followup_output(
+            project_id=project_id,
+            chapter_request_id=chapter_request_id,
+            followup_type="LONGFORM_RECAP",
+            output_key="longform.recap.report",
+        ),
+        "replan_request": _followup_output(
+            project_id=project_id,
+            chapter_request_id=chapter_request_id,
+            followup_type="LONGFORM_RECAP",
+            output_key="longform.recap.replan_request",
+        ),
+    }
 
 
 def _activate_plan_chain(
@@ -1068,7 +1181,11 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
     worker_principal = Principal(
         principal_id=f"book-worker:{project_id}",
         principal_type=PrincipalType.WORKER,
-        permissions=principal.permissions,
+        permissions=frozenset(
+            permission
+            for permission in principal.permissions
+            if permission != "book.authority.approve_replan"
+        ),
         project_scope=principal.project_scope,
         authentication_source="postgres-functional-loop-worker",
     )
@@ -1406,19 +1523,31 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
         object_store.cleanup()
         return
 
-    recap_version, replan_request_version = _seed_recap_lineage(
-        project_id,
-        book_id,
-        book_run_id=book.book_run_id,
+    for _ in range(8):
+        if _followup_output_exists(
+            project_id=project_id,
+            chapter_request_id=checkpoint_request_id,
+            output_key="reader_outcome.report",
+        ):
+            break
+        worker_tick(worker_composition)
+    else:
+        raise AssertionError("Canonical Worker did not complete Reader Outcome")
+
+    controlled_recap = _run_controlled_recap_through_authority(
+        book_authority,
+        project_id=project_id,
         chapter_request_id=checkpoint_request_id,
+        principal=principal,
     )
     coordinator = composition.replan
-    assert recap_version
-    assert replan_request_version
-    supervisor = composition.supervisor
-    supervisor._set_state(
-        book_authority.require(book.book_run_id),
-        BookProductionState.REPLAN_REQUIRED,
+    assert controlled_recap["recap"]["asset_version_id"]
+    assert controlled_recap["replan_request"]["asset_version_id"]
+    book_authority.complete_followup(
+        controlled_recap["operation_id"], replan_required=True
+    )
+    assert book_authority.require(book.book_run_id)["state"] == (
+        BookProductionState.REPLAN_REQUIRED.value
     )
 
     started_replan = worker_tick(worker_composition)
@@ -1453,6 +1582,14 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
         coordinator.latest_for_book(book.book_run_id)["replan_id"]
         == (pending["replan_id"])
     )
+    with pytest.raises(PermissionError):
+        worker_composition.approve_replan(
+            book_run_id=book.book_run_id,
+            replan_id=str(pending["replan_id"]),
+            authority_type="PLAN_CHANGE_AUTHORITY",
+            authority_version="worker-forbidden-v1",
+            evidence={},
+        )
 
     approval_response = api_post(
         f"/product/production/book-authority/runs/{book.book_run_id}/"

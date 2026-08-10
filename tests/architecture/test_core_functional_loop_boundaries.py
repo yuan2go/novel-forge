@@ -83,6 +83,7 @@ def test_api_and_worker_share_the_canonical_book_production_composition() -> Non
     router = _read("src/novel_forge/api/routers/book_authority.py")
     worker = _read("src/novel_forge/workers/book_authority.py")
     composition = _read("src/novel_forge/modules/book_authority/composition.py")
+    real_provider_proof = _read("scripts/run_short_longform_runtime_proof.py")
 
     assert "def build_book_production_composition(" in dependencies
     assert "BookProductionComposition(" in dependencies
@@ -93,6 +94,8 @@ def test_api_and_worker_share_the_canonical_book_production_composition() -> Non
     assert "def approve_replan(" in composition
     assert "self.replan.approve(" in composition
     assert "RESOLVED_AUTHORITY_INPUT" in worker
+    assert "build_book_production_composition(" in real_provider_proof
+    assert "PostgresBookProductionSupervisor(" not in real_provider_proof
 
 
 def test_replan_has_no_implicit_approval_path_and_worker_stops_pending() -> None:

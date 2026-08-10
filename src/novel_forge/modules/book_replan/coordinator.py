@@ -399,6 +399,9 @@ class BookReplanCoordinator:
         evidence: dict[str, Any],
     ) -> dict[str, Any]:
         replan = self.require(replan_id)
+        self.principal.require(
+            "book.authority.approve_replan", str(replan["project_id"])
+        )
         if replan["status"] in {"ACTIVE", "REGENERATING", "RESUMED"}:
             return {
                 **replan,

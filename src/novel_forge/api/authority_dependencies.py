@@ -1118,6 +1118,14 @@ def build_book_production_composition(
         principal=principal,
         replan=replan,
         production_preparation=preparation,
+        context_token_budget=int(
+            values.get("NOVEL_FORGE_BOOK_CONTEXT_TOKEN_BUDGET") or 16_000
+        ),
+        quality_context_token_budget=int(
+            values.get("NOVEL_FORGE_BOOK_QUALITY_CONTEXT_TOKEN_BUDGET")
+            or values.get("NOVEL_FORGE_BOOK_CONTEXT_TOKEN_BUDGET")
+            or 16_000
+        ),
     )
     return BookProductionComposition(
         authority=authority,

@@ -40,8 +40,9 @@ Authority API admission
 → ChapterGroup and ChapterPlan
 → Chapter Authority Operation/Saga/Attempt/ExternalEffect
 → acceptance
+→ Narrative Checkpoint and Ending Reachability
 → Reader Outcome
-→ Recap/checkpoint
+→ cadence Recap, or Authority-requested Recap when Ending Reachability is at risk
 → no-replan next chapter, or Replan candidate and PlanChange proposal
 → APPROVAL_PENDING
 → formal Authority approval command/API
@@ -49,9 +50,11 @@ Authority API admission
 → Book resume and next chapter
 ```
 
-The Worker may generate a Replan candidate and proposal but cannot approve it.
-`APPROVAL_PENDING` is a durable normal wait state. Approval replay and the
-subsequent activation/resume path are idempotent and restart-safe.
+The Worker may generate a Replan candidate and proposal but cannot approve it:
+its principal has `book.authority.execute`, not the separate
+`book.authority.approve_replan` permission. `APPROVAL_PENDING` is a durable
+normal wait state. Approval replay and the subsequent activation/resume path
+are idempotent and restart-safe.
 
 ## Authority and recovery facts
 

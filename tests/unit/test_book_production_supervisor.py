@@ -33,6 +33,7 @@ def test_supervisor_reports_planning_generation_operation_identity(
     }
     supervisor = object.__new__(PostgresBookProductionSupervisor)
     supervisor.authority = SimpleNamespace(require=lambda _book_run_id: dict(book))
+    supervisor.replan = SimpleNamespace(latest_for_book=lambda _book_run_id: None)
     supervisor._checkpoint_if_needed = lambda _book: None
     supervisor._set_state = lambda _book, _state: "checkpoint-operation"
     supervisor._active_group_run = lambda _book, *_args: (
@@ -210,3 +211,33 @@ def test_supervisor_activates_formally_approved_replan_and_resumes() -> None:
     assert tick.evidence_ref == "replan:1"
     assert activated == ["replan:1"]
     assert superseded == [("group-run:1", "replan:1", "chapter-group:v1")]
+
+
+def test_supervisor_finishes_replan_resume_after_snapshot_binding_restart() -> None:
+    book = {
+        "book_run_id": "book-run:1",
+        "state": BookProductionState.READY.value,
+        "input_mode": "RESOLVED_AUTHORITY_INPUT",
+    }
+    activated: list[str] = []
+    replan = SimpleNamespace(
+        latest_for_book=lambda _book_run_id: {
+            "replan_id": "replan:1",
+            "status": "REGENERATING",
+        },
+        activate=lambda replan_id: (
+            activated.append(replan_id)
+            or {"replan_id": replan_id, "status": "RESUMED"}
+        ),
+    )
+    supervisor = object.__new__(PostgresBookProductionSupervisor)
+    supervisor.authority = SimpleNamespace(
+        require=lambda _book_run_id: dict(book)
+    )
+    supervisor.replan = replan
+
+    tick = supervisor.tick("book-run:1")
+
+    assert tick.action is SupervisorAction.ACTIVATE_REPLAN
+    assert tick.evidence_ref == "replan:1"
+    assert activated == ["replan:1"]

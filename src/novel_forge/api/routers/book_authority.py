@@ -282,7 +282,9 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
             principal = build_trusted_principal_resolver().resolve_api_principal(
                 claimed_actor_id=request.actor_id
             )
-            principal.require("book.authority.execute", book["project_id"])
+            principal.require(
+                "book.authority.approve_replan", book["project_id"]
+            )
             return _composition(ctx).approve_replan(
                 book_run_id=book_run_id,
                 replan_id=replan_id,

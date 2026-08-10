@@ -97,8 +97,11 @@ production evidence. The PostgreSQL two-chapter proof covers both:
 - No-Replan: resolved admission through Chapter 1 acceptance, Reader/Recap, and
   Chapter 2 admission/execution.
 - Explicit Replan: candidate/proposal creation, durable `APPROVAL_PENDING`,
-  restart-safe waiting, formal Authority API approval, Plan activation, new
-  input snapshot, Book resume, and Chapter 2 admission/execution.
+  restart-safe waiting, proof that the Worker permission cannot approve, formal
+  Authority API approval, Plan activation, new input snapshot, Book resume, and
+  Chapter 2 admission/execution. The controlled Replan trigger is produced by
+  the real Followup Authority, not by direct SQL or a private Supervisor state
+  write.
 
 The integration suite also retains retry, restart/resume, lease/fence, and
 UNKNOWN ExternalEffect recovery coverage. Deterministic Provider results make

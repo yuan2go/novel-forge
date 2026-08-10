@@ -30,8 +30,9 @@ Resolved Book admission
 → ChapterAuthorityCommandPort.submit
 → Chapter root Operation + Chapter Saga
 → query Chapter Authority terminal state
+→ Narrative Checkpoint and Ending Reachability report
 → Reader Outcome child Operation
-→ Long-form Recap/checkpoint child Operation
+→ cadence Long-form Recap, or forced Recap for a blocking checkpoint finding
 → no-replan next chapter, or explicit Replan approval flow
 → Book checkpoint / root Saga completion
 ```
@@ -79,15 +80,17 @@ When followup evidence requires Replan, the Worker invokes the existing
 PlanChange proposal. It then stops at durable `REPLAN_APPROVAL_PENDING`.
 Repeated ticks and process restarts return the existing candidate/proposal.
 
-Only the formal Authority endpoint may approve the proposal:
+Only a principal holding the distinct `book.authority.approve_replan`
+permission may use the formal Authority endpoint to approve the proposal:
 
 ```text
 POST /product/production/book-authority/runs/{book_run_id}/replans/{replan_id}/approve
 ```
 
-The command requires an authorized principal plus authority type/version and
-evidence. The Worker never supplies approval and no fixture or low-risk policy
-bypasses it. After approval, the same composition activates PlanChange,
+The Book Worker principal deliberately lacks that permission. The command also
+requires authority type/version and evidence. The Worker never supplies
+approval and no fixture or low-risk policy bypasses it. After approval, the
+same composition activates PlanChange,
 supersedes the obsolete inactive ChapterGroup when safe, resolves a new Book
 input snapshot, resumes the Book, and continues with the next chapter.
 

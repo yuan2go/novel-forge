@@ -17,12 +17,11 @@ from typing import Any, Mapping
 from uuid import uuid4
 
 from novel_forge.api.authority_dependencies import (
-    build_book_authority_application,
+    build_book_production_composition,
     build_chapter_authority_application,
     build_story_planning_generation_application,
 )
 from novel_forge.modules.book_authority import (
-    BookProductionInputResolver,
     PostgresBookAuthority,
     PostgresBookProductionSupervisor,
     ResolveBookProductionInputCommand,
@@ -34,16 +33,12 @@ from novel_forge.modules.book_followup_authority.application import (
 )
 from novel_forge.modules.book_production import SupervisorAction
 from novel_forge.modules.book_replan import (
-    BookReplanCoordinator,
     CoordinateBookReplanCommand,
 )
 from novel_forge.modules.canon_graph.approval_authority import (
     CanonApprovalContext,
     decide_canon_approval,
     list_canon_approvals,
-)
-from novel_forge.modules.chapter_group_authority import (
-    PostgresChapterGroupAuthority,
 )
 from novel_forge.infrastructure.settings import IndustrialSettings
 from novel_forge.modules.authority_security import Principal
@@ -87,7 +82,6 @@ from novel_forge.modules.project_authority import (
     ProjectAuthorityApplication,
     ProjectAuthorityCommand,
 )
-from novel_forge.modules.plan_change_authority import PostgresPlanChangeAuthority
 from novel_forge.modules.story_planning_runtime import (
     GENERATOR_INPUT_ROLES,
     PlanningGenerationStatus,
@@ -2942,14 +2936,22 @@ def _run_book_phase(
     book_record = BookDesignAuthorityQuery(database_url).require_book(
         project_id=project_id, book_id=book_id
     )
-    input_resolver = BookProductionInputResolver(
-        database_url,
-        application_build_id=build_id,
-        commit_sha=commit_sha,
+    composition_env = {
+        **env,
+        "NOVEL_FORGE_BOOK_QUALITY_CONTEXT_TOKEN_BUDGET": str(
+            quality_context_token_budget
+        ),
+    }
+    composition = build_book_production_composition(
+        settings,
+        principal=operator,
+        env=composition_env,
+        chapter_application=chapter,
     )
-    authority = build_book_authority_application(
-        settings, env=env, chapter_application=chapter
-    )
+    authority = composition.authority
+    planning = composition.planning
+    input_resolver = composition.input_resolver
+    supervisor = composition.supervisor
     existing_books = _query_rows(
         database_url,
         """
@@ -3018,19 +3020,6 @@ def _run_book_phase(
             ),
             principal=operator,
         )
-    chapter_groups = PostgresChapterGroupAuthority(
-        database_url,
-        book_authority=authority,
-        application_build_id=build_id,
-        commit_sha=commit_sha,
-    )
-    supervisor = PostgresBookProductionSupervisor(
-        authority,
-        planning=planning,
-        chapter_groups=chapter_groups,
-        principal=operator,
-        quality_context_token_budget=quality_context_token_budget,
-    )
     worker = _principal(
         env["NOVEL_FORGE_AUTHORITY_WORKER_ID"],
         project_id,
@@ -3153,21 +3142,7 @@ def _run_book_phase(
         chapter_request_id=str(chapter_requests[2]["chapter_request_id"]),
         principal=operator,
     )
-    plan_change = PostgresPlanChangeAuthority(
-        database_url,
-        story_design=planning.story_design,
-        planning=planning.planning,
-        application_build_id=build_id,
-        commit_sha=commit_sha,
-    )
-    replan = BookReplanCoordinator(
-        database_url,
-        book_authority=authority,
-        planning=planning,
-        plan_change=plan_change,
-        input_resolver=input_resolver,
-        principal=operator,
-    )
+    replan = composition.replan
     command = CoordinateBookReplanCommand(
         project_id=project_id,
         workspace_id=workspace_id,
@@ -3375,6 +3350,7 @@ def _resume_book_phase(args: argparse.Namespace) -> dict[str, Any]:
         "project.authority.execute",
         "book_design.authority.execute",
         "book.authority.execute",
+        "book.authority.approve_replan",
         "book.followup:*",
         "chapter.authority.execute",
         "story_design.authority.execute",
@@ -3531,6 +3507,7 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
         "project.authority.execute",
         "book_design.authority.execute",
         "book.authority.execute",
+        "book.authority.approve_replan",
         "book.followup:*",
         "chapter.authority.execute",
         "story_design.authority.execute",

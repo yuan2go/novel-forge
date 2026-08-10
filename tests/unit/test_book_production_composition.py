@@ -117,7 +117,13 @@ class BookProductionCompositionTests(unittest.TestCase):
             input_resolver=SimpleNamespace(),
             replan=SimpleNamespace(),
             supervisor=supervisor,
-            principal=SimpleNamespace(),
+            principal=Principal(
+                principal_id="trusted-operator",
+                principal_type=PrincipalType.LOCAL_OPERATOR,
+                permissions=frozenset({"book.authority.approve_replan"}),
+                project_scope=frozenset({"project:1"}),
+                authentication_source="test",
+            ),
         )
 
         self.assertEqual(composition.tick("resolved"), "supervisor-tick")
@@ -135,7 +141,10 @@ class BookProductionCompositionTests(unittest.TestCase):
 
         approvals: list[tuple[str, str, str, dict[str, object]]] = []
         replan = SimpleNamespace(
-            require=lambda _replan_id: {"book_run_id": "book-run:1"},
+            require=lambda _replan_id: {
+                "book_run_id": "book-run:1",
+                "project_id": "project:1",
+            },
             approve=lambda replan_id, **values: (
                 approvals.append(
                     (
@@ -158,7 +167,13 @@ class BookProductionCompositionTests(unittest.TestCase):
             input_resolver=SimpleNamespace(),
             replan=replan,
             supervisor=SimpleNamespace(),
-            principal=SimpleNamespace(),
+            principal=Principal(
+                principal_id="trusted-operator",
+                principal_type=PrincipalType.LOCAL_OPERATOR,
+                permissions=frozenset({"book.authority.approve_replan"}),
+                project_scope=frozenset({"project:1"}),
+                authentication_source="test",
+            ),
         )
 
         result = composition.approve_replan(
@@ -181,6 +196,33 @@ class BookProductionCompositionTests(unittest.TestCase):
             )
         self.assertEqual(raised.exception.code, "BOOK_REPLAN_SCOPE_MISMATCH")
 
+        worker_composition = BookProductionComposition(
+            authority=SimpleNamespace(),
+            planning=SimpleNamespace(),
+            chapter_groups=SimpleNamespace(),
+            production_preparation=SimpleNamespace(),
+            followup=SimpleNamespace(),
+            plan_change=SimpleNamespace(),
+            input_resolver=SimpleNamespace(),
+            replan=replan,
+            supervisor=SimpleNamespace(),
+            principal=Principal(
+                principal_id="book-worker",
+                principal_type=PrincipalType.WORKER,
+                permissions=frozenset({"book.authority.execute"}),
+                project_scope=frozenset({"project:1"}),
+                authentication_source="test",
+            ),
+        )
+        with self.assertRaises(PermissionError):
+            worker_composition.approve_replan(
+                book_run_id="book-run:1",
+                replan_id="replan:1",
+                authority_type="PLAN_CHANGE_AUTHORITY",
+                authority_version="worker-forbidden-v1",
+                evidence={},
+            )
+
     def test_authority_api_is_the_only_replan_approval_entrypoint(self) -> None:
         from fastapi import FastAPI
         from fastapi.testclient import TestClient
@@ -202,7 +244,12 @@ class BookProductionCompositionTests(unittest.TestCase):
         principal = Principal(
             principal_id="trusted-operator",
             principal_type=PrincipalType.LOCAL_OPERATOR,
-            permissions=frozenset({"book.authority.execute"}),
+            permissions=frozenset(
+                {
+                    "book.authority.execute",
+                    "book.authority.approve_replan",
+                }
+            ),
             project_scope=frozenset({"project:1"}),
             authentication_source="test",
         )
