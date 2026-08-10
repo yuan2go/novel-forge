@@ -38,6 +38,37 @@ def derive_worker_database_status(
     return "READY"
 
 
+def evaluate_worker_fleet_readiness(
+    workers: list[dict[str, Any]],
+    *,
+    required_worker_kinds: tuple[str, ...] = (),
+) -> dict[str, Any]:
+    required = tuple(sorted(set(required_worker_kinds)))
+    present = sorted({str(item["worker_kind"]) for item in workers})
+    evaluated = required or tuple(present)
+    missing = sorted(set(required) - set(present))
+    unhealthy: list[str] = []
+    for kind in evaluated:
+        candidates = [
+            item for item in workers if str(item["worker_kind"]) == kind
+        ]
+        healthy = any(
+            bool(item["fresh"])
+            and item["status"] not in {"FATAL", "STOPPED"}
+            and item["database_status"] not in {"UNAVAILABLE", "UNKNOWN"}
+            for item in candidates
+        )
+        if candidates and not healthy:
+            unhealthy.append(kind)
+    return {
+        "ready": bool(evaluated) and not missing and not unhealthy,
+        "required_worker_kinds": list(required),
+        "present_worker_kinds": present,
+        "missing_worker_kinds": missing,
+        "unhealthy_worker_kinds": unhealthy,
+    }
+
+
 class PostgresWorkerHealthObserver:
     """Persist rebuildable worker, database, and fleet operational projections."""
 
@@ -401,7 +432,10 @@ class PostgresWorkerHealthObserver:
 
 
 def runtime_health_report(
-    database_url: str, *, freshness_seconds: int = 120
+    database_url: str,
+    *,
+    freshness_seconds: int = 120,
+    required_worker_kinds: tuple[str, ...] = (),
 ) -> dict[str, Any]:
     if freshness_seconds <= 0:
         raise ValueError("worker freshness must be positive")
@@ -513,17 +547,20 @@ def runtime_health_report(
             "SELECT COUNT(*) FROM authority_operation WHERE status='DEAD_LETTER'"
         )
         dead_letters = int(uow.cursor.fetchone()[0])
-    ready = bool(workers) and all(
-        item["fresh"]
-        and item["status"] not in {"FATAL", "STOPPED"}
-        and item["database_status"] not in {"UNAVAILABLE", "UNKNOWN"}
-        for item in workers
+    fleet = evaluate_worker_fleet_readiness(
+        workers,
+        required_worker_kinds=required_worker_kinds,
     )
     return {
         "type": "RuntimeHealthReport",
         "database_ready": True,
         "liveness": "ALIVE",
-        "readiness": "READY" if ready else "DEGRADED",
+        "readiness": "READY" if fleet["ready"] else "DEGRADED",
+        "worker_fleet_ready": fleet["ready"],
+        "required_worker_kinds": fleet["required_worker_kinds"],
+        "present_worker_kinds": fleet["present_worker_kinds"],
+        "missing_worker_kinds": fleet["missing_worker_kinds"],
+        "unhealthy_worker_kinds": fleet["unhealthy_worker_kinds"],
         "workers": workers,
         "worker_freshness_seconds": freshness_seconds,
         "outbox_lag": fleet_metrics["outbox_backlog"],
@@ -538,5 +575,6 @@ def runtime_health_report(
 __all__ = [
     "PostgresWorkerHealthObserver",
     "derive_worker_database_status",
+    "evaluate_worker_fleet_readiness",
     "runtime_health_report",
 ]

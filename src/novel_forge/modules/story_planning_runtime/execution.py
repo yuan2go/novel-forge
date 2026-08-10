@@ -154,6 +154,18 @@ def _chapter_function_row(chapter: int, function: str, hook: str) -> dict[str, A
     }
 
 
+def _logical_chapter_number(logical_key: str) -> int:
+    parts = logical_key.split(":")
+    if len(parts) >= 2 and parts[0] == "chapter":
+        try:
+            chapter = int(parts[1])
+        except ValueError:
+            chapter = 0
+        if chapter > 0:
+            return chapter
+    return 1
+
+
 def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str, Any]:
     """Explicit deterministic response for SCRIPTED_FIXTURE routes only."""
 
@@ -163,6 +175,7 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
     if not isinstance(command, Mapping):
         raise ValueError("Planning fixture requires its frozen command")
     logical_key = str(command.get("logical_key") or "")
+    chapter_number = _logical_chapter_number(logical_key)
     parent_version_id = str(command.get("parent_version_id") or "")
     input_versions = command.get("input_versions")
     versions = dict(input_versions) if isinstance(input_versions, Mapping) else {}
@@ -262,10 +275,12 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
             ],
         },
         PlanContractType.CHAPTER: {
-            **_chapter_function_row(1, "setup", "door closes"),
+            **_chapter_function_row(chapter_number, "setup", "door closes"),
             "actual_arc_contributions": [],
-            "title": "The Door Closes",
-            "premise": "The protagonist makes a witnessed choice.",
+            "title": f"Chapter {chapter_number}: The Door Closes",
+            "premise": (
+                f"Chapter {chapter_number} forces the protagonist into a witnessed choice."
+            ),
         },
     }
     payload.update(by_type[contract_type])

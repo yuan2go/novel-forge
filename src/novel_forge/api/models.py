@@ -872,6 +872,13 @@ class BookAuthorityControlRequest(BaseModel):
     actor_id: str = ""
 
 
+class BookReplanApprovalRequest(BaseModel):
+    authority_type: str = Field(min_length=1)
+    authority_version: str = Field(min_length=1)
+    evidence: dict[str, Any] = Field(default_factory=dict)
+    actor_id: str = ""
+
+
 class ExternalEffectManualResolutionRequest(BaseModel):
     operation_id: str = Field(min_length=1)
     project_id: str = Field(min_length=1)
@@ -2244,6 +2251,7 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "BookProductionInputResolveRequest": BookProductionInputResolveRequest,
         "BookAuthorityChapterRequest": BookAuthorityChapterRequest,
         "BookAuthorityControlRequest": BookAuthorityControlRequest,
+        "BookReplanApprovalRequest": BookReplanApprovalRequest,
         "ExternalEffectManualResolutionRequest": ExternalEffectManualResolutionRequest,
         "ChapterProductionResumeRequest": ChapterProductionResumeRequest,
         "ChapterProductionControlRequest": ChapterProductionControlRequest,

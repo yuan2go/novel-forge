@@ -203,6 +203,22 @@ def test_chapter_contract_preserves_explicit_empty_arc_contribution_policy() -> 
     assert contract.content["required_arc_contributions"] == []
 
 
+def test_planning_fixture_preserves_requested_chapter_number() -> None:
+    content = planning_fixture_response(
+        "chapter_plan.generate",
+        {
+            "planning_command": {
+                "logical_key": "chapter:2:after:replan-1",
+                "parent_version_id": "chapter-group:v2",
+                "input_versions": {"arc_plans": "arc:v1"},
+            }
+        },
+    )
+
+    assert content["chapter_number"] == 2
+    assert content["title"].startswith("Chapter 2:")
+
+
 def _command(generator: str) -> StoryPlanningGenerationCommand:
     return StoryPlanningGenerationCommand(
         project_id="project-1",

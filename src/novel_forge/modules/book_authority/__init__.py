@@ -25,6 +25,7 @@ from .supervisor import (
     BookProductionSupervisorTick,
     PostgresBookProductionSupervisor,
 )
+from .composition import BookProductionComposition
 
 __all__ = [
     "BookAuthorityScheduler",
@@ -48,4 +49,5 @@ __all__ = [
     "PostgresBookAuthorityScheduler",
     "BookProductionSupervisorTick",
     "PostgresBookProductionSupervisor",
+    "BookProductionComposition",
 ]

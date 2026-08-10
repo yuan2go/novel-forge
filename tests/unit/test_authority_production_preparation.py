@@ -280,6 +280,15 @@ class ProductionPreparationTests(unittest.TestCase):
         self.assertTrue(
             principal.allows("content.operation:theme.question.create", "project-1")
         )
+        self.assertTrue(
+            principal.allows("story_planning.authority.execute", "project-1")
+        )
+        worker = TrustedPrincipalResolver(environment="test").resolve_worker_principal(
+            "book-worker"
+        )
+        self.assertTrue(
+            worker.allows("story_planning.authority.execute", "project-1")
+        )
 
     def test_production_requires_configured_trusted_principal(self) -> None:
         with self.assertRaisesRegex(RuntimeError, "trusted local operator"):

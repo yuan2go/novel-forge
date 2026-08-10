@@ -2,8 +2,11 @@ from __future__ import annotations
 
 from copy import deepcopy
 import hashlib
+from pathlib import Path
 import tempfile
+from types import SimpleNamespace
 from typing import Any
+from unittest.mock import patch
 from uuid import uuid4
 
 import psycopg
@@ -11,42 +14,19 @@ from psycopg.types.json import Jsonb
 import pytest
 
 from novel_forge.api.authority_dependencies import (
+    build_book_production_composition,
     build_chapter_authority_application,
     build_story_planning_generation_application,
 )
 from novel_forge.infrastructure.settings import IndustrialSettings
 
 from novel_forge.modules.authority_security import Principal, PrincipalType
-from novel_forge.modules.command_kernel.external_effect_adapters import (
-    FakeDeterministicProvider,
-)
-from novel_forge.modules.command_kernel.external_effect_runtime import (
-    EffectCommandContext,
-    dispatch_external_effect,
-    plan_external_effect,
-)
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.book_authority.input_resolver import (
-    BookProductionInputResolver,
     ResolveBookProductionInputCommand,
 )
-from novel_forge.modules.book_authority.production import (
-    BookProductionState,
-    PostgresBookAuthority,
-    StartBookProductionCommand,
-)
-from novel_forge.modules.book_authority.supervisor import (
-    PostgresBookProductionSupervisor,
-)
-from novel_forge.modules.book_production import (
-    PostgresBookNarrativeCheckpointAuthority,
-    SupervisorAction,
-)
-from novel_forge.modules.book_replan import (
-    BookReplanCoordinator,
-    CoordinateBookReplanCommand,
-)
-from novel_forge.modules.chapter_group_authority import PostgresChapterGroupAuthority
+from novel_forge.modules.book_authority.production import BookProductionState
+from novel_forge.modules.book_production import SupervisorAction
 from novel_forge.modules.hierarchical_planning.domain import (
     COMMON_FIELDS,
     TYPE_FIELDS,
@@ -62,13 +42,9 @@ from novel_forge.modules.reader_judge_authority import (
     ReaderJudgeResolutionScope,
     ReaderJudgeRuntimeResolver,
 )
-from novel_forge.modules.plan_change_authority import PostgresPlanChangeAuthority
 from novel_forge.modules.story_planning_runtime import (
     GENERATOR_INPUT_ROLES,
-    CapabilityPackBackedPlanningExecutionBinder,
     FrozenPlanningInput,
-    PostgresPlanningExecutionBundleResolver,
-    PreparedPlanningExecution,
     PlanningExecutionEvidence,
     PlanningGenerationCandidate,
     PlanningGenerationStatus,
@@ -81,11 +57,6 @@ from novel_forge.modules.story_planning_runtime import (
     story_planning_generation_definition,
 )
 from novel_forge.modules.story_design_authority import GENERATOR_CATALOG
-from novel_forge.modules.production_execution.domain_execution import (
-    CandidateKind,
-    DomainExecutionCandidate,
-    DomainExecutionEvidence,
-)
 from novel_forge.modules.production_execution.capability_registry import (
     PLANNING_TIMEOUT_POLICY_VERSION,
     default_capability_registry,
@@ -323,164 +294,6 @@ class _ExternalEffectPepFixturePlanningBinder:
         )
 
 
-class _PlanningExternalEffectPepPort:
-    """Scripted PEP port backed by the real Command Kernel ExternalEffect runtime."""
-
-    production_execution_gateway_backed = True
-    external_effect_backed = True
-
-    def __init__(
-        self,
-        *,
-        context: EffectCommandContext,
-        attempt_id: str,
-        fencing_token: int,
-        worker_id: str,
-        effect_id: str,
-        command: StoryPlanningGenerationCommand,
-        adapter: FakeDeterministicProvider,
-        route_snapshot_ref: str,
-        input_manifest_ref: str,
-    ) -> None:
-        self.context = context
-        self.attempt_id = attempt_id
-        self.fencing_token = fencing_token
-        self.worker_id = worker_id
-        self.effect_id = effect_id
-        self.planning_command = command
-        self.adapter = adapter
-        self.route_snapshot_ref = route_snapshot_ref
-        self.input_manifest_ref = input_manifest_ref
-
-    def execute(self, command: Any) -> DomainExecutionCandidate:
-        dispatched = dispatch_external_effect(
-            DATABASE_URL,
-            self.context,
-            effect_id=self.effect_id,
-            worker_id=self.worker_id,
-            lease_seconds=30,
-            adapter=self.adapter,
-        )
-        assert dispatched["outcome"] == "success"
-        payload = _planning_contract(self.planning_command)
-        if ":replacement-candidate" in self.planning_command.idempotency_key:
-            payload["objective"] = f"{payload['objective']} after recap deviation"
-        return DomainExecutionCandidate(
-            candidate_kind=CandidateKind.GENERATION,
-            raw_output=payload,
-            evidence=DomainExecutionEvidence(
-                execution_id=self.effect_id,
-                operation_id=self.context.operation_id,
-                attempt_id=self.attempt_id,
-                fencing_token=self.fencing_token,
-                capability=command.capability,
-                backend_id="command-kernel-external-effect:scripted-fixture",
-                route_snapshot_id=self.route_snapshot_ref,
-                input_manifest_ref=self.input_manifest_ref,
-                output_manifest_ref=f"output-manifest:{self.effect_id}",
-                validation_manifest_ref=f"validation-manifest:{self.effect_id}",
-                usage_receipt_ref=f"usage-receipt:{self.effect_id}",
-                cost_receipt_ref=f"cost-receipt:{self.effect_id}",
-                fixture_protocol_only=True,
-                real_model_call=False,
-                production_verified=False,
-                provider_id=self.adapter.provider,
-                model_id="scripted-planning-fixture",
-                provider_request_id=str(dispatched.get("provider_request_id") or ""),
-                external_receipt_ref=self.effect_id,
-            ),
-        )
-
-
-class _PlanningExternalEffectPreparer:
-    def prepare(
-        self,
-        *,
-        operation_id: str,
-        attempt_id: str,
-        fencing_token: int,
-        worker_id: str,
-        command: StoryPlanningGenerationCommand,
-        inputs: tuple[FrozenPlanningInput, ...],
-        definition: Any,
-        attempt_snapshot: Any,
-    ) -> PreparedPlanningExecution:
-        frozen = attempt_snapshot.execution_snapshot
-        manifest = [
-            {
-                "role": item.role,
-                "asset_version_id": item.asset_version_id,
-                "content_hash": item.content_hash,
-            }
-            for item in inputs
-        ]
-        input_manifest_hash = canonical_hash(manifest)
-        input_manifest_ref = (
-            f"planning-input-manifest:{input_manifest_hash.removeprefix('sha256:')}"
-        )
-        context = EffectCommandContext(
-            operation_id=operation_id,
-            project_id=command.project_id,
-            actor_id=worker_id,
-            trace_id=command.trace_id,
-            correlation_id=command.correlation_id,
-        )
-        adapter = FakeDeterministicProvider("success")
-        effect_id = str(
-            plan_external_effect(
-                DATABASE_URL,
-                context,
-                effect_type="model.invoke",
-                provider=adapter.provider,
-                capability=definition.capability,
-                stable_idempotency_key=(
-                    f"{operation_id}:{attempt_id}:{definition.capability}:fixture"
-                ),
-                request_payload={
-                    "generator_operation_name": command.generator_operation_name,
-                    "logical_key": command.logical_key,
-                    "input_manifest_ref": input_manifest_ref,
-                },
-                max_attempts=1,
-                reversible=False,
-                request_timeout_seconds=30,
-                reconciliation_mode=adapter.reconciliation_mode,
-                provider_capability_profile=dict(adapter.capability_profile),
-            )["external_effect_id"]
-        )
-        port = _PlanningExternalEffectPepPort(
-            context=context,
-            attempt_id=attempt_id,
-            fencing_token=fencing_token,
-            worker_id=worker_id,
-            effect_id=effect_id,
-            command=command,
-            adapter=adapter,
-            route_snapshot_ref=frozen.route_policy_ref,
-            input_manifest_ref=input_manifest_ref,
-        )
-        return PreparedPlanningExecution(
-            execution_port=port,
-            context_bundle_asset_version_id=inputs[0].asset_version_id,
-            context_bundle_hash=inputs[0].content_hash,
-            route_snapshot_ref=frozen.route_policy_ref,
-            route_snapshot_hash=frozen.route_policy_hash,
-            input_manifest_ref=input_manifest_ref,
-            input_manifest_hash=input_manifest_hash,
-            prompt_bundle_ref=frozen.prompt_bundle_ref,
-            prompt_bundle_hash=frozen.prompt_bundle_hash,
-            skill_bundle_ref=frozen.skill_bundle_ref,
-            skill_bundle_hash=frozen.skill_bundle_hash,
-            tool_permission_snapshot_ref=frozen.tool_policy_ref,
-            tool_permission_snapshot_hash=frozen.tool_policy_hash,
-            context_policy_ref=frozen.context_policy_ref,
-            context_policy_hash=frozen.context_policy_hash,
-            validation_policy_ref=frozen.evaluation_policy_ref,
-            commit_policy_ref="story-design-candidate-only:v1",
-            timeout_policy_ref="story-planning-timeout:v1",
-        )
-
-
 def _principal(project_id: str) -> Principal:
     return Principal(
         principal_id=f"planning-operator:{project_id}",
@@ -492,6 +305,9 @@ def _principal(project_id: str) -> Principal:
                 "story_planning.authority.activate",
                 "story_design.authority.execute",
                 "book.authority.execute",
+                "book.followup:*",
+                "chapter.authority.execute",
+                "external_effect.execute",
             }
         ),
         project_scope=frozenset({project_id}),
@@ -660,7 +476,13 @@ def _seed_inputs(project_id: str, book_id: str) -> dict[str, str]:
     return result
 
 
-def _seed_recap_lineage(project_id: str, book_id: str) -> tuple[str, str]:
+def _seed_recap_lineage(
+    project_id: str,
+    book_id: str,
+    *,
+    book_run_id: str = "",
+    chapter_request_id: str = "",
+) -> tuple[str, str]:
     definition_name = identifier("longform-recap-fixture-definition")
     operation_id = identifier("longform-recap-fixture-operation")
     outputs: list[tuple[str, str, str]] = []
@@ -720,249 +542,24 @@ def _seed_recap_lineage(project_id: str, book_id: str) -> tuple[str, str]:
                 [operation_id, asset_id, version_id, output_key, digest],
             )
             outputs.append((asset_type, output_key, version_id))
-    return outputs[0][2], outputs[1][2]
-
-
-def _seed_current_canon_role_outputs(
-    *, project_id: str, book_id: str, book_run_id: str
-) -> dict[str, str]:
-    definition_name = identifier("current-canon-role-fixture-definition")
-    operation_id = identifier("current-canon-role-fixture-operation")
-    versions: dict[str, str] = {}
-    with transaction() as connection, connection.cursor() as cursor:
-        insert_definition(cursor, definition_name)
-        insert_operation(
-            cursor,
-            operation_id=operation_id,
-            definition_name=definition_name,
-            project_id=project_id,
-            status="SUCCEEDED",
-        )
-        for asset_type in (
-            "canon_snapshot",
-            "character_state_snapshot",
-            "foreshadow_snapshot",
-            "reward_ledger_snapshot",
-            "promise_ledger_snapshot",
-        ):
-            asset_id = identifier(f"current-{asset_type}-asset")
-            version_id = f"{asset_id}:v1"
-            content = {
-                "book_id": book_id,
-                "chapter_number": 1,
-                "role": asset_type,
-            }
-            digest = canonical_hash(content)
-            cursor.execute(
-                "INSERT INTO authority_asset(asset_id,project_id,asset_type) VALUES (%s,%s,%s)",
-                [asset_id, project_id, asset_type],
-            )
+        if book_run_id and chapter_request_id:
             cursor.execute(
                 """
-                INSERT INTO authority_asset_version(
-                    asset_version_id,asset_id,version_number,lifecycle,
-                    eligibility,governance,content,content_hash,schema_version
-                ) VALUES (%s,%s,1,'ACTIVE','ELIGIBLE','CLEAR',%s,%s,%s)
+                INSERT INTO authority_book_followup_operation(
+                    followup_id, book_run_id, chapter_request_id, project_id,
+                    followup_type, operation_id, stable_idempotency_key
+                ) VALUES (%s,%s,%s,%s,'LONGFORM_RECAP',%s,%s)
                 """,
                 [
-                    version_id,
-                    asset_id,
-                    Jsonb(content),
-                    digest,
-                    f"{asset_type}.v1",
-                ],
-            )
-            cursor.execute(
-                """
-                INSERT INTO authority_operation_output_asset(
-                    operation_id,asset_id,asset_version_id,output_key,role,content_hash
-                ) VALUES (%s,%s,%s,%s,'state_snapshot',%s)
-                """,
-                [
+                    identifier("longform-recap-fixture-followup"),
+                    book_run_id,
+                    chapter_request_id,
+                    project_id,
                     operation_id,
-                    asset_id,
-                    version_id,
-                    f"chapter.canon.snapshot.{asset_type}",
-                    digest,
+                    f"{book_run_id}:{chapter_request_id}:fixture-replan-recap",
                 ],
             )
-            versions[asset_type] = version_id
-        cursor.execute(
-            """
-            UPDATE authority_book_production
-            SET active_canon_snapshot_version_id=%s
-            WHERE book_run_id=%s
-            """,
-            [versions["canon_snapshot"], book_run_id],
-        )
-        assert cursor.rowcount == 1
-    return versions
-
-
-def _seed_chapter_acceptance_for_checkpoint(
-    *,
-    project_id: str,
-    book_run_id: str,
-    chapter_plan_version: str,
-    chapter_group_plan_version: str,
-    production_profile_version: str,
-    arc_plan_version: str,
-) -> str:
-    request_id = identifier("checkpoint-chapter-request")
-    delegation_id = identifier("checkpoint-delegation")
-    child_operation_id = identifier("checkpoint-child-operation")
-    acceptance_operation_id = identifier("checkpoint-acceptance-operation")
-    child_saga_id = identifier("checkpoint-child-saga")
-    child_definition = identifier("checkpoint-child-definition")
-    acceptance_definition = identifier("checkpoint-acceptance-definition")
-    outcome_version = ""
-    story_state_version = ""
-    canon_version = ""
-    with transaction() as connection, connection.cursor() as cursor:
-        cursor.execute(
-            "SELECT content_hash FROM authority_asset_version WHERE asset_version_id=%s",
-            [chapter_plan_version],
-        )
-        chapter_plan_hash = str(cursor.fetchone()[0])
-        insert_definition(cursor, child_definition)
-        insert_definition(cursor, acceptance_definition)
-        insert_operation(
-            cursor,
-            operation_id=child_operation_id,
-            definition_name=child_definition,
-            project_id=project_id,
-            status="SUCCEEDED",
-        )
-        insert_operation(
-            cursor,
-            operation_id=acceptance_operation_id,
-            definition_name=acceptance_definition,
-            project_id=project_id,
-            status="SUCCEEDED",
-        )
-        cursor.execute(
-            """
-            INSERT INTO authority_saga(
-                saga_id,root_operation_id,project_id,status,trace_id,correlation_id
-            ) VALUES (%s,%s,%s,'SUCCEEDED',%s,%s)
-            """,
-            [
-                child_saga_id,
-                child_operation_id,
-                project_id,
-                f"trace:{child_operation_id}",
-                f"correlation:{child_operation_id}",
-            ],
-        )
-        cursor.execute(
-            """
-            INSERT INTO authority_book_chapter_request(
-                chapter_request_id,book_run_id,project_id,chapter_number,
-                chapter_plan_version,chapter_plan_content_hash,
-                production_profile_version,stable_idempotency_key,command_payload,
-                chapter_root_operation_id,chapter_saga_id,status_reference,
-                parent_group_version_id
-            ) VALUES (%s,%s,%s,1,%s,%s,%s,%s,'{}'::jsonb,%s,%s,'SUCCEEDED',%s)
-            """,
-            [
-                request_id,
-                book_run_id,
-                project_id,
-                chapter_plan_version,
-                chapter_plan_hash,
-                production_profile_version,
-                f"{request_id}:submit",
-                child_operation_id,
-                child_saga_id,
-                chapter_group_plan_version,
-            ],
-        )
-        cursor.execute(
-            """
-            INSERT INTO authority_child_delegation(
-                delegation_id,project_id,owner_authority,owner_id,child_authority,
-                chapter_request_id,chapter_number,plan_version_id,
-                child_root_operation_id,child_saga_id,stable_idempotency_key,status
-            ) VALUES (%s,%s,'BOOK',%s,'CHAPTER',%s,1,%s,%s,%s,%s,'ACCEPTED')
-            """,
-            [
-                delegation_id,
-                project_id,
-                book_run_id,
-                request_id,
-                chapter_plan_version,
-                child_operation_id,
-                child_saga_id,
-                f"{request_id}:delegation",
-            ],
-        )
-        for asset_type, content in (
-            (
-                "chapter_outcome",
-                {
-                    "actual_arc_contributions": [
-                        {
-                            "arc_plan_version_id": arc_plan_version,
-                            "kind": "advance",
-                            "evidence": "accepted chapter outcome",
-                        }
-                    ]
-                },
-            ),
-            ("story_state_snapshot", {"chapter_number": 1}),
-            ("canon_snapshot", {"chapter_number": 1}),
-        ):
-            asset_id = identifier(f"checkpoint-{asset_type}")
-            version_id = f"{asset_id}:v1"
-            digest = canonical_hash(content)
-            cursor.execute(
-                "INSERT INTO authority_asset(asset_id,project_id,asset_type) VALUES (%s,%s,%s)",
-                [asset_id, project_id, asset_type],
-            )
-            cursor.execute(
-                """
-                INSERT INTO authority_asset_version(
-                    asset_version_id,asset_id,version_number,lifecycle,
-                    eligibility,governance,content,content_hash,schema_version
-                ) VALUES (%s,%s,1,'ACTIVE','ELIGIBLE','CLEAR',%s,%s,%s)
-                """,
-                [
-                    version_id,
-                    asset_id,
-                    Jsonb(content),
-                    digest,
-                    f"{asset_type}.v1",
-                ],
-            )
-            if asset_type == "chapter_outcome":
-                outcome_version = version_id
-            elif asset_type == "story_state_snapshot":
-                story_state_version = version_id
-            else:
-                canon_version = version_id
-        cursor.execute(
-            """
-            INSERT INTO authority_book_chapter_acceptance(
-                acceptance_id,project_id,book_run_id,chapter_request_id,
-                delegation_id,acceptance_operation_id,chapter_number,
-                chapter_outcome_asset_version_id,story_state_asset_version_id,
-                canon_snapshot_asset_version_id,evidence,status
-            ) VALUES (%s,%s,%s,%s,%s,%s,1,%s,%s,%s,%s,'COMMITTED')
-            """,
-            [
-                identifier("checkpoint-acceptance"),
-                project_id,
-                book_run_id,
-                request_id,
-                delegation_id,
-                acceptance_operation_id,
-                outcome_version,
-                story_state_version,
-                canon_version,
-                Jsonb({"fixture_protocol_only": True}),
-            ],
-        )
-    return request_id
+    return outputs[0][2], outputs[1][2]
 
 
 def _activate_plan_chain(
@@ -1021,9 +618,7 @@ def _activate_plan_chain(
         )
         generated = application.generate(command, principal=principal)
         assert generated.status is PlanningGenerationStatus.APPROVAL_PENDING
-        candidate = application.require_candidate(
-            generated.candidate_asset_version_id
-        )
+        candidate = application.require_candidate(generated.candidate_asset_version_id)
         assert candidate["generator_definition_version"] == (
             GENERATOR_CATALOG[generator].definition_version
         )
@@ -1404,7 +999,10 @@ def test_planning_retry_reuses_frozen_pack_after_measured_provider_result() -> N
     assert candidate_count == 1
 
 
-def test_book_input_resolver_freezes_active_authorities_and_planning_pack() -> None:
+@pytest.mark.parametrize("runtime_path", ("NO_REPLAN", "EXPLICIT_REPLAN_APPROVAL"))
+def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
+    runtime_path: str,
+) -> None:
     harness = CapabilityPackPostgresHarness("book-input-resolver")
     deployment_id = _activate_planning_pack(harness)
     project_id = harness.project_id
@@ -1412,24 +1010,30 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack() -> N
     book_id = harness.book_ids[0]
     generic = _seed_inputs(project_id, book_id)
     principal = _principal(project_id)
-    execution_resolver = PostgresPlanningExecutionBundleResolver(
-        DATABASE_URL,
-        execution_preparer=_PlanningExternalEffectPreparer(),
-        workflow_definition_ref=STORY_PLANNING_WORKFLOW_DEFINITION_REF,
-        pack_id=harness.pack_id,
+    object_store = tempfile.TemporaryDirectory()
+    settings = IndustrialSettings(
+        root=Path(__file__).resolve().parents[2],
         environment="development",
-        runtime_profile="development",
-        release_channel="VALIDATION",
-        release_sha=RELEASE_SHA,
+        storage_authority="postgresql",
+        database_url=DATABASE_URL,
     )
-    planning = StoryPlanningGenerationApplication(
-        DATABASE_URL,
-        execution_binder=CapabilityPackBackedPlanningExecutionBinder(
-            execution_resolver
-        ),
-        application_build_id="core-functional-loop-fixture",
-        commit_sha=RELEASE_SHA,
+    runtime_env = {
+        "NOVEL_FORGE_ENVIRONMENT": "development",
+        "NOVEL_FORGE_APPLICATION_BUILD_ID": "core-functional-loop-fixture",
+        "NOVEL_FORGE_COMMIT_SHA": RELEASE_SHA,
+        "NOVEL_FORGE_MODEL_PROVIDER": "scripted_provider_v2",
+        "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": object_store.name,
+        "NOVEL_FORGE_AUTHORITY_WORKER_ID": "core-functional-loop-worker",
+        "NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID": harness.pack_id,
+    }
+    chapter_application = build_chapter_authority_application(settings, env=runtime_env)
+    composition = build_book_production_composition(
+        settings,
+        principal=principal,
+        env=runtime_env,
+        chapter_application=chapter_application,
     )
+    planning = composition.planning
     activated = _activate_plan_chain(
         project_id=project_id,
         workspace_id=workspace_id,
@@ -1526,11 +1130,7 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack() -> N
             ],
         )
         expected_book_version = int(cursor.fetchone()[0])
-    resolver = BookProductionInputResolver(
-        DATABASE_URL,
-        application_build_id="core-functional-loop-fixture",
-        commit_sha=RELEASE_SHA,
-    )
+    resolver = composition.input_resolver
     command = ResolveBookProductionInputCommand(
         project_id=project_id,
         workspace_id=workspace_id,
@@ -1560,174 +1160,275 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack() -> N
                 ["f" * 40, snapshot.snapshot_id],
             )
 
-    book_authority = PostgresBookAuthority(
-        DATABASE_URL,
-        chapter_port=object(),
-        followup_application=object(),
-        application_build_id="core-functional-loop-fixture",
-        commit_sha=RELEASE_SHA,
-        legacy_fixture_input_allowed=False,
+    book_authority = composition.authority
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+
+    from novel_forge.api.models import product_model_map
+    from novel_forge.api.routers.book_authority import create_router
+    from novel_forge.api.routers.context import ProductRouterContext
+
+    authority_api = FastAPI()
+    authority_api.include_router(
+        create_router(
+            ProductRouterContext(
+                app_settings=settings,
+                models=product_model_map(),
+                services=SimpleNamespace(book_production=composition),
+            )
+        )
     )
-    book = book_authority.start(
-        StartBookProductionCommand(
-            project_id=project_id,
-            workspace_id=workspace_id,
-            book_id=book_id,
-            actor_id=principal.principal_id,
-            trace_id=f"trace:{project_id}:book-start",
-            correlation_id=f"correlation:{project_id}",
-            stable_idempotency_key=f"{project_id}:book-start",
-            book_design_version=snapshot.book_design_version,
-            book_plan_version=snapshot.book_plan_version,
-            production_profile_version=snapshot.production_profile_version,
-            longform_context_versions={
-                "volume_plan_version": snapshot.current_volume_plan_version,
-                "arc_plan_version": snapshot.active_arc_plan_versions[0],
-                "character_state_version": snapshot.character_state_version,
-                "foreshadowing_state_version": (snapshot.foreshadowing_state_version),
-                "quality_trend_version": snapshot.quality_trend_version,
-                "reward_ledger_version": snapshot.reward_ledger_version,
-                "promise_ledger_version": snapshot.promise_ledger_version,
-                "reader_segment_version": snapshot.reader_segment_version,
-                "reader_contract_version": snapshot.reader_contract_version,
-                "platform_profile_version": snapshot.platform_profile_version,
-            },
-            target_chapter_count=3,
-            input_snapshot_id=snapshot.snapshot_id,
-            input_mode="RESOLVED_AUTHORITY_INPUT",
-        ),
-        principal=principal,
+
+    def api_post(path: str, payload: dict[str, Any]):
+        trusted = SimpleNamespace(resolve_api_principal=lambda **_values: principal)
+        with (
+            patch(
+                "novel_forge.api.routers.book_authority.build_trusted_principal_resolver",
+                return_value=trusted,
+            ),
+            TestClient(authority_api) as client,
+        ):
+            return client.post(path, json=payload)
+
+    start_response = api_post(
+        "/product/production/book-authority/commands",
+        {
+            "project_id": project_id,
+            "workspace_id": workspace_id,
+            "book_id": book_id,
+            "idempotency_key": f"{project_id}:book-start",
+            "input_snapshot_id": snapshot.snapshot_id,
+            "input_mode": "RESOLVED_AUTHORITY_INPUT",
+            "target_chapter_count": 3,
+            "light_recap_cadence": 5,
+            "formal_recap_cadence": 10,
+            "actor_id": "untrusted-caller",
+            "trace_id": f"trace:{project_id}:book-start",
+            "correlation_id": f"correlation:{project_id}",
+        },
     )
-    checkpoint_request_id = _seed_chapter_acceptance_for_checkpoint(
-        project_id=project_id,
-        book_run_id=book.book_run_id,
-        chapter_plan_version=activated["chapter_plan.generate"],
-        chapter_group_plan_version=activated["chapter_group_plan.generate"],
-        production_profile_version=snapshot.production_profile_version,
-        arc_plan_version=activated["arc_plan.generate"],
+    assert start_response.status_code == 202, start_response.text
+    book = SimpleNamespace(**start_response.json())
+
+    from novel_forge.modules.chapter_authority.contracts import ChapterNode
+    from novel_forge.modules.runtime_job import RuntimeJobAuthority
+    from novel_forge.workers.book_authority import (
+        execute_book_coordination_claim,
+        schedule_book_coordination_jobs,
     )
-    checkpoints = PostgresBookNarrativeCheckpointAuthority(
-        DATABASE_URL,
-        application_build_id="core-functional-loop-fixture",
-        commit_sha=RELEASE_SHA,
-    )
-    checkpoint_result = checkpoints.record_after_acceptance(
-        book_run_id=book.book_run_id,
-        chapter_request_id=checkpoint_request_id,
-        principal=principal,
-    )
-    checkpoint_replay = checkpoints.record_after_acceptance(
-        book_run_id=book.book_run_id,
-        chapter_request_id=checkpoint_request_id,
-        principal=principal,
-    )
-    assert checkpoint_result["replayed"] is False
-    assert checkpoint_replay["replayed"] is True
-    assert checkpoint_result["operation_id"] == checkpoint_replay["operation_id"]
-    assert {
-        key: value for key, value in checkpoint_result.items() if key != "replayed"
-    } == {key: value for key, value in checkpoint_replay.items() if key != "replayed"}
-    assert checkpoint_result["contribution_count"] == 1
-    assert checkpoint_result["ending_reachability"]["status"] in {
-        "REACHABLE",
-        "AT_RISK",
-    }
+
+    runtime_jobs = RuntimeJobAuthority(DATABASE_URL)
+
+    def worker_tick(runtime):
+        schedule_book_coordination_jobs(
+            DATABASE_URL,
+            runtime_jobs,
+            limit=1,
+            book_run_id=book.book_run_id,
+        )
+        claim = runtime_jobs.claim(
+            runtime_group="book",
+            worker_id="canonical-book-worker",
+            lease_seconds=30,
+            job_kinds=("BOOK_COORDINATION_TICK",),
+            subject_kind="BOOK_RUN",
+            subject_id=book.book_run_id,
+        )
+        assert claim is not None
+        return execute_book_coordination_claim(runtime_jobs, runtime, claim)
+
+    def run_chapter(root_operation_id: str) -> None:
+        scheduler = chapter_application.scheduler(principal=principal)
+        for _ in range(len(ChapterNode) + 4):
+            tick = scheduler.tick(
+                project_id=project_id,
+                root_operation_id=root_operation_id,
+            )
+            if tick.saga_status == "SUCCEEDED":
+                return
+        raise AssertionError("Chapter worker did not complete the admitted Chapter")
+
+    before_replan_actions: list[str] = []
+    for _ in range(32):
+        tick = worker_tick(composition)
+        action = str(tick["action"])
+        before_replan_actions.append(action)
+        if action == SupervisorAction.DISPATCH_CHAPTER.value:
+            run_chapter(str(tick["operation_id"]))
+        if (
+            int(book_authority.require(book.book_run_id)["accepted_through_chapter"])
+            >= 1
+        ):
+            break
+    else:
+        raise AssertionError("Canonical Worker did not accept Chapter 1")
+    assert SupervisorAction.DISPATCH_CHAPTER.value in before_replan_actions
+    assert SupervisorAction.ACCEPT_CHAPTER.value in before_replan_actions
+
+    checkpoint_action = ""
+    for _ in range(8):
+        checkpoint_tick = worker_tick(composition)
+        checkpoint_action = str(checkpoint_tick["action"])
+        if checkpoint_action == SupervisorAction.UPDATE_CHECKPOINTS.value:
+            break
+    assert checkpoint_action == SupervisorAction.UPDATE_CHECKPOINTS.value
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
         uow.cursor.execute(
             """
-            SELECT COUNT(DISTINCT contribution.contribution_id),
-                   COUNT(DISTINCT arc.checkpoint_id),
-                   COUNT(DISTINCT volume.checkpoint_id),
-                   COUNT(DISTINCT ending.report_id),
-                   COUNT(DISTINCT checkpoint_operation.operation_id)
-            FROM authority_arc_contribution AS contribution
-            JOIN authority_book_arc_checkpoint AS arc
-              ON arc.updated_by_operation_id=contribution.recorded_by_operation_id
-            JOIN authority_book_volume_checkpoint AS volume
-              ON volume.updated_by_operation_id=contribution.recorded_by_operation_id
-            JOIN authority_ending_reachability_report AS ending
-              ON ending.generated_by_operation_id=contribution.recorded_by_operation_id
-            JOIN authority_operation AS checkpoint_operation
-              ON checkpoint_operation.operation_id=contribution.recorded_by_operation_id
-            WHERE contribution.chapter_request_id=%s
-              AND checkpoint_operation.definition_name='book.narrative_checkpoint.record'
-              AND checkpoint_operation.status='SUCCEEDED'
+            SELECT request.chapter_request_id
+            FROM authority_book_chapter_acceptance AS acceptance
+            JOIN authority_book_chapter_request AS request
+              ON request.chapter_request_id=acceptance.chapter_request_id
+            WHERE acceptance.book_run_id=%s AND acceptance.chapter_number=1
             """,
-            [checkpoint_request_id],
+            [book.book_run_id],
         )
-        assert uow.cursor.fetchone() == (1, 1, 1, 1, 1)
-    current_canon_roles = _seed_current_canon_role_outputs(
-        project_id=project_id,
-        book_id=book_id,
+        checkpoint_request_id = str(uow.cursor.fetchone()[0])
+        uow.cursor.execute(
+            """
+            SELECT COUNT(*)
+            FROM authority_book_volume_checkpoint
+            WHERE book_run_id=%s AND accepted_through_chapter=1
+            """,
+            [book.book_run_id],
+        )
+        assert int(uow.cursor.fetchone()[0]) == 1
+
+    if runtime_path == "NO_REPLAN":
+        no_replan_actions: list[str] = []
+        for _ in range(32):
+            tick = worker_tick(composition)
+            action = str(tick["action"])
+            no_replan_actions.append(action)
+            if action == SupervisorAction.DISPATCH_CHAPTER.value:
+                run_chapter(str(tick["operation_id"]))
+            if (
+                int(
+                    book_authority.require(book.book_run_id)["accepted_through_chapter"]
+                )
+                >= 2
+            ):
+                break
+        else:
+            raise AssertionError(
+                "Canonical Worker did not produce the no-Replan Chapter 2"
+            )
+        assert SupervisorAction.START_REPLAN.value not in no_replan_actions
+        assert SupervisorAction.DISPATCH_CHAPTER.value in no_replan_actions
+        assert SupervisorAction.ACCEPT_CHAPTER.value in no_replan_actions
+        assert (
+            book_authority.require(book.book_run_id)["input_snapshot_id"]
+            == snapshot.snapshot_id
+        )
+        chapter_application.close()
+        object_store.cleanup()
+        return
+
+    recap_version, replan_request_version = _seed_recap_lineage(
+        project_id,
+        book_id,
         book_run_id=book.book_run_id,
+        chapter_request_id=checkpoint_request_id,
     )
-    recap_version, replan_request_version = _seed_recap_lineage(project_id, book_id)
-    plan_change = PostgresPlanChangeAuthority(
-        DATABASE_URL,
-        story_design=planning.story_design,
-        planning=planning.planning,
-        application_build_id="core-functional-loop-fixture",
-        commit_sha=RELEASE_SHA,
+    coordinator = composition.replan
+    assert recap_version
+    assert replan_request_version
+    supervisor = composition.supervisor
+    supervisor._set_state(
+        book_authority.require(book.book_run_id),
+        BookProductionState.REPLAN_REQUIRED,
     )
-    coordinator = BookReplanCoordinator(
-        DATABASE_URL,
-        book_authority=book_authority,
-        planning=planning,
-        plan_change=plan_change,
-        input_resolver=resolver,
-        principal=principal,
-    )
-    replan_command = CoordinateBookReplanCommand(
-        project_id=project_id,
-        workspace_id=workspace_id,
-        book_id=book_id,
-        book_run_id=book.book_run_id,
-        source_recap_asset_version_id=recap_version,
-        replan_request_asset_version_id=replan_request_version,
-        affected_scope="CHAPTER_GROUP",
-        target_asset_version_id=activated["chapter_group_plan.generate"],
-        idempotency_key=f"{project_id}:replan:chapter-group",
-        trace_id=f"trace:{project_id}:replan",
-        correlation_id=book.root_operation_id,
-    )
-    pending = coordinator.start(replan_command)
-    replayed_pending = coordinator.start(replan_command)
+
+    started_replan = worker_tick(composition)
+    assert started_replan["action"] == SupervisorAction.START_REPLAN.value
+    pending = coordinator.latest_for_book(book.book_run_id)
+    assert pending is not None
     assert pending["status"] == "APPROVAL_PENDING"
-    assert replayed_pending["replan_id"] == pending["replan_id"]
-    coordinator.approve(
-        pending["replan_id"],
-        authority_type="PLAN_CHANGE_AUTHORITY",
-        authority_version="fixture-explicit-approval-v1",
-        evidence={
-            "human_approved": True,
-            "fixture_protocol_only": True,
-            "production_verified": False,
+    assert book_authority.require(book.book_run_id)["state"] == (
+        BookProductionState.REPLAN_APPROVAL_PENDING.value
+    )
+    assert (
+        schedule_book_coordination_jobs(
+            DATABASE_URL,
+            runtime_jobs,
+            limit=1,
+            book_run_id=book.book_run_id,
+        )
+        == ()
+    )
+    pending_restart = build_book_production_composition(
+        settings,
+        principal=principal,
+        env=runtime_env,
+        chapter_application=chapter_application,
+    )
+    pending_restart_tick = pending_restart.tick(book.book_run_id)
+    assert pending_restart_tick.action is SupervisorAction.WAIT_REPLAN_APPROVAL
+    waiting_response = api_post(
+        f"/product/production/book-authority/runs/{book.book_run_id}/tick",
+        {},
+    )
+    assert waiting_response.status_code == 200, waiting_response.text
+    assert waiting_response.json()["action"] == (
+        SupervisorAction.WAIT_REPLAN_APPROVAL.value
+    )
+    assert (
+        coordinator.latest_for_book(book.book_run_id)["replan_id"]
+        == (pending["replan_id"])
+    )
+
+    approval_response = api_post(
+        f"/product/production/book-authority/runs/{book.book_run_id}/"
+        f"replans/{pending['replan_id']}/approve",
+        {
+            "authority_type": "PLAN_CHANGE_AUTHORITY",
+            "authority_version": "fixture-explicit-approval-v1",
+            "evidence": {
+                "operator_approved": True,
+                "fixture_protocol_only": True,
+                "production_verified": False,
+            },
+            "actor_id": "untrusted-caller",
         },
     )
-    resumed = coordinator.activate(pending["replan_id"])
-    replayed_resume = coordinator.activate(pending["replan_id"])
+    assert approval_response.status_code == 200, approval_response.text
+    assert approval_response.json()["status"] == "ACTIVE"
+    approval_replay = api_post(
+        f"/product/production/book-authority/runs/{book.book_run_id}/"
+        f"replans/{pending['replan_id']}/approve",
+        {
+            "authority_type": "PLAN_CHANGE_AUTHORITY",
+            "authority_version": "fixture-explicit-approval-v1",
+            "evidence": {
+                "operator_approved": True,
+                "fixture_protocol_only": True,
+                "production_verified": False,
+            },
+            "actor_id": "untrusted-caller",
+        },
+    )
+    assert approval_replay.status_code == 200, approval_replay.text
+    assert approval_replay.json()["replan_id"] == pending["replan_id"]
+
+    restarted = build_book_production_composition(
+        settings,
+        principal=principal,
+        env=runtime_env,
+        chapter_application=chapter_application,
+    )
+    activated_replan = worker_tick(restarted)
+    assert activated_replan["action"] == SupervisorAction.ACTIVATE_REPLAN.value
+    resumed = restarted.replan.require(pending["replan_id"])
     assert resumed["status"] == "RESUMED"
-    assert resumed["book_state"] == "READY"
-    assert resumed["replacement_child_candidate"]
-    assert replayed_resume["replan_id"] == resumed["replan_id"]
     assert resumed["input_snapshot_id"] != snapshot.snapshot_id
     resumed_snapshot = resolver.require(resumed["input_snapshot_id"])
-    assert (
-        resumed_snapshot.character_state_version
-        == current_canon_roles["character_state_snapshot"]
-    )
+    assert resumed_snapshot.character_state_version != snapshot.character_state_version
     assert (
         resumed_snapshot.foreshadowing_state_version
-        == current_canon_roles["foreshadow_snapshot"]
+        != snapshot.foreshadowing_state_version
     )
-    assert (
-        resumed_snapshot.reward_ledger_version
-        == current_canon_roles["reward_ledger_snapshot"]
-    )
-    assert (
-        resumed_snapshot.promise_ledger_version
-        == current_canon_roles["promise_ledger_snapshot"]
-    )
+    assert resumed_snapshot.reward_ledger_version != snapshot.reward_ledger_version
+    assert resumed_snapshot.promise_ledger_version != snapshot.promise_ledger_version
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
         uow.cursor.execute(
             """
@@ -1748,33 +1449,21 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack() -> N
     assert old_group_freshness == "STALE"
     assert binding_count == 2
 
-    chapter_groups = PostgresChapterGroupAuthority(
-        DATABASE_URL,
-        book_authority=book_authority,
-        application_build_id="core-functional-loop-fixture",
-        commit_sha=RELEASE_SHA,
-    )
-    supervisor = PostgresBookProductionSupervisor(
-        book_authority,
-        planning=planning,
-        chapter_groups=chapter_groups,
-        principal=principal,
-    )
-    group_frozen = supervisor.tick(book.book_run_id)
-    assert group_frozen.action is SupervisorAction.FREEZE_CHAPTER_GROUP_PLAN
-    group_started = supervisor.tick(book.book_run_id)
-    assert group_started.action is SupervisorAction.START_CHAPTER_GROUP
+    group_frozen = worker_tick(restarted)
+    assert group_frozen["action"] == SupervisorAction.FREEZE_CHAPTER_GROUP_PLAN.value
+    group_started = worker_tick(restarted)
+    assert group_started["action"] == SupervisorAction.START_CHAPTER_GROUP.value
     paused = book_authority.pause(
         book.book_run_id, reason="restart recovery probe", principal=principal
     )
     assert paused["state"] == "PAUSED"
-    restarted_supervisor = PostgresBookProductionSupervisor(
-        book_authority,
-        planning=planning,
-        chapter_groups=chapter_groups,
+    restarted_after_pause = build_book_production_composition(
+        settings,
         principal=principal,
+        env=runtime_env,
+        chapter_application=chapter_application,
     )
-    paused_tick = restarted_supervisor.tick(book.book_run_id)
+    paused_tick = restarted_after_pause.tick(book.book_run_id)
     assert paused_tick.action is SupervisorAction.NO_ACTION
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
         uow.cursor.execute(
@@ -1785,29 +1474,31 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack() -> N
             [book.book_run_id],
         )
         group_run_count = int(uow.cursor.fetchone()[0])
-    assert group_run_count == 1
+    assert group_run_count == 2
     resumed_book = book_authority.resume(
         book.book_run_id, reason="restart recovery complete", principal=principal
     )
     assert resumed_book["state"] == "READY"
-    state_operation_id = supervisor._set_state(
-        book_authority.require(book.book_run_id),
-        BookProductionState.CHAPTER_PLAN_REQUIRED,
-    )
-    assert state_operation_id
-    with AuthorityUnitOfWork(DATABASE_URL) as uow:
-        uow.cursor.execute(
-            """
-            SELECT definition_name, status
-            FROM authority_operation
-            WHERE operation_id=%s
-            """,
-            [state_operation_id],
-        )
-        assert uow.cursor.fetchone() == (
-            "book.supervisor.checkpoint.advance",
-            "SUCCEEDED",
-        )
+
+    after_replan_actions: list[str] = []
+    for _ in range(32):
+        tick = worker_tick(restarted_after_pause)
+        action = str(tick["action"])
+        after_replan_actions.append(action)
+        if action == SupervisorAction.DISPATCH_CHAPTER.value:
+            run_chapter(str(tick["operation_id"]))
+        if (
+            int(book_authority.require(book.book_run_id)["accepted_through_chapter"])
+            >= 2
+        ):
+            break
+    else:
+        raise AssertionError("Canonical Worker did not resume through Chapter 2")
+    assert SupervisorAction.DISPATCH_CHAPTER.value in after_replan_actions
+    assert SupervisorAction.ACCEPT_CHAPTER.value in after_replan_actions
+    assert book_authority.require(book.book_run_id)["accepted_through_chapter"] == 2
+    chapter_application.close()
+    object_store.cleanup()
 
 
 def test_reader_judge_shadow_activation_drift_and_suspension_in_postgres() -> None:

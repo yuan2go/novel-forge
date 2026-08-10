@@ -15,19 +15,22 @@ from novel_forge.api.authority_dependencies import (
     build_chapter_authority_query,
     build_content_authority_application,
     build_content_authority_query,
-    build_book_authority_application,
+    build_book_production_composition,
+    build_trusted_principal_resolver,
     build_book_design_authority_application,
     build_book_design_authority_query,
     build_agent_runtime_authority_application,
     build_agent_runtime_query,
     build_capability_pack_authority_application,
     build_capability_pack_authority_query,
+    chapter_capability_pack_compilation_report,
 )
 from novel_forge.infrastructure.settings import IndustrialSettings
 from novel_forge.modules.chapter_authority.application import ChapterAuthorityApplication
 from novel_forge.modules.chapter_authority.queries import ChapterAuthorityQuery
 from novel_forge.modules.content_authority import ContentAuthorityApplication, ContentAuthorityQuery
 from novel_forge.modules.book_authority.production import PostgresBookAuthority
+from novel_forge.modules.book_authority.composition import BookProductionComposition
 from novel_forge.modules.book_design_authority import (
     BookDesignAuthorityApplication,
     BookDesignAuthorityQuery,
@@ -119,6 +122,7 @@ class AuthorityApiServices:
     content_authority_query: ContentAuthorityQuery
     provider_callback_service: ProviderCallbackAuthorityService
     book_authority_application: PostgresBookAuthority
+    book_production: BookProductionComposition
     project_authority_application: ProjectAuthorityApplication
     project_authority_query: ProjectAuthorityQuery
     task_authority_query: AuthorityTaskQuery
@@ -167,6 +171,12 @@ def create_authority_app(settings: IndustrialSettings):
     if settings.authority_runtime_profile == "track-b-minimal":
         return _create_track_b_minimal_app(settings, FastAPI, CORSMiddleware)
     application = build_chapter_authority_application(settings)
+    book_principal = build_trusted_principal_resolver().resolve_api_principal()
+    book_production = build_book_production_composition(
+        settings,
+        principal=book_principal,
+        chapter_application=application,
+    )
     provider_registry = ProviderAdapterRegistry()
     registered: set[str] = set()
     for adapter in application.model_port.adapter.provider_adapters.values():
@@ -182,9 +192,8 @@ def create_authority_app(settings: IndustrialSettings):
         provider_callback_service=ProviderCallbackAuthorityService(
             settings.database_url or "", provider_registry
         ),
-        book_authority_application=build_book_authority_application(
-            settings, chapter_application=application
-        ),
+        book_authority_application=book_production.authority,
+        book_production=book_production,
         project_authority_application=ProjectAuthorityApplication(
             settings.database_url,
             application_build_id=build_id,
@@ -428,17 +437,77 @@ def create_authority_app(settings: IndustrialSettings):
         except Exception as exc:
             object_store_ready = False
             object_store_error = f"{type(exc).__name__}: {exc}"
-        provider_name = str(
-            os.environ.get("NOVEL_FORGE_MODEL_PROVIDER") or ""
-        ).strip().lower()
-        fixture_provider = provider_name in {"", "mock", "local", "offline"}
+        routes = dict(application.model_port.adapter.routes)
+        route_runtime_classes = {
+            route.model_profile.runtime_class.value for route in routes.values()
+        }
+        provider_route_buildable = bool(routes) and all(
+            route.model_profile.backend_id
+            and route.model_profile.model_id
+            and route.model_profile.capability_probe_ref
+            for route in routes.values()
+        )
+        fixture_only = route_runtime_classes == {"SCRIPTED_FIXTURE"}
         provider_status = (
             "FIXTURE_ONLY"
-            if settings.environment in {"development", "test"} and fixture_provider
-            else "CONFIGURED"
-            if provider_name
+            if provider_route_buildable and fixture_only
+            else "ROUTE_BUILT"
+            if provider_route_buildable
             else "BLOCKED"
         )
+        try:
+            pack_report = chapter_capability_pack_compilation_report(settings)
+        except Exception as exc:
+            pack_report = {
+                "ok": False,
+                "pack_id": "chapter_generation_pack",
+                "pack_version": "",
+                "manifest_hash": "",
+                "compilation_hash": "",
+                "errors": [
+                    {
+                        "code": type(exc).__name__,
+                        "path": "$",
+                        "message": str(exc),
+                    }
+                ],
+            }
+        controlled = settings.environment in {
+            "validation",
+            "provider-validation",
+            "production",
+        }
+        pack_activation_ready = not controlled
+        pack_activation_error = ""
+        if controlled and database_health.get("status") == "ready":
+            try:
+                from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+
+                with AuthorityUnitOfWork(settings.database_url) as uow:
+                    uow.cursor.execute(
+                        """
+                        SELECT COUNT(*)
+                        FROM authority_capability_pack_activation AS activation
+                        JOIN authority_capability_pack_deployment AS deployment
+                          ON deployment.deployment_id=
+                             activation.active_deployment_id
+                        WHERE activation.pack_id=%s
+                          AND activation.environment=%s
+                          AND deployment.deployment_status='ACTIVE'
+                        """,
+                        [
+                            str(
+                                os.environ.get(
+                                    "NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID"
+                                )
+                                or "chapter_generation_pack"
+                            ),
+                            settings.environment,
+                        ],
+                    )
+                    pack_activation_ready = int(uow.cursor.fetchone()[0]) > 0
+            except Exception as exc:
+                pack_activation_error = f"{type(exc).__name__}: {exc}"
         definitions = {
             "chapter_handler_count": len(application.registry.available_handler_keys),
             "content_definition_count": len(
@@ -451,11 +520,20 @@ def create_authority_app(settings: IndustrialSettings):
             and database_health.get("status") == "ready"
             and connection_budget.get("within_budget")
             and object_store_ready
-            and provider_status != "BLOCKED"
+            and provider_route_buildable
+            and pack_report["ok"]
+            and pack_activation_ready
             and all(definitions.values())
         )
         return {
             "status": "ready" if ready else "not_ready",
+            "api_ready": ready,
+            "runtime_ready": False,
+            "fixture_only": fixture_only,
+            "real_provider_qualified": False,
+            "real_provider_proven": False,
+            "longform_proven": False,
+            "production_verified": False,
             "runtime_profile": settings.authority_runtime_profile,
             "postgresql": {
                 "authority": True,
@@ -479,7 +557,18 @@ def create_authority_app(settings: IndustrialSettings):
             },
             "provider": {
                 "status": provider_status,
+                "route_buildable": provider_route_buildable,
+                "runtime_classes": sorted(route_runtime_classes),
+                "real_provider_qualified": False,
                 "real_provider_proven": False,
+            },
+            "capability_pack": {
+                **pack_report,
+                "compilable": bool(pack_report["ok"]),
+                "activation_required": controlled,
+                "activation_checked": controlled,
+                "activation_ready": pack_activation_ready,
+                "activation_error": pack_activation_error,
             },
             "legacy_write_enabled": False,
             "silent_fallback_enabled": False,
@@ -506,8 +595,30 @@ def create_authority_app(settings: IndustrialSettings):
     def runtime_readiness() -> dict[str, Any]:
         from novel_forge.storage.worker_health import runtime_health_report
 
-        result = runtime_health_report(settings.database_url)
-        if result["readiness"] != "READY":
+        api = readiness_payload()
+        fleet = runtime_health_report(
+            settings.database_url,
+            required_worker_kinds=REQUIRED_RUNTIME_GROUPS,
+        )
+        runtime_ready = bool(api["api_ready"] and fleet["worker_fleet_ready"])
+        result = {
+            **fleet,
+            "api_ready": bool(api["api_ready"]),
+            "runtime_ready": runtime_ready,
+            "fixture_only": bool(api["fixture_only"]),
+            "real_provider_qualified": bool(api["real_provider_qualified"]),
+            "real_provider_proven": bool(api["real_provider_proven"]),
+            "longform_proven": bool(api["longform_proven"]),
+            "production_verified": bool(api["production_verified"]),
+            "capability_pack": api["capability_pack"],
+            "provider": api["provider"],
+            "api_dependencies": {
+                "postgresql": api["postgresql"],
+                "object_store": api["object_store"],
+            },
+            "readiness": "READY" if runtime_ready else "DEGRADED",
+        }
+        if not runtime_ready:
             from fastapi import HTTPException
 
             raise HTTPException(status_code=503, detail=result)

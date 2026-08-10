@@ -8,6 +8,7 @@ from novel_forge.modules.book_authority.production import BookProductionState
 from novel_forge.modules.book_authority.supervisor import (
     PostgresBookProductionSupervisor,
 )
+from novel_forge.modules.book_replan import CoordinateBookReplanCommand
 from novel_forge.modules.book_production import SupervisorAction
 from novel_forge.modules.hierarchical_planning import PlanExecutionScope
 from novel_forge.modules.story_planning_runtime import PlanningGenerationStatus
@@ -100,3 +101,112 @@ def test_supervisor_keeps_draft_budget_separate_from_quality_evidence_budget() -
         "decision": "READY",
         "stage_context_token_budgets": {"draft": 16_000, "quality": 28_000},
     }
+
+
+def test_supervisor_starts_replan_once_and_waits_for_authority_approval() -> None:
+    state = {"value": BookProductionState.REPLAN_REQUIRED.value}
+    book = {
+        "book_run_id": "book-run:1",
+        "project_id": "project:1",
+        "workspace_id": "workspace:1",
+        "book_id": "book:1",
+        "root_operation_id": "book-operation:1",
+        "stable_idempotency_key": "book-key:1",
+        "accepted_through_chapter": 1,
+        "state": state["value"],
+        "input_mode": "RESOLVED_AUTHORITY_INPUT",
+    }
+    commands: list[CoordinateBookReplanCommand] = []
+
+    def require(_book_run_id: str):
+        return {**book, "state": state["value"]}
+
+    def start(command: CoordinateBookReplanCommand):
+        commands.append(command)
+        state["value"] = BookProductionState.REPLAN_APPROVAL_PENDING.value
+        return {
+            "replan_id": "replan:1",
+            "generation_operation_id": "planning-operation:1",
+            "status": "APPROVAL_PENDING",
+        }
+
+    supervisor = object.__new__(PostgresBookProductionSupervisor)
+    supervisor.authority = SimpleNamespace(require=require)
+    supervisor.replan = SimpleNamespace(
+        start=start,
+        latest_for_book=lambda _book_run_id: {
+            "replan_id": "replan:1",
+            "status": "APPROVAL_PENDING",
+        },
+    )
+    supervisor._checkpoint_if_needed = lambda _book: None
+    supervisor._replan_source = lambda _book: {
+        "recap_asset_version_id": "recap:v1",
+        "replan_request_asset_version_id": "request:v1",
+        "recap_operation_id": "recap-operation:1",
+        "affected_scope": "CHAPTER_GROUP",
+    }
+
+    started = supervisor.tick("book-run:1")
+    waiting = supervisor.tick("book-run:1")
+
+    assert started.action is SupervisorAction.START_REPLAN
+    assert started.operation_id == "planning-operation:1"
+    assert started.evidence_ref == "replan:1"
+    assert waiting.action is SupervisorAction.WAIT_REPLAN_APPROVAL
+    assert len(commands) == 1
+    assert commands[0].idempotency_key == (
+        "book-key:1:replan:1:recap-operation:1"
+    )
+
+
+def test_supervisor_activates_formally_approved_replan_and_resumes() -> None:
+    state = {"value": BookProductionState.REPLAN_GENERATING.value}
+    book = {
+        "book_run_id": "book-run:1",
+        "state": state["value"],
+        "input_mode": "RESOLVED_AUTHORITY_INPUT",
+    }
+    activated: list[str] = []
+    superseded: list[tuple[str, str, str]] = []
+
+    def require(_book_run_id: str):
+        return {**book, "state": state["value"]}
+
+    def activate(replan_id: str):
+        activated.append(replan_id)
+        state["value"] = BookProductionState.READY.value
+        return {"replan_id": replan_id, "status": "RESUMED"}
+
+    supervisor = object.__new__(PostgresBookProductionSupervisor)
+    supervisor.authority = SimpleNamespace(require=require)
+    supervisor.replan = SimpleNamespace(
+        latest_for_book=lambda _book_run_id: {
+            "replan_id": "replan:1",
+            "status": "ACTIVE",
+            "affected_scope": "CHAPTER_GROUP",
+            "target_asset_version_id": "chapter-group:v1",
+        },
+        activate=activate,
+    )
+    supervisor.principal = SimpleNamespace()
+    supervisor._active_group_run = lambda _book: {
+        "group_run_id": "group-run:1",
+    }
+    supervisor.chapter_groups = SimpleNamespace(
+        supersede_for_approved_replan=lambda group_run_id, **kwargs: superseded.append(
+            (
+                group_run_id,
+                kwargs["replan_id"],
+                kwargs["target_group_plan_version_id"],
+            )
+        )
+    )
+
+    tick = supervisor.tick("book-run:1")
+
+    assert tick.action is SupervisorAction.ACTIVATE_REPLAN
+    assert tick.state == BookProductionState.READY.value
+    assert tick.evidence_ref == "replan:1"
+    assert activated == ["replan:1"]
+    assert superseded == [("group-run:1", "replan:1", "chapter-group:v1")]

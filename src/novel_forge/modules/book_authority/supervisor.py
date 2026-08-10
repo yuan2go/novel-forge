@@ -67,24 +67,32 @@ class PostgresBookProductionSupervisor:
         planning: StoryPlanningGenerationApplication,
         chapter_groups: PostgresChapterGroupAuthority,
         principal: Principal,
+        replan: Any | None = None,
         production_preparation: ProductionPreparationService | None = None,
         context_token_budget: int = 16_000,
         quality_context_token_budget: int | None = None,
     ) -> None:
         if context_token_budget <= 0:
             raise ValueError("context_token_budget must be positive")
-        if quality_context_token_budget is not None and quality_context_token_budget <= 0:
+        if (
+            quality_context_token_budget is not None
+            and quality_context_token_budget <= 0
+        ):
             raise ValueError("quality_context_token_budget must be positive")
         self.authority = authority
         self.planning = planning
         self.chapter_groups = chapter_groups
         self.principal = principal
+        self.replan = replan
         self.context_token_budget = context_token_budget
         self.quality_context_token_budget = (
             quality_context_token_budget or context_token_budget
         )
-        self.production_preparation = production_preparation or ProductionPreparationService(
-            PostgresProductionAssetResolver(authority.database_url)
+        self.production_preparation = (
+            production_preparation
+            or ProductionPreparationService(
+                PostgresProductionAssetResolver(authority.database_url)
+            )
         )
         self.scheduler = PostgresBookAuthorityScheduler(authority, principal=principal)
         self.checkpoints = PostgresBookNarrativeCheckpointAuthority(
@@ -106,6 +114,34 @@ class PostgresBookProductionSupervisor:
             BookProductionState.ABORTED.value,
         }:
             return self._result(book_run_id, before, SupervisorAction.NO_ACTION)
+        if before == BookProductionState.REPLAN_APPROVAL_PENDING.value:
+            replan = self._latest_replan(book_run_id)
+            return self._result(
+                book_run_id,
+                before,
+                SupervisorAction.WAIT_REPLAN_APPROVAL,
+                evidence_ref=str(replan["replan_id"]),
+            )
+        if before == BookProductionState.REPLAN_GENERATING.value:
+            replan = self._latest_replan(book_run_id)
+            if replan["affected_scope"] == "CHAPTER_GROUP":
+                active_group = self._active_group_run(book)
+                if active_group is not None:
+                    self.chapter_groups.supersede_for_approved_replan(
+                        str(active_group["group_run_id"]),
+                        replan_id=str(replan["replan_id"]),
+                        target_group_plan_version_id=str(
+                            replan["target_asset_version_id"]
+                        ),
+                        principal=self.principal,
+                    )
+            activated = self._require_replan().activate(str(replan["replan_id"]))
+            return self._result(
+                book_run_id,
+                before,
+                SupervisorAction.ACTIVATE_REPLAN,
+                evidence_ref=str(activated["replan_id"]),
+            )
         if before in {
             BookProductionState.CHAPTER_SUBMITTED.value,
             BookProductionState.CHAPTER_RUNNING.value,
@@ -135,10 +171,14 @@ class PostgresBookProductionSupervisor:
             tick = self.scheduler.tick(book_run_id)
             action = self._scheduler_action(tick.action)
             return self._result(book_run_id, before, action, tick.operation_id)
-        if before in {
-            BookProductionState.READY.value,
-            BookProductionState.COMPLETED.value,
-        } and int(book["accepted_through_chapter"]) > 0:
+        if (
+            before
+            in {
+                BookProductionState.READY.value,
+                BookProductionState.COMPLETED.value,
+            }
+            and int(book["accepted_through_chapter"]) > 0
+        ):
             sidecar = self.scheduler.tick(book_run_id)
             action = self._scheduler_action(sidecar.action)
             if action is not SupervisorAction.NO_ACTION:
@@ -154,7 +194,7 @@ class PostgresBookProductionSupervisor:
                 evidence_ref=checkpoint["volume_checkpoint"]["checkpoint_id"],
             )
         if before == BookProductionState.REPLAN_REQUIRED.value:
-            return self._result(book_run_id, before, SupervisorAction.START_REPLAN)
+            return self._start_replan(book)
         next_chapter = int(book["accepted_through_chapter"]) + 1
         group_run = self._active_group_run(book)
         if (
@@ -273,12 +313,8 @@ class PostgresBookProductionSupervisor:
             "chapter_plan": str(execution_plan["asset_version_id"])
         }
         if next_chapter > 1:
-            previous_story_state = str(
-                book.get("active_story_state_version_id") or ""
-            )
-            previous_canon = str(
-                book.get("active_canon_snapshot_version_id") or ""
-            )
+            previous_story_state = str(book.get("active_story_state_version_id") or "")
+            previous_canon = str(book.get("active_canon_snapshot_version_id") or "")
             if not previous_story_state or not previous_canon:
                 raise KernelError(
                     "BOOK_SUPERVISOR_PREVIOUS_ACCEPTANCE_STATE_MISSING",
@@ -327,9 +363,7 @@ class PostgresBookProductionSupervisor:
                 execution_chapter_plan_asset_version_id=str(
                     execution_plan["asset_version_id"]
                 ),
-                execution_chapter_plan_content_hash=str(
-                    execution_plan["content_hash"]
-                ),
+                execution_chapter_plan_content_hash=str(execution_plan["content_hash"]),
                 parent_group_version_id=str(group["asset_version_id"]),
                 context_version_refs=context_version_refs,
                 context_token_budget=prepared.context_token_budget,
@@ -640,6 +674,96 @@ class PostgresBookProductionSupervisor:
             principal=self.principal,
         )
 
+    def _start_replan(self, book: dict[str, Any]) -> BookProductionSupervisorTick:
+        from novel_forge.modules.book_replan import CoordinateBookReplanCommand
+
+        source = self._replan_source(book)
+        accepted_chapter = int(book["accepted_through_chapter"])
+        result = self._require_replan().start(
+            CoordinateBookReplanCommand(
+                project_id=str(book["project_id"]),
+                workspace_id=str(book["workspace_id"]),
+                book_id=str(book["book_id"]),
+                book_run_id=str(book["book_run_id"]),
+                source_recap_asset_version_id=str(source["recap_asset_version_id"]),
+                replan_request_asset_version_id=str(
+                    source["replan_request_asset_version_id"]
+                ),
+                affected_scope=str(source["affected_scope"]),
+                idempotency_key=(
+                    f"{book['stable_idempotency_key']}:replan:{accepted_chapter}:"
+                    f"{source['recap_operation_id']}"
+                ),
+                trace_id=f"{book['root_operation_id']}:replan:{accepted_chapter}",
+                correlation_id=str(source["recap_operation_id"]),
+            )
+        )
+        return self._result(
+            str(book["book_run_id"]),
+            BookProductionState.REPLAN_REQUIRED.value,
+            SupervisorAction.START_REPLAN,
+            str(result["generation_operation_id"]),
+            str(result["replan_id"]),
+        )
+
+    def _replan_source(self, book: dict[str, Any]) -> dict[str, str]:
+        with AuthorityUnitOfWork(self.authority.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT recap.asset_version_id, request.asset_version_id,
+                       operation.operation_id,
+                       COALESCE(NULLIF(request_version.content->>'affected_scope',''),
+                                'CHAPTER_GROUP')
+                FROM authority_book_followup_operation AS followup
+                JOIN authority_operation AS operation
+                  ON operation.operation_id=followup.operation_id
+                JOIN authority_operation_output_asset AS recap
+                  ON recap.operation_id=operation.operation_id
+                 AND recap.output_key='longform.recap.report'
+                JOIN authority_operation_output_asset AS request
+                  ON request.operation_id=operation.operation_id
+                 AND request.output_key='longform.recap.replan_request'
+                JOIN authority_asset_version AS request_version
+                  ON request_version.asset_version_id=request.asset_version_id
+                WHERE followup.book_run_id=%s
+                  AND followup.followup_type='LONGFORM_RECAP'
+                  AND operation.status='SUCCEEDED'
+                ORDER BY followup.created_at DESC
+                LIMIT 1
+                """,
+                [book["book_run_id"]],
+            )
+            rows = uow.cursor.fetchall()
+        if not rows:
+            raise KernelError(
+                "BOOK_REPLAN_SOURCE_UNAVAILABLE",
+                "Replan requires a latest successful Recap request",
+            )
+        row = rows[0]
+        return {
+            "recap_asset_version_id": str(row[0]),
+            "replan_request_asset_version_id": str(row[1]),
+            "recap_operation_id": str(row[2]),
+            "affected_scope": str(row[3]),
+        }
+
+    def _require_replan(self) -> Any:
+        if self.replan is None:
+            raise KernelError(
+                "BOOK_REPLAN_NOT_CONFIGURED",
+                "Book production composition requires BookReplanCoordinator",
+            )
+        return self.replan
+
+    def _latest_replan(self, book_run_id: str) -> dict[str, Any]:
+        result = self._require_replan().latest_for_book(book_run_id)
+        if result is None:
+            raise KernelError(
+                "BOOK_REPLAN_NOT_FOUND",
+                "Book state references no durable Replan record",
+            )
+        return dict(result)
+
     def _snapshot(self, book: dict[str, Any]) -> dict[str, Any]:
         with AuthorityUnitOfWork(self.authority.database_url) as uow:
             uow.cursor.execute(
@@ -693,9 +817,7 @@ class PostgresBookProductionSupervisor:
                 LIMIT 2
                 """,
                 [
-                    self._project_for_plan(
-                        str(planning_binding["asset_version_id"])
-                    ),
+                    self._project_for_plan(str(planning_binding["asset_version_id"])),
                     str(planning_binding["asset_version_id"]),
                 ],
             )
@@ -851,7 +973,6 @@ class PostgresBookProductionSupervisor:
             operation_id,
             evidence_ref,
         )
-
 
 
 def _supervisor_checkpoint_definition(

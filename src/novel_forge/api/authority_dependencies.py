@@ -33,11 +33,31 @@ from novel_forge.modules.capability_packs.artifacts import (
     ArtifactKind,
     default_chapter_artifact_resolver,
 )
+from novel_forge.modules.capability_packs import (
+    CapabilityPackCompiler,
+    PackCatalogEntry,
+    ReadOnlyPackCatalog,
+    chapter_operation_definition_catalog,
+    chapter_workflow_binding_catalog,
+    default_capability_type_catalog,
+    default_tool_definition_catalog,
+    load_capability_pack,
+)
 from novel_forge.modules.chapter_authority.queries import ChapterAuthorityQuery
 from novel_forge.modules.book_authority.production import (
     ChapterAuthorityCommandAdapter,
     PostgresBookAuthority,
 )
+from novel_forge.modules.book_authority.composition import BookProductionComposition
+from novel_forge.modules.book_authority.input_resolver import (
+    BookProductionInputResolver,
+)
+from novel_forge.modules.book_authority.supervisor import (
+    PostgresBookProductionSupervisor,
+)
+from novel_forge.modules.book_replan import BookReplanCoordinator
+from novel_forge.modules.chapter_group_authority import PostgresChapterGroupAuthority
+from novel_forge.modules.plan_change_authority import PostgresPlanChangeAuthority
 from novel_forge.modules.book_design_authority import (
     BookDesignAuthorityApplication,
     BookDesignAuthorityQuery,
@@ -77,7 +97,7 @@ from novel_forge.modules.capability_pack_authority.application import (
 from novel_forge.modules.capability_pack_authority.query import (
     CapabilityPackAuthorityQuery,
 )
-from novel_forge.modules.authority_security import TrustedPrincipalResolver
+from novel_forge.modules.authority_security import Principal, TrustedPrincipalResolver
 from novel_forge.modules.command_kernel.external_effect_adapters import (
     LocalFileObjectStoreAdapter,
     MinioObjectStoreExternalEffectAdapter,
@@ -941,6 +961,54 @@ def build_chapter_authority_query(
     return ChapterAuthorityQuery(settings.database_url)
 
 
+def chapter_capability_pack_compilation_report(
+    settings: IndustrialSettings,
+    *,
+    env: Mapping[str, str] | None = None,
+) -> dict[str, object]:
+    """Compile the shipped Chapter Pack from repository facts without activation."""
+
+    values = env or os.environ
+    _build_id, release_sha = authority_release_identity(env=values)
+    manifest = load_capability_pack(
+        settings.root / "config/capability_packs/chapter_generation_pack.json"
+    )
+    compiler = CapabilityPackCompiler(
+        capability_registry=default_capability_registry(),
+        capability_type_catalog=default_capability_type_catalog(),
+        operation_catalog=chapter_operation_definition_catalog(
+            release_sha=release_sha
+        ),
+        workflow_catalog=chapter_workflow_binding_catalog(),
+        artifact_resolver=default_chapter_artifact_resolver(settings.root),
+        tool_catalog=default_tool_definition_catalog(),
+        pack_catalog=ReadOnlyPackCatalog((PackCatalogEntry(manifest),)),
+    )
+    environment = str(
+        values.get("NOVEL_FORGE_ENVIRONMENT") or settings.environment
+    ).strip().lower()
+    result = compiler.compile(
+        manifest,
+        target_runtime_profile=environment,
+        novel_forge_version="7.0.0",
+        release_sha=release_sha,
+        release_channel=str(
+            values.get("NOVEL_FORGE_RELEASE_CHANNEL") or "VALIDATION"
+        ).upper(),
+    )
+    return {
+        "ok": result.report.ok,
+        "pack_id": result.report.pack_id,
+        "pack_version": result.report.version,
+        "manifest_hash": result.report.manifest_hash,
+        "compilation_hash": result.report.compilation_hash,
+        "errors": [
+            {"code": item.code, "path": item.path, "message": item.message}
+            for item in result.report.errors
+        ],
+    }
+
+
 def build_book_authority_application(
     settings: IndustrialSettings,
     *,
@@ -980,6 +1048,88 @@ def build_book_authority_application(
             .lower()
             not in {"validation", "provider-validation", "production"}
         ),
+    )
+
+
+def build_book_production_composition(
+    settings: IndustrialSettings,
+    *,
+    principal: Principal,
+    env: Mapping[str, str] | None = None,
+    chapter_application: ChapterAuthorityApplication | None = None,
+) -> BookProductionComposition:
+    """Build the one Book production graph consumed by API and Worker."""
+
+    if not settings.database_url:
+        raise RuntimeError("PostgreSQL database is required for Book production")
+    values = env or os.environ
+    chapter = chapter_application or build_chapter_authority_application(
+        settings, env=values
+    )
+    authority = build_book_authority_application(
+        settings,
+        env=values,
+        chapter_application=chapter,
+    )
+    planning = build_story_planning_generation_application(
+        settings,
+        env=values,
+        chapter_application=chapter,
+    )
+    preparation = build_production_preparation_service(settings)
+    chapter_groups = PostgresChapterGroupAuthority(
+        settings.database_url,
+        book_authority=authority,
+        application_build_id=authority.application_build_id,
+        commit_sha=authority.commit_sha,
+        worker_id=str(
+            values.get("NOVEL_FORGE_CHAPTER_GROUP_WORKER_ID")
+            or "chapter-group-authority-worker"
+        ),
+    )
+    plan_change = PostgresPlanChangeAuthority(
+        settings.database_url,
+        story_design=planning.story_design,
+        planning=planning.planning,
+        application_build_id=authority.application_build_id,
+        commit_sha=authority.commit_sha,
+        worker_id=str(
+            values.get("NOVEL_FORGE_PLAN_CHANGE_WORKER_ID")
+            or "plan-change-authority-worker"
+        ),
+    )
+    input_resolver = BookProductionInputResolver(
+        settings.database_url,
+        application_build_id=authority.application_build_id,
+        commit_sha=authority.commit_sha,
+    )
+    replan = BookReplanCoordinator(
+        settings.database_url,
+        book_authority=authority,
+        planning=planning,
+        plan_change=plan_change,
+        input_resolver=input_resolver,
+        principal=principal,
+    )
+    supervisor = PostgresBookProductionSupervisor(
+        authority,
+        planning=planning,
+        chapter_groups=chapter_groups,
+        principal=principal,
+        replan=replan,
+        production_preparation=preparation,
+    )
+    return BookProductionComposition(
+        authority=authority,
+        planning=planning,
+        chapter_groups=chapter_groups,
+        production_preparation=preparation,
+        followup=authority.followup,
+        plan_change=plan_change,
+        input_resolver=input_resolver,
+        replan=replan,
+        supervisor=supervisor,
+        principal=principal,
     )
 
 
@@ -1170,11 +1320,13 @@ __all__ = [
     "authority_release_identity",
     "build_chapter_authority_application",
     "build_chapter_authority_query",
+    "chapter_capability_pack_compilation_report",
     "build_production_preparation_service",
     "build_trusted_principal_resolver",
     "build_content_authority_application",
     "build_content_authority_query",
     "build_book_authority_application",
+    "build_book_production_composition",
     "build_reader_outcome_model_port",
     "build_story_planning_generation_application",
     "build_capability_pack_authority_application",

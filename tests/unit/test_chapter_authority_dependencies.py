@@ -10,6 +10,7 @@ from novel_forge.api.authority_dependencies import (
     authority_release_identity,
     build_chapter_authority_application,
     build_chapter_authority_query,
+    chapter_capability_pack_compilation_report,
 )
 from novel_forge.infrastructure.settings import IndustrialSettings
 from novel_forge.modules.provider_control import (
@@ -20,6 +21,23 @@ from novel_forge.modules.provider_control import (
 
 
 class ChapterAuthorityDependenciesTests(unittest.TestCase):
+    def test_shipped_chapter_capability_pack_compiles_for_readiness(self) -> None:
+        report = chapter_capability_pack_compilation_report(
+            IndustrialSettings(
+                root=Path(__file__).resolve().parents[2],
+                database_url="postgresql://authority",
+            ),
+            env={
+                "NOVEL_FORGE_ENVIRONMENT": "validation",
+                "NOVEL_FORGE_RELEASE_CHANNEL": "VALIDATION",
+                "NOVEL_FORGE_APPLICATION_BUILD_ID": "readiness-test",
+                "NOVEL_FORGE_COMMIT_SHA": "a" * 40,
+            },
+        )
+
+        self.assertTrue(report["ok"], report["errors"])
+        self.assertEqual(report["pack_id"], "chapter_generation_pack")
+
     def test_strong_query_requires_only_postgresql(self) -> None:
         query = build_chapter_authority_query(
             IndustrialSettings(root=Path("."), database_url="postgresql://authority")

@@ -1,9 +1,9 @@
 """Durable ChapterGroup coordinator over Book and Chapter Authority ports."""
+
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 import hashlib
-import json
 from typing import Any
 from uuid import uuid4
 
@@ -42,10 +42,7 @@ from novel_forge.modules.command_kernel.service import (
 from novel_forge.modules.content_authority.scheduler import (
     ContentAuthorityScheduler,
 )
-from novel_forge.modules.hierarchical_planning import (
-    PlanContractType,
-    validate_chapter_function_matrix,
-)
+from novel_forge.modules.hierarchical_planning import validate_chapter_function_matrix
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 from .domain import (
@@ -71,6 +68,7 @@ STEP_DEFINITIONS = (
     "chapter_group.production.close",
     "chapter_group.production.pause",
     "chapter_group.production.resume",
+    "chapter_group.production.supersede",
     "chapter_group.production.cancel",
 )
 ALL_DEFINITIONS = (ROOT_DEFINITION, *STEP_DEFINITIONS)
@@ -91,9 +89,7 @@ class StartChapterGroupCommand:
 
 
 class _StepHandler:
-    def execute(
-        self, request: AuthorityHandlerRequest
-    ) -> AuthorityHandlerOutput:
+    def execute(self, request: AuthorityHandlerRequest) -> AuthorityHandlerOutput:
         payload = request.command.get("payload")
         if not isinstance(payload, dict):
             raise KernelError(
@@ -110,9 +106,7 @@ class _StepHandler:
                 "group_run_id": str(payload["group_run_id"]),
                 "chapter_range": list(payload["chapter_range"]),
                 "accepted_chapters": list(payload["accepted_chapters"]),
-                "objective_status": str(
-                    payload.get("objective_status") or "OBSERVED"
-                ),
+                "objective_status": str(payload.get("objective_status") or "OBSERVED"),
                 "mutation_allowed": False,
             }
         elif request.definition_name == "chapter_group.plan_adjustment.propose":
@@ -122,9 +116,7 @@ class _StepHandler:
                 "type": "GroupPlanAdjustmentProposal",
                 "contract_version": "group-plan-adjustment-proposal-v1",
                 "group_run_id": str(payload["group_run_id"]),
-                "source_recap_operation_id": str(
-                    payload["source_recap_operation_id"]
-                ),
+                "source_recap_operation_id": str(payload["source_recap_operation_id"]),
                 "source_proposal_version_id": str(
                     payload["source_proposal_version_id"]
                 ),
@@ -134,9 +126,8 @@ class _StepHandler:
             }
         else:
             asset_type = "chapter_group_step_receipt"
-            output_key = (
-                "chapter_group.step."
-                + request.definition_name.removeprefix("chapter_group.")
+            output_key = "chapter_group.step." + request.definition_name.removeprefix(
+                "chapter_group."
             )
             content = {
                 "type": "ChapterGroupStepReceipt",
@@ -164,9 +155,7 @@ class _StepHandler:
 
 class _Registry:
     def __init__(self) -> None:
-        self._registrations: dict[
-            tuple[str, str], AuthorityHandlerRegistration
-        ] = {}
+        self._registrations: dict[tuple[str, str], AuthorityHandlerRegistration] = {}
         handler = _StepHandler()
         for definition_name in STEP_DEFINITIONS:
             asset_type, output_key = _output_contract(definition_name)
@@ -230,9 +219,7 @@ class PostgresChapterGroupAuthority:
                 "CHAPTER_GROUP_BOOK_SCOPE_MISMATCH",
                 "Book run belongs to another Project or Workspace",
             )
-        plan = self._group_plan(
-            command.project_id, command.group_plan_version_id
-        )
+        plan = self._group_plan(command.project_id, command.group_plan_version_id)
         if plan["content_hash"] != command.group_plan_content_hash:
             raise KernelError(
                 "CHAPTER_GROUP_PLAN_HASH_MISMATCH",
@@ -244,10 +231,16 @@ class PostgresChapterGroupAuthority:
             list(content["chapter_function_matrix"]),
             group_objective=str(content["local_objective"]),
         )
-        if int(book["accepted_through_chapter"]) != chapter_range.start - 1:
+        accepted_through = int(book["accepted_through_chapter"])
+        if not chapter_range.start - 1 <= accepted_through < chapter_range.end:
             raise KernelError(
                 "CHAPTER_GROUP_BOOK_CURSOR_MISMATCH",
-                "Book cursor must be immediately before the ChapterGroup",
+                "Book cursor must be before completion of the ChapterGroup",
+            )
+        if accepted_through >= chapter_range.start:
+            self._require_replacement_group_snapshot(
+                book=book,
+                group_plan_version_id=command.group_plan_version_id,
             )
         self._register_definitions()
         admitted = admit_command(
@@ -266,9 +259,7 @@ class PostgresChapterGroupAuthority:
                 "causation_id": str(book["root_operation_id"]),
                 "input": {
                     "project_id": command.project_id,
-                    "input_asset_version_ids": [
-                        command.group_plan_version_id
-                    ],
+                    "input_asset_version_ids": [command.group_plan_version_id],
                     "payload": asdict(command),
                 },
                 "input_assets": [
@@ -291,10 +282,8 @@ class PostgresChapterGroupAuthority:
                 ("READY", "EXECUTING"),
             ):
                 with AuthorityUnitOfWork(self.database_url) as uow:
-                    current = (
-                        uow.repositories.attempt_runtime.operation_state(
-                            root_operation_id, command.project_id
-                        )
+                    current = uow.repositories.attempt_runtime.operation_state(
+                        root_operation_id, command.project_id
                     )
                 transition_operation(
                     self.database_url,
@@ -333,7 +322,7 @@ class PostgresChapterGroupAuthority:
                     "stable_idempotency_key": command.stable_idempotency_key,
                     "chapter_start": chapter_range.start,
                     "chapter_end": chapter_range.end,
-                    "accepted_through_chapter": chapter_range.start - 1,
+                    "accepted_through_chapter": accepted_through,
                 }
             )
             uow.commit()
@@ -362,9 +351,7 @@ class PostgresChapterGroupAuthority:
                         chapter_range.start,
                         chapter_range.end,
                     ],
-                    "function_matrix": content[
-                        "chapter_function_matrix"
-                    ],
+                    "function_matrix": content["chapter_function_matrix"],
                 },
                 input_assets=inputs,
                 principal=principal,
@@ -379,6 +366,33 @@ class PostgresChapterGroupAuthority:
                 )
             uow.commit()
         return self.require(group_run_id)
+
+    def _require_replacement_group_snapshot(
+        self,
+        *,
+        book: dict[str, Any],
+        group_plan_version_id: str,
+    ) -> None:
+        if book["input_mode"] != "RESOLVED_AUTHORITY_INPUT":
+            raise KernelError(
+                "CHAPTER_GROUP_REPLACEMENT_RESOLVED_INPUT_REQUIRED",
+                "an overlapping replacement ChapterGroup requires resolved input",
+            )
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT current_chapter_group_plan_version
+                FROM authority_book_production_input_snapshot
+                WHERE snapshot_id=%s
+                """,
+                [book["input_snapshot_id"]],
+            )
+            row = uow.cursor.fetchone()
+        if row is None or str(row[0] or "") != group_plan_version_id:
+            raise KernelError(
+                "CHAPTER_GROUP_REPLACEMENT_SNAPSHOT_MISMATCH",
+                "replacement ChapterGroup must be bound by the current Book snapshot",
+            )
 
     def dispatch(
         self,
@@ -408,7 +422,7 @@ class PostgresChapterGroupAuthority:
                 "CHAPTER_GROUP_BOOK_RUN_MISMATCH",
                 "Chapter command targets another Book run",
             )
-        plan = self._chapter_plan(
+        self._chapter_plan(
             group["project_id"],
             command.chapter_plan_asset_version_id,
             group["group_plan_version_id"],
@@ -433,9 +447,7 @@ class PostgresChapterGroupAuthority:
             SubmitBookChapterCommand(
                 **{
                     **asdict(command),
-                    "parent_group_version_id": str(
-                        group["group_plan_version_id"]
-                    ),
+                    "parent_group_version_id": str(group["group_plan_version_id"]),
                 }
             ),
             principal=principal,
@@ -452,9 +464,7 @@ class PostgresChapterGroupAuthority:
                 chapter_number=command.chapter_number,
                 chapter_plan_version_id=command.chapter_plan_asset_version_id,
                 chapter_request_id=str(request["chapter_request_id"]),
-                child_root_operation_id=str(
-                    request["chapter_root_operation_id"]
-                ),
+                child_root_operation_id=str(request["chapter_root_operation_id"]),
                 child_delegation_id=str(request["delegation_id"]),
             )
             uow.commit()
@@ -532,9 +542,7 @@ class PostgresChapterGroupAuthority:
             uow.commit()
         return self.require(group_run_id)
 
-    def close(
-        self, group_run_id: str, *, principal: Principal
-    ) -> dict[str, Any]:
+    def close(self, group_run_id: str, *, principal: Principal) -> dict[str, Any]:
         group = self.require(group_run_id)
         principal.require("book.authority.execute", group["project_id"])
         if group["state"] != ChapterGroupState.CLOSURE_PENDING.value:
@@ -594,9 +602,7 @@ class PostgresChapterGroupAuthority:
             ordinal=9003,
             payload={
                 "source_recap_operation_id": recap["operation_id"],
-                "source_proposal_version_id": recap[
-                    "source_proposal_version_id"
-                ],
+                "source_proposal_version_id": recap["source_proposal_version_id"],
                 "plan_vs_actual_operation_id": actual,
             },
             input_assets=common_inputs,
@@ -696,35 +702,8 @@ class PostgresChapterGroupAuthority:
         }:
             return group
         self._control_step(group, "cancel", reason, principal)
-        self.book.cancel(
-            group["book_run_id"], reason=reason, principal=principal
-        )
-        with AuthorityUnitOfWork(self.database_url) as uow:
-            root = uow.repositories.attempt_runtime.operation_state(
-                str(group["root_operation_id"]), group["project_id"]
-            )
-        if root["status"] not in {
-            "CANCELLED",
-            "CANCELLATION_REQUESTED",
-            "SUCCEEDED",
-            "FAILED_FINAL",
-            "DEAD_LETTER",
-        }:
-            request_cancellation(
-                self.database_url,
-                CancelCommand(
-                    operation_id=str(group["root_operation_id"]),
-                    project_id=group["project_id"],
-                    actor_id=principal.principal_id,
-                    reason=reason or "ChapterGroup production cancelled",
-                    expected_version=int(root["version"]),
-                    idempotency_key=(
-                        f"{group['stable_idempotency_key']}:cancel-root"
-                    ),
-                    trace_id=f"{group['root_operation_id']}:cancel",
-                    correlation_id=str(group["root_operation_id"]),
-                ),
-            )
+        self.book.cancel(group["book_run_id"], reason=reason, principal=principal)
+        self._request_root_cancellation(group, reason=reason, principal=principal)
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.repositories.chapter_group.set_state(
                 group_run_id,
@@ -735,6 +714,51 @@ class PostgresChapterGroupAuthority:
                     ChapterGroupState.CLOSURE_PENDING.value,
                     ChapterGroupState.PAUSED.value,
                     ChapterGroupState.FAILED.value,
+                ),
+                target=ChapterGroupState.ABORTED.value,
+                failure_reason=reason,
+            )
+            uow.commit()
+        return self.require(group_run_id)
+
+    def supersede_for_approved_replan(
+        self,
+        group_run_id: str,
+        *,
+        replan_id: str,
+        target_group_plan_version_id: str,
+        principal: Principal,
+    ) -> dict[str, Any]:
+        """Retire the old group after the Replan Authority approval transition."""
+        group = self.require(group_run_id)
+        if group["state"] in {
+            ChapterGroupState.COMPLETED.value,
+            ChapterGroupState.ABORTED.value,
+            ChapterGroupState.FAILED.value,
+        }:
+            return group
+        principal.require("book.authority.execute", str(group["project_id"]))
+        if str(group["group_plan_version_id"]) != target_group_plan_version_id:
+            raise KernelError(
+                "CHAPTER_GROUP_REPLAN_TARGET_MISMATCH",
+                "approved Replan target does not match the active ChapterGroup",
+            )
+        if group["active_chapter_request_id"] is not None:
+            raise KernelError(
+                "CHAPTER_GROUP_REPLAN_ACTIVE_CHILD",
+                "approved Replan cannot supersede a ChapterGroup with an active child",
+            )
+        reason = f"superseded by approved Book Replan {replan_id}"
+        self._control_step(group, "supersede", reason, principal)
+        self._request_root_cancellation(group, reason=reason, principal=principal)
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.repositories.chapter_group.set_state(
+                group_run_id,
+                expected=(
+                    ChapterGroupState.PREPARING.value,
+                    ChapterGroupState.READY.value,
+                    ChapterGroupState.CLOSURE_PENDING.value,
+                    ChapterGroupState.PAUSED.value,
                 ),
                 target=ChapterGroupState.ABORTED.value,
                 failure_reason=reason,
@@ -769,9 +793,7 @@ class PostgresChapterGroupAuthority:
                 "definition_name": definition,
                 "definition_version": DEFINITION_VERSION,
                 "project_id": group["project_id"],
-                "workspace_id": self.book.require(
-                    group["book_run_id"]
-                )["workspace_id"],
+                "workspace_id": self.book.require(group["book_run_id"])["workspace_id"],
                 "actor_id": principal.principal_id,
                 "idempotency_scope": "project:chapter-group-step",
                 "idempotency_key": (
@@ -892,9 +914,7 @@ class PostgresChapterGroupAuthority:
                 [
                     group["project_id"],
                     group["book_id"],
-                    str(chapter[0]) if chapter else group[
-                        "group_plan_version_id"
-                    ],
+                    str(chapter[0]) if chapter else group["group_plan_version_id"],
                 ],
             )
             arcs = uow.cursor.fetchone()[0] or []
@@ -902,8 +922,7 @@ class PostgresChapterGroupAuthority:
                 "planning-horizon:"
                 + hashlib.sha256(
                     (
-                        f"{group['project_id']}:{group['book_id']}:"
-                        f"{window_version}"
+                        f"{group['project_id']}:{group['book_id']}:{window_version}"
                     ).encode()
                 ).hexdigest()
             )
@@ -967,9 +986,7 @@ class PostgresChapterGroupAuthority:
             )
             uow.commit()
 
-    def _group_recap_evidence(
-        self, group: dict[str, Any]
-    ) -> dict[str, str]:
+    def _group_recap_evidence(self, group: dict[str, Any]) -> dict[str, str]:
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
@@ -1004,9 +1021,7 @@ class PostgresChapterGroupAuthority:
             "source_proposal_version_id": str(row[3]),
         }
 
-    def _group_plan(
-        self, project_id: str, asset_version_id: str
-    ) -> dict[str, Any]:
+    def _group_plan(self, project_id: str, asset_version_id: str) -> dict[str, Any]:
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
@@ -1025,11 +1040,7 @@ class PostgresChapterGroupAuthority:
                 [project_id, asset_version_id],
             )
             row = uow.cursor.fetchone()
-        if (
-            row is None
-            or str(row[1]) != "FROZEN"
-            or str(row[2]) != "CURRENT"
-        ):
+        if row is None or str(row[1]) != "FROZEN" or str(row[2]) != "CURRENT":
             raise KernelError(
                 "CHAPTER_GROUP_FROZEN_PLAN_REQUIRED",
                 "ChapterGroup execution requires a current Frozen plan",
@@ -1069,8 +1080,7 @@ class PostgresChapterGroupAuthority:
             or str(row[0]) != "FROZEN"
             or str(row[1]) != "CURRENT"
             or str(row[2]) != parent_version_id
-            or int((row[3] or {}).get("chapter_number") or 0)
-            != chapter_number
+            or int((row[3] or {}).get("chapter_number") or 0) != chapter_number
         ):
             raise KernelError(
                 "CHAPTER_GROUP_CHAPTER_PLAN_INVALID",
@@ -1078,9 +1088,7 @@ class PostgresChapterGroupAuthority:
             )
         return {"content": dict(row[3])}
 
-    def _operation_output(
-        self, operation_id: str, output_key: str
-    ) -> dict[str, str]:
+    def _operation_output(self, operation_id: str, output_key: str) -> dict[str, str]:
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
@@ -1122,6 +1130,39 @@ class PostgresChapterGroupAuthority:
             payload={"reason": reason},
             input_assets=inputs,
             principal=principal,
+        )
+
+    def _request_root_cancellation(
+        self,
+        group: dict[str, Any],
+        *,
+        reason: str,
+        principal: Principal,
+    ) -> None:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            root = uow.repositories.attempt_runtime.operation_state(
+                str(group["root_operation_id"]), group["project_id"]
+            )
+        if root["status"] in {
+            "CANCELLED",
+            "CANCELLATION_REQUESTED",
+            "SUCCEEDED",
+            "FAILED_FINAL",
+            "DEAD_LETTER",
+        }:
+            return
+        request_cancellation(
+            self.database_url,
+            CancelCommand(
+                operation_id=str(group["root_operation_id"]),
+                project_id=group["project_id"],
+                actor_id=principal.principal_id,
+                reason=reason or "ChapterGroup production cancelled",
+                expected_version=int(root["version"]),
+                idempotency_key=f"{group['stable_idempotency_key']}:cancel-root",
+                trace_id=f"{group['root_operation_id']}:cancel",
+                correlation_id=str(group["root_operation_id"]),
+            ),
         )
 
     def _register_definitions(self) -> None:
@@ -1180,8 +1221,7 @@ def _output_contract(definition_name: str) -> tuple[str, str]:
         )
     return (
         "chapter_group_step_receipt",
-        "chapter_group.step."
-        + definition_name.removeprefix("chapter_group."),
+        "chapter_group.step." + definition_name.removeprefix("chapter_group."),
     )
 
 
@@ -1224,9 +1264,7 @@ def _definition(
         ),
         "concurrency_key_template": "project:{project_id}:chapter-group",
         "retry_policy": {"max_attempts": 2},
-        "timeout_policy": {
-            "operation_timeout_seconds": 86400 if is_root else 120
-        },
+        "timeout_policy": {"operation_timeout_seconds": 86400 if is_root else 120},
         "cancellation_policy": {
             "mode": "cancel_children" if is_root else "cancel_active_attempt"
         },

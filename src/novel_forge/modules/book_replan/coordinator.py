@@ -75,7 +75,6 @@ class CoordinateBookReplanCommand:
     trace_id: str
     correlation_id: str
     target_asset_version_id: str = ""
-    auto_approve_low_risk: bool = False
 
     def __post_init__(self) -> None:
         required = (
@@ -275,14 +274,6 @@ class BookReplanCoordinator:
             handler=record_start,
         )
         result = self.require(replan_id)
-        if command.auto_approve_low_risk and proposal["risk"] == "LOW":
-            self.approve(
-                replan_id,
-                authority_type="PLAN_CHANGE_AUTHORITY",
-                authority_version="plan-change-low-risk-policy-v1",
-                evidence={"explicit_low_risk_auto_approval_policy": True},
-            )
-            return self.activate(replan_id)
         return result
 
     def _find_by_idempotency(
@@ -295,6 +286,21 @@ class BookReplanCoordinator:
                 WHERE project_id=%s AND stable_idempotency_key=%s
                 """,
                 [project_id, stable_idempotency_key],
+            )
+            row = uow.cursor.fetchone()
+        return self.require(str(row[0])) if row is not None else None
+
+    def latest_for_book(self, book_run_id: str) -> dict[str, Any] | None:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT replan_id
+                FROM authority_book_replan
+                WHERE book_run_id=%s
+                ORDER BY created_at DESC
+                LIMIT 1
+                """,
+                [book_run_id],
             )
             row = uow.cursor.fetchone()
         return self.require(str(row[0])) if row is not None else None
@@ -389,6 +395,18 @@ class BookReplanCoordinator:
         evidence: dict[str, Any],
     ) -> dict[str, Any]:
         replan = self.require(replan_id)
+        if replan["status"] in {"ACTIVE", "REGENERATING", "RESUMED"}:
+            return {
+                **replan,
+                "plan_change": self.plan_change.require(
+                    replan["plan_change_proposal_id"]
+                ),
+            }
+        if replan["status"] != "APPROVAL_PENDING":
+            raise KernelError(
+                "BOOK_REPLAN_APPROVAL_STATE_INVALID",
+                "Book Replan is not waiting for Authority approval",
+            )
         proposal = self.plan_change.decide(
             replan["plan_change_proposal_id"],
             approved=True,
@@ -446,21 +464,32 @@ class BookReplanCoordinator:
             checkpoint("after_outbox_insert")
             return {"replan_id": replan_id, "status": "ACTIVE"}
 
-        self._run_checkpoint(
-            project_id=replan["project_id"],
-            workspace_id=str(book["workspace_id"]),
-            book_id=replan["book_id"],
-            idempotency_key=f"{replan['stable_idempotency_key']}:approval-record",
-            trace_id=f"{replan_id}:approval",
-            correlation_id=str(proposal["approval_operation_id"]),
-            causation_operation_id=str(proposal["approval_operation_id"]),
-            payload={
-                "transition": "ACTIVE",
-                "replan_id": replan_id,
-                "plan_change_decision_operation_id": proposal["approval_operation_id"],
-            },
-            handler=record_approval,
-        )
+        try:
+            self._run_checkpoint(
+                project_id=replan["project_id"],
+                workspace_id=str(book["workspace_id"]),
+                book_id=replan["book_id"],
+                idempotency_key=f"{replan['stable_idempotency_key']}:approval-record",
+                trace_id=f"{replan_id}:approval",
+                correlation_id=str(proposal["approval_operation_id"]),
+                causation_operation_id=str(proposal["approval_operation_id"]),
+                payload={
+                    "transition": "ACTIVE",
+                    "replan_id": replan_id,
+                    "plan_change_decision_operation_id": proposal[
+                        "approval_operation_id"
+                    ],
+                },
+                handler=record_approval,
+            )
+        except KernelError as exc:
+            replay = self.require(replan_id)
+            if exc.code != "BOOK_REPLAN_STATE_CONFLICT" or replay["status"] not in {
+                "ACTIVE",
+                "REGENERATING",
+                "RESUMED",
+            }:
+                raise
         return {**self.require(replan_id), "plan_change": proposal}
 
     def activate(self, replan_id: str) -> dict[str, Any]:
@@ -512,17 +541,20 @@ class BookReplanCoordinator:
             checkpoint("after_outbox_insert")
             return {"replan_id": replan_id, "status": "REGENERATING"}
 
-        self._run_checkpoint(
-            project_id=replan["project_id"],
-            workspace_id=str(book["workspace_id"]),
-            book_id=replan["book_id"],
-            idempotency_key=f"{replan['stable_idempotency_key']}:regenerating-record",
-            trace_id=f"{replan_id}:regenerating",
-            correlation_id=str(proposal["activation_operation_id"]),
-            causation_operation_id=str(proposal["activation_operation_id"]),
-            payload={"transition": "REGENERATING", "replan_id": replan_id},
-            handler=record_regenerating,
-        )
+        if replan["status"] == "ACTIVE":
+            self._run_checkpoint(
+                project_id=replan["project_id"],
+                workspace_id=str(book["workspace_id"]),
+                book_id=replan["book_id"],
+                idempotency_key=(
+                    f"{replan['stable_idempotency_key']}:regenerating-record"
+                ),
+                trace_id=f"{replan_id}:regenerating",
+                correlation_id=str(proposal["activation_operation_id"]),
+                causation_operation_id=str(proposal["activation_operation_id"]),
+                payload={"transition": "REGENERATING", "replan_id": replan_id},
+                handler=record_regenerating,
+            )
         chapter_plan_projection: dict[str, Any] | None = None
         if replan["affected_scope"] == "CHAPTER":
             chapter_plan_projection = (

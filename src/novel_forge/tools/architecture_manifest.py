@@ -145,7 +145,7 @@ def check_tests(root: Path) -> dict[str, Any]:
     )
     if discovery.returncode:
         detail = discovery.stderr.strip() or discovery.stdout.strip()
-        raise ValueError(f"required pytest collection failed: {detail}")
+        raise ValueError(f"required pytest collection cannot be discovered: {detail}")
     node_ids = tuple(
         line.strip()
         for line in discovery.stdout.splitlines()

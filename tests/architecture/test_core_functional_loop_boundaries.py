@@ -77,6 +77,39 @@ def test_book_supervisor_uses_authorities_and_owns_no_execution_runtime() -> Non
         assert forbidden not in supervisor
 
 
+def test_api_and_worker_share_the_canonical_book_production_composition() -> None:
+    dependencies = _read("src/novel_forge/api/authority_dependencies.py")
+    api = _read("src/novel_forge/api/authority_app.py")
+    router = _read("src/novel_forge/api/routers/book_authority.py")
+    worker = _read("src/novel_forge/workers/book_authority.py")
+    composition = _read("src/novel_forge/modules/book_authority/composition.py")
+
+    assert "def build_book_production_composition(" in dependencies
+    assert "BookProductionComposition(" in dependencies
+    assert "build_book_production_composition(" in api
+    assert "build_book_production_composition(" in worker
+    assert "return ctx.services.book_production" in router
+    assert "getattr(" not in router
+    assert "def approve_replan(" in composition
+    assert "self.replan.approve(" in composition
+    assert "RESOLVED_AUTHORITY_INPUT" in worker
+
+
+def test_replan_has_no_implicit_approval_path_and_worker_stops_pending() -> None:
+    coordinator = _read("src/novel_forge/modules/book_replan/coordinator.py")
+    supervisor = _read("src/novel_forge/modules/book_authority/supervisor.py")
+    worker = _read("src/novel_forge/workers/book_authority.py")
+
+    command_block = coordinator.split("class CoordinateBookReplanCommand:", 1)[1]
+    command_block = command_block.split("class BookReplanCoordinator:", 1)[0]
+    assert "auto_approve_low_risk" not in command_block
+    assert "WAIT_REPLAN_APPROVAL" in supervisor
+    assert (
+        '"REPLAN_APPROVAL_PENDING"'
+        not in worker.split("ACTIVE_STATES", 1)[1].split(")", 1)[0]
+    )
+
+
 def test_book_run_and_replan_bind_immutable_input_snapshots() -> None:
     production = _read("src/novel_forge/modules/book_authority/production.py")
     resolver = _read("src/novel_forge/modules/book_authority/input_resolver.py")

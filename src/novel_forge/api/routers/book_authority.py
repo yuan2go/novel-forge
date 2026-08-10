@@ -7,22 +7,13 @@ from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException
 
-from novel_forge.api.authority_dependencies import (
-    build_book_authority_application,
-    build_trusted_principal_resolver,
-)
+from novel_forge.api.authority_dependencies import build_trusted_principal_resolver
 from novel_forge.api.routers.context import ProductRouterContext
 from novel_forge.modules.book_authority.production import (
     StartBookProductionCommand,
     SubmitBookChapterCommand,
 )
-from novel_forge.modules.book_authority.input_resolver import (
-    BookProductionInputResolver,
-    ResolveBookProductionInputCommand,
-)
-from novel_forge.modules.book_authority.governed_scheduler import (
-    PostgresBookAuthorityScheduler,
-)
+from novel_forge.modules.book_authority.input_resolver import ResolveBookProductionInputCommand
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.production_preparation import PostgresProductionAssetResolver
 
@@ -33,6 +24,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     BookProductionInputResolveRequest = ctx.models["BookProductionInputResolveRequest"]
     BookAuthorityChapterRequest = ctx.models["BookAuthorityChapterRequest"]
     BookAuthorityControlRequest = ctx.models["BookAuthorityControlRequest"]
+    BookReplanApprovalRequest = ctx.models["BookReplanApprovalRequest"]
     router = APIRouter(
         prefix="/product/production/book-authority",
         tags=["product-book-authority"],
@@ -43,15 +35,10 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
         book_id: str, request: BookProductionInputResolveRequest
     ) -> dict[str, Any]:
         try:
-            authority = _application(ctx)
             principal = build_trusted_principal_resolver().resolve_api_principal(
                 claimed_actor_id=request.actor_id
             )
-            snapshot = BookProductionInputResolver(
-                authority.database_url,
-                application_build_id=authority.application_build_id,
-                commit_sha=authority.commit_sha,
-            ).resolve(
+            snapshot = _composition(ctx).input_resolver.resolve(
                 ResolveBookProductionInputCommand(
                     project_id=request.project_id,
                     workspace_id=request.workspace_id,
@@ -74,7 +61,6 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     @router.post("/commands", status_code=202)
     def start_book(request: BookAuthorityStartRequest) -> dict[str, Any]:
         try:
-            authority = _application(ctx)
             principal = build_trusted_principal_resolver().resolve_api_principal(
                 claimed_actor_id=request.actor_id
             )
@@ -83,11 +69,9 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
             production_profile_version = request.production_profile_version
             longform_context_versions = dict(request.longform_context_versions)
             if request.input_mode == "RESOLVED_AUTHORITY_INPUT":
-                snapshot = BookProductionInputResolver(
-                    authority.database_url,
-                    application_build_id=authority.application_build_id,
-                    commit_sha=authority.commit_sha,
-                ).require(request.input_snapshot_id)
+                snapshot = _composition(ctx).input_resolver.require(
+                    request.input_snapshot_id
+                )
                 if (snapshot.project_id, snapshot.workspace_id, snapshot.book_id) != (
                     request.project_id,
                     request.workspace_id,
@@ -262,20 +246,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
             book = authority.require(book_run_id)
             principal = build_trusted_principal_resolver().resolve_api_principal()
             principal.require("book.authority.execute", book["project_id"])
-            if book["input_mode"] == "RESOLVED_AUTHORITY_INPUT":
-                supervisor = getattr(
-                    ctx.services, "book_production_supervisor", None
-                )
-                if supervisor is None:
-                    raise KernelError(
-                        "BOOK_PRODUCTION_SUPERVISOR_NOT_CONFIGURED",
-                        "resolved Book production requires the governed Supervisor runtime",
-                    )
-                tick = supervisor.tick(book_run_id)
-            else:
-                tick = PostgresBookAuthorityScheduler(
-                    authority, principal=principal
-                ).tick(book_run_id)
+            tick = _composition(ctx).tick(book_run_id)
             return {
                 "book_run_id": tick.book_run_id,
                 "previous_state": tick.previous_state,
@@ -295,6 +266,30 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
             principal = build_trusted_principal_resolver().resolve_api_principal()
             principal.require("book.authority.query", result["project_id"])
             return result
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
+
+    @router.post("/runs/{book_run_id}/replans/{replan_id}/approve")
+    def approve_replan(
+        book_run_id: str,
+        replan_id: str,
+        request: BookReplanApprovalRequest,
+    ) -> dict[str, Any]:
+        try:
+            book = _application(ctx).require(book_run_id)
+            principal = build_trusted_principal_resolver().resolve_api_principal(
+                claimed_actor_id=request.actor_id
+            )
+            principal.require("book.authority.execute", book["project_id"])
+            return _composition(ctx).approve_replan(
+                book_run_id=book_run_id,
+                replan_id=replan_id,
+                authority_type=request.authority_type,
+                authority_version=request.authority_version,
+                evidence=dict(request.evidence),
+            )
         except PermissionError as exc:
             raise HTTPException(status_code=403, detail=str(exc)) from exc
         except (KernelError, ValueError, RuntimeError) as exc:
@@ -352,8 +347,11 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
 
 
 def _application(ctx: ProductRouterContext):
-    application = getattr(ctx.services, "book_authority_application", None)
-    return application or build_book_authority_application(ctx.app_settings)
+    return _composition(ctx).authority
+
+
+def _composition(ctx: ProductRouterContext):
+    return ctx.services.book_production
 
 
 def _http_error(exc: Exception) -> HTTPException:

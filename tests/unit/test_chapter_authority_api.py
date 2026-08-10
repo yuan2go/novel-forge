@@ -169,8 +169,8 @@ class ChapterAuthorityApiTests(unittest.TestCase):
                     return_value=fake,
                 ),
                 patch(
-                    "novel_forge.api.authority_app.build_book_authority_application",
-                    return_value=SimpleNamespace(),
+                    "novel_forge.api.authority_app.build_book_production_composition",
+                    return_value=SimpleNamespace(authority=SimpleNamespace()),
                 ),
             ):
                 app = create_app(
@@ -233,8 +233,8 @@ class ChapterAuthorityApiTests(unittest.TestCase):
                     return_value=fake.query,
                 ),
                 patch(
-                    "novel_forge.api.authority_app.build_book_authority_application",
-                    return_value=SimpleNamespace(),
+                    "novel_forge.api.authority_app.build_book_production_composition",
+                    return_value=SimpleNamespace(authority=SimpleNamespace()),
                 ),
             ):
                 app = create_app(

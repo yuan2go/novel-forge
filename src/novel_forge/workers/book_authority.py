@@ -7,11 +7,15 @@ import time
 from dataclasses import asdict
 
 from novel_forge.api.authority_dependencies import (
-    build_book_authority_application,
+    build_book_production_composition,
+    build_chapter_authority_application,
     build_trusted_principal_resolver,
 )
 from novel_forge.infrastructure.settings import IndustrialSettings
-from novel_forge.modules.book_authority import PostgresBookAuthorityScheduler
+from novel_forge.modules.book_authority import (
+    BookProductionComposition,
+    PostgresBookAuthorityScheduler,
+)
 from novel_forge.modules.command_kernel.worker_execution import (
     AuthorityWorkerExecutionBoundary,
     WorkerProgrammingError,
@@ -35,6 +39,8 @@ ACTIVE_STATES = (
     "CHAPTER_COMPLETED",
     "READER_OUTCOME_PENDING",
     "CHECKPOINT_PENDING",
+    "REPLAN_REQUIRED",
+    "REPLAN_GENERATING",
     "READY",
     "COMPLETED",
 )
@@ -65,6 +71,10 @@ def schedule_book_coordination_jobs(
               AND (%s='' OR book.book_run_id=%s)
               AND (
                   book.state NOT IN ('READY','COMPLETED')
+                  OR (
+                      book.state='READY'
+                      AND book.input_mode='RESOLVED_AUTHORITY_INPUT'
+                  )
                   OR EXISTS (
                       SELECT 1
                       FROM authority_book_chapter_acceptance AS acceptance
@@ -154,7 +164,7 @@ def schedule_book_coordination_jobs(
 
 def execute_book_coordination_claim(
     runtime_jobs: RuntimeJobAuthority,
-    scheduler: PostgresBookAuthorityScheduler,
+    ticker: BookProductionComposition | PostgresBookAuthorityScheduler,
     claim: RuntimeJobClaim,
     *,
     lease_seconds: int = 30,
@@ -180,7 +190,7 @@ def execute_book_coordination_claim(
             lease_seconds=lease_seconds,
             label=f"runtime-job:{claim.attempt_id}",
         ):
-            tick = scheduler.tick(claim.subject_id)
+            tick = ticker.tick(claim.subject_id)
         tick_result = asdict(tick)
         runtime_jobs.checkpoint(
             claim,
@@ -215,8 +225,12 @@ def main() -> int:
         or "book-authority-worker"
     ).strip()
     principal = build_trusted_principal_resolver().resolve_worker_principal(worker_id)
-    authority = build_book_authority_application(settings)
-    scheduler = PostgresBookAuthorityScheduler(authority, principal=principal)
+    chapter = build_chapter_authority_application(settings)
+    composition = build_book_production_composition(
+        settings,
+        principal=principal,
+        chapter_application=chapter,
+    )
     runtime_jobs = RuntimeJobAuthority(settings.database_url)
     poll_seconds = max(
         0.05, float(os.environ.get("NOVEL_FORGE_AUTHORITY_POLL_SECONDS") or "1")
@@ -268,7 +282,7 @@ def main() -> int:
                     identity=lambda item: (item.project_id, item.runtime_job_id),
                     execute=lambda item: execute_book_coordination_claim(
                         runtime_jobs,
-                        scheduler,
+                        composition,
                         item,
                         lease_seconds=lease_seconds,
                     ),
