@@ -112,7 +112,7 @@ def crash_authority_scope() -> dict[str, str]:
             JOIN authority_operation AS operation
               ON operation.operation_id=binding.created_by_operation_id
             WHERE binding.workflow_definition_ref=
-                  'chapter_authority_slice@2.3.0'
+                  'chapter_authority_slice@2.3.1'
               AND binding.workflow_node_id='draft'
               AND binding.binding_status='ACTIVE'
             ORDER BY binding.created_at DESC

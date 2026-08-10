@@ -95,13 +95,13 @@ def test_scope_membership_and_project_owned_system_leakage_fail_closed() -> None
                 project_id=harness.project_id,
                 workspace_id=other_workspace,
                 book_id=other_book,
-                workflow_definition_ref="chapter_authority_slice@2.3.0",
+                workflow_definition_ref="chapter_authority_slice@2.3.1",
                 workflow_node_id="draft",
                 environment="development",
                 runtime_profile="development",
                 release_channel="VALIDATION",
                 release_sha=RELEASE_SHA,
-                operation_definition_ref="chapter.draft.generate@2.3.0",
+                operation_definition_ref="chapter.draft.generate@2.3.1",
                 pack_id=harness.pack_id,
             )
         )
@@ -111,13 +111,13 @@ def test_scope_membership_and_project_owned_system_leakage_fail_closed() -> None
             project_id=harness.project_id,
             workspace_id="",
             book_id=harness.book_ids[0],
-            workflow_definition_ref="chapter_authority_slice@2.3.0",
+            workflow_definition_ref="chapter_authority_slice@2.3.1",
             workflow_node_id="draft",
             environment="development",
             runtime_profile="development",
             release_channel="VALIDATION",
             release_sha=RELEASE_SHA,
-            operation_definition_ref="chapter.draft.generate@2.3.0",
+            operation_definition_ref="chapter.draft.generate@2.3.1",
             pack_id=harness.pack_id,
         )
 

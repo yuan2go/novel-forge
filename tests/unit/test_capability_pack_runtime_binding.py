@@ -28,7 +28,7 @@ def _node() -> CompiledWorkflowNode:
         ordinal=3,
         node_id="draft",
         definition_name="chapter.draft.generate",
-        definition_version="2.3.0",
+        definition_version="2.3.1",
         definition_hash=HASH_A,
         handler_key="novel_forge.chapter_authority.draft",
         handler_contract_version="1.0.0",
@@ -48,9 +48,9 @@ def _binding() -> ChapterNodeExecutionBinding:
     return ChapterNodeExecutionBinding(
         binding_id="chapter-binding:draft",
         binding_version=1,
-        workflow_definition_ref="chapter_authority_slice@2.3.0",
+        workflow_definition_ref="chapter_authority_slice@2.3.1",
         workflow_node_id="draft",
-        operation_definition_ref="chapter.draft.generate@2.3.0",
+        operation_definition_ref="chapter.draft.generate@2.3.1",
         operation_definition_hash=HASH_A,
         agent_definition_ref="chapter-draft-agent@1",
         agent_definition_hash=HASH_B,
@@ -72,7 +72,7 @@ def _binding() -> ChapterNodeExecutionBinding:
 def _authority() -> dict[str, object]:
     return {
         "name": "chapter.draft.generate",
-        "definition_version": "2.3.0",
+        "definition_version": "2.3.1",
         "definition_hash": HASH_A,
         "handler_key": "novel_forge.chapter_authority.draft",
         "handler_contract_version": "1.0.0",
@@ -102,7 +102,7 @@ def test_compiled_pack_binds_configuration_to_existing_authority() -> None:
 
     assert result.capability_pack_compilation_hash == HASH_B
     assert result.agent_definition_ref == "chapter-draft-agent@1"
-    assert result.operation_definition_ref == "chapter.draft.generate@2.3.0"
+    assert result.operation_definition_ref == "chapter.draft.generate@2.3.1"
 
 
 def test_pack_cannot_override_authority_retry_policy() -> None:

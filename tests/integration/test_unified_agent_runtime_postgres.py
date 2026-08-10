@@ -243,7 +243,7 @@ class UnifiedAgentRuntimePostgresTests(unittest.TestCase):
                        retry_policy, timeout_policy, approval_policy,
                        compensation_policy, completion_contract
                 FROM authority_operation_definition
-                WHERE name='chapter.draft.generate' AND definition_version='2.3.0'
+                WHERE name='chapter.draft.generate' AND definition_version='2.3.1'
                 """
             ).fetchone()
         assert authority is not None
@@ -363,7 +363,7 @@ class UnifiedAgentRuntimePostgresTests(unittest.TestCase):
 
         node = CompiledWorkflowNode(
             ordinal=3, node_id="draft",
-            definition_name="chapter.draft.generate", definition_version="2.3.0",
+            definition_name="chapter.draft.generate", definition_version="2.3.1",
             definition_hash=str(authority[0]), handler_key=str(authority[1]),
             handler_contract_version=str(authority[2]),
             capability_id=capability.capability_id,
@@ -399,7 +399,7 @@ class UnifiedAgentRuntimePostgresTests(unittest.TestCase):
                     """
                     SELECT COALESCE(MAX(binding_version), 0) + 1
                     FROM authority_chapter_node_agent_binding
-                    WHERE workflow_definition_ref='chapter_authority_slice@2.3.0'
+                    WHERE workflow_definition_ref='chapter_authority_slice@2.3.1'
                       AND workflow_node_id='draft'
                     """
                 ).fetchone()[0]
@@ -408,7 +408,7 @@ class UnifiedAgentRuntimePostgresTests(unittest.TestCase):
                 """
                 SELECT activation_version
                 FROM authority_chapter_node_agent_binding_activation
-                WHERE workflow_definition_ref='chapter_authority_slice@2.3.0'
+                WHERE workflow_definition_ref='chapter_authority_slice@2.3.1'
                   AND workflow_node_id='draft'
                 """
             ).fetchone()
@@ -426,9 +426,9 @@ class UnifiedAgentRuntimePostgresTests(unittest.TestCase):
                 payload={
                     "authority_mode": "DEVELOPMENT_FIXTURE",
                     "binding_id": binding_id, "binding_version": binding_version,
-                    "workflow_definition_ref": "chapter_authority_slice@2.3.0",
+                    "workflow_definition_ref": "chapter_authority_slice@2.3.1",
                     "workflow_node_id": "draft",
-                    "operation_definition_ref": "chapter.draft.generate@2.3.0",
+                    "operation_definition_ref": "chapter.draft.generate@2.3.1",
                     "operation_definition_hash": str(authority[0]),
                     "agent_definition_ref": f"{definition.agent_id}@1",
                     "agent_definition_hash": definition.definition_hash,
@@ -458,7 +458,7 @@ class UnifiedAgentRuntimePostgresTests(unittest.TestCase):
                 expected_activation_version=expected_activation_version,
                 payload={
                     "authority_mode": "DEVELOPMENT_FIXTURE",
-                    "workflow_definition_ref": "chapter_authority_slice@2.3.0",
+                    "workflow_definition_ref": "chapter_authority_slice@2.3.1",
                     "workflow_node_id": "draft", "binding_id": binding_id,
                     "binding_version": binding_version, "status": "ACTIVE",
                     "reason": "fixture activation",

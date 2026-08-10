@@ -94,7 +94,7 @@ def test_postgres_rejects_approval_deployment_activation_and_rollout_attacks() -
         {
             "scope_key": _deployment_scope_key(other_book_deployment.deployment_id),
             "environment": "development",
-            "workflow_definition_ref": "chapter_authority_slice@2.3.0",
+            "workflow_definition_ref": "chapter_authority_slice@2.3.1",
             "pack_id": harness.pack_id,
         }
     )

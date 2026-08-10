@@ -218,7 +218,7 @@ class CapabilityPackP1ATests(unittest.TestCase):
     def test_current_chapter_operations_all_resolve(self) -> None:
         catalog = chapter_operation_definition_catalog(release_sha=FIXTURE_RELEASE_SHA)
         for node in ChapterNode:
-            definition = catalog.resolve(node.definition_name, "2.3.0")
+            definition = catalog.resolve(node.definition_name, "2.3.1")
             self.assertEqual(definition.handler_key, node.handler_key)
             self.assertTrue(definition.definition_hash.startswith("sha256:"))
 
