@@ -15,6 +15,7 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 WORKERS = (
     "chapter-authority-worker",
+    "agent-authority-worker",
     "content-authority-worker",
     "source-authority-worker",
     "mkaos-authority-worker",
@@ -122,6 +123,27 @@ def main() -> int:
             )
         )
         evidence["readiness"] = readiness
+        runtime_readiness = json.loads(
+            _run(
+                _compose(
+                    project,
+                    "exec",
+                    "-T",
+                    "authority-api",
+                    "curl",
+                    "-fsS",
+                    "http://localhost:8000/runtime/readiness",
+                ),
+                env=env,
+            )
+        )
+        if not runtime_readiness.get("runtime_ready"):
+            raise RuntimeError(
+                "worker fleet did not reach runtime readiness: "
+                f"{runtime_readiness}"
+            )
+        evidence["runtime_readiness"] = runtime_readiness
+        evidence["steps"].append("required_worker_fleet_ready")
 
         first = _exec_probe(project, env, "submit", "--suffix", "normal")
         first_result = _exec_probe(
