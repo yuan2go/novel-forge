@@ -1,107 +1,81 @@
 # Project Current State
 
-Updated: 2026-08-04
+Updated: 2026-08-10
 
-Branch: `feat/v7-content-intelligence-and-longform-proof`
-
-Implementation SHA: `8d0c49973ad3f58ca325e3d39941fd89cb5d5f5e`
-
-Autonomous Novel OS remains the product target. The current engineering verdict
-is narrower: the backend production boundary has completed its PostgreSQL
-Authority cutover, while real Provider, real long-form and production proof have
-not been performed.
+The codebase now has one PostgreSQL-backed Book production composition shared by
+the Authority API and Book Worker. P0 convergence is proven with deterministic
+providers, PostgreSQL integration, and the default Compose topology. Real
+Provider, sustained long-form, and production deployment evidence remain absent.
 
 ```text
-status=POSTGRESQL_AUTHORITY_BACKEND_HARDENING_PARTIAL
-architecture_defined=true
-fixture_proven=true
-postgresql_integration_proven=true
-compose_smoke_proven=true
-fault_injection_proven=true
-domain_migration_core_types_proven=false
-worker_fleet_e2e_proven=false
-remote_sha_ci_proven=false
+status=P0_PRODUCTION_RUNTIME_CONVERGED_FIXTURE_PROVEN
+canonical_book_runtime=true
+api_worker_composition_shared=true
+postgresql_authority=true
+capability_pack_compilable=true
+required_worker_fleet_readiness_proven=true
+two_chapter_no_replan_proven=true
+two_chapter_explicit_replan_approval_proven=true
+fixture_only=true
+real_provider_qualified=false
 real_provider_proven=false
 longform_proven=false
-multi_book_proven=false
 production_verified=false
-backup_pitr_proven=false
-
-transaction_command_atomicity_proven=true
-inflight_command_recovery_semantics_proven=true
-execution_classification_consistent=true
-architecture_fitness_scope_hardened=true
-asset_scope_database_constraints_proven=true
-book_design_planning_convergence_adr_accepted=true
-real_provider_auth_proven=false
-provider_request_receipt_proven=false
-provider_usage_proven=false
-provider_cost_proven=false
-provider_timeout_query_cancel_behavior_recorded=false
-unknown_reconciliation_proven=false
-provider_restart_recovery_proven=false
 ```
 
-## Runtime fact
+## Canonical runtime
 
-The standard development, production-like, CLI, API, Worker and Compose paths use
-PostgreSQL Authority. If PostgreSQL is unavailable, they fail closed. Legacy
-LocalStorage can only be selected by the explicit compatibility CLI/profile or
-used as a frozen migration/import/export source. It is not a fallback and is not
-dual-written.
+`build_book_production_composition` is the Book production composition root. It
+constructs `BookProductionComposition` from the existing Book, Planning,
+ChapterGroup, Production Preparation, Followup, PlanChange, input resolver, and
+Replan components. Both the Authority API and Book Worker require this graph at
+startup; missing dependencies fail closed.
 
-The default backend topology contains PostgreSQL, object storage, a one-shot
-migration service, Authority API and Chapter, Content, Source, MKAOS, Book,
-Outbox and Maintenance Worker groups. It contains no Web or Legacy service.
+For `RESOLVED_AUTHORITY_INPUT`, the durable path is:
 
-## Authority fact table
+```text
+Authority API admission
+→ Story Planning candidate and activation
+→ Book input snapshot
+→ ChapterGroup and ChapterPlan
+→ Chapter Authority Operation/Saga/Attempt/ExternalEffect
+→ acceptance
+→ Reader Outcome
+→ Recap/checkpoint
+→ no-replan next chapter, or Replan candidate and PlanChange proposal
+→ APPROVAL_PENDING
+→ formal Authority approval command/API
+→ PlanChange activation and new input snapshot
+→ Book resume and next chapter
+```
 
-| Capability | Current fact | Evidence boundary |
+The Worker may generate a Replan candidate and proposal but cannot approve it.
+`APPROVAL_PENDING` is a durable normal wait state. Approval replay and the
+subsequent activation/resume path are idempotent and restart-safe.
+
+## Authority and recovery facts
+
+| Area | Current code/runtime fact | Evidence ceiling |
 |---|---|---|
-| Command Kernel | durable Operation/Saga/Attempt, idempotency, lease/fence, recovery | PostgreSQL integration and synthetic fault injection |
-| Asset authority | immutable typed AssetVersion, qualification, activation, projection | PostgreSQL integration |
-| Legacy migration | 59 mappings: 18 domain-native and 41 archival; durable phases, references, approval and reconciliation | synthetic frozen snapshot; no real user data |
-| Chapter/Content | registered Authority definitions and grouped Workers | fixture proof; no real prose quality proof |
-| Project/Book/BookDesign/Planning | PostgreSQL commands and projections | typed integration fixtures |
-| Transaction Commands | admission, domain/business mutation, audit/outbox and Operation completion in one UoW; zero Attempt/Lease | precise PostgreSQL fault injection and replay |
-| D0 qualification | Authority-persisted fixture harness, six scenario rows, object evidence and report AssetVersion | no real Provider call; all real Gates false |
-| Source/MKAOS | Authority commands, object-store boundary and Workers | fixture/source protocol; no real connector proof |
-| External effects | planned execution, receipt, callback, query/reconciliation | scripted/fake Provider only |
-| Runtime governance | process-local psycopg3 pools, timeouts, bounded retry, metrics, drain | real PostgreSQL and Compose fault injection |
-| Compose | clean-volume 11-service backend, migration once, Content execution and recovery | local smoke; not seven domain E2Es |
-| Web | excluded from this task | no Web implementation or browser proof |
+| PostgreSQL | sole production state authority; production-like paths fail closed without it | migration and PostgreSQL integration |
+| Book composition | API and Worker share `BookProductionComposition` | two-chapter PostgreSQL fixture proof |
+| Replan | candidate/proposal automatic; approval explicit; activation/resume automatic after approval | formal API approval fixture proof |
+| Chapter execution | Command Kernel owns Operation, Saga, Attempt, Lease, Fence, ExternalEffect, receipt, result, and recovery | PostgreSQL integration and fault injection |
+| Capability Pack | shipped Chapter Pack compiles against real operation/capability/artifact catalogs; controlled environments also require activation | local and Compose compilation; no real-provider activation proof |
+| Readiness | separates `api_ready` from complete required Worker fleet `runtime_ready` and explicit evidence flags | eight-worker Compose health proof |
+| Compose | PostgreSQL, MinIO, migration, API, and eight required Worker kinds; restart, lease recovery, stale-fence rejection, and drain | fixture fault-injection proof |
 
 ## Current limits
 
-- Real Provider qualification is blocked without approved credentials and was not
-  attempted.
-- Real novel quality, long-form and multi-book behavior were not exercised.
-- Public authentication, production secrets, backup/PITR, load/capacity/SLO and
-  real publishing platform behavior remain unverified.
-- The repository still contains explicit Legacy compatibility source. Architecture
-  gates use a recursive 15-entrypoint graph to prove guarded reachability; source
-  deletion is not claimed.
-- MKAOS material/rule/template and remaining historical domains have no
-  domain-native migration adapters yet.
-- Final-SHA GitHub Actions have not run because this work has not been pushed.
-- Admin production dependencies report zero known production vulnerabilities;
-  unit tests, TypeScript/build and a Playwright smoke passed locally. This is not
-  public-authentication or production-deployment proof.
+- All current vertical proofs use deterministic fixture providers. They do not
+  prove prose quality, credentials, usage/cost receipts from a real Provider, or
+  Provider-specific timeout/query/cancel behavior.
+- No sustained real long-form or multi-book run has been performed.
+- Public authentication, production secrets, backup/PITR, load/capacity/SLO,
+  and real publishing behavior remain unverified.
+- Explicit legacy compatibility code still exists for migration and local
+  compatibility use; it is not the canonical production path.
+- Final-SHA remote CI is not evidence until the pushed Draft PR checks complete.
 
-## Current evidence
-
-Start with current code and these exact-SHA reports:
-
-- [`reports/current-head-sha-baseline.md`](reports/current-head-sha-baseline.md)
-- [`reports/current-engineering-state.md`](reports/current-engineering-state.md)
-- [`reports/legacy-postgresql-authority-migration-status.md`](reports/legacy-postgresql-authority-migration-status.md)
-- [`architecture/authority-runtime-architecture.md`](architecture/authority-runtime-architecture.md)
-- [`06-operations/authority-compose-runbook.md`](06-operations/authority-compose-runbook.md)
-- [`adr/0004-database-connection-and-transaction-governance.md`](adr/0004-database-connection-and-transaction-governance.md)
-- [`reports/track-b-execution-semantics-hardening.md`](reports/track-b-execution-semantics-hardening.md)
-- [`reports/d0-authority-provider-qualification.md`](reports/d0-authority-provider-qualification.md)
-- [`reports/track-c-convergence-review.md`](reports/track-c-convergence-review.md)
-- [`adr/0003-book-design-and-planning-convergence.md`](adr/0003-book-design-and-planning-convergence.md)
-
-Blueprints and historical reports describe their own target or historical SHA;
-they do not supersede current code and exact-HEAD test evidence.
+Historical reports describe their own SHA and are navigation material only.
+Current code, current migrations, and exact-HEAD test evidence take precedence.

@@ -1,5 +1,18 @@
 # Book-to-Chapter Authority Flow
 
+## Composition root
+
+`build_book_production_composition` constructs the only production Book graph,
+`BookProductionComposition`. Authority API routes and the Book Worker both use
+this builder. The composition contains the existing `PostgresBookAuthority`,
+`StoryPlanningGenerationApplication`, `PostgresChapterGroupAuthority`,
+`ProductionPreparationService`, `BookFollowupAuthorityApplication`,
+`PostgresPlanChangeAuthority`, `BookProductionInputResolver`,
+`BookReplanCoordinator`, and `PostgresBookProductionSupervisor`.
+
+Composition is mandatory: the resolved-input API path has no runtime `getattr`
+fallback, and startup fails closed when a required dependency cannot be built.
+
 ## Ownership
 
 `PostgresBookAuthority` owns book-level scheduling checkpoints.
@@ -7,16 +20,19 @@
 fences, ExternalEffects, outputs, and failure state.
 
 ```text
-Book start Command
+Resolved Book admission
+→ Story Planning candidate, approval/activation and resolved input snapshot
 → book.production.coordinate root Operation + Saga
 → durable authority_book_production checkpoint
+→ ChapterGroup and ChapterPlan
 → SubmitBookChapterCommand
 → persist SUBMITTING request
 → ChapterAuthorityCommandPort.submit
 → Chapter root Operation + Chapter Saga
 → query Chapter Authority terminal state
 → Reader Outcome child Operation
-→ optional Long-form Recap child Operation
+→ Long-form Recap/checkpoint child Operation
+→ no-replan next chapter, or explicit Replan approval flow
 → Book checkpoint / root Saga completion
 ```
 
@@ -55,6 +71,25 @@ status reference into the Book checkpoint.
 Retryable, terminal, cancelled, and running Chapter states remain Chapter-owned.
 Unknown work is queried/reconciled; it is not hidden by regenerating the chapter.
 The governed Scheduler advances one durable transition per tick.
+
+## Replan approval boundary
+
+When followup evidence requires Replan, the Worker invokes the existing
+`BookReplanCoordinator` to create one replacement Planning candidate and one
+PlanChange proposal. It then stops at durable `REPLAN_APPROVAL_PENDING`.
+Repeated ticks and process restarts return the existing candidate/proposal.
+
+Only the formal Authority endpoint may approve the proposal:
+
+```text
+POST /product/production/book-authority/runs/{book_run_id}/replans/{replan_id}/approve
+```
+
+The command requires an authorized principal plus authority type/version and
+evidence. The Worker never supplies approval and no fixture or low-risk policy
+bypasses it. After approval, the same composition activates PlanChange,
+supersedes the obsolete inactive ChapterGroup when safe, resolves a new Book
+input snapshot, resumes the Book, and continues with the next chapter.
 
 Request creation and the `CHAPTER_SUBMITTED` Book slot reservation are one
 transaction. The reservation requires `state=READY` and

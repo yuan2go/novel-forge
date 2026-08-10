@@ -6,11 +6,18 @@
 docker compose up -d --build --wait
 docker compose ps
 curl -fsS http://localhost:8000/readiness
+curl -fsS http://localhost:8000/runtime/readiness
 ```
 
 The migration service must reach
-`20260804_0067_activated_migration_archival_binding` before API/Workers become
+`20260806_0073_core_functional_loops` before API/Workers become
 ready. Legacy compatibility is not started by this topology.
+
+`/readiness` reports API dependencies and `api_ready`.
+`/runtime/readiness` additionally requires fresh Chapter, Agent, Content,
+Source, MKAOS, Book, Outbox, and Maintenance Worker heartbeats. Provider and
+evidence fields remain explicit; a fixture route never reports real-provider,
+long-form, or production proof.
 
 ## Configuration checks
 
@@ -24,15 +31,17 @@ Production forbids mock providers and fixture MKAOS activation. Never set
 `NOVEL_FORGE_MKAOS_ALLOW_FIXTURE_ACTIVATION=true` outside an explicit non-
 production E2E environment.
 
-## Composite Content smoke
+## Authority runtime smoke
 
 ```bash
 make authority-smoke
 ```
 
-This clean-volume check proves the default topology, Content execution, forced
-worker restart, fence recovery, Outbox/Audit evidence, graceful drain and
-connection cleanup. It remains a Content smoke, not Worker Fleet proof.
+This clean-volume check proves API readiness, complete required Worker fleet
+readiness, Content execution, forced Worker restart, expired-lease recovery,
+stale-fence rejection, Outbox/Audit evidence, graceful drain of all eight Worker
+kinds, and connection cleanup. It uses deterministic Provider routes and is not
+real-provider, long-form, or production verification.
 
 ## Seven Worker E2E scenarios
 

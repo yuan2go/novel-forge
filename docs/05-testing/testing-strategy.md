@@ -18,6 +18,11 @@ least one test; a tracked file or unittest discovery of zero cases is not eviden
 make test
 make lint
 make validate
+make authority-test
+make postgres-authority-test
+make authority-compose-config-check
+make authority-smoke
+npm --prefix web/admin test
 make demo
 make sync-skills-dry-run
 make check-skills
@@ -82,6 +87,22 @@ The P0 fixture should cover one project and one chapter-sized production target:
 - cost-quality dashboard or acceptance report.
 
 Full-novel generation belongs to later long-chain acceptance. It should test continuity over many chapters, cost drift, quality drift, and editorial throughput after the P0 runtime chain is stable.
+
+### Canonical Book vertical proof
+
+Book production changes must run through the same composition builders used by
+the Authority API and Book Worker. A test-local hand-built Supervisor is not
+production evidence. The PostgreSQL two-chapter proof covers both:
+
+- No-Replan: resolved admission through Chapter 1 acceptance, Reader/Recap, and
+  Chapter 2 admission/execution.
+- Explicit Replan: candidate/proposal creation, durable `APPROVAL_PENDING`,
+  restart-safe waiting, formal Authority API approval, Plan activation, new
+  input snapshot, Book resume, and Chapter 2 admission/execution.
+
+The integration suite also retains retry, restart/resume, lease/fence, and
+UNKNOWN ExternalEffect recovery coverage. Deterministic Provider results make
+this fixture integration evidence, not real-provider or long-form proof.
 
 ### Context Builder
 
