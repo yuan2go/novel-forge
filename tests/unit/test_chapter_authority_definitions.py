@@ -17,6 +17,8 @@ from novel_forge.modules.chapter_authority.definitions import (
     CHAPTER_MODEL_WORKFLOW_DEFINITION_VERSION,
     CHAPTER_MODEL_OPERATION_TIMEOUT_SECONDS,
     CHAPTER_MODEL_ROOT_TIMEOUT_SECONDS,
+    CHAPTER_QUALITY_GROUP_TIMEOUT_SECONDS,
+    CHAPTER_QUALITY_PROVIDER_NODES,
     CHAPTER_SLICE_HANDLER_CONTRACT_VERSION,
     CHAPTER_SLICE_DEFINITION_VERSION,
     CHAPTER_SLICE_ROOT_DEFINITION_NAME,
@@ -191,7 +193,13 @@ class ChapterAuthorityDefinitionTests(unittest.TestCase):
                 {"capability": capability, "allowed_states": ["SUCCEEDED"]},
                 definition["completion_contract"]["required_external_effects"],
             )
-        for node in CHAPTER_LONG_TIMEOUT_POLICY_NODES:
+        for node in CHAPTER_QUALITY_PROVIDER_NODES:
+            definition = definitions[list(ChapterNode).index(node)]
+            self.assertEqual(
+                definition["timeout_policy"]["operation_timeout_seconds"],
+                CHAPTER_QUALITY_GROUP_TIMEOUT_SECONDS,
+            )
+        for node in CHAPTER_LONG_TIMEOUT_POLICY_NODES - CHAPTER_QUALITY_PROVIDER_NODES:
             definition = definitions[list(ChapterNode).index(node)]
             self.assertEqual(
                 definition["timeout_policy"]["operation_timeout_seconds"],

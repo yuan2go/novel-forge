@@ -8,7 +8,7 @@ from novel_forge.modules.chapter_authority.contracts import ChapterNode
 
 
 CHAPTER_SLICE_DEFINITION_VERSION = "2.0.11"
-CHAPTER_MODEL_EFFECT_DEFINITION_VERSION = "2.3.0"
+CHAPTER_MODEL_EFFECT_DEFINITION_VERSION = "2.3.1"
 CHAPTER_MODEL_WORKFLOW_DEFINITION_ID = "chapter_authority_slice"
 CHAPTER_MODEL_WORKFLOW_DEFINITION_VERSION = CHAPTER_MODEL_EFFECT_DEFINITION_VERSION
 CHAPTER_MODEL_WORKFLOW_DEFINITION_REF = (
@@ -20,6 +20,18 @@ CHAPTER_SLICE_ROOT_DEFINITION_NAME = "chapter.slice.run"
 CHAPTER_SLICE_ROOT_HANDLER_KEY = "novel_forge.chapter_authority.root"
 CHAPTER_MODEL_OPERATION_TIMEOUT_SECONDS = 600
 CHAPTER_MODEL_ROOT_TIMEOUT_SECONDS = 3_600
+CHAPTER_QUALITY_PROVIDER_NODES = frozenset(
+    {
+        ChapterNode.QUALITY_STRUCTURAL,
+        ChapterNode.QUALITY_COMMERCIAL,
+        ChapterNode.QUALITY_SOURCE_ORIGINALITY,
+        ChapterNode.QUALITY_LONGFORM,
+        ChapterNode.QUALITY_PLATFORM,
+    }
+)
+CHAPTER_QUALITY_GROUP_TIMEOUT_SECONDS = (
+    CHAPTER_MODEL_OPERATION_TIMEOUT_SECONDS * len(CHAPTER_QUALITY_PROVIDER_NODES)
+)
 CHAPTER_LONG_TIMEOUT_POLICY_NODES = frozenset(
     {
         ChapterNode.DRAFT,
@@ -279,9 +291,14 @@ def _definition(
         "retry_policy": {"max_attempts": 2},
         "timeout_policy": {
             "operation_timeout_seconds": (
-                CHAPTER_MODEL_OPERATION_TIMEOUT_SECONDS
-                if model_effects_required and node in CHAPTER_LONG_TIMEOUT_POLICY_NODES
-                else 60
+                CHAPTER_QUALITY_GROUP_TIMEOUT_SECONDS
+                if model_effects_required and node in CHAPTER_QUALITY_PROVIDER_NODES
+                else (
+                    CHAPTER_MODEL_OPERATION_TIMEOUT_SECONDS
+                    if model_effects_required
+                    and node in CHAPTER_LONG_TIMEOUT_POLICY_NODES
+                    else 60
+                )
             )
         },
         "cancellation_policy": {"mode": "cancel_active_attempt"},
