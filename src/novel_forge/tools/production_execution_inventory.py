@@ -1025,9 +1025,7 @@ def _current_route(
     text = f"{function.source} {classification.current_adapter}".lower()
     if classification.side_effect_type == "DATABASE_AUTHORITY":
         return "POSTGRESQL_AUTHORITY"
-    if classification.status_hint:
-        status = classification.status_hint
-    elif classification.side_effect_type == "SCRIPTED_FIXTURE":
+    if classification.side_effect_type == "SCRIPTED_FIXTURE":
         return "SCRIPTED_FIXTURE"
     if (
         classification.current_adapter.startswith("PRODUCTION_EXECUTION_PORT:")
@@ -1283,7 +1281,6 @@ def scan_repository_execution_boundaries(
             )
             continue
         module = _module_name(root, path)
-        aliases = _aliases_for_module(module, tree)
         for node in ast.walk(tree):
             imported: list[tuple[str, str]] = []
             if isinstance(node, ast.Import):
@@ -1669,11 +1666,11 @@ def main() -> int:
     parser.add_argument("--repo-root", default=".")
     parser.add_argument(
         "--json-output",
-        default="docs/reports/production-execution-migration-ledger.json",
+        default="build/reports/production-execution-inventory.json",
     )
     parser.add_argument(
         "--markdown-output",
-        default="docs/reports/production-execution-migration-ledger.md",
+        default="build/reports/production-execution-inventory.md",
     )
     arguments = parser.parse_args()
     write_execution_inventory(

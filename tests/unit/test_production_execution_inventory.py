@@ -343,8 +343,8 @@ class ProductionExecutionInventoryTests(unittest.TestCase):
                 return model.generate("prompt", {})
             """,
         )
-        json_output = self.root / "docs/reports/ledger.json"
-        markdown_output = self.root / "docs/reports/ledger.md"
+        json_output = self.root / "build/reports/inventory.json"
+        markdown_output = self.root / "build/reports/inventory.md"
 
         first = write_execution_inventory(
             self.root, json_output, markdown_output
