@@ -47,7 +47,12 @@ class PostgresContentIntelligenceExecutionPort(_BaseExecutionPort):
         environment = RuntimeEnvironment.parse(
             str(os.environ.get("NOVEL_FORGE_ENVIRONMENT") or "development")
         )
-        root = Path(os.environ.get("NOVEL_FORGE_ROOT") or Path.cwd()).resolve()
+        configured_root = str(os.environ.get("NOVEL_FORGE_ROOT") or "").strip()
+        root = (
+            Path(configured_root).expanduser().resolve()
+            if configured_root
+            else Path(__file__).resolve().parents[4]
+        )
         try:
             return source_intelligence_artifact_resolver(root)
         except (OSError, UnicodeError, ValueError) as exc:
