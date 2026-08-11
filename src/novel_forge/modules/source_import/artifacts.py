@@ -33,8 +33,10 @@ _SOURCE_SKILLS = {
         "2.0",
         "skills/platform-strategy-os/SKILL.md",
     ),
+    # anti-copy-abstraction is the Observation -> Candidate MKAOS method. It is
+    # not used as a Source deconstruction analyzer.
     "anti-copy-abstraction": (
-        "2.0",
+        "1.0",
         "skills/anti-copy-abstraction/SKILL.md",
     ),
 }
