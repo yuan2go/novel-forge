@@ -27,7 +27,6 @@
     "tests/unit/test_worker_fleet_evidence.py",
     "tests/unit/test_agent_runtime_contracts.py",
     "tests/unit/test_agent_runtime_definitions.py",
-    "tests/unit/test_agent_runtime_bootstrap.py",
     "tests/unit/test_agent_authority_scheduler.py",
     "tests/unit/test_agent_runtime_api_contract.py",
     "tests/unit/test_unified_agent_runtime_migration.py",

@@ -1,6 +1,8 @@
 """PostgreSQL-authoritative single-chapter application slice."""
 
-from novel_forge.modules.chapter_authority.application import ChapterAuthorityApplication
+from novel_forge.modules.chapter_authority.application import (
+    ChapterAuthorityApplication,
+)
 
 from novel_forge.modules.chapter_authority.contracts import (
     ChapterHandlerOutput,
@@ -24,8 +26,6 @@ from novel_forge.modules.chapter_authority.handlers import (
 )
 from novel_forge.modules.chapter_authority.model_effects import (
     ChapterModelPort,
-    ChapterModelExternalEffectAdapter,
-    ChapterModelRoute,
     ExternalEffectChapterModelPort,
     ModelProviderResult,
 )
@@ -57,8 +57,6 @@ __all__ = [
     "ChapterInputAsset",
     "ChapterNode",
     "ChapterModelPort",
-    "ChapterModelExternalEffectAdapter",
-    "ChapterModelRoute",
     "ChapterExecutionBinding",
     "ChapterExecutionGatewaySession",
     "ChapterExecutionRoute",

@@ -7,7 +7,6 @@ from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 from typing import Any, Mapping, Protocol
 
-from novel_forge.infrastructure.environment import RuntimeEnvironment
 from novel_forge.modules.chapter_authority.contracts import (
     ChapterHandlerRequest,
     resolve_stage_context_token_budget,
@@ -16,8 +15,6 @@ from novel_forge.modules.command_kernel.asset_commands import AuthorityAssetWrit
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.command_kernel.external_effect_adapters import (
     ExternalEffectAdapter,
-    ExternalEffectAdapterError,
-    ProviderResult,
 )
 from novel_forge.modules.command_kernel.external_effect_runtime import (
     EffectCommandContext,
@@ -37,7 +34,6 @@ from novel_forge.storage.authority_asset_store import (
 from novel_forge.storage.database_runtime import get_database_runtime
 from novel_forge.modules.provider_control.contracts import (
     ProviderCapabilityProfile,
-    ProviderControlLevel,
 )
 from novel_forge.modules.production_execution.contracts import ExecutionRecoveryAction
 
@@ -56,29 +52,6 @@ AGENT_MODEL_STAGES = frozenset(
         "quality_platform",
     }
 )
-
-
-class LegacyChapterModelAdapter(Protocol):
-    name: str
-
-    def generate(
-        self, prompt: str, context: dict[str, Any] | None = None
-    ) -> dict[str, Any]: ...
-
-    def analyze(
-        self, text: str, context: dict[str, Any] | None = None
-    ) -> dict[str, Any]: ...
-
-    def review(
-        self, content: str, context: dict[str, Any] | None = None
-    ) -> dict[str, Any]: ...
-
-    def revise(
-        self,
-        content: str,
-        review: dict[str, Any],
-        context: dict[str, Any] | None = None,
-    ) -> dict[str, Any]: ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -249,340 +222,6 @@ class ChapterAgentBindingRecorder(Protocol):
         attempt_id: str,
         error_code: str,
     ) -> bool: ...
-
-
-@dataclass(frozen=True, slots=True)
-class ChapterModelRoute:
-    adapter: LegacyChapterModelAdapter
-    provider_id: str
-    model_id: str
-    prompt_version: str
-    skill_version: str
-    real_model_call: bool
-
-    def __post_init__(self) -> None:
-        if not all(
-            (
-                self.provider_id,
-                self.model_id,
-                self.prompt_version,
-                self.skill_version,
-            )
-        ):
-            raise ValueError("chapter model route identity is incomplete")
-
-
-class ChapterModelExternalEffectAdapter:
-    """Test/development compatibility adapter for pre-PEP Chapter routes.
-
-    The production composition root does not construct this adapter.  Keeping it
-    available makes old fixtures replayable while the explicit environment guard
-    prevents it from becoming a controlled-environment fallback.
-    """
-
-    provider = "novel_forge_model_gateway_v1"
-    reconciliation_mode = "unsupported"
-    legacy_compatibility_only = True
-    legacy_independent_execution = True
-    production_execution_gateway_backed = False
-    capability_profile = ProviderCapabilityProfile(
-        provider=provider,
-        control_level=ProviderControlLevel.LEGACY_UNCONTROLLED,
-        supports_request_timeout=False,
-        supports_provider_idempotency=False,
-        supports_query=False,
-        supports_cancel=False,
-        supports_callback=False,
-        supports_usage_receipt=True,
-        supports_cost_receipt=True,
-        reconciliation_mode="unsupported",
-        real_provider_validation_eligible=False,
-    )
-
-    def __init__(
-        self,
-        routes: dict[str, ChapterModelRoute],
-        *,
-        environment: str = "test",
-    ) -> None:
-        unsupported = set(routes) - {
-            "draft",
-            "review",
-            "revision",
-            "rereview",
-            "canon_extraction",
-            "quality_structural",
-            "quality_commercial",
-            "quality_source_originality",
-            "quality_longform",
-            "quality_platform",
-            "reader_outcome",
-        }
-        if not routes or unsupported:
-            raise ValueError("chapter model routes contain unsupported stages")
-        self.routes = dict(routes)
-        self.environment = environment.strip().lower() or "development"
-
-    def execute(
-        self,
-        *,
-        stable_idempotency_key: str,
-        capability: str,
-        request_payload: dict[str, Any],
-    ) -> ProviderResult:
-        self._assert_legacy_execution_allowed()
-        stage, route, inputs = self._request(capability, request_payload)
-        try:
-            raw = self._call(route.adapter, stage, inputs)
-        except ExternalEffectAdapterError:
-            raise
-        except Exception as exc:
-            raise ExternalEffectAdapterError(
-                f"chapter model route raised {type(exc).__name__}: {exc}",
-                request_sent=True,
-            ) from exc
-        try:
-            output = _normalize_model_output(stage, raw)
-            if stage.startswith("quality_"):
-                requested_dimensions = inputs.get("dimensions")
-                returned_dimensions = [
-                    str(item.get("dimension") or "") for item in output["dimensions"]
-                ]
-                if (
-                    not isinstance(requested_dimensions, list)
-                    or len(returned_dimensions) != len(set(returned_dimensions))
-                    or set(returned_dimensions)
-                    != {str(item) for item in requested_dimensions}
-                ):
-                    raise KernelError(
-                        "MODEL_RESPONSE_INVALID",
-                        "quality response dimensions must exactly match the frozen contract",
-                    )
-            usage = raw.get("usage") if isinstance(raw.get("usage"), dict) else {}
-            cost = raw.get("cost") if isinstance(raw.get("cost"), dict) else {}
-            result = ModelProviderResult(
-                output=output,
-                provider_id=route.provider_id,
-                model_id=route.model_id,
-                prompt_version=route.prompt_version,
-                skill_version=route.skill_version,
-                input_tokens=int(usage.get("input_tokens") or 0),
-                output_tokens=int(usage.get("output_tokens") or 0),
-                cost_amount=str(cost.get("amount") or "0"),
-                currency=str(cost.get("currency") or "USD"),
-                real_model_call=route.real_model_call,
-            )
-        except (KernelError, TypeError, ValueError) as exc:
-            return ProviderResult(
-                "final_failure",
-                f"model:{stable_idempotency_key}",
-                {
-                    "error_code": "MODEL_RESPONSE_INVALID",
-                    "error_type": type(exc).__name__,
-                    "message": str(exc),
-                    "stage": stage,
-                    "provider_id": route.provider_id,
-                    "model_id": route.model_id,
-                },
-            )
-        return ProviderResult(
-            "success",
-            f"model:{stable_idempotency_key}",
-            result.to_evidence(),
-        )
-
-    def query(
-        self,
-        *,
-        stable_idempotency_key: str,
-        capability: str,
-        request_payload: dict[str, Any],
-    ) -> ProviderResult:
-        self._assert_legacy_execution_allowed()
-        stage, route, _inputs = self._request(capability, request_payload)
-        return ProviderResult(
-            "ambiguous",
-            f"model-query:{stable_idempotency_key}",
-            {
-                "provider_state": "query_capability_not_established",
-                "stage": stage,
-                "provider_id": route.provider_id,
-                "model_id": route.model_id,
-            },
-        )
-
-    def cancel(
-        self,
-        *,
-        stable_idempotency_key: str,
-        capability: str,
-        request_payload: dict[str, Any],
-        provider_request_id: str,
-    ) -> ProviderResult:
-        self._assert_legacy_execution_allowed()
-        stage, route, _inputs = self._request(capability, request_payload)
-        return ProviderResult(
-            "ambiguous",
-            provider_request_id or f"model-cancel:{stable_idempotency_key}",
-            {
-                "cancel_capability_not_established": True,
-                "manual_resolution_required": True,
-                "stage": stage,
-                "provider_id": route.provider_id,
-                "model_id": route.model_id,
-            },
-        )
-
-    def _request(
-        self,
-        capability: str,
-        request_payload: dict[str, Any],
-    ) -> tuple[str, ChapterModelRoute, dict[str, Any]]:
-        stage = str(request_payload.get("stage") or "")
-        route = self.routes.get(stage)
-        if stage == "rereview" and route is None:
-            route = self.routes.get("review")
-        if capability != f"model.{stage}" or route is None:
-            raise ExternalEffectAdapterError(
-                "chapter model capability or route is unsupported",
-                request_sent=False,
-            )
-        inputs = request_payload.get("input")
-        if not isinstance(inputs, dict):
-            raise ExternalEffectAdapterError(
-                "chapter model input must be an object",
-                request_sent=False,
-            )
-        return stage, route, inputs
-
-    def model_id_for_stage(self, stage: str) -> str:
-        route = self.routes.get(stage)
-        if stage == "rereview" and route is None:
-            route = self.routes.get("review")
-        return "" if route is None else route.model_id
-
-    def _assert_legacy_execution_allowed(self) -> None:
-        if RuntimeEnvironment.parse(self.environment).controlled:
-            raise ExternalEffectAdapterError(
-                "legacy Chapter model execution is blocked in controlled environments; "
-                "use ProductionExecutionGatewayExternalEffectAdapter",
-                request_sent=False,
-            )
-
-    @staticmethod
-    def _call(
-        adapter: LegacyChapterModelAdapter,
-        stage: str,
-        inputs: dict[str, Any],
-    ) -> dict[str, Any]:
-        if stage == "draft":
-            plan = _object(inputs, "plan")
-            context = _object(inputs, "context")
-            style = _object(inputs, "style")
-            prompt = (
-                f"Write chapter {plan.get('chapter', '')}: {plan.get('title', '')}\n"
-                f"Premise: {plan.get('premise', '')}\n"
-                f"Objective: {plan.get('chapter_objective', '')}\n"
-                f"Scenes: {plan.get('scene_sequence', [])}\n"
-                f"Conflict: {plan.get('conflict_chain', [])}\n"
-                f"Reveals: {plan.get('information_reveals', [])}\n"
-                f"Promise actions: {plan.get('reader_promise_actions', [])}\n"
-                f"Reward setup/payoff: {plan.get('reward_setup', [])} / {plan.get('reward_payoff', [])}\n"
-                f"Hook: {plan.get('chapter_hook', '')}"
-            )
-            return adapter.generate(
-                prompt,
-                {"draft_context_view": context, "draft_style_view": style},
-            )
-        if stage in {"review", "rereview"}:
-            draft = _object(inputs, "draft")
-            return adapter.review(
-                str(draft.get("text") or ""),
-                {
-                    "rubric": (
-                        "chapter-authority-rereview-v1"
-                        if stage == "rereview" or "revision" in inputs
-                        else "chapter-authority-review-v1"
-                    ),
-                    "initial_review": inputs.get("review", {}),
-                },
-            )
-        if stage == "canon_extraction":
-            revision = _object(inputs, "revision")
-            context = _object(inputs, "context")
-            prompt = (
-                "Extract Canon semantic changes as a JSON object matching "
-                "canon-semantic-extraction-v2. Return arrays for canon_facts, "
-                "character_state_changes, relationship_changes, timeline_events, "
-                "foreshadow_changes, promise_changes, reward_changes, world_rule_usages, "
-                "power_state_changes, narrative_pattern_fingerprints, theme_movements, "
-                "plot_thread_changes, resource_state_changes, and "
-                "antagonist_pressure_changes. Every item must cite evidence_start, "
-                "evidence_end and confidence.\nRevision:\n"
-                + str(revision.get("text") or "")
-            )
-            return adapter.generate(
-                prompt,
-                {
-                    "contract_version": "canon-semantic-extraction-v2",
-                    "context": context,
-                },
-            )
-        if stage.startswith("quality_"):
-            revision = _object(inputs, "revision")
-            quality_context = _object(inputs, "quality_context")
-            group = stage.removeprefix("quality_")
-            dimensions = inputs.get("dimensions")
-            if not isinstance(dimensions, list) or not dimensions:
-                raise ExternalEffectAdapterError(
-                    "quality judge requires an explicit dimension contract",
-                    request_sent=False,
-                )
-            prompt = (
-                "Evaluate only the requested chapter quality dimensions. Return JSON "
-                "{dimensions:[{dimension,gate_status,score,evidence_locations,confidence,"
-                "issue_codes,revision_strategies}]}. Use PASSED only when the chapter "
-                "contains direct evidence; otherwise use INSUFFICIENT_EVIDENCE or FAILED. "
-                "Every dimension must include at least one concrete evidence location, "
-                "including policy-compliance dimensions.\n"
-                f"Group: {group}\nDimensions: {dimensions}\nGoverned context:\n"
-                + str(quality_context)
-            )
-            return adapter.generate(
-                prompt,
-                {
-                    "contract_version": "chapter-quality-provider-evidence-v2",
-                    "group": group,
-                    "dimensions": dimensions,
-                    "quality_context": quality_context,
-                },
-            )
-        if stage == "reader_outcome":
-            assets = _object(inputs, "assets")
-            prompt = (
-                "Evaluate the frozen chapter from the reader-outcome perspective. "
-                "Return JSON {reader_state:{continue_intent,curiosity,satisfaction,"
-                "confusion,trust,character_attachment,antagonist_pressure,"
-                "promise_expectation,payoff_satisfaction,drop_risk,"
-                "repetition_fatigue},evidence:[{asset_version_id,location,claim}]}. "
-                "All reader-state values must be numbers from zero to one."
-            )
-            return adapter.generate(
-                prompt,
-                {
-                    "contract_version": "reader-outcome-provider-v1",
-                    "chapter": inputs.get("chapter"),
-                    "book_id": inputs.get("book_id"),
-                    "assets": assets,
-                },
-            )
-        draft = _object(inputs, "draft")
-        review = _object(inputs, "review")
-        return adapter.revise(
-            str(draft.get("text") or ""),
-            review,
-            {"policy": "resolve-all-blocking-issues-v1"},
-        )
 
 
 class ExternalEffectChapterModelPort:
@@ -1625,8 +1264,6 @@ def _review_severity(value: str) -> str:
 __all__ = [
     "ChapterAgentBindingRecorder",
     "ChapterModelPort",
-    "ChapterModelExternalEffectAdapter",
-    "ChapterModelRoute",
     "ExternalEffectChapterModelPort",
     "ModelProviderResult",
     "normalize_model_output",
