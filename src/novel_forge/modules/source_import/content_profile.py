@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-import math
 import re
 from typing import Iterable
 
@@ -150,7 +149,13 @@ def classify_source_content(
     """
 
     normalized_paths = tuple(
-        sorted({str(path).replace("\\", "/").strip() for path in paths if str(path).strip()})
+        sorted(
+            {
+                str(path).replace("\\", "/").strip()
+                for path in paths
+                if str(path).strip()
+            }
+        )
     )
     if not normalized_paths:
         normalized_paths = ("unknown",)
@@ -246,7 +251,9 @@ def classify_source_content(
             domain_tags=domains,
             confidence=_confidence(top, second),
             manual_review_required=True,
-            signals=tuple(sorted(set(signals + ["insufficient_classification_evidence"]))),
+            signals=tuple(
+                sorted(set(signals + ["insufficient_classification_evidence"]))
+            ),
             source_paths=normalized_paths,
         )
 
