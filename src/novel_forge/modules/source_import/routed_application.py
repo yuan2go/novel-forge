@@ -8,7 +8,11 @@ from novel_forge.modules.command_kernel.asset_commands import AuthorityAssetWrit
 from novel_forge.modules.command_kernel.attempt_runtime import WorkerLeaseCommand
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.source_authority.deconstruction import stable_hash
-from novel_forge.storage.authority_asset_store import AuthorityAssetQuery, AuthorityAssetWriter
+from novel_forge.storage.authority_asset_store import (
+    AuthorityAssetDocument,
+    AuthorityAssetQuery,
+    AuthorityAssetWriter,
+)
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from novel_forge.storage.source_import_repositories import SourceImportRepository
 
@@ -32,8 +36,10 @@ class SourceImportApplication(_BaseSourceImportApplication):
             super()._admit_deconstruction_children(worker, job, transform)
             return
 
+        snapshot_id = str(job["repository_snapshot_asset_version_id"])
         paths, normalized_text = self._profile_input(
             project_id=worker.project_id,
+            repository_snapshot_asset_version_id=snapshot_id,
             source_transform_id=str(transform["source_transform_id"]),
         )
         profile = classify_source_content(
@@ -41,7 +47,12 @@ class SourceImportApplication(_BaseSourceImportApplication):
             text=normalized_text,
             requested_profile="auto",
         )
-        profile_document = self._materialize_source_profile(worker, transform, profile)
+        profile_document = self._materialize_source_profile(
+            worker,
+            transform,
+            profile,
+            repository_snapshot_asset_version_id=snapshot_id,
+        )
         transform["source_profile"] = profile.to_dict()
         transform["source_profile_asset_version_id"] = profile_document.asset_version_id
         transform["resolved_analysis_profile"] = profile.selected_analysis_profile
@@ -241,10 +252,15 @@ class SourceImportApplication(_BaseSourceImportApplication):
         worker: WorkerLeaseCommand,
         transform: dict[str, Any],
         profile: SourceContentProfile,
-    ):
+        *,
+        repository_snapshot_asset_version_id: str,
+    ) -> AuthorityAssetDocument:
         content = {
             "schema_version": "source-content-profile.v1",
             "project_id": worker.project_id,
+            "repository_snapshot_asset_version_id": (
+                repository_snapshot_asset_version_id
+            ),
             "source_document_id": str(transform["source_document_id"]),
             "source_transform_id": str(transform["source_transform_id"]),
             "source_transform_asset_version_id": str(
@@ -296,7 +312,11 @@ class SourceImportApplication(_BaseSourceImportApplication):
         )
 
     def _profile_input(
-        self, *, project_id: str, source_transform_id: str
+        self,
+        *,
+        project_id: str,
+        repository_snapshot_asset_version_id: str,
+        source_transform_id: str,
     ) -> tuple[tuple[str, ...], str]:
         if self.object_store_reader is None:
             raise KernelError(
@@ -315,11 +335,17 @@ class SourceImportApplication(_BaseSourceImportApplication):
                  AND transform.source_transform_id=file.source_transform_id
                 JOIN authority_blob AS blob
                   ON blob.blob_id=transform.normalized_blob_id
-                WHERE file.project_id=%s AND file.source_transform_id=%s
+                WHERE file.project_id=%s
+                  AND file.repository_snapshot_asset_version_id=%s
+                  AND file.source_transform_id=%s
                   AND file.diff_state <> 'REMOVED'
                 ORDER BY file.path
                 """,
-                [project_id, source_transform_id],
+                [
+                    project_id,
+                    repository_snapshot_asset_version_id,
+                    source_transform_id,
+                ],
             )
             rows = uow.cursor.fetchall()
         if not rows:
