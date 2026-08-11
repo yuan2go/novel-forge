@@ -2,15 +2,20 @@
 from __future__ import annotations
 
 from typing import Any
+from uuid import uuid4
 
+from novel_forge.modules.command_kernel.asset_commands import AuthorityAssetWriteCommand
 from novel_forge.modules.command_kernel.attempt_runtime import WorkerLeaseCommand
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.source_authority.deconstruction import stable_hash
+from novel_forge.storage.authority_asset_store import AuthorityAssetQuery, AuthorityAssetWriter
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from novel_forge.storage.source_import_repositories import SourceImportRepository
 
-from .analysis_profiles import analysis_profile
+from .analysis_profiles import analysis_profile, plan_analysis_tasks
 from .application import SourceImportApplication as _BaseSourceImportApplication
-from .content_profile import classify_source_content
+from .content_profile import SourceContentProfile, classify_source_content
+from .definitions import SOURCE_IMPORT_DECONSTRUCTION_OPERATION
 
 
 class SourceImportApplication(_BaseSourceImportApplication):
@@ -36,7 +41,9 @@ class SourceImportApplication(_BaseSourceImportApplication):
             text=normalized_text,
             requested_profile="auto",
         )
+        profile_document = self._materialize_source_profile(worker, transform, profile)
         transform["source_profile"] = profile.to_dict()
+        transform["source_profile_asset_version_id"] = profile_document.asset_version_id
         transform["resolved_analysis_profile"] = profile.selected_analysis_profile
         if profile.manual_review_required or profile.selected_analysis_profile == "unknown":
             transform["analysis_blocked"] = {
@@ -47,11 +54,115 @@ class SourceImportApplication(_BaseSourceImportApplication):
                     "with an explicit analysis_profile after review"
                 ),
                 "confidence": profile.confidence,
+                "source_profile_asset_version_id": profile_document.asset_version_id,
             }
             return
 
         routed_job = {**job, "analysis_profile": profile.selected_analysis_profile}
-        super()._admit_deconstruction_children(worker, routed_job, transform)
+        self._admit_profiled_deconstruction_children(
+            worker,
+            routed_job,
+            transform,
+            profile_asset_version_id=profile_document.asset_version_id,
+        )
+
+    def _admit_profiled_deconstruction_children(
+        self,
+        worker: WorkerLeaseCommand,
+        job: dict[str, Any],
+        transform: dict[str, Any],
+        *,
+        profile_asset_version_id: str,
+    ) -> None:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT asset_version_id, chunk_index, byte_size, content_hash
+                FROM authority_source_chunk
+                WHERE project_id=%s AND source_transform_id=%s
+                ORDER BY chunk_index
+                """,
+                [worker.project_id, transform["source_transform_id"]],
+            )
+            chunks = [
+                {
+                    "asset_version_id": row[0],
+                    "chunk_index": row[1],
+                    "byte_size": row[2],
+                    "content_hash": row[3],
+                }
+                for row in uow.cursor.fetchall()
+            ]
+        tasks = plan_analysis_tasks(
+            profile_id=str(job["analysis_profile"]),
+            source_document_id=str(transform["source_document_id"]),
+            chunks=chunks,
+        )
+        for task in tasks:
+            child = self._admit_child(
+                definition_name=SOURCE_IMPORT_DECONSTRUCTION_OPERATION,
+                project_id=worker.project_id,
+                workspace_id=str(job["workspace_id"]),
+                actor_id=self.worker_id,
+                idempotency_key=f"source.import.analysis:{task.stable_key}",
+                trace_id=worker.trace_id,
+                correlation_id=worker.correlation_id,
+                causation_id=str(transform["source_transform_asset_version_id"]),
+                parent_operation_id=worker.causation_id,
+                payload={
+                    "import_job_id": job["import_job_id"],
+                    "source_document_id": transform["source_document_id"],
+                    "source_transform_id": transform["source_transform_id"],
+                    "source_transform_asset_version_id": transform[
+                        "source_transform_asset_version_id"
+                    ],
+                    "source_profile_asset_version_id": profile_asset_version_id,
+                    "resolved_analysis_profile": str(job["analysis_profile"]),
+                    "analysis_task": task.to_dict(),
+                },
+                input_assets=(
+                    *tuple(
+                        {
+                            "asset_version_id": chunk_id,
+                            "role": "source_chunk_evidence",
+                        }
+                        for chunk_id in task.source_chunk_asset_version_ids
+                    ),
+                    {
+                        "asset_version_id": profile_asset_version_id,
+                        "role": "source_content_profile",
+                    },
+                ),
+                ready=False,
+            )
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                SourceImportRepository(uow.cursor).register_work(
+                    {
+                        "work_id": str(uuid4()),
+                        "import_job_id": job["import_job_id"],
+                        "project_id": worker.project_id,
+                        "work_kind": "DECONSTRUCTION",
+                        "stable_key": task.stable_key,
+                        "source_path": "",
+                        "target_asset_version_id": transform[
+                            "source_transform_asset_version_id"
+                        ],
+                        "operation_id": child,
+                        "status": "PLANNED",
+                        "result": {},
+                        "failure": {},
+                    }
+                )
+                uow.commit()
+            self._ready_child(
+                operation_id=child,
+                project_id=worker.project_id,
+                actor_id=self.worker_id,
+                trace_id=worker.trace_id,
+                correlation_id=worker.correlation_id,
+                causation_id=str(transform["source_transform_asset_version_id"]),
+                reason="profile-routed Source deconstruction execution ready",
+            )
 
     def _admit_mkaos_child(
         self,
@@ -117,10 +228,72 @@ class SourceImportApplication(_BaseSourceImportApplication):
                         "code": "SOURCE_PROFILE_REVIEW_REQUIRED",
                         "operation_id": worker.causation_id,
                         "source_profile": dict(result["source_profile"]),
+                        "source_profile_asset_version_id": str(
+                            result["source_profile_asset_version_id"]
+                        ),
                     },
                 )
             uow.commit()
         return result
+
+    def _materialize_source_profile(
+        self,
+        worker: WorkerLeaseCommand,
+        transform: dict[str, Any],
+        profile: SourceContentProfile,
+    ):
+        content = {
+            "schema_version": "source-content-profile.v1",
+            "project_id": worker.project_id,
+            "source_document_id": str(transform["source_document_id"]),
+            "source_transform_id": str(transform["source_transform_id"]),
+            "source_transform_asset_version_id": str(
+                transform["source_transform_asset_version_id"]
+            ),
+            "classification": profile.to_dict(),
+            "source_policy": {
+                "raw_source_text_included": False,
+                "generation_context_allowed": False,
+                "routing_evidence_only": True,
+            },
+            "lineage": {"created_by_operation_id": worker.causation_id},
+        }
+        digest = stable_hash(content).removeprefix("sha256:")
+        logical_ref = f"source-intelligence/profiles/{digest}.json"
+        query = AuthorityAssetQuery(self.database_url)
+        try:
+            existing = query.require(project_id=worker.project_id, logical_ref=logical_ref)
+        except KernelError as exc:
+            if exc.code != "AUTHORITY_ASSET_NOT_FOUND":
+                raise
+            existing = None
+        if existing is not None:
+            if existing.asset_type != "source_content_profile" or existing.content != content:
+                raise KernelError(
+                    "SOURCE_PROFILE_REPLAY_CONFLICT",
+                    "Source profile identity is already bound to different content",
+                )
+            return existing
+        return AuthorityAssetWriter(self.database_url).materialize_output(
+            AuthorityAssetWriteCommand(
+                operation_id=worker.causation_id,
+                project_id=worker.project_id,
+                asset_id=f"source-content-profile:{worker.project_id}:{digest}",
+                asset_type="source_content_profile",
+                schema_version="source-content-profile.v1",
+                logical_ref=logical_ref,
+                category="source-intelligence",
+                output_key="source.import.content_profile",
+                role="routing_evidence",
+                content=content,
+                qualification_policy="source-content-profile-v1",
+                trace_id=worker.trace_id,
+                correlation_id=worker.correlation_id,
+                causation_id=str(transform["source_transform_asset_version_id"]),
+                eligibility="INELIGIBLE",
+                governance="CLEAR",
+            )
+        )
 
     def _profile_input(
         self, *, project_id: str, source_transform_id: str
