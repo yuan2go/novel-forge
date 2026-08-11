@@ -6,6 +6,8 @@ from typing import Any, Iterable
 
 from novel_forge.modules.source_authority.deconstruction import AnalyzerContract
 
+from .artifacts import source_skill_version
+
 
 _WEB_NOVEL_DIMENSIONS = (
     "structure",
@@ -203,9 +205,7 @@ def plan_analysis_tasks(
                 else profile.analysis_skill_id
             )
             analyzer = AnalyzerContract(
-                analyzer_id=(
-                    f"novel-forge.{profile.profile_id}.{dimension}"
-                ),
+                analyzer_id=f"novel-forge.{profile.profile_id}.{dimension}",
                 analyzer_version="1.0",
                 dimension=dimension,
                 schema_version=(
@@ -215,7 +215,7 @@ def plan_analysis_tasks(
                 prompt_id=f"source.{profile.profile_id}.{dimension}",
                 prompt_version="1.0",
                 skill_id=skill_id,
-                skill_version="1.0",
+                skill_version=source_skill_version(skill_id),
                 capability_id="deconstruction.observe",
                 capability_version="1.0",
                 provider_policy_version="1.0",
