@@ -8,6 +8,7 @@ from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from novel_forge.storage.source_import_repositories import SourceImportRepository
 
+from .analysis_profiles import analysis_profile
 from .application import SourceImportApplication as _BaseSourceImportApplication
 from .content_profile import classify_source_content
 
@@ -51,6 +52,33 @@ class SourceImportApplication(_BaseSourceImportApplication):
 
         routed_job = {**job, "analysis_profile": profile.selected_analysis_profile}
         super()._admit_deconstruction_children(worker, routed_job, transform)
+
+    def _admit_mkaos_child(
+        self,
+        worker: WorkerLeaseCommand,
+        job: dict[str, Any],
+        observation: dict[str, Any],
+    ) -> None:
+        if str(job["analysis_profile"]).strip().lower() != "auto":
+            super()._admit_mkaos_child(worker, job, observation)
+            return
+        analyzer_id = str(observation.get("analyzer_id") or "")
+        parts = analyzer_id.split(".")
+        if len(parts) < 3 or parts[0] != "novel-forge":
+            raise KernelError(
+                "SOURCE_PROFILE_ANALYZER_IDENTITY_INVALID",
+                "AUTO-routed Observation does not carry a profile-bound analyzer identity",
+            )
+        profile_id = parts[1]
+        profile = analysis_profile(profile_id)
+        if profile.profile_id == "auto":
+            raise KernelError(
+                "SOURCE_PROFILE_NOT_RESOLVED",
+                "AUTO profile reached MKAOS without a resolved Source methodology",
+            )
+        observation["resolved_analysis_profile"] = profile.profile_id
+        routed_job = {**job, "analysis_profile": profile.profile_id}
+        super()._admit_mkaos_child(worker, routed_job, observation)
 
     def _execute_file(self, worker: WorkerLeaseCommand) -> dict[str, Any]:
         result = super()._execute_file(worker)
