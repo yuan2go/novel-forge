@@ -196,6 +196,37 @@ def _definition(
             }
             for state_kind, asset_type in SNAPSHOT_ASSET_TYPES.items()
         )
+        completion["required_asset_selectors"].append(
+            {
+                "selector": "deterministic_continuity_report",
+                "output_key": "chapter.canon.deterministic_continuity",
+                "role": "completion_evidence",
+                "lifecycle": "ACTIVE",
+                "eligibility": "ELIGIBLE",
+                "governance": "CLEAR",
+            }
+        )
+    if node is ChapterNode.QUALITY_COMMERCIAL:
+        completion["required_asset_selectors"].extend(
+            (
+                {
+                    "selector": "hook_analysis",
+                    "output_key": "chapter.quality.commercial.hook_analysis",
+                    "role": "longform_observation",
+                    "lifecycle": "ACTIVE",
+                    "eligibility": "ELIGIBLE",
+                    "governance": "CLEAR",
+                },
+                {
+                    "selector": "pacing_observation",
+                    "output_key": "chapter.quality.commercial.pacing_observation",
+                    "role": "longform_observation",
+                    "lifecycle": "ACTIVE",
+                    "eligibility": "ELIGIBLE",
+                    "governance": "CLEAR",
+                },
+            )
+        )
     if node is ChapterNode.PLAN:
         completion["required_asset_selectors"].extend(
             (

@@ -18,6 +18,7 @@ description: Use when reviewing topics, worlds, characters, outlines, chapter pl
 - 审查题材、世界观、人物、大纲、细纲、正文或反馈采纳方案。
 - 正文草稿进入修订或 final 前。
 - 判断是否通过、小修、重修、退回细纲或暂停。
+- 审核 Commercial Quality 中已有的 `golden_opening`、`reader_promise`、`reward`、`chapter_hook`、`suspense_progression`、`emotional_curve` 和 `serialization_function`，并消费而非重复实现 `HookAnalysis` / `PacingObservation`。
 
 ## 输入要求
 
@@ -31,9 +32,11 @@ description: Use when reviewing topics, worlds, characters, outlines, chapter pl
 2. 先查 P0：原创风险、设定崩坏、严重逻辑断裂。
 3. 再查 P1：读者吸引力、冲突、爽点、结尾追读。
 4. 检查人物动机链、因果链、世界规则、伏笔设置与回收。
-5. 检查节奏、叙述密度、AI 腔、对白差异和商业化弱点。
-6. 给出评分、优先级、是否退回和可执行修改建议。
-7. 明确哪些内容不建议改，避免破坏已有优势。
+5. 检查 HookAnalysis 的 opening/ending hook、promise binding、horizon、evidence lineage；检查 PacingObservation 的多尺度窗口和 qualification。
+6. 将明确结构化状态的确定性测量与 provider semantic judgment 分开，禁止用关键词/英文正则代替节奏质量判断。
+7. 检查节奏、叙述密度、AI 腔、对白差异和商业化弱点。
+8. 给出评分、优先级、是否退回和可执行修改建议。
+9. 明确哪些内容不建议改，避免破坏已有优势。
 
 ## 输出格式
 
@@ -47,6 +50,8 @@ description: Use when reviewing topics, worlds, characters, outlines, chapter pl
 通过 / 小修 / 重修 / 退回细纲 / 暂停
 ## P0 问题
 ## P1 问题
+## Hook / Promise 证据
+## Multi-scale Pacing 诊断
 ## P2 问题
 ## P3 问题
 ## P4 问题
@@ -61,6 +66,7 @@ description: Use when reviewing topics, worlds, characters, outlines, chapter pl
 - 修改建议必须能直接转成任务或 RevisionPlan。
 - 不能只给泛泛评价，必须指出具体问题类型。
 - 商业追读和原创边界优先于炫技式设定补完。
+- Semantic observation 必须带 evidence、confidence 和 qualification；deterministic aggregate 必须能重放且不得读取未来章节。
 
 ## 禁止事项
 
@@ -68,9 +74,11 @@ description: Use when reviewing topics, worlds, characters, outlines, chapter pl
 - 禁止降低原创风险标准。
 - 禁止用多学科合理性压制章节爽点。
 - 禁止建议突破世界规则或核心人物逻辑。
+- 禁止用简单关键词、标点或字面模式宣称节奏质量、情绪合理性或 hook strength 已被确定性证明。
 
 ## 与其他模块的关系
 
-- 上游：全部生成资产、`anti-copy-abstraction`、evaluation rubric。
+- 上游：全部生成资产、`anti-copy-abstraction`、evaluation rubric、`hook.analyze`、`pacing.analyze`、`pacing.aggregate`。
 - 下游：ReviewReport、RevisionPlan、FeedbackInsight。
+- 关联 Skill：`multi-scale-pacing`、`narrative-beat-design`、`canon-continuity-graph`。
 - Agent：Review Agent、Quality Agent、Chief Editor Agent。

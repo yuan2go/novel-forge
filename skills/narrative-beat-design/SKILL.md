@@ -19,6 +19,7 @@ description: Use when designing or reviewing long-outline, chapter-outline, scen
 - 审查 reader grounding：读者是否已经知道后续 beat 依赖的概念、规则、人物动机、承诺或伏笔。
 - 修复大纲/细纲中的信息跳跃、解释过载、伏笔未铺、 payoff 没有前置基础的问题。
 - 将商业钩子、冲突、反转、代价和信息增量组织成可执行路径。
+- 设计 opening / ending hook、information gap、reader question、next-chapter pull 和跨尺度 hook horizon，而不把钩子简化为固定兑现章数。
 
 ## 输入要求
 
@@ -26,6 +27,7 @@ description: Use when designing or reviewing long-outline, chapter-outline, scen
 - 目标读者默认已知的 prerequisite concepts。
 - 本段必须 introduced 的概念、规则、人物状态、悬念、伏笔、承诺和 payoff。
 - 禁用项、原创风险边界、platform rhythm 和 source isolation policy。
+- 已有 reader promise、promise lifecycle 和 `HookAnalysis` evidence；没有时明确标记缺口。
 
 ## 操作流程
 
@@ -34,8 +36,9 @@ description: Use when designing or reviewing long-outline, chapter-outline, scen
 3. 拆出候选 beats：每个 beat 只做一个动作，如设置压力、展示规则、制造选择、兑现奖励、翻转认知。
 4. 为每个 beat 标注 `requires` 和 `grounds`：它依赖什么、它让读者新理解什么。
 5. 删除或前移不可达 beat：任何依赖未 grounded 概念的 beat 必须先补 grounding beat。
-6. 排列 beat path：优先行动和冲突，解释只在读者需要时出现。
-7. 将 beat path 映射回 Outline / ChapterPlan / ScenePlan，并生成 missing groundwork 和 review issues。
+6. 为 opening / ending hook 标注类型、information gap、immediate conflict、reader question、unresolved tension、next-chapter pull、promise binding 和 horizon（IMMEDIATE / CHAPTER / MINI_ARC / ARC / VOLUME / BOOK）。
+7. 排列 beat path：优先行动和冲突，解释只在读者需要时出现；horizon 由故事承诺决定，不套用固定 1～3 章规则。
+8. 将 beat path 映射回 Outline / ChapterPlan / ScenePlan，并生成 missing groundwork 和 review issues。
 
 ## 输出格式
 
@@ -53,6 +56,8 @@ description: Use when designing or reviewing long-outline, chapter-outline, scen
   - requires:
   - grounds:
   - hook/payoff:
+  - promise id / horizon:
+  - evidence:
   - risk:
 
 ## Grounding Gaps
@@ -72,6 +77,7 @@ description: Use when designing or reviewing long-outline, chapter-outline, scen
 - 每个后续 beat 依赖的概念必须已是 prerequisite 或被早先 beat grounding。
 - beat path 必须产生行动、冲突、信息增量、情绪变化或 reader payoff。
 - 章节级 beat 必须能约束 `prose-generation`，不是抽象口号。
+- Hook 判断必须保留 evidence span 和 confidence；无文本/计划证据时不得伪造 promise binding。
 
 ## 禁止事项
 
@@ -79,6 +85,7 @@ description: Use when designing or reviewing long-outline, chapter-outline, scen
 - 禁止把解释性百科 beat 当作剧情推进。
 - 禁止用参考作品 beat 顺序作为新项目骨架。
 - 禁止输出正文草稿或 final chapter。
+- 禁止把所有 Hook 强制规定为 1～3 章兑现，或另建重复 Hook Agent。
 
 ## 与其他模块的关系
 

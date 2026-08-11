@@ -46,6 +46,8 @@ from novel_forge.modules.capability_pack_authority.application import (
 from novel_forge.modules.capability_pack_authority.query import (
     CapabilityPackAuthorityQuery,
 )
+from novel_forge.modules.temporal_query import TemporalQueryService
+from novel_forge.modules.content_intelligence import PacingAnalysisService
 from novel_forge.modules.project_authority import (
     ProjectAuthorityApplication,
     ProjectAuthorityQuery,
@@ -139,6 +141,8 @@ class AuthorityApiServices:
     agent_runtime_query: AgentRuntimeQuery
     capability_pack_authority_application: CapabilityPackAuthorityApplication
     capability_pack_authority_query: CapabilityPackAuthorityQuery
+    temporal_query_service: TemporalQueryService
+    pacing_analysis_service: PacingAnalysisService
 
 
 @dataclass(frozen=True, slots=True)
@@ -229,6 +233,8 @@ def create_authority_app(settings: IndustrialSettings):
         capability_pack_authority_query=build_capability_pack_authority_query(
             settings
         ),
+        temporal_query_service=TemporalQueryService(settings.database_url),
+        pacing_analysis_service=PacingAnalysisService(settings.database_url),
     )
     app = FastAPI(
         title="Novel Forge PostgreSQL Authority API",
@@ -275,6 +281,12 @@ def create_authority_app(settings: IndustrialSettings):
     )
     from novel_forge.api.routers.capability_pack_authority import (
         create_router as create_capability_pack_router,
+    )
+    from novel_forge.api.routers.temporal_query import (
+        create_router as create_temporal_query_router,
+    )
+    from novel_forge.api.routers.content_intelligence import (
+        create_router as create_content_intelligence_router,
     )
 
     app.include_router(
@@ -342,6 +354,24 @@ def create_authority_app(settings: IndustrialSettings):
     )
     app.include_router(
         create_capability_pack_router(
+            ProductRouterContext(
+                app_settings=settings,
+                models=product_model_map(),
+                services=services,
+            )
+        )
+    )
+    app.include_router(
+        create_temporal_query_router(
+            ProductRouterContext(
+                app_settings=settings,
+                models=product_model_map(),
+                services=services,
+            )
+        )
+    )
+    app.include_router(
+        create_content_intelligence_router(
             ProductRouterContext(
                 app_settings=settings,
                 models=product_model_map(),

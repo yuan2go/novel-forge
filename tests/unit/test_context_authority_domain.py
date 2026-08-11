@@ -12,6 +12,45 @@ from novel_forge.modules.context_builder.domain import (
 
 
 class ContextAuthorityDomainTests(unittest.TestCase):
+    def test_dynamic_required_assets_are_preserved_before_optional_context(self) -> None:
+        required = self.candidate(
+            "style-v1",
+            "style_policy",
+            estimated_tokens=40,
+            relevance_score=0.1,
+        )
+        optional = self.candidate(
+            "world-v1",
+            "world_bible",
+            estimated_tokens=90,
+            relevance_score=1.0,
+        )
+        plan = self.candidate(
+            "plan-v1",
+            "chapter_plan",
+            estimated_tokens=40,
+            relevance_score=1.0,
+        )
+
+        bundle = build_authority_context_bundle(
+            project_id="project-a",
+            stage="draft",
+            created_by_operation_id="operation-a",
+            context_profile_version="draft-v1",
+            candidates=(optional, required, plan),
+            token_budget=80,
+            required_asset_types=("chapter_plan", "style_policy"),
+        )
+
+        self.assertEqual(
+            set(bundle["selected_asset_version_ids"]),
+            {"plan-v1", "style-v1"},
+        )
+        self.assertIn(
+            {"asset_version_id": "world-v1", "reason": "token_budget"},
+            bundle["rejected_asset_versions"],
+        )
+
     def candidate(self, asset_version_id: str, asset_type: str, **changes):
         values = {
             "asset_version_id": asset_version_id,

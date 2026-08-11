@@ -12,6 +12,7 @@ STATE_ASSET_TYPES = (
     "canon_snapshot", "character_state_snapshot", "relationship_state_snapshot",
     "timeline_snapshot", "foreshadow_snapshot", "promise_ledger_snapshot",
     "reward_ledger_snapshot", "world_rule_snapshot", "power_state_snapshot",
+    "plot_thread_snapshot", "resource_state_snapshot",
 )
 
 
@@ -468,6 +469,8 @@ def _fit_quality_context(
         candidate["omitted_fact_count"] = int(
             candidate.get("omitted_fact_count") or 0
         ) + 1
+        if not facts:
+            _drop_redundant_empty_row_fields(candidate)
     selected_versions = sorted(
         str(row.get("asset_version_id") or "") for row in rows if row.get("asset_version_id")
     )
@@ -492,6 +495,16 @@ def _fit_quality_context(
         "repair_actions": [],
         "contract_version": "quality-context-coverage-v1",
     }
+
+
+def _drop_redundant_empty_row_fields(row: dict[str, Any]) -> None:
+    """Keep evidence identity while removing null/default transport fields."""
+
+    for key in ("entity_id", "relationship_pair", "chapter"):
+        if row.get(key) is None:
+            row.pop(key, None)
+    if row.get("declared_empty") is False:
+        row.pop("declared_empty", None)
 
 
 def _compact_noncritical_current_candidate_rows(body: dict[str, Any]) -> bool:

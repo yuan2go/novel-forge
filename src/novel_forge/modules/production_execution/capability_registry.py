@@ -229,6 +229,13 @@ def default_capability_registry() -> CapabilityRegistry:
     ]
     definitions.append(
         _definition(
+            CapabilityId.WORLD_CONSEQUENCE_ANALYZE,
+            ExecutionDomain.WORLD,
+            skill_bundle_type="WORLD_CONSEQUENCE_MODELING_SKILL",
+        )
+    )
+    definitions.append(
+        _definition(
             CapabilityId.QUALITY_AGGREGATE,
             ExecutionDomain.QUALITY,
             runtimes=(ExecutionRuntimeClass.AUTHORITY_IN_PROCESS,),
@@ -241,6 +248,78 @@ def default_capability_registry() -> CapabilityRegistry:
             risk=RiskClass.LOW,
         )
     )
+    for capability_id, domain, backend, skill_bundle, query, risk in (
+        (
+            CapabilityId.TEMPORAL_QUERY,
+            ExecutionDomain.CANON,
+            "temporal-query-authority",
+            "LONGFORM_TEMPORAL_QUERY_SKILL",
+            True,
+            RiskClass.MEDIUM,
+        ),
+        (
+            CapabilityId.CANON_VALIDATE,
+            ExecutionDomain.CANON,
+            "chapter-authority",
+            "CANON_CONTINUITY_GRAPH_SKILL",
+            False,
+            RiskClass.HIGH,
+        ),
+        (
+            CapabilityId.CONTINUITY_VALIDATE,
+            ExecutionDomain.CANON,
+            "chapter-authority",
+            "CANON_CONTINUITY_GRAPH_SKILL",
+            False,
+            RiskClass.HIGH,
+        ),
+        (
+            CapabilityId.HOOK_ANALYZE,
+            ExecutionDomain.QUALITY,
+            "chapter-authority",
+            "NARRATIVE_BEAT_DESIGN_SKILL",
+            False,
+            RiskClass.MEDIUM,
+        ),
+        (
+            CapabilityId.PACING_ANALYZE,
+            ExecutionDomain.LONGFORM,
+            "chapter-authority",
+            "MULTI_SCALE_PACING_SKILL",
+            False,
+            RiskClass.MEDIUM,
+        ),
+        (
+            CapabilityId.PACING_AGGREGATE,
+            ExecutionDomain.LONGFORM,
+            "content-intelligence-authority",
+            "MULTI_SCALE_PACING_SKILL",
+            True,
+            RiskClass.MEDIUM,
+        ),
+        (
+            CapabilityId.FACT_VERIFY,
+            ExecutionDomain.MKAOS,
+            "content-authority",
+            "EVIDENCE_FACT_VERIFICATION_SKILL",
+            False,
+            RiskClass.HIGH,
+        ),
+    ):
+        definitions.append(
+            _definition(
+                capability_id,
+                domain,
+                runtimes=(ExecutionRuntimeClass.AUTHORITY_IN_PROCESS,),
+                backends=(backend,),
+                prompt_bundle_type="NO_PROMPT_BUNDLE",
+                skill_bundle_type=skill_bundle,
+                query=query,
+                cancel=False,
+                callback=False,
+                risk=risk,
+            )
+        )
     definitions.extend(
         (
             _definition(

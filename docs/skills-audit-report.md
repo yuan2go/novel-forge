@@ -2,6 +2,18 @@
 
 日期：2026-07-05
 
+## 2026-08-11 Long-form Intelligence 收敛补充
+
+- 当前 HEAD 复核后，root project Skills 从 29 个收敛扩展为 33 个；新增 `longform-temporal-query`、`multi-scale-pacing`、`world-consequence-modeling`、`evidence-fact-verification`。
+- `webnovel-hook-intelligence`、`character-temporal-consistency`、`deterministic-narrative-validation` 判定为重复触发面，分别 MERGE 到 `narrative-beat-design` / `chapter-outline` / `long-outline` / `quality-review` 与 `canon-continuity-graph`，不新增目录。
+- 新 Skill 只承载方法；生产执行复用 Capability、PostgreSQL Authority、Chapter / Content Authority、ReviewIssue、Gate 和 Trace。未新增 Agent、Scheduler、Workflow、Provider Runtime、Canon / Knowledge database 或 Vector Store。
+- 外部来源决策：项目当前实现与公开行为语义为 `ADAPT` / clean-room `REIMPLEMENT`；无第三方 Skill Pack 被 vendor（`REJECT` wholesale vendor）；无许可证不清代码或测试被复制；真实 provider world-consequence generation 和多来源事实检索仍为 `DEFER`。
+
+| Skill | 来源 | 本地路径 | 使用阶段 | 使用原因 | 风险 | 是否安装 | 是否同步 | 是否更新映射 |
+|---|---|---|---|---|---|---|---|---|
+| `skill-governance` | project root | `skills/skill-governance/` | 收敛审计 | 防止重复 Skill 和 runtime drift | 中 | 否，已存在 | 待本轮验证 | 是 |
+| `novel-os-engineering-audit` | project root | `skills/novel-os-engineering-audit/` | HEAD / Runtime 审计 | 区分代码、测试、生产和证明等级 | 低 | 否，已存在 | 待本轮验证 | 是 |
+
 ## 1. 审计范围
 
 本报告基于当前项目 `.claude/skills/` 目录做分析，并记录本次按 root `skills/` source-of-truth 同步后的状态。Skill 内容只在根 `skills/` 新增/更新，runtime copy 通过 `make sync-skills` 生成。
@@ -24,9 +36,9 @@
 - `find .claude/skills -mindepth 2 -type f`
 - `make check-skills`
 
-当前 `.claude/skills` 共 38 个 Skill：
+本轮同步后 `.claude/skills` 应为 42 个 Skill：
 
-- 项目 / Novel OS Skill：29 个
+- 项目 / Novel OS Skill：33 个
 - runtime/vendor 工具型 Skill：9 个
 
 `SKILL.md` 合计约 5,176 行。工具型 Skill 中存在 Python 脚本、Office/PDF 处理脚本、Playwright 测试辅助、MCP eval 脚本和大量 Claude API reference 文档。

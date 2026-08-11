@@ -479,11 +479,14 @@ SKILL_AGENT_MAP = {
     "character-design": "character",
     "classic-literary-depth-analysis": "analysis",
     "context-builder-source-isolation": "context",
+    "evidence-fact-verification": "knowledge",
     "hot-novel-business-deconstruction": "analysis",
     "hot-novel-deconstruction": "knowledge",
     "long-outline": "outline",
+    "longform-temporal-query": "context",
     "material-curation": "material",
     "mkaos-knowledge-asset-os": "knowledge",
+    "multi-scale-pacing": "review",
     "multidisciplinary-knowledge": "knowledge",
     "narrative-beat-design": "outline",
     "novel-os-engineering-audit": "engineering",
@@ -499,6 +502,7 @@ SKILL_AGENT_MAP = {
     "skill-governance": "engineering",
     "topic-development": "topic",
     "training-exercise": "training",
+    "world-consequence-modeling": "worldbuilding",
     "worldbuilding": "worldbuilding",
 }
 

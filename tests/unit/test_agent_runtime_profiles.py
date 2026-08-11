@@ -54,6 +54,10 @@ class AgentRuntimeProfileTests(unittest.TestCase):
             "skill-governance": "Engineering Agent",
             "platform-strategy-os": "Platform Compliance Agent",
             "training-exercise": "Training Agent",
+            "longform-temporal-query": "Context Agent",
+            "multi-scale-pacing": "Review Agent",
+            "world-consequence-modeling": "Worldbuilding Agent",
+            "evidence-fact-verification": "Knowledge Agent",
         }
 
         for skill, expected_agent in cases.items():

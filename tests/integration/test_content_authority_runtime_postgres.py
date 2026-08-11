@@ -78,6 +78,16 @@ class ContentAuthorityRuntimePostgresTests(unittest.TestCase):
         )
         return {"asset_version_id": result.asset_version_id, "content_hash": result.content_hash}
 
+    def read_content(self, asset_version_id: str) -> dict:
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                "SELECT content FROM authority_asset_version WHERE asset_version_id=%s",
+                [asset_version_id],
+            )
+            row = uow.cursor.fetchone()
+        self.assertIsNotNone(row)
+        return dict(row[0])
+
     def test_all_registered_codecs_execute_through_postgresql_authority(self) -> None:
         brief_payload = {
             "target_genre": "fantasy", "subgenre": "mystery", "target_platform": "serial",
@@ -139,6 +149,49 @@ class ContentAuthorityRuntimePostgresTests(unittest.TestCase):
         }]
         world = self.run_op("production.world.generate", [brief], {"rules": rules, "entities": {"world_premise": [{"name": "Archive City"}], "factions": [], "institutions": [], "locations": [], "resources": [], "systems": [], "economy": [], "social_hierarchy": [], "information_boundaries": [], "historical_events": [], "conflict_sources": [], "daily_life_impacts": []}})
         self.run_op("world.validate", [world])
+        consequence_receipt = self.seed(
+            "world_consequence_provider_receipt",
+            {
+                "provider_id": "scripted-world-fixture",
+                "model_id": "fixture",
+                "prompt_version": "world-consequence-fixture-v1",
+                "real_model_call": False,
+                "consequences": [
+                    {
+                        "consequence_id": "consequence:memory-tax",
+                        "rule_id": "memory_cost",
+                        "direct_consequence": "Restoration becomes rationed.",
+                        "affected_groups": ["clerks"],
+                    }
+                ],
+            },
+            "world-consequence-receipt",
+        )
+        world_consequence = self.run_op(
+            "world.consequence.materialize_candidate",
+            [world, consequence_receipt],
+        )
+        consequence_content = self.read_content(world_consequence["asset_version_id"])
+        self.assertEqual(consequence_content["status"], "CANDIDATE")
+        self.assertFalse(consequence_content["accepted_canon"])
+        self.assertEqual(
+            consequence_content["activation_requirement"],
+            "STORY_DESIGN_AUTHORITY_DECISION",
+        )
+        self.assertEqual(
+            consequence_content["affected_group_node_ids"],
+            ["affected_group:clerks"],
+        )
+        consequence_node_ids = {
+            item["node_id"] for item in consequence_content["nodes"]
+        }
+        self.assertTrue(
+            all(
+                edge["source_id"] in consequence_node_ids
+                and edge["target_id"] in consequence_node_ids
+                for edge in consequence_content["edges"]
+            )
+        )
         theme_question = self.run_op("theme.question.create", payload={"question": brief_payload["theme_question"]})
         character_fields = {
             "project_id": self.project_id, "desire": "restore truth", "need": "trust others", "fear": "self-erasure",
@@ -196,6 +249,66 @@ class ContentAuthorityRuntimePostgresTests(unittest.TestCase):
             self.seed("quality_score_report", {"trend": "improving"}, "quality-report"),
         ]
         self.run_op("longform.recap.enhance", recap_inputs, {"reports": {"main_plot_progress": "archive reopened", "constraints": ["preserve memory cost"]}})
+
+        source_document = self.seed(
+            "source_document",
+            {"title": "Policy record", "rights_authorization": "owned"},
+            "fact-source",
+        )
+        fact_claim = self.run_op(
+            "fact.claim.register",
+            [source_document],
+            {
+                "claim": {
+                    "claim_id": "claim:policy",
+                    "statement": "The archive policy is in force.",
+                    "domain": "law",
+                    "retrieved_at": "2026-08-01T00:00:00Z",
+                    "temporal_valid_to": "2026-12-31T00:00:00Z",
+                    "source_quality": 0.9,
+                    "confidence": 0.8,
+                    "fictionalization_allowed": False,
+                }
+            },
+        )
+        knowledge_card = self.seed(
+            "knowledge_card",
+            {
+                "project_id": self.project_id,
+                "lineage": {
+                    "candidate_asset_version_id": "candidate:policy:v1",
+                    "source_chunk_asset_version_ids": ["source-chunk:policy:v1"],
+                },
+            },
+            "fact-knowledge-card",
+        )
+        fact_verification = self.run_op(
+            "fact.verify",
+            [fact_claim, knowledge_card],
+            {
+                "as_of": "2026-08-01T00:00:00Z",
+                "evidence_decisions": [
+                    {
+                        "knowledge_card_asset_version_id": knowledge_card[
+                            "asset_version_id"
+                        ],
+                        "stance": "SUPPORTS",
+                        "source_quality": 0.9,
+                        "confidence": 0.8,
+                    }
+                ],
+            },
+        )
+        verification_content = self.read_content(
+            fact_verification["asset_version_id"]
+        )
+        self.assertEqual(verification_content["status"], "VERIFIED")
+        self.assertEqual(verification_content["gate_result"], "PASSED")
+        self.assertEqual(
+            verification_content["claim_asset_version_id"],
+            fact_claim["asset_version_id"],
+        )
+        self.assertTrue(verification_content["evidence_refs"])
 
         calibration_profile = self.seed(
             "quality_calibration_profile",

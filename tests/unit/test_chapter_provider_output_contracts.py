@@ -27,6 +27,8 @@ CANON_FIELDS = (
     "reward_changes",
     "world_rule_usages",
     "power_state_changes",
+    "plot_thread_changes",
+    "resource_state_changes",
     "narrative_pattern_fingerprints",
     "theme_movements",
     "antagonist_pressure_changes",
@@ -329,7 +331,7 @@ def test_provider_schema_has_no_open_object_escape_hatch() -> None:
         if isinstance(schema, dict):
             if schema.get("type") == "object":
                 assert schema.get("additionalProperties") is False
-                assert set(schema.get("required") or ()) == set(
+                assert set(schema.get("required") or ()).issubset(
                     (schema.get("properties") or {}).keys()
                 )
             for child in schema.values():

@@ -516,7 +516,8 @@ class ChapterModelExternalEffectAdapter:
                 "character_state_changes, relationship_changes, timeline_events, "
                 "foreshadow_changes, promise_changes, reward_changes, world_rule_usages, "
                 "power_state_changes, narrative_pattern_fingerprints, theme_movements, "
-                "and antagonist_pressure_changes. Every item must cite evidence_start, "
+                "plot_thread_changes, resource_state_changes, and "
+                "antagonist_pressure_changes. Every item must cite evidence_start, "
                 "evidence_end and confidence.\nRevision:\n"
                 + str(revision.get("text") or "")
             )
@@ -1454,6 +1455,8 @@ def _normalize_model_output(stage: str, raw: dict[str, Any]) -> dict[str, Any]:
             "reward_changes",
             "world_rule_usages",
             "power_state_changes",
+            "plot_thread_changes",
+            "resource_state_changes",
             "narrative_pattern_fingerprints",
             "theme_movements",
             "antagonist_pressure_changes",

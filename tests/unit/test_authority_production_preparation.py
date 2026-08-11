@@ -336,6 +336,8 @@ class ProductionPreparationTests(unittest.TestCase):
             "foreshadow_snapshot",
             "promise_ledger_snapshot", "reward_ledger_snapshot", "world_rule_snapshot",
             "power_state_snapshot",
+            "plot_thread_snapshot",
+            "resource_state_snapshot",
         )
         collections = {kind: [_asset(kind)] for kind in required}
         collections["chapter_plan"][0] = replace(
@@ -390,6 +392,7 @@ class ProductionPreparationTests(unittest.TestCase):
             "reward_ledger_snapshot",
             "world_rule_snapshot",
             "power_state_snapshot",
+            "plot_thread_snapshot", "resource_state_snapshot",
         )
         collections = {
             kind: [_asset(kind)]

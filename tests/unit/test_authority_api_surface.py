@@ -100,6 +100,9 @@ class AuthorityApiSurfaceTests(unittest.TestCase):
                 "/product/mkaos/knowledge-cards",
                 "/product/mkaos/knowledge-packs",
                 "/product/mkaos/knowledge-packs/{knowledge_pack_id}",
+                "/product/temporal-query",
+                "/product/content-intelligence/pacing",
+                "/product/content-intelligence/hooks",
             }.issubset(paths)
         )
 

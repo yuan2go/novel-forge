@@ -27,7 +27,9 @@ from novel_forge.modules.book_followup_authority.query import (
     BookFollowupProjectionQuery,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.content_intelligence import PacingAnalysisService
 from novel_forge.modules.runtime_job import RuntimeJobAuthority
+from novel_forge.modules.temporal_query import TemporalQueryService
 from novel_forge.modules.chapter_authority.orchestrator import (
     ChapterSagaAdmission,
     SingleChapterRequest,
@@ -700,6 +702,65 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                 acceptance_count = int(uow.cursor.fetchone()[0])
             self.assertEqual(delegation_statuses, {"ACCEPTED": 2})
             self.assertEqual(acceptance_count, 2)
+
+            temporal = TemporalQueryService(DATABASE_URL)
+            chapter_one = temporal.changes_between(project_id, 0, 1)
+            chapter_two = temporal.changes_between(project_id, 0, 2)
+            self.assertEqual(chapter_one["status"], "FOUND")
+            self.assertTrue(chapter_one["changes"])
+            self.assertTrue(
+                all(item["accepted_chapter"] == 1 for item in chapter_one["changes"])
+            )
+            self.assertGreater(
+                len(chapter_two["changes"]), len(chapter_one["changes"])
+            )
+            self.assertEqual(
+                temporal.changes_between(identifier("unrelated-project"), 0, 2)[
+                    "changes"
+                ],
+                [],
+            )
+            pacing = PacingAnalysisService(DATABASE_URL)
+            chapter_one_pacing = pacing.aggregate_at(
+                project_id=project_id,
+                chapter=1,
+            )
+            chapter_two_pacing = pacing.aggregate_at(
+                project_id=project_id,
+                chapter=2,
+            )
+            chapter_one_window = next(
+                item
+                for item in chapter_one_pacing["aggregates"]
+                if item["scale"] == "3_CHAPTER_WINDOW"
+            )
+            chapter_two_window = next(
+                item
+                for item in chapter_two_pacing["aggregates"]
+                if item["scale"] == "3_CHAPTER_WINDOW"
+            )
+            self.assertEqual(chapter_one_window["chapters"], [1])
+            self.assertEqual(chapter_two_window["chapters"], [1, 2])
+            self.assertEqual(
+                [
+                    item["accepted_chapter"]
+                    for item in pacing.hook_analyses_at(
+                        project_id=project_id,
+                        chapter=1,
+                    )["analyses"]
+                ],
+                [1],
+            )
+            unrelated_pacing = pacing.aggregate_at(
+                project_id=identifier("unrelated-project"),
+                chapter=2,
+            )
+            self.assertTrue(
+                all(
+                    item["chapters"] == []
+                    for item in unrelated_pacing["aggregates"]
+                )
+            )
 
     def test_book_chapter_dispatch_idempotency(self) -> None:
         fixture = self._new_book_fixture(target_chapter_count=2)

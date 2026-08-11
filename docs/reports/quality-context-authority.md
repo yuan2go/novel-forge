@@ -8,7 +8,7 @@ bundle:
 | Structural | revision, word/paragraph/dialogue/readability/mobile/format policy |
 | Commercial | ChapterPlan, promise/reward, protagonist/antagonist, suspense/emotion, hook/bridge |
 | Source/originality | Manifest and source-isolation evidence, allowed use, copyright/style/originality policy |
-| Long-form | nine state kinds, volume arc, recap/arc progress, current plan and Canon proposal |
+| Long-form | eleven state kinds, volume arc, recap/arc progress, current plan and Canon proposal |
 | Platform | compiled concrete length/format/safety/AI/opening/rhythm/metadata rules |
 
 `QualityPolicyCompiler` and `PlatformPolicyCompiler` produce deterministic, hashable,

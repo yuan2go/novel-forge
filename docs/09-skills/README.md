@@ -51,6 +51,10 @@ skills/
 ├── platform-strategy-os/
 ├── provider-runtime-policy/
 ├── canon-continuity-graph/
+├── longform-temporal-query/
+├── multi-scale-pacing/
+├── world-consequence-modeling/
+├── evidence-fact-verification/
 ├── publish-release-gate-os/
 ├── skill-governance/
 └── novel-os-engineering-audit/
@@ -100,7 +104,7 @@ Rules:
 - Drafting must pass through `chapter-outline` and `quality-review`.
 - Hot novel analysis must pass through `anti-copy-abstraction`.
 - Reader feedback, project planning, multidisciplinary knowledge, topic development, material curation, analysis conversion, published-fiction analysis, classic-literary analysis, and training exercise are implemented Skills.
-- MKAOS, Context Builder, ReviewIssue, Agent Loop, Provider Runtime, Canon Continuity, Publish Release Gate, Narrative Beat Design, Skill Governance, Platform Strategy, and Novel OS engineering audit now have dedicated Skills.
+- MKAOS, Context Builder, ReviewIssue, Agent Loop, Provider Runtime, Canon Continuity, Temporal Query, Multi-scale Pacing, World Consequence, Evidence Verification, Publish Release Gate, Narrative Beat Design, Skill Governance, Platform Strategy, and Novel OS engineering audit now have dedicated Skills.
 
 ## Usage And License Policy
 
@@ -115,7 +119,7 @@ Use `docs/09-skills/usage-policy.md` as the detailed policy. The short version:
 ## Acceptance
 
 - `skills/` exists.
-- 29 root project Skills exist.
+- 33 root project Skills exist.
 - Every Skill has frontmatter with `name` and `description`.
 - Every Skill has required sections for inputs, workflow, output, quality, forbidden behavior, and module relationships.
 - Every project Skill that can influence production state contains a Novel OS Runtime Contract.

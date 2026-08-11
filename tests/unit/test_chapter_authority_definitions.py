@@ -131,7 +131,7 @@ class ChapterAuthorityDefinitionTests(unittest.TestCase):
         canon_definition = definitions[list(ChapterNode).index(ChapterNode.CANON)]
         self.assertEqual(
             len(canon_definition["completion_contract"]["required_asset_selectors"]),
-            10,
+            13,
         )
         self.assertEqual(
             definitions[list(ChapterNode).index(ChapterNode.EXPORT)][

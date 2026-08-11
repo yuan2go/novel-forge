@@ -49,7 +49,14 @@ from novel_forge.modules.canon_graph.approval_domain import (
     build_canon_change_proposal,
     resolve_canon_extraction,
 )
+from novel_forge.modules.content_intelligence import (
+    build_hook_analysis,
+    build_pacing_observation,
+)
 from novel_forge.modules.production_execution import CommitManifest
+from novel_forge.modules.production_preparation.policies import (
+    CONTINUING_CHAPTER_REQUIRED_ASSET_TYPES,
+)
 
 
 class DeterministicFixtureChapterProvider:
@@ -312,15 +319,34 @@ class _ContextHandler:
                     "structured_facts": list(item.content.get("structured_facts") or metadata.get("structured_facts") or []),
                 }
             )
+        available_candidate_types = {
+            str(item["asset_type"]) for item in governed_candidates
+        }
+        required_candidate_types = {
+            "quality_rubric",
+            "platform_profile",
+        }
+        if int(plan.content["chapter"]) > 1:
+            required_candidate_types.update(
+                CONTINUING_CHAPTER_REQUIRED_ASSET_TYPES
+            )
         bundle = build_context_bundle(
-                plan=plan.content,
-                plan_asset_version_id=plan.asset_version_id,
-                plan_content_hash=plan.content_hash,
-                project_id=request.project_id,
-                created_by_operation_id=request.operation_id,
-                governed_candidates=governed_candidates,
-                version_refs=dict(request.command.get("context_version_refs", {})),
-            token_budget=int(request.command.get("context_token_budget", 6000)),
+            plan=plan.content,
+            plan_asset_version_id=plan.asset_version_id,
+            plan_content_hash=plan.content_hash,
+            project_id=request.project_id,
+            created_by_operation_id=request.operation_id,
+            governed_candidates=governed_candidates,
+            version_refs=dict(request.command.get("context_version_refs", {})),
+            required_asset_types=(
+                "chapter_plan",
+                *sorted(
+                    required_candidate_types & available_candidate_types
+                ),
+            ),
+            token_budget=int(
+                request.command.get("context_token_budget", 6000)
+            ),
         )
         bundle["production_input_manifest"] = manifest
         bundle["production_input_manifest_asset_version_id"] = (
@@ -569,6 +595,47 @@ class _CanonHandler:
             )
             for snapshot in content["snapshot_candidates"]
         )
+        continuity_report = {
+            **dict(content["deterministic_validation"]),
+            "project_id": request.project_id,
+            "chapter": int(content["chapter"]),
+            "canon_patch_source_operation_id": request.operation_id,
+            "source_revision_asset_version_id": revision.asset_version_id,
+            "context_bundle_asset_version_id": context.asset_version_id,
+            "review_issue_candidates": [
+                {
+                    "issue_type": "deterministic_continuity",
+                    "severity": item["severity"],
+                    "blocking": item["severity"] == "blocking",
+                    "code": item["conflict_code"],
+                    "message": item["recommended_resolution"],
+                    "evidence": item["evidence"],
+                }
+                for item in content["deterministic_validation"]["violations"]
+            ],
+        }
+        validation_output = ChapterAuxiliaryOutput(
+            asset_type="deterministic_continuity_report",
+            output_key="chapter.canon.deterministic_continuity",
+            role="completion_evidence",
+            content=continuity_report,
+            reference_asset_version_ids=tuple(
+                sorted(
+                    {
+                        revision.asset_version_id,
+                        extraction.asset_version_id,
+                        proposal.asset_version_id,
+                        context.asset_version_id,
+                        *content["historical_input_version_ids"],
+                    }
+                )
+            ),
+            evidence={
+                "authority_family": "chapter",
+                "validator": "deterministic-continuity-v1",
+                "semantic_judge_used": False,
+            },
+        )
         primary = _output(
             ChapterNode.CANON,
             content,
@@ -579,7 +646,7 @@ class _CanonHandler:
             role=primary.role,
             content=primary.content,
             qualification_policy=primary.qualification_policy,
-            auxiliary_outputs=snapshot_outputs,
+            auxiliary_outputs=(*snapshot_outputs, validation_output),
         )
 
 
@@ -742,6 +809,75 @@ class _QualityGroupHandler:
             },
         )
         auxiliaries: tuple[ChapterAuxiliaryOutput, ...] = (coverage,)
+        if self.group == "commercial":
+            provider_dimensions = (
+                list(generated.output.get("dimensions", []))
+                if generated is not None
+                else []
+            )
+            provider_evidence = (
+                {
+                    **_provider_evidence(generated),
+                    "trace_id": request.trace_id,
+                    "operation_id": request.operation_id,
+                }
+                if generated is not None
+                else {
+                    "trace_id": request.trace_id,
+                    "operation_id": request.operation_id,
+                    "real_model_call": False,
+                }
+            )
+            hook_analysis = build_hook_analysis(
+                project_id=request.project_id,
+                chapter=int(revision.content["chapter"]),
+                chapter_plan=plan.content,
+                provider_dimensions=provider_dimensions,
+                target_asset_version_id=revision.asset_version_id,
+                chapter_plan_asset_version_id=plan.asset_version_id,
+                provider_evidence=provider_evidence,
+            )
+            pacing_observation = build_pacing_observation(
+                project_id=request.project_id,
+                chapter=int(revision.content["chapter"]),
+                revision=revision.content,
+                chapter_plan=plan.content,
+                canon=canon.content,
+                provider_dimensions=provider_dimensions,
+                target_asset_version_id=revision.asset_version_id,
+                provider_evidence=provider_evidence,
+            )
+            intelligence_refs = (
+                revision.asset_version_id,
+                plan.asset_version_id,
+                canon.asset_version_id,
+                context.asset_version_id,
+            )
+            auxiliaries = (
+                *auxiliaries,
+                ChapterAuxiliaryOutput(
+                    asset_type="hook_analysis",
+                    output_key="chapter.quality.commercial.hook_analysis",
+                    role="longform_observation",
+                    content=hook_analysis,
+                    reference_asset_version_ids=intelligence_refs,
+                    evidence={
+                        "capability": "hook.analyze",
+                        "commercial_quality_reused": True,
+                    },
+                ),
+                ChapterAuxiliaryOutput(
+                    asset_type="pacing_observation",
+                    output_key="chapter.quality.commercial.pacing_observation",
+                    role="longform_observation",
+                    content=pacing_observation,
+                    reference_asset_version_ids=intelligence_refs,
+                    evidence={
+                        "capability": "pacing.analyze",
+                        "semantic_and_deterministic_separated": True,
+                    },
+                ),
+            )
         if generated is not None:
             commit = _execution_commit_auxiliary(node, request, generated)
             if commit is not None:

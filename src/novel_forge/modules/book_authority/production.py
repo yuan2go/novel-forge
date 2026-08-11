@@ -146,7 +146,7 @@ class SubmitBookChapterCommand:
     execution_chapter_plan_content_hash: str = ""
     parent_group_version_id: str = ""
     context_version_refs: dict[str, Any] | None = None
-    context_token_budget: int = 6000
+    context_token_budget: int = 16_000
     preparation_report: dict[str, Any] | None = None
 
 
@@ -1321,7 +1321,7 @@ class PostgresBookAuthority:
                     payload.get("parent_group_version_id") or ""
                 ),
                 context_version_refs=payload.get("context_version_refs"),
-                context_token_budget=int(payload.get("context_token_budget") or 6000),
+                context_token_budget=int(payload.get("context_token_budget") or 16_000),
                 preparation_report=payload.get("preparation_report"),
             ),
             principal=principal,
@@ -2025,26 +2025,40 @@ class PostgresBookAuthority:
                 "BOOK_PREVIOUS_CHAPTER_STATE_MISSING",
                 "next Chapter requires accepted predecessor state snapshots",
             )
-        governed = tuple(
-            {
-                "asset_type": str(row[0]),
-                "physical_asset_type": str(row[0]),
-                "asset_version_id": str(row[1]),
-                "content_hash": str(row[2]),
-                "project_id": project_id,
-                "estimated_tokens": max(1, len(str(row[3])) // 4),
-                "safe_summary": (
-                    f"Accepted chapter {chapter_number - 1} {row[0]} state snapshot."
-                ),
-                "structured_facts": list(
-                    (row[3] or {}).get("changes") or (row[3] or {}).get("facts") or []
-                ),
-                "narrative_function": "authoritative_story_state",
-                "source_use_mode": "generation",
-                "allowed_use": "generation",
-            }
-            for row in rows
-        )
+        governed_items: list[dict[str, Any]] = []
+        for row in rows:
+            content = dict(row[3] or {})
+            safe_summary = (
+                f"Accepted chapter {chapter_number - 1} {row[0]} state snapshot."
+            )
+            structured_facts = list(
+                content.get("changes") or content.get("facts") or []
+            )
+            rendered = json.dumps(
+                {
+                    "safe_summary": safe_summary,
+                    "structured_facts": structured_facts,
+                },
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            )
+            governed_items.append(
+                {
+                    "asset_type": str(row[0]),
+                    "physical_asset_type": str(row[0]),
+                    "asset_version_id": str(row[1]),
+                    "content_hash": str(row[2]),
+                    "project_id": project_id,
+                    "estimated_tokens": max(1, len(rendered) // 4),
+                    "safe_summary": safe_summary,
+                    "structured_facts": structured_facts,
+                    "narrative_function": "authoritative_story_state",
+                    "source_use_mode": "generation",
+                    "allowed_use": "generation",
+                }
+            )
+        governed = tuple(governed_items)
         merged: dict[str, dict[str, Any]] = {
             str(item["asset_version_id"]): dict(item) for item in requested
         }

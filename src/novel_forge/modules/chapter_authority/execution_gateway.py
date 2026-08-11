@@ -1417,6 +1417,8 @@ def default_chapter_fixture_response(
             "reward_changes": [],
             "world_rule_usages": [],
             "power_state_changes": [],
+            "plot_thread_changes": [],
+            "resource_state_changes": [],
             "narrative_pattern_fingerprints": [],
             "theme_movements": [],
             "antagonist_pressure_changes": [],

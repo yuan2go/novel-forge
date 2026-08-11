@@ -113,6 +113,7 @@ class ScriptedProviderAdapterV2:
                 "timeline_events": [], "foreshadow_changes": [],
                 "promise_changes": [], "reward_changes": [],
                 "world_rule_usages": [], "power_state_changes": [],
+                "plot_thread_changes": [], "resource_state_changes": [],
                 "narrative_pattern_fingerprints": [], "theme_movements": [],
                 "antagonist_pressure_changes": [],
             }

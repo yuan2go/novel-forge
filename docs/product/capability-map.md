@@ -1,8 +1,8 @@
 # Autonomous Novel OS Capability Map
 
-Updated: 2026-08-01  
+Updated: 2026-08-11
 Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`  
-Audited HEAD: `aa991b53039cdf2e4e7911d4483052b9a6a752a1`
+Implementation audit start HEAD: `68d4e0021dcc20a209908130687f2da03a9398cf`
 
 Status in this document is evidence-based:
 
@@ -21,12 +21,13 @@ A UI page, API route, schema, fixture or design document alone is not a complete
 |---|---|---|---|
 | PostgreSQL Command Kernel | Implemented / fixture-proven | DB constraints, Operation/Saga/Attempt tests | production load and recovery drill |
 | Chapter Authority | Implemented / fixture-proven | 18-node PostgreSQL Saga | real Provider and editorial quality |
-| Canon and Story State | Implemented foundation | proposal/approval/update and 9 snapshots | long-horizon semantic accuracy |
+| Canon and Story State | Implemented foundation / PostgreSQL-tested | proposal/approval/update, 11 snapshots and deterministic continuity report | long-horizon semantic accuracy |
 | Quality and Review | Implemented foundation | 5 groups, 41 dimensions, aggregate gate | Judge calibration and real model evidence |
 | Book Authority | Implemented foundation / fixture-proven | persistent coordination and child delegation | autonomous whole-book progression |
 | Provider v2 | Implemented protocol | registry, route, query/cancel/callback contracts | real composition, billed cost and production proof |
 | Long-form | Partial | Reader Outcome/Recap/Plan proposal contracts | real 100/300 chapter and million-word proof |
-| Source and MKAOS Authority | Blocked pending integrity verification | current imports/migration registrations | confirm all target modules/migrations/tests committed |
+| Long-form native intelligence | Partial / PostgreSQL-tested | temporal projection/query, hook and pacing observations, candidate consequence and evidence-bound fact decisions | real Provider, long-form and downstream-consumer proof |
+| Source and MKAOS Authority | Implemented foundation / PostgreSQL-tested | SourceDocument/MKAOS Authority integration and migration integrity gates | real corpus, retrieval quality and production operations |
 | Agent collaboration | Design/Foundation / fixture-proven | frozen scope, work order, candidate graph | complete autonomous Agent Center |
 | Web operator product | Partial | broad Next.js console | authentication, browser E2E and guided repair |
 | Publishing/platform | Partial | local/manual/generic adapter foundations | official platform and real receipt proof |
@@ -50,7 +51,7 @@ A UI page, API route, schema, fixture or design document alone is not a complete
 | External Effect | Implemented foundation | effect/dispatch/receipt/query/callback/reconcile | real provider/platform proof absent |
 | Inbox/Outbox | Implemented foundation | durable tables and recovery operations | production dispatcher topology incomplete |
 | Audit/State Event | Implemented | admission and lifecycle evidence | retention/analytics operations partial |
-| AssetVersion | Implemented | immutable versions, qualification and output binding | latest business Authority migration integrity pending |
+| AssetVersion | Implemented | immutable versions, qualification and output binding | production scale and retention operations unproven |
 | Blob/Object effect | Fixture-proven | verified local object delivery protocol | remote production object store proof absent |
 
 ## 3. Chapter Production Capabilities
@@ -66,7 +67,7 @@ A UI page, API route, schema, fixture or design document alone is not a complete
 | Re-review | Fixture-proven | independent pass/fail evidence | real evaluator calibration unproven |
 | Canon Extraction | Fixture-proven | semantic extraction stage or deterministic fallback | real extraction precision/recall unproven |
 | Canon Proposal/Approval | Implemented foundation | versioned proposal and decision-gated changes | operator merge/repair UX partial |
-| Canon Update | Fixture-proven | patch plus append-only state snapshots | long-horizon conflicts unproven |
+| Canon Update | PostgreSQL-tested | patch, 11 append-only state snapshots and deterministic continuity report | long-horizon semantic accuracy unproven |
 | Structural Quality | Fixture-proven | structural dimensions | calibration incomplete |
 | Commercial Quality | Fixture-proven | promise/reward/charm/pressure/hook dimensions | platform/reader calibration incomplete |
 | Source/Originality Quality | Fixture-proven | originality, leakage and style evidence | external plagiarism corpus proof incomplete |
@@ -99,9 +100,9 @@ A UI page, API route, schema, fixture or design document alone is not a complete
 
 | Capability | Status | Current evidence | Remaining gap |
 |---|---|---|---|
-| Source registry/intake | Broad Legacy foundation | source metadata, rights/risk and snapshots | Authority migration and full caller convergence |
-| Source eligibility | Implemented foundation | R0-R4, quarantine, allowed-use and approval concepts | current Source Authority integrity pending |
-| MKAOS ingestion | Broad foundation | document/chunk/candidate/card/pack flows | Authority migration and real corpus operations |
+| Source registry/intake | PostgreSQL Authority foundation plus Legacy surfaces | source metadata, rights/risk and SourceDocument integration | full caller convergence |
+| Source eligibility | Implemented foundation / PostgreSQL-tested | R0-R4, quarantine, allowed-use and approval concepts | real-source operational proof |
+| MKAOS ingestion | PostgreSQL Authority foundation plus Legacy surfaces | document/chunk/candidate/card/pack integration flows | real corpus operations and full caller convergence |
 | MKAOS quality | Partial | leakage, near-duplicate, risk and usability gates | real calibration and full production enforcement |
 | MKAOS lineage | Partial | source-to-output lineage and feedback attribution | PostgreSQL Authority convergence and scale |
 | Context Builder | Partial/meaningful | stage profiles, source isolation and token budgets | universal production path use and selection evaluation |
@@ -110,6 +111,23 @@ A UI page, API route, schema, fixture or design document alone is not a complete
 | Style OS | Implemented foundation | abstract fingerprint/policy/drift | provider-assisted calibration and larger corpus workflows |
 | Analysis/decomposition | Partial | web/published/classic analysis slices | model quality, lineage and asset conversion closure |
 | Material system | Implemented foundation | reusable structured assets | Authority lifecycle and usage learning depth |
+
+### 5.1 Long-form native intelligence evidence
+
+These flags describe the current implementation independently. `PRODUCTION_WIRED` means a real current Authority/API composition consumer exists; it does not imply production deployment or real-provider proof.
+
+| Capability | CODE_EXISTS | SKILL_DEFINED | FIXTURE_TESTED | POSTGRES_TESTED | PRODUCTION_WIRED | REAL_PROVIDER_PROVEN | LONGFORM_PROVEN | Current boundary |
+|---|---:|---:|---:|---:|---:|---:|---:|---|
+| `temporal.query` | Yes | Yes | Yes | Yes | Yes | No | No | read-only accepted Chapter/AssetVersion projection and API; two-chapter proof only |
+| `canon.validate` | Yes | Yes | Yes | Yes | Yes | No | No | existing Canon operation emits the deterministic report and 11 snapshots |
+| `continuity.validate` | Yes | Yes | Yes | Yes | Yes | No | No | deterministic rules only; motivation, OOC and emotional plausibility remain semantic |
+| `hook.analyze` | Yes | Yes, merged | Yes | Yes | Yes | No | No | reuses the Commercial Quality provider receipt and emits qualified evidence |
+| `pacing.analyze` | Yes | Yes | Yes | Yes | Yes | No | No | semantic observations require provider evidence; no keyword quality inference |
+| `pacing.aggregate` | Yes | Yes | Yes | Yes | Yes | No | No | deterministic as-of aggregation over accepted observations, exposed through API |
+| `world.consequence.analyze` | Yes | Yes | Yes | Yes | Partial | No | No | Content Authority materializes a provider-receipt candidate; provider generation and Story Design activation are not wired |
+| `fact.verify` | Yes | Yes | Yes | Yes | Partial | No | No | Content Authority consumes frozen Claim and MKAOS evidence; automatic retrieval and production Fact Gate consumers are not wired |
+
+The first six capabilities reuse the existing Chapter/Book Authority, Quality, Capability Pack and API composition. The final two deliberately remain candidate/evidence operations and cannot mutate Accepted Canon. No capability in this table establishes real-provider, multi-book, production deployment or long-form proof.
 
 ## 6. Creative And Quality Product Capabilities
 

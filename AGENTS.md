@@ -61,17 +61,17 @@ Agent is a role and permission boundary. Skill is a reusable capability. Use `do
 | Chief Editor Agent | `project-planning`, `quality-review`, `long-outline`, `narrative-beat-design`, `novel-os-engineering-audit`, `platform-strategy-os`, `publish-release-gate-os` |
 | Workflow Agent | `project-planning`, `quality-review`, `agent-loop-governance`, `review-issue-gate`, `provider-runtime-policy` |
 | Analysis Agent | `hot-novel-deconstruction`, `hot-novel-business-deconstruction`, `published-fiction-craft-analysis`, `classic-literary-depth-analysis`, `anti-copy-abstraction`, `analysis-to-asset-conversion` |
-| Knowledge Agent | `mkaos-knowledge-asset-os`, `multidisciplinary-knowledge`, `anti-copy-abstraction`, `analysis-to-asset-conversion` |
+| Knowledge Agent | `mkaos-knowledge-asset-os`, `multidisciplinary-knowledge`, `evidence-fact-verification`, `anti-copy-abstraction`, `analysis-to-asset-conversion` |
 | Material Agent | `material-curation`, `mkaos-knowledge-asset-os`, `analysis-to-asset-conversion`, `topic-development` |
-| Context Agent | `context-builder-source-isolation`, `mkaos-knowledge-asset-os`, `material-curation`, `quality-review`, `canon-continuity-graph` |
+| Context Agent | `context-builder-source-isolation`, `mkaos-knowledge-asset-os`, `material-curation`, `quality-review`, `longform-temporal-query`, `canon-continuity-graph` |
 | Topic Agent | `topic-development`, `platform-strategy-os`, `material-curation` |
-| Worldbuilding Agent | `worldbuilding`, `multidisciplinary-knowledge`, `mkaos-knowledge-asset-os`, `canon-continuity-graph` |
+| Worldbuilding Agent | `worldbuilding`, `world-consequence-modeling`, `multidisciplinary-knowledge`, `mkaos-knowledge-asset-os`, `canon-continuity-graph` |
 | Character Agent | `character-design`, `worldbuilding`, `context-builder-source-isolation`, `canon-continuity-graph` |
-| Outline Agent | `long-outline`, `narrative-beat-design`, `character-design`, `worldbuilding`, `platform-strategy-os`, `context-builder-source-isolation`, `canon-continuity-graph` |
-| Chapter Plan Agent | `chapter-outline`, `narrative-beat-design`, `quality-review`, `platform-strategy-os`, `context-builder-source-isolation`, `canon-continuity-graph` |
+| Outline Agent | `long-outline`, `narrative-beat-design`, `multi-scale-pacing`, `world-consequence-modeling`, `character-design`, `worldbuilding`, `platform-strategy-os`, `context-builder-source-isolation`, `longform-temporal-query`, `canon-continuity-graph` |
+| Chapter Plan Agent | `chapter-outline`, `narrative-beat-design`, `multi-scale-pacing`, `quality-review`, `platform-strategy-os`, `context-builder-source-isolation`, `longform-temporal-query`, `canon-continuity-graph` |
 | Draft Agent | `prose-generation`, `chapter-outline`, `context-builder-source-isolation`, `review-issue-gate`, `provider-runtime-policy` |
 | Editor Agent | `quality-review`, `review-issue-gate`, `prose-generation`, `chapter-outline`, `canon-continuity-graph` |
-| Review Agent | `quality-review`, `review-issue-gate`, `anti-copy-abstraction`, `mkaos-knowledge-asset-os`, `canon-continuity-graph` |
+| Review Agent | `quality-review`, `multi-scale-pacing`, `evidence-fact-verification`, `review-issue-gate`, `anti-copy-abstraction`, `mkaos-knowledge-asset-os`, `longform-temporal-query`, `canon-continuity-graph` |
 | Feedback Agent | `reader-feedback`, `quality-review`, `mkaos-knowledge-asset-os`, `platform-strategy-os` |
 | Publishing Agent | `publish-release-gate-os`, `quality-review`, `review-issue-gate`, `platform-strategy-os`, `context-builder-source-isolation`, `canon-continuity-graph` |
 | Model Evaluation Agent | `quality-review`, `project-planning`, `novel-os-engineering-audit`, `provider-runtime-policy` |

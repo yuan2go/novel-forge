@@ -11,6 +11,10 @@ from novel_forge.modules.chapter_quality_authority.calibration import (
 )
 from novel_forge.modules.production_preparation.empty_state import initialize_typed_empty_state
 from novel_forge.modules.creative.generator_boundary import build_candidate_pool
+from novel_forge.modules.content_intelligence import (
+    build_world_consequence_candidate,
+    verify_claim,
+)
 from novel_forge.modules.content_authority.codecs import (
     author_chapter_plan,
     author_operator_checklist,
@@ -26,6 +30,7 @@ CONTENT_DOMAIN_HANDLERS = {
     "creative.project.approve": build_project_proposal,
     "production.world.generate": build_world_bible,
     "world.validate": validate_world_rules,
+    "world.consequence.materialize_candidate": build_world_consequence_candidate,
     "production.character.generate": build_character,
     "character.relationships.generate": build_relationship_state,
     "theme.question.create": validate_theme_question,
@@ -42,6 +47,8 @@ CONTENT_DOMAIN_HANDLERS = {
     "longform.pattern.evaluate": detect_pattern_repetition,
     "longform.narrative_debt.evaluate": evaluate_narrative_debt,
     "longform.recap.enhance": build_enhanced_recap,
+    "fact.claim.register": dict,
+    "fact.verify": verify_claim,
     "quality.golden_sample.create": QualityGoldenSample,
     "quality.human_decision.record": QualityHumanDecision,
     "quality.calibration.run": evaluate_calibration_run,
