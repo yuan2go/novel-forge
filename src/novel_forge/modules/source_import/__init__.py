@@ -20,6 +20,7 @@ from .analysis_profiles import (
     analysis_profile,
     plan_analysis_tasks,
 )
+from .artifacts import source_intelligence_artifact_resolver
 from .content_profile import (
     CLASSIFIER_VERSION,
     SourceContentProfile,
@@ -33,7 +34,7 @@ from .application import (
 from .routed_application import SourceImportApplication
 from .scheduler import SourceImportScheduler
 from .query import SourceImportQuery
-from .execution import PostgresContentIntelligenceExecutionPort
+from .routed_execution import PostgresContentIntelligenceExecutionPort
 
 __all__ = [
     "AnalysisTask",
@@ -63,4 +64,5 @@ __all__ = [
     "normalize_repository_url",
     "normalize_source_bytes",
     "plan_analysis_tasks",
+    "source_intelligence_artifact_resolver",
 ]
