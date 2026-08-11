@@ -12,26 +12,41 @@ from novel_forge.modules.capability_packs.artifacts import (
 )
 
 
-_SOURCE_SKILLS = (
-    ("hot-novel-deconstruction", "1.0", "skills/hot-novel-deconstruction/SKILL.md"),
-    (
-        "published-fiction-craft-analysis",
+_SOURCE_SKILLS = {
+    "hot-novel-deconstruction": (
         "1.0",
+        "skills/hot-novel-deconstruction/SKILL.md",
+    ),
+    "published-fiction-craft-analysis": (
+        "2.0",
         "skills/published-fiction-craft-analysis/SKILL.md",
     ),
-    (
-        "classic-literary-depth-analysis",
-        "1.0",
+    "classic-literary-depth-analysis": (
+        "2.0",
         "skills/classic-literary-depth-analysis/SKILL.md",
     ),
-    (
-        "multidisciplinary-knowledge",
-        "1.0",
+    "multidisciplinary-knowledge": (
+        "2.0",
         "skills/multidisciplinary-knowledge/SKILL.md",
     ),
-    ("platform-strategy-os", "1.0", "skills/platform-strategy-os/SKILL.md"),
-    ("anti-copy-abstraction", "1.0", "skills/anti-copy-abstraction/SKILL.md"),
-)
+    "platform-strategy-os": (
+        "2.0",
+        "skills/platform-strategy-os/SKILL.md",
+    ),
+    "anti-copy-abstraction": (
+        "2.0",
+        "skills/anti-copy-abstraction/SKILL.md",
+    ),
+}
+
+
+def source_skill_version(skill_id: str) -> str:
+    """Return the exact governed Source Skill version used in fingerprints."""
+
+    try:
+        return _SOURCE_SKILLS[skill_id][0]
+    except KeyError as exc:
+        raise ValueError(f"unsupported Source intelligence Skill: {skill_id}") from exc
 
 
 def source_intelligence_artifact_resolver(
@@ -39,7 +54,7 @@ def source_intelligence_artifact_resolver(
 ) -> ExplicitArtifactResolver:
     root = Path(repository_root).resolve()
     artifacts: list[ResolvedArtifact] = []
-    for ref, version, source_path in _SOURCE_SKILLS:
+    for ref, (version, source_path) in sorted(_SOURCE_SKILLS.items()):
         relative = Path(source_path)
         target = (root / relative).resolve()
         if root not in target.parents:
@@ -61,4 +76,7 @@ def source_intelligence_artifact_resolver(
     return ExplicitArtifactResolver(artifacts)
 
 
-__all__ = ["source_intelligence_artifact_resolver"]
+__all__ = [
+    "source_intelligence_artifact_resolver",
+    "source_skill_version",
+]
