@@ -14,7 +14,7 @@ from novel_forge.modules.capability_packs.artifacts import (
 
 _SOURCE_SKILLS = {
     "hot-novel-deconstruction": (
-        "1.0",
+        "2.0",
         "skills/hot-novel-deconstruction/SKILL.md",
     ),
     "published-fiction-craft-analysis": (
