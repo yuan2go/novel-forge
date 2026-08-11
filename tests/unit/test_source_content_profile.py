@@ -1,11 +1,15 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
+from novel_forge.modules.capability_packs.artifacts import ArtifactKind
 from novel_forge.modules.source_import import (
     analysis_profile,
     classify_source_content,
     plan_analysis_tasks,
+    source_intelligence_artifact_resolver,
 )
 
 
@@ -136,3 +140,25 @@ def test_auto_profile_cannot_reach_analysis_planner_unresolved() -> None:
             source_document_id="source:auto",
             chunks=({"asset_version_id": "chunk:v1", "chunk_index": 0},),
         )
+
+
+def test_source_skill_catalog_resolves_exact_repository_artifacts() -> None:
+    repository_root = Path(__file__).resolve().parents[2]
+    resolver = source_intelligence_artifact_resolver(repository_root)
+
+    classic = resolver.resolve(
+        ArtifactKind.SKILL,
+        "classic-literary-depth-analysis",
+        "1.0",
+    )
+    professional = resolver.resolve(
+        ArtifactKind.SKILL,
+        "multidisciplinary-knowledge",
+        "1.0",
+    )
+
+    assert classic.source_identity == "skills/classic-literary-depth-analysis/SKILL.md"
+    assert professional.source_identity == "skills/multidisciplinary-knowledge/SKILL.md"
+    assert classic.content_hash.startswith("sha256:")
+    assert professional.content_hash.startswith("sha256:")
+    assert classic.content_hash != professional.content_hash
