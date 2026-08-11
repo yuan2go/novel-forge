@@ -3,6 +3,7 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from typing import Any
 import unittest
 
 from novel_forge.api.authority_dependencies import build_chapter_authority_application
@@ -248,7 +249,7 @@ class SourceContentRoutingPostgresTests(unittest.TestCase):
             self.assertEqual(cursor.fetchone()[0], transform_count)
             self._assert_profiled_analyzers(cursor)
 
-    def _create_import(self, profile_id: str, suffix: str) -> dict[str, object]:
+    def _create_import(self, profile_id: str, suffix: str) -> dict[str, Any]:
         policy = SourceImportPolicy(analysis_profile=profile_id)
         return self.application.create_import(
             CreateSourceImportCommand(
@@ -270,7 +271,7 @@ class SourceContentRoutingPostgresTests(unittest.TestCase):
             )
         )
 
-    def _assert_profiled_analyzers(self, cursor: object) -> None:
+    def _assert_profiled_analyzers(self, cursor: Any) -> None:
         cursor.execute(
             """
             SELECT observation.analyzer_id
