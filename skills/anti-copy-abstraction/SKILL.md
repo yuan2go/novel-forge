@@ -1,80 +1,59 @@
 ---
 name: anti-copy-abstraction
-description: Use when converting concrete reference-work analysis into reusable abstract mechanisms, writing principles, and review checks that cannot be used to reconstruct or imitate a protected work.
+description: Convert governed source Observations into reusable abstract Knowledge Candidates that cannot reconstruct or imitate a protected work.
 ---
 
 # Anti Copy Abstraction
 
 ## Novel OS Runtime Contract
 
-- 需要进入生产链路的输出必须落到 schema-backed asset，而不是只停留在对话文本。
-- 产物必须保留 `project_id`、输入引用、来源边界、质量状态；涉及 Agent/Workflow 时必须保留 `trace_id` 或 handoff 依据。
-- 生成、审稿、修订、发布、复盘相关上下文必须通过 Context Builder / Knowledge Pack / ReviewIssue / GateResult 的现有边界。
-- 禁止 raw source text、参考作品表达、`source_chunk.raw_text` 或未抽象材料进入 prose、publish、recap 和 feedback backflow。
-- Markdown 输出格式只作为 operator handoff；写入工程时必须映射到对应资产 schema、测试或报告路径。
+- Observation 只描述来源中观察到什么；Knowledge Candidate 才描述经过抽象后可复用什么，两者不得共用资产或状态。
+- 正式输入必须是已提交的 Observation AssetVersion，并保留 EvidenceSpan lineage；不得重新读取 raw SourceChunk、文件路径或外部来源。
+- Candidate 未经过 MKAOS Governance/Approval 前不得成为 KnowledgeCard，也不得进入生成 Context。
 
-## 适用场景
+## Source MKAOS Candidate Contract
 
-- 热门小说拆解后，进入题材、世界观、人物、大纲或正文前。
-- 拆解报告包含具体桥段、人物关系、独特反转或世界设定风险。
-- 审稿时怀疑产物过度接近已有作品。
+当 stage 为 `source.mkaos.extract`，本节优先于 standalone 报告格式：
 
-## 输入要求
+1. 只使用 supplied Observation 及其冻结 lineage metadata，不请求文件系统、Web、MCP 或 raw source。
+2. 删除或泛化人物名、地点、专有名词、事件顺序、标志性场景、语言纹理、独特反转和可识别组合。
+3. 只保留跨作品成立的因果机制、约束、冲突生成器、可信度规则和审稿检查。
+4. 输出必须严格匹配冻结 MKAOS schema，且只包含：
+   - `concept_name`
+   - `discipline`
+   - `abstract_principle`
+   - `constraints`
+   - `conflict_generators`
+   - `review_checks`
+   - `copyright_boundaries`
+5. 不得输出 Markdown、反抄袭报告、Source quote、EvidenceSpan 原文、KnowledgeCard ID、approval decision 或正文。
+6. `copyright_boundaries` 必须说明哪些具体表达、设定、场景组合、案例或来源组织方式不能迁移。
+7. 如果 Observation 本身不足以支持可复用机制，Candidate 应保持保守、收窄适用条件，而不是发明机制。
 
-- 拆解报告、来源标识、可复用点和禁止复用点。
-- 任何具体剧情、台词、人物组合和独特设定都必须标记为高风险。
-- 不接受无来源的“爆款套路”直接进入生成链路。
-- 正式输入必须是已提交的 Observation AssetVersion，并保留其 EvidenceSpan lineage；不得将 raw SourceChunk 内容重新复制进抽象 Prompt。
+## 抽象方法
 
-## Observation 到 Candidate 合同
+1. 区分表达、具体事件、设定、结构功能、因果机制和读者/系统效果。
+2. 删除表达、具体事件、独特设定和可识别人物组合。
+3. 将具体桥段映射成类型无关的状态变化、约束或决策机制。
+4. 为原则补充适用条件、失效条件和安全/版权边界。
+5. 把可检验的风险转成 review checks，而不是模糊“注意原创”。
+6. 对专业知识，保留概念和因果边界，不保留来源特有案例与表达。
+7. 对文学作品，保留 craft/function，不保留作者识别性语言或 set piece。
 
-- `Observation` 只说明来源中观察到什么，`Knowledge Candidate` 才说明经过抽象后可复用什么；两者不得共用一个资产或状态。
-- 一个 Observation 可以在不同 abstraction policy / schema / prompt / model 版本下产生多个 Candidate；旧 Candidate 必须保留并可被 rejected、superseded 或 deprecated。
-- Candidate 只允许保存跨作品成立的因果机制、约束、冲突生成器和审稿检查，不得保存可复原单一作品的角色组合、事件序列、专有名词或表达。
-- Candidate 必须引用 Observation AssetVersion；正式 API 不接受只有 SourceChunk 的 Candidate。
+## Standalone / Operator Handoff
 
-## 操作流程
-
-1. 将输入分成表达、剧情、设定、结构、机制和读者效果。
-2. 删除或标记表达、具体剧情、独特设定和可识别人物组合。
-3. 保留结构、机制和读者效果。
-4. 将具体桥段改写为类型无关的因果机制。
-5. 为每条原则补适用范围、禁用范围和审稿检查项。
-6. 输出 schema-backed Knowledge Candidate，进入 Validation、Source Isolation、Originality Gate 与人工 Approval；未批准前不得成为 KnowledgeCard。
-
-## 输出格式
-
-```markdown
-# 反抄袭抽象报告
-
-## 输入来源
-## 高风险具体内容
-## 删除或禁用内容
-## 抽象机制
-## 可复用创作原则
-## 适用题材
-## 审稿检查项
-## 原创风险等级
-## 是否允许进入下游
-```
+脱离 Canonical Source MKAOS Runtime 时可以生成人工阅读用反抄袭抽象报告，但该报告不是 Knowledge Authority。正式生产必须重新进入 Observation → Candidate → Governance → KnowledgeCard。
 
 ## 质量标准
 
-- 输出不能让创作者复原原作品的具体桥段。
-- 每条抽象原则必须脱离单一作品语境也能成立。
-- 必须明确哪些内容不能进入 prompt、正文、素材库和生成输出。
-- 必须能被 `quality-review` 用作原创风险检查依据。
-- 必须声明 abstraction policy version、input Observation versions、confidence、copyright boundary 和所有 rejected mechanisms。
+- Candidate 不能让创作者据此复原原作品的具体桥段或表达。
+- 每条抽象原则脱离单一来源语境仍成立，并说明适用/禁用范围。
+- copyright boundary、review checks 与 constraints 必须具体可执行。
+- 不得把“换名字、换地点”视为有效抽象。
 
 ## 禁止事项
 
-- 禁止保留可识别人物组合。
-- 禁止保留独特反转和具体案件结构。
+- 禁止保留可识别人物组合、标志性场景、独特反转或具体案件结构。
 - 禁止用“致敬”“参考风格”规避版权边界。
-- 禁止将拆解结果直接交给 `prose-generation`。
-
-## 与其他模块的关系
-
-- 上游：`hot-novel-deconstruction`、`data/decompositions/`。
-- 下游：`data/knowledge/`、`data/materials/`、`quality-review`。
-- Agent：Knowledge Agent、Review Agent、Quality Agent。
+- 禁止把 Observation 直接交给 prose-generation。
+- 禁止绕过 MKAOS Approval 把 Candidate 变成生产知识。
