@@ -199,11 +199,7 @@ def plan_analysis_tasks(
         start = window_start + 1
         end = window_start + len(window)
         for dimension in profile.dimensions:
-            skill_id = (
-                "anti-copy-abstraction"
-                if dimension == "originality_copyright_risk"
-                else profile.analysis_skill_id
-            )
+            skill_id = profile.analysis_skill_id
             analyzer = AnalyzerContract(
                 analyzer_id=f"novel-forge.{profile.profile_id}.{dimension}",
                 analyzer_version="1.0",
