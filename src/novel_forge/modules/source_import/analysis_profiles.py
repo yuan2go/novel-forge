@@ -70,17 +70,17 @@ _PROFILES = {
     # conservative upper bound used by import preview cost estimation.
     "auto": SourceAnalysisProfile(
         profile_id="auto",
-        profile_version="1.0",
+        profile_version="2.0",
         dimensions=_WEB_NOVEL_DIMENSIONS,
         window_chunks=4,
         max_analyzer_calls=2_000,
         mkaos_capability="mkaos.knowledge.extract",
-        abstraction_policy_version="auto-routing.1.0",
+        abstraction_policy_version="auto-routing.2.0",
         analysis_skill_id="source-content-profiling",
     ),
     "web_novel": SourceAnalysisProfile(
         profile_id="web_novel",
-        profile_version="1.0",
+        profile_version="2.0",
         dimensions=_WEB_NOVEL_DIMENSIONS,
         window_chunks=4,
         max_analyzer_calls=2_000,
@@ -90,7 +90,7 @@ _PROFILES = {
     ),
     "published_fiction": SourceAnalysisProfile(
         profile_id="published_fiction",
-        profile_version="1.0",
+        profile_version="2.0",
         dimensions=(
             "structure",
             "conflict",
@@ -109,7 +109,7 @@ _PROFILES = {
     ),
     "classic_literature": SourceAnalysisProfile(
         profile_id="classic_literature",
-        profile_version="1.0",
+        profile_version="2.0",
         dimensions=(
             "structure",
             "conflict",
@@ -128,7 +128,7 @@ _PROFILES = {
     ),
     "writing_theory": SourceAnalysisProfile(
         profile_id="writing_theory",
-        profile_version="1.0",
+        profile_version="2.0",
         dimensions=(
             "structure",
             "pacing",
@@ -145,7 +145,7 @@ _PROFILES = {
     ),
     "platform_rules": SourceAnalysisProfile(
         profile_id="platform_rules",
-        profile_version="1.0",
+        profile_version="2.0",
         dimensions=(
             "reader_promise",
             "serialization",
@@ -160,7 +160,7 @@ _PROFILES = {
     ),
     "professional_knowledge": SourceAnalysisProfile(
         profile_id="professional_knowledge",
-        profile_version="1.0",
+        profile_version="2.0",
         dimensions=(
             "structure",
             "conflict",
