@@ -49,6 +49,18 @@ def test_policy_blocks_submodule_symlink_extension_and_large_file() -> None:
     assert policy.path_decision("book/a.md", mode="100644", object_type="blob", size=1025) == ("BLOCKED", "file_size_policy")
 
 
+def test_policy_v2_changes_snapshot_identity_without_forcing_rechunk() -> None:
+    current = SourceImportPolicy(analysis_profile="auto")
+    legacy = SourceImportPolicy(
+        policy_version="source-import-policy.v1",
+        analysis_profile="auto",
+    )
+
+    assert current.policy_version == "source-import-policy.v2"
+    assert current.policy_hash != legacy.policy_hash
+    assert current.chunking_policy_hash == legacy.chunking_policy_hash
+
+
 def test_manifest_diff_handles_unchanged_modified_rename_removed_and_blocked() -> None:
     previous = (
         _file("same.md", "1" * 40),
