@@ -838,7 +838,56 @@ class SourceDeconstructionApplication:
                                 str(descendant["asset_type"])
                             ),
                             "scale": str(requested["scope"]["scale"]),
+                            "depth": int(descendant["depth"]),
                         }
+                source_chunk_ids: list[str] = []
+                evidence_spans: list[dict[str, Any]] = []
+                lower_observation_ids: list[str] = []
+                if current is not None:
+                    current_content = dict(current["content"])
+                    evidence_spans = list(
+                        current_content.get("evidence_spans") or []
+                    )
+                    current_lineage = dict(current_content.get("lineage") or {})
+                    lower_observation_ids = list(
+                        current_lineage.get(
+                            "input_observation_asset_version_ids"
+                        )
+                        or []
+                    )
+                    source_chunk_ids = sorted(
+                        {
+                            str(span["source_chunk_asset_version_id"])
+                            for span in evidence_spans
+                        }
+                    )
+                elif payload["source_transform_id"]:
+                    repository.cursor.execute(
+                        """
+                        SELECT asset_version_id
+                        FROM authority_source_chunk
+                        WHERE project_id=%s AND source_transform_id=%s
+                        ORDER BY chunk_index
+                        """,
+                        [worker.project_id, payload["source_transform_id"]],
+                    )
+                    source_chunk_ids = [
+                        str(row[0]) for row in repository.cursor.fetchall()
+                    ]
+                execution_spec = {
+                    "schema_version": "source-reprocessing-execution.v1",
+                    "action": action,
+                    "target_key": requested["target_key"],
+                    "current_asset_version_id": (
+                        current["asset_version_id"] if current else ""
+                    ),
+                    "source_transform_id": payload["source_transform_id"],
+                    "scope": requested["scope"],
+                    "analyzer": requested["analyzer"],
+                    "source_chunk_asset_version_ids": source_chunk_ids,
+                    "evidence_spans": evidence_spans,
+                    "input_observation_asset_version_ids": lower_observation_ids,
+                }
                 items.append(
                     {
                         "target_key": requested["target_key"],
@@ -850,27 +899,119 @@ class SourceDeconstructionApplication:
                         ),
                         "desired_analyzer_contract_hash": desired_hash,
                         "reason": reason,
+                        "dependency_ids": [],
+                        "execution_spec": execution_spec,
                     }
                 )
+            derived_target_keys = {
+                asset_version_id: stable_hash(
+                    {
+                        "projection_asset_version_id": asset_version_id,
+                        "selector_key": invalidation["selector_key"],
+                    }
+                )
+                for asset_version_id, invalidation in invalidations.items()
+                if invalidation["derived_action"]
+            }
             for asset_version_id, invalidation in sorted(invalidations.items()):
                 if not invalidation["derived_action"]:
                     continue
+                prior_depths = [
+                    int(other.get("depth") or 0)
+                    for other in invalidations.values()
+                    if other["derived_action"]
+                    and other["selector_key"] == invalidation["selector_key"]
+                    and int(other.get("depth") or 0)
+                    < int(invalidation.get("depth") or 0)
+                ]
+                nearest_depth = max(prior_depths, default=0)
+                dependencies = sorted(
+                    derived_target_keys[other_id]
+                    for other_id, other in invalidations.items()
+                    if other["derived_action"]
+                    and other["selector_key"] == invalidation["selector_key"]
+                    and int(other.get("depth") or 0) == nearest_depth
+                )
+                if not dependencies:
+                    dependencies = [invalidation["selector_key"]]
+                derived_version = repository.asset_versions(
+                    project_id=worker.project_id,
+                    asset_version_ids=(asset_version_id,),
+                )[asset_version_id]
+                derived_content = dict(derived_version["content"])
+                derived_action = invalidation["derived_action"]
+                derived_spec: dict[str, Any] = {
+                    "schema_version": "source-reprocessing-execution.v1",
+                    "action": derived_action,
+                    "current_asset_version_id": asset_version_id,
+                    "owner_asset_type": derived_version["asset_type"],
+                    "depends_on_target_key": invalidation["selector_key"],
+                }
+                if derived_action == "RECOMPUTE_AGGREGATE":
+                    lineage = dict(derived_content.get("lineage") or {})
+                    derived_spec.update(
+                        {
+                            "scope": dict(derived_content["scope"]),
+                            "analyzer": dict(derived_content["analyzer"]),
+                            "source_chunk_asset_version_ids": [],
+                            "evidence_spans": list(
+                                derived_content.get("evidence_spans") or []
+                            ),
+                            "input_observation_asset_version_ids": list(
+                                lineage.get(
+                                    "input_observation_asset_version_ids"
+                                )
+                                or []
+                            ),
+                        }
+                    )
+                elif derived_action == "REABSTRACT":
+                    observation_ids = list(
+                        derived_content.get("observation_asset_version_ids")
+                        or dict(derived_content.get("lineage") or {}).get(
+                            "observation_asset_version_ids"
+                        )
+                        or []
+                    )
+                    execution_id = str(
+                        dict(derived_content.get("execution_evidence") or {}).get(
+                            "asset_version_id"
+                        )
+                        or ""
+                    )
+                    execution_versions = repository.asset_versions(
+                        project_id=worker.project_id,
+                        asset_version_ids=(execution_id,),
+                    )
+                    execution_content = dict(
+                        execution_versions.get(execution_id, {}).get("content")
+                        or {}
+                    )
+                    derived_spec.update(
+                        {
+                            "observation_asset_version_ids": observation_ids,
+                            "capability": execution_content.get("capability")
+                            or "mkaos.knowledge.extract",
+                            "abstraction_policy_version": derived_content[
+                                "abstraction_policy_version"
+                            ],
+                        }
+                    )
+                else:
+                    derived_spec["requires_owner_action"] = True
                 items.append(
                     {
-                        "target_key": stable_hash(
-                            {
-                                "projection_asset_version_id": asset_version_id,
-                                "selector_key": invalidation["selector_key"],
-                            }
-                        ),
+                        "target_key": derived_target_keys[asset_version_id],
                         "dimension": invalidation["dimension"],
                         "scale": invalidation["scale"],
-                        "action": invalidation["derived_action"],
+                        "action": derived_action,
                         "current_asset_version_id": asset_version_id,
                         "desired_analyzer_contract_hash": stable_hash(
                             {"projection": "rebuild", "cause": payload["cause_type"]}
                         ),
                         "reason": "downstream lineage depends on a stale Observation",
+                        "dependency_ids": dependencies,
+                        "execution_spec": derived_spec,
                     }
                 )
             plan_hash = stable_hash(items)

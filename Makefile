@@ -113,13 +113,13 @@ authority-down:
 	$(AUTHORITY_COMPOSE) down --timeout 45
 
 authority-build:
-	$(AUTHORITY_COMPOSE) build authority-migration authority-api agent-authority-worker chapter-authority-worker content-authority-worker source-authority-worker mkaos-authority-worker book-authority-worker outbox-worker maintenance-worker
+	$(AUTHORITY_COMPOSE) build authority-migration authority-api agent-authority-worker chapter-authority-worker content-authority-worker source-authority-worker source-import-worker mkaos-authority-worker book-authority-worker outbox-worker maintenance-worker
 
 authority-smoke:
 	PYTHONPATH=$(PYTHONPATH) $(PYTHON) scripts/verify_authority_compose.py
 
 authority-logs:
-	$(AUTHORITY_COMPOSE) logs -f authority-api agent-authority-worker chapter-authority-worker content-authority-worker source-authority-worker mkaos-authority-worker book-authority-worker outbox-worker maintenance-worker
+	$(AUTHORITY_COMPOSE) logs -f authority-api agent-authority-worker chapter-authority-worker content-authority-worker source-authority-worker source-import-worker mkaos-authority-worker book-authority-worker outbox-worker maintenance-worker
 
 authority-test: lint lint-authority lint-ratchet architecture-manifests-check architecture-fitness-check head-integrity-check
 	PYTHONPATH=$(PYTHONPATH) $(PYTEST) tests/unit tests/architecture tests/acceptance

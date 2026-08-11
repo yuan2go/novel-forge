@@ -552,16 +552,21 @@ class SourceIntelligenceRepository:
                 reprocessing_plan_asset_version_id, project_id, ordinal,
                 target_key, dimension, scale, action,
                 current_asset_version_id, desired_analyzer_contract_hash,
-                reason, created_by_operation_id
+                reason, dependency_ids, execution_spec, created_by_operation_id
             ) VALUES (
                 %(reprocessing_plan_asset_version_id)s, %(project_id)s,
                 %(ordinal)s, %(target_key)s, %(dimension)s, %(scale)s,
                 %(action)s, %(current_asset_version_id)s,
                 %(desired_analyzer_contract_hash)s, %(reason)s,
+                %(dependency_ids)s, %(execution_spec)s,
                 %(created_by_operation_id)s
             )
             """,
-            row,
+            {
+                **row,
+                "dependency_ids": Jsonb(row.get("dependency_ids") or []),
+                "execution_spec": Jsonb(row.get("execution_spec") or {}),
+            },
         )
 
 

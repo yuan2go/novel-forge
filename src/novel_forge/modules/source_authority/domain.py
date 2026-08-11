@@ -58,7 +58,6 @@ def validate_source_chunk_candidates(
             "SOURCE_CHUNK_COUNT_INVALID",
             "Source transform requires between 1 and 10000 chunks",
         )
-    blob_ids: set[str] = set()
     previous_end = 0
     total_bytes = 0
     for expected_index, candidate in enumerate(candidates):
@@ -67,9 +66,9 @@ def validate_source_chunk_candidates(
                 "SOURCE_CHUNK_INDEX_INVALID",
                 "Source chunk indexes must be contiguous and start at zero",
             )
-        if not candidate.blob_id.strip() or candidate.blob_id in blob_ids:
+        if not candidate.blob_id.strip():
             raise KernelError(
-                "SOURCE_CHUNK_BLOB_INVALID", "Source chunk Blob identities must be unique"
+                "SOURCE_CHUNK_BLOB_INVALID", "Source chunk Blob identity is required"
             )
         if not _SHA256.fullmatch(candidate.content_hash):
             raise KernelError(
@@ -93,7 +92,6 @@ def validate_source_chunk_candidates(
                 "SOURCE_CHUNK_SPAN_INVALID",
                 "Source chunk evidence spans must be ordered, non-overlapping and in bounds",
             )
-        blob_ids.add(candidate.blob_id)
         previous_end = candidate.source_byte_end
         total_bytes += candidate.byte_size
     if total_bytes > source_size * 4:

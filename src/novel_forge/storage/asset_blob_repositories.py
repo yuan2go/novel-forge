@@ -187,7 +187,7 @@ class AssetBlobRepository:
             [decision, asset_version_id],
         )
 
-    def reserve_blob(self, row: dict[str, Any]) -> None:
+    def reserve_blob(self, row: dict[str, Any]) -> bool:
         parameters = {
             **row,
             "retention_class": str(row.get("retention_class") or "STANDARD"),
@@ -205,9 +205,12 @@ class AssetBlobRepository:
                 %(expected_hash)s, %(expected_size)s, %(media_type)s, 'PENDING_UPLOAD',
                 %(retention_class)s, %(encryption_metadata)s
             )
+            ON CONFLICT (blob_id) DO NOTHING
+            RETURNING blob_id
             """,
             parameters,
         )
+        return self.cursor.fetchone() is not None
 
     def blob_for_update(self, blob_id: str) -> dict[str, Any]:
         self.cursor.execute(

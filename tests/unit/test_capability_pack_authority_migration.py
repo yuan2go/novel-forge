@@ -14,7 +14,22 @@ from novel_forge.storage.migrations.versions import (
     v20260811_0074_longform_native_intelligence as longform_migration,
 )
 from novel_forge.storage.migrations.versions import (
-    v20260811_0075_source_deconstruction_intelligence as latest_migration,
+    v20260811_0075_source_deconstruction_intelligence as deconstruction_migration,
+)
+from novel_forge.storage.migrations.versions import (
+    v20260811_0076_source_import_runtime as source_import_migration,
+)
+from novel_forge.storage.migrations.versions import (
+    v20260811_0077_source_reprocessing_execution as reprocessing_migration,
+)
+from novel_forge.storage.migrations.versions import (
+    v20260811_0078_reprocessing_action_expansion as action_migration,
+)
+from novel_forge.storage.migrations.versions import (
+    v20260811_0079_source_import_scope_closure as scope_migration,
+)
+from novel_forge.storage.migrations.versions import (
+    v20260811_0080_source_snapshot_governance_identity as latest_migration,
 )
 
 
@@ -30,7 +45,12 @@ def test_capability_pack_authority_remains_in_linear_migration_chain() -> None:
     assert migration.DOWN_REVISION == foundation_migration.MIGRATION_ID
     assert core_migration.DOWN_REVISION == migration.MIGRATION_ID
     assert longform_migration.DOWN_REVISION == core_migration.MIGRATION_ID
-    assert latest_migration.DOWN_REVISION == longform_migration.MIGRATION_ID
+    assert deconstruction_migration.DOWN_REVISION == longform_migration.MIGRATION_ID
+    assert source_import_migration.DOWN_REVISION == deconstruction_migration.MIGRATION_ID
+    assert reprocessing_migration.DOWN_REVISION == source_import_migration.MIGRATION_ID
+    assert action_migration.DOWN_REVISION == reprocessing_migration.MIGRATION_ID
+    assert scope_migration.DOWN_REVISION == action_migration.MIGRATION_ID
+    assert latest_migration.DOWN_REVISION == scope_migration.MIGRATION_ID
     assert LATEST_MIGRATION_ID == latest_migration.MIGRATION_ID
     assert migration.FORWARD_ONLY is True
 

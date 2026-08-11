@@ -65,6 +65,7 @@ industrial-graph = [
 [project.scripts]
 novel-forge = "novel_forge.cli:main"
 novel-forge-source-authority-worker = "novel_forge.workers.source_authority:cli"
+novel-forge-source-import-worker = "novel_forge.workers.source_import:main"
 novel-forge-mkaos-authority-worker = "novel_forge.workers.mkaos_authority:cli"
 novel-forge-book-authority-worker = "novel_forge.workers.book_authority:cli"
 novel-forge-agent-authority-worker = "novel_forge.workers.agent_authority:main"

@@ -26,6 +26,7 @@ from novel_forge.api.authority_dependencies import (
     chapter_capability_pack_compilation_report,
 )
 from novel_forge.infrastructure.settings import IndustrialSettings
+from novel_forge.infrastructure.environment import RuntimeEnvironment
 from novel_forge.modules.chapter_authority.application import ChapterAuthorityApplication
 from novel_forge.modules.chapter_authority.queries import ChapterAuthorityQuery
 from novel_forge.modules.content_authority import ContentAuthorityApplication, ContentAuthorityQuery
@@ -57,6 +58,10 @@ from novel_forge.modules.source_authority import (
     SourceAuthorityApplication,
     SourceAuthorityQuery,
 )
+from novel_forge.modules.source_import import (
+    SourceImportApplication,
+    SourceImportQuery,
+)
 from novel_forge.modules.mkaos_authority import (
     MkaosAuthorityApplication,
     MkaosAuthorityQuery,
@@ -81,6 +86,7 @@ REQUIRED_RUNTIME_GROUPS = (
     "chapter",
     "content",
     "source",
+    "source_import",
     "mkaos",
     "book",
     "outbox",
@@ -133,6 +139,8 @@ class AuthorityApiServices:
     task_authority_query: AuthorityTaskQuery
     source_authority_application: SourceAuthorityApplication
     source_authority_query: SourceAuthorityQuery
+    source_import_application: SourceImportApplication
+    source_import_query: SourceImportQuery
     mkaos_authority_application: MkaosAuthorityApplication
     mkaos_authority_query: MkaosAuthorityQuery
     book_design_authority_application: BookDesignAuthorityApplication
@@ -192,6 +200,12 @@ def create_authority_app(settings: IndustrialSettings):
         chapter_application=application,
     )
     build_id, commit_sha = authority_release_identity()
+    runtime_environment = RuntimeEnvironment.parse(
+        str(os.environ.get("NOVEL_FORGE_ENVIRONMENT") or settings.environment)
+    )
+    source_fixture_root = str(
+        os.environ.get("NOVEL_FORGE_SOURCE_IMPORT_FILE_FIXTURE_ROOT") or ""
+    ).strip()
     services = AuthorityApiServices(
         chapter_application=application,
         chapter_query=build_chapter_authority_query(settings),
@@ -215,6 +229,15 @@ def create_authority_app(settings: IndustrialSettings):
             commit_sha=commit_sha,
         ),
         source_authority_query=SourceAuthorityQuery(settings.database_url),
+        source_import_application=SourceImportApplication(
+            settings.database_url,
+            application_build_id=build_id,
+            commit_sha=commit_sha,
+            allow_file_repositories=(
+                runtime_environment.fixture_allowed and bool(source_fixture_root)
+            ),
+        ),
+        source_import_query=SourceImportQuery(settings.database_url),
         mkaos_authority_application=MkaosAuthorityApplication(
             settings.database_url,
             application_build_id=build_id,
@@ -270,6 +293,9 @@ def create_authority_app(settings: IndustrialSettings):
     from novel_forge.api.routers.source_authority import (
         create_router as create_source_router,
     )
+    from novel_forge.api.routers.source_import import (
+        create_router as create_source_import_router,
+    )
     from novel_forge.api.routers.mkaos_authority import (
         create_router as create_mkaos_router,
     )
@@ -318,6 +344,15 @@ def create_authority_app(settings: IndustrialSettings):
     )
     app.include_router(
         create_source_router(
+            ProductRouterContext(
+                app_settings=settings,
+                models=product_model_map(),
+                services=services,
+            )
+        )
+    )
+    app.include_router(
+        create_source_import_router(
             ProductRouterContext(
                 app_settings=settings,
                 models=product_model_map(),

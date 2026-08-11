@@ -30,6 +30,7 @@ class AuthorityComposeContractTests(unittest.TestCase):
             "chapter-authority-worker",
             "content-authority-worker",
             "source-authority-worker",
+            "source-import-worker",
             "mkaos-authority-worker",
             "book-authority-worker",
             "agent-authority-worker",

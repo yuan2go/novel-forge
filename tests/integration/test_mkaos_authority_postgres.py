@@ -300,6 +300,19 @@ class MkaosAuthorityPostgresTests(unittest.TestCase):
             principal=self.principal,
         )
         self.assertNotEqual(replacement["asset_version_id"], pack["asset_version_id"])
+        pack_diff = self.query.diff_packs(
+            project_id=self.project_id,
+            knowledge_pack_id=replacement["knowledge_pack_id"],
+            against_knowledge_pack_id=pack["knowledge_pack_id"],
+        )
+        self.assertTrue(pack_diff["directly_supersedes_baseline"])
+        self.assertEqual(pack_diff["added"], [])
+        self.assertEqual(pack_diff["removed"], [])
+        self.assertEqual(len(pack_diff["changed"]), 1)
+        self.assertEqual(
+            pack_diff["changed"][0]["before"]["usage_role"], "CONSTRAINT"
+        )
+        self.assertEqual(pack_diff["changed"][0]["after"]["usage_role"], "CHECK")
 
         with transaction() as connection:
             cursor = connection.cursor()

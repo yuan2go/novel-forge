@@ -290,6 +290,77 @@ class AuthoritySourceReprocessingPlanRequest(BaseModel):
     correlation_id: str = ""
 
 
+class ProductSourceImportSourceRequest(BaseModel):
+    type: str = Field(pattern=r"^github_repository$")
+    repository: str = Field(min_length=1, max_length=2_000)
+    ref: str = Field(default="HEAD", min_length=1, max_length=255)
+
+
+class ProductSourceImportPolicyRequest(BaseModel):
+    policy_version: str = "source-import-policy.v1"
+    include_globs: list[str] = Field(
+        default_factory=lambda: ["**/*", "*"], min_length=1, max_length=100
+    )
+    exclude_globs: list[str] = Field(
+        default_factory=lambda: [
+            ".git/**",
+            "**/.git/**",
+            "node_modules/**",
+            "**/node_modules/**",
+            "**/__pycache__/**",
+        ],
+        max_length=100,
+    )
+    extension_allowlist: list[str] = Field(
+        default_factory=lambda: [
+            ".txt",
+            ".text",
+            ".md",
+            ".markdown",
+            ".json",
+            ".jsonl",
+            ".yaml",
+            ".yml",
+        ],
+        min_length=1,
+        max_length=100,
+    )
+    max_file_bytes: int = Field(default=8_000_000, gt=0)
+    max_repository_bytes: int = Field(default=500_000_000, gt=0)
+    max_files: int = Field(default=20_000, gt=0, le=100_000)
+    max_chunk_bytes: int = Field(default=12_000, gt=0, le=100_000)
+    allow_symlinks: bool = False
+    allow_submodules: bool = False
+    allow_git_lfs: bool = False
+    normalization_version: str = "source-normalization.v1"
+    chunking_version: str = "source-structural-chunking.v1"
+    analysis_profile: str = "writing_theory"
+
+
+class ProductSourceImportRequest(BaseModel):
+    project_id: str = Field(min_length=1)
+    workspace_id: str = Field(min_length=1)
+    source: ProductSourceImportSourceRequest
+    policy: ProductSourceImportPolicyRequest = Field(
+        default_factory=ProductSourceImportPolicyRequest
+    )
+    rights_authorization: str = Field(min_length=1)
+    license_name: str = ""
+    copyright_boundary: str = ""
+    idempotency_key: str = Field(min_length=1, max_length=255)
+    trace_id: str = ""
+    correlation_id: str = ""
+
+
+class ProductSourceReprocessingApplyRequest(BaseModel):
+    project_id: str = Field(min_length=1)
+    workspace_id: str = Field(min_length=1)
+    reprocessing_plan_asset_version_id: str = Field(min_length=1)
+    idempotency_key: str = Field(min_length=1)
+    trace_id: str = ""
+    correlation_id: str = ""
+
+
 class AuthorityMkaosEvidenceSpanRequest(BaseModel):
     source_chunk_asset_version_id: str = Field(min_length=1)
     chunk_byte_start: int = Field(ge=0)
@@ -2256,6 +2327,8 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "AuthorityOutboxRecoveryRequest": AuthorityOutboxRecoveryRequest,
         "AuthoritySourceDocumentRegisterRequest": AuthoritySourceDocumentRegisterRequest,
         "AuthoritySourceTransformCommitRequest": AuthoritySourceTransformCommitRequest,
+        "ProductSourceImportRequest": ProductSourceImportRequest,
+        "ProductSourceReprocessingApplyRequest": ProductSourceReprocessingApplyRequest,
         "AuthorityMkaosKnowledgeCandidateRequest": AuthorityMkaosKnowledgeCandidateRequest,
         "AuthorityMkaosKnowledgeApprovalRequest": AuthorityMkaosKnowledgeApprovalRequest,
         "AuthorityMkaosKnowledgePackRequest": AuthorityMkaosKnowledgePackRequest,

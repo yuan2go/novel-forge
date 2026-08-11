@@ -6,7 +6,7 @@ import hashlib
 import json
 from dataclasses import dataclass
 from typing import Any
-from uuid import uuid4
+from uuid import NAMESPACE_URL, uuid4, uuid5
 
 import psycopg
 
@@ -225,16 +225,28 @@ def reserve_blob(
     media_type: str,
     retention_class: str = "STANDARD",
     encryption_metadata: dict[str, Any] | None = None,
+    stable_identity: str = "",
 ) -> str:
     if not all((provider, object_key, expected_hash, media_type)) or expected_size < 0:
         raise KernelError("COMMAND_SCHEMA_INVALID", "blob reservation is incomplete")
     if retention_class not in {"EPHEMERAL", "STANDARD", "LONG_TERM", "LEGAL_HOLD"}:
         raise KernelError("COMMAND_SCHEMA_INVALID", "unsupported Blob retention_class")
-    blob_id = str(uuid4())
+    if stable_identity and len(stable_identity) > 512:
+        raise KernelError(
+            "COMMAND_SCHEMA_INVALID", "Blob stable_identity exceeds the limit"
+        )
+    blob_id = str(
+        uuid5(
+            NAMESPACE_URL,
+            f"novel-forge:blob:{context.project_id}:{stable_identity}",
+        )
+        if stable_identity
+        else uuid4()
+    )
     with AuthorityUnitOfWork(database_url) as uow:
         repository = uow.repositories.asset_blobs
         _require_context(repository, context)
-        repository.reserve_blob(
+        created = repository.reserve_blob(
             {
                 "blob_id": blob_id,
                 "project_id": context.project_id,
@@ -247,19 +259,37 @@ def reserve_blob(
                 "encryption_metadata": dict(encryption_metadata or {}),
             }
         )
-        _record(
-            repository,
-            context,
-            "authority_blob",
-            blob_id,
-            "blob.reserved",
-            {
+        if created:
+            _record(
+                repository,
+                context,
+                "authority_blob",
+                blob_id,
+                "blob.reserved",
+                {
+                    "provider": provider,
+                    "object_key": object_key,
+                    "retention_class": retention_class,
+                    "encryption_metadata": dict(encryption_metadata or {}),
+                    "stable_identity": bool(stable_identity),
+                },
+            )
+        else:
+            existing = repository.blob_for_update(blob_id)
+            expected = {
+                "project_id": context.project_id,
                 "provider": provider,
                 "object_key": object_key,
+                "expected_hash": expected_hash,
+                "expected_size": expected_size,
+                "media_type": media_type,
                 "retention_class": retention_class,
-                "encryption_metadata": dict(encryption_metadata or {}),
-            },
-        )
+            }
+            if any(existing[key] != value for key, value in expected.items()):
+                raise KernelError(
+                    "BLOB_STABLE_IDENTITY_CONFLICT",
+                    "Blob stable identity is already frozen to different content",
+                )
         uow.commit()
     return blob_id
 

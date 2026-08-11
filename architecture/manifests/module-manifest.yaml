@@ -13,6 +13,7 @@
     {"name": "project-authority", "path": "src/novel_forge/modules/project_authority/__init__.py", "import_path": "novel_forge.modules.project_authority", "owner": "project", "authority_mode": "postgresql"},
     {"name": "task-authority", "path": "src/novel_forge/modules/task_authority/__init__.py", "import_path": "novel_forge.modules.task_authority", "owner": "task", "authority_mode": "postgresql"},
     {"name": "source-authority", "path": "src/novel_forge/modules/source_authority/__init__.py", "import_path": "novel_forge.modules.source_authority", "owner": "source", "authority_mode": "postgresql"},
+    {"name": "source-import", "path": "src/novel_forge/modules/source_import/__init__.py", "import_path": "novel_forge.modules.source_import", "owner": "source", "authority_mode": "postgresql-orchestrator"},
     {"name": "mkaos-authority", "path": "src/novel_forge/modules/mkaos_authority/__init__.py", "import_path": "novel_forge.modules.mkaos_authority", "owner": "mkaos", "authority_mode": "postgresql"},
     {"name": "chapter-authority", "path": "src/novel_forge/modules/chapter_authority/__init__.py", "import_path": "novel_forge.modules.chapter_authority", "owner": "chapter", "authority_mode": "postgresql"},
     {"name": "book-authority", "path": "src/novel_forge/modules/book_authority/__init__.py", "import_path": "novel_forge.modules.book_authority", "owner": "book-coordination", "authority_mode": "postgresql"},

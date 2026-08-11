@@ -80,6 +80,21 @@ from novel_forge.modules.story_planning_runtime import (
 from novel_forge.modules.story_planning_runtime.execution import (
     planning_fixture_response,
 )
+from novel_forge.modules.source_import.execution_contracts import (
+    DECONSTRUCTION_STAGE,
+    MKAOS_STAGE,
+    content_intelligence_fixture_response,
+    validate_content_intelligence_output,
+)
+from novel_forge.modules.source_import.object_reader import (
+    LocalObjectStoreReader,
+    MinioObjectStoreReader,
+)
+from novel_forge.modules.source_import import (
+    GitRepositoryExternalEffectAdapter,
+    PostgresContentIntelligenceExecutionPort,
+    SourceImportApplication,
+)
 from novel_forge.modules.agent_runtime.application import (
     AgentRuntimeAuthorityApplication,
 )
@@ -589,6 +604,28 @@ def build_chapter_authority_application(
     object_root = Path(object_root_value).expanduser()
     if not object_root.is_absolute():
         object_root = settings.root / object_root
+    object_store_backend = (
+        str(values.get("NOVEL_FORGE_AUTHORITY_OBJECT_STORE_BACKEND") or "local")
+        .strip()
+        .lower()
+    )
+    if object_store_backend == "minio":
+        from novel_forge.storage.object_store import MinioObjectStore
+
+        store = MinioObjectStore(settings)
+        object_store_adapter = MinioObjectStoreExternalEffectAdapter(
+            store.client, bucket=settings.minio_artifact_bucket
+        )
+        source_object_reader = MinioObjectStoreReader(
+            store.client, bucket=settings.minio_artifact_bucket
+        )
+    elif object_store_backend == "local" and runtime_environment.fixture_allowed:
+        object_store_adapter = LocalFileObjectStoreAdapter(object_root)
+        source_object_reader = LocalObjectStoreReader(object_root)
+    else:
+        raise RuntimeError(
+            "controlled Authority runtime requires the MinIO object-store backend"
+        )
 
     codex_executable = ""
     codex_workspace: Path | None = None
@@ -648,6 +685,10 @@ def build_chapter_authority_application(
         output_schema: Mapping[str, object],
         value: Mapping[str, object],
     ) -> Mapping[str, object]:
+        if stage in {DECONSTRUCTION_STAGE, MKAOS_STAGE}:
+            return validate_content_intelligence_output(
+                stage, output_schema, value
+            )
         validated = validate_chapter_provider_output_against_schema(
             stage,
             output_schema,
@@ -665,6 +706,8 @@ def build_chapter_authority_application(
         return normalize_model_output(stage, semantic)
 
     def fixture_response(stage: str, inputs: Mapping[str, object]) -> dict[str, object]:
+        if stage in {DECONSTRUCTION_STAGE, MKAOS_STAGE}:
+            return content_intelligence_fixture_response(stage, inputs)
         if stage in {
             "book_plan.generate",
             "volume_plan.generate",
@@ -699,6 +742,7 @@ def build_chapter_authority_application(
                     payload_resolver=PostgresProductionExecutionPayloadResolver(
                         settings.database_url,
                         fixture_response_factory=fixture_response,
+                        source_object_reader=source_object_reader,
                         working_directory=settings.root,
                     ),
                     record_store=store,
@@ -713,6 +757,7 @@ def build_chapter_authority_application(
                     admission=admission,
                     payload_resolver=PostgresProductionExecutionPayloadResolver(
                         settings.database_url,
+                        source_object_reader=source_object_reader,
                         working_directory=codex_workspace,
                     ),
                     record_store=store,
@@ -742,6 +787,7 @@ def build_chapter_authority_application(
                     admission=admission,
                     payload_resolver=PostgresProductionExecutionPayloadResolver(
                         settings.database_url,
+                        source_object_reader=source_object_reader,
                         working_directory=settings.root,
                     ),
                     record_store=store,
@@ -768,25 +814,6 @@ def build_chapter_authority_application(
         ),
         pack_required=controlled,
     )
-    object_store_backend = (
-        str(values.get("NOVEL_FORGE_AUTHORITY_OBJECT_STORE_BACKEND") or "local")
-        .strip()
-        .lower()
-    )
-    if object_store_backend == "minio":
-        from novel_forge.storage.object_store import MinioObjectStore
-
-        store = MinioObjectStore(settings)
-        object_store_adapter = MinioObjectStoreExternalEffectAdapter(
-            store.client, bucket=settings.minio_artifact_bucket
-        )
-    elif object_store_backend == "local" and runtime_environment.fixture_allowed:
-        object_store_adapter = LocalFileObjectStoreAdapter(object_root)
-    else:
-        raise RuntimeError(
-            "controlled Authority runtime requires the MinIO object-store backend"
-        )
-
     return ChapterAuthorityApplication(
         settings.database_url,
         model_adapter=model_gateway,
@@ -959,6 +986,109 @@ def build_content_authority_query(
     if not settings.database_url:
         raise RuntimeError("PostgreSQL database is required for Content Authority")
     return ContentAuthorityQuery(settings.database_url)
+
+
+def build_source_import_application(
+    settings: IndustrialSettings,
+    *,
+    env: Mapping[str, str] | None = None,
+) -> SourceImportApplication:
+    """Compose Source Import over the existing Chapter-owned PEP transport."""
+
+    if settings.storage_authority != "postgresql" or not settings.database_url:
+        raise RuntimeError("Source Import runtime requires PostgreSQL authority")
+    values = os.environ if env is None else env
+    runtime_environment = RuntimeEnvironment.parse(
+        str(values.get("NOVEL_FORGE_ENVIRONMENT") or settings.environment)
+    )
+    build_id, commit_sha = authority_release_identity(env=values)
+    worker_id = str(
+        values.get("NOVEL_FORGE_SOURCE_IMPORT_WORKER_ID") or "source-import-worker"
+    ).strip()
+    chapter = build_chapter_authority_application(settings, env=values)
+    transport = chapter.model_port.adapter
+    if not isinstance(transport, ProductionExecutionGatewayExternalEffectAdapter):
+        raise RuntimeError("Source Import requires ProductionExecutionGateway")
+    object_backend = str(
+        values.get("NOVEL_FORGE_AUTHORITY_OBJECT_STORE_BACKEND") or "local"
+    ).strip().lower()
+    object_root_value = str(
+        values.get("NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT") or ""
+    ).strip()
+    if not object_root_value:
+        raise RuntimeError("Source Import requires an explicit object-store root")
+    object_root = Path(object_root_value).expanduser()
+    if not object_root.is_absolute():
+        object_root = settings.root / object_root
+    if object_backend == "minio":
+        from novel_forge.storage.object_store import MinioObjectStore
+
+        store = MinioObjectStore(settings)
+        object_reader = MinioObjectStoreReader(
+            store.client, bucket=settings.minio_artifact_bucket
+        )
+    elif object_backend == "local" and runtime_environment.fixture_allowed:
+        object_reader = LocalObjectStoreReader(object_root)
+    else:
+        raise RuntimeError(
+            "controlled Source Import requires the MinIO object-store backend"
+        )
+    git_cache_value = str(
+        values.get("NOVEL_FORGE_SOURCE_IMPORT_GIT_CACHE_ROOT") or ""
+    ).strip()
+    if runtime_environment.controlled and not git_cache_value:
+        raise RuntimeError(
+            "controlled Source Import requires NOVEL_FORGE_SOURCE_IMPORT_GIT_CACHE_ROOT"
+        )
+    git_cache = Path(git_cache_value or ".local/source-import/git-cache").expanduser()
+    if not git_cache.is_absolute():
+        git_cache = settings.root / git_cache
+    file_fixture_root = str(
+        values.get("NOVEL_FORGE_SOURCE_IMPORT_FILE_FIXTURE_ROOT") or ""
+    ).strip()
+    allow_file = runtime_environment.fixture_allowed and bool(file_fixture_root)
+    git_adapter = GitRepositoryExternalEffectAdapter(
+        git_cache,
+        allow_file_repositories=allow_file,
+        allowed_file_roots=(Path(file_fixture_root).expanduser(),)
+        if allow_file
+        else (),
+        timeout_seconds=int(
+            values.get("NOVEL_FORGE_SOURCE_IMPORT_GIT_TIMEOUT_SECONDS") or "120"
+        ),
+    )
+    max_cost_per_call = str(
+        values.get("NOVEL_FORGE_PROVIDER_MAX_COST_PER_CALL") or "0"
+    )
+    execution_port = PostgresContentIntelligenceExecutionPort(
+        settings.database_url,
+        transport=transport,
+        worker_id=worker_id,
+        lease_seconds=int(values.get("NOVEL_FORGE_AUTHORITY_LEASE_SECONDS") or "30"),
+        max_cost_per_call=max_cost_per_call,
+        budget_caps={
+            key: str(values[environment_key])
+            for key, environment_key in (
+                ("project_daily", "NOVEL_FORGE_PROJECT_DAILY_PROVIDER_CAP"),
+                ("operation_total", "NOVEL_FORGE_OPERATION_PROVIDER_CAP"),
+                ("provider_project_daily", "NOVEL_FORGE_PROVIDER_DAILY_CAP"),
+                ("global_daily", "NOVEL_FORGE_DAILY_PROVIDER_CAP"),
+            )
+            if str(values.get(environment_key) or "").strip()
+        },
+    )
+    return SourceImportApplication(
+        settings.database_url,
+        application_build_id=build_id,
+        commit_sha=commit_sha,
+        worker_id=worker_id,
+        git_adapter=git_adapter,
+        object_store_adapter=chapter.object_store_adapter,
+        object_store_reader=object_reader,
+        execution_port=execution_port,
+        allow_fixture_intelligence=runtime_environment.fixture_allowed,
+        allow_file_repositories=allow_file,
+    )
 
 
 def build_chapter_authority_query(

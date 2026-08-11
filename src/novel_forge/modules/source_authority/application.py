@@ -95,6 +95,9 @@ class CommitSourceTransformCommand:
     idempotency_key: str
     trace_id: str
     correlation_id: str
+    normalized_blob_id: str = ""
+    normalized_content_hash: str = ""
+    normalized_byte_size: int = 0
 
     def __post_init__(self) -> None:
         required = (
@@ -111,6 +114,13 @@ class CommitSourceTransformCommand:
         )
         if any(not value.strip() for value in required) or not self.chunks:
             raise ValueError("Source transform command is incomplete")
+        normalized_values = (
+            bool(self.normalized_blob_id),
+            bool(self.normalized_content_hash),
+            self.normalized_byte_size > 0,
+        )
+        if any(normalized_values) and not all(normalized_values):
+            raise ValueError("normalized Source identity must be complete")
 
 
 class SourceAuthorityApplication:
@@ -340,6 +350,9 @@ class SourceAuthorityApplication:
                 "chunking_policy_hash": command.chunking_policy_hash,
                 "manifest_hash": manifest_hash,
                 "chunks": [asdict(chunk) for chunk in chunks],
+                "normalized_blob_id": command.normalized_blob_id or None,
+                "normalized_content_hash": command.normalized_content_hash or None,
+                "normalized_byte_size": command.normalized_byte_size or None,
                 "client_idempotency_key": command.idempotency_key,
                 "raw_source_text_in_postgresql": False,
                 "source_chunks_are_evidence_only": True,
@@ -479,17 +492,46 @@ class SourceAuthorityApplication:
                     "SOURCE_TRANSFORM_GOVERNANCE_BLOCKED",
                     "only an eligible governed SourceDocument can be transformed",
                 )
+            normalized_size = command.normalized_byte_size or int(source["source_size"])
             chunks = validate_source_chunk_candidates(
-                command.chunks, source_size=int(source["source_size"])
+                command.chunks, source_size=normalized_size
             )
             blobs = repository.chunk_blobs_for_update(
-                tuple(chunk.blob_id for chunk in chunks)
+                tuple(
+                    dict.fromkeys(
+                        (
+                            *(chunk.blob_id for chunk in chunks),
+                            *((command.normalized_blob_id,) if command.normalized_blob_id else ()),
+                        )
+                    )
+                )
             )
-        if len(blobs) != len(chunks):
+        required_blob_ids = {chunk.blob_id for chunk in chunks}
+        if command.normalized_blob_id:
+            required_blob_ids.add(command.normalized_blob_id)
+        if set(blobs) != required_blob_ids:
             raise KernelError(
                 "SOURCE_CHUNK_BLOB_NOT_FOUND",
-                "one or more Source chunk Blobs do not exist",
+                "one or more normalized or Source chunk Blobs do not exist",
             )
+        if command.normalized_blob_id:
+            normalized_blob = blobs[command.normalized_blob_id]
+            if (
+                normalized_blob["project_id"] != command.project_id
+                or normalized_blob["status"] != "AVAILABLE"
+                or normalized_blob["actual_hash"] != command.normalized_content_hash
+                or normalized_blob["expected_hash"] != command.normalized_content_hash
+                or int(normalized_blob["actual_size"] or -1)
+                != command.normalized_byte_size
+                or int(normalized_blob["expected_size"])
+                != command.normalized_byte_size
+                or normalized_blob["actual_object_key"] != normalized_blob["object_key"]
+                or not str(normalized_blob["media_type"]).startswith("text/")
+            ):
+                raise KernelError(
+                    "SOURCE_NORMALIZED_BLOB_IDENTITY_CONFLICT",
+                    "normalized Source Blob differs from the frozen transform identity",
+                )
         for chunk in chunks:
             blob = blobs[chunk.blob_id]
             if blob["project_id"] != command.project_id:
@@ -517,6 +559,9 @@ class SourceAuthorityApplication:
                 "normalization_version": command.normalization_version,
                 "chunking_version": command.chunking_version,
                 "chunking_policy_hash": command.chunking_policy_hash,
+                "normalized_blob_id": command.normalized_blob_id or None,
+                "normalized_content_hash": command.normalized_content_hash or None,
+                "normalized_byte_size": command.normalized_byte_size or None,
                 "chunks": [asdict(chunk) for chunk in chunks],
             }
         )
@@ -794,18 +839,47 @@ class SourceAuthorityApplication:
                     "SOURCE_TRANSFORM_GOVERNANCE_BLOCKED",
                     "SourceDocument is no longer eligible for transformation",
                 )
+            normalized_size = int(payload.get("normalized_byte_size") or source["source_size"])
             chunks = validate_source_chunk_candidates(
                 tuple(SourceChunkCandidate(**item) for item in payload["chunks"]),
-                source_size=int(source["source_size"]),
+                source_size=normalized_size,
             )
             blobs = repository.chunk_blobs_for_update(
-                tuple(chunk.blob_id for chunk in chunks)
+                tuple(
+                    dict.fromkeys(
+                        (
+                            *(chunk.blob_id for chunk in chunks),
+                            *((str(payload["normalized_blob_id"]),) if payload.get("normalized_blob_id") else ()),
+                        )
+                    )
+                )
             )
-            if len(blobs) != len(chunks):
+            required_blob_ids = {chunk.blob_id for chunk in chunks}
+            if payload.get("normalized_blob_id"):
+                required_blob_ids.add(str(payload["normalized_blob_id"]))
+            if set(blobs) != required_blob_ids:
                 raise KernelError(
                     "SOURCE_CHUNK_BLOB_NOT_FOUND",
                     "one or more Source chunk Blobs disappeared",
                 )
+            if payload.get("normalized_blob_id"):
+                normalized_blob = blobs[str(payload["normalized_blob_id"])]
+                if (
+                    normalized_blob["project_id"] != worker.project_id
+                    or normalized_blob["status"] != "AVAILABLE"
+                    or normalized_blob["actual_hash"]
+                    != payload["normalized_content_hash"]
+                    or normalized_blob["expected_hash"]
+                    != payload["normalized_content_hash"]
+                    or int(normalized_blob["actual_size"] or -1)
+                    != int(payload["normalized_byte_size"])
+                    or normalized_blob["actual_object_key"]
+                    != normalized_blob["object_key"]
+                ):
+                    raise KernelError(
+                        "SOURCE_NORMALIZED_BLOB_IDENTITY_CONFLICT",
+                        "normalized Source Blob no longer matches the transform",
+                    )
             for chunk in chunks:
                 blob = blobs[chunk.blob_id]
                 if (
@@ -829,6 +903,9 @@ class SourceAuthorityApplication:
                     "normalization_version": payload["normalization_version"],
                     "chunking_version": payload["chunking_version"],
                     "chunking_policy_hash": payload["chunking_policy_hash"],
+                    "normalized_blob_id": payload.get("normalized_blob_id"),
+                    "normalized_content_hash": payload.get("normalized_content_hash"),
+                    "normalized_byte_size": payload.get("normalized_byte_size"),
                     "chunks": [asdict(chunk) for chunk in chunks],
                 }
             )
@@ -866,6 +943,15 @@ class SourceAuthorityApplication:
                 "normalization_version": payload["normalization_version"],
                 "chunking_version": payload["chunking_version"],
                 "chunking_policy_hash": payload["chunking_policy_hash"],
+                "normalized_object_reference": (
+                    {
+                        "blob_id": payload["normalized_blob_id"],
+                        "content_hash": payload["normalized_content_hash"],
+                        "size": payload["normalized_byte_size"],
+                    }
+                    if payload.get("normalized_blob_id")
+                    else None
+                ),
                 "manifest_hash": expected_manifest_hash,
                 "chunks": chunk_rows,
                 "source_policy": {
@@ -922,8 +1008,21 @@ class SourceAuthorityApplication:
                         "total_chunk_bytes": sum(
                             chunk.byte_size for chunk in chunks
                         ),
+                        "normalized_blob_id": payload.get("normalized_blob_id"),
+                        "normalized_content_hash": payload.get("normalized_content_hash"),
+                        "normalized_byte_size": payload.get("normalized_byte_size"),
                     }
                 )
+                if payload.get("normalized_blob_id"):
+                    uow.repositories.asset_blobs.bind_blob(
+                        f"source-normalized-blob-reference:{transform_asset_version_id}",
+                        transform_asset_version_id,
+                        str(payload["normalized_blob_id"]),
+                        "normalized_source",
+                        0,
+                        str(blobs[str(payload["normalized_blob_id"])]["media_type"]),
+                        str(payload["normalized_content_hash"]),
+                    )
                 for chunk, row in zip(chunks, chunk_rows, strict=True):
                     blob = blobs[chunk.blob_id]
                     chunk_content = {

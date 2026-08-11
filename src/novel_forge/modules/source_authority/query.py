@@ -331,6 +331,64 @@ class SourceAuthorityQuery:
         )
         return [dict(zip(keys, row, strict=True)) for row in rows]
 
+    def list_invalidations(
+        self,
+        *,
+        project_id: str,
+        status: str = "OPEN",
+        dimension: str = "",
+        limit: int = 100,
+    ) -> list[dict[str, Any]]:
+        if (
+            not project_id
+            or status not in {"", "OPEN", "RESOLVED", "SUPERSEDED"}
+            or limit < 1
+            or limit > 1_000
+        ):
+            raise ValueError("project_id, invalidation status, and limit are invalid")
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT invalidation.invalidation_id,
+                       invalidation.target_asset_version_id,
+                       asset.asset_type, target.lifecycle, target.eligibility,
+                       invalidation.cause_type, invalidation.cause_ref,
+                       invalidation.dimension, invalidation.status,
+                       invalidation.created_by_operation_id,
+                       invalidation.resolved_by_operation_id,
+                       invalidation.created_at, invalidation.resolved_at
+                FROM authority_content_invalidation AS invalidation
+                JOIN authority_asset_version AS target
+                  ON target.asset_version_id=invalidation.target_asset_version_id
+                JOIN authority_asset AS asset
+                  ON asset.asset_id=target.asset_id
+                WHERE invalidation.project_id=%s
+                  AND (%s='' OR invalidation.status=%s)
+                  AND (%s='' OR invalidation.dimension=%s)
+                ORDER BY invalidation.created_at DESC,
+                         invalidation.invalidation_id
+                LIMIT %s
+                """,
+                [project_id, status, status, dimension, dimension, limit],
+            )
+            rows = uow.cursor.fetchall()
+        keys = (
+            "invalidation_id",
+            "target_asset_version_id",
+            "target_asset_type",
+            "target_lifecycle",
+            "target_eligibility",
+            "cause_type",
+            "cause_ref",
+            "dimension",
+            "status",
+            "created_by_operation_id",
+            "resolved_by_operation_id",
+            "created_at",
+            "resolved_at",
+        )
+        return [dict(zip(keys, row, strict=True)) for row in rows]
+
     def data_import_admission(self, *, project_id: str) -> dict[str, Any]:
         """Evaluate current PostgreSQL evidence; missing proof always blocks."""
         if not project_id:
@@ -346,6 +404,19 @@ class SourceAuthorityQuery:
                 )
             counts = _admission_counts(uow.cursor, project_id)
             checks = [
+                _check(
+                    "repository_import_runtime",
+                    counts["repository_snapshot_count"] > 0
+                    and counts["invalid_repository_snapshots"] == 0,
+                    counts["repository_snapshot_count"],
+                    "repository snapshots freeze exact commits, manifests, and policies",
+                ),
+                _check(
+                    "incremental_repository_import",
+                    counts["incremental_snapshot_count"] > 0,
+                    counts["incremental_snapshot_count"],
+                    "a later snapshot proves manifest-diff reuse against its predecessor",
+                ),
                 _check(
                     "source_deduplication",
                     counts["source_count"] > 0 and counts["duplicate_sources"] == 0,
@@ -406,6 +477,12 @@ class SourceAuthorityQuery:
                     "one plan contains both REUSE and dimension-scoped RECOMPUTE",
                 ),
                 _check(
+                    "reprocessing_execution",
+                    counts["applied_reprocessing_items"] > 0,
+                    counts["applied_reprocessing_items"],
+                    "planned recomputation has durable APPLIED or REUSED item evidence",
+                ),
+                _check(
                     "invalidation",
                     counts["invalidation_count"] > 0,
                     counts["invalidation_count"],
@@ -444,6 +521,10 @@ class SourceAuthorityQuery:
             "schema_version": "data-import-admission.v1",
             "project_id": project_id,
             "data_import_ready": ready,
+            "capability_status": "CAPABILITY_IMPLEMENTED",
+            "project_qualification": (
+                "PROJECT_QUALIFIED" if ready else "PROJECT_NOT_QUALIFIED"
+            ),
             "decision": "ADMITTED" if ready else "BLOCKED",
             "checks": checks,
             "evidence_counts": counts,
@@ -466,6 +547,33 @@ def _check(name: str, passed: bool, evidence_count: int, detail: str) -> dict[st
 
 def _admission_counts(cursor: Any, project_id: str) -> dict[str, int]:
     queries = {
+        "repository_snapshot_count": """
+            SELECT COUNT(*) FROM authority_source_repository_snapshot
+            WHERE project_id=%s
+        """,
+        "invalid_repository_snapshots": """
+            SELECT COUNT(*) FROM authority_source_repository_snapshot
+            WHERE project_id=%s AND (
+                resolved_commit_sha !~ '^[0-9a-f]{40}$'
+                OR manifest_hash !~ '^sha256:[0-9a-f]{64}$'
+                OR import_policy_hash !~ '^sha256:[0-9a-f]{64}$'
+            )
+        """,
+        "incremental_snapshot_count": """
+            SELECT COUNT(DISTINCT job.repository_snapshot_asset_version_id)
+            FROM authority_source_import_job AS job
+            WHERE job.project_id=%s
+              AND job.previous_snapshot_asset_version_id IS NOT NULL
+              AND EXISTS (
+                  SELECT 1 FROM authority_source_repository_file AS file
+                  WHERE file.repository_snapshot_asset_version_id=
+                        job.repository_snapshot_asset_version_id
+                    AND file.diff_state IN (
+                        'UNCHANGED', 'RENAMED_SAME_CONTENT', 'MODIFIED',
+                        'ADDED', 'REMOVED'
+                    )
+              )
+        """,
         "source_count": "SELECT COUNT(*) FROM authority_source_document WHERE project_id=%s",
         "duplicate_sources": """
             SELECT COUNT(*) FROM (
@@ -547,6 +655,10 @@ def _admission_counts(cursor: Any, project_id: str) -> dict[str, int]:
                 HAVING BOOL_OR(action='REUSE') AND BOOL_OR(action='RECOMPUTE')
             ) AS plan
         """,
+        "applied_reprocessing_items": """
+            SELECT COUNT(*) FROM authority_source_reprocessing_plan_item
+            WHERE project_id=%s AND status IN ('APPLIED', 'REUSED')
+        """,
         "invalidation_count": "SELECT COUNT(*) FROM authority_content_invalidation WHERE project_id=%s",
         "recovered_attempts": """
             SELECT COUNT(*) FROM authority_attempt AS attempt
@@ -556,7 +668,12 @@ def _admission_counts(cursor: Any, project_id: str) -> dict[str, int]:
               AND operation.definition_name IN (
                   'source.document.register', 'source.transform.commit',
                   'source.deconstruction.observation.commit',
-                  'source.deconstruction.reprocessing.plan'
+                  'source.deconstruction.reprocessing.plan',
+                  'source.import.repository.discover',
+                  'source.import.file.process',
+                  'source.import.deconstruction.execute',
+                  'source.import.mkaos.extract',
+                  'source.import.reprocessing.apply'
               ) AND (
                 attempt.attempt_number>1
                 OR EXISTS (
@@ -579,7 +696,10 @@ def _admission_counts(cursor: Any, project_id: str) -> dict[str, int]:
         "scope_guard_count": """
             SELECT COUNT(*) FROM pg_trigger AS trigger
             JOIN pg_proc AS function ON function.oid=trigger.tgfoid
-            WHERE function.proname='authority_validate_source_intelligence_scope'
+            WHERE function.proname IN (
+                    'authority_validate_source_intelligence_scope',
+                    'authority_validate_source_import_scope'
+                  )
               AND trigger.tgenabled<>'D' AND NOT trigger.tgisinternal
         """,
         "untraced_or_fixture_observations": """

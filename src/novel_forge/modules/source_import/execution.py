@@ -1,0 +1,1143 @@
+"""Source-domain binding to the existing Production Execution Gateway."""
+from __future__ import annotations
+
+from collections.abc import Mapping
+from dataclasses import asdict, dataclass
+import hashlib
+import json
+from typing import Any
+
+from novel_forge.modules.chapter_authority.execution_gateway import (
+    ChapterExecutionBinding,
+    ProductionExecutionGatewayExternalEffectAdapter,
+)
+from novel_forge.modules.command_kernel.asset_commands import AuthorityAssetWriteCommand
+from novel_forge.modules.command_kernel.budget_runtime import (
+    BudgetReservationRequest,
+    reserve_provider_budget,
+    resolve_provider_budget_failure,
+    settle_provider_budget,
+)
+from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.command_kernel.external_effect_adapters import (
+    ExternalEffectAdapterError,
+    ProviderResult,
+)
+from novel_forge.modules.command_kernel.external_effect_runtime import (
+    EffectCommandContext,
+    dispatch_external_effect,
+    plan_external_effect,
+)
+from novel_forge.modules.command_kernel.attempt_runtime import WorkerLeaseCommand
+from novel_forge.modules.mkaos_authority.domain import (
+    KnowledgeEvidenceSpan,
+    validate_knowledge_candidate,
+)
+from novel_forge.modules.production_execution import (
+    ArtifactPointer,
+    ExecutionOutcome,
+    ExecutionRequest,
+    ExecutionRuntimeClass,
+    FallbackPolicy,
+    InputManifest,
+    ModelProfile,
+    RoutePolicy,
+    RouteSnapshot,
+    TargetScope,
+    default_capability_registry,
+)
+from novel_forge.modules.source_authority.deconstruction import (
+    AnalyzerContract,
+    ObservationEvidenceSpan,
+    ObservationScope,
+    stable_hash,
+    validate_observation_payload,
+)
+from novel_forge.storage.authority_asset_store import (
+    AuthorityAssetDocument,
+    AuthorityAssetQuery,
+    AuthorityAssetWriter,
+)
+from novel_forge.storage.database_runtime import get_database_runtime
+
+from .execution_contracts import (
+    DECONSTRUCTION_STAGE,
+    MKAOS_STAGE,
+    content_intelligence_output_schema,
+    validate_content_intelligence_output,
+)
+
+
+def _canonical(value: Any) -> str:
+    return json.dumps(
+        value,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+        default=str,
+    )
+
+
+def _hash(value: Any) -> str:
+    return "sha256:" + hashlib.sha256(_canonical(value).encode("utf-8")).hexdigest()
+
+
+def _token(value: str) -> str:
+    return hashlib.sha256(value.encode("utf-8")).hexdigest()[:24]
+
+
+@dataclass(frozen=True, slots=True)
+class _ExecutionSpec:
+    kind: str
+    stage: str
+    capability: str
+    prompt_id: str
+    prompt_version: str
+    skill_id: str
+    skill_version: str
+    target_scope: TargetScope
+    input_payload: dict[str, Any]
+    artifact_version_ids: tuple[str, ...]
+    context_contract: dict[str, Any]
+    output_schema: dict[str, Any]
+
+
+class _SourceGatewayEffectAdapter:
+    """ExternalEffect adapter for one frozen Source execution request."""
+
+    production_execution_gateway_backed = True
+
+    def __init__(
+        self,
+        *,
+        transport: ProductionExecutionGatewayExternalEffectAdapter,
+        binding: ChapterExecutionBinding,
+    ) -> None:
+        self.transport = transport
+        self.binding = binding
+        self.session = transport.session_for_project(binding.request.project_id)
+        self.provider = transport.provider
+        self.reconciliation_mode = transport.reconciliation_mode
+        self.capability_profile = transport.capability_profile
+
+    def execute(
+        self,
+        *,
+        stable_idempotency_key: str,
+        capability: str,
+        request_payload: dict[str, Any],
+    ) -> ProviderResult:
+        request = self.binding.request
+        if (
+            stable_idempotency_key != request.stable_idempotency_key
+            or capability != request.capability
+            or str(request_payload.get("external_effect_id") or "")
+            != request.external_effect_id
+        ):
+            raise ExternalEffectAdapterError(
+                "Source execution differs from its frozen PEP request",
+                request_sent=False,
+            )
+        request_sent = False
+        try:
+            handle = self.session.gateway.submit(request)
+            request_sent = True
+            result = self.session.gateway.reconcile(handle)
+        except Exception as exc:
+            raise ExternalEffectAdapterError(
+                f"Source PEP execution failed: {type(exc).__name__}: {exc}",
+                request_sent=request_sent,
+            ) from exc
+        record = self.session.evidence_store.get_record(request.execution_id)
+        evidence: dict[str, Any] = {
+            "provider_id": self.binding.route_snapshot.model_provider,
+            "model_id": self.binding.route_snapshot.model_id,
+            "prompt_version": self.binding.input_manifest.prompt_bundle_version,
+            "skill_version": self.binding.input_manifest.skill_bundle_version,
+            "real_model_call": handle.transport
+            in {
+                ExecutionRuntimeClass.REMOTE_PROVIDER_API,
+                ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE,
+            },
+            "fixture_protocol_only": (
+                handle.transport is ExecutionRuntimeClass.SCRIPTED_FIXTURE
+            ),
+            "production_verified": False,
+            "production_execution": {
+                "execution_request": request.to_dict(),
+                "execution_handle": handle.to_dict(),
+                "execution_result": result.to_dict(),
+                "route_snapshot": self.binding.route_snapshot.to_dict(),
+                "input_manifest": self.binding.input_manifest.to_dict(),
+                "process_evidence": dict(record.raw_evidence),
+            },
+        }
+        capability_evidence = record.raw_evidence.get("capability_evidence")
+        if isinstance(capability_evidence, Mapping):
+            evidence["capability_runtime"] = dict(capability_evidence)
+        if result.normalized_output_ref:
+            evidence["result"] = self.session.evidence_store.read_evidence(
+                str(result.normalized_output_ref)
+            )
+        if result.usage_receipt_ref:
+            evidence["usage"] = self.session.evidence_store.read_evidence(
+                str(result.usage_receipt_ref)
+            )
+        if result.cost_receipt_ref:
+            evidence["cost"] = self.session.evidence_store.read_evidence(
+                str(result.cost_receipt_ref)
+            )
+        outcome = {
+            ExecutionOutcome.SUCCEEDED: "success",
+            ExecutionOutcome.RETRYABLE_FAILURE: "retryable_failure",
+            ExecutionOutcome.TIMED_OUT: "retryable_failure",
+            ExecutionOutcome.CORRUPT_RESULT: "retryable_failure",
+            ExecutionOutcome.FINAL_FAILURE: "final_failure",
+            ExecutionOutcome.CANCELLED: "cancelled",
+        }.get(result.outcome, "unknown")
+        return ProviderResult(
+            outcome,
+            handle.backend_execution_id,
+            evidence,
+            handle.provider_request_id or "",
+        )
+
+    def query(self, **kwargs: Any) -> ProviderResult:
+        return self.execute(**kwargs)
+
+    def cancel(
+        self,
+        *,
+        stable_idempotency_key: str,
+        capability: str,
+        request_payload: dict[str, Any],
+        provider_request_id: str,
+    ) -> ProviderResult:
+        del stable_idempotency_key, capability, request_payload
+        handle = self.session.gateway.submit(self.binding.request)
+        result = self.session.gateway.cancel(handle, "Source execution cancellation")
+        return ProviderResult(
+            "cancelled",
+            handle.backend_execution_id,
+            {"production_execution_cancellation": result.to_dict()},
+            provider_request_id,
+        )
+
+
+class PostgresContentIntelligenceExecutionPort:
+    """Attempt-bound deconstruction and MKAOS execution through shared PEP."""
+
+    external_effect_backed = True
+    production_execution_gateway_backed = True
+
+    def __init__(
+        self,
+        database_url: str,
+        *,
+        transport: ProductionExecutionGatewayExternalEffectAdapter,
+        worker_id: str,
+        lease_seconds: int = 60,
+        max_cost_per_call: str = "0",
+        budget_caps: Mapping[str, str] | None = None,
+    ) -> None:
+        if not database_url or not worker_id or lease_seconds <= 0:
+            raise ValueError("Source PEP port requires database, worker, and lease")
+        if not getattr(transport, "production_execution_gateway_backed", False):
+            raise ValueError("Source execution requires ProductionExecutionGateway")
+        self.database_url = database_url
+        self.transport = transport
+        self.worker_id = worker_id
+        self.lease_seconds = lease_seconds
+        self.max_cost_per_call = max_cost_per_call
+        self.budget_caps = dict(budget_caps or {})
+        self.query = AuthorityAssetQuery(database_url)
+        self.writer = AuthorityAssetWriter(database_url)
+
+    def execute_deconstruction(
+        self,
+        *,
+        worker: WorkerLeaseCommand,
+        analyzer: AnalyzerContract,
+        scope: ObservationScope,
+        evidence_spans: tuple[ObservationEvidenceSpan, ...],
+        source_segments: tuple[dict[str, Any], ...],
+        input_observations: tuple[dict[str, Any], ...] = (),
+    ) -> dict[str, Any]:
+        if bool(evidence_spans) == bool(input_observations):
+            raise KernelError(
+                "SOURCE_PEP_INPUT_MODE_INVALID",
+                "deconstruction requires Source evidence or lower Observations exclusively",
+            )
+        by_id = {
+            str(item["source_chunk_asset_version_id"]): item
+            for item in source_segments
+        }
+        for span in evidence_spans:
+            segment = by_id.get(span.source_chunk_asset_version_id)
+            if segment is None:
+                raise KernelError(
+                    "SOURCE_PEP_INPUT_IDENTITY_INVALID",
+                    "transient Source segment differs from its frozen identity",
+                )
+            content = str(segment.get("content") or "").encode("utf-8")
+            content_hash = "sha256:" + hashlib.sha256(content).hexdigest()
+            if content_hash != str(segment.get("content_hash")):
+                raise KernelError(
+                    "SOURCE_PEP_INPUT_IDENTITY_INVALID",
+                    "transient Source segment differs from its frozen identity",
+                )
+        segment_manifest = [
+            {
+                "source_chunk_asset_version_id": span.source_chunk_asset_version_id,
+                "content_hash": span.evidence_hash,
+                "byte_size": span.chunk_byte_end - span.chunk_byte_start,
+            }
+            for span in evidence_spans
+        ]
+        observation_manifest = [
+            {
+                "asset_version_id": str(item["asset_version_id"]),
+                "content_hash": str(item["content_hash"]),
+                "observation_hash": _hash(item["observation"]),
+            }
+            for item in input_observations
+        ]
+        lower_ids = tuple(
+            str(item["asset_version_id"]) for item in input_observations
+        )
+        spec = _ExecutionSpec(
+            kind=(
+                "deconstruction_aggregate"
+                if input_observations
+                else "deconstruction"
+            ),
+            stage=DECONSTRUCTION_STAGE,
+            capability=analyzer.capability_id,
+            prompt_id=analyzer.prompt_id,
+            prompt_version=analyzer.prompt_version,
+            skill_id=analyzer.skill_id,
+            skill_version=analyzer.skill_version,
+            target_scope=TargetScope(
+                scope_kind=scope.scale.lower(),
+                scope_id=scope.fingerprint,
+                project_id=worker.project_id,
+                book_id=f"source-corpus:{worker.project_id}",
+            ),
+            input_payload={
+                "analyzer": analyzer.to_dict(),
+                "scope": scope.to_dict(),
+                "evidence_span_ids": [item.evidence_span_id for item in evidence_spans],
+                "source_segments": segment_manifest,
+                "input_observation_asset_version_ids": list(lower_ids),
+                "input_observations": observation_manifest,
+            },
+            artifact_version_ids=(
+                lower_ids
+                if input_observations
+                else tuple(
+                    item.source_chunk_asset_version_id for item in evidence_spans
+                )
+            ),
+            context_contract={
+                "analyzer_contract_hash": analyzer.fingerprint,
+                "scope_hash": scope.fingerprint,
+                "evidence_span_ids": [item.evidence_span_id for item in evidence_spans],
+                "input_observation_asset_version_ids": list(lower_ids),
+                "aggregation_uses_source_text": False,
+                "raw_source_text_in_postgresql": False,
+                "generation_context_allowed": False,
+            },
+            output_schema=content_intelligence_output_schema(DECONSTRUCTION_STAGE),
+        )
+        execution = self._execute(worker=worker, spec=spec)
+        observation = validate_content_intelligence_output(
+            spec.stage, spec.output_schema, execution["result"]
+        )
+        observation = validate_observation_payload(
+            observation,
+            evidence_spans=evidence_spans,
+            input_observation_asset_version_ids=lower_ids,
+        )
+        binding = {
+            "schema_version": "source-deconstruction-execution-binding.v1",
+            "analyzer_contract_hash": analyzer.fingerprint,
+            "scope_hash": scope.fingerprint,
+            "observation_hash": stable_hash(observation),
+            "evidence_span_ids": sorted(
+                {item.evidence_span_id for item in evidence_spans}
+            ),
+            "input_observation_asset_version_ids": sorted(lower_ids),
+        }
+        log = self._execution_log(
+            worker=worker,
+            spec=spec,
+            execution=execution,
+            domain_binding={"source_deconstruction_binding": binding},
+        )
+        return {
+            "observation": observation,
+            "execution_asset_version_id": log.asset_version_id,
+            "evidence_class": self._evidence_class(execution),
+            "provider_execution_reused": bool(
+                execution.get("provider_execution_reused")
+            ),
+        }
+
+    def execute_mkaos_extraction(
+        self,
+        *,
+        worker: WorkerLeaseCommand,
+        capability: str,
+        abstraction_policy_version: str,
+        observation_asset_version_id: str,
+        observation: dict[str, Any],
+        evidence_spans: tuple[KnowledgeEvidenceSpan, ...],
+    ) -> dict[str, Any]:
+        if not observation:
+            raise ValueError("MKAOS execution requires one Observation")
+        spec = _ExecutionSpec(
+            kind="mkaos",
+            stage=MKAOS_STAGE,
+            capability=capability,
+            prompt_id="mkaos.abstraction",
+            prompt_version=abstraction_policy_version,
+            skill_id="anti-copy-abstraction",
+            skill_version="1.0",
+            target_scope=TargetScope(
+                scope_kind="observation",
+                scope_id=observation_asset_version_id,
+                project_id=worker.project_id,
+                book_id=f"source-corpus:{worker.project_id}",
+            ),
+            input_payload={
+                "observation_asset_version_id": observation_asset_version_id,
+                "observation_hash": _hash(observation),
+                "abstraction_policy_version": abstraction_policy_version,
+                "evidence_manifest_hash": _evidence_manifest_hash(evidence_spans),
+            },
+            artifact_version_ids=(observation_asset_version_id,),
+            context_contract={
+                "observation_asset_version_id": observation_asset_version_id,
+                "observation_hash": _hash(observation),
+                "abstraction_policy_version": abstraction_policy_version,
+                "source_expression_available": False,
+                "generation_context_allowed": False,
+            },
+            output_schema=content_intelligence_output_schema(MKAOS_STAGE),
+        )
+        execution = self._execute(worker=worker, spec=spec)
+        candidate = validate_content_intelligence_output(
+            spec.stage, spec.output_schema, execution["result"]
+        )
+        candidate = validate_knowledge_candidate(candidate)
+        binding = {
+            "schema_version": "mkaos-candidate-execution-binding.v1",
+            "candidate_payload_hash": _hash(candidate),
+            "abstraction_policy_version": abstraction_policy_version,
+            "evidence_manifest_hash": _evidence_manifest_hash(evidence_spans),
+            "observation_asset_version_ids": [observation_asset_version_id],
+        }
+        log = self._execution_log(
+            worker=worker,
+            spec=spec,
+            execution=execution,
+            domain_binding={"mkaos_candidate_binding": binding},
+        )
+        return {
+            "candidate": candidate,
+            "execution_asset_version_id": log.asset_version_id,
+            "provider_execution_reused": bool(
+                execution.get("provider_execution_reused")
+            ),
+        }
+
+    def _execute(
+        self, *, worker: WorkerLeaseCommand, spec: _ExecutionSpec
+    ) -> dict[str, Any]:
+        cache_key = _hash(
+            {
+                "schema_version": "source-provider-execution-cache.v1",
+                "operation_id": worker.causation_id,
+                "stage": spec.stage,
+                "capability": spec.capability,
+                "input": spec.input_payload,
+                "context_contract": spec.context_contract,
+            }
+        )
+        replay = self._replay_succeeded_effect(
+            worker=worker, cache_key=cache_key
+        )
+        if replay is not None:
+            return replay
+        definition = default_capability_registry().resolve(spec.capability)
+        graph = self._operation_graph(worker.causation_id, worker.project_id)
+        documents = tuple(
+            self.query.require(
+                project_id=worker.project_id, asset_version_id=identity
+            )
+            for identity in sorted(set(spec.artifact_version_ids))
+        )
+        context = self._ensure_contract(
+            operation_id=worker.causation_id,
+            project_id=worker.project_id,
+            logical_ref=(
+                "source-intelligence/context/"
+                + _token(f"{worker.causation_id}:{worker.attempt_id}:{spec.stage}")
+            ),
+            asset_type="source_execution_context_manifest",
+            contract=spec.context_contract,
+            trace_id=worker.trace_id,
+            correlation_id=worker.correlation_id,
+            eligibility="INELIGIBLE",
+        )
+        materialization = self._materialization(spec)
+        materialization_document = self._ensure_contract(
+            operation_id=worker.causation_id,
+            project_id=worker.project_id,
+            logical_ref=(
+                "source-intelligence/capability-materialization/"
+                + _token(f"{worker.causation_id}:{worker.attempt_id}:{spec.capability}")
+            ),
+            asset_type="capability_materialization_manifest",
+            contract=materialization,
+            trace_id=worker.trace_id,
+            correlation_id=worker.correlation_id,
+        )
+        stable_key = (
+            f"{worker.causation_id}:{worker.attempt_id}:{spec.capability}:"
+            "source-pep-v1"
+        )
+        effect_context = EffectCommandContext(
+            operation_id=worker.causation_id,
+            project_id=worker.project_id,
+            actor_id=self.worker_id,
+            trace_id=worker.trace_id,
+            correlation_id=worker.correlation_id,
+            causation_id=worker.attempt_id,
+        )
+        request_payload = {
+            "stage": spec.stage,
+            "input": spec.input_payload,
+            "trace_id": worker.trace_id,
+            "correlation_id": worker.correlation_id,
+            "_source_intelligence": {
+                "kind": spec.kind,
+                "cache_key": cache_key,
+            },
+            "_production_execution": {
+                "operation_id": worker.causation_id,
+                "attempt_id": worker.attempt_id,
+                "fencing_token": worker.fencing_token,
+                "project_id": worker.project_id,
+                "workspace_id": graph["workspace_id"],
+                "book_id": spec.target_scope.book_id,
+                "worker_id": worker.worker_id,
+                "capability_runtime": {
+                    "materialization_asset_version_id": (
+                        materialization_document.asset_version_id
+                    ),
+                    "materialization_content_hash": (
+                        materialization_document.content_hash
+                    ),
+                    "materialization_hash": materialization["materialization_hash"],
+                },
+            },
+        }
+        base_route = self.transport.routes["quality_source_originality"]
+        effect = plan_external_effect(
+            self.database_url,
+            effect_context,
+            effect_type="model.invoke",
+            provider=self.transport.provider,
+            capability=spec.capability,
+            stable_idempotency_key=stable_key,
+            request_payload=request_payload,
+            max_attempts=2,
+            reversible=False,
+            completion_policy="synchronous_final",
+            model_id=base_route.model_profile.model_id,
+            request_timeout_seconds=self.lease_seconds * 5,
+            reconciliation_mode=self.transport.reconciliation_mode,
+            provider_capability_profile=self.transport.capability_profile.to_dict(),
+        )
+        effect_id = str(effect["external_effect_id"])
+        reservation = reserve_provider_budget(
+            self.database_url,
+            BudgetReservationRequest(
+                operation_id=worker.causation_id,
+                external_effect_id=effect_id,
+                project_id=worker.project_id,
+                stable_idempotency_key=f"budget:{stable_key}",
+                provider=self.transport.provider,
+                currency="USD",
+                estimated_amount=self.max_cost_per_call,
+                estimated_tokens=0,
+                caps=self.budget_caps,
+            ),
+        )
+        binding = self._binding(
+            worker=worker,
+            spec=spec,
+            definition=definition,
+            graph=graph,
+            documents=documents,
+            context=context,
+            effect_id=effect_id,
+            stable_key=stable_key,
+            reservation_id=str(reservation["reservation_id"]),
+        )
+        adapter = _SourceGatewayEffectAdapter(
+            transport=self.transport, binding=binding
+        )
+        try:
+            dispatched = dispatch_external_effect(
+                self.database_url,
+                effect_context,
+                effect_id=effect_id,
+                worker_id=self.worker_id,
+                lease_seconds=self.lease_seconds,
+                adapter=adapter,
+            )
+        except Exception:
+            resolve_provider_budget_failure(
+                self.database_url,
+                reservation_id=str(reservation["reservation_id"]),
+                project_id=worker.project_id,
+            )
+            raise
+        if dispatched["outcome"] != "success" or not isinstance(
+            dispatched.get("provider_evidence"), Mapping
+        ):
+            resolve_provider_budget_failure(
+                self.database_url,
+                reservation_id=str(reservation["reservation_id"]),
+                project_id=worker.project_id,
+            )
+            raise KernelError(
+                "SOURCE_PEP_EXECUTION_FAILED",
+                f"Source Provider outcome was {dispatched.get('outcome')}",
+            )
+        evidence = dict(dispatched["provider_evidence"])
+        result = evidence.get("result")
+        usage = evidence.get("usage")
+        cost = evidence.get("cost")
+        if not all(
+            isinstance(item, Mapping) for item in (result, usage, cost)
+        ):
+            raise KernelError(
+                "SOURCE_PEP_EVIDENCE_INCOMPLETE",
+                "Source PEP result lacks output, usage, or cost evidence",
+            )
+        assert isinstance(usage, Mapping)
+        assert isinstance(cost, Mapping)
+        total_tokens = int(
+            usage.get("total_tokens")
+            or int(usage.get("input_tokens") or 0)
+            + int(usage.get("output_tokens") or 0)
+        )
+        amount = str(cost.get("amount") or cost.get("amount_usd") or "0")
+        settle_provider_budget(
+            self.database_url,
+            reservation_id=str(reservation["reservation_id"]),
+            project_id=worker.project_id,
+            actual_amount=amount,
+            actual_tokens=total_tokens,
+            evidence={
+                "provider_id": str(evidence.get("provider_id") or ""),
+                "model_id": str(evidence.get("model_id") or ""),
+                "real_model_call": bool(evidence.get("real_model_call")),
+                "fixture": bool(evidence.get("fixture_protocol_only")),
+            },
+        )
+        return evidence
+
+    def _replay_succeeded_effect(
+        self, *, worker: WorkerLeaseCommand, cache_key: str
+    ) -> dict[str, Any] | None:
+        runtime = get_database_runtime(self.database_url)
+        with runtime.connection() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT effect.external_effect_id,
+                           CASE
+                             WHEN effect.reconciliation <> '{}'::jsonb
+                               THEN effect.reconciliation
+                             ELSE dispatch.evidence
+                           END,
+                           reservation.reservation_id,
+                           reservation.status
+                    FROM authority_external_effect AS effect
+                    JOIN LATERAL (
+                        SELECT evidence
+                        FROM authority_external_effect_dispatch
+                        WHERE external_effect_id=effect.external_effect_id
+                          AND status='SUCCEEDED'
+                        ORDER BY generation DESC
+                        LIMIT 1
+                    ) AS dispatch ON TRUE
+                    LEFT JOIN LATERAL (
+                        SELECT reservation_id, status
+                        FROM authority_budget_reservation
+                        WHERE external_effect_id=effect.external_effect_id
+                        ORDER BY created_at DESC
+                        LIMIT 1
+                    ) AS reservation ON TRUE
+                    WHERE effect.operation_id=%s AND effect.project_id=%s
+                      AND effect.status='SUCCEEDED'
+                      AND effect.request_payload->'_source_intelligence'
+                            ->>'cache_key'=%s
+                    ORDER BY effect.created_at DESC
+                    LIMIT 1
+                    """,
+                    [worker.causation_id, worker.project_id, cache_key],
+                )
+                row = cursor.fetchone()
+        if row is None or not isinstance(row[1], Mapping):
+            return None
+        evidence = dict(row[1])
+        result = evidence.get("result")
+        usage = evidence.get("usage")
+        cost = evidence.get("cost")
+        if not all(isinstance(value, Mapping) for value in (result, usage, cost)):
+            raise KernelError(
+                "SOURCE_PEP_REPLAY_EVIDENCE_INCOMPLETE",
+                "succeeded Provider effect has incomplete durable evidence",
+            )
+        if row[2] and str(row[3]) in {"RESERVED", "HELD_UNKNOWN"}:
+            assert isinstance(usage, Mapping)
+            assert isinstance(cost, Mapping)
+            total_tokens = int(
+                usage.get("total_tokens")
+                or int(usage.get("input_tokens") or 0)
+                + int(usage.get("output_tokens") or 0)
+            )
+            settle_provider_budget(
+                self.database_url,
+                reservation_id=str(row[2]),
+                project_id=worker.project_id,
+                actual_amount=str(
+                    cost.get("amount") or cost.get("amount_usd") or "0"
+                ),
+                actual_tokens=total_tokens,
+                evidence={
+                    "replayed_after_worker_failure": True,
+                    "external_effect_id": str(row[0]),
+                },
+            )
+        return {
+            **evidence,
+            "provider_execution_reused": True,
+            "reused_external_effect_id": str(row[0]),
+        }
+
+    def _binding(
+        self,
+        *,
+        worker: WorkerLeaseCommand,
+        spec: _ExecutionSpec,
+        definition: Any,
+        graph: dict[str, str],
+        documents: tuple[AuthorityAssetDocument, ...],
+        context: AuthorityAssetDocument,
+        effect_id: str,
+        stable_key: str,
+        reservation_id: str,
+    ) -> ChapterExecutionBinding:
+        base = self.transport.routes["quality_source_originality"]
+        suffix = spec.capability.replace(".", "-")
+        profile = ModelProfile(
+            profile_id=f"source-intelligence.{suffix}.default",
+            profile_version=1,
+            backend_id=base.model_profile.backend_id,
+            runtime_class=base.model_profile.runtime_class,
+            model_provider=base.model_profile.model_provider,
+            model_id=base.model_profile.model_id,
+            reasoning_effort=base.model_profile.reasoning_effort,
+            timeout_policy_ref=definition.timeout_policy_ref,
+            workspace_policy_ref="workspace:source-intelligence:v1",
+            output_policy_ref=definition.output_schema_ref,
+            fallback_policy="FAIL_CLOSED",
+            status=base.model_profile.status,
+            capability_probe_ref=base.model_profile.capability_probe_ref,
+        )
+        policy = RoutePolicy(
+            policy_id=f"source-intelligence.{suffix}.route",
+            policy_version=1,
+            default_model_profile_id=profile.profile_id,
+            allowed_model_profile_ids=(profile.profile_id,),
+            rule_set_ref=f"route-rules:source-intelligence:{suffix}:v1",
+            fallback_policy="FAIL_CLOSED",
+            fallback_policy_ref=f"source-intelligence.{suffix}.fail-closed",
+            fallback_policy_version=1,
+            reasoning_downgrade_policy="PROHIBITED",
+            status="ACTIVE",
+        )
+        fallback = FallbackPolicy.fail_closed(
+            policy.fallback_policy_ref, policy.fallback_policy_version
+        )
+        context_ref = f"asset-version:{context.asset_version_id}"
+        prompt_ref = f"source-intelligence/prompts/{spec.prompt_id}/{spec.prompt_version}"
+        skill_ref = f"source-intelligence/skills/{spec.skill_id}/{spec.skill_version}"
+        input_ref = "production_execution/inputs/" + _token(
+            f"{worker.causation_id}:{worker.attempt_id}:{spec.capability}"
+        )
+        route_ref = "production_execution/routes/" + _token(
+            f"{worker.causation_id}:{worker.attempt_id}:{spec.capability}"
+        )
+        pointers = (
+            ArtifactPointer(
+                artifact_ref=context_ref,
+                asset_version_id=context.asset_version_id,
+                artifact_type=context.asset_type,
+                content_hash=context.content_hash,
+                schema_version="source-execution-context.v1",
+                source_eligibility="SOURCE_ANALYSIS_ONLY",
+            ),
+            *tuple(
+                ArtifactPointer(
+                    artifact_ref=f"asset-version:{document.asset_version_id}",
+                    asset_version_id=document.asset_version_id,
+                    artifact_type=document.asset_type,
+                    content_hash=document.content_hash,
+                    schema_version=f"{document.asset_type}.v1",
+                    source_eligibility="SOURCE_ANALYSIS_ONLY",
+                )
+                for document in documents
+            ),
+        )
+        manifest = InputManifest(
+            manifest_id=input_ref,
+            operation_id=worker.causation_id,
+            attempt_id=worker.attempt_id,
+            fencing_token=worker.fencing_token,
+            project_id=worker.project_id,
+            book_id=spec.target_scope.book_id,
+            target_scope=spec.target_scope,
+            context_bundle_ref=context_ref,
+            prompt_bundle_ref=prompt_ref,
+            skill_bundle_ref=skill_ref,
+            context_bundle_version=context.asset_version_id,
+            prompt_bundle_version=spec.prompt_version,
+            skill_bundle_version=spec.skill_version,
+            canon_snapshot_version="not-applicable",
+            story_state_version="not-applicable",
+            planning_version="not-applicable",
+            quality_profile_version="source-intelligence.v1",
+            source_policy_ref=definition.source_policy_ref,
+            source_eligibility="SOURCE_ANALYSIS_ONLY",
+            canon_version_refs=(),
+            arc_version_refs=(),
+            input_artifacts=pointers,
+            read_set=tuple(item.artifact_ref for item in pointers),
+        )
+        route = RouteSnapshot(
+            route_snapshot_id=route_ref,
+            route_decision_id=f"route-decision:{_token(route_ref)}",
+            operation_id=worker.causation_id,
+            attempt_id=worker.attempt_id,
+            policy_id=policy.policy_id,
+            policy_version=policy.policy_version,
+            backend_id=profile.backend_id,
+            backend_version=base.backend_version,
+            runtime_host_id=base.runtime_host_id,
+            auth_profile_ref=base.auth_profile_ref,
+            model_profile_id=profile.profile_id,
+            model_profile_version=profile.profile_version,
+            model_profile_hash=profile.contract_hash,
+            route_policy_hash=policy.contract_hash,
+            model_provider=profile.model_provider,
+            model_id=profile.model_id,
+            requested_reasoning_effort=profile.reasoning_effort,
+            reasoning_effort=profile.reasoning_effort,
+            prompt_bundle_ref=prompt_ref,
+            skill_bundle_ref=skill_ref,
+            context_bundle_ref=context_ref,
+            output_schema_ref=definition.output_schema_ref,
+            release_sha=base.release_sha,
+            fallback_policy_ref=fallback.policy_id,
+            fallback_policy_version=fallback.policy_version,
+        )
+        for logical_ref, asset_type, contract in (
+            (
+                f"production_execution/model_profiles/{profile.profile_id}/v1",
+                "model_profile",
+                profile.to_dict(),
+            ),
+            (
+                f"production_execution/route_policies/{policy.policy_id}/v1",
+                "route_policy",
+                policy.to_dict(),
+            ),
+            (
+                f"production_execution/fallback_policies/{fallback.policy_id}/v1",
+                "fallback_policy",
+                fallback.to_dict(),
+            ),
+            (input_ref, "input_manifest", manifest.to_dict()),
+            (route_ref, "route_snapshot", route.to_dict()),
+        ):
+            self._ensure_contract(
+                operation_id=worker.causation_id,
+                project_id=worker.project_id,
+                logical_ref=logical_ref,
+                asset_type=asset_type,
+                contract=contract,
+                trace_id=worker.trace_id,
+                correlation_id=worker.correlation_id,
+            )
+        request = ExecutionRequest(
+            execution_id=f"source-intelligence-execution:{effect_id}",
+            operation_id=worker.causation_id,
+            root_operation_id=graph["root_operation_id"],
+            saga_id=graph["saga_id"],
+            attempt_id=worker.attempt_id,
+            fencing_token=worker.fencing_token,
+            project_id=worker.project_id,
+            workspace_id=graph["workspace_id"],
+            book_id=spec.target_scope.book_id,
+            target_scope=spec.target_scope,
+            domain=definition.domain.value,
+            task_kind=graph["definition_name"],
+            stage=spec.stage,
+            capability=spec.capability,
+            importance_class="HIGH",
+            risk_class=definition.risk_class.value,
+            route_snapshot_id=route_ref,
+            workspace_snapshot_ref=graph["workspace_id"],
+            input_manifest_ref=input_ref,
+            resource_claims=(f"source-intelligence:{spec.target_scope.scope_id}",),
+            timeout_policy_ref=definition.timeout_policy_ref,
+            budget_policy_ref=definition.budget_policy_ref,
+            permission_policy_ref=definition.permission_policy_ref,
+            validation_policy_ref=definition.validation_policy_ref,
+            commit_policy_ref=definition.commit_policy_ref,
+            stable_idempotency_key=stable_key,
+            origin_chain=("source.import", spec.kind),
+            trace_id=worker.trace_id,
+            correlation_id=worker.correlation_id,
+            external_effect_id=effect_id,
+            budget_reservation_id=reservation_id,
+        )
+        return ChapterExecutionBinding(request, route, manifest)
+
+    def _materialization(self, spec: _ExecutionSpec) -> dict[str, Any]:
+        system_text = (
+            "You analyze governed source evidence for reusable abstract mechanisms. "
+            "Never reproduce protected expression or treat an Observation as reusable "
+            "knowledge before MKAOS governance."
+        )
+        skill_text = (
+            "Cite only supplied EvidenceSpan identities. Separate observations from "
+            "abstractions. Remove names, settings, scenes, phrasing, and distinctive "
+            "plot combinations from every reusable candidate."
+        )
+        template_text = (
+            "Perform the frozen Source intelligence stage and return a bounded JSON "
+            "object matching the supplied schema."
+        )
+        output_ref = default_capability_registry().resolve(
+            spec.capability
+        ).output_schema_ref
+        materialization: dict[str, Any] = {
+            "schema_version": "source-capability-materialization.v1",
+            "stage": spec.stage,
+            "capability": spec.capability,
+            "system_instruction": {
+                "ref": "source-intelligence-system",
+                "version": "1.0",
+                "content_hash": _hash(system_text),
+                "text": system_text,
+            },
+            "prompt_template": {
+                "ref": spec.prompt_id,
+                "version": spec.prompt_version,
+                "content_hash": _hash(template_text),
+                "text": template_text,
+            },
+            "skill": {
+                "ref": spec.skill_id,
+                "version": spec.skill_version,
+                "content_hash": _hash(skill_text),
+                "text": skill_text,
+            },
+            "tool_permissions": {
+                "default": "DENY",
+                "allowed": ["model.provider.invoke"],
+                "denied": ["shell", "filesystem", "web", "mcp"],
+            },
+            "output_schema": {
+                "ref": output_ref,
+                "content_hash": _hash(spec.output_schema),
+                "content": spec.output_schema,
+            },
+            "source_isolation": {
+                "raw_source_persisted_in_postgresql": False,
+                "raw_source_allowed_in_generation_context": False,
+                "provider_input_resolved_from_object_store": True,
+            },
+        }
+        materialization["materialization_hash"] = _hash(materialization)
+        return materialization
+
+    def _execution_log(
+        self,
+        *,
+        worker: WorkerLeaseCommand,
+        spec: _ExecutionSpec,
+        execution: dict[str, Any],
+        domain_binding: dict[str, Any],
+    ) -> AuthorityAssetDocument:
+        content = {
+            "schema_version": "source-model-call-log.v1",
+            "production_execution_gateway_backed": True,
+            "gateway": "ProductionExecutionGateway",
+            "fixture_protocol_only": bool(execution.get("fixture_protocol_only")),
+            "real_provider_proven": bool(execution.get("real_model_call")),
+            "production_verified": bool(execution.get("production_verified")),
+            "provider_id": str(execution.get("provider_id") or ""),
+            "model_id": str(execution.get("model_id") or ""),
+            "prompt_version": str(execution.get("prompt_version") or ""),
+            "skill_version": str(execution.get("skill_version") or ""),
+            "capability": spec.capability,
+            "usage": dict(execution.get("usage") or {}),
+            "cost": dict(execution.get("cost") or {}),
+            "production_execution": dict(
+                execution.get("production_execution") or {}
+            ),
+            **domain_binding,
+        }
+        return self.writer.materialize_output(
+            AuthorityAssetWriteCommand(
+                operation_id=worker.causation_id,
+                project_id=worker.project_id,
+                asset_id=(
+                    f"model-call-log:{worker.causation_id}:{worker.attempt_id}:"
+                    f"{_token(spec.capability)}"
+                ),
+                asset_type="model_call_log",
+                schema_version="source-model-call-log.v1",
+                logical_ref=(
+                    f"runs/model_call_logs/{worker.causation_id}-"
+                    f"{worker.attempt_id}-{_token(spec.capability)}.json"
+                ),
+                category="runs",
+                output_key=f"model_call_log.source.{_token(spec.capability)}",
+                role="model_evidence",
+                content=content,
+                qualification_policy="source-content-intelligence-execution-v1",
+                trace_id=worker.trace_id,
+                correlation_id=worker.correlation_id,
+            )
+        )
+
+    def _ensure_contract(
+        self,
+        *,
+        operation_id: str,
+        project_id: str,
+        logical_ref: str,
+        asset_type: str,
+        contract: dict[str, Any],
+        trace_id: str,
+        correlation_id: str,
+        eligibility: str = "ELIGIBLE",
+    ) -> AuthorityAssetDocument:
+        try:
+            existing = self.query.require(
+                project_id=project_id, logical_ref=logical_ref
+            )
+        except KernelError as exc:
+            if exc.code != "AUTHORITY_ASSET_NOT_FOUND":
+                raise
+            existing = None
+        if existing is not None:
+            if (
+                existing.asset_type != asset_type
+                or existing.content.get("contract", existing.content) != contract
+            ):
+                raise KernelError(
+                    "SOURCE_EXECUTION_CONTRACT_FROZEN_CONFLICT",
+                    "Source execution contract changed inside one identity",
+                )
+            return existing
+        return self.writer.materialize_output(
+            AuthorityAssetWriteCommand(
+                operation_id=operation_id,
+                project_id=project_id,
+                asset_id=f"production-execution-contract:{_token(project_id + logical_ref)}",
+                asset_type=asset_type,
+                schema_version="production-execution-contract.v1",
+                logical_ref=logical_ref,
+                category="production_execution_contracts",
+                output_key=f"production_execution.contract.{asset_type}.{_token(logical_ref)}",
+                role="execution_contract",
+                content={"contract": contract},
+                qualification_policy="production-execution-contract-v1",
+                trace_id=trace_id,
+                correlation_id=correlation_id,
+                eligibility=eligibility,
+                governance="CLEAR",
+            )
+        )
+
+    def _operation_graph(self, operation_id: str, project_id: str) -> dict[str, str]:
+        runtime = get_database_runtime(self.database_url)
+        with runtime.connection() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT definition_name, root_operation_id,
+                           COALESCE(NULLIF(saga_id, ''), root_operation_id),
+                           workspace_id
+                    FROM authority_operation
+                    WHERE operation_id=%s AND project_id=%s
+                    """,
+                    [operation_id, project_id],
+                )
+                row = cursor.fetchone()
+        if row is None or not all(row):
+            raise KernelError(
+                "SOURCE_EXECUTION_GRAPH_INVALID",
+                "Source PEP execution has no admitted Operation graph",
+            )
+        return {
+            "definition_name": str(row[0]),
+            "root_operation_id": str(row[1]),
+            "saga_id": str(row[2]),
+            "workspace_id": str(row[3]),
+        }
+
+    @staticmethod
+    def _evidence_class(execution: Mapping[str, Any]) -> str:
+        if bool(execution.get("fixture_protocol_only")):
+            return "FIXTURE"
+        if bool(execution.get("real_model_call")) and bool(
+            execution.get("production_verified")
+        ):
+            return "PROVIDER_QUALIFIED"
+        return "PROVIDER_UNCALIBRATED"
+
+
+def _evidence_manifest_hash(
+    evidence_spans: tuple[KnowledgeEvidenceSpan, ...],
+) -> str:
+    return _hash(
+        {
+            "evidence_spans": [
+                asdict(item)
+                for item in sorted(
+                    evidence_spans,
+                    key=lambda item: (
+                        item.source_chunk_asset_version_id,
+                        item.chunk_byte_start,
+                        item.chunk_byte_end,
+                        item.evidence_hash,
+                    ),
+                )
+            ]
+        }
+    )
+
+
+__all__ = ["PostgresContentIntelligenceExecutionPort"]

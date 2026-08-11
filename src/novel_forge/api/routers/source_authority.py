@@ -254,6 +254,24 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
         _authorize("source.authority.query", project_id)
         return query.list_reprocessing_plans(project_id=project_id, limit=limit)
 
+    @router.get("/product/source-governance/invalidations")
+    def invalidations(
+        project_id: str,
+        status: str = "OPEN",
+        dimension: str = "",
+        limit: int = Query(default=100, ge=1, le=1_000),
+    ) -> list[dict[str, Any]]:
+        _authorize("source.authority.query", project_id)
+        try:
+            return query.list_invalidations(
+                project_id=project_id,
+                status=status,
+                dimension=dimension,
+                limit=limit,
+            )
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+
     @router.get("/product/source-governance/data-import-admission")
     def data_import_admission(project_id: str) -> dict[str, Any]:
         _authorize("source.authority.query", project_id)

@@ -173,6 +173,22 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
         except KernelError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
 
+    @router.get("/product/mkaos/knowledge-packs/{knowledge_pack_id}/diff")
+    def pack_diff(
+        knowledge_pack_id: str,
+        project_id: str,
+        against_knowledge_pack_id: str,
+    ) -> dict[str, Any]:
+        _authorize("mkaos.authority.query", project_id)
+        try:
+            return query.diff_packs(
+                project_id=project_id,
+                knowledge_pack_id=knowledge_pack_id,
+                against_knowledge_pack_id=against_knowledge_pack_id,
+            )
+        except KernelError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+
     return router
 
 

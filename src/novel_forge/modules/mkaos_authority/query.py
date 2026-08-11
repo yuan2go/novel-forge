@@ -189,10 +189,106 @@ class MkaosAuthorityQuery:
             )
         return matches[0]
 
+    def diff_packs(
+        self,
+        *,
+        project_id: str,
+        knowledge_pack_id: str,
+        against_knowledge_pack_id: str,
+    ) -> dict[str, Any]:
+        current = self.require_pack(
+            project_id=project_id, knowledge_pack_id=knowledge_pack_id
+        )
+        baseline = self.require_pack(
+            project_id=project_id, knowledge_pack_id=against_knowledge_pack_id
+        )
+        current_items = _pack_items(current)
+        baseline_items = _pack_items(baseline)
+        added = sorted(set(current_items) - set(baseline_items))
+        removed = sorted(set(baseline_items) - set(current_items))
+        changed = sorted(
+            identity
+            for identity in set(current_items) & set(baseline_items)
+            if current_items[identity] != baseline_items[identity]
+        )
+        unchanged = sorted(
+            identity
+            for identity in set(current_items) & set(baseline_items)
+            if current_items[identity] == baseline_items[identity]
+        )
+        current_lineage = dict(current["content"].get("lineage") or {})
+        baseline_lineage = dict(baseline["content"].get("lineage") or {})
+        return {
+            "schema_version": "mkaos-knowledge-pack-diff.v1",
+            "project_id": project_id,
+            "knowledge_pack_id": knowledge_pack_id,
+            "against_knowledge_pack_id": against_knowledge_pack_id,
+            "target_changed": (
+                current["target_asset_version_id"]
+                != baseline["target_asset_version_id"]
+            ),
+            "selector_policy_changed": (
+                current["selector_policy_version"]
+                != baseline["selector_policy_version"]
+                or current["selector_policy_hash"]
+                != baseline["selector_policy_hash"]
+            ),
+            "directly_supersedes_baseline": (
+                current_lineage.get("supersedes_pack_asset_version_id")
+                == baseline["asset_version_id"]
+            ),
+            "baseline_directly_supersedes_current": (
+                baseline_lineage.get("supersedes_pack_asset_version_id")
+                == current["asset_version_id"]
+            ),
+            "added": [current_items[identity] for identity in added],
+            "removed": [baseline_items[identity] for identity in removed],
+            "changed": [
+                {
+                    "knowledge_card_asset_version_id": identity,
+                    "before": baseline_items[identity],
+                    "after": current_items[identity],
+                }
+                for identity in changed
+            ],
+            "unchanged_count": len(unchanged),
+        }
+
 
 def _validate(project_id: str, limit: int) -> None:
     if not project_id or limit < 1 or limit > 500:
         raise ValueError("project_id and a limit between 1 and 500 are required")
+
+
+def _pack_items(pack: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    content = dict(pack.get("content") or {})
+    items = content.get("items")
+    if not isinstance(items, list):
+        raise KernelError(
+            "MKAOS_PACK_CONTENT_INVALID",
+            "KnowledgePack does not expose its immutable item composition",
+        )
+    result: dict[str, dict[str, Any]] = {}
+    for item in items:
+        if not isinstance(item, dict):
+            raise KernelError(
+                "MKAOS_PACK_CONTENT_INVALID",
+                "KnowledgePack item composition is malformed",
+            )
+        identity = str(item.get("knowledge_card_asset_version_id") or "")
+        if not identity or identity in result:
+            raise KernelError(
+                "MKAOS_PACK_CONTENT_INVALID",
+                "KnowledgePack item identities are incomplete or duplicated",
+            )
+        result[identity] = {
+            "knowledge_card_asset_version_id": identity,
+            "content_hash": str(item.get("content_hash") or ""),
+            "usage_role": str(item.get("usage_role") or ""),
+            "frozen_weight": str(item.get("frozen_weight") or ""),
+            "ordinal": int(item.get("ordinal") or 0),
+        }
+    return result
 
 
 __all__ = ["MkaosAuthorityQuery"]

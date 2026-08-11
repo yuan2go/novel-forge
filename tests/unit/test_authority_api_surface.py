@@ -95,11 +95,23 @@ class AuthorityApiSurfaceTests(unittest.TestCase):
                 "/product/source-governance/documents/{source_document_id}",
                 "/product/source-governance/documents/{source_document_id}/transforms",
                 "/product/source-governance/transforms/{source_transform_id}/chunks",
+                "/product/source-governance/invalidations",
+                "/product/source-imports",
+                "/product/source-imports/preview",
+                "/product/source-imports/{import_job_id}",
+                "/product/source-imports/{import_job_id}/preview",
+                "/product/source-imports/{import_job_id}/files",
+                "/product/source-imports/{import_job_id}/work",
+                "/product/source-imports/{import_job_id}/downstream",
+                "/product/source-imports/{import_job_id}/resume",
+                "/product/source-imports/reprocessing/apply",
+                "/product/source-imports/reprocessing/{plan_asset_version_id}",
                 "/product/mkaos/knowledge-candidates",
                 "/product/mkaos/knowledge-candidates/{candidate_asset_version_id}/approve",
                 "/product/mkaos/knowledge-cards",
                 "/product/mkaos/knowledge-packs",
                 "/product/mkaos/knowledge-packs/{knowledge_pack_id}",
+                "/product/mkaos/knowledge-packs/{knowledge_pack_id}/diff",
                 "/product/temporal-query",
                 "/product/content-intelligence/pacing",
                 "/product/content-intelligence/hooks",
@@ -221,9 +233,13 @@ class AuthorityApiSurfaceTests(unittest.TestCase):
                             "idempotency_key": "mkaos-denied",
                         },
                     ),
+                    client.get(
+                        "/product/source-imports/import-denied",
+                        params={"project_id": "project-denied"},
+                    ),
                 )
 
-        self.assertEqual([response.status_code for response in responses], [403] * 10)
+        self.assertEqual([response.status_code for response in responses], [403] * 11)
 
 
 if __name__ == "__main__":
