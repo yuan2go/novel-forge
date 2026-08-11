@@ -63,11 +63,23 @@ class SourceImportApplication(_BaseSourceImportApplication):
                 operation_id=worker.causation_id,
                 for_update=True,
             )
+            all_work = repository.list_work(
+                project_id=worker.project_id,
+                import_job_id=str(work["import_job_id"]),
+            )
+            unfinished = any(
+                str(item["status"]) in {"PLANNED", "RUNNING", "FAILED_RETRYABLE"}
+                for item in all_work
+                if str(item["operation_id"]) != worker.causation_id
+            )
             job = repository.job_for_update(
                 project_id=worker.project_id,
                 import_job_id=str(work["import_job_id"]),
             )
-            if job["status"] in {"PROCESSING", "PARTIALLY_COMPLETED"}:
+            if (
+                not unfinished
+                and job["status"] in {"PROCESSING", "PARTIALLY_COMPLETED"}
+            ):
                 repository.transition_job(
                     project_id=worker.project_id,
                     import_job_id=str(work["import_job_id"]),
