@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -1010,7 +1010,7 @@ class BookAuthorityStartRequest(BaseModel):
     book_id: str = Field(min_length=1)
     idempotency_key: str = Field(min_length=1)
     input_snapshot_id: str = ""
-    input_mode: str = "RESOLVED_AUTHORITY_INPUT"
+    input_mode: Literal["RESOLVED_AUTHORITY_INPUT"] = "RESOLVED_AUTHORITY_INPUT"
     book_design_version: str = ""
     book_plan_version: str = ""
     production_profile_version: str = ""

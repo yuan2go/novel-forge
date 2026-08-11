@@ -951,6 +951,7 @@ def _book_scenario(settings: Any, control: "ComposeControl") -> dict[str, Any]:
             production_profile_version="production-profile:v1",
             longform_context_versions=versions,
             target_chapter_count=1,
+            input_mode="LEGACY_FIXTURE_INPUT_MODE",
             light_recap_cadence=1,
             formal_recap_cadence=1,
         ),

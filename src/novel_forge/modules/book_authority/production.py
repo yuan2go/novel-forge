@@ -130,10 +130,10 @@ class StartBookProductionCommand:
     production_profile_version: str
     longform_context_versions: dict[str, str]
     target_chapter_count: int
+    input_mode: str
     light_recap_cadence: int = 5
     formal_recap_cadence: int = 10
     input_snapshot_id: str = ""
-    input_mode: str = "LEGACY_FIXTURE_INPUT_MODE"
 
 
 @dataclass(frozen=True, slots=True)
@@ -288,7 +288,7 @@ class PostgresBookAuthority:
         application_build_id: str,
         commit_sha: str,
         failure_injector: Callable[[str], None] | None = None,
-        legacy_fixture_input_allowed: bool = True,
+        legacy_fixture_input_allowed: bool = False,
     ) -> None:
         if not database_url or not application_build_id or len(commit_sha) != 40:
             raise ValueError("PostgreSQL, build id, and full commit SHA are required")
@@ -2388,6 +2388,7 @@ def book_coordinate_definition(
         "projection_consumers": ["book_authority_checkpoint"],
         "migration_owner": "book-authority",
         "policy": {
+            "execution_classification": "saga",
             "chapter_authority_state_ownership": "reference_only",
             "persistent_checkpoint_required": True,
         },

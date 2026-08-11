@@ -209,13 +209,13 @@
       "definition_factory": "novel_forge.modules.chapter_authority.definitions:chapter_root_operation_definition"
     },
     {
-      "name": "book.production.run",
+      "name": "book.production.coordinate",
       "source": "src/novel_forge/api/routers/book_authority.py",
       "application_source": "src/novel_forge/modules/book_authority/production.py",
       "classification": "saga",
       "dispatch": "saga_coordinator",
       "api_call": "_application(ctx).start",
-      "definition_factory": "novel_forge.modules.book_authority.definitions:book_definitions"
+      "definition_factory": "novel_forge.modules.book_authority.production:book_coordinate_definition"
     },
     {
       "name": "planning.binding.activate",

@@ -173,7 +173,7 @@ class ProductionExecutionContractTests(unittest.TestCase):
             validation_policy_ref="validation:chapter-draft:v1",
             commit_policy_ref="commit:chapter-draft:v1",
             stable_idempotency_key="chapter-1:draft:attempt-1",
-            origin_chain=("book.production.run", "chapter.slice.run"),
+            origin_chain=("book.production.coordinate", "chapter.slice.run"),
             agent_hop_count=0,
         )
 

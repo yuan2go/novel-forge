@@ -284,6 +284,7 @@ class ChapterGroupAuthorityPostgresTests(unittest.TestCase):
             followup_application=followup,
             application_build_id="chapter-group-integration",
             commit_sha="f" * 40,
+            legacy_fixture_input_allowed=True,
         )
         principal = Principal(
             principal_id="chapter-group-operator",
@@ -329,6 +330,7 @@ class ChapterGroupAuthorityPostgresTests(unittest.TestCase):
                 production_profile_version="production-profile:v1",
                 longform_context_versions=versions,
                 target_chapter_count=3,
+                input_mode="LEGACY_FIXTURE_INPUT_MODE",
                 light_recap_cadence=3,
                 formal_recap_cadence=10,
             ),

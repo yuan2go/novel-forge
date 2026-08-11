@@ -58,3 +58,27 @@ def test_chapter_command_adapter_uses_the_chapter_query_boundary() -> None:
     adapter = adapter.split("def stable_chapter_submission_key(", 1)[0]
     assert "self.application.query.require_operation_control_state(" in adapter
     assert "AuthorityUnitOfWork" not in adapter
+
+
+def test_fixture_book_kernel_is_not_a_second_runtime() -> None:
+    retired = (
+        "application.py",
+        "codecs.py",
+        "definitions.py",
+        "registry.py",
+        "scheduler.py",
+    )
+    package = ROOT / "src/novel_forge/modules/book_authority"
+    for name in retired:
+        assert not (package / name).exists(), name
+
+    composition = _read("src/novel_forge/modules/book_authority/composition.py")
+    production = _read("src/novel_forge/modules/book_authority/production.py")
+    api_models = _read("src/novel_forge/api/models.py")
+    entry_manifest = _read("architecture/manifests/production-entry-manifest.yaml")
+    assert "self.supervisor.tick(book_run_id)" in composition
+    assert "LEGACY_FIXTURE_INPUT" not in composition
+    assert "legacy_fixture_input_allowed: bool = False" in production
+    assert 'Literal["RESOLVED_AUTHORITY_INPUT"]' in api_models
+    assert '"name": "book.production.coordinate"' in entry_manifest
+    assert "book.production.run" not in entry_manifest

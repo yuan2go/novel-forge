@@ -16,7 +16,7 @@ class ProductionReachabilityManifestTests(unittest.TestCase):
         manifest = build_production_reachability_manifest(ROOT)
         by_name = {item["name"]: item for item in manifest["capabilities"]}
 
-        for name in ("book.production.run", "chapter.slice.run"):
+        for name in ("book.production.coordinate", "chapter.slice.run"):
             item = by_name[name]
             self.assertTrue(item["code_exists"])
             self.assertTrue(item["composed"])

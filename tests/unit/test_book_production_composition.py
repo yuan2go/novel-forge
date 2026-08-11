@@ -81,35 +81,19 @@ class BookProductionCompositionTests(unittest.TestCase):
         self.assertIs(composition.supervisor.chapter_groups, composition.chapter_groups)
         self.assertIs(composition.supervisor.production_preparation, preparation)
 
-    def test_tick_uses_supervisor_for_resolved_input_and_same_sidecar_for_legacy(
-        self,
-    ) -> None:
+    def test_tick_has_one_canonical_supervisor_path(self) -> None:
         from novel_forge.modules.book_authority.composition import (
             BookProductionComposition,
         )
 
         calls: list[tuple[str, str]] = []
-        authority = SimpleNamespace(
-            require=lambda book_run_id: {
-                "input_mode": (
-                    "RESOLVED_AUTHORITY_INPUT"
-                    if book_run_id == "resolved"
-                    else "LEGACY_FIXTURE_INPUT"
-                )
-            }
-        )
         supervisor = SimpleNamespace(
             tick=lambda book_run_id: (
                 calls.append(("supervisor", book_run_id)) or "supervisor-tick"
             ),
-            scheduler=SimpleNamespace(
-                tick=lambda book_run_id: (
-                    calls.append(("scheduler", book_run_id)) or "scheduler-tick"
-                )
-            ),
         )
         composition = BookProductionComposition(
-            authority=authority,
+            authority=SimpleNamespace(),
             query=SimpleNamespace(),
             planning=SimpleNamespace(),
             chapter_groups=SimpleNamespace(),
@@ -129,12 +113,8 @@ class BookProductionCompositionTests(unittest.TestCase):
         )
         assert composition.query is not None
 
-        self.assertEqual(composition.tick("resolved"), "supervisor-tick")
-        self.assertEqual(composition.tick("legacy"), "scheduler-tick")
-        self.assertEqual(
-            calls,
-            [("supervisor", "resolved"), ("scheduler", "legacy")],
-        )
+        self.assertEqual(composition.tick("book-run:1"), "supervisor-tick")
+        self.assertEqual(calls, [("supervisor", "book-run:1")])
 
     def test_formal_replan_approval_is_scoped_to_the_book_run(self) -> None:
         from novel_forge.modules.book_authority.composition import (

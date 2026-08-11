@@ -266,6 +266,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                 followup_application=followup,
                 application_build_id="book-chapter-vertical",
                 commit_sha="e" * 40,
+                legacy_fixture_input_allowed=True,
             )
             principal = Principal(
                 principal_id="book-authority-operator",
@@ -300,6 +301,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                     production_profile_version="production-profile:v1",
                     longform_context_versions=longform_versions,
                     target_chapter_count=1,
+                    input_mode="LEGACY_FIXTURE_INPUT_MODE",
                     light_recap_cadence=1,
                     formal_recap_cadence=1,
                 ),
@@ -520,6 +522,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                     production_profile_version="production-profile:v1",
                     longform_context_versions=dict(final["longform_context_versions"]),
                     target_chapter_count=2,
+                    input_mode="LEGACY_FIXTURE_INPUT_MODE",
                 ),
                 principal=principal,
             )
@@ -563,6 +566,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                 DATABASE_URL,
                 application_build_id="two-chapter-vertical",
                 commit_sha="e" * 40,
+                legacy_fixture_input_allowed=True,
                 model_port=build_reader_outcome_model_port(
                     settings, execution=execution, env=env
                 ),
@@ -577,6 +581,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                 followup_application=followup,
                 application_build_id="two-chapter-vertical",
                 commit_sha="e" * 40,
+                legacy_fixture_input_allowed=True,
             )
             principal = self._principal(project_id)
             worker = Principal(
@@ -609,6 +614,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                     production_profile_version="production-profile:v1",
                     longform_context_versions=longform_versions,
                     target_chapter_count=2,
+                    input_mode="LEGACY_FIXTURE_INPUT_MODE",
                 ),
                 principal=principal,
             )
@@ -1036,6 +1042,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
             application_build_id="book-authority-control",
             commit_sha="e" * 40,
             failure_injector=failure_injector,
+            legacy_fixture_input_allowed=True,
         )
         principal = self._principal(project_id)
         worker = Principal(
@@ -1066,6 +1073,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                 production_profile_version="production-profile:v1",
                 longform_context_versions=versions,
                 target_chapter_count=target_chapter_count,
+                input_mode="LEGACY_FIXTURE_INPUT_MODE",
             ),
             principal=principal,
         )

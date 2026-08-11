@@ -51,7 +51,6 @@
     "required_operation_definitions": [
       "chapter.slice.run",
       "creative.brief.create",
-      "book.production.run",
       "book.production.coordinate",
       "asset.create",
       "external_effect.reconcile",
