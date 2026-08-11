@@ -111,10 +111,14 @@ def _authority_main(argv: list[str] | None, settings: IndustrialSettings) -> int
             from novel_forge.api.authority_dependencies import (
                 authority_release_identity,
                 build_chapter_authority_application,
+                build_production_execution_composition,
             )
             from novel_forge.modules.chapter_authority.orchestrator import SingleChapterRequest
 
-            application = build_chapter_authority_application(settings)
+            production_execution = build_production_execution_composition(settings)
+            application = build_chapter_authority_application(
+                settings, execution=production_execution
+            )
             build_id, commit_sha = authority_release_identity()
             result = application.run(
                 SingleChapterRequest(
@@ -134,6 +138,7 @@ def _authority_main(argv: list[str] | None, settings: IndustrialSettings) -> int
                 project_id=args.project_id,
                 root_operation_id=result.root_operation_id,
             )
+            production_execution.close()
             print(json.dumps(detail, ensure_ascii=False, indent=2))
             return 0
         from novel_forge.api.authority_dependencies import build_chapter_authority_query

@@ -355,7 +355,10 @@ def _prepare_operation_recovery(
 
 
 def _chapter_scenario(settings: Any, control: "ComposeControl") -> dict[str, Any]:
-    from novel_forge.api.authority_dependencies import build_chapter_authority_application
+    from novel_forge.api.authority_dependencies import (
+        build_chapter_authority_application,
+        build_production_execution_composition,
+    )
     from novel_forge.modules.chapter_authority import SingleChapterRequest
     from tests.integration.test_postgresql_only_chapter_slice import (
         PostgreSQLOnlyChapterSliceTests,
@@ -366,7 +369,10 @@ def _chapter_scenario(settings: Any, control: "ComposeControl") -> dict[str, Any
     principal = _fixture_principal(
         project_id, {"chapter.authority.execute", "external_effect.execute"}
     )
-    application = build_chapter_authority_application(settings, env=os.environ)
+    execution = build_production_execution_composition(settings, env=os.environ)
+    application = build_chapter_authority_application(
+        settings, execution=execution, env=os.environ
+    )
     control.stop_target()
     admission = application.admit(
         SingleChapterRequest(
@@ -864,7 +870,11 @@ def _runtime_job_evidence(database_url: str, runtime_job_id: str) -> dict[str, A
 
 
 def _book_scenario(settings: Any, control: "ComposeControl") -> dict[str, Any]:
-    from novel_forge.api.authority_dependencies import build_book_authority_application
+    from novel_forge.api.authority_dependencies import (
+        build_book_authority_application,
+        build_chapter_authority_application,
+        build_production_execution_composition,
+    )
     from novel_forge.modules.book_authority import (
         StartBookProductionCommand,
         SubmitBookChapterCommand,
@@ -882,7 +892,16 @@ def _book_scenario(settings: Any, control: "ComposeControl") -> dict[str, Any]:
     principal = BookToChapterAuthorityVerticalPostgresTests._principal(project_id)
     candidates = PostgreSQLOnlyChapterSliceTests.release_evidence(project_id)
     versions = BookToChapterAuthorityVerticalPostgresTests._seed_book_inputs(project_id)
-    application = build_book_authority_application(settings, env=os.environ)
+    execution = build_production_execution_composition(settings, env=os.environ)
+    chapter = build_chapter_authority_application(
+        settings, execution=execution, env=os.environ
+    )
+    application = build_book_authority_application(
+        settings,
+        execution=execution,
+        chapter_application=chapter,
+        env=os.environ,
+    )
     control.stop_target()
     book = application.start(
         StartBookProductionCommand(

@@ -21,6 +21,7 @@
   "production_roots": [
     "src/novel_forge/api/authority_app.py",
     "src/novel_forge/api/authority_dependencies.py",
+    "src/novel_forge/infrastructure/production_execution_composition.py",
     "src/novel_forge/api/routers/authority_projects.py",
     "src/novel_forge/api/routers/authority_tasks.py",
     "src/novel_forge/api/routers/authority_assets.py",

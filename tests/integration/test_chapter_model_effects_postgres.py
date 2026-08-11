@@ -6,7 +6,10 @@ import hashlib
 import json
 from pathlib import Path
 
-from novel_forge.api.authority_dependencies import build_chapter_authority_application
+from novel_forge.api.authority_dependencies import (
+    build_chapter_authority_application,
+    build_production_execution_composition,
+)
 from novel_forge.infrastructure.settings import IndustrialSettings
 from novel_forge.modules.chapter_authority.application import (
     ChapterAuthorityApplication,
@@ -694,19 +697,23 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
         project_id = identifier("gateway-model-slice-project")
         recovery_execution_id = ""
         with tempfile.TemporaryDirectory() as directory:
+            settings = IndustrialSettings(
+                root=Path(directory), database_url=DATABASE_URL
+            )
+            env = {
+                "NOVEL_FORGE_ENVIRONMENT": "test",
+                "NOVEL_FORGE_DRAFT_PROVIDER": "mock",
+                "NOVEL_FORGE_REVIEW_PROVIDER": "mock",
+                "NOVEL_FORGE_REVISION_PROVIDER": "mock",
+                "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": str(
+                    Path(directory) / "objects"
+                ),
+                "NOVEL_FORGE_ENABLE_SYNCHRONOUS_AUTHORITY_FIXTURE": "true",
+                "NOVEL_FORGE_COMMIT_SHA": "e" * 40,
+            }
+            execution = build_production_execution_composition(settings, env=env)
             application = build_chapter_authority_application(
-                IndustrialSettings(root=Path(directory), database_url=DATABASE_URL),
-                env={
-                    "NOVEL_FORGE_ENVIRONMENT": "test",
-                    "NOVEL_FORGE_DRAFT_PROVIDER": "mock",
-                    "NOVEL_FORGE_REVIEW_PROVIDER": "mock",
-                    "NOVEL_FORGE_REVISION_PROVIDER": "mock",
-                    "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": str(
-                        Path(directory) / "objects"
-                    ),
-                    "NOVEL_FORGE_ENABLE_SYNCHRONOUS_AUTHORITY_FIXTURE": "true",
-                    "NOVEL_FORGE_COMMIT_SHA": "e" * 40,
-                },
+                settings, execution=execution, env=env
             )
             result = application.run(
                 SingleChapterRequest(
@@ -727,7 +734,7 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
             self.assertEqual(result.root_status, "SUCCEEDED")
             self.assertEqual(result.saga_status, "SUCCEEDED")
             self.assertTrue(
-                application.model_port.adapter.production_execution_gateway_backed
+                execution.gateway.production_execution_gateway_backed
             )
             exported = (
                 Path(directory) / "objects" / f"chapters/{project_id}/1/chapter.txt"

@@ -7,7 +7,11 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from novel_forge.api.authority_dependencies import build_chapter_authority_application
+from novel_forge.api.authority_dependencies import (
+    build_chapter_authority_application,
+    build_production_execution_composition,
+    build_reader_outcome_model_port,
+)
 from novel_forge.infrastructure.settings import IndustrialSettings
 from novel_forge.modules.authority_security import Principal, PrincipalType
 from novel_forge.modules.book_authority.production import (
@@ -241,12 +245,17 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                 "NOVEL_FORGE_AUTHORITY_WORKER_ID": "book-chapter-pep-worker",
                 "NOVEL_FORGE_ENABLE_SYNCHRONOUS_AUTHORITY_FIXTURE": "true",
             }
-            chapter = build_chapter_authority_application(settings, env=env)
+            execution = build_production_execution_composition(settings, env=env)
+            chapter = build_chapter_authority_application(
+                settings, execution=execution, env=env
+            )
             followup = BookFollowupAuthorityApplication(
                 DATABASE_URL,
                 application_build_id="book-chapter-vertical",
                 commit_sha="e" * 40,
-                model_port=chapter.model_port,
+                model_port=build_reader_outcome_model_port(
+                    settings, execution=execution, env=env
+                ),
                 worker_id="book-followup-vertical-worker",
             )
             port = _SynchronousCommandPort(chapter)
@@ -553,17 +562,25 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                 "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": str(Path(root) / "objects"),
                 "NOVEL_FORGE_AUTHORITY_WORKER_ID": "two-chapter-pep-worker",
             }
-            chapter = build_chapter_authority_application(settings, env=env)
+            execution = build_production_execution_composition(settings, env=env)
+            chapter = build_chapter_authority_application(
+                settings, execution=execution, env=env
+            )
             followup = BookFollowupAuthorityApplication(
                 DATABASE_URL,
                 application_build_id="two-chapter-vertical",
                 commit_sha="e" * 40,
-                model_port=chapter.model_port,
+                model_port=build_reader_outcome_model_port(
+                    settings, execution=execution, env=env
+                ),
                 worker_id="two-chapter-followup-worker",
             )
             authority = PostgresBookAuthority(
                 DATABASE_URL,
-                chapter_port=ChapterAuthorityCommandAdapter(chapter),
+                chapter_port=ChapterAuthorityCommandAdapter(
+                    chapter,
+                    external_effect_adapters=execution.external_effect_adapters,
+                ),
                 followup_application=followup,
                 application_build_id="two-chapter-vertical",
                 commit_sha="e" * 40,
@@ -1018,17 +1035,25 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
             ),
             "NOVEL_FORGE_AUTHORITY_WORKER_ID": "book-control-pep-worker",
         }
-        chapter = build_chapter_authority_application(settings, env=env)
+        execution = build_production_execution_composition(settings, env=env)
+        chapter = build_chapter_authority_application(
+            settings, execution=execution, env=env
+        )
         followup = BookFollowupAuthorityApplication(
             DATABASE_URL,
             application_build_id="book-authority-control",
             commit_sha="e" * 40,
-            model_port=chapter.model_port,
+            model_port=build_reader_outcome_model_port(
+                settings, execution=execution, env=env
+            ),
             worker_id="book-control-followup-worker",
         )
         authority = PostgresBookAuthority(
             DATABASE_URL,
-            chapter_port=ChapterAuthorityCommandAdapter(chapter),
+            chapter_port=ChapterAuthorityCommandAdapter(
+                chapter,
+                external_effect_adapters=execution.external_effect_adapters,
+            ),
             followup_application=followup,
             application_build_id="book-authority-control",
             commit_sha="e" * 40,

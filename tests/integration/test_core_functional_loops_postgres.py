@@ -16,6 +16,7 @@ import pytest
 from novel_forge.api.authority_dependencies import (
     build_book_production_composition,
     build_chapter_authority_application,
+    build_production_execution_composition,
     build_story_planning_generation_application,
 )
 from novel_forge.infrastructure.settings import IndustrialSettings
@@ -935,11 +936,11 @@ def test_production_composition_executes_five_planning_generators_via_pep() -> N
             "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": root,
             "NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID": harness.pack_id,
         }
-        chapter = build_chapter_authority_application(settings, env=env)
+        execution = build_production_execution_composition(settings, env=env)
         planning = build_story_planning_generation_application(
             settings,
+            execution=execution,
             env=env,
-            chapter_application=chapter,
         )
         activated = _activate_plan_chain(
             project_id=harness.project_id,
@@ -949,7 +950,7 @@ def test_production_composition_executes_five_planning_generators_via_pep() -> N
             principal=principal,
             application=planning,
         )
-        chapter.close()
+        execution.close()
 
     assert set(activated) == set(GENERATOR_INPUT_ROLES)
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
@@ -1019,11 +1020,11 @@ def test_planning_retry_reuses_frozen_pack_after_measured_provider_result() -> N
             "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": root,
             "NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID": harness.pack_id,
         }
-        chapter = build_chapter_authority_application(settings, env=env)
+        execution = build_production_execution_composition(settings, env=env)
         planning = build_story_planning_generation_application(
             settings,
+            execution=execution,
             env=env,
-            chapter_application=chapter,
             post_provider_fault_injector=fail_once,
         )
         command = StoryPlanningGenerationCommand(
@@ -1055,7 +1056,7 @@ def test_planning_retry_reuses_frozen_pack_after_measured_provider_result() -> N
         harness.activate(replacement_deployment, expected_activation_version=1)
 
         result = planning.generate(command, principal=principal)
-        chapter.close()
+        execution.close()
 
     assert result.status is PlanningGenerationStatus.APPROVAL_PENDING
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
@@ -1205,18 +1206,27 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
         "NOVEL_FORGE_AUTHORITY_WORKER_ID": "core-functional-loop-worker",
         "NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID": harness.pack_id,
     }
-    chapter_application = build_chapter_authority_application(settings, env=runtime_env)
-    worker_chapter_applications = []
+    production_execution = build_production_execution_composition(
+        settings, env=runtime_env
+    )
+    chapter_application = build_chapter_authority_application(
+        settings, execution=production_execution, env=runtime_env
+    )
+    worker_production_executions = []
 
     def build_worker_runtime():
-        worker_chapter = build_chapter_authority_application(
+        worker_execution = build_production_execution_composition(
             settings, env=runtime_env
         )
-        worker_chapter_applications.append(worker_chapter)
+        worker_chapter = build_chapter_authority_application(
+            settings, execution=worker_execution, env=runtime_env
+        )
+        worker_production_executions.append(worker_execution)
         return (
             build_book_production_composition(
                 settings,
                 principal=worker_principal,
+                execution=worker_execution,
                 env=runtime_env,
                 chapter_application=worker_chapter,
             ),
@@ -1226,6 +1236,7 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
     composition = build_book_production_composition(
         settings,
         principal=principal,
+        execution=production_execution,
         env=runtime_env,
         chapter_application=chapter_application,
     )
@@ -1517,9 +1528,9 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
             book_authority.require(book.book_run_id)["input_snapshot_id"]
             == snapshot.snapshot_id
         )
-        chapter_application.close()
-        for worker_chapter in worker_chapter_applications:
-            worker_chapter.close()
+        production_execution.close()
+        for worker_execution in worker_production_executions:
+            worker_execution.close()
         object_store.cleanup()
         return
 
@@ -1706,9 +1717,9 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
     assert SupervisorAction.DISPATCH_CHAPTER.value in after_replan_actions
     assert SupervisorAction.ACCEPT_CHAPTER.value in after_replan_actions
     assert book_authority.require(book.book_run_id)["accepted_through_chapter"] == 2
-    chapter_application.close()
-    for worker_chapter in worker_chapter_applications:
-        worker_chapter.close()
+    production_execution.close()
+    for worker_execution in worker_production_executions:
+        worker_execution.close()
     object_store.cleanup()
 
 

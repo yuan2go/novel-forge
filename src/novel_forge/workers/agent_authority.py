@@ -4,11 +4,12 @@ from __future__ import annotations
 
 import signal
 import time
+import os
 from dataclasses import dataclass
 
 from novel_forge.api.authority_dependencies import (
     build_agent_authority_scheduler,
-    build_chapter_authority_application,
+    build_production_execution_composition,
     build_trusted_principal_resolver,
 )
 from novel_forge.infrastructure.settings import IndustrialSettings
@@ -33,13 +34,16 @@ def run_worker(*, poll_seconds: float = 1.0, batch_size: int = 10) -> int:
     if poll_seconds <= 0 or poll_seconds > 60 or batch_size <= 0:
         raise ValueError("worker poll and batch configuration is invalid")
     settings = IndustrialSettings.from_env()
-    chapter_application = build_chapter_authority_application(settings)
+    production_execution = build_production_execution_composition(settings)
     resolver = build_trusted_principal_resolver()
-    worker_id = chapter_application.worker_id
+    worker_id = str(
+        os.environ.get("NOVEL_FORGE_AUTHORITY_WORKER_ID")
+        or "agent-authority-worker"
+    ).strip()
     principal = resolver.resolve_worker_principal(worker_id)
     scheduler = build_agent_authority_scheduler(
         settings,
-        chapter_application=chapter_application,
+        execution=production_execution,
         worker_id=principal.principal_id,
     )
     shutdown = _Shutdown()
@@ -85,10 +89,12 @@ def run_worker(*, poll_seconds: float = 1.0, batch_size: int = 10) -> int:
             supervisor.batch_completed(failures)
         except WorkerProgrammingError as error:
             supervisor.fatal(error)
+            production_execution.close()
             close_all_database_runtimes()
             return WorkerSupervisor.FATAL_EXIT_CODE
     supervisor.draining()
     supervisor.stopped()
+    production_execution.close()
     close_all_database_runtimes()
     return 0
 

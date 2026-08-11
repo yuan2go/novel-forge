@@ -38,11 +38,8 @@ class BookProductionCompositionTests(unittest.TestCase):
         )
         preparation = SimpleNamespace()
 
+        execution = SimpleNamespace()
         with (
-            patch(
-                "novel_forge.api.authority_dependencies.build_chapter_authority_application",
-                return_value=chapter,
-            ),
             patch(
                 "novel_forge.api.authority_dependencies.build_book_authority_application",
                 return_value=book,
@@ -65,6 +62,8 @@ class BookProductionCompositionTests(unittest.TestCase):
                     "NOVEL_FORGE_COMMIT_SHA": "a" * 40,
                 },
                 principal=principal,
+                execution=execution,
+                chapter_application=chapter,
             )
 
         self.assertIs(composition.authority, book)

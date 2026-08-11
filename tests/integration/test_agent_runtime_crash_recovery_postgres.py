@@ -7,6 +7,7 @@ import pytest
 
 from novel_forge.api.authority_dependencies import (
     build_chapter_authority_application,
+    build_production_execution_composition,
 )
 from novel_forge.infrastructure.settings import IndustrialSettings
 from novel_forge.modules.agent_collaboration.application import (
@@ -551,14 +552,17 @@ def _application(
         environment="test",
         database_url=DATABASE_URL,
     )
+    env = {
+        "NOVEL_FORGE_ENVIRONMENT": "test",
+        "NOVEL_FORGE_MODEL_PROVIDER": "scripted_provider_v2",
+        "NOVEL_FORGE_COMMIT_SHA": RELEASE_SHA,
+        "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": str(object_root),
+    }
+    execution = build_production_execution_composition(settings, env=env)
     return build_chapter_authority_application(
         settings,
-        env={
-            "NOVEL_FORGE_ENVIRONMENT": "test",
-            "NOVEL_FORGE_MODEL_PROVIDER": "scripted_provider_v2",
-            "NOVEL_FORGE_COMMIT_SHA": RELEASE_SHA,
-            "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": str(object_root),
-        },
+        execution=execution,
+        env=env,
         runtime_fault_injector=fault_injector,
     )
 

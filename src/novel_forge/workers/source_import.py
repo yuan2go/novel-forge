@@ -6,6 +6,7 @@ import signal
 import time
 
 from novel_forge.api.authority_dependencies import (
+    build_production_execution_composition,
     build_source_import_application,
     build_trusted_principal_resolver,
 )
@@ -50,7 +51,10 @@ def main() -> int:
     lease_seconds = max(
         1, int(os.environ.get("NOVEL_FORGE_AUTHORITY_LEASE_SECONDS") or "30")
     )
-    application = build_source_import_application(settings)
+    production_execution = build_production_execution_composition(settings)
+    application = build_source_import_application(
+        settings, execution=production_execution
+    )
     scheduler = SourceImportScheduler(
         application,
         worker_id=principal.principal_id,
@@ -105,10 +109,12 @@ def main() -> int:
             supervisor.batch_completed(failures)
         except WorkerProgrammingError as error:
             supervisor.fatal(error)
+            production_execution.close()
             close_all_database_runtimes()
             return WorkerSupervisor.FATAL_EXIT_CODE
     supervisor.draining()
     supervisor.stopped()
+    production_execution.close()
     close_all_database_runtimes()
     return 0
 

@@ -43,6 +43,9 @@ from novel_forge.modules.command_kernel.cancellation import (
 from novel_forge.modules.command_kernel.external_effect_runtime import (
     cancel_operation_external_effects,
 )
+from novel_forge.modules.command_kernel.external_effect_adapters import (
+    ExternalEffectAdapter,
+)
 from novel_forge.modules.command_kernel.operation_graph import (
     GraphCommandContext,
     coordinate_saga,
@@ -187,6 +190,7 @@ class ChapterAuthorityCommandPort(Protocol):
 @dataclass(slots=True)
 class ChapterAuthorityCommandAdapter:
     application: ChapterAuthorityApplication
+    external_effect_adapters: dict[str, ExternalEffectAdapter]
 
     def submit(
         self, request: SingleChapterRequest, *, principal: Principal
@@ -240,7 +244,7 @@ class ChapterAuthorityCommandAdapter:
             actor_id=actor_id,
             trace_id=trace_id,
             correlation_id=correlation_id,
-            adapters=self.application.external_effect_adapters,
+            adapters=self.external_effect_adapters,
         )
         return {**result, "external_effect_cancellations": list(cancellations)}
 

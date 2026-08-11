@@ -55,7 +55,7 @@ from novel_forge.modules.source_authority.deconstruction import (
     ObservationScope,
 )
 from novel_forge.api.authority_dependencies import (
-    build_chapter_authority_application,
+    build_production_execution_composition,
     build_source_import_application,
 )
 from novel_forge.infrastructure.settings import IndustrialSettings
@@ -144,20 +144,21 @@ class SourceImportRuntimePostgresTests(unittest.TestCase):
             allowed_file_roots=(self.root,),
         )
         self.git_adapter = git_adapter
-        self.chapter_application = build_chapter_authority_application(
-            IndustrialSettings(root=self.root, database_url=DATABASE_URL),
-            env={
+        settings = IndustrialSettings(root=self.root, database_url=DATABASE_URL)
+        env = {
                 "NOVEL_FORGE_ENVIRONMENT": "test",
                 "NOVEL_FORGE_DRAFT_PROVIDER": "mock",
                 "NOVEL_FORGE_REVIEW_PROVIDER": "mock",
                 "NOVEL_FORGE_REVISION_PROVIDER": "mock",
                 "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": str(self.object_root),
                 "NOVEL_FORGE_COMMIT_SHA": "e" * 40,
-            },
+        }
+        self.production_execution = build_production_execution_composition(
+            settings, env=env
         )
         execution_port = PostgresContentIntelligenceExecutionPort(
             DATABASE_URL,
-            transport=self.chapter_application.model_port.adapter,
+            transport=self.production_execution.gateway,
             worker_id="source-import-integration-worker",
             lease_seconds=30,
         )
@@ -168,7 +169,7 @@ class SourceImportRuntimePostgresTests(unittest.TestCase):
             commit_sha="e" * 40,
             worker_id="source-import-integration-worker",
             git_adapter=git_adapter,
-            object_store_adapter=self.chapter_application.object_store_adapter,
+            object_store_adapter=self.production_execution.object_store,
             object_store_reader=LocalObjectStoreReader(self.object_root),
             execution_port=execution_port,
             allow_fixture_intelligence=True,
@@ -205,23 +206,27 @@ class SourceImportRuntimePostgresTests(unittest.TestCase):
         self.temporary.cleanup()
 
     def test_production_composition_runs_automatic_document_routing(self) -> None:
+        settings = IndustrialSettings(root=self.root, database_url=DATABASE_URL)
+        env = {
+            "NOVEL_FORGE_ENVIRONMENT": "test",
+            "NOVEL_FORGE_DRAFT_PROVIDER": "mock",
+            "NOVEL_FORGE_REVIEW_PROVIDER": "mock",
+            "NOVEL_FORGE_REVISION_PROVIDER": "mock",
+            "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": str(
+                self.root / "composed-objects"
+            ),
+            "NOVEL_FORGE_SOURCE_IMPORT_GIT_CACHE_ROOT": str(
+                self.root / "composed-git-cache"
+            ),
+            "NOVEL_FORGE_SOURCE_IMPORT_FILE_FIXTURE_ROOT": str(self.root),
+            "NOVEL_FORGE_APPLICATION_BUILD_ID": "source-import-composition-test",
+            "NOVEL_FORGE_COMMIT_SHA": "e" * 40,
+        }
+        execution = build_production_execution_composition(settings, env=env)
         composed = build_source_import_application(
-            IndustrialSettings(root=self.root, database_url=DATABASE_URL),
-            env={
-                "NOVEL_FORGE_ENVIRONMENT": "test",
-                "NOVEL_FORGE_DRAFT_PROVIDER": "mock",
-                "NOVEL_FORGE_REVIEW_PROVIDER": "mock",
-                "NOVEL_FORGE_REVISION_PROVIDER": "mock",
-                "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": str(
-                    self.root / "composed-objects"
-                ),
-                "NOVEL_FORGE_SOURCE_IMPORT_GIT_CACHE_ROOT": str(
-                    self.root / "composed-git-cache"
-                ),
-                "NOVEL_FORGE_SOURCE_IMPORT_FILE_FIXTURE_ROOT": str(self.root),
-                "NOVEL_FORGE_APPLICATION_BUILD_ID": "source-import-composition-test",
-                "NOVEL_FORGE_COMMIT_SHA": "e" * 40,
-            },
+            settings,
+            execution=execution,
+            env=env,
         )
         self.assertIsInstance(
             composed.execution_port, PostgresContentIntelligenceExecutionPort

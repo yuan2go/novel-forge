@@ -10,6 +10,7 @@ from novel_forge.api.authority_dependencies import (
     authority_release_identity,
     build_chapter_authority_application,
     build_chapter_authority_query,
+    build_production_execution_composition,
     chapter_capability_pack_compilation_report,
 )
 from novel_forge.infrastructure.settings import IndustrialSettings
@@ -79,7 +80,7 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
             database_url="postgresql://authority",
         )
         with self.assertRaisesRegex(RuntimeError, "explicit chapter model provider"):
-            build_chapter_authority_application(settings, env={})
+            build_production_execution_composition(settings, env={})
 
     def test_nonproduction_fixture_routes_are_explicit_and_filesystem_independent(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -87,7 +88,7 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
                 root=Path(directory),
                 database_url="postgresql://authority",
             )
-            application = build_chapter_authority_application(
+            execution = build_production_execution_composition(
                 settings,
                 env={
                     "NOVEL_FORGE_ENVIRONMENT": "test",
@@ -97,23 +98,30 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
                     "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": "object-store",
                 },
             )
+            application = build_chapter_authority_application(
+                settings,
+                execution=execution,
+                env={
+                    "NOVEL_FORGE_ENVIRONMENT": "test",
+                },
+            )
 
         self.assertEqual(
-            application.model_port.adapter.provider,
+            execution.gateway.provider,
             "production_execution_gateway",
         )
-        self.assertTrue(
-            application.model_port.adapter.production_execution_gateway_backed
-        )
+        self.assertTrue(execution.gateway.production_execution_gateway_backed)
         self.assertEqual(
-            application.model_port.adapter.capability_profile.control_level.value,
+            execution.gateway.capability_profile.control_level.value,
             "FIXTURE_CONTROLLED",
         )
+        self.assertFalse(hasattr(application, "model_port"))
+        self.assertFalse(hasattr(application, "object_store_adapter"))
 
     def test_production_rejects_mock_model_routes(self) -> None:
         settings = IndustrialSettings(root=Path("."), database_url="postgresql://authority")
         with self.assertRaisesRegex(RuntimeError, "not configured"):
-            build_chapter_authority_application(
+            build_production_execution_composition(
                 settings,
                 env={
                     "NOVEL_FORGE_ENVIRONMENT": "production",
@@ -156,7 +164,7 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
             "NOVEL_FORGE_PROVIDER_AUTH_PROFILE": "auth:test",
         }
         with self.assertRaisesRegex(RuntimeError, "SYSTEM_INSTRUCTION_HASH"):
-            build_chapter_authority_application(
+            build_production_execution_composition(
                 IndustrialSettings(
                     root=Path("."),
                     database_url="postgresql://authority",
@@ -177,19 +185,25 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
             "novel_forge.storage.object_store.MinioObjectStore",
             return_value=SimpleNamespace(client=object()),
         ):
-            application = build_chapter_authority_application(
-                IndustrialSettings(
-                    root=Path("."), database_url="postgresql://authority"
-                ),
+            settings = IndustrialSettings(
+                root=Path("."), database_url="postgresql://authority"
+            )
+            execution = build_production_execution_composition(
+                settings,
                 provider_registry=registry,
                 env=controlled_environment,
             )
+            build_chapter_authority_application(
+                settings,
+                execution=execution,
+                env=controlled_environment,
+            )
         self.assertEqual(
-            application.model_port.adapter.capability_profile.control_level.value,
+            execution.gateway.capability_profile.control_level.value,
             "V2_CONTROLLED",
         )
         self.assertTrue(
-            application.model_port.adapter.capability_profile.real_provider_validation_eligible
+            execution.gateway.capability_profile.real_provider_validation_eligible
         )
     def test_provider_validation_composes_codex_directly_without_provider_v2(self) -> None:
         repository_root = Path(__file__).resolve().parents[2]
@@ -226,16 +240,15 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
                 "novel_forge.storage.object_store.MinioObjectStore",
                 return_value=SimpleNamespace(client=object()),
             ):
-                application = build_chapter_authority_application(
+                execution = build_production_execution_composition(
                     IndustrialSettings(
-                        root=repository_root,
-                        database_url="postgresql://authority",
+                        root=repository_root, database_url="postgresql://authority"
                     ),
                     provider_registry=ProviderAdapterRegistry(),
                     env=environment,
                 )
 
-        routes = application.model_port.adapter.routes
+        routes = execution.gateway.routes
         self.assertEqual(
             {route.model_profile.backend_id for route in routes.values()},
             {"codex-cli"},
@@ -245,9 +258,9 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
             {"LOCAL_CLI_REMOTE_INFERENCE"},
         )
         self.assertTrue(
-            application.model_port.adapter.capability_profile.real_provider_validation_eligible
+            execution.gateway.capability_profile.real_provider_validation_eligible
         )
-        session = application.model_port.adapter.session_factory("project:codex-test")
+        session = execution.gateway.session_factory("project:codex-test")
         backend = session.gateway.backends.resolve("codex-cli")
         self.assertEqual(
             backend.capability_profile.qualification_ref,

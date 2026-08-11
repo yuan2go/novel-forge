@@ -8,6 +8,9 @@ from novel_forge.modules.chapter_authority.model_effects import (
     ChapterAgentBindingRecorder,
     ExternalEffectChapterModelPort,
 )
+from novel_forge.modules.chapter_authority.execution_gateway import (
+    PostgresChapterExecutionContractBinder,
+)
 from novel_forge.modules.chapter_authority.orchestrator import (
     ChapterSagaAdmission,
     ChapterSliceResult,
@@ -19,7 +22,6 @@ from novel_forge.modules.chapter_authority.scheduler import ChapterAuthoritySche
 from novel_forge.modules.authority_security import Principal
 from novel_forge.modules.chapter_authority.queries import ChapterAuthorityQuery
 from novel_forge.modules.command_kernel.external_effect_adapters import ExternalEffectAdapter
-from novel_forge.storage.database_runtime import close_all_database_runtimes
 
 
 class ChapterAuthorityApplication:
@@ -30,6 +32,7 @@ class ChapterAuthorityApplication:
         model_adapter: ExternalEffectAdapter,
         object_store_adapter: ExternalEffectAdapter,
         worker_id: str,
+        capability_binder: PostgresChapterExecutionContractBinder | None = None,
         allow_synchronous_fixture: bool = True,
         max_cost_per_model_call: str = "0",
         budget_caps: dict[str, str] | None = None,
@@ -41,7 +44,7 @@ class ChapterAuthorityApplication:
             raise ValueError("PostgreSQL database and worker identity are required")
         self.database_url = database_url
         self.agent_binding_recorder = agent_binding_recorder
-        self.model_port = ExternalEffectChapterModelPort(
+        self._model_port = ExternalEffectChapterModelPort(
             database_url,
             adapter=model_adapter,
             worker_id=f"{worker_id}:model",
@@ -50,20 +53,14 @@ class ChapterAuthorityApplication:
             agent_binding_recorder=agent_binding_recorder,
             agent_binding_required=agent_binding_required,
             fault_injector=runtime_fault_injector,
+            capability_binder=capability_binder,
         )
-        self.registry = build_chapter_handler_registry(self.model_port)
-        self.object_store_adapter = object_store_adapter
+        self.registry = build_chapter_handler_registry(self._model_port)
+        self._object_store_adapter = object_store_adapter
         self.worker_id = worker_id
         self.allow_synchronous_fixture = allow_synchronous_fixture
         self.runtime_fault_injector = runtime_fault_injector
         self.query = ChapterAuthorityQuery(database_url)
-
-    @property
-    def external_effect_adapters(self) -> dict[str, ExternalEffectAdapter]:
-        return {
-            self.model_port.adapter.provider: self.model_port.adapter,
-            self.object_store_adapter.provider: self.object_store_adapter,
-        }
 
     def run(self, request: SingleChapterRequest) -> ChapterSliceResult:
         if not self.allow_synchronous_fixture:
@@ -74,7 +71,7 @@ class ChapterAuthorityApplication:
             self.database_url,
             request=request,
             registry=self.registry,
-            object_store_adapter=self.object_store_adapter,
+            object_store_adapter=self._object_store_adapter,
         )
 
     def admit(
@@ -99,21 +96,13 @@ class ChapterAuthorityApplication:
         return ChapterAuthorityScheduler(
             self.database_url,
             registry=self.registry,
-            object_store_adapter=self.object_store_adapter,
+            object_store_adapter=self._object_store_adapter,
             worker_id=principal.principal_id,
             permissions=principal.permissions,
             agent_binding_recorder=self.agent_binding_recorder,
             fault_injector=self.runtime_fault_injector,
-            model_effect_adapter=self.model_port.adapter,
+            model_effect_adapter=self._model_port.adapter,
         )
-
-    def close(self) -> None:
-        """Destroy process-local gateway sessions and PostgreSQL pools."""
-
-        close_sessions = getattr(self.model_port.adapter, "close_sessions", None)
-        if callable(close_sessions):
-            close_sessions()
-        close_all_database_runtimes()
 
 
 __all__ = ["ChapterAuthorityApplication"]

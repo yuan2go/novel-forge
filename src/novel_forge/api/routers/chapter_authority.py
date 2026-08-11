@@ -8,8 +8,6 @@ from fastapi import APIRouter, HTTPException, Query
 
 from novel_forge.api.authority_dependencies import (
     authority_release_identity,
-    build_chapter_authority_application,
-    build_chapter_authority_query,
     build_production_preparation_service,
     build_trusted_principal_resolver,
 )
@@ -220,7 +218,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 actor_id=principal.principal_id,
                 trace_id=trace_id,
                 correlation_id=correlation_id,
-                adapters=_application(ctx).external_effect_adapters,
+                adapters=ctx.services.production_execution.external_effect_adapters,
             )
             return {
                 **result,
@@ -265,13 +263,17 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
 
 
 def _application(ctx: ProductRouterContext):
-    application = getattr(ctx.services, "chapter_application", None)
-    return application or build_chapter_authority_application(ctx.app_settings)
+    application = ctx.services.chapter_application
+    if application is None:
+        raise RuntimeError("Chapter Authority application is not composed")
+    return application
 
 
 def _query(ctx: ProductRouterContext):
-    query = getattr(ctx.services, "chapter_query", None)
-    return query or build_chapter_authority_query(ctx.app_settings)
+    query = ctx.services.chapter_query
+    if query is None:
+        raise RuntimeError("PostgreSQL database is required for Chapter query")
+    return query
 
 
 __all__ = ["create_router"]

@@ -17,6 +17,7 @@ from novel_forge.modules.chapter_authority.contracts import (
 )
 from novel_forge.modules.chapter_authority.execution_gateway import (
     ChapterExecutionBinding,
+    PostgresChapterExecutionContractBinder,
     ProductionExecutionGatewayExternalEffectAdapter,
     chapter_stage_capability,
 )
@@ -74,6 +75,7 @@ class ChapterGatewayAgentExecutionPreparer:
         database_url: str,
         *,
         adapter: ProductionExecutionGatewayExternalEffectAdapter,
+        capability_binder: PostgresChapterExecutionContractBinder,
         worker_id: str,
         lease_seconds: int = 60,
         max_cost_per_call: str = "0",
@@ -85,6 +87,7 @@ class ChapterGatewayAgentExecutionPreparer:
             raise ValueError("Agent production execution requires the PEP adapter")
         self.database_url = database_url
         self.adapter = adapter
+        self.capability_binder = capability_binder
         self.worker_id = worker_id
         self.lease_seconds = lease_seconds
         self.max_cost_per_call = max_cost_per_call
@@ -225,7 +228,7 @@ class ChapterGatewayAgentExecutionPreparer:
             ),
         )
         payload["external_effect_id"] = str(effect["external_effect_id"])
-        binding = self.adapter.binder.bind(
+        binding = self.capability_binder.bind(
             stable_idempotency_key=stable_key,
             capability=f"model.{stage}",
             request_payload=payload,

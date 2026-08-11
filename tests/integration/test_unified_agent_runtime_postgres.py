@@ -6,7 +6,10 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from novel_forge.api.authority_dependencies import build_chapter_authority_application
+from novel_forge.api.authority_dependencies import (
+    build_chapter_authority_application,
+    build_production_execution_composition,
+)
 from novel_forge.infrastructure.settings import IndustrialSettings
 from novel_forge.modules.agent_collaboration.domain import (
     AgentCapability,
@@ -112,7 +115,10 @@ class UnifiedAgentRuntimePostgresTests(unittest.TestCase):
                 "NOVEL_FORGE_COMMIT_SHA": RELEASE_SHA,
                 "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": object_root,
             }
-            chapter = build_chapter_authority_application(settings, env=env)
+            execution = build_production_execution_composition(settings, env=env)
+            chapter = build_chapter_authority_application(
+                settings, execution=execution, env=env
+            )
             principal = Principal(
                 principal_id=actor,
                 principal_type=PrincipalType.LOCAL_OPERATOR,

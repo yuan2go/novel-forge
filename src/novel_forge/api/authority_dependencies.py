@@ -10,6 +10,9 @@ from pathlib import Path
 from typing import Mapping
 
 from novel_forge.infrastructure.environment import RuntimeEnvironment
+from novel_forge.infrastructure.production_execution_composition import (
+    ProductionExecutionComposition,
+)
 from novel_forge.infrastructure.settings import IndustrialSettings
 from novel_forge.modules.chapter_authority.application import (
     ChapterAuthorityApplication,
@@ -17,6 +20,7 @@ from novel_forge.modules.chapter_authority.application import (
 from novel_forge.modules.chapter_authority.execution_gateway import (
     ChapterExecutionGatewaySession,
     ChapterExecutionRoute,
+    PostgresChapterExecutionContractBinder,
     PostgresProductionExecutionPayloadResolver,
     ProductionExecutionGatewayExternalEffectAdapter,
     chapter_stage_capability,
@@ -242,13 +246,12 @@ def build_book_design_authority_query(
     return BookDesignAuthorityQuery(settings.database_url)
 
 
-def build_chapter_authority_application(
+def build_production_execution_composition(
     settings: IndustrialSettings,
     *,
     env: Mapping[str, str] | None = None,
     provider_registry: ProviderAdapterRegistry | None = None,
-    runtime_fault_injector: Callable[[str], None] | None = None,
-) -> ChapterAuthorityApplication:
+) -> ProductionExecutionComposition:
     values = os.environ if env is None else env
     if not settings.database_url:
         raise RuntimeError("PostgreSQL database is required for chapter authority")
@@ -810,6 +813,50 @@ def build_chapter_authority_application(
         provider_adapters={
             adapter.provider: adapter for adapter in provider_adapters.values()
         },
+    )
+    shared_budget_caps = {
+        key: str(values[value])
+        for key, value in (
+            ("project_daily", "NOVEL_FORGE_PROJECT_DAILY_PROVIDER_CAP"),
+            ("operation_total", "NOVEL_FORGE_OPERATION_PROVIDER_CAP"),
+            ("provider_project_daily", "NOVEL_FORGE_PROVIDER_DAILY_CAP"),
+            ("global_daily", "NOVEL_FORGE_DAILY_PROVIDER_CAP"),
+        )
+        if str(values.get(value) or "").strip()
+    }
+    return ProductionExecutionComposition(
+        gateway=model_gateway,
+        object_store=object_store_adapter,
+        source_object_reader=source_object_reader,
+        runtime_environment=runtime_environment,
+        max_cost_per_call=max_cost_per_call or "0",
+        shared_budget_caps=shared_budget_caps,
+        chapter_total_budget_cap=str(
+            values.get("NOVEL_FORGE_CHAPTER_PROVIDER_CAP") or ""
+        ).strip(),
+    )
+
+
+def build_chapter_authority_application(
+    settings: IndustrialSettings,
+    *,
+    execution: ProductionExecutionComposition,
+    env: Mapping[str, str] | None = None,
+    runtime_fault_injector: Callable[[str], None] | None = None,
+) -> ChapterAuthorityApplication:
+    if not settings.database_url:
+        raise RuntimeError("PostgreSQL database is required for chapter authority")
+    values = os.environ if env is None else env
+    runtime_environment = RuntimeEnvironment.parse(
+        str(values.get("NOVEL_FORGE_ENVIRONMENT") or settings.environment)
+    )
+    if runtime_environment is not execution.runtime_environment:
+        raise RuntimeError("Chapter and Production Execution environments must match")
+    environment = runtime_environment.value
+    controlled = runtime_environment.controlled
+    binder = PostgresChapterExecutionContractBinder(
+        settings.database_url,
+        execution.gateway.routes,
         capability_pack_id=str(
             values.get("NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID")
             or "chapter_generation_pack"
@@ -821,10 +868,12 @@ def build_chapter_authority_application(
         ),
         pack_required=controlled,
     )
+    execution.gateway.register_execution_binder("chapter", binder)
     return ChapterAuthorityApplication(
         settings.database_url,
-        model_adapter=model_gateway,
-        object_store_adapter=object_store_adapter,
+        model_adapter=execution.gateway,
+        object_store_adapter=execution.object_store,
+        capability_binder=binder,
         worker_id=str(
             values.get("NOVEL_FORGE_AUTHORITY_WORKER_ID") or "chapter-authority-api"
         ),
@@ -833,18 +882,8 @@ def build_chapter_authority_application(
             values.get("NOVEL_FORGE_ENABLE_SYNCHRONOUS_AUTHORITY_FIXTURE") or ""
         ).lower()
         in {"1", "true", "yes"},
-        max_cost_per_model_call=max_cost_per_call or "0",
-        budget_caps={
-            key: str(values[value])
-            for key, value in (
-                ("project_daily", "NOVEL_FORGE_PROJECT_DAILY_PROVIDER_CAP"),
-                ("operation_total", "NOVEL_FORGE_OPERATION_PROVIDER_CAP"),
-                ("provider_project_daily", "NOVEL_FORGE_PROVIDER_DAILY_CAP"),
-                ("global_daily", "NOVEL_FORGE_DAILY_PROVIDER_CAP"),
-                ("chapter_total", "NOVEL_FORGE_CHAPTER_PROVIDER_CAP"),
-            )
-            if str(values.get(value) or "").strip()
-        },
+        max_cost_per_model_call=execution.max_cost_per_call,
+        budget_caps=execution.budget_caps(include_chapter_total=True),
         agent_binding_recorder=PostgresChapterAgentBindingRecorder(
             settings.database_url,
             bound_stages=AGENT_BOUND_CHAPTER_STAGES,
@@ -931,18 +970,40 @@ def build_capability_pack_authority_query(
 def build_agent_authority_scheduler(
     settings: IndustrialSettings,
     *,
-    chapter_application: ChapterAuthorityApplication,
+    execution: ProductionExecutionComposition,
     worker_id: str,
+    env: Mapping[str, str] | None = None,
 ) -> AgentAuthorityScheduler:
-    adapter = chapter_application.model_port.adapter
-    if not isinstance(adapter, ProductionExecutionGatewayExternalEffectAdapter):
-        raise RuntimeError("Agent worker requires the Production Execution Gateway")
+    if not settings.database_url:
+        raise RuntimeError("Agent worker requires PostgreSQL authority")
+    values = os.environ if env is None else env
+    runtime_environment = RuntimeEnvironment.parse(
+        str(values.get("NOVEL_FORGE_ENVIRONMENT") or settings.environment)
+    )
+    if runtime_environment is not execution.runtime_environment:
+        raise RuntimeError("Agent and Production Execution environments must match")
+    environment = execution.runtime_environment.value
+    binder = PostgresChapterExecutionContractBinder(
+        settings.database_url,
+        execution.gateway.routes,
+        capability_pack_id=str(
+            values.get("NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID")
+            or "chapter_generation_pack"
+        ),
+        pack_environment=environment,
+        pack_runtime_profile=environment,
+        pack_release_channel=str(
+            values.get("NOVEL_FORGE_RELEASE_CHANNEL") or "VALIDATION"
+        ),
+        pack_required=execution.runtime_environment.controlled,
+    )
     preparer = ChapterGatewayAgentExecutionPreparer(
         settings.database_url,
-        adapter=adapter,
+        adapter=execution.gateway,
+        capability_binder=binder,
         worker_id=worker_id,
-        max_cost_per_call=chapter_application.model_port.max_cost_per_call,
-        budget_caps=chapter_application.model_port.budget_caps,
+        max_cost_per_call=execution.max_cost_per_call,
+        budget_caps=execution.budget_caps(include_chapter_total=True),
     )
     return AgentAuthorityScheduler(
         settings.database_url,
@@ -996,9 +1057,10 @@ def build_content_authority_query(
 def build_source_import_application(
     settings: IndustrialSettings,
     *,
+    execution: ProductionExecutionComposition,
     env: Mapping[str, str] | None = None,
 ) -> SourceImportApplication:
-    """Compose Source Import over the existing Chapter-owned PEP transport."""
+    """Compose Source Import as a peer consumer of the shared PEP."""
 
     if settings.storage_authority != "postgresql" or not settings.database_url:
         raise RuntimeError("Source Import runtime requires PostgreSQL authority")
@@ -1006,40 +1068,14 @@ def build_source_import_application(
     runtime_environment = RuntimeEnvironment.parse(
         str(values.get("NOVEL_FORGE_ENVIRONMENT") or settings.environment)
     )
+    if runtime_environment is not execution.runtime_environment:
+        raise RuntimeError(
+            "Source Import and Production Execution environments must match"
+        )
     build_id, commit_sha = authority_release_identity(env=values)
     worker_id = str(
         values.get("NOVEL_FORGE_SOURCE_IMPORT_WORKER_ID") or "source-import-worker"
     ).strip()
-    chapter = build_chapter_authority_application(settings, env=values)
-    transport = chapter.model_port.adapter
-    if not isinstance(transport, ProductionExecutionGatewayExternalEffectAdapter):
-        raise RuntimeError("Source Import requires ProductionExecutionGateway")
-    object_backend = (
-        str(values.get("NOVEL_FORGE_AUTHORITY_OBJECT_STORE_BACKEND") or "local")
-        .strip()
-        .lower()
-    )
-    object_root_value = str(
-        values.get("NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT") or ""
-    ).strip()
-    if not object_root_value:
-        raise RuntimeError("Source Import requires an explicit object-store root")
-    object_root = Path(object_root_value).expanduser()
-    if not object_root.is_absolute():
-        object_root = settings.root / object_root
-    if object_backend == "minio":
-        from novel_forge.storage.object_store import MinioObjectStore
-
-        store = MinioObjectStore(settings)
-        object_reader = MinioObjectStoreReader(
-            store.client, bucket=settings.minio_artifact_bucket
-        )
-    elif object_backend == "local" and runtime_environment.fixture_allowed:
-        object_reader = LocalObjectStoreReader(object_root)
-    else:
-        raise RuntimeError(
-            "controlled Source Import requires the MinIO object-store backend"
-        )
     git_cache_value = str(
         values.get("NOVEL_FORGE_SOURCE_IMPORT_GIT_CACHE_ROOT") or ""
     ).strip()
@@ -1064,23 +1100,13 @@ def build_source_import_application(
             values.get("NOVEL_FORGE_SOURCE_IMPORT_GIT_TIMEOUT_SECONDS") or "120"
         ),
     )
-    max_cost_per_call = str(values.get("NOVEL_FORGE_PROVIDER_MAX_COST_PER_CALL") or "0")
     execution_port = PostgresContentIntelligenceExecutionPort(
         settings.database_url,
-        transport=transport,
+        transport=execution.gateway,
         worker_id=worker_id,
         lease_seconds=int(values.get("NOVEL_FORGE_AUTHORITY_LEASE_SECONDS") or "30"),
-        max_cost_per_call=max_cost_per_call,
-        budget_caps={
-            key: str(values[environment_key])
-            for key, environment_key in (
-                ("project_daily", "NOVEL_FORGE_PROJECT_DAILY_PROVIDER_CAP"),
-                ("operation_total", "NOVEL_FORGE_OPERATION_PROVIDER_CAP"),
-                ("provider_project_daily", "NOVEL_FORGE_PROVIDER_DAILY_CAP"),
-                ("global_daily", "NOVEL_FORGE_DAILY_PROVIDER_CAP"),
-            )
-            if str(values.get(environment_key) or "").strip()
-        },
+        max_cost_per_call=execution.max_cost_per_call,
+        budget_caps=execution.budget_caps(),
     )
     return SourceImportApplication(
         settings.database_url,
@@ -1088,8 +1114,8 @@ def build_source_import_application(
         commit_sha=commit_sha,
         worker_id=worker_id,
         git_adapter=git_adapter,
-        object_store_adapter=chapter.object_store_adapter,
-        object_store_reader=object_reader,
+        object_store_adapter=execution.object_store,
+        object_store_reader=execution.source_object_reader,
         execution_port=execution_port,
         allow_fixture_intelligence=runtime_environment.fixture_allowed,
         allow_file_repositories=allow_file,
@@ -1155,19 +1181,17 @@ def chapter_capability_pack_compilation_report(
 def build_book_authority_application(
     settings: IndustrialSettings,
     *,
+    execution: ProductionExecutionComposition,
+    chapter_application: ChapterAuthorityApplication,
     env: Mapping[str, str] | None = None,
-    chapter_application: ChapterAuthorityApplication | None = None,
 ) -> PostgresBookAuthority:
     if not settings.database_url:
         raise RuntimeError("PostgreSQL database is required for Book Authority")
     build_id, commit_sha = authority_release_identity(env=env)
-    chapter = chapter_application or build_chapter_authority_application(
-        settings, env=env
-    )
     reader_model_port = build_reader_outcome_model_port(
         settings,
+        execution=execution,
         env=env,
-        chapter_application=chapter,
     )
     followup = BookFollowupAuthorityApplication(
         settings.database_url,
@@ -1183,7 +1207,10 @@ def build_book_authority_application(
     )
     return PostgresBookAuthority(
         settings.database_url,
-        chapter_port=ChapterAuthorityCommandAdapter(chapter),
+        chapter_port=ChapterAuthorityCommandAdapter(
+            chapter_application,
+            external_effect_adapters=execution.external_effect_adapters,
+        ),
         followup_application=followup,
         application_build_id=build_id,
         commit_sha=commit_sha,
@@ -1200,26 +1227,25 @@ def build_book_production_composition(
     settings: IndustrialSettings,
     *,
     principal: Principal,
+    execution: ProductionExecutionComposition,
+    chapter_application: ChapterAuthorityApplication,
     env: Mapping[str, str] | None = None,
-    chapter_application: ChapterAuthorityApplication | None = None,
 ) -> BookProductionComposition:
     """Build the one Book production graph consumed by API and Worker."""
 
     if not settings.database_url:
         raise RuntimeError("PostgreSQL database is required for Book production")
     values = os.environ if env is None else env
-    chapter = chapter_application or build_chapter_authority_application(
-        settings, env=values
-    )
     authority = build_book_authority_application(
         settings,
+        execution=execution,
+        chapter_application=chapter_application,
         env=values,
-        chapter_application=chapter,
     )
     planning = build_story_planning_generation_application(
         settings,
+        execution=execution,
         env=values,
-        chapter_application=chapter,
     )
     preparation = build_production_preparation_service(settings)
     chapter_groups = PostgresChapterGroupAuthority(
@@ -1289,8 +1315,8 @@ def build_book_production_composition(
 def build_reader_outcome_model_port(
     settings: IndustrialSettings,
     *,
+    execution: ProductionExecutionComposition,
     env: Mapping[str, str] | None = None,
-    chapter_application: ChapterAuthorityApplication,
 ) -> ExternalEffectChapterModelPort:
     """Compose Reader Outcome with a Reader-owned Pack binder and shared PEP."""
 
@@ -1300,13 +1326,14 @@ def build_reader_outcome_model_port(
     runtime_environment = RuntimeEnvironment.parse(
         str(values.get("NOVEL_FORGE_ENVIRONMENT") or settings.environment)
     )
+    if runtime_environment is not execution.runtime_environment:
+        raise RuntimeError(
+            "Reader Outcome and Production Execution environments must match"
+        )
     environment = runtime_environment.value
-    transport = chapter_application.model_port.adapter
-    if not isinstance(transport, ProductionExecutionGatewayExternalEffectAdapter):
-        raise RuntimeError("Reader Outcome requires the Production Execution Gateway")
     binder = PostgresReaderOutcomeExecutionContractBinder(
         settings.database_url,
-        transport.routes,
+        execution.gateway.routes,
         capability_pack_id=str(
             values.get("NOVEL_FORGE_READER_OUTCOME_CAPABILITY_PACK_ID")
             or "reader_outcome_pack"
@@ -1318,20 +1345,16 @@ def build_reader_outcome_model_port(
         ).upper(),
         pack_required=runtime_environment.controlled,
     )
-    transport.register_execution_binder("reader_outcome", binder)
+    execution.gateway.register_execution_binder("reader_outcome", binder)
     return ExternalEffectChapterModelPort(
         settings.database_url,
-        adapter=transport,
+        adapter=execution.gateway,
         worker_id=str(
             values.get("NOVEL_FORGE_BOOK_FOLLOWUP_WORKER_ID")
             or "book-followup-authority-worker"
         ),
-        max_cost_per_call=chapter_application.model_port.max_cost_per_call,
-        budget_caps={
-            key: value
-            for key, value in chapter_application.model_port.budget_caps.items()
-            if key != "chapter_total"
-        },
+        max_cost_per_call=execution.max_cost_per_call,
+        budget_caps=execution.budget_caps(),
         capability_binder=binder,
         execution_binding_domain="reader_outcome",
     )
@@ -1340,22 +1363,17 @@ def build_reader_outcome_model_port(
 def build_story_planning_generation_application(
     settings: IndustrialSettings,
     *,
+    execution: ProductionExecutionComposition,
     env: Mapping[str, str] | None = None,
-    chapter_application: ChapterAuthorityApplication | None = None,
     post_provider_fault_injector: Callable[[str], None] | None = None,
 ) -> StoryPlanningGenerationApplication:
-    """Compose Story Planning over the existing Production Execution Plane."""
+    """Compose Story Planning as a peer consumer of the shared PEP."""
 
     if not settings.database_url:
         raise RuntimeError("PostgreSQL database is required for Story Planning")
     values = os.environ if env is None else env
     build_id, commit_sha = authority_release_identity(env=values)
-    chapter = chapter_application or build_chapter_authority_application(
-        settings, env=values
-    )
-    transport = chapter.model_port.adapter
-    if not isinstance(transport, ProductionExecutionGatewayExternalEffectAdapter):
-        raise RuntimeError("Story Planning requires the Production Execution Gateway")
+    transport = execution.gateway
     worker_id = str(
         values.get("NOVEL_FORGE_STORY_PLANNING_WORKER_ID")
         or "story-planning-generation-worker"
@@ -1363,6 +1381,8 @@ def build_story_planning_generation_application(
     runtime_environment = RuntimeEnvironment.parse(
         str(values.get("NOVEL_FORGE_ENVIRONMENT") or settings.environment)
     )
+    if runtime_environment is not execution.runtime_environment:
+        raise RuntimeError("Planning and Production Execution environments must match")
     environment = runtime_environment.value
     base_route = transport.routes["draft"]
     planning_model = str(values.get("NOVEL_FORGE_PLANNING_MODEL") or "").strip()
@@ -1434,12 +1454,8 @@ def build_story_planning_generation_application(
         execution_transport=transport,
         planning_route=planning_route,
         worker_id=worker_id,
-        max_cost_per_call=chapter.model_port.max_cost_per_call,
-        budget_caps={
-            key: value
-            for key, value in chapter.model_port.budget_caps.items()
-            if key != "chapter_total"
-        },
+        max_cost_per_call=execution.max_cost_per_call,
+        budget_caps=execution.budget_caps(),
         post_provider_fault_injector=post_provider_fault_injector,
     )
     resolver = PostgresPlanningExecutionBundleResolver(
@@ -1468,6 +1484,7 @@ def build_story_planning_generation_application(
 
 __all__ = [
     "authority_release_identity",
+    "build_production_execution_composition",
     "build_chapter_authority_application",
     "build_chapter_authority_query",
     "chapter_capability_pack_compilation_report",

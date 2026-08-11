@@ -8,6 +8,8 @@ import unittest
 
 from novel_forge.api.authority_dependencies import (
     build_chapter_authority_application,
+    build_production_execution_composition,
+    build_reader_outcome_model_port,
 )
 from novel_forge.infrastructure.settings import IndustrialSettings
 from novel_forge.modules.authority_security import Principal, PrincipalType
@@ -279,17 +281,25 @@ class ChapterGroupAuthorityPostgresTests(unittest.TestCase):
             ),
             "NOVEL_FORGE_AUTHORITY_WORKER_ID": "group-chapter-worker",
         }
-        chapter = build_chapter_authority_application(settings, env=env)
+        execution = build_production_execution_composition(settings, env=env)
+        chapter = build_chapter_authority_application(
+            settings, execution=execution, env=env
+        )
         followup = BookFollowupAuthorityApplication(
             DATABASE_URL,
             application_build_id="chapter-group-integration",
             commit_sha="f" * 40,
-            model_port=chapter.model_port,
+            model_port=build_reader_outcome_model_port(
+                settings, execution=execution, env=env
+            ),
             worker_id="group-followup-worker",
         )
         book_authority = PostgresBookAuthority(
             DATABASE_URL,
-            chapter_port=ChapterAuthorityCommandAdapter(chapter),
+            chapter_port=ChapterAuthorityCommandAdapter(
+                chapter,
+                external_effect_adapters=execution.external_effect_adapters,
+            ),
             followup_application=followup,
             application_build_id="chapter-group-integration",
             commit_sha="f" * 40,

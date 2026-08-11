@@ -16,6 +16,7 @@ from uuid import uuid4
 from novel_forge.api.authority_dependencies import (
     build_chapter_authority_application,
     build_content_authority_application,
+    build_production_execution_composition,
 )
 from novel_forge.infrastructure.settings import IndustrialSettings
 from novel_forge.modules.agent_collaboration.domain import (
@@ -1406,8 +1407,14 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
         principal=operator,
     )
     crash = OneShotProviderSuccessCrash()
+    production_execution = build_production_execution_composition(
+        settings, env=env
+    )
     chapter = build_chapter_authority_application(
-        settings, env=env, runtime_fault_injector=crash
+        settings,
+        execution=production_execution,
+        env=env,
+        runtime_fault_injector=crash,
     )
     admission = chapter.admit(
         SingleChapterRequest(
@@ -1483,7 +1490,12 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
         "chapter.authority.execute",
         worker=True,
     )
-    recovered = build_chapter_authority_application(settings, env=recovered_env)
+    recovered_execution = build_production_execution_composition(
+        settings, env=recovered_env
+    )
+    recovered = build_chapter_authority_application(
+        settings, execution=recovered_execution, env=recovered_env
+    )
     scheduler = recovered.scheduler(principal=worker_recovered)
     terminal = None
     try:

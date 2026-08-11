@@ -11,6 +11,7 @@ from typing import Any
 
 from novel_forge.api.authority_dependencies import (
     authority_release_identity,
+    build_production_execution_composition,
     build_chapter_authority_application,
     build_chapter_authority_query,
     build_content_authority_application,
@@ -27,6 +28,9 @@ from novel_forge.api.authority_dependencies import (
 )
 from novel_forge.infrastructure.settings import IndustrialSettings
 from novel_forge.infrastructure.environment import RuntimeEnvironment
+from novel_forge.infrastructure.production_execution_composition import (
+    ProductionExecutionComposition,
+)
 from novel_forge.modules.chapter_authority.application import ChapterAuthorityApplication
 from novel_forge.modules.chapter_authority.queries import ChapterAuthorityQuery
 from novel_forge.modules.content_authority import ContentAuthorityApplication, ContentAuthorityQuery
@@ -127,6 +131,7 @@ def _install_database_runtime_routes(app: Any, settings: IndustrialSettings) -> 
 
 @dataclass(frozen=True, slots=True)
 class AuthorityApiServices:
+    production_execution: ProductionExecutionComposition
     chapter_application: ChapterAuthorityApplication
     chapter_query: ChapterAuthorityQuery
     content_authority_application: ContentAuthorityApplication
@@ -190,13 +195,17 @@ def create_authority_app(settings: IndustrialSettings):
         provider_ids=configured_chapter_provider_ids(os.environ),
         env=os.environ,
     )
-    application = build_chapter_authority_application(
+    production_execution = build_production_execution_composition(
         settings, provider_registry=provider_registry
+    )
+    application = build_chapter_authority_application(
+        settings, execution=production_execution
     )
     book_principal = build_trusted_principal_resolver().resolve_api_principal()
     book_production = build_book_production_composition(
         settings,
         principal=book_principal,
+        execution=production_execution,
         chapter_application=application,
     )
     build_id, commit_sha = authority_release_identity()
@@ -207,6 +216,7 @@ def create_authority_app(settings: IndustrialSettings):
         os.environ.get("NOVEL_FORGE_SOURCE_IMPORT_FILE_FIXTURE_ROOT") or ""
     ).strip()
     services = AuthorityApiServices(
+        production_execution=production_execution,
         chapter_application=application,
         chapter_query=build_chapter_authority_query(settings),
         content_authority_application=build_content_authority_application(settings),
@@ -505,7 +515,7 @@ def create_authority_app(settings: IndustrialSettings):
         except Exception as exc:
             object_store_ready = False
             object_store_error = f"{type(exc).__name__}: {exc}"
-        routes = dict(application.model_port.adapter.routes)
+        routes = dict(production_execution.gateway.routes)
         route_runtime_classes = {
             route.model_profile.runtime_class.value for route in routes.values()
         }
@@ -692,6 +702,7 @@ def create_authority_app(settings: IndustrialSettings):
 
     @app.on_event("shutdown")
     def shutdown_database_runtime() -> None:
+        production_execution.close()
         close_all_database_runtimes()
 
     _install_database_runtime_routes(app, settings)

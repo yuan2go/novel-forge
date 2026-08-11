@@ -2214,25 +2214,11 @@ class ProductionExecutionGatewayExternalEffectAdapter:
         routes: Mapping[str, ChapterExecutionRoute],
         session_factory: Callable[[str], ChapterExecutionGatewaySession],
         provider_adapters: Mapping[str, Any] | None = None,
-        capability_pack_id: str = "",
-        pack_environment: str = "development",
-        pack_runtime_profile: str = "development",
-        pack_release_channel: str = "VALIDATION",
-        pack_required: bool = False,
     ) -> None:
         if set(routes) != _STAGES:
             raise ValueError("all governed execution stages must use the gateway")
         self.database_url = database_url
         self.routes = dict(routes)
-        self.binder = PostgresChapterExecutionContractBinder(
-            database_url,
-            routes,
-            capability_pack_id=capability_pack_id,
-            pack_environment=pack_environment,
-            pack_runtime_profile=pack_runtime_profile,
-            pack_release_channel=pack_release_channel,
-            pack_required=pack_required,
-        )
         self.recovery_authorizations = PostgresExecutionRecoveryAuthorizationStore(
             database_url
         )
@@ -2390,7 +2376,6 @@ class ProductionExecutionGatewayExternalEffectAdapter:
         normalized = domain.strip().lower()
         if (
             not normalized
-            or normalized == "chapter"
             or normalized in self.execution_binders
         ):
             raise ValueError("execution binder domain is missing or already registered")
@@ -2594,7 +2579,12 @@ class ProductionExecutionGatewayExternalEffectAdapter:
             if isinstance(metadata, Mapping)
             else "chapter"
         )
-        binder = self.execution_binders.get(binding_domain, self.binder)
+        binder = self.execution_binders.get(binding_domain)
+        if binder is None:
+            raise ExternalEffectAdapterError(
+                f"no execution binder is registered for {binding_domain}",
+                request_sent=False,
+            )
         binding = binder.bind(
             stable_idempotency_key=stable_idempotency_key,
             capability=capability,

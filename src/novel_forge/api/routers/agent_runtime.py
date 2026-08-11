@@ -242,7 +242,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 actor_id=principal.principal_id,
                 trace_id=trace_id,
                 correlation_id=correlation_id,
-                adapters=ctx.services.chapter_application.external_effect_adapters,
+                adapters=ctx.services.production_execution.external_effect_adapters,
             )
             return {**result, "external_effect_cancellation": effects}
         except KernelError as exc:

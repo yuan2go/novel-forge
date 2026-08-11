@@ -9,6 +9,7 @@ from dataclasses import asdict
 from novel_forge.api.authority_dependencies import (
     build_book_production_composition,
     build_chapter_authority_application,
+    build_production_execution_composition,
     build_trusted_principal_resolver,
 )
 from novel_forge.infrastructure.settings import IndustrialSettings
@@ -225,10 +226,14 @@ def main() -> int:
         or "book-authority-worker"
     ).strip()
     principal = build_trusted_principal_resolver().resolve_worker_principal(worker_id)
-    chapter = build_chapter_authority_application(settings)
+    production_execution = build_production_execution_composition(settings)
+    chapter = build_chapter_authority_application(
+        settings, execution=production_execution
+    )
     composition = build_book_production_composition(
         settings,
         principal=principal,
+        execution=production_execution,
         chapter_application=chapter,
     )
     runtime_jobs = RuntimeJobAuthority(settings.database_url)
@@ -299,6 +304,7 @@ def main() -> int:
         supervisor.stopped()
         return 0
     finally:
+        production_execution.close()
         close_all_database_runtimes()
 
 
