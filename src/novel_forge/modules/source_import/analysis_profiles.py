@@ -139,7 +139,7 @@ _PROFILES = {
         max_analyzer_calls=800,
         mkaos_capability="mkaos.rule.extract",
         abstraction_policy_version="writing-theory-abstraction.1.0",
-        analysis_skill_id="writing-theory-analysis",
+        analysis_skill_id="multidisciplinary-knowledge",
     ),
     "platform_rules": SourceAnalysisProfile(
         profile_id="platform_rules",
