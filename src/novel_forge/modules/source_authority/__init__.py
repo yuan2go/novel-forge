@@ -5,6 +5,10 @@ from .application import (
     RegisterSourceDocumentCommand,
     SourceAuthorityApplication,
 )
+from .profiling_application import (
+    CommitSourceAnalysisPlanCommand,
+    CommitSourceContentProfileCommand,
+)
 from .deconstruction import (
     AnalyzerContract,
     DECONSTRUCTION_DIMENSIONS,
@@ -28,6 +32,8 @@ from .scheduler import SourceAuthorityScheduler
 __all__ = [
     "RIGHTS_AUTHORIZATIONS",
     "CommitSourceTransformCommand",
+    "CommitSourceContentProfileCommand",
+    "CommitSourceAnalysisPlanCommand",
     "CommitDeconstructionObservationCommand",
     "PlanSourceReprocessingCommand",
     "AnalyzerContract",

@@ -81,6 +81,7 @@ from novel_forge.modules.story_planning_runtime.execution import (
     planning_fixture_response,
 )
 from novel_forge.modules.source_import.execution_contracts import (
+    CLASSIFICATION_STAGE,
     DECONSTRUCTION_STAGE,
     MKAOS_STAGE,
     content_intelligence_fixture_response,
@@ -685,10 +686,12 @@ def build_chapter_authority_application(
         output_schema: Mapping[str, object],
         value: Mapping[str, object],
     ) -> Mapping[str, object]:
-        if stage in {DECONSTRUCTION_STAGE, MKAOS_STAGE}:
-            return validate_content_intelligence_output(
-                stage, output_schema, value
-            )
+        if stage in {
+            CLASSIFICATION_STAGE,
+            DECONSTRUCTION_STAGE,
+            MKAOS_STAGE,
+        }:
+            return validate_content_intelligence_output(stage, output_schema, value)
         validated = validate_chapter_provider_output_against_schema(
             stage,
             output_schema,
@@ -706,7 +709,11 @@ def build_chapter_authority_application(
         return normalize_model_output(stage, semantic)
 
     def fixture_response(stage: str, inputs: Mapping[str, object]) -> dict[str, object]:
-        if stage in {DECONSTRUCTION_STAGE, MKAOS_STAGE}:
+        if stage in {
+            CLASSIFICATION_STAGE,
+            DECONSTRUCTION_STAGE,
+            MKAOS_STAGE,
+        }:
             return content_intelligence_fixture_response(stage, inputs)
         if stage in {
             "book_plan.generate",
@@ -958,9 +965,7 @@ def build_trusted_principal_resolver(
     *,
     env: Mapping[str, str] | None = None,
 ) -> TrustedPrincipalResolver:
-    return TrustedPrincipalResolver.from_environment(
-        os.environ if env is None else env
-    )
+    return TrustedPrincipalResolver.from_environment(os.environ if env is None else env)
 
 
 def build_content_authority_application(
@@ -1009,9 +1014,11 @@ def build_source_import_application(
     transport = chapter.model_port.adapter
     if not isinstance(transport, ProductionExecutionGatewayExternalEffectAdapter):
         raise RuntimeError("Source Import requires ProductionExecutionGateway")
-    object_backend = str(
-        values.get("NOVEL_FORGE_AUTHORITY_OBJECT_STORE_BACKEND") or "local"
-    ).strip().lower()
+    object_backend = (
+        str(values.get("NOVEL_FORGE_AUTHORITY_OBJECT_STORE_BACKEND") or "local")
+        .strip()
+        .lower()
+    )
     object_root_value = str(
         values.get("NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT") or ""
     ).strip()
@@ -1057,9 +1064,7 @@ def build_source_import_application(
             values.get("NOVEL_FORGE_SOURCE_IMPORT_GIT_TIMEOUT_SECONDS") or "120"
         ),
     )
-    max_cost_per_call = str(
-        values.get("NOVEL_FORGE_PROVIDER_MAX_COST_PER_CALL") or "0"
-    )
+    max_cost_per_call = str(values.get("NOVEL_FORGE_PROVIDER_MAX_COST_PER_CALL") or "0")
     execution_port = PostgresContentIntelligenceExecutionPort(
         settings.database_url,
         transport=transport,
@@ -1114,17 +1119,17 @@ def chapter_capability_pack_compilation_report(
     compiler = CapabilityPackCompiler(
         capability_registry=default_capability_registry(),
         capability_type_catalog=default_capability_type_catalog(),
-        operation_catalog=chapter_operation_definition_catalog(
-            release_sha=release_sha
-        ),
+        operation_catalog=chapter_operation_definition_catalog(release_sha=release_sha),
         workflow_catalog=chapter_workflow_binding_catalog(),
         artifact_resolver=default_chapter_artifact_resolver(settings.root),
         tool_catalog=default_tool_definition_catalog(),
         pack_catalog=ReadOnlyPackCatalog((PackCatalogEntry(manifest),)),
     )
-    environment = str(
-        values.get("NOVEL_FORGE_ENVIRONMENT") or settings.environment
-    ).strip().lower()
+    environment = (
+        str(values.get("NOVEL_FORGE_ENVIRONMENT") or settings.environment)
+        .strip()
+        .lower()
+    )
     result = compiler.compile(
         manifest,
         target_runtime_profile=environment,
@@ -1184,9 +1189,7 @@ def build_book_authority_application(
         commit_sha=commit_sha,
         legacy_fixture_input_allowed=RuntimeEnvironment.parse(
             str(
-                (os.environ if env is None else env).get(
-                    "NOVEL_FORGE_ENVIRONMENT"
-                )
+                (os.environ if env is None else env).get("NOVEL_FORGE_ENVIRONMENT")
                 or settings.environment
             )
         ).fixture_allowed,

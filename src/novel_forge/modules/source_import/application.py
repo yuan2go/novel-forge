@@ -1,9 +1,11 @@
 """Durable product Source import orchestration over existing Authorities."""
+
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 import hashlib
 import json
+from pathlib import Path
 from typing import Any, Mapping, Protocol
 from uuid import uuid4
 
@@ -36,6 +38,8 @@ from novel_forge.modules.mkaos_authority import (
 from novel_forge.modules.mkaos_authority.domain import KnowledgeEvidenceSpan
 from novel_forge.modules.source_authority import (
     CommitDeconstructionObservationCommand,
+    CommitSourceAnalysisPlanCommand,
+    CommitSourceContentProfileCommand,
     CommitSourceTransformCommand,
     RegisterSourceDocumentCommand,
     SourceAuthorityApplication,
@@ -51,10 +55,16 @@ from novel_forge.modules.source_authority.domain import (
 )
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from novel_forge.storage.source_import_repositories import SourceImportRepository
+from novel_forge.storage.source_intelligence_repositories import (
+    SourceIntelligenceRepository,
+)
+from novel_forge.storage.source_profile_repositories import SourceProfileRepository
 
-from .analysis_profiles import analysis_profile, plan_analysis_tasks
+from .analysis_profiles import plan_analysis_tasks, resolve_analysis_strategy
 from .definitions import (
     SOURCE_IMPORT_DECONSTRUCTION_OPERATION,
+    SOURCE_IMPORT_PROFILING_OPERATION,
+    SOURCE_IMPORT_ANALYSIS_PLANNING_OPERATION,
     SOURCE_IMPORT_DEFINITION_VERSION,
     SOURCE_IMPORT_DISCOVERY_OPERATION,
     SOURCE_IMPORT_FILE_OPERATION,
@@ -71,12 +81,31 @@ from .domain import (
     normalize_source_bytes,
     chunk_normalized_text,
 )
+from .methodologies import SourceMethodologyRegistry
+from .profiling import (
+    LogicalDocumentScope,
+    SourceAnalysisOverride,
+    SourceContentType,
+    SourceIntelligencePolicy,
+    build_classification_evidence,
+    resolve_profile,
+)
 from .object_store_adapter import SourceImportObjectStoreAdapter
 
 
 class ContentIntelligenceExecutionPort(Protocol):
     external_effect_backed: bool
     production_execution_gateway_backed: bool
+
+    def execute_classification(
+        self,
+        *,
+        worker: WorkerLeaseCommand,
+        logical_document_scope_hash: str,
+        classifier_contract: dict[str, Any],
+        classification_evidence: dict[str, Any],
+        source_segments: tuple[dict[str, Any], ...],
+    ) -> dict[str, Any]: ...
 
     def execute_deconstruction(
         self,
@@ -87,6 +116,7 @@ class ContentIntelligenceExecutionPort(Protocol):
         evidence_spans: tuple[ObservationEvidenceSpan, ...],
         source_segments: tuple[dict[str, Any], ...],
         input_observations: tuple[dict[str, Any], ...] = (),
+        analysis_plan_asset_version_id: str = "",
     ) -> dict[str, Any]: ...
 
     def execute_mkaos_extraction(
@@ -109,7 +139,8 @@ class CreateSourceImportCommand:
     repository_url: str
     requested_ref: str
     policy: SourceImportPolicy
-    analysis_profile: str
+    intelligence_policy: SourceIntelligencePolicy
+    analysis_override: SourceAnalysisOverride | None
     mode: str
     rights_authorization: str
     license_name: str
@@ -126,7 +157,6 @@ class CreateSourceImportCommand:
             self.source_type,
             self.repository_url,
             self.requested_ref,
-            self.analysis_profile,
             self.mode,
             self.rights_authorization,
             self.actor_id,
@@ -137,14 +167,11 @@ class CreateSourceImportCommand:
         if any(not value.strip() for value in required):
             raise ValueError("Source import command is incomplete")
         if self.source_type != "github_repository":
-            raise ValueError("only github_repository is production-enabled in this release")
+            raise ValueError(
+                "only github_repository is production-enabled in this release"
+            )
         if self.mode not in {"PREVIEW", "IMPORT"}:
             raise ValueError("Source import mode must be PREVIEW or IMPORT")
-        analysis_profile(self.analysis_profile)
-        if self.policy.analysis_profile != self.analysis_profile:
-            raise ValueError(
-                "analysis profile must be frozen identically in the import policy"
-            )
         decide_source_governance(
             authorization=self.rights_authorization,
             license_name=self.license_name,
@@ -192,6 +219,7 @@ class SourceImportApplication:
         object_store_adapter: Any | None = None,
         object_store_reader: Any | None = None,
         execution_port: ContentIntelligenceExecutionPort | None = None,
+        methodology_registry: SourceMethodologyRegistry | None = None,
         allow_fixture_intelligence: bool = False,
         allow_file_repositories: bool = False,
     ) -> None:
@@ -200,9 +228,7 @@ class SourceImportApplication:
         if execution_port is not None and not (
             bool(getattr(execution_port, "external_effect_backed", False))
             and bool(
-                getattr(
-                    execution_port, "production_execution_gateway_backed", False
-                )
+                getattr(execution_port, "production_execution_gateway_backed", False)
             )
         ):
             raise ValueError(
@@ -216,6 +242,9 @@ class SourceImportApplication:
         self.object_store_adapter = object_store_adapter
         self.object_store_reader = object_store_reader
         self.execution_port = execution_port
+        self.methodology_registry = methodology_registry or SourceMethodologyRegistry(
+            Path(__file__).resolve().parents[4] / "skills"
+        )
         self.allow_file_repositories = allow_file_repositories
         self.source_authority = SourceAuthorityApplication(
             database_url,
@@ -261,7 +290,13 @@ class SourceImportApplication:
                 "requested_ref": command.requested_ref,
                 "policy": asdict(command.policy),
                 "import_policy_hash": command.policy.policy_hash,
-                "analysis_profile": command.analysis_profile,
+                "intelligence_policy": asdict(command.intelligence_policy),
+                "intelligence_policy_hash": (command.intelligence_policy.policy_hash),
+                "analysis_override": (
+                    command.analysis_override.to_dict()
+                    if command.analysis_override is not None
+                    else {}
+                ),
                 "mode": command.mode,
                 "rights_authorization": command.rights_authorization,
                 "license_name": command.license_name,
@@ -309,7 +344,15 @@ class SourceImportApplication:
                     "requested_ref": command.requested_ref,
                     "import_policy": asdict(command.policy),
                     "import_policy_hash": command.policy.policy_hash,
-                    "analysis_profile": command.analysis_profile,
+                    "intelligence_policy": asdict(command.intelligence_policy),
+                    "intelligence_policy_hash": (
+                        command.intelligence_policy.policy_hash
+                    ),
+                    "analysis_override": (
+                        command.analysis_override.to_dict()
+                        if command.analysis_override is not None
+                        else {}
+                    ),
                     "mode": command.mode,
                     "status": "ADMITTED",
                     "discovery_operation_id": operation_id,
@@ -355,9 +398,7 @@ class SourceImportApplication:
             "import_job_id": import_job_id,
             "operation_id": operation_id,
             "project_id": command.project_id,
-            "status": self._operation_state(operation_id, command.project_id)[
-                "status"
-            ],
+            "status": self._operation_state(operation_id, command.project_id)["status"],
             "replayed": bool(admitted.get("replayed")),
             "mode": command.mode,
         }
@@ -545,9 +586,7 @@ class SourceImportApplication:
                 else "FAILED_FINAL"
             )
             payload = dict(operation[1] or {})
-            plan_id = str(
-                payload.get("reprocessing_plan_asset_version_id") or ""
-            )
+            plan_id = str(payload.get("reprocessing_plan_asset_version_id") or "")
             if plan_id:
                 ordinal = payload.get("reprocessing_item_ordinal")
                 if ordinal is not None:
@@ -616,13 +655,15 @@ class SourceImportApplication:
             uow.commit()
 
     def execute_fenced(self, worker: WorkerLeaseCommand) -> dict[str, Any]:
-        definition = self._operation_definition(
-            worker.causation_id, worker.project_id
-        )
+        definition = self._operation_definition(worker.causation_id, worker.project_id)
         if definition == SOURCE_IMPORT_DISCOVERY_OPERATION:
             return self._execute_discovery(worker)
         if definition == SOURCE_IMPORT_FILE_OPERATION:
             return self._execute_file(worker)
+        if definition == SOURCE_IMPORT_PROFILING_OPERATION:
+            return self._execute_profiling(worker)
+        if definition == SOURCE_IMPORT_ANALYSIS_PLANNING_OPERATION:
+            return self._execute_analysis_planning(worker)
         if definition == SOURCE_IMPORT_DECONSTRUCTION_OPERATION:
             return self._execute_deconstruction(worker)
         if definition == SOURCE_IMPORT_MKAOS_OPERATION:
@@ -659,6 +700,8 @@ class SourceImportApplication:
                     "replayed": replayed,
                 }
             if definition in {
+                SOURCE_IMPORT_PROFILING_OPERATION,
+                SOURCE_IMPORT_ANALYSIS_PLANNING_OPERATION,
                 SOURCE_IMPORT_DECONSTRUCTION_OPERATION,
                 SOURCE_IMPORT_MKAOS_OPERATION,
             }:
@@ -671,9 +714,7 @@ class SourceImportApplication:
                     [operation_id, project_id],
                 )
                 payload = dict(uow.cursor.fetchone()[0] or {})
-                plan_id = str(
-                    payload.get("reprocessing_plan_asset_version_id") or ""
-                )
+                plan_id = str(payload.get("reprocessing_plan_asset_version_id") or "")
                 if plan_id:
                     ordinal = int(payload["reprocessing_item_ordinal"])
                     uow.cursor.execute(
@@ -766,6 +807,7 @@ class SourceImportApplication:
         result = self._commit_discovery(worker, job, discovery)
         if job["mode"] == "IMPORT":
             self._admit_file_children(worker, job, result)
+            self._admit_reused_profiling_children(worker, job, result)
             with AuthorityUnitOfWork(self.database_url) as uow:
                 repository = SourceImportRepository(uow.cursor)
                 work = repository.work_by_operation(
@@ -815,9 +857,7 @@ class SourceImportApplication:
                 "schema_version": "source-import-governance-policy.v1",
                 "authorization": job["source_locator"]["rights_authorization"],
                 "license_name": job["source_locator"].get("license_name") or "",
-                "copyright_boundary": job["source_locator"].get(
-                    "copyright_boundary"
-                )
+                "copyright_boundary": job["source_locator"].get("copyright_boundary")
                 or "",
                 "governance_status": governance.governance_status,
             }
@@ -840,17 +880,7 @@ class SourceImportApplication:
                 counters = self._discovery_counters(
                     stored_files, policy=policy, snapshot_reused=True
                 )
-                pending_files = any(
-                    row["status"] in {"DISCOVERED", "QUEUED", "PROCESSING"}
-                    for row in stored_files
-                )
-                target = (
-                    "PREVIEWED"
-                    if job["mode"] == "PREVIEW"
-                    else "PROCESSING"
-                    if pending_files
-                    else "IMPORTED"
-                )
+                target = "PREVIEWED" if job["mode"] == "PREVIEW" else "PROCESSING"
                 repository.transition_job(
                     project_id=worker.project_id,
                     import_job_id=job["import_job_id"],
@@ -869,19 +899,13 @@ class SourceImportApplication:
                     "manifest_hash": existing["manifest_hash"],
                     "snapshot_reused": True,
                     "counters": counters,
-                    "license_findings": list(
-                        discovery.get("license_findings") or []
-                    ),
+                    "license_findings": list(discovery.get("license_findings") or []),
                 }
                 repository.update_work(
                     project_id=worker.project_id,
                     operation_id=worker.causation_id,
                     expected=("RUNNING",),
-                    status=(
-                        "RUNNING"
-                        if job["mode"] == "IMPORT" and pending_files
-                        else "REUSED"
-                    ),
+                    status=("RUNNING" if job["mode"] == "IMPORT" else "REUSED"),
                     result=result,
                 )
                 uow.commit()
@@ -901,7 +925,9 @@ class SourceImportApplication:
                 if previous is not None
                 else []
             )
-            previous_files = tuple(_repository_file_from_row(row) for row in previous_rows)
+            previous_files = tuple(
+                _repository_file_from_row(row) for row in previous_rows
+            )
             diffs = diff_repository_manifests(previous_files, current_files)
             snapshot_digest = _hash(
                 {
@@ -909,7 +935,9 @@ class SourceImportApplication:
                     "governance_policy_hash": governance_policy_hash,
                 }
             ).removeprefix("sha256:")
-            snapshot_id = f"source-repository-snapshot:{worker.project_id}:{snapshot_digest}"
+            snapshot_id = (
+                f"source-repository-snapshot:{worker.project_id}:{snapshot_digest}"
+            )
             snapshot_version_id = f"{snapshot_id}:v1"
             file_rows = self._build_snapshot_file_rows(
                 project_id=worker.project_id,
@@ -1219,9 +1247,7 @@ class SourceImportApplication:
             CommitDeconstructionObservationCommand(
                 project_id=worker.project_id,
                 workspace_id=workspace_id,
-                execution_asset_version_id=str(
-                    executed["execution_asset_version_id"]
-                ),
+                execution_asset_version_id=str(executed["execution_asset_version_id"]),
                 scope=scope,
                 analyzer=analyzer,
                 observation=dict(executed["observation"]),
@@ -1246,9 +1272,7 @@ class SourceImportApplication:
                 executed.get("provider_execution_reused")
             ),
         }
-        self._complete_reprocessing_item(
-            plan_id, ordinal, "APPLIED", result=result
-        )
+        self._complete_reprocessing_item(plan_id, ordinal, "APPLIED", result=result)
         self._resolve_reprocessing_invalidation(
             project_id=worker.project_id,
             plan_id=plan_id,
@@ -1354,14 +1378,10 @@ class SourceImportApplication:
             CommitKnowledgeCandidateCommand(
                 project_id=worker.project_id,
                 workspace_id=workspace_id,
-                execution_asset_version_id=str(
-                    executed["execution_asset_version_id"]
-                ),
+                execution_asset_version_id=str(executed["execution_asset_version_id"]),
                 candidate=dict(executed["candidate"]),
                 evidence_spans=evidence_spans,
-                abstraction_policy_version=str(
-                    payload["abstraction_policy_version"]
-                ),
+                abstraction_policy_version=str(payload["abstraction_policy_version"]),
                 actor_id=self.worker_id,
                 idempotency_key=f"reprocess-candidate:{plan_id}:{ordinal}",
                 trace_id=worker.trace_id,
@@ -1376,9 +1396,7 @@ class SourceImportApplication:
             "status": "NEEDS_REVIEW",
             "execution_asset_version_id": executed["execution_asset_version_id"],
         }
-        self._complete_reprocessing_item(
-            plan_id, ordinal, "APPLIED", result=result
-        )
+        self._complete_reprocessing_item(plan_id, ordinal, "APPLIED", result=result)
         self._queue_reprocessing_continuation(worker, plan_id, ordinal)
         self._refresh_reprocessing_plan(plan_id)
         return result
@@ -1426,8 +1444,7 @@ class SourceImportApplication:
             elif eligibility == "ELIGIBLE" and item.content_hash:
                 if (
                     prior
-                    and str(prior.get("content_hash") or "")
-                    == item.content_hash
+                    and str(prior.get("content_hash") or "") == item.content_hash
                     and prior.get("source_document_id")
                     and prior.get("source_transform_id")
                 ):
@@ -1465,9 +1482,7 @@ class SourceImportApplication:
         job: dict[str, Any],
         discovery_result: dict[str, Any],
     ) -> None:
-        snapshot_id = str(
-            discovery_result["repository_snapshot_asset_version_id"]
-        )
+        snapshot_id = str(discovery_result["repository_snapshot_asset_version_id"])
         with AuthorityUnitOfWork(self.database_url) as uow:
             rows = SourceImportRepository(uow.cursor).snapshot_files(
                 project_id=worker.project_id,
@@ -1495,9 +1510,7 @@ class SourceImportApplication:
                 payload={
                     "import_job_id": job["import_job_id"],
                     "repository_snapshot_asset_version_id": snapshot_id,
-                    "repository_identity": discovery_result.get(
-                        "repository_identity"
-                    )
+                    "repository_identity": discovery_result.get("repository_identity")
                     or "",
                     "path": canonical["path"],
                     "object_id": canonical["object_id"],
@@ -1548,6 +1561,201 @@ class SourceImportApplication:
                 causation_id=worker.causation_id,
                 reason="Source import file processing ready",
             )
+
+    def _admit_reused_profiling_children(
+        self,
+        worker: WorkerLeaseCommand,
+        job: dict[str, Any],
+        discovery_result: dict[str, Any],
+    ) -> None:
+        snapshot_id = str(discovery_result["repository_snapshot_asset_version_id"])
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            rows = SourceImportRepository(uow.cursor).snapshot_files(
+                project_id=worker.project_id,
+                snapshot_asset_version_id=snapshot_id,
+            )
+        grouped: dict[str, list[dict[str, Any]]] = {}
+        for row in rows:
+            transform_id = str(row.get("source_transform_id") or "")
+            if (
+                transform_id
+                and row["eligibility"] == "ELIGIBLE"
+                and row["status"]
+                in {
+                    "REUSED",
+                    "TRANSFORMED",
+                    "PROFILED",
+                    "PROFILE_REVIEW_REQUIRED",
+                    "ANALYZING",
+                    "CANDIDATE_READY",
+                }
+            ):
+                grouped.setdefault(transform_id, []).append(row)
+        for rows_for_transform in grouped.values():
+            first = rows_for_transform[0]
+            self._admit_profiling_child(
+                worker,
+                {
+                    **job,
+                    "repository_snapshot_asset_version_id": snapshot_id,
+                },
+                {
+                    "source_document_id": first["source_document_id"],
+                    "source_transform_id": first["source_transform_id"],
+                    "source_transform_asset_version_id": "",
+                },
+                source_paths=tuple(
+                    sorted(str(item["path"]) for item in rows_for_transform)
+                ),
+            )
+
+    def _admit_profiling_child(
+        self,
+        worker: WorkerLeaseCommand,
+        job: dict[str, Any],
+        transform: dict[str, Any],
+        *,
+        source_paths: tuple[str, ...],
+    ) -> None:
+        transform_id = str(transform["source_transform_id"])
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            repository = SourceImportRepository(uow.cursor)
+            uow.cursor.execute(
+                """
+                SELECT transform.asset_version_id, transform.source_document_id,
+                       chunk.asset_version_id, chunk.chunk_index,
+                       version.content_hash
+                FROM authority_source_transform AS transform
+                JOIN authority_source_chunk AS chunk
+                  ON chunk.source_transform_id=transform.source_transform_id
+                 AND chunk.project_id=transform.project_id
+                JOIN authority_asset_version AS version
+                  ON version.asset_version_id=chunk.asset_version_id
+                WHERE transform.project_id=%s
+                  AND transform.source_transform_id=%s
+                  AND transform.status='ACTIVE'
+                ORDER BY chunk.chunk_index
+                """,
+                [worker.project_id, transform_id],
+            )
+            rows = uow.cursor.fetchall()
+            if not rows:
+                raise KernelError(
+                    "SOURCE_PROFILE_TRANSFORM_MISSING",
+                    "profiling requires an active SourceTransform with chunks",
+                )
+            transform_version = str(rows[0][0])
+            source_document_id = str(rows[0][1])
+            chunks = tuple(
+                {
+                    "asset_version_id": str(row[2]),
+                    "chunk_index": int(row[3]),
+                    "content_hash": str(row[4]),
+                }
+                for row in rows
+            )
+        policy = SourceIntelligencePolicy(**dict(job["intelligence_policy"]))
+        scope = LogicalDocumentScope(
+            scope_kind="FILE_DOCUMENT",
+            source_document_id=source_document_id,
+            source_transform_id=transform_id,
+            source_chunk_asset_version_ids=tuple(
+                item["asset_version_id"] for item in chunks
+            ),
+            boundary_policy_version=policy.logical_document_policy_version,
+            label=f"governed file document {source_document_id}",
+        )
+        requested_override = _source_analysis_override(job.get("analysis_override"))
+        override = (
+            requested_override
+            if requested_override is not None
+            and requested_override.logical_document_scope_hash == scope.scope_hash
+            else None
+        )
+        stable_key = _hash(
+            {
+                "logical_document_scope_hash": scope.scope_hash,
+                "intelligence_policy_hash": policy.policy_hash,
+                "override_contract_hash": (override.contract_hash if override else ""),
+                "path_hints": list(source_paths),
+            }
+        )
+        child = self._admit_child(
+            definition_name=SOURCE_IMPORT_PROFILING_OPERATION,
+            project_id=worker.project_id,
+            workspace_id=str(job["workspace_id"]),
+            actor_id=self.worker_id,
+            idempotency_key=(
+                f"source.import.profile:{job['import_job_id']}:{stable_key}"
+            ),
+            trace_id=worker.trace_id,
+            correlation_id=worker.correlation_id,
+            causation_id=transform_version,
+            parent_operation_id=worker.causation_id,
+            payload={
+                "import_job_id": job["import_job_id"],
+                "repository_snapshot_asset_version_id": job[
+                    "repository_snapshot_asset_version_id"
+                ],
+                "logical_document_scope": scope.to_dict(),
+                "intelligence_policy": asdict(policy),
+                "analysis_override": (override.to_dict() if override else {}),
+                "source_paths": list(source_paths),
+            },
+            input_assets=tuple(
+                {
+                    "asset_version_id": item["asset_version_id"],
+                    "role": "source_chunk_evidence",
+                    "content_hash": item["content_hash"],
+                }
+                for item in chunks
+            ),
+            ready=False,
+        )
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            repository = SourceImportRepository(uow.cursor)
+            repository.update_files_analysis_by_transform(
+                project_id=worker.project_id,
+                snapshot_asset_version_id=str(
+                    job["repository_snapshot_asset_version_id"]
+                ),
+                source_transform_id=transform_id,
+                expected=(
+                    "REUSED",
+                    "TRANSFORMED",
+                    "PROFILED",
+                    "PROFILE_REVIEW_REQUIRED",
+                    "ANALYZING",
+                    "CANDIDATE_READY",
+                ),
+                status="PROFILING",
+                processing_operation_id=child,
+            )
+            repository.register_work(
+                {
+                    "work_id": str(uuid4()),
+                    "import_job_id": job["import_job_id"],
+                    "project_id": worker.project_id,
+                    "work_kind": "PROFILING",
+                    "stable_key": stable_key,
+                    "source_path": source_paths[0] if source_paths else "",
+                    "target_asset_version_id": transform_version,
+                    "operation_id": child,
+                    "status": "PLANNED",
+                    "result": {},
+                    "failure": {},
+                }
+            )
+            uow.commit()
+        self._ready_child(
+            operation_id=child,
+            project_id=worker.project_id,
+            actor_id=self.worker_id,
+            trace_id=worker.trace_id,
+            correlation_id=worker.correlation_id,
+            causation_id=transform_version,
+            reason="LogicalDocument Source profiling ready",
+        )
 
     def _execute_file(self, worker: WorkerLeaseCommand) -> dict[str, Any]:
         if self.git_adapter is None or self.object_store_adapter is None:
@@ -1645,9 +1853,7 @@ class SourceImportApplication:
                 title=str(target["path"]).rsplit("/", 1)[-1],
                 source_kind="github_repository_file",
                 source_uri=source_uri,
-                rights_authorization=str(
-                    job["source_locator"]["rights_authorization"]
-                ),
+                rights_authorization=str(job["source_locator"]["rights_authorization"]),
                 license_name=str(job["source_locator"].get("license_name") or ""),
                 copyright_boundary=str(
                     job["source_locator"].get("copyright_boundary") or ""
@@ -1749,7 +1955,18 @@ class SourceImportApplication:
                 result=result,
             )
             uow.commit()
-        self._admit_deconstruction_children(worker, job, result)
+        self._admit_profiling_child(
+            worker,
+            job,
+            result,
+            source_paths=tuple(
+                sorted(
+                    str(item["path"])
+                    for item in files
+                    if item.get("content_hash") == actual_hash
+                )
+            ),
+        )
         with AuthorityUnitOfWork(self.database_url) as uow:
             SourceImportRepository(uow.cursor).update_work(
                 project_id=worker.project_id,
@@ -1761,11 +1978,425 @@ class SourceImportApplication:
             uow.commit()
         return result
 
+    def _execute_profiling(self, worker: WorkerLeaseCommand) -> dict[str, Any]:
+        port = self._require_execution_port()
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            require_current_fence(uow, worker)
+            repository = SourceImportRepository(uow.cursor)
+            work = repository.work_by_operation(
+                project_id=worker.project_id,
+                operation_id=worker.causation_id,
+                for_update=True,
+            )
+            if work["status"] in {"SUCCEEDED", "REUSED"}:
+                return dict(work["result"])
+            job = repository.job_for_update(
+                project_id=worker.project_id,
+                import_job_id=work["import_job_id"],
+            )
+            operation = uow.repositories.chapter_authority.operation_execution(
+                worker.causation_id, worker.project_id
+            )
+            payload = dict(operation["command_payload"])["payload"]
+            scope = LogicalDocumentScope(**dict(payload["logical_document_scope"]))
+            uow.cursor.execute(
+                """
+                SELECT chunk.asset_version_id, chunk.blob_id, chunk.byte_size,
+                       chunk.content_hash, blob.actual_object_key,
+                       blob.actual_hash, blob.actual_size, blob.status
+                FROM authority_source_chunk AS chunk
+                JOIN authority_blob AS blob ON blob.blob_id=chunk.blob_id
+                WHERE chunk.project_id=%s AND chunk.asset_version_id=ANY(%s)
+                ORDER BY chunk.chunk_index
+                FOR SHARE OF chunk, blob
+                """,
+                [
+                    worker.project_id,
+                    list(scope.source_chunk_asset_version_ids),
+                ],
+            )
+            rows = uow.cursor.fetchall()
+            if len(rows) != len(scope.source_chunk_asset_version_ids):
+                raise KernelError(
+                    "SOURCE_CLASSIFICATION_INPUT_MISSING",
+                    "LogicalDocument SourceChunk input is unavailable",
+                )
+            repository.update_work(
+                project_id=worker.project_id,
+                operation_id=worker.causation_id,
+                expected=("PLANNED", "RUNNING", "FAILED_RETRYABLE"),
+                status="RUNNING",
+            )
+            uow.commit()
+        if self.object_store_reader is None:
+            raise KernelError(
+                "SOURCE_IMPORT_OBJECT_READER_REQUIRED",
+                "profiling worker cannot read governed SourceChunk objects",
+            )
+        segments: list[dict[str, Any]] = []
+        for row in rows:
+            if str(row[7]) != "AVAILABLE":
+                raise KernelError(
+                    "SOURCE_IMPORT_CHUNK_BLOB_UNAVAILABLE",
+                    "profiling SourceChunk Blob is not AVAILABLE",
+                )
+            content = self.object_store_reader.read(
+                object_key=str(row[4]),
+                expected_hash=str(row[5]),
+                expected_size=int(row[6]),
+            )
+            segments.append(
+                {
+                    "source_chunk_asset_version_id": str(row[0]),
+                    "content": content.decode("utf-8", errors="strict"),
+                    "content_hash": str(row[3]),
+                    "byte_size": int(row[2]),
+                }
+            )
+        policy = SourceIntelligencePolicy(**dict(payload["intelligence_policy"]))
+        override = _source_analysis_override(payload.get("analysis_override"))
+        if (
+            override is not None
+            and override.logical_document_scope_hash != scope.scope_hash
+        ):
+            raise KernelError(
+                "SOURCE_PROFILE_OVERRIDE_SCOPE_MISMATCH",
+                "governance override belongs to another LogicalDocument",
+            )
+        evidence = build_classification_evidence(
+            scope=scope,
+            path_hints=tuple(payload.get("source_paths") or ()),
+            source_segments=tuple(segments),
+            policy=policy,
+        )
+        override_hash = override.contract_hash if override else ""
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            current = SourceProfileRepository(uow.cursor).current_profile(
+                project_id=worker.project_id,
+                logical_document_scope_hash=scope.scope_hash,
+            )
+        if current is not None and current["operation_status"] != "SUCCEEDED":
+            raise KernelError(
+                "SOURCE_PROFILE_RECOVERY_REQUIRED",
+                "current Source Profile Authority Operation requires recovery",
+            )
+        exact_profile = bool(
+            current
+            and current["classifier_contract_hash"] == policy.classifier_contract_hash
+            and current["classification_input_hash"] == evidence.input_hash
+            and current["intelligence_policy_hash"] == policy.policy_hash
+            and current["override_contract_hash"] == override_hash
+        )
+        if exact_profile:
+            assert current is not None
+            profile = {
+                "asset_version_id": current["asset_version_id"],
+                "source_content_profile_id": current["source_content_profile_id"],
+                "profile_status": current["status"],
+                "resolved_content_type": current["resolved_content_type"],
+                "duplicate": True,
+            }
+            classifier_reused = True
+            profile_reused = True
+        else:
+            reusable_classifier = bool(
+                current
+                and current["classifier_contract_hash"]
+                == policy.classifier_contract_hash
+                and current["classification_input_hash"] == evidence.input_hash
+            )
+            if reusable_classifier:
+                assert current is not None
+                current_content = dict(current["content"])
+                executed = {
+                    "classification": dict(current_content["classifier_output"]),
+                    "execution_asset_version_id": current_content["execution_evidence"][
+                        "asset_version_id"
+                    ],
+                    "evidence_class": current_content["execution_evidence"][
+                        "evidence_class"
+                    ],
+                    "provider_execution_reused": True,
+                }
+            else:
+                executed = port.execute_classification(
+                    worker=worker,
+                    logical_document_scope_hash=scope.scope_hash,
+                    classifier_contract=policy.classifier_contract,
+                    classification_evidence=evidence.to_dict(),
+                    source_segments=tuple(segments),
+                )
+            resolution = resolve_profile(
+                classifier_output=dict(executed["classification"]),
+                policy=policy,
+                override=override,
+            )
+            profile = self.source_authority.execute_content_profile(
+                CommitSourceContentProfileCommand(
+                    project_id=worker.project_id,
+                    workspace_id=str(job["workspace_id"]),
+                    logical_document_scope=scope.to_dict(),
+                    intelligence_policy=asdict(policy),
+                    classifier_contract=policy.classifier_contract,
+                    classification_evidence=evidence.to_dict(),
+                    classifier_output=dict(executed["classification"]),
+                    resolution=resolution.to_dict(),
+                    execution_asset_version_id=str(
+                        executed["execution_asset_version_id"]
+                    ),
+                    evidence_class=str(executed["evidence_class"]),
+                    governance_override=(override.to_dict() if override else {}),
+                    actor_id=self.worker_id,
+                    idempotency_key=(f"import-profile:{work['stable_key']}"),
+                    trace_id=worker.trace_id,
+                    correlation_id=worker.correlation_id,
+                )
+            )
+            classifier_reused = bool(executed.get("provider_execution_reused"))
+            profile_reused = bool(profile.get("duplicate"))
+        result = {
+            "source_content_profile_id": profile["source_content_profile_id"],
+            "profile_asset_version_id": profile["asset_version_id"],
+            "profile_status": profile["profile_status"],
+            "resolved_content_type": profile["resolved_content_type"],
+            "logical_document_scope_hash": scope.scope_hash,
+            "classifier_contract_hash": policy.classifier_contract_hash,
+            "classification_input_hash": evidence.input_hash,
+            "classifier_execution_reused": classifier_reused,
+            "profile_reused": profile_reused,
+        }
+        blocked = profile["profile_status"] != "ROUTABLE"
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            repository = SourceImportRepository(uow.cursor)
+            repository.update_files_analysis_by_transform(
+                project_id=worker.project_id,
+                snapshot_asset_version_id=str(
+                    job["repository_snapshot_asset_version_id"]
+                ),
+                source_transform_id=scope.source_transform_id,
+                expected=("PROFILING",),
+                status=("PROFILE_REVIEW_REQUIRED" if blocked else "PROFILED"),
+                processing_operation_id=worker.causation_id,
+                profile_asset_version_id=str(profile["asset_version_id"]),
+            )
+            repository.update_work(
+                project_id=worker.project_id,
+                operation_id=worker.causation_id,
+                expected=("RUNNING",),
+                status=(
+                    "BLOCKED"
+                    if blocked
+                    else "REUSED"
+                    if profile_reused
+                    else "SUCCEEDED"
+                ),
+                result=result,
+                failure=(
+                    {
+                        "code": "SOURCE_PROFILE_REVIEW_REQUIRED",
+                        "resolved_content_type": profile["resolved_content_type"],
+                    }
+                    if blocked
+                    else {}
+                ),
+            )
+            uow.commit()
+        if not blocked:
+            self._admit_analysis_planning_child(
+                worker,
+                job,
+                scope=scope,
+                profile_asset_version_id=str(profile["asset_version_id"]),
+            )
+        else:
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                repository = SourceImportRepository(uow.cursor)
+                self._refresh_job(
+                    repository,
+                    str(job["import_job_id"]),
+                    worker.project_id,
+                )
+                uow.commit()
+        return result
+
+    def _admit_analysis_planning_child(
+        self,
+        worker: WorkerLeaseCommand,
+        job: dict[str, Any],
+        *,
+        scope: LogicalDocumentScope,
+        profile_asset_version_id: str,
+    ) -> None:
+        policy = SourceIntelligencePolicy(**dict(job["intelligence_policy"]))
+        stable_key = _hash(
+            {
+                "profile_asset_version_id": profile_asset_version_id,
+                "routing_policy_version": policy.routing_policy_version,
+            }
+        )
+        child = self._admit_child(
+            definition_name=SOURCE_IMPORT_ANALYSIS_PLANNING_OPERATION,
+            project_id=worker.project_id,
+            workspace_id=str(job["workspace_id"]),
+            actor_id=self.worker_id,
+            idempotency_key=(
+                f"source.import.analysis.plan:{job['import_job_id']}:{stable_key}"
+            ),
+            trace_id=worker.trace_id,
+            correlation_id=worker.correlation_id,
+            causation_id=profile_asset_version_id,
+            parent_operation_id=worker.causation_id,
+            payload={
+                "import_job_id": job["import_job_id"],
+                "profile_asset_version_id": profile_asset_version_id,
+                "logical_document_scope": scope.to_dict(),
+                "routing_policy_version": policy.routing_policy_version,
+            },
+            input_assets=(
+                {
+                    "asset_version_id": profile_asset_version_id,
+                    "role": "source_content_profile",
+                },
+            ),
+            ready=False,
+        )
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            SourceImportRepository(uow.cursor).register_work(
+                {
+                    "work_id": str(uuid4()),
+                    "import_job_id": job["import_job_id"],
+                    "project_id": worker.project_id,
+                    "work_kind": "ANALYSIS_PLANNING",
+                    "stable_key": stable_key,
+                    "source_path": "",
+                    "target_asset_version_id": profile_asset_version_id,
+                    "operation_id": child,
+                    "status": "PLANNED",
+                    "result": {},
+                    "failure": {},
+                }
+            )
+            uow.commit()
+        self._ready_child(
+            operation_id=child,
+            project_id=worker.project_id,
+            actor_id=self.worker_id,
+            trace_id=worker.trace_id,
+            correlation_id=worker.correlation_id,
+            causation_id=profile_asset_version_id,
+            reason="Source analysis strategy resolution ready",
+        )
+
+    def _execute_analysis_planning(self, worker: WorkerLeaseCommand) -> dict[str, Any]:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            require_current_fence(uow, worker)
+            repository = SourceImportRepository(uow.cursor)
+            work = repository.work_by_operation(
+                project_id=worker.project_id,
+                operation_id=worker.causation_id,
+                for_update=True,
+            )
+            if work["status"] in {"SUCCEEDED", "REUSED"}:
+                return dict(work["result"])
+            job = repository.job_for_update(
+                project_id=worker.project_id,
+                import_job_id=work["import_job_id"],
+            )
+            operation = uow.repositories.chapter_authority.operation_execution(
+                worker.causation_id, worker.project_id
+            )
+            payload = dict(operation["command_payload"])["payload"]
+            profile = SourceProfileRepository(uow.cursor).profile(
+                project_id=worker.project_id,
+                asset_version_id=str(payload["profile_asset_version_id"]),
+            )
+            if profile is None or profile["status"] != "ROUTABLE":
+                raise KernelError(
+                    "SOURCE_ANALYSIS_PROFILE_NOT_ROUTABLE",
+                    "Analysis planning stopped because Profile is not routable",
+                )
+            repository.update_work(
+                project_id=worker.project_id,
+                operation_id=worker.causation_id,
+                expected=("PLANNED", "RUNNING", "FAILED_RETRYABLE"),
+                status="RUNNING",
+            )
+            uow.commit()
+        strategy = resolve_analysis_strategy(
+            SourceContentType(str(profile["resolved_content_type"])),
+            registry=self.methodology_registry,
+            routing_policy_version=str(payload["routing_policy_version"]),
+        )
+        plan = self.source_authority.execute_analysis_plan(
+            CommitSourceAnalysisPlanCommand(
+                project_id=worker.project_id,
+                workspace_id=str(job["workspace_id"]),
+                profile_asset_version_id=str(payload["profile_asset_version_id"]),
+                strategy=strategy.to_dict(),
+                actor_id=self.worker_id,
+                idempotency_key=f"import-analysis-plan:{work['stable_key']}",
+                trace_id=worker.trace_id,
+                correlation_id=worker.correlation_id,
+            )
+        )
+        scope = LogicalDocumentScope(**dict(payload["logical_document_scope"]))
+        result = {
+            "source_analysis_plan_id": plan["source_analysis_plan_id"],
+            "analysis_plan_asset_version_id": plan["asset_version_id"],
+            "profile_asset_version_id": payload["profile_asset_version_id"],
+            "resolved_content_type": profile["resolved_content_type"],
+            "profile_id": strategy.profile_id,
+            "profile_version": strategy.profile_version,
+            "strategy_contract_hash": strategy.contract_hash,
+            "methodologies": [
+                {
+                    "skill_id": item.skill_id,
+                    "skill_version": item.skill_version,
+                    "methodology_content_hash": item.methodology_content_hash,
+                }
+                for item in strategy.analyzers
+            ],
+            "plan_reused": bool(plan.get("duplicate")),
+        }
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            repository = SourceImportRepository(uow.cursor)
+            repository.update_files_analysis_by_transform(
+                project_id=worker.project_id,
+                snapshot_asset_version_id=str(
+                    job["repository_snapshot_asset_version_id"]
+                ),
+                source_transform_id=scope.source_transform_id,
+                expected=("PROFILED", "ANALYZING", "CANDIDATE_READY"),
+                status="ANALYZING",
+                processing_operation_id=worker.causation_id,
+                profile_asset_version_id=str(payload["profile_asset_version_id"]),
+                analysis_plan_asset_version_id=str(plan["asset_version_id"]),
+            )
+            repository.update_work(
+                project_id=worker.project_id,
+                operation_id=worker.causation_id,
+                expected=("RUNNING",),
+                status="REUSED" if plan.get("duplicate") else "SUCCEEDED",
+                result=result,
+            )
+            uow.commit()
+        self._admit_deconstruction_children(
+            worker,
+            job,
+            logical_document_scope=scope,
+            strategy=strategy,
+            analysis_plan_asset_version_id=str(plan["asset_version_id"]),
+        )
+        return result
+
     def _admit_deconstruction_children(
         self,
         worker: WorkerLeaseCommand,
         job: dict[str, Any],
-        transform: dict[str, Any],
+        *,
+        logical_document_scope: LogicalDocumentScope,
+        strategy: Any,
+        analysis_plan_asset_version_id: str,
     ) -> None:
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
@@ -1775,7 +2406,7 @@ class SourceImportApplication:
                 WHERE project_id=%s AND source_transform_id=%s
                 ORDER BY chunk_index
                 """,
-                [worker.project_id, transform["source_transform_id"]],
+                [worker.project_id, logical_document_scope.source_transform_id],
             )
             chunks = [
                 {
@@ -1787,8 +2418,9 @@ class SourceImportApplication:
                 for row in uow.cursor.fetchall()
             ]
         tasks = plan_analysis_tasks(
-            profile_id=str(job["analysis_profile"]),
-            source_document_id=str(transform["source_document_id"]),
+            strategy=strategy,
+            logical_document_scope=logical_document_scope,
+            analysis_plan_asset_version_id=analysis_plan_asset_version_id,
             chunks=chunks,
         )
         for task in tasks:
@@ -1797,26 +2429,34 @@ class SourceImportApplication:
                 project_id=worker.project_id,
                 workspace_id=str(job["workspace_id"]),
                 actor_id=self.worker_id,
-                idempotency_key=f"source.import.analysis:{task.stable_key}",
+                idempotency_key=(
+                    f"source.import.analysis:{job['import_job_id']}:{task.stable_key}"
+                ),
                 trace_id=worker.trace_id,
                 correlation_id=worker.correlation_id,
-                causation_id=str(transform["source_transform_asset_version_id"]),
+                causation_id=analysis_plan_asset_version_id,
                 parent_operation_id=worker.causation_id,
                 payload={
                     "import_job_id": job["import_job_id"],
-                    "source_document_id": transform["source_document_id"],
-                    "source_transform_id": transform["source_transform_id"],
-                    "source_transform_asset_version_id": transform[
-                        "source_transform_asset_version_id"
-                    ],
+                    "source_document_id": logical_document_scope.source_document_id,
+                    "source_transform_id": logical_document_scope.source_transform_id,
+                    "analysis_plan_asset_version_id": analysis_plan_asset_version_id,
+                    "mkaos_capability": strategy.mkaos_capability,
+                    "abstraction_policy_version": (strategy.abstraction_policy_version),
                     "analysis_task": task.to_dict(),
                 },
-                input_assets=tuple(
+                input_assets=(
                     {
-                        "asset_version_id": chunk_id,
-                        "role": "source_chunk_evidence",
-                    }
-                    for chunk_id in task.source_chunk_asset_version_ids
+                        "asset_version_id": analysis_plan_asset_version_id,
+                        "role": "source_analysis_plan",
+                    },
+                    *tuple(
+                        {
+                            "asset_version_id": chunk_id,
+                            "role": "source_chunk_evidence",
+                        }
+                        for chunk_id in task.source_chunk_asset_version_ids
+                    ),
                 ),
                 ready=False,
             )
@@ -1829,9 +2469,7 @@ class SourceImportApplication:
                         "work_kind": "DECONSTRUCTION",
                         "stable_key": task.stable_key,
                         "source_path": "",
-                        "target_asset_version_id": transform[
-                            "source_transform_asset_version_id"
-                        ],
+                        "target_asset_version_id": analysis_plan_asset_version_id,
                         "operation_id": child,
                         "status": "PLANNED",
                         "result": {},
@@ -1845,13 +2483,11 @@ class SourceImportApplication:
                 actor_id=self.worker_id,
                 trace_id=worker.trace_id,
                 correlation_id=worker.correlation_id,
-                causation_id=str(transform["source_transform_asset_version_id"]),
+                causation_id=analysis_plan_asset_version_id,
                 reason="Source deconstruction execution ready",
             )
 
-    def _execute_deconstruction(
-        self, worker: WorkerLeaseCommand
-    ) -> dict[str, Any]:
+    def _execute_deconstruction(self, worker: WorkerLeaseCommand) -> dict[str, Any]:
         port = self._require_execution_port()
         with AuthorityUnitOfWork(self.database_url) as uow:
             operation = uow.repositories.chapter_authority.operation_execution(
@@ -1904,6 +2540,62 @@ class SourceImportApplication:
                 status="RUNNING",
             )
             uow.commit()
+        analyzer = AnalyzerContract(
+            **{
+                key: value
+                for key, value in dict(task["analyzer"]).items()
+                if key != "fingerprint"
+            }
+        )
+        scope = ObservationScope(
+            scale=str(task["scale"]),
+            range_start=int(task["range_start"]),
+            range_end=int(task["range_end"]),
+            source_document_ids=(str(payload["source_document_id"]),),
+            label=str(task["label"]),
+        )
+        analysis_plan_asset_version_id = str(payload["analysis_plan_asset_version_id"])
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            current = SourceIntelligenceRepository(uow.cursor).current_observation(
+                project_id=worker.project_id,
+                scope_hash=scope.fingerprint,
+                analyzer_id=analyzer.analyzer_id,
+            )
+        if (
+            current is not None
+            and current["operation_status"] == "SUCCEEDED"
+            and current["analyzer_contract_hash"] == analyzer.fingerprint
+            and current["analysis_plan_asset_version_id"]
+            == analysis_plan_asset_version_id
+            and current["methodology_content_hash"] == analyzer.methodology_content_hash
+        ):
+            current_content = dict(current["content"])
+            reused_result = {
+                "observation_id": current["observation_id"],
+                "observation_asset_version_id": current["asset_version_id"],
+                "execution_asset_version_id": current_content["execution_evidence"][
+                    "asset_version_id"
+                ],
+                "evidence_class": current_content["execution_evidence"][
+                    "evidence_class"
+                ],
+                "provider_execution_reused": True,
+                "observation_reused": True,
+                "analyzer_id": analyzer.analyzer_id,
+                "analyzer_contract_hash": analyzer.fingerprint,
+                "analysis_plan_asset_version_id": analysis_plan_asset_version_id,
+            }
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                SourceImportRepository(uow.cursor).update_work(
+                    project_id=worker.project_id,
+                    operation_id=worker.causation_id,
+                    expected=("RUNNING",),
+                    status="REUSED",
+                    result=reused_result,
+                )
+                uow.commit()
+            self._admit_mkaos_child(worker, job, reused_result, payload=payload)
+            return reused_result
         if self.object_store_reader is None:
             raise KernelError(
                 "SOURCE_IMPORT_OBJECT_READER_REQUIRED",
@@ -1938,34 +2630,19 @@ class SourceImportApplication:
                     evidence_hash=str(row[3]),
                 )
             )
-        analyzer = AnalyzerContract(
-            **{
-                key: value
-                for key, value in dict(task["analyzer"]).items()
-                if key != "fingerprint"
-            }
-        )
-        scope = ObservationScope(
-            scale=str(task["scale"]),
-            range_start=int(task["range_start"]),
-            range_end=int(task["range_end"]),
-            source_document_ids=(str(payload["source_document_id"]),),
-            label=str(task["label"]),
-        )
         executed = port.execute_deconstruction(
             worker=worker,
             analyzer=analyzer,
             scope=scope,
             evidence_spans=tuple(spans),
             source_segments=tuple(segments),
+            analysis_plan_asset_version_id=analysis_plan_asset_version_id,
         )
         observation = self.source_authority.execute_observation(
             CommitDeconstructionObservationCommand(
                 project_id=worker.project_id,
                 workspace_id=str(job["workspace_id"]),
-                execution_asset_version_id=str(
-                    executed["execution_asset_version_id"]
-                ),
+                execution_asset_version_id=str(executed["execution_asset_version_id"]),
                 scope=scope,
                 analyzer=analyzer,
                 observation=dict(executed["observation"]),
@@ -1976,6 +2653,7 @@ class SourceImportApplication:
                 idempotency_key=f"import-observation:{task['stable_key']}",
                 trace_id=worker.trace_id,
                 correlation_id=worker.correlation_id,
+                analysis_plan_asset_version_id=analysis_plan_asset_version_id,
             )
         )
         result = {
@@ -1988,6 +2666,7 @@ class SourceImportApplication:
             ),
             "analyzer_id": analyzer.analyzer_id,
             "analyzer_contract_hash": analyzer.fingerprint,
+            "analysis_plan_asset_version_id": analysis_plan_asset_version_id,
         }
         with AuthorityUnitOfWork(self.database_url) as uow:
             require_current_fence(uow, worker)
@@ -1999,7 +2678,7 @@ class SourceImportApplication:
                 result=result,
             )
             uow.commit()
-        self._admit_mkaos_child(worker, job, result)
+        self._admit_mkaos_child(worker, job, result, payload=payload)
         with AuthorityUnitOfWork(self.database_url) as uow:
             SourceImportRepository(uow.cursor).update_work(
                 project_id=worker.project_id,
@@ -2016,8 +2695,12 @@ class SourceImportApplication:
         worker: WorkerLeaseCommand,
         job: dict[str, Any],
         observation: dict[str, Any],
+        *,
+        payload: dict[str, Any],
     ) -> None:
-        profile = analysis_profile(str(job["analysis_profile"]))
+        capability = str(payload["mkaos_capability"])
+        abstraction_policy_version = str(payload["abstraction_policy_version"])
+        mkaos_methodology = self.methodology_registry.require("anti-copy-abstraction")
         observation_version = str(observation["observation_asset_version_id"])
         child = self._admit_child(
             definition_name=SOURCE_IMPORT_MKAOS_OPERATION,
@@ -2025,8 +2708,11 @@ class SourceImportApplication:
             workspace_id=str(job["workspace_id"]),
             actor_id=self.worker_id,
             idempotency_key=(
-                f"source.import.mkaos:{observation_version}:"
-                f"{profile.abstraction_policy_version}:{profile.mkaos_capability}"
+                f"source.import.mkaos:{job['import_job_id']}:"
+                f"{observation_version}:"
+                f"{abstraction_policy_version}:{capability}:"
+                f"{mkaos_methodology.skill_version}:"
+                f"{mkaos_methodology.content_digest}"
             ),
             trace_id=worker.trace_id,
             correlation_id=worker.correlation_id,
@@ -2035,8 +2721,15 @@ class SourceImportApplication:
             payload={
                 "import_job_id": job["import_job_id"],
                 "observation_asset_version_id": observation_version,
-                "capability": profile.mkaos_capability,
-                "abstraction_policy_version": profile.abstraction_policy_version,
+                "analysis_plan_asset_version_id": payload[
+                    "analysis_plan_asset_version_id"
+                ],
+                "source_transform_id": payload["source_transform_id"],
+                "capability": capability,
+                "abstraction_policy_version": abstraction_policy_version,
+                "mkaos_skill_id": mkaos_methodology.skill_id,
+                "mkaos_skill_version": mkaos_methodology.skill_version,
+                "mkaos_methodology_content_hash": (mkaos_methodology.content_digest),
             },
             input_assets=(
                 {
@@ -2054,7 +2747,9 @@ class SourceImportApplication:
                     "project_id": worker.project_id,
                     "work_kind": "MKAOS_EXTRACTION",
                     "stable_key": (
-                        f"{observation_version}:{profile.abstraction_policy_version}"
+                        f"{observation_version}:{abstraction_policy_version}:"
+                        f"{capability}:{mkaos_methodology.skill_version}:"
+                        f"{mkaos_methodology.content_digest}"
                     ),
                     "source_path": "",
                     "target_asset_version_id": observation_version,
@@ -2076,16 +2771,13 @@ class SourceImportApplication:
         )
 
     def _execute_mkaos(self, worker: WorkerLeaseCommand) -> dict[str, Any]:
-        port = self._require_execution_port()
         with AuthorityUnitOfWork(self.database_url) as uow:
             operation = uow.repositories.chapter_authority.operation_execution(
                 worker.causation_id, worker.project_id
             )
             operation_payload = dict(operation["command_payload"])["payload"]
         if "reprocessing_plan_asset_version_id" in operation_payload:
-            return self._execute_reprocessing_mkaos(
-                worker, dict(operation_payload)
-            )
+            return self._execute_reprocessing_mkaos(worker, dict(operation_payload))
         with AuthorityUnitOfWork(self.database_url) as uow:
             require_current_fence(uow, worker)
             repository = SourceImportRepository(uow.cursor)
@@ -2141,6 +2833,23 @@ class SourceImportApplication:
                 )
                 for row in uow.cursor.fetchall()
             )
+            mkaos_methodology = self.methodology_registry.require(
+                str(payload["mkaos_skill_id"]),
+                expected_digest=str(payload["mkaos_methodology_content_hash"]),
+            )
+            if mkaos_methodology.skill_version != str(payload["mkaos_skill_version"]):
+                raise KernelError(
+                    "SOURCE_MKAOS_SKILL_VERSION_MISMATCH",
+                    "MKAOS Skill version differs from the frozen child Operation",
+                )
+            reusable_candidate = self._reusable_mkaos_candidate(
+                uow,
+                project_id=worker.project_id,
+                observation_asset_version_id=observation_version,
+                capability=str(payload["capability"]),
+                abstraction_policy_version=str(payload["abstraction_policy_version"]),
+                methodology_content_hash=mkaos_methodology.content_digest,
+            )
             repository.update_work(
                 project_id=worker.project_id,
                 operation_id=worker.causation_id,
@@ -2148,6 +2857,36 @@ class SourceImportApplication:
                 status="RUNNING",
             )
             uow.commit()
+        if reusable_candidate is not None:
+            result = {
+                **reusable_candidate,
+                "status": reusable_candidate["candidate_status"],
+                "observation_asset_version_id": observation_version,
+                "provider_execution_reused": True,
+                "candidate_reused": True,
+            }
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                repository = SourceImportRepository(uow.cursor)
+                repository.update_work(
+                    project_id=worker.project_id,
+                    operation_id=worker.causation_id,
+                    expected=("RUNNING",),
+                    status="REUSED",
+                    result=result,
+                )
+                self._complete_analysis_file_if_ready(
+                    uow,
+                    repository=repository,
+                    worker=worker,
+                    job=job,
+                    payload=payload,
+                )
+                self._refresh_job(
+                    repository, str(job["import_job_id"]), worker.project_id
+                )
+                uow.commit()
+            return result
+        port = self._require_execution_port()
         observation_content = dict(observation_row[0])
         executed = port.execute_mkaos_extraction(
             worker=worker,
@@ -2161,14 +2900,10 @@ class SourceImportApplication:
             CommitKnowledgeCandidateCommand(
                 project_id=worker.project_id,
                 workspace_id=str(job["workspace_id"]),
-                execution_asset_version_id=str(
-                    executed["execution_asset_version_id"]
-                ),
+                execution_asset_version_id=str(executed["execution_asset_version_id"]),
                 candidate=dict(executed["candidate"]),
                 evidence_spans=evidence_spans,
-                abstraction_policy_version=str(
-                    payload["abstraction_policy_version"]
-                ),
+                abstraction_policy_version=str(payload["abstraction_policy_version"]),
                 actor_id=self.worker_id,
                 idempotency_key=(
                     f"import-candidate:{observation_version}:"
@@ -2185,6 +2920,10 @@ class SourceImportApplication:
             "status": "NEEDS_REVIEW",
             "execution_asset_version_id": executed["execution_asset_version_id"],
             "observation_asset_version_id": observation_version,
+            "provider_execution_reused": bool(
+                executed.get("provider_execution_reused")
+            ),
+            "candidate_reused": bool(candidate.get("duplicate")),
         }
         with AuthorityUnitOfWork(self.database_url) as uow:
             require_current_fence(uow, worker)
@@ -2193,12 +2932,126 @@ class SourceImportApplication:
                 project_id=worker.project_id,
                 operation_id=worker.causation_id,
                 expected=("RUNNING",),
-                status="SUCCEEDED",
+                status="REUSED" if candidate.get("duplicate") else "SUCCEEDED",
                 result=result,
+            )
+            self._complete_analysis_file_if_ready(
+                uow,
+                repository=repository,
+                worker=worker,
+                job=job,
+                payload=payload,
             )
             self._refresh_job(repository, job["import_job_id"], worker.project_id)
             uow.commit()
         return result
+
+    def _reusable_mkaos_candidate(
+        self,
+        uow: AuthorityUnitOfWork,
+        *,
+        project_id: str,
+        observation_asset_version_id: str,
+        capability: str,
+        abstraction_policy_version: str,
+        methodology_content_hash: str,
+    ) -> dict[str, Any] | None:
+        uow.cursor.execute(
+            """
+            SELECT candidate.knowledge_candidate_id,
+                   candidate.asset_version_id,
+                   candidate.execution_asset_version_id,
+                   candidate.status
+            FROM authority_mkaos_knowledge_candidate AS candidate
+            JOIN authority_operation AS candidate_operation
+              ON candidate_operation.operation_id=candidate.created_by_operation_id
+            JOIN authority_asset_version AS candidate_version
+              ON candidate_version.asset_version_id=candidate.asset_version_id
+            JOIN authority_asset_version AS execution_version
+              ON execution_version.asset_version_id=
+                 candidate.execution_asset_version_id
+            WHERE candidate.project_id=%s
+              AND candidate_operation.status='SUCCEEDED'
+              AND candidate.abstraction_policy_version=%s
+              AND candidate_version.content->'observation_asset_version_ids'
+                    @> jsonb_build_array(%s::text)
+              AND jsonb_array_length(
+                    candidate_version.content->'observation_asset_version_ids'
+                  )=1
+              AND execution_version.content->>'capability'=%s
+              AND execution_version.content->'methodology'->>'skill_id'=
+                    'anti-copy-abstraction'
+              AND execution_version.content->'methodology'->>'content_hash'=%s
+              AND NOT EXISTS (
+                    SELECT 1 FROM authority_content_invalidation AS invalidation
+                    WHERE invalidation.project_id=candidate.project_id
+                      AND invalidation.target_asset_version_id=
+                          candidate.asset_version_id
+                      AND invalidation.status='OPEN'
+                  )
+            ORDER BY candidate.created_at DESC
+            LIMIT 1
+            """,
+            [
+                project_id,
+                abstraction_policy_version,
+                observation_asset_version_id,
+                capability,
+                methodology_content_hash,
+            ],
+        )
+        row = uow.cursor.fetchone()
+        if row is None:
+            return None
+        return {
+            "knowledge_candidate_id": str(row[0]),
+            "candidate_asset_version_id": str(row[1]),
+            "execution_asset_version_id": str(row[2]),
+            "candidate_status": str(row[3]),
+        }
+
+    def _complete_analysis_file_if_ready(
+        self,
+        uow: AuthorityUnitOfWork,
+        *,
+        repository: SourceImportRepository,
+        worker: WorkerLeaseCommand,
+        job: dict[str, Any],
+        payload: dict[str, Any],
+    ) -> None:
+        uow.cursor.execute(
+            """
+            SELECT EXISTS (
+              SELECT 1
+              FROM authority_source_import_work AS work
+              JOIN authority_operation AS operation
+                ON operation.operation_id=work.operation_id
+              WHERE work.project_id=%s AND work.import_job_id=%s
+                AND work.work_kind IN ('DECONSTRUCTION', 'MKAOS_EXTRACTION')
+                AND work.status IN ('PLANNED', 'RUNNING', 'FAILED_RETRYABLE')
+                AND operation.command_payload->'payload'->>'source_transform_id'=%s
+            )
+            """,
+            [
+                worker.project_id,
+                job["import_job_id"],
+                payload["source_transform_id"],
+            ],
+        )
+        if bool(uow.cursor.fetchone()[0]):
+            return
+        repository.update_files_analysis_by_transform(
+            project_id=worker.project_id,
+            snapshot_asset_version_id=str(job["repository_snapshot_asset_version_id"]),
+            source_transform_id=str(payload["source_transform_id"]),
+            expected=("ANALYZING", "CANDIDATE_READY"),
+            status="CANDIDATE_READY",
+            processing_operation_id=worker.causation_id,
+            profile_asset_version_id=None,
+            analysis_plan_asset_version_id=str(
+                payload["analysis_plan_asset_version_id"]
+            ),
+        )
 
     def _execute_reprocessing(self, worker: WorkerLeaseCommand) -> dict[str, Any]:
         with AuthorityUnitOfWork(self.database_url) as uow:
@@ -2236,9 +3089,17 @@ class SourceImportApplication:
                 [plan_id],
             )
             keys = (
-                "ordinal", "action", "target_key", "reason",
-                "dependency_ids", "execution_spec", "status",
-                "child_operation_id", "attempt_count", "last_error", "result",
+                "ordinal",
+                "action",
+                "target_key",
+                "reason",
+                "dependency_ids",
+                "execution_spec",
+                "status",
+                "child_operation_id",
+                "attempt_count",
+                "last_error",
+                "result",
             )
             items = [dict(zip(keys, row, strict=True)) for row in uow.cursor.fetchall()]
             if str(plan[0]) == "APPLIED":
@@ -2297,12 +3158,31 @@ class SourceImportApplication:
             ):
                 continue
             execution_spec = dict(item["execution_spec"] or {})
-            if action in {
-                "RECOMPUTE",
-                "RECOMPUTE_AGGREGATE",
-                "REABSTRACT",
-                "REBUILD_PROJECTION",
-            } and not execution_spec:
+            if action in {"RECOMPUTE", "RECOMPUTE_AGGREGATE"} and str(
+                execution_spec.get("analysis_plan_asset_version_id") or ""
+            ):
+                self._block_reprocessing_item(
+                    plan_id,
+                    ordinal,
+                    code="SOURCE_ANALYSIS_PLAN_RECOMPOSITION_REQUIRED",
+                    message=(
+                        "plan-bound Observation cannot be independently recomputed; "
+                        "create a new classification/routing AnalysisPlan so all "
+                        "affected downstream work is recomposed"
+                    ),
+                )
+                status_by_target[target_key] = "BLOCKED"
+                continue
+            if (
+                action
+                in {
+                    "RECOMPUTE",
+                    "RECOMPUTE_AGGREGATE",
+                    "REABSTRACT",
+                    "REBUILD_PROJECTION",
+                }
+                and not execution_spec
+            ):
                 self._block_reprocessing_item(
                     plan_id,
                     ordinal,
@@ -2348,18 +3228,18 @@ class SourceImportApplication:
                 input_assets.append(
                     {"asset_version_id": current_id, "role": "stale_asset"}
                 )
-            for chunk_id in execution_spec.get(
-                "source_chunk_asset_version_ids"
-            ) or ():
+            for chunk_id in execution_spec.get("source_chunk_asset_version_ids") or ():
                 input_assets.append(
                     {
                         "asset_version_id": str(chunk_id),
                         "role": "source_chunk_evidence",
                     }
                 )
-            for observation_id in execution_spec.get(
-                "observation_asset_version_ids"
-            ) or execution_spec.get("input_observation_asset_version_ids") or ():
+            for observation_id in (
+                execution_spec.get("observation_asset_version_ids")
+                or execution_spec.get("input_observation_asset_version_ids")
+                or ()
+            ):
                 input_assets.append(
                     {
                         "asset_version_id": str(observation_id),
@@ -2447,9 +3327,7 @@ class SourceImportApplication:
             )
             uow.commit()
 
-    def _refresh_reprocessing_plan(
-        self, plan_id: str
-    ) -> tuple[str, dict[str, int]]:
+    def _refresh_reprocessing_plan(self, plan_id: str) -> tuple[str, dict[str, int]]:
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
@@ -2563,9 +3441,7 @@ class SourceImportApplication:
                 workspace_id=str(row[0]),
                 reprocessing_plan_asset_version_id=plan_id,
                 actor_id=self.worker_id,
-                idempotency_key=(
-                    f"continue:{plan_id}:{ordinal}:{worker.causation_id}"
-                ),
+                idempotency_key=(f"continue:{plan_id}:{ordinal}:{worker.causation_id}"),
                 trace_id=worker.trace_id,
                 correlation_id=worker.correlation_id,
             )
@@ -2608,9 +3484,8 @@ class SourceImportApplication:
         with AuthorityUnitOfWork(self.database_url) as uow:
             blob = uow.repositories.asset_blobs.blob_for_update(blob_id)
         if blob["status"] == "AVAILABLE":
-            if (
-                blob["actual_hash"] != content_hash
-                or int(blob["actual_size"]) != len(content)
+            if blob["actual_hash"] != content_hash or int(blob["actual_size"]) != len(
+                content
             ):
                 raise KernelError(
                     "SOURCE_IMPORT_BLOB_REUSE_CONFLICT",
@@ -2959,21 +3834,58 @@ class SourceImportApplication:
         import_job_id: str,
         project_id: str,
     ) -> None:
-        work = repository.list_work(
+        work = repository.list_work(project_id=project_id, import_job_id=import_job_id)
+        statuses = {str(item["status"]) for item in work}
+        job = repository.job_for_update(
             project_id=project_id, import_job_id=import_job_id
         )
-        statuses = {str(item["status"]) for item in work}
+        transition_failure: dict[str, Any] | None = None
         if statuses & {"FAILED_RETRYABLE", "FAILED_FINAL"}:
             target = "PARTIALLY_COMPLETED"
         elif statuses & {"PLANNED", "RUNNING"}:
             return
-        elif any(item["work_kind"] == "MKAOS_EXTRACTION" for item in work):
-            target = "AWAITING_GOVERNANCE"
         else:
-            target = "IMPORTED"
-        job = repository.job_for_update(
-            project_id=project_id, import_job_id=import_job_id
-        )
+            requested_override = _source_analysis_override(job.get("analysis_override"))
+            override_applied = True
+            if requested_override is not None:
+                repository.cursor.execute(
+                    """
+                    SELECT EXISTS (
+                      SELECT 1
+                      FROM authority_source_repository_file AS file
+                      JOIN authority_source_content_profile AS profile
+                        ON profile.asset_version_id=
+                           file.source_content_profile_asset_version_id
+                      WHERE file.project_id=%s
+                        AND file.repository_snapshot_asset_version_id=%s
+                        AND profile.logical_document_scope_hash=%s
+                        AND profile.override_contract_hash=%s
+                    )
+                    """,
+                    [
+                        project_id,
+                        job["repository_snapshot_asset_version_id"],
+                        requested_override.logical_document_scope_hash,
+                        requested_override.contract_hash,
+                    ],
+                )
+                override_applied = bool(repository.cursor.fetchone()[0])
+            if not override_applied:
+                target = "AWAITING_GOVERNANCE"
+                transition_failure = {
+                    "code": "SOURCE_PROFILE_OVERRIDE_TARGET_NOT_FOUND",
+                    "logical_document_scope_hash": (
+                        requested_override.logical_document_scope_hash
+                        if requested_override is not None
+                        else ""
+                    ),
+                }
+            elif statuses & {"BLOCKED"} or any(
+                item["work_kind"] == "MKAOS_EXTRACTION" for item in work
+            ):
+                target = "AWAITING_GOVERNANCE"
+            else:
+                target = "IMPORTED"
         if job["status"] == target:
             return
         repository.transition_job(
@@ -2985,6 +3897,7 @@ class SourceImportApplication:
                 "AWAITING_GOVERNANCE",
             ),
             target=target,
+            failure=transition_failure,
         )
 
     @staticmethod
@@ -3004,25 +3917,27 @@ class SourceImportApplication:
             }.values()
         )
         estimated_chunks = sum(
-            max(1, (int(row["size_bytes"]) + policy.max_chunk_bytes - 1) // policy.max_chunk_bytes)
+            max(
+                1,
+                (int(row["size_bytes"]) + policy.max_chunk_bytes - 1)
+                // policy.max_chunk_bytes,
+            )
             for row in unique_to_process
         )
-        profile = analysis_profile(policy.analysis_profile)
+        estimated_tokens = sum(
+            max(1, int(row["size_bytes"]) // 3) for row in unique_to_process
+        )
         return {
             "files_discovered": len(rows),
             "files_eligible": len(eligible),
             "files_blocked": sum(row["eligibility"] == "BLOCKED" for row in rows),
             "files_reused": sum(row["status"] == "REUSED" for row in rows),
             "files_to_fetch": len(unique_to_process),
-            "estimated_bytes": sum(
-                int(row["size_bytes"]) for row in unique_to_process
-            ),
+            "estimated_bytes": sum(int(row["size_bytes"]) for row in unique_to_process),
             "estimated_chunks": estimated_chunks,
-            "estimated_model_work": estimated_chunks * len(profile.dimensions),
-            "estimated_tokens": sum(
-                max(1, int(row["size_bytes"]) // 3) for row in unique_to_process
-            )
-            * len(profile.dimensions),
+            "estimated_classification_calls": len(unique_to_process),
+            "estimated_model_work": len(unique_to_process),
+            "estimated_tokens": estimated_tokens,
             "provider_calls_performed": 0,
             "snapshot_reused": snapshot_reused,
             "diff": counts,
@@ -3073,6 +3988,16 @@ def _repository_file_from_row(row: dict[str, Any]) -> RepositoryFile:
     )
 
 
+def _source_analysis_override(
+    value: Any,
+) -> SourceAnalysisOverride | None:
+    if not value:
+        return None
+    if isinstance(value, SourceAnalysisOverride):
+        return value
+    return SourceAnalysisOverride(**dict(value))
+
+
 def _file_row(
     *,
     project_id: str,
@@ -3092,7 +4017,11 @@ def _file_row(
         else str((prior or {}).get("content_hash") or "")
     )
     object_id = file.object_id if file is not None else ""
-    size = file.size_bytes if file is not None else int((prior or {}).get("size_bytes") or 0)
+    size = (
+        file.size_bytes
+        if file is not None
+        else int((prior or {}).get("size_bytes") or 0)
+    )
     return {
         "repository_snapshot_asset_version_id": snapshot_asset_version_id,
         "project_id": project_id,

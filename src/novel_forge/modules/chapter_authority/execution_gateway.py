@@ -1598,13 +1598,11 @@ class PostgresProductionExecutionPayloadResolver:
                     "Provider materialization hash differs from frozen ExternalEffect",
                 )
             if source_execution:
-                input_text, prompt_evidence = (
-                    _materialize_source_intelligence_prompt(
-                        request=request,
-                        stage=stage,
-                        inputs=inputs,
-                        materialization=materialization,
-                    )
+                input_text, prompt_evidence = _materialize_source_intelligence_prompt(
+                    request=request,
+                    stage=stage,
+                    inputs=inputs,
+                    materialization=materialization,
                 )
             else:
                 input_text, prompt_evidence = _materialize_production_codex_prompt(
@@ -1689,6 +1687,81 @@ class PostgresProductionExecutionPayloadResolver:
         metadata: Mapping[str, Any],
     ) -> dict[str, Any]:
         kind = str(metadata.get("kind") or "")
+        if kind == "classification":
+            if self.source_object_reader is None:
+                raise KernelError(
+                    "SOURCE_CLASSIFICATION_OBJECT_READER_REQUIRED",
+                    "Source classification requires a governed object-store reader",
+                )
+            evidence = stored_inputs.get("classification_evidence")
+            if not isinstance(evidence, Mapping):
+                raise ValueError("Source classification Evidence is missing")
+            samples = evidence.get("samples")
+            if not isinstance(samples, list) or not samples:
+                raise ValueError("Source classification sample manifest is missing")
+            identities = [
+                str(item.get("source_chunk_asset_version_id") or "")
+                for item in samples
+                if isinstance(item, Mapping)
+            ]
+            runtime = get_database_runtime(self.database_url)
+            with runtime.connection() as connection:
+                with connection.cursor() as cursor:
+                    cursor.execute(
+                        """
+                        SELECT chunk.asset_version_id, chunk.content_hash,
+                               chunk.byte_size, blob.actual_object_key,
+                               blob.actual_hash, blob.actual_size, blob.status
+                        FROM authority_source_chunk AS chunk
+                        JOIN authority_blob AS blob ON blob.blob_id=chunk.blob_id
+                        WHERE chunk.project_id=%s
+                          AND chunk.asset_version_id=ANY(%s)
+                        """,
+                        [request.project_id, identities],
+                    )
+                    rows = cursor.fetchall()
+            by_id = {str(row[0]): row for row in rows}
+            if len(by_id) != len(set(identities)):
+                raise ValueError("Source classification sample is outside the project")
+            resolved_samples: list[dict[str, Any]] = []
+            for sample in samples:
+                if not isinstance(sample, Mapping):
+                    raise ValueError("Source classification sample pointer is invalid")
+                identity = str(sample.get("source_chunk_asset_version_id") or "")
+                row = by_id[identity]
+                if str(row[6]) != "AVAILABLE":
+                    raise ValueError("Source classification Blob is unavailable")
+                content = self.source_object_reader.read(
+                    object_key=str(row[3]),
+                    expected_hash=str(row[4]),
+                    expected_size=int(row[5]),
+                )
+                if str(row[1]) != str(row[4]) or int(row[2]) != len(content):
+                    raise ValueError("Source classification chunk identity drifted")
+                start = int(sample.get("byte_start") or 0)
+                end = int(sample.get("byte_end") or 0)
+                bounded = content[start:end]
+                digest = "sha256:" + hashlib.sha256(bounded).hexdigest()
+                if (
+                    start < 0
+                    or end <= start
+                    or end > len(content)
+                    or digest != str(sample.get("sample_hash") or "")
+                ):
+                    raise ValueError("Source classification sample hash drifted")
+                resolved_samples.append(
+                    {
+                        "sample_id": str(sample.get("sample_id") or ""),
+                        "source_chunk_asset_version_id": identity,
+                        "position": str(sample.get("position") or ""),
+                        "sample_hash": digest,
+                        "content": bounded.decode("utf-8", errors="strict"),
+                    }
+                )
+            return {
+                **dict(stored_inputs),
+                "classification_samples": resolved_samples,
+            }
         if kind == "deconstruction":
             if self.source_object_reader is None:
                 raise KernelError(
@@ -1751,9 +1824,7 @@ class PostgresProductionExecutionPayloadResolver:
         if kind == "deconstruction_aggregate":
             manifest = stored_inputs.get("input_observations")
             if not isinstance(manifest, list) or not manifest:
-                raise ValueError(
-                    "Source aggregate Observation manifest is missing"
-                )
+                raise ValueError("Source aggregate Observation manifest is missing")
             identities = [
                 str(item.get("asset_version_id") or "")
                 for item in manifest
@@ -1769,22 +1840,18 @@ class PostgresProductionExecutionPayloadResolver:
             resolved_observations: list[dict[str, Any]] = []
             for item in manifest:
                 if not isinstance(item, Mapping):
-                    raise ValueError(
-                        "Source aggregate Observation pointer is invalid"
-                    )
+                    raise ValueError("Source aggregate Observation pointer is invalid")
                 identity = str(item.get("asset_version_id") or "")
                 document = documents.get(identity)
                 observation = (
                     document.content.get("observation")
                     if document is not None
-                    and document.asset_type
-                    == "source_deconstruction_observation"
+                    and document.asset_type == "source_deconstruction_observation"
                     else None
                 )
                 if (
                     document is None
-                    or document.content_hash
-                    != str(item.get("content_hash") or "")
+                    or document.content_hash != str(item.get("content_hash") or "")
                     or not isinstance(observation, Mapping)
                     or "sha256:"
                     + hashlib.sha256(
@@ -1792,9 +1859,7 @@ class PostgresProductionExecutionPayloadResolver:
                     ).hexdigest()
                     != str(item.get("observation_hash") or "")
                 ):
-                    raise ValueError(
-                        "Source aggregate Observation identity drifted"
-                    )
+                    raise ValueError("Source aggregate Observation identity drifted")
                 resolved_observations.append(
                     {
                         "asset_version_id": identity,
@@ -2010,8 +2075,7 @@ def _materialize_source_intelligence_prompt(
     if (
         any(not text for text in texts)
         or not isinstance(schema_content, Mapping)
-        or tuple(tool_permissions.get("allowed") or ())
-        != ("model.provider.invoke",)
+        or tuple(tool_permissions.get("allowed") or ()) != ("model.provider.invoke",)
     ):
         raise KernelError(
             "SOURCE_CAPABILITY_MATERIALIZATION_INVALID",
@@ -2028,18 +2092,14 @@ def _materialize_source_intelligence_prompt(
             "<source_analysis_input>\n"
             + _canonical(inputs)
             + "\n</source_analysis_input>",
-            "<output_schema>\n"
-            + _canonical(schema_content)
-            + "\n</output_schema>",
+            "<output_schema>\n" + _canonical(schema_content) + "\n</output_schema>",
             "Return only one JSON object matching the frozen schema. Do not quote, "
             "reproduce, or preserve source expression in analysis output.",
         )
     )
     prompt_hash = "sha256:" + hashlib.sha256(prompt.encode("utf-8")).hexdigest()
     return prompt, {
-        "materialization_hash": str(
-            materialization.get("materialization_hash") or ""
-        ),
+        "materialization_hash": str(materialization.get("materialization_hash") or ""),
         "fully_rendered_prompt_hash": prompt_hash,
         "stage": stage,
         "source_bytes_transient_only": True,
@@ -2050,9 +2110,7 @@ def _materialize_source_intelligence_prompt(
         "prompt_template": {
             key: template.get(key) for key in ("ref", "version", "content_hash")
         },
-        "skill": {
-            key: skill.get(key) for key in ("ref", "version", "content_hash")
-        },
+        "skill": {key: skill.get(key) for key in ("ref", "version", "content_hash")},
         "output_schema_ref": str(output_schema.get("ref") or ""),
         "output_schema_hash": str(output_schema.get("content_hash") or ""),
         "allowed_tools": ["model.provider.invoke"],

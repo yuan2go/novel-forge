@@ -1,4 +1,5 @@
 """Operational query surface for product Source imports and downstream lineage."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -24,9 +25,7 @@ class SourceImportQuery:
         self._require(principal, project_id)
         with AuthorityUnitOfWork(self.database_url) as uow:
             repository = SourceImportRepository(uow.cursor)
-            job = repository.job(
-                project_id=project_id, import_job_id=import_job_id
-            )
+            job = repository.job(project_id=project_id, import_job_id=import_job_id)
             work = repository.list_work(
                 project_id=project_id, import_job_id=import_job_id
             )
@@ -98,9 +97,7 @@ class SourceImportQuery:
         self._require(principal, project_id)
         with AuthorityUnitOfWork(self.database_url) as uow:
             repository = SourceImportRepository(uow.cursor)
-            job = repository.job(
-                project_id=project_id, import_job_id=import_job_id
-            )
+            job = repository.job(project_id=project_id, import_job_id=import_job_id)
             if not job["repository_snapshot_asset_version_id"]:
                 return []
             rows = repository.snapshot_files(
@@ -109,7 +106,34 @@ class SourceImportQuery:
                     job["repository_snapshot_asset_version_id"]
                 ),
             )
-        return [_serializable(row) for row in rows]
+            profile_ids = sorted(
+                {
+                    str(row["source_content_profile_asset_version_id"])
+                    for row in rows
+                    if row.get("source_content_profile_asset_version_id")
+                }
+            )
+            plan_ids = sorted(
+                {
+                    str(row["source_analysis_plan_asset_version_id"])
+                    for row in rows
+                    if row.get("source_analysis_plan_asset_version_id")
+                }
+            )
+            profiles = self._profile_summaries(uow, project_id, profile_ids)
+            plans = self._plan_summaries(uow, project_id, plan_ids)
+        return [
+            {
+                **_serializable(row),
+                "source_profile": profiles.get(
+                    str(row.get("source_content_profile_asset_version_id") or "")
+                ),
+                "analysis_plan": plans.get(
+                    str(row.get("source_analysis_plan_asset_version_id") or "")
+                ),
+            }
+            for row in rows
+        ]
 
     def work(
         self,
@@ -179,14 +203,14 @@ class SourceImportQuery:
         self._require(principal, project_id)
         with AuthorityUnitOfWork(self.database_url) as uow:
             repository = SourceImportRepository(uow.cursor)
-            job = repository.job(
-                project_id=project_id, import_job_id=import_job_id
-            )
+            job = repository.job(project_id=project_id, import_job_id=import_job_id)
             snapshot = str(job["repository_snapshot_asset_version_id"] or "")
             if not snapshot:
                 return {
                     "source_documents": 0,
                     "transforms": 0,
+                    "content_profiles": 0,
+                    "analysis_plans": 0,
                     "observations": 0,
                     "knowledge_candidates": 0,
                     "review_required": 0,
@@ -201,15 +225,23 @@ class SourceImportQuery:
                     WHERE project_id=%s
                       AND repository_snapshot_asset_version_id=%s
                       AND source_document_id IS NOT NULL
+                ), profiles AS (
+                    SELECT DISTINCT file.source_content_profile_asset_version_id
+                    FROM authority_source_repository_file AS file
+                    WHERE file.project_id=%s
+                      AND file.repository_snapshot_asset_version_id=%s
+                      AND file.source_content_profile_asset_version_id IS NOT NULL
+                ), plans AS (
+                    SELECT DISTINCT file.source_analysis_plan_asset_version_id
+                    FROM authority_source_repository_file AS file
+                    WHERE file.project_id=%s
+                      AND file.repository_snapshot_asset_version_id=%s
+                      AND file.source_analysis_plan_asset_version_id IS NOT NULL
                 ), observations AS (
                     SELECT DISTINCT observation.asset_version_id
                     FROM authority_source_deconstruction_observation AS observation
-                    JOIN authority_source_deconstruction_observation_input AS input
-                      ON input.observation_asset_version_id=observation.asset_version_id
-                     AND input.role='SOURCE_CHUNK_EVIDENCE'
-                    JOIN authority_source_chunk AS chunk
-                      ON chunk.asset_version_id=input.input_asset_version_id
-                    JOIN imported ON imported.source_transform_id=chunk.source_transform_id
+                    JOIN plans ON plans.source_analysis_plan_asset_version_id=
+                      observation.analysis_plan_asset_version_id
                     WHERE observation.project_id=%s
                 ), candidates AS (
                     SELECT DISTINCT candidate.asset_version_id, candidate.status
@@ -238,6 +270,8 @@ class SourceImportQuery:
                 SELECT
                     (SELECT COUNT(DISTINCT source_document_id) FROM imported),
                     (SELECT COUNT(DISTINCT source_transform_id) FROM imported),
+                    (SELECT COUNT(*) FROM profiles),
+                    (SELECT COUNT(*) FROM plans),
                     (SELECT COUNT(*) FROM observations),
                     (SELECT COUNT(*) FROM candidates),
                     (SELECT COUNT(*) FROM candidates WHERE status='NEEDS_REVIEW'),
@@ -251,6 +285,10 @@ class SourceImportQuery:
                     project_id,
                     snapshot,
                     project_id,
+                    snapshot,
+                    project_id,
+                    snapshot,
+                    project_id,
                     project_id,
                     project_id,
                 ],
@@ -259,6 +297,8 @@ class SourceImportQuery:
         keys = (
             "source_documents",
             "transforms",
+            "content_profiles",
+            "analysis_plans",
             "observations",
             "knowledge_candidates",
             "review_required",
@@ -336,9 +376,106 @@ class SourceImportQuery:
             "items": [_serializable(item) for item in items],
         }
 
-    def _snapshot_value(
-        self, project_id: str, asset_version_id: str, key: str
-    ) -> str:
+    @staticmethod
+    def _profile_summaries(
+        uow: AuthorityUnitOfWork,
+        project_id: str,
+        asset_version_ids: list[str],
+    ) -> dict[str, dict[str, Any]]:
+        if not asset_version_ids:
+            return {}
+        uow.cursor.execute(
+            """
+            SELECT asset_version_id, logical_document_scope_hash,
+                   classifier_id, classifier_version,
+                   classifier_prompt_version, classifier_schema_version,
+                   classifier_contract_hash, intelligence_policy_hash,
+                   classification_input_hash, classification_output_hash,
+                   evidence, predicted_content_type, resolved_content_type,
+                   confidence, margin, resolution_mode, resolution_reasons,
+                   override_contract_hash, override_decision_ref,
+                   status, manual_review_required, evidence_class,
+                   execution_asset_version_id, created_by_operation_id
+            FROM authority_source_content_profile
+            WHERE project_id=%s AND asset_version_id=ANY(%s)
+            """,
+            [project_id, asset_version_ids],
+        )
+        keys = (
+            "asset_version_id",
+            "logical_document_scope_hash",
+            "classifier_id",
+            "classifier_version",
+            "classifier_prompt_version",
+            "classifier_schema_version",
+            "classifier_contract_hash",
+            "intelligence_policy_hash",
+            "classification_input_hash",
+            "classification_output_hash",
+            "evidence",
+            "predicted_content_type",
+            "resolved_content_type",
+            "confidence",
+            "margin",
+            "resolution_mode",
+            "resolution_reasons",
+            "override_contract_hash",
+            "override_decision_ref",
+            "status",
+            "manual_review_required",
+            "evidence_class",
+            "execution_asset_version_id",
+            "created_by_operation_id",
+        )
+        return {
+            str(row[0]): _serializable(dict(zip(keys, row, strict=True)))
+            for row in uow.cursor.fetchall()
+        }
+
+    @staticmethod
+    def _plan_summaries(
+        uow: AuthorityUnitOfWork,
+        project_id: str,
+        asset_version_ids: list[str],
+    ) -> dict[str, dict[str, Any]]:
+        if not asset_version_ids:
+            return {}
+        uow.cursor.execute(
+            """
+            SELECT asset_version_id, profile_asset_version_id,
+                   logical_document_scope_hash, resolved_content_type,
+                   routing_policy_version, profile_id, profile_version,
+                   strategy_contract_hash, methodology_contract_hash,
+                   methodologies, mkaos_capability,
+                   abstraction_policy_version, status,
+                   created_by_operation_id
+            FROM authority_source_analysis_plan
+            WHERE project_id=%s AND asset_version_id=ANY(%s)
+            """,
+            [project_id, asset_version_ids],
+        )
+        keys = (
+            "asset_version_id",
+            "profile_asset_version_id",
+            "logical_document_scope_hash",
+            "resolved_content_type",
+            "routing_policy_version",
+            "profile_id",
+            "profile_version",
+            "strategy_contract_hash",
+            "methodology_contract_hash",
+            "methodologies",
+            "mkaos_capability",
+            "abstraction_policy_version",
+            "status",
+            "created_by_operation_id",
+        )
+        return {
+            str(row[0]): _serializable(dict(zip(keys, row, strict=True)))
+            for row in uow.cursor.fetchall()
+        }
+
+    def _snapshot_value(self, project_id: str, asset_version_id: str, key: str) -> str:
         if not asset_version_id:
             return ""
         if key not in {"resolved_commit_sha", "manifest_hash"}:

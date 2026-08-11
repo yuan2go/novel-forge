@@ -1,4 +1,5 @@
 """PostgreSQL SourceDocument governance projection."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -165,7 +166,9 @@ class SourceAuthorityQuery:
         limit: int = 500,
     ) -> list[dict[str, Any]]:
         if not project_id or not source_transform_id or limit < 1 or limit > 10_000:
-            raise ValueError("project/transform identity and a valid limit are required")
+            raise ValueError(
+                "project/transform identity and a valid limit are required"
+            )
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
@@ -241,6 +244,9 @@ class SourceAuthorityQuery:
                        observation.observation_schema_version,
                        observation.observation_hash, observation.confidence,
                        observation.evidence_class,
+                       observation.analysis_plan_asset_version_id,
+                       observation.methodology_content_hash,
+                       observation.analysis_lineage_version,
                        observation.execution_asset_version_id,
                        observation.created_by_operation_id,
                        version.lifecycle, version.eligibility,
@@ -282,6 +288,9 @@ class SourceAuthorityQuery:
             "observation_hash",
             "confidence",
             "evidence_class",
+            "analysis_plan_asset_version_id",
+            "methodology_content_hash",
+            "analysis_lineage_version",
             "execution_asset_version_id",
             "created_by_operation_id",
             "lifecycle",
@@ -439,8 +448,7 @@ class SourceAuthorityQuery:
                 ),
                 _check(
                     "versioned_transform",
-                    counts["transform_count"] > 0
-                    and counts["invalid_transforms"] == 0,
+                    counts["transform_count"] > 0 and counts["invalid_transforms"] == 0,
                     counts["transform_count"],
                     "normalization/chunking versions and manifests are frozen",
                 ),

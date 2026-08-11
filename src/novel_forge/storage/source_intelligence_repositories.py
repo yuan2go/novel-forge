@@ -1,4 +1,5 @@
 """PostgreSQL projections for Source Deconstruction and selective replay."""
+
 from __future__ import annotations
 
 from typing import Any, Iterable
@@ -15,7 +16,9 @@ class SourceIntelligenceRepository:
     def asset_versions(
         self, *, project_id: str, asset_version_ids: Iterable[str]
     ) -> dict[str, dict[str, Any]]:
-        identities = tuple(dict.fromkeys(str(item) for item in asset_version_ids if str(item)))
+        identities = tuple(
+            dict.fromkeys(str(item) for item in asset_version_ids if str(item))
+        )
         if not identities:
             return {}
         self.cursor.execute(
@@ -48,7 +51,9 @@ class SourceIntelligenceRepository:
     def source_chunks(
         self, *, project_id: str, asset_version_ids: Iterable[str]
     ) -> dict[str, dict[str, Any]]:
-        identities = tuple(dict.fromkeys(str(item) for item in asset_version_ids if str(item)))
+        identities = tuple(
+            dict.fromkeys(str(item) for item in asset_version_ids if str(item))
+        )
         if not identities:
             return {}
         self.cursor.execute(
@@ -105,7 +110,9 @@ class SourceIntelligenceRepository:
     def observations(
         self, *, project_id: str, asset_version_ids: Iterable[str]
     ) -> dict[str, dict[str, Any]]:
-        identities = tuple(dict.fromkeys(str(item) for item in asset_version_ids if str(item)))
+        identities = tuple(
+            dict.fromkeys(str(item) for item in asset_version_ids if str(item))
+        )
         if not identities:
             return {}
         self.cursor.execute(
@@ -188,10 +195,11 @@ class SourceIntelligenceRepository:
             """,
             [list(identities), project_id, project_id],
         )
-        for root_asset_version_id, source_chunk_asset_version_id in self.cursor.fetchall():
-            result[str(root_asset_version_id)].add(
-                str(source_chunk_asset_version_id)
-            )
+        for (
+            root_asset_version_id,
+            source_chunk_asset_version_id,
+        ) in self.cursor.fetchall():
+            result[str(root_asset_version_id)].add(str(source_chunk_asset_version_id))
         return result
 
     def current_observation(
@@ -206,7 +214,10 @@ class SourceIntelligenceRepository:
             SELECT observation.observation_id, observation.asset_version_id,
                    observation.analyzer_contract_hash,
                    observation.observation_hash, observation.dimension,
-                   observation.scale, observation.created_by_operation_id,
+                   observation.scale,
+                   observation.analysis_plan_asset_version_id,
+                   observation.methodology_content_hash,
+                   observation.created_by_operation_id,
                    operation.status, version.content_hash, version.content
             FROM authority_source_deconstruction_observation AS observation
             JOIN authority_asset_version AS version
@@ -229,6 +240,8 @@ class SourceIntelligenceRepository:
             "observation_hash",
             "dimension",
             "scale",
+            "analysis_plan_asset_version_id",
+            "methodology_content_hash",
             "operation_id",
             "operation_status",
             "content_hash",
@@ -243,6 +256,7 @@ class SourceIntelligenceRepository:
         scope_hash: str,
         analyzer_contract_hash: str,
         observation_hash: str,
+        analysis_plan_asset_version_id: str = "",
     ) -> dict[str, Any] | None:
         self.cursor.execute(
             """
@@ -257,8 +271,15 @@ class SourceIntelligenceRepository:
             WHERE observation.project_id=%s AND observation.scope_hash=%s
               AND observation.analyzer_contract_hash=%s
               AND observation.observation_hash=%s
+              AND COALESCE(observation.analysis_plan_asset_version_id, '')=%s
             """,
-            [project_id, scope_hash, analyzer_contract_hash, observation_hash],
+            [
+                project_id,
+                scope_hash,
+                analyzer_contract_hash,
+                observation_hash,
+                analysis_plan_asset_version_id,
+            ],
         )
         row = self.cursor.fetchone()
         if row is None:
@@ -356,7 +377,9 @@ class SourceIntelligenceRepository:
                 skill_version, capability_id, capability_version,
                 provider_policy_version, aggregation_policy_version,
                 observation_schema_version, observation_hash, confidence,
-                evidence_class, created_by_operation_id
+                evidence_class, analysis_plan_asset_version_id,
+                methodology_content_hash, analysis_lineage_version,
+                created_by_operation_id
             ) VALUES (
                 %(observation_id)s, %(project_id)s, %(workspace_id)s,
                 %(asset_version_id)s, %(execution_asset_version_id)s,
@@ -368,6 +391,8 @@ class SourceIntelligenceRepository:
                 %(provider_policy_version)s, %(aggregation_policy_version)s,
                 %(observation_schema_version)s, %(observation_hash)s,
                 %(confidence)s, %(evidence_class)s,
+                %(analysis_plan_asset_version_id)s,
+                %(methodology_content_hash)s, %(analysis_lineage_version)s,
                 %(created_by_operation_id)s
             )
             """,

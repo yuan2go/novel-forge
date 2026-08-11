@@ -1,4 +1,5 @@
 """Product-level Source import commands and operational queries."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -17,6 +18,11 @@ from novel_forge.modules.source_import import (
     CreateSourceImportCommand,
 )
 from novel_forge.modules.source_import.domain import SourceImportPolicy
+from novel_forge.modules.source_import.profiling import (
+    SourceAnalysisOverride,
+    SourceContentType,
+    SourceIntelligencePolicy,
+)
 
 
 def create_router(ctx: ProductRouterContext) -> APIRouter:
@@ -40,10 +46,25 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                     **request.policy.model_dump(),
                     "include_globs": tuple(request.policy.include_globs),
                     "exclude_globs": tuple(request.policy.exclude_globs),
-                    "extension_allowlist": tuple(
-                        request.policy.extension_allowlist
-                    ),
+                    "extension_allowlist": tuple(request.policy.extension_allowlist),
                 }
+            )
+            intelligence_policy = SourceIntelligencePolicy(
+                **request.intelligence_policy.model_dump()
+            )
+            override = (
+                SourceAnalysisOverride(
+                    logical_document_scope_hash=(
+                        request.analysis_override.logical_document_scope_hash
+                    ),
+                    content_type=SourceContentType(
+                        request.analysis_override.content_type
+                    ),
+                    reason=request.analysis_override.reason,
+                    decision_ref=request.analysis_override.decision_ref,
+                )
+                if request.analysis_override is not None
+                else None
             )
             return application.create_import(
                 CreateSourceImportCommand(
@@ -53,7 +74,8 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                     repository_url=request.source.repository,
                     requested_ref=request.source.ref,
                     policy=policy,
-                    analysis_profile=policy.analysis_profile,
+                    intelligence_policy=intelligence_policy,
+                    analysis_override=override,
                     mode=mode,
                     rights_authorization=request.rights_authorization,
                     license_name=request.license_name,

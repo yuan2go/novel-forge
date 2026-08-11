@@ -4,6 +4,7 @@ This module never reads Source Blob bytes.  It validates the identities and
 structured results that cross the Source Authority commit boundary after a
 governed deterministic or provider execution has completed.
 """
+
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
@@ -31,6 +32,41 @@ DECONSTRUCTION_DIMENSIONS = (
     "commercial_logic",
     "originality_copyright_risk",
 )
+DOCUMENT_ANALYSIS_DIMENSIONS = (
+    "scene_craft",
+    "narrative_distance",
+    "character_arc",
+    "subtext",
+    "transition",
+    "theme_system",
+    "social_pressure",
+    "symbol_function",
+    "fate_curve",
+    "moral_dilemma",
+    "craft_principle",
+    "core_concept",
+    "causal_constraints",
+    "credibility_rule",
+    "conflict_generator",
+    "misuse_risk",
+    "review_check",
+    "historical_causality",
+    "institutional_constraint",
+    "social_dynamics",
+    "source_reliability",
+    "argument_structure",
+    "concept_definition",
+    "assumption",
+    "counterargument",
+    "platform_policy",
+    "eligibility_rule",
+    "retention_constraint",
+    "release_constraint",
+    "compliance_risk",
+)
+SUPPORTED_DECONSTRUCTION_DIMENSIONS = tuple(
+    dict.fromkeys((*DECONSTRUCTION_DIMENSIONS, *DOCUMENT_ANALYSIS_DIMENSIONS))
+)
 DECONSTRUCTION_SCALES = (
     "CHAPTER",
     "CHAPTER_WINDOW",
@@ -39,6 +75,8 @@ DECONSTRUCTION_SCALES = (
     "VOLUME",
     "BOOK",
     "CROSS_BOOK_PATTERN",
+    "DOCUMENT_SECTION",
+    "LOGICAL_DOCUMENT",
 )
 FORBIDDEN_OBSERVATION_KEYS = frozenset(
     {
@@ -80,6 +118,7 @@ class AnalyzerContract:
     provider_policy_version: str
     aggregation_policy_version: str
     recommended_scales: tuple[str, ...]
+    methodology_content_hash: str = ""
 
     def __post_init__(self) -> None:
         for value, label in (
@@ -100,7 +139,7 @@ class AnalyzerContract:
         ):
             if not _VERSION.fullmatch(value):
                 raise ValueError(f"{label} is invalid")
-        if self.dimension not in DECONSTRUCTION_DIMENSIONS:
+        if self.dimension not in SUPPORTED_DECONSTRUCTION_DIMENSIONS:
             raise ValueError("deconstruction dimension is invalid")
         if not re.fullmatch(r"[a-z0-9][a-z0-9._-]*\.v[0-9]+", self.schema_version):
             raise ValueError("observation schema_version is invalid")
@@ -108,10 +147,16 @@ class AnalyzerContract:
         if not scales or any(item not in DECONSTRUCTION_SCALES for item in scales):
             raise ValueError("recommended deconstruction scale is invalid")
         object.__setattr__(self, "recommended_scales", scales)
+        if self.methodology_content_hash and not _SHA256.fullmatch(
+            self.methodology_content_hash
+        ):
+            raise ValueError("methodology_content_hash must be canonical sha256")
 
     def to_dict(self, *, include_fingerprint: bool = True) -> dict[str, Any]:
         payload = asdict(self)
         payload["recommended_scales"] = list(self.recommended_scales)
+        if not self.methodology_content_hash:
+            payload.pop("methodology_content_hash")
         if include_fingerprint:
             payload["fingerprint"] = self.fingerprint
         return payload
@@ -162,14 +207,22 @@ class ObservationScope:
 
     def __post_init__(self) -> None:
         scale = self.scale.strip().upper()
-        documents = tuple(sorted(set(item.strip() for item in self.source_document_ids if item.strip())))
+        documents = tuple(
+            sorted(
+                set(item.strip() for item in self.source_document_ids if item.strip())
+            )
+        )
         if scale not in DECONSTRUCTION_SCALES:
             raise ValueError("deconstruction scale is invalid")
         if not self.label.strip() or not documents:
-            raise ValueError("observation scope label and SourceDocument identities are required")
+            raise ValueError(
+                "observation scope label and SourceDocument identities are required"
+            )
         if scale == "CROSS_BOOK_PATTERN":
             if len(documents) < 2 or self.range_start != 0 or self.range_end != 0:
-                raise ValueError("cross-book scope requires at least two sources and zero range")
+                raise ValueError(
+                    "cross-book scope requires at least two sources and zero range"
+                )
         elif self.range_start <= 0 or self.range_end < self.range_start:
             raise ValueError("observation source range is invalid")
         elif scale == "CHAPTER" and self.range_start != self.range_end:
@@ -218,7 +271,9 @@ def validate_observation_payload(
     input_observation_asset_version_ids: tuple[str, ...] = (),
 ) -> dict[str, Any]:
     if not isinstance(payload, Mapping):
-        raise KernelError("DECONSTRUCTION_OBSERVATION_INVALID", "observation must be an object")
+        raise KernelError(
+            "DECONSTRUCTION_OBSERVATION_INVALID", "observation must be an object"
+        )
     observation = dict(payload)
     _assert_source_isolated(observation)
     if len(_canonical_json(observation)) > 512_000:
@@ -233,9 +288,14 @@ def validate_observation_payload(
             "observation findings must contain between 1 and 500 items",
         )
     confidence = observation.get("confidence")
-    if not isinstance(confidence, (int, float)) or isinstance(confidence, bool) or not 0 <= float(confidence) <= 1:
+    if (
+        not isinstance(confidence, (int, float))
+        or isinstance(confidence, bool)
+        or not 0 <= float(confidence) <= 1
+    ):
         raise KernelError(
-            "DECONSTRUCTION_CONFIDENCE_INVALID", "observation confidence must be within [0, 1]"
+            "DECONSTRUCTION_CONFIDENCE_INVALID",
+            "observation confidence must be within [0, 1]",
         )
     if str(observation.get("knowledge_status") or "") != "NOT_ABSTRACTED":
         raise KernelError(
@@ -243,7 +303,9 @@ def validate_observation_payload(
             "Observation must declare knowledge_status=NOT_ABSTRACTED",
         )
     allowed_evidence = {span.evidence_span_id for span in evidence_spans}
-    allowed_inputs = {item for item in input_observation_asset_version_ids if item.strip()}
+    allowed_inputs = {
+        item for item in input_observation_asset_version_ids if item.strip()
+    }
     if not allowed_evidence and not allowed_inputs:
         raise KernelError(
             "DECONSTRUCTION_LINEAGE_REQUIRED",
@@ -251,10 +313,13 @@ def validate_observation_payload(
         )
     for finding in findings:
         if not isinstance(finding, Mapping):
-            raise KernelError("DECONSTRUCTION_OBSERVATION_INVALID", "each finding must be an object")
-        if not str(finding.get("finding_code") or "").strip() or not str(
-            finding.get("statement") or ""
-        ).strip():
+            raise KernelError(
+                "DECONSTRUCTION_OBSERVATION_INVALID", "each finding must be an object"
+            )
+        if (
+            not str(finding.get("finding_code") or "").strip()
+            or not str(finding.get("statement") or "").strip()
+        ):
             raise KernelError(
                 "DECONSTRUCTION_OBSERVATION_INVALID",
                 "each finding requires finding_code and statement",
@@ -359,19 +424,118 @@ def analyzer_prompt_bundle(contract: AnalyzerContract) -> dict[str, Any]:
 def default_analyzer_contracts() -> dict[str, AnalyzerContract]:
     scale_map = {
         "structure": ("CHAPTER_GROUP", "ARC", "VOLUME", "BOOK", "CROSS_BOOK_PATTERN"),
-        "pacing": ("CHAPTER", "CHAPTER_WINDOW", "CHAPTER_GROUP", "ARC", "VOLUME", "BOOK", "CROSS_BOOK_PATTERN"),
-        "hook": ("CHAPTER", "CHAPTER_WINDOW", "CHAPTER_GROUP", "ARC", "VOLUME", "BOOK", "CROSS_BOOK_PATTERN"),
-        "reward_payoff": ("CHAPTER", "CHAPTER_WINDOW", "CHAPTER_GROUP", "ARC", "VOLUME", "BOOK", "CROSS_BOOK_PATTERN"),
-        "reader_promise": ("CHAPTER", "CHAPTER_WINDOW", "CHAPTER_GROUP", "ARC", "VOLUME", "BOOK", "CROSS_BOOK_PATTERN"),
-        "conflict": ("CHAPTER", "CHAPTER_WINDOW", "CHAPTER_GROUP", "ARC", "VOLUME", "BOOK", "CROSS_BOOK_PATTERN"),
-        "character_mechanism": ("CHAPTER_WINDOW", "CHAPTER_GROUP", "ARC", "VOLUME", "BOOK", "CROSS_BOOK_PATTERN"),
-        "relationship_mechanism": ("CHAPTER_WINDOW", "CHAPTER_GROUP", "ARC", "VOLUME", "BOOK", "CROSS_BOOK_PATTERN"),
-        "emotion_curve": ("CHAPTER", "CHAPTER_WINDOW", "CHAPTER_GROUP", "ARC", "VOLUME", "BOOK", "CROSS_BOOK_PATTERN"),
-        "foreshadowing": ("CHAPTER", "CHAPTER_WINDOW", "CHAPTER_GROUP", "ARC", "VOLUME", "BOOK", "CROSS_BOOK_PATTERN"),
-        "information_progression": ("CHAPTER", "CHAPTER_WINDOW", "CHAPTER_GROUP", "ARC", "VOLUME", "BOOK", "CROSS_BOOK_PATTERN"),
-        "serialization": ("CHAPTER_WINDOW", "CHAPTER_GROUP", "ARC", "VOLUME", "BOOK", "CROSS_BOOK_PATTERN"),
-        "commercial_logic": ("CHAPTER_WINDOW", "CHAPTER_GROUP", "ARC", "VOLUME", "BOOK", "CROSS_BOOK_PATTERN"),
-        "originality_copyright_risk": ("CHAPTER_WINDOW", "CHAPTER_GROUP", "ARC", "VOLUME", "BOOK", "CROSS_BOOK_PATTERN"),
+        "pacing": (
+            "CHAPTER",
+            "CHAPTER_WINDOW",
+            "CHAPTER_GROUP",
+            "ARC",
+            "VOLUME",
+            "BOOK",
+            "CROSS_BOOK_PATTERN",
+        ),
+        "hook": (
+            "CHAPTER",
+            "CHAPTER_WINDOW",
+            "CHAPTER_GROUP",
+            "ARC",
+            "VOLUME",
+            "BOOK",
+            "CROSS_BOOK_PATTERN",
+        ),
+        "reward_payoff": (
+            "CHAPTER",
+            "CHAPTER_WINDOW",
+            "CHAPTER_GROUP",
+            "ARC",
+            "VOLUME",
+            "BOOK",
+            "CROSS_BOOK_PATTERN",
+        ),
+        "reader_promise": (
+            "CHAPTER",
+            "CHAPTER_WINDOW",
+            "CHAPTER_GROUP",
+            "ARC",
+            "VOLUME",
+            "BOOK",
+            "CROSS_BOOK_PATTERN",
+        ),
+        "conflict": (
+            "CHAPTER",
+            "CHAPTER_WINDOW",
+            "CHAPTER_GROUP",
+            "ARC",
+            "VOLUME",
+            "BOOK",
+            "CROSS_BOOK_PATTERN",
+        ),
+        "character_mechanism": (
+            "CHAPTER_WINDOW",
+            "CHAPTER_GROUP",
+            "ARC",
+            "VOLUME",
+            "BOOK",
+            "CROSS_BOOK_PATTERN",
+        ),
+        "relationship_mechanism": (
+            "CHAPTER_WINDOW",
+            "CHAPTER_GROUP",
+            "ARC",
+            "VOLUME",
+            "BOOK",
+            "CROSS_BOOK_PATTERN",
+        ),
+        "emotion_curve": (
+            "CHAPTER",
+            "CHAPTER_WINDOW",
+            "CHAPTER_GROUP",
+            "ARC",
+            "VOLUME",
+            "BOOK",
+            "CROSS_BOOK_PATTERN",
+        ),
+        "foreshadowing": (
+            "CHAPTER",
+            "CHAPTER_WINDOW",
+            "CHAPTER_GROUP",
+            "ARC",
+            "VOLUME",
+            "BOOK",
+            "CROSS_BOOK_PATTERN",
+        ),
+        "information_progression": (
+            "CHAPTER",
+            "CHAPTER_WINDOW",
+            "CHAPTER_GROUP",
+            "ARC",
+            "VOLUME",
+            "BOOK",
+            "CROSS_BOOK_PATTERN",
+        ),
+        "serialization": (
+            "CHAPTER_WINDOW",
+            "CHAPTER_GROUP",
+            "ARC",
+            "VOLUME",
+            "BOOK",
+            "CROSS_BOOK_PATTERN",
+        ),
+        "commercial_logic": (
+            "CHAPTER_WINDOW",
+            "CHAPTER_GROUP",
+            "ARC",
+            "VOLUME",
+            "BOOK",
+            "CROSS_BOOK_PATTERN",
+        ),
+        "originality_copyright_risk": (
+            "CHAPTER_WINDOW",
+            "CHAPTER_GROUP",
+            "ARC",
+            "VOLUME",
+            "BOOK",
+            "CROSS_BOOK_PATTERN",
+        ),
     }
     return {
         dimension: AnalyzerContract(
@@ -424,11 +588,13 @@ def _assert_source_isolated(value: Any, *, path: str = "observation") -> None:
 
 __all__ = [
     "DECONSTRUCTION_DIMENSIONS",
+    "DOCUMENT_ANALYSIS_DIMENSIONS",
     "DECONSTRUCTION_SCALES",
     "AnalyzerContract",
     "ObservationEvidenceSpan",
     "ObservationScope",
     "ReprocessingTarget",
+    "SUPPORTED_DECONSTRUCTION_DIMENSIONS",
     "analyzer_prompt_bundle",
     "default_analyzer_contracts",
     "stable_hash",

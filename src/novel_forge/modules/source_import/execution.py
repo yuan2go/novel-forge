@@ -1,10 +1,13 @@
 """Source-domain binding to the existing Production Execution Gateway."""
+
 from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import asdict, dataclass
 import hashlib
 import json
+from pathlib import Path
+import re
 from typing import Any
 
 from novel_forge.modules.chapter_authority.execution_gateway import (
@@ -61,11 +64,20 @@ from novel_forge.storage.authority_asset_store import (
 from novel_forge.storage.database_runtime import get_database_runtime
 
 from .execution_contracts import (
+    CLASSIFICATION_STAGE,
     DECONSTRUCTION_STAGE,
     MKAOS_STAGE,
     content_intelligence_output_schema,
     validate_content_intelligence_output,
 )
+from .methodologies import SourceMethodologyRegistry
+from .profiling import (
+    SOURCE_CLASSIFIER_METHODOLOGY,
+    SOURCE_CLASSIFIER_METHODOLOGY_HASH,
+)
+
+
+_SHA256 = re.compile(r"^sha256:[0-9a-f]{64}$")
 
 
 def _canonical(value: Any) -> str:
@@ -95,6 +107,8 @@ class _ExecutionSpec:
     prompt_version: str
     skill_id: str
     skill_version: str
+    methodology_content: str
+    methodology_content_hash: str
     target_scope: TargetScope
     input_payload: dict[str, Any]
     artifact_version_ids: tuple[str, ...]
@@ -239,6 +253,7 @@ class PostgresContentIntelligenceExecutionPort:
         lease_seconds: int = 60,
         max_cost_per_call: str = "0",
         budget_caps: Mapping[str, str] | None = None,
+        methodology_registry: SourceMethodologyRegistry | None = None,
     ) -> None:
         if not database_url or not worker_id or lease_seconds <= 0:
             raise ValueError("Source PEP port requires database, worker, and lease")
@@ -252,6 +267,130 @@ class PostgresContentIntelligenceExecutionPort:
         self.budget_caps = dict(budget_caps or {})
         self.query = AuthorityAssetQuery(database_url)
         self.writer = AuthorityAssetWriter(database_url)
+        self.methodology_registry = methodology_registry or SourceMethodologyRegistry(
+            Path(__file__).resolve().parents[4] / "skills"
+        )
+
+    def execute_classification(
+        self,
+        *,
+        worker: WorkerLeaseCommand,
+        logical_document_scope_hash: str,
+        classifier_contract: dict[str, Any],
+        classification_evidence: dict[str, Any],
+        source_segments: tuple[dict[str, Any], ...],
+    ) -> dict[str, Any]:
+        if not _SHA256.fullmatch(logical_document_scope_hash):
+            raise ValueError("classification requires a canonical scope hash")
+        if (
+            classifier_contract.get("methodology_content_hash")
+            != SOURCE_CLASSIFIER_METHODOLOGY_HASH
+            or classifier_contract.get("capability") != "source.content.classify"
+        ):
+            raise KernelError(
+                "SOURCE_CLASSIFIER_METHODOLOGY_MISMATCH",
+                "classifier methodology or capability differs from runtime",
+            )
+        if (
+            classification_evidence.get("logical_document_scope_hash")
+            != logical_document_scope_hash
+        ):
+            raise ValueError("classification Evidence differs from LogicalDocument")
+        by_id = {
+            str(item.get("source_chunk_asset_version_id") or ""): item
+            for item in source_segments
+        }
+        samples = list(classification_evidence.get("samples") or [])
+        if not by_id or not samples:
+            raise ValueError("classification requires bounded Source samples")
+        for segment in by_id.values():
+            content = str(segment.get("content") or "").encode("utf-8")
+            if "sha256:" + hashlib.sha256(content).hexdigest() != str(
+                segment.get("content_hash") or ""
+            ) or len(content) != int(segment.get("byte_size") or -1):
+                raise KernelError(
+                    "SOURCE_CLASSIFICATION_INPUT_IDENTITY_INVALID",
+                    "transient SourceChunk differs from its Authority identity",
+                )
+        for sample in samples:
+            if not isinstance(sample, Mapping):
+                raise ValueError("classification sample manifest is invalid")
+            segment = by_id.get(str(sample.get("source_chunk_asset_version_id") or ""))
+            start = int(sample.get("byte_start") or 0)
+            end = int(sample.get("byte_end") or 0)
+            if segment is None or start < 0 or end <= start:
+                raise ValueError("classification sample manifest is invalid")
+            content = str(segment["content"]).encode("utf-8")
+            sample_hash = "sha256:" + hashlib.sha256(content[start:end]).hexdigest()
+            if end > len(content) or sample_hash != sample.get("sample_hash"):
+                raise KernelError(
+                    "SOURCE_CLASSIFICATION_SAMPLE_DRIFT",
+                    "bounded sample differs from its frozen Evidence hash",
+                )
+        classifier_contract_hash = _hash(classifier_contract)
+        classification_input_hash = _hash(classification_evidence)
+        spec = _ExecutionSpec(
+            kind="classification",
+            stage=CLASSIFICATION_STAGE,
+            capability=str(classifier_contract["capability"]),
+            prompt_id=str(classifier_contract["classifier_id"]),
+            prompt_version=str(classifier_contract["prompt_version"]),
+            skill_id="source-content-classifier",
+            skill_version=str(classifier_contract["methodology_version"]),
+            methodology_content=SOURCE_CLASSIFIER_METHODOLOGY,
+            methodology_content_hash=SOURCE_CLASSIFIER_METHODOLOGY_HASH,
+            target_scope=TargetScope(
+                scope_kind="logical_document",
+                scope_id=logical_document_scope_hash,
+                project_id=worker.project_id,
+                book_id=f"source-corpus:{worker.project_id}",
+            ),
+            input_payload={
+                "logical_document_scope_hash": logical_document_scope_hash,
+                "classifier_contract": classifier_contract,
+                "classifier_contract_hash": classifier_contract_hash,
+                "classification_evidence": classification_evidence,
+                "classification_input_hash": classification_input_hash,
+            },
+            artifact_version_ids=tuple(sorted(by_id)),
+            context_contract={
+                "logical_document_scope_hash": logical_document_scope_hash,
+                "classifier_contract_hash": classifier_contract_hash,
+                "classification_input_hash": classification_input_hash,
+                "methodology_content_hash": SOURCE_CLASSIFIER_METHODOLOGY_HASH,
+                "bounded_samples_only": True,
+                "raw_source_text_in_postgresql": False,
+                "generation_context_allowed": False,
+            },
+            output_schema=content_intelligence_output_schema(CLASSIFICATION_STAGE),
+        )
+        execution = self._execute(worker=worker, spec=spec)
+        classification = dict(
+            validate_content_intelligence_output(
+                spec.stage, spec.output_schema, execution["result"]
+            )
+        )
+        binding = {
+            "schema_version": "source-classification-execution-binding.v1",
+            "logical_document_scope_hash": logical_document_scope_hash,
+            "classifier_contract_hash": classifier_contract_hash,
+            "classification_input_hash": classification_input_hash,
+            "classification_output_hash": _hash(classification),
+        }
+        log = self._execution_log(
+            worker=worker,
+            spec=spec,
+            execution=execution,
+            domain_binding={"source_classification_binding": binding},
+        )
+        return {
+            "classification": classification,
+            "execution_asset_version_id": log.asset_version_id,
+            "evidence_class": self._evidence_class(execution),
+            "provider_execution_reused": bool(
+                execution.get("provider_execution_reused")
+            ),
+        }
 
     def execute_deconstruction(
         self,
@@ -262,6 +401,7 @@ class PostgresContentIntelligenceExecutionPort:
         evidence_spans: tuple[ObservationEvidenceSpan, ...],
         source_segments: tuple[dict[str, Any], ...],
         input_observations: tuple[dict[str, Any], ...] = (),
+        analysis_plan_asset_version_id: str = "",
     ) -> dict[str, Any]:
         if bool(evidence_spans) == bool(input_observations):
             raise KernelError(
@@ -269,8 +409,7 @@ class PostgresContentIntelligenceExecutionPort:
                 "deconstruction requires Source evidence or lower Observations exclusively",
             )
         by_id = {
-            str(item["source_chunk_asset_version_id"]): item
-            for item in source_segments
+            str(item["source_chunk_asset_version_id"]): item for item in source_segments
         }
         for span in evidence_spans:
             segment = by_id.get(span.source_chunk_asset_version_id)
@@ -302,14 +441,19 @@ class PostgresContentIntelligenceExecutionPort:
             }
             for item in input_observations
         ]
-        lower_ids = tuple(
-            str(item["asset_version_id"]) for item in input_observations
+        lower_ids = tuple(str(item["asset_version_id"]) for item in input_observations)
+        methodology = self.methodology_registry.require(
+            analyzer.skill_id,
+            expected_digest=analyzer.methodology_content_hash,
         )
+        if methodology.skill_version != analyzer.skill_version:
+            raise KernelError(
+                "SOURCE_ANALYZER_SKILL_VERSION_MISMATCH",
+                "Analyzer Skill version differs from canonical methodology",
+            )
         spec = _ExecutionSpec(
             kind=(
-                "deconstruction_aggregate"
-                if input_observations
-                else "deconstruction"
+                "deconstruction_aggregate" if input_observations else "deconstruction"
             ),
             stage=DECONSTRUCTION_STAGE,
             capability=analyzer.capability_id,
@@ -317,6 +461,8 @@ class PostgresContentIntelligenceExecutionPort:
             prompt_version=analyzer.prompt_version,
             skill_id=analyzer.skill_id,
             skill_version=analyzer.skill_version,
+            methodology_content=methodology.content,
+            methodology_content_hash=methodology.content_digest,
             target_scope=TargetScope(
                 scope_kind=scope.scale.lower(),
                 scope_id=scope.fingerprint,
@@ -330,6 +476,7 @@ class PostgresContentIntelligenceExecutionPort:
                 "source_segments": segment_manifest,
                 "input_observation_asset_version_ids": list(lower_ids),
                 "input_observations": observation_manifest,
+                "analysis_plan_asset_version_id": (analysis_plan_asset_version_id),
             },
             artifact_version_ids=(
                 lower_ids
@@ -343,6 +490,7 @@ class PostgresContentIntelligenceExecutionPort:
                 "scope_hash": scope.fingerprint,
                 "evidence_span_ids": [item.evidence_span_id for item in evidence_spans],
                 "input_observation_asset_version_ids": list(lower_ids),
+                "analysis_plan_asset_version_id": (analysis_plan_asset_version_id),
                 "aggregation_uses_source_text": False,
                 "raw_source_text_in_postgresql": False,
                 "generation_context_allowed": False,
@@ -367,6 +515,11 @@ class PostgresContentIntelligenceExecutionPort:
                 {item.evidence_span_id for item in evidence_spans}
             ),
             "input_observation_asset_version_ids": sorted(lower_ids),
+            **(
+                {"analysis_plan_asset_version_id": (analysis_plan_asset_version_id)}
+                if analysis_plan_asset_version_id
+                else {}
+            ),
         }
         log = self._execution_log(
             worker=worker,
@@ -395,6 +548,7 @@ class PostgresContentIntelligenceExecutionPort:
     ) -> dict[str, Any]:
         if not observation:
             raise ValueError("MKAOS execution requires one Observation")
+        methodology = self.methodology_registry.require("anti-copy-abstraction")
         spec = _ExecutionSpec(
             kind="mkaos",
             stage=MKAOS_STAGE,
@@ -402,7 +556,9 @@ class PostgresContentIntelligenceExecutionPort:
             prompt_id="mkaos.abstraction",
             prompt_version=abstraction_policy_version,
             skill_id="anti-copy-abstraction",
-            skill_version="1.0",
+            skill_version=methodology.skill_version,
+            methodology_content=methodology.content,
+            methodology_content_hash=methodology.content_digest,
             target_scope=TargetScope(
                 scope_kind="observation",
                 scope_id=observation_asset_version_id,
@@ -456,25 +612,21 @@ class PostgresContentIntelligenceExecutionPort:
     ) -> dict[str, Any]:
         cache_key = _hash(
             {
-                "schema_version": "source-provider-execution-cache.v1",
-                "operation_id": worker.causation_id,
+                "schema_version": "source-provider-execution-cache.v2",
                 "stage": spec.stage,
                 "capability": spec.capability,
+                "methodology_content_hash": spec.methodology_content_hash,
                 "input": spec.input_payload,
                 "context_contract": spec.context_contract,
             }
         )
-        replay = self._replay_succeeded_effect(
-            worker=worker, cache_key=cache_key
-        )
+        replay = self._replay_succeeded_effect(worker=worker, cache_key=cache_key)
         if replay is not None:
             return replay
         definition = default_capability_registry().resolve(spec.capability)
         graph = self._operation_graph(worker.causation_id, worker.project_id)
         documents = tuple(
-            self.query.require(
-                project_id=worker.project_id, asset_version_id=identity
-            )
+            self.query.require(project_id=worker.project_id, asset_version_id=identity)
             for identity in sorted(set(spec.artifact_version_ids))
         )
         context = self._ensure_contract(
@@ -504,8 +656,7 @@ class PostgresContentIntelligenceExecutionPort:
             correlation_id=worker.correlation_id,
         )
         stable_key = (
-            f"{worker.causation_id}:{worker.attempt_id}:{spec.capability}:"
-            "source-pep-v1"
+            f"{worker.causation_id}:{worker.attempt_id}:{spec.capability}:source-pep-v1"
         )
         effect_context = EffectCommandContext(
             operation_id=worker.causation_id,
@@ -586,9 +737,7 @@ class PostgresContentIntelligenceExecutionPort:
             stable_key=stable_key,
             reservation_id=str(reservation["reservation_id"]),
         )
-        adapter = _SourceGatewayEffectAdapter(
-            transport=self.transport, binding=binding
-        )
+        adapter = _SourceGatewayEffectAdapter(transport=self.transport, binding=binding)
         try:
             dispatched = dispatch_external_effect(
                 self.database_url,
@@ -621,9 +770,7 @@ class PostgresContentIntelligenceExecutionPort:
         result = evidence.get("result")
         usage = evidence.get("usage")
         cost = evidence.get("cost")
-        if not all(
-            isinstance(item, Mapping) for item in (result, usage, cost)
-        ):
+        if not all(isinstance(item, Mapping) for item in (result, usage, cost)):
             raise KernelError(
                 "SOURCE_PEP_EVIDENCE_INCOMPLETE",
                 "Source PEP result lacks output, usage, or cost evidence",
@@ -683,14 +830,14 @@ class PostgresContentIntelligenceExecutionPort:
                         ORDER BY created_at DESC
                         LIMIT 1
                     ) AS reservation ON TRUE
-                    WHERE effect.operation_id=%s AND effect.project_id=%s
+                    WHERE effect.project_id=%s
                       AND effect.status='SUCCEEDED'
                       AND effect.request_payload->'_source_intelligence'
                             ->>'cache_key'=%s
                     ORDER BY effect.created_at DESC
                     LIMIT 1
                     """,
-                    [worker.causation_id, worker.project_id, cache_key],
+                    [worker.project_id, cache_key],
                 )
                 row = cursor.fetchone()
         if row is None or not isinstance(row[1], Mapping):
@@ -716,9 +863,7 @@ class PostgresContentIntelligenceExecutionPort:
                 self.database_url,
                 reservation_id=str(row[2]),
                 project_id=worker.project_id,
-                actual_amount=str(
-                    cost.get("amount") or cost.get("amount_usd") or "0"
-                ),
+                actual_amount=str(cost.get("amount") or cost.get("amount_usd") or "0"),
                 actual_tokens=total_tokens,
                 evidence={
                     "replayed_after_worker_failure": True,
@@ -777,7 +922,9 @@ class PostgresContentIntelligenceExecutionPort:
             policy.fallback_policy_ref, policy.fallback_policy_version
         )
         context_ref = f"asset-version:{context.asset_version_id}"
-        prompt_ref = f"source-intelligence/prompts/{spec.prompt_id}/{spec.prompt_version}"
+        prompt_ref = (
+            f"source-intelligence/prompts/{spec.prompt_id}/{spec.prompt_version}"
+        )
         skill_ref = f"source-intelligence/skills/{spec.skill_id}/{spec.skill_version}"
         input_ref = "production_execution/inputs/" + _token(
             f"{worker.causation_id}:{worker.attempt_id}:{spec.capability}"
@@ -927,18 +1074,22 @@ class PostgresContentIntelligenceExecutionPort:
             "Never reproduce protected expression or treat an Observation as reusable "
             "knowledge before MKAOS governance."
         )
-        skill_text = (
-            "Cite only supplied EvidenceSpan identities. Separate observations from "
-            "abstractions. Remove names, settings, scenes, phrasing, and distinctive "
-            "plot combinations from every reusable candidate."
+        skill_text = spec.methodology_content
+        actual_skill_hash = (
+            "sha256:" + hashlib.sha256(skill_text.encode("utf-8")).hexdigest()
         )
+        if actual_skill_hash != spec.methodology_content_hash:
+            raise KernelError(
+                "SOURCE_SKILL_MATERIALIZATION_DRIFT",
+                "frozen Skill bytes differ from Analyzer methodology digest",
+            )
         template_text = (
             "Perform the frozen Source intelligence stage and return a bounded JSON "
             "object matching the supplied schema."
         )
-        output_ref = default_capability_registry().resolve(
-            spec.capability
-        ).output_schema_ref
+        output_ref = (
+            default_capability_registry().resolve(spec.capability).output_schema_ref
+        )
         materialization: dict[str, Any] = {
             "schema_version": "source-capability-materialization.v1",
             "stage": spec.stage,
@@ -958,7 +1109,7 @@ class PostgresContentIntelligenceExecutionPort:
             "skill": {
                 "ref": spec.skill_id,
                 "version": spec.skill_version,
-                "content_hash": _hash(skill_text),
+                "content_hash": spec.methodology_content_hash,
                 "text": skill_text,
             },
             "tool_permissions": {
@@ -1000,11 +1151,14 @@ class PostgresContentIntelligenceExecutionPort:
             "prompt_version": str(execution.get("prompt_version") or ""),
             "skill_version": str(execution.get("skill_version") or ""),
             "capability": spec.capability,
+            "methodology": {
+                "skill_id": spec.skill_id,
+                "skill_version": spec.skill_version,
+                "content_hash": spec.methodology_content_hash,
+            },
             "usage": dict(execution.get("usage") or {}),
             "cost": dict(execution.get("cost") or {}),
-            "production_execution": dict(
-                execution.get("production_execution") or {}
-            ),
+            "production_execution": dict(execution.get("production_execution") or {}),
             **domain_binding,
         }
         return self.writer.materialize_output(

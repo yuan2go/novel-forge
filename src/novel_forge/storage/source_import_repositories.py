@@ -1,4 +1,5 @@
 """PostgreSQL projections for durable product-level Source imports."""
+
 from __future__ import annotations
 
 from typing import Any, Iterable
@@ -42,6 +43,8 @@ class SourceImportRepository:
             **row,
             "source_locator": Jsonb(dict(row["source_locator"])),
             "import_policy": Jsonb(dict(row["import_policy"])),
+            "intelligence_policy": Jsonb(dict(row["intelligence_policy"])),
+            "analysis_override": Jsonb(dict(row.get("analysis_override") or {})),
             "counters": Jsonb(dict(row.get("counters") or {})),
             "failure": Jsonb(dict(row.get("failure") or {})),
         }
@@ -50,13 +53,15 @@ class SourceImportRepository:
             INSERT INTO authority_source_import_job (
                 import_job_id, project_id, workspace_id, source_type,
                 source_locator, requested_ref, import_policy,
-                import_policy_hash, analysis_profile, mode, status,
+                import_policy_hash, intelligence_policy,
+                intelligence_policy_hash, analysis_override, mode, status,
                 discovery_operation_id, counters, failure
             ) VALUES (
                 %(import_job_id)s, %(project_id)s, %(workspace_id)s,
                 %(source_type)s, %(source_locator)s, %(requested_ref)s,
                 %(import_policy)s, %(import_policy_hash)s,
-                %(analysis_profile)s, %(mode)s, %(status)s,
+                %(intelligence_policy)s, %(intelligence_policy_hash)s,
+                %(analysis_override)s, %(mode)s, %(status)s,
                 %(discovery_operation_id)s, %(counters)s, %(failure)s
             )
             ON CONFLICT (discovery_operation_id) DO NOTHING
@@ -66,14 +71,13 @@ class SourceImportRepository:
         )
         return self.cursor.fetchone() is not None
 
-    def job_for_update(
-        self, *, project_id: str, import_job_id: str
-    ) -> dict[str, Any]:
+    def job_for_update(self, *, project_id: str, import_job_id: str) -> dict[str, Any]:
         self.cursor.execute(
             """
             SELECT import_job_id, project_id, workspace_id, source_type,
                    source_locator, requested_ref, import_policy,
-                   import_policy_hash, analysis_profile, mode, status,
+                   import_policy_hash, intelligence_policy,
+                   intelligence_policy_hash, analysis_override, mode, status,
                    discovery_operation_id, repository_snapshot_asset_version_id,
                    previous_snapshot_asset_version_id, counters, failure,
                    created_at, updated_at
@@ -95,7 +99,8 @@ class SourceImportRepository:
             """
             SELECT import_job_id, project_id, workspace_id, source_type,
                    source_locator, requested_ref, import_policy,
-                   import_policy_hash, analysis_profile, mode, status,
+                   import_policy_hash, intelligence_policy,
+                   intelligence_policy_hash, analysis_override, mode, status,
                    discovery_operation_id, repository_snapshot_asset_version_id,
                    previous_snapshot_asset_version_id, counters, failure,
                    created_at, updated_at
@@ -124,7 +129,8 @@ class SourceImportRepository:
             f"""
             SELECT import_job_id, project_id, workspace_id, source_type,
                    source_locator, requested_ref, import_policy,
-                   import_policy_hash, analysis_profile, mode, status,
+                   import_policy_hash, intelligence_policy,
+                   intelligence_policy_hash, analysis_override, mode, status,
                    discovery_operation_id, repository_snapshot_asset_version_id,
                    previous_snapshot_asset_version_id, counters, failure,
                    created_at, updated_at
@@ -167,7 +173,7 @@ class SourceImportRepository:
         self.cursor.execute(
             f"""
             UPDATE authority_source_import_job
-            SET {', '.join(assignments)}
+            SET {", ".join(assignments)}
             WHERE project_id=%s AND import_job_id=%s AND status=ANY(%s)
             """,
             parameters,
@@ -249,9 +255,7 @@ class SourceImportRepository:
         row = self.cursor.fetchone()
         return _snapshot_row(row) if row is not None else None
 
-    def snapshot(
-        self, *, project_id: str, asset_version_id: str
-    ) -> dict[str, Any]:
+    def snapshot(self, *, project_id: str, asset_version_id: str) -> dict[str, Any]:
         self.cursor.execute(
             """
             SELECT repository_snapshot_id, project_id, workspace_id,
@@ -330,6 +334,8 @@ class SourceImportRepository:
                    previous_object_id, object_mode, object_type, object_id,
                    size_bytes, eligibility, block_reason, content_hash,
                    source_document_id, source_transform_id,
+                   source_content_profile_asset_version_id,
+                   source_analysis_plan_asset_version_id,
                    processing_operation_id, status, failure,
                    created_at, updated_at
             FROM authority_source_repository_file
@@ -403,13 +409,11 @@ class SourceImportRepository:
         if failure is not None:
             assignments.append("failure=%s")
             parameters.append(Jsonb(dict(failure)))
-        parameters.extend(
-            [project_id, snapshot_asset_version_id, path, list(expected)]
-        )
+        parameters.extend([project_id, snapshot_asset_version_id, path, list(expected)])
         self.cursor.execute(
             f"""
             UPDATE authority_source_repository_file
-            SET {', '.join(assignments)}
+            SET {", ".join(assignments)}
             WHERE project_id=%s
               AND repository_snapshot_asset_version_id=%s
               AND path=%s AND status=ANY(%s)
@@ -459,6 +463,51 @@ class SourceImportRepository:
         )
         return int(self.cursor.rowcount)
 
+    def update_files_analysis_by_transform(
+        self,
+        *,
+        project_id: str,
+        snapshot_asset_version_id: str,
+        source_transform_id: str,
+        expected: Iterable[str],
+        status: str,
+        processing_operation_id: str,
+        profile_asset_version_id: str | None = None,
+        analysis_plan_asset_version_id: str | None = None,
+    ) -> int:
+        assignments = [
+            "status=%s",
+            "processing_operation_id=%s",
+            "failure='{}'::jsonb",
+            "updated_at=NOW()",
+        ]
+        parameters: list[Any] = [status, processing_operation_id]
+        if profile_asset_version_id is not None:
+            assignments.append("source_content_profile_asset_version_id=%s")
+            parameters.append(profile_asset_version_id or None)
+        if analysis_plan_asset_version_id is not None:
+            assignments.append("source_analysis_plan_asset_version_id=%s")
+            parameters.append(analysis_plan_asset_version_id or None)
+        parameters.extend(
+            [
+                project_id,
+                snapshot_asset_version_id,
+                source_transform_id,
+                list(expected),
+            ]
+        )
+        self.cursor.execute(
+            f"""
+            UPDATE authority_source_repository_file
+            SET {", ".join(assignments)}
+            WHERE project_id=%s
+              AND repository_snapshot_asset_version_id=%s
+              AND source_transform_id=%s AND status=ANY(%s)
+            """,
+            parameters,
+        )
+        return int(self.cursor.rowcount)
+
     def register_work(self, row: dict[str, Any]) -> bool:
         self.cursor.execute(
             """
@@ -505,7 +554,7 @@ class SourceImportRepository:
         self.cursor.execute(
             f"""
             UPDATE authority_source_import_work
-            SET {', '.join(assignments)}
+            SET {", ".join(assignments)}
             WHERE project_id=%s AND operation_id=%s AND status=ANY(%s)
             """,
             parameters,
@@ -537,9 +586,7 @@ class SourceImportRepository:
             )
         return _work_row(row)
 
-    def list_work(
-        self, *, project_id: str, import_job_id: str
-    ) -> list[dict[str, Any]]:
+    def list_work(self, *, project_id: str, import_job_id: str) -> list[dict[str, Any]]:
         self.cursor.execute(
             """
             SELECT work_id, import_job_id, project_id, work_kind, stable_key,
@@ -556,36 +603,75 @@ class SourceImportRepository:
 
 def _job_row(row: Any) -> dict[str, Any]:
     keys = (
-        "import_job_id", "project_id", "workspace_id", "source_type",
-        "source_locator", "requested_ref", "import_policy",
-        "import_policy_hash", "analysis_profile", "mode", "status",
-        "discovery_operation_id", "repository_snapshot_asset_version_id",
-        "previous_snapshot_asset_version_id", "counters", "failure",
-        "created_at", "updated_at",
+        "import_job_id",
+        "project_id",
+        "workspace_id",
+        "source_type",
+        "source_locator",
+        "requested_ref",
+        "import_policy",
+        "import_policy_hash",
+        "intelligence_policy",
+        "intelligence_policy_hash",
+        "analysis_override",
+        "mode",
+        "status",
+        "discovery_operation_id",
+        "repository_snapshot_asset_version_id",
+        "previous_snapshot_asset_version_id",
+        "counters",
+        "failure",
+        "created_at",
+        "updated_at",
     )
     return dict(zip(keys, row, strict=True))
 
 
 def _snapshot_row(row: Any) -> dict[str, Any]:
     keys = (
-        "repository_snapshot_id", "project_id", "workspace_id",
-        "asset_version_id", "repository_identity", "repository_url",
-        "requested_ref", "resolved_commit_sha", "manifest_hash",
-        "import_policy_hash", "governance_policy_hash", "file_count",
+        "repository_snapshot_id",
+        "project_id",
+        "workspace_id",
+        "asset_version_id",
+        "repository_identity",
+        "repository_url",
+        "requested_ref",
+        "resolved_commit_sha",
+        "manifest_hash",
+        "import_policy_hash",
+        "governance_policy_hash",
+        "file_count",
         "repository_bytes",
-        "created_by_operation_id", "created_at",
+        "created_by_operation_id",
+        "created_at",
     )
     return dict(zip(keys, row, strict=True))
 
 
 def _file_row(row: Any) -> dict[str, Any]:
     keys = (
-        "repository_snapshot_asset_version_id", "project_id", "path",
-        "file_identity_hash", "diff_state", "previous_path",
-        "previous_object_id", "object_mode", "object_type", "object_id",
-        "size_bytes", "eligibility", "block_reason", "content_hash",
-        "source_document_id", "source_transform_id",
-        "processing_operation_id", "status", "failure", "created_at",
+        "repository_snapshot_asset_version_id",
+        "project_id",
+        "path",
+        "file_identity_hash",
+        "diff_state",
+        "previous_path",
+        "previous_object_id",
+        "object_mode",
+        "object_type",
+        "object_id",
+        "size_bytes",
+        "eligibility",
+        "block_reason",
+        "content_hash",
+        "source_document_id",
+        "source_transform_id",
+        "source_content_profile_asset_version_id",
+        "source_analysis_plan_asset_version_id",
+        "processing_operation_id",
+        "status",
+        "failure",
+        "created_at",
         "updated_at",
     )
     return dict(zip(keys, row, strict=True))
@@ -593,9 +679,19 @@ def _file_row(row: Any) -> dict[str, Any]:
 
 def _work_row(row: Any) -> dict[str, Any]:
     keys = (
-        "work_id", "import_job_id", "project_id", "work_kind", "stable_key",
-        "source_path", "target_asset_version_id", "operation_id", "status",
-        "result", "failure", "created_at", "updated_at",
+        "work_id",
+        "import_job_id",
+        "project_id",
+        "work_kind",
+        "stable_key",
+        "source_path",
+        "target_asset_version_id",
+        "operation_id",
+        "status",
+        "result",
+        "failure",
+        "created_at",
+        "updated_at",
     )
     return dict(zip(keys, row, strict=True))
 

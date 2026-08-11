@@ -81,6 +81,7 @@ from . import (
     v20260811_0078_reprocessing_action_expansion,
     v20260811_0079_source_import_scope_closure,
     v20260811_0080_source_snapshot_governance_identity,
+    v20260811_0081_source_intelligence_router,
 )
 
 VERSION_MODULES = [
@@ -164,6 +165,7 @@ VERSION_MODULES = [
     v20260811_0078_reprocessing_action_expansion,
     v20260811_0079_source_import_scope_closure,
     v20260811_0080_source_snapshot_governance_identity,
+    v20260811_0081_source_intelligence_router,
 ]
 
 __all__ = ["VERSION_MODULES"]

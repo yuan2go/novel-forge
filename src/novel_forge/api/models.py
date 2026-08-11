@@ -334,7 +334,37 @@ class ProductSourceImportPolicyRequest(BaseModel):
     allow_git_lfs: bool = False
     normalization_version: str = "source-normalization.v1"
     chunking_version: str = "source-structural-chunking.v1"
-    analysis_profile: str = "writing_theory"
+
+
+class ProductSourceIntelligencePolicyRequest(BaseModel):
+    policy_version: str = "source-intelligence-policy.v1"
+    classifier_id: str = "novel-forge.source-content-classifier"
+    classifier_version: str = "1.0"
+    classifier_prompt_version: str = "1.0"
+    classifier_schema_version: str = "source-content-classification.v1"
+    classifier_capability: str = "source.content.classify"
+    signal_schema_version: str = "source-profile-signals.v1"
+    sample_policy_version: str = "source-profile-sampling.v1"
+    routing_policy_version: str = "source-analysis-routing.v2"
+    logical_document_policy_version: str = "file-logical-document.v1"
+    min_confidence: float = Field(default=0.72, gt=0, le=1)
+    min_margin: float = Field(default=0.12, ge=0, le=1)
+    max_sample_chunks: int = Field(default=3, gt=0, le=12)
+    max_sample_bytes_per_chunk: int = Field(default=6_000, gt=0, le=64_000)
+    max_signal_bytes: int = Field(default=128_000, gt=0, le=1_000_000)
+
+
+class ProductSourceAnalysisOverrideRequest(BaseModel):
+    logical_document_scope_hash: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
+    content_type: str = Field(
+        pattern=(
+            r"^(WEB_NOVEL|PUBLISHED_FICTION|CLASSIC_LITERATURE|WRITING_THEORY|"
+            r"PROFESSIONAL_KNOWLEDGE|HISTORY_SOCIAL_SCIENCE|BIOGRAPHY_MEMOIR|"
+            r"PHILOSOPHY_ESSAY|PLATFORM_RULES)$"
+        )
+    )
+    reason: str = Field(min_length=20, max_length=2_000)
+    decision_ref: str = Field(min_length=1, max_length=500)
 
 
 class ProductSourceImportRequest(BaseModel):
@@ -344,6 +374,10 @@ class ProductSourceImportRequest(BaseModel):
     policy: ProductSourceImportPolicyRequest = Field(
         default_factory=ProductSourceImportPolicyRequest
     )
+    intelligence_policy: ProductSourceIntelligencePolicyRequest = Field(
+        default_factory=ProductSourceIntelligencePolicyRequest
+    )
+    analysis_override: ProductSourceAnalysisOverrideRequest | None = None
     rights_authorization: str = Field(min_length=1)
     license_name: str = ""
     copyright_boundary: str = ""

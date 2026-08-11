@@ -1,4 +1,5 @@
 """Structured Provider contracts for Source deconstruction and abstraction."""
+
 from __future__ import annotations
 
 from collections.abc import Mapping
@@ -7,9 +8,86 @@ from typing import Any
 
 DECONSTRUCTION_STAGE = "source.deconstruction.observe"
 MKAOS_STAGE = "source.mkaos.extract"
+CLASSIFICATION_STAGE = "source.content.classify"
+
+_CONTENT_TYPES = (
+    "WEB_NOVEL",
+    "PUBLISHED_FICTION",
+    "CLASSIC_LITERATURE",
+    "WRITING_THEORY",
+    "PROFESSIONAL_KNOWLEDGE",
+    "HISTORY_SOCIAL_SCIENCE",
+    "BIOGRAPHY_MEMOIR",
+    "PHILOSOPHY_ESSAY",
+    "PLATFORM_RULES",
+    "UNKNOWN",
+    "MIXED",
+)
 
 
 def content_intelligence_output_schema(stage: str) -> dict[str, Any]:
+    if stage == CLASSIFICATION_STAGE:
+        return {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "type": "object",
+            "properties": {
+                "content_type": {"type": "string", "enum": list(_CONTENT_TYPES)},
+                "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+                "alternatives": {
+                    "type": "array",
+                    "minItems": 2,
+                    "maxItems": 5,
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "content_type": {
+                                "type": "string",
+                                "enum": list(_CONTENT_TYPES),
+                            },
+                            "confidence": {
+                                "type": "number",
+                                "minimum": 0,
+                                "maximum": 1,
+                            },
+                        },
+                        "required": ["content_type", "confidence"],
+                        "additionalProperties": False,
+                    },
+                },
+                "evidence_codes": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 20,
+                    "items": {"type": "string", "minLength": 1, "maxLength": 100},
+                },
+                "boundary_assessment": {
+                    "type": "object",
+                    "properties": {
+                        "scope_kind": {"const": "FILE_DOCUMENT"},
+                        "suspected_document_count": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 10000,
+                        },
+                        "review_required": {"type": "boolean"},
+                    },
+                    "required": [
+                        "scope_kind",
+                        "suspected_document_count",
+                        "review_required",
+                    ],
+                    "additionalProperties": False,
+                },
+            },
+            "required": [
+                "content_type",
+                "confidence",
+                "alternatives",
+                "evidence_codes",
+                "boundary_assessment",
+            ],
+            "additionalProperties": False,
+        }
     if stage == DECONSTRUCTION_STAGE:
         return {
             "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -41,14 +119,10 @@ def content_intelligence_output_schema(stage: str) -> dict[str, Any]:
                         "anyOf": [
                             {
                                 "required": ["evidence_span_ids"],
-                                "properties": {
-                                    "evidence_span_ids": {"minItems": 1}
-                                },
+                                "properties": {"evidence_span_ids": {"minItems": 1}},
                             },
                             {
-                                "required": [
-                                    "input_observation_asset_version_ids"
-                                ],
+                                "required": ["input_observation_asset_version_ids"],
                                 "properties": {
                                     "input_observation_asset_version_ids": {
                                         "minItems": 1
@@ -101,11 +175,11 @@ def content_intelligence_fixture_response(
 ) -> dict[str, Any]:
     """Explicit protocol fixture; it never qualifies production knowledge."""
 
+    if stage == CLASSIFICATION_STAGE:
+        return _classification_fixture(inputs)
     if stage == DECONSTRUCTION_STAGE:
         evidence_ids = [
-            str(item)
-            for item in inputs.get("evidence_span_ids") or ()
-            if str(item)
+            str(item) for item in inputs.get("evidence_span_ids") or () if str(item)
         ]
         analyzer = inputs.get("analyzer")
         dimension = (
@@ -116,10 +190,7 @@ def content_intelligence_fixture_response(
         if not evidence_ids:
             observation_ids = [
                 str(item)
-                for item in inputs.get(
-                    "input_observation_asset_version_ids"
-                )
-                or ()
+                for item in inputs.get("input_observation_asset_version_ids") or ()
                 if str(item)
             ]
             if not observation_ids:
@@ -185,6 +256,60 @@ def validate_content_intelligence_output(
     required = set(expected["required"])
     if set(payload) != required:
         raise ValueError("content-intelligence output fields differ from schema")
+    if stage == CLASSIFICATION_STAGE:
+        content_type = payload.get("content_type")
+        confidence = payload.get("confidence")
+        alternatives = payload.get("alternatives")
+        evidence_codes = payload.get("evidence_codes")
+        boundary = payload.get("boundary_assessment")
+        if (
+            content_type not in _CONTENT_TYPES
+            or not isinstance(confidence, (int, float))
+            or isinstance(confidence, bool)
+            or not 0 <= float(confidence) <= 1
+            or not isinstance(alternatives, list)
+            or not 2 <= len(alternatives) <= 5
+            or not isinstance(evidence_codes, list)
+            or not evidence_codes
+            or any(
+                not isinstance(item, str) or not item.strip() or len(item) > 100
+                for item in evidence_codes
+            )
+            or not isinstance(boundary, Mapping)
+            or set(boundary)
+            != {"scope_kind", "suspected_document_count", "review_required"}
+            or boundary.get("scope_kind") != "FILE_DOCUMENT"
+            or not isinstance(boundary.get("suspected_document_count"), int)
+            or isinstance(boundary.get("suspected_document_count"), bool)
+            or not 1 <= int(boundary["suspected_document_count"]) <= 10_000
+            or not isinstance(boundary.get("review_required"), bool)
+        ):
+            raise ValueError("invalid Source classification Provider output")
+        scores: dict[str, float] = {}
+        for item in alternatives:
+            if not isinstance(item, Mapping) or set(item) != {
+                "content_type",
+                "confidence",
+            }:
+                raise ValueError("invalid Source classification alternative")
+            kind = item.get("content_type")
+            score = item.get("confidence")
+            if (
+                kind not in _CONTENT_TYPES
+                or kind in scores
+                or not isinstance(score, (int, float))
+                or isinstance(score, bool)
+                or not 0 <= float(score) <= 1
+            ):
+                raise ValueError("invalid Source classification alternative")
+            scores[str(kind)] = float(score)
+        ordered = sorted(scores.items(), key=lambda item: (-item[1], item[0]))
+        if (
+            ordered[0][0] != content_type
+            or abs(ordered[0][1] - float(confidence)) > 0.000001
+        ):
+            raise ValueError("classification top alternative is inconsistent")
+        return payload
     if stage == DECONSTRUCTION_STAGE:
         findings = payload.get("findings")
         confidence = payload.get("confidence")
@@ -233,15 +358,230 @@ def validate_content_intelligence_output(
         "copyright_boundaries",
     ):
         values = payload.get(field)
-        if not isinstance(values, list) or not values or any(
-            not isinstance(item, str) or not item.strip() or len(item) > 2_000
-            for item in values
+        if (
+            not isinstance(values, list)
+            or not values
+            or any(
+                not isinstance(item, str) or not item.strip() or len(item) > 2_000
+                for item in values
+            )
         ):
             raise ValueError(f"invalid MKAOS field: {field}")
     return payload
 
 
+def _classification_fixture(inputs: Mapping[str, Any]) -> dict[str, Any]:
+    """Semantic protocol fixture; paths are weak evidence and never direct truth."""
+
+    evidence = inputs.get("classification_evidence")
+    samples = inputs.get("classification_samples")
+    if (
+        not isinstance(evidence, Mapping)
+        or not isinstance(samples, list)
+        or not samples
+    ):
+        raise ValueError("classification fixture requires bounded governed samples")
+    text = "\n".join(
+        str(item.get("content") or "") for item in samples if isinstance(item, Mapping)
+    ).lower()
+    signals = evidence.get("signals")
+    if not isinstance(signals, Mapping):
+        raise ValueError("classification fixture requires structural signals")
+    path_tokens = {
+        str(item).lower() for item in evidence.get("path_hints") or () if str(item)
+    }
+    scores = {kind: 0.0 for kind in _CONTENT_TYPES[:-2]}
+
+    def add(kind: str, terms: tuple[str, ...], weight: float = 1.0) -> None:
+        scores[kind] += weight * sum(term in text for term in terms)
+
+    add(
+        "WEB_NOVEL",
+        (
+            "cliffhanger",
+            "chapter update",
+            "reader retention",
+            "爽点",
+            "追读",
+            "断章",
+            "金手指",
+        ),
+        1.4,
+    )
+    add(
+        "PUBLISHED_FICTION",
+        (
+            "scene",
+            "dialogue",
+            "protagonist",
+            "narrator",
+            "she said",
+            "he said",
+            "小说",
+            "人物",
+        ),
+        1.0,
+    )
+    add(
+        "CLASSIC_LITERATURE",
+        ("tragedy", "fate", "symbol", "social class", "古典", "命运", "象征", "礼教"),
+        1.0,
+    )
+    add(
+        "WRITING_THEORY",
+        (
+            "craft",
+            "plot",
+            "hook",
+            "pacing",
+            "scene objective",
+            "forward pressure",
+            "写作",
+            "叙事",
+            "节奏",
+        ),
+        1.2,
+    )
+    add(
+        "PROFESSIONAL_KNOWLEDGE",
+        (
+            "quorum",
+            "consistency model",
+            "algorithm",
+            "protocol",
+            "engineering",
+            "clinical",
+            "legal",
+            "system design",
+            "分布式",
+            "工程",
+            "专业",
+        ),
+        1.4,
+    )
+    add(
+        "HISTORY_SOCIAL_SCIENCE",
+        (
+            "historical",
+            "institution",
+            "society",
+            "archive",
+            "empire",
+            "revolution",
+            "历史",
+            "制度",
+            "社会",
+        ),
+        1.1,
+    )
+    add(
+        "BIOGRAPHY_MEMOIR",
+        (
+            "memoir",
+            "my childhood",
+            "my life",
+            "autobiography",
+            "回忆录",
+            "我的一生",
+            "童年",
+        ),
+        1.3,
+    )
+    add(
+        "PHILOSOPHY_ESSAY",
+        (
+            "argument",
+            "premise",
+            "counterargument",
+            "ethics",
+            "epistemology",
+            "哲学",
+            "论证",
+            "伦理",
+        ),
+        1.2,
+    )
+    add(
+        "PLATFORM_RULES",
+        (
+            "platform policy",
+            "eligibility",
+            "prohibited content",
+            "terms of service",
+            "submission rule",
+            "平台规则",
+            "签约",
+            "违规",
+            "审核",
+        ),
+        1.6,
+    )
+    dialogue_ratio = float(signals.get("dialogue_line_ratio") or 0)
+    citation_count = int(signals.get("citation_count") or 0)
+    first_person = float(signals.get("first_person_density") or 0)
+    chapter_markers = int(signals.get("chapter_marker_count") or 0)
+    if dialogue_ratio >= 0.12:
+        scores["PUBLISHED_FICTION"] += 1.4
+    if chapter_markers >= 3:
+        scores["WEB_NOVEL"] += 1.2
+    if citation_count >= 2:
+        scores["HISTORY_SOCIAL_SCIENCE"] += 0.8
+        scores["PROFESSIONAL_KNOWLEDGE"] += 0.6
+    if first_person >= 0.2:
+        scores["BIOGRAPHY_MEMOIR"] += 1.0
+    weak_path_hints = {
+        "rules": "PLATFORM_RULES",
+        "policy": "PLATFORM_RULES",
+        "fiction": "PUBLISHED_FICTION",
+        "novel": "WEB_NOVEL",
+        "history": "HISTORY_SOCIAL_SCIENCE",
+        "memoir": "BIOGRAPHY_MEMOIR",
+        "theory": "WRITING_THEORY",
+    }
+    for token, kind in weak_path_hints.items():
+        if token in path_tokens:
+            scores[kind] += 0.25
+    ordered = sorted(scores.items(), key=lambda item: (-item[1], item[0]))
+    top_kind, top_score = ordered[0]
+    second_kind, second_score = ordered[1]
+    if top_score < 1.0:
+        kind = "UNKNOWN"
+        confidence = 0.62
+        alternatives = [
+            {"content_type": "UNKNOWN", "confidence": confidence},
+            {"content_type": top_kind, "confidence": 0.28},
+        ]
+    elif second_score >= 1.5 and top_score - second_score < 0.45:
+        kind = "MIXED"
+        confidence = 0.78
+        alternatives = [
+            {"content_type": "MIXED", "confidence": confidence},
+            {"content_type": top_kind, "confidence": 0.11},
+            {"content_type": second_kind, "confidence": 0.09},
+        ]
+    else:
+        kind = top_kind
+        confidence = min(0.97, 0.78 + top_score * 0.045)
+        runner_up = min(0.19, max(0.01, second_score * 0.04))
+        alternatives = [
+            {"content_type": kind, "confidence": round(confidence, 6)},
+            {"content_type": second_kind, "confidence": round(runner_up, 6)},
+        ]
+    return {
+        "content_type": kind,
+        "confidence": round(confidence, 6),
+        "alternatives": alternatives,
+        "evidence_codes": ["DETERMINISTIC_SIGNALS", "BOUNDED_SEMANTIC_SAMPLE"],
+        "boundary_assessment": {
+            "scope_kind": "FILE_DOCUMENT",
+            "suspected_document_count": 1,
+            "review_required": kind == "MIXED",
+        },
+    }
+
+
 __all__ = [
+    "CLASSIFICATION_STAGE",
     "DECONSTRUCTION_STAGE",
     "MKAOS_STAGE",
     "content_intelligence_fixture_response",

@@ -1,4 +1,5 @@
 """Command-Kernel application for governed source Observations and replay plans."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -38,6 +39,7 @@ from novel_forge.storage.source_authority_repositories import SourceAuthorityRep
 from novel_forge.storage.source_intelligence_repositories import (
     SourceIntelligenceRepository,
 )
+from novel_forge.storage.source_profile_repositories import SourceProfileRepository
 
 
 @dataclass(frozen=True, slots=True)
@@ -55,6 +57,7 @@ class CommitDeconstructionObservationCommand:
     idempotency_key: str
     trace_id: str
     correlation_id: str
+    analysis_plan_asset_version_id: str = ""
 
     def __post_init__(self) -> None:
         _require_strings(
@@ -76,6 +79,12 @@ class CommitDeconstructionObservationCommand:
             "PROVIDER_QUALIFIED",
         }:
             raise ValueError("unsupported Observation evidence_class")
+        if bool(self.analysis_plan_asset_version_id) != bool(
+            self.analyzer.methodology_content_hash
+        ):
+            raise ValueError(
+                "versioned Analyzer methodology requires its AnalysisPlan AssetVersion"
+            )
 
 
 @dataclass(frozen=True, slots=True)
@@ -168,6 +177,7 @@ class SourceDeconstructionApplication:
                     f"source.observation:{command.project_id}:"
                     f"{payload['payload']['scope_hash']}:"
                     f"{payload['payload']['analyzer']['fingerprint']}:"
+                    f"{payload['payload'].get('analysis_plan_asset_version_id') or 'legacy'}:"
                     f"{payload['payload']['observation_hash']}"
                 ),
                 "trace_id": command.trace_id,
@@ -388,9 +398,7 @@ class SourceDeconstructionApplication:
             chunks = repository.source_chunks(
                 project_id=command.project_id, asset_version_ids=chunk_ids
             )
-            lower_ids = tuple(
-                sorted(set(command.input_observation_asset_version_ids))
-            )
+            lower_ids = tuple(sorted(set(command.input_observation_asset_version_ids)))
             lower = repository.observations(
                 project_id=command.project_id, asset_version_ids=lower_ids
             )
@@ -399,8 +407,43 @@ class SourceDeconstructionApplication:
                 scope_hash=command.scope.fingerprint,
                 analyzer_contract_hash=command.analyzer.fingerprint,
                 observation_hash=observation_hash,
+                analysis_plan_asset_version_id=(command.analysis_plan_asset_version_id),
+            )
+            plan = (
+                SourceProfileRepository(uow.cursor).plan(
+                    project_id=command.project_id,
+                    asset_version_id=command.analysis_plan_asset_version_id,
+                )
+                if command.analysis_plan_asset_version_id
+                else None
             )
         self._validate_execution_class(command.evidence_class, proof)
+        if command.analysis_plan_asset_version_id:
+            if plan is None or plan["status"] != "ACTIVE":
+                raise KernelError(
+                    "DECONSTRUCTION_ANALYSIS_PLAN_INVALID",
+                    "Observation requires an active AnalysisPlan",
+                )
+            plan_content = dict(plan["content"])
+            planned_analyzers = {
+                str(item.get("fingerprint") or "")
+                for item in dict(plan_content.get("strategy") or {}).get(
+                    "analyzers", []
+                )
+                if isinstance(item, dict)
+            }
+            plan_chunks = set(
+                dict(plan_content.get("logical_document_scope") or {}).get(
+                    "source_chunk_asset_version_ids", []
+                )
+            )
+            if command.analyzer.fingerprint not in planned_analyzers or not set(
+                chunk_ids
+            ).issubset(plan_chunks):
+                raise KernelError(
+                    "DECONSTRUCTION_ANALYSIS_PLAN_CONFLICT",
+                    "Analyzer or SourceChunk is outside the frozen AnalysisPlan",
+                )
         if len(chunks) != len(chunk_ids) or len(lower) != len(lower_ids):
             raise KernelError(
                 "DECONSTRUCTION_LINEAGE_NOT_FOUND",
@@ -408,7 +451,9 @@ class SourceDeconstructionApplication:
             )
         spans = validate_evidence_spans(
             command.evidence_spans,
-            source_chunk_sizes={key: int(value["byte_size"]) for key, value in chunks.items()},
+            source_chunk_sizes={
+                key: int(value["byte_size"]) for key, value in chunks.items()
+            },
         )
         source_documents = set(command.scope.source_document_ids)
         if chunks and (
@@ -441,6 +486,7 @@ class SourceDeconstructionApplication:
             observation_hash=observation_hash,
             evidence_span_ids=tuple(span.evidence_span_id for span in spans),
             input_observation_asset_version_ids=lower_ids,
+            analysis_plan_asset_version_id=(command.analysis_plan_asset_version_id),
         )
         input_assets = [
             {
@@ -464,6 +510,17 @@ class SourceDeconstructionApplication:
                 }
                 for key in sorted(lower)
             ],
+            *(
+                [
+                    {
+                        "asset_version_id": command.analysis_plan_asset_version_id,
+                        "role": "analysis_plan",
+                        "content_hash": plan["content_hash"],
+                    }
+                ]
+                if plan is not None
+                else []
+            ),
         ]
         return {
             "observation": observation,
@@ -476,6 +533,7 @@ class SourceDeconstructionApplication:
             "existing": existing,
             "input_assets": input_assets,
             "execution_binding": execution_binding,
+            "analysis_plan": plan,
         }
 
     def _observation_payload(
@@ -486,6 +544,9 @@ class SourceDeconstructionApplication:
             "workspace_id": command.workspace_id,
             "payload": {
                 "execution_asset_version_id": command.execution_asset_version_id,
+                "analysis_plan_asset_version_id": (
+                    command.analysis_plan_asset_version_id
+                ),
                 "scope": command.scope.to_dict(),
                 "scope_hash": command.scope.fingerprint,
                 "analyzer": command.analyzer.to_dict(),
@@ -502,9 +563,7 @@ class SourceDeconstructionApplication:
             },
         }
 
-    def _execute_observation_fenced(
-        self, worker: WorkerLeaseCommand
-    ) -> dict[str, Any]:
+    def _execute_observation_fenced(self, worker: WorkerLeaseCommand) -> dict[str, Any]:
         with AuthorityUnitOfWork(self.database_url) as uow:
             require_current_fence(uow, worker)
             repository = SourceIntelligenceRepository(uow.cursor)
@@ -563,7 +622,8 @@ class SourceDeconstructionApplication:
                 scope.fingerprint != payload["scope_hash"]
                 or analyzer.fingerprint != payload["analyzer"]["fingerprint"]
                 or expected_hash != payload["observation_hash"]
-                or len(chunks) != len({span.source_chunk_asset_version_id for span in spans})
+                or len(chunks)
+                != len({span.source_chunk_asset_version_id for span in spans})
                 or len(lower) != len(lower_ids)
             ):
                 raise KernelError(
@@ -576,9 +636,7 @@ class SourceDeconstructionApplication:
                     "analyzer_id": analyzer.analyzer_id,
                 }
             ).removeprefix("sha256:")
-            observation_id = (
-                f"source-observation:{worker.project_id}:{identity_digest}"
-            )
+            observation_id = f"source-observation:{worker.project_id}:{identity_digest}"
             current = repository.current_observation(
                 project_id=worker.project_id,
                 scope_hash=scope.fingerprint,
@@ -610,6 +668,13 @@ class SourceDeconstructionApplication:
                     "created_by_operation_id": worker.causation_id,
                     "source_chunk_asset_version_ids": sorted(chunks),
                     "input_observation_asset_version_ids": sorted(lower),
+                    "analysis_plan_asset_version_id": payload.get(
+                        "analysis_plan_asset_version_id"
+                    )
+                    or None,
+                    "methodology_content_hash": (
+                        analyzer.methodology_content_hash or None
+                    ),
                     "supersedes_asset_version_id": (
                         current["asset_version_id"] if current else None
                     ),
@@ -646,9 +711,7 @@ class SourceDeconstructionApplication:
                     "project_id": worker.project_id,
                     "workspace_id": str(command["workspace_id"]),
                     "asset_version_id": created.asset_version_id,
-                    "execution_asset_version_id": payload[
-                        "execution_asset_version_id"
-                    ],
+                    "execution_asset_version_id": payload["execution_asset_version_id"],
                     "scope": scope.to_dict(),
                     "scope_hash": scope.fingerprint,
                     "dimension": analyzer.dimension,
@@ -668,6 +731,17 @@ class SourceDeconstructionApplication:
                     "observation_hash": expected_hash,
                     "confidence": observation["confidence"],
                     "evidence_class": payload["evidence_class"],
+                    "analysis_plan_asset_version_id": (
+                        payload.get("analysis_plan_asset_version_id") or None
+                    ),
+                    "methodology_content_hash": (
+                        analyzer.methodology_content_hash or None
+                    ),
+                    "analysis_lineage_version": (
+                        "source-analysis-lineage.v1"
+                        if payload.get("analysis_plan_asset_version_id")
+                        else "legacy.v0"
+                    ),
                     "created_by_operation_id": worker.causation_id,
                 }
             )
@@ -738,15 +812,35 @@ class SourceDeconstructionApplication:
                 {
                     "observation_asset_version_id": created.asset_version_id,
                     "project_id": worker.project_id,
-                    "input_asset_version_id": payload[
-                        "execution_asset_version_id"
-                    ],
+                    "input_asset_version_id": payload["execution_asset_version_id"],
                     "evidence_span_id": None,
                     "role": "EXECUTION_EVIDENCE",
                     "ordinal": 0,
                     "created_by_operation_id": worker.causation_id,
                 }
             )
+            if payload.get("analysis_plan_asset_version_id"):
+                repository.register_observation_input(
+                    {
+                        "observation_asset_version_id": created.asset_version_id,
+                        "project_id": worker.project_id,
+                        "input_asset_version_id": payload[
+                            "analysis_plan_asset_version_id"
+                        ],
+                        "evidence_span_id": None,
+                        "role": "ANALYSIS_PLAN",
+                        "ordinal": 0,
+                        "created_by_operation_id": worker.causation_id,
+                    }
+                )
+                self._dependency(
+                    repository,
+                    worker,
+                    upstream=str(payload["analysis_plan_asset_version_id"]),
+                    downstream=created.asset_version_id,
+                    relationship="PLANS",
+                    selector_key=analyzer.dimension,
+                )
             self._event(
                 uow,
                 worker,
@@ -845,15 +939,10 @@ class SourceDeconstructionApplication:
                 lower_observation_ids: list[str] = []
                 if current is not None:
                     current_content = dict(current["content"])
-                    evidence_spans = list(
-                        current_content.get("evidence_spans") or []
-                    )
+                    evidence_spans = list(current_content.get("evidence_spans") or [])
                     current_lineage = dict(current_content.get("lineage") or {})
                     lower_observation_ids = list(
-                        current_lineage.get(
-                            "input_observation_asset_version_ids"
-                        )
-                        or []
+                        current_lineage.get("input_observation_asset_version_ids") or []
                     )
                     source_chunk_ids = sorted(
                         {
@@ -887,6 +976,11 @@ class SourceDeconstructionApplication:
                     "source_chunk_asset_version_ids": source_chunk_ids,
                     "evidence_spans": evidence_spans,
                     "input_observation_asset_version_ids": lower_observation_ids,
+                    "analysis_plan_asset_version_id": (
+                        str(current["analysis_plan_asset_version_id"] or "")
+                        if current is not None
+                        else ""
+                    ),
                 }
                 items.append(
                     {
@@ -958,10 +1052,10 @@ class SourceDeconstructionApplication:
                                 derived_content.get("evidence_spans") or []
                             ),
                             "input_observation_asset_version_ids": list(
-                                lineage.get(
-                                    "input_observation_asset_version_ids"
-                                )
-                                or []
+                                lineage.get("input_observation_asset_version_ids") or []
+                            ),
+                            "analysis_plan_asset_version_id": (
+                                lineage.get("analysis_plan_asset_version_id") or ""
                             ),
                         }
                     )
@@ -984,8 +1078,7 @@ class SourceDeconstructionApplication:
                         asset_version_ids=(execution_id,),
                     )
                     execution_content = dict(
-                        execution_versions.get(execution_id, {}).get("content")
-                        or {}
+                        execution_versions.get(execution_id, {}).get("content") or {}
                     )
                     derived_spec.update(
                         {
@@ -1218,9 +1311,7 @@ class SourceDeconstructionApplication:
         }
 
     @staticmethod
-    def _actor(
-        actor_id: str, principal: Principal | None, project_id: str
-    ) -> str:
+    def _actor(actor_id: str, principal: Principal | None, project_id: str) -> str:
         if principal is None:
             return actor_id
         principal.require("source.authority.execute", project_id)
@@ -1306,6 +1397,7 @@ def _execution_binding(
     observation_hash: str,
     evidence_span_ids: tuple[str, ...],
     input_observation_asset_version_ids: tuple[str, ...],
+    analysis_plan_asset_version_id: str = "",
 ) -> dict[str, Any]:
     expected = {
         "schema_version": "source-deconstruction-execution-binding.v1",
@@ -1316,9 +1408,22 @@ def _execution_binding(
         "input_observation_asset_version_ids": sorted(
             set(input_observation_asset_version_ids)
         ),
+        **(
+            {"analysis_plan_asset_version_id": analysis_plan_asset_version_id}
+            if analysis_plan_asset_version_id
+            else {}
+        ),
     }
-    binding = content.get("source_deconstruction_binding") if isinstance(content, dict) else None
-    if binding is None and evidence_class == "FIXTURE":
+    binding = (
+        content.get("source_deconstruction_binding")
+        if isinstance(content, dict)
+        else None
+    )
+    if (
+        binding is None
+        and evidence_class == "FIXTURE"
+        and not analysis_plan_asset_version_id
+    ):
         return {
             "schema_version": expected["schema_version"],
             "validation_status": "FIXTURE_PROTOCOL_UNBOUND",

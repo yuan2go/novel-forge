@@ -105,8 +105,12 @@ Otherwise the Profile is committed as `NEEDS_REVIEW` and no AnalysisPlan or
 Analyzer Operation is admitted.
 
 A manual override still runs and retains the classifier result.  It requires an
-explicit type, reason and governance decision reference and produces a new
-Profile AssetVersion with `resolution_mode=GOVERNANCE_OVERRIDE`.
+exact `LogicalDocumentScope` hash, explicit type, reason and governance decision
+reference and produces a new Profile AssetVersion with
+`resolution_mode=GOVERNANCE_OVERRIDE`.  An Import-level request can therefore
+target one governed LogicalDocument but cannot silently force every document in
+an heterogeneous Repository onto one profile; a missing/stale target fails into
+governance review.
 
 ## Resolver and methodologies
 
@@ -199,4 +203,3 @@ Tests must prove:
   Analyzer admission;
 - PostgreSQL exposes confidence, evidence, resolved type/profile, classifier,
   Skill version/digest, trace and downstream lineage.
-

@@ -63,19 +63,23 @@ class SourceImportPolicy:
     allow_git_lfs: bool = False
     normalization_version: str = "source-normalization.v1"
     chunking_version: str = "source-structural-chunking.v1"
-    analysis_profile: str = "writing_theory"
 
     def __post_init__(self) -> None:
         if not re.fullmatch(r"[a-z][a-z0-9_.-]+\.v[0-9]+", self.policy_version):
             raise ValueError("Source import policy_version is invalid")
         if not self.include_globs or not self.extension_allowlist:
-            raise ValueError("Source import policy requires include and extension rules")
-        if min(
-            self.max_file_bytes,
-            self.max_repository_bytes,
-            self.max_files,
-            self.max_chunk_bytes,
-        ) <= 0:
+            raise ValueError(
+                "Source import policy requires include and extension rules"
+            )
+        if (
+            min(
+                self.max_file_bytes,
+                self.max_repository_bytes,
+                self.max_files,
+                self.max_chunk_bytes,
+            )
+            <= 0
+        ):
             raise ValueError("Source import limits must be positive")
         if self.max_file_bytes > self.max_repository_bytes:
             raise ValueError("file limit cannot exceed repository limit")
@@ -104,7 +108,9 @@ class SourceImportPolicy:
             }
         )
 
-    def path_decision(self, path: str, *, mode: str, object_type: str, size: int) -> tuple[str, str]:
+    def path_decision(
+        self, path: str, *, mode: str, object_type: str, size: int
+    ) -> tuple[str, str]:
         normalized = path.replace("\\", "/").lstrip("/")
         if not normalized or ".." in normalized.split("/"):
             return "BLOCKED", "unsafe_path"
@@ -126,7 +132,11 @@ class SourceImportPolicy:
             return "BLOCKED", "excluded_path"
         if not any(fnmatch(normalized, pattern) for pattern in self.include_globs):
             return "BLOCKED", "not_included"
-        suffix = "." + normalized.rsplit(".", 1)[-1].lower() if "." in normalized.rsplit("/", 1)[-1] else ""
+        suffix = (
+            "." + normalized.rsplit(".", 1)[-1].lower()
+            if "." in normalized.rsplit("/", 1)[-1]
+            else ""
+        )
         if suffix not in self.extension_allowlist:
             return "BLOCKED", "extension_policy"
         if size < 0:
@@ -223,7 +233,9 @@ def normalize_repository_url(value: str, *, allow_file: bool = False) -> str:
     raw = value.strip()
     parsed = urlsplit(raw)
     if parsed.username or parsed.password or parsed.query or parsed.fragment:
-        raise ValueError("repository URL cannot contain credentials, query, or fragment")
+        raise ValueError(
+            "repository URL cannot contain credentials, query, or fragment"
+        )
     if parsed.scheme == "https":
         if (parsed.hostname or "").lower() != "github.com":
             raise ValueError("GitHub repository host must be github.com")
@@ -232,7 +244,9 @@ def normalize_repository_url(value: str, *, allow_file: bool = False) -> str:
             raise ValueError("GitHub repository URL must contain owner and repository")
         owner, repository = parts
         repository = repository.removesuffix(".git")
-        if not all(re.fullmatch(r"[A-Za-z0-9_.-]+", item) for item in (owner, repository)):
+        if not all(
+            re.fullmatch(r"[A-Za-z0-9_.-]+", item) for item in (owner, repository)
+        ):
             raise ValueError("GitHub repository owner or name is invalid")
         return f"https://github.com/{owner.lower()}/{repository.lower()}.git"
     if parsed.scheme == "file" and allow_file:
@@ -289,16 +303,26 @@ def diff_repository_manifests(
             )
         elif prior and prior.object_id == item.object_id and prior.mode == item.mode:
             result.append(
-                ManifestDiffEntry(path, "UNCHANGED", item.object_id, path, prior.object_id)
+                ManifestDiffEntry(
+                    path, "UNCHANGED", item.object_id, path, prior.object_id
+                )
             )
         elif prior:
             result.append(
-                ManifestDiffEntry(path, "MODIFIED", item.object_id, path, prior.object_id)
+                ManifestDiffEntry(
+                    path, "MODIFIED", item.object_id, path, prior.object_id
+                )
             )
         else:
-            candidates = [row for row in removed_by_oid.get(item.object_id, []) if row[0] not in consumed_removed]
+            candidates = [
+                row
+                for row in removed_by_oid.get(item.object_id, [])
+                if row[0] not in consumed_removed
+            ]
             if candidates:
-                previous_path, previous_item = sorted(candidates, key=lambda row: row[0])[0]
+                previous_path, previous_item = sorted(
+                    candidates, key=lambda row: row[0]
+                )[0]
                 consumed_removed.add(previous_path)
                 result.append(
                     ManifestDiffEntry(
@@ -358,7 +382,9 @@ def normalize_source_bytes(
         break
     if not encoding:
         raise ValueError("unsupported_text_encoding")
-    suffix = "." + path.rsplit(".", 1)[-1].lower() if "." in path.rsplit("/", 1)[-1] else ""
+    suffix = (
+        "." + path.rsplit(".", 1)[-1].lower() if "." in path.rsplit("/", 1)[-1] else ""
+    )
     source_format = {
         ".md": "markdown",
         ".markdown": "markdown",
@@ -384,7 +410,9 @@ def normalize_source_bytes(
             except json.JSONDecodeError as exc:
                 raise ValueError("invalid_jsonl_text") from exc
             normalized_rows.append(
-                json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+                json.dumps(
+                    value, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+                )
             )
         text = "\n".join(normalized_rows)
     text = "\n".join(line.rstrip() for line in text.split("\n")).strip("\n") + "\n"
@@ -399,7 +427,12 @@ def normalize_source_bytes(
     return NormalizedSource(
         text=text,
         encoding=encoding,
-        media_type={"markdown": "text/markdown", "json": "application/json", "jsonl": "application/x-ndjson", "yaml": "application/yaml"}.get(source_format, "text/plain"),
+        media_type={
+            "markdown": "text/markdown",
+            "json": "application/json",
+            "jsonl": "application/x-ndjson",
+            "yaml": "application/yaml",
+        }.get(source_format, "text/plain"),
         source_format=source_format,
         normalization_version=normalization_version,
         content_hash="sha256:" + hashlib.sha256(encoded).hexdigest(),
@@ -444,8 +477,14 @@ def chunk_normalized_text(
         content = piece.encode("utf-8")
         if not content:
             continue
-        first_line = next((line.strip() for line in piece.splitlines() if line.strip()), "")
-        label = first_line.lstrip("# ")[:160] if _HEADING.match(first_line) else f"segment-{index + 1}"
+        first_line = next(
+            (line.strip() for line in piece.splitlines() if line.strip()), ""
+        )
+        label = (
+            first_line.lstrip("# ")[:160]
+            if _HEADING.match(first_line)
+            else f"segment-{index + 1}"
+        )
         chunks.append(
             NormalizedChunk(
                 chunk_index=index,

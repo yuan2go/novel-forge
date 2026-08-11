@@ -1,14 +1,19 @@
 """Command Kernel definitions for the product Source import execution plane."""
+
 from __future__ import annotations
 
 from typing import Any
 
 
-SOURCE_IMPORT_DEFINITION_VERSION = "1.0.0"
+SOURCE_IMPORT_DEFINITION_VERSION = "1.1.0"
 SOURCE_IMPORT_DISCOVERY_OPERATION = "source.import.repository.discover"
 SOURCE_IMPORT_DISCOVERY_HANDLER = "novel_forge.source_import.repository_discover"
 SOURCE_IMPORT_FILE_OPERATION = "source.import.file.process"
 SOURCE_IMPORT_FILE_HANDLER = "novel_forge.source_import.file_process"
+SOURCE_IMPORT_PROFILING_OPERATION = "source.import.document.profile"
+SOURCE_IMPORT_PROFILING_HANDLER = "novel_forge.source_import.document_profile"
+SOURCE_IMPORT_ANALYSIS_PLANNING_OPERATION = "source.import.analysis.plan"
+SOURCE_IMPORT_ANALYSIS_PLANNING_HANDLER = "novel_forge.source_import.analysis_plan"
 SOURCE_IMPORT_DECONSTRUCTION_OPERATION = "source.import.deconstruction.execute"
 SOURCE_IMPORT_DECONSTRUCTION_HANDLER = (
     "novel_forge.source_import.deconstruction_execute"
@@ -22,6 +27,8 @@ SOURCE_IMPORT_OPERATIONS = frozenset(
     {
         SOURCE_IMPORT_DISCOVERY_OPERATION,
         SOURCE_IMPORT_FILE_OPERATION,
+        SOURCE_IMPORT_PROFILING_OPERATION,
+        SOURCE_IMPORT_ANALYSIS_PLANNING_OPERATION,
         SOURCE_IMPORT_DECONSTRUCTION_OPERATION,
         SOURCE_IMPORT_MKAOS_OPERATION,
         SOURCE_IMPORT_REPROCESSING_OPERATION,
@@ -94,6 +101,18 @@ def source_import_definitions(
             ["object_store.put"],
         ),
         (
+            SOURCE_IMPORT_PROFILING_OPERATION,
+            SOURCE_IMPORT_PROFILING_HANDLER,
+            "source-profile:{project_id}",
+            ["source.content.classify"],
+        ),
+        (
+            SOURCE_IMPORT_ANALYSIS_PLANNING_OPERATION,
+            SOURCE_IMPORT_ANALYSIS_PLANNING_HANDLER,
+            "source-analysis-plan:{project_id}",
+            [],
+        ),
+        (
             SOURCE_IMPORT_DECONSTRUCTION_OPERATION,
             SOURCE_IMPORT_DECONSTRUCTION_HANDLER,
             "source-analysis:{project_id}",
@@ -139,6 +158,8 @@ __all__ = [
     "SOURCE_IMPORT_DEFINITION_VERSION",
     "SOURCE_IMPORT_DISCOVERY_OPERATION",
     "SOURCE_IMPORT_FILE_OPERATION",
+    "SOURCE_IMPORT_PROFILING_OPERATION",
+    "SOURCE_IMPORT_ANALYSIS_PLANNING_OPERATION",
     "SOURCE_IMPORT_MKAOS_OPERATION",
     "SOURCE_IMPORT_OPERATIONS",
     "SOURCE_IMPORT_REPROCESSING_OPERATION",
