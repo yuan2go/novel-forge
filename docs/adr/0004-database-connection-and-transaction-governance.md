@@ -2,9 +2,6 @@
 
 Status: Accepted
 
-Evidence binding: implementation SHA is recorded in
-`docs/reports/current-head-sha-baseline.json` after the final local regression.
-
 ## Context
 
 Authority repositories and Workers previously opened direct psycopg connections,

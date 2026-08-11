@@ -1,197 +1,38 @@
-# Autonomous Novel OS Capability Map
+# Capability map
 
-Updated: 2026-08-11
-Baseline checked: branch `feat/v7-content-intelligence-and-longform-proof`  
-Implementation audit start HEAD: `68d4e0021dcc20a209908130687f2da03a9398cf`
+## Agent, capability, Skill, and Capability Pack
 
-Status in this document is evidence-based:
-
-- **Implemented**: substantial code path exists;
-- **Fixture-proven**: deterministic/mock integration proves protocol behavior;
-- **Partial**: important path exists but the business loop is incomplete;
-- **Design/Foundation**: schema, migration, contract or first slice exists;
-- **Unproven**: no current real-world proof;
-- **Blocked**: current HEAD or deployment condition prevents a valid completion claim.
-
-A UI page, API route, schema, fixture or design document alone is not a completed capability.
-
-## 1. Current Capability Summary
-
-| Capability group | Current state | Strongest evidence | Main gap |
-|---|---|---|---|
-| PostgreSQL Command Kernel | Implemented / fixture-proven | DB constraints, Operation/Saga/Attempt tests | production load and recovery drill |
-| Chapter Authority | Implemented / fixture-proven | 18-node PostgreSQL Saga | real Provider and editorial quality |
-| Canon and Story State | Implemented foundation / PostgreSQL-tested | proposal/approval/update, 11 snapshots and deterministic continuity report | long-horizon semantic accuracy |
-| Quality and Review | Implemented foundation | 5 groups, 41 dimensions, aggregate gate | Judge calibration and real model evidence |
-| Book Authority | Implemented foundation / fixture-proven | persistent coordination and child delegation | autonomous whole-book progression |
-| Provider v2 | Implemented protocol | registry, route, query/cancel/callback contracts | real composition, billed cost and production proof |
-| Long-form | Partial | Reader Outcome/Recap/Plan proposal contracts | real 100/300 chapter and million-word proof |
-| Long-form native intelligence | Partial / PostgreSQL-tested | temporal projection/query, hook and pacing observations, candidate consequence and evidence-bound fact decisions | real Provider, long-form and downstream-consumer proof |
-| Source and MKAOS Authority | Implemented foundation / PostgreSQL-tested | SourceDocument/MKAOS Authority integration and migration integrity gates | real corpus, retrieval quality and production operations |
-| Agent collaboration | Design/Foundation / fixture-proven | frozen scope, work order, candidate graph | complete autonomous Agent Center |
-| Web operator product | Partial | broad Next.js console | authentication, browser E2E and guided repair |
-| Publishing/platform | Partial | local/manual/generic adapter foundations | official platform and real receipt proof |
-| Portfolio/multi-book | Design/Foundation | isolation, scoring and allocation plans | real parallel dispatch and operational proof |
-| Production deployment | Blocked/partial | Docker and CI configuration | Authority-only topology and readiness |
-| Security/multi-user | Partial | trusted server Principal | HTTP authentication and project RBAC |
-
-## 2. Runtime And Authority Capabilities
-
-| Capability | Status | Code evidence | Explicit limit |
-|---|---|---|---|
-| Operation Definition registry | Implemented | `modules/command_kernel/`, `storage/authority_repositories.py` | definition deployment governance still requires release process |
-| Command admission | Implemented | schema, permission, approval, handler and frozen input checks | full multi-user identity not implemented |
-| Idempotency | Implemented | unique key plus Request Digest conflict | production operational policy still needs load proof |
-| Operation lifecycle | Implemented | version/status CAS | distributed pressure not proven |
-| Saga/dependency graph | Implemented | graph coordination and DB acyclic guard | large dynamic graph scale not proven |
-| Attempt/retry | Implemented | active Attempt uniqueness and retry policies | real provider failure distribution unproven |
-| Lease/fencing | Implemented | DB lease function, monotonic fencing and stale rejection | multi-worker production load unproven |
-| Cancellation | Implemented foundation | cancellation command and effect cancellation | real upstream cancellation unproven |
-| Compensation | Implemented foundation | compensation contracts and repositories | end-to-end irreversible action drill incomplete |
-| External Effect | Implemented foundation | effect/dispatch/receipt/query/callback/reconcile | real provider/platform proof absent |
-| Inbox/Outbox | Implemented foundation | durable tables and recovery operations | production dispatcher topology incomplete |
-| Audit/State Event | Implemented | admission and lifecycle evidence | retention/analytics operations partial |
-| AssetVersion | Implemented | immutable versions, qualification and output binding | production scale and retention operations unproven |
-| Blob/Object effect | Fixture-proven | verified local object delivery protocol | remote production object store proof absent |
-
-## 3. Chapter Production Capabilities
-
-| Stage | Status | Current behavior | Limit |
-|---|---|---|---|
-| Production Preparation | Implemented foundation | resolves frozen ChapterPlan/context/profile assets | deployment/operator workflow proof incomplete |
-| Plan materialization | Implemented | validates authoritative ChapterPlan identity and qualification | autonomous ChapterPlan generation is separate and incomplete |
-| Context | Implemented | manifest/frozen input/segment equality and source-isolated views | retrieval selection quality needs calibration |
-| Draft | Fixture-proven | governed model stage and normalized output | real Chinese prose unproven |
-| Review | Fixture-proven | structured review and issues | semantic review accuracy unproven |
-| Revision | Fixture-proven | revised DraftVersion and resolved issue codes | real repair quality unproven |
-| Re-review | Fixture-proven | independent pass/fail evidence | real evaluator calibration unproven |
-| Canon Extraction | Fixture-proven | semantic extraction stage or deterministic fallback | real extraction precision/recall unproven |
-| Canon Proposal/Approval | Implemented foundation | versioned proposal and decision-gated changes | operator merge/repair UX partial |
-| Canon Update | PostgreSQL-tested | patch, 11 append-only state snapshots and deterministic continuity report | long-horizon semantic accuracy unproven |
-| Structural Quality | Fixture-proven | structural dimensions | calibration incomplete |
-| Commercial Quality | Fixture-proven | promise/reward/charm/pressure/hook dimensions | platform/reader calibration incomplete |
-| Source/Originality Quality | Fixture-proven | originality, leakage and style evidence | external plagiarism corpus proof incomplete |
-| Long-form Quality | Fixture-proven | continuity, promise, arc and repetition dimensions | real long-chain evidence absent |
-| Platform Quality | Fixture-proven | format, length and policy dimensions | real platform rule integration partial |
-| Quality Aggregate | Implemented | fail-closed five-group fan-in | input evidence can still be fixture/uncalibrated |
-| Publish Gate | Fixture-proven | internal release decision | not a real platform permission |
-| Export | Fixture-proven | package/blob/effect/receipt protocol | real object and publishing adapter unproven |
-| Final Release Gate | Fixture-proven | post-export evidence gate | no real publication proof |
-
-## 4. Book And Long-form Capabilities
-
-| Capability | Status | Current evidence | Remaining gap |
-|---|---|---|---|
-| Book root admission | Fixture-proven | persistent Book Operation and Saga | real book execution environment |
-| Book input freezing | Implemented | BookDesign, BookPlan, production and long-form versions | upstream semantic generator acceptance still partial |
-| Sequential chapter cursor | Implemented | reservation and acceptance progression | parallel/group policies need broader proof |
-| Chapter child delegation | Fixture-proven | Chapter Authority command port and persisted delegation | real Provider child runs unproven |
-| Chapter acceptance | Fixture-proven | Final Gate evidence to ChapterOutcome/StoryState | production editorial acceptance unproven |
-| Pause/resume/cancel | Fixture-proven foundation | Book gate and child/root cancellation | real long-running worker/provider race proof incomplete |
-| Reader Outcome | Shadow foundation | governed report and state candidate | uncalibrated and non-blocking |
-| Longform Recap | Deterministic foundation | recap, deviation and proposal outputs | semantic model/human proof incomplete |
-| Plan Change | Design/Foundation | diff, impact, decision and activation contracts | complete automatic replan propagation unproven |
-| Hierarchical planning | Design/Foundation | Book/Volume/Arc/ChapterGroup migrations/contracts | continuous planner execution incomplete |
-| Ending/closure | Design/partial | ending and reachability concepts in execution/design layers | no full-book closure proof |
-| Whole-book supervisor | Missing/partial | coordination pieces exist separately | no single autonomous progression owner |
-| Million-word stability | Unproven | no current real-provider long novel evidence | staged 10/30/100/300/million-word proof required |
-
-## 5. Knowledge And Content Intelligence
-
-| Capability | Status | Current evidence | Remaining gap |
-|---|---|---|---|
-| Source registry/intake | PostgreSQL Authority foundation plus Legacy surfaces | source metadata, rights/risk and SourceDocument integration | full caller convergence |
-| Source eligibility | Implemented foundation / PostgreSQL-tested | R0-R4, quarantine, allowed-use and approval concepts | real-source operational proof |
-| MKAOS ingestion | PostgreSQL Authority foundation plus Legacy surfaces | document/chunk/candidate/card/pack integration flows | real corpus operations and full caller convergence |
-| MKAOS quality | Partial | leakage, near-duplicate, risk and usability gates | real calibration and full production enforcement |
-| MKAOS lineage | Partial | source-to-output lineage and feedback attribution | PostgreSQL Authority convergence and scale |
-| Context Builder | Partial/meaningful | stage profiles, source isolation and token budgets | universal production path use and selection evaluation |
-| Retrieval | Partial | local, Qdrant and pgvector slices | real embedding/rerank quality and operations |
-| Genre OS | Implemented foundation | strategy profiles and policy assets | real output calibration and Authority binding |
-| Style OS | Implemented foundation | abstract fingerprint/policy/drift | provider-assisted calibration and larger corpus workflows |
-| Analysis/decomposition | Partial | web/published/classic analysis slices | model quality, lineage and asset conversion closure |
-| Material system | Implemented foundation | reusable structured assets | Authority lifecycle and usage learning depth |
-
-### 5.1 Long-form native intelligence evidence
-
-These flags describe the current implementation independently. `PRODUCTION_WIRED` means a real current Authority/API composition consumer exists; it does not imply production deployment or real-provider proof.
-
-| Capability | CODE_EXISTS | SKILL_DEFINED | FIXTURE_TESTED | POSTGRES_TESTED | PRODUCTION_WIRED | REAL_PROVIDER_PROVEN | LONGFORM_PROVEN | Current boundary |
-|---|---:|---:|---:|---:|---:|---:|---:|---|
-| `temporal.query` | Yes | Yes | Yes | Yes | Yes | No | No | read-only accepted Chapter/AssetVersion projection and API; two-chapter proof only |
-| `canon.validate` | Yes | Yes | Yes | Yes | Yes | No | No | existing Canon operation emits the deterministic report and 11 snapshots |
-| `continuity.validate` | Yes | Yes | Yes | Yes | Yes | No | No | deterministic rules only; motivation, OOC and emotional plausibility remain semantic |
-| `hook.analyze` | Yes | Yes, merged | Yes | Yes | Yes | No | No | reuses the Commercial Quality provider receipt and emits qualified evidence |
-| `pacing.analyze` | Yes | Yes | Yes | Yes | Yes | No | No | semantic observations require provider evidence; no keyword quality inference |
-| `pacing.aggregate` | Yes | Yes | Yes | Yes | Yes | No | No | deterministic as-of aggregation over accepted observations, exposed through API |
-| `world.consequence.analyze` | Yes | Yes | Yes | Yes | Partial | No | No | Content Authority materializes a provider-receipt candidate; provider generation and Story Design activation are not wired |
-| `fact.verify` | Yes | Yes | Yes | Yes | Partial | No | No | Content Authority consumes frozen Claim and MKAOS evidence; automatic retrieval and production Fact Gate consumers are not wired |
-
-The first six capabilities reuse the existing Chapter/Book Authority, Quality, Capability Pack and API composition. The final two deliberately remain candidate/evidence operations and cannot mutate Accepted Canon. No capability in this table establishes real-provider, multi-book, production deployment or long-form proof.
-
-## 6. Creative And Quality Product Capabilities
-
-| Capability | Status | Explicit limit |
-|---|---|---|
-| Topic generation | Local/domain implementation | not yet fully Authority-led real-provider production |
-| Worldbuilding | Local/domain implementation | contradiction and lifecycle Authority partial |
-| Character design | Local/domain implementation | long-horizon state and editable lifecycle partial |
-| Outline/Book planning | Partial | semantic generator and hierarchical acceptance still converging |
-| ChapterPlan | Implemented contract, partial production | real automatic generation and qualification not yet whole-book closed |
-| Readable prose | Partial | governed Chapter stage exists, real quality not proven |
-| ReviewIssue | Implemented foundation | universal caller and repair UX still converging |
-| Revision strategy | Partial | candidate/plan/patch contracts exist, real provider repair proof absent |
-| Reader Promise | Foundation | deterministic payoff detection needs calibration |
-| Chapter Economy | Foundation | heuristic water/repetition detection needs calibration |
-| Character Pressure | Foundation | heuristic agency/pressure scores need calibration |
-| Mobile Reading | Foundation | heuristic layout checks need platform/reader calibration |
-| Evaluation Center | Partial | golden-set and annotation foundations, no production premium Judge proof |
-
-## 7. Agent, UI, Publishing And Portfolio
-
-| Capability | Status | Explicit limit |
-|---|---|---|
-| Agent Registry | Foundation | target-role and operation coverage incomplete |
-| Agent Scheduler | Partial | broad Legacy scheduler plus newer Authority workers; topology not unified |
-| Agent Collaboration V1 | Fixture-proven foundation | no real Codex/Provider collaborative book-design proof |
-| Permission Center | Foundation | approval records exist; not full user/org RBAC |
-| OS Cockpit | Partial | broad evidence views; some actions remain review/planning only |
-| Web Admin | Partial | Node/static tests historically reported; browser smoke and auth incomplete |
-| Local export | Development slice | no production distribution proof |
-| Platform strategy | Partial | rules and gates, limited official integration |
-| Publishing adapters | Manual/generic foundation | no verified official platform API lifecycle |
-| Feedback import/backflow | Partial | proposal/patch/AgentTask plans exist; live stream and causal proof absent |
-| Portfolio OS | Foundation | allocation plans are non-dispatching and approval-gated |
-| Multi-book isolation | Fixture/design evidence | real concurrency and contamination proof absent |
-
-## 8. Current Completion Assessment
-
-Practical maturity, not module count:
-
-| Dimension | Assessment |
+| Term | Meaning |
 |---|---|
-| Architecture/control-plane design | 65-70% |
-| Fixture/protocol implementation | 60-65% |
-| Real business loop | 35-40% |
-| Production readiness | 25-30% |
-| Final Autonomous Novel OS target | roughly half of the critical proof remains |
+| Agent | A governed reasoning executor with a versioned definition, scope, permissions, budgets, tools, context, and candidate output. Its lifecycle is projected from Command Kernel Operation/Attempt facts. It is not a Domain Authority. |
+| Capability | A versioned unit of work with typed input/output and a risk/qualification contract. Agent capabilities map one-to-one to an execution capability in PEP. |
+| Skill | A reusable, versioned procedure bound by content hash, input/output contracts, invocation limits, dependencies, and drift policy. It does not own runtime state. |
+| Capability Pack | A validated, compiled, content-addressed manifest that freezes roles, workflows, capabilities, Skills, prompts, tools, policies, gates, and compatibility for a release channel. |
 
-The next maturity step is not adding more isolated modules. It is closing one buildable and deployable Authority path, then proving real Provider, whole-book and multi-book behavior in staged acceptance gates.
+Agent output remains a proposal until the relevant Domain Authority accepts it. The runtime has one execution plane: Agent execution uses the same Operation, Attempt, Lease/Fence, ExternalEffect, and provider gateway as other governed work.
 
-## 9. Completion Rule
+## Runtime capability map
 
-A capability may be marked production-complete only when all applicable evidence exists:
+| Capability family | Runtime status | Evidence boundary |
+|---|---|---|
+| Project/workspace/task and asset authority | `runtime-wired` | Atomic command and query tests; PostgreSQL suites exist. |
+| Book design and typed planning | `runtime-wired` | Candidate/decision/activation and Book-flow tests. |
+| Chapter production saga | `runtime-wired`, `fixture-proven` | 18-node bounded acceptance paths; selected PostgreSQL integration. |
+| Book supervision and follow-up | `runtime-wired`, `fixture-proven` | Deterministic tick, Reader/recap/replan tests. |
+| Canon, ChapterOutcome, StoryState, temporal query | `runtime-wired`, `fixture-proven` | Accepted-state and as-of query tests. |
+| Context building | `runtime-wired`, `fixture-proven` | Source isolation and budget/profile validation. |
+| Source Import and Source Authority | `runtime-wired`, `fixture-proven` | Governed repository/document/chunk flows; integration suites exist. |
+| MKAOS knowledge candidate/approval/pack | `runtime-wired`, `fixture-proven` | Evidence and source-leakage gates; integration suites exist. |
+| Agent candidate runtime | first slice `runtime-wired` | Admission, scheduler, checkpoint/gate/budget/recovery tests; limited operation coverage. |
+| Capability Pack authority | `runtime-wired`, `fixture-proven` | Validation, compilation, deployment/activation contracts. |
+| Provider qualification | `implemented`, selectively `runtime-wired` | D0 probe exists; default Compose remains fixture-only. |
+| Admin console | `implemented`, `fixture-proven` | Type and route/component tests; incomplete product depth. |
 
-```text
-current HEAD builds
-+ Authority command path
-+ frozen versions
-+ idempotency/concurrency
-+ durable worker/recovery
-+ real external behavior where applicable
-+ output qualification
-+ audit/trace/cost
-+ positive and negative tests
-+ operator workflow
-+ production deployment proof
-```
+## Explicitly not proven
+
+- complete autonomous Agent Center operation;
+- broad Agent operation coverage and business rollback across all domains;
+- real-provider model usage hard-stop across a sustained Book run;
+- long-form quality and continuity over a full novel;
+- external publishing or multi-book scale;
+- production deployment, SLOs, or operational history.

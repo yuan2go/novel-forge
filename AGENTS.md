@@ -34,7 +34,7 @@ Do not claim a complete autonomous Agent Center exists until UI depth, operation
 | Chief Editor Agent | product docs, roadmap, current implementation, risks | priorities, acceptance decisions, architectural constraints | update docs and plans | claim completion without evidence or tests |
 | Workflow Agent | project goal, workflow definition, node state, run logs | workflow plan, node order, recovery instruction | coordinate workflow runs and node contracts | bypass schema, artifact, or quality-gate requirements |
 | Engineering Agent | schemas, services, API, UI, tests | code, tests, migrations, docs | edit `src/`, `tests/`, `web/`, docs | break compatibility silently or mix unrelated refactors |
-| Skill Governance Agent | root skills, runtime skills, skill policy, sync reports, licenses | skill updates, routing changes, governance reports | edit `skills/`, `docs/09-skills/`, governance reports | hand-edit `.claude/skills` as source or vendor unclear-license skills |
+| Skill Governance Agent | root skills, runtime skills, skill policy, sync reports, licenses | skill updates, routing changes, governance reports | edit `skills/`, `docs/development/skills.md`, governance records | hand-edit `.claude/skills` as source or vendor unclear-license skills |
 | Analysis Agent | cleaned sources, analysis profile, rights metadata | abstract analysis report | deconstruct structure, rhythm, conflict, craft, emotion, hooks | copy protected expression, characters, settings, or plot combinations |
 | Knowledge Agent | cleaned text, decompositions, analysis reports | knowledge cards, rule candidates | abstract and tag reusable knowledge | mix raw sources with generated drafts |
 | Material Agent | knowledge/decomposition/analysis assets | reusable material cards, templates | build reusable asset library | copy story-specific protected combinations |
@@ -54,7 +54,7 @@ Do not claim a complete autonomous Agent Center exists until UI depth, operation
 
 ## Agent-Skill Map
 
-Agent is a role and permission boundary. Skill is a reusable capability. Use `docs/09-skills/agent-skill-map.md` for detailed runtime selection.
+Agent is a role and permission boundary. Skill is a reusable capability. Use `docs/development/skills.md` for repository and runtime selection rules.
 
 | Agent | Recommended Skills |
 |---|---|

@@ -1,55 +1,54 @@
-# Novel Forge Documentation
+# Novel Forge documentation
 
-This directory contains current reference documents and historical engineering
-records. Current code and exact-HEAD evidence always outrank prose.
+This documentation describes the runtime reachable from the current code. Architecture manifests, migrations, entry points, and tests take precedence over prose.
 
-## Canonical current documents
+## Architecture
 
-| Fact area | Document |
+- [Overview](architecture/overview.md) — system shape, boundaries, and proof status
+- [Runtime](architecture/runtime.md) — API, worker, operation, and recovery paths
+- [Authority model](architecture/authority-model.md) — PostgreSQL ownership and mutation rules
+- [Production execution](architecture/production-execution.md) — shared execution composition and provider boundary
+- [Narrative state](architecture/narrative-state.md) — Canon, outcomes, StoryState, temporal query, and context
+- [Source and knowledge](architecture/source-and-knowledge.md) — Source Import, Intelligence, and MKAOS
+
+## Product
+
+- [Novel production flow](product/novel-production-flow.md)
+- [Capability map](product/capability-map.md)
+
+## Operations
+
+- [Local development](operations/local-development.md)
+- [Configuration](operations/configuration.md)
+- [Database](operations/database.md)
+- [Workers](operations/workers.md)
+- [Legacy migration](operations/legacy-migration.md)
+- [Troubleshooting](operations/troubleshooting.md)
+
+## Development
+
+- [Repository structure](development/repository-structure.md)
+- [Testing and evidence](development/testing.md)
+- [Adding capabilities](development/adding-capabilities.md)
+- [Coding guidelines](development/coding-guidelines.md)
+- [Skills](development/skills.md)
+
+## Decisions
+
+`adr/` contains only decisions that still constrain the current system. It is not a session log or a record of every implementation phase.
+
+## Evidence vocabulary
+
+Every maturity statement uses one of these levels:
+
+| Level | Meaning |
 |---|---|
-| Current status and evidence ceiling | [`project-current-state.md`](project-current-state.md) |
-| Current module and runtime architecture | [`01-architecture/current-implementation.md`](01-architecture/current-implementation.md) |
-| Canonical Book workflow | [`../WORKFLOW.md`](../WORKFLOW.md) |
-| Provider / execution architecture | [`architecture/unified-production-execution-plane.md`](architecture/unified-production-execution-plane.md) |
-| Testing | [`05-testing/testing-strategy.md`](05-testing/testing-strategy.md) |
-| Operations | [`06-operations/authority-compose-runbook.md`](06-operations/authority-compose-runbook.md) |
-| Roadmap | [`roadmap/current-roadmap.md`](roadmap/current-roadmap.md) |
-| ADRs | [`adr/`](adr/) |
+| `implemented` | Code and schema exist. |
+| `runtime-wired` | A current API, CLI, worker, or composition root reaches it. |
+| `fixture-proven` | Deterministic local tests or the scripted provider exercise it. |
+| `integration-proven` | A non-skippable test exercises real PostgreSQL or another named dependency. |
+| `real-provider-proven` | A recorded run uses a real external model provider. |
+| `production-verified` | Deployment evidence proves the complete operated system. |
+| `not-proven` | The repository contains no sufficient evidence for the claim. |
 
-The code-derived production reachability manifest is available with:
-
-```bash
-PYTHONPATH=src python -m novel_forge.tools.production_reachability
-```
-
-It derives `code_exists`, `composed`, `deployed`, `runtime_reachable`,
-`authority_backed`, `worker_backed`, `proof_level`, and `proof_sha` from tracked
-production entries, imports, console scripts, and `compose.yml`.
-
-## Documentation authority order
-
-```text
-current code and migrations
-→ current-SHA runtime/test evidence
-→ accepted ADRs
-→ canonical current documents above
-→ design references
-→ historical audits, reports, plans, blueprints, prompts
-```
-
-Documents under `reports/`, `superpowers/`, `plans/`, `deliverables/`,
-`architecture-closure/`, and most `blueprint/` paths retain engineering lineage.
-They describe their original baseline and are not Current Truth unless a
-canonical current document links them for a specific invariant.
-
-## Maintenance rules
-
-- Update current documents only after the code and verification change.
-- Bind test/proof claims to a full commit SHA.
-- Do not promote fixture evidence to real-provider, long-form, or production
-  evidence.
-- Keep PostgreSQL as the only production state authority.
-- Do not document a module, table, interface, route, or class as production
-  reachable without composition/deployment evidence.
-- Keep phase delivery notes historical instead of repeatedly rewriting them as
-  current state.
+Existence at one level does not imply any later level.
