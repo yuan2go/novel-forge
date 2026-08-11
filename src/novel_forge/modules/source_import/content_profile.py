@@ -126,12 +126,28 @@ class SourceContentProfile:
             analysis_profile(self.selected_analysis_profile)
 
     def to_dict(self) -> dict[str, object]:
+        resolved = (
+            None
+            if self.selected_analysis_profile == _UNKNOWN
+            else analysis_profile(self.selected_analysis_profile)
+        )
         return {
             "schema_version": "source-content-profile.v1",
             **asdict(self),
             "domain_tags": list(self.domain_tags),
             "signals": list(self.signals),
             "source_paths": list(self.source_paths),
+            "analysis_profile_contract": (
+                None
+                if resolved is None
+                else {
+                    "profile_id": resolved.profile_id,
+                    "profile_version": resolved.profile_version,
+                    "analysis_skill_id": resolved.analysis_skill_id,
+                    "mkaos_capability": resolved.mkaos_capability,
+                    "abstraction_policy_version": resolved.abstraction_policy_version,
+                }
+            ),
         }
 
 
