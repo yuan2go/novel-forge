@@ -29,6 +29,11 @@ def test_auto_profile_routes_explicit_classic_metadata_to_classic_literature() -
     assert profile.content_type == "CLASSIC_LITERATURE"
     assert profile.confidence >= 0.72
     assert profile.manual_review_required is False
+    contract = profile.to_dict()["analysis_profile_contract"]
+    assert isinstance(contract, dict)
+    assert contract["profile_id"] == "classic_literature"
+    assert contract["profile_version"] == "2.0"
+    assert contract["analysis_skill_id"] == "classic-literary-depth-analysis"
 
 
 def test_auto_profile_routes_general_fiction_to_published_fiction() -> None:
@@ -80,6 +85,7 @@ def test_auto_profile_fails_closed_when_evidence_is_ambiguous() -> None:
     assert profile.selected_analysis_profile == "unknown"
     assert profile.manual_review_required is True
     assert "insufficient_classification_evidence" in profile.signals
+    assert profile.to_dict()["analysis_profile_contract"] is None
 
 
 def test_explicit_profile_override_remains_authoritative() -> None:
@@ -96,6 +102,7 @@ def test_explicit_profile_override_remains_authoritative() -> None:
 
 
 def test_analysis_profiles_use_source_specific_skills() -> None:
+    assert analysis_profile("web_novel").profile_version == "2.0"
     assert (
         analysis_profile("web_novel").analysis_skill_id
         == "hot-novel-deconstruction"
@@ -150,6 +157,11 @@ def test_source_skill_catalog_resolves_exact_stage_appropriate_artifacts() -> No
     repository_root = Path(__file__).resolve().parents[2]
     resolver = source_intelligence_artifact_resolver(repository_root)
 
+    web = resolver.resolve(
+        ArtifactKind.SKILL,
+        "hot-novel-deconstruction",
+        "2.0",
+    )
     classic = resolver.resolve(
         ArtifactKind.SKILL,
         "classic-literary-depth-analysis",
@@ -166,15 +178,19 @@ def test_source_skill_catalog_resolves_exact_stage_appropriate_artifacts() -> No
         "1.0",
     )
 
+    web_text = str(json.loads(web.content_json)["text"])
     classic_text = str(json.loads(classic.content_json)["text"])
     professional_text = str(json.loads(professional.content_json)["text"])
     anti_copy_text = str(json.loads(anti_copy.content_json)["text"])
 
+    assert web.source_identity == "skills/hot-novel-deconstruction/SKILL.md"
     assert classic.source_identity == "skills/classic-literary-depth-analysis/SKILL.md"
     assert professional.source_identity == "skills/multidisciplinary-knowledge/SKILL.md"
+    assert web.content_hash.startswith("sha256:")
     assert classic.content_hash.startswith("sha256:")
     assert professional.content_hash.startswith("sha256:")
-    assert classic.content_hash != professional.content_hash
+    assert len({web.content_hash, classic.content_hash, professional.content_hash}) == 3
+    assert "Source Intelligence Observation Contract" in web_text
     assert "Source Intelligence Observation Contract" in classic_text
     assert "Source Intelligence Observation Contract" in professional_text
     assert "Source MKAOS Candidate Contract" in anti_copy_text
