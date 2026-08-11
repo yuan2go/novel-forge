@@ -604,7 +604,13 @@ def _source_policy_for_asset(data: dict[str, Any]) -> dict[str, Any]:
     metadata = data.get("metadata", {}) if isinstance(data.get("metadata", {}), dict) else {}
     content = data.get("content", {}) if isinstance(data.get("content", {}), dict) else {}
     source_type = str(metadata.get("source_type") or asset_type)
-    high_risk_types = {"source_document", "source_chunk", "cleaned_text"}
+    high_risk_types = {
+        "source_document",
+        "source_chunk",
+        "source_deconstruction_observation",
+        "source_reprocessing_plan",
+        "cleaned_text",
+    }
     source_risk_level = str(metadata.get("source_risk_level") or ("high" if asset_type in high_risk_types else "low"))
     license_policy = str(metadata.get("license_policy") or metadata.get("rights_status") or "project_owned")
     permission_scope = str(metadata.get("permission_scope") or "internal")

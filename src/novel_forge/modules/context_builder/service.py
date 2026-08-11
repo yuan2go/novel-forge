@@ -26,6 +26,8 @@ from novel_forge.storage.rag_context import build_rag_context, generation_contex
 
 RAW_OR_REPORT_TYPES = {
     "source_document",
+    "source_deconstruction_observation",
+    "source_reprocessing_plan",
     "cleaned_text",
     "decomposition_report",
     "common_novel_analysis_report",

@@ -49,7 +49,12 @@ class SourceAuthorityScheduler:
         self.lease_seconds = lease_seconds
         self.operation_names = SOURCE_AUTHORITY_OPERATIONS
         self.output_keys = frozenset(
-            {"source.document", "source.transform.manifest"}
+            {
+                "source.document",
+                "source.transform.manifest",
+                "source.deconstruction.observation",
+                "source.reprocessing.plan",
+            }
         )
 
     def pending_operations(self, *, limit: int = 50) -> tuple[tuple[str, str], ...]:

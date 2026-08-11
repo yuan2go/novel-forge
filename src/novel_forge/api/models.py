@@ -220,6 +220,76 @@ class AuthoritySourceTransformCommitRequest(BaseModel):
     correlation_id: str = ""
 
 
+class AuthorityDeconstructionAnalyzerRequest(BaseModel):
+    analyzer_id: str = Field(min_length=2)
+    analyzer_version: str = Field(pattern=r"^[0-9]+(?:\.[0-9]+){0,2}$")
+    dimension: str = Field(min_length=1)
+    schema_version: str = Field(min_length=1)
+    prompt_id: str = Field(min_length=2)
+    prompt_version: str = Field(pattern=r"^[0-9]+(?:\.[0-9]+){0,2}$")
+    skill_id: str = Field(min_length=2)
+    skill_version: str = Field(pattern=r"^[0-9]+(?:\.[0-9]+){0,2}$")
+    capability_id: str = Field(min_length=2)
+    capability_version: str = Field(pattern=r"^[0-9]+(?:\.[0-9]+){0,2}$")
+    provider_policy_version: str = Field(pattern=r"^[0-9]+(?:\.[0-9]+){0,2}$")
+    aggregation_policy_version: str = Field(pattern=r"^[0-9]+(?:\.[0-9]+){0,2}$")
+    recommended_scales: list[str] = Field(min_length=1, max_length=7)
+
+
+class AuthorityDeconstructionScopeRequest(BaseModel):
+    scale: str = Field(min_length=1)
+    range_start: int = Field(ge=0)
+    range_end: int = Field(ge=0)
+    source_document_ids: list[str] = Field(min_length=1, max_length=100)
+    label: str = Field(min_length=1, max_length=500)
+
+
+class AuthorityDeconstructionEvidenceSpanRequest(BaseModel):
+    source_chunk_asset_version_id: str = Field(min_length=1)
+    chunk_byte_start: int = Field(ge=0)
+    chunk_byte_end: int = Field(gt=0)
+    evidence_hash: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
+
+
+class AuthorityDeconstructionObservationCommitRequest(BaseModel):
+    project_id: str = Field(min_length=1)
+    workspace_id: str = Field(min_length=1)
+    execution_asset_version_id: str = Field(min_length=1)
+    scope: AuthorityDeconstructionScopeRequest
+    analyzer: AuthorityDeconstructionAnalyzerRequest
+    observation: dict[str, Any]
+    evidence_spans: list[AuthorityDeconstructionEvidenceSpanRequest] = Field(
+        default_factory=list, max_length=1_000
+    )
+    input_observation_asset_version_ids: list[str] = Field(
+        default_factory=list, max_length=1_000
+    )
+    evidence_class: str = Field(min_length=1)
+    idempotency_key: str = Field(min_length=1)
+    actor_id: str = ""
+    trace_id: str = ""
+    correlation_id: str = ""
+
+
+class AuthorityReprocessingTargetRequest(BaseModel):
+    scope: AuthorityDeconstructionScopeRequest
+    analyzer: AuthorityDeconstructionAnalyzerRequest
+
+
+class AuthoritySourceReprocessingPlanRequest(BaseModel):
+    project_id: str = Field(min_length=1)
+    workspace_id: str = Field(min_length=1)
+    targets: list[AuthorityReprocessingTargetRequest] = Field(
+        min_length=1, max_length=1_000
+    )
+    cause_type: str = Field(min_length=1)
+    source_transform_id: str = ""
+    idempotency_key: str = Field(min_length=1)
+    actor_id: str = ""
+    trace_id: str = ""
+    correlation_id: str = ""
+
+
 class AuthorityMkaosEvidenceSpanRequest(BaseModel):
     source_chunk_asset_version_id: str = Field(min_length=1)
     chunk_byte_start: int = Field(ge=0)
@@ -233,7 +303,10 @@ class AuthorityMkaosKnowledgeCandidateRequest(BaseModel):
     execution_asset_version_id: str = Field(min_length=1)
     candidate: dict[str, Any]
     evidence_spans: list[AuthorityMkaosEvidenceSpanRequest] = Field(
-        min_length=1, max_length=1_000
+        default_factory=list, max_length=1_000
+    )
+    observation_asset_version_ids: list[str] = Field(
+        default_factory=list, max_length=1_000
     )
     abstraction_policy_version: str = Field(min_length=1)
     idempotency_key: str = Field(min_length=1)
@@ -272,6 +345,7 @@ class AuthorityMkaosKnowledgePackRequest(BaseModel):
     actor_id: str = ""  # compatibility-only; never trusted
     trace_id: str = ""
     correlation_id: str = ""
+    supersedes_pack_asset_version_id: str = ""
 
 
 class TaskControlRequest(BaseModel):

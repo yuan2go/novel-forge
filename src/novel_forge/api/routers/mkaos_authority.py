@@ -34,6 +34,11 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     ) -> dict[str, Any]:
         principal = _authorize("mkaos.authority.execute", request.project_id)
         try:
+            if not request.observation_asset_version_ids:
+                raise KernelError(
+                    "MKAOS_CANONICAL_OBSERVATION_REQUIRED",
+                    "production Candidate admission requires deconstruction Observation AssetVersions; direct SourceChunk mode is MIGRATION_ONLY",
+                )
             return application.admit_candidate(
                 CommitKnowledgeCandidateCommand(
                     project_id=request.project_id,
@@ -51,6 +56,9 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                     or f"trace:mkaos-candidate:{request.idempotency_key}",
                     correlation_id=request.correlation_id.strip()
                     or f"correlation:mkaos-candidate:{request.idempotency_key}",
+                    observation_asset_version_ids=tuple(
+                        request.observation_asset_version_ids
+                    ),
                 ),
                 principal=principal,
             )
@@ -133,6 +141,9 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                     or f"trace:mkaos-pack:{request.idempotency_key}",
                     correlation_id=request.correlation_id.strip()
                     or f"correlation:mkaos-pack:{request.idempotency_key}",
+                    supersedes_pack_asset_version_id=(
+                        request.supersedes_pack_asset_version_id
+                    ),
                 ),
                 principal=principal,
             )

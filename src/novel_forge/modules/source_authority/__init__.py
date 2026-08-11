@@ -1,7 +1,19 @@
 from .application import (
+    CommitDeconstructionObservationCommand,
     CommitSourceTransformCommand,
+    PlanSourceReprocessingCommand,
     RegisterSourceDocumentCommand,
     SourceAuthorityApplication,
+)
+from .deconstruction import (
+    AnalyzerContract,
+    DECONSTRUCTION_DIMENSIONS,
+    DECONSTRUCTION_SCALES,
+    ObservationEvidenceSpan,
+    ObservationScope,
+    ReprocessingTarget,
+    analyzer_prompt_bundle,
+    default_analyzer_contracts,
 )
 from .domain import (
     RIGHTS_AUTHORIZATIONS,
@@ -16,6 +28,16 @@ from .scheduler import SourceAuthorityScheduler
 __all__ = [
     "RIGHTS_AUTHORIZATIONS",
     "CommitSourceTransformCommand",
+    "CommitDeconstructionObservationCommand",
+    "PlanSourceReprocessingCommand",
+    "AnalyzerContract",
+    "ObservationEvidenceSpan",
+    "ObservationScope",
+    "ReprocessingTarget",
+    "DECONSTRUCTION_DIMENSIONS",
+    "DECONSTRUCTION_SCALES",
+    "analyzer_prompt_bundle",
+    "default_analyzer_contracts",
     "SourceChunkCandidate",
     "RegisterSourceDocumentCommand",
     "SourceAuthorityApplication",

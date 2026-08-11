@@ -32,7 +32,14 @@ from novel_forge.modules.source_authority.definitions import (
     SOURCE_TRANSFORM_DEFINITION_VERSION,
     SOURCE_TRANSFORM_HANDLER_KEY,
     SOURCE_TRANSFORM_OPERATION,
+    SOURCE_OBSERVATION_OPERATION,
+    SOURCE_REPROCESSING_OPERATION,
     source_authority_definitions,
+)
+from novel_forge.modules.source_authority.deconstruction_application import (
+    CommitDeconstructionObservationCommand,
+    PlanSourceReprocessingCommand,
+    SourceDeconstructionApplication,
 )
 from novel_forge.modules.source_authority.domain import (
     SourceChunkCandidate,
@@ -114,6 +121,7 @@ class SourceAuthorityApplication:
         application_build_id: str,
         commit_sha: str,
         worker_id: str = "source-authority-worker",
+        allow_fixture_observations: bool = False,
     ) -> None:
         if not database_url:
             raise ValueError("PostgreSQL database_url is required")
@@ -121,6 +129,54 @@ class SourceAuthorityApplication:
         self.application_build_id = application_build_id
         self.commit_sha = commit_sha
         self.worker_id = worker_id
+        self.deconstruction = SourceDeconstructionApplication(
+            database_url,
+            application_build_id=application_build_id,
+            commit_sha=commit_sha,
+            allow_fixture_observations=allow_fixture_observations,
+        )
+
+    def execute_observation(
+        self,
+        command: CommitDeconstructionObservationCommand,
+        *,
+        principal: Principal | None = None,
+    ) -> dict[str, Any]:
+        admitted = self.admit_observation(command, principal=principal)
+        if admitted["status"] == "SUCCEEDED":
+            return admitted
+        return self._run(str(admitted["operation_id"]), command.project_id)
+
+    def admit_observation(
+        self,
+        command: CommitDeconstructionObservationCommand,
+        *,
+        principal: Principal | None = None,
+    ) -> dict[str, Any]:
+        self._register_definition()
+        return self.deconstruction.admit_observation(command, principal=principal)
+
+    def execute_reprocessing_plan(
+        self,
+        command: PlanSourceReprocessingCommand,
+        *,
+        principal: Principal | None = None,
+    ) -> dict[str, Any]:
+        admitted = self.admit_reprocessing_plan(command, principal=principal)
+        if admitted["status"] == "SUCCEEDED":
+            return admitted
+        return self._run(str(admitted["operation_id"]), command.project_id)
+
+    def admit_reprocessing_plan(
+        self,
+        command: PlanSourceReprocessingCommand,
+        *,
+        principal: Principal | None = None,
+    ) -> dict[str, Any]:
+        self._register_definition()
+        return self.deconstruction.admit_reprocessing_plan(
+            command, principal=principal
+        )
 
     def execute(
         self,
@@ -1008,6 +1064,8 @@ class SourceAuthorityApplication:
             return self._execute_document_fenced(worker)
         if row[0] == SOURCE_TRANSFORM_OPERATION:
             return self._execute_transform_fenced(worker)
+        if row[0] in {SOURCE_OBSERVATION_OPERATION, SOURCE_REPROCESSING_OPERATION}:
+            return self.deconstruction.execute_fenced(worker, str(row[0]))
         raise KernelError(
             "SOURCE_HANDLER_NOT_FOUND", f"unsupported Source Operation: {row[0]}"
         )
@@ -1074,6 +1132,13 @@ class SourceAuthorityApplication:
             raise KernelError("OPERATION_NOT_FOUND", "Source Operation does not exist")
         if row[0] == SOURCE_AUTHORITY_OPERATION:
             return self._result(operation_id, project_id, replayed=replayed)
+        if row[0] in {SOURCE_OBSERVATION_OPERATION, SOURCE_REPROCESSING_OPERATION}:
+            return self.deconstruction.result(
+                operation_id,
+                project_id,
+                definition_name=str(row[0]),
+                replayed=replayed,
+            )
         if row[0] != SOURCE_TRANSFORM_OPERATION:
             raise KernelError(
                 "SOURCE_HANDLER_NOT_FOUND", f"unsupported Source Operation: {row[0]}"
@@ -1132,6 +1197,8 @@ def _is_sha256(value: str) -> bool:
 
 __all__ = [
     "CommitSourceTransformCommand",
+    "CommitDeconstructionObservationCommand",
+    "PlanSourceReprocessingCommand",
     "RegisterSourceDocumentCommand",
     "SourceAuthorityApplication",
 ]

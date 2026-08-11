@@ -173,7 +173,7 @@
 
 | 重叠组 | 涉及 Skill | 判断 | 建议 |
 |---|---|---|---|
-| 网文拆解 | `hot-novel-deconstruction`, `hot-novel-business-deconstruction` | 高重叠。前者是人工/Markdown 拆解流，后者更偏 schema-backed 商业分析。 | 保留两者；生产链优先 `hot-novel-business-deconstruction`，旧版作为 operator analysis。 |
+| 网文拆解 | `hot-novel-deconstruction`, `hot-novel-business-deconstruction` | 部分重叠。前者负责多尺度、分维度、Evidence-backed Observation；后者负责商业结构专门分析。 | 保留两者；正式输出都必须提交 Source Deconstruction Observation，Markdown 只作 operator handoff。 |
 | 出版/经典分析 | `published-fiction-craft-analysis`, `classic-literary-depth-analysis` | 中重叠。前者偏技法参数，后者偏主题/象征/社会压力。 | 保留；同一来源不可把两个报告直接塞进 generation RAG。 |
 | 知识转译 | `multidisciplinary-knowledge`, `mkaos-knowledge-asset-os` | 连续链路，不是删除型重复。 | `multidisciplinary-knowledge` 做知识转译，`mkaos-knowledge-asset-os` 做资产、gate、selector、learning。 |
 | 素材/资产转换 | `material-curation`, `analysis-to-asset-conversion` | 部分重叠。前者偏素材分类和标签，后者偏分析报告转资产。 | 保留；转换生成资产时优先 `analysis-to-asset-conversion`。 |
@@ -244,7 +244,7 @@
 - `frontend-design`：仅 UI 设计/重构任务使用，仍需遵守本项目 Web Admin 的实用工作台风格。
 - `doc-coauthoring`：仅 RFC、PRD、proposal、长文档共创使用。
 - `training-exercise`：保留为训练题和能力评测扩展。
-- `hot-novel-deconstruction`：保留为旧式/operator 拆解入口，生产路径优先使用 schema-backed 新分析 Skill。
+- `hot-novel-deconstruction`：已收敛为 schema-backed 多尺度 Observation 合同；Markdown 仅保留 operator handoff，不是生产 Authority。
 
 ## 8. 删除建议
 
@@ -260,7 +260,7 @@
 | `pdf` | 不处理 PDF 输入/输出，且专有许可不可接受 | 损失 PDF 表格/表单/OCR 能力 | 项目资料导入仍可能需要，谨慎 |
 | `xlsx` | 不处理表格/CSV/XLSX deliverable，且专有许可不可接受 | 损失表格清洗和公式验证能力 | 非主链，可条件删除 |
 | `claude-api` | 项目明确禁用 Anthropic provider | 减少 provider 偏置和大上下文风险 | 若禁用 Claude，可删除或移出 runtime |
-| `hot-novel-deconstruction` | 完全迁移到 `hot-novel-business-deconstruction` | 减少旧式 Markdown 拆解入口 | 先确认所有工作流迁移完成 |
+| `hot-novel-deconstruction` | 与商业专用 Analyzer 保持分维度组合 | 避免整书单调用与重复 Token | Analyzer registry、reprocessing plan 与 Observation schema 持续兼容 |
 
 删除或 prune 规则：
 

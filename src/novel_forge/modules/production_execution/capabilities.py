@@ -41,6 +41,7 @@ class CapabilityId(StrEnum):
     PACING_AGGREGATE = "pacing.aggregate"
     WORLD_CONSEQUENCE_ANALYZE = "world.consequence.analyze"
     FACT_VERIFY = "fact.verify"
+    DECONSTRUCTION_OBSERVE = "deconstruction.observe"
     QUALITY_INTRINSIC_JUDGE = "quality.intrinsic.judge"
     QUALITY_AGGREGATE = "quality.aggregate"
     QUALITY_ORIGINALITY_JUDGE = "quality.originality.judge"
@@ -93,6 +94,7 @@ class ExecutionDomain(StrEnum):
     STORAGE = "storage"
     TOOL = "tool"
     ANALYTICS = "analytics"
+    DECONSTRUCTION = "deconstruction"
 
 
 class RiskClass(StrEnum):

@@ -155,6 +155,24 @@
       "definition_factory": "novel_forge.modules.source_authority.definitions:source_authority_definitions"
     },
     {
+      "name": "source.deconstruction.observation.commit",
+      "source": "src/novel_forge/api/routers/source_authority.py",
+      "application_source": "src/novel_forge/modules/source_authority/deconstruction_application.py",
+      "classification": "durable_job",
+      "dispatch": "worker_claim",
+      "api_call": "application.admit_observation",
+      "definition_factory": "novel_forge.modules.source_authority.definitions:source_authority_definitions"
+    },
+    {
+      "name": "source.deconstruction.reprocessing.plan",
+      "source": "src/novel_forge/api/routers/source_authority.py",
+      "application_source": "src/novel_forge/modules/source_authority/deconstruction_application.py",
+      "classification": "durable_job",
+      "dispatch": "worker_claim",
+      "api_call": "application.admit_reprocessing_plan",
+      "definition_factory": "novel_forge.modules.source_authority.definitions:source_authority_definitions"
+    },
+    {
       "name": "mkaos.knowledge_candidate.commit",
       "source": "src/novel_forge/api/routers/mkaos_authority.py",
       "application_source": "src/novel_forge/modules/mkaos_authority/application.py",

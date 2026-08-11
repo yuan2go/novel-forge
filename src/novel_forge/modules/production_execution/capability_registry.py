@@ -202,6 +202,7 @@ def default_capability_registry() -> CapabilityRegistry:
         CapabilityId.REVIEW_CHAPTER_EVALUATE: ExecutionDomain.REVIEW,
         CapabilityId.REVISION_CHAPTER_REVISE: ExecutionDomain.REVISION,
         CapabilityId.CANON_EXTRACT: ExecutionDomain.CANON,
+        CapabilityId.DECONSTRUCTION_OBSERVE: ExecutionDomain.DECONSTRUCTION,
         CapabilityId.QUALITY_INTRINSIC_JUDGE: ExecutionDomain.QUALITY,
         CapabilityId.QUALITY_ORIGINALITY_JUDGE: ExecutionDomain.QUALITY,
         CapabilityId.QUALITY_PLATFORM_JUDGE: ExecutionDomain.QUALITY,

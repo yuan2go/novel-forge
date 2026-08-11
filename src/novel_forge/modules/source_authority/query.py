@@ -213,5 +213,407 @@ class SourceAuthorityQuery:
         )
         return [dict(zip(keys, row, strict=True)) for row in rows]
 
+    def list_observations(
+        self,
+        *,
+        project_id: str,
+        dimension: str = "",
+        scale: str = "",
+        limit: int = 100,
+    ) -> list[dict[str, Any]]:
+        if not project_id or limit < 1 or limit > 1_000:
+            raise ValueError("project_id and a valid limit are required")
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT observation.observation_id, observation.asset_version_id,
+                       observation.workspace_id, observation.scope,
+                       observation.scope_hash, observation.dimension,
+                       observation.scale, observation.analyzer_id,
+                       observation.analyzer_version,
+                       observation.analyzer_contract_hash,
+                       observation.prompt_id, observation.prompt_version,
+                       observation.skill_id, observation.skill_version,
+                       observation.capability_id,
+                       observation.capability_version,
+                       observation.provider_policy_version,
+                       observation.aggregation_policy_version,
+                       observation.observation_schema_version,
+                       observation.observation_hash, observation.confidence,
+                       observation.evidence_class,
+                       observation.execution_asset_version_id,
+                       observation.created_by_operation_id,
+                       version.lifecycle, version.eligibility,
+                       version.governance, version.content,
+                       observation.created_at
+                FROM authority_source_deconstruction_observation AS observation
+                JOIN authority_asset_version AS version
+                  ON version.asset_version_id=observation.asset_version_id
+                WHERE observation.project_id=%s
+                  AND (%s='' OR observation.dimension=%s)
+                  AND (%s='' OR observation.scale=%s)
+                ORDER BY observation.created_at DESC,
+                         observation.asset_version_id
+                LIMIT %s
+                """,
+                [project_id, dimension, dimension, scale, scale, limit],
+            )
+            rows = uow.cursor.fetchall()
+        keys = (
+            "observation_id",
+            "asset_version_id",
+            "workspace_id",
+            "scope",
+            "scope_hash",
+            "dimension",
+            "scale",
+            "analyzer_id",
+            "analyzer_version",
+            "analyzer_contract_hash",
+            "prompt_id",
+            "prompt_version",
+            "skill_id",
+            "skill_version",
+            "capability_id",
+            "capability_version",
+            "provider_policy_version",
+            "aggregation_policy_version",
+            "observation_schema_version",
+            "observation_hash",
+            "confidence",
+            "evidence_class",
+            "execution_asset_version_id",
+            "created_by_operation_id",
+            "lifecycle",
+            "eligibility",
+            "governance",
+            "content",
+            "created_at",
+        )
+        return [dict(zip(keys, row, strict=True)) for row in rows]
+
+    def list_reprocessing_plans(
+        self, *, project_id: str, limit: int = 100
+    ) -> list[dict[str, Any]]:
+        if not project_id or limit < 1 or limit > 500:
+            raise ValueError("project_id and a valid limit are required")
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT plan.reprocessing_plan_id, plan.asset_version_id,
+                       plan.workspace_id, plan.source_transform_id,
+                       plan.desired_state_hash, plan.plan_hash,
+                       plan.item_count, plan.status,
+                       plan.created_by_operation_id, version.content,
+                       plan.created_at
+                FROM authority_source_reprocessing_plan AS plan
+                JOIN authority_asset_version AS version
+                  ON version.asset_version_id=plan.asset_version_id
+                WHERE plan.project_id=%s
+                ORDER BY plan.created_at DESC, plan.asset_version_id
+                LIMIT %s
+                """,
+                [project_id, limit],
+            )
+            rows = uow.cursor.fetchall()
+        keys = (
+            "reprocessing_plan_id",
+            "asset_version_id",
+            "workspace_id",
+            "source_transform_id",
+            "desired_state_hash",
+            "plan_hash",
+            "item_count",
+            "plan_status",
+            "created_by_operation_id",
+            "content",
+            "created_at",
+        )
+        return [dict(zip(keys, row, strict=True)) for row in rows]
+
+    def data_import_admission(self, *, project_id: str) -> dict[str, Any]:
+        """Evaluate current PostgreSQL evidence; missing proof always blocks."""
+        if not project_id:
+            raise ValueError("project_id is required")
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                "SELECT EXISTS(SELECT 1 FROM authority_project WHERE project_id=%s)",
+                [project_id],
+            )
+            if not uow.cursor.fetchone()[0]:
+                raise KernelError(
+                    "PROJECT_NOT_FOUND", "Data Import Admission project does not exist"
+                )
+            counts = _admission_counts(uow.cursor, project_id)
+            checks = [
+                _check(
+                    "source_deduplication",
+                    counts["source_count"] > 0 and counts["duplicate_sources"] == 0,
+                    counts["source_count"],
+                    "content-hash Source identity is unique within the project",
+                ),
+                _check(
+                    "source_integrity",
+                    counts["source_count"] > 0
+                    and counts["invalid_source_receipts"] == 0,
+                    counts["source_count"] - counts["invalid_source_receipts"],
+                    "SourceDocument identities match AVAILABLE Blob receipts",
+                ),
+                _check(
+                    "rights_copyright_governance",
+                    counts["source_count"] > 0
+                    and counts["governance_blocked_sources"] == 0,
+                    counts["source_count"] - counts["governance_blocked_sources"],
+                    "all admitted Sources are rights-eligible",
+                ),
+                _check(
+                    "versioned_transform",
+                    counts["transform_count"] > 0
+                    and counts["invalid_transforms"] == 0,
+                    counts["transform_count"],
+                    "normalization/chunking versions and manifests are frozen",
+                ),
+                _check(
+                    "stable_evidence_addressing",
+                    counts["evidence_span_count"] > 0,
+                    counts["evidence_span_count"],
+                    "stable EvidenceSpan identities address immutable SourceChunk versions",
+                ),
+                _check(
+                    "deconstruction_versioning",
+                    counts["observation_count"] > 0
+                    and counts["invalid_observations"] == 0,
+                    counts["observation_count"],
+                    "Observations freeze analyzer/prompt/skill/schema/provider contracts",
+                ),
+                _check(
+                    "mkaos_lineage",
+                    counts["observation_candidate_edges"] > 0
+                    and counts["production_knowledge_cards"] > 0,
+                    counts["observation_candidate_edges"],
+                    "Observation to Candidate to approved non-fixture KnowledgeCard is proven",
+                ),
+                _check(
+                    "replay",
+                    counts["reuse_plan_items"] > 0,
+                    counts["reuse_plan_items"],
+                    "a persisted plan proves unchanged Observation reuse",
+                ),
+                _check(
+                    "selective_reprocessing",
+                    counts["mixed_selective_plans"] > 0,
+                    counts["mixed_selective_plans"],
+                    "one plan contains both REUSE and dimension-scoped RECOMPUTE",
+                ),
+                _check(
+                    "invalidation",
+                    counts["invalidation_count"] > 0,
+                    counts["invalidation_count"],
+                    "lineage-targeted invalidations are durable",
+                ),
+                _check(
+                    "failure_recovery",
+                    counts["recovered_attempts"] > 0,
+                    counts["recovered_attempts"],
+                    "retry or lease-takeover evidence exists for this project",
+                ),
+                _check(
+                    "source_isolation",
+                    counts["observation_count"] > 0
+                    and counts["source_leakage_assets"] == 0,
+                    counts["observation_count"] - counts["source_leakage_assets"],
+                    "Source/Observation assets are evidence-only and carry no raw prose fields",
+                ),
+                _check(
+                    "cross_project_isolation",
+                    counts["scope_guard_count"] >= 7,
+                    counts["scope_guard_count"],
+                    "PostgreSQL constraint triggers enforce project/workspace lineage",
+                ),
+                _check(
+                    "token_cost_traceability",
+                    counts["observation_count"] > 0
+                    and counts["untraced_or_fixture_observations"] == 0,
+                    counts["observation_count"]
+                    - counts["untraced_or_fixture_observations"],
+                    "all Observations have non-fixture usage and cost evidence",
+                ),
+            ]
+        ready = all(check["passed"] for check in checks)
+        return {
+            "schema_version": "data-import-admission.v1",
+            "project_id": project_id,
+            "data_import_ready": ready,
+            "decision": "ADMITTED" if ready else "BLOCKED",
+            "checks": checks,
+            "evidence_counts": counts,
+            "evidence_ceiling": (
+                "PROJECT_DATA_IMPORT_QUALIFIED"
+                if ready
+                else "CAPABILITY_PRESENT_PROJECT_PROOF_INCOMPLETE"
+            ),
+        }
+
+
+def _check(name: str, passed: bool, evidence_count: int, detail: str) -> dict[str, Any]:
+    return {
+        "name": name,
+        "passed": bool(passed),
+        "evidence_count": int(evidence_count),
+        "detail": detail,
+    }
+
+
+def _admission_counts(cursor: Any, project_id: str) -> dict[str, int]:
+    queries = {
+        "source_count": "SELECT COUNT(*) FROM authority_source_document WHERE project_id=%s",
+        "duplicate_sources": """
+            SELECT COUNT(*) FROM (
+                SELECT source_content_hash FROM authority_source_document
+                WHERE project_id=%s GROUP BY source_content_hash HAVING COUNT(*)>1
+            ) AS duplicate
+        """,
+        "invalid_source_receipts": """
+            SELECT COUNT(*) FROM authority_source_document AS source
+            JOIN authority_blob AS blob ON blob.blob_id=source.blob_id
+            WHERE source.project_id=%s AND (
+                blob.status<>'AVAILABLE'
+                OR blob.actual_hash<>source.source_content_hash
+                OR blob.actual_hash<>blob.expected_hash
+                OR blob.actual_size<>blob.expected_size
+            )
+        """,
+        "governance_blocked_sources": """
+            SELECT COUNT(*) FROM authority_source_document
+            WHERE project_id=%s AND governance_status<>'ELIGIBLE'
+        """,
+        "transform_count": "SELECT COUNT(*) FROM authority_source_transform WHERE project_id=%s",
+        "invalid_transforms": """
+            SELECT COUNT(*) FROM authority_source_transform
+            WHERE project_id=%s AND (
+                normalization_version='' OR chunking_version=''
+                OR chunking_policy_hash='' OR manifest_hash='' OR chunk_count<1
+            )
+        """,
+        "evidence_span_count": "SELECT COUNT(*) FROM authority_source_evidence_span WHERE project_id=%s",
+        "observation_count": "SELECT COUNT(*) FROM authority_source_deconstruction_observation WHERE project_id=%s",
+        "invalid_observations": """
+            SELECT COUNT(*) FROM authority_source_deconstruction_observation
+            WHERE project_id=%s AND (
+                analyzer_contract_hash='' OR prompt_version='' OR skill_version=''
+                OR capability_version='' OR observation_schema_version=''
+            )
+        """,
+        "observation_candidate_edges": """
+            SELECT COUNT(*) FROM authority_content_dependency AS dependency
+            JOIN authority_source_deconstruction_observation AS observation
+              ON observation.asset_version_id=dependency.upstream_asset_version_id
+            JOIN authority_mkaos_knowledge_candidate AS candidate
+              ON candidate.asset_version_id=dependency.downstream_asset_version_id
+            WHERE dependency.project_id=%s AND dependency.relationship='ABSTRACTS'
+        """,
+        "production_knowledge_cards": """
+            SELECT COUNT(DISTINCT card.asset_version_id)
+            FROM authority_content_dependency AS abstraction
+            JOIN authority_source_deconstruction_observation AS observation
+              ON observation.asset_version_id=abstraction.upstream_asset_version_id
+            JOIN authority_mkaos_knowledge_candidate AS candidate
+              ON candidate.asset_version_id=abstraction.downstream_asset_version_id
+            JOIN authority_asset_version AS candidate_version
+              ON candidate_version.asset_version_id=candidate.asset_version_id
+            JOIN authority_content_dependency AS activation
+              ON activation.project_id=abstraction.project_id
+             AND activation.upstream_asset_version_id=candidate.asset_version_id
+             AND activation.relationship='ACTIVATES'
+            JOIN authority_mkaos_knowledge_card AS card
+              ON card.asset_version_id=activation.downstream_asset_version_id
+            JOIN authority_asset_version AS version
+              ON version.asset_version_id=card.asset_version_id
+            WHERE abstraction.project_id=%s
+              AND abstraction.relationship='ABSTRACTS'
+              AND card.status='ACTIVE'
+              AND candidate_version.content->'execution_evidence'->'binding'->>'validation_status'='VERIFIED'
+              AND COALESCE((version.content->'source_policy'->>'fixture_protocol_only')::boolean, TRUE)=FALSE
+        """,
+        "reuse_plan_items": """
+            SELECT COUNT(*) FROM authority_source_reprocessing_plan_item
+            WHERE project_id=%s AND action='REUSE'
+        """,
+        "mixed_selective_plans": """
+            SELECT COUNT(*) FROM (
+                SELECT reprocessing_plan_asset_version_id
+                FROM authority_source_reprocessing_plan_item WHERE project_id=%s
+                GROUP BY reprocessing_plan_asset_version_id
+                HAVING BOOL_OR(action='REUSE') AND BOOL_OR(action='RECOMPUTE')
+            ) AS plan
+        """,
+        "invalidation_count": "SELECT COUNT(*) FROM authority_content_invalidation WHERE project_id=%s",
+        "recovered_attempts": """
+            SELECT COUNT(*) FROM authority_attempt AS attempt
+            JOIN authority_operation AS operation
+              ON operation.operation_id=attempt.operation_id
+            WHERE operation.project_id=%s
+              AND operation.definition_name IN (
+                  'source.document.register', 'source.transform.commit',
+                  'source.deconstruction.observation.commit',
+                  'source.deconstruction.reprocessing.plan'
+              ) AND (
+                attempt.attempt_number>1
+                OR EXISTS (
+                    SELECT 1 FROM authority_lease_acquisition AS lease
+                    WHERE lease.attempt_id=attempt.attempt_id
+                    GROUP BY lease.attempt_id HAVING COUNT(*)>1
+                )
+            )
+        """,
+        "source_leakage_assets": """
+            SELECT COUNT(*) FROM authority_source_deconstruction_observation AS observation
+            JOIN authority_asset_version AS version
+              ON version.asset_version_id=observation.asset_version_id
+            WHERE observation.project_id=%s AND (
+                version.eligibility<>'INELIGIBLE'
+                OR version.content::text ~* '\"(raw_text|clean_text|source_text|excerpt|quotes?)\"[[:space:]]*:'
+                OR COALESCE((version.content->'source_policy'->>'generation_context_allowed')::boolean, TRUE)
+            )
+        """,
+        "scope_guard_count": """
+            SELECT COUNT(*) FROM pg_trigger AS trigger
+            JOIN pg_proc AS function ON function.oid=trigger.tgfoid
+            WHERE function.proname='authority_validate_source_intelligence_scope'
+              AND trigger.tgenabled<>'D' AND NOT trigger.tgisinternal
+        """,
+        "untraced_or_fixture_observations": """
+            SELECT COUNT(*)
+            FROM authority_source_deconstruction_observation AS observation
+            JOIN authority_asset_version AS execution
+              ON execution.asset_version_id=observation.execution_asset_version_id
+            WHERE observation.project_id=%s AND (
+                observation.evidence_class NOT IN (
+                    'DETERMINISTIC', 'PROVIDER_QUALIFIED'
+                )
+                OR COALESCE((execution.content->>'fixture_protocol_only')::boolean, FALSE)
+                OR NOT (execution.content ? 'usage')
+                OR NOT (execution.content ? 'cost')
+                OR NOT (execution.content ? 'source_deconstruction_binding')
+                OR (
+                    observation.evidence_class='DETERMINISTIC' AND (
+                        COALESCE((execution.content->>'deterministic_execution')::boolean, FALSE)=FALSE
+                        OR COALESCE((execution.content->>'model_call_performed')::boolean, TRUE)
+                        OR COALESCE((execution.content->'usage'->>'total_tokens')::bigint, -1)<>0
+                        OR COALESCE((execution.content->'cost'->>'amount_usd')::numeric, -1)<>0
+                    )
+                )
+            )
+        """,
+    }
+    counts: dict[str, int] = {}
+    for key, sql in queries.items():
+        if key == "scope_guard_count":
+            cursor.execute(sql)
+        else:
+            cursor.execute(sql, [project_id])
+        counts[key] = int(cursor.fetchone()[0])
+    return counts
+
 
 __all__ = ["SourceAuthorityQuery"]

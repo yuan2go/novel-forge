@@ -4,6 +4,10 @@ import unittest
 from decimal import Decimal
 
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.mkaos_authority.application import (
+    _candidate_execution_binding,
+    _hash,
+)
 from novel_forge.modules.mkaos_authority.domain import (
     KnowledgeEvidenceSpan,
     KnowledgePackSelection,
@@ -14,6 +18,41 @@ from novel_forge.modules.mkaos_authority.domain import (
 
 
 class MkaosAuthorityDomainTests(unittest.TestCase):
+    def test_non_fixture_candidate_execution_must_bind_output_and_inputs(self) -> None:
+        span = KnowledgeEvidenceSpan("chunk:v1", 0, 20, "sha256:" + "a" * 64)
+        arguments = {
+            "fixture_protocol_only": False,
+            "candidate_payload_hash": "sha256:" + "b" * 64,
+            "abstraction_policy_version": "anti-copy:v1",
+            "evidence_spans": (span,),
+            "observation_asset_version_ids": ("observation:v1",),
+        }
+        with self.assertRaisesRegex(KernelError, "MKAOS_EXECUTION_OUTPUT_UNBOUND"):
+            _candidate_execution_binding({}, **arguments)
+
+        binding = {
+            "schema_version": "mkaos-candidate-execution-binding.v1",
+            "candidate_payload_hash": arguments["candidate_payload_hash"],
+            "abstraction_policy_version": arguments["abstraction_policy_version"],
+            "evidence_manifest_hash": _hash(
+                {
+                    "evidence_spans": [
+                        {
+                            "source_chunk_asset_version_id": "chunk:v1",
+                            "chunk_byte_start": 0,
+                            "chunk_byte_end": 20,
+                            "evidence_hash": "sha256:" + "a" * 64,
+                        }
+                    ]
+                }
+            ),
+            "observation_asset_version_ids": ["observation:v1"],
+        }
+        verified = _candidate_execution_binding(
+            {"mkaos_candidate_binding": binding}, **arguments
+        )
+        self.assertEqual(verified["validation_status"], "VERIFIED")
+
     def test_candidate_requires_abstract_fields_and_blocks_source_expression(self) -> None:
         valid = {
             "concept_name": "Escalating obligation",

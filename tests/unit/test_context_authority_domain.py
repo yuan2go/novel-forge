@@ -90,6 +90,9 @@ class ContextAuthorityDomainTests(unittest.TestCase):
                 self.candidate("review-only", "knowledge_card", source_use_mode="review_only"),
                 self.candidate("structure-only", "knowledge_card", source_use_mode="structure_only"),
                 self.candidate("raw", "source_document", raw_source=True),
+                self.candidate(
+                    "observation", "source_deconstruction_observation"
+                ),
             ],
         )
         self.assertEqual(
@@ -103,6 +106,7 @@ class ContextAuthorityDomainTests(unittest.TestCase):
         self.assertEqual(reasons["quarantine"], "qualification:QUARANTINED")
         self.assertEqual(reasons["review-only"], "source_mode:review_only")
         self.assertEqual(reasons["raw"], "raw_source_forbidden")
+        self.assertEqual(reasons["observation"], "raw_source_forbidden")
 
     def test_budget_is_deterministic_and_never_exceeded(self) -> None:
         selection = select_context_candidates(

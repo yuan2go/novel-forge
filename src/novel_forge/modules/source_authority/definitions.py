@@ -10,8 +10,23 @@ SOURCE_AUTHORITY_OPERATION = "source.document.register"
 SOURCE_TRANSFORM_DEFINITION_VERSION = "1.0.1"
 SOURCE_TRANSFORM_HANDLER_KEY = "novel_forge.source_authority.transform_commit"
 SOURCE_TRANSFORM_OPERATION = "source.transform.commit"
+SOURCE_OBSERVATION_DEFINITION_VERSION = "1.0.1"
+SOURCE_OBSERVATION_HANDLER_KEY = (
+    "novel_forge.source_authority.deconstruction_observation_commit"
+)
+SOURCE_OBSERVATION_OPERATION = "source.deconstruction.observation.commit"
+SOURCE_REPROCESSING_DEFINITION_VERSION = "1.0.1"
+SOURCE_REPROCESSING_HANDLER_KEY = (
+    "novel_forge.source_authority.reprocessing_plan_commit"
+)
+SOURCE_REPROCESSING_OPERATION = "source.deconstruction.reprocessing.plan"
 SOURCE_AUTHORITY_OPERATIONS = frozenset(
-    {SOURCE_AUTHORITY_OPERATION, SOURCE_TRANSFORM_OPERATION}
+    {
+        SOURCE_AUTHORITY_OPERATION,
+        SOURCE_TRANSFORM_OPERATION,
+        SOURCE_OBSERVATION_OPERATION,
+        SOURCE_REPROCESSING_OPERATION,
+    }
 )
 
 
@@ -183,6 +198,150 @@ def source_authority_definitions(
                 ],
             },
         },
+        {
+            "name": SOURCE_OBSERVATION_OPERATION,
+            "definition_version": SOURCE_OBSERVATION_DEFINITION_VERSION,
+            "family": "source_deconstruction",
+            "enabled": True,
+            "command_schema": {
+                "type": "object",
+                "required": ["project_id", "workspace_id", "payload"],
+                "properties": {
+                    "project_id": {"type": "string"},
+                    "workspace_id": {"type": "string"},
+                    "payload": {"type": "object"},
+                },
+                "additionalProperties": False,
+            },
+            "result_schema": {
+                "type": "object",
+                "required": ["observation_id", "asset_version_id"],
+                "properties": {
+                    "observation_id": {"type": "string"},
+                    "asset_version_id": {"type": "string"},
+                },
+                "additionalProperties": True,
+            },
+            "handler_key": SOURCE_OBSERVATION_HANDLER_KEY,
+            "handler_contract_version": "source-observation-handler-v1",
+            "application_build_id": application_build_id,
+            "commit_sha": commit_sha,
+            "execution_mode": "worker",
+            "permissions": ["source.authority.execute"],
+            "approval_policy": {
+                "required": False,
+                "policy_key": "source-observation-commit-v1",
+            },
+            "idempotency_scope": "project:source-observation",
+            "concurrency_key_template": "project:{project_id}:source-observation",
+            "retry_policy": {"max_attempts": 2},
+            "timeout_policy": {"operation_timeout_seconds": 120},
+            "cancellation_policy": {"mode": "cancel_active_attempt"},
+            "compensation_policy": {
+                "supported": False,
+                "reason": "Observation versions and evidence lineage are immutable",
+            },
+            "irreversible_effect_policy": {"allowed": False},
+            "external_capabilities": [],
+            "policy": {
+                "execution_classification": "durable_job",
+                "project_scope_required": True,
+                "source_evidence_or_lower_observation_required": True,
+                "provider_execution_evidence_required": True,
+                "raw_source_in_postgresql_forbidden": True,
+                "observation_is_not_reusable_knowledge": True,
+                "source_observation_generation_context_forbidden": True,
+            },
+            "completion_contract": {
+                "version": "source.deconstruction.observation.commit.completion.v1",
+                "required_asset_selectors": [
+                    {
+                        "selector": "source_deconstruction_observation",
+                        "output_key": "source.deconstruction.observation",
+                        "role": "evidence",
+                        "lifecycle": "ACTIVE",
+                        "eligibility": "INELIGIBLE",
+                        "governance": "CLEAR",
+                    }
+                ],
+                "required_evidence": ["trace", "audit"],
+                "required_outbox_events": [
+                    "authority.source.deconstruction.observation.committed"
+                ],
+            },
+        },
+        {
+            "name": SOURCE_REPROCESSING_OPERATION,
+            "definition_version": SOURCE_REPROCESSING_DEFINITION_VERSION,
+            "family": "source_deconstruction",
+            "enabled": True,
+            "command_schema": {
+                "type": "object",
+                "required": ["project_id", "workspace_id", "payload"],
+                "properties": {
+                    "project_id": {"type": "string"},
+                    "workspace_id": {"type": "string"},
+                    "payload": {"type": "object"},
+                },
+                "additionalProperties": False,
+            },
+            "result_schema": {
+                "type": "object",
+                "required": ["reprocessing_plan_id", "asset_version_id", "items"],
+                "properties": {
+                    "reprocessing_plan_id": {"type": "string"},
+                    "asset_version_id": {"type": "string"},
+                    "items": {"type": "array"},
+                },
+                "additionalProperties": True,
+            },
+            "handler_key": SOURCE_REPROCESSING_HANDLER_KEY,
+            "handler_contract_version": "source-reprocessing-plan-handler-v1",
+            "application_build_id": application_build_id,
+            "commit_sha": commit_sha,
+            "execution_mode": "worker",
+            "permissions": ["source.authority.execute"],
+            "approval_policy": {
+                "required": False,
+                "policy_key": "source-selective-reprocessing-v1",
+            },
+            "idempotency_scope": "project:source-reprocessing-plan",
+            "concurrency_key_template": "project:{project_id}:source-reprocessing",
+            "retry_policy": {"max_attempts": 2},
+            "timeout_policy": {"operation_timeout_seconds": 120},
+            "cancellation_policy": {"mode": "cancel_active_attempt"},
+            "compensation_policy": {
+                "supported": False,
+                "reason": "plan and invalidation records are immutable evidence",
+            },
+            "irreversible_effect_policy": {"allowed": False},
+            "external_capabilities": [],
+            "policy": {
+                "execution_classification": "durable_job",
+                "project_scope_required": True,
+                "lineage_driven": True,
+                "unchanged_upstream_reuse_required": True,
+                "selective_invalidation_required": True,
+                "plan_does_not_execute_provider": True,
+            },
+            "completion_contract": {
+                "version": "source.deconstruction.reprocessing.plan.completion.v1",
+                "required_asset_selectors": [
+                    {
+                        "selector": "source_reprocessing_plan",
+                        "output_key": "source.reprocessing.plan",
+                        "role": "operational",
+                        "lifecycle": "ACTIVE",
+                        "eligibility": "INELIGIBLE",
+                        "governance": "CLEAR",
+                    }
+                ],
+                "required_evidence": ["trace", "audit"],
+                "required_outbox_events": [
+                    "authority.source.deconstruction.reprocessing.planned"
+                ],
+            },
+        },
     )
 
 
@@ -194,5 +353,11 @@ __all__ = [
     "SOURCE_TRANSFORM_DEFINITION_VERSION",
     "SOURCE_TRANSFORM_HANDLER_KEY",
     "SOURCE_TRANSFORM_OPERATION",
+    "SOURCE_OBSERVATION_DEFINITION_VERSION",
+    "SOURCE_OBSERVATION_HANDLER_KEY",
+    "SOURCE_OBSERVATION_OPERATION",
+    "SOURCE_REPROCESSING_DEFINITION_VERSION",
+    "SOURCE_REPROCESSING_HANDLER_KEY",
+    "SOURCE_REPROCESSING_OPERATION",
     "source_authority_definitions",
 ]

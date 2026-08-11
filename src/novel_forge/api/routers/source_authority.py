@@ -7,14 +7,22 @@ from fastapi import APIRouter, HTTPException, Query
 
 from novel_forge.api.authority_dependencies import build_trusted_principal_resolver
 from novel_forge.api.models import (
+    AuthorityDeconstructionObservationCommitRequest,
     AuthoritySourceDocumentRegisterRequest,
+    AuthoritySourceReprocessingPlanRequest,
     AuthoritySourceTransformCommitRequest,
 )
 from novel_forge.api.routers.context import ProductRouterContext
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.source_authority import (
+    AnalyzerContract,
+    CommitDeconstructionObservationCommand,
     CommitSourceTransformCommand,
+    ObservationEvidenceSpan,
+    ObservationScope,
+    PlanSourceReprocessingCommand,
     RegisterSourceDocumentCommand,
+    ReprocessingTarget,
     SourceChunkCandidate,
 )
 
@@ -156,6 +164,104 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
             limit=limit,
         )
 
+    @router.post(
+        "/product/source-governance/deconstruction-observations",
+        status_code=202,
+    )
+    def commit_observation(
+        request: AuthorityDeconstructionObservationCommitRequest,
+    ) -> dict[str, Any]:
+        principal = _authorize("source.authority.execute", request.project_id)
+        try:
+            return application.admit_observation(
+                CommitDeconstructionObservationCommand(
+                    project_id=request.project_id,
+                    workspace_id=request.workspace_id,
+                    execution_asset_version_id=request.execution_asset_version_id,
+                    scope=ObservationScope(**request.scope.model_dump()),
+                    analyzer=AnalyzerContract(**request.analyzer.model_dump()),
+                    observation=request.observation,
+                    evidence_spans=tuple(
+                        ObservationEvidenceSpan(**span.model_dump())
+                        for span in request.evidence_spans
+                    ),
+                    input_observation_asset_version_ids=tuple(
+                        request.input_observation_asset_version_ids
+                    ),
+                    evidence_class=request.evidence_class,
+                    actor_id=principal.principal_id,
+                    idempotency_key=request.idempotency_key,
+                    trace_id=request.trace_id.strip()
+                    or f"trace:source-observation:{request.idempotency_key}",
+                    correlation_id=request.correlation_id.strip()
+                    or f"correlation:source-observation:{request.idempotency_key}",
+                ),
+                principal=principal,
+            )
+        except (KernelError, ValueError) as exc:
+            raise _conflict(exc) from exc
+
+    @router.get("/product/source-governance/deconstruction-observations")
+    def observations(
+        project_id: str,
+        dimension: str = "",
+        scale: str = "",
+        limit: int = Query(default=100, ge=1, le=1_000),
+    ) -> list[dict[str, Any]]:
+        _authorize("source.authority.query", project_id)
+        return query.list_observations(
+            project_id=project_id, dimension=dimension, scale=scale, limit=limit
+        )
+
+    @router.post(
+        "/product/source-governance/reprocessing-plans", status_code=202
+    )
+    def plan_reprocessing(
+        request: AuthoritySourceReprocessingPlanRequest,
+    ) -> dict[str, Any]:
+        principal = _authorize("source.authority.execute", request.project_id)
+        try:
+            return application.admit_reprocessing_plan(
+                PlanSourceReprocessingCommand(
+                    project_id=request.project_id,
+                    workspace_id=request.workspace_id,
+                    targets=tuple(
+                        ReprocessingTarget(
+                            scope=ObservationScope(**target.scope.model_dump()),
+                            analyzer=AnalyzerContract(**target.analyzer.model_dump()),
+                        )
+                        for target in request.targets
+                    ),
+                    cause_type=request.cause_type,
+                    source_transform_id=request.source_transform_id,
+                    actor_id=principal.principal_id,
+                    idempotency_key=request.idempotency_key,
+                    trace_id=request.trace_id.strip()
+                    or f"trace:source-reprocessing:{request.idempotency_key}",
+                    correlation_id=request.correlation_id.strip()
+                    or f"correlation:source-reprocessing:{request.idempotency_key}",
+                ),
+                principal=principal,
+            )
+        except (KernelError, ValueError) as exc:
+            raise _conflict(exc) from exc
+
+    @router.get("/product/source-governance/reprocessing-plans")
+    def reprocessing_plans(
+        project_id: str,
+        limit: int = Query(default=100, ge=1, le=500),
+    ) -> list[dict[str, Any]]:
+        _authorize("source.authority.query", project_id)
+        return query.list_reprocessing_plans(project_id=project_id, limit=limit)
+
+    @router.get("/product/source-governance/data-import-admission")
+    def data_import_admission(project_id: str) -> dict[str, Any]:
+        _authorize("source.authority.query", project_id)
+        try:
+            return query.data_import_admission(project_id=project_id)
+        except (KernelError, ValueError) as exc:
+            raise _conflict(exc) from exc
+
     return router
 
 
@@ -166,6 +272,15 @@ def _authorize(permission: str, project_id: str):
     except PermissionError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
     return principal
+
+
+def _conflict(exc: KernelError | ValueError) -> HTTPException:
+    detail: Any = (
+        {"code": exc.code, "message": exc.message}
+        if isinstance(exc, KernelError)
+        else str(exc)
+    )
+    return HTTPException(status_code=409, detail=detail)
 
 
 __all__ = ["create_router"]

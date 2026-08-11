@@ -60,7 +60,16 @@ class ContextSelection:
     token_budget: int
 
 
-_RAW_TYPES = frozenset({"source_document", "source_chunk", "cleaned_text", "parallel_pair"})
+_RAW_TYPES = frozenset(
+    {
+        "source_document",
+        "source_chunk",
+        "source_deconstruction_observation",
+        "source_reprocessing_plan",
+        "cleaned_text",
+        "parallel_pair",
+    }
+)
 _COMMON = frozenset({
     "chapter_plan", "chapter_plan_version", "outline_version", "volume_arc", "world_bible",
     "character_card", "character_state", "relationship_state", "canon_snapshot",

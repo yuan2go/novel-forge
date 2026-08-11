@@ -90,6 +90,8 @@ COPYRIGHT_BLOCKING_RISKS = {"high"}
 GENERATION_RAG_BLOCKED_TYPES = {
     "source_document",
     "source_chunk",
+    "source_deconstruction_observation",
+    "source_reprocessing_plan",
     "cleaned_text",
     "decomposition_report",
     "common_novel_analysis_report",

@@ -111,6 +111,31 @@
       "removal_preconditions": ["legacy content services stop consuming LocalStorage Context assets"]
     },
     {
+      "id": "legacy-source-intake-pipeline",
+      "paths": ["src/novel_forge/modules/source_intake", "src/novel_forge/modules/analysis"],
+      "classification": "LEGACY_ISOLATED",
+      "allowed_environments": ["development", "test", "migration"],
+      "replacement": "PostgreSQL Source Authority transform and source deconstruction Observations",
+      "removal_preconditions": ["legacy LocalStorage projects are migrated", "all analysis callers submit Source Authority Operations"]
+    },
+    {
+      "id": "legacy-local-mkaos-pipeline",
+      "paths": [
+        "src/novel_forge/api/routers/mkaos.py",
+        "src/novel_forge/modules/mkaos",
+        "src/novel_forge/modules/mkaos_ingestion",
+        "src/novel_forge/modules/mkaos_lineage",
+        "src/novel_forge/modules/mkaos_model_extraction",
+        "src/novel_forge/modules/mkaos_production_gate",
+        "src/novel_forge/modules/mkaos_quality",
+        "src/novel_forge/modules/mkaos_converters"
+      ],
+      "classification": "LEGACY_ISOLATED",
+      "allowed_environments": ["development", "test", "migration"],
+      "replacement": "PostgreSQL MKAOS Authority Candidate, Decision, KnowledgeCard and rebuildable KnowledgePack",
+      "removal_preconditions": ["legacy MKAOS assets are migrated", "legacy product routes have no retained UI consumers"]
+    },
+    {
       "id": "d0-fixture-worker",
       "paths": ["src/novel_forge/workers/d0_provider_qualification.py", "src/novel_forge/modules/provider_qualification/scheduler.py"],
       "classification": "DEVELOPMENT_FIXTURE",

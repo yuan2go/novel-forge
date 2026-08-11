@@ -30,6 +30,7 @@ def main() -> int:
         "test_production_execution_*_postgres.py",
         "test_mkaos_authority_postgres.py",
         "test_source_document_authority_postgres.py",
+        "test_source_deconstruction_authority_postgres.py",
         "test_agent_collaboration_postgres.py",
         "test_book_followup_authority_postgres.py",
         "test_book_to_chapter_authority_vertical_postgres.py",

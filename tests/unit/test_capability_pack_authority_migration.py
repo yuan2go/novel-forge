@@ -11,7 +11,10 @@ from novel_forge.storage.migrations.versions import (
     v20260806_0073_core_functional_loops as core_migration,
 )
 from novel_forge.storage.migrations.versions import (
-    v20260811_0074_longform_native_intelligence as latest_migration,
+    v20260811_0074_longform_native_intelligence as longform_migration,
+)
+from novel_forge.storage.migrations.versions import (
+    v20260811_0075_source_deconstruction_intelligence as latest_migration,
 )
 
 
@@ -26,7 +29,8 @@ def test_capability_pack_authority_remains_in_linear_migration_chain() -> None:
     )
     assert migration.DOWN_REVISION == foundation_migration.MIGRATION_ID
     assert core_migration.DOWN_REVISION == migration.MIGRATION_ID
-    assert latest_migration.DOWN_REVISION == core_migration.MIGRATION_ID
+    assert longform_migration.DOWN_REVISION == core_migration.MIGRATION_ID
+    assert latest_migration.DOWN_REVISION == longform_migration.MIGRATION_ID
     assert LATEST_MIGRATION_ID == latest_migration.MIGRATION_ID
     assert migration.FORWARD_ONLY is True
 
