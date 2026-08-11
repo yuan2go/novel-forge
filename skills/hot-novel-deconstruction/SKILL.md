@@ -1,105 +1,76 @@
 ---
 name: hot-novel-deconstruction
-description: Use when analyzing popular novels or genre samples to extract abstract structure, pacing, payoff mechanics, character mechanisms, conflict patterns, emotion curves, chapter hooks, and commercial logic without copying protected expression or plot combinations.
+description: Analyze web novels and genre samples into evidence-backed abstract structure, pacing, reward, character, conflict, emotion, hook, serialization, and commercial Observations without copying protected expression or plot combinations.
 ---
 
 # Hot Novel Deconstruction
 
 ## Novel OS Runtime Contract
 
-- 需要进入生产链路的输出必须落到 schema-backed asset，而不是只停留在对话文本。
-- 产物必须保留 `project_id`、输入引用、来源边界、质量状态；涉及 Agent/Workflow 时必须保留 `trace_id` 或 handoff 依据。
-- 生成、审稿、修订、发布、复盘相关上下文必须通过 Context Builder / Knowledge Pack / ReviewIssue / GateResult 的现有边界。
-- 禁止 raw source text、参考作品表达、`source_chunk.raw_text` 或未抽象材料进入 prose、publish、recap 和 feedback backflow。
-- Markdown 输出格式只作为 operator handoff；写入工程时必须映射到对应资产 schema、测试或报告路径。
+- Source Authority / EvidenceSpan / Observation / MKAOS / KnowledgePack 是正式生产边界。
+- raw source、原句、人物名、独特设定和具体桥段不得进入 prose、publish、recap 或 feedback backflow。
+- Observation 只描述来源中观察到什么；只有经后续 MKAOS 抽象和 Governance 批准的 KnowledgeCard 才可进入生产知识。
 
-## 适用场景
+## Source Intelligence Observation Contract
 
-- 拆解热门小说、爆款章节、同赛道样本或类型文片段。
-- 为 `decompose`、`extract-knowledge`、`build-materials` 或题材策划提供抽象输入。
-- 需要判断一个样本为什么有追读、爽点和商业吸引力。
+当 stage 为 `source.deconstruction.observe`，或输入包含冻结 AnalyzerContract / EvidenceSpan 时：
 
-## 输入要求
+1. 只分析 AnalyzerContract 指定的 `dimension` 和 `scope`，不得默认整本一次分析，也不得自行扩大样本范围。
+2. 只使用 supplied Source evidence 或 lower-scale Observations；不得访问文件系统、Web、MCP 或其它未冻结来源。
+3. 每条 finding 必须引用 supplied `evidence_span_ids`；聚合模式只引用 supplied lower Observation AssetVersion。
+4. 输出必须**严格**匹配冻结 Source Observation schema，只允许：
+   - `findings`
+   - `confidence`
+   - `knowledge_status`，且必须为 `NOT_ABSTRACTED`
+5. 不得额外输出 `originality_risk`、Markdown 报告、KnowledgeCard、正文、文件写入指令或解释性包装；原创风险必须作为 `originality_copyright_risk` dimension 下的 finding 表达。
+6. finding statement 只能描述抽象机制、节奏/状态变化和读者效果，不复述来源剧情，不保留可识别事件序列。
+7. Higher-scale 聚合如果输入已经是 lower-scale Observations，不得重新读取 Source text。
 
-- 来源、范围、类型、目标读者和拆解目的。
-- 版权边界说明：输入只用于结构分析，不进入正文生成。
-- 若样本来自单一作品，必须标记为高原创风险输入。
-- 正式运行只接收 Source Authority 提供的 `source_document_id`、`source_transform_id`、不可变 `source_chunk_asset_version_id` 与稳定 `evidence_span_id`；不得从文件名推断来源身份。
-- 每次运行必须冻结 analyzer / schema / prompt / Skill / capability / provider-policy / aggregation-policy 版本和 execution evidence。
+## Dimension Focus
 
-## 正式 Deconstruction Intelligence 合同
+- `structure`: 开局问题、阶段目标、转折、升级、阶段结果和结构压力。
+- `pacing`: 信息增量、压迫、缓释、反转、奖励间隔和节奏密度。
+- `hook`: 未决问题、信息缺口、威胁、机会和章节末前进压力。
+- `reward_payoff`: 承诺、延迟、兑现、升级与奖励密度。
+- `reader_promise`: 题材/角色/冲突对读者形成的可验证期待与兑现状态。
+- `conflict`: 目标、资源、身份、价值、关系和制度压力的升级机制。
+- `character_mechanism`: 欲望、恐惧、能力、缺陷、决策成本和行动驱动。
+- `relationship_mechanism`: 信任、权力、依赖、敌友和亲疏状态变化。
+- `emotion_curve`: 压力、期待、释放、反转、余韵和疲劳。
+- `foreshadowing`: 建立、强化、延迟、兑现、转义或失效的功能关系。
+- `information_progression`: 信息隐藏、揭示、误判、认知差和读者知识变化。
+- `serialization`: 连载推进、阶段闭环、持续未决问题和下一章驱动力。
+- `commercial_logic`: 追读理由、核心承诺、奖励周期和读者留存机制；不得把未经证据支持的平台传闻写成规则。
+- `originality_copyright_risk`: 哪些仅能迁移抽象功能，哪些表达、设定、场景和独特组合必须隔离。
 
-- 输出首先是 `Observation`，不是 `KnowledgeCard`，也不是一篇整书 Markdown 总结。
-- 维度按需独立运行：`structure`、`pacing`、`hook`、`reward_payoff`、`reader_promise`、`conflict`、`character_mechanism`、`relationship_mechanism`、`emotion_curve`、`foreshadowing`、`information_progression`、`serialization`、`commercial_logic`、`originality_copyright_risk`。
-- 尺度从 `CHAPTER`、`CHAPTER_WINDOW`、`CHAPTER_GROUP` 逐级聚合到 `ARC`、`VOLUME`、`BOOK`、`CROSS_BOOK_PATTERN`；禁止默认整本一次模型调用。
-- 下层 Observation 已足够时，上层聚合只读取 Observation，不重新读取原文；确定性聚合不得调用模型。
-- 每条 finding 必须引用本次冻结输入中的 `evidence_span_id` 或 lower-scale Observation AssetVersion，并包含 confidence 与 originality risk。
-- 相同 scope + analyzer contract + observation 内容必须重放已有结果；合约升级只重算目标维度及 lineage 下游。
+## MKAOS Handoff
 
-## 操作流程
+Observation 完成后交给 `anti-copy-abstraction`：
 
-1. 记录来源、样本范围、类型、目标读者和拆解问题。
-2. 拆出结构：开局问题、阶段目标、冲突升级、阶段奖励和结尾压力。
-3. 拆出节奏：信息增量、压迫、缓释、反转、奖励兑现和章节钩子间隔。
-4. 拆出人物机制：欲望、恐惧、能力、缺陷、关系压力和行动代价。
-5. 拆出冲突机制：目标冲突、资源冲突、身份冲突、价值冲突和制度压力。
-6. 拆出商业逻辑：读者期待、爽点承诺、情绪释放、追读理由和禁用风险。
-7. 先提交结构化 Observation，明确 `knowledge_status=NOT_ABSTRACTED`。
-8. 交给 `anti-copy-abstraction` 生成独立 Knowledge Candidate；不得把 Observation 直接当生产知识。
-
-## 输出格式
-
-生产输出必须匹配 `source-deconstruction-observation.v1`，至少包含：
-
-```json
-{
-  "findings": [{
-    "finding_code": "hook.chapter_end_pressure",
-    "statement": "仅描述抽象观察，不复述来源表达",
-    "evidence_span_ids": ["source-evidence-span:..."]
-  }],
-  "confidence": 0.0,
-  "originality_risk": "LOW_AFTER_ABSTRACTION",
-  "knowledge_status": "NOT_ABSTRACTED"
-}
+```text
+Evidence
+→ Observation (NOT_ABSTRACTED)
+→ MKAOS Candidate
+→ Governance
+→ KnowledgeCard
 ```
 
-以下 Markdown 只允许作为 operator handoff，不是生产 Authority：
+不得把热门作品直接变成“换名剧情模板”。
 
-```markdown
-# 热门小说拆解报告
+## Standalone / Operator Handoff
 
-## 来源与范围
-## 类型与目标读者
-## 结构拆解
-## 节奏拆解
-## 爽点机制
-## 人设机制
-## 冲突机制
-## 情绪曲线
-## 章节钩子
-## 商业化逻辑
-## 可复用抽象原则
-## 禁止复用内容
-## 原创风险等级
-```
+脱离 Canonical Source Import Runtime 时可以生成人工阅读用热门小说拆解报告，但它不是生产 Authority。正式使用必须重新进入 Evidence-backed Observation，再经过 MKAOS。
 
 ## 质量标准
 
-- 输出重点是结构、机制和读者效果，不是剧情复述。
-- 每个可复用点必须说明适用边界。
-- 每个高风险点必须进入禁止复用内容。
-- Observation 必须能通过后续 Abstraction/Governance 转成 Candidate，但自身永远不是可生成知识。
+- 输出重点是结构机制和读者状态，而不是剧情复述。
+- 每条 finding 必须有本次冻结输入的 lineage。
+- 可迁移原则必须脱离单一作品仍成立，并有适用/禁用边界。
+- Originality 风险通过专门 dimension 记录，不在 schema 外增加字段。
 
 ## 禁止事项
 
-- 禁止复制原文表达、台词、人物身份、独特设定和具体桥段。
-- 禁止把单一热门小说直接转成新书剧情骨架。
-- 禁止输出换名仿写建议。
-- 禁止把原文片段保存为可生成素材。
-
-## 与其他模块的关系
-
-- 上游：`data/raw/`、`data/cleaned/`、`docs/00-product/copyright-and-compliance.md`。
-- 下游：`anti-copy-abstraction`、Source Deconstruction Authority、MKAOS Candidate/Governance；`data/decompositions/` 仅为 legacy/operator handoff。
-- Agent：Knowledge Agent、Material Agent、Chief Editor Agent。
+- 禁止复制原文、台词、人物身份、独特设定、标志性场景和具体桥段。
+- 禁止把单一热门小说直接转成新书剧情骨架或换名仿写方案。
+- 禁止把 SourceChunk 或 Observation 直接送入正文生成。
+- 禁止绕过 MKAOS Governance。
