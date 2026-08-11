@@ -35,7 +35,10 @@ def _canonical_hash(value: Any) -> str:
 
 @dataclass(frozen=True, slots=True)
 class SourceImportPolicy:
-    policy_version: str = "source-import-policy.v1"
+    # v2 makes heterogeneous Source routing/profile contracts part of the
+    # repository-snapshot identity. A v1 -> v2 import can reuse immutable
+    # Source/Transform assets while scheduling the new profiling/analysis work.
+    policy_version: str = "source-import-policy.v2"
     include_globs: tuple[str, ...] = ("**/*", "*")
     exclude_globs: tuple[str, ...] = (
         ".git/**",
