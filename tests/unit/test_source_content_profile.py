@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -113,7 +114,7 @@ def test_analysis_profiles_use_source_specific_skills() -> None:
     )
 
 
-def test_planner_freezes_profile_identity_in_analyzer_contract() -> None:
+def test_planner_freezes_profile_method_and_version_in_analyzer_contract() -> None:
     tasks = plan_analysis_tasks(
         profile_id="classic_literature",
         source_document_id="source:classic",
@@ -126,11 +127,14 @@ def test_planner_freezes_profile_identity_in_analyzer_contract() -> None:
     assert tasks
     assert all(task.profile_id == "classic_literature" for task in tasks)
     assert all(
-        task.analyzer.skill_id
-        in {"classic-literary-depth-analysis", "anti-copy-abstraction"}
+        task.analyzer.skill_id == "classic-literary-depth-analysis"
         for task in tasks
     )
+    assert all(task.analyzer.skill_version == "2.0" for task in tasks)
     assert all("classic_literature" in task.stable_key for task in tasks)
+    assert any(
+        task.analyzer.dimension == "originality_copyright_risk" for task in tasks
+    )
 
 
 def test_auto_profile_cannot_reach_analysis_planner_unresolved() -> None:
@@ -142,23 +146,35 @@ def test_auto_profile_cannot_reach_analysis_planner_unresolved() -> None:
         )
 
 
-def test_source_skill_catalog_resolves_exact_repository_artifacts() -> None:
+def test_source_skill_catalog_resolves_exact_stage_appropriate_artifacts() -> None:
     repository_root = Path(__file__).resolve().parents[2]
     resolver = source_intelligence_artifact_resolver(repository_root)
 
     classic = resolver.resolve(
         ArtifactKind.SKILL,
         "classic-literary-depth-analysis",
-        "1.0",
+        "2.0",
     )
     professional = resolver.resolve(
         ArtifactKind.SKILL,
         "multidisciplinary-knowledge",
+        "2.0",
+    )
+    anti_copy = resolver.resolve(
+        ArtifactKind.SKILL,
+        "anti-copy-abstraction",
         "1.0",
     )
+
+    classic_text = str(json.loads(classic.content_json)["text"])
+    professional_text = str(json.loads(professional.content_json)["text"])
+    anti_copy_text = str(json.loads(anti_copy.content_json)["text"])
 
     assert classic.source_identity == "skills/classic-literary-depth-analysis/SKILL.md"
     assert professional.source_identity == "skills/multidisciplinary-knowledge/SKILL.md"
     assert classic.content_hash.startswith("sha256:")
     assert professional.content_hash.startswith("sha256:")
     assert classic.content_hash != professional.content_hash
+    assert "Source Intelligence Observation Contract" in classic_text
+    assert "Source Intelligence Observation Contract" in professional_text
+    assert "Source MKAOS Candidate Contract" in anti_copy_text
