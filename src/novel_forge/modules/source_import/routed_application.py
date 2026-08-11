@@ -4,6 +4,7 @@ from __future__ import annotations
 from typing import Any
 from uuid import uuid4
 
+from novel_forge.modules.authority_handler_runtime.runtime import require_current_fence
 from novel_forge.modules.command_kernel.asset_commands import AuthorityAssetWriteCommand
 from novel_forge.modules.command_kernel.attempt_runtime import WorkerLeaseCommand
 from novel_forge.modules.command_kernel.errors import KernelError
@@ -418,10 +419,6 @@ class SourceImportApplication(_BaseSourceImportApplication):
         self, worker: WorkerLeaseCommand, payload: dict[str, Any]
     ) -> dict[str, Any]:
         with AuthorityUnitOfWork(self.database_url) as uow:
-            require_current_fence = __import__(
-                "novel_forge.modules.authority_handler_runtime.runtime",
-                fromlist=["require_current_fence"],
-            ).require_current_fence
             require_current_fence(uow, worker)
             repository = SourceImportRepository(uow.cursor)
             work = repository.work_by_operation(
@@ -476,7 +473,10 @@ class SourceImportApplication(_BaseSourceImportApplication):
                 status="SUCCEEDED",
                 result=result,
             )
-            self._refresh_job(repository, str(job["import_job_id"]), worker.project_id)
+            if not result.get("analysis_blocked"):
+                self._refresh_job(
+                    repository, str(job["import_job_id"]), worker.project_id
+                )
             uow.commit()
         return result
 
