@@ -26,7 +26,6 @@ class IndustrialSettings:
     root: Path
     environment: RuntimeEnvironment | str = RuntimeEnvironment.DEVELOPMENT
     storage_authority: str = "postgresql"
-    authority_runtime_profile: str = "full"
     database_url: str = ""
     minio_endpoint: str = "localhost:9000"
     minio_access_key: str = "novel_forge"
@@ -43,18 +42,14 @@ class IndustrialSettings:
     def __post_init__(self) -> None:
         environment = RuntimeEnvironment.parse(self.environment)
         authority = self.storage_authority.strip().lower()
-        runtime_profile = self.authority_runtime_profile.strip().lower()
         if authority != "postgresql":
             raise ValueError("storage_authority must be postgresql")
-        if runtime_profile not in {"full", "track-b-minimal"}:
-            raise ValueError("authority_runtime_profile must be full or track-b-minimal")
         if environment.controlled and self.mkaos_fixture_activation_enabled:
             raise ValueError(
                 "controlled runtime forbids fixture MKAOS activation"
             )
         object.__setattr__(self, "environment", environment)
         object.__setattr__(self, "storage_authority", authority)
-        object.__setattr__(self, "authority_runtime_profile", runtime_profile)
 
     @classmethod
     def from_env(
@@ -85,12 +80,6 @@ class IndustrialSettings:
             root=resolved_root,
             environment=environment,
             storage_authority=storage_authority,
-            authority_runtime_profile=_get(
-                values,
-                file_values,
-                "NOVEL_FORGE_AUTHORITY_RUNTIME_PROFILE",
-                "full",
-            ),
             database_url=_get(values, file_values, "NOVEL_FORGE_DATABASE_URL", _get(values, file_values, "DATABASE_URL", "")),
             minio_endpoint=_get(values, file_values, "NOVEL_FORGE_MINIO_ENDPOINT", "localhost:9000"),
             minio_access_key=_get(values, file_values, "NOVEL_FORGE_MINIO_ACCESS_KEY", "novel_forge"),

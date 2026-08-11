@@ -12,34 +12,6 @@ from novel_forge.infrastructure.settings import IndustrialSettings
 
 
 class AuthorityApiSurfaceTests(unittest.TestCase):
-    def test_track_b_minimal_profile_does_not_construct_provider_or_legacy_routes(self) -> None:
-        with tempfile.TemporaryDirectory() as directory, patch.dict(
-            "os.environ",
-            {
-                "NOVEL_FORGE_APPLICATION_BUILD_ID": "track-b-minimal-unit",
-                "NOVEL_FORGE_COMMIT_SHA": "e" * 40,
-                "NOVEL_FORGE_ENVIRONMENT": "production",
-                "NOVEL_FORGE_LOCAL_OPERATOR_PRINCIPAL_ID": "operator-unit",
-            },
-            clear=False,
-        ):
-            app = create_authority_app(
-                IndustrialSettings(
-                    root=Path(directory),
-                    environment="production",
-                    storage_authority="postgresql",
-                    authority_runtime_profile="track-b-minimal",
-                    database_url="postgresql://authority-test.invalid/test",
-                )
-            )
-            paths = set(app.openapi()["paths"])
-
-        self.assertIn("/authority/books", paths)
-        self.assertIn("/authority/books/{book_id}/design-candidates", paths)
-        self.assertIn("/ready", paths)
-        self.assertNotIn("/authority/chapters/run", paths)
-        self.assertFalse(any("provider" in path for path in paths))
-
     def test_required_product_reads_are_exposed_by_postgresql_app(self) -> None:
         with tempfile.TemporaryDirectory() as directory, patch.dict(
             "os.environ",

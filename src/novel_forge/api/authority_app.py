@@ -158,17 +158,6 @@ class AuthorityApiServices:
     pacing_analysis_service: PacingAnalysisService
 
 
-@dataclass(frozen=True, slots=True)
-class TrackBMinimalAuthorityServices:
-    """Only the services exercised by the first Track B vertical slice."""
-
-    project_authority_application: ProjectAuthorityApplication
-    project_authority_query: ProjectAuthorityQuery
-    task_authority_query: AuthorityTaskQuery
-    book_design_authority_application: BookDesignAuthorityApplication
-    book_design_authority_query: BookDesignAuthorityQuery
-
-
 def create_authority_app(settings: IndustrialSettings):
     try:
         from fastapi import FastAPI
@@ -188,8 +177,6 @@ def create_authority_app(settings: IndustrialSettings):
             os.environ.get("NOVEL_FORGE_POSTGRES_MAX_CONNECTIONS") or "100"
         ),
     )
-    if settings.authority_runtime_profile == "track-b-minimal":
-        return _create_track_b_minimal_app(settings, FastAPI, CORSMiddleware)
     provider_registry = build_provider_adapter_registry(
         environment=settings.environment,
         provider_ids=configured_chapter_provider_ids(os.environ),
@@ -481,7 +468,7 @@ def create_authority_app(settings: IndustrialSettings):
     def liveness() -> dict[str, Any]:
         return {
             "status": "alive",
-            "runtime_profile": settings.authority_runtime_profile,
+            "runtime_profile": "full",
             "storage_authority": "postgresql",
         }
 
@@ -612,7 +599,7 @@ def create_authority_app(settings: IndustrialSettings):
             "real_provider_proven": False,
             "longform_proven": False,
             "production_verified": False,
-            "runtime_profile": settings.authority_runtime_profile,
+            "runtime_profile": "full",
             "postgresql": {
                 "authority": True,
                 "reachable": database_health.get("status") == "ready",
@@ -715,122 +702,8 @@ def create_authority_app_from_env():
     return create_authority_app(IndustrialSettings.from_env())
 
 
-def _create_track_b_minimal_app(settings: IndustrialSettings, FastAPI: Any, CORSMiddleware: Any):
-    """Compose an Authority-only API without Provider or Legacy construction."""
-
-    build_id, commit_sha = authority_release_identity()
-    services = TrackBMinimalAuthorityServices(
-        project_authority_application=ProjectAuthorityApplication(
-            settings.database_url,
-            application_build_id=build_id,
-            commit_sha=commit_sha,
-        ),
-        project_authority_query=ProjectAuthorityQuery(settings.database_url),
-        task_authority_query=AuthorityTaskQuery(settings.database_url),
-        book_design_authority_application=build_book_design_authority_application(settings),
-        book_design_authority_query=build_book_design_authority_query(settings),
-    )
-    app = FastAPI(
-        title="Novel Forge Track B Authority API",
-        version="7.0.0-track-b-minimal",
-        description="Book + BookDesign PostgreSQL Authority-only runtime.",
-    )
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=list(settings.api_cors_origins),
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
-
-    from novel_forge.api.models import product_model_map
-    from novel_forge.api.routers.authority_assets import create_router as create_asset_router
-    from novel_forge.api.routers.authority_projects import create_router as create_project_router
-    from novel_forge.api.routers.authority_tasks import create_router as create_task_router
-    from novel_forge.api.routers.book_design_authority import (
-        create_router as create_book_design_router,
-    )
-    from novel_forge.api.routers.context import ProductRouterContext
-    from novel_forge.storage.object_store import MinioObjectStore
-
-    context = ProductRouterContext(
-        app_settings=settings,
-        models=product_model_map(),
-        services=services,
-    )
-    for router_factory in (
-        create_project_router,
-        create_task_router,
-        create_asset_router,
-        create_book_design_router,
-    ):
-        app.include_router(router_factory(context))
-
-    @app.get("/health")
-    def health() -> dict[str, Any]:
-        return {
-            "status": "running",
-            "runtime_profile": "track-b-minimal",
-            "storage_authority": "postgresql",
-            "queue_authority": False,
-        }
-
-    @app.get("/liveness")
-    def liveness() -> dict[str, Any]:
-        return health()
-
-    @app.get("/ready")
-    def ready() -> dict[str, Any]:
-        database = get_migration_status(settings.database_url)
-        object_store_error = ""
-        try:
-            MinioObjectStore(settings).client.list_buckets()
-            object_store_ready = True
-        except Exception as exc:  # dependency/network boundary is reported, never hidden
-            object_store_ready = False
-            object_store_error = f"{type(exc).__name__}: {exc}"
-        status = "ready" if database["ok"] and object_store_ready else "not_ready"
-        result = {
-            "status": status,
-            "runtime_profile": "track-b-minimal",
-            "postgresql": {
-                "authority": True,
-                "migration_head": database["current"],
-                "migration_chain_current": database["ok"],
-            },
-            "object_store": {
-                "configured": True,
-                "reachable": object_store_ready,
-                "error": object_store_error,
-            },
-            "outbox": {"authority": "postgresql"},
-            "queue": {"role": "delivery_only", "authority": False},
-        }
-        if status != "ready":
-            from fastapi import HTTPException
-
-            raise HTTPException(status_code=503, detail=result)
-        return result
-
-    @app.get("/startup")
-    def startup() -> dict[str, Any]:
-        return ready()
-
-    @app.get("/readiness")
-    def readiness() -> dict[str, Any]:
-        return ready()
-
-    @app.on_event("shutdown")
-    def shutdown_database_runtime() -> None:
-        close_all_database_runtimes()
-
-    _install_database_runtime_routes(app, settings)
-    return app
-
-
 __all__ = [
     "AuthorityApiServices",
-    "TrackBMinimalAuthorityServices",
     "create_authority_app",
     "create_authority_app_from_env",
 ]

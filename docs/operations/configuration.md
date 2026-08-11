@@ -8,7 +8,6 @@ Configuration is read from process environment and `.env`; process environment w
 |---|---|---|
 | `NOVEL_FORGE_ENVIRONMENT` | `development`, validation, or controlled production behavior | `development` |
 | `NOVEL_FORGE_STORAGE_AUTHORITY` | Business authority backend; only `postgresql` is valid | `postgresql` |
-| `NOVEL_FORGE_AUTHORITY_RUNTIME_PROFILE` | `full` or bounded `track-b-minimal` API composition | `full` |
 | `NOVEL_FORGE_DATABASE_URL` | PostgreSQL DSN | required outside Compose |
 | `NOVEL_FORGE_APPLICATION_BUILD_ID` | Release/build identity recorded on operations | Compose fixture value |
 | `NOVEL_FORGE_COMMIT_SHA` | Source identity recorded on operations | zero fixture SHA in Compose |

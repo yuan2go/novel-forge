@@ -38,3 +38,20 @@ def test_chapter_model_effects_only_expose_the_shared_gateway_port() -> None:
     assert "class ChapterModelExternalEffectAdapter" not in effects
     assert "LegacyChapterModelAdapter" not in effects
     assert "legacy_independent_execution" not in effects
+
+
+def test_authority_api_has_one_production_composition_profile() -> None:
+    combined = "\n".join(
+        (
+            _read("src/novel_forge/api/authority_app.py"),
+            _read("src/novel_forge/infrastructure/settings.py"),
+            _read("compose.yml"),
+        )
+    )
+    for retired_marker in (
+        "TrackBMinimalAuthorityServices",
+        "_create_track_b_minimal_app",
+        "track-b-minimal",
+        "NOVEL_FORGE_AUTHORITY_RUNTIME_PROFILE",
+    ):
+        assert retired_marker not in combined

@@ -3,7 +3,6 @@ name: novel-forge-authority
 x-authority-environment: &authority-environment
   NOVEL_FORGE_ENVIRONMENT: ${NOVEL_FORGE_ENVIRONMENT:-development}
   NOVEL_FORGE_STORAGE_AUTHORITY: postgresql
-  NOVEL_FORGE_AUTHORITY_RUNTIME_PROFILE: full
   NOVEL_FORGE_DATABASE_URL: postgresql://novel_forge:${NOVEL_FORGE_POSTGRES_PASSWORD:-novel_forge_dev_only}@postgresql:5432/novel_forge
   NOVEL_FORGE_APPLICATION_BUILD_ID: ${NOVEL_FORGE_APPLICATION_BUILD_ID:-authority-compose-fixture}
   NOVEL_FORGE_COMMIT_SHA: ${NOVEL_FORGE_COMMIT_SHA:-0000000000000000000000000000000000000000}
