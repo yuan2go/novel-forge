@@ -7,7 +7,7 @@ from uuid import uuid4
 from novel_forge.modules.command_kernel.asset_commands import AuthorityAssetWriteCommand
 from novel_forge.modules.command_kernel.attempt_runtime import WorkerLeaseCommand
 from novel_forge.modules.command_kernel.errors import KernelError
-from novel_forge.modules.source_authority.deconstruction import stable_hash
+from novel_forge.modules.source_authority.deconstruction import ObservationScope, stable_hash
 from novel_forge.storage.authority_asset_store import (
     AuthorityAssetDocument,
     AuthorityAssetQuery,
@@ -15,15 +15,148 @@ from novel_forge.storage.authority_asset_store import (
 )
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from novel_forge.storage.source_import_repositories import SourceImportRepository
+from novel_forge.storage.source_intelligence_repositories import SourceIntelligenceRepository
 
 from .analysis_profiles import analysis_profile, plan_analysis_tasks
 from .application import SourceImportApplication as _BaseSourceImportApplication
 from .content_profile import SourceContentProfile, classify_source_content
-from .definitions import SOURCE_IMPORT_DECONSTRUCTION_OPERATION
+from .definitions import (
+    SOURCE_IMPORT_DECONSTRUCTION_OPERATION,
+    SOURCE_IMPORT_FILE_OPERATION,
+)
 
 
 class SourceImportApplication(_BaseSourceImportApplication):
     """Adds AUTO file-level profiling without creating a second import path."""
+
+    def _admit_file_children(
+        self,
+        worker: WorkerLeaseCommand,
+        job: dict[str, Any],
+        discovery_result: dict[str, Any],
+    ) -> None:
+        super()._admit_file_children(worker, job, discovery_result)
+        if bool(discovery_result.get("snapshot_reused")):
+            return
+        snapshot_id = str(discovery_result["repository_snapshot_asset_version_id"])
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            repository = SourceImportRepository(uow.cursor)
+            current_job = repository.job_for_update(
+                project_id=worker.project_id,
+                import_job_id=str(job["import_job_id"]),
+            )
+            # A predecessor under the exact same import policy already owns the
+            # unchanged rows' analysis. Cross-policy content reuse has no such
+            # predecessor and must enter profiling/analysis without re-fetching.
+            if current_job["previous_snapshot_asset_version_id"]:
+                return
+            rows = repository.snapshot_files(
+                project_id=worker.project_id,
+                snapshot_asset_version_id=snapshot_id,
+            )
+            transform_ids = sorted(
+                {
+                    str(row["source_transform_id"])
+                    for row in rows
+                    if row["status"] == "REUSED" and row.get("source_transform_id")
+                }
+            )
+            if not transform_ids:
+                return
+            uow.cursor.execute(
+                """
+                SELECT transform.source_transform_id,
+                       transform.source_document_id,
+                       transform.asset_version_id,
+                       transform.source_asset_version_id,
+                       transform.status
+                FROM authority_source_transform AS transform
+                WHERE transform.project_id=%s
+                  AND transform.source_transform_id=ANY(%s)
+                ORDER BY transform.source_transform_id
+                """,
+                [worker.project_id, transform_ids],
+            )
+            transforms = {
+                str(row[0]): {
+                    "source_transform_id": str(row[0]),
+                    "source_document_id": str(row[1]),
+                    "source_transform_asset_version_id": str(row[2]),
+                    "source_asset_version_id": str(row[3]),
+                    "status": str(row[4]),
+                }
+                for row in uow.cursor.fetchall()
+            }
+        if set(transforms) != set(transform_ids) or any(
+            item["status"] != "ACTIVE" for item in transforms.values()
+        ):
+            raise KernelError(
+                "SOURCE_IMPORT_REUSED_TRANSFORM_INVALID",
+                "reused Source content does not resolve to an active SourceTransform",
+            )
+        for transform_id in transform_ids:
+            transform = transforms[transform_id]
+            child = self._admit_child(
+                definition_name=SOURCE_IMPORT_FILE_OPERATION,
+                project_id=worker.project_id,
+                workspace_id=str(job["workspace_id"]),
+                actor_id=self.worker_id,
+                idempotency_key=(
+                    f"source.import.reused-analysis:{job['import_job_id']}:"
+                    f"{transform_id}:{job['analysis_profile']}"
+                ),
+                trace_id=worker.trace_id,
+                correlation_id=worker.correlation_id,
+                causation_id=snapshot_id,
+                parent_operation_id=worker.causation_id,
+                payload={
+                    "import_job_id": job["import_job_id"],
+                    "repository_snapshot_asset_version_id": snapshot_id,
+                    "reuse_existing_transform": True,
+                    **transform,
+                },
+                input_assets=(
+                    {
+                        "asset_version_id": snapshot_id,
+                        "role": "repository_snapshot",
+                    },
+                    {
+                        "asset_version_id": transform[
+                            "source_transform_asset_version_id"
+                        ],
+                        "role": "source_transform",
+                    },
+                ),
+                ready=False,
+            )
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                SourceImportRepository(uow.cursor).register_work(
+                    {
+                        "work_id": str(uuid4()),
+                        "import_job_id": job["import_job_id"],
+                        "project_id": worker.project_id,
+                        "work_kind": "FILE",
+                        "stable_key": f"reuse-analysis:{transform_id}",
+                        "source_path": "",
+                        "target_asset_version_id": transform[
+                            "source_transform_asset_version_id"
+                        ],
+                        "operation_id": child,
+                        "status": "PLANNED",
+                        "result": {},
+                        "failure": {},
+                    }
+                )
+                uow.commit()
+            self._ready_child(
+                operation_id=child,
+                project_id=worker.project_id,
+                actor_id=self.worker_id,
+                trace_id=worker.trace_id,
+                correlation_id=worker.correlation_id,
+                causation_id=snapshot_id,
+                reason="reused SourceTransform profiling and analysis ready",
+            )
 
     def _admit_deconstruction_children(
         self,
@@ -33,7 +166,12 @@ class SourceImportApplication(_BaseSourceImportApplication):
     ) -> None:
         requested_profile = str(job["analysis_profile"]).strip().lower()
         if requested_profile != "auto":
-            super()._admit_deconstruction_children(worker, job, transform)
+            self._admit_profiled_deconstruction_children(
+                worker,
+                job,
+                transform,
+                profile_asset_version_id="",
+            )
             return
 
         snapshot_id = str(job["repository_snapshot_asset_version_id"])
@@ -110,6 +248,38 @@ class SourceImportApplication(_BaseSourceImportApplication):
             chunks=chunks,
         )
         for task in tasks:
+            scope = ObservationScope(
+                scale=task.scale,
+                range_start=task.range_start,
+                range_end=task.range_end,
+                source_document_ids=(str(transform["source_document_id"]),),
+                label=task.label,
+            )
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                current = SourceIntelligenceRepository(uow.cursor).current_observation(
+                    project_id=worker.project_id,
+                    scope_hash=scope.fingerprint,
+                    analyzer_id=task.analyzer.analyzer_id,
+                )
+            if (
+                current is not None
+                and str(current["analyzer_contract_hash"]) == task.analyzer.fingerprint
+            ):
+                continue
+            input_assets = [
+                {
+                    "asset_version_id": chunk_id,
+                    "role": "source_chunk_evidence",
+                }
+                for chunk_id in task.source_chunk_asset_version_ids
+            ]
+            if profile_asset_version_id:
+                input_assets.append(
+                    {
+                        "asset_version_id": profile_asset_version_id,
+                        "role": "source_content_profile",
+                    }
+                )
             child = self._admit_child(
                 definition_name=SOURCE_IMPORT_DECONSTRUCTION_OPERATION,
                 project_id=worker.project_id,
@@ -131,19 +301,7 @@ class SourceImportApplication(_BaseSourceImportApplication):
                     "resolved_analysis_profile": str(job["analysis_profile"]),
                     "analysis_task": task.to_dict(),
                 },
-                input_assets=(
-                    *tuple(
-                        {
-                            "asset_version_id": chunk_id,
-                            "role": "source_chunk_evidence",
-                        }
-                        for chunk_id in task.source_chunk_asset_version_ids
-                    ),
-                    {
-                        "asset_version_id": profile_asset_version_id,
-                        "role": "source_content_profile",
-                    },
-                ),
+                input_assets=tuple(input_assets),
                 ready=False,
             )
             with AuthorityUnitOfWork(self.database_url) as uow:
@@ -203,7 +361,16 @@ class SourceImportApplication(_BaseSourceImportApplication):
         super()._admit_mkaos_child(worker, routed_job, observation)
 
     def _execute_file(self, worker: WorkerLeaseCommand) -> dict[str, Any]:
-        result = super()._execute_file(worker)
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            operation = uow.repositories.chapter_authority.operation_execution(
+                worker.causation_id, worker.project_id
+            )
+            payload = dict(operation["command_payload"])["payload"]
+        result = (
+            self._execute_reused_transform_analysis(worker, dict(payload))
+            if bool(payload.get("reuse_existing_transform"))
+            else super()._execute_file(worker)
+        )
         if not result.get("analysis_blocked"):
             return result
         with AuthorityUnitOfWork(self.database_url) as uow:
@@ -244,6 +411,72 @@ class SourceImportApplication(_BaseSourceImportApplication):
                         ),
                     },
                 )
+            uow.commit()
+        return result
+
+    def _execute_reused_transform_analysis(
+        self, worker: WorkerLeaseCommand, payload: dict[str, Any]
+    ) -> dict[str, Any]:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            require_current_fence = __import__(
+                "novel_forge.modules.authority_handler_runtime.runtime",
+                fromlist=["require_current_fence"],
+            ).require_current_fence
+            require_current_fence(uow, worker)
+            repository = SourceImportRepository(uow.cursor)
+            work = repository.work_by_operation(
+                project_id=worker.project_id,
+                operation_id=worker.causation_id,
+                for_update=True,
+            )
+            if work["status"] in {"SUCCEEDED", "REUSED"}:
+                return dict(work["result"])
+            job = repository.job_for_update(
+                project_id=worker.project_id,
+                import_job_id=str(work["import_job_id"]),
+            )
+            uow.cursor.execute(
+                """
+                SELECT transform.source_document_id, transform.asset_version_id,
+                       transform.source_asset_version_id, transform.status
+                FROM authority_source_transform AS transform
+                WHERE transform.project_id=%s AND transform.source_transform_id=%s
+                FOR SHARE OF transform
+                """,
+                [worker.project_id, str(payload["source_transform_id"])],
+            )
+            row = uow.cursor.fetchone()
+            if row is None or str(row[3]) != "ACTIVE":
+                raise KernelError(
+                    "SOURCE_IMPORT_REUSED_TRANSFORM_INVALID",
+                    "reused SourceTransform became unavailable before analysis",
+                )
+            repository.update_work(
+                project_id=worker.project_id,
+                operation_id=worker.causation_id,
+                expected=("PLANNED", "RUNNING", "FAILED_RETRYABLE"),
+                status="RUNNING",
+            )
+            uow.commit()
+        result = {
+            "source_document_id": str(row[0]),
+            "source_transform_id": str(payload["source_transform_id"]),
+            "source_transform_asset_version_id": str(row[1]),
+            "source_asset_version_id": str(row[2]),
+            "reused_source_transform": True,
+            "provider_tokens": 0,
+        }
+        self._admit_deconstruction_children(worker, job, result)
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            repository = SourceImportRepository(uow.cursor)
+            repository.update_work(
+                project_id=worker.project_id,
+                operation_id=worker.causation_id,
+                expected=("RUNNING",),
+                status="SUCCEEDED",
+                result=result,
+            )
+            self._refresh_job(repository, str(job["import_job_id"]), worker.project_id)
             uow.commit()
         return result
 
