@@ -566,7 +566,6 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                 DATABASE_URL,
                 application_build_id="two-chapter-vertical",
                 commit_sha="e" * 40,
-                legacy_fixture_input_allowed=True,
                 model_port=build_reader_outcome_model_port(
                     settings, execution=execution, env=env
                 ),
