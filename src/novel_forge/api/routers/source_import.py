@@ -36,8 +36,11 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
         principal = _authorize("source.authority.execute", request.project_id)
         try:
             policy_payload = request.policy.model_dump()
-            # The legacy API default was writing_theory. Treat an omitted field as
-            # AUTO while preserving an explicit writing_theory override.
+            # Legacy clients materialize v1/writing_theory defaults in the Pydantic
+            # model. Omitted fields now enter the heterogeneous v2 routing policy,
+            # while explicit values remain exact replay/override identities.
+            if "policy_version" not in request.policy.model_fields_set:
+                policy_payload["policy_version"] = "source-import-policy.v2"
             if "analysis_profile" not in request.policy.model_fields_set:
                 policy_payload["analysis_profile"] = "auto"
             policy = SourceImportPolicy(
