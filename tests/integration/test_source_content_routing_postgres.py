@@ -191,8 +191,12 @@ class SourceContentRoutingPostgresTests(unittest.TestCase):
             )
             self.assertGreater(cursor.fetchone()[0], 0)
 
-    def test_new_auto_policy_reuses_existing_source_and_only_reanalyzes(self) -> None:
-        legacy = self._create_import("writing_theory", "legacy")
+    def test_policy_v2_reuses_v1_source_and_only_reanalyzes(self) -> None:
+        legacy = self._create_import(
+            "writing_theory",
+            "legacy-v1",
+            policy_version="source-import-policy.v1",
+        )
         self.scheduler.run_or_recover(
             operation_id=legacy["operation_id"], project_id=self.project_id
         )
@@ -208,8 +212,21 @@ class SourceContentRoutingPostgresTests(unittest.TestCase):
                 [self.project_id],
             )
             transform_count = int(cursor.fetchone()[0])
+            cursor.execute(
+                """
+                SELECT import_policy_hash
+                FROM authority_source_import_job
+                WHERE project_id=%s AND import_job_id=%s
+                """,
+                [self.project_id, legacy["import_job_id"]],
+            )
+            legacy_policy_hash = str(cursor.fetchone()[0])
 
-        routed = self._create_import("auto", "auto-after-legacy")
+        routed = self._create_import(
+            "auto",
+            "auto-v2-after-legacy",
+            policy_version="source-import-policy.v2",
+        )
         self.scheduler.run_or_recover(
             operation_id=routed["operation_id"], project_id=self.project_id
         )
@@ -226,6 +243,15 @@ class SourceContentRoutingPostgresTests(unittest.TestCase):
                 [self.project_id],
             )
             self.assertEqual(cursor.fetchone()[0], transform_count)
+            cursor.execute(
+                """
+                SELECT import_policy_hash
+                FROM authority_source_import_job
+                WHERE project_id=%s AND import_job_id=%s
+                """,
+                [self.project_id, routed["import_job_id"]],
+            )
+            self.assertNotEqual(str(cursor.fetchone()[0]), legacy_policy_hash)
             cursor.execute(
                 """
                 SELECT COUNT(*)
@@ -249,8 +275,17 @@ class SourceContentRoutingPostgresTests(unittest.TestCase):
             self.assertEqual(cursor.fetchone()[0], transform_count)
             self._assert_profiled_analyzers(cursor)
 
-    def _create_import(self, profile_id: str, suffix: str) -> dict[str, Any]:
-        policy = SourceImportPolicy(analysis_profile=profile_id)
+    def _create_import(
+        self,
+        profile_id: str,
+        suffix: str,
+        *,
+        policy_version: str = "source-import-policy.v2",
+    ) -> dict[str, Any]:
+        policy = SourceImportPolicy(
+            policy_version=policy_version,
+            analysis_profile=profile_id,
+        )
         return self.application.create_import(
             CreateSourceImportCommand(
                 project_id=self.project_id,
@@ -274,20 +309,32 @@ class SourceContentRoutingPostgresTests(unittest.TestCase):
     def _assert_profiled_analyzers(self, cursor: Any) -> None:
         cursor.execute(
             """
-            SELECT observation.analyzer_id
+            SELECT observation.analyzer_id, observation.analyzer_contract_hash,
+                   version.content->'analyzer'->>'skill_version'
             FROM authority_source_deconstruction_observation AS observation
+            JOIN authority_asset_version AS version
+              ON version.asset_version_id=observation.asset_version_id
             WHERE observation.project_id=%s
             ORDER BY observation.analyzer_id
             """,
             [self.project_id],
         )
-        analyzers = {str(row[0]) for row in cursor.fetchall()}
+        rows = cursor.fetchall()
+        analyzers = {str(row[0]) for row in rows}
         self.assertTrue(
             any(value.startswith("novel-forge.classic_literature.") for value in analyzers)
         )
         self.assertTrue(
             any(value.startswith("novel-forge.professional_knowledge.") for value in analyzers)
         )
+        profiled_versions = {
+            str(row[2])
+            for row in rows
+            if str(row[0]).startswith(
+                ("novel-forge.classic_literature.", "novel-forge.professional_knowledge.")
+            )
+        }
+        self.assertEqual(profiled_versions, {"2.0"})
 
     def _run_ready_operations(self) -> None:
         for _ in range(120):
