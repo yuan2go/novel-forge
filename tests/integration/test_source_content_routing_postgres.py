@@ -122,26 +122,7 @@ class SourceContentRoutingPostgresTests(unittest.TestCase):
         self.temporary.cleanup()
 
     def test_auto_routes_mixed_corpus_and_freezes_profile_evidence(self) -> None:
-        policy = SourceImportPolicy(analysis_profile="auto")
-        admitted = self.application.create_import(
-            CreateSourceImportCommand(
-                project_id=self.project_id,
-                workspace_id=self.workspace_id,
-                source_type="github_repository",
-                repository_url=self.repository.as_uri(),
-                requested_ref=self.commit_sha,
-                policy=policy,
-                analysis_profile="auto",
-                mode="IMPORT",
-                rights_authorization="licensed",
-                license_name="fixture-license",
-                copyright_boundary="analysis and abstraction only",
-                actor_id="source-profile-operator",
-                idempotency_key=f"auto:{self.project_id}",
-                trace_id=f"trace:auto:{self.project_id}",
-                correlation_id=f"correlation:{self.project_id}",
-            )
-        )
+        admitted = self._create_import("auto", "auto")
         self.scheduler.run_or_recover(
             operation_id=admitted["operation_id"], project_id=self.project_id
         )
@@ -153,10 +134,10 @@ class SourceContentRoutingPostgresTests(unittest.TestCase):
                 SELECT result->'source_profile'->>'selected_analysis_profile',
                        result->>'source_profile_asset_version_id'
                 FROM authority_source_import_work
-                WHERE project_id=%s AND work_kind='FILE'
+                WHERE project_id=%s AND import_job_id=%s AND work_kind='FILE'
                 ORDER BY source_path
                 """,
-                [self.project_id],
+                [self.project_id, admitted["import_job_id"]],
             )
             file_profiles = cursor.fetchall()
             self.assertEqual(
@@ -202,35 +183,113 @@ class SourceContentRoutingPostgresTests(unittest.TestCase):
             self.assertGreater(routed.get("classic_literature", 0), 0)
             self.assertGreater(routed.get("professional_knowledge", 0), 0)
 
+            self._assert_profiled_analyzers(cursor)
             cursor.execute(
-                """
-                SELECT observation.analyzer_id
-                FROM authority_source_deconstruction_observation AS observation
-                WHERE observation.project_id=%s
-                ORDER BY observation.analyzer_id
-                """,
-                [self.project_id],
-            )
-            analyzers = {str(row[0]) for row in cursor.fetchall()}
-            self.assertTrue(
-                any(value.startswith("novel-forge.classic_literature.") for value in analyzers)
-            )
-            self.assertTrue(
-                any(value.startswith("novel-forge.professional_knowledge.") for value in analyzers)
-            )
-
-            cursor.execute(
-                """
-                SELECT COUNT(*)
-                FROM authority_mkaos_knowledge_candidate
-                WHERE project_id=%s
-                """,
+                "SELECT COUNT(*) FROM authority_mkaos_knowledge_candidate WHERE project_id=%s",
                 [self.project_id],
             )
             self.assertGreater(cursor.fetchone()[0], 0)
 
+    def test_new_auto_policy_reuses_existing_source_and_only_reanalyzes(self) -> None:
+        legacy = self._create_import("writing_theory", "legacy")
+        self.scheduler.run_or_recover(
+            operation_id=legacy["operation_id"], project_id=self.project_id
+        )
+        self._run_ready_operations()
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT COUNT(*) FROM authority_source_document WHERE project_id=%s",
+                [self.project_id],
+            )
+            source_count = int(cursor.fetchone()[0])
+            cursor.execute(
+                "SELECT COUNT(*) FROM authority_source_transform WHERE project_id=%s",
+                [self.project_id],
+            )
+            transform_count = int(cursor.fetchone()[0])
+
+        routed = self._create_import("auto", "auto-after-legacy")
+        self.scheduler.run_or_recover(
+            operation_id=routed["operation_id"], project_id=self.project_id
+        )
+        self._run_ready_operations()
+
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT COUNT(*) FROM authority_source_document WHERE project_id=%s",
+                [self.project_id],
+            )
+            self.assertEqual(cursor.fetchone()[0], source_count)
+            cursor.execute(
+                "SELECT COUNT(*) FROM authority_source_transform WHERE project_id=%s",
+                [self.project_id],
+            )
+            self.assertEqual(cursor.fetchone()[0], transform_count)
+            cursor.execute(
+                """
+                SELECT COUNT(*)
+                FROM authority_source_import_work
+                WHERE project_id=%s AND import_job_id=%s AND work_kind='FILE'
+                  AND result->>'reused_source_transform'='true'
+                  AND COALESCE((result->>'provider_tokens')::int, -1)=0
+                """,
+                [self.project_id, routed["import_job_id"]],
+            )
+            self.assertEqual(cursor.fetchone()[0], transform_count)
+            cursor.execute(
+                """
+                SELECT COUNT(*)
+                FROM authority_source_import_work
+                WHERE project_id=%s AND import_job_id=%s AND work_kind='FILE'
+                  AND result ? 'source_profile_asset_version_id'
+                """,
+                [self.project_id, routed["import_job_id"]],
+            )
+            self.assertEqual(cursor.fetchone()[0], transform_count)
+            self._assert_profiled_analyzers(cursor)
+
+    def _create_import(self, profile_id: str, suffix: str) -> dict[str, object]:
+        policy = SourceImportPolicy(analysis_profile=profile_id)
+        return self.application.create_import(
+            CreateSourceImportCommand(
+                project_id=self.project_id,
+                workspace_id=self.workspace_id,
+                source_type="github_repository",
+                repository_url=self.repository.as_uri(),
+                requested_ref=self.commit_sha,
+                policy=policy,
+                analysis_profile=profile_id,
+                mode="IMPORT",
+                rights_authorization="licensed",
+                license_name="fixture-license",
+                copyright_boundary="analysis and abstraction only",
+                actor_id="source-profile-operator",
+                idempotency_key=f"{suffix}:{self.project_id}",
+                trace_id=f"trace:{suffix}:{self.project_id}",
+                correlation_id=f"correlation:{self.project_id}",
+            )
+        )
+
+    def _assert_profiled_analyzers(self, cursor: object) -> None:
+        cursor.execute(
+            """
+            SELECT observation.analyzer_id
+            FROM authority_source_deconstruction_observation AS observation
+            WHERE observation.project_id=%s
+            ORDER BY observation.analyzer_id
+            """,
+            [self.project_id],
+        )
+        analyzers = {str(row[0]) for row in cursor.fetchall()}
+        self.assertTrue(
+            any(value.startswith("novel-forge.classic_literature.") for value in analyzers)
+        )
+        self.assertTrue(
+            any(value.startswith("novel-forge.professional_knowledge.") for value in analyzers)
+        )
+
     def _run_ready_operations(self) -> None:
-        for _ in range(80):
+        for _ in range(120):
             with transaction() as connection, connection.cursor() as cursor:
                 cursor.execute(
                     """
