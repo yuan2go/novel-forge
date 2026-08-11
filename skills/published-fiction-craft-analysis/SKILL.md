@@ -1,53 +1,54 @@
 ---
 name: published-fiction-craft-analysis
-description: Analyze published fiction references into abstract scene craft, narrative distance, character arc, subtext, and transferable technique reports.
+description: Analyze published fiction references into abstract scene craft, narrative distance, character arc, subtext, and transferable technique without copying protected expression.
 ---
+
+# Published Fiction Craft Analysis
 
 ## Novel OS Runtime Contract
 
-- 需要进入生产链路的输出必须落到 schema-backed asset，而不是只停留在对话文本。
-- 产物必须保留 `project_id`、输入引用、来源边界、质量状态；涉及 Agent/Workflow 时必须保留 `trace_id` 或 handoff 依据。
-- 生成、审稿、修订、发布、复盘相关上下文必须通过 Context Builder / Knowledge Pack / ReviewIssue / GateResult 的现有边界。
-- 禁止 raw source text、参考作品表达、`source_chunk.raw_text` 或未抽象材料进入 prose、publish、recap 和 feedback backflow。
-- Markdown 输出格式只作为 operator handoff；写入工程时必须映射到对应资产 schema、测试或报告路径。
+- 生产链输出必须进入 schema-backed Authority asset，不得只停留在 Markdown 或对话文本。
+- 禁止 raw source text、参考作品表达、可识别场景顺序或作者风格模仿进入 prose、publish、recap 和 feedback backflow。
+- Source Authority / EvidenceSpan / Observation / MKAOS / KnowledgePack 是正式生产边界；文件路径和 Markdown 报告仅用于非生产 operator handoff。
 
-## 适用场景
+## Source Intelligence Observation Contract
 
-用于拆解出版小说的技法层：场景经营、叙事距离、角色弧光、转场、潜台词和语言纹理。只保留技法参数，不模仿具体作者。
+当冻结 stage 为 `source.deconstruction.observe`，或输入包含 `AnalyzerContract` / `EvidenceSpan` 时，本节优先于任何 standalone 输出说明：
 
-## 输入要求
+1. 只分析本次 AnalyzerContract 指定的 `dimension`、`scope` 和已冻结输入；不得自行扩大到整本作品。
+2. Source bytes 只作为本次 Provider 内存中的瞬时证据使用；不得请求文件系统、Web、MCP 或额外来源。
+3. 每条 finding 必须只描述抽象技法或叙事功能，并引用 supplied `evidence_span_ids`；聚合执行时改为引用 supplied lower Observation AssetVersion。
+4. 输出必须严格匹配 Source Authority 的 Observation schema：`findings`、`confidence`、`knowledge_status=NOT_ABSTRACTED`。不得输出 `published_fiction_analysis_report`、KnowledgeCard、正文、文件写入指令或 Markdown 包装。
+5. 不保留人物名、地点、独特事件序列、标志性场景、原句、语言纹理或可重建作品的组合。
+6. `originality_copyright_risk` 维度只判断可迁移机制与受保护表达/独特组合之间的边界，不执行 Knowledge 抽象；Knowledge 抽象由后续 MKAOS 完成。
 
-- schema-backed source asset path.
-- project workspace path when available.
-- source rights and copyright boundary.
-- desired craft focus if available.
+## 分析重点
 
-## 操作流程
+根据 dimension 只选择相关观察：
 
-1. Read the referenced source asset by path.
-2. Separate scene objective, obstacle, turn, after-effect, character belief pressure, and narrative distance.
-3. Remove source-specific characters, scenes, prose texture, and sequence.
-4. Produce `published_fiction_analysis_report`.
-5. Record validation status and copyright boundary.
+- `structure`: 场景目标、阻碍、转折、后效应、段落/章节功能。
+- `conflict`: 目标冲突、价值压力、选择成本和升级机制。
+- `character_mechanism`: 欲望、信念压力、决策变化和角色弧驱动力。
+- `relationship_mechanism`: 权力、信任、依赖、距离和关系状态变化。
+- `emotion_curve`: 压力、缓释、反转、余韵与情绪节奏。
+- `information_progression`: POV、叙事距离、信息遮蔽、揭示和潜台词。
+- `foreshadowing`: 建立、强化、延迟、兑现或转义的功能关系。
+- `originality_copyright_risk`: 不可迁移的表达、独特场景组合和作者识别性风险。
 
-## 输出格式
+## Standalone / Operator Handoff
 
-Write one JSON asset with type `published_fiction_analysis_report` under `data/analysis`.
+不在 Canonical Source Import Runtime 中运行时，可以生成 `published_fiction_analysis_report` 供人工阅读，但它不是生产 Authority，也不得直接进入生成 RAG。正式使用前必须转成 Observation，再经过 MKAOS 治理。
 
 ## 质量标准
 
-- Report passes schema validation.
-- Output stays at craft-parameter level.
-- `metadata.use_in_generation_rag` is `false`.
-- No specific author imitation request appears.
+- 结论停留在 craft/function 层，不模仿具体作者。
+- Observation lineage 完整，confidence 与证据相符。
+- 单个 finding 离开原作品语境仍能被理解，但不能据此复原原作品。
+- Source-specific scene order、表达和专有组合不得进入可复用知识。
 
 ## 禁止事项
 
-- Do not copy protected text.
-- Do not imitate a specific author.
-- Do not write draft prose.
-- Do not preserve source-specific scene order.
-
-## 与其他模块的关系
-
-Output can be converted into `craft_template`, `writing_template`, or `review_rule_pack` before use in production.
+- Do not copy protected text or imitate a living or deceased author's distinctive style.
+- Do not write draft prose from the reference.
+- Do not preserve recognizable set pieces or source-specific scene sequence.
+- Do not bypass Observation → MKAOS → Approval boundaries.
