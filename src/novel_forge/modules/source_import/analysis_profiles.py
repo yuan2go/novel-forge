@@ -85,7 +85,7 @@ _PROFILES = {
         window_chunks=4,
         max_analyzer_calls=2_000,
         mkaos_capability="mkaos.knowledge.extract",
-        abstraction_policy_version="anti-copy-abstraction.1.0",
+        abstraction_policy_version="anti-copy-abstraction.2.0",
         analysis_skill_id="hot-novel-deconstruction",
     ),
     "published_fiction": SourceAnalysisProfile(
@@ -104,7 +104,7 @@ _PROFILES = {
         window_chunks=6,
         max_analyzer_calls=1_200,
         mkaos_capability="mkaos.knowledge.extract",
-        abstraction_policy_version="published-fiction-abstraction.1.0",
+        abstraction_policy_version="published-fiction-abstraction.2.0",
         analysis_skill_id="published-fiction-craft-analysis",
     ),
     "classic_literature": SourceAnalysisProfile(
@@ -123,7 +123,7 @@ _PROFILES = {
         window_chunks=8,
         max_analyzer_calls=1_000,
         mkaos_capability="mkaos.knowledge.extract",
-        abstraction_policy_version="classic-literature-abstraction.1.0",
+        abstraction_policy_version="classic-literature-abstraction.2.0",
         analysis_skill_id="classic-literary-depth-analysis",
     ),
     "writing_theory": SourceAnalysisProfile(
@@ -140,7 +140,7 @@ _PROFILES = {
         window_chunks=6,
         max_analyzer_calls=800,
         mkaos_capability="mkaos.rule.extract",
-        abstraction_policy_version="writing-theory-abstraction.1.0",
+        abstraction_policy_version="writing-theory-abstraction.2.0",
         analysis_skill_id="multidisciplinary-knowledge",
     ),
     "platform_rules": SourceAnalysisProfile(
@@ -155,7 +155,7 @@ _PROFILES = {
         window_chunks=8,
         max_analyzer_calls=400,
         mkaos_capability="mkaos.rule.extract",
-        abstraction_policy_version="platform-rule-abstraction.1.0",
+        abstraction_policy_version="platform-rule-abstraction.2.0",
         analysis_skill_id="platform-strategy-os",
     ),
     "professional_knowledge": SourceAnalysisProfile(
@@ -170,7 +170,7 @@ _PROFILES = {
         window_chunks=8,
         max_analyzer_calls=600,
         mkaos_capability="mkaos.knowledge.extract",
-        abstraction_policy_version="multidisciplinary-abstraction.1.0",
+        abstraction_policy_version="multidisciplinary-abstraction.2.0",
         analysis_skill_id="multidisciplinary-knowledge",
     ),
 }
