@@ -20,12 +20,17 @@ from .analysis_profiles import (
     analysis_profile,
     plan_analysis_tasks,
 )
+from .content_profile import (
+    CLASSIFIER_VERSION,
+    SourceContentProfile,
+    classify_source_content,
+)
 from .application import (
     ApplyReprocessingPlanCommand,
     ContentIntelligenceExecutionPort,
     CreateSourceImportCommand,
-    SourceImportApplication,
 )
+from .routed_application import SourceImportApplication
 from .scheduler import SourceImportScheduler
 from .query import SourceImportQuery
 from .execution import PostgresContentIntelligenceExecutionPort
@@ -33,6 +38,7 @@ from .execution import PostgresContentIntelligenceExecutionPort
 __all__ = [
     "AnalysisTask",
     "ApplyReprocessingPlanCommand",
+    "CLASSIFIER_VERSION",
     "ContentIntelligenceExecutionPort",
     "CreateSourceImportCommand",
     "GitRepositoryExternalEffectAdapter",
@@ -44,12 +50,14 @@ __all__ = [
     "PostgresContentIntelligenceExecutionPort",
     "RepositoryFile",
     "SourceAnalysisProfile",
+    "SourceContentProfile",
     "SourceImportApplication",
     "SourceImportScheduler",
     "SourceImportQuery",
     "SourceImportPolicy",
     "analysis_profile",
     "chunk_normalized_text",
+    "classify_source_content",
     "diff_repository_manifests",
     "manifest_hash",
     "normalize_repository_url",
