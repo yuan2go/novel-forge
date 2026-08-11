@@ -1,4 +1,5 @@
 """Bounded PostgreSQL Book Authority coordinator worker."""
+
 from __future__ import annotations
 
 import os
@@ -17,6 +18,7 @@ from novel_forge.modules.book_authority import (
     BookProductionComposition,
     PostgresBookAuthorityScheduler,
 )
+from novel_forge.modules.book_authority.queries import PostgresBookProductionQuery
 from novel_forge.modules.command_kernel.worker_execution import (
     AuthorityWorkerExecutionBoundary,
     WorkerProgrammingError,
@@ -28,7 +30,6 @@ from novel_forge.modules.runtime_job import (
     RuntimeJobClaim,
     RuntimeJobSpec,
 )
-from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from novel_forge.storage.database_runtime import close_all_database_runtimes
 from novel_forge.storage.worker_health import PostgresWorkerHealthObserver
 
@@ -48,113 +49,37 @@ ACTIVE_STATES = (
 
 
 def schedule_book_coordination_jobs(
-    database_url: str,
+    query: PostgresBookProductionQuery,
     runtime_jobs: RuntimeJobAuthority,
     *,
     limit: int,
     book_run_id: str = "",
 ) -> tuple[dict[str, object], ...]:
-    with AuthorityUnitOfWork(database_url) as uow:
-        uow.cursor.execute(
-            """
-            SELECT book.book_run_id, book.project_id, book.state, book.version,
-                   book.updated_at,
-                   COALESCE((
-                       SELECT COUNT(*)
-                       FROM authority_runtime_job AS job
-                       WHERE job.runtime_group='book'
-                         AND job.job_kind='BOOK_COORDINATION_TICK'
-                         AND job.subject_kind='BOOK_RUN'
-                         AND job.subject_id=book.book_run_id
-                   ), 0) AS previous_tick_count
-            FROM authority_book_production AS book
-            WHERE book.state = ANY(%s)
-              AND (%s='' OR book.book_run_id=%s)
-              AND (
-                  book.state NOT IN ('READY','COMPLETED')
-                  OR (
-                      book.state='READY'
-                      AND book.input_mode='RESOLVED_AUTHORITY_INPUT'
-                  )
-                  OR EXISTS (
-                      SELECT 1
-                      FROM authority_book_chapter_acceptance AS acceptance
-                      JOIN authority_book_chapter_request AS request
-                        ON request.chapter_request_id=acceptance.chapter_request_id
-                      WHERE acceptance.book_run_id=book.book_run_id
-                        AND acceptance.chapter_number=(
-                            SELECT MAX(latest.chapter_number)
-                            FROM authority_book_chapter_acceptance AS latest
-                            WHERE latest.book_run_id=book.book_run_id
-                        )
-                        AND (
-                            NOT EXISTS (
-                                SELECT 1
-                                FROM authority_book_followup_operation AS followup
-                                JOIN authority_operation AS operation
-                                  ON operation.operation_id=followup.operation_id
-                                WHERE followup.chapter_request_id=request.chapter_request_id
-                                  AND followup.followup_type='READER_OUTCOME'
-                                  AND operation.status='SUCCEEDED'
-                            )
-                            OR (
-                                (
-                                    MOD(request.chapter_number, book.light_recap_cadence)=0
-                                    OR MOD(request.chapter_number, book.formal_recap_cadence)=0
-                                )
-                                AND EXISTS (
-                                    SELECT 1
-                                    FROM authority_book_followup_operation AS reader_followup
-                                    JOIN authority_operation AS reader_operation
-                                      ON reader_operation.operation_id=reader_followup.operation_id
-                                    WHERE reader_followup.chapter_request_id=request.chapter_request_id
-                                      AND reader_followup.followup_type='READER_OUTCOME'
-                                      AND reader_operation.status='SUCCEEDED'
-                                )
-                                AND NOT EXISTS (
-                                    SELECT 1
-                                    FROM authority_book_followup_operation AS recap_followup
-                                    JOIN authority_operation AS recap_operation
-                                      ON recap_operation.operation_id=recap_followup.operation_id
-                                    WHERE recap_followup.chapter_request_id=request.chapter_request_id
-                                      AND recap_followup.followup_type='LONGFORM_RECAP'
-                                      AND recap_operation.status='SUCCEEDED'
-                                )
-                            )
-                        )
-                  )
-              )
-            ORDER BY book.updated_at, book.book_run_id
-            LIMIT %s
-            """,
-            [list(ACTIVE_STATES), book_run_id, book_run_id, limit],
-        )
-        pending = tuple(uow.cursor.fetchall())
+    pending = query.coordination_candidates(
+        active_states=ACTIVE_STATES,
+        book_run_id=book_run_id,
+        limit=limit,
+    )
     scheduled: list[dict[str, object]] = []
-    for (
-        book_run_id,
-        project_id,
-        state,
-        version,
-        updated_at,
-        previous_tick_count,
-    ) in pending:
+    for candidate in pending:
         scheduled.append(
             runtime_jobs.schedule(
                 RuntimeJobSpec(
                     job_kind="BOOK_COORDINATION_TICK",
                     runtime_group="book",
                     subject_kind="BOOK_RUN",
-                    subject_id=str(book_run_id),
-                    project_id=str(project_id),
-                    dedupe_key=f"{book_run_id}:tick:{int(previous_tick_count) + 1}",
+                    subject_id=candidate.book_run_id,
+                    project_id=candidate.project_id,
+                    dedupe_key=(
+                        f"{candidate.book_run_id}:tick:{candidate.next_tick_sequence}"
+                    ),
                     input_snapshot={
-                        "book_run_id": str(book_run_id),
-                        "project_id": str(project_id),
-                        "observed_state": str(state),
-                        "observed_version": int(version),
-                        "observed_updated_at": updated_at.isoformat(),
-                        "tick_sequence": int(previous_tick_count) + 1,
+                        "book_run_id": candidate.book_run_id,
+                        "project_id": candidate.project_id,
+                        "observed_state": candidate.state,
+                        "observed_version": candidate.version,
+                        "observed_updated_at": candidate.updated_at.isoformat(),
+                        "tick_sequence": candidate.next_tick_sequence,
                     },
                     max_attempts=5,
                 )
@@ -240,9 +165,7 @@ def main() -> int:
     poll_seconds = max(
         0.05, float(os.environ.get("NOVEL_FORGE_AUTHORITY_POLL_SECONDS") or "1")
     )
-    batch_size = max(
-        1, int(os.environ.get("NOVEL_FORGE_AUTHORITY_BATCH_SIZE") or "10")
-    )
+    batch_size = max(1, int(os.environ.get("NOVEL_FORGE_AUTHORITY_BATCH_SIZE") or "10"))
     lease_seconds = max(
         5, int(os.environ.get("NOVEL_FORGE_AUTHORITY_LEASE_SECONDS") or "30")
     )
@@ -263,7 +186,7 @@ def main() -> int:
     try:
         while not stopping:
             schedule_book_coordination_jobs(
-                settings.database_url,
+                composition.query,
                 runtime_jobs,
                 limit=batch_size,
             )
@@ -292,8 +215,8 @@ def main() -> int:
                         lease_seconds=lease_seconds,
                     ),
                     on_task_start=supervisor.operation_started,
-                    on_task_finish=lambda operation_id, succeeded: supervisor.operation_finished(
-                        operation_id, succeeded=succeeded
+                    on_task_finish=lambda operation_id, succeeded: (
+                        supervisor.operation_finished(operation_id, succeeded=succeeded)
                     ),
                 )
                 supervisor.batch_completed(failures)

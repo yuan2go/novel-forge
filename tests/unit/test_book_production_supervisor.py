@@ -26,16 +26,23 @@ def test_supervisor_reports_planning_generation_operation_identity(
 ) -> None:
     book = {
         "book_run_id": "book-run:1",
+        "version": 7,
         "state": BookProductionState.READY.value,
         "input_mode": "RESOLVED_AUTHORITY_INPUT",
         "accepted_through_chapter": 0,
         "target_chapter_count": 3,
     }
     supervisor = object.__new__(PostgresBookProductionSupervisor)
-    supervisor.authority = SimpleNamespace(require=lambda _book_run_id: dict(book))
+    transitions: list[BookProductionState] = []
+    supervisor.authority = SimpleNamespace(
+        require=lambda _book_run_id: dict(book),
+        advance_supervisor_checkpoint=lambda _book_run_id, **values: (
+            transitions.append(values["target_state"]) or "checkpoint-operation"
+        ),
+    )
+    supervisor.principal = SimpleNamespace()
     supervisor.replan = SimpleNamespace(latest_for_book=lambda _book_run_id: None)
     supervisor._checkpoint_if_needed = lambda _book: None
-    supervisor._set_state = lambda _book, _state: "checkpoint-operation"
     supervisor._active_group_run = lambda _book, *_args: (
         {"group_run_id": "group-run:1", "state": "RUNNING"}
         if generated_contract == "CHAPTER"
@@ -63,6 +70,13 @@ def test_supervisor_reports_planning_generation_operation_identity(
     assert tick.action is expected_action
     assert tick.operation_id == "planning-operation:1"
     assert tick.evidence_ref == "planning-candidate:1"
+    assert transitions == [
+        (
+            BookProductionState.CHAPTER_PLAN_REQUIRED
+            if generated_contract == "CHAPTER_GROUP"
+            else BookProductionState.READY
+        )
+    ]
 
 
 def test_supervisor_keeps_draft_budget_separate_from_quality_evidence_budget() -> None:
@@ -141,12 +155,14 @@ def test_supervisor_starts_replan_once_and_waits_for_authority_approval() -> Non
         },
     )
     supervisor._checkpoint_if_needed = lambda _book: None
-    supervisor._replan_source = lambda _book: {
-        "recap_asset_version_id": "recap:v1",
-        "replan_request_asset_version_id": "request:v1",
-        "recap_operation_id": "recap-operation:1",
-        "affected_scope": "CHAPTER_GROUP",
-    }
+    supervisor.query = SimpleNamespace(
+        require_replan_source=lambda **_values: {
+            "recap_asset_version_id": "recap:v1",
+            "replan_request_asset_version_id": "request:v1",
+            "recap_operation_id": "recap-operation:1",
+            "affected_scope": "CHAPTER_GROUP",
+        }
+    )
 
     started = supervisor.tick("book-run:1")
     waiting = supervisor.tick("book-run:1")
@@ -156,9 +172,7 @@ def test_supervisor_starts_replan_once_and_waits_for_authority_approval() -> Non
     assert started.evidence_ref == "replan:1"
     assert waiting.action is SupervisorAction.WAIT_REPLAN_APPROVAL
     assert len(commands) == 1
-    assert commands[0].idempotency_key == (
-        "book-key:1:replan:1:recap-operation:1"
-    )
+    assert commands[0].idempotency_key == ("book-key:1:replan:1:recap-operation:1")
 
 
 def test_supervisor_activates_formally_approved_replan_and_resumes() -> None:
@@ -226,14 +240,11 @@ def test_supervisor_finishes_replan_resume_after_snapshot_binding_restart() -> N
             "status": "REGENERATING",
         },
         activate=lambda replan_id: (
-            activated.append(replan_id)
-            or {"replan_id": replan_id, "status": "RESUMED"}
+            activated.append(replan_id) or {"replan_id": replan_id, "status": "RESUMED"}
         ),
     )
     supervisor = object.__new__(PostgresBookProductionSupervisor)
-    supervisor.authority = SimpleNamespace(
-        require=lambda _book_run_id: dict(book)
-    )
+    supervisor.authority = SimpleNamespace(require=lambda _book_run_id: dict(book))
     supervisor.replan = replan
 
     tick = supervisor.tick("book-run:1")

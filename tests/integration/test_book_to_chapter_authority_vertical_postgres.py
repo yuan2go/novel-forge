@@ -21,6 +21,7 @@ from novel_forge.modules.book_authority.production import (
     SubmitBookChapterCommand,
     _validate_chapter_acceptance_evidence,
 )
+from novel_forge.modules.book_authority.queries import PostgresBookProductionQuery
 from novel_forge.modules.book_authority.governed_scheduler import (
     PostgresBookAuthorityScheduler,
 )
@@ -78,9 +79,7 @@ class _SynchronousCommandPort:
             project_id=project_id, root_operation_id=root_operation_id
         )
 
-    def require_acceptance_evidence(
-        self, *, project_id: str, root_operation_id: str
-    ):
+    def require_acceptance_evidence(self, *, project_id: str, root_operation_id: str):
         return self.application.query.require_acceptance_evidence(
             project_id=project_id, root_operation_id=root_operation_id
         )
@@ -106,9 +105,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
             "canon_patch": {"gate": "PASSED", "conflicts": []},
             "canon_snapshot": {},
             "quality_score_report": {"gate": "PASSED_WITH_UNCALIBRATED"},
-            "release_package": {
-                "release_status": "READY_FOR_BLOB_VERIFICATION"
-            },
+            "release_package": {"release_status": "READY_FOR_BLOB_VERIFICATION"},
             "final_release_gate_report": {
                 "gate": "PASSED",
                 "release_status": "INTERNAL_RELEASE_FINALIZED",
@@ -119,10 +116,14 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
             {
                 "asset_type": asset_type,
                 "asset_version_id": (
-                    execution_plan if asset_type == "chapter_plan" else f"{asset_type}:v1"
+                    execution_plan
+                    if asset_type == "chapter_plan"
+                    else f"{asset_type}:v1"
                 ),
                 "content_hash": (
-                    execution_hash if asset_type == "chapter_plan" else f"sha256:{asset_type}"
+                    execution_hash
+                    if asset_type == "chapter_plan"
+                    else f"sha256:{asset_type}"
                 ),
                 "content": content,
                 "lifecycle": "ACTIVE",
@@ -279,8 +280,10 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                 project_scope=frozenset({project_id}),
                 authentication_source="integration-test",
             )
-            candidates = chapter_fixture.PostgreSQLOnlyChapterSliceTests.release_evidence(
-                project_id
+            candidates = (
+                chapter_fixture.PostgreSQLOnlyChapterSliceTests.release_evidence(
+                    project_id
+                )
             )
             longform_versions = self._seed_book_inputs(project_id)
             book = authority.start(
@@ -292,9 +295,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                     trace_id=identifier("trace"),
                     correlation_id=identifier("correlation"),
                     stable_idempotency_key=f"{project_id}:book:v1",
-                    book_design_version=longform_versions.pop(
-                        "book_design_version"
-                    ),
+                    book_design_version=longform_versions.pop("book_design_version"),
                     book_plan_version=longform_versions.pop("book_plan_version"),
                     production_profile_version="production-profile:v1",
                     longform_context_versions=longform_versions,
@@ -337,13 +338,15 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
             self.assertEqual(reconciled["status_reference"], "SUCCEEDED")
 
             scheduler = PostgresBookAuthorityScheduler(
-                authority, principal=principal
+                authority,
+                query=PostgresBookProductionQuery(DATABASE_URL),
+                principal=principal,
             )
             runtime_jobs = RuntimeJobAuthority(DATABASE_URL)
 
             def runtime_tick() -> dict[str, object]:
                 schedule_book_coordination_jobs(
-                    DATABASE_URL,
+                    PostgresBookProductionQuery(DATABASE_URL),
                     runtime_jobs,
                     limit=10,
                     book_run_id=book.book_run_id,
@@ -380,12 +383,8 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                 reader_tick["action"],
                 "ACCEPT_CHAPTER_AND_SUBMIT_READER_SHADOW",
             )
-            self.assertEqual(
-                reader_complete_tick["action"], "COMPLETE_READER_SHADOW"
-            )
-            self.assertEqual(
-                recap_tick["action"], "SUBMIT_LONGFORM_RECAP_SIDECAR"
-            )
+            self.assertEqual(reader_complete_tick["action"], "COMPLETE_READER_SHADOW")
+            self.assertEqual(recap_tick["action"], "SUBMIT_LONGFORM_RECAP_SIDECAR")
             self.assertEqual(
                 recap_complete_tick["action"],
                 "COMPLETE_LONGFORM_RECAP_SIDECAR",
@@ -409,9 +408,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                 reader_projection["content"]["score_semantics"], "RAW_SCORE"
             )
             self.assertFalse(reader_projection["content"]["publish_blocking"])
-            self.assertNotIn(
-                "completion_probability", reader_projection["content"]
-            )
+            self.assertNotIn("completion_probability", reader_projection["content"])
             self.assertFalse(recap_projection["content"]["plan_mutation_allowed"])
             with AuthorityUnitOfWork(DATABASE_URL) as uow:
                 uow.cursor.execute(
@@ -521,9 +518,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                     book_design_version=final["book_design_version"],
                     book_plan_version=final["book_plan_version"],
                     production_profile_version="production-profile:v1",
-                    longform_context_versions=dict(
-                        final["longform_context_versions"]
-                    ),
+                    longform_context_versions=dict(final["longform_context_versions"]),
                     target_chapter_count=2,
                 ),
                 principal=principal,
@@ -537,9 +532,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                         chapter_number=2,
                         title="Out of order",
                         premise="This must never reach Chapter Authority.",
-                        chapter_plan_asset_version_id=str(
-                            plan["asset_version_id"]
-                        ),
+                        chapter_plan_asset_version_id=str(plan["asset_version_id"]),
                         chapter_plan_content_hash=str(plan["content_hash"]),
                         context_candidates=tuple(candidates),
                     ),
@@ -672,9 +665,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                 replayed_acceptance = authority.accept_chapter(
                     delegated["chapter_request_id"], principal=principal
                 )
-                self.assertEqual(
-                    accepted["accepted_through_chapter"], chapter_number
-                )
+                self.assertEqual(accepted["accepted_through_chapter"], chapter_number)
                 self.assertEqual(
                     replayed_acceptance["accepted_through_chapter"],
                     chapter_number,
@@ -728,9 +719,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
             self.assertTrue(
                 all(item["accepted_chapter"] == 1 for item in chapter_one["changes"])
             )
-            self.assertGreater(
-                len(chapter_two["changes"]), len(chapter_one["changes"])
-            )
+            self.assertGreater(len(chapter_two["changes"]), len(chapter_one["changes"]))
             self.assertEqual(
                 temporal.changes_between(identifier("unrelated-project"), 0, 2)[
                     "changes"
@@ -773,10 +762,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                 chapter=2,
             )
             self.assertTrue(
-                all(
-                    item["chapters"] == []
-                    for item in unrelated_pacing["aggregates"]
-                )
+                all(item["chapters"] == [] for item in unrelated_pacing["aggregates"])
             )
 
     def test_book_chapter_dispatch_idempotency(self) -> None:
@@ -810,9 +796,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
             reason="operator gate",
             principal=fixture["principal"],
         )
-        with self.assertRaisesRegex(
-            KernelError, "BOOK_CHAPTER_SUBMISSION_NOT_READY"
-        ):
+        with self.assertRaisesRegex(KernelError, "BOOK_CHAPTER_SUBMISSION_NOT_READY"):
             fixture["authority"].submit_chapter(
                 self._chapter_command(fixture, chapter_number=1),
                 principal=fixture["principal"],
@@ -873,9 +857,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
             self._chapter_command(fixture, chapter_number=1),
             principal=fixture["principal"],
         )
-        with self.assertRaisesRegex(
-            KernelError, "BOOK_CHAPTER_ACCEPTANCE_NOT_READY"
-        ):
+        with self.assertRaisesRegex(KernelError, "BOOK_CHAPTER_ACCEPTANCE_NOT_READY"):
             fixture["authority"].accept_chapter(
                 delegated["chapter_request_id"],
                 principal=fixture["principal"],
@@ -922,9 +904,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
             root_operation_id=delegated["chapter_root_operation_id"],
         )
         self.assertEqual(cancelled["state"], "ABORTED")
-        self.assertIn(
-            child["status"], {"CANCELLATION_REQUESTED", "CANCELLED"}
-        )
+        self.assertIn(child["status"], {"CANCELLATION_REQUESTED", "CANCELLED"})
 
     def test_book_reconcile_after_worker_restart(self) -> None:
         failure = {"enabled": True}
@@ -1030,9 +1010,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
             "NOVEL_FORGE_ENVIRONMENT": "test",
             "NOVEL_FORGE_COMMIT_SHA": "e" * 40,
             "NOVEL_FORGE_MODEL_PROVIDER": "scripted_provider_v2",
-            "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": str(
-                Path(root.name) / "objects"
-            ),
+            "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": str(Path(root.name) / "objects"),
             "NOVEL_FORGE_AUTHORITY_WORKER_ID": "book-control-pep-worker",
         }
         execution = build_production_execution_composition(settings, env=env)
@@ -1070,9 +1048,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
             authentication_source="integration-test",
         )
         candidates = list(
-            chapter_fixture.PostgreSQLOnlyChapterSliceTests.release_evidence(
-                project_id
-            )
+            chapter_fixture.PostgreSQLOnlyChapterSliceTests.release_evidence(project_id)
         )
         self._seed_two_chapter_plans(project_id, candidates)
         versions = self._seed_book_inputs(project_id)
@@ -1107,9 +1083,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
         self, fixture: dict[str, object], *, chapter_number: int
     ) -> SubmitBookChapterCommand:
         candidates = fixture["candidates"]
-        plan = next(
-            item for item in candidates if item["asset_type"] == "chapter_plan"
-        )
+        plan = next(item for item in candidates if item["asset_type"] == "chapter_plan")
         return SubmitBookChapterCommand(
             book_run_id=fixture["book"].book_run_id,
             chapter_number=chapter_number,
@@ -1123,11 +1097,13 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
     @staticmethod
     def _run_child(fixture: dict[str, object], root_operation_id: str) -> None:
         for _ in range(len(ChapterNode) + 2):
-            tick = fixture["chapter"].scheduler(
-                principal=fixture["worker"]
-            ).tick(
-                project_id=fixture["project_id"],
-                root_operation_id=root_operation_id,
+            tick = (
+                fixture["chapter"]
+                .scheduler(principal=fixture["worker"])
+                .tick(
+                    project_id=fixture["project_id"],
+                    root_operation_id=root_operation_id,
+                )
             )
             if tick.saga_status == "SUCCEEDED":
                 return
@@ -1145,8 +1121,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                 [project_id],
             )
             return [
-                {"chapter_request_id": str(row[0])}
-                for row in uow.cursor.fetchall()
+                {"chapter_request_id": str(row[0])} for row in uow.cursor.fetchall()
             ]
 
     @staticmethod
@@ -1178,11 +1153,14 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
             "title": "The Debt Compounds",
             "chapter_objective": "Escalate the cost created by chapter one.",
         }
-        second_hash = "sha256:" + hashlib.sha256(
-            json.dumps(
-                second_content, sort_keys=True, separators=(",", ":")
-            ).encode()
-        ).hexdigest()
+        second_hash = (
+            "sha256:"
+            + hashlib.sha256(
+                json.dumps(
+                    second_content, sort_keys=True, separators=(",", ":")
+                ).encode()
+            ).hexdigest()
+        )
         second = {
             **first,
             "asset_version_id": f"{project_id}:chapter-plan-v2",
@@ -1239,11 +1217,14 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                     "contract_version": f"{asset_type}-fixture-v1",
                     "safe_summary": f"Frozen {asset_type} fixture.",
                 }
-                content_hash = "sha256:" + hashlib.sha256(
-                    json.dumps(
-                        content, sort_keys=True, separators=(",", ":")
-                    ).encode()
-                ).hexdigest()
+                content_hash = (
+                    "sha256:"
+                    + hashlib.sha256(
+                        json.dumps(
+                            content, sort_keys=True, separators=(",", ":")
+                        ).encode()
+                    ).hexdigest()
+                )
                 uow.cursor.execute(
                     """
                     INSERT INTO authority_asset(asset_id, project_id, asset_type)

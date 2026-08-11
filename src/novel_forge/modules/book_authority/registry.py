@@ -8,4 +8,3 @@ from .codecs import BOOK_CODECS
 class BookHandlerRegistry(ContentHandlerRegistry):
     def __init__(self) -> None:
         self._codecs = dict(BOOK_CODECS)
-

@@ -60,6 +60,7 @@ from novel_forge.modules.book_authority.input_resolver import (
 from novel_forge.modules.book_authority.supervisor import (
     PostgresBookProductionSupervisor,
 )
+from novel_forge.modules.book_authority.queries import PostgresBookProductionQuery
 from novel_forge.modules.book_replan import BookReplanCoordinator
 from novel_forge.modules.chapter_group_authority import PostgresChapterGroupAuthority
 from novel_forge.modules.plan_change_authority import PostgresPlanChangeAuthority
@@ -1274,6 +1275,7 @@ def build_book_production_composition(
         application_build_id=authority.application_build_id,
         commit_sha=authority.commit_sha,
     )
+    query = PostgresBookProductionQuery(settings.database_url)
     replan = BookReplanCoordinator(
         settings.database_url,
         book_authority=authority,
@@ -1286,6 +1288,7 @@ def build_book_production_composition(
         authority,
         planning=planning,
         chapter_groups=chapter_groups,
+        query=query,
         principal=principal,
         replan=replan,
         production_preparation=preparation,
@@ -1300,6 +1303,7 @@ def build_book_production_composition(
     )
     return BookProductionComposition(
         authority=authority,
+        query=query,
         planning=planning,
         chapter_groups=chapter_groups,
         production_preparation=preparation,

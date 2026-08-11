@@ -13,9 +13,9 @@ from novel_forge.modules.book_followup_authority.domain import (
     should_trigger_longform_recap,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
-from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 from .production import BookProductionState, PostgresBookAuthority
+from .queries import PostgresBookProductionQuery
 
 
 @dataclass(frozen=True, slots=True)
@@ -31,9 +31,14 @@ class PostgresBookAuthorityScheduler:
     """Advance one durable checkpoint; no Chapter execution state is copied."""
 
     def __init__(
-        self, authority: PostgresBookAuthority, *, principal: Principal
+        self,
+        authority: PostgresBookAuthority,
+        *,
+        query: PostgresBookProductionQuery,
+        principal: Principal,
     ) -> None:
         self.authority = authority
+        self.query = query
         self.principal = principal
 
     def tick(self, book_run_id: str) -> BookAuthorityTick:
@@ -142,91 +147,36 @@ class PostgresBookAuthorityScheduler:
         group_version = str(request.get("parent_group_version_id") or "")
         if not group_version:
             return False
-        with AuthorityUnitOfWork(self.authority.database_url) as uow:
-            uow.cursor.execute(
-                """
-                SELECT content->'chapter_range'
-                FROM authority_asset_version
-                WHERE asset_version_id=%s
-                """,
-                [group_version],
-            )
-            row = uow.cursor.fetchone()
-        if row is None or not isinstance(row[0], list) or len(row[0]) != 2:
-            raise KernelError(
-                "BOOK_CHAPTER_GROUP_PLAN_INVALID",
-                "Chapter request references an invalid ChapterGroup Plan",
-            )
-        return int(request["chapter_number"]) == int(row[0][1])
+        _start, end = self.query.require_chapter_group_range(group_version)
+        return int(request["chapter_number"]) == end
 
     def _ending_reachability(
         self, book: dict[str, Any], chapter_number: int
     ) -> dict[str, Any]:
-        with AuthorityUnitOfWork(self.authority.database_url) as uow:
-            uow.cursor.execute(
-                """
-                SELECT report_id, replan_required, ending_contract_reachable,
-                       remaining_chapter_budget, reasons, report_hash
-                FROM authority_ending_reachability_report
-                WHERE book_run_id=%s AND evaluated_through_chapter=%s
-                ORDER BY created_at DESC
-                LIMIT 1
-                """,
-                [book["book_run_id"], chapter_number],
-            )
-            row = uow.cursor.fetchone()
-        if row is None:
-            return {}
-        return {
-            "report_id": str(row[0]),
-            "replan_required": bool(row[1]),
-            "ending_contract_reachable": bool(row[2]),
-            "remaining_chapter_budget": int(row[3]),
-            "reasons": list(row[4]),
-            "report_hash": str(row[5]),
-        }
+        return self.query.ending_reachability(
+            book_run_id=str(book["book_run_id"]),
+            chapter_number=chapter_number,
+        )
 
     def _latest_accepted_request(self, book: dict[str, Any]) -> dict[str, Any] | None:
-        with AuthorityUnitOfWork(self.authority.database_url) as uow:
-            uow.cursor.execute(
-                """
-                SELECT request.chapter_request_id
-                FROM authority_book_chapter_acceptance AS acceptance
-                JOIN authority_book_chapter_request AS request
-                  ON request.chapter_request_id=acceptance.chapter_request_id
-                WHERE acceptance.book_run_id=%s
-                  AND acceptance.project_id=%s
-                ORDER BY acceptance.chapter_number DESC
-                LIMIT 1
-                """,
-                [book["book_run_id"], book["project_id"]],
-            )
-            row = uow.cursor.fetchone()
+        request_id = self.query.latest_accepted_chapter_request_id(
+            book_run_id=str(book["book_run_id"]),
+            project_id=str(book["project_id"]),
+        )
         return (
-            self.authority.require_chapter_request(str(row[0]))
-            if row is not None
-            else None
+            self.authority.require_chapter_request(request_id) if request_id else None
         )
 
     def _followup_operation(self, chapter_request_id: str, followup_type: str) -> str:
-        with AuthorityUnitOfWork(self.authority.database_url) as uow:
-            uow.cursor.execute(
-                """
-                SELECT operation_id
-                FROM authority_book_followup_operation
-                WHERE chapter_request_id=%s AND followup_type=%s
-                """,
-                [chapter_request_id, followup_type],
-            )
-            row = uow.cursor.fetchone()
-        return str(row[0]) if row is not None else ""
+        return self.query.followup_operation_id(
+            chapter_request_id=chapter_request_id,
+            followup_type=followup_type,
+        )
 
     def _operation_status(self, operation_id: str, project_id: str) -> str:
-        with AuthorityUnitOfWork(self.authority.database_url) as uow:
-            state = uow.repositories.attempt_runtime.operation_state(
-                operation_id, project_id
-            )
-        return str(state["status"])
+        return self.query.operation_status(
+            operation_id=operation_id, project_id=project_id
+        )
 
     def _schedule_reader(
         self, book: dict[str, Any], request: dict[str, Any]
@@ -383,26 +333,9 @@ class PostgresBookAuthorityScheduler:
         )
 
     def _previous_reader_state(self, book: dict[str, Any], chapter_number: int) -> str:
-        if chapter_number <= 1:
-            return "NONE"
-        with AuthorityUnitOfWork(self.authority.database_url) as uow:
-            uow.cursor.execute(
-                """
-                SELECT binding.asset_version_id
-                FROM authority_book_chapter_acceptance AS acceptance
-                JOIN authority_book_followup_operation AS link
-                  ON link.chapter_request_id=acceptance.chapter_request_id
-                 AND link.followup_type='READER_OUTCOME'
-                JOIN authority_operation_output_asset AS binding
-                  ON binding.operation_id=link.operation_id
-                 AND binding.output_key='reader_outcome.state_transition'
-                WHERE acceptance.book_run_id=%s
-                  AND acceptance.chapter_number=%s
-                """,
-                [book["book_run_id"], chapter_number - 1],
-            )
-            row = uow.cursor.fetchone()
-        return str(row[0]) if row is not None else "NONE"
+        return self.query.previous_reader_state(
+            book_run_id=str(book["book_run_id"]), chapter_number=chapter_number
+        )
 
     @staticmethod
     def _evidence_output(evidence: dict[str, Any], asset_type: str) -> dict[str, Any]:
@@ -439,30 +372,11 @@ class PostgresBookAuthorityScheduler:
     def _output(
         self, operation_id: str, project_id: str, output_key: str
     ) -> dict[str, Any]:
-        with AuthorityUnitOfWork(self.authority.database_url) as uow:
-            uow.cursor.execute(
-                """
-                SELECT binding.asset_version_id, binding.content_hash, version.content
-                FROM authority_operation_output_asset AS binding
-                JOIN authority_asset_version AS version
-                  ON version.asset_version_id=binding.asset_version_id
-                JOIN authority_operation AS operation
-                  ON operation.operation_id=binding.operation_id
-                WHERE binding.operation_id=%s AND operation.project_id=%s
-                  AND binding.output_key=%s
-                """,
-                [operation_id, project_id, output_key],
-            )
-            row = uow.cursor.fetchone()
-        if row is None:
-            raise KernelError(
-                "BOOK_FOLLOWUP_OUTPUT_MISSING", f"missing output {output_key}"
-            )
-        return {
-            "asset_version_id": str(row[0]),
-            "content_hash": str(row[1]),
-            "content": dict(row[2]),
-        }
+        return self.query.require_followup_output(
+            operation_id=operation_id,
+            project_id=project_id,
+            output_key=output_key,
+        )
 
     @staticmethod
     def _asset_ref(item: dict[str, Any]) -> dict[str, str]:

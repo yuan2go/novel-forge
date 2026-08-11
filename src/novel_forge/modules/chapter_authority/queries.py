@@ -1,4 +1,5 @@
 """Strong PostgreSQL queries for authoritative chapter runs."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -89,7 +90,9 @@ class ChapterAuthorityQuery:
             )
             root = cursor.fetchone()
             if root is None:
-                raise KernelError("CHAPTER_RUN_NOT_FOUND", "authoritative chapter run does not exist")
+                raise KernelError(
+                    "CHAPTER_RUN_NOT_FOUND", "authoritative chapter run does not exist"
+                )
             cursor.execute(
                 """
                 SELECT operation_id, definition_name, definition_version, status,
@@ -300,6 +303,25 @@ class ChapterAuthorityQuery:
             "outputs": outputs,
             "budgets": budgets,
             "cost_receipt_refs": cost_receipt_refs,
+        }
+
+    def require_operation_control_state(
+        self,
+        *,
+        project_id: str,
+        root_operation_id: str,
+    ) -> dict[str, Any]:
+        """Return the concurrency state required by Chapter control commands."""
+        if not project_id or not root_operation_id:
+            raise ValueError("project_id and root_operation_id are required")
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            state = uow.repositories.attempt_runtime.operation_state(
+                root_operation_id,
+                project_id,
+            )
+        return {
+            "status": str(state["status"]),
+            "version": int(state["version"]),
         }
 
 

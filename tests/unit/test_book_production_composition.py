@@ -76,6 +76,8 @@ class BookProductionCompositionTests(unittest.TestCase):
         self.assertIs(composition.replan.book, book)
         self.assertIs(composition.replan.planning, planning)
         self.assertIs(composition.supervisor.authority, book)
+        self.assertIs(composition.supervisor.query, composition.query)
+        self.assertIs(composition.supervisor.scheduler.query, composition.query)
         self.assertIs(composition.supervisor.chapter_groups, composition.chapter_groups)
         self.assertIs(composition.supervisor.production_preparation, preparation)
 
@@ -108,6 +110,7 @@ class BookProductionCompositionTests(unittest.TestCase):
         )
         composition = BookProductionComposition(
             authority=authority,
+            query=SimpleNamespace(),
             planning=SimpleNamespace(),
             chapter_groups=SimpleNamespace(),
             production_preparation=SimpleNamespace(),
@@ -124,6 +127,7 @@ class BookProductionCompositionTests(unittest.TestCase):
                 authentication_source="test",
             ),
         )
+        assert composition.query is not None
 
         self.assertEqual(composition.tick("resolved"), "supervisor-tick")
         self.assertEqual(composition.tick("legacy"), "scheduler-tick")
@@ -158,6 +162,7 @@ class BookProductionCompositionTests(unittest.TestCase):
         )
         composition = BookProductionComposition(
             authority=SimpleNamespace(),
+            query=SimpleNamespace(),
             planning=SimpleNamespace(),
             chapter_groups=SimpleNamespace(),
             production_preparation=SimpleNamespace(),
@@ -174,6 +179,7 @@ class BookProductionCompositionTests(unittest.TestCase):
                 authentication_source="test",
             ),
         )
+        assert composition.query is not None
 
         result = composition.approve_replan(
             book_run_id="book-run:1",
@@ -197,6 +203,7 @@ class BookProductionCompositionTests(unittest.TestCase):
 
         worker_composition = BookProductionComposition(
             authority=SimpleNamespace(),
+            query=SimpleNamespace(),
             planning=SimpleNamespace(),
             chapter_groups=SimpleNamespace(),
             production_preparation=SimpleNamespace(),
@@ -213,6 +220,7 @@ class BookProductionCompositionTests(unittest.TestCase):
                 authentication_source="test",
             ),
         )
+        assert worker_composition.query is not None
         with self.assertRaises(PermissionError):
             worker_composition.approve_replan(
                 book_run_id="book-run:1",

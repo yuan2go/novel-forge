@@ -220,10 +220,10 @@ class ChapterAuthorityCommandAdapter:
         trace_id: str,
         correlation_id: str,
     ) -> dict[str, Any]:
-        with AuthorityUnitOfWork(self.application.database_url) as uow:
-            state = uow.repositories.attempt_runtime.operation_state(
-                root_operation_id, project_id
-            )
+        state = self.application.query.require_operation_control_state(
+            project_id=project_id,
+            root_operation_id=root_operation_id,
+        )
         result = request_cancellation(
             self.application.database_url,
             CancelCommand(
@@ -1114,6 +1114,67 @@ class PostgresBookAuthority:
             handler=commit_resume,
         )
         return self.require(book_run_id)
+
+    def advance_supervisor_checkpoint(
+        self,
+        book_run_id: str,
+        *,
+        expected_version: int,
+        expected_state: str,
+        target_state: BookProductionState,
+        principal: Principal,
+    ) -> str:
+        """CAS one Supervisor-selected state through Book Authority."""
+
+        book = self.require(book_run_id)
+        principal.require("book.authority.execute", str(book["project_id"]))
+        if (
+            int(book["version"]) != expected_version
+            or str(book["state"]) != expected_state
+        ):
+            raise KernelError(
+                "BOOK_SUPERVISOR_CHECKPOINT_CONFLICT",
+                "Book checkpoint changed during Supervisor Tick",
+            )
+
+        def commit_checkpoint(
+            uow: AuthorityUnitOfWork,
+            _operation_id: str,
+            checkpoint: TransactionCheckpoint,
+        ) -> dict[str, Any]:
+            checkpoint("after_domain_validation")
+            self._cas_book_state(
+                uow,
+                book_run_id=book_run_id,
+                expected_version=expected_version,
+                target_state=target_state,
+            )
+            return {
+                "previous_state": expected_state,
+                "state": target_state.value,
+                "expected_version": expected_version,
+            }
+
+        result = self._execute_mutation(
+            book=book,
+            action="supervisor_checkpoint_advance",
+            event_type="book.supervisor.checkpoint.advanced",
+            idempotency_key=(
+                f"{book['stable_idempotency_key']}:supervisor-state:"
+                f"{expected_version}:{target_state.value}"
+            ),
+            actor_id=principal.principal_id,
+            trace_id=(f"{book['root_operation_id']}:supervisor:{target_state.value}"),
+            correlation_id=str(book["root_operation_id"]),
+            causation_id=str(book["root_operation_id"]),
+            payload={
+                "previous_state": expected_state,
+                "state": target_state.value,
+                "expected_version": expected_version,
+            },
+            handler=commit_checkpoint,
+        )
+        return str(result["operation_id"])
 
     def bind_replanned_input_snapshot(
         self,

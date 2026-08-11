@@ -20,6 +20,7 @@ from novel_forge.modules.story_planning_runtime import (
 from .governed_scheduler import BookAuthorityTick
 from .input_resolver import BookProductionInputResolver
 from .production import PostgresBookAuthority
+from .queries import PostgresBookProductionQuery
 from .supervisor import (
     BookProductionSupervisorTick,
     PostgresBookProductionSupervisor,
@@ -31,6 +32,7 @@ class BookProductionComposition:
     """Dependency container only; all durable state remains in PostgreSQL."""
 
     authority: PostgresBookAuthority
+    query: PostgresBookProductionQuery
     planning: StoryPlanningGenerationApplication
     chapter_groups: PostgresChapterGroupAuthority
     production_preparation: ProductionPreparationService

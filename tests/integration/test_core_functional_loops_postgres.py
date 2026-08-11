@@ -1429,7 +1429,7 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
 
     def worker_tick(runtime):
         schedule_book_coordination_jobs(
-            DATABASE_URL,
+            runtime.query,
             runtime_jobs,
             limit=1,
             book_run_id=book.book_run_id,
@@ -1571,7 +1571,7 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
     )
     assert (
         schedule_book_coordination_jobs(
-            DATABASE_URL,
+            composition.query,
             runtime_jobs,
             limit=1,
             book_run_id=book.book_run_id,
@@ -1670,10 +1670,7 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
     assert binding_count == 2
 
     group_transition = worker_tick(restarted)
-    if (
-        group_transition["action"]
-        == SupervisorAction.FREEZE_CHAPTER_GROUP_PLAN.value
-    ):
+    if group_transition["action"] == SupervisorAction.FREEZE_CHAPTER_GROUP_PLAN.value:
         group_started = worker_tick(restarted)
     else:
         group_started = group_transition
