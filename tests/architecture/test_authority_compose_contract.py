@@ -44,11 +44,6 @@ class AuthorityComposeContractTests(unittest.TestCase):
                 continue
             environment = service["environment"]
             self.assertEqual(environment["NOVEL_FORGE_STORAGE_AUTHORITY"], "postgresql")
-            self.assertEqual(environment["NOVEL_FORGE_LEGACY_WRITE_ENABLED"], "false")
-            self.assertEqual(
-                environment["NOVEL_FORGE_SILENT_LEGACY_FALLBACK_ENABLED"],
-                "false",
-            )
 
     def test_startup_order_health_and_worker_governance_are_explicit(self) -> None:
         document = yaml.safe_load((ROOT / "compose.yml").read_text(encoding="utf-8"))
@@ -76,13 +71,8 @@ class AuthorityComposeContractTests(unittest.TestCase):
             self.assertTrue(service["labels"]["novel-forge.runtime-group"])
             self.assertTrue(service["labels"]["novel-forge.operation-definitions"])
 
-    def test_legacy_services_require_explicit_profile(self) -> None:
-        document = yaml.safe_load(
-            (ROOT / "compose.legacy.yml").read_text(encoding="utf-8")
-        )
-        self.assertEqual(set(document["services"]), {"legacy-redis", "legacy-api", "legacy-worker"})
-        for service in document["services"].values():
-            self.assertEqual(service["profiles"], ["legacy"])
+    def test_interactive_legacy_compose_is_retired(self) -> None:
+        self.assertFalse((ROOT / "compose.legacy.yml").exists())
 
     def test_compose_connection_budget_fits_postgresql_capacity(self) -> None:
         result = validate_connection_budget(

@@ -8,8 +8,10 @@ from novel_forge.modules.authority_security import Principal, PrincipalType
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.reader_calibration import (
     CalibrationScope,
-    PostgresReaderCalibrationAuthority,
     PreferenceChoice,
+)
+from novel_forge.modules.reader_calibration.application import (
+    PostgresReaderCalibrationAuthority,
 )
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from tests.integration.authority_postgres_support import (

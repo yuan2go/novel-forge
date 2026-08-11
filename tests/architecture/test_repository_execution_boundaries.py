@@ -5,26 +5,10 @@ import os
 import unittest
 from pathlib import Path
 from unittest.mock import patch
-
-from novel_forge.infrastructure.legacy_http import (
-    development_only_http_request,
-)
-from novel_forge.model_adapters.embeddings import (
-    OpenAICompatibleEmbeddingAdapter,
-)
 from novel_forge.modules.command_kernel.external_effect_runtime import (
     EffectCommandContext,
     dispatch_external_effect,
 )
-from novel_forge.modules.production_execution import (
-    CandidateKind,
-    DomainModelOperation,
-    ExternalActionCandidate,
-    ExternalActionExecutionEvidence,
-    execute_domain_candidate,
-)
-from novel_forge.modules.clickhouse_analytics.service import _clickhouse_execute
-from novel_forge.modules.tool_gateway.service import _mcp_json_rpc
 from novel_forge.tools.production_execution_inventory import (
     scan_repository_execution_boundaries,
 )
@@ -45,52 +29,6 @@ class _LegacyAdapter:
 
     def execute(self, **kwargs):
         raise AssertionError(f"legacy adapter must not execute: {kwargs}")
-
-
-class _LegacyModel:
-    def __init__(self) -> None:
-        self.called = False
-
-    def generate(self, *args, **kwargs):
-        self.called = True
-        raise AssertionError(f"legacy model must not execute: {args}, {kwargs}")
-
-
-class _ExternalActionFixturePort:
-    def __init__(self) -> None:
-        self.capabilities: list[str] = []
-
-    def execute(self, command):
-        self.capabilities.append(command.capability)
-        return ExternalActionCandidate(
-            raw_output={
-                "result": {"tools": []},
-                "status": "ok",
-                "fixture_protocol_only": True,
-                "real_model_call": False,
-                "production_verified": False,
-            },
-            evidence=ExternalActionExecutionEvidence(
-                execution_id=f"execution:{command.capability}",
-                operation_id=f"operation:{command.capability}",
-                attempt_id=f"attempt:{command.capability}",
-                fencing_token=1,
-                capability=command.capability,
-                backend_id="remote-external-action",
-                route_snapshot_id=f"route:{command.capability}",
-                input_manifest_ref=f"input:{command.capability}",
-                output_manifest_ref=f"output:{command.capability}",
-                validation_manifest_ref=f"validation:{command.capability}",
-                external_receipt_ref=f"receipt:{command.capability}",
-                usage_receipt_ref=f"usage:{command.capability}",
-                cost_receipt_ref=f"cost:{command.capability}",
-                external_request_id=f"external:{command.capability}",
-                query_supported=True,
-                cancel_supported=True,
-                callback_supported=True,
-                fixture_protocol_only=True,
-            ),
-        )
 
 
 class RepositoryExecutionBoundaryTests(unittest.TestCase):
@@ -199,89 +137,6 @@ class RepositoryExecutionBoundaryTests(unittest.TestCase):
                     lease_seconds=30,
                     adapter=_LegacyAdapter(),
                 )
-
-    def test_controlled_legacy_http_and_embedding_block_before_network(
-        self,
-    ) -> None:
-        with patch(
-            "novel_forge.infrastructure.legacy_http.urllib.request.urlopen"
-        ) as urlopen:
-            with self.assertRaisesRegex(
-                RuntimeError, "legacy execution is blocked"
-            ):
-                development_only_http_request(
-                    component="guard fixture",
-                    url="https://example.invalid",
-                    method="POST",
-                    body=b"{}",
-                    headers={"Content-Type": "application/json"},
-                    timeout_seconds=1,
-                    environment="production",
-                )
-            urlopen.assert_not_called()
-
-        adapter = OpenAICompatibleEmbeddingAdapter(
-            {
-                "NOVEL_FORGE_ENVIRONMENT": "production",
-                "OPENAI_API_KEY": "must-not-be-used",
-            }
-        )
-        with patch(
-            "novel_forge.model_adapters.embeddings.urllib.request.urlopen"
-        ) as urlopen:
-            with self.assertRaisesRegex(
-                RuntimeError, "legacy execution is blocked"
-            ):
-                adapter.embed_batch(["bounded input"])
-            urlopen.assert_not_called()
-
-    def test_controlled_local_storage_model_fallback_blocks_before_call(
-        self,
-    ) -> None:
-        model = _LegacyModel()
-        with self.assertRaisesRegex(
-            RuntimeError, "requires GatewayDomainExecutionPort"
-        ):
-            execute_domain_candidate(
-                capability="creative.topic.generate",
-                operation=DomainModelOperation.GENERATE,
-                candidate_kind=CandidateKind.GENERATION,
-                prompt="bounded prompt",
-                context={"project_id": "project:guard:1"},
-                legacy_model=model,
-                environment="production",
-            )
-        self.assertFalse(model.called)
-
-    def test_tool_and_analytics_remote_calls_accept_gateway_port(self) -> None:
-        port = _ExternalActionFixturePort()
-        tool_result = _mcp_json_rpc(
-            {
-                "id": "mcp-server:fixture",
-                "content": {
-                    "server_id": "mcp-server:fixture",
-                    "transport": "https",
-                    "endpoint": "https://must-not-connect.invalid",
-                },
-            },
-            "tools/list",
-            {},
-            external_action_execution_port=port,
-            project_id="project:guard:1",
-            environment="production",
-        )
-        analytics_result = _clickhouse_execute(
-            "select 1",
-            external_action_execution_port=port,
-            environment="production",
-        )
-        self.assertIn("production_execution", tool_result)
-        self.assertIn("production_execution", analytics_result)
-        self.assertEqual(
-            port.capabilities,
-            ["tool.remote.invoke", "analytics.query.execute"],
-        )
-
 
 if __name__ == "__main__":
     unittest.main()

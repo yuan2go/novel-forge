@@ -1,7 +1,8 @@
 {
   "schema_version": "architecture-manifest.v1",
   "console_scripts": [
-    {"name": "novel-forge", "target": "novel_forge.cli:main", "owner": "platform", "authority_mode": "selector"},
+    {"name": "novel-forge", "target": "novel_forge.cli.authority:main", "owner": "platform", "authority_mode": "postgresql"},
+    {"name": "novel-forge-migrate", "target": "novel_forge.cli.migration:main", "owner": "migration", "authority_mode": "migration-only"},
     {"name": "novel-forge-source-authority-worker", "target": "novel_forge.workers.source_authority:cli", "owner": "source", "authority_mode": "postgresql"},
     {"name": "novel-forge-source-import-worker", "target": "novel_forge.workers.source_import:main", "owner": "source", "authority_mode": "postgresql"},
     {"name": "novel-forge-mkaos-authority-worker", "target": "novel_forge.workers.mkaos_authority:cli", "owner": "mkaos", "authority_mode": "postgresql"},

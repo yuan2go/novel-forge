@@ -3,11 +3,11 @@ from __future__ import annotations
 import ast
 import io
 import unittest
-from contextlib import redirect_stderr, redirect_stdout
+from contextlib import redirect_stdout
 from pathlib import Path
 from unittest.mock import patch
 
-from novel_forge.cli import _authority_main, main
+from novel_forge.cli.authority import _authority_main, _authority_parser
 from novel_forge.infrastructure.settings import IndustrialSettings
 
 
@@ -18,49 +18,13 @@ class _Query:
 
 class PostgreSQLAuthorityCliBoundaryTests(unittest.TestCase):
     def test_non_postgresql_cli_never_silently_falls_back_to_legacy(self) -> None:
-        with (
-            patch(
-                "novel_forge.infrastructure.settings.IndustrialSettings.from_env",
-                return_value=IndustrialSettings(
-                    root=Path("."),
-                    environment="development",
-                    storage_authority="legacy_local",
-                ),
-            ),
-            patch("novel_forge.cli.legacy.main") as legacy,
-        ):
-            self.assertEqual(main(["projects"]), 1)
-        legacy.assert_not_called()
+        with self.assertRaisesRegex(ValueError, "must be postgresql"):
+            IndustrialSettings.from_env(
+                env={"NOVEL_FORGE_STORAGE_AUTHORITY": "legacy_local"}
+            )
 
-    def test_legacy_cli_is_only_reached_by_explicit_legacy_command(self) -> None:
-        stderr = io.StringIO()
-        with (
-            patch(
-                "novel_forge.infrastructure.settings.IndustrialSettings.from_env",
-                return_value=IndustrialSettings(
-                    root=Path("."),
-                    environment="development",
-                    storage_authority="postgresql",
-                ),
-            ),
-            patch("novel_forge.cli.legacy.main", return_value=17) as legacy,
-            redirect_stderr(stderr),
-        ):
-            self.assertEqual(main(["legacy", "projects"]), 17)
-            legacy.assert_called_once_with(["projects"])
-            self.assertIn("legacy_usage", stderr.getvalue())
-            self.assertIn("COMPATIBILITY_ADAPTER", stderr.getvalue())
-
-    def test_production_rejects_explicit_legacy_command(self) -> None:
-        with patch(
-            "novel_forge.infrastructure.settings.IndustrialSettings.from_env",
-            return_value=IndustrialSettings(
-                root=Path("."),
-                environment="production",
-                storage_authority="postgresql",
-            ),
-        ):
-            self.assertEqual(main(["legacy", "projects"]), 1)
+    def test_authority_parser_has_no_interactive_legacy_command(self) -> None:
+        self.assertNotIn("legacy", _authority_parser()._subparsers._group_actions[0].choices)
 
     def test_authority_query_command_uses_postgresql_query_port(self) -> None:
         settings = IndustrialSettings(
@@ -85,7 +49,7 @@ class PostgreSQLAuthorityCliBoundaryTests(unittest.TestCase):
         self.assertIn('"limit": 9', output.getvalue())
 
     def test_authority_cli_surface_has_no_localstorage_import(self) -> None:
-        path = Path(__file__).resolve().parents[2] / "src" / "novel_forge" / "cli" / "__init__.py"
+        path = Path(__file__).resolve().parents[2] / "src" / "novel_forge" / "cli" / "authority.py"
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         imports = {
             node.module

@@ -2,7 +2,7 @@ import inspect
 from types import SimpleNamespace
 
 from novel_forge.api.routers.capability_pack_authority import create_router
-from novel_forge.cli import _run_capability_pack_command
+from novel_forge.cli.authority import _run_capability_pack_command
 
 
 def test_capability_pack_router_exposes_governed_lifecycle_and_queries() -> None:

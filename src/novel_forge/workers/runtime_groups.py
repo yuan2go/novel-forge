@@ -144,10 +144,6 @@ def _maintenance_loop() -> int:
     settings = IndustrialSettings.from_env()
     if settings.storage_authority != "postgresql" or not settings.database_url:
         raise RuntimeError("maintenance worker requires PostgreSQL authority")
-    if settings.authority_runtime_profile == "track-b-minimal" and (
-        settings.legacy_write_enabled or settings.silent_legacy_fallback_enabled
-    ):
-        raise RuntimeError("Authority-only worker forbids Legacy writes and fallback")
     migration = get_migration_status(settings.database_url)
     if not migration["ok"]:
         raise RuntimeError("Authority-only worker requires the current migration head")

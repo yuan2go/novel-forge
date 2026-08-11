@@ -6,7 +6,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from novel_forge.api.app import create_app
+from novel_forge.api.authority_app import create_authority_app as create_app
 from novel_forge.infrastructure.settings import IndustrialSettings
 
 

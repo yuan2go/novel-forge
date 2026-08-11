@@ -40,19 +40,6 @@ class AuthorityApiSurfaceTests(unittest.TestCase):
         self.assertNotIn("/authority/chapters/run", paths)
         self.assertFalse(any("provider" in path for path in paths))
 
-    def test_track_b_minimal_profile_rejects_legacy_write_or_fallback(self) -> None:
-        for field in ("legacy_write_enabled", "silent_legacy_fallback_enabled"):
-            with self.subTest(field=field), self.assertRaisesRegex(
-                ValueError, "forbids Legacy writes, dual write, and silent fallback"
-            ):
-                IndustrialSettings(
-                    root=Path("."),
-                    environment="production",
-                    storage_authority="postgresql",
-                    authority_runtime_profile="track-b-minimal",
-                    **{field: True},
-                )
-
     def test_required_product_reads_are_exposed_by_postgresql_app(self) -> None:
         with tempfile.TemporaryDirectory() as directory, patch.dict(
             "os.environ",

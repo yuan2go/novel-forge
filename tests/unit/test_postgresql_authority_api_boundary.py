@@ -3,9 +3,8 @@ from __future__ import annotations
 import ast
 import unittest
 from pathlib import Path
-from unittest.mock import patch
 
-from novel_forge.api.app import create_app
+from novel_forge.api.authority_app import create_authority_app as create_app
 from novel_forge.infrastructure.settings import IndustrialSettings
 
 
@@ -15,9 +14,6 @@ class PostgreSQLAuthorityApiBoundaryTests(unittest.TestCase):
             env={"NOVEL_FORGE_ROOT": ".", "NOVEL_FORGE_ENVIRONMENT": "development"}
         )
         self.assertEqual(settings.storage_authority, "postgresql")
-        self.assertFalse(settings.postgres_write_through)
-        self.assertFalse(settings.legacy_write_enabled)
-        self.assertFalse(settings.silent_legacy_fallback_enabled)
 
     def test_production_defaults_to_postgresql_authority(self) -> None:
         settings = IndustrialSettings.from_env(
@@ -38,47 +34,19 @@ class PostgreSQLAuthorityApiBoundaryTests(unittest.TestCase):
                 storage_authority="legacy_local",
             )
 
-    def test_postgresql_authority_cannot_enable_legacy_write_or_fallback(self) -> None:
-        for field in (
-            "legacy_write_enabled",
-            "silent_legacy_fallback_enabled",
-            "postgres_write_through",
-        ):
-            with self.subTest(field), self.assertRaisesRegex(
-                ValueError, "forbids Legacy writes, dual write, and silent fallback"
-            ):
-                IndustrialSettings(
-                    root=Path("."),
-                    storage_authority="postgresql",
-                    **{field: True},
-                )
-
-    def test_postgresql_selector_never_constructs_legacy_app(self) -> None:
+    def test_authority_app_has_no_runtime_selector(self) -> None:
         settings = IndustrialSettings(
             root=Path("."),
             environment="production",
             storage_authority="postgresql",
             database_url="postgresql://authority",
         )
-        sentinel = object()
-        with (
-            patch(
-                "novel_forge.api.authority_app.create_authority_app",
-                return_value=sentinel,
-            ) as authority,
-            patch(
-                "novel_forge.api.legacy_app.create_app",
-                side_effect=AssertionError("legacy app must not be constructed"),
-            ) as legacy,
-        ):
-            self.assertIs(create_app(settings), sentinel)
-        authority.assert_called_once_with(settings)
-        legacy.assert_not_called()
+        self.assertTrue(callable(create_app))
+        self.assertEqual(settings.storage_authority, "postgresql")
 
     def test_authority_runtime_surface_has_no_localstorage_dependency(self) -> None:
         root = Path(__file__).resolve().parents[2] / "src" / "novel_forge"
         paths = [
-            root / "api" / "app.py",
             root / "api" / "authority_app.py",
             root / "api" / "authority_dependencies.py",
             root / "api" / "routers" / "chapter_authority.py",

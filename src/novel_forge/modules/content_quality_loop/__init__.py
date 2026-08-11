@@ -1,3 +1,8 @@
-from novel_forge.modules.content_quality_loop.service import run_content_quality_loop
+"""Chapter quality evidence contracts used by the Authority runtime."""
 
-__all__ = ["run_content_quality_loop"]
+from novel_forge.modules.content_quality_loop.domain import (
+    QUALITY_GATE_TYPES,
+    evaluate_quality_evidence,
+)
+
+__all__ = ["QUALITY_GATE_TYPES", "evaluate_quality_evidence"]

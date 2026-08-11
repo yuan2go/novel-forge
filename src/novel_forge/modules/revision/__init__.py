@@ -1,3 +1,3 @@
-from novel_forge.modules.revision.service import create_revision_task, revise, run_review_rework_loop
+from novel_forge.modules.revision.domain import apply_revision_result
 
-__all__ = ["create_revision_task", "revise", "run_review_rework_loop"]
+__all__ = ["apply_revision_result"]

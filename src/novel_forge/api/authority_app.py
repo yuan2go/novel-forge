@@ -465,7 +465,6 @@ def create_authority_app(settings: IndustrialSettings):
         return {
             "status": "alive",
             "storage_authority": "postgresql",
-            "legacy_localstorage_loaded": False,
         }
 
     @app.get("/liveness")
@@ -639,8 +638,6 @@ def create_authority_app(settings: IndustrialSettings):
                 "activation_ready": pack_activation_ready,
                 "activation_error": pack_activation_error,
             },
-            "legacy_write_enabled": False,
-            "silent_fallback_enabled": False,
         }
 
     @app.get("/startup")
@@ -710,8 +707,6 @@ def create_authority_app_from_env():
 def _create_track_b_minimal_app(settings: IndustrialSettings, FastAPI: Any, CORSMiddleware: Any):
     """Compose an Authority-only API without Provider or Legacy construction."""
 
-    if settings.legacy_write_enabled or settings.silent_legacy_fallback_enabled:
-        raise RuntimeError("Track B runtime forbids Legacy writes and silent fallback")
     build_id, commit_sha = authority_release_identity()
     services = TrackBMinimalAuthorityServices(
         project_authority_application=ProjectAuthorityApplication(
@@ -767,8 +762,6 @@ def _create_track_b_minimal_app(settings: IndustrialSettings, FastAPI: Any, CORS
             "runtime_profile": "track-b-minimal",
             "storage_authority": "postgresql",
             "queue_authority": False,
-            "legacy_write_enabled": False,
-            "silent_fallback_enabled": False,
         }
 
     @app.get("/liveness")
@@ -801,8 +794,6 @@ def _create_track_b_minimal_app(settings: IndustrialSettings, FastAPI: Any, CORS
             },
             "outbox": {"authority": "postgresql"},
             "queue": {"role": "delivery_only", "authority": False},
-            "legacy_write_enabled": False,
-            "silent_fallback_enabled": False,
         }
         if status != "ready":
             from fastapi import HTTPException

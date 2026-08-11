@@ -139,6 +139,72 @@ def _repository_boundary_violations(
     return violations
 
 
+def _migration_surface_violations(root: Path) -> list[dict[str, str]]:
+    path = root / "architecture/manifests/migration-surface-manifest.yaml"
+    try:
+        manifest = json.loads(path.read_text(encoding="utf-8"))
+    except (FileNotFoundError, json.JSONDecodeError) as exc:
+        return [
+            {
+                "rule": "migration-surface-manifest",
+                "path": str(path.relative_to(root)),
+                "detail": str(exc),
+            }
+        ]
+    violations: list[dict[str, str]] = []
+    required = {
+        "schema_version": "novel-forge.migration-surface.v1",
+        "classification": "MIGRATION_ONLY",
+        "runtime_registration": "FORBIDDEN",
+        "production_import": "FORBIDDEN",
+    }
+    for key, expected in required.items():
+        if manifest.get(key) != expected:
+            violations.append(
+                {
+                    "rule": "migration-surface-policy",
+                    "path": str(path.relative_to(root)),
+                    "detail": f"{key} must be {expected}",
+                }
+            )
+    for relative in manifest.get("retained_paths", []):
+        if not (root / str(relative)).exists():
+            violations.append(
+                {
+                    "rule": "migration-surface-retained-path",
+                    "path": str(relative),
+                    "detail": "declared retained path is missing",
+                }
+            )
+    for relative in manifest.get("retired_paths", []):
+        if (root / str(relative)).exists():
+            violations.append(
+                {
+                    "rule": "migration-surface-retired-path",
+                    "path": str(relative),
+                    "detail": "retired interactive runtime path still exists",
+                }
+            )
+
+    from novel_forge.tools.authority_reachability import (
+        build_authority_import_graph,
+        production_paths as reachable_production_paths,
+    )
+
+    graph = build_authority_import_graph(root)
+    for relative, paths in graph.paths_by_file.items():
+        reached = reachable_production_paths(paths)
+        if relative.startswith("src/novel_forge/modules/legacy_migration/") and reached:
+            violations.append(
+                {
+                    "rule": "production-migration-import",
+                    "path": relative,
+                    "detail": " -> ".join(reached[0]),
+                }
+            )
+    return violations
+
+
 def _definition_for_entry(entry: dict[str, Any]) -> dict[str, Any]:
     module_name, separator, function_name = str(
         entry.get("definition_factory") or ""
@@ -311,6 +377,7 @@ def build_report(repo_root: str | Path = ".") -> dict[str, Any]:
         _provider_direct_violations(root, provider_paths, provider_allowlist)
     )
     violations.extend(_repository_boundary_violations(root, policy))
+    violations.extend(_migration_surface_violations(root))
 
     for contract in policy.get("schema_contracts", []):
         path = root / str(contract["path"])

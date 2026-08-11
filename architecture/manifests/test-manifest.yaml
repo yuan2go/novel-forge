@@ -44,7 +44,7 @@
     "tests/unit/test_chapter_agent_binding_boundary.py",
     "tests/unit/test_reader_outcome_decision_policy.py",
     "tests/unit/test_quality_calibration_foundation.py",
-    "tests/architecture/test_legacy_surface_manifest.py",
+    "tests/architecture/test_migration_surface_boundary.py",
     "tests/architecture/test_capability_pack_authority_boundaries.py",
     "tests/integration/test_unified_agent_runtime_postgres.py",
     "tests/integration/test_capability_pack_registration_compilation_postgres.py",

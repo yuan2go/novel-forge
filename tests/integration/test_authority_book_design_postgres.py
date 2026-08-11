@@ -57,7 +57,7 @@ class BookDesignAuthorityPostgresTests(unittest.TestCase):
         self.query = BookDesignAuthorityQuery(DATABASE_URL)
         self._create_project()
 
-    def test_full_chain_replay_projection_supersession_and_legacy_cutover(self) -> None:
+    def test_full_chain_replay_projection_and_supersession(self) -> None:
         created = self._book_command(
             "book.create",
             payload={
@@ -67,7 +67,7 @@ class BookDesignAuthorityPostgresTests(unittest.TestCase):
                     "environment": "production",
                     "platform": "fixture",
                 },
-                "runtime_policy": {"legacy_write": False, "silent_fallback": False},
+                "runtime_policy": {"execution_fallback": "FAIL_CLOSED"},
                 "release_identity": "book-design-integration@" + "b" * 40,
             },
             idempotency_key=f"book:create:{self.book_id}",
@@ -81,7 +81,7 @@ class BookDesignAuthorityPostgresTests(unittest.TestCase):
                     "environment": "production",
                     "platform": "fixture",
                 },
-                "runtime_policy": {"legacy_write": False, "silent_fallback": False},
+                "runtime_policy": {"execution_fallback": "FAIL_CLOSED"},
                 "release_identity": "book-design-integration@" + "b" * 40,
             },
             idempotency_key=f"book:create:{self.book_id}",
@@ -124,8 +124,6 @@ class BookDesignAuthorityPostgresTests(unittest.TestCase):
             book["active_book_design_version_id"], first["asset_version_id"]
         )
         self.assertEqual(book["version"], 2)
-        self.assertEqual(book["legacy_cutover"]["writer_cutover_status"], "DISABLED")
-
         second = self._book_command(
             "book_design.propose",
             payload=self._design("accountable collective truth"),

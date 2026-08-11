@@ -8,7 +8,6 @@ import unittest
 ROOT = Path(__file__).resolve().parents[2]
 ALLOWED_DIRECT_CONNECTS = {
     Path("src/novel_forge/storage/migrations/runner.py"),
-    Path("src/novel_forge/storage/postgres.py"),
 }
 
 
@@ -37,7 +36,6 @@ class DatabaseRuntimeReachabilityTests(unittest.TestCase):
             ALLOWED_DIRECT_CONNECTS,
             {
                 Path("src/novel_forge/storage/migrations/runner.py"),
-                Path("src/novel_forge/storage/postgres.py"),
             },
         )
         for relative in ALLOWED_DIRECT_CONNECTS:
