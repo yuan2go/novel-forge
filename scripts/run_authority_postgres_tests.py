@@ -31,6 +31,8 @@ def main() -> int:
         "test_mkaos_authority_postgres.py",
         "test_source_document_authority_postgres.py",
         "test_source_deconstruction_authority_postgres.py",
+        "test_source_import_runtime_postgres.py",
+        "test_source_content_routing_postgres.py",
         "test_agent_collaboration_postgres.py",
         "test_book_followup_authority_postgres.py",
         "test_book_to_chapter_authority_vertical_postgres.py",
