@@ -186,9 +186,15 @@ class PostgresBookAuthorityScheduler:
             root_operation_id=request["chapter_root_operation_id"],
         )
         draft = self._evidence_output(evidence, "draft_version")
-        canon = self._evidence_output(evidence, "canon_snapshot")
         quality = self._evidence_output(evidence, "quality_score_report")
         manifest = self._evidence_output(evidence, "production_input_manifest")
+        # Canon becomes authoritative only when Book acceptance commits the
+        # ChapterOutcome/StoryState/Canon pointer set.  Never consume a child
+        # operation projection as if it were accepted truth.
+        canon = self.authority.resolve_asset_refs(
+            project_id=book["project_id"],
+            asset_version_ids=(str(book["active_canon_snapshot_version_id"]),),
+        )[0]
         frozen_versions = dict(book["longform_context_versions"])
         authority_inputs = self.authority.resolve_asset_refs(
             project_id=book["project_id"],
@@ -251,15 +257,6 @@ class PostgresBookAuthorityScheduler:
         trigger: dict[str, Any],
         ending_reachability: dict[str, Any],
     ) -> BookFollowupAdmission:
-        evidence = self.authority.chapter_port.require_acceptance_evidence(
-            project_id=book["project_id"],
-            root_operation_id=request["chapter_root_operation_id"],
-        )
-        canon = self._evidence_output(evidence, "canon_snapshot")
-        character = self._evidence_output(evidence, "character_state_snapshot")
-        foreshadow = self._evidence_output(evidence, "foreshadow_snapshot")
-        reward = self._evidence_output(evidence, "reward_ledger_snapshot")
-        promise = self._evidence_output(evidence, "promise_ledger_snapshot")
         chapter = int(request["chapter_number"])
         frozen_versions = dict(book["longform_context_versions"])
         authority_inputs = self.authority.resolve_asset_refs(
@@ -272,6 +269,7 @@ class PostgresBookAuthorityScheduler:
                 str(frozen_versions["quality_trend_version"]),
                 str(book["last_chapter_outcome_version_id"]),
                 str(book["active_story_state_version_id"]),
+                str(book["active_canon_snapshot_version_id"]),
             ),
         )
         return self.authority.schedule_longform_recap(
@@ -288,15 +286,13 @@ class PostgresBookAuthorityScheduler:
                 "book_plan_version": book["book_plan_version"],
                 "volume_plan_version": frozen_versions["volume_plan_version"],
                 "arc_plan_version": frozen_versions["arc_plan_version"],
-                "canon_snapshot_version": canon["asset_version_id"],
-                "character_state_version": character["asset_version_id"],
-                "foreshadowing_state_version": foreshadow["asset_version_id"],
+                "canon_snapshot_version": book[
+                    "active_canon_snapshot_version_id"
+                ],
+                "story_state_version": book["active_story_state_version_id"],
                 "reader_state_version": reader["asset_version_id"],
                 "quality_trend_version": frozen_versions["quality_trend_version"],
-                "reward_ledger_version": reward["asset_version_id"],
-                "promise_ledger_version": promise["asset_version_id"],
                 "chapter_outcome_versions": [book["last_chapter_outcome_version_id"]],
-                "story_state_version": book["active_story_state_version_id"],
                 "observations": {
                     "reader_state": dict(reader["content"].get("reader_state") or {}),
                     "reader_qualification": {
@@ -323,11 +319,6 @@ class PostgresBookAuthorityScheduler:
                     "asset_version_id": reader["asset_version_id"],
                     "content_hash": reader["content_hash"],
                 },
-                self._asset_ref(canon),
-                self._asset_ref(character),
-                self._asset_ref(foreshadow),
-                self._asset_ref(reward),
-                self._asset_ref(promise),
                 *authority_inputs,
             ),
         )

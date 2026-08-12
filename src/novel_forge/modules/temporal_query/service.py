@@ -1,34 +1,48 @@
-"""Accepted-state, as-of Chapter queries over PostgreSQL Authority evidence.
-
-The service is a read model.  It does not own Canon state and cannot activate,
-supersede, or roll back an AssetVersion.  Its only source is the immutable
-Chapter acceptance boundary and the state snapshot outputs accepted there.
-"""
-
+"""Accepted-only, as-of-Chapter projections over Narrative State v2 events."""
 from __future__ import annotations
 
+from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any, Iterable
 
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.narrative_state import (
+    NarrativeLayer,
+    NarrativeStateEvent,
+    NarrativeStateKind,
+    project_entity_state,
+    reduce_story_state_v2,
+)
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 
 @dataclass(frozen=True, slots=True)
 class TemporalStateEvent:
+    """A v2 event proven accepted by one committed Book chapter boundary."""
+
     project_id: str
     book_id: str
     book_run_id: str
     acceptance_id: str
-    operation_id: str
+    acceptance_operation_id: str
     trace_id: str
     accepted_chapter: int
-    state_kind: str
-    asset_type: str
-    asset_version_id: str
-    effective_chapter: int
-    payload: dict[str, Any]
+    chapter_outcome_asset_version_id: str
+    event: NarrativeStateEvent
+    event_ordinal: int
     recorded_at: str
+
+    def __post_init__(self) -> None:
+        if (
+            self.project_id != self.event.scope.project_id
+            or self.book_id != self.event.scope.book_id
+            or self.accepted_chapter != self.event.coordinate.source_chapter
+            or self.event.coordinate.effective_from_chapter > self.accepted_chapter
+        ):
+            raise KernelError(
+                "TEMPORAL_ACCEPTANCE_BOUNDARY_INVALID",
+                "accepted event scope and chapter must match committed Book acceptance",
+            )
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -36,14 +50,15 @@ class TemporalStateEvent:
             "book_id": self.book_id,
             "book_run_id": self.book_run_id,
             "acceptance_id": self.acceptance_id,
-            "operation_id": self.operation_id,
+            "acceptance_operation_id": self.acceptance_operation_id,
             "trace_id": self.trace_id,
             "accepted_chapter": self.accepted_chapter,
-            "state_kind": self.state_kind,
-            "asset_type": self.asset_type,
-            "asset_version_id": self.asset_version_id,
-            "effective_chapter": self.effective_chapter,
-            "payload": dict(self.payload),
+            "chapter_outcome_asset_version_id": (
+                self.chapter_outcome_asset_version_id
+            ),
+            "event_ordinal": self.event_ordinal,
+            "authority": {"status": "ACCEPTED", "boundary": "BOOK_CHAPTER"},
+            "event": self.event.to_dict(),
             "recorded_at": self.recorded_at,
         }
 
@@ -54,7 +69,7 @@ def changes_in_range(
     chapter_from: int,
     chapter_to: int,
 ) -> tuple[TemporalStateEvent, ...]:
-    """Return accepted events in the left-open, right-closed chapter range."""
+    """Return accepted State Events in the left-open, right-closed range."""
 
     if chapter_from < 0 or chapter_to <= chapter_from:
         raise ValueError("chapter range must satisfy 0 <= chapter_from < chapter_to")
@@ -63,9 +78,9 @@ def changes_in_range(
             (
                 event
                 for event in events
-                if chapter_from < event.effective_chapter <= chapter_to
-                and event.accepted_chapter <= chapter_to
-                and event.effective_chapter <= event.accepted_chapter
+                if chapter_from < event.accepted_chapter <= chapter_to
+                and event.event.coordinate.effective_from_chapter
+                <= event.accepted_chapter
             ),
             key=_event_order,
         )
@@ -76,205 +91,184 @@ def reduce_entity_state(
     events: Iterable[TemporalStateEvent],
     *,
     state_kind: str,
-    identity: tuple[str, Any],
+    entity_key: str,
     as_of_chapter: int,
 ) -> dict[str, Any]:
-    """Reduce one typed entity using only accepted events visible at the boundary."""
+    """Project one entity with the exact same reducers used by current state."""
 
-    if not state_kind or as_of_chapter <= 0:
-        raise ValueError("state_kind and a positive as_of_chapter are required")
-    visible = [
+    if not state_kind or not entity_key or as_of_chapter <= 0:
+        raise ValueError("state_kind, entity_key and positive as_of_chapter are required")
+    visible = tuple(
         event
         for event in events
-        if event.state_kind == state_kind
-        and event.accepted_chapter <= as_of_chapter
-        and event.effective_chapter <= as_of_chapter
-        and event.effective_chapter <= event.accepted_chapter
-        and _matches_identity(event.payload, identity)
-    ]
-    visible.sort(key=_event_order)
-    if not visible:
-        return _missing(state_kind, as_of_chapter)
-
-    active: list[TemporalStateEvent] = []
-    superseded: set[str] = set()
-    for event in visible:
-        supersedes = str(
-            event.payload.get("supersedes_version_id")
-            or event.payload.get("supersedes_asset_version_id")
-            or ""
-        )
-        if supersedes:
-            superseded.add(supersedes)
-            active = [item for item in active if _event_lineage_id(item) != supersedes]
-        active.append(event)
-
-    state: dict[str, Any] = {}
-    for event in active:
-        state.update(_state_payload(event.payload))
+        if event.accepted_chapter <= as_of_chapter
+        and event.event.coordinate.effective_from_chapter <= as_of_chapter
+        and event.event.state_kind.value == state_kind
+    )
+    snapshot = _rebuild_as_of(visible, as_of_chapter=as_of_chapter)
+    result = project_entity_state(snapshot, state_kind, entity_key)
     return {
-        "status": "FOUND",
-        "state_kind": state_kind,
+        **result,
         "as_of_chapter": as_of_chapter,
         "boundary": "INCLUSIVE",
         "accepted_state_only": True,
-        "missing_reason": "",
-        "state": state,
-        "source_asset_version_ids": [
-            event.asset_version_id
-            for event in active
-            if event.asset_version_id not in superseded
-        ],
-        "source_operation_ids": sorted(
-            {event.operation_id for event in active if event.operation_id}
-        ),
-        "trace_ids": sorted({event.trace_id for event in active if event.trace_id}),
-        "superseded_asset_version_ids": sorted(superseded),
-        "observed_through_chapter": max(event.effective_chapter for event in active),
     }
 
 
 class TemporalQueryService:
-    """Production read service for the governed ``temporal.query`` capability."""
+    """Read-only temporal capability rooted in committed Book acceptance."""
 
     def __init__(self, database_url: str) -> None:
         if not database_url:
             raise ValueError("PostgreSQL database_url is required")
         self.database_url = database_url
 
+    def state_at(self, project_id: str, book_id: str, chapter: int) -> dict[str, Any]:
+        self._validate_scope(project_id, book_id, chapter)
+        return _rebuild_as_of(
+            self._events(project_id, book_id, through_chapter=chapter),
+            as_of_chapter=chapter,
+        )
+
     def character_state_at(
-        self, project_id: str, character_id: str, chapter: int
+        self, project_id: str, book_id: str, character_id: str, chapter: int
     ) -> dict[str, Any]:
         return self._entity_at(
             project_id,
+            book_id,
             chapter,
             state_kind="character_state",
-            identity=("character_id", character_id),
+            entity_key=f"character_id={character_id}",
         )
 
     def character_knows_at(
-        self, project_id: str, character_id: str, fact_id: str, chapter: int
+        self,
+        project_id: str,
+        book_id: str,
+        character_id: str,
+        fact_id: str,
+        chapter: int,
     ) -> dict[str, Any]:
-        events = self._events(
-            project_id,
-            state_kinds=("character_state", "canon_snapshot"),
-            through_chapter=chapter,
+        state = self.character_state_at(project_id, book_id, character_id, chapter)
+        known = {
+            str(item)
+            for item in (state.get("state") or {}).get("known_fact_ids") or ()
+        }
+        canon = self._collection_at(
+            project_id, book_id, chapter, state_kind="canon_fact"
         )
-        evidence = [
-            event
-            for event in events
-            if _is_knowledge_event(event.payload, character_id, fact_id)
-        ]
-        evidence.sort(key=_event_order)
-        if not evidence:
-            return {
-                **_missing("character_knowledge", chapter),
-                "project_id": project_id,
-                "character_id": character_id,
-                "fact_id": fact_id,
-                "knows": False,
-            }
-        latest = evidence[-1]
-        knowledge_state = str(
-            latest.payload.get("knowledge_state")
-            or latest.payload.get("status")
-            or "KNOWN"
-        ).upper()
+        canon_knows = any(
+            str((item.get("state") or {}).get("subject") or "") == character_id
+            and str((item.get("state") or {}).get("predicate") or "").lower()
+            in {"knows", "knows_fact", "knowledge"}
+            and str((item.get("state") or {}).get("object") or "") == fact_id
+            for item in canon.get("states") or ()
+        )
+        knows = fact_id in known or canon_knows
         return {
-            "status": "FOUND",
+            "status": "FOUND" if knows else "NOT_FOUND",
             "project_id": project_id,
+            "book_id": book_id,
             "state_kind": "character_knowledge",
+            "character_id": character_id,
+            "fact_id": fact_id,
+            "knows": knows,
             "as_of_chapter": chapter,
             "boundary": "INCLUSIVE",
             "accepted_state_only": True,
-            "missing_reason": "",
-            "character_id": character_id,
-            "fact_id": fact_id,
-            "knows": knowledge_state in {"KNOWN", "ACQUIRED", "ACTIVE", "TRUE"},
-            "knowledge_state": knowledge_state,
-            "source_asset_version_ids": [latest.asset_version_id],
-            "source_operation_ids": [latest.operation_id],
-            "trace_ids": [latest.trace_id],
-            "superseded_asset_version_ids": [],
-            "observed_through_chapter": latest.effective_chapter,
+            "missing_reason": "" if knows else "NO_ACCEPTED_STATE_AT_BOUNDARY",
         }
 
     def relationship_at(
         self,
         project_id: str,
+        book_id: str,
         source_id: str,
         target_id: str,
         chapter: int,
     ) -> dict[str, Any]:
         return self._entity_at(
             project_id,
+            book_id,
             chapter,
             state_kind="relationship_state",
-            identity=("relationship", (source_id, target_id)),
+            entity_key=f"source_id={source_id}|target_id={target_id}",
         )
 
-    def world_state_at(self, project_id: str, chapter: int) -> dict[str, Any]:
-        return self._collection_at(project_id, chapter, state_kind="world_rule")
+    def world_state_at(
+        self, project_id: str, book_id: str, chapter: int
+    ) -> dict[str, Any]:
+        return self._collection_at(
+            project_id, book_id, chapter, state_kind="world_rule"
+        )
 
     def power_state_at(
-        self, project_id: str, character_id: str, chapter: int
+        self, project_id: str, book_id: str, character_id: str, chapter: int
     ) -> dict[str, Any]:
         return self._entity_at(
             project_id,
+            book_id,
             chapter,
             state_kind="power_state",
-            identity=("character_id", character_id),
+            entity_key=f"character_id={character_id}",
         )
 
     def plot_thread_at(
-        self, project_id: str, thread_id: str, chapter: int
+        self, project_id: str, book_id: str, thread_id: str, chapter: int
     ) -> dict[str, Any]:
         return self._entity_at(
             project_id,
+            book_id,
             chapter,
             state_kind="plot_thread",
-            identity=("thread_id", thread_id),
+            entity_key=f"thread_id={thread_id}",
         )
 
     def foreshadow_state_at(
-        self, project_id: str, thread_id: str, chapter: int
+        self, project_id: str, book_id: str, thread_id: str, chapter: int
     ) -> dict[str, Any]:
         return self._entity_at(
             project_id,
+            book_id,
             chapter,
             state_kind="foreshadow_state",
-            identity=("thread_id", thread_id),
+            entity_key=f"thread_id={thread_id}",
         )
 
-    def pending_promises_at(self, project_id: str, chapter: int) -> dict[str, Any]:
+    def pending_promises_at(
+        self, project_id: str, book_id: str, chapter: int
+    ) -> dict[str, Any]:
         collection = self._collection_at(
-            project_id, chapter, state_kind="reader_promise"
+            project_id, book_id, chapter, state_kind="reader_promise"
         )
-        if collection["status"] == "NOT_FOUND":
-            return {**collection, "promises": []}
         pending = [
             item
-            for item in collection["states"]
-            if str(item["state"].get("status") or "OPEN").upper()
+            for item in collection.get("states") or ()
+            if str((item.get("state") or {}).get("status") or "OPEN").upper()
             in {"OPEN", "PLANTED", "PROMISED", "ACTIVE", "DEFERRED"}
         ]
         return {**collection, "states": pending, "promises": pending}
 
     def changes_between(
-        self, project_id: str, chapter_from: int, chapter_to: int
+        self,
+        project_id: str,
+        book_id: str,
+        chapter_from: int,
+        chapter_to: int,
     ) -> dict[str, Any]:
-        self._validate_scope(project_id, chapter_to)
+        self._validate_scope(project_id, book_id, chapter_to)
         events = changes_in_range(
-            self._events(project_id, through_chapter=chapter_to),
+            self._events(project_id, book_id, through_chapter=chapter_to),
             chapter_from=chapter_from,
             chapter_to=chapter_to,
         )
         return {
             "status": "FOUND" if events else "NOT_FOUND",
             "project_id": project_id,
+            "book_id": book_id,
             "chapter_from": chapter_from,
             "chapter_to": chapter_to,
-            "range_semantics": "LEFT_OPEN_RIGHT_CLOSED",
+            "range_semantics": "LEFT_OPEN_RIGHT_CLOSED_ACCEPTED_CHAPTER",
             "accepted_state_only": True,
             "changes": [event.to_dict() for event in events],
         }
@@ -282,54 +276,52 @@ class TemporalQueryService:
     def _entity_at(
         self,
         project_id: str,
+        book_id: str,
         chapter: int,
         *,
         state_kind: str,
-        identity: tuple[str, Any],
+        entity_key: str,
     ) -> dict[str, Any]:
-        self._validate_scope(project_id, chapter)
+        self._validate_scope(project_id, book_id, chapter)
         return {
             "project_id": project_id,
+            "book_id": book_id,
             **reduce_entity_state(
                 self._events(
                     project_id,
+                    book_id,
                     state_kinds=(state_kind,),
                     through_chapter=chapter,
                 ),
                 state_kind=state_kind,
-                identity=identity,
+                entity_key=entity_key,
                 as_of_chapter=chapter,
             ),
         }
 
     def _collection_at(
-        self, project_id: str, chapter: int, *, state_kind: str
+        self,
+        project_id: str,
+        book_id: str,
+        chapter: int,
+        *,
+        state_kind: str,
     ) -> dict[str, Any]:
-        self._validate_scope(project_id, chapter)
-        events = self._events(
-            project_id,
-            state_kinds=(state_kind,),
-            through_chapter=chapter,
+        self._validate_scope(project_id, book_id, chapter)
+        snapshot = _rebuild_as_of(
+            self._events(
+                project_id,
+                book_id,
+                state_kinds=(state_kind,),
+                through_chapter=chapter,
+            ),
+            as_of_chapter=chapter,
         )
-        identities = sorted(
-            {
-                _collection_identity(state_kind, event.payload)
-                for event in events
-                if _collection_identity(state_kind, event.payload)
-            }
-        )
-        states = [
-            reduce_entity_state(
-                events,
-                state_kind=state_kind,
-                identity=("collection_identity", identity),
-                as_of_chapter=chapter,
-            )
-            for identity in identities
-        ]
+        states = deepcopy((snapshot.get("current_state") or {}).get(state_kind) or [])
         return {
             "status": "FOUND" if states else "NOT_FOUND",
             "project_id": project_id,
+            "book_id": book_id,
             "state_kind": state_kind,
             "as_of_chapter": chapter,
             "boundary": "INCLUSIVE",
@@ -341,168 +333,114 @@ class TemporalQueryService:
     def _events(
         self,
         project_id: str,
+        book_id: str,
         *,
         state_kinds: tuple[str, ...] = (),
         through_chapter: int,
     ) -> tuple[TemporalStateEvent, ...]:
-        self._validate_scope(project_id, through_chapter)
+        self._validate_scope(project_id, book_id, through_chapter)
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
                 SELECT project_id, book_id, book_run_id, acceptance_id,
-                       operation_id, trace_id, accepted_chapter, state_kind,
-                       asset_type, asset_version_id, payload, recorded_at
-                FROM authority_temporal_state_event_projection
-                WHERE project_id=%s
+                       acceptance_operation_id, trace_id, accepted_chapter,
+                       chapter_outcome_asset_version_id, event_payload,
+                       event_ordinal, recorded_at
+                FROM authority_narrative_state_event_projection
+                WHERE project_id=%s AND book_id=%s
                   AND accepted_chapter <= %s
-                  AND (%s::text[] = '{}'::text[] OR state_kind=ANY(%s))
-                ORDER BY accepted_chapter, recorded_at, asset_version_id,
-                         event_ordinal
+                  AND (%s::text[] = '{}'::text[]
+                       OR event_payload->>'state_kind'=ANY(%s))
+                ORDER BY accepted_chapter, event_ordinal,
+                         chapter_outcome_asset_version_id
                 """,
-                [project_id, through_chapter, list(state_kinds), list(state_kinds)],
+                [
+                    project_id,
+                    book_id,
+                    through_chapter,
+                    list(state_kinds),
+                    list(state_kinds),
+                ],
             )
             rows = uow.cursor.fetchall()
-        events = tuple(_event_from_row(row) for row in rows)
-        return tuple(
-            event
-            for event in events
-            if event.effective_chapter <= event.accepted_chapter
-            and event.effective_chapter <= through_chapter
-        )
+        return tuple(_event_from_row(row) for row in rows)
 
     @staticmethod
-    def _validate_scope(project_id: str, chapter: int) -> None:
-        if not project_id.strip() or chapter <= 0:
-            raise ValueError("project_id and a positive chapter are required")
+    def _validate_scope(project_id: str, book_id: str, chapter: int) -> None:
+        if not project_id.strip() or not book_id.strip() or chapter <= 0:
+            raise ValueError("project_id, book_id and a positive chapter are required")
+
+
+def _rebuild_as_of(
+    events: Iterable[TemporalStateEvent], *, as_of_chapter: int
+) -> dict[str, Any]:
+    ordered = sorted(events, key=_event_order)
+    state: dict[str, Any] | None = None
+    index = 0
+    while index < len(ordered):
+        head = ordered[index]
+        group: list[TemporalStateEvent] = []
+        while index < len(ordered):
+            candidate = ordered[index]
+            if (
+                candidate.accepted_chapter != head.accepted_chapter
+                or candidate.chapter_outcome_asset_version_id
+                != head.chapter_outcome_asset_version_id
+            ):
+                break
+            group.append(candidate)
+            index += 1
+        outcome_id = str(group[0].event.provenance.get("chapter_outcome_id") or "")
+        state = reduce_story_state_v2(
+            previous=state,
+            events=tuple(item.event for item in group),
+            chapter_outcome_asset_version_id=head.chapter_outcome_asset_version_id,
+            chapter_outcome_id=outcome_id,
+        )
+    if state is None:
+        current_state = {kind.value: [] for kind in NarrativeStateKind}
+        state = {
+            "type": "TemporalNarrativeStateProjection",
+            "contract_version": "temporal-narrative-state-v2",
+            "project_id": "",
+            "book_id": "",
+            "current_state": current_state,
+            "accepted_through_chapter": 0,
+        }
+    else:
+        state = deepcopy(state)
+        state["type"] = "TemporalNarrativeStateProjection"
+        state["contract_version"] = "temporal-narrative-state-v2"
+    state["layer"] = NarrativeLayer.TEMPORAL_PROJECTION.value
+    state["as_of_chapter"] = as_of_chapter
+    state["boundary"] = "INCLUSIVE"
+    state["accepted_state_only"] = True
+    return state
 
 
 def _event_from_row(row: tuple[Any, ...]) -> TemporalStateEvent:
-    payload = dict(row[10])
-    raw_chapter = payload.get("effective_chapter", payload.get("chapter", row[6]))
-    try:
-        effective_chapter = int(raw_chapter)
-    except (TypeError, ValueError) as exc:
-        raise KernelError(
-            "TEMPORAL_STATE_CHAPTER_INVALID",
-            "accepted state event has an invalid effective chapter",
-        ) from exc
-    if effective_chapter <= 0:
-        raise KernelError(
-            "TEMPORAL_STATE_CHAPTER_INVALID",
-            "accepted state event has a non-positive effective chapter",
-        )
     return TemporalStateEvent(
         project_id=str(row[0]),
         book_id=str(row[1]),
         book_run_id=str(row[2]),
         acceptance_id=str(row[3]),
-        operation_id=str(row[4]),
+        acceptance_operation_id=str(row[4]),
         trace_id=str(row[5]),
         accepted_chapter=int(row[6]),
-        state_kind=str(row[7]),
-        asset_type=str(row[8]),
-        asset_version_id=str(row[9]),
-        effective_chapter=effective_chapter,
-        payload=payload,
-        recorded_at=str(row[11]),
+        chapter_outcome_asset_version_id=str(row[7]),
+        event=NarrativeStateEvent.from_dict(dict(row[8])),
+        event_ordinal=int(row[9]),
+        recorded_at=str(row[10]),
     )
 
 
-def _event_order(event: TemporalStateEvent) -> tuple[int, int, str, str]:
+def _event_order(event: TemporalStateEvent) -> tuple[int, int, str, int]:
     return (
-        event.effective_chapter,
         event.accepted_chapter,
-        event.recorded_at,
-        event.asset_version_id,
+        event.event.coordinate.effective_from_chapter,
+        event.chapter_outcome_asset_version_id,
+        event.event_ordinal,
     )
-
-
-def _event_lineage_id(event: TemporalStateEvent) -> str:
-    return str(
-        event.payload.get("source_asset_version_id")
-        or event.payload.get("state_version_id")
-        or event.asset_version_id
-    )
-
-
-def _matches_identity(payload: dict[str, Any], identity: tuple[str, Any]) -> bool:
-    kind, value = identity
-    if kind == "relationship":
-        source_id, target_id = value
-        return (
-            str(payload.get("source_id") or payload.get("source_character_id") or "")
-            == source_id
-            and str(
-                payload.get("target_id") or payload.get("target_character_id") or ""
-            )
-            == target_id
-        )
-    if kind == "collection_identity":
-        return value in {
-            str(payload.get(key) or "")
-            for key in (
-                "rule_id",
-                "promise_id",
-                "thread_id",
-                "entity_id",
-                "character_id",
-                "state_id",
-                "subject",
-            )
-        }
-    return str(payload.get(kind) or payload.get("entity_id") or "") == str(value)
-
-
-def _collection_identity(state_kind: str, payload: dict[str, Any]) -> str:
-    keys = {
-        "world_rule": ("rule_id", "state_id", "subject"),
-        "reader_promise": ("promise_id", "thread_id", "subject"),
-    }.get(state_kind, ("entity_id", "thread_id", "character_id", "subject"))
-    return next((str(payload.get(key)) for key in keys if payload.get(key)), "")
-
-
-def _state_payload(payload: dict[str, Any]) -> dict[str, Any]:
-    controls = {
-        "effective_chapter",
-        "chapter",
-        "supersedes_version_id",
-        "supersedes_asset_version_id",
-    }
-    return {key: value for key, value in payload.items() if key not in controls}
-
-
-def _is_knowledge_event(
-    payload: dict[str, Any], character_id: str, fact_id: str
-) -> bool:
-    direct = (
-        str(payload.get("character_id") or payload.get("entity_id") or "")
-        == character_id
-        and str(payload.get("fact_id") or "") == fact_id
-    )
-    canon_fact = (
-        str(payload.get("subject") or "") == character_id
-        and str(payload.get("predicate") or "").lower()
-        in {"knows", "knows_fact", "knowledge"}
-        and str(payload.get("object") or "") == fact_id
-    )
-    return direct or canon_fact
-
-
-def _missing(state_kind: str, chapter: int) -> dict[str, Any]:
-    return {
-        "status": "NOT_FOUND",
-        "state_kind": state_kind,
-        "as_of_chapter": chapter,
-        "boundary": "INCLUSIVE",
-        "accepted_state_only": True,
-        "missing_reason": "NO_ACCEPTED_STATE_AT_BOUNDARY",
-        "state": None,
-        "source_asset_version_ids": [],
-        "source_operation_ids": [],
-        "trace_ids": [],
-        "superseded_asset_version_ids": [],
-        "observed_through_chapter": None,
-    }
 
 
 __all__ = [

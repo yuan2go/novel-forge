@@ -183,19 +183,6 @@ def _definition(
         ]
         external_capabilities = [model_capability]
     if node is ChapterNode.CANON:
-        from novel_forge.modules.canon_graph.domain import SNAPSHOT_ASSET_TYPES
-
-        completion["required_asset_selectors"].extend(
-            {
-                "selector": asset_type,
-                "output_key": f"chapter.canon.snapshot.{state_kind}",
-                "role": "state_snapshot",
-                "lifecycle": "ACTIVE",
-                "eligibility": "ELIGIBLE",
-                "governance": "CLEAR",
-            }
-            for state_kind, asset_type in SNAPSHOT_ASSET_TYPES.items()
-        )
         completion["required_asset_selectors"].append(
             {
                 "selector": "deterministic_continuity_report",

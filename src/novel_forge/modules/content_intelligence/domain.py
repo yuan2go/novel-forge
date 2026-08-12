@@ -173,11 +173,23 @@ def build_pacing_observation(
     provider_evidence: dict[str, Any],
 ) -> dict[str, Any]:
     _require_scope(project_id, chapter)
-    snapshots = {
-        str(item.get("state_kind") or ""): list(item.get("changes") or [])
-        for item in canon.get("snapshot_candidates", [])
-        if isinstance(item, dict)
-    }
+    state_changes = canon.get("state_changes")
+    if isinstance(state_changes, dict):
+        snapshots = {
+            str(state_kind): [
+                dict(item) for item in items if isinstance(item, dict)
+            ]
+            for state_kind, items in state_changes.items()
+            if isinstance(items, list)
+        }
+    else:
+        # Historical Canon patches remain readable evidence during deterministic
+        # v1 -> v2 rebuild; new production Canon emits only ``state_changes``.
+        snapshots = {
+            str(item.get("state_kind") or ""): list(item.get("changes") or [])
+            for item in canon.get("snapshot_candidates", [])
+            if isinstance(item, dict)
+        }
     open_promises = sum(
         1
         for item in snapshots.get("reader_promise", [])
@@ -203,7 +215,7 @@ def build_pacing_observation(
                 "value": deterministic[name],
                 "status": "MEASURED",
                 "measurement_type": "DETERMINISTIC",
-                "evidence": "typed Canon snapshot changes",
+                "evidence": "typed Canon state changes",
             }
             if name in deterministic
             else {

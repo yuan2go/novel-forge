@@ -7,27 +7,27 @@ from typing import Any, Iterable, Protocol
 from novel_forge.modules.command_kernel.errors import KernelError
 
 
-STATE_ASSET_TYPES = (
-    "canon_snapshot", "character_state", "relationship_state", "timeline_snapshot",
-    "foreshadow_state", "reader_promise", "reward_ledger", "world_rule", "power_state",
-    "plot_thread", "resource_state",
-)
-
-SNAPSHOT_ASSET_TYPES = {
-    "canon_snapshot": "canon_snapshot",
-    "character_state": "character_state_snapshot",
-    "relationship_state": "relationship_state_snapshot",
-    "timeline_snapshot": "timeline_snapshot",
-    "foreshadow_state": "foreshadow_snapshot",
-    "reader_promise": "promise_ledger_snapshot",
-    "reward_ledger": "reward_ledger_snapshot",
-    "world_rule": "world_rule_snapshot",
-    "power_state": "power_state_snapshot",
-    "plot_thread": "plot_thread_snapshot",
-    "resource_state": "resource_state_snapshot",
+SEMANTIC_CHANGE_FIELDS = {
+    "canon_assertion_candidates": "canon_fact",
+    "character_state_changes": "character_state",
+    "relationship_changes": "relationship_state",
+    "timeline_event_candidates": "timeline_event",
+    "foreshadow_changes": "foreshadow_state",
+    "promise_changes": "reader_promise",
+    "reward_changes": "reward_event",
+    "world_rule_usages": "world_rule",
+    "power_state_changes": "power_state",
+    "plot_thread_changes": "plot_thread",
+    "resource_state_changes": "resource_state",
+    "narrative_pattern_fingerprints": "narrative_pattern_fingerprints",
+    "theme_movements": "theme_movements",
+    "antagonist_pressure_changes": "antagonist_pressure_changes",
 }
 
-SEMANTIC_CHANGE_FIELDS = {
+# Provider response keys are an extraction API, not Narrative State identity.
+# Keep this translation explicit so the Canon proposal can use the shared v2
+# state-kind vocabulary without silently changing the provider boundary.
+PROVIDER_SEMANTIC_CHANGE_FIELDS = {
     "canon_assertion_candidates": "canon_facts",
     "character_state_changes": "character_state_changes",
     "relationship_changes": "relationship_changes",
@@ -95,7 +95,7 @@ def extract_canon_candidates(
             "subject": f"chapter:{revision['chapter']}",
             "predicate": "accepted_revision_digest",
             "object": "sha256:" + hashlib.sha256(text.encode("utf-8")).hexdigest(),
-            "effective_chapter": int(revision["chapter"]),
+            "effective_from_chapter": int(revision["chapter"]),
             "evidence_source": "deterministic_revision_digest",
         }
     )
@@ -239,18 +239,10 @@ def build_canon_update(
                 if item.get("asset_version_id")
             }
         ),
-        "snapshot_candidates": _snapshot_candidates(
-            project_id,
-            chapter,
-            state,
-            extraction,
-            facts,
-            revision_asset_version_id,
-            context_bundle_version_id,
-        ),
+        "state_changes": _narrative_state_changes(extraction, facts),
         "rebuildable": True,
         "rollback_aware": True,
-        "canon_contract_version": "canon-update-domain-v3",
+        "canon_contract_version": "canon-update-domain-v4",
     }
 
 
@@ -262,11 +254,12 @@ def _normalize_fact(item: dict[str, Any], chapter: int, source: str) -> dict[str
         raise KernelError("CANON_ASSERTION_INVALID", "canon assertion requires subject/predicate/object")
     return {
         "subject": subject, "predicate": predicate, "object": object_value,
-        "effective_chapter": int(item.get("effective_chapter") or chapter),
+        "effective_from_chapter": int(item.get("effective_from_chapter") or chapter),
         "source_asset_version_id": source,
-        "supersedes_version_id": str(item.get("supersedes_version_id") or ""),
+        "supersedes_event_id": str(item.get("supersedes_event_id") or ""),
         "extraction_evidence": dict(item.get("extraction_evidence") or {}),
         "confidence": float(item.get("confidence", 0.0)),
+        "coverage": str(item.get("coverage") or "EXPLICIT"),
     }
 
 
@@ -276,7 +269,7 @@ def _merge_semantic_changes(
     *,
     source: str,
 ) -> None:
-    for target_field, provider_field in SEMANTIC_CHANGE_FIELDS.items():
+    for target_field, provider_field in PROVIDER_SEMANTIC_CHANGE_FIELDS.items():
         values = provider.get(provider_field, [])
         if not isinstance(values, list):
             raise KernelError(
@@ -359,7 +352,7 @@ def _fact_conflicts(previous: list[dict[str, Any]], facts: list[dict[str, Any]])
     conflicts = []
     for fact in facts:
         for old in previous:
-            if old.get("subject") == fact["subject"] and old.get("predicate") == fact["predicate"] and old.get("object") != fact["object"] and not fact["supersedes_version_id"]:
+            if old.get("subject") == fact["subject"] and old.get("predicate") == fact["predicate"] and old.get("object") != fact["object"] and not fact["supersedes_event_id"]:
                 conflicts.append(_conflict("FACT_CONTRADICTION", old, fact, "supersede explicitly or revise the chapter"))
     return conflicts
 
@@ -380,9 +373,7 @@ def validate_deterministic_continuity(
     }
     conflicts: list[dict[str, Any]] = []
     for event in extraction.get("timeline_event_candidates", []):
-        event_chapter = int(
-            event.get("effective_chapter", event.get("chapter", chapter))
-        )
+        event_chapter = int(event.get("effective_from_chapter", chapter))
         if event_chapter > chapter:
             conflicts.append(
                 _conflict(
@@ -394,7 +385,7 @@ def validate_deterministic_continuity(
             )
         if event_chapter < max(
             [
-                int(item.get("effective_chapter", item.get("chapter", 0)))
+                int(item.get("effective_from_chapter", item.get("chapter", 0)))
                 for item in state.get("timeline_snapshot", [])
             ]
             or [0]
@@ -660,56 +651,30 @@ def _validate_lifecycle_transition(
         )
 
 
-def _snapshot_candidates(
-    project_id: str,
-    chapter: int,
-    state: dict[str, list[dict[str, Any]]],
-    extraction: dict[str, Any],
-    facts: list[dict[str, Any]],
-    revision_asset_version_id: str,
-    context_bundle_version_id: str,
-) -> list[dict[str, Any]]:
+def _narrative_state_changes(
+    extraction: dict[str, Any], facts: list[dict[str, Any]]
+) -> dict[str, list[dict[str, Any]]]:
+    """Expose Canon-approved deltas using the shared Narrative State vocabulary."""
+
     changes = {
-        "canon_snapshot": facts,
+        "canon_fact": facts,
         "character_state": extraction.get("character_state_changes", []),
         "relationship_state": extraction.get("relationship_changes", []),
-        "timeline_snapshot": extraction.get("timeline_event_candidates", []),
+        "timeline_event": extraction.get("timeline_event_candidates", []),
         "foreshadow_state": extraction.get("foreshadow_changes", []),
         "reader_promise": extraction.get("promise_changes", []),
-        "reward_ledger": extraction.get("reward_changes", []),
+        "reward_event": extraction.get("reward_changes", []),
         "world_rule": extraction.get("world_rule_usages", []),
         "power_state": extraction.get("power_state_changes", []),
         "plot_thread": extraction.get("plot_thread_changes", []),
         "resource_state": extraction.get("resource_state_changes", []),
+        "theme_movement": extraction.get("theme_movements", []),
+        "antagonist_state": extraction.get("antagonist_pressure_changes", []),
     }
-    return [
-        {
-            "project_id": project_id,
-            "state_kind": asset_type,
-            "asset_type": SNAPSHOT_ASSET_TYPES[asset_type],
-            "chapter": chapter,
-            "previous_asset_version_ids": [str(item.get("asset_version_id")) for item in state.get(asset_type, []) if item.get("asset_version_id")],
-            "changes": list(changes[asset_type]),
-            "append_only": True,
-            "rebuildable": True,
-            "rollback_aware": True,
-            "source_revision_asset_version_id": revision_asset_version_id,
-            "context_bundle_version_id": context_bundle_version_id,
-            "canon_change_proposal_asset_version_id": str(
-                extraction.get("canon_change_proposal_asset_version_id") or ""
-            ),
-            "canon_approval_decision_asset_version_ids": list(
-                extraction.get("canon_approval_decision_asset_version_ids") or []
-            ),
-            "snapshot_contract_version": "canon-state-snapshot-v1",
-        }
-        for asset_type in STATE_ASSET_TYPES
-    ]
+    return {key: list(values) for key, values in changes.items() if values}
 
 
 __all__ = [
-    "SNAPSHOT_ASSET_TYPES",
-    "STATE_ASSET_TYPES",
     "build_canon_update",
     "extract_canon_candidates",
     "validate_deterministic_continuity",

@@ -58,6 +58,7 @@ class TemporalQueryApiTests(unittest.TestCase):
                 "/product/temporal-query",
                 json={
                     "project_id": "project-a",
+                    "book_id": "book-a",
                     "query": "relationship_at",
                     "source_id": "character-a",
                     "target_id": "character-b",
@@ -66,7 +67,7 @@ class TemporalQueryApiTests(unittest.TestCase):
             )
         self.assertEqual(response.status_code, 200, response.text)
         service.relationship_at.assert_called_once_with(
-            "project-a", "character-a", "character-b", 35
+            "project-a", "book-a", "character-a", "character-b", 35
         )
 
     def test_cross_project_and_incomplete_queries_fail_closed(self) -> None:
@@ -82,6 +83,7 @@ class TemporalQueryApiTests(unittest.TestCase):
                 "/product/temporal-query",
                 json={
                     "project_id": "project-b",
+                    "book_id": "book-b",
                     "query": "pending_promises_at",
                     "chapter": 20,
                 },
@@ -90,6 +92,7 @@ class TemporalQueryApiTests(unittest.TestCase):
                 "/product/temporal-query",
                 json={
                     "project_id": "project-a",
+                    "book_id": "book-a",
                     "query": "character_knows_at",
                     "chapter": 20,
                     "character_id": "character-a",

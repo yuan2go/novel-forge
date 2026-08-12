@@ -268,12 +268,9 @@ class LongformRecapHandler:
             "volume_plan_version",
             "arc_plan_version",
             "canon_snapshot_version",
-            "character_state_version",
-            "foreshadowing_state_version",
+            "story_state_version",
             "reader_state_version",
             "quality_trend_version",
-            "reward_ledger_version",
-            "promise_ledger_version",
         )
         missing = [name for name in required if payload.get(name) in (None, "")]
         if missing:

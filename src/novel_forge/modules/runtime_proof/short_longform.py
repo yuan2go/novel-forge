@@ -23,16 +23,6 @@ PLANNING_STAGES = frozenset(
 CONTINUITY_STATE_TYPES = (
     "story_state_snapshot",
     "canon_snapshot",
-    "character_state_snapshot",
-    "relationship_state_snapshot",
-    "timeline_snapshot",
-    "foreshadow_snapshot",
-    "promise_ledger_snapshot",
-    "reward_ledger_snapshot",
-    "world_rule_snapshot",
-    "power_state_snapshot",
-    "plot_thread_snapshot",
-    "resource_state_snapshot",
 )
 
 CHAPTER_REAL_PROVIDER_STAGES = frozenset(

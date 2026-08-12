@@ -102,7 +102,7 @@ def _valid(stage: str) -> dict[str, object]:
                         "subject": "protagonist",
                         "predicate": "made_choice",
                         "object": "exposed_record",
-                        "effective_chapter": 1,
+                        "effective_from_chapter": 1,
                         "evidence_start": 0,
                         "evidence_end": 24,
                         "confidence": 0.91,

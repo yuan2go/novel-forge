@@ -1,28 +1,139 @@
-# Narrative state
+# Narrative State Contract v2
 
-Novel Forge separates narrative truth, accepted chapter consequences, reduced state, temporal reads, generation context, and reusable knowledge. They are related but not interchangeable.
+Narrative State v2 unifies the semantic protocol between accepted narrative
+events, materialized current state, historical as-of state, governed context,
+and future planning. It does not merge their Authorities or storage lifecycles.
 
-| Concept | Responsibility | May mutate authority? |
+## Ownership and classification
+
+| Surface | Classification | Owner and rule |
 |---|---|---|
-| Canon | Validates candidate facts and continuity changes against accepted narrative evidence; emits governed Canon decisions/snapshots. | Only through Canon/Chapter acceptance authority. |
-| ChapterOutcome | Immutable summary of one accepted chapter: plan/release/quality lineage plus occurred events and typed deltas. | No; it is accepted evidence. |
-| StoryState | Deterministic reduction of ordered ChapterOutcome versions across timeline, characters, relationships, world, resources, promises, debts, and arcs. | Only its owning acceptance path persists versions. |
-| Temporal Query | Read-only, as-of-chapter projection over accepted snapshots and event evidence. | Never. |
-| ContextBundle | Immutable, budgeted selection of versioned assets sent to a specific production stage. | No; it records selection and isolation. |
-| Knowledge | Abstract, evidence-linked reusable principles, constraints, conflict generators, and checks produced through MKAOS. | MKAOS Authority governs candidate approval and pack construction. |
+| Canon decision and accepted Canon snapshot | `TRUTH` | Canon and Book acceptance decide narrative validity. Model output is only a candidate. |
+| ChapterOutcome v2 | `ACCEPTED_ACTUAL` | Immutable actuals for one chapter; authoritative only when a committed Book acceptance points to the AssetVersion. |
+| NarrativeStateEvent v2 | `STATE_EVENT` | Append-only delta stored inside ChapterOutcome; never updated or deleted. |
+| StoryStateSnapshot v2 | `CURRENT_STATE` | Deterministic, entity-aware projection of accepted events; rebuildable and not an Authority replacement. |
+| Temporal query result | `TEMPORAL_PROJECTION` | Read-only replay at an inclusive accepted chapter boundary. |
+| ChapterPlan and hierarchical plans | `FUTURE_INTENT` | Planning/PlanChange Authority owns candidates and activation; plans never become actuals automatically. |
+| ContextBundle | `EXECUTION_CONTEXT` | Frozen, isolated and token-budgeted input with exact AssetVersion refs. It cannot mutate state. |
+| KnowledgeCard/KnowledgePack | `RETRIEVABLE_KNOWLEDGE` | MKAOS-governed external facts and methods; retrieval does not make them Canon or character knowledge. |
+| Reader, recap and quality output | `OBSERVATION` | Evidence/proposals only; no direct Canon, StoryState or plan mutation. |
 
-## Acceptance boundary
+The accepted flow is:
 
-A draft or model response is not narrative truth. After Chapter gates pass, Canon extraction produces candidates and conflict evidence. The acceptance path freezes the accepted revision, Canon decision, quality and release evidence, then constructs a `ChapterOutcome`. StoryState reduction is deterministic, append-only by outcome version, and idempotent.
+```text
+committed Book chapter acceptance
+  -> immutable ChapterOutcome v2 events
+  -> deterministic StoryState/Canon current snapshots
+  -> accepted-only temporal replay and compact Context
+  -> future planning candidate
+```
 
-## Temporal semantics
+## Shared event contract
 
-Temporal Query returns only evidence accepted by or before the requested chapter. The boundary is inclusive. Supersession lineage is applied without rewriting history, and missing state is an explicit result rather than an invented default. The service is a read model and cannot activate, supersede, or roll back an asset.
+Every v2 event carries:
 
-## Context semantics
+- `state_kind` and a typed `identity` with a stable `entity_key`;
+- `scope.project_id` and `scope.book_id`;
+- `coordinate.source_chapter` and inclusive `effective_from_chapter`;
+- pending/accepted Authority boundary semantics;
+- a typed reducer mutation;
+- only `supersedes_event_id` for supersession;
+- Canon patch, accepted draft, ChapterOutcome, source Operation and trace lineage;
+- confidence, coverage and governed evidence.
 
-Context building selects versioned candidates by stage profile, project scope, relevance, source risk, and token budget. Required asset types must be present; forbidden source content and raw-source ratios fail closed. The ContextBundle records what was selected, rejected, and sent. It does not become Canon merely because a model saw it.
+`recorded_at` is audit time and never narrative time. New v2 evidence rejects
+the v1 aliases `effective_chapter`, `supersedes_version_id`,
+`supersedes_asset_version_id`, and `state_version_id`. Persisted
+`chapter-outcome-v1` evidence remains readable only through the deterministic
+rebuild adapter.
 
-## Feedback and replan
+## Event, current state and temporal projection
 
-Reader outcomes and recaps are evidence. They may request a replan, but cannot rewrite active plans. Book coordination resolves the request, PlanChange Authority decides/activates governed semantic changes, and future frozen inputs are rebound with explicit lineage.
+ChapterOutcome stores what an accepted chapter changed. The event list is
+immutable and replayable. Creating an AssetVersion is not acceptance: the SQL
+event view starts at `authority_book_chapter_acceptance` rows whose status is
+`COMMITTED` and whose acceptance Operation succeeded.
+
+StoryState stores what is currently true through the latest accepted chapter.
+It has one sorted entry per state kind and entity identity. Character location,
+relationship status, Promise lifecycle, rule status and resource balance are
+materialized values, not ever-growing change arrays. Timeline, reward and
+theme movements remain append-only because their business meaning is an event
+ledger.
+
+Temporal Query filters by Project, Book and `accepted_chapter <= N`, then
+replays the same reducers used by current state. It never orders by
+`created_at`, never reads unaccepted child outputs and never exposes events
+accepted after the requested boundary.
+
+## Reducer matrix
+
+| State kind | Identity | Reduction |
+|---|---|---|
+| Canon fact | subject + predicate | consistent upsert; changed definition requires explicit supersession |
+| Timeline event | event id | append-only |
+| Character | character id | attribute upsert and knowledge-set merge; death/invalidation cannot silently reopen |
+| Relationship | directed source + target | checked transition/upsert |
+| World rule | rule id | activate/upsert; definition change requires explicit supersession |
+| Resource | entity + resource | initial balance or reconciled increment/decrement |
+| Power | character id | checked tier/state transition |
+| Foreshadow | thread id | open/transition/pay/close lifecycle |
+| Reader promise | promise id | open/transition/pay/close lifecycle |
+| Plot thread | thread id | open/transition/resolve lifecycle |
+| Narrative debt | source kind + entity | derived open/resolved lifecycle |
+| Mystery | mystery id | open/transition/resolve lifecycle |
+| Antagonist | antagonist id | entity-aware upsert/transition |
+| Arc | arc id | entity-aware lifecycle |
+| Reward and theme movement | event identity | append-only |
+
+All reducers are deterministic, order-aware, idempotent at the already-applied
+head, replayable and fail closed on scope drift, missing identity, invalid
+predecessors, broken balances or incorrect supersession targets.
+
+## Future-leak invariant
+
+Four boundaries enforce the invariant that Chapter N cannot consume Narrative
+State created or accepted after N:
+
+1. Event construction rejects future-effective changes.
+2. PostgreSQL views expose only committed Book acceptance evidence.
+3. Temporal Query requires Project/Book scope and filters accepted/effective
+   chapter boundaries before replay.
+4. Production Preparation resolves only the immediately preceding accepted
+   StoryState v2 and Canon v2 pointers for the same Book. A globally active,
+   unaccepted AssetVersion and a typed-empty fixture cannot satisfy the state
+   requirement.
+
+## Context behavior
+
+Continuing chapters freeze exactly one accepted StoryState v2 and one accepted
+Canon v2 snapshot. StoryState is flattened to bounded structured facts with one
+current value per entity, while preserving source event, effective chapter,
+confidence, coverage and evidence. The existing Context Builder still owns
+selection, rejection, source isolation, immutable refs and token budgets.
+Historical evidence is obtained through an explicit temporal read; the normal
+Context is not an unbounded history list.
+
+## Migration and rebuild
+
+Forward-only migration `20260812_0082_narrative_state_contract_v2` adds:
+
+- accepted-only event and current-state views;
+- an accepted v1/v2 rebuild-source view;
+- event/entity/reducer/accepted-chapter evidence on reducer receipts;
+- replay indexes keyed by Project, kind, entity and accepted chapter.
+
+The migration does not rewrite AssetVersion, ChapterOutcome or Book acceptance
+history. `NarrativeStateRebuildService` reads accepted outcomes in chapter
+order, adapts v1 evidence at the input boundary, replays v2 reducers and returns
+a deterministic projection/hash without mutating Authority. Persisting a
+replacement projection remains an owning Authority operation outside this
+read-only service.
+
+## Qualification boundary
+
+Semantic unit tests and real PostgreSQL integration establish local validation
+of the bounded Narrative State v2 slice, including Book acceptance, replay,
+rebuild equality and future-leak exclusion. They do not establish real-provider
+quality, sustained 1000-chapter operation, production authorization, multi-book
+scale or long-form content qualification.

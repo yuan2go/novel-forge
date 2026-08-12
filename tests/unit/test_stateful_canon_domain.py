@@ -2,12 +2,7 @@ from __future__ import annotations
 
 import unittest
 
-from novel_forge.modules.canon_graph.domain import (
-    SNAPSHOT_ASSET_TYPES,
-    STATE_ASSET_TYPES,
-    build_canon_update,
-    extract_canon_candidates,
-)
+from novel_forge.modules.canon_graph.domain import build_canon_update, extract_canon_candidates
 
 
 class StatefulCanonDomainTests(unittest.TestCase):
@@ -20,7 +15,13 @@ class StatefulCanonDomainTests(unittest.TestCase):
                 "canon_assertions": [
                     {"subject": "alliance", "predicate": "status", "object": "broken"}
                 ],
-                "timeline_events": [{"chapter": 1, "event": "late insertion"}],
+                "timeline_events": [
+                    {
+                        "event_id": "timeline:late-insertion",
+                        "effective_from_chapter": 1,
+                        "event": "late insertion",
+                    }
+                ],
                 "character_state_changes": [
                     {"character_id": "hero", "canonical_name": "Different Hero"}
                 ],
@@ -71,16 +72,9 @@ class StatefulCanonDomainTests(unittest.TestCase):
             "PROMISE_LIFECYCLE_CONTRADICTION",
         }.issubset(codes))
         self.assertEqual(update["gate"], "BLOCKED")
-        self.assertEqual(
-            {item["asset_type"] for item in update["snapshot_candidates"]},
-            set(SNAPSHOT_ASSET_TYPES.values()),
-        )
-        self.assertEqual(
-            {item["state_kind"] for item in update["snapshot_candidates"]},
-            set(STATE_ASSET_TYPES),
-        )
-        self.assertTrue(all(item["append_only"] for item in update["snapshot_candidates"]))
-        self.assertTrue(all(item["rollback_aware"] for item in update["snapshot_candidates"]))
+        self.assertIn("canon_fact", update["state_changes"])
+        self.assertIn("character_state", update["state_changes"])
+        self.assertNotIn("snapshot_candidates", update)
         self.assertIn("canon-v1", update["historical_input_version_ids"])
 
 

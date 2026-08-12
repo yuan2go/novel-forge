@@ -964,6 +964,7 @@ class AuthorityChapterRunRequest(BaseModel):
 class AuthorityChapterCommandRequest(BaseModel):
     project_id: str = Field(min_length=1)
     workspace_id: str = Field(min_length=1)
+    book_id: str = Field(min_length=1)
     chapter: int = Field(ge=1)
     idempotency_key: str = Field(min_length=1)
     title_override: str = ""

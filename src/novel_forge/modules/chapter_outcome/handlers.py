@@ -6,6 +6,7 @@ from novel_forge.modules.authority_handler_runtime import (
     AuthorityHandlerRequest,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.narrative_state import materialize_canon_snapshot_v2
 
 from .domain import build_chapter_outcome, reduce_story_state
 
@@ -58,9 +59,11 @@ class ChapterOutcomeCommitHandler:
             quality_aggregate_version_id=inputs[
                 "quality_score_report"
             ].asset_version_id,
+            canon_patch_asset_version_id=inputs["canon_patch"].asset_version_id,
             canon_patch=canon,
             cost_receipt_refs=tuple(payload.get("cost_receipt_refs") or ()),
             created_by_operation_id=request.operation_id,
+            trace_id=request.trace_id,
         )
         outcome_version_id = (
             f"authority-output:{request.operation_id}:chapter.outcome:v1"
@@ -75,6 +78,22 @@ class ChapterOutcomeCommitHandler:
             previous=previous[0].content if previous else None,
             chapter_outcome=outcome,
             chapter_outcome_asset_version_id=outcome_version_id,
+            previous_story_state_asset_version_id=(
+                previous[0].asset_version_id if previous else ""
+            ),
+        )
+        previous_canon = request.inputs_of_type("canon_snapshot")
+        if len(previous_canon) > 1:
+            raise KernelError(
+                "CHAPTER_OUTCOME_INPUT_INVALID",
+                "only one previous Canon snapshot is allowed",
+            )
+        canon_snapshot = materialize_canon_snapshot_v2(
+            story_state=state,
+            chapter_outcome_asset_version_id=outcome_version_id,
+            previous_canon_asset_version_id=(
+                previous_canon[0].asset_version_id if previous_canon else ""
+            ),
         )
         evidence = {
             "deterministic": True,
@@ -89,7 +108,7 @@ class ChapterOutcomeCommitHandler:
             output_key="chapter.outcome",
             role="primary",
             content=outcome,
-            qualification_policy="chapter-outcome-acceptance-v1",
+            qualification_policy="chapter-outcome-acceptance-v2",
             reference_asset_version_ids=source_refs,
             evidence=evidence,
             auxiliary_outputs=(
@@ -98,7 +117,16 @@ class ChapterOutcomeCommitHandler:
                     output_key="chapter.story_state",
                     role="story_state",
                     content=state,
-                    qualification_policy="deterministic-story-state-v1",
+                    qualification_policy="deterministic-story-state-v2",
+                    reference_asset_version_ids=source_refs,
+                    evidence=evidence,
+                ),
+                AuthorityAuxiliaryOutput(
+                    asset_type="canon_snapshot",
+                    output_key="chapter.canon.current",
+                    role="canon_truth",
+                    content=canon_snapshot,
+                    qualification_policy="accepted-canon-snapshot-v2",
                     reference_asset_version_ids=source_refs,
                     evidence=evidence,
                 ),

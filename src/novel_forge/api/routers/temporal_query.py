@@ -15,6 +15,7 @@ class TemporalQueryRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     project_id: str = Field(min_length=1)
+    book_id: str = Field(min_length=1)
     query: Literal[
         "character_state_at",
         "character_knows_at",
@@ -76,12 +77,14 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
             if request.query == "changes_between":
                 return service.changes_between(
                     request.project_id,
+                    request.book_id,
                     int(request.chapter_from),
                     int(request.chapter_to),
                 )
             if request.query == "relationship_at":
                 return service.relationship_at(
                     request.project_id,
+                    request.book_id,
                     request.source_id,
                     request.target_id,
                     int(request.chapter),
@@ -89,6 +92,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
             if request.query == "character_knows_at":
                 return service.character_knows_at(
                     request.project_id,
+                    request.book_id,
                     request.character_id,
                     request.fact_id,
                     int(request.chapter),
@@ -97,6 +101,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 method = getattr(service, request.query)
                 return method(
                     request.project_id,
+                    request.book_id,
                     request.character_id,
                     int(request.chapter),
                 )
@@ -104,11 +109,12 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 method = getattr(service, request.query)
                 return method(
                     request.project_id,
+                    request.book_id,
                     request.thread_id,
                     int(request.chapter),
                 )
             method = getattr(service, request.query)
-            return method(request.project_id, int(request.chapter))
+            return method(request.project_id, request.book_id, int(request.chapter))
         except PermissionError as exc:
             raise HTTPException(status_code=403, detail=str(exc)) from exc
 

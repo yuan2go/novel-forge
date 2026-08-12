@@ -20,9 +20,14 @@ def test_acceptance_binding_supplies_ephemeral_snapshot_chapter_metadata() -> No
         selected_reason="explicit audited AssetVersion override",
     )
 
-    bound = PostgresProductionAssetResolver._bind_acceptance_chapter(asset, 1)
+    bound = PostgresProductionAssetResolver._bind_acceptance_scope(
+        asset, "book-1", 1, "acceptance-1"
+    )
 
     assert bound.content["chapter"] == 1
     assert bound.content["chapter_number"] == 1
+    assert bound.content["accepted_through_chapter"] == 1
+    assert bound.content["book_id"] == "book-1"
+    assert bound.content["acceptance_id"] == "acceptance-1"
     assert bound.content["_authority_acceptance_bound"] is True
     assert "chapter" not in asset.content

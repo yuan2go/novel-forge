@@ -31,6 +31,7 @@ from novel_forge.storage.migrations.versions import (
 from novel_forge.storage.migrations.versions import (
     v20260811_0080_source_snapshot_governance_identity as governance_migration,
     v20260811_0081_source_intelligence_router as latest_migration,
+    v20260812_0082_narrative_state_contract_v2 as narrative_state_migration,
 )
 
 
@@ -55,7 +56,8 @@ def test_capability_pack_authority_remains_in_linear_migration_chain() -> None:
     assert scope_migration.DOWN_REVISION == action_migration.MIGRATION_ID
     assert governance_migration.DOWN_REVISION == scope_migration.MIGRATION_ID
     assert latest_migration.DOWN_REVISION == governance_migration.MIGRATION_ID
-    assert LATEST_MIGRATION_ID == latest_migration.MIGRATION_ID
+    assert narrative_state_migration.DOWN_REVISION == latest_migration.MIGRATION_ID
+    assert LATEST_MIGRATION_ID == narrative_state_migration.MIGRATION_ID
     assert migration.FORWARD_ONLY is True
 
 

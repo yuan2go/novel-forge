@@ -432,6 +432,7 @@ class PostgresBookProductionSupervisor:
         return ProductionPreparationRequest(
             project_id=str(book["project_id"]),
             workspace_id=str(book["workspace_id"]),
+            book_id=str(book["book_id"]),
             chapter=next_chapter,
             idempotency_key=(
                 f"{book['stable_idempotency_key']}:chapter:{next_chapter}"

@@ -72,13 +72,7 @@ _RAW_TYPES = frozenset(
 )
 _COMMON = frozenset({
     "chapter_plan", "chapter_plan_version", "outline_version", "volume_arc", "world_bible",
-    "character_card", "character_state", "relationship_state", "canon_snapshot",
-    "timeline_snapshot", "foreshadow_state", "reader_promise", "reward_ledger",
-    "character_state_snapshot", "relationship_state_snapshot", "foreshadow_snapshot",
-    "promise_ledger_snapshot", "reward_ledger_snapshot", "world_rule_snapshot",
-    "power_state_snapshot",
-    "plot_thread_snapshot", "resource_state_snapshot",
-    "story_state_snapshot",
+    "character_card", "canon_snapshot", "story_state_snapshot",
     "style_policy", "knowledge_pack", "knowledge_card", "material_asset", "material_card",
     "quality_rubric", "quality_profile", "platform_profile", "context_profile",
     "theme_arc", "theme_beat", "closure_plan", "review_issue", "review_report",
@@ -283,12 +277,11 @@ def build_authority_context_bundle(
         "outline_version": refs.get("outline_version", ""),
         "volume_arc_version": refs.get("volume_arc_version", ""),
         "world_bible_version": refs.get("world_bible_version", ""),
-        "character_state_versions": list(refs.get("character_state_versions", [])),
+        "story_state_snapshot_version": refs.get(
+            "story_state_snapshot_version",
+            refs.get("story_state_snapshot_versions", ""),
+        ),
         "canon_snapshot_version": refs.get("canon_snapshot_version", ""),
-        "timeline_snapshot_version": refs.get("timeline_snapshot_version", ""),
-        "foreshadow_state_versions": list(refs.get("foreshadow_state_versions", [])),
-        "reader_promise_versions": list(refs.get("reader_promise_versions", [])),
-        "reward_ledger_version": refs.get("reward_ledger_version", ""),
         "style_policy_version": refs.get("style_policy_version", ""),
         "operator_checklist_version": refs.get("operator_checklist_version", ""),
         "knowledge_pack_versions": [item.asset_version_id for item in selection.selected if item.asset_type == "knowledge_pack"],
@@ -326,7 +319,7 @@ def build_authority_context_bundle(
             "priority_rules": list(profile.priority_rules),
             "compression_policy": profile.compression_policy,
         },
-        "context_contract_version": "authority-context-bundle-v3",
+        "context_contract_version": "authority-context-bundle-v4",
     }
 
 

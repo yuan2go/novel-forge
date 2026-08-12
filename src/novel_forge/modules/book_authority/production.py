@@ -63,6 +63,7 @@ from novel_forge.modules.command_kernel.service import (
     admit_command,
     execute_transaction_command,
 )
+from novel_forge.modules.narrative_state import compact_current_state_facts
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 
@@ -757,12 +758,22 @@ class PostgresBookAuthority:
             request=request,
             evidence=evidence,
         )
+        if bool(book["active_story_state_version_id"]) != bool(
+            book["active_canon_snapshot_version_id"]
+        ):
+            raise KernelError(
+                "BOOK_NARRATIVE_STATE_CHECKPOINT_INCOMPLETE",
+                "Story State and Canon checkpoints must advance together",
+            )
         if book["active_story_state_version_id"]:
             acceptance_inputs = (
                 *acceptance_inputs,
                 *self.resolve_asset_refs(
                     project_id=request["project_id"],
-                    asset_version_ids=(str(book["active_story_state_version_id"]),),
+                    asset_version_ids=(
+                        str(book["active_story_state_version_id"]),
+                        str(book["active_canon_snapshot_version_id"]),
+                    ),
                 ),
             )
         stable_key = f"{request['stable_idempotency_key']}:accept"
@@ -809,11 +820,7 @@ class PostgresBookAuthority:
         outputs = {item.asset_type: item for item in materialized_outputs}
         outcome = outputs["chapter_outcome"]
         story_state = outputs["story_state_snapshot"]
-        canon_snapshot = next(
-            item
-            for item in evidence["outputs"]
-            if item["asset_type"] == "canon_snapshot"
-        )
+        canon_snapshot = outputs["canon_snapshot"]
         self._probe("before_acceptance")
         acceptance_id = (
             "chapter-acceptance:" + hashlib.sha256(stable_key.encode()).hexdigest()
@@ -849,7 +856,7 @@ class PostgresBookAuthority:
                 chapter_number=int(request["chapter_number"]),
                 chapter_outcome_asset_version_id=outcome.asset_version_id,
                 story_state_asset_version_id=story_state.asset_version_id,
-                canon_snapshot_asset_version_id=str(canon_snapshot["asset_version_id"]),
+                canon_snapshot_asset_version_id=canon_snapshot.asset_version_id,
                 evidence={
                     "child_root_operation_id": request["chapter_root_operation_id"],
                     "child_saga_id": request["chapter_saga_id"],
@@ -872,9 +879,7 @@ class PostgresBookAuthority:
                 "chapter_number": int(request["chapter_number"]),
                 "chapter_outcome_asset_version_id": outcome.asset_version_id,
                 "story_state_asset_version_id": story_state.asset_version_id,
-                "canon_snapshot_asset_version_id": str(
-                    canon_snapshot["asset_version_id"]
-                ),
+                "canon_snapshot_asset_version_id": canon_snapshot.asset_version_id,
             }
 
         self._execute_mutation(
@@ -906,7 +911,7 @@ class PostgresBookAuthority:
             "acceptance_operation_id": admission.operation_id,
             "last_chapter_outcome_version_id": outcome.asset_version_id,
             "active_story_state_version_id": story_state.asset_version_id,
-            "active_canon_snapshot_version_id": str(canon_snapshot["asset_version_id"]),
+            "active_canon_snapshot_version_id": canon_snapshot.asset_version_id,
         }
 
     def pause(
@@ -2033,45 +2038,39 @@ class PostgresBookAuthority:
         chapter_number: int,
         requested: tuple[dict[str, Any], ...],
     ) -> tuple[dict[str, Any], ...]:
-        """Add only previously accepted Authority state to the next child input."""
+        """Freeze compact current state from the immediately preceding acceptance."""
         if chapter_number <= 1:
             return requested
+        book_id = str(self.require(book_run_id)["book_id"])
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
                 SELECT state.asset_type, state.asset_version_id,
                        state.content_hash, state.content
                 FROM (
-                    SELECT asset.asset_type, version.asset_version_id,
-                           version.content_hash, version.content
-                    FROM authority_child_delegation AS delegation
-                    JOIN authority_operation AS operation
-                      ON operation.root_operation_id=
-                         delegation.child_root_operation_id
-                     AND operation.project_id=delegation.project_id
-                    JOIN authority_operation_output_asset AS binding
-                      ON binding.operation_id=operation.operation_id
-                     AND binding.role='state_snapshot'
-                    JOIN authority_asset_version AS version
-                      ON version.asset_version_id=binding.asset_version_id
-                    JOIN authority_asset AS asset
-                      ON asset.asset_id=version.asset_id
-                     AND asset.project_id=delegation.project_id
-                    WHERE delegation.owner_id=%s
-                      AND delegation.project_id=%s
-                      AND delegation.chapter_number=%s
-                      AND delegation.status='ACCEPTED'
-                    UNION ALL
-                    SELECT 'story_state_snapshot',
-                           version.asset_version_id,
-                           version.content_hash, version.content
+                    SELECT 'story_state_snapshot'::text AS asset_type,
+                           story.asset_version_id,
+                           story.content_hash, story.content
                     FROM authority_book_chapter_acceptance AS acceptance
-                    JOIN authority_asset_version AS version
-                      ON version.asset_version_id=
+                    JOIN authority_asset_version AS story
+                      ON story.asset_version_id=
                          acceptance.story_state_asset_version_id
                     WHERE acceptance.book_run_id=%s
                       AND acceptance.project_id=%s
                       AND acceptance.chapter_number=%s
+                      AND acceptance.status='COMMITTED'
+                    UNION ALL
+                    SELECT 'canon_snapshot'::text AS asset_type,
+                           canon.asset_version_id,
+                           canon.content_hash, canon.content
+                    FROM authority_book_chapter_acceptance AS acceptance
+                    JOIN authority_asset_version AS canon
+                      ON canon.asset_version_id=
+                         acceptance.canon_snapshot_asset_version_id
+                    WHERE acceptance.book_run_id=%s
+                      AND acceptance.project_id=%s
+                      AND acceptance.chapter_number=%s
+                      AND acceptance.status='COMMITTED'
                 ) AS state
                 ORDER BY state.asset_type, state.asset_version_id
                 """,
@@ -2085,19 +2084,40 @@ class PostgresBookAuthority:
                 ],
             )
             rows = uow.cursor.fetchall()
-        if not rows:
+        if {str(row[0]) for row in rows} != {
+            "story_state_snapshot",
+            "canon_snapshot",
+        }:
             raise KernelError(
                 "BOOK_PREVIOUS_CHAPTER_STATE_MISSING",
-                "next Chapter requires accepted predecessor state snapshots",
+                "next Chapter requires one accepted predecessor Story State and Canon snapshot",
             )
         governed_items: list[dict[str, Any]] = []
         for row in rows:
             content = dict(row[3] or {})
+            expected_contract = (
+                "story-state-snapshot-v2"
+                if row[0] == "story_state_snapshot"
+                else "canon-snapshot-v2"
+            )
+            if (
+                content.get("contract_version") != expected_contract
+                or content.get("project_id") != project_id
+                or content.get("book_id") != book_id
+                or int(content.get("accepted_through_chapter") or 0)
+                != chapter_number - 1
+            ):
+                raise KernelError(
+                    "BOOK_PREVIOUS_CHAPTER_STATE_INVALID",
+                    "predecessor state contract, Project, Book or accepted chapter is invalid",
+                )
             safe_summary = (
                 f"Accepted chapter {chapter_number - 1} {row[0]} state snapshot."
             )
-            structured_facts = list(
-                content.get("changes") or content.get("facts") or []
+            structured_facts = (
+                compact_current_state_facts(content)
+                if row[0] == "story_state_snapshot"
+                else list(content.get("current_facts") or [])
             )
             rendered = json.dumps(
                 {
@@ -2115,6 +2135,11 @@ class PostgresBookAuthority:
                     "asset_version_id": str(row[1]),
                     "content_hash": str(row[2]),
                     "project_id": project_id,
+                    "scope": {
+                        "project_id": project_id,
+                        "book_id": str(content["book_id"]),
+                        "accepted_through_chapter": chapter_number - 1,
+                    },
                     "estimated_tokens": max(1, len(rendered) // 4),
                     "safe_summary": safe_summary,
                     "structured_facts": structured_facts,
@@ -2417,7 +2442,6 @@ def _validate_chapter_acceptance_evidence(
         "draft_version",
         "re_review_report",
         "canon_patch",
-        "canon_snapshot",
         "quality_score_report",
         "release_package",
         "final_release_gate_report",

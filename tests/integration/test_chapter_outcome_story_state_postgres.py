@@ -83,7 +83,9 @@ class ChapterOutcomeStoryStatePostgresTests(unittest.TestCase):
                 [admission.operation_id],
             )
             operation_status = str(uow.cursor.fetchone()[0])
-        self.assertEqual(partial_count, 7)
+        # The v2 ledger contains the two semantic events below.  The injected
+        # crash occurs after the first idempotent reducer receipt is persisted.
+        self.assertEqual(partial_count, 1)
         self.assertEqual(operation_status, "SUCCEEDED")
 
         failure["enabled"] = False
@@ -109,8 +111,10 @@ class ChapterOutcomeStoryStatePostgresTests(unittest.TestCase):
                 [admission.operation_id],
             )
             output_count = int(uow.cursor.fetchone()[0])
-        self.assertEqual(counts, (14, 14, 1))
-        self.assertEqual(output_count, 2)
+        self.assertEqual(counts, (2, 2, 1))
+        # ChapterOutcome, materialized StoryState, and materialized Canon are
+        # one atomic/recoverable output set under the same operation.
+        self.assertEqual(output_count, 3)
 
     @staticmethod
     def _seed_inputs(project_id: str) -> list[dict[str, str]]:
@@ -124,18 +128,25 @@ class ChapterOutcomeStoryStatePostgresTests(unittest.TestCase):
             "canon_patch": {
                 "gate": "PASSED",
                 "conflicts": [],
-                "snapshot_candidates": [
-                    {
-                        "state_kind": "timeline_snapshot",
-                        "changes": [{"event_id": "event-1"}],
-                    },
-                    {
-                        "state_kind": "reader_promise",
-                        "changes": [
-                            {"promise_id": "promise-1", "status": "OPEN"}
-                        ],
-                    },
-                ],
+                "state_changes": {
+                    "timeline_event": [
+                        {
+                            "event_id": "event-1",
+                            "description": "A arrives in Hangzhou",
+                            "confidence": 1.0,
+                            "coverage": "FULL_CHAPTER",
+                        },
+                    ],
+                    "reader_promise": [
+                        {
+                            "promise_id": "promise-1",
+                            "status": "OPEN",
+                            "description": "Reveal the hidden letter",
+                            "confidence": 1.0,
+                            "coverage": "FULL_CHAPTER",
+                        },
+                    ],
+                },
             },
             "quality_score_report": {"gate": "PASSED"},
             "release_package": {

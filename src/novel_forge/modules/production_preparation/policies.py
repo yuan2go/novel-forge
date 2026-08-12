@@ -8,33 +8,17 @@ from .contracts import ProductionInputRequirement, ProductionInputRole
 CONTINUING_CHAPTER_REQUIRED_ASSET_TYPES = (
     "story_state_snapshot",
     "canon_snapshot",
-    "character_state_snapshot",
-    "relationship_state_snapshot",
-    "timeline_snapshot",
-    "foreshadow_snapshot",
-    "promise_ledger_snapshot",
-    "reward_ledger_snapshot",
-    "world_rule_snapshot",
-    "power_state_snapshot",
-    "plot_thread_snapshot",
-    "resource_state_snapshot",
 )
 
 COLLECTION_ASSET_TYPES = frozenset(
     {
-        "character_state_snapshot",
-        "relationship_state_snapshot",
-        "foreshadow_snapshot",
         "reader_promise",
         "reward_item",
         "world_rule",
-        "plot_thread_snapshot",
-        "resource_state_snapshot",
         "knowledge_pack",
         "material_asset",
         "context_segment",
         "character_card",
-        "typed_empty_state_snapshot",
     }
 )
 
@@ -58,13 +42,9 @@ _BASE_ALLOWED = (
     "chapter_plan", "outline", "outline_version", "volume_arc", "world_bible",
     "creative_brief", "theme_question", "theme_arc", "closure_plan",
     "style_policy", "quality_profile", "quality_rubric", "platform_profile",
-    "context_profile", "story_state_snapshot", "canon_snapshot", "character_state_snapshot",
-    "relationship_state_snapshot", "timeline_snapshot", "foreshadow_snapshot",
-    "promise_ledger_snapshot", "reward_ledger_snapshot", "world_rule_snapshot",
-    "power_state_snapshot", "plot_thread_snapshot", "resource_state_snapshot",
+    "context_profile", "story_state_snapshot", "canon_snapshot",
     "character_card", "genre_profile", "knowledge_pack",
     "material_asset", "reader_promise", "empty_state_declaration",
-    "typed_empty_state_snapshot",
     "context_segment", "context_bundle",
     "draft_version", "review_rule", "review_report", "re_review_report", "canon_patch",
     "operator_checklist", "approval_decision",
@@ -203,7 +183,7 @@ CONTEXT_VERSION_REF_KEYS = {
     "volume_arc": "volume_arc_version",
     "world_bible": "world_bible_version",
     "canon_snapshot": "canon_snapshot_version",
-    "timeline_snapshot": "timeline_snapshot_version",
+    "story_state_snapshot": "story_state_snapshot_version",
     "style_policy": "style_policy_version",
     "quality_profile": "quality_profile_version",
     "quality_rubric": "quality_profile_version",

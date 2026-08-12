@@ -295,7 +295,7 @@
         "node_id": "canon",
         "operation_name": "chapter.canon.update",
         "operation_definition_ref": "chapter.canon.update@2.3.1",
-        "operation_definition_hash": "sha256:727d3a81d9506ada9a553298afd386389db31e1094157c6b796dc56321f42c51",
+        "operation_definition_hash": "sha256:fcade3a4da62b620617b272f1f640657813fb33e7dfd8c3bbf968d92f5d080cf",
         "handler_key": "novel_forge.chapter_authority.canon",
         "stage": "canon",
         "capability_id": "canon.extract",

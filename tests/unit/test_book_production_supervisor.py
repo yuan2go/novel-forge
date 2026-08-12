@@ -86,8 +86,9 @@ def test_supervisor_keeps_draft_budget_separate_from_quality_evidence_budget() -
 
     request = supervisor._chapter_preparation_request(
         book={
-            "project_id": "project:1",
-            "workspace_id": "workspace:1",
+                "project_id": "project:1",
+                "workspace_id": "workspace:1",
+                "book_id": "book:1",
             "stable_idempotency_key": "book:1",
         },
         next_chapter=3,

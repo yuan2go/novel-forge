@@ -16,6 +16,11 @@ class PostgresProductionAssetResolver:
     def resolve_latest(
         self, *, project_id: str, asset_type: str
     ) -> ResolvedProductionAsset | None:
+        if asset_type in {"story_state_snapshot", "canon_snapshot"}:
+            states = self._resolve_accepted_states(
+                project_id=project_id, asset_type=asset_type, limit=1
+            )
+            return states[0] if states else None
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
@@ -62,6 +67,10 @@ class PostgresProductionAssetResolver:
     ) -> tuple[ResolvedProductionAsset, ...]:
         if limit <= 0 or limit > 1000:
             raise ValueError("production asset selection limit is invalid")
+        if asset_type in {"story_state_snapshot", "canon_snapshot"}:
+            return self._resolve_accepted_states(
+                project_id=project_id, asset_type=asset_type, limit=limit
+            )
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
@@ -106,6 +115,37 @@ class PostgresProductionAssetResolver:
             )
             rows = uow.cursor.fetchall()
         return tuple(self._asset(row, "eligible scoped authority collection") for row in rows)
+
+    def resolve_accepted_for_boundary(
+        self,
+        *,
+        project_id: str,
+        book_id: str,
+        asset_type: str,
+        accepted_chapter: int,
+    ) -> tuple[ResolvedProductionAsset, ...]:
+        """Resolve the exact Book acceptance pointer required by continuation."""
+
+        if (
+            asset_type not in {"story_state_snapshot", "canon_snapshot"}
+            or not project_id
+            or not book_id
+            or accepted_chapter <= 0
+        ):
+            raise ValueError("accepted Narrative State boundary is invalid")
+        candidates = self._resolve_accepted_states(
+            project_id=project_id,
+            asset_type=asset_type,
+            limit=2,
+            book_id=book_id,
+            accepted_chapter=accepted_chapter,
+        )
+        if len(candidates) > 1:
+            raise KernelError(
+                "PREPARATION_ACCEPTED_STATE_AMBIGUOUS",
+                "Book acceptance resolved multiple Narrative State snapshots at one boundary",
+            )
+        return candidates
 
     def resolve_override(
         self, *, project_id: str, asset_version_id: str
@@ -154,39 +194,50 @@ class PostgresProductionAssetResolver:
                 "override AssetVersion is stale, revoked, or quarantined",
             )
         asset = self._asset(row[:10], "explicit audited AssetVersion override")
-        accepted_chapter = self._accepted_snapshot_chapter(
+        accepted_scope = self._accepted_snapshot_scope(
             project_id=project_id,
             asset_version_id=asset_version_id,
         )
-        if accepted_chapter is not None:
-            asset = self._bind_acceptance_chapter(asset, accepted_chapter)
+        if accepted_scope is not None:
+            asset = self._bind_acceptance_scope(asset, *accepted_scope)
         return asset
 
-    def _accepted_snapshot_chapter(
+    def _accepted_snapshot_scope(
         self, *, project_id: str, asset_version_id: str
-    ) -> int | None:
+    ) -> tuple[str, int, str] | None:
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
-                SELECT chapter_number
-                FROM authority_book_chapter_acceptance
-                WHERE project_id=%s
+                SELECT production.book_id, acceptance.chapter_number,
+                       acceptance.acceptance_id
+                FROM authority_book_chapter_acceptance AS acceptance
+                JOIN authority_book_production AS production
+                  ON production.book_run_id=acceptance.book_run_id
+                 AND production.project_id=acceptance.project_id
+                WHERE acceptance.project_id=%s
                   AND status='COMMITTED'
                   AND (
                     story_state_asset_version_id=%s
                     OR canon_snapshot_asset_version_id=%s
                   )
-                ORDER BY chapter_number DESC
+                ORDER BY acceptance.chapter_number DESC
                 LIMIT 1
                 """,
                 [project_id, asset_version_id, asset_version_id],
             )
             row = uow.cursor.fetchone()
-        return int(row[0]) if row is not None else None
+        return (
+            (str(row[0]), int(row[1]), str(row[2]))
+            if row is not None
+            else None
+        )
 
     @staticmethod
-    def _bind_acceptance_chapter(
-        asset: ResolvedProductionAsset, accepted_chapter: int
+    def _bind_acceptance_scope(
+        asset: ResolvedProductionAsset,
+        book_id: str,
+        accepted_chapter: int,
+        acceptance_id: str,
     ) -> ResolvedProductionAsset:
         content = dict(asset.content)
         declared = content.get("chapter", content.get("chapter_number"))
@@ -199,10 +250,93 @@ class PostgresProductionAssetResolver:
             {
                 "chapter": accepted_chapter,
                 "chapter_number": accepted_chapter,
+                "accepted_through_chapter": accepted_chapter,
+                "book_id": book_id,
+                "acceptance_id": acceptance_id,
                 "_authority_acceptance_bound": True,
             }
         )
         return replace(asset, content=content)
+
+    def _resolve_accepted_states(
+        self,
+        *,
+        project_id: str,
+        asset_type: str,
+        limit: int,
+        book_id: str = "",
+        accepted_chapter: int | None = None,
+    ) -> tuple[ResolvedProductionAsset, ...]:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT asset.project_id, asset.asset_id, version.asset_version_id,
+                       asset.asset_type, version.content_hash, version.content,
+                       COALESCE(qualification.decision, 'ELIGIBLE'),
+                       acceptance_operation.operation_id,
+                       acceptance_operation.definition_name,
+                       acceptance_operation.status,
+                       production.book_id, acceptance.chapter_number,
+                       acceptance.acceptance_id
+                FROM authority_book_chapter_acceptance AS acceptance
+                JOIN authority_book_production AS production
+                  ON production.book_run_id=acceptance.book_run_id
+                 AND production.project_id=acceptance.project_id
+                JOIN authority_operation AS acceptance_operation
+                  ON acceptance_operation.operation_id=
+                     acceptance.acceptance_operation_id
+                 AND acceptance_operation.project_id=acceptance.project_id
+                 AND acceptance_operation.status='SUCCEEDED'
+                JOIN authority_asset_version AS version
+                  ON version.asset_version_id=CASE
+                    WHEN %s='story_state_snapshot'
+                    THEN acceptance.story_state_asset_version_id
+                    ELSE acceptance.canon_snapshot_asset_version_id
+                  END
+                JOIN authority_asset AS asset
+                  ON asset.asset_id=version.asset_id
+                 AND asset.project_id=acceptance.project_id
+                 AND asset.asset_type=%s
+                LEFT JOIN LATERAL (
+                    SELECT decision
+                    FROM authority_asset_qualification
+                    WHERE asset_version_id=version.asset_version_id
+                    ORDER BY created_at DESC, qualification_id DESC
+                    LIMIT 1
+                ) AS qualification ON TRUE
+                WHERE acceptance.project_id=%s
+                  AND acceptance.status='COMMITTED'
+                  AND (%s='' OR production.book_id=%s)
+                  AND (%s::integer IS NULL OR acceptance.chapter_number=%s)
+                  AND version.lifecycle='ACTIVE'
+                  AND version.eligibility='ELIGIBLE'
+                  AND version.governance='CLEAR'
+                  AND COALESCE(qualification.decision, 'ELIGIBLE')='ELIGIBLE'
+                ORDER BY acceptance.chapter_number DESC,
+                         acceptance.created_at DESC
+                LIMIT %s
+                """,
+                [
+                    asset_type,
+                    asset_type,
+                    project_id,
+                    book_id,
+                    book_id,
+                    accepted_chapter,
+                    accepted_chapter,
+                    limit,
+                ],
+            )
+            rows = uow.cursor.fetchall()
+        return tuple(
+            self._bind_acceptance_scope(
+                self._asset(row[:10], "committed Book acceptance state"),
+                str(row[10]),
+                int(row[11]),
+                str(row[12]),
+            )
+            for row in rows
+        )
 
     @staticmethod
     def _asset(row: tuple[object, ...], reason: str) -> ResolvedProductionAsset:

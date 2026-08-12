@@ -292,7 +292,7 @@ def chapter_outcome_operation_definition(
         "output_contract": {
             "asset_type": "chapter_outcome",
             "output_key": "chapter.outcome",
-            "auxiliary_asset_types": ["story_state_snapshot"],
+            "auxiliary_asset_types": ["story_state_snapshot", "canon_snapshot"],
         },
         "handler_key": CHAPTER_OUTCOME_HANDLER_KEY,
         "handler_contract_version": "chapter-outcome-handler-v1",
@@ -335,6 +335,14 @@ def chapter_outcome_operation_definition(
                     "selector": "story_state_snapshot",
                     "output_key": "chapter.story_state",
                     "role": "story_state",
+                    "lifecycle": "ACTIVE",
+                    "eligibility": "ELIGIBLE",
+                    "governance": "CLEAR",
+                },
+                {
+                    "selector": "canon_snapshot",
+                    "output_key": "chapter.canon.current",
+                    "role": "canon_truth",
                     "lifecycle": "ACTIVE",
                     "eligibility": "ELIGIBLE",
                     "governance": "CLEAR",

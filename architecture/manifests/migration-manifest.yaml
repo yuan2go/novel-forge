@@ -1,7 +1,7 @@
 {
   "schema_version": "architecture-manifest.v1",
   "registry": "novel_forge.storage.migrations.versions:VERSION_MODULES",
-  "head": "20260811_0081_source_intelligence_router",
+  "head": "20260812_0082_narrative_state_contract_v2",
   "migration_ids": [
     "20260625_0001_initial_industrial_schema",
     "20260628_0002_query_and_release_indexes",
@@ -83,6 +83,7 @@
     "20260811_0078_reprocessing_action_expansion",
     "20260811_0079_source_import_scope_closure",
     "20260811_0080_source_snapshot_governance_identity",
-    "20260811_0081_source_intelligence_router"
+    "20260811_0081_source_intelligence_router",
+    "20260812_0082_narrative_state_contract_v2"
   ]
 }

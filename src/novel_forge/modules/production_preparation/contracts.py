@@ -26,6 +26,7 @@ class ProductionPreparationRequest:
     workspace_id: str
     chapter: int
     idempotency_key: str
+    book_id: str = ""
     title_override: str = ""
     premise_override: str = ""
     explicit_asset_version_overrides: dict[str, str | list[str]] = field(default_factory=dict)
@@ -103,6 +104,7 @@ class ProductionPreparationRepairAction:
 @dataclass(frozen=True, slots=True)
 class ProductionInputManifest:
     project_id: str
+    book_id: str
     workspace_id: str
     chapter: int
     stage: str
@@ -114,7 +116,6 @@ class ProductionInputManifest:
     volume_arc_version_id: str
     world_bible_version_id: str
     canon_snapshot_version_id: str
-    timeline_snapshot_version_id: str
     context_profile_version_id: str
     selected_asset_versions: tuple[dict[str, Any], ...]
     rejected_asset_versions: tuple[dict[str, Any], ...]
@@ -155,6 +156,7 @@ class ProductionPreparationReport:
 @dataclass(frozen=True, slots=True)
 class ChapterAuthorityCommand:
     project_id: str
+    book_id: str
     workspace_id: str
     chapter: int
     chapter_plan_asset_version_id: str
