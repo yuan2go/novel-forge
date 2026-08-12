@@ -526,6 +526,9 @@ def _validate(
             raise ValueError(f"{path} must be at least {minimum}")
         if maximum is not None and value > maximum:
             raise ValueError(f"{path} must be at most {maximum}")
+    elif expected == "boolean":
+        if not isinstance(value, bool):
+            raise ValueError(f"{path} must be a boolean")
     elif expected is not None:
         raise ValueError(f"{path} uses unsupported schema type {expected}")
     if "enum" in schema and value not in schema["enum"]:

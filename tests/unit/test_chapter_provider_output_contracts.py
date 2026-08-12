@@ -257,6 +257,37 @@ def test_schema_validation_does_not_treat_boolean_as_number() -> None:
     assert "confidence" in str(raised.value)
 
 
+def test_schema_validation_supports_nullable_boolean_canon_fields() -> None:
+    value = deepcopy(_valid("canon_extraction"))
+    change_schema = chapter_provider_output_schema("canon_extraction")["properties"][
+        "character_state_changes"
+    ]["items"]
+    value["character_state_changes"] = [
+        {
+            key: (
+                False
+                if key == "resurrection_authorized"
+                else None
+                if "null" in schema.get("type", [])
+                else "character remains alive"
+                if key == "summary"
+                else "CHARACTER_STATE_CONFIRMED"
+                if key == "impact_type"
+                else 0
+                if key == "evidence_start"
+                else 1
+                if key == "evidence_end"
+                else 0.9
+            )
+            for key, schema in change_schema["properties"].items()
+        }
+    ]
+
+    assert validate_chapter_provider_output_schema("canon_extraction", value) == value
+    normalized = validate_chapter_provider_output_semantics("canon_extraction", value)
+    assert normalized["character_state_changes"][0]["resurrection_authorized"] is False
+
+
 def test_quality_schema_requires_evidence_for_every_dimension() -> None:
     schema = chapter_provider_output_schema("quality_platform")
     locations = schema["properties"]["dimensions"]["items"]["properties"][
