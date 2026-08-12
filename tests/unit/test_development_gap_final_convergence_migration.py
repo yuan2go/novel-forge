@@ -13,7 +13,7 @@ def test_migration_converges_projections_without_new_execution_authority() -> No
     assert migration.FORWARD_ONLY is True
     assert "CREATE TABLE authority_book_replan_reevaluation" in sql
     assert "CREATE TABLE authority_operation_definition_release" in sql
-    assert "CREATE TABLE authority_operation" not in sql
+    assert "CREATE TABLE authority_operation (" not in sql
     assert "CREATE TABLE authority_attempt" not in sql
     assert "authority_mkaos_runtime_selection_projection" in sql
     assert "authority_mkaos_runtime_usage_projection" in sql
