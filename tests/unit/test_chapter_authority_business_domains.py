@@ -154,6 +154,52 @@ class ChapterAuthorityBusinessDomainTests(unittest.TestCase):
                 provider_evidence={},
             )
 
+    def test_quality_revision_accepts_only_active_subset_of_required_actions(
+        self,
+    ) -> None:
+        quality = {
+            "project_id": "project-a",
+            "required_actions": [
+                {"observation": "canon_consistency", "status": "OPEN"},
+                {"observation": "timeline_consistency", "status": "OPEN"},
+            ],
+        }
+        active_task = {
+            "project_id": "project-a",
+            "observation": "timeline_consistency",
+            "status": "OPEN",
+            "target_revision_asset_version_id": "revision-v1",
+        }
+        corrected = apply_quality_revision_result(
+            project_id="project-a",
+            revision={"chapter": 1, "title": "Cost", "text": "old"},
+            revision_asset_version_id="revision-v1",
+            quality=quality,
+            quality_asset_version_id="quality-v1",
+            revision_tasks=(active_task,),
+            revision_task_asset_version_ids=("active-task-v1",),
+            context_bundle_version_id="context-v1",
+            result={"text": "Only the active timeline action is repaired."},
+            provider_evidence={"provider_id": "fixture"},
+        )
+        self.assertEqual(
+            corrected["quality_action_observations"], ["timeline_consistency"]
+        )
+        unknown_task = {**active_task, "observation": "unknown_action"}
+        with self.assertRaisesRegex(KernelError, "QUALITY_REVISION_TASK_CONFLICT"):
+            apply_quality_revision_result(
+                project_id="project-a",
+                revision={"chapter": 1, "title": "Cost", "text": "old"},
+                revision_asset_version_id="revision-v1",
+                quality=quality,
+                quality_asset_version_id="quality-v1",
+                revision_tasks=(unknown_task,),
+                revision_task_asset_version_ids=("unknown-task-v1",),
+                context_bundle_version_id="context-v1",
+                result={"text": "An unknown action must not run."},
+                provider_evidence={},
+            )
+
     def test_canon_quality_and_publish_use_structured_evidence(self) -> None:
         review = self.review()
         revision = self.revision(review)

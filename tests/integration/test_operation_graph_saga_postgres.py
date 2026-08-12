@@ -21,6 +21,7 @@ from novel_forge.modules.command_kernel.operation_graph import (
     operation_graph,
     register_saga_step,
     start_saga,
+    terminalize_saga_from_extension,
 )
 from novel_forge.modules.command_kernel.runtime import (
     OperationTransitionCommand,
@@ -134,6 +135,86 @@ class OperationGraphSagaPostgresTests(unittest.TestCase):
         with transaction() as connection, connection.cursor() as cursor:
             cursor.execute("SELECT status FROM authority_operation WHERE operation_id = %s", [root])
             self.assertEqual(cursor.fetchone()[0], "SUCCEEDED")
+
+    def test_extension_terminalization_rejects_immutable_saga_outcomes(self) -> None:
+        for saga_status, root_status in (
+            ("SUCCEEDED", "SUCCEEDED"),
+            ("COMPENSATED", "COMPENSATED"),
+            ("COMPENSATION_FAILED", "COMPENSATION_FAILED"),
+        ):
+            with self.subTest(saga_status=saga_status):
+                context, root, children = self._graph_fixture(
+                    1, root_status="EXECUTING"
+                )
+                extension = children[0]
+                saga_id = start_saga(
+                    DATABASE_URL, context, root_operation_id=root
+                )["saga_id"]
+                with transaction() as connection, connection.cursor() as cursor:
+                    cursor.execute(
+                        "UPDATE authority_operation SET status=%s WHERE operation_id=%s",
+                        [root_status, root],
+                    )
+                    cursor.execute(
+                        "UPDATE authority_operation SET status='FAILED_FINAL' WHERE operation_id=%s",
+                        [extension],
+                    )
+                    cursor.execute(
+                        "UPDATE authority_saga SET status=%s WHERE saga_id=%s",
+                        [saga_status, saga_id],
+                    )
+                with self.assertRaises(KernelError) as caught:
+                    terminalize_saga_from_extension(
+                        DATABASE_URL,
+                        context,
+                        saga_id,
+                        operation_id=extension,
+                    )
+                self.assertEqual(
+                    caught.exception.code, "SAGA_EXTENSION_TERMINAL_CONFLICT"
+                )
+
+    def test_extension_terminalization_replays_only_the_same_outcome(self) -> None:
+        context, root, children = self._graph_fixture(1, root_status="EXECUTING")
+        extension = children[0]
+        saga_id = start_saga(DATABASE_URL, context, root_operation_id=root)["saga_id"]
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE authority_operation SET status='FAILED_FINAL' WHERE operation_id=%s",
+                [extension],
+            )
+        first = terminalize_saga_from_extension(
+            DATABASE_URL, context, saga_id, operation_id=extension
+        )
+        replay = terminalize_saga_from_extension(
+            DATABASE_URL, context, saga_id, operation_id=extension
+        )
+        self.assertFalse(first["replayed"])
+        self.assertTrue(replay["replayed"])
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE authority_operation SET status='CANCELLED' WHERE operation_id=%s",
+                [extension],
+            )
+        with self.assertRaises(KernelError) as caught:
+            terminalize_saga_from_extension(
+                DATABASE_URL, context, saga_id, operation_id=extension
+            )
+        self.assertEqual(caught.exception.code, "SAGA_EXTENSION_TERMINAL_CONFLICT")
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT operation.status, saga.status
+                FROM authority_operation AS operation
+                JOIN authority_saga AS saga
+                  ON saga.root_operation_id=operation.operation_id
+                WHERE operation.operation_id=%s
+                """,
+                [root],
+            )
+            self.assertEqual(
+                cursor.fetchone(), ("FAILED_FINAL", "MANUAL_INTERVENTION")
+            )
 
     def test_saga_failure_plans_reverse_compensation_and_distinguishes_partial_failure(self) -> None:
         context, root, children = self._graph_fixture(3, root_status="EXECUTING")

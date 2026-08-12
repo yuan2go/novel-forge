@@ -72,6 +72,7 @@ from novel_forge.modules.command_kernel.operation_graph import (
     add_operation_dependency,
     coordinate_saga,
     register_saga_step,
+    terminalize_saga_from_extension,
 )
 from novel_forge.modules.command_kernel.service import AdmissionContext, admit_command
 from novel_forge.modules.command_kernel.runtime import (
@@ -152,6 +153,7 @@ class ChapterAuthorityScheduler:
         ) or coordinated["status"] in {
             "FAILED_FINAL",
             "DEAD_LETTER",
+            "MANUAL_INTERVENTION",
             "CANCELLED",
             "COMPENSATED",
             "COMPENSATION_FAILED",
@@ -321,13 +323,7 @@ class ChapterAuthorityScheduler:
                 "DEAD_LETTER",
                 "CANCELLED",
             }:
-                return self._generation_tick(
-                    root,
-                    saga,
-                    operation,
-                    node,
-                    "quality_correction_terminal_replay",
-                )
+                return self._terminal_quality_correction(root, saga, operation, node)
             if operation is None:
                 inputs, dependencies = self._quality_correction_inputs(
                     request=request,
@@ -388,7 +384,18 @@ class ChapterAuthorityScheduler:
                     activate_immediately=True,
                 )
                 correction[node] = operation
-            recovery = self._execute_node(request, node, operation)
+            try:
+                recovery = self._execute_node(request, node, operation)
+            except Exception:
+                current = self._child(
+                    str(operation["operation_id"]), request.project_id
+                )
+                if current["status"] in {"FAILED_FINAL", "DEAD_LETTER", "CANCELLED"}:
+                    return self._terminal_quality_correction(root, saga, current, node)
+                raise
+            current = self._child(str(operation["operation_id"]), request.project_id)
+            if current["status"] in {"FAILED_FINAL", "DEAD_LETTER", "CANCELLED"}:
+                return self._terminal_quality_correction(root, saga, current, node)
             final = coordinate_saga(
                 self.database_url,
                 GraphCommandContext(
@@ -412,6 +419,35 @@ class ChapterAuthorityScheduler:
             )
         return None
 
+    def _terminal_quality_correction(
+        self,
+        root: dict[str, Any],
+        saga: dict[str, Any],
+        operation: dict[str, Any],
+        node: ChapterNode,
+    ) -> ChapterSchedulerTick:
+        terminal = terminalize_saga_from_extension(
+            self.database_url,
+            GraphCommandContext(
+                project_id=str(root["project_id"]),
+                actor_id=self.worker_id,
+                trace_id=str(root["trace_id"]),
+                correlation_id=str(root["correlation_id"]),
+                causation_id=str(operation["operation_id"]),
+            ),
+            str(saga["saga_id"]),
+            operation_id=str(operation["operation_id"]),
+        )
+        return ChapterSchedulerTick(
+            root_operation_id=str(root["operation_id"]),
+            saga_id=str(saga["saga_id"]),
+            saga_status=str(terminal["saga_status"]),
+            operation_id=str(operation["operation_id"]),
+            node=node.value,
+            operation_status=str(operation["status"]),
+            recovery_mode="quality_correction_terminal_replay",
+        )
+
     def pending_roots(self, *, limit: int = 20) -> tuple[tuple[str, str], ...]:
         if limit <= 0:
             raise ValueError("pending root limit must be positive")
@@ -428,7 +464,8 @@ class ChapterAuthorityScheduler:
                     'CANCELLATION_REQUESTED', 'WAITING_GATE'
                   )
                   AND saga.status NOT IN (
-                    'SUCCEEDED', 'COMPENSATED', 'COMPENSATION_FAILED', 'CANCELLED'
+                    'SUCCEEDED', 'COMPENSATED', 'COMPENSATION_FAILED',
+                    'MANUAL_INTERVENTION', 'CANCELLED'
                   )
                 ORDER BY operation.created_at, operation.operation_id
                 LIMIT %s
@@ -826,8 +863,11 @@ class ChapterAuthorityScheduler:
                 FROM authority_operation_output_asset AS binding
                 JOIN authority_operation AS operation
                   ON operation.operation_id=binding.operation_id
+                JOIN authority_asset_version AS version
+                  ON version.asset_version_id=binding.asset_version_id
                 WHERE binding.operation_id=%s AND operation.project_id=%s
                   AND binding.role=%s
+                  AND version.lifecycle='ACTIVE'
                 ORDER BY binding.output_key
                 """,
                 [operation_id, project_id, role],

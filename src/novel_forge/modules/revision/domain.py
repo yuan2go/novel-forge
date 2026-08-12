@@ -108,12 +108,14 @@ def apply_quality_revision_result(
         str(item.get("observation") or item.get("issue", {}).get("code") or "")
         for item in revision_tasks
     }
-    if not expected or expected != frozen or any(
+    expected.discard("")
+    frozen.discard("")
+    if not expected or not frozen or not frozen.issubset(expected) or any(
         str(item.get("status") or "OPEN") != "OPEN" for item in revision_tasks
     ):
         raise KernelError(
             "QUALITY_REVISION_TASK_CONFLICT",
-            "frozen RevisionTasks differ from the aggregate Quality required actions",
+            "frozen RevisionTasks are not active aggregate Quality required actions",
         )
     if str(quality.get("project_id") or "") != project_id or any(
         str(item.get("project_id") or "") != project_id
@@ -133,7 +135,7 @@ def apply_quality_revision_result(
         "quality_revision_task_asset_version_ids": list(
             revision_task_asset_version_ids
         ),
-        "quality_action_observations": sorted(expected),
+        "quality_action_observations": sorted(frozen),
         "context_bundle_version_id": context_bundle_version_id,
         "provider_evidence": dict(provider_evidence),
         "revision_contract_version": "quality-corrective-revision-v1",

@@ -229,6 +229,96 @@ def register_saga_step(
     return {"created": created}
 
 
+def terminalize_saga_from_extension(
+    database_url: str,
+    context: GraphCommandContext,
+    saga_id: str,
+    *,
+    operation_id: str,
+) -> dict[str, Any]:
+    """Propagate a late-bound child terminal through its existing root Saga."""
+    _validate_context(context)
+    with AuthorityUnitOfWork(database_url) as uow:
+        repository = uow.repositories.operation_graph
+        saga = repository.saga_for_update(saga_id, context.project_id)
+        operation = repository.operation(operation_id, context.project_id, lock=True)
+        if operation["root_operation_id"] != saga["root_operation_id"]:
+            raise KernelError(
+                "SAGA_EXTENSION_ROOT_CONFLICT",
+                "terminal extension Operation belongs to another root",
+            )
+        operation_status = str(operation["status"])
+        if operation_status not in {"FAILED_FINAL", "DEAD_LETTER", "CANCELLED"}:
+            raise KernelError(
+                "SAGA_EXTENSION_NOT_TERMINAL",
+                "extension Operation has no terminal failure or cancellation",
+            )
+        saga_status = (
+            "CANCELLED" if operation_status == "CANCELLED" else "MANUAL_INTERVENTION"
+        )
+        root_status = "CANCELLED" if operation_status == "CANCELLED" else "FAILED_FINAL"
+        root = repository.operation(
+            str(saga["root_operation_id"]),
+            context.project_id,
+            lock=True,
+        )
+        current_root_status = str(root["status"])
+        if str(saga["status"]) == saga_status and current_root_status == root_status:
+            return {
+                "saga_status": saga_status,
+                "root_status": root_status,
+                "replayed": True,
+            }
+        if (
+            str(saga["status"])
+            not in {"RUNNING", "FORWARD_RECOVERY", "WAITING_GATE"}
+            or current_root_status in TERMINAL_STATUSES
+        ):
+            raise KernelError(
+                "SAGA_EXTENSION_TERMINAL_CONFLICT",
+                "extension cannot overwrite an existing terminal Saga outcome",
+            )
+        lease = repository.acquire_coordinator(
+            saga,
+            owner=context.actor_id,
+            lease_id=str(uuid4()),
+            lease_seconds=30,
+        )
+        if str(saga["status"]) != saga_status:
+            repository.update_saga(saga_id, int(saga["version"]), saga_status)
+        if repository.complete_root(str(saga["root_operation_id"]), root_status):
+            _record_operation_transition(
+                repository,
+                context,
+                str(saga["root_operation_id"]),
+                root_status,
+                lease["fencing_token"],
+            )
+        _record(
+            repository,
+            context,
+            str(saga["root_operation_id"]),
+            "authority.saga.extension_terminal_propagated",
+            {
+                "saga_id": saga_id,
+                "extension_operation_id": operation_id,
+                "extension_operation_status": operation_status,
+                "saga_status": saga_status,
+                "root_status": root_status,
+                "coordinator_fencing_token": lease["fencing_token"],
+            },
+            aggregate_type="authority_saga",
+            aggregate_id=saga_id,
+        )
+        repository.release_coordinator(
+            saga_id,
+            context.actor_id,
+            lease["fencing_token"],
+        )
+        uow.commit()
+    return {"saga_status": saga_status, "root_status": root_status, "replayed": False}
+
+
 def coordinate_saga(
     database_url: str,
     context: GraphCommandContext,
@@ -242,7 +332,13 @@ def coordinate_saga(
         saga = repository.saga_for_update(saga_id, context.project_id)
         repository.synchronize_compensation_statuses(saga_id)
         steps = repository.saga_steps(saga_id)
-        if saga["status"] in {"SUCCEEDED", "COMPENSATED", "COMPENSATION_FAILED", "CANCELLED"}:
+        if saga["status"] in {
+            "SUCCEEDED",
+            "COMPENSATED",
+            "COMPENSATION_FAILED",
+            "MANUAL_INTERVENTION",
+            "CANCELLED",
+        }:
             return _saga_result(saga["status"], steps)
         lease = repository.acquire_coordinator(
             saga,
