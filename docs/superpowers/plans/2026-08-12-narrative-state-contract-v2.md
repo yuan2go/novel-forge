@@ -39,7 +39,7 @@ Cover deterministic event IDs, Project/Book/entity scope, source/effective bound
 
 - [ ] **Step 2: Verify the contract tests fail**
 
-Run: `PYTHONPATH=src .venv/bin/python -m pytest tests/unit/test_narrative_state_contract_v2.py -q`  
+Run: `PYTHONPATH=src .venv/bin/python -m pytest tests/unit/test_narrative_state_contract_v2.py -q`
 Expected: import failure for `novel_forge.modules.narrative_state`.
 
 - [ ] **Step 3: Implement the immutable contract**
@@ -52,7 +52,7 @@ Map `occurred_events`, typed delta/action arrays, legacy chapter names and legac
 
 - [ ] **Step 5: Run contract and architecture-manifest tests**
 
-Run: `PYTHONPATH=src .venv/bin/python -m pytest tests/unit/test_narrative_state_contract_v2.py tests/architecture/test_architecture_manifests.py -q`  
+Run: `PYTHONPATH=src .venv/bin/python -m pytest tests/unit/test_narrative_state_contract_v2.py tests/architecture/test_architecture_manifests.py -q`
 Expected: all pass.
 
 ### Task 2: Typed deterministic reducers and replay
@@ -73,7 +73,7 @@ Use Lin/Hangzhou/Secret-X/Mei/Beijing/Promise-P/WorldRule-R/Resource-X/Foreshado
 
 - [ ] **Step 2: Verify append-list v1 fails the suite**
 
-Run: `PYTHONPATH=src .venv/bin/python -m pytest tests/unit/test_narrative_state_semantics_v2.py -q`  
+Run: `PYTHONPATH=src .venv/bin/python -m pytest tests/unit/test_narrative_state_semantics_v2.py -q`
 Expected: missing reducer/projection APIs.
 
 - [ ] **Step 3: Implement policy-specific reducers**
@@ -86,7 +86,7 @@ Implement keyed upsert, declared-from transition, lifecycle open/close, world-ru
 
 - [ ] **Step 5: Run reducer and existing ChapterOutcome tests**
 
-Run: `PYTHONPATH=src .venv/bin/python -m pytest tests/unit/test_narrative_state_semantics_v2.py tests/unit/test_chapter_outcome_story_state.py -q`  
+Run: `PYTHONPATH=src .venv/bin/python -m pytest tests/unit/test_narrative_state_semantics_v2.py tests/unit/test_chapter_outcome_story_state.py -q`
 Expected: all pass with v2 assertions.
 
 ### Task 3: Canon current snapshot and acceptance ownership
@@ -128,8 +128,8 @@ Pass Canon patch AssetVersion, draft AssetVersion, source Operation and Trace in
 
 - [ ] **Step 5: Run focused Canon, provider and PostgreSQL tests**
 
-Run: `PYTHONPATH=src .venv/bin/python -m pytest tests/unit/test_stateful_canon_domain.py tests/unit/test_chapter_provider_output_contracts.py tests/unit/test_chapter_outcome_story_state.py -q`  
-Run with test PostgreSQL: `NOVEL_FORGE_DATABASE_URL=postgresql://novel_forge:novel_forge@localhost:55432/novel_forge_authority_test PYTHONPATH=src .venv/bin/python -m pytest tests/integration/test_chapter_outcome_story_state_postgres.py -q`  
+Run: `PYTHONPATH=src .venv/bin/python -m pytest tests/unit/test_stateful_canon_domain.py tests/unit/test_chapter_provider_output_contracts.py tests/unit/test_chapter_outcome_story_state.py -q`
+Run with test PostgreSQL: `NOVEL_FORGE_DATABASE_URL=postgresql://novel_forge:novel_forge@localhost:55432/novel_forge_authority_test PYTHONPATH=src .venv/bin/python -m pytest tests/integration/test_chapter_outcome_story_state_postgres.py -q`
 Expected: all pass.
 
 ### Task 4: Forward-only PostgreSQL projections and Temporal Query
@@ -166,8 +166,8 @@ Load accepted outcomes in chapter order, adapt v1 only at the input boundary, re
 
 - [ ] **Step 5: Run migration and PostgreSQL proof**
 
-Run: `PYTHONPATH=src .venv/bin/python -m pytest tests/unit/test_narrative_state_migration_v2.py tests/unit/test_temporal_query_domain.py -q`  
-Run: `NOVEL_FORGE_DATABASE_URL=postgresql://novel_forge:novel_forge@localhost:55432/novel_forge_authority_test PYTHONPATH=src .venv/bin/python -m pytest tests/integration/test_authority_migrations_postgres.py tests/integration/test_narrative_state_v2_postgres.py -q`  
+Run: `PYTHONPATH=src .venv/bin/python -m pytest tests/unit/test_narrative_state_migration_v2.py tests/unit/test_temporal_query_domain.py -q`
+Run: `NOVEL_FORGE_DATABASE_URL=postgresql://novel_forge:novel_forge@localhost:55432/novel_forge_authority_test PYTHONPATH=src .venv/bin/python -m pytest tests/integration/test_authority_migrations_postgres.py tests/integration/test_narrative_state_v2_postgres.py -q`
 Expected: all pass.
 
 ### Task 5: Accepted compact state in Production Preparation and Context
@@ -208,8 +208,8 @@ Use `compact_current_state_facts()` in candidate construction, retain source iso
 
 - [ ] **Step 5: Run preparation, Context and Book integration tests**
 
-Run: `PYTHONPATH=src .venv/bin/python -m pytest tests/unit/test_authority_production_preparation.py tests/unit/test_quality_context_authority.py -q`  
-Run: `NOVEL_FORGE_DATABASE_URL=postgresql://novel_forge:novel_forge@localhost:55432/novel_forge_authority_test PYTHONPATH=src .venv/bin/python -m pytest tests/integration/test_book_to_chapter_authority_vertical_postgres.py -q`  
+Run: `PYTHONPATH=src .venv/bin/python -m pytest tests/unit/test_authority_production_preparation.py tests/unit/test_quality_context_authority.py -q`
+Run: `NOVEL_FORGE_DATABASE_URL=postgresql://novel_forge:novel_forge@localhost:55432/novel_forge_authority_test PYTHONPATH=src .venv/bin/python -m pytest tests/integration/test_book_to_chapter_authority_vertical_postgres.py -q`
 Expected: all pass.
 
 ### Task 6: Architecture, ownership and documentation closure
@@ -235,8 +235,8 @@ Document the event/current/as-of layers, accepted boundary, reducer matrix, sole
 
 - [ ] **Step 3: Run architecture and head-integrity gates**
 
-Run: `PYTHONPATH=src .venv/bin/python -m pytest tests/architecture/test_narrative_state_boundaries.py -q`  
-Run: `make architecture-manifests-check architecture-fitness-check head-integrity-check`  
+Run: `PYTHONPATH=src .venv/bin/python -m pytest tests/architecture/test_narrative_state_boundaries.py -q`
+Run: `make architecture-manifests-check architecture-fitness-check head-integrity-check`
 Expected: all pass.
 
 ### Task 7: Full qualification, publication and Draft PR
@@ -250,20 +250,20 @@ Expected: all pass.
 
 - [ ] **Step 1: Run local gates**
 
-Run: `make validate`  
-Run: `make authority-test`  
-Run: `make test`  
+Run: `make validate`
+Run: `make authority-test`
+Run: `make test`
 Expected: all applicable checks pass; existing deprecation warnings remain non-blocking.
 
 - [ ] **Step 2: Run clean PostgreSQL migration and full Authority integration**
 
-Run: `make postgres-authority-test-down && make postgres-authority-test-up && make postgres-authority-test`  
+Run: `make postgres-authority-test-down && make postgres-authority-test-up && make postgres-authority-test`
 Expected: all non-skippable PostgreSQL tests pass with migration head `20260812_0082_narrative_state_contract_v2`.
 
 - [ ] **Step 3: Run final integrity checks**
 
-Run: `make sync-skills-dry-run && make check-skills`  
-Run: `git diff --check && git status --short --branch`  
+Run: `make sync-skills-dry-run && make check-skills`
+Run: `git diff --check && git status --short --branch`
 Expected: no skill drift, no whitespace errors, no unrelated or protected local state.
 
 - [ ] **Step 4: Commit and push**

@@ -1,7 +1,7 @@
 # Narrative State Contract v2 Design
 
-Date: 2026-08-12  
-Start SHA: `55b33675f223488fe7193d672ecdfc7e7df28737`  
+Date: 2026-08-12
+Start SHA: `55b33675f223488fe7193d672ecdfc7e7df28737`
 Branch: `refactor/narrative-state-contract-v2`
 
 ## Scope and decision
