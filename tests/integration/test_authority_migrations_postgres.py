@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import unittest
 
 import psycopg
@@ -7,6 +8,8 @@ from psycopg import sql
 from psycopg.conninfo import conninfo_to_dict, make_conninfo
 
 from novel_forge.storage.migrations import LATEST_MIGRATION_ID, MIGRATIONS, run_migrations
+from novel_forge.modules.runtime_job import RuntimeJobAuthority, RuntimeJobSpec
+from novel_forge.modules.runtime_job.application import canonical_payload_hash
 from tests.integration.authority_postgres_support import DATABASE_URL, identifier
 
 
@@ -170,6 +173,84 @@ class AuthorityMigrationsPostgresTests(unittest.TestCase):
             ).fetchone()
         self.assertEqual(operation, (operation_id, "ADMITTED"))
         self.assertEqual(blob_project_column, ("NO",))
+
+    def test_existing_0083_runtime_job_identity_upgrades_by_project(self) -> None:
+        dedupe_key = "book:shared:version:3"
+        input_snapshot = {"observed_version": 3, "state": "CHAPTER_COMPLETED"}
+        old_identity = "\x1f".join(
+            ("book", "BOOK_COORDINATION_TICK", dedupe_key)
+        )
+        old_runtime_job_id = (
+            "runtime-job:"
+            + hashlib.sha256(old_identity.encode("utf-8")).hexdigest()
+        )
+        with psycopg.connect(self.test_url) as connection, connection.cursor() as cursor:
+            for migration in MIGRATIONS[:-1]:
+                for statement in migration.upgrade_statements:
+                    cursor.execute(statement)
+                cursor.execute(
+                    "INSERT INTO nf_schema_migrations (migration_id) VALUES (%s)",
+                    [migration.migration_id],
+                )
+            cursor.execute(
+                """
+                INSERT INTO authority_runtime_job(
+                  runtime_job_id, job_kind, runtime_group, subject_kind,
+                  subject_id, project_id, dedupe_key, input_snapshot, input_hash
+                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                """,
+                [
+                    old_runtime_job_id,
+                    "BOOK_COORDINATION_TICK",
+                    "book",
+                    "BOOK_RUN",
+                    "book-run:shared",
+                    "project:a",
+                    dedupe_key,
+                    psycopg.types.json.Jsonb(input_snapshot),
+                    canonical_payload_hash(input_snapshot),
+                ],
+            )
+
+        status = run_migrations(self.test_url)
+        self.assertTrue(status["ok"])
+        authority = RuntimeJobAuthority(self.test_url)
+
+        def spec(project_id: str) -> RuntimeJobSpec:
+            return RuntimeJobSpec(
+                job_kind="BOOK_COORDINATION_TICK",
+                runtime_group="book",
+                subject_kind="BOOK_RUN",
+                subject_id="book-run:shared",
+                project_id=project_id,
+                dedupe_key=dedupe_key,
+                input_snapshot=input_snapshot,
+            )
+
+        replay = authority.schedule(spec("project:a"))
+        isolated = authority.schedule(spec("project:b"))
+        self.assertEqual(replay["runtime_job_id"], old_runtime_job_id)
+        self.assertTrue(replay["deduplicated"])
+        self.assertTrue(isolated["created"])
+        self.assertNotEqual(isolated["runtime_job_id"], old_runtime_job_id)
+        with psycopg.connect(self.test_url) as connection:
+            definitions = dict(
+                connection.execute(
+                    """
+                    SELECT indexname, indexdef
+                    FROM pg_indexes
+                    WHERE schemaname='public'
+                      AND indexname IN (
+                        'authority_runtime_job_dedupe_idx',
+                        'authority_runtime_job_active_subject_idx'
+                      )
+                    """
+                ).fetchall()
+            )
+        self.assertIn("project_id", definitions["authority_runtime_job_dedupe_idx"])
+        self.assertIn(
+            "project_id", definitions["authority_runtime_job_active_subject_idx"]
+        )
 
 
 if __name__ == "__main__":

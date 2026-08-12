@@ -12,6 +12,19 @@ FORWARD_FIX = (
 
 
 UPGRADE_STATEMENTS = [
+    "DROP INDEX IF EXISTS authority_runtime_job_active_subject_idx",
+    "DROP INDEX IF EXISTS authority_runtime_job_dedupe_idx",
+    """
+    CREATE UNIQUE INDEX authority_runtime_job_dedupe_idx
+    ON authority_runtime_job(project_id, runtime_group, job_kind, dedupe_key)
+    """,
+    """
+    CREATE UNIQUE INDEX authority_runtime_job_active_subject_idx
+    ON authority_runtime_job(
+      project_id, runtime_group, job_kind, subject_kind, subject_id
+    )
+    WHERE status IN ('READY','CLAIMED','RUNNING','CHECKPOINTED','RETRY_WAIT')
+    """,
     """
     CREATE TABLE authority_book_replan_reevaluation (
         reevaluation_id TEXT PRIMARY KEY,

@@ -45,9 +45,9 @@ def canonical_payload_hash(value: Any) -> str:
 
 
 def deterministic_runtime_job_id(
-    *, runtime_group: str, job_kind: str, dedupe_key: str
+    *, project_id: str, runtime_group: str, job_kind: str, dedupe_key: str
 ) -> str:
-    identity = "\x1f".join((runtime_group, job_kind, dedupe_key))
+    identity = "\x1f".join((project_id, runtime_group, job_kind, dedupe_key))
     return "runtime-job:" + hashlib.sha256(identity.encode("utf-8")).hexdigest()
 
 
@@ -84,6 +84,8 @@ class RuntimeJobSpec:
             raise ValueError(
                 "runtime job group and subject do not match its operational contract"
             )
+        if self.runtime_group != "maintenance" and not self.project_id.strip():
+            raise ValueError("project-scoped runtime jobs require a project identity")
         if self.max_attempts <= 0:
             raise ValueError("runtime job max_attempts must be positive")
         if self.priority < 0:
@@ -94,6 +96,7 @@ class RuntimeJobSpec:
     @property
     def runtime_job_id(self) -> str:
         return deterministic_runtime_job_id(
+            project_id=self.project_id,
             runtime_group=self.runtime_group,
             job_kind=self.job_kind,
             dedupe_key=self.dedupe_key,
@@ -169,7 +172,7 @@ class RuntimeJobAuthority:
                 SELECT runtime_job_id, input_hash, status, current_attempt_id,
                        dedupe_key
                 FROM authority_runtime_job
-                WHERE runtime_group=%s AND job_kind=%s
+                WHERE project_id=%s AND runtime_group=%s AND job_kind=%s
                   AND (
                       dedupe_key=%s
                       OR (
@@ -184,6 +187,7 @@ class RuntimeJobAuthority:
                 FOR UPDATE
                 """,
                 [
+                    spec.project_id,
                     spec.runtime_group,
                     spec.job_kind,
                     spec.dedupe_key,
@@ -239,6 +243,7 @@ class RuntimeJobAuthority:
         worker_id: str,
         lease_seconds: int,
         job_kinds: Iterable[str] = (),
+        project_id: str = "",
         subject_kind: str = "",
         subject_id: str = "",
     ) -> RuntimeJobClaim | None:
@@ -257,6 +262,7 @@ class RuntimeJobAuthority:
                 FROM authority_runtime_job AS job
                 WHERE job.runtime_group=%s
                   AND (%s::text[]='{}'::text[] OR job.job_kind=ANY(%s))
+                  AND (%s='' OR job.project_id=%s)
                   AND (%s='' OR (job.subject_kind=%s AND job.subject_id=%s))
                   AND (
                       (
@@ -283,6 +289,8 @@ class RuntimeJobAuthority:
                     runtime_group,
                     list(kinds),
                     list(kinds),
+                    project_id,
+                    project_id,
                     subject_kind,
                     subject_kind,
                     subject_id,

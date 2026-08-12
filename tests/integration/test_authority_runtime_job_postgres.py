@@ -21,6 +21,7 @@ class AuthorityRuntimeJobPostgresTests(unittest.TestCase):
 
     def setUp(self) -> None:
         self.runtime_group = "book"
+        self.project_id = identifier("project")
         self.authority = RuntimeJobAuthority(DATABASE_URL)
 
     def spec(self, *, dedupe_key: str, subject_id: str = "subject:1") -> RuntimeJobSpec:
@@ -29,7 +30,7 @@ class AuthorityRuntimeJobPostgresTests(unittest.TestCase):
             runtime_group=self.runtime_group,
             subject_kind="BOOK_RUN",
             subject_id=subject_id,
-            project_id=identifier("project"),
+            project_id=self.project_id,
             dedupe_key=dedupe_key,
             input_snapshot={"observed_version": 3, "state": "CHAPTER_COMPLETED"},
             max_attempts=2,
@@ -40,6 +41,7 @@ class AuthorityRuntimeJobPostgresTests(unittest.TestCase):
             runtime_group=self.runtime_group,
             worker_id=worker_id,
             lease_seconds=30,
+            project_id=self.project_id,
             subject_kind="BOOK_RUN",
             subject_id=subject_id,
         )
@@ -91,6 +93,44 @@ class AuthorityRuntimeJobPostgresTests(unittest.TestCase):
         self.assertEqual(tuple(evidence[:4]), ("SUCCEEDED", "SUCCEEDED", "RELEASED", 1))
         self.assertTrue(str(evidence[4]).startswith("sha256:"))
         self.assertGreaterEqual(int(evidence[5]), 5)
+
+    def test_same_logical_job_is_isolated_between_projects(self) -> None:
+        first_spec = self.spec(
+            dedupe_key="book:shared:version:3", subject_id="subject:shared"
+        )
+        first = self.authority.schedule(first_spec)
+        first_claim = self.claim(
+            subject_id="subject:shared", worker_id="book-worker-project-a"
+        )
+        assert first_claim is not None
+        self.authority.start(first_claim)
+        self.authority.complete(first_claim, {"project": "a"})
+
+        second_project_id = identifier("project")
+        second_spec = RuntimeJobSpec(
+            job_kind=first_spec.job_kind,
+            runtime_group=first_spec.runtime_group,
+            subject_kind=first_spec.subject_kind,
+            subject_id=first_spec.subject_id,
+            project_id=second_project_id,
+            dedupe_key=first_spec.dedupe_key,
+            input_snapshot=first_spec.input_snapshot,
+            max_attempts=first_spec.max_attempts,
+        )
+        second = self.authority.schedule(second_spec)
+
+        self.assertTrue(second["created"])
+        self.assertNotEqual(first["runtime_job_id"], second["runtime_job_id"])
+        second_claim = self.authority.claim(
+            runtime_group=self.runtime_group,
+            worker_id="book-worker-project-b",
+            lease_seconds=30,
+            project_id=second_project_id,
+            subject_kind="BOOK_RUN",
+            subject_id="subject:shared",
+        )
+        assert second_claim is not None
+        self.assertEqual(second_claim.project_id, second_project_id)
 
     def test_expired_lease_takeover_increments_fence_and_rejects_stale_worker(self) -> None:
         scheduled = self.authority.schedule(
@@ -224,6 +264,7 @@ class AuthorityRuntimeJobPostgresTests(unittest.TestCase):
             runtime_group=self.runtime_group,
             worker_id="book-worker-identity-a",
             lease_seconds=30,
+            project_id=self.project_id,
             subject_kind="BOOK_RUN",
             subject_id="subject:identity-a",
         )
@@ -235,6 +276,7 @@ class AuthorityRuntimeJobPostgresTests(unittest.TestCase):
             runtime_group=self.runtime_group,
             worker_id="book-worker-identity-b",
             lease_seconds=30,
+            project_id=self.project_id,
             subject_kind="BOOK_RUN",
             subject_id="subject:identity-b",
         )
@@ -268,6 +310,7 @@ class AuthorityRuntimeJobPostgresTests(unittest.TestCase):
             runtime_group=self.runtime_group,
             worker_id="book-worker-authoritative",
             lease_seconds=30,
+            project_id=self.project_id,
         )
         assert claim is not None
         with self.assertRaises(ForeignKeyViolation):

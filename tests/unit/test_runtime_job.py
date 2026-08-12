@@ -12,16 +12,27 @@ from novel_forge.modules.runtime_job import (
 class RuntimeJobContractTests(unittest.TestCase):
     def test_job_identity_and_payload_hash_are_deterministic(self) -> None:
         first = deterministic_runtime_job_id(
+            project_id="project:7",
             runtime_group="book",
             job_kind="BOOK_COORDINATION_TICK",
             dedupe_key="book-run:7:version:3",
         )
         second = deterministic_runtime_job_id(
+            project_id="project:7",
             runtime_group="book",
             job_kind="BOOK_COORDINATION_TICK",
             dedupe_key="book-run:7:version:3",
         )
         self.assertEqual(first, second)
+        self.assertNotEqual(
+            first,
+            deterministic_runtime_job_id(
+                project_id="project:8",
+                runtime_group="book",
+                job_kind="BOOK_COORDINATION_TICK",
+                dedupe_key="book-run:7:version:3",
+            ),
+        )
         self.assertTrue(first.startswith("runtime-job:"))
         self.assertEqual(
             canonical_payload_hash({"b": 2, "a": 1}),

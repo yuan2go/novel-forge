@@ -17,6 +17,13 @@ def test_migration_converges_projections_without_new_execution_authority() -> No
     assert "authority_mkaos_runtime_selection_projection" in sql
     assert "authority_mkaos_runtime_usage_projection" in sql
     assert "authority_corrective_action_lineage_projection" in sql
+    assert (
+        "authority_runtime_job(project_id, runtime_group, job_kind, dedupe_key)"
+        in sql
+    )
+    assert (
+        "project_id, runtime_group, job_kind, subject_kind, subject_id" in sql
+    )
 
 
 def test_consumption_requires_successful_provider_effect_and_attempt_identity() -> None:
