@@ -2450,9 +2450,14 @@ def _validate_chapter_acceptance_evidence(
     by_type: dict[str, list[dict[str, Any]]] = {}
     for item in outputs:
         by_type.setdefault(str(item["asset_type"]), []).append(item)
+    lineage_roots = (
+        "chapter_plan",
+        "release_package",
+        "final_release_gate_report",
+    )
     missing = [
         asset_type
-        for asset_type in required_types
+        for asset_type in lineage_roots
         if len(by_type.get(asset_type, ())) != 1
     ]
     if missing:
@@ -2460,12 +2465,48 @@ def _validate_chapter_acceptance_evidence(
             "BOOK_CHAPTER_ACCEPTANCE_EVIDENCE_MISSING",
             "missing unique Chapter outputs: " + ", ".join(missing),
         )
-    selected = {key: by_type[key][0] for key in required_types}
+    selected = {key: by_type[key][0] for key in lineage_roots}
     final_gate = selected["final_release_gate_report"]["content"]
+    release = selected["release_package"]["content"]
+    accepted_versions = final_gate.get("accepted_asset_version_ids")
+    if not isinstance(accepted_versions, dict):
+        raise KernelError(
+            "BOOK_CHAPTER_ACCEPTANCE_EVIDENCE_MISSING",
+            "final release gate has no accepted asset lineage",
+        )
+    expected_versions = {
+        "draft_version": str(release.get("source_asset_version_id") or ""),
+        "re_review_report": str(accepted_versions.get("rereview") or ""),
+        "canon_patch": str(accepted_versions.get("canon") or ""),
+        "quality_score_report": str(accepted_versions.get("quality") or ""),
+        "release_package": str(accepted_versions.get("export") or ""),
+    }
+    output_by_version = {
+        str(item.get("asset_version_id") or ""): item for item in outputs
+    }
+    invalid_lineage = [
+        asset_type
+        for asset_type, asset_version_id in expected_versions.items()
+        if not asset_version_id
+        or asset_version_id not in output_by_version
+        or str(output_by_version[asset_version_id].get("asset_type") or "")
+        != asset_type
+    ]
+    if invalid_lineage:
+        raise KernelError(
+            "BOOK_CHAPTER_ACCEPTANCE_EVIDENCE_MISSING",
+            "final release asset lineage is incomplete: "
+            + ", ".join(invalid_lineage),
+        )
+    selected.update(
+        {
+            asset_type: output_by_version[asset_version_id]
+            for asset_type, asset_version_id in expected_versions.items()
+        }
+    )
     quality = selected["quality_score_report"]["content"]
     rereview = selected["re_review_report"]["content"]
     canon = selected["canon_patch"]["content"]
-    release = selected["release_package"]["content"]
     plan = selected["chapter_plan"]["content"]
     submitted = dict(request.get("command_payload") or {})
     execution_plan_version = str(

@@ -106,10 +106,20 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
             "canon_patch": {"gate": "PASSED", "conflicts": []},
             "canon_snapshot": {},
             "quality_score_report": {"gate": "PASSED_WITH_UNCALIBRATED"},
-            "release_package": {"release_status": "READY_FOR_BLOB_VERIFICATION"},
+            "release_package": {
+                "release_status": "READY_FOR_BLOB_VERIFICATION",
+                "source_asset_version_id": "draft_version:v1",
+            },
             "final_release_gate_report": {
                 "gate": "PASSED",
                 "release_status": "INTERNAL_RELEASE_FINALIZED",
+                "accepted_asset_version_ids": {
+                    "export": "release_package:v1",
+                    "quality": "quality_score_report:v1",
+                    "rereview": "re_review_report:v1",
+                    "canon": "canon_patch:v1",
+                    "context_bundle": "context_bundle:v1",
+                },
                 "blob_receipt": {"receipt_id": "receipt:chapter-1"},
             },
         }
@@ -163,6 +173,51 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                 "content_hash": "sha256:logical-plan",
             },
             frozen,
+        )
+
+        corrected_outputs = [
+            *outputs,
+            *[
+                {
+                    **next(
+                        item
+                        for item in outputs
+                        if item["asset_type"] == asset_type
+                    ),
+                    "asset_version_id": f"{asset_type}:superseded",
+                    "content_hash": f"sha256:{asset_type}:superseded",
+                }
+                for asset_type in (
+                    "draft_version",
+                    "re_review_report",
+                    "canon_patch",
+                    "quality_score_report",
+                )
+            ],
+        ]
+        corrected = _validate_chapter_acceptance_evidence(
+            request={
+                "chapter_number": 1,
+                "chapter_plan_version": logical_plan,
+                "chapter_plan_content_hash": "sha256:logical-plan",
+                "command_payload": {
+                    "execution_chapter_plan_asset_version_id": execution_plan,
+                    "execution_chapter_plan_content_hash": execution_hash,
+                },
+            },
+            evidence={
+                "status": "SUCCEEDED",
+                "saga": {"status": "SUCCEEDED"},
+                "outputs": corrected_outputs,
+                "model_effects": [],
+                "budgets": [],
+            },
+        )
+        self.assertTrue(
+            all(
+                not item["asset_version_id"].endswith(":superseded")
+                for item in corrected
+            )
         )
 
         recovered = _validate_chapter_acceptance_evidence(
