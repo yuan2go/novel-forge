@@ -80,7 +80,7 @@
 - Consumes: exact final SHA commands and test outputs.
 - Produces: Capability Proof Matrix and fail-closed handoff.
 
-- [x] Validate migration chain, fresh database migration, and 0084-to-0085 upgrade without editing migration history.
+- [x] Validate migration chain, fresh database migration, 0007-to-latest, and 0085-to-0086 upgrade without editing migration history.
 - [x] Run unit, architecture, acceptance, integration, PostgreSQL, lint, type-check equivalent, Skill drift, Capability Pack, package, web test/build, and Compose configuration gates.
 - [x] Run code review, remove dead/duplicate/forwarding artifacts, and rerun affected gates.
 - [x] Record exact commands, counts, evidence ceilings, recovery/idempotency results, and remaining gaps in the qualification report and Capability Proof Matrix.

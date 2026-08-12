@@ -48,7 +48,7 @@ capability beyond `FIXTURE_PROVEN`.
 |---|---|
 | Source analysis methodology invalidation and selective reuse | `FIXTURE_PROVEN` |
 | Narrative Measurement evidence and false-zero semantics | `FIXTURE_PROVEN` |
-| Quality issue to correction to re-evaluation to resolution | `FIXTURE_PROVEN` |
+| Quality issue to corrected REREVIEW, Canon/Quality re-evaluation, and resolution | `FIXTURE_PROVEN` |
 | Longform Replan/PlanChange activation and later re-evaluation | `FIXTURE_PROVEN` |
 | MKAOS selection versus actual Provider consumption lineage | `FIXTURE_PROVEN` |
 | Real-provider narrative correctness | `MISSING` |

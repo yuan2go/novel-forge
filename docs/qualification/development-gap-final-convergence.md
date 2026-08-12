@@ -5,16 +5,19 @@
 - Starting Git SHA: `aa6734799c693f1d669a5b3781d69ef5d888e15f`
 - Baseline: exact `origin/main` after fetch
 - Baseline migration head: `20260812_0084_development_gap_final_convergence`
-- Final migration head: `20260812_0085_corrective_action_terminal_lineage`
+- Final migration head: `20260812_0086_corrective_generation_terminal_lineage`
 - Production architecture: PostgreSQL Authority, Command Kernel, Operation/Attempt/Lease/Fence, ExternalEffect, Production Execution Gateway, existing Chapter and Book runtimes
 
 Migration 0084 already owns the non-derivable Book replan re-evaluation fact
 and the derived Corrective Action/MKAOS projections. Final code review found
 that the 0084 Quality projection only joined successful correction Operations.
 Forward-only migration 0085 renames that projection to an explicit
-`MIGRATION_ONLY` base and wraps it with terminal Operation/Attempt and action
-AssetVersion lifecycle derivation. No history was edited and no new table or
-execution Authority was added.
+`MIGRATION_ONLY` base and wraps it with terminal Revision Operation/Attempt and
+action AssetVersion lifecycle derivation. Forward-only migration 0086 keeps
+that base migration-only and derives terminal outcomes from every Operation in
+the exact bounded correction generation, including failures or cancellation
+after Revision succeeds. No history was edited and no new table or execution
+Authority was added.
 
 The production Compose smoke also found a baseline entrypoint defect outside
 the four domain gaps: Compose invoked `python -m novel_forge.cli.authority`, but
@@ -77,20 +80,24 @@ existing Chapter Operation definitions:
 Quality required_action AssetVersion
   -> Revision Operation consumes frozen task + target revision + Context
   -> corrected Draft AssetVersion
+  -> independent REREVIEW Operation consumes the corrected Draft
   -> existing Canon extraction/proposal/update Operations
   -> existing five Quality group Operations
   -> aggregate Quality re-evaluation
   -> CorrectiveActionQuery: RESOLVED or ESCALATED
 ```
 
-The correction uses the existing root Operation, Attempt/Lease/Fence,
+Every Canon and Quality re-evaluation input is late-bound to the corrected
+REREVIEW output rather than the original review. The correction uses the
+existing root Operation, Attempt/Lease/Fence,
 ExternalEffect behavior when the configured Provider is remote, immutable
 outputs, deterministic exact idempotency keys, and the existing retry/cancel
 terminal states. It is not a second workflow or retry plane. Re-evaluation does
 not emit a recursive new task; an unresolved action is escalated after the
-bounded correction. Execution failure/cancellation and superseded action
-versions project as `FAILED`, `CANCELLED`, and `SUPERSEDED` rather than remaining
-`ADMITTED`.
+bounded correction. Failure or cancellation at Revision, corrected REREVIEW,
+Canon, grouped Quality, or aggregate Quality, plus superseded action versions,
+project as `FAILED`, `CANCELLED`, and `SUPERSEDED` rather than remaining
+`ADMITTED` or `REEVALUATION_PENDING`.
 
 The existing longform path remains:
 
@@ -129,7 +136,7 @@ effect/result identity and cannot create a duplicate logical consumption row.
 |---|---|---|
 | Source methodology invalidation/reuse | `FIXTURE_PROVEN` | Unit field matrix plus PostgreSQL Source Import reuse/reanalysis matrix |
 | Narrative Measurement evidence plumbing | `FIXTURE_PROVEN` | Unit missing/zero/contradiction tests plus mock-gateway PostgreSQL receipts |
-| Quality issue correction and re-evaluation | `FIXTURE_PROVEN` | PostgreSQL `RESOLVED` and `ESCALATED` paths with replay deduplication |
+| Quality issue correction and re-evaluation | `FIXTURE_PROVEN` | PostgreSQL corrected-REREVIEW `RESOLVED`/`ESCALATED` and terminal/replay paths |
 | Longform Replan/PlanChange/re-evaluation | `FIXTURE_PROVEN` | Two-chapter governed PostgreSQL fixture; not longform proof |
 | MKAOS selection versus consumption lineage | `FIXTURE_PROVEN` | Selected-only and exact-context Provider execution PostgreSQL tests |
 | Real-provider narrative correctness | `MISSING` | No real-provider run in this task |
@@ -142,11 +149,12 @@ effect/result identity and cannot create a duplicate logical consumption row.
 | Command | Result |
 |---|---|
 | Focused Source Intelligence unit + PostgreSQL matrix | 25 unit passed; 5 PostgreSQL passed |
-| Focused Chapter/Measurement/MKAOS PostgreSQL group | 16 passed before final full gate |
-| `tests/integration/test_authority_migrations_postgres.py` | 3 passed: fresh chain, historical upgrade, 0084 to 0085 upgrade |
-| `make validate` | PASS: compile, Ruff, 85 migrations, manifests, architecture fitness, Compose |
-| `make authority-test` | 936 passed |
-| `make authority-postgres-test` | 182 passed, 60 subtests passed |
+| Focused Chapter corrective scheduler PostgreSQL suite | 17 passed, including corrected REREVIEW, downstream terminal states, takeover, stale fence, and replay |
+| `tests/integration/test_authority_migrations_postgres.py` | 3 passed: fresh chain, 0007-to-latest, and 0085-to-0086 upgrade |
+| `make validate` | PASS: compile, Ruff, 86 migrations at 0086, manifests, architecture fitness, Compose |
+| `make authority-test` | 944 passed, 14 warnings |
+| `make authority-postgres-test` | 189 passed, 60 subtests passed |
+| `make test` plus Admin `npm test` | 1256 Python tests passed with 16 warnings; 11 Admin tests passed |
 | Capability Pack unit validation | 183 passed, 1308 subtests passed |
 | `make sync-skills-dry-run && make check-skills` | PASS, no drift |
 | Admin `test`, `lint`, `build` | 11 tests passed, TypeScript passed, 74 routes built |
@@ -162,7 +170,8 @@ runtime tests are reported as such; the TypeScript project has a real `tsc
 ## Recovery and duplicate prevention
 
 - Corrective correction replay reuses the same idempotency keys and creates one
-  Revision and one aggregate re-evaluation per bounded generation.
+  Revision, one corrected REREVIEW, and one aggregate re-evaluation per bounded
+  generation. Root terminal states remain stable on subsequent scheduler ticks.
 - Command admission concurrency, Attempt retry/dead-letter, lease takeover,
   stale-fence rejection, cancellation, ExternalEffect reconciliation, and
   receipt replay passed the non-skippable PostgreSQL gate.
@@ -181,14 +190,20 @@ manager, receipt, or schema table. Quality correction is deliberately one
 bounded generation over existing Chapter Operations and immutable assets. MKAOS
 consumption remains a derived Authority projection instead of a copied lineage
 record, and Source analysis retains its single canonical strategy fingerprint.
-The one forward migration only repairs derived terminal-state projection
-semantics and marks its replaced base view `MIGRATION_ONLY`.
+The two forward migrations only repair derived terminal-state projection
+semantics and mark their replaced base views `MIGRATION_ONLY`.
 
 The obsolete behavior removed is semantic rather than architectural: aggregate
 Quality tasks are no longer passive projection-only records, missing narrative
 evidence is no longer converted to zero, and the Compose module entrypoint no
-longer exits without starting the service. No replaced production path or
-migration-only compatibility path remains in this diff.
+longer exits without starting the service. No replaced production runtime path
+remains; the two superseded projection views are explicitly constrained to
+forward-migration compatibility.
+
+Two database-bearing suites were initially started concurrently against their
+shared module-isolation database and interfered during database reset. Those
+non-authoritative runs were stopped and discarded; the serial reruns reported
+above are green and are the qualification evidence.
 
 ## Remaining gaps
 
