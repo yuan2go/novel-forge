@@ -219,6 +219,25 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                 for item in corrected
             )
         )
+        corrected_evidence = {
+            "status": "SUCCEEDED",
+            "saga": {"status": "SUCCEEDED"},
+            "outputs": corrected_outputs,
+            "model_effects": [],
+            "budgets": [],
+        }
+        self.assertEqual(
+            PostgresBookAuthorityScheduler._evidence_output(
+                corrected_evidence, "draft_version"
+            )["asset_version_id"],
+            "draft_version:v1",
+        )
+        self.assertEqual(
+            PostgresBookAuthorityScheduler._evidence_output(
+                corrected_evidence, "quality_score_report"
+            )["asset_version_id"],
+            "quality_score_report:v1",
+        )
 
         recovered = _validate_chapter_acceptance_evidence(
             request={

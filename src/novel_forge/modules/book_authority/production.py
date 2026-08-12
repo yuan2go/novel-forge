@@ -2424,28 +2424,11 @@ def book_coordinate_definition(
     }
 
 
-def _validate_chapter_acceptance_evidence(
-    *,
-    request: dict[str, Any],
+def _select_chapter_acceptance_outputs(
     evidence: dict[str, Any],
-) -> tuple[dict[str, str], ...]:
-    if (
-        evidence.get("status") != "SUCCEEDED"
-        or (evidence.get("saga") or {}).get("status") != "SUCCEEDED"
-    ):
-        raise KernelError(
-            "BOOK_CHAPTER_ACCEPTANCE_NOT_READY",
-            "Chapter root Operation and Saga must both succeed",
-        )
-    required_types = (
-        "chapter_plan",
-        "draft_version",
-        "re_review_report",
-        "canon_patch",
-        "quality_score_report",
-        "release_package",
-        "final_release_gate_report",
-    )
+) -> dict[str, dict[str, Any]]:
+    """Resolve the accepted generation through final release lineage."""
+
     outputs = list(evidence.get("outputs") or ())
     by_type: dict[str, list[dict[str, Any]]] = {}
     for item in outputs:
@@ -2504,6 +2487,34 @@ def _validate_chapter_acceptance_evidence(
             for asset_type, asset_version_id in expected_versions.items()
         }
     )
+    return selected
+
+
+def _validate_chapter_acceptance_evidence(
+    *,
+    request: dict[str, Any],
+    evidence: dict[str, Any],
+) -> tuple[dict[str, str], ...]:
+    if (
+        evidence.get("status") != "SUCCEEDED"
+        or (evidence.get("saga") or {}).get("status") != "SUCCEEDED"
+    ):
+        raise KernelError(
+            "BOOK_CHAPTER_ACCEPTANCE_NOT_READY",
+            "Chapter root Operation and Saga must both succeed",
+        )
+    required_types = (
+        "chapter_plan",
+        "draft_version",
+        "re_review_report",
+        "canon_patch",
+        "quality_score_report",
+        "release_package",
+        "final_release_gate_report",
+    )
+    selected = _select_chapter_acceptance_outputs(evidence)
+    final_gate = selected["final_release_gate_report"]["content"]
+    release = selected["release_package"]["content"]
     quality = selected["quality_score_report"]["content"]
     rereview = selected["re_review_report"]["content"]
     canon = selected["canon_patch"]["content"]

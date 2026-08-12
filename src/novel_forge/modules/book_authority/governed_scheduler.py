@@ -14,7 +14,11 @@ from novel_forge.modules.book_followup_authority.domain import (
 )
 from novel_forge.modules.command_kernel.errors import KernelError
 
-from .production import BookProductionState, PostgresBookAuthority
+from .production import (
+    BookProductionState,
+    PostgresBookAuthority,
+    _select_chapter_acceptance_outputs,
+)
 from .queries import PostgresBookProductionQuery
 
 
@@ -330,6 +334,9 @@ class PostgresBookAuthorityScheduler:
 
     @staticmethod
     def _evidence_output(evidence: dict[str, Any], asset_type: str) -> dict[str, Any]:
+        accepted = _select_chapter_acceptance_outputs(evidence)
+        if asset_type in accepted:
+            return accepted[asset_type]
         matches = [
             item for item in evidence["outputs"] if item["asset_type"] == asset_type
         ]
