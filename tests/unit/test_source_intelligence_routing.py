@@ -321,6 +321,8 @@ def test_analysis_strategy_fingerprint_freezes_every_invalidation_dimension() ->
     analyzer = strategy.analyzers[0]
 
     variants = (
+        replace(strategy, content_type=SourceContentType.PROFESSIONAL_KNOWLEDGE),
+        replace(strategy, profile_id="platform_rules_changed"),
         replace(
             strategy,
             analyzers=(
@@ -335,8 +337,81 @@ def test_analysis_strategy_fingerprint_freezes_every_invalidation_dimension() ->
                 *strategy.analyzers[1:],
             ),
         ),
+        replace(
+            strategy,
+            analyzers=(
+                replace(analyzer, analyzer_id="source.platform-policy.changed"),
+                *strategy.analyzers[1:],
+            ),
+        ),
+        replace(
+            strategy,
+            analyzers=(
+                replace(analyzer, analyzer_version="99.0.0"),
+                *strategy.analyzers[1:],
+            ),
+        ),
+        replace(
+            strategy,
+            analyzers=(
+                replace(analyzer, prompt_id="source.platform-policy.changed"),
+                *strategy.analyzers[1:],
+            ),
+        ),
+        replace(
+            strategy,
+            analyzers=(
+                replace(analyzer, prompt_version="99.0.0"),
+                *strategy.analyzers[1:],
+            ),
+        ),
+        replace(
+            strategy,
+            analyzers=(
+                replace(analyzer, schema_version="source.changed.v99"),
+                *strategy.analyzers[1:],
+            ),
+        ),
+        replace(
+            strategy,
+            analyzers=(
+                replace(analyzer, capability_id="source.platform.changed"),
+                *strategy.analyzers[1:],
+            ),
+        ),
+        replace(
+            strategy,
+            analyzers=(
+                replace(analyzer, capability_version="99.0.0"),
+                *strategy.analyzers[1:],
+            ),
+        ),
+        replace(
+            strategy,
+            analyzers=(
+                replace(analyzer, provider_policy_version="99.0.0"),
+                *strategy.analyzers[1:],
+            ),
+        ),
+        replace(
+            strategy,
+            analyzers=(
+                replace(analyzer, aggregation_policy_version="99.0.0"),
+                *strategy.analyzers[1:],
+            ),
+        ),
+        replace(
+            strategy,
+            analyzers=(
+                replace(analyzer, recommended_scales=("DOCUMENT_SECTION",)),
+                *strategy.analyzers[1:],
+            ),
+        ),
         replace(strategy, profile_version="99.0"),
         replace(strategy, routing_policy_version="source-analysis-routing.v99"),
+        replace(strategy, window_chunks=strategy.window_chunks + 1),
+        replace(strategy, max_analyzer_calls=strategy.max_analyzer_calls + 1),
+        replace(strategy, mkaos_capability="mkaos.rule.changed"),
         replace(strategy, abstraction_policy_version="platform-rule-abstraction.99"),
     )
 

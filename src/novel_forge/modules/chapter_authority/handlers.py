@@ -57,6 +57,7 @@ from novel_forge.modules.content_intelligence import (
 )
 from novel_forge.modules.narrative_state import measure_narrative_runtime
 from novel_forge.modules.production_execution import CommitManifest
+from novel_forge.modules.revision.domain import apply_quality_revision_result
 from novel_forge.modules.production_preparation.policies import (
     CONTINUING_CHAPTER_REQUIRED_ASSET_TYPES,
 )
@@ -522,6 +523,42 @@ class _RevisionHandler:
     provider: ChapterModelPort
 
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
+        quality_tasks = tuple(
+            item for item in request.inputs if item.asset_type == "revision_task"
+        )
+        if quality_tasks:
+            revision = request.require_input("draft_version")
+            quality = request.require_input("quality_score_report")
+            context = request.require_input("context_bundle")
+            revised = self.provider.invoke(
+                request,
+                stage="revision",
+                payload={
+                    "draft": revision.content,
+                    "quality": quality.content,
+                    "required_actions": [item.content for item in quality_tasks],
+                    "context": context.content,
+                },
+            )
+            return _model_output(
+                ChapterNode.REVISION,
+                apply_quality_revision_result(
+                    project_id=request.project_id,
+                    revision=revision.content,
+                    revision_asset_version_id=revision.asset_version_id,
+                    quality=quality.content,
+                    quality_asset_version_id=quality.asset_version_id,
+                    revision_tasks=tuple(item.content for item in quality_tasks),
+                    revision_task_asset_version_ids=tuple(
+                        item.asset_version_id for item in quality_tasks
+                    ),
+                    context_bundle_version_id=context.asset_version_id,
+                    result=revised.output,
+                    provider_evidence=_provider_evidence(revised),
+                ),
+                request=request,
+                generated=revised,
+            )
         draft = request.require_input("draft_chapter")
         review = request.require_input("review_report")
         context = request.require_input("context_bundle")
@@ -757,7 +794,10 @@ class _QualityGroupHandler:
                 request.command, f"quality_{self.group}"
             ),
         )
-        if bool(getattr(self.provider, "external_effect_backed", False)):
+        if bool(
+            getattr(self.provider, "external_effect_backed", False)
+            or getattr(self.provider, "supports_quality_evaluation", False)
+        ):
             generated = self.provider.invoke(
                 request,
                 stage=f"quality_{self.group}",
@@ -1019,30 +1059,39 @@ class _QualityHandler:
             for ordinal, action in enumerate(
                 content.get("required_actions", []), start=1
             )
-        )
+        ) if not any(
+            item.asset_type == "revision_task" for item in request.inputs
+        ) else ()
         manifest = dict(context.content.get("context_manifest") or {})
         authority_boundary = dict(manifest.get("authority_state_boundary") or {})
         provider_usage = _provider_usage_records(request.inputs)
-        knowledge_usage = list(manifest.get("knowledge_usage") or [])
-        mkaos_usage = (
-            [
+        knowledge_selection = [
+            dict(item) for item in manifest.get("knowledge_usage") or []
+        ]
+        provider_effect_ids = sorted(
+            {
+                str(record.get("external_effect_id") or "")
+                for record in provider_usage or []
+                if str(record.get("external_effect_id") or "")
+            }
+        )
+        if provider_usage is None:
+            mkaos_usage = None
+        elif not knowledge_selection:
+            mkaos_usage = []
+        elif not provider_effect_ids:
+            mkaos_usage = [{"availability": "NOT_AVAILABLE"}]
+        else:
+            mkaos_usage = [
                 {
-                    **dict(item),
+                    **item,
+                    "availability": "MEASURED",
                     "context_manifest_asset_version_id": context.asset_version_id,
-                    "provider_external_effect_ids": sorted(
-                        {
-                            str(record.get("external_effect_id") or "")
-                            for record in provider_usage
-                            if str(record.get("external_effect_id") or "")
-                        }
-                    ),
+                    "provider_external_effect_ids": provider_effect_ids,
                     "result_asset_version_id": revision.asset_version_id,
                 }
-                for item in knowledge_usage
+                for item in knowledge_selection
             ]
-            if provider_usage is not None
-            else None
-        )
         planning_violations = [
             {
                 "dimension": str(item.get("observation") or ""),

@@ -9,7 +9,10 @@ from novel_forge.modules.chapter_quality_authority import QUALITY_GROUPS
 from novel_forge.modules.content_quality_loop.domain import evaluate_quality_evidence
 from novel_forge.modules.publishing.domain import prepare_internal_release
 from novel_forge.modules.review.domain import evaluate_rereview_result, evaluate_review_result
-from novel_forge.modules.revision.domain import apply_revision_result
+from novel_forge.modules.revision.domain import (
+    apply_quality_revision_result,
+    apply_revision_result,
+)
 
 
 class ChapterAuthorityBusinessDomainTests(unittest.TestCase):
@@ -104,6 +107,52 @@ class ChapterAuthorityBusinessDomainTests(unittest.TestCase):
         passed = self.rereview(review, revision, passed=True)
         self.assertEqual(passed["issue_lineage"][0]["to_status"], "RESOLVED")
         self.assertEqual(passed["revision_quality_delta"]["resolved_issue_count"], 1)
+
+    def test_quality_revision_is_bound_to_frozen_action_and_target(self) -> None:
+        quality = {
+            "project_id": "project-a",
+            "required_actions": [
+                {"observation": "canon_consistency", "status": "OPEN"}
+            ],
+        }
+        task = {
+            "project_id": "project-a",
+            "observation": "canon_consistency",
+            "status": "OPEN",
+            "target_revision_asset_version_id": "revision-v1",
+        }
+        corrected = apply_quality_revision_result(
+            project_id="project-a",
+            revision={"chapter": 1, "title": "Cost", "text": "old"},
+            revision_asset_version_id="revision-v1",
+            quality=quality,
+            quality_asset_version_id="quality-v1",
+            revision_tasks=(task,),
+            revision_task_asset_version_ids=("revision-task-v1",),
+            context_bundle_version_id="context-v1",
+            result={"text": "The frozen timeline is now consistent."},
+            provider_evidence={"provider_id": "fixture"},
+        )
+        self.assertEqual(
+            corrected["quality_action_observations"], ["canon_consistency"]
+        )
+        self.assertEqual(
+            corrected["quality_revision_task_asset_version_ids"],
+            ["revision-task-v1"],
+        )
+        with self.assertRaisesRegex(KernelError, "QUALITY_REVISION_LINEAGE_CONFLICT"):
+            apply_quality_revision_result(
+                project_id="project-a",
+                revision={"chapter": 1, "title": "Cost", "text": "old"},
+                revision_asset_version_id="revision-v2",
+                quality=quality,
+                quality_asset_version_id="quality-v1",
+                revision_tasks=(task,),
+                revision_task_asset_version_ids=("revision-task-v1",),
+                context_bundle_version_id="context-v1",
+                result={"text": "A correction with the wrong target."},
+                provider_evidence={},
+            )
 
     def test_canon_quality_and_publish_use_structured_evidence(self) -> None:
         review = self.review()

@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-import unittest
 import hashlib
 import json
+import unittest
 
 from novel_forge.modules.chapter_authority.contracts import ChapterNode
 from novel_forge.modules.chapter_quality_authority import QUALITY_DIMENSIONS
@@ -42,6 +42,58 @@ from tests.integration.authority_postgres_support import (
     identifier,
     transaction,
 )
+
+
+class QualityCorrectionFixture(DeterministicFixtureChapterProvider):
+    supports_quality_evaluation = True
+
+    def __init__(self, *, correction_resolves: bool) -> None:
+        self.correction_resolves = correction_resolves
+        self.longform_evaluations = 0
+
+    def invoke(self, request, *, stage, payload):  # type: ignore[no-untyped-def]
+        if stage == "revision" and "quality" in payload:
+            draft = payload["draft"]
+            return self._result(
+                stage,
+                {
+                    "text": (
+                        f"{draft['text']} The corrected timeline now matches "
+                        "the frozen Canon evidence."
+                    )
+                },
+            )
+        if stage.startswith("quality_"):
+            statuses = []
+            for dimension in payload["dimensions"]:
+                gate = "PASSED"
+                if stage == "quality_longform" and dimension == "canon_consistency":
+                    self.longform_evaluations += 1
+                    if self.longform_evaluations == 1 or not self.correction_resolves:
+                        gate = "FAILED"
+                statuses.append(
+                    {
+                        "dimension": dimension,
+                        "gate_status": gate,
+                        "fixture_protocol_only": True,
+                    }
+                )
+            return self._result(stage, {"dimensions": statuses})
+        return super().invoke(request, stage=stage, payload=payload)
+
+    def _result(self, stage: str, output: dict[str, object]) -> ModelProviderResult:
+        return ModelProviderResult(
+            output=output,
+            provider_id=self.provider_id,
+            model_id="quality-correction-fixture-v1",
+            prompt_version=f"{stage}-fixture-v1",
+            skill_version="quality-correction-fixture-v1",
+            input_tokens=0,
+            output_tokens=0,
+            cost_amount="0",
+            currency="USD",
+            real_model_call=False,
+        )
 
 
 class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
@@ -210,6 +262,171 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
         self.assertEqual(corrective[0]["status"], "ESCALATED")
         self.assertEqual(corrective[0]["gate_result"], "FAILED")
         self.assertEqual(corrective[0]["resolution"], "ESCALATED")
+
+    def test_quality_issue_executes_bounded_revision_and_resolves_after_reevaluation(
+        self,
+    ) -> None:
+        project_id = identifier("quality-correction-project")
+        provider = QualityCorrectionFixture(correction_resolves=True)
+        registry = build_chapter_handler_registry(provider)
+        admission = admit_single_chapter_saga(
+            DATABASE_URL,
+            request=SingleChapterRequest(
+                project_id=project_id,
+                workspace_id=f"workspace:{project_id}",
+                actor_id="trusted-operator",
+                chapter=1,
+                title="A Corrected Timeline",
+                premise="Quality evidence orders a bounded correction.",
+                trace_id=identifier("quality-correction-trace"),
+                correlation_id=identifier("quality-correction-correlation"),
+                application_build_id="quality-correction-test",
+                commit_sha="f" * 40,
+                idempotency_key=f"{project_id}:chapter:1",
+                preparation_report={"decision": "READY", "fixture": True},
+                context_candidates=tuple(self._release_evidence(project_id)),
+            ),
+            registry=registry,
+            permissions=frozenset({"chapter.authority.execute"}),
+        )
+        scheduler = ChapterAuthorityScheduler(
+            DATABASE_URL,
+            registry=registry,
+            object_store_adapter=FakeDeterministicProvider("success"),
+            worker_id="quality-correction-worker",
+            permissions=frozenset({"chapter.authority.execute"}),
+        )
+        corrective = []
+        for _ in range(48):
+            scheduler.tick(
+                project_id=project_id,
+                root_operation_id=admission.root_operation_id,
+            )
+            corrective = CorrectiveActionQuery(DATABASE_URL).list(
+                project_id=project_id, issue_type="canon_consistency"
+            )
+            if corrective and corrective[0]["status"] == "RESOLVED":
+                break
+        else:
+            self.fail("Quality correction did not reach authoritative re-evaluation")
+        self.assertEqual(len(corrective), 1)
+        self.assertEqual(corrective[0]["status"], "RESOLVED")
+        self.assertEqual(corrective[0]["gate_result"], "PASSED")
+        self.assertTrue(corrective[0]["execution_operation_id"])
+        self.assertTrue(corrective[0]["execution_attempt_id"])
+        self.assertTrue(corrective[0]["result_asset_version_ids"])
+        self.assertTrue(corrective[0]["evaluation_operation_id"])
+        self.assertEqual(corrective[0]["lifecycle"][-1], "RESOLVED")
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT definition_name, COUNT(*)
+                FROM authority_operation
+                WHERE root_operation_id=%s
+                  AND idempotency_key LIKE '%%:quality-correction:1'
+                GROUP BY definition_name
+                ORDER BY definition_name
+                """,
+                [admission.root_operation_id],
+            )
+            correction_counts = dict(cursor.fetchall())
+        self.assertEqual(correction_counts[ChapterNode.REVISION.definition_name], 1)
+        self.assertEqual(correction_counts[ChapterNode.QUALITY.definition_name], 1)
+        self.assertEqual(
+            sum(correction_counts.values()),
+            5 + len(
+                {
+                    ChapterNode.REVISION,
+                    ChapterNode.CANON_EXTRACTION,
+                    ChapterNode.CANON_PROPOSAL,
+                    ChapterNode.CANON,
+                    ChapterNode.QUALITY,
+                }
+            ),
+        )
+
+    def test_quality_issue_escalates_when_bounded_reevaluation_still_fails(
+        self,
+    ) -> None:
+        project_id = identifier("quality-correction-escalation-project")
+        registry = build_chapter_handler_registry(
+            QualityCorrectionFixture(correction_resolves=False)
+        )
+        admission = admit_single_chapter_saga(
+            DATABASE_URL,
+            request=SingleChapterRequest(
+                project_id=project_id,
+                workspace_id=f"workspace:{project_id}",
+                actor_id="trusted-operator",
+                chapter=1,
+                title="An Escalated Timeline",
+                premise="A bounded correction retains an evidenced contradiction.",
+                trace_id=identifier("quality-escalation-trace"),
+                correlation_id=identifier("quality-escalation-correlation"),
+                application_build_id="quality-escalation-test",
+                commit_sha="f" * 40,
+                idempotency_key=f"{project_id}:chapter:1",
+                preparation_report={"decision": "READY", "fixture": True},
+                context_candidates=tuple(self._release_evidence(project_id)),
+            ),
+            registry=registry,
+            permissions=frozenset({"chapter.authority.execute"}),
+        )
+        scheduler = ChapterAuthorityScheduler(
+            DATABASE_URL,
+            registry=registry,
+            object_store_adapter=FakeDeterministicProvider("success"),
+            worker_id="quality-escalation-worker",
+            permissions=frozenset({"chapter.authority.execute"}),
+        )
+        corrective = []
+        for _ in range(48):
+            scheduler.tick(
+                project_id=project_id,
+                root_operation_id=admission.root_operation_id,
+            )
+            corrective = CorrectiveActionQuery(DATABASE_URL).list(
+                project_id=project_id, issue_type="canon_consistency"
+            )
+            if corrective and corrective[0]["status"] == "ESCALATED":
+                break
+        else:
+            self.fail("Quality correction did not reach authoritative escalation")
+        self.assertEqual(len(corrective), 1)
+        self.assertEqual(corrective[0]["gate_result"], "FAILED")
+        self.assertTrue(corrective[0]["execution_operation_id"])
+        self.assertTrue(corrective[0]["result_asset_version_ids"])
+        self.assertTrue(corrective[0]["evaluation_operation_id"])
+        self.assertEqual(corrective[0]["lifecycle"][-1], "ESCALATED")
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT definition_name, COUNT(*)
+                FROM authority_operation
+                WHERE root_operation_id=%s
+                  AND idempotency_key LIKE '%%:quality-correction:1'
+                GROUP BY definition_name
+                """,
+                [admission.root_operation_id],
+            )
+            before_replay = dict(cursor.fetchall())
+        scheduler.tick(
+            project_id=project_id,
+            root_operation_id=admission.root_operation_id,
+        )
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT definition_name, COUNT(*)
+                FROM authority_operation
+                WHERE root_operation_id=%s
+                  AND idempotency_key LIKE '%%:quality-correction:1'
+                GROUP BY definition_name
+                """,
+                [admission.root_operation_id],
+            )
+            after_replay = dict(cursor.fetchall())
+        self.assertEqual(before_replay, after_replay)
 
     def test_uncalibrated_fixture_is_a_successful_publish_block(self) -> None:
         project_id = identifier("uncalibrated-publish-block-project")

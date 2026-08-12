@@ -817,6 +817,18 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                 measurement["observations"]["provider_usage"]["status"],
                 "MEASURED",
             )
+            self.assertEqual(
+                measurement["observations"]["provider_trace"]["status"],
+                "MEASURED",
+            )
+            self.assertEqual(
+                measurement["observations"]["provider_usage_receipt"]["status"],
+                "MEASURED",
+            )
+            self.assertEqual(
+                measurement["observations"]["provider_cost_receipt"]["status"],
+                "MEASURED",
+            )
             self.assertEqual(measurement["metrics"]["provider_call_count"], 10)
             self.assertEqual(measurement["metrics"]["provider_token_count"], 0)
             self.assertEqual(measurement["metrics"]["provider_cost"], 0.0)

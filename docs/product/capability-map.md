@@ -36,3 +36,25 @@ Agent output remains a proposal until the relevant Domain Authority accepts it. 
 - long-form quality and continuity over a full novel;
 - external publishing or multi-book scale;
 - production deployment, SLOs, or operational history.
+
+## Capability Proof Matrix
+
+The proof vocabulary is `MISSING`, `SKELETON`, `IMPLEMENTED`, `WIRED`,
+`FIXTURE_PROVEN`, `REAL_PROVIDER_PROVEN`, `LONGFORM_PROVEN`,
+`MULTIBOOK_PROVEN`, and `PRODUCTION_PROVEN`. Local tests do not promote a
+capability beyond `FIXTURE_PROVEN`.
+
+| Capability | Current proof state |
+|---|---|
+| Source analysis methodology invalidation and selective reuse | `FIXTURE_PROVEN` |
+| Narrative Measurement evidence and false-zero semantics | `FIXTURE_PROVEN` |
+| Quality issue to correction to re-evaluation to resolution | `FIXTURE_PROVEN` |
+| Longform Replan/PlanChange activation and later re-evaluation | `FIXTURE_PROVEN` |
+| MKAOS selection versus actual Provider consumption lineage | `FIXTURE_PROVEN` |
+| Real-provider narrative correctness | `MISSING` |
+| 30-chapter/longform narrative correctness | `MISSING` |
+| Multi-book narrative correctness | `MISSING` |
+| Production authorization and operational proof | `MISSING` |
+
+Exact scope and qualification commands are recorded in
+[`Development Gap Final Convergence Qualification`](../qualification/development-gap-final-convergence.md).
