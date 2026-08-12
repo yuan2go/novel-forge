@@ -489,7 +489,11 @@ class CapabilityPackAuthorityApplication:
                 identities.append((name, value))
             operation_catalog = RepositoryOperationDefinitionLoader(
                 uow.repositories.definitions
-            ).load(identities)
+            ).load(
+                identities,
+                application_build_id=self.application_build_id,
+                commit_sha=self.commit_sha,
+            )
         artifact_resolver = _artifact_resolver(version["artifact_catalog"])
         compiler = CapabilityPackCompiler(
             capability_registry=default_capability_registry(),

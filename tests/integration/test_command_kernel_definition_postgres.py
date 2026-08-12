@@ -61,6 +61,37 @@ class CommandKernelDefinitionPostgresTests(unittest.TestCase):
         self.assertFalse(second["registered"])
         self.assertEqual(first["definition_hash"], second["definition_hash"])
 
+    def test_same_semantic_definition_binds_multiple_releases(self) -> None:
+        definition = definition_payload(identifier("definition"))
+        next_release = {
+            **definition,
+            "application_build_id": "test-build-2",
+            "commit_sha": "b" * 40,
+        }
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.repositories.definitions.register(definition)
+            second = uow.repositories.definitions.register(next_release)
+            first_release = uow.repositories.definitions.get_release(
+                definition["name"],
+                definition["definition_version"],
+                application_build_id=definition["application_build_id"],
+                commit_sha=definition["commit_sha"],
+            )
+            second_release = uow.repositories.definitions.get_release(
+                definition["name"],
+                definition["definition_version"],
+                application_build_id=next_release["application_build_id"],
+                commit_sha=next_release["commit_sha"],
+            )
+            uow.commit()
+
+        self.assertFalse(second["registered"])
+        self.assertEqual(first_release["commit_sha"], "a" * 40)
+        self.assertEqual(second_release["commit_sha"], "b" * 40)
+        self.assertEqual(
+            first_release["definition_hash"], second_release["definition_hash"]
+        )
+
     def test_same_name_version_with_different_definition_hash_fails_closed(self) -> None:
         definition = definition_payload(identifier("definition"))
         with AuthorityUnitOfWork(DATABASE_URL) as uow:

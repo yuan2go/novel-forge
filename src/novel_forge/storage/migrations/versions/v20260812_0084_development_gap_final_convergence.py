@@ -26,6 +26,39 @@ UPGRADE_STATEMENTS = [
     WHERE status IN ('READY','CLAIMED','RUNNING','CHECKPOINTED','RETRY_WAIT')
     """,
     """
+    CREATE TABLE authority_operation_definition_release (
+        name TEXT NOT NULL,
+        definition_version TEXT NOT NULL,
+        application_build_id TEXT NOT NULL,
+        commit_sha TEXT NOT NULL,
+        definition_hash TEXT NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        PRIMARY KEY(
+          name, definition_version, application_build_id, commit_sha
+        ),
+        FOREIGN KEY(name, definition_version)
+          REFERENCES authority_operation_definition(name, definition_version),
+        CHECK (application_build_id<>''),
+        CHECK (commit_sha ~ '^[0-9a-f]{40}$'),
+        CHECK (definition_hash ~ '^sha256:[0-9a-f]{64}$')
+    )
+    """,
+    """
+    CREATE INDEX authority_operation_definition_release_sha_idx
+    ON authority_operation_definition_release(commit_sha, name, definition_version)
+    """,
+    """
+    INSERT INTO authority_operation_definition_release(
+      name, definition_version, application_build_id, commit_sha, definition_hash
+    )
+    SELECT name, definition_version, application_build_id, commit_sha, definition_hash
+    FROM authority_operation_definition
+    WHERE application_build_id<>''
+      AND commit_sha ~ '^[0-9a-f]{40}$'
+      AND definition_hash ~ '^sha256:[0-9a-f]{64}$'
+    ON CONFLICT DO NOTHING
+    """,
+    """
     CREATE TABLE authority_book_replan_reevaluation (
         reevaluation_id TEXT PRIMARY KEY,
         replan_id TEXT NOT NULL REFERENCES authority_book_replan(replan_id),
