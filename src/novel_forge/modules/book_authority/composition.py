@@ -8,9 +8,13 @@ from novel_forge.modules.authority_security import Principal
 from novel_forge.modules.book_followup_authority.application import (
     BookFollowupAuthorityApplication,
 )
-from novel_forge.modules.book_replan import BookReplanCoordinator
+from novel_forge.modules.book_replan import (
+    BookReplanCoordinator,
+    ReevaluateBookReplanCommand,
+)
 from novel_forge.modules.chapter_group_authority import PostgresChapterGroupAuthority
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.corrective_action import CorrectiveActionQuery
 from novel_forge.modules.plan_change_authority import PostgresPlanChangeAuthority
 from novel_forge.modules.production_preparation import ProductionPreparationService
 from novel_forge.modules.story_planning_runtime import (
@@ -39,6 +43,7 @@ class BookProductionComposition:
     plan_change: PostgresPlanChangeAuthority
     input_resolver: BookProductionInputResolver
     replan: BookReplanCoordinator
+    corrective_actions: CorrectiveActionQuery
     supervisor: PostgresBookProductionSupervisor
     principal: Principal
 
@@ -68,6 +73,37 @@ class BookProductionComposition:
             authority_type=authority_type,
             authority_version=authority_version,
             evidence=evidence,
+        )
+
+    def reevaluate_replan(
+        self,
+        *,
+        book_run_id: str,
+        replan_id: str,
+        source_recap_asset_version_id: str,
+        deviation_report_asset_version_id: str,
+        idempotency_key: str,
+        trace_id: str,
+        correlation_id: str,
+    ) -> dict[str, object]:
+        replan = self.replan.require(replan_id)
+        if str(replan["book_run_id"]) != book_run_id:
+            raise KernelError(
+                "BOOK_REPLAN_SCOPE_MISMATCH",
+                "Replan belongs to another Book production run",
+            )
+        book = self.authority.require(book_run_id)
+        return self.replan.reevaluate(
+            ReevaluateBookReplanCommand(
+                project_id=str(replan["project_id"]),
+                workspace_id=str(book["workspace_id"]),
+                replan_id=replan_id,
+                source_recap_asset_version_id=source_recap_asset_version_id,
+                deviation_report_asset_version_id=deviation_report_asset_version_id,
+                idempotency_key=idempotency_key,
+                trace_id=trace_id,
+                correlation_id=correlation_id,
+            )
         )
 
 

@@ -18,6 +18,7 @@
     {"name": "mkaos-authority", "path": "src/novel_forge/modules/mkaos_authority/__init__.py", "import_path": "novel_forge.modules.mkaos_authority", "owner": "mkaos", "authority_mode": "postgresql"},
     {"name": "narrative-state", "path": "src/novel_forge/modules/narrative_state/__init__.py", "import_path": "novel_forge.modules.narrative_state", "owner": "chapter-outcome-projection", "authority_mode": "storage-free-rebuildable-projection"},
     {"name": "chapter-authority", "path": "src/novel_forge/modules/chapter_authority/__init__.py", "import_path": "novel_forge.modules.chapter_authority", "owner": "chapter", "authority_mode": "postgresql"},
+    {"name": "corrective-action", "path": "src/novel_forge/modules/corrective_action/__init__.py", "import_path": "novel_forge.modules.corrective_action", "owner": "quality-governance", "authority_mode": "postgresql-derived-projection"},
     {"name": "book-authority", "path": "src/novel_forge/modules/book_authority/__init__.py", "import_path": "novel_forge.modules.book_authority", "owner": "book-coordination", "authority_mode": "postgresql"},
     {"name": "book-design-authority", "path": "src/novel_forge/modules/book_design_authority/__init__.py", "import_path": "novel_forge.modules.book_design_authority", "owner": "book-design", "authority_mode": "postgresql"},
     {"name": "production-execution", "path": "src/novel_forge/modules/production_execution/__init__.py", "import_path": "novel_forge.modules.production_execution", "owner": "execution", "authority_mode": "unified-gateway"},

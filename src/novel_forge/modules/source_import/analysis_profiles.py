@@ -57,8 +57,40 @@ class ResolvedAnalysisStrategy:
         }
 
     @property
-    def contract_hash(self) -> str:
+    def fingerprint(self) -> str:
         return canonical_hash(self.to_dict())
+
+
+def analysis_strategy_from_dict(
+    payload: dict[str, Any], *, expected_fingerprint: str
+) -> ResolvedAnalysisStrategy:
+    """Restore one admission-frozen strategy without re-resolving live Skills."""
+    try:
+        strategy = ResolvedAnalysisStrategy(
+            profile_id=str(payload["profile_id"]),
+            profile_version=str(payload["profile_version"]),
+            content_type=SourceContentType(str(payload["content_type"])),
+            routing_policy_version=str(payload["routing_policy_version"]),
+            analyzers=tuple(
+                AnalyzerContract(
+                    **{
+                        key: value
+                        for key, value in dict(item).items()
+                        if key != "fingerprint"
+                    }
+                )
+                for item in payload["analyzers"]
+            ),
+            window_chunks=int(payload["window_chunks"]),
+            max_analyzer_calls=int(payload["max_analyzer_calls"]),
+            mkaos_capability=str(payload["mkaos_capability"]),
+            abstraction_policy_version=str(payload["abstraction_policy_version"]),
+        )
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ValueError("frozen Source analysis strategy is invalid") from exc
+    if not expected_fingerprint or strategy.fingerprint != expected_fingerprint:
+        raise ValueError("frozen Source analysis strategy fingerprint drifted")
+    return strategy
 
 
 @dataclass(frozen=True, slots=True)
@@ -386,6 +418,7 @@ __all__ = [
     "AnalyzerMethodologySpec",
     "ResolvedAnalysisStrategy",
     "SourceAnalysisProfile",
+    "analysis_strategy_from_dict",
     "plan_analysis_tasks",
     "resolve_analysis_strategy",
 ]

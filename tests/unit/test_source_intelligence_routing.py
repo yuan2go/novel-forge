@@ -8,6 +8,7 @@ import pytest
 
 from novel_forge.modules.source_import import analysis_profiles
 from novel_forge.modules.source_import.analysis_profiles import (
+    analysis_strategy_from_dict,
     plan_analysis_tasks,
     resolve_analysis_strategy,
 )
@@ -69,6 +70,15 @@ def test_source_identity_policy_contains_no_analysis_semantics() -> None:
         for marker in ("classifier", "methodology", "skill")
     )
     assert SourceIntelligencePolicy().policy_hash != policy.policy_hash
+
+
+def test_routing_policy_changes_analysis_but_not_profiling_identity() -> None:
+    baseline = SourceIntelligencePolicy()
+    changed = replace(baseline, routing_policy_version="source-analysis-routing.v99")
+
+    assert changed.policy_hash != baseline.policy_hash
+    assert changed.profiling_policy_hash == baseline.profiling_policy_hash
+    assert changed.classifier_contract_hash == baseline.classifier_contract_hash
 
 
 def test_logical_document_scope_is_not_implicitly_a_book() -> None:
@@ -300,6 +310,45 @@ def test_methodology_digest_changes_analyzer_and_task_identity() -> None:
         chunks=chunks,
     )
     assert first[0].stable_key != second[0].stable_key
+
+
+def test_analysis_strategy_fingerprint_freezes_every_invalidation_dimension() -> None:
+    strategy = resolve_analysis_strategy(
+        SourceContentType.PLATFORM_RULES,
+        registry=SourceMethodologyRegistry(SKILL_ROOT),
+        routing_policy_version="source-analysis-routing.v2",
+    )
+    analyzer = strategy.analyzers[0]
+
+    variants = (
+        replace(
+            strategy,
+            analyzers=(
+                replace(analyzer, methodology_content_hash="sha256:" + "f" * 64),
+                *strategy.analyzers[1:],
+            ),
+        ),
+        replace(
+            strategy,
+            analyzers=(
+                replace(analyzer, skill_version="99.0.0"),
+                *strategy.analyzers[1:],
+            ),
+        ),
+        replace(strategy, profile_version="99.0"),
+        replace(strategy, routing_policy_version="source-analysis-routing.v99"),
+        replace(strategy, abstraction_policy_version="platform-rule-abstraction.99"),
+    )
+
+    assert all(item.fingerprint != strategy.fingerprint for item in variants)
+    restored = analysis_strategy_from_dict(
+        strategy.to_dict(), expected_fingerprint=strategy.fingerprint
+    )
+    assert restored == strategy
+    with pytest.raises(ValueError, match="fingerprint drifted"):
+        analysis_strategy_from_dict(
+            variants[0].to_dict(), expected_fingerprint=strategy.fingerprint
+        )
 
 
 def test_missing_or_mismatched_skill_materialization_fails_closed(

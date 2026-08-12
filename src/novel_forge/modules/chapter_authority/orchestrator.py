@@ -1,4 +1,5 @@
 """Bounded PostgreSQL-only orchestration for one deterministic chapter."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -286,6 +287,17 @@ def run_single_chapter_slice(
                 }
                 for item in request.context_candidates
             )
+        if node is ChapterNode.QUALITY:
+            input_assets.extend(
+                _measurement_evidence_inputs(
+                    database_url,
+                    project_id=request.project_id,
+                    root_operation_id=str(root),
+                    context_bundle_asset_version_id=outputs[
+                        ChapterNode.CONTEXT
+                    ].asset_version_id,
+                )
+            )
         operation_id = admit_command(
             database_url,
             _command(
@@ -347,14 +359,18 @@ def run_single_chapter_slice(
         previous_operation_id = operation_id
 
     final_saga = coordinate_saga(database_url, graph_context, saga_id)
-    root_status, _root_version = _operation_state(database_url, root, request.project_id)
+    root_status, _root_version = _operation_state(
+        database_url, root, request.project_id
+    )
     if final_saga["status"] != "SUCCEEDED" or root_status != "SUCCEEDED":
         raise KernelError(
             "CHAPTER_SLICE_INCOMPLETE",
             "all chapter nodes completed but the root Saga did not succeed",
         )
     if export_evidence is None:
-        raise KernelError("CHAPTER_EXPORT_EVIDENCE_MISSING", "Export delivery did not run")
+        raise KernelError(
+            "CHAPTER_EXPORT_EVIDENCE_MISSING", "Export delivery did not run"
+        )
     manifest = build_chapter_slice_evidence_manifest(
         database_url,
         project_id=request.project_id,
@@ -378,7 +394,9 @@ def _run_failed_attempt(
     operation_id: str,
     node: ChapterNode,
 ) -> None:
-    worker = _start_attempt(database_url, request, operation_id, f"{node.value}-crash-worker")
+    worker = _start_attempt(
+        database_url, request, operation_id, f"{node.value}-crash-worker"
+    )
     status, version = _operation_state(database_url, operation_id, request.project_id)
     submit_attempt_result(
         database_url,
@@ -431,7 +449,9 @@ def _run_successful_attempt(
             "content_hash": output.content_hash,
         },
     )
-    completed_status, _ = _operation_state(database_url, operation_id, request.project_id)
+    completed_status, _ = _operation_state(
+        database_url, operation_id, request.project_id
+    )
     if completed_status != "SUCCEEDED":
         raise KernelError(
             "CHAPTER_NODE_COMPLETION_FAILED",
@@ -455,7 +475,9 @@ def _start_attempt(
         correlation_id=request.correlation_id,
     )["attempt_id"]
     if attempt_id is None:
-        raise KernelError("CHAPTER_ATTEMPT_EXHAUSTED", "chapter Attempt policy is exhausted")
+        raise KernelError(
+            "CHAPTER_ATTEMPT_EXHAUSTED", "chapter Attempt policy is exhausted"
+        )
     queue_attempt(
         database_url,
         attempt_id=attempt_id,
@@ -505,7 +527,9 @@ def _operation_output_by_key(
         )
         row = uow.cursor.fetchone()
     if row is None:
-        raise KernelError("CHAPTER_INPUT_OUTPUT_MISSING", f"missing output {output_key}")
+        raise KernelError(
+            "CHAPTER_INPUT_OUTPUT_MISSING", f"missing output {output_key}"
+        )
     return {"asset_version_id": str(row[0]), "content_hash": str(row[1])}
 
 
@@ -537,7 +561,9 @@ def _command(
             "chapter": request.chapter,
             "title": request.title,
             "premise": request.premise,
-            "chapter_plan_asset_version_id": _chapter_plan_input(request)["asset_version_id"],
+            "chapter_plan_asset_version_id": _chapter_plan_input(request)[
+                "asset_version_id"
+            ],
             "chapter_plan_content_hash": _chapter_plan_input(request)["content_hash"],
             "context_candidates": [dict(item) for item in request.context_candidates],
             "context_version_refs": dict(request.context_version_refs or {}),
@@ -604,7 +630,9 @@ def _operation_state(
     project_id: str,
 ) -> tuple[str, int]:
     with AuthorityUnitOfWork(database_url) as uow:
-        state = uow.repositories.attempt_runtime.operation_state(operation_id, project_id)
+        state = uow.repositories.attempt_runtime.operation_state(
+            operation_id, project_id
+        )
     return str(state["status"]), int(state["version"])
 
 
@@ -622,7 +650,11 @@ def _input_nodes(node: ChapterNode) -> tuple[ChapterNode, ...]:
         ChapterNode.CONTEXT: (ChapterNode.PLAN,),
         ChapterNode.DRAFT: (ChapterNode.PLAN, ChapterNode.CONTEXT),
         ChapterNode.REVIEW: (ChapterNode.DRAFT, ChapterNode.CONTEXT),
-        ChapterNode.REVISION: (ChapterNode.DRAFT, ChapterNode.REVIEW, ChapterNode.CONTEXT),
+        ChapterNode.REVISION: (
+            ChapterNode.DRAFT,
+            ChapterNode.REVIEW,
+            ChapterNode.CONTEXT,
+        ),
         ChapterNode.REREVIEW: (
             ChapterNode.DRAFT,
             ChapterNode.REVIEW,
@@ -643,6 +675,7 @@ def _input_nodes(node: ChapterNode) -> tuple[ChapterNode, ...]:
             ChapterNode.CONTEXT,
         ),
         ChapterNode.QUALITY: (
+            ChapterNode.PLAN,
             ChapterNode.REVISION,
             ChapterNode.REREVIEW,
             ChapterNode.CANON,
@@ -668,6 +701,41 @@ def _input_nodes(node: ChapterNode) -> tuple[ChapterNode, ...]:
     }[node]
 
 
+def _measurement_evidence_inputs(
+    database_url: str,
+    *,
+    project_id: str,
+    root_operation_id: str,
+    context_bundle_asset_version_id: str,
+) -> list[dict[str, str]]:
+    """Freeze upstream Provider evidence that consumed this exact Context."""
+    with AuthorityUnitOfWork(database_url) as uow:
+        uow.cursor.execute(
+            """
+            SELECT binding.asset_version_id, binding.content_hash
+            FROM authority_operation AS operation
+            JOIN authority_operation_output_asset AS binding
+              ON binding.operation_id=operation.operation_id
+            JOIN authority_asset AS asset ON asset.asset_id=binding.asset_id
+            WHERE operation.project_id=%s
+              AND operation.root_operation_id=%s
+              AND operation.status='SUCCEEDED'
+              AND asset.asset_type IN ('model_call_log','cost_ledger')
+              AND EXISTS (
+                SELECT 1
+                FROM jsonb_array_elements(operation.input_asset_snapshot) AS input(value)
+                WHERE input.value->>'asset_version_id'=%s
+              )
+            ORDER BY operation.created_at, asset.asset_type, binding.output_key
+            """,
+            [project_id, root_operation_id, context_bundle_asset_version_id],
+        )
+        return [
+            {"asset_version_id": str(row[0]), "content_hash": str(row[1])}
+            for row in uow.cursor.fetchall()
+        ]
+
+
 def _validate_request(request: SingleChapterRequest) -> None:
     required = (
         request.project_id,
@@ -685,13 +753,17 @@ def _validate_request(request: SingleChapterRequest) -> None:
         or len(request.commit_sha) != 40
         or request.context_token_budget <= 0
     ):
-        raise KernelError("CHAPTER_SLICE_REQUEST_INVALID", "single-chapter request is incomplete")
+        raise KernelError(
+            "CHAPTER_SLICE_REQUEST_INVALID", "single-chapter request is incomplete"
+        )
     _chapter_plan_input(request)
 
 
 def _chapter_plan_input(request: SingleChapterRequest) -> dict[str, str]:
     candidates = [
-        item for item in request.context_candidates if item.get("asset_type") == "chapter_plan"
+        item
+        for item in request.context_candidates
+        if item.get("asset_type") == "chapter_plan"
     ]
     if len(candidates) != 1:
         raise KernelError(
@@ -699,8 +771,12 @@ def _chapter_plan_input(request: SingleChapterRequest) -> dict[str, str]:
             f"exactly one frozen ChapterPlan AssetVersion is required, found {len(candidates)}",
         )
     candidate = candidates[0]
-    asset_version_id = str(request.chapter_plan_asset_version_id or candidate.get("asset_version_id") or "")
-    content_hash = str(request.chapter_plan_content_hash or candidate.get("content_hash") or "")
+    asset_version_id = str(
+        request.chapter_plan_asset_version_id or candidate.get("asset_version_id") or ""
+    )
+    content_hash = str(
+        request.chapter_plan_content_hash or candidate.get("content_hash") or ""
+    )
     if (
         not asset_version_id
         or not content_hash

@@ -1059,6 +1059,15 @@ class BookReplanApprovalRequest(BaseModel):
     actor_id: str = ""
 
 
+class BookReplanReevaluationRequest(BaseModel):
+    source_recap_asset_version_id: str = Field(min_length=1)
+    deviation_report_asset_version_id: str = Field(min_length=1)
+    idempotency_key: str = Field(min_length=1)
+    actor_id: str = ""
+    trace_id: str = ""
+    correlation_id: str = ""
+
+
 class ExternalEffectManualResolutionRequest(BaseModel):
     operation_id: str = Field(min_length=1)
     project_id: str = Field(min_length=1)
@@ -2434,6 +2443,7 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "BookAuthorityChapterRequest": BookAuthorityChapterRequest,
         "BookAuthorityControlRequest": BookAuthorityControlRequest,
         "BookReplanApprovalRequest": BookReplanApprovalRequest,
+        "BookReplanReevaluationRequest": BookReplanReevaluationRequest,
         "ExternalEffectManualResolutionRequest": ExternalEffectManualResolutionRequest,
         "ChapterProductionResumeRequest": ChapterProductionResumeRequest,
         "ChapterProductionControlRequest": ChapterProductionControlRequest,

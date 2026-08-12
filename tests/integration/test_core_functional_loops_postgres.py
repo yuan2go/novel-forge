@@ -1377,6 +1377,26 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
         ):
             return client.post(path, json=payload)
 
+    def api_get(path: str):
+        query_principal = Principal(
+            principal_id=f"book-query:{project_id}",
+            principal_type=PrincipalType.LOCAL_OPERATOR,
+            permissions=frozenset({"book.authority.query"}),
+            project_scope=frozenset({project_id}),
+            authentication_source="postgres-functional-loop-query",
+        )
+        trusted = SimpleNamespace(
+            resolve_api_principal=lambda **_values: query_principal
+        )
+        with (
+            patch(
+                "novel_forge.api.routers.book_authority.build_trusted_principal_resolver",
+                return_value=trusted,
+            ),
+            TestClient(authority_api) as client,
+        ):
+            return client.get(path)
+
     start_response = api_post(
         "/product/production/book-authority/commands",
         {
@@ -1696,6 +1716,136 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
     assert SupervisorAction.DISPATCH_CHAPTER.value in after_replan_actions
     assert SupervisorAction.ACCEPT_CHAPTER.value in after_replan_actions
     assert book_authority.require(book.book_run_id)["accepted_through_chapter"] == 2
+
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute(
+            """
+            SELECT request.chapter_request_id
+            FROM authority_book_chapter_acceptance AS acceptance
+            JOIN authority_book_chapter_request AS request
+              ON request.chapter_request_id=acceptance.chapter_request_id
+            WHERE acceptance.book_run_id=%s AND acceptance.chapter_number=2
+            """,
+            [book.book_run_id],
+        )
+        chapter_two_request_id = str(uow.cursor.fetchone()[0])
+    current_book = book_authority.require(book.book_run_id)
+    frozen = dict(current_book["longform_context_versions"])
+    reader = _followup_output(
+        project_id=project_id,
+        chapter_request_id=checkpoint_request_id,
+        followup_type="READER_OUTCOME",
+        output_key="reader_outcome.report",
+    )
+    authority_inputs = book_authority.resolve_asset_refs(
+        project_id=project_id,
+        asset_version_ids=(
+            str(current_book["book_design_version"]),
+            str(current_book["book_plan_version"]),
+            str(frozen["volume_plan_version"]),
+            str(frozen["arc_plan_version"]),
+            str(frozen["quality_trend_version"]),
+            str(current_book["last_chapter_outcome_version_id"]),
+            str(current_book["active_story_state_version_id"]),
+            str(current_book["active_canon_snapshot_version_id"]),
+        ),
+    )
+    later_admission = book_authority.schedule_longform_recap(
+        chapter_two_request_id,
+        principal=principal,
+        payload={
+            "book_id": current_book["book_id"],
+            "checkpoint_type": LongformCheckpointType.ARC_CHECKPOINT.value,
+            "chapter_range": [1, 2],
+            "book_design_version": current_book["book_design_version"],
+            "book_plan_version": current_book["book_plan_version"],
+            "volume_plan_version": frozen["volume_plan_version"],
+            "arc_plan_version": frozen["arc_plan_version"],
+            "canon_snapshot_version": current_book["active_canon_snapshot_version_id"],
+            "reader_state_version": reader["asset_version_id"],
+            "quality_trend_version": frozen["quality_trend_version"],
+            "chapter_outcome_versions": [
+                current_book["last_chapter_outcome_version_id"]
+            ],
+            "story_state_version": current_book["active_story_state_version_id"],
+            "observations": {
+                "evidence_level": "CONTROLLED_FIXTURE",
+                "fixture_only": True,
+                "production_verified": False,
+                "reader_state": dict(reader["content"].get("reader_state") or {}),
+                "reader_qualification": {
+                    "qualification_status": "SHADOW",
+                    "sample_size": 0,
+                    "confidence": 0,
+                    "disagreement": True,
+                    "position_bias": True,
+                    "ood": True,
+                    "recent_reports": [],
+                },
+                "canon": {"conflicts": []},
+                "quality_trend": {"direction": "STABLE"},
+            },
+        },
+        input_assets=(
+            {
+                "asset_version_id": str(reader["asset_version_id"]),
+                "content_hash": str(reader["content_hash"]),
+            },
+            *authority_inputs,
+        ),
+    )
+    book_authority.followup.run_or_recover(
+        BookFollowupAdmission(later_admission.operation_id, project_id, True)
+    )
+    later_recap = _followup_output(
+        project_id=project_id,
+        chapter_request_id=chapter_two_request_id,
+        followup_type="LONGFORM_RECAP",
+        output_key="longform.recap.report",
+    )
+    later_deviation = _followup_output(
+        project_id=project_id,
+        chapter_request_id=chapter_two_request_id,
+        followup_type="LONGFORM_RECAP",
+        output_key="longform.recap.deviation_report",
+    )
+    reevaluation_payload = {
+        "source_recap_asset_version_id": str(later_recap["asset_version_id"]),
+        "deviation_report_asset_version_id": str(later_deviation["asset_version_id"]),
+        "idempotency_key": f"{pending['replan_id']}:reevaluation:chapter:2",
+        "trace_id": f"trace:{pending['replan_id']}:reevaluation",
+        "correlation_id": str(later_admission.operation_id),
+        "actor_id": "untrusted-caller",
+    }
+    reevaluation_response = api_post(
+        f"/product/production/book-authority/runs/{book.book_run_id}/"
+        f"replans/{pending['replan_id']}/reevaluate",
+        reevaluation_payload,
+    )
+    replayed_response = api_post(
+        f"/product/production/book-authority/runs/{book.book_run_id}/"
+        f"replans/{pending['replan_id']}/reevaluate",
+        reevaluation_payload,
+    )
+    assert reevaluation_response.status_code == 200, reevaluation_response.text
+    assert replayed_response.status_code == 200, replayed_response.text
+    reevaluated = reevaluation_response.json()
+    replayed_reevaluation = replayed_response.json()
+    assert reevaluated["resolution"] == "RESOLVED"
+    assert replayed_reevaluation["replayed"] is True
+    assert replayed_reevaluation["reevaluation_id"] == (reevaluated["reevaluation_id"])
+    corrective_response = api_get(
+        f"/product/production/book-authority/runs/{book.book_run_id}/"
+        "corrective-actions?issue_type=CANON_CONFLICT"
+    )
+    assert corrective_response.status_code == 200, corrective_response.text
+    corrective = corrective_response.json()
+    assert len(corrective) == 1
+    assert corrective[0]["status"] == "RESOLVED"
+    assert (
+        corrective[0]["evaluation_operation_id"]
+        == (reevaluated["evaluation_operation_id"])
+    )
     production_execution.close()
     for worker_execution in worker_production_executions:
         worker_execution.close()

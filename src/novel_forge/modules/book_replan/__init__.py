@@ -1,3 +1,11 @@
-from .coordinator import BookReplanCoordinator, CoordinateBookReplanCommand
+from .coordinator import (
+    BookReplanCoordinator,
+    CoordinateBookReplanCommand,
+    ReevaluateBookReplanCommand,
+)
 
-__all__ = ["BookReplanCoordinator", "CoordinateBookReplanCommand"]
+__all__ = [
+    "BookReplanCoordinator",
+    "CoordinateBookReplanCommand",
+    "ReevaluateBookReplanCommand",
+]

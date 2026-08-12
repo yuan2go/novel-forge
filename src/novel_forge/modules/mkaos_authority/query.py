@@ -1,4 +1,5 @@
 """Strong PostgreSQL queries for MKAOS Candidate/Decision/Card/Pack assets."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -230,8 +231,7 @@ class MkaosAuthorityQuery:
             "selector_policy_changed": (
                 current["selector_policy_version"]
                 != baseline["selector_policy_version"]
-                or current["selector_policy_hash"]
-                != baseline["selector_policy_hash"]
+                or current["selector_policy_hash"] != baseline["selector_policy_hash"]
             ),
             "directly_supersedes_baseline": (
                 current_lineage.get("supersedes_pack_asset_version_id")
@@ -263,7 +263,7 @@ class MkaosAuthorityQuery:
         result_asset_version_id: str = "",
         limit: int = 100,
     ) -> list[dict[str, Any]]:
-        """Trace KnowledgePack cards through Context to a successful result."""
+        """Trace cards through a frozen Context and successful Provider effect."""
         _validate(project_id, limit)
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
@@ -273,6 +273,10 @@ class MkaosAuthorityQuery:
                        context_build_operation_id,
                        consumer_operation_id,
                        consumer_definition_name,
+                       attempt_id, external_effect_id, provider, model_id,
+                       provider_request_id, capability_id,
+                       capability_pack_snapshot_id,
+                       capability_pack_id, capability_pack_version,
                        result_asset_version_id, result_asset_type,
                        target_capability_id, narrative_position, trace_id,
                        knowledge_pack_id,
@@ -308,6 +312,15 @@ class MkaosAuthorityQuery:
             "context_build_operation_id",
             "consumer_operation_id",
             "consumer_definition_name",
+            "attempt_id",
+            "external_effect_id",
+            "provider",
+            "model_id",
+            "provider_request_id",
+            "capability_id",
+            "capability_pack_snapshot_id",
+            "capability_pack_id",
+            "capability_pack_version",
             "result_asset_version_id",
             "result_asset_type",
             "target_capability_id",
@@ -321,6 +334,65 @@ class MkaosAuthorityQuery:
             "inclusion_reason",
             "narrative_function",
             "consumed_at",
+        )
+        return [dict(zip(keys, row, strict=True)) for row in rows]
+
+    def list_runtime_selections(
+        self,
+        *,
+        project_id: str,
+        book_id: str = "",
+        target_capability_id: str = "",
+        limit: int = 100,
+    ) -> list[dict[str, Any]]:
+        """List Context-frozen selections without claiming Provider consumption."""
+        _validate(project_id, limit)
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT project_id, book_id,
+                       context_bundle_asset_version_id,
+                       context_build_operation_id, trace_id,
+                       target_capability_id, narrative_position,
+                       knowledge_pack_id,
+                       knowledge_pack_asset_version_id,
+                       knowledge_card_asset_version_id,
+                       usage_role, frozen_weight,
+                       inclusion_reason, narrative_function, selected_at
+                FROM authority_mkaos_runtime_selection_projection
+                WHERE project_id=%s
+                  AND (%s='' OR book_id=%s)
+                  AND (%s='' OR target_capability_id=%s)
+                ORDER BY selected_at DESC, context_bundle_asset_version_id,
+                         knowledge_pack_id, knowledge_card_asset_version_id
+                LIMIT %s
+                """,
+                [
+                    project_id,
+                    book_id,
+                    book_id,
+                    target_capability_id,
+                    target_capability_id,
+                    limit,
+                ],
+            )
+            rows = uow.cursor.fetchall()
+        keys = (
+            "project_id",
+            "book_id",
+            "context_bundle_asset_version_id",
+            "context_build_operation_id",
+            "trace_id",
+            "target_capability_id",
+            "narrative_position",
+            "knowledge_pack_id",
+            "knowledge_pack_asset_version_id",
+            "knowledge_card_asset_version_id",
+            "usage_role",
+            "frozen_weight",
+            "inclusion_reason",
+            "narrative_function",
+            "selected_at",
         )
         return [dict(zip(keys, row, strict=True)) for row in rows]
 

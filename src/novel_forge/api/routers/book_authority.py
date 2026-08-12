@@ -13,7 +13,9 @@ from novel_forge.modules.book_authority.production import (
     StartBookProductionCommand,
     SubmitBookChapterCommand,
 )
-from novel_forge.modules.book_authority.input_resolver import ResolveBookProductionInputCommand
+from novel_forge.modules.book_authority.input_resolver import (
+    ResolveBookProductionInputCommand,
+)
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.production_preparation import PostgresProductionAssetResolver
 
@@ -25,6 +27,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     BookAuthorityChapterRequest = ctx.models["BookAuthorityChapterRequest"]
     BookAuthorityControlRequest = ctx.models["BookAuthorityControlRequest"]
     BookReplanApprovalRequest = ctx.models["BookReplanApprovalRequest"]
+    BookReplanReevaluationRequest = ctx.models["BookReplanReevaluationRequest"]
     router = APIRouter(
         prefix="/product/production/book-authority",
         tags=["product-book-authority"],
@@ -271,6 +274,28 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
         except (KernelError, ValueError, RuntimeError) as exc:
             raise _http_error(exc) from exc
 
+    @router.get("/runs/{book_run_id}/corrective-actions")
+    def corrective_actions(
+        book_run_id: str,
+        status: str = "",
+        issue_type: str = "",
+        limit: int = 100,
+    ) -> list[dict[str, Any]]:
+        try:
+            book = _application(ctx).require(book_run_id)
+            principal = build_trusted_principal_resolver().resolve_api_principal()
+            principal.require("book.authority.query", book["project_id"])
+            return _composition(ctx).corrective_actions.list(
+                project_id=str(book["project_id"]),
+                status=status,
+                issue_type=issue_type,
+                limit=limit,
+            )
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
+
     @router.post("/runs/{book_run_id}/replans/{replan_id}/approve")
     def approve_replan(
         book_run_id: str,
@@ -282,15 +307,41 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
             principal = build_trusted_principal_resolver().resolve_api_principal(
                 claimed_actor_id=request.actor_id
             )
-            principal.require(
-                "book.authority.approve_replan", book["project_id"]
-            )
+            principal.require("book.authority.approve_replan", book["project_id"])
             return _composition(ctx).approve_replan(
                 book_run_id=book_run_id,
                 replan_id=replan_id,
                 authority_type=request.authority_type,
                 authority_version=request.authority_version,
                 evidence=dict(request.evidence),
+            )
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
+
+    @router.post("/runs/{book_run_id}/replans/{replan_id}/reevaluate")
+    def reevaluate_replan(
+        book_run_id: str,
+        replan_id: str,
+        request: BookReplanReevaluationRequest,
+    ) -> dict[str, Any]:
+        try:
+            book = _application(ctx).require(book_run_id)
+            principal = build_trusted_principal_resolver().resolve_api_principal(
+                claimed_actor_id=request.actor_id
+            )
+            principal.require("book.authority.execute", book["project_id"])
+            return _composition(ctx).reevaluate_replan(
+                book_run_id=book_run_id,
+                replan_id=replan_id,
+                source_recap_asset_version_id=(request.source_recap_asset_version_id),
+                deviation_report_asset_version_id=(
+                    request.deviation_report_asset_version_id
+                ),
+                idempotency_key=request.idempotency_key,
+                trace_id=request.trace_id or f"trace:{uuid4()}",
+                correlation_id=request.correlation_id or f"correlation:{uuid4()}",
             )
         except PermissionError as exc:
             raise HTTPException(status_code=403, detail=str(exc)) from exc

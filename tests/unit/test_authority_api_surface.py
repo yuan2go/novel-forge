@@ -13,16 +13,19 @@ from novel_forge.infrastructure.settings import IndustrialSettings
 
 class AuthorityApiSurfaceTests(unittest.TestCase):
     def test_required_product_reads_are_exposed_by_postgresql_app(self) -> None:
-        with tempfile.TemporaryDirectory() as directory, patch.dict(
-            "os.environ",
-            {
-                "NOVEL_FORGE_APPLICATION_BUILD_ID": "authority-api-unit",
-                "NOVEL_FORGE_COMMIT_SHA": "d" * 40,
-                "NOVEL_FORGE_ENVIRONMENT": "test",
-                "NOVEL_FORGE_MODEL_PROVIDER": "mock",
-                "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": directory,
-            },
-            clear=False,
+        with (
+            tempfile.TemporaryDirectory() as directory,
+            patch.dict(
+                "os.environ",
+                {
+                    "NOVEL_FORGE_APPLICATION_BUILD_ID": "authority-api-unit",
+                    "NOVEL_FORGE_COMMIT_SHA": "d" * 40,
+                    "NOVEL_FORGE_ENVIRONMENT": "test",
+                    "NOVEL_FORGE_MODEL_PROVIDER": "mock",
+                    "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": directory,
+                },
+                clear=False,
+            ),
         ):
             app = create_authority_app(
                 IndustrialSettings(
@@ -72,6 +75,8 @@ class AuthorityApiSurfaceTests(unittest.TestCase):
                 "/product/mkaos/knowledge-packs/{knowledge_pack_id}",
                 "/product/mkaos/knowledge-packs/{knowledge_pack_id}/diff",
                 "/product/mkaos/runtime-usage",
+                "/product/mkaos/runtime-selections",
+                "/product/production/book-authority/runs/{book_run_id}/corrective-actions",
                 "/product/temporal-query",
                 "/product/content-intelligence/pacing",
                 "/product/content-intelligence/hooks",
@@ -79,17 +84,20 @@ class AuthorityApiSurfaceTests(unittest.TestCase):
         )
 
     def test_project_scoped_principal_cannot_query_another_project(self) -> None:
-        with tempfile.TemporaryDirectory() as directory, patch.dict(
-            "os.environ",
-            {
-                "NOVEL_FORGE_APPLICATION_BUILD_ID": "authority-api-unit",
-                "NOVEL_FORGE_COMMIT_SHA": "d" * 40,
-                "NOVEL_FORGE_ENVIRONMENT": "test",
-                "NOVEL_FORGE_MODEL_PROVIDER": "mock",
-                "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": directory,
-                "NOVEL_FORGE_AUTHORITY_PROJECT_SCOPE": "project-allowed",
-            },
-            clear=False,
+        with (
+            tempfile.TemporaryDirectory() as directory,
+            patch.dict(
+                "os.environ",
+                {
+                    "NOVEL_FORGE_APPLICATION_BUILD_ID": "authority-api-unit",
+                    "NOVEL_FORGE_COMMIT_SHA": "d" * 40,
+                    "NOVEL_FORGE_ENVIRONMENT": "test",
+                    "NOVEL_FORGE_MODEL_PROVIDER": "mock",
+                    "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": directory,
+                    "NOVEL_FORGE_AUTHORITY_PROJECT_SCOPE": "project-allowed",
+                },
+                clear=False,
+            ),
         ):
             app = create_authority_app(
                 IndustrialSettings(
@@ -101,7 +109,9 @@ class AuthorityApiSurfaceTests(unittest.TestCase):
             )
             with TestClient(app) as client:
                 responses = (
-                    client.get("/product/tasks", params={"project_id": "project-denied"}),
+                    client.get(
+                        "/product/tasks", params={"project_id": "project-denied"}
+                    ),
                     client.get(
                         "/product/analysis/reports",
                         params={"project_id": "project-denied"},

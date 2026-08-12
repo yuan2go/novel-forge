@@ -61,6 +61,7 @@ from novel_forge.modules.book_authority.supervisor import (
     PostgresBookProductionSupervisor,
 )
 from novel_forge.modules.book_authority.queries import PostgresBookProductionQuery
+from novel_forge.modules.corrective_action import CorrectiveActionQuery
 from novel_forge.modules.book_replan import BookReplanCoordinator
 from novel_forge.modules.chapter_group_authority import PostgresChapterGroupAuthority
 from novel_forge.modules.plan_change_authority import PostgresPlanChangeAuthority
@@ -1311,6 +1312,7 @@ def build_book_production_composition(
         plan_change=plan_change,
         input_resolver=input_resolver,
         replan=replan,
+        corrective_actions=CorrectiveActionQuery(settings.database_url),
         supervisor=supervisor,
         principal=principal,
     )
