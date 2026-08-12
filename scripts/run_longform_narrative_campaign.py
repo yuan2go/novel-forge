@@ -574,8 +574,14 @@ def _collect_measurements(
             WHERE asset.project_id=%s AND asset.asset_type='cost_ledger'
         """,
         "context_manifests": """
-            SELECT COUNT(*) AS count FROM authority_asset AS asset
-            WHERE asset.project_id=%s AND asset.asset_type='context_manifest'
+            SELECT COUNT(*) AS count
+            FROM authority_asset AS asset
+            JOIN authority_asset_version AS version
+              ON version.asset_id=asset.asset_id
+            WHERE asset.project_id=%s
+              AND asset.asset_type='context_bundle'
+              AND version.content->'context_manifest'->>'contract_version'
+                    ='narrative-context-manifest-v1'
         """,
     }
     result = {

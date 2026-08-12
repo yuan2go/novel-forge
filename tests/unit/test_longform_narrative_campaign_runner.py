@@ -146,3 +146,31 @@ def test_process_failure_is_persisted_before_campaign_checkpoint_exists(
     payload = __import__("json").loads(path.read_text(encoding="utf-8"))
     assert payload["failures"][0]["category"] == "PROOF_HARNESS_DEFECT"
     assert payload["failures"][0]["context"] == {"phase": "INITIALISATION"}
+
+
+def test_campaign_counts_embedded_narrative_context_manifests(monkeypatch) -> None:
+    campaign = _load_script()
+    observed_sql: list[str] = []
+
+    def query_rows(_database_url: str, sql: str, _params):
+        observed_sql.append(sql)
+        if "authority_book_chapter_request" in sql:
+            return [{"chapter_number": 1, "accepted": 1}]
+        if (
+            "asset_type='context_bundle'" in sql
+            and "content->'context_manifest'->>'contract_version'" in sql
+        ):
+            return [{"count": 1}]
+        return [{"count": 0}]
+
+    monkeypatch.setattr(campaign, "_query_rows", query_rows)
+
+    measurements = campaign._collect_measurements(
+        "postgresql://authority",
+        project_id="project-1",
+        book_run_id="book-run-1",
+    )
+
+    assert measurements["context_manifests"] == 1
+    assert measurements["duplicate_logical_chapters"] == 0
+    assert any("asset_type='context_bundle'" in sql for sql in observed_sql)
