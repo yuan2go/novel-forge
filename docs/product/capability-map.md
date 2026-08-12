@@ -19,7 +19,7 @@ Agent output remains a proposal until the relevant Domain Authority accepts it. 
 | Book design and typed planning | `runtime-wired` | Candidate/decision/activation and Book-flow tests. |
 | Chapter production saga | `runtime-wired`, `fixture-proven` | 18-node bounded acceptance paths; selected PostgreSQL integration. |
 | Book supervision and follow-up | `runtime-wired`, `fixture-proven` | Deterministic tick, Reader/recap/replan tests. |
-| Canon, ChapterOutcome, StoryState, temporal query | `runtime-wired`, `fixture-proven` | Accepted-state and as-of query tests. |
+| Narrative State Contract v2: Canon, ChapterOutcome, StoryState, temporal query | `runtime-wired`, `PostgreSQL-fixture-validated` | Entity-aware current state, accepted-only as-of reads, Book acceptance and deterministic rebuild tests. |
 | Context building | `runtime-wired`, `fixture-proven` | Source isolation and budget/profile validation. |
 | Source Import and Source Authority | `runtime-wired`, `fixture-proven` | Governed repository/document/chunk flows; integration suites exist. |
 | MKAOS knowledge candidate/approval/pack | `runtime-wired`, `fixture-proven` | Evidence and source-leakage gates; integration suites exist. |

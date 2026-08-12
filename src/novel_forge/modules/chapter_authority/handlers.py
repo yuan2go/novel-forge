@@ -106,7 +106,7 @@ class DeterministicFixtureChapterProvider:
                         "subject": "protagonist",
                         "predicate": "gave_up",
                         "object": "safe_route_home",
-                        "effective_chapter": draft["chapter"],
+                        "effective_from_chapter": draft["chapter"],
                     }
                 ],
             }
@@ -569,32 +569,6 @@ class _CanonHandler:
             extraction=resolved_extraction,
             context_bundle=context.content,
         )
-        snapshot_outputs = tuple(
-            ChapterAuxiliaryOutput(
-                asset_type=str(snapshot["asset_type"]),
-                output_key=f"chapter.canon.snapshot.{snapshot['state_kind']}",
-                role="state_snapshot",
-                content=dict(snapshot),
-                reference_asset_version_ids=tuple(
-                    sorted(
-                        {
-                            revision.asset_version_id,
-                            extraction.asset_version_id,
-                            proposal.asset_version_id,
-                            *(item.asset_version_id for item in request.inputs if item.asset_type == "canon_approval_decision"),
-                            context.asset_version_id,
-                            *snapshot.get("previous_asset_version_ids", []),
-                        }
-                    )
-                ),
-                evidence={
-                    "authority_family": "chapter",
-                    "state_kind": snapshot["state_kind"],
-                    "append_only": True,
-                },
-            )
-            for snapshot in content["snapshot_candidates"]
-        )
         continuity_report = {
             **dict(content["deterministic_validation"]),
             "project_id": request.project_id,
@@ -646,7 +620,7 @@ class _CanonHandler:
             role=primary.role,
             content=primary.content,
             qualification_policy=primary.qualification_policy,
-            auxiliary_outputs=(*snapshot_outputs, validation_output),
+            auxiliary_outputs=(validation_output,),
         )
 
 

@@ -27,14 +27,14 @@ class StoryStateRepository:
                     input_contract_version, output_state_type,
                     current_state_version, transition_hash, idempotency_key,
                     validation_policy, dependency_keys,
-                    story_state_asset_version_id, status
+                    story_state_asset_version_id, status,
+                    event_id, state_kind, entity_key, reducer_semantics,
+                    accepted_chapter
                 ) VALUES (
                     %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                    %s, 'APPLIED'
+                    %s, 'APPLIED', %s, %s, %s, %s, %s
                 )
-                ON CONFLICT (
-                    project_id, chapter_outcome_asset_version_id, reducer_key
-                ) DO NOTHING
+                ON CONFLICT (project_id, event_id) DO NOTHING
                 """,
                 [
                     "story-reducer:"
@@ -52,6 +52,11 @@ class StoryStateRepository:
                     application["validation_policy"],
                     Jsonb(application.get("dependencies") or []),
                     story_state_asset_version_id,
+                    application["event_id"],
+                    application["state_kind"],
+                    application["entity_key"],
+                    application["reducer_semantics"],
+                    int(application["accepted_chapter"]),
                 ],
             )
             inserted += self.cursor.rowcount

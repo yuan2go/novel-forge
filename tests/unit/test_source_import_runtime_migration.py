@@ -8,12 +8,14 @@ from novel_forge.storage.migrations.versions import (
     v20260811_0079_source_import_scope_closure as scope_migration,
     v20260811_0080_source_snapshot_governance_identity as governance_migration,
     v20260811_0081_source_intelligence_router as intelligence_migration,
+    v20260812_0082_narrative_state_contract_v2 as narrative_state_migration,
 )
 
 
 def test_source_import_runtime_is_registered_forward_only_head() -> None:
     validate_migration_chain()
-    assert LATEST_MIGRATION_ID == intelligence_migration.MIGRATION_ID
+    assert narrative_state_migration.DOWN_REVISION == intelligence_migration.MIGRATION_ID
+    assert LATEST_MIGRATION_ID == narrative_state_migration.MIGRATION_ID
     assert migration.DOWN_REVISION == "20260811_0075_source_deconstruction_intelligence"
     assert migration.FORWARD_ONLY is True
     sql = "\n".join(migration.UPGRADE_STATEMENTS).lower()

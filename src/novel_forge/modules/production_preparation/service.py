@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from typing import Protocol
 
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.narrative_state import compact_current_state_facts
 from novel_forge.modules.chapter_authority.chapter_plan_views import (
     normalize_authoritative_chapter_plan,
     qualification_profile_for_plan,
@@ -31,13 +32,6 @@ from .policies import (
     STAGE_PROFILES,
     requirements_for,
 )
-from .empty_state import (
-    TYPED_EMPTY_STATE_ASSET_TYPE,
-    project_typed_empty_state,
-    validate_typed_empty_state,
-)
-
-
 class AssetResolver(Protocol):
     def resolve_latest(self, *, project_id: str, asset_type: str) -> ResolvedProductionAsset | None: ...
     def resolve_all(self, *, project_id: str, asset_type: str, limit: int = 200) -> tuple[ResolvedProductionAsset, ...]: ...
@@ -72,6 +66,7 @@ class ProductionPreparationService:
                     asset_type=requirement.asset_type,
                     asset=candidate,
                     requested_chapter=request.chapter,
+                    requested_book_id=request.book_id,
                     stage=request.stage,
                     forbidden_types=profile.forbidden_asset_types,
                 )
@@ -135,29 +130,10 @@ class ProductionPreparationService:
                 )
 
         missing: list[str] = []
-        declarations = selected_by_type.get(TYPED_EMPTY_STATE_ASSET_TYPE, [])
         for requirement in requirements:
             if not requirement.required or selected_by_type.get(requirement.asset_type):
                 continue
-            declaration = self._typed_empty_state(
-                declarations, requirement.asset_type, request
-            )
-            if declaration is not None:
-                selected_by_type.setdefault(requirement.asset_type, []).append(declaration)
-                selections.append(
-                    ProductionInputSelection(
-                        declaration.asset_version_id,
-                        requirement.asset_type,
-                        "state",
-                        f"explicit empty baseline for {requirement.asset_type}",
-                    )
-                )
-            else:
-                missing.append(requirement.asset_type)
-
-        # Physical typed-empty assets are projected into their concrete logical
-        # state buckets.  Do not include a second raw copy in the Manifest.
-        selected_by_type.pop(TYPED_EMPTY_STATE_ASSET_TYPE, None)
+            missing.append(requirement.asset_type)
         selected = [item for values in selected_by_type.values() for item in values]
         risks = self._risks(request, selected)
         approvals = selected_by_type.get("approval_decision", [])
@@ -263,6 +239,7 @@ class ProductionPreparationService:
             report=report,
             command=ChapterAuthorityCommand(
                 project_id=request.project_id,
+                book_id=request.book_id,
                 workspace_id=request.workspace_id,
                 chapter=request.chapter,
                 chapter_plan_asset_version_id=selected_by_type["chapter_plan"][0].asset_version_id,
@@ -284,6 +261,19 @@ class ProductionPreparationService:
             assets = tuple(
                 self.resolver.resolve_override(project_id=request.project_id, asset_version_id=item)
                 for item in ids
+            )
+        elif (
+            request.chapter > 1
+            and asset_type in CONTINUING_CHAPTER_REQUIRED_ASSET_TYPES
+            and hasattr(self.resolver, "resolve_accepted_for_boundary")
+        ):
+            assets = tuple(
+                self.resolver.resolve_accepted_for_boundary(
+                    project_id=request.project_id,
+                    book_id=request.book_id,
+                    asset_type=asset_type,
+                    accepted_chapter=request.chapter - 1,
+                )
             )
         elif hasattr(self.resolver, "resolve_all"):
             assets = tuple(self.resolver.resolve_all(project_id=request.project_id, asset_type=asset_type))
@@ -323,6 +313,25 @@ class ProductionPreparationService:
         evidence_only = item.asset_type in {
             "operator_checklist", "approval_decision", *evidence_only_types,
         }
+        safe_summary = str(item.content.get("safe_summary") or "")
+        structured_facts = list(item.content.get("structured_facts") or [])
+        if item.asset_type == "story_state_snapshot":
+            structured_facts = compact_current_state_facts(item.content)
+            safe_summary = (
+                "Compact authoritative current Narrative State through Chapter "
+                f"{item.content.get('accepted_through_chapter')}."
+            )
+        elif item.asset_type == "canon_snapshot":
+            if item.content.get("contract_version") != "canon-snapshot-v2":
+                raise KernelError(
+                    "CANON_SNAPSHOT_CONTRACT_UNSUPPORTED",
+                    "execution context accepts only Canon snapshot v2",
+                )
+            structured_facts = list(item.content.get("current_facts") or [])
+            safe_summary = (
+                "Compact authoritative Canon truth through Chapter "
+                f"{item.content.get('accepted_through_chapter')}."
+            )
         return {
             "asset_version_id": item.asset_version_id,
             "content_hash": item.content_hash,
@@ -332,10 +341,13 @@ class ProductionPreparationService:
             ),
             "project_id": item.project_id,
             "selection_reason": item.selected_reason,
-            "safe_summary": str(item.content.get("safe_summary") or ""),
-            "structured_facts": list(item.content.get("structured_facts") or []),
+            "safe_summary": safe_summary,
+            "structured_facts": structured_facts,
             "narrative_function": str(item.content.get("narrative_function") or item.asset_type),
-            "estimated_tokens": int(item.content.get("estimated_tokens") or max(1, len(str(item.content.get("safe_summary") or "")) // 4)),
+            "estimated_tokens": int(
+                item.content.get("estimated_tokens")
+                or max(1, len(safe_summary + repr(structured_facts)) // 4)
+            ),
             "allowed_use": (
                 "evidence_only"
                 if evidence_only
@@ -348,25 +360,6 @@ class ProductionPreparationService:
             "entity_id": str(item.content.get("entity_id") or ""),
             "scope": dict(item.content.get("scope") or {}),
         }
-
-    @staticmethod
-    def _typed_empty_state(
-        declarations: list[ResolvedProductionAsset],
-        state_kind: str,
-        request: ProductionPreparationRequest,
-    ) -> ResolvedProductionAsset | None:
-        for declaration in declarations:
-            content = declaration.content
-            if str(content.get("state_kind") or content.get("logical_asset_type") or "") != state_kind:
-                continue
-            snapshot = validate_typed_empty_state(
-                declaration,
-                project_id=request.project_id,
-                requested_chapter=request.chapter,
-                logical_asset_type=state_kind,
-            )
-            return project_typed_empty_state(declaration, snapshot=snapshot)
-        return None
 
     @staticmethod
     def _risks(request: ProductionPreparationRequest, selected: list[ResolvedProductionAsset]) -> tuple[ProductionPreparationRisk, ...]:
@@ -436,6 +429,7 @@ class ProductionPreparationService:
         }
         digest_payload = {
             "project_id": request.project_id,
+            "book_id": request.book_id,
             "chapter": request.chapter,
             "stage": request.stage,
             "selected": selected_payload,
@@ -459,6 +453,7 @@ class ProductionPreparationService:
             return next((by_type[item].asset_version_id for item in types if item in by_type), "")
         return ProductionInputManifest(
             project_id=request.project_id,
+            book_id=request.book_id,
             workspace_id=request.workspace_id,
             chapter=request.chapter,
             stage=request.stage,
@@ -470,7 +465,6 @@ class ProductionPreparationService:
             volume_arc_version_id=version("volume_arc"),
             world_bible_version_id=version("world_bible"),
             canon_snapshot_version_id=version("canon_snapshot"),
-            timeline_snapshot_version_id=version("timeline_snapshot"),
             context_profile_version_id=version("context_profile"),
             selected_asset_versions=selected_payload,
             rejected_asset_versions=tuple(asdict(item) for item in rejections),
@@ -488,7 +482,7 @@ class ProductionPreparationService:
         )
 
     @staticmethod
-    def _asset_fit_issue(*, asset_type: str, asset: ResolvedProductionAsset, requested_chapter: int, stage: str, forbidden_types: tuple[str, ...]) -> str:
+    def _asset_fit_issue(*, asset_type: str, asset: ResolvedProductionAsset, requested_chapter: int, requested_book_id: str, stage: str, forbidden_types: tuple[str, ...]) -> str:
         content = asset.content
         if asset_type in forbidden_types or content.get("quarantined") is True:
             return "STAGE_ASSET_FORBIDDEN"
@@ -504,8 +498,19 @@ class ProductionPreparationService:
             except (TypeError, ValueError):
                 return "CHAPTER_PLAN_TARGET_MISSING"
         if asset_type in CONTINUING_CHAPTER_REQUIRED_ASSET_TYPES:
+            expected_contract = (
+                "story-state-snapshot-v2"
+                if asset_type == "story_state_snapshot"
+                else "canon-snapshot-v2"
+            )
+            if content.get("contract_version") != expected_contract:
+                return "NARRATIVE_STATE_CONTRACT_UNSUPPORTED"
+            if content.get("_authority_acceptance_bound") is not True:
+                return "NARRATIVE_STATE_NOT_ACCEPTANCE_BOUND"
+            if not requested_book_id or content.get("book_id") != requested_book_id:
+                return "NARRATIVE_STATE_BOOK_SCOPE_MISMATCH"
             try:
-                if int(content.get("chapter")) != requested_chapter - 1:
+                if int(content.get("accepted_through_chapter")) != requested_chapter - 1:
                     return "HISTORICAL_SNAPSHOT_CHAPTER_MISMATCH"
             except (TypeError, ValueError):
                 return "HISTORICAL_SNAPSHOT_CHAPTER_MISSING"
@@ -545,29 +550,26 @@ class ProductionPreparationService:
             if item
         }
         entity_id = str(asset.content.get("entity_id") or asset.content.get("character_id") or "")
-        if asset.asset_type in {"character_card", "character_state_snapshot"} and entity_id and wanted_entities and entity_id not in wanted_entities:
+        if asset.asset_type == "character_card" and entity_id and wanted_entities and entity_id not in wanted_entities:
             return "ENTITY_SCOPE_MISMATCH"
-        wanted_pairs = {
-            tuple(sorted(str(value) for value in item))
-            for item in plan.get("relationship_pairs", [])
-            if isinstance(item, (list, tuple)) and len(item) == 2
-        }
-        pair = asset.content.get("relationship_pair") or scope.get("relationship_pair")
-        if asset.asset_type == "relationship_state_snapshot" and wanted_pairs and isinstance(pair, (list, tuple)) and len(pair) == 2 and tuple(sorted(str(value) for value in pair)) not in wanted_pairs:
-            return "RELATIONSHIP_SCOPE_MISMATCH"
         return ""
 
     @staticmethod
     def _repair_action(asset_type: str) -> str:
-        if asset_type == "canon_snapshot":
-            return "produce a qualified previous-chapter Canon snapshot or explicit EmptyStateDeclaration"
         if asset_type in CONTINUING_CHAPTER_REQUIRED_ASSET_TYPES:
-            return f"produce a qualified previous-chapter {asset_type} or explicit EmptyStateDeclaration"
+            state_name = {
+                "canon_snapshot": "Canon snapshot",
+                "story_state_snapshot": "StoryState snapshot",
+            }[asset_type]
+            return (
+                "complete and commit the previous chapter through Book Authority "
+                f"to produce an accepted {state_name} v2"
+            )
         return f"create or re-qualify the required {asset_type} Authority asset"
 
     @staticmethod
     def _validate(request: ProductionPreparationRequest) -> None:
         if request.stage not in STAGE_PROFILES:
             raise ValueError("unknown production preparation stage")
-        if any(not item for item in (request.project_id, request.workspace_id, request.idempotency_key)) or request.chapter <= 0 or request.context_token_budget <= 0:
+        if any(not item for item in (request.project_id, request.workspace_id, request.idempotency_key)) or request.chapter <= 0 or request.context_token_budget <= 0 or (request.chapter > 1 and not request.book_id):
             raise ValueError("production preparation request is incomplete")

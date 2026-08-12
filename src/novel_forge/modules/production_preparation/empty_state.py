@@ -6,10 +6,26 @@ from typing import Any
 from novel_forge.modules.command_kernel.errors import KernelError
 
 from .contracts import ResolvedProductionAsset
-from .policies import CONTINUING_CHAPTER_REQUIRED_ASSET_TYPES
 
-
+# Historical compatibility only. Production Preparation no longer selects or
+# projects these records; Narrative State v2 starts from accepted ChapterOutcome
+# and Book acceptance evidence instead of an operator-declared empty surrogate.
 TYPED_EMPTY_STATE_ASSET_TYPE = "typed_empty_state_snapshot"
+LEGACY_INITIALIZABLE_STATE_KINDS = frozenset(
+    {
+        "canon_snapshot",
+        "character_state_snapshot",
+        "relationship_state_snapshot",
+        "timeline_snapshot",
+        "foreshadow_snapshot",
+        "promise_ledger_snapshot",
+        "reward_ledger_snapshot",
+        "world_rule_snapshot",
+        "power_state_snapshot",
+        "plot_thread_snapshot",
+        "resource_state_snapshot",
+    }
+)
 
 
 def initialize_typed_empty_state(
@@ -23,7 +39,7 @@ def initialize_typed_empty_state(
     absence_evidence: dict[str, object],
 ) -> dict[str, object]:
     """Build an explicit empty baseline after Authority absence proof succeeds."""
-    if state_kind not in CONTINUING_CHAPTER_REQUIRED_ASSET_TYPES:
+    if state_kind not in LEGACY_INITIALIZABLE_STATE_KINDS:
         raise ValueError("typed empty initializer state kind is unsupported")
     if absence_evidence.get("state_kind") != state_kind:
         raise ValueError("state absence evidence targets another state kind")
@@ -101,7 +117,7 @@ def validate_typed_empty_state(
             "typed empty state was not materialized by the trusted initializer Operation",
         )
     state_kind = str(content.get("state_kind") or content.get("logical_asset_type") or "")
-    if state_kind not in CONTINUING_CHAPTER_REQUIRED_ASSET_TYPES:
+    if state_kind not in LEGACY_INITIALIZABLE_STATE_KINDS:
         raise KernelError(
             "TYPED_EMPTY_STATE_KIND_INVALID",
             "typed empty state has an unsupported state_kind",

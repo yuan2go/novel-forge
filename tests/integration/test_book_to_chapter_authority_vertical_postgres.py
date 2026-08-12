@@ -33,6 +33,7 @@ from novel_forge.modules.book_followup_authority.query import (
 )
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.content_intelligence import PacingAnalysisService
+from novel_forge.modules.narrative_state import NarrativeStateRebuildService
 from novel_forge.modules.runtime_job import RuntimeJobAuthority
 from novel_forge.modules.temporal_query import TemporalQueryService
 from novel_forge.modules.chapter_authority.orchestrator import (
@@ -503,7 +504,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                 frozen_input_counts,
                 {
                     "book.production.coordinate": 12,
-                    "longform.recap": 13,
+                    "longform.recap": 9,
                     "reader_outcome.evaluate": 14,
                 },
             )
@@ -713,12 +714,42 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                     [project_id],
                 )
                 acceptance_count = int(uow.cursor.fetchone()[0])
+                uow.cursor.execute(
+                    """
+                    SELECT COUNT(*), MAX(accepted_chapter)
+                    FROM authority_narrative_state_event_projection
+                    WHERE project_id=%s AND book_id=%s
+                    """,
+                    [project_id, f"book:{project_id}"],
+                )
+                event_projection_count, latest_event_chapter = uow.cursor.fetchone()
+                uow.cursor.execute(
+                    """
+                    SELECT accepted_through_chapter, story_state
+                    FROM authority_narrative_current_state_projection
+                    WHERE project_id=%s AND book_id=%s
+                    """,
+                    [project_id, f"book:{project_id}"],
+                )
+                current_projection = uow.cursor.fetchone()
             self.assertEqual(delegation_statuses, {"ACCEPTED": 2})
             self.assertEqual(acceptance_count, 2)
+            self.assertGreater(int(event_projection_count), 0)
+            self.assertEqual(int(latest_event_chapter), 2)
+            self.assertEqual(int(current_projection[0]), 2)
+
+            rebuilt = NarrativeStateRebuildService(DATABASE_URL).rebuild(
+                project_id=project_id,
+                book_id=f"book:{project_id}",
+            )
+            self.assertEqual(rebuilt.accepted_outcome_count, 2)
+            self.assertEqual(rebuilt.accepted_through_chapter, 2)
+            self.assertEqual(rebuilt.projection, dict(current_projection[1]))
 
             temporal = TemporalQueryService(DATABASE_URL)
-            chapter_one = temporal.changes_between(project_id, 0, 1)
-            chapter_two = temporal.changes_between(project_id, 0, 2)
+            book_id = f"book:{project_id}"
+            chapter_one = temporal.changes_between(project_id, book_id, 0, 1)
+            chapter_two = temporal.changes_between(project_id, book_id, 0, 2)
             self.assertEqual(chapter_one["status"], "FOUND")
             self.assertTrue(chapter_one["changes"])
             self.assertTrue(
@@ -726,9 +757,12 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
             )
             self.assertGreater(len(chapter_two["changes"]), len(chapter_one["changes"]))
             self.assertEqual(
-                temporal.changes_between(identifier("unrelated-project"), 0, 2)[
-                    "changes"
-                ],
+                temporal.changes_between(
+                    identifier("unrelated-project"),
+                    identifier("unrelated-book"),
+                    0,
+                    2,
+                )["changes"],
                 [],
             )
             pacing = PacingAnalysisService(DATABASE_URL)

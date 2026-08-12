@@ -146,7 +146,7 @@ class QualityContextAuthorityTests(unittest.TestCase):
     def test_longform_compression_preserves_snapshot_identity(self) -> None:
         bundle = _bundle()
         state = next(item for item in bundle["context_segments"] if item["asset_type"] == "canon_snapshot")
-        state["structured_facts"] = [{"index": item} for item in range(1000)]
+        state["structured_facts"] = [{"index": item} for item in range(3000)]
         view = _view("longform", bundle, token_budget=6000)
         row = view["previous_state_snapshots"]["canon_snapshot"]["canon_snapshot:project"][0]
         self.assertEqual(row["asset_version_id"], "canon_snapshot-v1")
@@ -179,32 +179,27 @@ class QualityContextAuthorityTests(unittest.TestCase):
 
     def test_longform_preserves_multiple_entities_and_emits_coverage(self) -> None:
         bundle = _bundle()
-        bundle["context_segments"].extend(
-            [
-                {
-                    "asset_version_id": "character-alice-v1",
-                    "asset_type": "character_state_snapshot",
-                    "entity_id": "alice",
-                    "chapter": 1,
-                    "content_digest": "sha256:alice",
-                    "qualification": "ELIGIBLE",
-                    "structured_facts": [{"entity_id": "alice", "goal": "protect"}],
-                },
-                {
-                    "asset_version_id": "character-bob-v1",
-                    "asset_type": "character_state_snapshot",
-                    "entity_id": "bob",
-                    "chapter": 1,
-                    "content_digest": "sha256:bob",
-                    "qualification": "ELIGIBLE",
-                    "structured_facts": [{"entity_id": "bob", "goal": "escape"}],
-                },
-            ]
+        story = next(
+            item
+            for item in bundle["context_segments"]
+            if item["asset_type"] == "story_state_snapshot"
         )
+        story["structured_facts"] = [
+            {
+                "state_kind": "character_state",
+                "entity_key": "character_id=alice",
+                "state": {"character_id": "alice", "goal": "protect"},
+            },
+            {
+                "state_kind": "character_state",
+                "entity_key": "character_id=bob",
+                "state": {"character_id": "bob", "goal": "escape"},
+            },
+        ]
         view = _view("longform", bundle)
-        identities = view["previous_state_snapshots"]["character_state_snapshot"]
-        self.assertIn("entity_id:alice", identities)
-        self.assertIn("entity_id:bob", identities)
+        identities = view["previous_state_snapshots"]["story_state_snapshot"]
+        self.assertIn("character_id=alice", identities)
+        self.assertIn("character_id=bob", identities)
         self.assertLessEqual(
             view["coverage_report"]["token_estimate"],
             view["coverage_report"]["token_budget"],
@@ -218,29 +213,25 @@ class QualityContextAuthorityTests(unittest.TestCase):
         identities = [f"character-{index}" for index in range(60)]
         canon = {
             "conflicts": [],
-            "snapshot_candidates": [
-                {
-                    "asset_type": "character_state_snapshot",
-                    "previous_asset_version_ids": ["character-state-v1"],
-                    "changes": [
+            "state_changes": {
+                "character_state": [
                         {
-                            "entity_id": identity,
+                            "character_id": identity,
                             "description": "noncritical detail " * 20,
                         }
                         for identity in identities
-                    ],
-                }
-            ],
+                ]
+            },
         }
 
         view = _view("longform", token_budget=2500, canon=canon)
 
         compacted = view["current_state_candidates"][
-            "character_state_snapshot"
+            "character_state"
         ]["compressed:noncritical"][0]
         self.assertEqual(
             compacted["included_identities"],
-            [f"entity_id:{identity}" for identity in identities],
+            [f"character_id:{identity}" for identity in identities],
         )
         self.assertEqual(compacted["identity_count"], len(identities))
         self.assertTrue(view["coverage_report"]["critical_facts_preserved"])

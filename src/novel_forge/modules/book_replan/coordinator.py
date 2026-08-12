@@ -54,14 +54,6 @@ _SNAPSHOT_ROLE_FIELDS = (
     "promise_ledger_version",
 )
 
-_CANON_OUTPUT_ROLE_TYPES = {
-    "character_state_snapshot": "character_state_version",
-    "foreshadow_snapshot": "foreshadowing_state_version",
-    "reward_ledger_snapshot": "reward_ledger_version",
-    "promise_ledger_snapshot": "promise_ledger_version",
-}
-
-
 @dataclass(frozen=True, slots=True)
 class CoordinateBookReplanCommand:
     project_id: str
@@ -935,53 +927,6 @@ class BookReplanCoordinator:
     ) -> tuple[tuple[str, str], ...]:
         previous = self._snapshot(book["input_snapshot_id"])
         overrides = {role: str(previous[role]) for role in _SNAPSHOT_ROLE_FIELDS}
-        active_canon = str(book.get("active_canon_snapshot_version_id") or "")
-        if not active_canon:
-            return tuple(sorted(overrides.items()))
-        with AuthorityUnitOfWork(self.database_url) as uow:
-            uow.cursor.execute(
-                """
-                SELECT operation_id
-                FROM authority_operation_output_asset
-                WHERE asset_version_id=%s
-                """,
-                [active_canon],
-            )
-            anchor_rows = uow.cursor.fetchall()
-            if len(anchor_rows) != 1:
-                raise KernelError(
-                    "BOOK_REPLAN_ACTIVE_CANON_OUTPUT_AMBIGUOUS",
-                    "active Canon snapshot must identify one Authority commit",
-                )
-            uow.cursor.execute(
-                """
-                SELECT asset.asset_type, output.asset_version_id
-                FROM authority_operation_output_asset AS output
-                JOIN authority_asset AS asset ON asset.asset_id=output.asset_id
-                WHERE output.operation_id=%s
-                  AND output.role='state_snapshot'
-                  AND asset.asset_type=ANY(%s)
-                """,
-                [str(anchor_rows[0][0]), list(_CANON_OUTPUT_ROLE_TYPES)],
-            )
-            rows = uow.cursor.fetchall()
-        resolved: dict[str, str] = {}
-        for asset_type, version_id in rows:
-            role = _CANON_OUTPUT_ROLE_TYPES[str(asset_type)]
-            if role in resolved:
-                raise KernelError(
-                    "BOOK_REPLAN_CANON_ROLE_INPUT_AMBIGUOUS",
-                    f"active Canon commit has multiple outputs for {role}",
-                )
-            resolved[role] = str(version_id)
-        missing = set(_CANON_OUTPUT_ROLE_TYPES.values()) - set(resolved)
-        if missing:
-            raise KernelError(
-                "BOOK_REPLAN_CANON_ROLE_INPUT_MISSING",
-                "active Canon commit lacks required Book input roles: "
-                + ", ".join(sorted(missing)),
-            )
-        overrides.update(resolved)
         return tuple(sorted(overrides.items()))
 
     def _snapshot(self, snapshot_id: str) -> dict[str, Any]:

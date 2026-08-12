@@ -59,7 +59,7 @@ Every v2 Narrative State event has one canonical shape and answers the required 
 - `state_kind`: one typed state kind.
 - `scope`: `project_id` and `book_id`.
 - `identity`: `identity_kind`, canonical `entity_key`, and typed `components`.
-- `coordinate`: `source_chapter`, `effective_from_chapter`, optional `effective_to_chapter`; `effective_from_chapter` may not exceed the accepted/source chapter.
+- `coordinate`: `source_chapter` and inclusive `effective_from_chapter`; the effective boundary may not exceed the accepted/source chapter. A closing boundary is represented by an explicit lifecycle/supersession event rather than a speculative implicit expiry.
 - `authority`: the persisted event requires committed Book acceptance. A read projection supplies `status=ACCEPTED` and `accepted_chapter`; orphan assets remain non-authoritative.
 - `mutation`: one of `UPSERT`, `TRANSITION`, `OPEN`, `CLOSE`, `ACTIVATE`, `SUPERSEDE`, `INCREMENT`, `DECREMENT`, or `APPEND` plus the typed payload.
 - `version`: event contract version and entity-version intent.
@@ -112,7 +112,7 @@ Temporal Query loads accepted events for the requested Project, Book, and inclus
 - `source_chapter` is the chapter whose accepted outcome emitted the event.
 - `accepted_chapter` comes only from the committed Book acceptance row and must equal the source outcome chapter for the canonical path.
 - `effective_from_chapter` is the first inclusive narrative chapter at which the state applies and must be less than or equal to `accepted_chapter`.
-- `effective_to_chapter`, when present, is an exclusive upper boundary and must be greater than `effective_from_chapter`.
+- Lifecycle closing and supersession are explicit accepted events; v2 deliberately has no implicit `effective_to_chapter` expiry that could advance state without an accepted event.
 - `supersedes_event_id` closes/replaces one earlier event with the same state kind, scope and entity identity. History is never updated or deleted.
 
 ## Future-leak invariant
@@ -141,9 +141,9 @@ Quality, Reader, recap, planning and model context receive the same frozen Conte
 
 Forward-only migration `20260812_0082_narrative_state_contract_v2` will:
 
-1. replace the temporal event read surface with an accepted ChapterOutcome-rooted v2 projection while preserving a v1 read branch for already persisted evidence;
+1. replace the temporal event read surface with an accepted ChapterOutcome-rooted v2 projection and expose accepted v1/v2 outcomes through a separate rebuild source;
 2. add a latest accepted current-state projection rooted at Book acceptance and StoryState/Canon AssetVersions;
-3. extend reducer-application evidence with reducer semantics, accepted/source chapter, event IDs and prior snapshot lineage;
+3. extend reducer-application evidence with reducer semantics, accepted chapter, event IDs and entity identity;
 4. add indexes needed for Project/Book/chapter as-of and current lookups.
 
 No historical AssetVersion or acceptance row is updated. Rebuild reads accepted outcomes in Book/chapter order, adapts v1 evidence deterministically when necessary, replays through the v2 reducer, and returns a content/hash comparison. Persisting a rebuilt AssetVersion remains an owning Authority operation and is not performed by Temporal Query.
@@ -156,7 +156,7 @@ For chapters after the first, the canonical preparation requirement becomes:
 - one immediately preceding accepted `canon_snapshot` v2;
 - normal frozen planning/profile/governance inputs.
 
-StoryState is rendered into a bounded structured-fact list with one current item per entity plus the intentionally append-only dimensions. The manifest continues to record exact AssetVersion refs, selected/rejected items, entity scope, token budget, source isolation, digest and qualification. Historical evidence is requested through Temporal Query only when a stage explicitly needs it; the normal draft context does not receive every old delta.
+StoryState is rendered into a bounded structured-fact list with one current item per materialized entity. Canon facts come from the separate accepted Canon snapshot, while append-only timeline/reward/theme evidence is requested through Temporal Query only when a stage explicitly needs it. The manifest continues to record exact AssetVersion refs, selected/rejected items, entity scope, token budget, source isolation, digest and qualification; the normal draft context does not receive every old delta.
 
 ## Compatibility strategy
 

@@ -89,6 +89,40 @@ def _asset(asset_type: str, *, project_id: str = "project-1") -> ResolvedProduct
                 "antagonist_pressure": {"mechanism": "tightens the deadline"},
             }
         )
+    if asset_type == "story_state_snapshot":
+        content.update(
+            {
+                "contract_version": "story-state-snapshot-v2",
+                "book_id": "book-1",
+                "accepted_through_chapter": 1,
+                "_authority_acceptance_bound": True,
+                "current_state": {
+                    "character_state": [
+                        {
+                            "entity_key": "character_id=hero",
+                            "entity_version": 1,
+                            "state": {"character_id": "hero", "location": "Hangzhou"},
+                            "source_event_id": "narrative-event:hero",
+                            "source_chapter": 1,
+                            "effective_from_chapter": 1,
+                            "confidence": 1.0,
+                            "coverage": "EXPLICIT",
+                            "evidence": {},
+                        }
+                    ]
+                },
+            }
+        )
+    if asset_type == "canon_snapshot":
+        content.update(
+            {
+                "contract_version": "canon-snapshot-v2",
+                "book_id": "book-1",
+                "accepted_through_chapter": 1,
+                "_authority_acceptance_bound": True,
+                "current_facts": [],
+            }
+        )
     return ResolvedProductionAsset(
         project_id=project_id,
         asset_id=f"asset:{asset_type}",
@@ -240,6 +274,7 @@ class ProductionPreparationTests(unittest.TestCase):
             ProductionPreparationRequest(
                 project_id="project-1",
                 workspace_id="workspace-1",
+                book_id="book-1",
                 chapter=2,
                 idempotency_key="chapter-2",
             )
@@ -278,6 +313,7 @@ class ProductionPreparationTests(unittest.TestCase):
             ProductionPreparationRequest(
                 project_id="project-1",
                 workspace_id="workspace-1",
+                book_id="book-1",
                 chapter=2,
                 idempotency_key="missing-story-state",
             )
@@ -329,71 +365,65 @@ class ProductionPreparationTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "trusted local operator"):
             TrustedPrincipalResolver(environment="production").resolve_api_principal()
 
-    def test_v2_selects_multiple_character_and_relationship_states(self) -> None:
+    def test_v2_freezes_multiple_entities_inside_one_compact_story_state(self) -> None:
         required = (
             "chapter_plan", "style_policy", "quality_rubric", "platform_profile",
-            "story_state_snapshot", "canon_snapshot", "timeline_snapshot",
-            "foreshadow_snapshot",
-            "promise_ledger_snapshot", "reward_ledger_snapshot", "world_rule_snapshot",
-            "power_state_snapshot",
-            "plot_thread_snapshot",
-            "resource_state_snapshot",
+            "story_state_snapshot", "canon_snapshot",
         )
         collections = {kind: [_asset(kind)] for kind in required}
         collections["chapter_plan"][0] = replace(
             collections["chapter_plan"][0],
             content={**collections["chapter_plan"][0].content, "chapter": 2},
         )
-        collections["character_state_snapshot"] = [
-            replace(
-                _asset("character_state_snapshot"),
-                asset_id=f"asset:character:{index}",
-                asset_version_id=f"version:character:{index}",
-                content={**_asset("character_state_snapshot").content, "entity_id": f"character-{index}"},
-            )
+        story = collections["story_state_snapshot"][0]
+        entries = [
+            {
+                "entity_key": f"character_id=character-{index}",
+                "entity_version": 1,
+                "state": {"character_id": f"character-{index}", "location": "Hangzhou"},
+                "source_event_id": f"narrative-event:character-{index}",
+                "source_chapter": 1,
+                "effective_from_chapter": 1,
+                "confidence": 1.0,
+                "coverage": "EXPLICIT",
+                "evidence": {},
+            }
             for index in (1, 2)
         ]
-        collections["relationship_state_snapshot"] = [
-            replace(
-                _asset("relationship_state_snapshot"),
-                asset_id=f"asset:relationship:{index}",
-                asset_version_id=f"version:relationship:{index}",
-                content={**_asset("relationship_state_snapshot").content, "entity_id": f"pair-{index}"},
-            )
-            for index in (1, 2)
-        ]
+        collections["story_state_snapshot"][0] = replace(
+            story,
+            content={
+                **story.content,
+                "current_state": {
+                    "character_state": entries,
+                    "relationship_state": [],
+                },
+            },
+        )
         result = ProductionPreparationService(_MultiResolver(collections)).prepare(
             ProductionPreparationRequest(
-                project_id="project-1", workspace_id="workspace-1", chapter=2,
+                project_id="project-1", workspace_id="workspace-1", book_id="book-1", chapter=2,
                 title_override="Chapter Two", premise_override="State carries forward.",
                 idempotency_key="chapter-2-multi",
             )
         )
         self.assertEqual(result.report.decision, "READY")
-        manifest = result.report.production_input_manifest
-        self.assertEqual(
-            sorted(manifest["entity_scopes"]["character_state_snapshot"]),
-            ["character-1", "character-2"],
+        story_candidate = next(
+            item
+            for item in result.command.context_candidates
+            if item["asset_type"] == "story_state_snapshot"
         )
+        self.assertEqual(len(story_candidate["structured_facts"]), 2)
         self.assertEqual(
-            sorted(manifest["entity_scopes"]["relationship_state_snapshot"]),
-            ["pair-1", "pair-2"],
+            {item["entity_key"] for item in story_candidate["structured_facts"]},
+            {
+                "character_id=character-1",
+                "character_id=character-2",
+            },
         )
 
     def test_current_collection_snapshot_is_not_blocked_by_historical_versions(self) -> None:
-        state_types = (
-            "story_state_snapshot",
-            "canon_snapshot",
-            "character_state_snapshot",
-            "relationship_state_snapshot",
-            "timeline_snapshot",
-            "foreshadow_snapshot",
-            "promise_ledger_snapshot",
-            "reward_ledger_snapshot",
-            "world_rule_snapshot",
-            "power_state_snapshot",
-            "plot_thread_snapshot", "resource_state_snapshot",
-        )
+        state_types = ("story_state_snapshot", "canon_snapshot")
         collections = {
             kind: [_asset(kind)]
             for kind in (
@@ -414,13 +444,13 @@ class ProductionPreparationTests(unittest.TestCase):
                 current,
                 asset_id=f"asset:{state_type}:chapter-2",
                 asset_version_id=f"version:{state_type}:chapter-2",
-                content={**current.content, "chapter": 2},
+                content={
+                    **current.content,
+                    "chapter": 2,
+                    "accepted_through_chapter": 2,
+                },
             )
-        for state_type in (
-            "character_state_snapshot",
-            "relationship_state_snapshot",
-            "foreshadow_snapshot",
-        ):
+        for state_type in state_types:
             historical = _asset(state_type)
             collections[state_type].append(
                 replace(
@@ -435,6 +465,7 @@ class ProductionPreparationTests(unittest.TestCase):
             ProductionPreparationRequest(
                 project_id="project-1",
                 workspace_id="workspace-1",
+                book_id="book-1",
                 chapter=3,
                 title_override="Chapter Three",
                 premise_override="Current state carries forward after replan.",
@@ -444,23 +475,17 @@ class ProductionPreparationTests(unittest.TestCase):
 
         self.assertEqual(result.report.decision, "READY")
         self.assertEqual(result.report.blocked_assets, ())
-        for state_type in (
-            "character_state_snapshot",
-            "relationship_state_snapshot",
-            "foreshadow_snapshot",
-        ):
+        for state_type in state_types:
             self.assertIn(
                 f"version:{state_type}:chapter-2",
                 result.report.selected_asset_version_ids,
             )
-            self.assertEqual(
-                result.report.production_input_manifest["rejection_reasons"][
-                    f"version:{state_type}:chapter-1"
-                ],
-                "HISTORICAL_SNAPSHOT_CHAPTER_MISMATCH",
+            self.assertNotIn(
+                f"version:{state_type}:chapter-1",
+                result.report.selected_asset_version_ids,
             )
 
-    def test_relationship_snapshot_is_required_for_continuing_chapter(self) -> None:
+    def test_legacy_per_kind_snapshots_cannot_replace_compact_story_state(self) -> None:
         assets = {
             kind: _asset(kind)
             for kind in (
@@ -475,11 +500,14 @@ class ProductionPreparationTests(unittest.TestCase):
         )
         result = ProductionPreparationService(_Resolver(assets)).prepare(
             ProductionPreparationRequest(
-                project_id="project-1", workspace_id="workspace-1", chapter=2,
+                project_id="project-1", workspace_id="workspace-1", book_id="book-1", chapter=2,
                 idempotency_key="missing-relationship",
             )
         )
-        self.assertIn("relationship_state_snapshot", result.report.missing_required_asset_types)
+        self.assertIn("story_state_snapshot", result.report.missing_required_asset_types)
+        self.assertNotIn(
+            "relationship_state_snapshot", result.report.missing_required_asset_types
+        )
 
     def test_stage_profiles_have_distinct_allowed_and_required_contracts(self) -> None:
         draft = STAGE_PROFILES["draft"]

@@ -27,7 +27,10 @@ class DeterministicContinuityValidatorTests(unittest.TestCase):
             },
             extraction={
                 "timeline_event_candidates": [
-                    {"event_id": "event-future", "effective_chapter": 21}
+                    {
+                        "event_id": "event-future",
+                        "effective_from_chapter": 21,
+                    }
                 ],
                 "character_state_changes": [
                     {

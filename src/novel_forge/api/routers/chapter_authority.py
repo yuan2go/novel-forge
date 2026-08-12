@@ -45,6 +45,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 ProductionPreparationRequest(
                     project_id=request.project_id,
                     workspace_id=request.workspace_id,
+                    book_id=request.book_id,
                     chapter=request.chapter,
                     idempotency_key=request.idempotency_key,
                     title_override=request.title_override,

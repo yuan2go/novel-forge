@@ -448,8 +448,25 @@ class BookFollowupAuthorityPostgresTests(unittest.TestCase):
         )
         canon = self.seed(
             "canon_snapshot",
-            {"contract_version": "canon-snapshot-v1", "conflicts": []},
+            {
+                "contract_version": "canon-snapshot-v2",
+                "project_id": self.project_id,
+                "book_id": "book:1",
+                "accepted_through_chapter": 10,
+                "current_facts": [],
+            },
             "canon-recap",
+        )
+        story_state = self.seed(
+            "story_state_snapshot",
+            {
+                "contract_version": "story-state-snapshot-v2",
+                "project_id": self.project_id,
+                "book_id": "book:1",
+                "accepted_through_chapter": 10,
+                "current_state": {},
+            },
+            "story-state-recap",
         )
         payload = {
             "book_id": "book:1",
@@ -460,12 +477,9 @@ class BookFollowupAuthorityPostgresTests(unittest.TestCase):
             "volume_plan_version": "volume-plan:v1",
             "arc_plan_version": "arc-plan:v1",
             "canon_snapshot_version": canon["asset_version_id"],
-            "character_state_version": "character-state:v1",
-            "foreshadowing_state_version": "foreshadow:v1",
+            "story_state_version": story_state["asset_version_id"],
             "reader_state_version": reader["asset_version_id"],
             "quality_trend_version": "quality-trend:v1",
-            "reward_ledger_version": "reward-ledger:v1",
-            "promise_ledger_version": "promise-ledger:v1",
             "observations": {
                 "reader_state": {"confusion": 0.8},
                 "canon": {"conflicts": [{"id": "c1"}]},
@@ -482,7 +496,7 @@ class BookFollowupAuthorityPostgresTests(unittest.TestCase):
                 correlation_id=identifier("correlation"),
                 idempotency_key=f"{self.project_id}:longform:arc:1",
                 payload=payload,
-                input_assets=(reader, canon),
+                input_assets=(reader, canon, story_state),
             ),
             principal=self.principal,
         )

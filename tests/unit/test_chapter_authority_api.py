@@ -55,6 +55,7 @@ class _FakeContentApplication:
         return SimpleNamespace(
             operation_id="content-operation-1",
             project_id="project-1",
+            book_id="book-1",
             replayed=False,
         )
 
@@ -139,6 +140,7 @@ class ChapterAuthorityApiTests(unittest.TestCase):
         fake = _FakeApplication()
         command = ChapterAuthorityCommand(
             project_id="project-1",
+            book_id="book-1",
             workspace_id="workspace-1",
             chapter=1,
             chapter_plan_asset_version_id="chapter-plan-version-1",
@@ -201,6 +203,7 @@ class ChapterAuthorityApiTests(unittest.TestCase):
                     json={
                         "project_id": "project-1",
                         "workspace_id": "workspace-1",
+                        "book_id": "book-1",
                         "chapter": 1,
                         "idempotency_key": "chapter-command-1",
                         "actor_id": "untrusted-caller",

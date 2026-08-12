@@ -9,10 +9,8 @@ from novel_forge.modules.command_kernel.errors import KernelError
 
 
 STATE_ASSET_TYPES = (
-    "canon_snapshot", "character_state_snapshot", "relationship_state_snapshot",
-    "timeline_snapshot", "foreshadow_snapshot", "promise_ledger_snapshot",
-    "reward_ledger_snapshot", "world_rule_snapshot", "power_state_snapshot",
-    "plot_thread_snapshot", "resource_state_snapshot",
+    "canon_snapshot",
+    "story_state_snapshot",
 )
 
 
@@ -218,7 +216,7 @@ def build_quality_context_view(
     elif group == "longform":
         previous_states = _group_state_segments(segments)
         current_states = _group_current_state_candidates(
-            list(canon.get("snapshot_candidates") or [])
+            dict(canon.get("state_changes") or {})
         )
         body = {
             "type": "LongformQualityContextView",
@@ -327,8 +325,32 @@ def _group_state_segments(
         state_type = str(item.get("asset_type") or "")
         if state_type not in grouped:
             continue
-        identity = _state_identity(item, state_type)
         facts = list(item.get("structured_facts") or [])
+        if state_type in {"story_state_snapshot", "canon_snapshot"}:
+            for fact in facts:
+                if not isinstance(fact, dict):
+                    continue
+                identity = str(fact.get("entity_key") or _state_identity(fact, state_type))
+                rows = grouped[state_type].setdefault(identity, [])
+                if rows and rows[-1].get("asset_version_id") == item.get(
+                    "asset_version_id"
+                ):
+                    rows[-1]["structured_facts"].append(fact)
+                else:
+                    rows.append({
+                        "asset_version_id": item.get("asset_version_id"),
+                        "entity_id": identity,
+                        "relationship_pair": None,
+                        "content_digest": item.get("content_digest"),
+                        "chapter": item.get("chapter"),
+                        "qualification": item.get("qualification", "ELIGIBLE"),
+                        "structured_facts": [fact],
+                        "declared_empty": False,
+                        "compressed": False,
+                        "omitted_fact_count": 0,
+                    })
+            continue
+        identity = _state_identity(item, state_type)
         declared_empty = bool(
             item.get("declared_empty")
             or any(isinstance(fact, dict) and fact.get("declared_empty") for fact in facts)
@@ -359,12 +381,11 @@ def _group_state_segments(
 
 
 def _group_current_state_candidates(
-    candidates: list[dict[str, Any]],
+    candidates: dict[str, Any],
 ) -> dict[str, dict[str, list[dict[str, Any]]]]:
     grouped: dict[str, dict[str, list[dict[str, Any]]]] = {}
-    for candidate in candidates:
-        state_type = str(candidate.get("asset_type") or "")
-        changes = [dict(item) for item in candidate.get("changes", []) if isinstance(item, dict)]
+    for state_type, raw_changes in sorted(candidates.items()):
+        changes = [dict(item) for item in raw_changes if isinstance(item, dict)]
         changes_by_identity: dict[str, list[dict[str, Any]]] = {}
         for change in changes:
             changes_by_identity.setdefault(
@@ -376,13 +397,20 @@ def _group_current_state_candidates(
             grouped.setdefault(state_type, {}).setdefault(identity, []).append(
                 {
                     "asset_version_id": "",
-                    "candidate_digest": _digest(candidate),
-                    "entity_id": identity,
-                    "chapter": candidate.get("chapter"),
-                    "qualification": "CANDIDATE",
-                    "previous_asset_version_ids": list(
-                        candidate.get("previous_asset_version_ids") or []
+                    "candidate_digest": _digest(
+                        {"state_kind": state_type, "changes": changes}
                     ),
+                    "entity_id": identity,
+                    "chapter": next(
+                        (
+                            item.get("effective_from_chapter")
+                            for item in identity_changes
+                            if item.get("effective_from_chapter") is not None
+                        ),
+                        None,
+                    ),
+                    "qualification": "CANDIDATE",
+                    "previous_asset_version_ids": [],
                     "structured_facts": identity_changes,
                     "declared_empty": False,
                     "compressed": False,
@@ -396,14 +424,32 @@ def _state_identity(item: dict[str, Any], state_type: str) -> str:
     pair = item.get("relationship_pair")
     if isinstance(pair, (list, tuple)) and pair:
         return "relationship:" + "|".join(sorted(str(value) for value in pair))
-    for key in ("entity_id", "logical_ref", "foreshadow_id", "promise_id", "reward_id"):
+    for key in (
+        "entity_id",
+        "character_id",
+        "thread_id",
+        "rule_id",
+        "logical_ref",
+        "foreshadow_id",
+        "promise_id",
+        "reward_id",
+    ):
         if item.get(key):
             return f"{key}:{item[key]}"
     facts = list(item.get("structured_facts") or [])
     for fact in facts:
         if not isinstance(fact, dict):
             continue
-        for key in ("entity_id", "logical_ref", "foreshadow_id", "promise_id", "reward_id"):
+        for key in (
+            "entity_id",
+            "character_id",
+            "thread_id",
+            "rule_id",
+            "logical_ref",
+            "foreshadow_id",
+            "promise_id",
+            "reward_id",
+        ):
             if fact.get(key):
                 return f"{key}:{fact[key]}"
     return f"{state_type}:project"

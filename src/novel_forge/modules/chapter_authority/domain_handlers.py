@@ -254,10 +254,44 @@ def build_canon_patch(
     }
     for segment in (context_bundle or {}).get("context_segments", []):
         asset_type = str(segment.get("asset_type") or "")
+        facts = list(segment.get("structured_facts", []))
+        if asset_type == "story_state_snapshot":
+            for fact in facts:
+                if not isinstance(fact, dict):
+                    continue
+                state_kind = {
+                    "canon_fact": "canon_snapshot",
+                    "timeline_event": "timeline_snapshot",
+                    "reward_event": "reward_ledger",
+                }.get(
+                    str(fact.get("state_kind") or ""),
+                    str(fact.get("state_kind") or ""),
+                )
+                state = fact.get("state")
+                if not state_kind or not isinstance(state, dict):
+                    continue
+                historical_state.setdefault(state_kind, []).append(
+                    {
+                        "asset_version_id": segment.get("asset_version_id", ""),
+                        "source_event_id": fact.get("source_event_id", ""),
+                        **state,
+                    }
+                )
+            continue
+        if asset_type == "canon_snapshot":
+            historical_state.setdefault("canon_snapshot", []).extend(
+                {
+                    "asset_version_id": segment.get("asset_version_id", ""),
+                    "source_event_id": fact.get("source_event_id", ""),
+                    **dict(fact.get("state") or {}),
+                }
+                for fact in facts
+                if isinstance(fact, dict) and isinstance(fact.get("state"), dict)
+            )
+            continue
         state_kind = state_aliases.get(asset_type)
         if state_kind is None:
             continue
-        facts = list(segment.get("structured_facts", []))
         historical_state.setdefault(state_kind, []).append(
             {
                 "asset_version_id": segment.get("asset_version_id", ""),

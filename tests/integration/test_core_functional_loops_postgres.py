@@ -449,7 +449,17 @@ def _chapter_function_row(chapter: int, function: str, hook: str) -> dict[str, A
 def _seed_inputs(project_id: str, book_id: str) -> dict[str, str]:
     roles = sorted(
         {role for values in GENERATOR_INPUT_ROLES.values() for role in values}
-        | {"style_policy", "quality_rubric"}
+        | {
+            "style_policy",
+            "quality_rubric",
+            # Frozen Story Design inputs retained by the existing Book input
+            # snapshot schema.  They are future-intent inputs, not accepted
+            # Narrative State v2 projections.
+            "character_state",
+            "foreshadowing_state",
+            "reward_ledger",
+            "promise_ledger",
+        }
     )
     result: dict[str, str] = {}
     with transaction() as connection, connection.cursor() as cursor:
@@ -568,14 +578,6 @@ def _run_controlled_recap_through_authority(
     """Produce controlled Replan evidence through the real follow-up Authority."""
     request = authority.require_chapter_request(chapter_request_id)
     book = authority.require(request["book_run_id"])
-    evidence = authority.chapter_port.require_acceptance_evidence(
-        project_id=project_id,
-        root_operation_id=request["chapter_root_operation_id"],
-    )
-    outputs = {
-        str(item["asset_type"]): dict(item)
-        for item in list(evidence.get("outputs") or [])
-    }
     reader = _followup_output(
         project_id=project_id,
         chapter_request_id=chapter_request_id,
@@ -593,15 +595,9 @@ def _run_controlled_recap_through_authority(
             str(frozen["quality_trend_version"]),
             str(book["last_chapter_outcome_version_id"]),
             str(book["active_story_state_version_id"]),
+            str(book["active_canon_snapshot_version_id"]),
         ),
     )
-
-    def asset_ref(name: str) -> dict[str, str]:
-        item = outputs[name]
-        return {
-            "asset_version_id": str(item["asset_version_id"]),
-            "content_hash": str(item["content_hash"]),
-        }
 
     admission = authority.schedule_longform_recap(
         chapter_request_id,
@@ -614,21 +610,9 @@ def _run_controlled_recap_through_authority(
             "book_plan_version": book["book_plan_version"],
             "volume_plan_version": frozen["volume_plan_version"],
             "arc_plan_version": frozen["arc_plan_version"],
-            "canon_snapshot_version": outputs["canon_snapshot"]["asset_version_id"],
-            "character_state_version": outputs["character_state_snapshot"][
-                "asset_version_id"
-            ],
-            "foreshadowing_state_version": outputs["foreshadow_snapshot"][
-                "asset_version_id"
-            ],
+            "canon_snapshot_version": book["active_canon_snapshot_version_id"],
             "reader_state_version": reader["asset_version_id"],
             "quality_trend_version": frozen["quality_trend_version"],
-            "reward_ledger_version": outputs["reward_ledger_snapshot"][
-                "asset_version_id"
-            ],
-            "promise_ledger_version": outputs["promise_ledger_snapshot"][
-                "asset_version_id"
-            ],
             "chapter_outcome_versions": [book["last_chapter_outcome_version_id"]],
             "story_state_version": book["active_story_state_version_id"],
             "observations": {
@@ -665,11 +649,6 @@ def _run_controlled_recap_through_authority(
                 "asset_version_id": str(reader["asset_version_id"]),
                 "content_hash": str(reader["content_hash"]),
             },
-            asset_ref("canon_snapshot"),
-            asset_ref("character_state_snapshot"),
-            asset_ref("foreshadow_snapshot"),
-            asset_ref("reward_ledger_snapshot"),
-            asset_ref("promise_ledger_snapshot"),
             *authority_inputs,
         ),
     )
@@ -1642,13 +1621,16 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
     assert resumed["status"] == "RESUMED"
     assert resumed["input_snapshot_id"] != snapshot.snapshot_id
     resumed_snapshot = resolver.require(resumed["input_snapshot_id"])
-    assert resumed_snapshot.character_state_version != snapshot.character_state_version
+    # A replan binds a new immutable future-intent snapshot, but accepted
+    # Narrative State remains owned by Book acceptance pointers.  It must not
+    # be copied into the legacy Story Design input roles.
+    assert resumed_snapshot.character_state_version == snapshot.character_state_version
     assert (
         resumed_snapshot.foreshadowing_state_version
-        != snapshot.foreshadowing_state_version
+        == snapshot.foreshadowing_state_version
     )
-    assert resumed_snapshot.reward_ledger_version != snapshot.reward_ledger_version
-    assert resumed_snapshot.promise_ledger_version != snapshot.promise_ledger_version
+    assert resumed_snapshot.reward_ledger_version == snapshot.reward_ledger_version
+    assert resumed_snapshot.promise_ledger_version == snapshot.promise_ledger_version
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
         uow.cursor.execute(
             """

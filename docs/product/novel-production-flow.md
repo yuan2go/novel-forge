@@ -16,7 +16,18 @@ ChapterGroup coordinates chapter requests. `chapter.slice.run` executes the Chap
 
 ## 4. Acceptance and narrative state
 
-Chapter acceptance commits the accepted revision, Canon decision, release/quality evidence, and `ChapterOutcome`. Deterministic reducers advance StoryState. The Book Authority accepts the chapter through CAS-guarded state and records checkpoint/outbox evidence.
+Chapter execution produces a governed Canon patch and a `ChapterOutcome` v2
+candidate containing immutable Narrative State events. A child success is not
+acceptance. Book Authority atomically commits the ChapterOutcome, materialized
+StoryState v2, Canon v2 snapshot and cursor through a CAS-guarded acceptance
+record. Only that committed pointer set is visible to Temporal Query or the next
+chapter.
+
+StoryState materializes one current value per entity-aware key. Timeline/reward
+events remain ledgers, while character, relationship, world-rule, power,
+resource, Promise, foreshadow and plot-thread state use their own reducer
+semantics. The current projection is rebuildable from accepted ChapterOutcome
+evidence and never replaces Canon Authority.
 
 ## 5. Reader and recap follow-up
 
@@ -37,7 +48,7 @@ ChapterPlan → freeze
       ↓
 Chapter 18-node saga
       ↓
-accepted revision + Canon + ChapterOutcome + StoryState
+committed ChapterOutcome events + Canon v2 + StoryState v2
       ↓
 Reader Outcome → Recap / ending evidence
       ↓ if governed request exists

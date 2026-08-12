@@ -129,14 +129,15 @@ def _canon_schema() -> dict[str, Any]:
             "subject": {"type": "string", "minLength": 1},
             "predicate": {"type": "string", "minLength": 1},
             "object": {"type": "string", "minLength": 1},
-            "effective_chapter": {"type": "number", "minimum": 1},
+            "effective_from_chapter": {"type": "number", "minimum": 1},
+            "supersedes_event_id": {"type": "string"},
             **evidence_fields,
         },
         required=(
             "subject",
             "predicate",
             "object",
-            "effective_chapter",
+            "effective_from_chapter",
             *evidence_fields,
         ),
     )
@@ -149,7 +150,8 @@ def _canon_schema() -> dict[str, Any]:
     change = _object_schema(
         {
             "summary": {"type": "string", "minLength": 1},
-            "effective_chapter": {"type": "number", "minimum": 1},
+            "effective_from_chapter": {"type": "number", "minimum": 1},
+            "supersedes_event_id": {"type": "string"},
             "character_id": {"type": "string"},
             "source_id": {"type": "string"},
             "target_id": {"type": "string"},
