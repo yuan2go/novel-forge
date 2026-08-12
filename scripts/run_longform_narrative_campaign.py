@@ -109,6 +109,53 @@ def _validate_resume_checkpoint(
         raise RuntimeError("target chapter is behind the durable cursor")
 
 
+def _validate_frozen_provider_policy(
+    provider: Mapping[str, Any],
+    *,
+    model: str,
+    reasoning_effort: str,
+    quality_context_token_budget: int,
+) -> None:
+    if provider.get("provider") != "codex-cli":
+        raise RuntimeError("Proof Contract provider is not codex-cli")
+    if provider.get("silent_fallback") is not False:
+        raise RuntimeError("Proof Contract permits silent Provider fallback")
+    if str(provider.get("model") or "") != model:
+        raise RuntimeError("CLI model differs from the frozen Proof Contract")
+    if str(provider.get("reasoning_effort") or "") != reasoning_effort:
+        raise RuntimeError(
+            "CLI reasoning effort differs from the frozen Proof Contract"
+        )
+    if int(provider.get("quality_context_token_budget") or 0) != int(
+        quality_context_token_budget
+    ):
+        raise RuntimeError(
+            "CLI Quality context budget differs from the frozen Proof Contract"
+        )
+
+
+def _apply_frozen_provider_policy(
+    env: Mapping[str, str], provider: Mapping[str, Any]
+) -> dict[str, str]:
+    model = str(provider["model"])
+    effort = str(provider["reasoning_effort"])
+    return {
+        **dict(env),
+        "NOVEL_FORGE_MODEL_PROVIDER": "codex-cli",
+        "NOVEL_FORGE_PLANNING_PROVIDER": "codex-cli",
+        "NOVEL_FORGE_PLANNING_MODEL": model,
+        "NOVEL_FORGE_PLANNING_REASONING_EFFORT": effort,
+        "NOVEL_FORGE_DRAFT_MODEL": model,
+        "NOVEL_FORGE_REVIEW_MODEL": model,
+        "NOVEL_FORGE_REVISION_MODEL": model,
+        "NOVEL_FORGE_REREVIEW_MODEL": model,
+        "NOVEL_FORGE_CANON_EXTRACTION_MODEL": model,
+        "NOVEL_FORGE_QUALITY_MODEL": model,
+        "NOVEL_FORGE_READER_OUTCOME_MODEL": model,
+        "NOVEL_FORGE_REASONING_EFFORT": effort,
+    }
+
+
 def _write_json(path: Path, value: Mapping[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_suffix(path.suffix + ".tmp")
@@ -119,12 +166,46 @@ def _write_json(path: Path, value: Mapping[str, Any]) -> None:
     temporary.replace(path)
 
 
+def _record_process_failure(
+    output_root: Path,
+    error: BaseException,
+    *,
+    category: str | None = None,
+    context: Mapping[str, Any] | None = None,
+) -> Path:
+    path = output_root / "evidence" / "process-failures.json"
+    existing: dict[str, Any] = {"failures": []}
+    if path.is_file():
+        loaded = json.loads(path.read_text(encoding="utf-8"))
+        if isinstance(loaded, Mapping):
+            existing = dict(loaded)
+    failures = list(existing.get("failures") or [])
+    failures.append(
+        {
+            "created_at": datetime.now().astimezone().isoformat(),
+            "category": category or _classify_failure(error),
+            "error_type": type(error).__name__,
+            "error": str(error),
+            "context": dict(context or {}),
+        }
+    )
+    _write_json(
+        path,
+        {
+            "schema_version": "novel-forge.proof-campaign-failure-history.v1",
+            "failures": failures,
+        },
+    )
+    return path
+
+
 def _runtime_settings(
     args: argparse.Namespace,
     *,
     runtime_root: Path,
     commit_sha: str,
     buckets: Mapping[str, str],
+    provider: Mapping[str, Any],
 ) -> tuple[IndustrialSettings, dict[str, str], str]:
     executable = str(Path(args.codex_executable).expanduser().resolve())
     login = subprocess.run(
@@ -135,13 +216,16 @@ def _runtime_settings(
         text=True,
     )
     runtime_root.mkdir(parents=True, exist_ok=False)
-    env = _runtime_env(
-        commit_sha=commit_sha,
-        codex_executable=executable,
-        runtime_root=runtime_root,
-        worker_id="chapter-worker:longform-narrative-proof",
-        model=args.model,
-        reasoning_effort=args.reasoning_effort,
+    env = _apply_frozen_provider_policy(
+        _runtime_env(
+            commit_sha=commit_sha,
+            codex_executable=executable,
+            runtime_root=runtime_root,
+            worker_id="chapter-worker:longform-narrative-proof",
+            model=args.model,
+            reasoning_effort=args.reasoning_effort,
+        ),
+        provider,
     )
     env.update(
         {
@@ -538,6 +622,12 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
     identity = contract_identity(contract)
     contract_payload = contract.to_dict()
     contract_payload["contract_identity"] = identity
+    _validate_frozen_provider_policy(
+        contract_payload["provider"],
+        model=args.model,
+        reasoning_effort=args.reasoning_effort,
+        quality_context_token_budget=args.quality_context_token_budget,
+    )
     output_root = Path(args.output_root).expanduser().resolve()
     output_root.mkdir(parents=True, exist_ok=True)
     checkpoint_path = output_root / "campaign-checkpoint.json"
@@ -561,6 +651,7 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
         runtime_root=process_root,
         commit_sha=commit_sha,
         buckets=buckets,
+        provider=contract_payload["provider"],
     )
     migration = run_migrations(args.database_url)
     MinioObjectStore(settings).ensure_buckets()
@@ -791,6 +882,15 @@ def main() -> int:
     try:
         result = _run(args)
     except BaseException as exc:
+        output_root = Path(args.output_root).expanduser().resolve()
+        failure_path = _record_process_failure(
+            output_root,
+            exc,
+            context={
+                "phase": "PROCESS",
+                "target_chapter": args.target_chapter,
+            },
+        )
         print(
             json.dumps(
                 {
@@ -798,6 +898,7 @@ def main() -> int:
                     "category": _classify_failure(exc),
                     "error_type": type(exc).__name__,
                     "error": str(exc),
+                    "failure_history": str(failure_path),
                 },
                 ensure_ascii=False,
             ),

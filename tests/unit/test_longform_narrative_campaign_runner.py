@@ -94,3 +94,55 @@ def test_resume_checkpoint_must_match_contract_release_and_target() -> None:
             commit_sha="b" * 40,
             target_chapter=1,
         )
+
+
+def test_frozen_provider_policy_rejects_cli_drift_and_overrides_legacy_planning() -> None:
+    campaign = _load_script()
+    provider = {
+        "provider": "codex-cli",
+        "model": "gpt-5.6-sol",
+        "reasoning_effort": "high",
+        "quality_context_token_budget": 28_000,
+        "silent_fallback": False,
+    }
+
+    campaign._validate_frozen_provider_policy(
+        provider,
+        model="gpt-5.6-sol",
+        reasoning_effort="high",
+        quality_context_token_budget=28_000,
+    )
+    env = campaign._apply_frozen_provider_policy(
+        {
+            "NOVEL_FORGE_MODEL_PROVIDER": "codex-cli",
+            "NOVEL_FORGE_PLANNING_REASONING_EFFORT": "xhigh",
+        },
+        provider,
+    )
+    assert env["NOVEL_FORGE_PLANNING_REASONING_EFFORT"] == "high"
+    assert env["NOVEL_FORGE_REASONING_EFFORT"] == "high"
+
+    with pytest.raises(RuntimeError, match="model differs"):
+        campaign._validate_frozen_provider_policy(
+            provider,
+            model="another-model",
+            reasoning_effort="high",
+            quality_context_token_budget=28_000,
+        )
+
+
+def test_process_failure_is_persisted_before_campaign_checkpoint_exists(
+    tmp_path: Path,
+) -> None:
+    campaign = _load_script()
+
+    path = campaign._record_process_failure(
+        tmp_path,
+        RuntimeError("frozen Provider configuration drift"),
+        category="PROOF_HARNESS_DEFECT",
+        context={"phase": "INITIALISATION"},
+    )
+
+    payload = __import__("json").loads(path.read_text(encoding="utf-8"))
+    assert payload["failures"][0]["category"] == "PROOF_HARNESS_DEFECT"
+    assert payload["failures"][0]["context"] == {"phase": "INITIALISATION"}
