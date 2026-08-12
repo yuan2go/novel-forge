@@ -302,12 +302,14 @@ class ChapterAuthorityScheduler:
             ChapterNode.CONTEXT: self._initial_primary(
                 root, request, ChapterNode.CONTEXT
             ),
-            ChapterNode.REREVIEW: self._initial_primary(
-                root, request, ChapterNode.REREVIEW
+            ChapterNode.DRAFT: self._initial_primary(root, request, ChapterNode.DRAFT),
+            ChapterNode.REVIEW: self._initial_primary(
+                root, request, ChapterNode.REVIEW
             ),
         }
         sequence = (
             ChapterNode.REVISION,
+            ChapterNode.REREVIEW,
             ChapterNode.CANON_EXTRACTION,
             ChapterNode.CANON_PROPOSAL,
             ChapterNode.CANON,
@@ -674,14 +676,28 @@ class ChapterAuthorityScheduler:
         revision_ref = self._primary_output(
             str(revision_operation["operation_id"]), request.project_id
         )
+        if node is ChapterNode.REREVIEW:
+            return (
+                [
+                    common[ChapterNode.DRAFT],
+                    common[ChapterNode.REVIEW],
+                    revision_ref,
+                    common[ChapterNode.CONTEXT],
+                ],
+                [str(revision_operation["operation_id"])],
+            )
+        rereview_operation = correction[ChapterNode.REREVIEW]
+        rereview_ref = self._primary_output(
+            str(rereview_operation["operation_id"]), request.project_id
+        )
         if node is ChapterNode.CANON_EXTRACTION:
             return (
                 [
                     revision_ref,
-                    common[ChapterNode.REREVIEW],
+                    rereview_ref,
                     common[ChapterNode.CONTEXT],
                 ],
-                [str(revision_operation["operation_id"])],
+                [str(rereview_operation["operation_id"])],
             )
         extraction_operation = correction[ChapterNode.CANON_EXTRACTION]
         extraction_ref = self._primary_output(
@@ -700,7 +716,7 @@ class ChapterAuthorityScheduler:
             return (
                 [
                     revision_ref,
-                    common[ChapterNode.REREVIEW],
+                    rereview_ref,
                     extraction_ref,
                     proposal_ref,
                     common[ChapterNode.CONTEXT],
@@ -716,7 +732,7 @@ class ChapterAuthorityScheduler:
                 [
                     common[ChapterNode.PLAN],
                     revision_ref,
-                    common[ChapterNode.REREVIEW],
+                    rereview_ref,
                     canon_ref,
                     common[ChapterNode.CONTEXT],
                 ],
@@ -740,7 +756,7 @@ class ChapterAuthorityScheduler:
             [
                 common[ChapterNode.PLAN],
                 revision_ref,
-                common[ChapterNode.REREVIEW],
+                rereview_ref,
                 canon_ref,
                 common[ChapterNode.CONTEXT],
                 *group_refs,

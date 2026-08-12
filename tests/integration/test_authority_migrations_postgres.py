@@ -174,7 +174,7 @@ class AuthorityMigrationsPostgresTests(unittest.TestCase):
         self.assertEqual(operation, (operation_id, "ADMITTED"))
         self.assertEqual(blob_project_column, ("NO",))
 
-    def test_existing_0084_runtime_job_identity_upgrades_by_project(self) -> None:
+    def test_existing_0085_upgrades_without_losing_runtime_job_identity(self) -> None:
         dedupe_key = "book:shared:version:3"
         input_snapshot = {"observed_version": 3, "state": "CHAPTER_COMPLETED"}
         old_identity = "\x1f".join(
