@@ -64,6 +64,10 @@ def test_quality_prompt_and_schema_version_require_dimension_evidence() -> None:
         chapter_provider_output_schema_ref("draft")
         == "schema:chapter-provider-output:draft:v1"
     )
+    assert (
+        chapter_provider_output_schema_ref("canon_extraction")
+        == "schema:chapter-provider-output:canon_extraction:v2"
+    )
 
 
 def test_canon_prompt_explains_unique_semantic_slot_encoding() -> None:
@@ -103,6 +107,7 @@ def _valid(stage: str) -> dict[str, object]:
                         "predicate": "made_choice",
                         "object": "exposed_record",
                         "effective_from_chapter": 1,
+                        "supersedes_event_id": None,
                         "evidence_start": 0,
                         "evidence_end": 24,
                         "confidence": 0.91,
@@ -185,6 +190,43 @@ def test_every_model_stage_has_a_strict_schema_and_accepts_its_contract(
     )
 
 
+def test_every_model_stage_schema_is_codex_strict_json_schema_compatible() -> None:
+    """Codex strict output schemas must require every declared object property."""
+
+    def assert_strict_object_contract(value: object, *, path: str) -> None:
+        if isinstance(value, list):
+            for index, item in enumerate(value):
+                assert_strict_object_contract(item, path=f"{path}[{index}]")
+            return
+        if not isinstance(value, dict):
+            return
+        if value.get("type") == "object":
+            properties = value.get("properties")
+            assert isinstance(properties, dict), path
+            assert set(value.get("required") or ()) == set(properties), path
+            assert value.get("additionalProperties") is False, path
+        for key, item in value.items():
+            assert_strict_object_contract(item, path=f"{path}.{key}")
+
+    for stage in (
+        "draft",
+        "review",
+        "revision",
+        "rereview",
+        "canon_extraction",
+        "quality_structural",
+        "quality_commercial",
+        "quality_source_originality",
+        "quality_longform",
+        "quality_platform",
+        "reader_outcome",
+    ):
+        assert_strict_object_contract(
+            chapter_provider_output_schema(stage),
+            path=f"$.{stage}",
+        )
+
+
 def test_schema_validation_rejects_missing_required_field_before_semantics() -> None:
     with pytest.raises(KernelError) as raised:
         validate_chapter_provider_output_schema("review", {"score": 72})
@@ -249,11 +291,14 @@ def test_shared_schema_validation_supports_integer_const_and_max_items() -> None
         "additionalProperties": False,
     }
 
-    assert validate_chapter_provider_output_against_schema(
-        "planning-proof",
-        schema,
-        {"chapter": 3, "scope": "chapter:3", "beats": ["choice"]},
-    )["chapter"] == 3
+    assert (
+        validate_chapter_provider_output_against_schema(
+            "planning-proof",
+            schema,
+            {"chapter": 3, "scope": "chapter:3", "beats": ["choice"]},
+        )["chapter"]
+        == 3
+    )
     with pytest.raises(KernelError, match="frozen constant"):
         validate_chapter_provider_output_against_schema(
             "planning-proof",
@@ -309,7 +354,9 @@ def test_canon_semantics_accepts_exact_duplicate_for_authority_deduplication() -
     value = _valid("canon_extraction")
     value["canon_facts"].append(dict(value["canon_facts"][0]))
 
-    assert validate_chapter_provider_output_semantics("canon_extraction", value) == value
+    normalized = validate_chapter_provider_output_semantics("canon_extraction", value)
+
+    assert "supersedes_event_id" not in normalized["canon_facts"][0]
 
 
 def test_revision_schema_tells_provider_text_is_reader_facing_prose_only() -> None:
