@@ -79,6 +79,14 @@ def test_canon_prompt_explains_unique_semantic_slot_encoding() -> None:
     assert "authorizes_public_identification" in contract
 
 
+def test_canon_prompt_binds_transition_preconditions_to_accepted_state() -> None:
+    contract = _stage_semantic_contract("canon_extraction")
+
+    assert "accepted Story State" in contract
+    assert "first occurrence" in contract
+    assert "omit from_status, from_state, and from_tier" in contract
+
+
 def _valid(stage: str) -> dict[str, object]:
     if stage == "draft":
         return {"text": "The choice closes the only safe road home."}

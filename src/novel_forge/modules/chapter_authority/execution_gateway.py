@@ -1911,6 +1911,11 @@ def _stage_semantic_contract(stage: str) -> str:
     if stage == "canon_extraction":
         return (
             "Extract only facts and state changes supported by the revised chapter. "
+            "Treat from_status, from_state, and from_tier only as compare-and-set "
+            "preconditions against the exact accepted Story State supplied in the "
+            "governed context. For a first occurrence with no accepted entity baseline, "
+            "omit from_status, from_state, and from_tier; never infer them from prose, "
+            "Story Design assets, plans, or ordinary background conditions. "
             "Within canon_facts, each (subject, predicate, impact_type) tuple may occur "
             "at most once. When one subject has multiple objects for a broad relation, "
             "either combine them into one object when they are one bundled fact, or use "
