@@ -8,6 +8,7 @@ from typing import Any, Iterable, Mapping
 _TERMINAL_OBLIGATION_STATUSES = {"FULFILLED", "CANCELLED"}
 _MEASURED = "MEASURED"
 _NOT_OBSERVED = "NOT_OBSERVED"
+_NOT_AVAILABLE = "NOT_AVAILABLE"
 _NOT_APPLICABLE = "NOT_APPLICABLE"
 
 
@@ -40,6 +41,7 @@ def measure_narrative_runtime(
         for entry in values
         if isinstance(entry, Mapping)
     ]
+    temporal_state_observed = "current_state" in story_state or bool(entries)
     temporal_contradictions = [
         entry
         for entry in entries
@@ -79,6 +81,7 @@ def measure_narrative_runtime(
     ]
 
     context_observed = bool(manifest)
+    context_segments_observed = "context_segments" in context_bundle
     selected_inputs = list(manifest.get("selected_inputs") or [])
     irrelevant = [
         item
@@ -142,22 +145,48 @@ def measure_narrative_runtime(
     envelope = dict(planning.get("constraint_envelope") or {})
     planning_drift = list(planning.get("constraint_violations") or [])
     mkaos_usage = None if mkaos_usage_records is None else list(mkaos_usage_records)
+    mkaos_available = (
+        None
+        if mkaos_usage is None
+        else all(
+            str(item.get("availability") or _MEASURED) == _MEASURED
+            for item in mkaos_usage
+        )
+    )
     provider_usage = (
         None if provider_usage_records is None else list(provider_usage_records)
     )
-    token_count = (
+    token_missing = (
         None
         if provider_usage is None
+        else [
+            item
+            for item in provider_usage
+            if item.get("total_tokens", item.get("token_count")) is None
+        ]
+    )
+    cost_missing = (
+        None
+        if provider_usage is None
+        else [
+            item
+            for item in provider_usage
+            if item.get("cost", item.get("amount")) is None
+        ]
+    )
+    token_count = (
+        None
+        if provider_usage is None or token_missing
         else sum(
-            int(item.get("total_tokens") or item.get("token_count") or 0)
+            int(item.get("total_tokens", item.get("token_count")))
             for item in provider_usage
         )
     )
     cost = (
         None
-        if provider_usage is None
+        if provider_usage is None or cost_missing
         else sum(
-            float(item.get("cost") or item.get("amount") or 0.0)
+            float(item.get("cost", item.get("amount")))
             for item in provider_usage
         )
     )
@@ -165,6 +194,24 @@ def measure_narrative_runtime(
         None
         if provider_usage is None
         else [item for item in provider_usage if not str(item.get("trace_id") or "")]
+    )
+    usage_receipt_missing = (
+        None
+        if provider_usage is None
+        else [
+            item
+            for item in provider_usage
+            if not str(item.get("usage_receipt_ref") or "")
+        ]
+    )
+    cost_receipt_missing = (
+        None
+        if provider_usage is None
+        else [
+            item
+            for item in provider_usage
+            if not str(item.get("cost_receipt_ref") or "")
+        ]
     )
     retry_count = (
         None
@@ -182,16 +229,32 @@ def measure_narrative_runtime(
     world_issues = [item for item in issues if "WORLD" in str(item.get("code") or "")]
 
     metrics: dict[str, Any] = {
-        "future_knowledge_leakage_count": len(future_knowledge),
-        "canon_contradiction_count": len(canon_issues),
-        "temporal_state_contradiction_count": len(temporal_contradictions),
-        "relationship_inconsistency_count": len(relationship_issues),
-        "world_state_inconsistency_count": len(world_issues),
-        "obligation_unresolved_count": len(unresolved),
-        "obligation_overdue_count": len(overdue),
-        "obligation_terminal_without_payoff_count": len(terminal_without_payoff),
+        "future_knowledge_leakage_count": (
+            len(future_knowledge) if context_segments_observed else None
+        ),
+        "canon_contradiction_count": (
+            len(canon_issues) if quality_decision is not None else None
+        ),
+        "temporal_state_contradiction_count": (
+            len(temporal_contradictions) if temporal_state_observed else None
+        ),
+        "relationship_inconsistency_count": (
+            len(relationship_issues) if quality_decision is not None else None
+        ),
+        "world_state_inconsistency_count": (
+            len(world_issues) if quality_decision is not None else None
+        ),
+        "obligation_unresolved_count": (
+            len(unresolved) if temporal_state_observed else None
+        ),
+        "obligation_overdue_count": (
+            len(overdue) if temporal_state_observed else None
+        ),
+        "obligation_terminal_without_payoff_count": (
+            len(terminal_without_payoff) if temporal_state_observed else None
+        ),
         "long_distance_context_selected_count": (
-            len(long_distance_selected) if context_observed else None
+            len(long_distance_selected) if context_segments_observed else None
         ),
         "context_selected_count": len(selected_inputs) if context_observed else None,
         "context_irrelevant_heuristic_count": len(irrelevant)
@@ -214,7 +277,7 @@ def measure_narrative_runtime(
             len(open_actions) if quality_decision is not None else None
         ),
         "mkaos_consumption_count": (
-            len(mkaos_usage) if mkaos_usage is not None else None
+            len(mkaos_usage) if mkaos_available else None
         ),
         "provider_call_count": (
             len(provider_usage) if provider_usage is not None else None
@@ -231,6 +294,24 @@ def measure_narrative_runtime(
             _MEASURED if context_observed else _NOT_OBSERVED,
             len(selected_inputs),
         ),
+        "context_segments": _observation_status(
+            _MEASURED
+            if context_segments_observed
+            else _NOT_AVAILABLE
+            if context_observed
+            else _NOT_OBSERVED,
+            len(context_bundle.get("context_segments") or ()),
+        ),
+        "temporal_state": _observation_status(
+            _MEASURED
+            if temporal_state_observed
+            else _NOT_APPLICABLE
+            if chapter <= 1
+            else _NOT_AVAILABLE
+            if story_state or context_observed
+            else _NOT_OBSERVED,
+            len(entries) if temporal_state_observed else 0,
+        ),
         "expected_context": _observation_status(
             expected_context_status,
             len(expected_context or ()),
@@ -244,19 +325,37 @@ def measure_narrative_runtime(
             len(actions) if quality_decision is not None else 0,
         ),
         "mkaos_consumption": _observation_status(
-            _MEASURED if mkaos_usage is not None else _NOT_OBSERVED,
-            len(mkaos_usage or ()),
+            _NOT_OBSERVED
+            if mkaos_usage is None
+            else _MEASURED
+            if mkaos_available
+            else _NOT_AVAILABLE,
+            len(mkaos_usage or ()) if mkaos_available else 0,
         ),
         "provider_usage": _observation_status(
             _MEASURED if provider_usage is not None else _NOT_OBSERVED,
             len(provider_usage or ()),
         ),
+        "provider_tokens": _availability_status(provider_usage, token_missing),
+        "provider_cost": _availability_status(provider_usage, cost_missing),
+        "provider_trace": _availability_status(provider_usage, trace_missing),
+        "provider_usage_receipt": _availability_status(
+            provider_usage, usage_receipt_missing
+        ),
+        "provider_cost_receipt": _availability_status(
+            provider_usage, cost_receipt_missing
+        ),
     }
+    proof_status = (
+        "MEASURED_NOT_QUALIFIED"
+        if any(item["status"] == _MEASURED for item in observations.values())
+        else "NOT_OBSERVED_NOT_QUALIFIED"
+    )
     return {
         "type": "NarrativeRuntimeMeasurement",
         "contract_version": "narrative-runtime-measurement-v2",
         "chapter": chapter,
-        "proof_status": "MEASURED_NOT_QUALIFIED",
+        "proof_status": proof_status,
         "metrics": metrics,
         "observations": observations,
         "evidence": {
@@ -282,6 +381,20 @@ def measure_narrative_runtime(
                     if str(item.get("external_effect_id") or "")
                 }
             ),
+            "provider_usage_receipt_refs": sorted(
+                {
+                    str(item.get("usage_receipt_ref") or "")
+                    for item in provider_usage or ()
+                    if str(item.get("usage_receipt_ref") or "")
+                }
+            ),
+            "provider_cost_receipt_refs": sorted(
+                {
+                    str(item.get("cost_receipt_ref") or "")
+                    for item in provider_usage or ()
+                    if str(item.get("cost_receipt_ref") or "")
+                }
+            ),
         },
         "qualification": {
             "longform_proven": False,
@@ -293,6 +406,19 @@ def measure_narrative_runtime(
 
 def _observation_status(status: str, evidence_count: int) -> dict[str, Any]:
     return {"status": status, "evidence_count": evidence_count}
+
+
+def _availability_status(
+    records: list[Mapping[str, Any]] | None,
+    missing: list[Mapping[str, Any]] | None,
+) -> dict[str, Any]:
+    if records is None:
+        return _observation_status(_NOT_OBSERVED, 0)
+    available_count = len(records) - len(missing or ())
+    return _observation_status(
+        _MEASURED if not missing else _NOT_AVAILABLE,
+        available_count,
+    )
 
 
 __all__ = ["measure_narrative_runtime"]

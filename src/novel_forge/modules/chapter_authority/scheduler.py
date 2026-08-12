@@ -72,6 +72,7 @@ from novel_forge.modules.command_kernel.operation_graph import (
     add_operation_dependency,
     coordinate_saga,
     register_saga_step,
+    terminalize_saga_from_extension,
 )
 from novel_forge.modules.command_kernel.service import AdmissionContext, admit_command
 from novel_forge.modules.command_kernel.runtime import (
@@ -143,10 +144,16 @@ class ChapterAuthorityScheduler:
             correlation_id=root["correlation_id"],
         )
         coordinated = coordinate_saga(self.database_url, context, saga["saga_id"])
-        if coordinated["status"] in {
-            "SUCCEEDED",
+        chapter_complete = all(
+            children.get(node, {}).get("status") == "SUCCEEDED"
+            for node in ChapterNode
+        )
+        if (
+            coordinated["status"] == "SUCCEEDED" and chapter_complete
+        ) or coordinated["status"] in {
             "FAILED_FINAL",
             "DEAD_LETTER",
+            "MANUAL_INTERVENTION",
             "CANCELLED",
             "COMPENSATED",
             "COMPENSATION_FAILED",
@@ -169,6 +176,14 @@ class ChapterAuthorityScheduler:
         )
         if reextraction_tick is not None:
             return reextraction_tick
+        correction_tick = self._advance_quality_correction(
+            request=request,
+            root=root,
+            saga=saga,
+            children=children,
+        )
+        if correction_tick is not None:
+            return correction_tick
         if children.get(ChapterNode.CANON, {}).get("status") == "SUCCEEDED":
             admitted_fanout = False
             for quality_node in QUALITY_GROUP_NODES:
@@ -243,6 +258,198 @@ class ChapterAuthorityScheduler:
             recovery_mode=recovery_mode,
         )
 
+    def _advance_quality_correction(
+        self,
+        *,
+        request: SingleChapterRequest,
+        root: dict[str, Any],
+        saga: dict[str, Any],
+        children: dict[ChapterNode, dict[str, Any]],
+    ) -> ChapterSchedulerTick | None:
+        """Run at most one bounded correction step ordered by aggregate Quality."""
+        root_key = request.idempotency_key or (
+            f"{request.project_id}:chapter:{request.chapter}:root"
+        )
+        initial_quality = self._initial_operation(
+            root_operation_id=str(root["operation_id"]),
+            project_id=request.project_id,
+            node=ChapterNode.QUALITY,
+            idempotency_key=f"{root_key}:{ChapterNode.QUALITY.value}",
+        )
+        if initial_quality is None or initial_quality["status"] != "SUCCEEDED":
+            return None
+        tasks = self._operation_outputs(
+            str(initial_quality["operation_id"]),
+            request.project_id,
+            role="required_action",
+        )
+        if not tasks:
+            return None
+        generation = 1
+        correction = self._correction_operations(
+            root_operation_id=str(root["operation_id"]),
+            project_id=request.project_id,
+            generation=generation,
+            root_idempotency_key=root_key,
+        )
+        aggregate = correction.get(ChapterNode.QUALITY)
+        if aggregate is not None and aggregate["status"] == "SUCCEEDED":
+            children.update(correction)
+            return None
+
+        common = {
+            ChapterNode.PLAN: self._initial_primary(root, request, ChapterNode.PLAN),
+            ChapterNode.CONTEXT: self._initial_primary(
+                root, request, ChapterNode.CONTEXT
+            ),
+            ChapterNode.DRAFT: self._initial_primary(root, request, ChapterNode.DRAFT),
+            ChapterNode.REVIEW: self._initial_primary(
+                root, request, ChapterNode.REVIEW
+            ),
+        }
+        sequence = (
+            ChapterNode.REVISION,
+            ChapterNode.REREVIEW,
+            ChapterNode.CANON_EXTRACTION,
+            ChapterNode.CANON_PROPOSAL,
+            ChapterNode.CANON,
+            *QUALITY_GROUP_NODES,
+            ChapterNode.QUALITY,
+        )
+        for ordinal, node in enumerate(sequence, start=1):
+            operation = correction.get(node)
+            if operation is not None and operation["status"] == "SUCCEEDED":
+                continue
+            if operation is not None and operation["status"] in {
+                "FAILED_FINAL",
+                "DEAD_LETTER",
+                "CANCELLED",
+            }:
+                return self._terminal_quality_correction(root, saga, operation, node)
+            if operation is None:
+                inputs, dependencies = self._quality_correction_inputs(
+                    request=request,
+                    root=root,
+                    node=node,
+                    initial_quality=initial_quality,
+                    tasks=tasks,
+                    correction=correction,
+                    common=common,
+                )
+                if node is ChapterNode.CANON:
+                    proposal = correction[ChapterNode.CANON_PROPOSAL]
+                    proposal_ref = self._primary_output(
+                        str(proposal["operation_id"]), request.project_id
+                    )
+                    gate = ensure_canon_approval_requests(
+                        self.database_url,
+                        CanonApprovalContext(
+                            project_id=request.project_id,
+                            principal_id=self.worker_id,
+                            trace_id=str(root["trace_id"]),
+                            correlation_id=str(root["correlation_id"]),
+                        ),
+                        root_operation_id=str(root["operation_id"]),
+                        saga_id=str(saga["saga_id"]),
+                        proposal_asset_version_id=proposal_ref["asset_version_id"],
+                        proposal=self._asset_content(
+                            proposal_ref["asset_version_id"], request.project_id
+                        ),
+                    )
+                    if gate["waiting"]:
+                        return self._generation_tick(
+                            root,
+                            saga,
+                            proposal,
+                            ChapterNode.CANON,
+                            "quality_correction_canon_gate",
+                        )
+                    inputs.extend(
+                        decision_asset_versions(
+                            self.database_url,
+                            project_id=request.project_id,
+                            root_operation_id=str(root["operation_id"]),
+                        )
+                    )
+                operation = self._admit_node(
+                    request=request,
+                    root=root,
+                    saga_id=str(saga["saga_id"]),
+                    children=children,
+                    node=node,
+                    idempotency_suffix=f":quality-correction:{generation}",
+                    register_step=False,
+                    explicit_inputs=inputs,
+                    dependency_operation_ids=dependencies,
+                    timeline_step_key=f"quality-correction:{generation}:{node.value}",
+                    timeline_ordinal=2000 + ordinal,
+                    activate_immediately=True,
+                )
+                correction[node] = operation
+            try:
+                recovery = self._execute_node(request, node, operation)
+            except Exception:
+                current = self._child(
+                    str(operation["operation_id"]), request.project_id
+                )
+                if current["status"] in {"FAILED_FINAL", "DEAD_LETTER", "CANCELLED"}:
+                    return self._terminal_quality_correction(root, saga, current, node)
+                raise
+            current = self._child(str(operation["operation_id"]), request.project_id)
+            if current["status"] in {"FAILED_FINAL", "DEAD_LETTER", "CANCELLED"}:
+                return self._terminal_quality_correction(root, saga, current, node)
+            final = coordinate_saga(
+                self.database_url,
+                GraphCommandContext(
+                    project_id=request.project_id,
+                    actor_id=self.worker_id,
+                    trace_id=str(root["trace_id"]),
+                    correlation_id=str(root["correlation_id"]),
+                ),
+                str(saga["saga_id"]),
+            )
+            return ChapterSchedulerTick(
+                root_operation_id=str(root["operation_id"]),
+                saga_id=str(saga["saga_id"]),
+                saga_status=str(final["status"]),
+                operation_id=str(operation["operation_id"]),
+                node=node.value,
+                operation_status=self._operation_status(
+                    str(operation["operation_id"]), request.project_id
+                ),
+                recovery_mode=f"quality_correction_{recovery}",
+            )
+        return None
+
+    def _terminal_quality_correction(
+        self,
+        root: dict[str, Any],
+        saga: dict[str, Any],
+        operation: dict[str, Any],
+        node: ChapterNode,
+    ) -> ChapterSchedulerTick:
+        terminal = terminalize_saga_from_extension(
+            self.database_url,
+            GraphCommandContext(
+                project_id=str(root["project_id"]),
+                actor_id=self.worker_id,
+                trace_id=str(root["trace_id"]),
+                correlation_id=str(root["correlation_id"]),
+                causation_id=str(operation["operation_id"]),
+            ),
+            str(saga["saga_id"]),
+            operation_id=str(operation["operation_id"]),
+        )
+        return ChapterSchedulerTick(
+            root_operation_id=str(root["operation_id"]),
+            saga_id=str(saga["saga_id"]),
+            saga_status=str(terminal["saga_status"]),
+            operation_id=str(operation["operation_id"]),
+            node=node.value,
+            operation_status=str(operation["status"]),
+            recovery_mode="quality_correction_terminal_replay",
+        )
+
     def pending_roots(self, *, limit: int = 20) -> tuple[tuple[str, str], ...]:
         if limit <= 0:
             raise ValueError("pending root limit must be positive")
@@ -259,7 +466,8 @@ class ChapterAuthorityScheduler:
                     'CANCELLATION_REQUESTED', 'WAITING_GATE'
                   )
                   AND saga.status NOT IN (
-                    'SUCCEEDED', 'COMPENSATED', 'COMPENSATION_FAILED', 'CANCELLED'
+                    'SUCCEEDED', 'COMPENSATED', 'COMPENSATION_FAILED',
+                    'MANUAL_INTERVENTION', 'CANCELLED'
                   )
                 ORDER BY operation.created_at, operation.operation_id
                 LIMIT %s
@@ -431,13 +639,259 @@ class ChapterAuthorityScheduler:
                         expected_status="ADMITTED",
                         target_status="READY",
                         actor_id=self.worker_id,
-                        reason="re-extraction generation dependencies are satisfied",
+                        reason=(
+                            "additional governed Chapter generation dependencies "
+                            "are satisfied"
+                        ),
                         trace_id=root["trace_id"],
                         correlation_id=root["correlation_id"],
                         causation_id=root["operation_id"],
                     ),
                 )
         return self._child(operation_id, root["project_id"])
+
+    def _quality_correction_inputs(
+        self,
+        *,
+        request: SingleChapterRequest,
+        root: dict[str, Any],
+        node: ChapterNode,
+        initial_quality: dict[str, Any],
+        tasks: list[dict[str, str]],
+        correction: dict[ChapterNode, dict[str, Any]],
+        common: dict[ChapterNode, dict[str, str]],
+    ) -> tuple[list[dict[str, str]], list[str]]:
+        quality_ref = self._primary_output(
+            str(initial_quality["operation_id"]), request.project_id
+        )
+        if node is ChapterNode.REVISION:
+            initial_revision = self._initial_primary(
+                root, request, ChapterNode.REVISION
+            )
+            return (
+                [initial_revision, quality_ref, common[ChapterNode.CONTEXT], *tasks],
+                [str(initial_quality["operation_id"])],
+            )
+        revision_operation = correction[ChapterNode.REVISION]
+        revision_ref = self._primary_output(
+            str(revision_operation["operation_id"]), request.project_id
+        )
+        if node is ChapterNode.REREVIEW:
+            return (
+                [
+                    common[ChapterNode.DRAFT],
+                    common[ChapterNode.REVIEW],
+                    revision_ref,
+                    common[ChapterNode.CONTEXT],
+                ],
+                [str(revision_operation["operation_id"])],
+            )
+        rereview_operation = correction[ChapterNode.REREVIEW]
+        rereview_ref = self._primary_output(
+            str(rereview_operation["operation_id"]), request.project_id
+        )
+        if node is ChapterNode.CANON_EXTRACTION:
+            return (
+                [
+                    revision_ref,
+                    rereview_ref,
+                    common[ChapterNode.CONTEXT],
+                ],
+                [str(rereview_operation["operation_id"])],
+            )
+        extraction_operation = correction[ChapterNode.CANON_EXTRACTION]
+        extraction_ref = self._primary_output(
+            str(extraction_operation["operation_id"]), request.project_id
+        )
+        if node is ChapterNode.CANON_PROPOSAL:
+            return (
+                [extraction_ref],
+                [str(extraction_operation["operation_id"])],
+            )
+        proposal_operation = correction[ChapterNode.CANON_PROPOSAL]
+        proposal_ref = self._primary_output(
+            str(proposal_operation["operation_id"]), request.project_id
+        )
+        if node is ChapterNode.CANON:
+            return (
+                [
+                    revision_ref,
+                    rereview_ref,
+                    extraction_ref,
+                    proposal_ref,
+                    common[ChapterNode.CONTEXT],
+                ],
+                [str(proposal_operation["operation_id"])],
+            )
+        canon_operation = correction[ChapterNode.CANON]
+        canon_ref = self._primary_output(
+            str(canon_operation["operation_id"]), request.project_id
+        )
+        if node in QUALITY_GROUP_NODES:
+            return (
+                [
+                    common[ChapterNode.PLAN],
+                    revision_ref,
+                    rereview_ref,
+                    canon_ref,
+                    common[ChapterNode.CONTEXT],
+                ],
+                [str(canon_operation["operation_id"])],
+            )
+        group_refs = [
+            self._primary_output(
+                str(correction[group]["operation_id"]), request.project_id
+            )
+            for group in QUALITY_GROUP_NODES
+        ]
+        measurement = _measurement_evidence_inputs(
+            self.database_url,
+            project_id=request.project_id,
+            root_operation_id=str(root["operation_id"]),
+            context_bundle_asset_version_id=common[ChapterNode.CONTEXT][
+                "asset_version_id"
+            ],
+        )
+        return (
+            [
+                common[ChapterNode.PLAN],
+                revision_ref,
+                rereview_ref,
+                canon_ref,
+                common[ChapterNode.CONTEXT],
+                *group_refs,
+                *tasks,
+                *measurement,
+            ],
+            [str(correction[group]["operation_id"]) for group in QUALITY_GROUP_NODES],
+        )
+
+    def _initial_primary(
+        self,
+        root: dict[str, Any],
+        request: SingleChapterRequest,
+        node: ChapterNode,
+    ) -> dict[str, str]:
+        root_key = request.idempotency_key or (
+            f"{request.project_id}:chapter:{request.chapter}:root"
+        )
+        operation = self._initial_operation(
+            root_operation_id=str(root["operation_id"]),
+            project_id=request.project_id,
+            node=node,
+            idempotency_key=f"{root_key}:{node.value}",
+        )
+        if operation is None or operation["status"] != "SUCCEEDED":
+            raise KernelError(
+                "QUALITY_CORRECTION_INPUT_MISSING",
+                f"Quality correction requires completed initial {node.value}",
+            )
+        return self._primary_output(str(operation["operation_id"]), request.project_id)
+
+    def _initial_operation(
+        self,
+        *,
+        root_operation_id: str,
+        project_id: str,
+        node: ChapterNode,
+        idempotency_key: str,
+    ) -> dict[str, Any] | None:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT operation_id, definition_name, status,
+                       COALESCE(
+                         (definition_snapshot->'retry_policy'->>'max_attempts')::int,
+                         1
+                       )
+                FROM authority_operation
+                WHERE root_operation_id=%s AND project_id=%s
+                  AND definition_name=%s
+                  AND idempotency_key=%s
+                LIMIT 1
+                """,
+                [
+                    root_operation_id,
+                    project_id,
+                    node.definition_name,
+                    idempotency_key,
+                ],
+            )
+            row = uow.cursor.fetchone()
+        if row is None:
+            return None
+        return dict(
+            zip(
+                ("operation_id", "definition_name", "status", "max_attempts"),
+                row,
+                strict=True,
+            )
+        )
+
+    def _correction_operations(
+        self,
+        *,
+        root_operation_id: str,
+        project_id: str,
+        generation: int,
+        root_idempotency_key: str,
+    ) -> dict[ChapterNode, dict[str, Any]]:
+        expected_keys = [
+            f"{root_idempotency_key}:{node.value}:quality-correction:{generation}"
+            for node in ChapterNode
+        ]
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT operation_id, definition_name, status,
+                       COALESCE(
+                         (definition_snapshot->'retry_policy'->>'max_attempts')::int,
+                         1
+                       )
+                FROM authority_operation
+                WHERE root_operation_id=%s AND project_id=%s
+                  AND idempotency_key=ANY(%s)
+                ORDER BY created_at, operation_id
+                """,
+                [root_operation_id, project_id, expected_keys],
+            )
+            rows = uow.cursor.fetchall()
+        by_definition = {node.definition_name: node for node in ChapterNode}
+        return {
+            by_definition[str(row[1])]: dict(
+                zip(
+                    ("operation_id", "definition_name", "status", "max_attempts"),
+                    row,
+                    strict=True,
+                )
+            )
+            for row in rows
+            if str(row[1]) in by_definition
+        }
+
+    def _operation_outputs(
+        self, operation_id: str, project_id: str, *, role: str
+    ) -> list[dict[str, str]]:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT binding.asset_version_id, binding.content_hash
+                FROM authority_operation_output_asset AS binding
+                JOIN authority_operation AS operation
+                  ON operation.operation_id=binding.operation_id
+                JOIN authority_asset_version AS version
+                  ON version.asset_version_id=binding.asset_version_id
+                WHERE binding.operation_id=%s AND operation.project_id=%s
+                  AND binding.role=%s
+                  AND version.lifecycle='ACTIVE'
+                ORDER BY binding.output_key
+                """,
+                [operation_id, project_id, role],
+            )
+            return [
+                {"asset_version_id": str(row[0]), "content_hash": str(row[1])}
+                for row in uow.cursor.fetchall()
+            ]
 
     def _advance_reextraction(
         self,
@@ -712,6 +1166,11 @@ class ChapterAuthorityScheduler:
         if attempt_status in {"QUEUED", "LEASED"}:
             start_attempt(self.database_url, worker)
         try:
+            if operation["status"] == "CANCELLATION_REQUESTED":
+                raise KernelError(
+                    "CHAPTER_OPERATION_CANCELLED",
+                    "Chapter correction was cancelled before recovery execution",
+                )
             if (
                 operation["status"]
                 in {"WAITING_EXTERNAL_RESULT", "RECONCILIATION_REQUIRED"}
@@ -871,7 +1330,7 @@ class ChapterAuthorityScheduler:
                 """
                 SELECT operation_id, project_id, workspace_id, actor_id, status,
                        definition_version, definition_snapshot, command_payload,
-                       trace_id, correlation_id
+                       trace_id, correlation_id, idempotency_key
                 FROM authority_operation
                 WHERE operation_id = %s AND project_id = %s
                   AND root_operation_id = operation_id
@@ -896,11 +1355,15 @@ class ChapterAuthorityScheduler:
                         "command_payload",
                         "trace_id",
                         "correlation_id",
+                        "idempotency_key",
                     ),
                     row,
                     strict=True,
                 )
             )
+            initial_child_keys = [
+                f"{root['idempotency_key']}:{node.value}" for node in ChapterNode
+            ]
             uow.cursor.execute(
                 "SELECT saga_id, status FROM authority_saga WHERE root_operation_id = %s AND project_id = %s",
                 [root_operation_id, project_id],
@@ -916,9 +1379,15 @@ class ChapterAuthorityScheduler:
                        COALESCE((definition_snapshot->'retry_policy'->>'max_attempts')::int, 1)
                 FROM authority_operation
                 WHERE root_operation_id = %s AND operation_id <> %s AND project_id = %s
+                  AND idempotency_key=ANY(%s)
                 ORDER BY created_at, operation_id
                 """,
-                [root_operation_id, root_operation_id, project_id],
+                [
+                    root_operation_id,
+                    root_operation_id,
+                    project_id,
+                    initial_child_keys,
+                ],
             )
             rows = uow.cursor.fetchall()
         by_definition = {node.definition_name: node for node in ChapterNode}

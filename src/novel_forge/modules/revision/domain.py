@@ -66,4 +66,80 @@ def apply_revision_result(
     }
 
 
-__all__ = ["apply_revision_result"]
+def apply_quality_revision_result(
+    *,
+    project_id: str,
+    revision: dict[str, Any],
+    revision_asset_version_id: str,
+    quality: dict[str, Any],
+    quality_asset_version_id: str,
+    revision_tasks: tuple[dict[str, Any], ...],
+    revision_task_asset_version_ids: tuple[str, ...],
+    context_bundle_version_id: str,
+    result: dict[str, Any],
+    provider_evidence: dict[str, Any],
+) -> dict[str, Any]:
+    """Apply one bounded repair ordered by aggregate Quality Authority."""
+    if not all(
+        (
+            project_id,
+            revision_asset_version_id,
+            quality_asset_version_id,
+            context_bundle_version_id,
+        )
+    ) or not revision_tasks or len(revision_tasks) != len(
+        revision_task_asset_version_ids
+    ):
+        raise KernelError(
+            "QUALITY_REVISION_INPUT_INVALID",
+            "Quality correction requires versioned target, decision, task, and context lineage",
+        )
+    text = str(result.get("text") or "").strip()
+    if not text:
+        raise KernelError(
+            "QUALITY_REVISION_INCOMPLETE", "Quality correction produced no revised text"
+        )
+    required_actions = list(quality.get("required_actions") or [])
+    expected = {
+        str(item.get("observation") or item.get("issue", {}).get("code") or "")
+        for item in required_actions
+    }
+    frozen = {
+        str(item.get("observation") or item.get("issue", {}).get("code") or "")
+        for item in revision_tasks
+    }
+    expected.discard("")
+    frozen.discard("")
+    if not expected or not frozen or not frozen.issubset(expected) or any(
+        str(item.get("status") or "OPEN") != "OPEN" for item in revision_tasks
+    ):
+        raise KernelError(
+            "QUALITY_REVISION_TASK_CONFLICT",
+            "frozen RevisionTasks are not active aggregate Quality required actions",
+        )
+    if str(quality.get("project_id") or "") != project_id or any(
+        str(item.get("project_id") or "") != project_id
+        or str(item.get("target_revision_asset_version_id") or "")
+        != revision_asset_version_id
+        for item in revision_tasks
+    ):
+        raise KernelError(
+            "QUALITY_REVISION_LINEAGE_CONFLICT",
+            "Quality correction task scope does not match its frozen target revision",
+        )
+    return {
+        **revision,
+        "text": text,
+        "source_revision_asset_version_id": revision_asset_version_id,
+        "source_quality_asset_version_id": quality_asset_version_id,
+        "quality_revision_task_asset_version_ids": list(
+            revision_task_asset_version_ids
+        ),
+        "quality_action_observations": sorted(frozen),
+        "context_bundle_version_id": context_bundle_version_id,
+        "provider_evidence": dict(provider_evidence),
+        "revision_contract_version": "quality-corrective-revision-v1",
+    }
+
+
+__all__ = ["apply_quality_revision_result", "apply_revision_result"]

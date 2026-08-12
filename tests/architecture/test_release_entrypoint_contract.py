@@ -28,6 +28,13 @@ class ReleaseEntrypointContractTests(unittest.TestCase):
         self.assertEqual(parsed.host, "0.0.0.0")
         self.assertEqual(parsed.port, 8000)
 
+    def test_python_module_entrypoint_invokes_the_authority_cli(self) -> None:
+        source = (ROOT / "src/novel_forge/cli/authority.py").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn('if __name__ == "__main__":', source)
+        self.assertIn("raise SystemExit(main())", source)
+
     def test_standard_make_targets_do_not_reference_removed_services_or_commands(self) -> None:
         source = (ROOT / "Makefile").read_text(encoding="utf-8")
         forbidden = (
