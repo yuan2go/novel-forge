@@ -28,6 +28,8 @@ class TemporalQueryApiTests(unittest.TestCase):
         )
         service = Mock()
         service.relationship_at.return_value = {"status": "FOUND"}
+        service.character_believes_at.return_value = {"status": "FOUND"}
+        service.obligations_at.return_value = {"status": "FOUND", "obligations": []}
         app = FastAPI()
         app.include_router(
             create_router(
@@ -101,6 +103,51 @@ class TemporalQueryApiTests(unittest.TestCase):
         self.assertEqual(denied.status_code, 403)
         self.assertEqual(invalid.status_code, 422)
         service.character_knows_at.assert_not_called()
+
+    def test_belief_and_obligation_queries_expose_typed_temporal_contracts(self) -> None:
+        root, client, service, resolver = self._client(scope=frozenset({"project-a"}))
+        with (
+            root,
+            patch(
+                "novel_forge.api.routers.temporal_query.build_trusted_principal_resolver",
+                return_value=resolver,
+            ),
+        ):
+            belief = client.post(
+                "/product/temporal-query",
+                json={
+                    "project_id": "project-a",
+                    "book_id": "book-a",
+                    "query": "character_believes_at",
+                    "character_id": "hero",
+                    "proposition_id": "proposition:traitor",
+                    "chapter": 12,
+                },
+            )
+            obligations = client.post(
+                "/product/temporal-query",
+                json={
+                    "project_id": "project-a",
+                    "book_id": "book-a",
+                    "query": "obligations_at",
+                    "obligation_type": "MYSTERY",
+                    "unresolved_only": True,
+                    "chapter": 12,
+                },
+            )
+
+        self.assertEqual(belief.status_code, 200, belief.text)
+        self.assertEqual(obligations.status_code, 200, obligations.text)
+        service.character_believes_at.assert_called_once_with(
+            "project-a", "book-a", "hero", "proposition:traitor", 12
+        )
+        service.obligations_at.assert_called_once_with(
+            "project-a",
+            "book-a",
+            12,
+            obligation_types=("MYSTERY",),
+            unresolved_only=True,
+        )
 
 
 if __name__ == "__main__":

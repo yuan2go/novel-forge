@@ -19,6 +19,11 @@ class TemporalQueryRequest(BaseModel):
     query: Literal[
         "character_state_at",
         "character_knows_at",
+        "character_believes_at",
+        "character_arc_at",
+        "conflict_at",
+        "obligations_at",
+        "state_at",
         "relationship_at",
         "world_state_at",
         "power_state_at",
@@ -32,6 +37,13 @@ class TemporalQueryRequest(BaseModel):
     chapter_to: int | None = Field(default=None, ge=1)
     character_id: str = ""
     fact_id: str = ""
+    proposition_id: str = ""
+    arc_id: str = ""
+    conflict_id: str = ""
+    obligation_type: Literal[
+        "PROMISE", "FORESHADOWING", "MYSTERY", "CONFLICT", "OPEN_LOOP"
+    ] | None = None
+    unresolved_only: bool = False
     source_id: str = ""
     target_id: str = ""
     thread_id: str = ""
@@ -41,6 +53,15 @@ class TemporalQueryRequest(BaseModel):
         required = {
             "character_state_at": ("chapter", "character_id"),
             "character_knows_at": ("chapter", "character_id", "fact_id"),
+            "character_believes_at": (
+                "chapter",
+                "character_id",
+                "proposition_id",
+            ),
+            "character_arc_at": ("chapter", "character_id", "arc_id"),
+            "conflict_at": ("chapter", "conflict_id"),
+            "obligations_at": ("chapter",),
+            "state_at": ("chapter",),
             "relationship_at": ("chapter", "source_id", "target_id"),
             "world_state_at": ("chapter",),
             "power_state_at": ("chapter", "character_id"),
@@ -96,6 +117,41 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                     request.character_id,
                     request.fact_id,
                     int(request.chapter),
+                )
+            if request.query == "character_believes_at":
+                return service.character_believes_at(
+                    request.project_id,
+                    request.book_id,
+                    request.character_id,
+                    request.proposition_id,
+                    int(request.chapter),
+                )
+            if request.query == "character_arc_at":
+                return service.character_arc_at(
+                    request.project_id,
+                    request.book_id,
+                    request.character_id,
+                    request.arc_id,
+                    int(request.chapter),
+                )
+            if request.query == "conflict_at":
+                return service.conflict_at(
+                    request.project_id,
+                    request.book_id,
+                    request.conflict_id,
+                    int(request.chapter),
+                )
+            if request.query == "obligations_at":
+                return service.obligations_at(
+                    request.project_id,
+                    request.book_id,
+                    int(request.chapter),
+                    obligation_types=(
+                        (request.obligation_type,)
+                        if request.obligation_type
+                        else ()
+                    ),
+                    unresolved_only=request.unresolved_only,
                 )
             if request.query in {"character_state_at", "power_state_at"}:
                 method = getattr(service, request.query)

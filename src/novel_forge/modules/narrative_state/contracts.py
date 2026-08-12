@@ -39,6 +39,40 @@ class NarrativeStateKind(StrEnum):
     ARC_STATE = "arc_state"
     REWARD_EVENT = "reward_event"
     THEME_MOVEMENT = "theme_movement"
+    CHARACTER_KNOWLEDGE = "character_knowledge"
+    CHARACTER_BELIEF = "character_belief"
+    CHARACTER_ARC = "character_arc"
+    WORLD_STATE = "world_state"
+    FACTION_STATE = "faction_state"
+    LOCATION_STATE = "location_state"
+    CONSEQUENCE_STATE = "consequence_state"
+    CONFLICT_STATE = "conflict_state"
+    NARRATIVE_OBLIGATION = "narrative_obligation"
+    PAYOFF_EVENT = "payoff_event"
+
+
+class NarrativeObligationType(StrEnum):
+    PROMISE = "PROMISE"
+    FORESHADOWING = "FORESHADOWING"
+    MYSTERY = "MYSTERY"
+    CONFLICT = "CONFLICT"
+    OPEN_LOOP = "OPEN_LOOP"
+
+
+class NarrativeObligationStatus(StrEnum):
+    PROPOSED = "PROPOSED"
+    OPEN = "OPEN"
+    DEVELOPING = "DEVELOPING"
+    DUE = "DUE"
+    FULFILLED = "FULFILLED"
+    CANCELLED = "CANCELLED"
+
+
+class NarrativeObligationPriority(StrEnum):
+    LOW = "LOW"
+    MEDIUM = "MEDIUM"
+    HIGH = "HIGH"
+    CRITICAL = "CRITICAL"
 
 
 class ReducerSemantics(StrEnum):
@@ -67,6 +101,44 @@ class NarrativeScope:
 
     def to_dict(self) -> dict[str, str]:
         return {"project_id": self.project_id, "book_id": self.book_id}
+
+
+@dataclass(frozen=True, slots=True)
+class NarrativePosition:
+    """Typed narrative coordinate carried by accepted events and Context manifests."""
+
+    chapter: int
+    volume_id: str = ""
+    arc_id: str = ""
+    sequence_id: str = ""
+    sequence_ordinal: int = 0
+
+    def __post_init__(self) -> None:
+        if self.chapter <= 0 or self.sequence_ordinal < 0:
+            raise KernelError(
+                "NARRATIVE_POSITION_INVALID",
+                "Narrative position requires a positive chapter and non-negative sequence ordinal",
+            )
+        if bool(self.sequence_id) != bool(self.sequence_ordinal):
+            raise KernelError(
+                "NARRATIVE_POSITION_INVALID",
+                "Narrative sequence identity and ordinal must be supplied together",
+            )
+
+    def to_dict(self) -> dict[str, Any]:
+        value: dict[str, Any] = {"chapter": self.chapter}
+        if self.volume_id:
+            value["volume_id"] = self.volume_id
+        if self.arc_id:
+            value["arc_id"] = self.arc_id
+        if self.sequence_id:
+            value.update(
+                {
+                    "sequence_id": self.sequence_id,
+                    "sequence_ordinal": self.sequence_ordinal,
+                }
+            )
+        return value
 
 
 @dataclass(frozen=True, slots=True)
@@ -113,23 +185,41 @@ class NarrativeIdentity:
 class NarrativeCoordinate:
     source_chapter: int
     effective_from_chapter: int
+    effective_to_chapter: int = 0
+    position: NarrativePosition | None = None
 
     def __post_init__(self) -> None:
         if (
             self.source_chapter <= 0
             or self.effective_from_chapter <= 0
             or self.effective_from_chapter > self.source_chapter
+            or (
+                self.effective_to_chapter
+                and (
+                    self.effective_to_chapter < self.effective_from_chapter
+                )
+            )
         ):
             raise KernelError(
                 "NARRATIVE_TEMPORAL_BOUNDARY_INVALID",
-                "Narrative State effective boundary must be positive, non-future, and ordered",
+                "Narrative State effective start must be non-future and its range ordered",
+            )
+        if self.position is not None and self.position.chapter != self.source_chapter:
+            raise KernelError(
+                "NARRATIVE_POSITION_INVALID",
+                "Narrative position chapter must equal the source chapter",
             )
 
-    def to_dict(self) -> dict[str, int]:
-        return {
+    def to_dict(self) -> dict[str, Any]:
+        value: dict[str, Any] = {
             "source_chapter": self.source_chapter,
             "effective_from_chapter": self.effective_from_chapter,
         }
+        if self.effective_to_chapter:
+            value["effective_to_chapter"] = self.effective_to_chapter
+        if self.position is not None:
+            value["position"] = self.position.to_dict()
+        return value
 
 
 @dataclass(frozen=True, slots=True)
@@ -147,18 +237,27 @@ class NarrativeStateEvent:
     coverage: str
     evidence: dict[str, Any]
     event_version: int = 1
+    entity_version: int = 1
+    canon_status: str = "APPROVED_CANON_PATCH"
 
     def __post_init__(self) -> None:
         if not self.event_id.startswith("narrative-event:sha256:"):
             raise KernelError(
                 "NARRATIVE_EVENT_ID_INVALID", "Narrative event ID must be content-derived"
             )
-        if not 0 <= self.confidence <= 1 or not self.coverage:
+        if (
+            not 0 <= self.confidence <= 1
+            or not self.coverage
+            or self.event_version <= 0
+            or self.entity_version <= 0
+            or self.canon_status not in {"APPROVED_CANON_PATCH", "NON_CANON_OBSERVATION"}
+        ):
             raise KernelError(
                 "NARRATIVE_EVIDENCE_INVALID",
                 "Narrative State confidence and coverage are required",
             )
         _reject_v2_aliases(self.payload)
+        _validate_event_payload(self.state_kind, self.payload)
         expected = _event_id(
             state_kind=self.state_kind,
             scope=self.scope,
@@ -172,6 +271,8 @@ class NarrativeStateEvent:
             coverage=self.coverage,
             evidence=self.evidence,
             event_version=self.event_version,
+            entity_version=self.entity_version,
+            canon_status=self.canon_status,
         )
         if self.event_id != expected:
             raise KernelError(
@@ -180,6 +281,14 @@ class NarrativeStateEvent:
             )
 
     def to_dict(self) -> dict[str, Any]:
+        authority = {
+            "status": "PENDING_BOOK_ACCEPTANCE",
+            "required_boundary": "COMMITTED_BOOK_CHAPTER_ACCEPTANCE",
+        }
+        version = {"event_contract": self.event_version}
+        if self.event_version >= 2:
+            authority["canon_status"] = self.canon_status
+            version["entity"] = self.entity_version
         return {
             "event_id": self.event_id,
             "contract_version": "narrative-state-event-v2",
@@ -188,15 +297,12 @@ class NarrativeStateEvent:
             "scope": self.scope.to_dict(),
             "identity": self.identity.to_dict(),
             "coordinate": self.coordinate.to_dict(),
-            "authority": {
-                "status": "PENDING_BOOK_ACCEPTANCE",
-                "required_boundary": "COMMITTED_BOOK_CHAPTER_ACCEPTANCE",
-            },
+            "authority": authority,
             "mutation": {
                 "semantics": self.semantics.value,
                 "payload": _deep_copy(self.payload),
             },
-            "version": {"event_contract": self.event_version},
+            "version": version,
             "supersession": {"supersedes_event_id": self.supersedes_event_id},
             "provenance": _deep_copy(self.provenance),
             "confidence": self.confidence,
@@ -227,6 +333,16 @@ class NarrativeStateEvent:
                 "NARRATIVE_EVENT_CONTRACT_INVALID",
                 "Narrative State scope, identity and coordinate are required",
             )
+        position_value = coordinate.get("position")
+        position = None
+        if isinstance(position_value, dict):
+            position = NarrativePosition(
+                chapter=int(position_value.get("chapter") or 0),
+                volume_id=str(position_value.get("volume_id") or ""),
+                arc_id=str(position_value.get("arc_id") or ""),
+                sequence_id=str(position_value.get("sequence_id") or ""),
+                sequence_ordinal=int(position_value.get("sequence_ordinal") or 0),
+            )
         try:
             state_kind = NarrativeStateKind(str(value.get("state_kind") or ""))
             semantics = ReducerSemantics(str(mutation.get("semantics") or ""))
@@ -248,6 +364,8 @@ class NarrativeStateEvent:
                 effective_from_chapter=int(
                     coordinate.get("effective_from_chapter") or 0
                 ),
+                effective_to_chapter=int(coordinate.get("effective_to_chapter") or 0),
+                position=position,
             ),
             semantics=semantics,
             payload=payload,
@@ -257,6 +375,11 @@ class NarrativeStateEvent:
             coverage=str(value.get("coverage") or ""),
             evidence=dict(value.get("evidence") or {}),
             event_version=int((value.get("version") or {}).get("event_contract") or 0),
+            entity_version=int((value.get("version") or {}).get("entity") or 1),
+            canon_status=str(
+                (value.get("authority") or {}).get("canon_status")
+                or "APPROVED_CANON_PATCH"
+            ),
         )
 
 
@@ -276,7 +399,36 @@ _PATCH_FIELDS: dict[NarrativeStateKind, tuple[str, ...]] = {
     NarrativeStateKind.THEME_MOVEMENT: ("theme_movements",),
     NarrativeStateKind.ANTAGONIST_STATE: ("antagonist_pressure_changes", "antagonist_actions"),
     NarrativeStateKind.ARC_STATE: ("arc_contributions",),
+    NarrativeStateKind.CHARACTER_KNOWLEDGE: ("character_knowledge_changes",),
+    NarrativeStateKind.CHARACTER_BELIEF: ("character_belief_changes",),
+    NarrativeStateKind.CHARACTER_ARC: ("character_arc_changes",),
+    NarrativeStateKind.WORLD_STATE: ("world_state_changes",),
+    NarrativeStateKind.FACTION_STATE: ("faction_state_changes",),
+    NarrativeStateKind.LOCATION_STATE: ("location_state_changes",),
+    NarrativeStateKind.CONSEQUENCE_STATE: ("consequence_changes",),
+    NarrativeStateKind.CONFLICT_STATE: ("conflict_state_changes",),
+    NarrativeStateKind.NARRATIVE_OBLIGATION: ("obligation_changes",),
+    NarrativeStateKind.PAYOFF_EVENT: ("payoff_events",),
 }
+
+_LEGACY_OBLIGATION_KINDS = frozenset(
+    {
+        NarrativeStateKind.FORESHADOW_STATE,
+        NarrativeStateKind.READER_PROMISE,
+        NarrativeStateKind.PLOT_THREAD,
+        NarrativeStateKind.NARRATIVE_DEBT,
+        NarrativeStateKind.MYSTERY_STATE,
+    }
+)
+
+_OBLIGATION_PATCH_FIELDS: tuple[tuple[str, NarrativeObligationType], ...] = (
+    ("promise_changes", NarrativeObligationType.PROMISE),
+    ("foreshadow_changes", NarrativeObligationType.FORESHADOWING),
+    ("mystery_actions", NarrativeObligationType.MYSTERY),
+    ("conflict_changes", NarrativeObligationType.CONFLICT),
+    ("plot_thread_changes", NarrativeObligationType.OPEN_LOOP),
+    ("open_loop_changes", NarrativeObligationType.OPEN_LOOP),
+)
 
 _SNAPSHOT_KIND_ALIASES = {
     "canon_snapshot": NarrativeStateKind.CANON_FACT,
@@ -338,16 +490,68 @@ def events_from_canon_patch(
                     "NARRATIVE_STATE_KIND_UNSUPPORTED",
                     f"unsupported Narrative State kind: {raw_kind}",
                 ) from exc
-            changes[kind].extend(_object_items(values))
+            items = _object_items(values)
+            if kind in _LEGACY_OBLIGATION_KINDS:
+                obligation_type = {
+                    NarrativeStateKind.READER_PROMISE: NarrativeObligationType.PROMISE,
+                    NarrativeStateKind.FORESHADOW_STATE: NarrativeObligationType.FORESHADOWING,
+                    NarrativeStateKind.MYSTERY_STATE: NarrativeObligationType.MYSTERY,
+                    NarrativeStateKind.PLOT_THREAD: NarrativeObligationType.OPEN_LOOP,
+                    NarrativeStateKind.NARRATIVE_DEBT: NarrativeObligationType.OPEN_LOOP,
+                }[kind]
+                changes[NarrativeStateKind.NARRATIVE_OBLIGATION].extend(
+                    _normalize_obligation(
+                        item, obligation_type, source_chapter, legacy_adapter=True
+                    )
+                    for item in items
+                )
+            elif kind is NarrativeStateKind.NARRATIVE_OBLIGATION:
+                changes[kind].extend(
+                    _normalize_obligation(
+                        item,
+                        NarrativeObligationType(
+                            str(item.get("obligation_type") or "").upper()
+                        ),
+                        source_chapter,
+                    )
+                    for item in items
+                )
+            else:
+                changes[kind].extend(items)
     for kind, fields in _PATCH_FIELDS.items():
+        if kind in _LEGACY_OBLIGATION_KINDS:
+            continue
         if changes[kind]:
             continue
         for field in fields:
             changes[kind].extend(_object_items(canon_patch.get(field)))
+    for field, obligation_type in _OBLIGATION_PATCH_FIELDS:
+        changes[NarrativeStateKind.NARRATIVE_OBLIGATION].extend(
+            _normalize_obligation(
+                item, obligation_type, source_chapter, legacy_adapter=True
+            )
+            for item in _object_items(canon_patch.get(field))
+        )
     for snapshot in _object_items(canon_patch.get("snapshot_candidates")):
         kind = _SNAPSHOT_KIND_ALIASES.get(str(snapshot.get("state_kind") or ""))
         if kind is not None and not changes[kind]:
-            changes[kind].extend(_object_items(snapshot.get("changes")))
+            items = _object_items(snapshot.get("changes"))
+            if kind in _LEGACY_OBLIGATION_KINDS:
+                obligation_type = {
+                    NarrativeStateKind.READER_PROMISE: NarrativeObligationType.PROMISE,
+                    NarrativeStateKind.FORESHADOW_STATE: NarrativeObligationType.FORESHADOWING,
+                    NarrativeStateKind.MYSTERY_STATE: NarrativeObligationType.MYSTERY,
+                    NarrativeStateKind.PLOT_THREAD: NarrativeObligationType.OPEN_LOOP,
+                    NarrativeStateKind.NARRATIVE_DEBT: NarrativeObligationType.OPEN_LOOP,
+                }[kind]
+                changes[NarrativeStateKind.NARRATIVE_OBLIGATION].extend(
+                    _normalize_obligation(
+                        item, obligation_type, source_chapter, legacy_adapter=True
+                    )
+                    for item in items
+                )
+            else:
+                changes[kind].extend(items)
 
     events: list[NarrativeStateEvent] = []
     for kind in NarrativeStateKind:
@@ -457,9 +661,38 @@ def _build_event(
         or (raw.get("chapter") if legacy else 0)
         or source_chapter
     )
+    raw_position = raw.get("narrative_position")
+    position = None
+    if not legacy and (
+        isinstance(raw_position, dict)
+        or any(
+            raw.get(key)
+            for key in ("volume_id", "arc_id", "sequence_id", "sequence_ordinal")
+        )
+    ):
+        position_data = dict(raw_position) if isinstance(raw_position, dict) else {}
+        sequence_id = str(
+            position_data.get("sequence_id") or raw.get("sequence_id") or ""
+        )
+        sequence_ordinal = int(
+            position_data.get("sequence_ordinal")
+            or raw.get("sequence_ordinal")
+            or 0
+        )
+        position = NarrativePosition(
+            chapter=source_chapter,
+            volume_id=str(
+                position_data.get("volume_id") or raw.get("volume_id") or ""
+            ),
+            arc_id=str(position_data.get("arc_id") or raw.get("arc_id") or ""),
+            sequence_id=sequence_id,
+            sequence_ordinal=sequence_ordinal,
+        )
     coordinate = NarrativeCoordinate(
         source_chapter=source_chapter,
         effective_from_chapter=effective_from,
+        effective_to_chapter=int(raw.get("effective_to_chapter") or 0),
+        position=position,
     )
     supersedes = str(
         raw.get("supersedes_event_id")
@@ -474,14 +707,24 @@ def _build_event(
             "NARRATIVE_V2_ALIAS_FORBIDDEN",
             "v2 Narrative State input uses a legacy temporal or supersession alias",
         )
+    legacy_obligation_adapter = bool(raw.get("_legacy_obligation_adapter"))
     payload = {
         key: _deep_copy(value)
         for key, value in raw.items()
         if key
         not in {
             "effective_from_chapter",
+            "effective_to_chapter",
             "effective_chapter",
             "chapter",
+            "narrative_position",
+            "volume_id",
+            "arc_id",
+            "sequence_id",
+            "sequence_ordinal",
+            "entity_version",
+            "canon_status",
+            "_legacy_obligation_adapter",
             "supersedes_event_id",
             "supersedes_version_id",
             "supersedes_asset_version_id",
@@ -491,6 +734,17 @@ def _build_event(
             "evidence",
         }
     }
+    if (
+        state_kind is NarrativeStateKind.NARRATIVE_OBLIGATION
+        and str(payload.get("status") or "").upper() == "FULFILLED"
+        and not dict(payload.get("payoff_evidence") or {})
+        and legacy_obligation_adapter
+    ):
+        payload["payoff_evidence"] = {
+            "asset_version_id": accepted_draft_asset_version_id,
+            "event_id": f"{source_asset_version_id}#{source_field}:{ordinal}",
+            "evidence_mode": "ACCEPTED_DRAFT_CANON_LINEAGE",
+        }
     semantics = _semantics_for(state_kind, payload, supersedes)
     provenance = {
         "source_asset_version_id": source_asset_version_id,
@@ -506,6 +760,18 @@ def _build_event(
     coverage = str(
         raw.get("coverage") or ("LEGACY_ADAPTED" if legacy else "UNSPECIFIED")
     )
+    event_version = (
+        2
+        if not legacy
+        and (
+            "entity_version" in raw
+            or "effective_to_chapter" in raw
+            or position is not None
+        )
+        else 1
+    )
+    entity_version = int(raw.get("entity_version") or 1)
+    canon_status = str(raw.get("canon_status") or "APPROVED_CANON_PATCH")
     return NarrativeStateEvent(
         event_id=_event_id(
             state_kind=state_kind,
@@ -519,7 +785,9 @@ def _build_event(
             confidence=confidence,
             coverage=coverage,
             evidence=evidence,
-            event_version=1,
+            event_version=event_version,
+            entity_version=entity_version,
+            canon_status=canon_status,
         ),
         state_kind=state_kind,
         scope=scope,
@@ -532,6 +800,9 @@ def _build_event(
         confidence=confidence,
         coverage=coverage,
         evidence=evidence,
+        event_version=event_version,
+        entity_version=entity_version,
+        canon_status=canon_status,
     )
 
 
@@ -549,6 +820,8 @@ def _event_id(
     coverage: str,
     evidence: dict[str, Any],
     event_version: int,
+    entity_version: int = 1,
+    canon_status: str = "APPROVED_CANON_PATCH",
 ) -> str:
     seed = {
         "state_kind": state_kind.value,
@@ -564,6 +837,9 @@ def _event_id(
         "evidence": evidence,
         "event_version": event_version,
     }
+    if event_version >= 2:
+        seed["entity_version"] = entity_version
+        seed["canon_status"] = canon_status
     digest = hashlib.sha256(_canonical_json(seed).encode()).hexdigest()
     return f"narrative-event:sha256:{digest}"
 
@@ -581,6 +857,16 @@ def _identity_for(
         fields = ("subject", "predicate")
     elif state_kind is NarrativeStateKind.CHARACTER_STATE:
         fields = ("character_id",)
+    elif state_kind in {
+        NarrativeStateKind.CHARACTER_KNOWLEDGE,
+        NarrativeStateKind.CHARACTER_BELIEF,
+    }:
+        fields = (
+            "character_id",
+            "proposition_id" if raw.get("proposition_id") else "fact_id",
+        )
+    elif state_kind is NarrativeStateKind.CHARACTER_ARC:
+        fields = ("character_id", "arc_id")
     elif state_kind is NarrativeStateKind.RELATIONSHIP_STATE:
         fields = (
             "source_id" if raw.get("source_id") else "source_character_id",
@@ -588,6 +874,20 @@ def _identity_for(
         )
     elif state_kind is NarrativeStateKind.WORLD_RULE:
         fields = ("rule_id",)
+    elif state_kind is NarrativeStateKind.WORLD_STATE:
+        fields = ("world_state_id",)
+    elif state_kind is NarrativeStateKind.FACTION_STATE:
+        fields = ("faction_id",)
+    elif state_kind is NarrativeStateKind.LOCATION_STATE:
+        fields = ("location_id",)
+    elif state_kind is NarrativeStateKind.CONSEQUENCE_STATE:
+        fields = ("consequence_id",)
+    elif state_kind is NarrativeStateKind.CONFLICT_STATE:
+        fields = ("conflict_id",)
+    elif state_kind is NarrativeStateKind.NARRATIVE_OBLIGATION:
+        fields = ("obligation_id",)
+    elif state_kind is NarrativeStateKind.PAYOFF_EVENT:
+        fields = ("payoff_id",)
     elif state_kind is NarrativeStateKind.RESOURCE_STATE:
         fields = ("entity_id", "resource_id")
     elif state_kind is NarrativeStateKind.POWER_STATE:
@@ -647,6 +947,7 @@ def _semantics_for(
         NarrativeStateKind.TIMELINE_EVENT,
         NarrativeStateKind.REWARD_EVENT,
         NarrativeStateKind.THEME_MOVEMENT,
+        NarrativeStateKind.PAYOFF_EVENT,
     }:
         return ReducerSemantics.APPEND
     if state_kind is NarrativeStateKind.RESOURCE_STATE and payload.get("delta") is not None:
@@ -656,9 +957,16 @@ def _semantics_for(
             else ReducerSemantics.INCREMENT
         )
     status = str(payload.get("status") or "").upper()
-    if status in {"OPEN", "PLANTED", "PROMISED"}:
+    if status in {"OPEN", "PLANTED", "PROMISED", "PROPOSED"}:
         return ReducerSemantics.OPEN
-    if status in {"PAID", "CLOSED", "RESOLVED", "CANCELLED", "ABANDONED"}:
+    if status in {
+        "PAID",
+        "CLOSED",
+        "RESOLVED",
+        "FULFILLED",
+        "CANCELLED",
+        "ABANDONED",
+    }:
         return ReducerSemantics.CLOSE
     if state_kind is NarrativeStateKind.WORLD_RULE and status in {"ACTIVE", "ACTIVATED"}:
         return ReducerSemantics.ACTIVATE
@@ -681,6 +989,202 @@ def _reject_v2_aliases(payload: dict[str, Any]) -> None:
             "NARRATIVE_V2_ALIAS_FORBIDDEN",
             "v2 Narrative State payload contains legacy aliases: " + ", ".join(found),
         )
+
+
+def _normalize_obligation(
+    raw: dict[str, Any],
+    obligation_type: NarrativeObligationType,
+    source_chapter: int,
+    *,
+    legacy_adapter: bool = False,
+) -> dict[str, Any]:
+    value = dict(raw)
+    obligation_id = str(
+        value.get("obligation_id")
+        or value.get("promise_id")
+        or value.get("thread_id")
+        or value.get("mystery_id")
+        or value.get("conflict_id")
+        or value.get("debt_id")
+        or ""
+    )
+    if not obligation_id:
+        raise KernelError(
+            "NARRATIVE_OBLIGATION_ID_REQUIRED",
+            "Narrative obligation requires an explicit stable identity",
+        )
+    status_alias = str(value.get("status") or "OPEN").upper()
+    status_map = {
+        "PLANTED": "OPEN",
+        "PROMISED": "OPEN",
+        "ACTIVE": "DEVELOPING",
+        "DEVELOPED": "DEVELOPING",
+        "PAID": "FULFILLED",
+        "RESOLVED": "FULFILLED",
+        "CLOSED": "FULFILLED",
+        "ABANDONED": "CANCELLED",
+    }
+    status = status_map.get(status_alias, status_alias)
+    if value.get("from_status") is not None:
+        value["from_status"] = status_map.get(
+            str(value["from_status"]).upper(), str(value["from_status"]).upper()
+        )
+    window = value.get("target_window")
+    if not isinstance(window, dict):
+        target_from = int(
+            value.get("target_from_chapter")
+            or value.get("due_from_chapter")
+            or 0
+        )
+        target_to = int(
+            value.get("target_to_chapter")
+            or value.get("due_chapter")
+            or 0
+        )
+        window = {
+            "status": "SCHEDULED" if target_from and target_to else "UNSCHEDULED",
+            "from_chapter": target_from,
+            "to_chapter": target_to,
+        }
+    payoff = value.get("payoff_evidence")
+    if not isinstance(payoff, dict):
+        payoff = {}
+    excluded = {
+        "promise_id",
+        "thread_id",
+        "mystery_id",
+        "conflict_id",
+        "debt_id",
+        "target_from_chapter",
+        "target_to_chapter",
+        "due_from_chapter",
+        "due_chapter",
+    }
+    normalized = {key: item for key, item in value.items() if key not in excluded}
+    normalized.update(
+        {
+            "obligation_id": obligation_id,
+            "obligation_type": obligation_type.value,
+            "status": status,
+            "priority": str(value.get("priority") or "MEDIUM").upper(),
+            "target_window": window,
+            "linked_character_ids": sorted(
+                {str(item) for item in value.get("linked_character_ids") or () if str(item)}
+            ),
+            "linked_arc_ids": sorted(
+                {str(item) for item in value.get("linked_arc_ids") or () if str(item)}
+            ),
+            "linked_event_ids": sorted(
+                {str(item) for item in value.get("linked_event_ids") or () if str(item)}
+            ),
+            "payoff_evidence": payoff,
+            "opened_chapter": int(value.get("opened_chapter") or source_chapter),
+            "lifecycle_migration": (
+                {
+                    "legacy_adapter": True,
+                    "source_status": status_alias,
+                    "target_window_inferred": False,
+                }
+                if legacy_adapter
+                else {}
+            ),
+            "_legacy_obligation_adapter": legacy_adapter,
+        }
+    )
+    return normalized
+
+
+def _validate_event_payload(
+    state_kind: NarrativeStateKind, payload: dict[str, Any]
+) -> None:
+    if state_kind is NarrativeStateKind.CHARACTER_KNOWLEDGE:
+        if str(payload.get("status") or "").upper() not in {
+            "UNKNOWN",
+            "SUSPECTED",
+            "KNOWN",
+            "FORGOTTEN",
+        }:
+            raise KernelError(
+                "CHARACTER_KNOWLEDGE_STATUS_INVALID",
+                "Character Knowledge requires UNKNOWN, SUSPECTED, KNOWN, or FORGOTTEN",
+            )
+    if state_kind is NarrativeStateKind.CHARACTER_BELIEF:
+        if str(payload.get("stance") or "").upper() not in {
+            "BELIEVES",
+            "DOUBTS",
+            "DISBELIEVES",
+            "UNCERTAIN",
+        }:
+            raise KernelError(
+                "CHARACTER_BELIEF_STANCE_INVALID",
+                "Character Belief requires a typed stance",
+            )
+        confidence = payload.get("belief_confidence")
+        if isinstance(confidence, bool) or not isinstance(confidence, (int, float)) or not 0 <= float(confidence) <= 1:
+            raise KernelError(
+                "CHARACTER_BELIEF_CONFIDENCE_INVALID",
+                "Character Belief confidence must be between zero and one",
+            )
+    if state_kind is NarrativeStateKind.NARRATIVE_OBLIGATION:
+        required = ("obligation_id", "obligation_type", "status", "priority")
+        if any(not str(payload.get(key) or "") for key in required):
+            raise KernelError(
+                "NARRATIVE_OBLIGATION_CONTRACT_INVALID",
+                "Narrative obligation identity, type, status, and priority are required",
+            )
+        try:
+            NarrativeObligationType(str(payload["obligation_type"]).upper())
+            status = NarrativeObligationStatus(str(payload["status"]).upper())
+            NarrativeObligationPriority(str(payload["priority"]).upper())
+        except ValueError as exc:
+            raise KernelError(
+                "NARRATIVE_OBLIGATION_CONTRACT_INVALID",
+                "Narrative obligation uses an unsupported type, status, or priority",
+            ) from exc
+        window = payload.get("target_window")
+        if not isinstance(window, dict) or str(window.get("status") or "") not in {
+            "SCHEDULED",
+            "UNSCHEDULED",
+        }:
+            raise KernelError(
+                "NARRATIVE_OBLIGATION_WINDOW_INVALID",
+                "Narrative obligation requires an explicit target-window status",
+            )
+        start = int(window.get("from_chapter") or 0)
+        end = int(window.get("to_chapter") or 0)
+        if window["status"] == "SCHEDULED" and (
+            start <= 0 or end < start
+        ):
+            raise KernelError(
+                "NARRATIVE_OBLIGATION_WINDOW_INVALID",
+                "scheduled obligation window must be positive and ordered",
+            )
+        legacy_unscheduled = bool(
+            payload.get("lifecycle_migration", {}).get("legacy_adapter")
+        )
+        if (
+            status
+            in {
+                NarrativeObligationStatus.DEVELOPING,
+                NarrativeObligationStatus.DUE,
+            }
+            and window["status"] != "SCHEDULED"
+            and not legacy_unscheduled
+        ):
+            raise KernelError(
+                "NARRATIVE_OBLIGATION_WINDOW_REQUIRED",
+                "developing or due obligation must have a scheduled target window",
+            )
+        payoff = payload.get("payoff_evidence")
+        if status is NarrativeObligationStatus.FULFILLED and (
+            not isinstance(payoff, dict)
+            or not str(payoff.get("asset_version_id") or "")
+            or not str(payoff.get("event_id") or "")
+        ):
+            raise KernelError(
+                "NARRATIVE_OBLIGATION_PAYOFF_EVIDENCE_REQUIRED",
+                "fulfilled obligation requires payoff AssetVersion and event evidence",
+            )
 
 
 def _object_items(value: Any) -> list[dict[str, Any]]:
@@ -713,6 +1217,10 @@ __all__ = [
     "NarrativeCoordinate",
     "NarrativeIdentity",
     "NarrativeLayer",
+    "NarrativeObligationPriority",
+    "NarrativeObligationStatus",
+    "NarrativeObligationType",
+    "NarrativePosition",
     "NarrativeScope",
     "NarrativeStateEvent",
     "NarrativeStateKind",

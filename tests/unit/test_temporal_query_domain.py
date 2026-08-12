@@ -67,6 +67,79 @@ def _event(
 
 
 class TemporalQueryDomainTests(unittest.TestCase):
+    def test_explicit_knowledge_belief_arc_and_conflict_are_queryable(self) -> None:
+        service = _FixtureTemporalQueryService(
+            (
+                _event(
+                    accepted_chapter=12,
+                    state_kind="character_knowledge",
+                    payload={
+                        "character_id": "hero",
+                        "fact_id": "fact:heir",
+                        "status": "KNOWN",
+                        "entity_version": 1,
+                    },
+                ),
+                _event(
+                    accepted_chapter=12,
+                    state_kind="character_belief",
+                    payload={
+                        "character_id": "hero",
+                        "proposition_id": "proposition:traitor",
+                        "stance": "DOUBTS",
+                        "belief_confidence": 0.6,
+                        "entity_version": 1,
+                    },
+                    ordinal=1,
+                ),
+                _event(
+                    accepted_chapter=12,
+                    state_kind="character_arc",
+                    payload={
+                        "character_id": "hero",
+                        "arc_id": "arc:trust",
+                        "status": "OPEN",
+                        "entity_version": 1,
+                    },
+                    ordinal=2,
+                ),
+                _event(
+                    accepted_chapter=12,
+                    state_kind="conflict_state",
+                    payload={
+                        "conflict_id": "conflict:crown",
+                        "status": "OPEN",
+                        "entity_version": 1,
+                    },
+                    ordinal=3,
+                ),
+            )
+        )
+
+        self.assertTrue(
+            service.character_knows_at(
+                "project-a", "book-a", "hero", "fact:heir", 12
+            )["knows"]
+        )
+        self.assertEqual(
+            service.character_believes_at(
+                "project-a", "book-a", "hero", "proposition:traitor", 12
+            )["state"]["stance"],
+            "DOUBTS",
+        )
+        self.assertEqual(
+            service.character_arc_at(
+                "project-a", "book-a", "hero", "arc:trust", 12
+            )["state"]["status"],
+            "OPEN",
+        )
+        self.assertEqual(
+            service.conflict_at(
+                "project-a", "book-a", "conflict:crown", 12
+            )["state"]["status"],
+            "OPEN",
+        )
+
     def test_character_knowledge_is_hidden_before_acquisition_chapter(self) -> None:
         service = _FixtureTemporalQueryService(
             (

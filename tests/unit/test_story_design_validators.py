@@ -1,12 +1,52 @@
 from __future__ import annotations
 
 import unittest
+from dataclasses import asdict
 
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.story_design_authority.validators import (
     STORY_DESIGN_VALIDATOR_VERSION,
     validate_story_design_candidate,
 )
+from novel_forge.modules.story_planning_runtime.domain import (
+    GENERATOR_INPUT_ROLES,
+    FrozenPlanningInput,
+    build_planning_constraint_envelope,
+    canonical_hash,
+)
+
+
+def _content_with_constraints(
+    generator: str,
+    scope: str,
+    logical_key: str,
+    payload: dict[str, object],
+) -> dict[str, object]:
+    inputs = tuple(
+        FrozenPlanningInput(
+            role=role,
+            asset_version_id=f"version:{role}",
+            content_hash="sha256:" + "0" * 64,
+            asset_type=role,
+        )
+        for role in GENERATOR_INPUT_ROLES[generator]
+    )
+    envelope = build_planning_constraint_envelope(
+        generator_operation_name=generator,
+        frozen_inputs=inputs,
+        input_contents={role: {} for role in GENERATOR_INPUT_ROLES[generator]},
+        candidate_payload=payload,
+    )
+    return {
+        "schema_version": "story_design.authority.v1",
+        "project_id": "project-1",
+        "generator_operation_name": generator,
+        "planning_scope": scope,
+        "logical_key": logical_key,
+        "candidate_payload": {**payload, "constraint_envelope": envelope},
+        "frozen_inputs": [asdict(item) for item in inputs],
+        "constraint_envelope": envelope,
+    }
 
 
 class StoryDesignValidatorTests(unittest.TestCase):
@@ -14,16 +54,12 @@ class StoryDesignValidatorTests(unittest.TestCase):
         self,
     ) -> None:
         result = validate_story_design_candidate(
-            content={
-                "schema_version": "story_design.authority.v1",
-                "project_id": "project-1",
-                "generator_operation_name": "book_plan.generate",
-                "planning_scope": "BOOK",
-                "logical_key": "book-plan:main",
-                "candidate_payload": {
-                    "objective": "Escalate the central conflict through irreversible choices"
-                },
-            },
+            content=_content_with_constraints(
+                "book_plan.generate",
+                "BOOK",
+                "book-plan:main",
+                {"objective": "Escalate the central conflict through irreversible choices"},
+            ),
             project_id="project-1",
             generator_operation_name="book_plan.generate",
             planning_scope="BOOK",
@@ -42,6 +78,7 @@ class StoryDesignValidatorTests(unittest.TestCase):
                 "SEMANTIC",
                 "GENERATOR_CONTRACT",
                 "PLANNING_SCOPE",
+                "CONSTRAINT_PROPAGATION",
             },
         )
 
@@ -68,18 +105,16 @@ class StoryDesignValidatorTests(unittest.TestCase):
         self,
     ) -> None:
         result = validate_story_design_candidate(
-            content={
-                "schema_version": "story_design.authority.v1",
-                "project_id": "project-1",
-                "generator_operation_name": "chapter_plan.generate",
-                "planning_scope": "CHAPTER",
-                "logical_key": "chapter:1",
-                "candidate_payload": {
+            content=_content_with_constraints(
+                "chapter_plan.generate",
+                "CHAPTER",
+                "chapter:1",
+                {
                     "objective": "A chapter objective",
                     "title": "The Name in the Ledger",
                     "premise": "A clerk preserves an altered ledger at a visible cost.",
                 },
-            },
+            ),
             project_id="project-1",
             generator_operation_name="chapter_plan.generate",
             planning_scope="CHAPTER",
@@ -140,6 +175,38 @@ class StoryDesignValidatorTests(unittest.TestCase):
             )
 
         self.assertEqual(raised.exception.code, "STORY_DESIGN_SCHEMA_INVALID")
+
+    def test_constraint_governance_shape_fails_closed(self) -> None:
+        content = _content_with_constraints(
+            "book_plan.generate",
+            "BOOK",
+            "book-plan:main",
+            {"objective": "Preserve accepted history"},
+        )
+        envelope = dict(content["constraint_envelope"])
+        envelope["change_governance"] = []
+        envelope["envelope_digest"] = canonical_hash(
+            {key: value for key, value in envelope.items() if key != "envelope_digest"}
+        )
+        content["constraint_envelope"] = envelope
+        content["candidate_payload"] = {
+            **dict(content["candidate_payload"]),
+            "constraint_envelope": envelope,
+        }
+
+        with self.assertRaises(KernelError) as raised:
+            validate_story_design_candidate(
+                content=content,
+                project_id="project-1",
+                generator_operation_name="book_plan.generate",
+                planning_scope="BOOK",
+                logical_key="book-plan:main",
+            )
+
+        self.assertEqual(
+            raised.exception.code,
+            "PLANNING_CONSTRAINT_ENVELOPE_INVALID",
+        )
 
 
 if __name__ == "__main__":

@@ -53,6 +53,7 @@ from novel_forge.modules.content_intelligence import (
     build_hook_analysis,
     build_pacing_observation,
 )
+from novel_forge.modules.narrative_state import measure_narrative_runtime
 from novel_forge.modules.production_execution import CommitManifest
 from novel_forge.modules.production_preparation.policies import (
     CONTINUING_CHAPTER_REQUIRED_ASSET_TYPES,
@@ -346,6 +347,15 @@ class _ContextHandler:
             ),
             token_budget=int(
                 request.command.get("context_token_budget", 6000)
+            ),
+            book_id=str(
+                request.command.get("book_id")
+                or plan.content.get("book_id")
+                or f"book:{request.project_id}"
+            ),
+            target_capability_id="prose.chapter.draft",
+            capability_pack_snapshot_ref=str(
+                request.command.get("capability_pack_snapshot_ref") or ""
             ),
         )
         bundle["production_input_manifest"] = manifest
@@ -923,13 +933,101 @@ class _QualityHandler:
             )
             for report in content["evidence_reports"]
         )
+        action_outputs = tuple(
+            ChapterAuxiliaryOutput(
+                asset_type="revision_task",
+                output_key=f"chapter.quality.required_action.{ordinal}",
+                role="required_action",
+                content={
+                    **dict(action),
+                    "type": "GovernedRevisionTask",
+                    "contract_version": "governed-revision-task-v1",
+                    "project_id": request.project_id,
+                    "chapter": int(content["chapter"]),
+                    "target_revision_asset_version_id": revision.asset_version_id,
+                    "source_quality_operation_id": request.operation_id,
+                    "status": "OPEN",
+                    "mutates_accepted_canon": False,
+                },
+                reference_asset_version_ids=tuple(
+                    sorted(
+                        {
+                            revision.asset_version_id,
+                            review.asset_version_id,
+                            canon.asset_version_id,
+                            context.asset_version_id,
+                            *action.get("evidence_asset_version_ids", []),
+                        }
+                    )
+                ),
+                evidence={
+                    "required_authority": action["required_authority"],
+                    "reevaluation_gate": action["reevaluation_gate"],
+                },
+            )
+            for ordinal, action in enumerate(
+                content.get("required_actions", []), start=1
+            )
+        )
+        manifest = dict(context.content.get("context_manifest") or {})
+        authority_boundary = dict(
+            manifest.get("authority_state_boundary") or {}
+        )
+        measurement = measure_narrative_runtime(
+            story_state={
+                "accepted_through_chapter": authority_boundary.get(
+                    "accepted_through_chapter",
+                    max(0, int(content["chapter"]) - 1),
+                ),
+                "state_hash": authority_boundary.get(
+                    "story_state_snapshot_version",
+                    context.content.get("story_state_snapshot_version", ""),
+                ),
+            },
+            context_bundle=context.content,
+            quality_decision=content,
+        )
+        measurement_output = ChapterAuxiliaryOutput(
+            asset_type="narrative_runtime_measurement",
+            output_key="chapter.quality.narrative_runtime_measurement",
+            role="proof_observation",
+            content={
+                **measurement,
+                "project_id": request.project_id,
+                "chapter": int(content["chapter"]),
+                "source_quality_operation_id": request.operation_id,
+                "context_bundle_asset_version_id": context.asset_version_id,
+            },
+            reference_asset_version_ids=tuple(
+                sorted(
+                    {
+                        revision.asset_version_id,
+                        review.asset_version_id,
+                        canon.asset_version_id,
+                        context.asset_version_id,
+                        *(item.asset_version_id for item in groups),
+                    }
+                )
+            ),
+            evidence={
+                "proof_status": measurement["proof_status"],
+                "context_digest": context.content.get(
+                    "actual_context_digest", ""
+                ),
+                "production_verified": False,
+            },
+        )
         return ChapterHandlerOutput(
             asset_type=primary.asset_type,
             output_key=primary.output_key,
             role=primary.role,
             content=primary.content,
             qualification_policy=primary.qualification_policy,
-            auxiliary_outputs=evidence_outputs,
+            auxiliary_outputs=(
+                *evidence_outputs,
+                *action_outputs,
+                measurement_output,
+            ),
         )
 
 

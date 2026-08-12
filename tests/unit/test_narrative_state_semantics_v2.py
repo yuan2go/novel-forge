@@ -218,11 +218,11 @@ def test_current_state_is_entity_aware_and_not_a_history_of_character_changes() 
     assert relation["state"]["status"] == "REPAIRED"
     assert resource["state"]["balance"] == 3
     assert project_entity_state(
-        state, "reader_promise", "promise_id=promise:p"
-    )["state"]["status"] == "PAID"
+        state, "narrative_obligation", "obligation_id=promise:p"
+    )["state"]["status"] == "FULFILLED"
     assert project_entity_state(
-        state, "plot_thread", "thread_id=plot:t"
-    )["state"]["status"] == "RESOLVED"
+        state, "narrative_obligation", "obligation_id=plot:t"
+    )["state"]["status"] == "FULFILLED"
 
 
 def test_as_of_rebuild_exposes_no_future_state() -> None:
@@ -242,14 +242,14 @@ def test_as_of_rebuild_exposes_no_future_state() -> None:
         _at(30), "character_state", "character_id=character:lin"
     )["state"]["location"] == "Beijing"
     assert project_entity_state(
-        _at(39), "reader_promise", "promise_id=promise:p"
+        _at(39), "narrative_obligation", "obligation_id=promise:p"
     )["status"] == "NOT_FOUND"
     assert project_entity_state(
-        _at(79), "reader_promise", "promise_id=promise:p"
+        _at(79), "narrative_obligation", "obligation_id=promise:p"
     )["state"]["status"] == "OPEN"
     assert project_entity_state(
-        _at(80), "reader_promise", "promise_id=promise:p"
-    )["state"]["status"] == "PAID"
+        _at(80), "narrative_obligation", "obligation_id=promise:p"
+    )["state"]["status"] == "FULFILLED"
     assert project_entity_state(
         _at(89),
         "relationship_state",

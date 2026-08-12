@@ -52,6 +52,9 @@ def build_context_bundle(
     version_refs: dict[str, Any] | None = None,
     token_budget: int = 6000,
     required_asset_types: tuple[str, ...] = (),
+    book_id: str = "",
+    target_capability_id: str = "prose.chapter.draft",
+    capability_pack_snapshot_ref: str = "",
 ) -> dict[str, Any]:
     _require_keys(plan, "chapter", "premise")
     objective = str(plan.get("chapter_objective") or plan.get("objective") or "").strip()
@@ -111,6 +114,7 @@ def build_context_bundle(
     refs = {**(version_refs or {}), "chapter_plan_version": plan_asset_version_id}
     governed = build_authority_context_bundle(
         project_id=project_id,
+        book_id=book_id,
         stage="draft",
         created_by_operation_id=created_by_operation_id,
         context_profile_version="draft-context-profile-v2",
@@ -118,6 +122,24 @@ def build_context_bundle(
         token_budget=token_budget,
         version_refs=refs,
         required_asset_types=required_asset_types,
+        narrative_position={
+            "book_id": book_id,
+            "volume_id": str(plan.get("volume_id") or ""),
+            "arc_id": str(plan.get("arc_id") or ""),
+            "sequence_id": str(plan.get("sequence_id") or ""),
+            "chapter": int(plan["chapter"]),
+            "sequence_ordinal": int(plan.get("sequence_ordinal") or 0),
+        },
+        target_capability_id=target_capability_id,
+        capability_pack_snapshot_ref=capability_pack_snapshot_ref,
+        authority_state_boundary={
+            "accepted_through_chapter": max(0, int(plan["chapter"]) - 1),
+            "story_state_snapshot_version": refs.get(
+                "story_state_snapshot_version",
+                refs.get("story_state_snapshot_versions", ""),
+            ),
+            "canon_snapshot_version": refs.get("canon_snapshot_version", ""),
+        },
     )
     return {
         **governed,

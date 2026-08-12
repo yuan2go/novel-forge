@@ -207,6 +207,11 @@ def build_authority_context_bundle(
     token_budget: int,
     version_refs: dict[str, Any] | None = None,
     required_asset_types: Iterable[str] = (),
+    book_id: str = "",
+    narrative_position: dict[str, Any] | None = None,
+    target_capability_id: str = "",
+    capability_pack_snapshot_ref: str = "",
+    authority_state_boundary: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Build the canonical immutable ContextBundle content payload."""
     profile = resolve_context_profile(stage)
@@ -269,8 +274,92 @@ def build_authority_context_bundle(
     ).hexdigest()
     policy_versions = sorted({item.policy_version for item in selection.selected if item.policy_version})
     invalidation_keys = sorted({key for item in selection.selected for key in item.invalidation_keys})
+    normalized_position = _normalize_narrative_position(narrative_position)
+    selected_inputs = [
+        {
+            "asset_version_id": item.asset_version_id,
+            "asset_type": item.asset_type,
+            "physical_asset_type": item.physical_asset_type or item.asset_type,
+            "content_digest": item.content_digest,
+            "inclusion_reason": _inclusion_reason(item, profile),
+            "narrative_function": item.narrative_function,
+            "relevance_score": item.relevance_score,
+            "allowed_use": (
+                "evidence_only"
+                if item.asset_type in profile.evidence_only_types
+                else item.allowed_use
+            ),
+        }
+        for item in selection.selected
+    ]
+    normalized_boundary = {
+        str(key): value
+        for key, value in sorted(dict(authority_state_boundary or {}).items())
+        if value not in (None, "", [], {})
+    }
+    replay_inputs = {
+        "project_id": project_id,
+        "book_id": book_id,
+        "stage": profile.name,
+        "context_profile_version": context_profile_version,
+        "target_capability_id": target_capability_id,
+        "capability_pack_snapshot_ref": capability_pack_snapshot_ref,
+        "narrative_position": normalized_position,
+        "authority_state_boundary": normalized_boundary,
+        "selected_inputs": selected_inputs,
+        "rejected_inputs": list(selection.rejected),
+        "token_budget": selection.token_budget,
+        "selection_policy": {
+            "priority_rules": list(profile.priority_rules),
+            "compression_policy": profile.compression_policy,
+            "copyright_mode": profile.copyright_mode,
+        },
+    }
+    replay_input_digest = "sha256:" + hashlib.sha256(
+        json.dumps(replay_inputs, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    context_manifest = {
+        "type": "NarrativeContextManifest",
+        "contract_version": "narrative-context-manifest-v1",
+        "task": {
+            "stage": profile.name,
+            "target_capability_id": target_capability_id,
+            "created_by_operation_id": created_by_operation_id,
+        },
+        "scope": {"project_id": project_id, "book_id": book_id},
+        "narrative_position": normalized_position,
+        "authority_state_boundary": normalized_boundary,
+        "selected_inputs": selected_inputs,
+        "selected_asset_version_ids": selected,
+        "rejected_inputs": list(selection.rejected),
+        "rejected_asset_versions": list(selection.rejected),
+        "knowledge_usage": [
+            {
+                "asset_version_id": item.asset_version_id,
+                "asset_type": item.asset_type,
+                "narrative_function": item.narrative_function,
+                "target_capability_id": target_capability_id,
+                "capability_pack_snapshot_ref": capability_pack_snapshot_ref,
+            }
+            for item in selection.selected
+            if item.asset_type in {"knowledge_pack", "knowledge_card"}
+        ],
+        "narrative_boundaries": _narrative_boundaries(segments),
+        "token_budget": {
+            "maximum": selection.token_budget,
+            "estimated_used": selection.estimated_tokens,
+            "remaining": selection.token_budget - selection.estimated_tokens,
+        },
+        "replay": {
+            "algorithm": "authority-context-selection-v1",
+            "input_digest": replay_input_digest,
+            "output_context_digest": actual_context_digest,
+        },
+        "policy_versions": policy_versions,
+    }
     return {
         "project_id": project_id,
+        "book_id": book_id,
         "stage": profile.name,
         "context_profile_version": context_profile_version,
         "chapter_plan_version": refs.get("chapter_plan_version", ""),
@@ -290,11 +379,7 @@ def build_authority_context_bundle(
         "selected_asset_versions": selected,
         "selected_asset_version_ids": selected,
         "rejected_asset_versions": list(selection.rejected),
-        "context_manifest": {
-            "selected_asset_version_ids": selected,
-            "rejected_asset_versions": list(selection.rejected),
-            "policy_versions": policy_versions,
-        },
+        "context_manifest": context_manifest,
         "context_segments": stage_view["segments"],
         "stage_context_view": stage_view,
         "token_budget": selection.token_budget,
@@ -319,7 +404,86 @@ def build_authority_context_bundle(
             "priority_rules": list(profile.priority_rules),
             "compression_policy": profile.compression_policy,
         },
-        "context_contract_version": "authority-context-bundle-v4",
+        "context_contract_version": "authority-context-bundle-v5",
+    }
+
+
+def _normalize_narrative_position(value: dict[str, Any] | None) -> dict[str, Any]:
+    raw = dict(value or {})
+    normalized: dict[str, Any] = {}
+    for key in ("book_id", "volume_id", "arc_id", "sequence_id"):
+        text = str(raw.get(key) or "").strip()
+        if text:
+            normalized[key] = text
+    for key in ("chapter", "sequence_ordinal"):
+        item = raw.get(key)
+        if item not in (None, ""):
+            number = int(item)
+            if number < 0 or (key == "chapter" and number == 0):
+                raise ValueError(f"narrative position {key} is invalid")
+            normalized[key] = number
+    return normalized
+
+
+def _inclusion_reason(candidate: ContextCandidate, profile: ContextProfile) -> str:
+    if candidate.asset_type in profile.required_asset_types:
+        return "REQUIRED_BY_CONTEXT_PROFILE"
+    if candidate.narrative_function:
+        return "NARRATIVE_FUNCTION_MATCH"
+    if candidate.asset_type in {"knowledge_pack", "knowledge_card"}:
+        return "CAPABILITY_KNOWLEDGE_SELECTION"
+    return "TASK_RELEVANCE_RANK"
+
+
+def _narrative_boundaries(
+    segments: Iterable[ContextSegment],
+) -> dict[str, list[dict[str, Any]]]:
+    knowledge: list[dict[str, Any]] = []
+    obligations: list[dict[str, Any]] = []
+    state_constraints: list[dict[str, Any]] = []
+    for segment in segments:
+        for fact in segment.structured_facts:
+            kind = str(fact.get("state_kind") or "")
+            state = dict(fact.get("state") or {})
+            base = {
+                "source_asset_version_id": segment.asset_version_id,
+                "state_kind": kind,
+                "entity_key": str(fact.get("entity_key") or ""),
+                "entity_version": int(fact.get("entity_version") or 0),
+                "effective_from_chapter": int(
+                    fact.get("effective_from_chapter") or 0
+                ),
+                "effective_to_chapter": int(
+                    fact.get("effective_to_chapter") or 0
+                ),
+            }
+            if kind in {"character_knowledge", "character_belief"}:
+                knowledge.append({**base, "state": state})
+            elif kind == "narrative_obligation":
+                if str(state.get("status") or "").upper() not in {
+                    "FULFILLED",
+                    "CANCELLED",
+                }:
+                    obligations.append({**base, "state": state})
+            elif kind in {
+                "character_state",
+                "character_arc",
+                "relationship_state",
+                "world_state",
+                "faction_state",
+                "location_state",
+                "world_rule",
+                "consequence_state",
+                "conflict_state",
+            }:
+                state_constraints.append({**base, "state": state})
+    def order(item: dict[str, Any]) -> tuple[str, str]:
+        return (str(item["state_kind"]), str(item["entity_key"]))
+
+    return {
+        "character_knowledge_and_belief": sorted(knowledge, key=order),
+        "unresolved_obligations": sorted(obligations, key=order),
+        "current_state_constraints": sorted(state_constraints, key=order),
     }
 
 

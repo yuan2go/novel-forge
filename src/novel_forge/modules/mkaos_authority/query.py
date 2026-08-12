@@ -254,6 +254,76 @@ class MkaosAuthorityQuery:
             "unchanged_count": len(unchanged),
         }
 
+    def list_runtime_usage(
+        self,
+        *,
+        project_id: str,
+        book_id: str = "",
+        target_capability_id: str = "",
+        result_asset_version_id: str = "",
+        limit: int = 100,
+    ) -> list[dict[str, Any]]:
+        """Trace KnowledgePack cards through Context to a successful result."""
+        _validate(project_id, limit)
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT project_id, book_id,
+                       context_bundle_asset_version_id,
+                       context_build_operation_id,
+                       consumer_operation_id,
+                       consumer_definition_name,
+                       result_asset_version_id, result_asset_type,
+                       target_capability_id, narrative_position, trace_id,
+                       knowledge_pack_id,
+                       knowledge_pack_asset_version_id,
+                       knowledge_card_asset_version_id,
+                       usage_role, frozen_weight,
+                       inclusion_reason, narrative_function, consumed_at
+                FROM authority_mkaos_runtime_usage_projection
+                WHERE project_id=%s
+                  AND (%s='' OR book_id=%s)
+                  AND (%s='' OR target_capability_id=%s)
+                  AND (%s='' OR result_asset_version_id=%s)
+                ORDER BY consumed_at DESC, context_bundle_asset_version_id,
+                         knowledge_pack_id, knowledge_card_asset_version_id
+                LIMIT %s
+                """,
+                [
+                    project_id,
+                    book_id,
+                    book_id,
+                    target_capability_id,
+                    target_capability_id,
+                    result_asset_version_id,
+                    result_asset_version_id,
+                    limit,
+                ],
+            )
+            rows = uow.cursor.fetchall()
+        keys = (
+            "project_id",
+            "book_id",
+            "context_bundle_asset_version_id",
+            "context_build_operation_id",
+            "consumer_operation_id",
+            "consumer_definition_name",
+            "result_asset_version_id",
+            "result_asset_type",
+            "target_capability_id",
+            "narrative_position",
+            "trace_id",
+            "knowledge_pack_id",
+            "knowledge_pack_asset_version_id",
+            "knowledge_card_asset_version_id",
+            "usage_role",
+            "frozen_weight",
+            "inclusion_reason",
+            "narrative_function",
+            "consumed_at",
+        )
+        return [dict(zip(keys, row, strict=True)) for row in rows]
+
 
 def _validate(project_id: str, limit: int) -> None:
     if not project_id or limit < 1 or limit > 500:

@@ -24,6 +24,7 @@ from novel_forge.modules.story_planning_runtime import (
     STORY_PLANNING_OPERATION_TIMEOUT_SECONDS,
     STORY_PLANNING_GENERATION_VERSION,
     StoryPlanningGenerationCommand,
+    build_planning_constraint_envelope,
     story_planning_generation_definition,
 )
 from novel_forge.modules.story_planning_runtime.execution import (
@@ -419,3 +420,45 @@ def test_planning_agent_cannot_claim_chapter_commit_authority() -> None:
             inputs=_inputs(command),
             definition=GENERATOR_CATALOG[command.generator_operation_name],
         )
+
+
+def test_planning_constraint_envelope_propagates_parent_invariants_and_scope() -> None:
+    command = _command("chapter_plan.generate")
+    inputs = _inputs(command)
+    contents = {role: {} for role in GENERATOR_INPUT_ROLES[command.generator_operation_name]}
+    contents["book_plan"] = {
+        "invariants": ["the succession law cannot be waived"],
+        "prohibited_outcomes": ["the dead regent returns alive"],
+    }
+    contents["story_state"] = {
+        "accepted_through_chapter": 11,
+        "unresolved_obligation_ids": ["obligation:sealed-door"],
+    }
+
+    envelope = build_planning_constraint_envelope(
+        generator_operation_name=command.generator_operation_name,
+        frozen_inputs=inputs,
+        input_contents=contents,
+        candidate_payload={
+            "objective": "Force the heir to choose publicly",
+            "prohibited_outcomes": ["resolve the sealed door off-page"],
+        },
+    )
+
+    assert envelope["planning_scope"] == "CHAPTER"
+    assert envelope["permitted_change_scope"] == "CHAPTER"
+    assert envelope["accepted_state_boundary"] == {
+        "accepted_through_chapter": 11,
+        "future_plan_only": True,
+    }
+    assert len(envelope["parent_versions"]) == len(
+        GENERATOR_INPUT_ROLES["chapter_plan.generate"]
+    )
+    assert envelope["inherited_invariants"][0]["constraint"] == (
+        "the succession law cannot be waived"
+    )
+    assert envelope["required_obligations"][0]["constraint"] == (
+        "obligation:sealed-door"
+    )
+    assert envelope["change_governance"]["preserve_executed_history"] is True
+    assert envelope["envelope_digest"].startswith("sha256:")

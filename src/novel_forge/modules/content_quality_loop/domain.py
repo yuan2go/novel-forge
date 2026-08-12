@@ -101,6 +101,7 @@ def evaluate_quality_evidence(
         round(sum(float(item["score"]) * float(item["weight"]) for item in scored) / weight, 4)
         if weight else None
     )
+    required_actions = derive_quality_actions(dimensions)
     return {
         "project_id": project_id,
         "chapter": revision["chapter"],
@@ -130,8 +131,67 @@ def evaluate_quality_evidence(
             for item in dimensions
         ) else "PASSED",
         "blocking_dimensions": [item["dimension"] for item in blocking],
-        "quality_contract_version": "chapter-quality-aggregate-v2",
+        "decision_chain": {
+            "contract_version": "quality-decision-chain-v1",
+            "observations": [item["dimension"] for item in dimensions],
+            "evidence_asset_version_ids": sorted(
+                {
+                    str(item.get("evidence_asset_version_id") or "")
+                    for item in dimensions
+                    if str(item.get("evidence_asset_version_id") or "")
+                }
+            ),
+            "issues": [item["issue"] for item in required_actions],
+            "required_actions": required_actions,
+            "reevaluation_gate": "chapter.quality.aggregate",
+        },
+        "required_actions": required_actions,
+        "quality_contract_version": "chapter-quality-aggregate-v3",
     }
+
+
+def derive_quality_actions(dimensions: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Turn failed evidence into bounded, traceable work; never infer broad replans."""
+    actions: list[dict[str, Any]] = []
+    passing = {
+        "PASSED",
+        "PASSED_WITH_WARNINGS",
+        "PASSED_WITH_UNCALIBRATED",
+        "WAIVED_BY_APPROVAL",
+    }
+    for item in dimensions:
+        status = str(item.get("gate_status") or "UNCALIBRATED").upper()
+        if status in passing or not bool(item.get("blocking")):
+            continue
+        dimension = str(item.get("dimension") or "unknown")
+        evidence_id = str(item.get("evidence_asset_version_id") or "")
+        action = "CHAPTER_ADJUSTMENT" if dimension in {
+            "commercial",
+            "commercial_quality",
+            "longform",
+            "longform_quality",
+        } else "LOCAL_REPAIR"
+        actions.append(
+            {
+                "observation": dimension,
+                "evidence_asset_version_ids": [evidence_id] if evidence_id else [],
+                "issue": {
+                    "code": f"QUALITY_{dimension.upper()}_FAILED",
+                    "severity": "BLOCKING",
+                    "status": "OPEN",
+                },
+                "required_action": action,
+                "permitted_change_scope": "CHAPTER",
+                "required_authority": "CHAPTER_AUTHORITY",
+                "preserved_invariants": [
+                    "accepted_canon",
+                    "executed_chapter_history",
+                    "active_parent_plan_identity",
+                ],
+                "reevaluation_gate": str(item.get("gate_type") or ""),
+            }
+        )
+    return actions
 
 
 def _normalize_evidence_dimension(
@@ -185,4 +245,8 @@ def _review_calibration(review: dict[str, Any]) -> str:
     return "PROVIDER_UNCALIBRATED" if _review_source(review) == "provider_judge" else "UNCALIBRATED"
 
 
-__all__ = ["QUALITY_GATE_TYPES", "evaluate_quality_evidence"]
+__all__ = [
+    "QUALITY_GATE_TYPES",
+    "derive_quality_actions",
+    "evaluate_quality_evidence",
+]

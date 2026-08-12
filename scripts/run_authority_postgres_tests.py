@@ -29,6 +29,7 @@ def main() -> int:
         "test_external_effect_*_postgres.py",
         "test_production_execution_*_postgres.py",
         "test_mkaos_authority_postgres.py",
+        "test_narrative_*_postgres.py",
         "test_source_document_authority_postgres.py",
         "test_source_deconstruction_authority_postgres.py",
         "test_agent_collaboration_postgres.py",

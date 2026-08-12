@@ -227,11 +227,14 @@ class PostgreSQLOnlyChapterSliceTests(unittest.TestCase):
         self.assertEqual(len(manifest["operations"]), 1 + len(ChapterNode))
         # The primary node outputs are accompanied by 41 dimension evidence
         # assets, deterministic continuity/Hook/Pacing/preparation/Plan/Context
-        # evidence, and one frozen-context coverage report per Quality group.
+        # evidence, one frozen-context coverage report per Quality group, and
+        # one mandatory Narrative Runtime measurement at Quality fan-in.
         # Canon no longer emits eleven delta arrays mislabeled as snapshots;
         # accepted current state is materialized with ChapterOutcome at Book
         # acceptance. Keep the count tied to the remaining protocol families.
-        expected_output_count = len(ChapterNode) + 41 + 6 + len(QUALITY_GROUP_NODES)
+        expected_output_count = (
+            len(ChapterNode) + 41 + 7 + len(QUALITY_GROUP_NODES)
+        )
         self.assertEqual(len(manifest["outputs"]), expected_output_count)
         self.assertEqual(
             len(

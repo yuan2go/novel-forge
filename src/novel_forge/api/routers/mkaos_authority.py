@@ -189,6 +189,23 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
         except KernelError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
 
+    @router.get("/product/mkaos/runtime-usage")
+    def runtime_usage(
+        project_id: str,
+        book_id: str = "",
+        target_capability_id: str = "",
+        result_asset_version_id: str = "",
+        limit: int = Query(default=100, ge=1, le=500),
+    ) -> list[dict[str, Any]]:
+        _authorize("mkaos.authority.query", project_id)
+        return query.list_runtime_usage(
+            project_id=project_id,
+            book_id=book_id,
+            target_capability_id=target_capability_id,
+            result_asset_version_id=result_asset_version_id,
+            limit=limit,
+        )
+
     return router
 
 

@@ -71,6 +71,7 @@ class AuthorityApiSurfaceTests(unittest.TestCase):
                 "/product/mkaos/knowledge-packs",
                 "/product/mkaos/knowledge-packs/{knowledge_pack_id}",
                 "/product/mkaos/knowledge-packs/{knowledge_pack_id}/diff",
+                "/product/mkaos/runtime-usage",
                 "/product/temporal-query",
                 "/product/content-intelligence/pacing",
                 "/product/content-intelligence/hooks",
