@@ -181,6 +181,86 @@ def test_drive_accepts_supervisor_generated_future_chapter_plan() -> None:
     ]
 
 
+def test_drive_advances_generated_group_and_governed_replan() -> None:
+    proof = _load_script()
+    request = {
+        "chapter_request_id": "chapter-request:31",
+        "chapter_number": 31,
+        "chapter_root_operation_id": "chapter-root:31",
+    }
+    approvals: list[str] = []
+    authority = SimpleNamespace(
+        require=lambda _book_run_id: {"active_chapter_request_id": ""},
+        require_chapter_request=lambda _request_id: dict(request),
+    )
+    actions = (
+        proof.SupervisorAction.CLOSE_CHAPTER_GROUP,
+        proof.SupervisorAction.GENERATE_CHAPTER_GROUP,
+        proof.SupervisorAction.FREEZE_CHAPTER_GROUP_PLAN,
+        proof.SupervisorAction.START_REPLAN,
+        proof.SupervisorAction.WAIT_REPLAN_APPROVAL,
+        proof.SupervisorAction.ACTIVATE_REPLAN,
+        proof.SupervisorAction.START_CHAPTER_GROUP,
+        proof.SupervisorAction.GENERATE_CHAPTER_PLAN,
+        proof.SupervisorAction.FREEZE_CHAPTER_PLAN,
+        proof.SupervisorAction.DISPATCH_CHAPTER,
+    )
+    ticks = iter(
+        BookProductionSupervisorTick(
+            book_run_id="book-run:1",
+            previous_state="READY",
+            state="READY",
+            action=action,
+            operation_id=f"operation:{index}",
+            evidence_ref=(
+                "replan:31"
+                if action is proof.SupervisorAction.WAIT_REPLAN_APPROVAL
+                else request["chapter_request_id"]
+                if action is proof.SupervisorAction.DISPATCH_CHAPTER
+                else f"evidence:{index}"
+            ),
+        )
+        for index, action in enumerate(actions, start=1)
+    )
+    supervisor = SimpleNamespace(
+        authority=authority,
+        tick=lambda _book_run_id: next(ticks),
+    )
+
+    dispatched, observed = proof._drive_to_chapter_dispatch(
+        supervisor,
+        book_run_id="book-run:1",
+        chapter_number=31,
+        approve_replan=approvals.append,
+    )
+
+    assert dispatched == request
+    assert approvals == ["replan:31"]
+    assert [item["action"] for item in observed] == list(actions)
+
+
+def test_drive_fails_closed_when_replan_approval_is_unavailable() -> None:
+    proof = _load_script()
+    authority = SimpleNamespace(
+        require=lambda _book_run_id: {"active_chapter_request_id": ""}
+    )
+    supervisor = SimpleNamespace(
+        authority=authority,
+        tick=lambda _book_run_id: BookProductionSupervisorTick(
+            book_run_id="book-run:1",
+            previous_state="REPLAN_APPROVAL_PENDING",
+            state="REPLAN_APPROVAL_PENDING",
+            action=proof.SupervisorAction.WAIT_REPLAN_APPROVAL,
+            evidence_ref="replan:1",
+        ),
+    )
+
+    with pytest.raises(RuntimeError, match="governed Replan approval"):
+        proof._drive_to_chapter_dispatch(
+            supervisor, book_run_id="book-run:1", chapter_number=2
+        )
+
+
 def test_release_checkout_accepts_current_clean_campaign_branch(monkeypatch) -> None:
     proof = _load_script()
     values = {

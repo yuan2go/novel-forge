@@ -13,7 +13,7 @@ import os
 from pathlib import Path
 import subprocess
 from types import SimpleNamespace
-from typing import Any, Mapping
+from typing import Any, Callable, Mapping
 from uuid import uuid4
 
 from novel_forge.api.authority_dependencies import (
@@ -327,6 +327,35 @@ def _proof_platform_profile_content() -> dict[str, Any]:
     }
 
 
+def _campaign_chapter_matrix(
+    campaign_contract: Mapping[str, Any],
+) -> tuple[dict[str, Any], ...]:
+    book = dict(campaign_contract["book"])
+    rows: list[dict[str, Any]] = []
+    for volume in book["volumes"]:
+        volume_row = dict(volume)
+        for beat in book["chapter_pattern"]:
+            beat_row = dict(beat)
+            offset = int(beat_row.pop("offset"))
+            rows.append(
+                {
+                    "chapter": (int(volume_row["volume"]) - 1) * 30 + offset,
+                    "offset": offset,
+                    "volume": int(volume_row["volume"]),
+                    "volume_title": volume_row["title"],
+                    "volume_goal": volume_row["goal"],
+                    "volume_pressure": volume_row["pressure"],
+                    "volume_reward": volume_row["reward"],
+                    "volume_cost": volume_row["cost"],
+                    "volume_ending_escalation": volume_row["ending_escalation"],
+                    **beat_row,
+                }
+            )
+    if [int(item["chapter"]) for item in rows] != list(range(1, 301)):
+        raise ValueError("Campaign chapter matrix must be contiguous 1..300")
+    return tuple(rows)
+
+
 def _bootstrap_assets(
     database_url: str,
     *,
@@ -336,6 +365,7 @@ def _bootstrap_assets(
     build_id: str,
     commit_sha: str,
     principal: Principal,
+    campaign_contract: Mapping[str, Any] | None = None,
 ) -> dict[str, str]:
     rows: dict[str, tuple[str, dict[str, Any]]] = {
         "world_bible": (
@@ -440,6 +470,147 @@ def _bootstrap_assets(
             {"chapter_number": 3, "function": "payoff", "hook": "the public cost"},
         ),
     }
+    if campaign_contract is not None:
+        book = dict(campaign_contract["book"])
+        ground_truth = dict(campaign_contract["ground_truth"])
+        target_chapters = int(book["target_chapters"])
+        world_bible = _proof_world_bible_content()
+        world_bible["safe_summary"] = (
+            "Frozen world rules and institutional constraints from the long-form "
+            "Proof Campaign contract."
+        )
+        world_bible["structured_facts"] = [
+            {"key": "world_rules", "value": ground_truth["world_rules"]},
+            {
+                "key": "factions",
+                "value": ground_truth.get("factions", []),
+            },
+            {
+                "key": "locations",
+                "value": ground_truth.get("locations", []),
+            },
+            {
+                "key": "resources",
+                "value": ground_truth.get("resources", []),
+            },
+            {
+                "key": "campaign_contract_identity",
+                "value": campaign_contract.get("contract_identity"),
+            },
+        ]
+        rows.update(
+            {
+                "world_bible": ("world_bible", world_bible),
+                "character_cast": (
+                    "character_cast",
+                    {
+                        "characters": ground_truth["characters"],
+                        "relationships": ground_truth.get("relationships", []),
+                        "knowledge_matrix": ground_truth["knowledge_matrix"],
+                    },
+                ),
+                "theme_contract": (
+                    "theme_contract",
+                    {"question": book["theme"]},
+                ),
+                "ending_intent": (
+                    "ending_intent",
+                    {"ending": book["ending_intent"]},
+                ),
+                "reader_promise": (
+                    "reader_promise",
+                    {"promise": book["reader_promise"]},
+                ),
+                "production_profile": (
+                    "production_profile",
+                    {
+                        "profile_id": "production:longform-narrative-proof:v1",
+                        "target_chapter_count": target_chapters,
+                        "campaign_id": campaign_contract["campaign_id"],
+                        "campaign_version": campaign_contract["campaign_version"],
+                    },
+                ),
+                "story_state": (
+                    "story_state",
+                    {
+                        "chapter_number": 0,
+                        "facts": [],
+                        "knowledge_matrix": ground_truth["knowledge_matrix"],
+                    },
+                ),
+                "canon_snapshot": (
+                    "canon_snapshot",
+                    {
+                        "chapter_number": 0,
+                        "facts": ground_truth["world_rules"],
+                    },
+                ),
+                "arc_portfolio": (
+                    "arc_portfolio",
+                    {"arcs": ground_truth.get("character_arcs", [])},
+                ),
+                "ending_reachability": (
+                    "ending_reachability",
+                    {"status": "REACHABLE", "target_chapter": target_chapters},
+                ),
+                "character_arc_portfolio": (
+                    "character_arc_portfolio",
+                    {"arcs": ground_truth.get("character_arcs", [])},
+                ),
+                "conflict_state": (
+                    "conflict_state",
+                    {"volumes": book["volumes"]},
+                ),
+                "promise_ledger": (
+                    "promise_ledger",
+                    {"open": ground_truth["obligations"], "paid": []},
+                ),
+                "foreshadowing_ledger": (
+                    "foreshadowing_ledger",
+                    {"open": ground_truth["obligations"], "paid": []},
+                ),
+                "foreshadowing_state": (
+                    "foreshadowing_state",
+                    {"open": ground_truth["obligations"], "paid": []},
+                ),
+                "character_state": (
+                    "character_state",
+                    {
+                        "chapter_number": 0,
+                        "characters": ground_truth["characters"],
+                        "relationships": ground_truth.get("relationships", []),
+                    },
+                ),
+                "reward_ledger": (
+                    "reward_ledger",
+                    {"open": ground_truth["obligations"], "paid": []},
+                ),
+            }
+        )
+        rows = {
+            key: value
+            for key, value in rows.items()
+            if not key.startswith("chapter_row_")
+        }
+        for chapter in _campaign_chapter_matrix(campaign_contract):
+            number = int(chapter["chapter"])
+            rows[f"chapter_row_{number}"] = (
+                "chapter_function_matrix_row",
+                {
+                    "chapter_number": number,
+                    "function": chapter["function"],
+                    "goal": chapter["volume_goal"],
+                    "conflict": chapter["volume_pressure"],
+                    "pressure_delta": chapter["pressure_delta"],
+                    "information_gain": chapter["information_gain"],
+                    "hook": chapter["hook"],
+                    "volume": chapter["volume"],
+                    "volume_title": chapter["volume_title"],
+                    "required_payoff": chapter["volume_reward"],
+                    "cost": chapter["volume_cost"],
+                    "prohibited_outcomes": ["silent reset", "future knowledge leak"],
+                },
+            )
     with AuthorityUnitOfWork(database_url) as uow:
         uow.repositories.definitions.register(
             _bootstrap_definition(build_id, commit_sha)
@@ -697,7 +868,21 @@ def _seed_project_and_active_design(
     build_id: str,
     commit_sha: str,
     principal: Principal,
+    campaign_contract: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
+    campaign_book = (
+        dict(campaign_contract["book"])
+        if campaign_contract is not None
+        else {
+            "title": "The Ledger Under Rain",
+            "genre": "original civic fantasy mystery",
+            "premise": "An archive clerk finds a living witness recorded as dead.",
+            "theme": "truth becomes accountable only when someone pays its cost",
+            "reader_promise": "three escalating choices with auditable consequences",
+            "ending_intent": "the evidence becomes public and creates a new obligation",
+            "target_chapters": 3,
+        }
+    )
     ProjectAuthorityApplication(
         database_url, application_build_id=build_id, commit_sha=commit_sha
     ).execute(
@@ -709,7 +894,7 @@ def _seed_project_and_active_design(
             idempotency_key=f"project:create:{project_id}",
             trace_id=f"trace:{project_id}",
             correlation_id=f"correlation:{project_id}",
-            payload={"title": "The Ledger Under Rain", "stage": "PRODUCTION"},
+            payload={"title": campaign_book["title"], "stage": "PRODUCTION"},
         ),
         principal=principal,
     )
@@ -731,7 +916,7 @@ def _seed_project_and_active_design(
             trace_id=f"trace:{project_id}:book:create",
             payload={
                 "schema_version": "book-authority.v1",
-                "title": "The Ledger Under Rain",
+                "title": campaign_book["title"],
                 "production_profile": {"environment": "validation"},
                 "runtime_policy": {"legacy_write": False, "silent_fallback": False},
                 "release_identity": f"{build_id}@{commit_sha}",
@@ -751,13 +936,13 @@ def _seed_project_and_active_design(
             trace_id=f"trace:{project_id}:book-design:propose",
             payload={
                 "schema_version": "book-design.v1",
-                "title": "The Ledger Under Rain",
-                "genre": "original civic fantasy mystery",
-                "premise": "An archive clerk finds a living witness recorded as dead.",
-                "theme": "truth becomes accountable only when someone pays its cost",
+                "title": campaign_book["title"],
+                "genre": campaign_book["genre"],
+                "premise": campaign_book["premise"],
+                "theme": campaign_book["theme"],
                 "core_conflict": "public truth versus institutional safety",
-                "reader_promise": "three escalating choices with auditable consequences",
-                "ending": "the evidence becomes public and creates a new obligation",
+                "reader_promise": campaign_book["reader_promise"],
+                "ending": campaign_book["ending_intent"],
                 "protagonist": {
                     "name": "Lin Qiao",
                     "external_goal": "preserve the erased ledger",
@@ -769,7 +954,7 @@ def _seed_project_and_active_design(
                     "official records carry revision traces",
                     "public correction imposes a named civic debt",
                 ],
-                "target_chapters": 3,
+                "target_chapters": int(campaign_book["target_chapters"]),
             },
             **base,
         ),
@@ -798,7 +983,7 @@ def _seed_project_and_active_design(
             target_asset_version_id=str(proposed["asset_version_id"]),
             idempotency_key=f"book-design:activate:{book_id}",
             trace_id=f"trace:{project_id}:book-design:activate",
-            payload={"reason": "approved short long-form proof design"},
+            payload={"reason": "approved governed long-form proof design"},
             **base,
         ),
         principal=principal,
@@ -1063,7 +1248,10 @@ def _run_planning(
     planning_profile: LongformCapabilityPackProfile,
     build_id: str,
     commit_sha: str,
+    initial_chapter_group_end: int = 3,
 ) -> tuple[Any, dict[str, str], dict[int, dict[str, Any]], dict[str, Any]]:
+    if initial_chapter_group_end < 1:
+        raise ValueError("initial_chapter_group_end must be positive")
     failure = OneShotMeasuredProviderFailure()
     planning = build_story_planning_generation_application(
         settings,
@@ -1184,7 +1372,7 @@ def _run_planning(
         ("arc_plan.generate", "arc:primary", ""),
         (
             "chapter_group_plan.generate",
-            "chapter-group:1-3",
+            f"chapter-group:1-{initial_chapter_group_end}",
             "",
         ),
         ("chapter_plan.generate", "chapter:1", ""),
@@ -2867,6 +3055,8 @@ def _drive_to_chapter_dispatch(
     *,
     book_run_id: str,
     chapter_number: int,
+    approve_replan: Callable[[str], None] | None = None,
+    max_ticks: int = 32,
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     ticks: list[dict[str, Any]] = []
     book = supervisor.authority.require(book_run_id)
@@ -2878,7 +3068,7 @@ def _drive_to_chapter_dispatch(
         ):
             raise RuntimeError("active Book Chapter request differs from resume target")
         return request, ticks
-    for _ in range(12):
+    for _ in range(max_ticks):
         tick = supervisor.tick(book_run_id)
         row = _jsonable(asdict(tick))
         ticks.append(row)
@@ -2894,17 +3084,37 @@ def _drive_to_chapter_dispatch(
             if int(request["chapter_number"]) != chapter_number:
                 raise RuntimeError("Supervisor dispatched the wrong Chapter")
             return request, ticks
-        if tick.action is SupervisorAction.GENERATE_CHAPTER_PLAN:
-            # Future Chapter Plans are expected to be generated by the governed
-            # Planning seam.  The next Supervisor tick freezes and dispatches
-            # that durable Authority output.
-            continue
         if tick.action in {
             SupervisorAction.GENERATE_CHAPTER_GROUP,
+            SupervisorAction.FREEZE_CHAPTER_GROUP_PLAN,
+            SupervisorAction.START_CHAPTER_GROUP,
+            SupervisorAction.CLOSE_CHAPTER_GROUP,
+            SupervisorAction.GENERATE_CHAPTER_PLAN,
+            SupervisorAction.FREEZE_CHAPTER_PLAN,
+            SupervisorAction.SCHEDULE_READER_OUTCOME,
+            SupervisorAction.SCHEDULE_LONGFORM_RECAP,
+            SupervisorAction.UPDATE_CHECKPOINTS,
             SupervisorAction.START_REPLAN,
+            SupervisorAction.ACTIVATE_REPLAN,
+            SupervisorAction.CONTINUE,
+            SupervisorAction.NO_ACTION,
         }:
+            # These are durable Supervisor-owned transitions. A long-form
+            # driver observes and advances them; it does not duplicate their
+            # state or write Planning/Book projections directly.
+            continue
+        if tick.action is SupervisorAction.WAIT_REPLAN_APPROVAL:
+            if approve_replan is None:
+                raise RuntimeError(
+                    "Supervisor requires governed Replan approval but no "
+                    "approval callback was supplied"
+                )
+            approve_replan(tick.evidence_ref)
+            continue
+        if tick.action is SupervisorAction.WAIT_PLAN_APPROVAL:
             raise RuntimeError(
-                f"Supervisor unexpectedly generated missing Authority input: {tick.action}"
+                "Supervisor requires Story Planning approval; this release has "
+                "no public Book resume transition for a pending generated plan"
             )
     raise RuntimeError(f"Supervisor did not dispatch Chapter {chapter_number}")
 
