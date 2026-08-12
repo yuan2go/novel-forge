@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any
-from uuid import uuid4
 
 from novel_forge.modules.authority_security import Principal
 from novel_forge.modules.book_production import (
@@ -17,11 +16,6 @@ from novel_forge.modules.chapter_group_authority import (
     StartChapterGroupCommand,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
-from novel_forge.modules.command_kernel.service import (
-    AdmissionContext,
-    TransactionCheckpoint,
-    execute_transaction_command,
-)
 from novel_forge.modules.hierarchical_planning import (
     PlanContractType,
     PlanExecutionScope,
@@ -36,14 +30,13 @@ from novel_forge.modules.story_planning_runtime import (
     StoryPlanningGenerationApplication,
     StoryPlanningGenerationCommand,
 )
-from novel_forge.storage.authority_uow import AuthorityUnitOfWork
-
 from .governed_scheduler import PostgresBookAuthorityScheduler
 from .production import (
     BookProductionState,
     PostgresBookAuthority,
     SubmitBookChapterCommand,
 )
+from .queries import PostgresBookProductionQuery
 
 
 @dataclass(frozen=True, slots=True)
@@ -65,6 +58,7 @@ class PostgresBookProductionSupervisor:
         *,
         planning: StoryPlanningGenerationApplication,
         chapter_groups: PostgresChapterGroupAuthority,
+        query: PostgresBookProductionQuery,
         principal: Principal,
         replan: Any,
         production_preparation: ProductionPreparationService,
@@ -81,6 +75,7 @@ class PostgresBookProductionSupervisor:
         self.authority = authority
         self.planning = planning
         self.chapter_groups = chapter_groups
+        self.query = query
         self.principal = principal
         self.replan = replan
         self.context_token_budget = context_token_budget
@@ -88,7 +83,9 @@ class PostgresBookProductionSupervisor:
             quality_context_token_budget or context_token_budget
         )
         self.production_preparation = production_preparation
-        self.scheduler = PostgresBookAuthorityScheduler(authority, principal=principal)
+        self.scheduler = PostgresBookAuthorityScheduler(
+            authority, query=query, principal=principal
+        )
         self.checkpoints = PostgresBookNarrativeCheckpointAuthority(
             authority.database_url,
             application_build_id=authority.application_build_id,
@@ -195,12 +192,21 @@ class PostgresBookProductionSupervisor:
             action = self._scheduler_action(sidecar.action)
             if action is not SupervisorAction.NO_ACTION:
                 return self._result(book_run_id, before, action, sidecar.operation_id)
-            replan_report_id = self._checkpoint_replan_report(book)
+            replan_report_id = self.query.checkpoint_replan_report_id(
+                book_run_id=str(book["book_run_id"]),
+                accepted_through_chapter=int(book["accepted_through_chapter"]),
+            )
             if replan_report_id:
                 # A checkpoint finding becomes executable only after the
                 # governed Recap has emitted its Replan Request.
-                self._replan_source(book)
-                self._set_state(book, BookProductionState.REPLAN_REQUIRED)
+                self.query.require_replan_source(book_run_id=str(book["book_run_id"]))
+                self.authority.advance_supervisor_checkpoint(
+                    str(book["book_run_id"]),
+                    expected_version=int(book["version"]),
+                    expected_state=str(book["state"]),
+                    target_state=BookProductionState.REPLAN_REQUIRED,
+                    principal=self.principal,
+                )
                 return self._result(
                     book_run_id,
                     before,
@@ -228,7 +234,13 @@ class PostgresBookProductionSupervisor:
         if before == BookProductionState.COMPLETED.value:
             return self._result(book_run_id, before, SupervisorAction.NO_ACTION)
         if next_chapter > int(book["target_chapter_count"]):
-            self._set_state(book, BookProductionState.COMPLETED)
+            self.authority.advance_supervisor_checkpoint(
+                str(book["book_run_id"]),
+                expected_version=int(book["version"]),
+                expected_state=str(book["state"]),
+                target_state=BookProductionState.COMPLETED,
+                principal=self.principal,
+            )
             return self._result(book_run_id, before, SupervisorAction.COMPLETE)
         group = self._active_plan(book, "CHAPTER_GROUP", next_chapter)
         if group is None:
@@ -240,7 +252,13 @@ class PostgresBookProductionSupervisor:
                 if result.status is PlanningGenerationStatus.ACTIVE
                 else BookProductionState.PLAN_APPROVAL_PENDING
             )
-            self._set_state(book, target)
+            self.authority.advance_supervisor_checkpoint(
+                str(book["book_run_id"]),
+                expected_version=int(book["version"]),
+                expected_state=str(book["state"]),
+                target_state=target,
+                principal=self.principal,
+            )
             return self._result(
                 book_run_id,
                 before,
@@ -298,7 +316,13 @@ class PostgresBookProductionSupervisor:
                 if result.status is PlanningGenerationStatus.ACTIVE
                 else BookProductionState.PLAN_APPROVAL_PENDING
             )
-            self._set_state(book, target)
+            self.authority.advance_supervisor_checkpoint(
+                str(book["book_run_id"]),
+                expected_version=int(book["version"]),
+                expected_state=str(book["state"]),
+                target_state=target,
+                principal=self.principal,
+            )
             return self._result(
                 book_run_id,
                 before,
@@ -322,7 +346,9 @@ class PostgresBookProductionSupervisor:
                 "BOOK_SUPERVISOR_CHAPTER_PLAN_NOT_EXECUTABLE",
                 "ChapterPlan must be Frozen before Chapter dispatch",
             )
-        execution_plan = self._chapter_execution_plan(chapter_plan)
+        execution_plan = self.query.require_chapter_execution_plan(
+            str(chapter_plan["asset_version_id"])
+        )
         explicit_overrides: dict[str, str | list[str]] = {
             "chapter_plan": str(execution_plan["asset_version_id"])
         }
@@ -429,7 +455,9 @@ class PostgresBookProductionSupervisor:
     ) -> Any:
         inputs = self._resolve_generation_inputs(book, generator)
         parent = (
-            self._snapshot(book)["current_volume_plan_version"]
+            self.query.require_input_snapshot(str(book["input_snapshot_id"]))[
+                "current_volume_plan_version"
+            ]
             if generator == "chapter_group_plan.generate"
             else str(
                 self._active_plan(book, "CHAPTER_GROUP", chapter_number)[
@@ -465,7 +493,7 @@ class PostgresBookProductionSupervisor:
     def _resolve_generation_inputs(
         self, book: dict[str, Any], generator: str
     ) -> dict[str, str]:
-        snapshot = self._snapshot(book)
+        snapshot = self.query.require_input_snapshot(str(book["input_snapshot_id"]))
         fixed = {
             "book_plan": snapshot["book_plan_version"],
             "volume_plan": snapshot["current_volume_plan_version"],
@@ -510,77 +538,21 @@ class PostgresBookProductionSupervisor:
                 "chapter_outcome",
             ),
         }.get(role, (role,))
-        with AuthorityUnitOfWork(self.authority.database_url) as uow:
-            uow.cursor.execute(
-                """
-                SELECT version.asset_version_id
-                FROM authority_asset AS asset
-                JOIN authority_asset_version AS version ON version.asset_id=asset.asset_id
-                WHERE asset.project_id=%s AND asset.asset_type=ANY(%s)
-                  AND version.lifecycle='ACTIVE' AND version.eligibility='ELIGIBLE'
-                  AND version.governance='CLEAR'
-                  AND COALESCE(version.content->>'book_id', %s)=%s
-                ORDER BY version.created_at DESC, version.version_number DESC
-                LIMIT 1
-                """,
-                [book["project_id"], list(aliases), book["book_id"], book["book_id"]],
-            )
-            row = uow.cursor.fetchone()
-        return str(row[0]) if row is not None else ""
+        return self.query.latest_eligible_role_asset(
+            project_id=str(book["project_id"]),
+            book_id=str(book["book_id"]),
+            asset_types=aliases,
+        )
 
     def _active_plan(
         self, book: dict[str, Any], contract_type: str, chapter_number: int
     ) -> dict[str, Any] | None:
-        with AuthorityUnitOfWork(self.authority.database_url) as uow:
-            uow.cursor.execute(
-                """
-                SELECT binding.asset_version_id, version.content_hash,
-                       version.content, binding.parent_version_id,
-                       binding.execution_scope
-                FROM active_story_plan_version AS active
-                JOIN story_plan_binding AS binding ON binding.binding_id=active.binding_id
-                JOIN authority_asset_version AS version
-                  ON version.asset_version_id=binding.asset_version_id
-                WHERE active.project_id=%s AND active.book_id=%s
-                  AND binding.contract_type=%s AND binding.freshness='CURRENT'
-                ORDER BY active.activated_at DESC
-                """,
-                [book["project_id"], book["book_id"], contract_type],
-            )
-            rows = uow.cursor.fetchall()
-        matches = []
-        for row in rows:
-            content = dict(row[2])
-            if contract_type == "CHAPTER":
-                applies = (
-                    int(content.get("chapter_number") or content.get("chapter") or 0)
-                    == chapter_number
-                )
-            else:
-                chapter_range = content.get("chapter_range") or [
-                    chapter_number,
-                    chapter_number,
-                ]
-                applies = (
-                    int(chapter_range[0]) <= chapter_number <= int(chapter_range[1])
-                )
-            if applies:
-                matches.append(row)
-        if len(matches) > 1:
-            raise KernelError(
-                "BOOK_SUPERVISOR_ACTIVE_PLAN_AMBIGUOUS",
-                f"multiple Active {contract_type} plans cover chapter {chapter_number}",
-            )
-        if not matches:
-            return None
-        row = matches[0]
-        return {
-            "asset_version_id": str(row[0]),
-            "content_hash": str(row[1]),
-            "content": dict(row[2]),
-            "parent_version_id": str(row[3] or ""),
-            "execution_scope": str(row[4]),
-        }
+        return self.query.active_plan_covering_chapter(
+            project_id=str(book["project_id"]),
+            book_id=str(book["book_id"]),
+            contract_type=contract_type,
+            chapter_number=chapter_number,
+        )
 
     def _freeze_plan(
         self,
@@ -617,26 +589,12 @@ class PostgresBookProductionSupervisor:
     def _active_group_run(
         self, book: dict[str, Any], group_plan_version: str = ""
     ) -> dict[str, Any] | None:
-        with AuthorityUnitOfWork(self.authority.database_url) as uow:
-            uow.cursor.execute(
-                """
-                SELECT group_run_id
-                FROM authority_chapter_group_production
-                WHERE project_id=%s AND book_run_id=%s
-                  AND (%s='' OR group_plan_version_id=%s)
-                  AND state NOT IN ('COMPLETED','ABORTED','FAILED')
-                ORDER BY created_at DESC
-                LIMIT 1
-                """,
-                [
-                    book["project_id"],
-                    book["book_run_id"],
-                    group_plan_version,
-                    group_plan_version,
-                ],
-            )
-            row = uow.cursor.fetchone()
-        return self.chapter_groups.require(str(row[0])) if row is not None else None
+        group_run_id = self.query.active_chapter_group_run_id(
+            project_id=str(book["project_id"]),
+            book_run_id=str(book["book_run_id"]),
+            group_plan_version_id=group_plan_version,
+        )
+        return self.chapter_groups.require(group_run_id) if group_run_id else None
 
     @staticmethod
     def _primary_arc_version(snapshot: dict[str, Any]) -> str:
@@ -663,64 +621,22 @@ class PostgresBookProductionSupervisor:
         chapter = int(book["accepted_through_chapter"])
         if chapter <= 0:
             return None
-        with AuthorityUnitOfWork(self.authority.database_url) as uow:
-            uow.cursor.execute(
-                """
-                SELECT request.chapter_request_id
-                FROM authority_book_chapter_acceptance AS acceptance
-                JOIN authority_book_chapter_request AS request
-                  ON request.chapter_request_id=acceptance.chapter_request_id
-                WHERE acceptance.book_run_id=%s AND acceptance.chapter_number=%s
-                  AND NOT EXISTS (
-                    SELECT 1 FROM authority_book_volume_checkpoint AS checkpoint
-                    WHERE checkpoint.book_run_id=acceptance.book_run_id
-                      AND checkpoint.accepted_through_chapter=acceptance.chapter_number
-                  )
-                """,
-                [book["book_run_id"], chapter],
-            )
-            row = uow.cursor.fetchone()
-        if row is None:
+        chapter_request_id = self.query.checkpointable_chapter_request_id(
+            book_run_id=str(book["book_run_id"]),
+            accepted_through_chapter=chapter,
+        )
+        if not chapter_request_id:
             return None
         return self.checkpoints.record_after_acceptance(
             book_run_id=str(book["book_run_id"]),
-            chapter_request_id=str(row[0]),
+            chapter_request_id=chapter_request_id,
             principal=self.principal,
         )
-
-    def _checkpoint_replan_report(self, book: dict[str, Any]) -> str:
-        with AuthorityUnitOfWork(self.authority.database_url) as uow:
-            uow.cursor.execute(
-                """
-                SELECT report_id
-                FROM authority_ending_reachability_report
-                WHERE book_run_id=%s
-                  AND evaluated_through_chapter=%s
-                  AND replan_required=TRUE
-                  AND NOT EXISTS (
-                    SELECT 1
-                    FROM authority_book_replan AS replan
-                    JOIN authority_asset_version AS recap
-                      ON recap.asset_version_id=
-                         replan.source_recap_asset_version_id
-                    WHERE replan.book_run_id=
-                          authority_ending_reachability_report.book_run_id
-                      AND recap.content #>>
-                          '{observation_snapshot,ending_reachability,report_id}' =
-                          authority_ending_reachability_report.report_id
-                  )
-                ORDER BY created_at DESC
-                LIMIT 1
-                """,
-                [book["book_run_id"], book["accepted_through_chapter"]],
-            )
-            row = uow.cursor.fetchone()
-        return str(row[0]) if row is not None else ""
 
     def _start_replan(self, book: dict[str, Any]) -> BookProductionSupervisorTick:
         from novel_forge.modules.book_replan import CoordinateBookReplanCommand
 
-        source = self._replan_source(book)
+        source = self.query.require_replan_source(book_run_id=str(book["book_run_id"]))
         accepted_chapter = int(book["accepted_through_chapter"])
         result = self.replan.start(
             CoordinateBookReplanCommand(
@@ -749,47 +665,6 @@ class PostgresBookProductionSupervisor:
             str(result["replan_id"]),
         )
 
-    def _replan_source(self, book: dict[str, Any]) -> dict[str, str]:
-        with AuthorityUnitOfWork(self.authority.database_url) as uow:
-            uow.cursor.execute(
-                """
-                SELECT recap.asset_version_id, request.asset_version_id,
-                       operation.operation_id,
-                       COALESCE(NULLIF(request_version.content->>'affected_scope',''),
-                                'CHAPTER_GROUP')
-                FROM authority_book_followup_operation AS followup
-                JOIN authority_operation AS operation
-                  ON operation.operation_id=followup.operation_id
-                JOIN authority_operation_output_asset AS recap
-                  ON recap.operation_id=operation.operation_id
-                 AND recap.output_key='longform.recap.report'
-                JOIN authority_operation_output_asset AS request
-                  ON request.operation_id=operation.operation_id
-                 AND request.output_key='longform.recap.replan_request'
-                JOIN authority_asset_version AS request_version
-                  ON request_version.asset_version_id=request.asset_version_id
-                WHERE followup.book_run_id=%s
-                  AND followup.followup_type='LONGFORM_RECAP'
-                  AND operation.status='SUCCEEDED'
-                ORDER BY followup.created_at DESC
-                LIMIT 1
-                """,
-                [book["book_run_id"]],
-            )
-            rows = uow.cursor.fetchall()
-        if not rows:
-            raise KernelError(
-                "BOOK_REPLAN_SOURCE_UNAVAILABLE",
-                "Replan requires a latest successful Recap request",
-            )
-        row = rows[0]
-        return {
-            "recap_asset_version_id": str(row[0]),
-            "replan_request_asset_version_id": str(row[1]),
-            "recap_operation_id": str(row[2]),
-            "affected_scope": str(row[3]),
-        }
-
     def _latest_replan(self, book_run_id: str) -> dict[str, Any]:
         result = self.replan.latest_for_book(book_run_id)
         if result is None:
@@ -798,94 +673,6 @@ class PostgresBookProductionSupervisor:
                 "Book state references no durable Replan record",
             )
         return dict(result)
-
-    def _snapshot(self, book: dict[str, Any]) -> dict[str, Any]:
-        with AuthorityUnitOfWork(self.authority.database_url) as uow:
-            uow.cursor.execute(
-                """
-                SELECT book_plan_version, current_volume_plan_version,
-                       active_arc_plan_versions, character_state_version,
-                       foreshadowing_state_version, quality_trend_version,
-                       reward_ledger_version, promise_ledger_version
-                FROM authority_book_production_input_snapshot
-                WHERE snapshot_id=%s
-                """,
-                [book["input_snapshot_id"]],
-            )
-            row = uow.cursor.fetchone()
-        if row is None:
-            raise KernelError(
-                "BOOK_INPUT_SNAPSHOT_MISSING", "Book input snapshot vanished"
-            )
-        keys = (
-            "book_plan_version",
-            "current_volume_plan_version",
-            "active_arc_plan_versions",
-            "character_state_version",
-            "foreshadowing_state_version",
-            "quality_trend_version",
-            "reward_ledger_version",
-            "promise_ledger_version",
-        )
-        return dict(zip(keys, row, strict=True))
-
-    def _chapter_execution_plan(
-        self, planning_binding: dict[str, Any]
-    ) -> dict[str, Any]:
-        with AuthorityUnitOfWork(self.authority.database_url) as uow:
-            uow.cursor.execute(
-                """
-                SELECT version.asset_version_id, version.content_hash,
-                       version.content
-                FROM authority_operation_output_asset AS output
-                JOIN authority_asset AS asset ON asset.asset_id=output.asset_id
-                JOIN authority_asset_version AS version
-                  ON version.asset_version_id=output.asset_version_id
-                JOIN authority_operation AS operation
-                  ON operation.operation_id=output.operation_id
-                WHERE operation.project_id=%s
-                  AND operation.status='SUCCEEDED'
-                  AND asset.asset_type='chapter_plan'
-                  AND output.output_key='story_planning.chapter_plan_projection'
-                  AND version.content->>'source_planning_candidate_asset_version_id'=%s
-                ORDER BY version.created_at DESC
-                LIMIT 2
-                """,
-                [
-                    self._project_for_plan(str(planning_binding["asset_version_id"])),
-                    str(planning_binding["asset_version_id"]),
-                ],
-            )
-            rows = uow.cursor.fetchall()
-        if len(rows) != 1:
-            raise KernelError(
-                "BOOK_SUPERVISOR_CHAPTER_PLAN_PROJECTION_INVALID",
-                "Active Chapter plan requires one typed Planning projection",
-            )
-        return {
-            "asset_version_id": str(rows[0][0]),
-            "content_hash": str(rows[0][1]),
-            "content": dict(rows[0][2]),
-        }
-
-    def _project_for_plan(self, asset_version_id: str) -> str:
-        with AuthorityUnitOfWork(self.authority.database_url) as uow:
-            uow.cursor.execute(
-                """
-                SELECT asset.project_id
-                FROM authority_asset_version AS version
-                JOIN authority_asset AS asset ON asset.asset_id=version.asset_id
-                WHERE version.asset_version_id=%s
-                """,
-                [asset_version_id],
-            )
-            row = uow.cursor.fetchone()
-        if row is None:
-            raise KernelError(
-                "BOOK_SUPERVISOR_CHAPTER_PLAN_MISSING",
-                "Active Chapter plan AssetVersion does not exist",
-            )
-        return str(row[0])
 
     @staticmethod
     def _context_version_refs(
@@ -898,99 +685,6 @@ class PostgresBookProductionSupervisor:
             "chapter_group_plan_version": group["asset_version_id"],
             "book_production_input_snapshot_id": book["input_snapshot_id"],
         }
-
-    def _set_state(self, book: dict[str, Any], state: BookProductionState) -> str:
-        definition_name = "book.supervisor.checkpoint.advance"
-        handler_key = "novel_forge.book.supervisor.checkpoint.advance"
-        with AuthorityUnitOfWork(self.authority.database_url) as uow:
-            uow.repositories.definitions.register(
-                _supervisor_checkpoint_definition(
-                    application_build_id=self.authority.application_build_id,
-                    commit_sha=self.authority.commit_sha,
-                )
-            )
-            uow.commit()
-
-        def handler(
-            uow: AuthorityUnitOfWork,
-            operation_id: str,
-            checkpoint: TransactionCheckpoint,
-        ) -> dict[str, Any]:
-            checkpoint("after_domain_validation")
-            uow.cursor.execute(
-                """
-                UPDATE authority_book_production
-                SET state=%s, version=version+1, updated_at=NOW()
-                WHERE book_run_id=%s AND version=%s
-                """,
-                [state.value, book["book_run_id"], book["version"]],
-            )
-            if uow.cursor.rowcount != 1:
-                raise KernelError(
-                    "BOOK_SUPERVISOR_CHECKPOINT_CONFLICT",
-                    "Book checkpoint changed during Supervisor Tick",
-                )
-            uow.repositories.operation_graph.record_event(
-                {
-                    "event_id": str(uuid4()),
-                    "audit_id": str(uuid4()),
-                    "outbox_id": str(uuid4()),
-                    "aggregate_type": "book_production_supervisor",
-                    "aggregate_id": str(book["book_run_id"]),
-                    "operation_id": operation_id,
-                    "project_id": str(book["project_id"]),
-                    "event_type": "book.supervisor.checkpoint.advanced",
-                    "correlation_id": str(book["root_operation_id"]),
-                    "causation_id": str(book["root_operation_id"]),
-                    "payload": {
-                        "operation_id": operation_id,
-                        "book_run_id": str(book["book_run_id"]),
-                        "previous_state": str(book["state"]),
-                        "state": state.value,
-                        "expected_version": int(book["version"]),
-                    },
-                }
-            )
-            checkpoint("after_outbox_insert")
-            return {"state": state.value}
-
-        result = execute_transaction_command(
-            self.authority.database_url,
-            {
-                "definition_name": definition_name,
-                "definition_version": "1.0.0",
-                "project_id": str(book["project_id"]),
-                "workspace_id": str(book["workspace_id"]),
-                "book_id": str(book["book_id"]),
-                "actor_id": self.principal.principal_id,
-                "idempotency_scope": "book:production-supervisor",
-                "idempotency_key": (
-                    f"{book['stable_idempotency_key']}:supervisor-state:"
-                    f"{book['version']}:{state.value}"
-                ),
-                "trace_id": f"{book['root_operation_id']}:supervisor:{state.value}",
-                "span_id": str(uuid4()),
-                "correlation_id": str(book["root_operation_id"]),
-                "causation_id": str(book["root_operation_id"]),
-                "causation_operation_id": str(book["root_operation_id"]),
-                "input": {
-                    "book_run_id": str(book["book_run_id"]),
-                    "expected_version": int(book["version"]),
-                    "previous_state": str(book["state"]),
-                    "state": state.value,
-                },
-                "input_assets": [],
-            },
-            context=AdmissionContext(
-                actor_id=self.principal.principal_id,
-                permissions=frozenset({"book.authority.execute"}),
-                available_handlers=frozenset({handler_key}),
-                application_build_id=self.authority.application_build_id,
-                commit_sha=self.authority.commit_sha,
-            ),
-            handler=handler,
-        )
-        return str(result["operation_id"])
 
     def _result(
         self,
@@ -1008,49 +702,6 @@ class PostgresBookProductionSupervisor:
             operation_id,
             evidence_ref,
         )
-
-
-def _supervisor_checkpoint_definition(
-    *, application_build_id: str, commit_sha: str
-) -> dict[str, Any]:
-    schema = {"type": "object"}
-    return {
-        "name": "book.supervisor.checkpoint.advance",
-        "definition_version": "1.0.0",
-        "family": "book_authority",
-        "enabled": True,
-        "definition_status": "implemented_validation_pending",
-        "command_schema_version": "book.supervisor.checkpoint.command.v1",
-        "result_schema_version": "book.supervisor.checkpoint.result.v1",
-        "command_schema": schema,
-        "result_schema": schema,
-        "input_contract": schema,
-        "output_contract": {"type": "BookProductionBusinessCheckpoint"},
-        "handler_key": "novel_forge.book.supervisor.checkpoint.advance",
-        "handler_contract_version": "book-supervisor-checkpoint-v1",
-        "application_build_id": application_build_id,
-        "commit_sha": commit_sha,
-        "execution_mode": "transactional",
-        "permissions": ["book.authority.execute"],
-        "approval_policy": {"required": False},
-        "policy": {
-            "execution_classification": "transaction_command",
-            "attempt_runtime_owner": "COMMAND_KERNEL",
-            "business_state_only": True,
-        },
-        "idempotency_scope": "book:production-supervisor",
-        "concurrency_key_template": "book:{book_id}:production-supervisor",
-        "retry_policy": {"max_attempts": 1},
-        "timeout_policy": {"operation_timeout_seconds": 30},
-        "cancellation_policy": {"mode": "not_applicable"},
-        "compensation_policy": {"supported": False, "reason": "CAS checkpoint"},
-        "irreversible_effect_policy": {"allowed": False},
-        "external_capabilities": [],
-        "completion_contract": {
-            "version": "book-supervisor-checkpoint-completion-v1",
-            "required_evidence": ["trace", "audit", "book_checkpoint"],
-        },
-    }
 
 
 __all__ = ["BookProductionSupervisorTick", "PostgresBookProductionSupervisor"]

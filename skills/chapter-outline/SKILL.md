@@ -34,7 +34,7 @@ description: Use when creating or reviewing chapter plans so every chapter has a
 4. 定义本章 reader prerequisites 和 grounded set：读者进入本章前已经知道的人物状态、世界规则、伏笔和承诺。
 5. 设计 beat path：每个 beat 标注 function、requires、grounds、hook/payoff 和风险。
 6. 安排信息增量、爽点、悬念、反转和情绪变化，确保后续 beat 不依赖未 grounded 概念。
-7. 设计开头钩子、小钩子、结尾钩子和下一章承接点。
+7. 设计开头钩子、小钩子、结尾钩子和下一章承接点；标注 hook type、information gap、reader question、promise id、horizon 和证据位置。
 8. 检查章节最小商业单元：冲突、推进、奖励、代价、钩子。
 9. 输出可交给正文模型执行的细纲。
 
@@ -55,6 +55,7 @@ description: Use when creating or reviewing chapter plans so every chapter has a
 ## 代价
 ## 开头钩子
 ## 结尾钩子
+## Hook Horizon 与 Promise Binding
 ## 下一章承接点
 ## 章节最小商业单元检查
 ```
@@ -66,6 +67,7 @@ description: Use when creating or reviewing chapter plans so every chapter has a
 - 每个关键 beat 的 requires 必须已经是 prerequisite 或由早先 beat grounded。
 - 如果本章需要解释世界规则、专业知识或伏笔，必须先说明它服务哪个行动、冲突或 payoff。
 - 结尾钩子必须制造下一章阅读理由。
+- Hook horizon 应由 reader promise、arc 和 serial function 决定，不得硬编码统一兑现窗口。
 - 细纲必须足够具体，能约束 `prose-generation` 不脱纲。
 
 ## 禁止事项
@@ -73,6 +75,7 @@ description: Use when creating or reviewing chapter plans so every chapter has a
 - 禁止用“铺垫一章”替代章节功能。
 - 禁止只有设定说明，没有人物行动。
 - 禁止为了反转牺牲因果链。
+- 禁止创建没有 promise lineage 或后续承接责任的空钩子。
 - 禁止绕过细纲直接生成正文。
 
 ## 与其他模块的关系

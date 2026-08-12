@@ -127,31 +127,41 @@ class TrustedPrincipalResolver:
             authentication_source="server_configuration",
         )
 
-    def resolve_worker_principal(self, worker_id: str) -> Principal:
+    def resolve_worker_principal(
+        self,
+        worker_id: str,
+        *,
+        permission_subset: frozenset[str] | None = None,
+    ) -> Principal:
         worker_id = worker_id.strip()
         if not worker_id:
             raise RuntimeError("configured Authority worker identity is required")
+        worker_permissions = frozenset(
+            {
+                "chapter.authority.execute",
+                "agent.authority.execute",
+                "agent.authority.query",
+                "agent.authority.recover",
+                "book.authority.execute",
+                "story_planning.authority.execute",
+                "project.authority.execute",
+                "book_design.authority.execute",
+                "content.authority.execute",
+                "mkaos.authority.execute",
+                "source.authority.execute",
+                "mkaos.authority.approve",
+                "content.operation:*",
+                "external_effect.execute",
+                "book.followup:*",
+            }
+        )
+        if permission_subset is not None and not permission_subset <= worker_permissions:
+            raise RuntimeError("worker permission subset exceeds the trusted worker policy")
         return Principal(
             principal_id=worker_id,
             principal_type=PrincipalType.WORKER,
-            permissions=frozenset(
-                {
-                    "chapter.authority.execute",
-                    "agent.authority.execute",
-                    "agent.authority.query",
-                    "agent.authority.recover",
-                    "book.authority.execute",
-                    "story_planning.authority.execute",
-                    "project.authority.execute",
-                    "book_design.authority.execute",
-                    "content.authority.execute",
-                    "mkaos.authority.execute",
-                    "source.authority.execute",
-                    "mkaos.authority.approve",
-                    "content.operation:*",
-                    "external_effect.execute",
-                    "book.followup:*",
-                }
+            permissions=(
+                worker_permissions if permission_subset is None else permission_subset
             ),
             project_scope=self.configured_project_scope,
             authentication_source="worker_configuration",

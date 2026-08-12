@@ -129,12 +129,6 @@ from .routing import (
     RouteResolver,
     RouteSnapshotRegistry,
 )
-from .legacy import (
-    LegacyGatewayModelAdapter,
-    LegacyRequestMapper,
-    LegacyResultMapper,
-    create_legacy_development_model_adapter,
-)
 from .domain_execution import (
     CandidateKind,
     DomainExecutionCandidate,
@@ -144,7 +138,6 @@ from .domain_execution import (
     DomainModelOperation,
     GatewayDomainExecutionPort,
     execute_domain_candidate,
-    execution_model_name,
 )
 from .judge_execution import (
     EvidenceSpan,
@@ -223,7 +216,6 @@ __all__ = [
     "InjectedExecutionFailure",
     "LocalTerminationOutcome",
     "LocalProcessExecutionPolicy",
-    "LegacyGatewayModelAdapter",
     "LegacyUsageEvent",
     "CandidateKind",
     "DomainExecutionCandidate",
@@ -235,7 +227,6 @@ __all__ = [
     "GatewayExternalActionExecutionPort",
     "execute_domain_candidate",
     "execute_external_action",
-    "execution_model_name",
     "EvidenceSpan",
     "JudgeExecutionEvidence",
     "JudgeKind",
@@ -249,10 +240,7 @@ __all__ = [
     "RetrievalExecutionPort",
     "execute_similarity_embedding_pair",
     "execute_agent_workspace_candidate",
-    "create_legacy_development_model_adapter",
     "assert_legacy_execution_allowed",
-    "LegacyRequestMapper",
-    "LegacyResultMapper",
     "ModelProfile",
     "ModelProfileStatus",
     "ModelProfileRegistry",

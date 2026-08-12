@@ -10,6 +10,7 @@ from novel_forge.modules.command_kernel.errors import KernelError
 STATE_ASSET_TYPES = (
     "canon_snapshot", "character_state", "relationship_state", "timeline_snapshot",
     "foreshadow_state", "reader_promise", "reward_ledger", "world_rule", "power_state",
+    "plot_thread", "resource_state",
 )
 
 SNAPSHOT_ASSET_TYPES = {
@@ -22,6 +23,8 @@ SNAPSHOT_ASSET_TYPES = {
     "reward_ledger": "reward_ledger_snapshot",
     "world_rule": "world_rule_snapshot",
     "power_state": "power_state_snapshot",
+    "plot_thread": "plot_thread_snapshot",
+    "resource_state": "resource_state_snapshot",
 }
 
 SEMANTIC_CHANGE_FIELDS = {
@@ -34,6 +37,8 @@ SEMANTIC_CHANGE_FIELDS = {
     "reward_changes": "reward_changes",
     "world_rule_usages": "world_rule_usages",
     "power_state_changes": "power_state_changes",
+    "plot_thread_changes": "plot_thread_changes",
+    "resource_state_changes": "resource_state_changes",
     "narrative_pattern_fingerprints": "narrative_pattern_fingerprints",
     "theme_movements": "theme_movements",
     "antagonist_pressure_changes": "antagonist_pressure_changes",
@@ -107,6 +112,8 @@ def extract_canon_candidates(
         "reward_changes": list(revision.get("reward_changes", [])),
         "world_rule_usages": list(revision.get("world_rule_usages", [])),
         "power_state_changes": list(revision.get("power_state_changes", [])),
+        "plot_thread_changes": list(revision.get("plot_thread_changes", [])),
+        "resource_state_changes": list(revision.get("resource_state_changes", [])),
         "narrative_pattern_fingerprints": list(
             revision.get("narrative_pattern_fingerprints", [])
         ),
@@ -198,8 +205,13 @@ def build_canon_update(
     state = {key: list(values) for key, values in (historical_state or {}).items()}
     previous = [*existing_facts, *state.get("canon_snapshot", [])]
     facts = [_normalize_fact(item, chapter, revision_asset_version_id) for item in extraction.get("canon_assertion_candidates", [])]
+    deterministic_validation = validate_deterministic_continuity(
+        chapter=chapter,
+        historical_state=state,
+        extraction=extraction,
+    )
     conflicts = _fact_conflicts(previous, facts)
-    conflicts.extend(_typed_state_conflicts(chapter, state, extraction))
+    conflicts.extend(deterministic_validation["violations"])
     if extraction.get("approval_required_changes") and not extraction.get(
         "high_impact_approval", {}
     ).get("status") == "APPROVED":
@@ -218,6 +230,7 @@ def build_canon_update(
         "context_bundle_version_id": context_bundle_version_id,
         "facts": facts,
         "conflicts": conflicts,
+        "deterministic_validation": deterministic_validation,
         "gate": "BLOCKED" if any(item["severity"] == "blocking" for item in conflicts) else "PASSED",
         "historical_input_version_ids": sorted(
             {
@@ -351,31 +364,300 @@ def _fact_conflicts(previous: list[dict[str, Any]], facts: list[dict[str, Any]])
     return conflicts
 
 
-def _typed_state_conflicts(chapter: int, state: dict[str, list[dict[str, Any]]], extraction: dict[str, Any]) -> list[dict[str, Any]]:
+def validate_deterministic_continuity(
+    *,
+    chapter: int,
+    historical_state: dict[str, list[dict[str, Any]]],
+    extraction: dict[str, Any],
+) -> dict[str, Any]:
+    """Validate only invariants supported by explicit structured Authority data."""
+
+    if chapter <= 0:
+        raise ValueError("chapter must be positive")
+    state = {
+        kind: _state_items(values)
+        for kind, values in historical_state.items()
+    }
     conflicts: list[dict[str, Any]] = []
     for event in extraction.get("timeline_event_candidates", []):
-        if int(event.get("chapter", chapter)) < max([int(item.get("chapter", 0)) for item in state.get("timeline_snapshot", [])] or [0]):
+        event_chapter = int(
+            event.get("effective_chapter", event.get("chapter", chapter))
+        )
+        if event_chapter > chapter:
+            conflicts.append(
+                _conflict(
+                    "FUTURE_STATE_LEAK",
+                    {"accepted_chapter": chapter},
+                    event,
+                    "set the event boundary to the current or an earlier chapter",
+                )
+            )
+        if event_chapter < max(
+            [
+                int(item.get("effective_chapter", item.get("chapter", 0)))
+                for item in state.get("timeline_snapshot", [])
+            ]
+            or [0]
+        ):
             conflicts.append(_conflict("TEMPORAL_CONTRADICTION", state.get("timeline_snapshot", []), event, "place the event after the latest frozen timeline boundary"))
     for change in extraction.get("character_state_changes", []):
         existing = next((item for item in state.get("character_state", []) if item.get("character_id") == change.get("character_id")), None)
         if existing and existing.get("canonical_name") and change.get("canonical_name") and existing["canonical_name"] != change["canonical_name"]:
             conflicts.append(_conflict("CHARACTER_IDENTITY_CONTRADICTION", existing, change, "create an alias/merge proposal instead of changing identity"))
+        if (
+            existing
+            and str(existing.get("life_status") or "").upper() == "DEAD"
+            and not change.get("resurrection_authorized")
+            and (
+                str(change.get("life_status") or "").upper() in {"ALIVE", "ACTIVE"}
+                or str(change.get("action_state") or "").upper()
+                in {"ACTIVE", "ACTING", "PRESENT"}
+            )
+        ):
+            conflicts.append(
+                _conflict(
+                    "DEAD_CHARACTER_USAGE",
+                    existing,
+                    change,
+                    "record an approved resurrection transition or remove the action",
+                )
+            )
+        if existing:
+            known = {
+                str(item)
+                for item in existing.get("known_fact_ids", [])
+            } | {
+                str(item)
+                for item in change.get("acquired_fact_ids", [])
+            }
+            required = {
+                str(item) for item in change.get("requires_fact_ids", [])
+            }
+            missing = sorted(required - known)
+            if missing:
+                conflicts.append(
+                    _conflict(
+                        "KNOWLEDGE_BOUNDARY_VIOLATION",
+                        {"known_fact_ids": sorted(known)},
+                        {**change, "missing_fact_ids": missing},
+                        "bind prior knowledge acquisition evidence before the action",
+                    )
+                )
     for change in extraction.get("relationship_changes", []):
+        source_id = str(change.get("source_id") or change.get("source_character_id") or "")
+        target_id = str(change.get("target_id") or change.get("target_character_id") or "")
+        if source_id and source_id == target_id and not change.get("allow_self_relation"):
+            conflicts.append(
+                _conflict(
+                    "GRAPH_INTEGRITY_VIOLATION",
+                    {"constraint": "relationship endpoints must differ"},
+                    change,
+                    "use two distinct entity identifiers",
+                )
+            )
+        existing = next(
+            (
+                item
+                for item in state.get("relationship_state", [])
+                if str(item.get("source_id") or item.get("source_character_id") or "")
+                == source_id
+                and str(item.get("target_id") or item.get("target_character_id") or "")
+                == target_id
+            ),
+            None,
+        )
+        declared_from = str(change.get("from_state") or "").upper()
+        existing_status = str(
+            (existing or {}).get("status")
+            or (existing or {}).get("trust_state")
+            or ""
+        ).upper()
+        if declared_from and existing_status and declared_from != existing_status:
+            conflicts.append(
+                _conflict(
+                    "INVALID_RELATIONSHIP_TRANSITION",
+                    existing,
+                    change,
+                    "set from_state to the accepted relationship state",
+                )
+            )
         if change.get("trust_state") == "trusted" and change.get("betrayal_unresolved"):
             conflicts.append(_conflict("RELATIONSHIP_CONTRADICTION", state.get("relationship_state", []), change, "add reconciliation evidence or preserve distrust"))
     for usage in extraction.get("world_rule_usages", []):
+        rule = next(
+            (
+                item
+                for item in state.get("world_rule", [])
+                if item.get("rule_id") == usage.get("rule_id")
+            ),
+            None,
+        )
+        if rule and usage.get("state") in set(rule.get("forbidden_states", [])):
+            conflicts.append(
+                _conflict(
+                    "WORLD_RULE_CONTRADICTION",
+                    rule,
+                    usage,
+                    "preserve the accepted rule or record a governed exception with cost",
+                )
+            )
         if usage.get("exception") and not usage.get("cost"):
             conflicts.append(_conflict("WORLD_RULE_CONTRADICTION", state.get("world_rule", []), usage, "pay the rule exception cost"))
     for change in extraction.get("power_state_changes", []):
+        existing = next(
+            (
+                item
+                for item in state.get("power_state", [])
+                if item.get("character_id") == change.get("character_id")
+            ),
+            None,
+        )
+        if (
+            existing
+            and change.get("from_tier") is not None
+            and int(change["from_tier"]) != int(existing.get("tier", 0))
+        ):
+            conflicts.append(
+                _conflict(
+                    "POWER_STATE_TRANSITION_INVALID",
+                    existing,
+                    change,
+                    "set from_tier to the accepted power state",
+                )
+            )
+        if (
+            str(change.get("transition_kind") or "").upper() == "ADVANCE"
+            and existing
+            and change.get("tier") is not None
+            and int(change["tier"]) <= int(existing.get("tier", 0))
+        ):
+            conflicts.append(
+                _conflict(
+                    "POWER_STATE_TRANSITION_INVALID",
+                    existing,
+                    change,
+                    "an ADVANCE transition must increase the accepted tier",
+                )
+            )
         if change.get("tier_increase") and not change.get("change_reasons"):
             conflicts.append(_conflict("POWER_PROGRESSION_CONTRADICTION", state.get("power_state", []), change, "supply training, equipment, condition, or cost evidence"))
     for change in extraction.get("foreshadow_changes", []):
+        _validate_lifecycle_transition(
+            conflicts,
+            state=state.get("foreshadow_state", []),
+            change=change,
+            identity_key="thread_id",
+            code="FORESHADOW_LIFECYCLE_CONTRADICTION",
+        )
         if change.get("status") == "PAID" and not change.get("payoff_evidence"):
             conflicts.append(_conflict("FORESHADOW_LIFECYCLE_CONTRADICTION", state.get("foreshadow_state", []), change, "add causal payoff evidence"))
     for change in extraction.get("promise_changes", []):
+        _validate_lifecycle_transition(
+            conflicts,
+            state=state.get("reader_promise", []),
+            change=change,
+            identity_key="promise_id",
+            code="PROMISE_LIFECYCLE_CONTRADICTION",
+        )
         if change.get("status") == "PAID" and not change.get("payoff_evidence"):
             conflicts.append(_conflict("PROMISE_LIFECYCLE_CONTRADICTION", state.get("reader_promise", []), change, "add reader-visible fulfillment evidence"))
-    return conflicts
+    for change in extraction.get("resource_state_changes", []):
+        existing = next(
+            (
+                item
+                for item in state.get("resource_state", [])
+                if item.get("entity_id") == change.get("entity_id")
+                and item.get("resource_id") == change.get("resource_id")
+            ),
+            None,
+        )
+        before = change.get("balance_before")
+        delta = change.get("delta")
+        after = change.get("balance_after")
+        invalid = (
+            existing is not None
+            and before is not None
+            and float(before) != float(existing.get("balance", before))
+        ) or (
+            before is not None
+            and delta is not None
+            and after is not None
+            and float(before) + float(delta) != float(after)
+        ) or (
+            after is not None
+            and float(after) < 0
+            and not change.get("allow_negative_balance")
+        )
+        if invalid:
+            conflicts.append(
+                _conflict(
+                    "RESOURCE_STATE_BALANCE_INVALID",
+                    existing or {},
+                    change,
+                    "reconcile balance_before + delta with the accepted resource state",
+                )
+            )
+    return {
+        "gate": "BLOCKED" if conflicts else "PASSED",
+        "violations": conflicts,
+        "deterministic_rule_count": 11,
+        "used_text_heuristics": False,
+        "semantic_judgment_required": [
+            "CHARACTER_MOTIVATION",
+            "EMOTIONAL_PLAUSIBILITY",
+            "OOC",
+        ],
+        "contract_version": "deterministic-continuity-v1",
+    }
+
+
+def _state_items(values: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    flattened: list[dict[str, Any]] = []
+    for item in values:
+        facts = item.get("facts")
+        if isinstance(facts, list):
+            flattened.extend(
+                {**fact, "asset_version_id": item.get("asset_version_id", "")}
+                for fact in facts
+                if isinstance(fact, dict)
+            )
+        else:
+            flattened.append(item)
+    return flattened
+
+
+def _validate_lifecycle_transition(
+    conflicts: list[dict[str, Any]],
+    *,
+    state: list[dict[str, Any]],
+    change: dict[str, Any],
+    identity_key: str,
+    code: str,
+) -> None:
+    existing = next(
+        (item for item in state if item.get(identity_key) == change.get(identity_key)),
+        None,
+    )
+    if existing is None:
+        return
+    existing_status = str(existing.get("status") or "OPEN").upper()
+    declared_from = str(change.get("from_status") or "").upper()
+    next_status = str(change.get("status") or existing_status).upper()
+    invalid = (
+        bool(declared_from) and declared_from != existing_status
+    ) or (
+        existing_status in {"PAID", "ABANDONED", "CANCELLED"}
+        and next_status != existing_status
+    )
+    if invalid:
+        conflicts.append(
+            _conflict(
+                code,
+                existing,
+                change,
+                "transition from the accepted lifecycle state without reopening a terminal item",
+            )
+        )
 
 
 def _snapshot_candidates(
@@ -397,6 +679,8 @@ def _snapshot_candidates(
         "reward_ledger": extraction.get("reward_changes", []),
         "world_rule": extraction.get("world_rule_usages", []),
         "power_state": extraction.get("power_state_changes", []),
+        "plot_thread": extraction.get("plot_thread_changes", []),
+        "resource_state": extraction.get("resource_state_changes", []),
     }
     return [
         {
@@ -428,5 +712,6 @@ __all__ = [
     "STATE_ASSET_TYPES",
     "build_canon_update",
     "extract_canon_candidates",
+    "validate_deterministic_continuity",
     "CanonSemanticProviderPort",
 ]

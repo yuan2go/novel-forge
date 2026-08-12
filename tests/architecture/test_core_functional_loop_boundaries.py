@@ -66,8 +66,11 @@ def test_book_supervisor_uses_authorities_and_owns_no_execution_runtime() -> Non
     assert "PostgresChapterGroupAuthority" in supervisor
     assert "StoryPlanningGenerationApplication" in supervisor
     assert "PostgresBookAuthorityScheduler" in supervisor
-    assert "execute_transaction_command" in supervisor
+    assert "PostgresBookProductionQuery" in supervisor
+    assert "advance_supervisor_checkpoint" in supervisor
     for forbidden in (
+        "AuthorityUnitOfWork",
+        "execute_transaction_command",
         "ProviderAdapter",
         "plan_external_effect",
         "create_attempt",
@@ -82,6 +85,7 @@ def test_api_and_worker_share_the_canonical_book_production_composition() -> Non
     api = _read("src/novel_forge/api/authority_app.py")
     router = _read("src/novel_forge/api/routers/book_authority.py")
     worker = _read("src/novel_forge/workers/book_authority.py")
+    query = _read("src/novel_forge/modules/book_authority/queries.py")
     composition = _read("src/novel_forge/modules/book_authority/composition.py")
     real_provider_proof = _read("scripts/run_short_longform_runtime_proof.py")
 
@@ -93,7 +97,7 @@ def test_api_and_worker_share_the_canonical_book_production_composition() -> Non
     assert "getattr(" not in router
     assert "def approve_replan(" in composition
     assert "self.replan.approve(" in composition
-    assert "RESOLVED_AUTHORITY_INPUT" in worker
+    assert "RESOLVED_AUTHORITY_INPUT" in query
     assert "build_book_production_composition(" in real_provider_proof
     assert "PostgresBookProductionSupervisor(" not in real_provider_proof
 
@@ -143,6 +147,7 @@ def test_book_durable_mutations_use_transaction_commands_not_attempt_runtime() -
         "book.production.paused",
         "book.production.resumed",
         "book.production.aborted",
+        "book.supervisor.checkpoint.advanced",
         "book.followup.linked",
         "book.followup.completed",
         "book.checkpoint.advanced",

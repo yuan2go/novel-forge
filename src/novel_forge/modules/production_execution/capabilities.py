@@ -33,6 +33,16 @@ class CapabilityId(StrEnum):
     REVIEW_CHAPTER_EVALUATE = "review.chapter.evaluate"
     REVISION_CHAPTER_REVISE = "revision.chapter.revise"
     CANON_EXTRACT = "canon.extract"
+    TEMPORAL_QUERY = "temporal.query"
+    CANON_VALIDATE = "canon.validate"
+    CONTINUITY_VALIDATE = "continuity.validate"
+    HOOK_ANALYZE = "hook.analyze"
+    PACING_ANALYZE = "pacing.analyze"
+    PACING_AGGREGATE = "pacing.aggregate"
+    WORLD_CONSEQUENCE_ANALYZE = "world.consequence.analyze"
+    FACT_VERIFY = "fact.verify"
+    SOURCE_CONTENT_CLASSIFY = "source.content.classify"
+    DECONSTRUCTION_OBSERVE = "deconstruction.observe"
     QUALITY_INTRINSIC_JUDGE = "quality.intrinsic.judge"
     QUALITY_AGGREGATE = "quality.aggregate"
     QUALITY_ORIGINALITY_JUDGE = "quality.originality.judge"
@@ -85,6 +95,7 @@ class ExecutionDomain(StrEnum):
     STORAGE = "storage"
     TOOL = "tool"
     ANALYTICS = "analytics"
+    DECONSTRUCTION = "deconstruction"
 
 
 class RiskClass(StrEnum):

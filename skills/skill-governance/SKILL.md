@@ -10,7 +10,7 @@ description: Use when creating, revising, auditing, syncing, pruning, or adoptin
 - 项目源 Skill 必须维护在 root `skills/`，`.claude/skills/` 只能由 sync 生成或保留 runtime/vendor 工具 Skill。
 - 生产相关 Skill 必须包含 Novel OS Runtime Contract，并明确 schema-backed output、Context Builder、Knowledge Pack、ReviewIssue、GateResult、source isolation 和 traceability。
 - 外部 Skill 不得直接进入 root `skills/`，除非记录 source、license、scripts、dependencies、network/provider behavior 和 verification。
-- Skill 治理输出必须更新 `docs/09-skills/agent-skill-map.md`、`docs/skills-audit-report.md` 或治理报告中最小必要文件。
+- Skill 治理只更新仍有长期价值的最小文件：root Skill、`AGENTS.md` 或 `docs/development/skills.md`。不要生成 session-level 审计报告。
 
 ## 适用场景
 
@@ -23,7 +23,7 @@ description: Use when creating, revising, auditing, syncing, pruning, or adoptin
 
 - 目标 Skill 名称、任务上下文、相关 Agent、已有 `skills/<name>/SKILL.md`。
 - 外部来源时需提供 source path/URL、license、scripts、references、dependencies、network/provider behavior。
-- 相关 docs：`docs/09-skills/usage-policy.md`、`docs/09-skills/runtime-sync.md`、`docs/09-skills/agent-skill-map.md`。
+- 相关 docs：`AGENTS.md`、`docs/development/skills.md`。
 
 ## 操作流程
 
@@ -33,7 +33,7 @@ description: Use when creating, revising, auditing, syncing, pruning, or adoptin
 4. 检查 progressive disclosure：核心步骤放 `SKILL.md`，长 reference 才拆文件；不要为短 Skill 加无用资源。
 5. 检查 predictability：每个流程有可检查完成条件，避免“写得更好”这类不可验收目标。
 6. 检查 Novel OS boundary：schema、gate、trace、source isolation、provider/runtime、copyright 是否完整。
-7. 更新 root Skill、mapping、audit 或 policy；再执行 sync dry-run、sync、check。
+7. 更新 root Skill 和最小必要的长期规则文件；再执行 sync dry-run、sync、check。
 
 ## 输出格式
 
@@ -81,5 +81,5 @@ description: Use when creating, revising, auditing, syncing, pruning, or adoptin
 ## 与其他模块的关系
 
 - 上游：Skill audit、external Skill intake、Agent-Skill map、usage policy。
-- 下游：root `skills/`、`.claude/skills` runtime copy、governance reports、Agent routing。
+- 下游：root `skills/`、`.claude/skills` runtime copy、Agent routing。
 - Agent：Engineering Agent、Quality Agent、Chief Editor Agent。

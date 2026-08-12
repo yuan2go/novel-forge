@@ -6,15 +6,13 @@ import hashlib
 import json
 from pathlib import Path
 
-from novel_forge.api.authority_dependencies import build_chapter_authority_application
-from novel_forge.infrastructure.settings import IndustrialSettings
-from novel_forge.modules.chapter_authority.application import (
-    ChapterAuthorityApplication,
+from novel_forge.api.authority_dependencies import (
+    build_chapter_authority_application,
+    build_production_execution_composition,
 )
+from novel_forge.infrastructure.settings import IndustrialSettings
 from novel_forge.modules.chapter_authority.contracts import ChapterHandlerRequest
 from novel_forge.modules.chapter_authority.model_effects import (
-    ChapterModelExternalEffectAdapter,
-    ChapterModelRoute,
     ExternalEffectChapterModelPort,
     ModelProviderResult,
 )
@@ -27,7 +25,6 @@ from novel_forge.modules.chapter_quality_authority import (
 )
 from novel_forge.modules.command_kernel.external_effect_adapters import (
     ExternalEffectAdapterError,
-    LocalFileObjectStoreAdapter,
     ProviderResult,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
@@ -110,101 +107,6 @@ class _ModelAdapter:
 
     def query(self, *, stable_idempotency_key, capability, request_payload):  # type: ignore[no-untyped-def]
         return ProviderResult("ambiguous", "", {"provider_state": "unknown"})
-
-
-class _StageModelAdapter:
-    name = "stage-model"
-
-    def __init__(self) -> None:
-        self.calls = 0
-
-    def generate(self, prompt, context=None):  # type: ignore[no-untyped-def]
-        self.calls += 1
-        if (context or {}).get(
-            "contract_version"
-        ) == "chapter-quality-provider-evidence-v2":
-            quality_context = (context or {}).get("quality_context") or {}
-            if not str(quality_context.get("type") or "").endswith(
-                "QualityContextView"
-            ):
-                raise AssertionError(
-                    "quality provider did not receive a stage-specific view"
-                )
-            return {
-                "dimensions": [
-                    {
-                        "dimension": dimension,
-                        "gate_status": "PASSED",
-                        "score": 85,
-                        "confidence": 0.8,
-                        "evidence_locations": [{"start": 0, "end": 10}],
-                        "issue_codes": [],
-                        "revision_strategies": [],
-                    }
-                    for dimension in (context or {}).get("dimensions", [])
-                ],
-                "usage": {"input_tokens": 20, "output_tokens": 10},
-                "cost": {"amount": "0.001", "currency": "USD"},
-            }
-        if "canon-semantic-extraction-v2" in prompt:
-            return {
-                "canon_facts": [
-                    {
-                        "subject": "protagonist",
-                        "predicate": "gave_up",
-                        "object": "safe_route_home",
-                        "evidence_start": 0,
-                        "evidence_end": 10,
-                        "confidence": 0.95,
-                    }
-                ],
-                "character_state_changes": [],
-                "relationship_changes": [],
-                "timeline_events": [],
-                "foreshadow_changes": [],
-                "promise_changes": [],
-                "reward_changes": [],
-                "world_rule_usages": [],
-                "power_state_changes": [],
-                "narrative_pattern_fingerprints": [],
-                "theme_movements": [],
-                "antagonist_pressure_changes": [],
-                "usage": {"input_tokens": 30, "output_tokens": 20},
-                "cost": {"amount": "0.001", "currency": "USD"},
-            }
-        return {
-            "text": "The promise is public, but its cost remains abstract.",
-            "usage": {"input_tokens": 12, "output_tokens": 8},
-            "cost": {"amount": "0.001", "currency": "USD"},
-        }
-
-    def review(self, content, context=None):  # type: ignore[no-untyped-def]
-        self.calls += 1
-        if (context or {}).get("rubric") == "chapter-authority-rereview-v1":
-            return {
-                "score": 91,
-                "issues": [],
-                "cost": {"amount": "0.001", "currency": "USD"},
-            }
-        return {
-            "score": 70,
-            "issues": [
-                {
-                    "dimension": "cost_not_concrete",
-                    "severity": "high",
-                    "message": "The cost must be visible.",
-                }
-            ],
-            "cost": {"amount": "0.001", "currency": "USD"},
-        }
-
-    def revise(self, content, review, context=None):  # type: ignore[no-untyped-def]
-        self.calls += 1
-        return {
-            "text": "The protagonist surrenders the only safe route home before every witness.",
-            "resolved_issue_codes": ["COST_NOT_CONCRETE"],
-            "cost": {"amount": "0.001", "currency": "USD"},
-        }
 
 
 class _RetryableMeasuredAdapter(_ModelAdapter):
@@ -566,145 +468,29 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
             )
             self.assertEqual(cursor.fetchone()[0], "UNKNOWN")
 
-    def test_full_chapter_slice_uses_five_model_effects_and_authority_ledgers(
-        self,
-    ) -> None:
-        project_id = identifier("model-slice-project")
-        stage_model = _StageModelAdapter()
-        adapter = ChapterModelExternalEffectAdapter(
-            {
-                stage: ChapterModelRoute(
-                    adapter=stage_model,
-                    provider_id="fixture-provider",
-                    model_id=f"fixture-{stage}-model",
-                    prompt_version=f"fixture-{stage}-prompt-v1",
-                    skill_version=f"fixture-{stage}-skill-v1",
-                    real_model_call=False,
-                )
-                for stage in (
-                    "draft",
-                    "review",
-                    "revision",
-                    "canon_extraction",
-                    "quality_structural",
-                    "quality_commercial",
-                    "quality_source_originality",
-                    "quality_longform",
-                    "quality_platform",
-                )
-            }
-        )
-        export_directory = tempfile.TemporaryDirectory()
-        self.addCleanup(export_directory.cleanup)
-        application = ChapterAuthorityApplication(
-            DATABASE_URL,
-            model_adapter=adapter,
-            object_store_adapter=LocalFileObjectStoreAdapter(
-                Path(export_directory.name)
-            ),
-            worker_id="model-worker",
-            max_cost_per_model_call="0.01",
-        )
-        result = application.run(
-            SingleChapterRequest(
-                project_id=project_id,
-                workspace_id=f"workspace:{project_id}",
-                actor_id="chapter-slice-worker",
-                chapter=1,
-                title="A Visible Cost",
-                premise="A public promise becomes irreversible.",
-                trace_id=identifier("trace"),
-                correlation_id=identifier("correlation"),
-                application_build_id="chapter-model-effect-test",
-                commit_sha="d" * 40,
-                context_candidates=self._release_evidence(project_id),
-            ),
-        )
-
-        self.assertEqual(result.root_status, "SUCCEEDED")
-        self.assertEqual(stage_model.calls, 10)
-        exported = Path(export_directory.name) / f"chapters/{project_id}/1/chapter.txt"
-        self.assertIn("surrenders the only safe route home", exported.read_text())
-        query = application.query
-        listed = query.list_runs(project_id=project_id)
-        detail = query.require_run(
-            project_id=project_id,
-            root_operation_id=result.root_operation_id,
-        )
-        self.assertEqual(listed[0]["root_operation_id"], result.root_operation_id)
-        self.assertEqual(listed[0]["status"], "SUCCEEDED")
-        self.assertEqual(detail["saga"]["status"], "SUCCEEDED")
-        self.assertEqual(len(detail["operations"]), 19)
-        self.assertEqual(len(detail["primary_outputs"]), 18)
-        self.assertEqual(len(detail["model_effects"]), 10)
-        self.assertEqual(query.list_runs(project_id=identifier("other-project")), [])
-        with self.assertRaisesRegex(KernelError, "CHAPTER_RUN_NOT_FOUND"):
-            query.require_run(
-                project_id=identifier("other-project"),
-                root_operation_id=result.root_operation_id,
-            )
-        with transaction() as connection, connection.cursor() as cursor:
-            cursor.execute(
-                """
-                SELECT capability, status, COUNT(*)
-                FROM authority_external_effect
-                WHERE project_id = %s AND provider = %s
-                GROUP BY capability, status
-                ORDER BY capability
-                """,
-                [project_id, adapter.provider],
-            )
-            self.assertEqual(
-                cursor.fetchall(),
-                [
-                    ("model.canon_extraction", "SUCCEEDED", 1),
-                    ("model.draft", "SUCCEEDED", 1),
-                    ("model.quality_commercial", "SUCCEEDED", 1),
-                    ("model.quality_longform", "SUCCEEDED", 1),
-                    ("model.quality_platform", "SUCCEEDED", 1),
-                    ("model.quality_source_originality", "SUCCEEDED", 1),
-                    ("model.quality_structural", "SUCCEEDED", 1),
-                    ("model.rereview", "SUCCEEDED", 1),
-                    ("model.review", "SUCCEEDED", 1),
-                    ("model.revision", "SUCCEEDED", 1),
-                ],
-            )
-            cursor.execute(
-                """
-                SELECT asset.asset_type, COUNT(*)
-                FROM authority_operation_output_asset AS binding
-                JOIN authority_operation AS operation
-                  ON operation.operation_id = binding.operation_id
-                JOIN authority_asset AS asset ON asset.asset_id = binding.asset_id
-                WHERE operation.root_operation_id = %s
-                  AND asset.asset_type IN ('model_call_log', 'cost_ledger')
-                GROUP BY asset.asset_type
-                """,
-                [result.root_operation_id],
-            )
-            self.assertEqual(
-                dict(cursor.fetchall()), {"cost_ledger": 10, "model_call_log": 10}
-            )
-
     def test_full_chapter_slice_uses_unified_execution_gateway_and_commit_manifests(
         self,
     ) -> None:
         project_id = identifier("gateway-model-slice-project")
         recovery_execution_id = ""
         with tempfile.TemporaryDirectory() as directory:
+            settings = IndustrialSettings(
+                root=Path(directory), database_url=DATABASE_URL
+            )
+            env = {
+                "NOVEL_FORGE_ENVIRONMENT": "test",
+                "NOVEL_FORGE_DRAFT_PROVIDER": "mock",
+                "NOVEL_FORGE_REVIEW_PROVIDER": "mock",
+                "NOVEL_FORGE_REVISION_PROVIDER": "mock",
+                "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": str(
+                    Path(directory) / "objects"
+                ),
+                "NOVEL_FORGE_ENABLE_SYNCHRONOUS_AUTHORITY_FIXTURE": "true",
+                "NOVEL_FORGE_COMMIT_SHA": "e" * 40,
+            }
+            execution = build_production_execution_composition(settings, env=env)
             application = build_chapter_authority_application(
-                IndustrialSettings(root=Path(directory), database_url=DATABASE_URL),
-                env={
-                    "NOVEL_FORGE_ENVIRONMENT": "test",
-                    "NOVEL_FORGE_DRAFT_PROVIDER": "mock",
-                    "NOVEL_FORGE_REVIEW_PROVIDER": "mock",
-                    "NOVEL_FORGE_REVISION_PROVIDER": "mock",
-                    "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": str(
-                        Path(directory) / "objects"
-                    ),
-                    "NOVEL_FORGE_ENABLE_SYNCHRONOUS_AUTHORITY_FIXTURE": "true",
-                    "NOVEL_FORGE_COMMIT_SHA": "e" * 40,
-                },
+                settings, execution=execution, env=env
             )
             result = application.run(
                 SingleChapterRequest(
@@ -724,9 +510,7 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
 
             self.assertEqual(result.root_status, "SUCCEEDED")
             self.assertEqual(result.saga_status, "SUCCEEDED")
-            self.assertTrue(
-                application.model_port.adapter.production_execution_gateway_backed
-            )
+            self.assertTrue(execution.gateway.production_execution_gateway_backed)
             exported = (
                 Path(directory) / "objects" / f"chapters/{project_id}/1/chapter.txt"
             )

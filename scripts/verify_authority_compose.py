@@ -18,6 +18,7 @@ WORKERS = (
     "agent-authority-worker",
     "content-authority-worker",
     "source-authority-worker",
+    "source-import-worker",
     "mkaos-authority-worker",
     "book-authority-worker",
     "outbox-worker",
@@ -260,7 +261,8 @@ def main() -> int:
                 "'active_transactions',COUNT(*) FILTER (WHERE xact_start IS NOT NULL),"
                 "'worker_connections',COUNT(*) FILTER (WHERE application_name IN ("
                 "'chapter-authority-worker','content-authority-worker',"
-                "'source-authority-worker','mkaos-authority-worker',"
+                "'source-authority-worker','source-import-worker',"
+                "'mkaos-authority-worker',"
                 "'book-authority-worker','outbox-worker','maintenance-worker'))) "
                 "FROM pg_stat_activity WHERE pid<>pg_backend_pid();",
             ),

@@ -11,10 +11,11 @@ from typing import Iterable
 AUTHORITY_ENTRY_MODULES: dict[str, str] = {
     "api-app": "novel_forge.api.authority_app",
     "authority-dependencies": "novel_forge.api.authority_dependencies",
-    "authority-cli": "novel_forge.cli",
+    "authority-cli": "novel_forge.cli.authority",
     "agent-worker": "novel_forge.workers.agent_authority",
     "chapter-worker": "novel_forge.workers.chapter_authority",
     "content-worker": "novel_forge.workers.content_authority",
+    "source-import-worker": "novel_forge.workers.source_import",
     "source-worker": "novel_forge.workers.source_authority",
     "mkaos-worker": "novel_forge.workers.mkaos_authority",
     "book-worker": "novel_forge.workers.book_authority",
@@ -27,13 +28,7 @@ AUTHORITY_ENTRY_MODULES: dict[str, str] = {
     "compose-probe": "scripts.verify_authority_compose",
 }
 
-GUARDED_COMPATIBILITY_BOUNDARIES = frozenset(
-    {
-        "novel_forge.cli.legacy",
-        "novel_forge.model_adapters.guarded",
-        "novel_forge.tools.authority_parity_manifest",
-    }
-)
+GUARDED_COMPATIBILITY_BOUNDARIES: frozenset[str] = frozenset()
 
 
 @dataclass(frozen=True, slots=True)

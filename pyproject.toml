@@ -30,18 +30,8 @@ test = [
     "PyYAML>=6.0",
     "ruff==0.15.20",
 ]
-worker = [
-    "celery[redis]>=5.4",
-    "redis>=5.0",
-]
-vector = [
-    "qdrant-client>=1.10",
-]
 object = [
     "minio>=7.2",
-]
-graph = [
-    "neo4j>=5.20",
 ]
 ingestion = [
     "pypdf>=4.0",
@@ -53,18 +43,14 @@ industrial = [
     "uvicorn[standard]>=0.30",
     "psycopg[binary]>=3.2",
     "psycopg_pool>=3.2",
-    "celery[redis]>=5.4",
-    "redis>=5.0",
-    "qdrant-client>=1.10",
     "minio>=7.2",
-]
-industrial-graph = [
-    "neo4j>=5.20",
 ]
 
 [project.scripts]
-novel-forge = "novel_forge.cli:main"
+novel-forge = "novel_forge.cli.authority:main"
+novel-forge-migrate = "novel_forge.cli.migration:main"
 novel-forge-source-authority-worker = "novel_forge.workers.source_authority:cli"
+novel-forge-source-import-worker = "novel_forge.workers.source_import:main"
 novel-forge-mkaos-authority-worker = "novel_forge.workers.mkaos_authority:cli"
 novel-forge-book-authority-worker = "novel_forge.workers.book_authority:cli"
 novel-forge-agent-authority-worker = "novel_forge.workers.agent_authority:main"

@@ -8,7 +8,7 @@ import tempfile
 import unittest
 
 from novel_forge.api.authority_dependencies import (
-    build_chapter_authority_application,
+    build_production_execution_composition,
     build_reader_outcome_model_port,
 )
 from novel_forge.infrastructure.settings import IndustrialSettings
@@ -199,14 +199,12 @@ class BookFollowupAuthorityPostgresTests(unittest.TestCase):
             ),
             "NOVEL_FORGE_AUTHORITY_WORKER_ID": "book-followup-pep",
         }
-        chapter = build_chapter_authority_application(settings, env=env)
-        self.assertTrue(
-            chapter.model_port.adapter.production_execution_gateway_backed
-        )
+        execution = build_production_execution_composition(settings, env=env)
+        self.assertTrue(execution.gateway.production_execution_gateway_backed)
         reader_port = build_reader_outcome_model_port(
             settings,
+            execution=execution,
             env=env,
-            chapter_application=chapter,
         )
         self.app = BookFollowupAuthorityApplication(
             DATABASE_URL,
@@ -370,9 +368,9 @@ class BookFollowupAuthorityPostgresTests(unittest.TestCase):
                 Path(self.temp.name) / "governed-reader-objects"
             ),
         }
-        chapter = build_chapter_authority_application(settings, env=env)
+        execution = build_production_execution_composition(settings, env=env)
         reader_port = build_reader_outcome_model_port(
-            settings, env=env, chapter_application=chapter
+            settings, execution=execution, env=env
         )
         app = BookFollowupAuthorityApplication(
             DATABASE_URL,

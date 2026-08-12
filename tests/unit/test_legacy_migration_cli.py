@@ -8,12 +8,12 @@ from contextlib import redirect_stdout
 from io import StringIO
 from pathlib import Path
 
-from novel_forge.cli import _authority_parser, main
+from novel_forge.cli.migration import _parser as _migration_parser, main
 
 
 class LegacyMigrationCliTests(unittest.TestCase):
     def test_verify_requires_an_explicit_bounded_level_vocabulary(self) -> None:
-        parser = _authority_parser()
+        parser = _migration_parser()
         parsed = parser.parse_args(
             [
                 "authority-verify-migration",

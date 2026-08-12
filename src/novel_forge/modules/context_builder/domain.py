@@ -6,7 +6,7 @@ project-scoped, versioned candidates and persist the returned payload.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 import hashlib
 import json
 from typing import Any, Iterable
@@ -60,7 +60,16 @@ class ContextSelection:
     token_budget: int
 
 
-_RAW_TYPES = frozenset({"source_document", "source_chunk", "cleaned_text", "parallel_pair"})
+_RAW_TYPES = frozenset(
+    {
+        "source_document",
+        "source_chunk",
+        "source_deconstruction_observation",
+        "source_reprocessing_plan",
+        "cleaned_text",
+        "parallel_pair",
+    }
+)
 _COMMON = frozenset({
     "chapter_plan", "chapter_plan_version", "outline_version", "volume_arc", "world_bible",
     "character_card", "character_state", "relationship_state", "canon_snapshot",
@@ -68,6 +77,7 @@ _COMMON = frozenset({
     "character_state_snapshot", "relationship_state_snapshot", "foreshadow_snapshot",
     "promise_ledger_snapshot", "reward_ledger_snapshot", "world_rule_snapshot",
     "power_state_snapshot",
+    "plot_thread_snapshot", "resource_state_snapshot",
     "story_state_snapshot",
     "style_policy", "knowledge_pack", "knowledge_card", "material_asset", "material_card",
     "quality_rubric", "quality_profile", "platform_profile", "context_profile",
@@ -202,9 +212,22 @@ def build_authority_context_bundle(
     candidates: Iterable[ContextCandidate],
     token_budget: int,
     version_refs: dict[str, Any] | None = None,
+    required_asset_types: Iterable[str] = (),
 ) -> dict[str, Any]:
     """Build the canonical immutable ContextBundle content payload."""
     profile = resolve_context_profile(stage)
+    required = frozenset(str(item) for item in required_asset_types if str(item))
+    unsupported = required - profile.allowed_asset_types
+    if unsupported:
+        raise ValueError(
+            "required context asset types are not allowed: "
+            + ", ".join(sorted(unsupported))
+        )
+    if required:
+        profile = replace(
+            profile,
+            required_asset_types=profile.required_asset_types | required,
+        )
     selection = select_context_candidates(
         project_id=project_id,
         profile=profile,

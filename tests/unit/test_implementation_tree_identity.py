@@ -32,7 +32,7 @@ class ImplementationTreeIdentityTests(unittest.TestCase):
             generated = root / "tests/__pycache__/test_example.pyc"
             generated.parent.mkdir(parents=True)
             generated.write_bytes(b"generated")
-            report = root / "docs/reports/current-head.json"
+            report = root / "docs/generated-current-head.json"
             report.parent.mkdir(parents=True)
             report.write_text('{"run_id":"changes-every-run"}\n', encoding="utf-8")
 
@@ -68,7 +68,7 @@ class ImplementationTreeIdentityTests(unittest.TestCase):
         self.assertIn("src/**", identity["scope"]["included"])
         self.assertIn("docs/**", identity["scope"]["excluded"])
         self.assertNotIn(
-            "docs/reports/postgresql-authority-coverage-baseline.json",
+            "docs/generated-coverage-baseline.json",
             identity["paths"],
         )
 

@@ -15,10 +15,13 @@ class ReleaseEntrypointContractTests(unittest.TestCase):
         match = re.search(r"^CMD\s+(\[.*\])$", source, flags=re.MULTILINE)
         self.assertIsNotNone(match)
         command = json.loads(match.group(1))
-        self.assertEqual(command[:4], ["python", "-m", "novel_forge.cli", "serve-api"])
+        self.assertEqual(
+            command[:4],
+            ["python", "-m", "novel_forge.cli.authority", "serve-api"],
+        )
         self.assertNotIn("--root", command)
 
-        from novel_forge.cli import _authority_parser
+        from novel_forge.cli.authority import _authority_parser
 
         parsed = _authority_parser().parse_args(command[3:])
         self.assertEqual(parsed.command, "serve-api")
@@ -45,9 +48,6 @@ class ReleaseEntrypointContractTests(unittest.TestCase):
             "authority-test:",
             "authority-postgres-test:",
             "authority-compose-config-check:",
-            "legacy-up:",
-            "legacy-down:",
-            "legacy-logs:",
         ):
             self.assertIn(target, source)
 

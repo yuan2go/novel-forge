@@ -2,14 +2,12 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from datetime import date, timedelta
 from typing import Any
 from uuid import uuid4
 
 from psycopg.types.json import Jsonb
 
 from novel_forge.modules.book_design_authority.domain import (
-    BOOK_DESIGN_SCHEMA_VERSION,
     BookDesignPayload,
     BookScope,
     evidence_hash,
@@ -59,35 +57,6 @@ class BookDesignAuthorityRepository:
             "UPDATE authority_workspace SET book_id = %s, updated_at = NOW() WHERE workspace_id = %s AND project_id = %s",
             [scope.book_id, scope.workspace_id, scope.project_id],
         )
-        today = date.today()
-        self.cursor.execute(
-            """
-            INSERT INTO authority_slice_legacy_cutover (
-                slice_key, legacy_source, authority_target, discovery_status,
-                import_status, validation_status, writer_cutover_status,
-                reader_compatibility_until, retirement_deadline,
-                recorded_by_operation_id, evidence
-            ) VALUES (
-                'book-book-design', 'legacy_local:projects/books/design',
-                'postgresql:authority_book+authority_asset_version',
-                'INVENTORIED', 'NOT_REQUIRED_EMPTY_OR_EXPLICIT_IMPORT', 'PASSED',
-                'DISABLED', %s, %s, %s, %s
-            )
-            ON CONFLICT (slice_key) DO UPDATE SET
-                recorded_by_operation_id = EXCLUDED.recorded_by_operation_id,
-                evidence = EXCLUDED.evidence,
-                updated_at = NOW()
-            """,
-            [
-                today + timedelta(days=30), today + timedelta(days=60), operation_id,
-                Jsonb({
-                    "legacy_writer": "disabled_in_authority_composition",
-                    "reader_compatibility": "import/read-only only",
-                    "silent_fallback": False,
-                }),
-            ],
-        )
-
     def book_for_update(self, *, project_id: str, workspace_id: str, book_id: str) -> dict[str, Any]:
         self.cursor.execute(
             """

@@ -226,11 +226,12 @@ class PostgreSQLOnlyChapterSliceTests(unittest.TestCase):
         self.assertEqual(manifest["saga"]["forward_recovery_attempts"], 1)
         self.assertEqual(len(manifest["operations"]), 1 + len(ChapterNode))
         # The 18 primary node outputs are accompanied by 41 dimension evidence
-        # assets, nine state snapshots, one preparation manifest, Plan/Context
+        # assets, eleven state snapshots, one deterministic continuity report,
+        # Hook/Pacing observations, one preparation manifest, Plan/Context
         # completion evidence, and one frozen-context coverage report per Quality
         # group. Keep the count tied to those protocol families so additions cannot
         # silently masquerade as duplicate materialization.
-        expected_output_count = len(ChapterNode) + 41 + 9 + 3 + len(QUALITY_GROUP_NODES)
+        expected_output_count = len(ChapterNode) + 41 + 11 + 6 + len(QUALITY_GROUP_NODES)
         self.assertEqual(len(manifest["outputs"]), expected_output_count)
         self.assertEqual(
             len(
@@ -301,11 +302,12 @@ class PostgreSQLOnlyChapterSliceTests(unittest.TestCase):
                 [result.root_operation_id, ChapterNode.CANON.definition_name],
             )
             snapshots = cursor.fetchall()
-            self.assertEqual(len(snapshots), 9)
+            self.assertEqual(len(snapshots), 11)
             self.assertEqual({row[2] for row in snapshots}, {
                 "canon_snapshot", "character_state", "relationship_state",
                 "timeline_snapshot", "foreshadow_state", "reader_promise",
                 "reward_ledger", "world_rule", "power_state",
+                "plot_thread", "resource_state",
             })
             cursor.execute(
                 """

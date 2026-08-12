@@ -13,6 +13,7 @@ from psycopg.types.json import Jsonb
 
 from novel_forge.api.authority_dependencies import (
     build_chapter_authority_application,
+    build_production_execution_composition,
 )
 from novel_forge.infrastructure.settings import IndustrialSettings
 from novel_forge.modules.agent_collaboration.domain import (
@@ -590,15 +591,18 @@ class CapabilityPackPostgresHarness:
                 storage_authority="postgresql",
                 database_url=DATABASE_URL,
             )
+            env = {
+                "NOVEL_FORGE_ENVIRONMENT": "development",
+                "NOVEL_FORGE_MODEL_PROVIDER": "scripted_provider_v2",
+                "NOVEL_FORGE_COMMIT_SHA": RELEASE_SHA,
+                "NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID": self.pack_id,
+                "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": root,
+            }
+            execution = build_production_execution_composition(settings, env=env)
             chapter = build_chapter_authority_application(
                 settings,
-                env={
-                    "NOVEL_FORGE_ENVIRONMENT": "development",
-                    "NOVEL_FORGE_MODEL_PROVIDER": "scripted_provider_v2",
-                    "NOVEL_FORGE_COMMIT_SHA": RELEASE_SHA,
-                    "NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID": self.pack_id,
-                    "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": root,
-                },
+                execution=execution,
+                env=env,
             )
             operator = self.principal("chapter-operator", "chapter.authority.execute")
             admission = chapter.admit(

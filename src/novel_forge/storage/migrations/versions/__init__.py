@@ -74,6 +74,14 @@ from . import (
     v20260805_0071_capability_pack_authority,
     v20260806_0072_capability_pack_integrity_hardening,
     v20260806_0073_core_functional_loops,
+    v20260811_0074_longform_native_intelligence,
+    v20260811_0075_source_deconstruction_intelligence,
+    v20260811_0076_source_import_runtime,
+    v20260811_0077_source_reprocessing_execution,
+    v20260811_0078_reprocessing_action_expansion,
+    v20260811_0079_source_import_scope_closure,
+    v20260811_0080_source_snapshot_governance_identity,
+    v20260811_0081_source_intelligence_router,
 )
 
 VERSION_MODULES = [
@@ -150,6 +158,14 @@ VERSION_MODULES = [
     v20260805_0071_capability_pack_authority,
     v20260806_0072_capability_pack_integrity_hardening,
     v20260806_0073_core_functional_loops,
+    v20260811_0074_longform_native_intelligence,
+    v20260811_0075_source_deconstruction_intelligence,
+    v20260811_0076_source_import_runtime,
+    v20260811_0077_source_reprocessing_execution,
+    v20260811_0078_reprocessing_action_expansion,
+    v20260811_0079_source_import_scope_closure,
+    v20260811_0080_source_snapshot_governance_identity,
+    v20260811_0081_source_intelligence_router,
 ]
 
 __all__ = ["VERSION_MODULES"]

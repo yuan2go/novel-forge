@@ -7,6 +7,7 @@ from dataclasses import dataclass
 
 from novel_forge.api.authority_dependencies import (
     build_chapter_authority_application,
+    build_production_execution_composition,
     build_trusted_principal_resolver,
 )
 from novel_forge.infrastructure.settings import IndustrialSettings
@@ -29,7 +30,10 @@ def run_worker(*, poll_seconds: float = 1.0, batch_size: int = 10) -> int:
     if poll_seconds <= 0 or poll_seconds > 60 or batch_size <= 0:
         raise ValueError("worker poll and batch configuration is invalid")
     settings = IndustrialSettings.from_env()
-    application = build_chapter_authority_application(settings)
+    production_execution = build_production_execution_composition(settings)
+    application = build_chapter_authority_application(
+        settings, execution=production_execution
+    )
     principal_resolver = build_trusted_principal_resolver()
     worker = principal_resolver.resolve_worker_principal(application.worker_id)
     scheduler = application.scheduler(principal=worker)
@@ -71,10 +75,12 @@ def run_worker(*, poll_seconds: float = 1.0, batch_size: int = 10) -> int:
             supervisor.batch_completed(failures)
         except WorkerProgrammingError as error:
             supervisor.fatal(error)
+            production_execution.close()
             close_all_database_runtimes()
             return WorkerSupervisor.FATAL_EXIT_CODE
     supervisor.draining()
     supervisor.stopped()
+    production_execution.close()
     close_all_database_runtimes()
     return 0
 

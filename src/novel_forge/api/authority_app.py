@@ -11,6 +11,7 @@ from typing import Any
 
 from novel_forge.api.authority_dependencies import (
     authority_release_identity,
+    build_production_execution_composition,
     build_chapter_authority_application,
     build_chapter_authority_query,
     build_content_authority_application,
@@ -26,6 +27,10 @@ from novel_forge.api.authority_dependencies import (
     chapter_capability_pack_compilation_report,
 )
 from novel_forge.infrastructure.settings import IndustrialSettings
+from novel_forge.infrastructure.environment import RuntimeEnvironment
+from novel_forge.infrastructure.production_execution_composition import (
+    ProductionExecutionComposition,
+)
 from novel_forge.modules.chapter_authority.application import ChapterAuthorityApplication
 from novel_forge.modules.chapter_authority.queries import ChapterAuthorityQuery
 from novel_forge.modules.content_authority import ContentAuthorityApplication, ContentAuthorityQuery
@@ -46,6 +51,8 @@ from novel_forge.modules.capability_pack_authority.application import (
 from novel_forge.modules.capability_pack_authority.query import (
     CapabilityPackAuthorityQuery,
 )
+from novel_forge.modules.temporal_query import TemporalQueryService
+from novel_forge.modules.content_intelligence import PacingAnalysisService
 from novel_forge.modules.project_authority import (
     ProjectAuthorityApplication,
     ProjectAuthorityQuery,
@@ -54,6 +61,10 @@ from novel_forge.modules.task_authority import AuthorityTaskQuery
 from novel_forge.modules.source_authority import (
     SourceAuthorityApplication,
     SourceAuthorityQuery,
+)
+from novel_forge.modules.source_import import (
+    SourceImportApplication,
+    SourceImportQuery,
 )
 from novel_forge.modules.mkaos_authority import (
     MkaosAuthorityApplication,
@@ -79,6 +90,7 @@ REQUIRED_RUNTIME_GROUPS = (
     "chapter",
     "content",
     "source",
+    "source_import",
     "mkaos",
     "book",
     "outbox",
@@ -119,6 +131,7 @@ def _install_database_runtime_routes(app: Any, settings: IndustrialSettings) -> 
 
 @dataclass(frozen=True, slots=True)
 class AuthorityApiServices:
+    production_execution: ProductionExecutionComposition
     chapter_application: ChapterAuthorityApplication
     chapter_query: ChapterAuthorityQuery
     content_authority_application: ContentAuthorityApplication
@@ -131,6 +144,8 @@ class AuthorityApiServices:
     task_authority_query: AuthorityTaskQuery
     source_authority_application: SourceAuthorityApplication
     source_authority_query: SourceAuthorityQuery
+    source_import_application: SourceImportApplication
+    source_import_query: SourceImportQuery
     mkaos_authority_application: MkaosAuthorityApplication
     mkaos_authority_query: MkaosAuthorityQuery
     book_design_authority_application: BookDesignAuthorityApplication
@@ -139,17 +154,8 @@ class AuthorityApiServices:
     agent_runtime_query: AgentRuntimeQuery
     capability_pack_authority_application: CapabilityPackAuthorityApplication
     capability_pack_authority_query: CapabilityPackAuthorityQuery
-
-
-@dataclass(frozen=True, slots=True)
-class TrackBMinimalAuthorityServices:
-    """Only the services exercised by the first Track B vertical slice."""
-
-    project_authority_application: ProjectAuthorityApplication
-    project_authority_query: ProjectAuthorityQuery
-    task_authority_query: AuthorityTaskQuery
-    book_design_authority_application: BookDesignAuthorityApplication
-    book_design_authority_query: BookDesignAuthorityQuery
+    temporal_query_service: TemporalQueryService
+    pacing_analysis_service: PacingAnalysisService
 
 
 def create_authority_app(settings: IndustrialSettings):
@@ -171,24 +177,33 @@ def create_authority_app(settings: IndustrialSettings):
             os.environ.get("NOVEL_FORGE_POSTGRES_MAX_CONNECTIONS") or "100"
         ),
     )
-    if settings.authority_runtime_profile == "track-b-minimal":
-        return _create_track_b_minimal_app(settings, FastAPI, CORSMiddleware)
     provider_registry = build_provider_adapter_registry(
         environment=settings.environment,
         provider_ids=configured_chapter_provider_ids(os.environ),
         env=os.environ,
     )
-    application = build_chapter_authority_application(
+    production_execution = build_production_execution_composition(
         settings, provider_registry=provider_registry
+    )
+    application = build_chapter_authority_application(
+        settings, execution=production_execution
     )
     book_principal = build_trusted_principal_resolver().resolve_api_principal()
     book_production = build_book_production_composition(
         settings,
         principal=book_principal,
+        execution=production_execution,
         chapter_application=application,
     )
     build_id, commit_sha = authority_release_identity()
+    runtime_environment = RuntimeEnvironment.parse(
+        str(os.environ.get("NOVEL_FORGE_ENVIRONMENT") or settings.environment)
+    )
+    source_fixture_root = str(
+        os.environ.get("NOVEL_FORGE_SOURCE_IMPORT_FILE_FIXTURE_ROOT") or ""
+    ).strip()
     services = AuthorityApiServices(
+        production_execution=production_execution,
         chapter_application=application,
         chapter_query=build_chapter_authority_query(settings),
         content_authority_application=build_content_authority_application(settings),
@@ -211,6 +226,15 @@ def create_authority_app(settings: IndustrialSettings):
             commit_sha=commit_sha,
         ),
         source_authority_query=SourceAuthorityQuery(settings.database_url),
+        source_import_application=SourceImportApplication(
+            settings.database_url,
+            application_build_id=build_id,
+            commit_sha=commit_sha,
+            allow_file_repositories=(
+                runtime_environment.fixture_allowed and bool(source_fixture_root)
+            ),
+        ),
+        source_import_query=SourceImportQuery(settings.database_url),
         mkaos_authority_application=MkaosAuthorityApplication(
             settings.database_url,
             application_build_id=build_id,
@@ -229,6 +253,8 @@ def create_authority_app(settings: IndustrialSettings):
         capability_pack_authority_query=build_capability_pack_authority_query(
             settings
         ),
+        temporal_query_service=TemporalQueryService(settings.database_url),
+        pacing_analysis_service=PacingAnalysisService(settings.database_url),
     )
     app = FastAPI(
         title="Novel Forge PostgreSQL Authority API",
@@ -264,6 +290,9 @@ def create_authority_app(settings: IndustrialSettings):
     from novel_forge.api.routers.source_authority import (
         create_router as create_source_router,
     )
+    from novel_forge.api.routers.source_import import (
+        create_router as create_source_import_router,
+    )
     from novel_forge.api.routers.mkaos_authority import (
         create_router as create_mkaos_router,
     )
@@ -275,6 +304,12 @@ def create_authority_app(settings: IndustrialSettings):
     )
     from novel_forge.api.routers.capability_pack_authority import (
         create_router as create_capability_pack_router,
+    )
+    from novel_forge.api.routers.temporal_query import (
+        create_router as create_temporal_query_router,
+    )
+    from novel_forge.api.routers.content_intelligence import (
+        create_router as create_content_intelligence_router,
     )
 
     app.include_router(
@@ -314,6 +349,15 @@ def create_authority_app(settings: IndustrialSettings):
         )
     )
     app.include_router(
+        create_source_import_router(
+            ProductRouterContext(
+                app_settings=settings,
+                models=product_model_map(),
+                services=services,
+            )
+        )
+    )
+    app.include_router(
         create_mkaos_router(
             ProductRouterContext(
                 app_settings=settings,
@@ -342,6 +386,24 @@ def create_authority_app(settings: IndustrialSettings):
     )
     app.include_router(
         create_capability_pack_router(
+            ProductRouterContext(
+                app_settings=settings,
+                models=product_model_map(),
+                services=services,
+            )
+        )
+    )
+    app.include_router(
+        create_temporal_query_router(
+            ProductRouterContext(
+                app_settings=settings,
+                models=product_model_map(),
+                services=services,
+            )
+        )
+    )
+    app.include_router(
+        create_content_intelligence_router(
             ProductRouterContext(
                 app_settings=settings,
                 models=product_model_map(),
@@ -400,14 +462,13 @@ def create_authority_app(settings: IndustrialSettings):
         return {
             "status": "alive",
             "storage_authority": "postgresql",
-            "legacy_localstorage_loaded": False,
         }
 
     @app.get("/liveness")
     def liveness() -> dict[str, Any]:
         return {
             "status": "alive",
-            "runtime_profile": settings.authority_runtime_profile,
+            "runtime_profile": "full",
             "storage_authority": "postgresql",
         }
 
@@ -441,7 +502,7 @@ def create_authority_app(settings: IndustrialSettings):
         except Exception as exc:
             object_store_ready = False
             object_store_error = f"{type(exc).__name__}: {exc}"
-        routes = dict(application.model_port.adapter.routes)
+        routes = dict(production_execution.gateway.routes)
         route_runtime_classes = {
             route.model_profile.runtime_class.value for route in routes.values()
         }
@@ -538,7 +599,7 @@ def create_authority_app(settings: IndustrialSettings):
             "real_provider_proven": False,
             "longform_proven": False,
             "production_verified": False,
-            "runtime_profile": settings.authority_runtime_profile,
+            "runtime_profile": "full",
             "postgresql": {
                 "authority": True,
                 "reachable": database_health.get("status") == "ready",
@@ -574,8 +635,6 @@ def create_authority_app(settings: IndustrialSettings):
                 "activation_ready": pack_activation_ready,
                 "activation_error": pack_activation_error,
             },
-            "legacy_write_enabled": False,
-            "silent_fallback_enabled": False,
         }
 
     @app.get("/startup")
@@ -630,6 +689,7 @@ def create_authority_app(settings: IndustrialSettings):
 
     @app.on_event("shutdown")
     def shutdown_database_runtime() -> None:
+        production_execution.close()
         close_all_database_runtimes()
 
     _install_database_runtime_routes(app, settings)
@@ -642,128 +702,8 @@ def create_authority_app_from_env():
     return create_authority_app(IndustrialSettings.from_env())
 
 
-def _create_track_b_minimal_app(settings: IndustrialSettings, FastAPI: Any, CORSMiddleware: Any):
-    """Compose an Authority-only API without Provider or Legacy construction."""
-
-    if settings.legacy_write_enabled or settings.silent_legacy_fallback_enabled:
-        raise RuntimeError("Track B runtime forbids Legacy writes and silent fallback")
-    build_id, commit_sha = authority_release_identity()
-    services = TrackBMinimalAuthorityServices(
-        project_authority_application=ProjectAuthorityApplication(
-            settings.database_url,
-            application_build_id=build_id,
-            commit_sha=commit_sha,
-        ),
-        project_authority_query=ProjectAuthorityQuery(settings.database_url),
-        task_authority_query=AuthorityTaskQuery(settings.database_url),
-        book_design_authority_application=build_book_design_authority_application(settings),
-        book_design_authority_query=build_book_design_authority_query(settings),
-    )
-    app = FastAPI(
-        title="Novel Forge Track B Authority API",
-        version="7.0.0-track-b-minimal",
-        description="Book + BookDesign PostgreSQL Authority-only runtime.",
-    )
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=list(settings.api_cors_origins),
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
-
-    from novel_forge.api.models import product_model_map
-    from novel_forge.api.routers.authority_assets import create_router as create_asset_router
-    from novel_forge.api.routers.authority_projects import create_router as create_project_router
-    from novel_forge.api.routers.authority_tasks import create_router as create_task_router
-    from novel_forge.api.routers.book_design_authority import (
-        create_router as create_book_design_router,
-    )
-    from novel_forge.api.routers.context import ProductRouterContext
-    from novel_forge.storage.object_store import MinioObjectStore
-
-    context = ProductRouterContext(
-        app_settings=settings,
-        models=product_model_map(),
-        services=services,
-    )
-    for router_factory in (
-        create_project_router,
-        create_task_router,
-        create_asset_router,
-        create_book_design_router,
-    ):
-        app.include_router(router_factory(context))
-
-    @app.get("/health")
-    def health() -> dict[str, Any]:
-        return {
-            "status": "running",
-            "runtime_profile": "track-b-minimal",
-            "storage_authority": "postgresql",
-            "queue_authority": False,
-            "legacy_write_enabled": False,
-            "silent_fallback_enabled": False,
-        }
-
-    @app.get("/liveness")
-    def liveness() -> dict[str, Any]:
-        return health()
-
-    @app.get("/ready")
-    def ready() -> dict[str, Any]:
-        database = get_migration_status(settings.database_url)
-        object_store_error = ""
-        try:
-            MinioObjectStore(settings).client.list_buckets()
-            object_store_ready = True
-        except Exception as exc:  # dependency/network boundary is reported, never hidden
-            object_store_ready = False
-            object_store_error = f"{type(exc).__name__}: {exc}"
-        status = "ready" if database["ok"] and object_store_ready else "not_ready"
-        result = {
-            "status": status,
-            "runtime_profile": "track-b-minimal",
-            "postgresql": {
-                "authority": True,
-                "migration_head": database["current"],
-                "migration_chain_current": database["ok"],
-            },
-            "object_store": {
-                "configured": True,
-                "reachable": object_store_ready,
-                "error": object_store_error,
-            },
-            "outbox": {"authority": "postgresql"},
-            "queue": {"role": "delivery_only", "authority": False},
-            "legacy_write_enabled": False,
-            "silent_fallback_enabled": False,
-        }
-        if status != "ready":
-            from fastapi import HTTPException
-
-            raise HTTPException(status_code=503, detail=result)
-        return result
-
-    @app.get("/startup")
-    def startup() -> dict[str, Any]:
-        return ready()
-
-    @app.get("/readiness")
-    def readiness() -> dict[str, Any]:
-        return ready()
-
-    @app.on_event("shutdown")
-    def shutdown_database_runtime() -> None:
-        close_all_database_runtimes()
-
-    _install_database_runtime_routes(app, settings)
-    return app
-
-
 __all__ = [
     "AuthorityApiServices",
-    "TrackBMinimalAuthorityServices",
     "create_authority_app",
     "create_authority_app_from_env",
 ]

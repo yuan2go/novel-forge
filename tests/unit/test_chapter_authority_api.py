@@ -6,7 +6,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from novel_forge.api.app import create_app
+from novel_forge.api.authority_app import create_authority_app as create_app
 from novel_forge.infrastructure.settings import IndustrialSettings
 
 
@@ -180,10 +180,6 @@ class ChapterAuthorityApiTests(unittest.TestCase):
                 )
             with (
                 patch(
-                    "novel_forge.api.routers.chapter_authority.build_chapter_authority_application",
-                    return_value=fake,
-                ),
-                patch(
                     "novel_forge.api.routers.chapter_authority.build_production_preparation_service",
                     return_value=preparation_service,
                 ),
@@ -244,14 +240,6 @@ class ChapterAuthorityApiTests(unittest.TestCase):
                 )
             with (
                 patch(
-                    "novel_forge.api.routers.chapter_authority.build_chapter_authority_application",
-                    return_value=fake,
-                ),
-                patch(
-                    "novel_forge.api.routers.chapter_authority.build_chapter_authority_query",
-                    return_value=fake.query,
-                ),
-                patch(
                     "novel_forge.api.routers.chapter_authority.authority_release_identity",
                     return_value=("build-42", "a" * 40),
                 ),
@@ -305,13 +293,7 @@ class ChapterAuthorityApiTests(unittest.TestCase):
                         root=Path(directory), database_url="postgresql://fixture"
                     )
                 )
-            with (
-                patch(
-                    "novel_forge.api.routers.chapter_authority.build_chapter_authority_query",
-                    side_effect=RuntimeError("PostgreSQL database is required"),
-                ),
-                TestClient(app) as client,
-            ):
+            with TestClient(app, raise_server_exceptions=False) as client:
                 response = client.get(
                     "/product/production/chapter-authority/runs",
                     params={"project_id": "project-1"},
@@ -336,10 +318,6 @@ class ChapterAuthorityApiTests(unittest.TestCase):
                     )
                 )
             with (
-                patch(
-                    "novel_forge.api.routers.chapter_authority.build_chapter_authority_query",
-                    return_value=fake.query,
-                ),
                 patch(
                     "novel_forge.api.routers.chapter_authority.build_trusted_principal_resolver",
                     return_value=TrustedPrincipalResolver(

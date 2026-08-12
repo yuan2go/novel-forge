@@ -1,3 +1,3 @@
-from novel_forge.cli import main
+from novel_forge.cli.authority import main
 
 raise SystemExit(main())

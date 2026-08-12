@@ -38,11 +38,8 @@ class BookProductionCompositionTests(unittest.TestCase):
         )
         preparation = SimpleNamespace()
 
+        execution = SimpleNamespace()
         with (
-            patch(
-                "novel_forge.api.authority_dependencies.build_chapter_authority_application",
-                return_value=chapter,
-            ),
             patch(
                 "novel_forge.api.authority_dependencies.build_book_authority_application",
                 return_value=book,
@@ -65,6 +62,8 @@ class BookProductionCompositionTests(unittest.TestCase):
                     "NOVEL_FORGE_COMMIT_SHA": "a" * 40,
                 },
                 principal=principal,
+                execution=execution,
+                chapter_application=chapter,
             )
 
         self.assertIs(composition.authority, book)
@@ -77,38 +76,25 @@ class BookProductionCompositionTests(unittest.TestCase):
         self.assertIs(composition.replan.book, book)
         self.assertIs(composition.replan.planning, planning)
         self.assertIs(composition.supervisor.authority, book)
+        self.assertIs(composition.supervisor.query, composition.query)
+        self.assertIs(composition.supervisor.scheduler.query, composition.query)
         self.assertIs(composition.supervisor.chapter_groups, composition.chapter_groups)
         self.assertIs(composition.supervisor.production_preparation, preparation)
 
-    def test_tick_uses_supervisor_for_resolved_input_and_same_sidecar_for_legacy(
-        self,
-    ) -> None:
+    def test_tick_has_one_canonical_supervisor_path(self) -> None:
         from novel_forge.modules.book_authority.composition import (
             BookProductionComposition,
         )
 
         calls: list[tuple[str, str]] = []
-        authority = SimpleNamespace(
-            require=lambda book_run_id: {
-                "input_mode": (
-                    "RESOLVED_AUTHORITY_INPUT"
-                    if book_run_id == "resolved"
-                    else "LEGACY_FIXTURE_INPUT"
-                )
-            }
-        )
         supervisor = SimpleNamespace(
             tick=lambda book_run_id: (
                 calls.append(("supervisor", book_run_id)) or "supervisor-tick"
             ),
-            scheduler=SimpleNamespace(
-                tick=lambda book_run_id: (
-                    calls.append(("scheduler", book_run_id)) or "scheduler-tick"
-                )
-            ),
         )
         composition = BookProductionComposition(
-            authority=authority,
+            authority=SimpleNamespace(),
+            query=SimpleNamespace(),
             planning=SimpleNamespace(),
             chapter_groups=SimpleNamespace(),
             production_preparation=SimpleNamespace(),
@@ -125,13 +111,10 @@ class BookProductionCompositionTests(unittest.TestCase):
                 authentication_source="test",
             ),
         )
+        assert composition.query is not None
 
-        self.assertEqual(composition.tick("resolved"), "supervisor-tick")
-        self.assertEqual(composition.tick("legacy"), "scheduler-tick")
-        self.assertEqual(
-            calls,
-            [("supervisor", "resolved"), ("scheduler", "legacy")],
-        )
+        self.assertEqual(composition.tick("book-run:1"), "supervisor-tick")
+        self.assertEqual(calls, [("supervisor", "book-run:1")])
 
     def test_formal_replan_approval_is_scoped_to_the_book_run(self) -> None:
         from novel_forge.modules.book_authority.composition import (
@@ -159,6 +142,7 @@ class BookProductionCompositionTests(unittest.TestCase):
         )
         composition = BookProductionComposition(
             authority=SimpleNamespace(),
+            query=SimpleNamespace(),
             planning=SimpleNamespace(),
             chapter_groups=SimpleNamespace(),
             production_preparation=SimpleNamespace(),
@@ -175,6 +159,7 @@ class BookProductionCompositionTests(unittest.TestCase):
                 authentication_source="test",
             ),
         )
+        assert composition.query is not None
 
         result = composition.approve_replan(
             book_run_id="book-run:1",
@@ -198,6 +183,7 @@ class BookProductionCompositionTests(unittest.TestCase):
 
         worker_composition = BookProductionComposition(
             authority=SimpleNamespace(),
+            query=SimpleNamespace(),
             planning=SimpleNamespace(),
             chapter_groups=SimpleNamespace(),
             production_preparation=SimpleNamespace(),
@@ -214,6 +200,7 @@ class BookProductionCompositionTests(unittest.TestCase):
                 authentication_source="test",
             ),
         )
+        assert worker_composition.query is not None
         with self.assertRaises(PermissionError):
             worker_composition.approve_replan(
                 book_run_id="book-run:1",

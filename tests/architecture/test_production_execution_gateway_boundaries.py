@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import re
 import unittest
 from pathlib import Path
 
@@ -19,15 +18,6 @@ class ProductionExecutionGatewayBoundaryTests(unittest.TestCase):
         self.assertNotIn("create table execution_attempt", source)
         self.assertNotIn("class executionattempt", source)
         self.assertNotIn("execution_attempts", source)
-
-    def test_model_router_has_no_direct_legacy_adapter_invocation(self) -> None:
-        source = (
-            ROOT / "src/novel_forge/modules/model_router/service.py"
-        ).read_text(encoding="utf-8")
-        direct = re.findall(
-            r"\badapter\.(?:generate|analyze|review|revise)\s*\(", source
-        )
-        self.assertEqual(direct, [])
 
     def test_scripted_backend_cannot_claim_real_provider_proof(self) -> None:
         source = (

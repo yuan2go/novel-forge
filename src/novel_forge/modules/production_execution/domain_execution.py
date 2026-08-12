@@ -2,8 +2,7 @@
 
 Domain modules own prompts, semantic validation, repair, approval, and activation.
 This module only turns an already frozen Authority ExecutionRequest into a structured
-candidate plus execution evidence.  The development adapter is an explicit
-strangler seam and is fail-closed in controlled environments.
+candidate plus execution evidence.
 """
 
 from __future__ import annotations
@@ -12,10 +11,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any, Mapping, Protocol
 
-from novel_forge.modules.production_execution.capability_registry import (
-    CONTROLLED_ENVIRONMENTS,
-    default_capability_registry,
-)
+from novel_forge.modules.production_execution.capability_registry import default_capability_registry
 from novel_forge.modules.production_execution.contracts import (
     ExecutionOutcome,
     ExecutionRequest,
@@ -23,7 +19,6 @@ from novel_forge.modules.production_execution.contracts import (
 )
 from novel_forge.modules.production_execution.gateway import ProductionExecutionGateway
 from novel_forge.modules.production_execution.evidence import ExecutionRecordStore
-from novel_forge.modules.production_execution.security import execution_environment
 
 
 class CandidateKind(StrEnum):
@@ -76,7 +71,6 @@ class DomainExecutionEvidence:
     fixture_protocol_only: bool
     real_model_call: bool
     production_verified: bool
-    legacy_compatibility_only: bool = False
     provider_id: str = ""
     model_id: str = ""
     provider_request_id: str = ""
@@ -99,7 +93,6 @@ class DomainExecutionEvidence:
             "fixture_protocol_only": self.fixture_protocol_only,
             "real_model_call": self.real_model_call,
             "production_verified": self.production_verified,
-            "legacy_compatibility_only": self.legacy_compatibility_only,
             "provider_id": self.provider_id,
             "model_id": self.model_id,
             "provider_request_id": self.provider_request_id,
@@ -211,17 +204,9 @@ def execute_domain_candidate(
     prompt: str,
     context: Mapping[str, Any],
     review: Mapping[str, Any] | None = None,
-    execution_port: DomainExecutionPort | None = None,
-    legacy_model: object | None = None,
-    legacy_model_role: str = "",
-    legacy_provider: str = "",
-    legacy_model_name: str = "",
-    environment: str = "",
-    storage: object | None = None,
-    agent_run_path: str = "",
-    legacy_validation_operation: DomainModelOperation | str | None = None,
+    execution_port: DomainExecutionPort,
 ) -> DomainExecutionCandidate:
-    """Execute through PEP, or an explicitly non-controlled compatibility seam."""
+    """Execute a frozen candidate request through the governed PEP port."""
 
     command = DomainExecutionCommand(
         capability=capability,
@@ -231,90 +216,7 @@ def execute_domain_candidate(
         context=dict(context),
         review=None if review is None else dict(review),
     )
-    if execution_port is not None:
-        return execution_port.execute(command)
-
-    normalized_environment = execution_environment(environment)
-    if normalized_environment in CONTROLLED_ENVIRONMENTS:
-        raise RuntimeError(
-            "legacy direct model adapters are disabled; controlled domain execution "
-            "requires GatewayDomainExecutionPort"
-        )
-    if legacy_model is None:
-        if not legacy_model_role:
-            raise ValueError(
-                "development compatibility execution requires a model role"
-            )
-        from novel_forge.model_adapters import model_from_env
-        import os
-
-        legacy_environment = dict(os.environ)
-        if legacy_provider:
-            legacy_environment["NOVEL_FORGE_MODEL_PROVIDER"] = legacy_provider
-        if legacy_model_name:
-            legacy_environment["NOVEL_FORGE_MODEL_NAME"] = legacy_model_name
-        legacy_model = model_from_env(legacy_model_role, env=legacy_environment)
-    model = legacy_model
-    if storage is not None and agent_run_path:
-        from novel_forge.model_adapters import GuardedModelAdapter
-
-        model = GuardedModelAdapter(legacy_model, storage, agent_run_path)
-    if command.operation is DomainModelOperation.GENERATE:
-        raw = model.generate(command.prompt, dict(command.context))  # type: ignore[attr-defined]
-    elif command.operation is DomainModelOperation.ANALYZE:
-        raw = model.analyze(command.prompt, dict(command.context))  # type: ignore[attr-defined]
-    elif command.operation is DomainModelOperation.REVIEW:
-        raw = model.review(command.prompt, dict(command.context))  # type: ignore[attr-defined]
-    else:
-        raw = model.revise(  # type: ignore[attr-defined]
-            command.prompt,
-            dict(command.review or {}),
-            dict(command.context),
-        )
-    from novel_forge.model_adapters import validate_model_output
-
-    validation_operation = (
-        DomainModelOperation(legacy_validation_operation).value
-        if legacy_validation_operation is not None
-        else command.operation.value
-    )
-    output = validate_model_output(validation_operation, raw)
-    model_name = str(getattr(legacy_model, "name", "development-model"))
-    return DomainExecutionCandidate(
-        candidate_kind=command.candidate_kind,
-        raw_output=output,
-        evidence=DomainExecutionEvidence(
-            execution_id="",
-            operation_id="",
-            attempt_id="",
-            fencing_token=0,
-            capability=command.capability,
-            backend_id=f"legacy-development:{model_name}",
-            route_snapshot_id="",
-            input_manifest_ref="",
-            output_manifest_ref="",
-            validation_manifest_ref="",
-            usage_receipt_ref="",
-            cost_receipt_ref="",
-            fixture_protocol_only=True,
-            real_model_call=False,
-            production_verified=False,
-            legacy_compatibility_only=True,
-            provider_id=model_name,
-            model_id=model_name,
-        ),
-    )
-
-
-def execution_model_name(
-    execution_port: DomainExecutionPort | None,
-    legacy_model: object | None,
-    *,
-    legacy_model_role: str,
-) -> str:
-    if execution_port is not None:
-        return "production-execution-gateway"
-    return str(getattr(legacy_model, "name", legacy_model_role or "development-model"))
+    return execution_port.execute(command)
 
 
 __all__ = [
@@ -326,5 +228,4 @@ __all__ = [
     "DomainModelOperation",
     "GatewayDomainExecutionPort",
     "execute_domain_candidate",
-    "execution_model_name",
 ]

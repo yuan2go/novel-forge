@@ -19,6 +19,7 @@ from uuid import uuid4
 from novel_forge.api.authority_dependencies import (
     build_book_production_composition,
     build_chapter_authority_application,
+    build_production_execution_composition,
     build_story_planning_generation_application,
 )
 from novel_forge.modules.book_authority import (
@@ -1037,7 +1038,7 @@ def _run_planning(
     database_url: str,
     settings: IndustrialSettings,
     env: dict[str, str],
-    chapter: Any,
+    execution: Any,
     project_id: str,
     workspace_id: str,
     book_id: str,
@@ -1054,8 +1055,8 @@ def _run_planning(
     failure = OneShotMeasuredProviderFailure()
     planning = build_story_planning_generation_application(
         settings,
+        execution=execution,
         env=env,
-        chapter_application=chapter,
         post_provider_fault_injector=failure,
     )
     activated: dict[str, str] = {}
@@ -2918,8 +2919,8 @@ def _run_book_phase(
     database_url: str,
     settings: IndustrialSettings,
     env: dict[str, str],
+    execution: Any,
     chapter: Any,
-    planning: Any,
     project_id: str,
     workspace_id: str,
     book_id: str,
@@ -2945,6 +2946,7 @@ def _run_book_phase(
     composition = build_book_production_composition(
         settings,
         principal=operator,
+        execution=execution,
         env=composition_env,
         chapter_application=chapter,
     )
@@ -3358,9 +3360,9 @@ def _resume_book_phase(args: argparse.Namespace) -> dict[str, Any]:
         "story_planning.authority.approve",
         "story_planning.authority.activate",
     )
-    chapter = build_chapter_authority_application(settings, env=env)
-    planning = build_story_planning_generation_application(
-        settings, env=env, chapter_application=chapter
+    production_execution = build_production_execution_composition(settings, env=env)
+    chapter = build_chapter_authority_application(
+        settings, execution=production_execution, env=env
     )
     planning_process_id = int(source["runtime"]["process_id"])
     if planning_process_id == os.getpid():
@@ -3380,8 +3382,8 @@ def _resume_book_phase(args: argparse.Namespace) -> dict[str, Any]:
             database_url=args.database_url,
             settings=settings,
             env=env,
+            execution=production_execution,
             chapter=chapter,
-            planning=planning,
             project_id=project_id,
             workspace_id=workspace_id,
             book_id=book_id,
@@ -3396,7 +3398,7 @@ def _resume_book_phase(args: argparse.Namespace) -> dict[str, Any]:
             stop_after_chapter=args.stop_after_chapter,
         )
     finally:
-        chapter.close()
+        production_execution.close()
     source["created_at"] = datetime.now().astimezone().isoformat()
     source["release"] = {
         "branch": branch,
@@ -3598,7 +3600,10 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
         agent_domain="reader_outcome",
         agent_scope_type="CHAPTER",
     )
-    chapter = build_chapter_authority_application(settings, env=env)
+    production_execution = build_production_execution_composition(settings, env=env)
+    chapter = build_chapter_authority_application(
+        settings, execution=production_execution, env=env
+    )
     chapter_pack = _install_pack(
         args.database_url,
         project_id=project_id,
@@ -3610,11 +3615,11 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
         approver=approver,
         agent_admin=agent_admin,
     )
-    planning, activated, projections, retry = _run_planning(
+    _planning, activated, projections, retry = _run_planning(
         database_url=args.database_url,
         settings=settings,
         env=env,
-        chapter=chapter,
+        execution=production_execution,
         project_id=project_id,
         workspace_id=workspace_id,
         book_id=book_id,
@@ -3706,7 +3711,7 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
         },
     }
     if args.stop_after_planning:
-        chapter.close()
+        production_execution.close()
         proof_evidence = _collect_proof_evidence(
             args.database_url,
             project_id=project_id,
@@ -3724,8 +3729,8 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
             database_url=args.database_url,
             settings=settings,
             env=env,
+            execution=production_execution,
             chapter=chapter,
-            planning=planning,
             project_id=project_id,
             workspace_id=workspace_id,
             book_id=book_id,
@@ -3740,7 +3745,7 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
             stop_after_chapter=args.stop_after_chapter,
         )
     finally:
-        chapter.close()
+        production_execution.close()
     planning_result["authority"]["book_phase"] = _jsonable(book_phase)
     planning_result["authority"]["activated_plans"] = activated
     planning_result["authority"]["chapter_plan_projections"] = projections

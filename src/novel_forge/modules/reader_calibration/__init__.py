@@ -1,4 +1,3 @@
-from .application import PostgresReaderCalibrationAuthority
 from .domain import (
     CalibrationCandidate,
     CalibrationScope,
@@ -30,7 +29,6 @@ __all__ = [
     "ReaderJudgeQualificationStatus",
     "ReaderOutcomeDecisionPolicy",
     "PreferenceChoice",
-    "PostgresReaderCalibrationAuthority",
     "blind_pair_order",
     "calibrated_probability",
     "calibration_metrics",

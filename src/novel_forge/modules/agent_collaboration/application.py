@@ -216,7 +216,6 @@ class AgentCollaborationApplication:
                 "participant_set_is_frozen": True,
             },
             execution_port=execution_port,
-            environment="production",
         )
         if candidate.candidate_kind is not CandidateKind.AGENT_RESULT:
             raise ValueError("PEP returned the wrong candidate kind for Agent turn")

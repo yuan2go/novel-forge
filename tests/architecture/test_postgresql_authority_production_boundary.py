@@ -6,7 +6,6 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 PRODUCTION_AUTHORITY_FILES = (
-    ROOT / "src/novel_forge/api/app.py",
     ROOT / "src/novel_forge/api/authority_app.py",
     ROOT / "src/novel_forge/api/routers/authority_projects.py",
     ROOT / "src/novel_forge/api/routers/authority_tasks.py",
@@ -35,20 +34,6 @@ FORBIDDEN = (
     "Path.write_text",
 )
 
-# The selector may import the development-only app after its explicit
-# production fail-closed branch.  It is not reachable in production and is
-# removed when the development UI migration reaches zero Legacy dependencies.
-ALLOWLIST = {
-    (
-        "src/novel_forge/api/app.py",
-        "novel_forge.api.legacy_app import",
-    ): {
-        "reason": "development-only compatibility entrypoint behind production fail-closed guard",
-        "delete_when": "WP-12 development product routers are fully Authority-backed",
-    },
-}
-
-
 class PostgreSqlAuthorityProductionBoundaryTests(unittest.TestCase):
     def test_authority_entrypoints_have_no_filesystem_or_legacy_task_authority(self) -> None:
         findings: list[str] = []
@@ -56,15 +41,13 @@ class PostgreSqlAuthorityProductionBoundaryTests(unittest.TestCase):
             source = path.read_text(encoding="utf-8")
             for marker in FORBIDDEN:
                 relative = str(path.relative_to(ROOT))
-                if marker in source and (relative, marker) not in ALLOWLIST:
+                if marker in source:
                     findings.append(f"{relative}: {marker}")
         self.assertEqual(findings, [])
 
-    def test_production_selector_is_fail_closed(self) -> None:
-        source = (ROOT / "src/novel_forge/api/app.py").read_text(encoding="utf-8")
-        self.assertIn('resolved.environment == "production"', source)
-        self.assertIn("production API requires NOVEL_FORGE_STORAGE_AUTHORITY=postgresql", source)
-        self.assertIn("create_authority_app(resolved)", source)
+    def test_production_has_no_runtime_selector(self) -> None:
+        self.assertFalse((ROOT / "src/novel_forge/api/app.py").exists())
+        self.assertFalse((ROOT / "src/novel_forge/api/legacy_app.py").exists())
 
     def test_task_center_has_no_legacy_retry_api(self) -> None:
         source = (

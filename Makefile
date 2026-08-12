@@ -2,12 +2,9 @@ PYTHON ?= $(if $(wildcard .venv/bin/python),.venv/bin/python,python3)
 PYTHONPATH := src
 PYTEST := $(PYTHON) -m pytest
 WEB_DIR ?= web/admin
-LOCAL_WORKSPACE ?= .local/workspace
-DEMO_WORKSPACE ?= .local/demo-workspace
 AUTHORITY_COMPOSE ?= docker compose -f compose.yml
-LEGACY_COMPOSE ?= docker compose -f compose.legacy.yml --profile legacy
 
-.PHONY: test lint lint-authority lint-ratchet validate demo authority-demo legacy-validate legacy-demo local-workspace infra-up infra-down postgres-authority-test-up postgres-authority-test-down postgres-authority-test authority-up authority-down authority-build authority-smoke authority-logs authority-test authority-postgres-test authority-compose-config-check authority-query-plan-release legacy-up legacy-down legacy-logs local-up local-down local-smoke local-logs failure-drill v1-slow-acceptance governance-dead-letter-regression runtime-growth-regression source-governance-regression api worker web-dev sync-skills sync-skills-dry-run check-skills authority-parity-check head-integrity-check architecture-manifests-check architecture-fitness-check authority-only-config-check d0-provider-probe help
+.PHONY: test lint lint-authority lint-ratchet validate demo authority-demo infra-up infra-down postgres-authority-test-up postgres-authority-test-down postgres-authority-test authority-up authority-down authority-build authority-smoke authority-logs authority-test authority-postgres-test authority-compose-config-check authority-query-plan-release api worker web-dev sync-skills sync-skills-dry-run check-skills head-integrity-check architecture-manifests-check architecture-fitness-check authority-only-config-check d0-provider-probe help
 
 RUFF ?= ruff
 AUTHORITY_RUFF_PATHS := \
@@ -24,9 +21,6 @@ help:
 	@echo "make lint-ratchet - reject new or increased repository Ruff debt"
 	@echo "make validate  - validate Authority code, manifests, fitness, and Compose configuration"
 	@echo "make demo      - run the PostgreSQL Authority fixture/recovery demo"
-	@echo "make legacy-validate - explicitly validate a Legacy development workspace"
-	@echo "make legacy-demo - explicitly run the Legacy development fixture"
-	@echo "make local-workspace - create ignored local runtime workspace"
 	@echo "make authority-up - build and start the PostgreSQL Authority backend"
 	@echo "make authority-down - stop the PostgreSQL Authority backend"
 	@echo "make authority-build - build Authority API and worker images"
@@ -34,22 +28,13 @@ help:
 	@echo "make authority-logs - tail Authority API and worker logs"
 	@echo "make authority-test - run local Authority lint, architecture, unit, and acceptance gates"
 	@echo "make authority-postgres-test - run non-skippable Authority PostgreSQL tests"
-	@echo "make authority-compose-config-check - validate Authority and explicit Legacy Compose"
+	@echo "make authority-compose-config-check - validate Authority Compose"
 	@echo "make authority-query-plan-release - run representative-scale real Planner proof"
-	@echo "make legacy-up - explicitly start the Legacy development profile"
-	@echo "make legacy-down - stop the explicit Legacy development profile"
-	@echo "make legacy-logs - tail explicit Legacy profile logs"
 	@echo "make infra-up  - start Authority PostgreSQL and object storage"
 	@echo "make postgres-authority-test-up - start isolated PostgreSQL authority test service"
 	@echo "make postgres-authority-test - run non-skippable authority PostgreSQL tests"
-	@echo "make local-up/local-down/local-smoke/local-logs - compatibility aliases for Authority targets"
-	@echo "make failure-drill - run non-destructive failure recovery drill"
-	@echo "make v1-slow-acceptance - run explicit 10-chapter V1 slow acceptance"
-	@echo "make governance-dead-letter-regression - run focused governance dead-letter regression"
-	@echo "make runtime-growth-regression - run focused runtime write-growth regression"
-	@echo "make source-governance-regression - run focused source governance regression"
 	@echo "make api       - run FastAPI backend"
-	@echo "make worker    - run Celery worker"
+	@echo "make worker    - run the Chapter Authority worker"
 	@echo "make web-dev   - run Next.js admin console"
 	@echo "make sync-skills-dry-run - preview syncing skills to .claude/skills"
 	@echo "make sync-skills - sync repository skills to .claude/skills"
@@ -75,20 +60,10 @@ lint-ratchet:
 
 validate: lint lint-authority lint-ratchet architecture-manifests-check architecture-fitness-check authority-only-config-check
 
-local-workspace:
-	mkdir -p $(LOCAL_WORKSPACE)
-
 demo: authority-demo
 
 authority-demo:
 	PYTHONPATH=$(PYTHONPATH) $(PYTHON) scripts/verify_authority_compose.py
-
-legacy-validate: local-workspace
-	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m novel_forge.cli legacy validate --root $(LOCAL_WORKSPACE)
-
-legacy-demo: local-workspace
-	mkdir -p $(DEMO_WORKSPACE)
-	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m novel_forge.cli legacy run-pipeline --sample --root $(DEMO_WORKSPACE)
 
 infra-up:
 	$(AUTHORITY_COMPOSE) up -d --wait postgresql object-store
@@ -113,13 +88,13 @@ authority-down:
 	$(AUTHORITY_COMPOSE) down --timeout 45
 
 authority-build:
-	$(AUTHORITY_COMPOSE) build authority-migration authority-api agent-authority-worker chapter-authority-worker content-authority-worker source-authority-worker mkaos-authority-worker book-authority-worker outbox-worker maintenance-worker
+	$(AUTHORITY_COMPOSE) build authority-migration authority-api agent-authority-worker chapter-authority-worker content-authority-worker source-authority-worker source-import-worker mkaos-authority-worker book-authority-worker outbox-worker maintenance-worker
 
 authority-smoke:
 	PYTHONPATH=$(PYTHONPATH) $(PYTHON) scripts/verify_authority_compose.py
 
 authority-logs:
-	$(AUTHORITY_COMPOSE) logs -f authority-api agent-authority-worker chapter-authority-worker content-authority-worker source-authority-worker mkaos-authority-worker book-authority-worker outbox-worker maintenance-worker
+	$(AUTHORITY_COMPOSE) logs -f authority-api agent-authority-worker chapter-authority-worker content-authority-worker source-authority-worker source-import-worker mkaos-authority-worker book-authority-worker outbox-worker maintenance-worker
 
 authority-test: lint lint-authority lint-ratchet architecture-manifests-check architecture-fitness-check head-integrity-check
 	PYTHONPATH=$(PYTHONPATH) $(PYTEST) tests/unit tests/architecture tests/acceptance
@@ -129,46 +104,13 @@ authority-postgres-test: postgres-authority-test
 authority-compose-config-check:
 	$(AUTHORITY_COMPOSE) config --quiet
 	docker compose -f compose.postgres-test.yml config --quiet
-	$(LEGACY_COMPOSE) config --quiet
 
 authority-query-plan-release:
 	NOVEL_FORGE_DATABASE_URL=$${NOVEL_FORGE_DATABASE_URL:-postgresql://novel_forge:novel_forge@localhost:55432/novel_forge_authority_test} \
 	PYTHONPATH=$(PYTHONPATH) $(PYTHON) scripts/qualify_authority_query_plans.py
 
-legacy-up:
-	$(LEGACY_COMPOSE) up -d --build
-
-legacy-down:
-	$(LEGACY_COMPOSE) down
-
-legacy-logs:
-	$(LEGACY_COMPOSE) logs -f legacy-api legacy-worker legacy-redis
-
-local-up: authority-up
-
-local-down: authority-down
-
-local-smoke: authority-smoke
-
-local-logs: authority-logs
-
-failure-drill:
-	PYTHONPATH=$(PYTHONPATH) $(PYTHON) scripts/failure_drill.py
-
-v1-slow-acceptance:
-	PYTHONPATH=$(PYTHONPATH) NOVEL_FORGE_MODEL_PROVIDER=$${NOVEL_FORGE_MODEL_PROVIDER:-mock} $(PYTHON) scripts/run_v1_chapter_sequence_acceptance.py --chapter-count 10
-
-governance-dead-letter-regression:
-	PYTHONPATH=$(PYTHONPATH) $(PYTHON) scripts/run_governance_dead_letter_regression.py
-
-runtime-growth-regression:
-	PYTHONPATH=$(PYTHONPATH) $(PYTHON) scripts/run_runtime_growth_regression.py
-
-source-governance-regression:
-	PYTHONPATH=$(PYTHONPATH) $(PYTHON) scripts/run_source_governance_regression.py
-
 api:
-	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m novel_forge.cli serve-api
+	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m novel_forge.cli.authority serve-api
 
 worker:
 	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m novel_forge.workers.chapter_authority
@@ -203,6 +145,3 @@ authority-only-config-check:
 
 d0-provider-probe:
 	PYTHONPATH=$(PYTHONPATH) $(PYTHON) scripts/run_d0_provider_probe.py
-
-authority-parity-check: head-integrity-check
-	PYTHONPATH=$(PYTHONPATH) $(PYTHON) -m novel_forge.tools.authority_parity_manifest --repo-root .

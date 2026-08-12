@@ -6,6 +6,7 @@ Each binder names and validates its inputs.  There is deliberately no generic
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
+from datetime import datetime
 import json
 from typing import Any, Callable
 
@@ -27,6 +28,10 @@ from novel_forge.modules.chapter_quality_authority.calibration import (
     promote_calibration_profile,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.content_intelligence import (
+    build_world_consequence_candidate,
+    verify_claim,
+)
 from novel_forge.modules.production_preparation.empty_state import initialize_typed_empty_state
 from novel_forge.modules.creative.domain import (
     build_project_proposal,
@@ -163,6 +168,128 @@ def _world_generate(request: AuthorityHandlerRequest) -> dict[str, Any]:
 def _world_validate(request: AuthorityHandlerRequest) -> dict[str, Any]:
     world = _one(request, "world_bible")
     return validate_world_rules(project_id=request.project_id, rules=list(world.content.get("rules", [])))
+
+
+def _world_consequence_analyze(request: AuthorityHandlerRequest) -> dict[str, Any]:
+    world = _one(request, "world_bible")
+    receipt = _one(request, "world_consequence_provider_receipt")
+    consequences = receipt.content.get("consequences")
+    if not isinstance(consequences, list):
+        raise ValueError("world consequence receipt requires consequences")
+    rules = [
+        {
+            **dict(item),
+            "rule_id": str(item.get("rule_id") or item.get("rule_key") or ""),
+        }
+        for item in world.content.get("rules", [])
+        if isinstance(item, dict)
+    ]
+    return build_world_consequence_candidate(
+        project_id=request.project_id,
+        world_bible_asset_version_id=world.asset_version_id,
+        world_rules=rules,
+        provider_consequences=consequences,
+        provider_evidence={
+            "provider_id": str(receipt.content.get("provider_id") or ""),
+            "model_id": str(receipt.content.get("model_id") or ""),
+            "prompt_version": str(receipt.content.get("prompt_version") or ""),
+            "real_model_call": receipt.content.get("real_model_call") is True,
+            "provider_receipt_asset_version_id": receipt.asset_version_id,
+            "trace_id": request.trace_id,
+            "operation_id": request.operation_id,
+        },
+    )
+
+
+def _fact_claim_register(request: AuthorityHandlerRequest) -> dict[str, Any]:
+    source = _one(request, "source_document")
+    claim = dict(_payload(request).get("claim") or {})
+    required = ("claim_id", "statement", "domain", "retrieved_at")
+    if any(not str(claim.get(key) or "").strip() for key in required):
+        raise ValueError(
+            "fact claim identity, statement, domain, and retrieval time are required"
+        )
+    for key in ("source_quality", "confidence"):
+        value = float(claim.get(key, -1))
+        if not 0 <= value <= 1:
+            raise ValueError(f"{key} must be between zero and one")
+    return {
+        "type": "Claim",
+        "project_id": request.project_id,
+        "claim_id": str(claim["claim_id"]),
+        "statement": str(claim["statement"]),
+        "domain": str(claim["domain"]),
+        "source_id": str(claim.get("source_id") or source.asset_version_id),
+        "source_asset_version_id": source.asset_version_id,
+        "evidence_refs": [],
+        "source_published_at": claim.get("source_published_at"),
+        "retrieved_at": str(claim["retrieved_at"]),
+        "temporal_valid_from": claim.get("temporal_valid_from"),
+        "temporal_valid_to": claim.get("temporal_valid_to"),
+        "source_quality": float(claim["source_quality"]),
+        "confidence": float(claim["confidence"]),
+        "status": "PENDING",
+        "fictionalization_allowed": bool(claim.get("fictionalization_allowed")),
+        "trace_id": request.trace_id,
+        "created_by_operation_id": request.operation_id,
+        "contract_version": "fact-claim-v1",
+    }
+
+
+def _fact_verify(request: AuthorityHandlerRequest) -> dict[str, Any]:
+    claim = _one(request, "fact_claim")
+    cards = _many(request, "knowledge_card")
+    payload = _payload(request)
+    decisions = {
+        str(item.get("knowledge_card_asset_version_id") or ""): dict(item)
+        for item in payload.get("evidence_decisions", [])
+        if isinstance(item, dict)
+    }
+    evidence: list[dict[str, Any]] = []
+    for card in cards:
+        decision = decisions.get(card.asset_version_id)
+        if decision is None:
+            raise ValueError("every frozen KnowledgeCard requires an evidence decision")
+        lineage = dict(card.content.get("lineage") or {})
+        candidate_version = str(lineage.get("candidate_asset_version_id") or "")
+        source_versions = list(lineage.get("source_chunk_asset_version_ids") or [])
+        if not candidate_version or not source_versions:
+            raise ValueError("KnowledgeCard has no MKAOS source lineage")
+        for index, source_version in enumerate(source_versions):
+            evidence.append(
+                {
+                    "project_id": request.project_id,
+                    "evidence_span_id": f"{candidate_version}:evidence:{index}",
+                    "source_document_id": str(source_version),
+                    "knowledge_card_asset_version_id": card.asset_version_id,
+                    "stance": str(decision.get("stance") or ""),
+                    "qualified": True,
+                    "source_quality": float(decision.get("source_quality", 0.0)),
+                    "confidence": float(decision.get("confidence", 0.0)),
+                    "source_published_at": decision.get("source_published_at"),
+                    "retrieved_at": decision.get("retrieved_at"),
+                    "temporal_valid_from": decision.get("temporal_valid_from"),
+                    "temporal_valid_to": decision.get("temporal_valid_to"),
+                }
+            )
+    as_of_value = str(payload.get("as_of") or "")
+    if not as_of_value:
+        raise ValueError("fact verification requires an explicit as_of timestamp")
+    result = verify_claim(
+        claim=claim.content,
+        evidence=evidence,
+        as_of=datetime.fromisoformat(as_of_value.replace("Z", "+00:00")),
+    )
+    return {
+        **result,
+        "statement": str(claim.content["statement"]),
+        "domain": str(claim.content["domain"]),
+        "fictionalization_allowed": bool(claim.content.get("fictionalization_allowed")),
+        "trace_id": request.trace_id,
+        "decided_by_operation_id": request.operation_id,
+        "claim_asset_version_id": claim.asset_version_id,
+        "knowledge_card_asset_version_ids": [card.asset_version_id for card in cards],
+    }
 
 
 def _character_generate(request: AuthorityHandlerRequest) -> dict[str, Any]:
@@ -576,6 +703,7 @@ CONTENT_CODECS: dict[str, ContentHandlerCodec] = {
         ("creative.project.approve", "project_proposal", "creative.project_proposal", _creative_approve),
         ("production.world.generate", "world_bible", "world.bible", _world_generate),
         ("world.validate", "world_rule_conflict_report", "world.validation", _world_validate),
+        ("world.consequence.materialize_candidate", "world_consequence_graph", "world.consequence", _world_consequence_analyze),
         ("production.character.generate", "character_card", "character.card", _character_generate),
         ("character.relationships.generate", "relationship_state", "character.relationship", _relationships_generate),
         ("theme.question.create", "theme_question", "theme.question", _theme_question),
@@ -592,6 +720,8 @@ CONTENT_CODECS: dict[str, ContentHandlerCodec] = {
         ("longform.pattern.evaluate", "pattern_repetition_report", "longform.pattern", _pattern),
         ("longform.narrative_debt.evaluate", "narrative_debt_report", "longform.narrative_debt", _debt),
         ("longform.recap.enhance", "longform_recap_report", "longform.recap", _recap),
+        ("fact.claim.register", "fact_claim", "fact.claim", _fact_claim_register),
+        ("fact.verify", "fact_verification_report", "fact.verification", _fact_verify),
         ("quality.golden_sample.create", "quality_golden_sample", "quality.golden_sample", _golden_sample_create),
         ("quality.human_decision.record", "quality_human_decision", "quality.human_decision", _human_decision_record),
         ("quality.calibration.run", "quality_calibration_report", "quality.calibration_report", _calibration_run),

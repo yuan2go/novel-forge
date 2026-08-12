@@ -43,12 +43,6 @@ from novel_forge.modules.production_execution.routing import (
     RouteRecommendationReadModel,
     RouteResolver,
 )
-from novel_forge.modules.production_execution.legacy import (
-    LegacyGatewayModelAdapter,
-    LegacyRequestMapper,
-    LegacyResultMapper,
-    execute_legacy_model_operation,
-)
 from novel_forge.modules.production_execution.backends import (
     CodexCliExecutionBackend,
     InMemoryExecutionRecordStore,
@@ -1257,82 +1251,6 @@ class ProductionExecutionGatewayTests(unittest.TestCase):
                 output_schema_ref="schema:1",
                 release_sha=SHA,
             )
-
-    def test_legacy_adapter_maps_only_frozen_attempt_bound_request_to_gateway(
-        self,
-    ) -> None:
-        contract_set = contracts(
-            backend_id="scripted-fixture",
-            runtime=ExecutionRuntimeClass.SCRIPTED_FIXTURE,
-        )
-        capability, profile, policy, route, manifest, request = contract_set
-        request = replace(request, stage="generate")
-        source = StaticExecutionContractSource(
-            route_snapshots=(route,),
-            model_profiles=(profile,),
-            route_policies=(policy,),
-            input_manifests=(manifest,),
-        )
-        admission = AdmissionController(
-            source,
-            StaticAttemptFenceVerifier({("operation:1", "attempt:1"): 7}),
-        )
-        store = InMemoryExecutionRecordStore()
-        backend = ScriptedFixtureExecutionBackend(
-            admission=admission,
-            payload_resolver=StaticExecutionPayloadResolver(
-                {
-                    request.execution_id: ResolvedExecutionPayload(
-                        request_payload={"result": {"text": "through gateway"}},
-                        input_text="frozen prompt",
-                        working_directory=".",
-                        timeout_seconds=5,
-                        output_schema_version="draft.v1",
-                    )
-                }
-            ),
-            record_store=store,
-        )
-        registry = ExecutionBackendRegistry()
-        registry.register(backend)
-        adapter = LegacyGatewayModelAdapter(
-            name="legacy-gateway",
-            gateway=ProductionExecutionGateway(registry, admission),
-            result_mapper=LegacyResultMapper(store),
-        )
-        prompt = "frozen prompt"
-        result = adapter.generate(
-            prompt,
-            {
-                "execution_request": request,
-                "legacy_input_digest": LegacyRequestMapper.input_digest(
-                    "generate", prompt
-                ),
-            },
-        )
-
-        self.assertEqual(result["text"], "through gateway")
-        self.assertEqual(
-            result["production_execution"]["attempt_id"], request.attempt_id
-        )
-        with self.assertRaisesRegex(ValueError, "frozen attempt-bound"):
-            adapter.generate(prompt, {})
-
-    def test_production_environment_rejects_non_gateway_legacy_adapter(self) -> None:
-        class DirectAdapter:
-            legacy_independent_execution = True
-
-            def generate(self, prompt, context=None):  # pragma: no cover
-                return {"text": prompt}
-
-        with self.assertRaisesRegex(RuntimeError, "legacy direct model adapters"):
-            execute_legacy_model_operation(
-                DirectAdapter(),
-                "generate",
-                "must not execute",
-                {"runtime_environment": "production"},
-            )
-
 
 if __name__ == "__main__":
     unittest.main()

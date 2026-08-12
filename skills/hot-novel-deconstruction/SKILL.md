@@ -24,6 +24,17 @@ description: Use when analyzing popular novels or genre samples to extract abstr
 - 来源、范围、类型、目标读者和拆解目的。
 - 版权边界说明：输入只用于结构分析，不进入正文生成。
 - 若样本来自单一作品，必须标记为高原创风险输入。
+- 正式运行只接收 Source Authority 提供的 `source_document_id`、`source_transform_id`、不可变 `source_chunk_asset_version_id` 与稳定 `evidence_span_id`；不得从文件名推断来源身份。
+- 每次运行必须冻结 analyzer / schema / prompt / Skill / capability / provider-policy / aggregation-policy 版本和 execution evidence。
+
+## 正式 Deconstruction Intelligence 合同
+
+- 输出首先是 `Observation`，不是 `KnowledgeCard`，也不是一篇整书 Markdown 总结。
+- 维度按需独立运行：`structure`、`pacing`、`hook`、`reward_payoff`、`reader_promise`、`conflict`、`character_mechanism`、`relationship_mechanism`、`emotion_curve`、`foreshadowing`、`information_progression`、`serialization`、`commercial_logic`、`originality_copyright_risk`。
+- 尺度从 `CHAPTER`、`CHAPTER_WINDOW`、`CHAPTER_GROUP` 逐级聚合到 `ARC`、`VOLUME`、`BOOK`、`CROSS_BOOK_PATTERN`；禁止默认整本一次模型调用。
+- 下层 Observation 已足够时，上层聚合只读取 Observation，不重新读取原文；确定性聚合不得调用模型。
+- 每条 finding 必须引用本次冻结输入中的 `evidence_span_id` 或 lower-scale Observation AssetVersion，并包含 confidence 与 originality risk。
+- 相同 scope + analyzer contract + observation 内容必须重放已有结果；合约升级只重算目标维度及 lineage 下游。
 
 ## 操作流程
 
@@ -33,10 +44,27 @@ description: Use when analyzing popular novels or genre samples to extract abstr
 4. 拆出人物机制：欲望、恐惧、能力、缺陷、关系压力和行动代价。
 5. 拆出冲突机制：目标冲突、资源冲突、身份冲突、价值冲突和制度压力。
 6. 拆出商业逻辑：读者期待、爽点承诺、情绪释放、追读理由和禁用风险。
-7. 输出可复用抽象原则和禁止复用内容。
-8. 交给 `anti-copy-abstraction` 去具体化和降版权风险。
+7. 先提交结构化 Observation，明确 `knowledge_status=NOT_ABSTRACTED`。
+8. 交给 `anti-copy-abstraction` 生成独立 Knowledge Candidate；不得把 Observation 直接当生产知识。
 
 ## 输出格式
+
+生产输出必须匹配 `source-deconstruction-observation.v1`，至少包含：
+
+```json
+{
+  "findings": [{
+    "finding_code": "hook.chapter_end_pressure",
+    "statement": "仅描述抽象观察，不复述来源表达",
+    "evidence_span_ids": ["source-evidence-span:..."]
+  }],
+  "confidence": 0.0,
+  "originality_risk": "LOW_AFTER_ABSTRACTION",
+  "knowledge_status": "NOT_ABSTRACTED"
+}
+```
+
+以下 Markdown 只允许作为 operator handoff，不是生产 Authority：
 
 ```markdown
 # 热门小说拆解报告
@@ -61,7 +89,7 @@ description: Use when analyzing popular novels or genre samples to extract abstr
 - 输出重点是结构、机制和读者效果，不是剧情复述。
 - 每个可复用点必须说明适用边界。
 - 每个高风险点必须进入禁止复用内容。
-- 拆解结果必须能转成 `KnowledgeCard` 或 `MaterialCard`。
+- Observation 必须能通过后续 Abstraction/Governance 转成 Candidate，但自身永远不是可生成知识。
 
 ## 禁止事项
 
@@ -73,5 +101,5 @@ description: Use when analyzing popular novels or genre samples to extract abstr
 ## 与其他模块的关系
 
 - 上游：`data/raw/`、`data/cleaned/`、`docs/00-product/copyright-and-compliance.md`。
-- 下游：`anti-copy-abstraction`、`data/decompositions/`、`data/knowledge/`、`data/materials/`。
+- 下游：`anti-copy-abstraction`、Source Deconstruction Authority、MKAOS Candidate/Governance；`data/decompositions/` 仅为 legacy/operator handoff。
 - Agent：Knowledge Agent、Material Agent、Chief Editor Agent。

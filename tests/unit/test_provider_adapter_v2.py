@@ -4,12 +4,7 @@ import unittest
 from dataclasses import asdict
 from unittest.mock import patch
 
-from novel_forge.modules.command_kernel.external_effect_adapters import (
-    ExternalEffectAdapterError,
-    FakeDeterministicProvider,
-)
 from novel_forge.modules.provider_control import (
-    LegacyProviderCompatibilityAdapter,
     ProviderCancellationRequest,
     ProviderCapabilityProfile,
     ProviderControlLevel,
@@ -55,7 +50,9 @@ class ProviderAdapterV2Tests(unittest.TestCase):
             registry.resolve("scripted_provider_v2"), ScriptedProviderAdapterV2
         )
 
-    def test_controlled_provider_composition_fails_closed_without_credentials(self) -> None:
+    def test_controlled_provider_composition_fails_closed_without_credentials(
+        self,
+    ) -> None:
         with self.assertRaisesRegex(RuntimeError, "OPENAI_API_KEY"):
             build_provider_adapter_registry(
                 environment="validation",
@@ -101,14 +98,22 @@ class ProviderAdapterV2Tests(unittest.TestCase):
         result = adapter.invoke(_request())
 
         self.assertEqual(adapter.last_request.stable_idempotency_key, "stable-key")
-        self.assertTrue(result.handle.provider_request_id.startswith("scripted-request:"))
+        self.assertTrue(
+            result.handle.provider_request_id.startswith("scripted-request:")
+        )
         replay = adapter.invoke(_request())
         self.assertTrue(replay.evidence["replayed"])
-        self.assertEqual(replay.handle.provider_request_id, result.handle.provider_request_id)
+        self.assertEqual(
+            replay.handle.provider_request_id, result.handle.provider_request_id
+        )
 
     def test_timeout_before_and_after_send_have_different_identity(self) -> None:
-        before = ScriptedProviderAdapterV2("timeout_before_send").invoke(_request("before"))
-        after = ScriptedProviderAdapterV2("timeout_after_send").invoke(_request("after"))
+        before = ScriptedProviderAdapterV2("timeout_before_send").invoke(
+            _request("before")
+        )
+        after = ScriptedProviderAdapterV2("timeout_after_send").invoke(
+            _request("after")
+        )
         self.assertEqual(before.outcome, "retryable_failure")
         self.assertFalse(before.request_sent)
         self.assertIsNone(before.handle)
@@ -119,19 +124,23 @@ class ProviderAdapterV2Tests(unittest.TestCase):
     def test_query_cancel_and_callback_protocol(self) -> None:
         adapter = ScriptedProviderAdapterV2("unknown_after_send")
         initial = adapter.invoke(_request())
-        query = adapter.query_v2(ProviderQueryRequest(
-            provider_request_id=initial.handle.provider_request_id,
-            stable_idempotency_key="stable-key",
-            trace_id="trace-1",
-            correlation_id="correlation-1",
-        ))
-        cancelled = adapter.cancel_v2(ProviderCancellationRequest(
-            provider_request_id=initial.handle.provider_request_id,
-            stable_idempotency_key="stable-key",
-            reason="operator cancel",
-            trace_id="trace-1",
-            correlation_id="correlation-1",
-        ))
+        query = adapter.query_v2(
+            ProviderQueryRequest(
+                provider_request_id=initial.handle.provider_request_id,
+                stable_idempotency_key="stable-key",
+                trace_id="trace-1",
+                correlation_id="correlation-1",
+            )
+        )
+        cancelled = adapter.cancel_v2(
+            ProviderCancellationRequest(
+                provider_request_id=initial.handle.provider_request_id,
+                stable_idempotency_key="stable-key",
+                reason="operator cancel",
+                trace_id="trace-1",
+                correlation_id="correlation-1",
+            )
+        )
         self.assertEqual(query.outcome, "success")
         self.assertEqual(cancelled.outcome, "cancelled")
         receipt = ProviderReceipt(
@@ -145,11 +154,15 @@ class ProviderAdapterV2Tests(unittest.TestCase):
         self.assertIs(adapter.accept_callback(receipt), receipt)
         self.assertIs(adapter.accept_callback(receipt), receipt)
         with self.assertRaisesRegex(ValueError, "conflicting callback"):
-            adapter.accept_callback(ProviderReceipt(
-                **{**asdict(receipt), "payload_hash": "sha256:conflict"}
-            ))
+            adapter.accept_callback(
+                ProviderReceipt(
+                    **{**asdict(receipt), "payload_hash": "sha256:conflict"}
+                )
+            )
 
-    def test_real_validation_profile_fails_closed_without_timeout_or_idempotency(self) -> None:
+    def test_real_validation_profile_fails_closed_without_timeout_or_idempotency(
+        self,
+    ) -> None:
         with self.assertRaisesRegex(ValueError, "SDK request timeout"):
             ProviderCapabilityProfile(
                 provider="provider-x",
@@ -174,7 +187,9 @@ class ProviderAdapterV2Tests(unittest.TestCase):
         self.assertFalse(report.qualified)
         self.assertIn("V2_CONTROLLED", " ".join(report.reasons))
 
-    def test_openai_v2_transport_receives_timeout_key_and_returns_request_id(self) -> None:
+    def test_openai_v2_transport_receives_timeout_key_and_returns_request_id(
+        self,
+    ) -> None:
         class Transport:
             request = None
 
@@ -194,7 +209,8 @@ class ProviderAdapterV2Tests(unittest.TestCase):
 
             def query(self, request):
                 return {
-                    "outcome": "success", "request_sent": True,
+                    "outcome": "success",
+                    "request_sent": True,
                     "provider_request_id": request.provider_request_id,
                     "evidence": {
                         "result": {"text": "controlled draft"},
@@ -205,7 +221,8 @@ class ProviderAdapterV2Tests(unittest.TestCase):
 
             def cancel(self, request):
                 return {
-                    "outcome": "cancelled", "request_sent": True,
+                    "outcome": "cancelled",
+                    "request_sent": True,
                     "provider_request_id": request.provider_request_id,
                     "evidence": {"cancelled": True},
                 }
@@ -213,8 +230,12 @@ class ProviderAdapterV2Tests(unittest.TestCase):
             def verify_callback(self, body, headers, *, secret):
                 self.callback = (body, headers, secret)
                 return ProviderReceipt(
-                    "response_123", "receipt_1", "message_1", "success",
-                    "sha256:callback", {"signature_verified": True},
+                    "response_123",
+                    "receipt_1",
+                    "message_1",
+                    "success",
+                    "sha256:callback",
+                    {"signature_verified": True},
                 )
 
         transport = Transport()
@@ -227,11 +248,18 @@ class ProviderAdapterV2Tests(unittest.TestCase):
             provider_idempotency_supported=True,
         )
         request = ProviderInvocationRequest(
-            provider="openai", model="gpt-test", capability="model.draft",
-            stage="draft", stable_idempotency_key="stable-openai",
-            request_payload={"stage": "draft"}, request_hash="sha256:req",
-            timeout_seconds=17, trace_id="trace", correlation_id="correlation",
-            operation_id="operation", external_effect_id="effect",
+            provider="openai",
+            model="gpt-test",
+            capability="model.draft",
+            stage="draft",
+            stable_idempotency_key="stable-openai",
+            request_payload={"stage": "draft"},
+            request_hash="sha256:req",
+            timeout_seconds=17,
+            trace_id="trace",
+            correlation_id="correlation",
+            operation_id="operation",
+            external_effect_id="effect",
         )
         result = adapter.invoke(request)
         self.assertEqual(transport.request.timeout_seconds, 17)
@@ -244,12 +272,20 @@ class ProviderAdapterV2Tests(unittest.TestCase):
         adapter = ScriptedProviderAdapterV2()
         route = ChapterProviderV2Route(
             ProviderRouteDefinition(
-                stage="draft", provider_id=adapter.provider,
-                model_id="scripted", adapter_contract_version="provider-capability-v2",
-                prompt_version="prompt-v1", skill_version="skill-v1",
-                timeout_seconds=30, environment="test", idempotency_policy="provider",
-                query_policy="query", cancel_policy="cancel", callback_policy="callback",
-                usage_receipt_policy="required", cost_receipt_policy="required",
+                stage="draft",
+                provider_id=adapter.provider,
+                model_id="scripted",
+                adapter_contract_version="provider-capability-v2",
+                prompt_version="prompt-v1",
+                skill_version="skill-v1",
+                timeout_seconds=30,
+                environment="test",
+                idempotency_policy="provider",
+                query_policy="query",
+                cancel_policy="cancel",
+                callback_policy="callback",
+                usage_receipt_policy="required",
+                cost_receipt_policy="required",
             ),
             adapter,
         )
@@ -258,32 +294,19 @@ class ProviderAdapterV2Tests(unittest.TestCase):
             stable_idempotency_key="gateway-key",
             capability="model.draft",
             request_payload={
-                "stage": "draft", "input": {}, "request_hash": "sha256:req",
-                "timeout_seconds": 20, "trace_id": "trace", "correlation_id": "correlation",
-                "operation_id": "operation", "external_effect_id": "effect",
+                "stage": "draft",
+                "input": {},
+                "request_hash": "sha256:req",
+                "timeout_seconds": 20,
+                "trace_id": "trace",
+                "correlation_id": "correlation",
+                "operation_id": "operation",
+                "external_effect_id": "effect",
             },
         )
         self.assertEqual(result.outcome, "success")
         self.assertEqual(result.provider_request_id, "scripted-request:gateway-key")
         self.assertEqual(result.evidence["result"]["text"], "Scripted chapter fixture.")
-
-    def test_legacy_adapter_is_not_a_production_route(self) -> None:
-        adapter = LegacyProviderCompatibilityAdapter(
-            FakeDeterministicProvider("success"),
-            provider="fake_deterministic_provider",
-            environment="production",
-        )
-        self.assertFalse(adapter.capability_profile.real_provider_validation_eligible)
-        self.assertEqual(
-            adapter.capability_profile.control_level,
-            ProviderControlLevel.LEGACY_UNCONTROLLED,
-        )
-        with self.assertRaises(ExternalEffectAdapterError):
-            adapter.execute(
-                stable_idempotency_key="stable",
-                capability="model.draft",
-                request_payload={},
-            )
 
 
 if __name__ == "__main__":

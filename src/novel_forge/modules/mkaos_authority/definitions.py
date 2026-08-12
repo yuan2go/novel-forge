@@ -5,7 +5,7 @@ from typing import Any
 
 
 MKAOS_CANDIDATE_OPERATION = "mkaos.knowledge_candidate.commit"
-MKAOS_CANDIDATE_DEFINITION_VERSION = "1.0.1"
+MKAOS_CANDIDATE_DEFINITION_VERSION = "1.0.2"
 MKAOS_CANDIDATE_HANDLER_KEY = "novel_forge.mkaos_authority.candidate_commit"
 MKAOS_APPROVE_OPERATION = "mkaos.knowledge.approve"
 MKAOS_APPROVE_DEFINITION_VERSION = "1.0.1"
@@ -65,7 +65,8 @@ def mkaos_authority_definitions(
                 "project_scope_required": True,
                 "candidate_only": True,
                 "gateway_execution_evidence_required": True,
-                "source_chunk_asset_versions_required": True,
+                "canonical_observation_asset_versions_required": True,
+                "direct_source_chunk_mode": "MIGRATION_ONLY",
                 "raw_source_expression_forbidden": True,
             },
             "completion_contract": {

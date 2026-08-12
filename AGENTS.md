@@ -34,7 +34,7 @@ Do not claim a complete autonomous Agent Center exists until UI depth, operation
 | Chief Editor Agent | product docs, roadmap, current implementation, risks | priorities, acceptance decisions, architectural constraints | update docs and plans | claim completion without evidence or tests |
 | Workflow Agent | project goal, workflow definition, node state, run logs | workflow plan, node order, recovery instruction | coordinate workflow runs and node contracts | bypass schema, artifact, or quality-gate requirements |
 | Engineering Agent | schemas, services, API, UI, tests | code, tests, migrations, docs | edit `src/`, `tests/`, `web/`, docs | break compatibility silently or mix unrelated refactors |
-| Skill Governance Agent | root skills, runtime skills, skill policy, sync reports, licenses | skill updates, routing changes, governance reports | edit `skills/`, `docs/09-skills/`, governance reports | hand-edit `.claude/skills` as source or vendor unclear-license skills |
+| Skill Governance Agent | root skills, runtime skills, skill policy, sync reports, licenses | skill updates, routing changes, governance reports | edit `skills/`, `docs/development/skills.md`, governance records | hand-edit `.claude/skills` as source or vendor unclear-license skills |
 | Analysis Agent | cleaned sources, analysis profile, rights metadata | abstract analysis report | deconstruct structure, rhythm, conflict, craft, emotion, hooks | copy protected expression, characters, settings, or plot combinations |
 | Knowledge Agent | cleaned text, decompositions, analysis reports | knowledge cards, rule candidates | abstract and tag reusable knowledge | mix raw sources with generated drafts |
 | Material Agent | knowledge/decomposition/analysis assets | reusable material cards, templates | build reusable asset library | copy story-specific protected combinations |
@@ -54,24 +54,24 @@ Do not claim a complete autonomous Agent Center exists until UI depth, operation
 
 ## Agent-Skill Map
 
-Agent is a role and permission boundary. Skill is a reusable capability. Use `docs/09-skills/agent-skill-map.md` for detailed runtime selection.
+Agent is a role and permission boundary. Skill is a reusable capability. Use `docs/development/skills.md` for repository and runtime selection rules.
 
 | Agent | Recommended Skills |
 |---|---|
 | Chief Editor Agent | `project-planning`, `quality-review`, `long-outline`, `narrative-beat-design`, `novel-os-engineering-audit`, `platform-strategy-os`, `publish-release-gate-os` |
 | Workflow Agent | `project-planning`, `quality-review`, `agent-loop-governance`, `review-issue-gate`, `provider-runtime-policy` |
 | Analysis Agent | `hot-novel-deconstruction`, `hot-novel-business-deconstruction`, `published-fiction-craft-analysis`, `classic-literary-depth-analysis`, `anti-copy-abstraction`, `analysis-to-asset-conversion` |
-| Knowledge Agent | `mkaos-knowledge-asset-os`, `multidisciplinary-knowledge`, `anti-copy-abstraction`, `analysis-to-asset-conversion` |
+| Knowledge Agent | `mkaos-knowledge-asset-os`, `multidisciplinary-knowledge`, `evidence-fact-verification`, `anti-copy-abstraction`, `analysis-to-asset-conversion` |
 | Material Agent | `material-curation`, `mkaos-knowledge-asset-os`, `analysis-to-asset-conversion`, `topic-development` |
-| Context Agent | `context-builder-source-isolation`, `mkaos-knowledge-asset-os`, `material-curation`, `quality-review`, `canon-continuity-graph` |
+| Context Agent | `context-builder-source-isolation`, `mkaos-knowledge-asset-os`, `material-curation`, `quality-review`, `longform-temporal-query`, `canon-continuity-graph` |
 | Topic Agent | `topic-development`, `platform-strategy-os`, `material-curation` |
-| Worldbuilding Agent | `worldbuilding`, `multidisciplinary-knowledge`, `mkaos-knowledge-asset-os`, `canon-continuity-graph` |
+| Worldbuilding Agent | `worldbuilding`, `world-consequence-modeling`, `multidisciplinary-knowledge`, `mkaos-knowledge-asset-os`, `canon-continuity-graph` |
 | Character Agent | `character-design`, `worldbuilding`, `context-builder-source-isolation`, `canon-continuity-graph` |
-| Outline Agent | `long-outline`, `narrative-beat-design`, `character-design`, `worldbuilding`, `platform-strategy-os`, `context-builder-source-isolation`, `canon-continuity-graph` |
-| Chapter Plan Agent | `chapter-outline`, `narrative-beat-design`, `quality-review`, `platform-strategy-os`, `context-builder-source-isolation`, `canon-continuity-graph` |
+| Outline Agent | `long-outline`, `narrative-beat-design`, `multi-scale-pacing`, `world-consequence-modeling`, `character-design`, `worldbuilding`, `platform-strategy-os`, `context-builder-source-isolation`, `longform-temporal-query`, `canon-continuity-graph` |
+| Chapter Plan Agent | `chapter-outline`, `narrative-beat-design`, `multi-scale-pacing`, `quality-review`, `platform-strategy-os`, `context-builder-source-isolation`, `longform-temporal-query`, `canon-continuity-graph` |
 | Draft Agent | `prose-generation`, `chapter-outline`, `context-builder-source-isolation`, `review-issue-gate`, `provider-runtime-policy` |
 | Editor Agent | `quality-review`, `review-issue-gate`, `prose-generation`, `chapter-outline`, `canon-continuity-graph` |
-| Review Agent | `quality-review`, `review-issue-gate`, `anti-copy-abstraction`, `mkaos-knowledge-asset-os`, `canon-continuity-graph` |
+| Review Agent | `quality-review`, `multi-scale-pacing`, `evidence-fact-verification`, `review-issue-gate`, `anti-copy-abstraction`, `mkaos-knowledge-asset-os`, `longform-temporal-query`, `canon-continuity-graph` |
 | Feedback Agent | `reader-feedback`, `quality-review`, `mkaos-knowledge-asset-os`, `platform-strategy-os` |
 | Publishing Agent | `publish-release-gate-os`, `quality-review`, `review-issue-gate`, `platform-strategy-os`, `context-builder-source-isolation`, `canon-continuity-graph` |
 | Model Evaluation Agent | `quality-review`, `project-planning`, `novel-os-engineering-audit`, `provider-runtime-policy` |

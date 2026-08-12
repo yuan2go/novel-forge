@@ -7,6 +7,7 @@ import pytest
 
 from novel_forge.api.authority_dependencies import (
     build_chapter_authority_application,
+    build_production_execution_composition,
 )
 from novel_forge.infrastructure.settings import IndustrialSettings
 from novel_forge.modules.agent_collaboration.application import (
@@ -180,7 +181,7 @@ def test_postgres_process_crash_matrix(
     actor = crash_authority_scope["actor"]
     object_root = tmp_path / crash_point
     controller = CrashController()
-    old_application = _application(
+    old_application, old_execution = _application(
         object_root=object_root,
         fault_injector=controller,
     )
@@ -246,7 +247,7 @@ def test_postgres_process_crash_matrix(
         tuple(before[field] for field in CRASH_PRE_STATE_FIELDS)
         == (CRASH_POINT_PRE_STATE[crash_point])
     )
-    old_application.close()
+    old_execution.close()
     del old_scheduler, old_application
 
     _expire_worker_lease(project_id, admission.root_operation_id)
@@ -256,7 +257,7 @@ def test_postgres_process_crash_matrix(
     )
     assert any(item["attempt_id"] == before["attempt_id"] for item in expired)
 
-    new_application = _application(object_root=object_root)
+    new_application, new_execution = _application(object_root=object_root)
     new_scheduler = new_application.scheduler(
         principal=_principal(
             new_worker,
@@ -308,7 +309,7 @@ def test_postgres_process_crash_matrix(
         asset_version_id=after["asset_version_id"],
     )
     assert lineage["lineage_strength"] == "EXACT_COLLABORATION_COMMIT"
-    new_application.close()
+    new_execution.close()
 
 
 def test_new_attempt_retry_supersedes_failed_candidate(
@@ -321,7 +322,7 @@ def test_new_attempt_retry_supersedes_failed_candidate(
     first_worker = "worker-retry-attempt-1"
     second_worker = "worker-retry-attempt-2"
     controller = CrashController()
-    application = _application(
+    application, execution = _application(
         object_root=tmp_path / "new-attempt-retry",
         fault_injector=controller,
     )
@@ -391,10 +392,12 @@ def test_new_attempt_retry_supersedes_failed_candidate(
         error_message="fixture retry after Candidate persistence",
         failure_class="RETRYABLE",
     )
-    application.close()
+    execution.close()
     del scheduler, application
 
-    recovered_application = _application(object_root=tmp_path / "new-attempt-retry")
+    recovered_application, recovered_execution = _application(
+        object_root=tmp_path / "new-attempt-retry"
+    )
     recovered_scheduler = recovered_application.scheduler(
         principal=_principal(
             second_worker,
@@ -471,7 +474,7 @@ def test_new_attempt_retry_supersedes_failed_candidate(
         or set(scope["categories"]) == {"superseded_candidate"}
         for scope in health["scopes"]
     )
-    recovered_application.close()
+    recovered_execution.close()
 
 
 def test_recovery_authorization_constraints_require_a_current_fence(
@@ -551,15 +554,21 @@ def _application(
         environment="test",
         database_url=DATABASE_URL,
     )
-    return build_chapter_authority_application(
-        settings,
-        env={
-            "NOVEL_FORGE_ENVIRONMENT": "test",
-            "NOVEL_FORGE_MODEL_PROVIDER": "scripted_provider_v2",
-            "NOVEL_FORGE_COMMIT_SHA": RELEASE_SHA,
-            "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": str(object_root),
-        },
-        runtime_fault_injector=fault_injector,
+    env = {
+        "NOVEL_FORGE_ENVIRONMENT": "test",
+        "NOVEL_FORGE_MODEL_PROVIDER": "scripted_provider_v2",
+        "NOVEL_FORGE_COMMIT_SHA": RELEASE_SHA,
+        "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": str(object_root),
+    }
+    execution = build_production_execution_composition(settings, env=env)
+    return (
+        build_chapter_authority_application(
+            settings,
+            execution=execution,
+            env=env,
+            runtime_fault_injector=fault_injector,
+        ),
+        execution,
     )
 
 

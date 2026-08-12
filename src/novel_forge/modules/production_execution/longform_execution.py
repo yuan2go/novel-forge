@@ -65,7 +65,6 @@ def execute_longform_analysis(
         prompt=prompt,
         context=context,
         execution_port=execution_port,
-        environment="production",
     )
 
 

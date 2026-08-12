@@ -8,6 +8,8 @@ import unittest
 
 from novel_forge.api.authority_dependencies import (
     build_chapter_authority_application,
+    build_production_execution_composition,
+    build_reader_outcome_model_port,
 )
 from novel_forge.infrastructure.settings import IndustrialSettings
 from novel_forge.modules.authority_security import Principal, PrincipalType
@@ -20,6 +22,7 @@ from novel_forge.modules.book_authority.production import (
     StartBookProductionCommand,
     SubmitBookChapterCommand,
 )
+from novel_forge.modules.book_authority.queries import PostgresBookProductionQuery
 from novel_forge.modules.book_followup_authority.application import (
     BookFollowupAuthorityApplication,
 )
@@ -62,16 +65,10 @@ class ChapterGroupAuthorityPostgresTests(unittest.TestCase):
                 actor_id=principal.principal_id,
                 trace_id=identifier("group-trace"),
                 correlation_id=fixture["book"].root_operation_id,
-                stable_idempotency_key=(
-                    f"{fixture['project_id']}:group:1:v1"
-                ),
+                stable_idempotency_key=(f"{fixture['project_id']}:group:1:v1"),
                 book_run_id=fixture["book"].book_run_id,
-                group_plan_version_id=fixture["group_plan"][
-                    "asset_version_id"
-                ],
-                group_plan_content_hash=fixture["group_plan"][
-                    "content_hash"
-                ],
+                group_plan_version_id=fixture["group_plan"]["asset_version_id"],
+                group_plan_content_hash=fixture["group_plan"]["content_hash"],
             ),
             principal=principal,
         )
@@ -81,9 +78,7 @@ class ChapterGroupAuthorityPostgresTests(unittest.TestCase):
             principal=principal,
         )
         self.assertEqual(paused["state"], "PAUSED")
-        with self.assertRaisesRegex(
-            KernelError, "CHAPTER_GROUP_DISPATCH_NOT_READY"
-        ):
+        with self.assertRaisesRegex(KernelError, "CHAPTER_GROUP_DISPATCH_NOT_READY"):
             group_authority.dispatch(
                 group["group_run_id"],
                 self._chapter_command(fixture, 1),
@@ -97,7 +92,9 @@ class ChapterGroupAuthorityPostgresTests(unittest.TestCase):
         self.assertEqual(resumed["state"], "READY")
 
         scheduler = PostgresBookAuthorityScheduler(
-            fixture["book_authority"], principal=principal
+            fixture["book_authority"],
+            query=PostgresBookProductionQuery(DATABASE_URL),
+            principal=principal,
         )
         for chapter_number in (1, 2, 3):
             running = group_authority.dispatch(
@@ -111,9 +108,7 @@ class ChapterGroupAuthorityPostgresTests(unittest.TestCase):
             ):
                 group_authority.dispatch(
                     group["group_run_id"],
-                    self._chapter_command(
-                        fixture, min(3, chapter_number + 1)
-                    ),
+                    self._chapter_command(fixture, min(3, chapter_number + 1)),
                     principal=principal,
                 )
             request = fixture["book_authority"].require_chapter_request(
@@ -136,9 +131,7 @@ class ChapterGroupAuthorityPostgresTests(unittest.TestCase):
                 scheduler.tick(fixture["book"].book_run_id)
                 scheduler.tick(fixture["book"].book_run_id)
 
-        closed = group_authority.close(
-            group["group_run_id"], principal=principal
-        )
+        closed = group_authority.close(group["group_run_id"], principal=principal)
         self.assertEqual(closed["state"], "COMPLETED")
         self.assertTrue(closed["recap_operation_id"])
         self.assertTrue(closed["plan_adjustment_proposal_version_id"])
@@ -152,9 +145,7 @@ class ChapterGroupAuthorityPostgresTests(unittest.TestCase):
                 """,
                 [group["group_run_id"]],
             )
-            accepted_counts = tuple(
-                int(value) for value in uow.cursor.fetchone()
-            )
+            accepted_counts = tuple(int(value) for value in uow.cursor.fetchone())
             uow.cursor.execute(
                 """
                 SELECT executed_through_chapter,
@@ -219,16 +210,10 @@ class ChapterGroupAuthorityPostgresTests(unittest.TestCase):
                 actor_id=fixture["principal"].principal_id,
                 trace_id=identifier("group-cancel-trace"),
                 correlation_id=fixture["book"].root_operation_id,
-                stable_idempotency_key=(
-                    f"{fixture['project_id']}:group:cancel:v1"
-                ),
+                stable_idempotency_key=(f"{fixture['project_id']}:group:cancel:v1"),
                 book_run_id=fixture["book"].book_run_id,
-                group_plan_version_id=fixture["group_plan"][
-                    "asset_version_id"
-                ],
-                group_plan_content_hash=fixture["group_plan"][
-                    "content_hash"
-                ],
+                group_plan_version_id=fixture["group_plan"]["asset_version_id"],
+                group_plan_content_hash=fixture["group_plan"]["content_hash"],
             ),
             principal=fixture["principal"],
         )
@@ -274,25 +259,32 @@ class ChapterGroupAuthorityPostgresTests(unittest.TestCase):
             "NOVEL_FORGE_ENVIRONMENT": "test",
             "NOVEL_FORGE_COMMIT_SHA": "f" * 40,
             "NOVEL_FORGE_MODEL_PROVIDER": "scripted_provider_v2",
-            "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": str(
-                Path(root.name) / "objects"
-            ),
+            "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": str(Path(root.name) / "objects"),
             "NOVEL_FORGE_AUTHORITY_WORKER_ID": "group-chapter-worker",
         }
-        chapter = build_chapter_authority_application(settings, env=env)
+        execution = build_production_execution_composition(settings, env=env)
+        chapter = build_chapter_authority_application(
+            settings, execution=execution, env=env
+        )
         followup = BookFollowupAuthorityApplication(
             DATABASE_URL,
             application_build_id="chapter-group-integration",
             commit_sha="f" * 40,
-            model_port=chapter.model_port,
+            model_port=build_reader_outcome_model_port(
+                settings, execution=execution, env=env
+            ),
             worker_id="group-followup-worker",
         )
         book_authority = PostgresBookAuthority(
             DATABASE_URL,
-            chapter_port=ChapterAuthorityCommandAdapter(chapter),
+            chapter_port=ChapterAuthorityCommandAdapter(
+                chapter,
+                external_effect_adapters=execution.external_effect_adapters,
+            ),
             followup_application=followup,
             application_build_id="chapter-group-integration",
             commit_sha="f" * 40,
+            legacy_fixture_input_allowed=True,
         )
         principal = Principal(
             principal_id="chapter-group-operator",
@@ -317,14 +309,10 @@ class ChapterGroupAuthorityPostgresTests(unittest.TestCase):
             authentication_source="integration-test",
         )
         candidates = list(
-            chapter_fixture.PostgreSQLOnlyChapterSliceTests.release_evidence(
-                project_id
-            )
+            chapter_fixture.PostgreSQLOnlyChapterSliceTests.release_evidence(project_id)
         )
-        versions = (
-            BookToChapterAuthorityVerticalPostgresTests._seed_book_inputs(
-                project_id
-            )
+        versions = BookToChapterAuthorityVerticalPostgresTests._seed_book_inputs(
+            project_id
         )
         book_id = f"book:{project_id}"
         seed_authority_project_book(project_id=project_id, book_id=book_id)
@@ -342,6 +330,7 @@ class ChapterGroupAuthorityPostgresTests(unittest.TestCase):
                 production_profile_version="production-profile:v1",
                 longform_context_versions=versions,
                 target_chapter_count=3,
+                input_mode="LEGACY_FIXTURE_INPUT_MODE",
                 light_recap_cadence=3,
                 formal_recap_cadence=10,
             ),
@@ -390,19 +379,19 @@ class ChapterGroupAuthorityPostgresTests(unittest.TestCase):
             chapter_plan_asset_version_id=plan["asset_version_id"],
             chapter_plan_content_hash=plan["content_hash"],
             context_candidates=candidates,
-            parent_group_version_id=fixture["group_plan"][
-                "asset_version_id"
-            ],
+            parent_group_version_id=fixture["group_plan"]["asset_version_id"],
         )
 
     @staticmethod
     def _run_child(fixture: dict, root_operation_id: str) -> None:
         for _ in range(len(ChapterNode) + 3):
-            tick = fixture["chapter"].scheduler(
-                principal=fixture["worker"]
-            ).tick(
-                project_id=fixture["project_id"],
-                root_operation_id=root_operation_id,
+            tick = (
+                fixture["chapter"]
+                .scheduler(principal=fixture["worker"])
+                .tick(
+                    project_id=fixture["project_id"],
+                    root_operation_id=root_operation_id,
+                )
             )
             if tick.saga_status == "SUCCEEDED":
                 return
@@ -458,17 +447,13 @@ class ChapterGroupAuthorityPostgresTests(unittest.TestCase):
                 "chapter": chapter,
                 "chapter_number": chapter,
                 "title": f"Group Chapter {chapter}",
-                "chapter_objective": matrix[chapter - 1][
-                    "required_state_delta"
-                ],
+                "chapter_objective": matrix[chapter - 1]["required_state_delta"],
             }
-            chapter_plans[chapter] = (
-                ChapterGroupAuthorityPostgresTests._seed_asset(
-                    project_id,
-                    "chapter_plan",
-                    f"group-chapter-plan-{chapter}",
-                    content,
-                )
+            chapter_plans[chapter] = ChapterGroupAuthorityPostgresTests._seed_asset(
+                project_id,
+                "chapter_plan",
+                f"group-chapter-plan-{chapter}",
+                content,
             )
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
             volume_binding = f"binding:{project_id}:volume"
@@ -588,11 +573,12 @@ class ChapterGroupAuthorityPostgresTests(unittest.TestCase):
     ) -> dict:
         asset_id = f"{project_id}:{label}:asset"
         version_id = f"{project_id}:{label}:v1"
-        content_hash = "sha256:" + hashlib.sha256(
-            json.dumps(
-                content, sort_keys=True, separators=(",", ":")
-            ).encode()
-        ).hexdigest()
+        content_hash = (
+            "sha256:"
+            + hashlib.sha256(
+                json.dumps(content, sort_keys=True, separators=(",", ":")).encode()
+            ).hexdigest()
+        )
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
             uow.cursor.execute(
                 """

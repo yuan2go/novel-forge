@@ -256,10 +256,12 @@ class MkaosAuthorityRepository:
             """
             SELECT pack.knowledge_pack_id, pack.asset_version_id,
                    pack.selection_hash, pack.created_by_operation_id,
-                   operation.status
+                   operation.status, version.content_hash
             FROM authority_mkaos_knowledge_pack AS pack
             JOIN authority_operation AS operation
               ON operation.operation_id = pack.created_by_operation_id
+            JOIN authority_asset_version AS version
+              ON version.asset_version_id=pack.asset_version_id
             WHERE pack.project_id = %s
               AND pack.target_asset_version_id = %s
               AND pack.status = 'ACTIVE'
@@ -271,8 +273,44 @@ class MkaosAuthorityRepository:
                 "selection_hash",
                 "operation_id",
                 "operation_status",
+                "content_hash",
             ),
         )
+
+    def supersede_pack(
+        self,
+        *,
+        project_id: str,
+        asset_version_id: str,
+        expected_selection_hash: str,
+    ) -> None:
+        self.cursor.execute(
+            """
+            UPDATE authority_mkaos_knowledge_pack
+            SET status='SUPERSEDED'
+            WHERE project_id=%s AND asset_version_id=%s
+              AND selection_hash=%s AND status='ACTIVE'
+            """,
+            [project_id, asset_version_id, expected_selection_hash],
+        )
+        if self.cursor.rowcount != 1:
+            raise KernelError(
+                "MKAOS_PACK_ACTIVE_CONFLICT",
+                "Active KnowledgePack changed before explicit supersede",
+            )
+        self.cursor.execute(
+            """
+            UPDATE authority_asset_version
+            SET lifecycle='SUPERSEDED'
+            WHERE asset_version_id=%s AND lifecycle='ACTIVE'
+            """,
+            [asset_version_id],
+        )
+        if self.cursor.rowcount != 1:
+            raise KernelError(
+                "MKAOS_PACK_ACTIVE_CONFLICT",
+                "KnowledgePack AssetVersion changed before explicit supersede",
+            )
 
     def knowledge_cards(
         self, *, project_id: str, asset_version_ids: tuple[str, ...]

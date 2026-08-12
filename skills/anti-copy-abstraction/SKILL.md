@@ -24,6 +24,14 @@ description: Use when converting concrete reference-work analysis into reusable 
 - 拆解报告、来源标识、可复用点和禁止复用点。
 - 任何具体剧情、台词、人物组合和独特设定都必须标记为高风险。
 - 不接受无来源的“爆款套路”直接进入生成链路。
+- 正式输入必须是已提交的 Observation AssetVersion，并保留其 EvidenceSpan lineage；不得将 raw SourceChunk 内容重新复制进抽象 Prompt。
+
+## Observation 到 Candidate 合同
+
+- `Observation` 只说明来源中观察到什么，`Knowledge Candidate` 才说明经过抽象后可复用什么；两者不得共用一个资产或状态。
+- 一个 Observation 可以在不同 abstraction policy / schema / prompt / model 版本下产生多个 Candidate；旧 Candidate 必须保留并可被 rejected、superseded 或 deprecated。
+- Candidate 只允许保存跨作品成立的因果机制、约束、冲突生成器和审稿检查，不得保存可复原单一作品的角色组合、事件序列、专有名词或表达。
+- Candidate 必须引用 Observation AssetVersion；正式 API 不接受只有 SourceChunk 的 Candidate。
 
 ## 操作流程
 
@@ -32,7 +40,7 @@ description: Use when converting concrete reference-work analysis into reusable 
 3. 保留结构、机制和读者效果。
 4. 将具体桥段改写为类型无关的因果机制。
 5. 为每条原则补适用范围、禁用范围和审稿检查项。
-6. 输出可进入 `KnowledgeCard`、`MaterialCard` 或审稿规则的抽象原则。
+6. 输出 schema-backed Knowledge Candidate，进入 Validation、Source Isolation、Originality Gate 与人工 Approval；未批准前不得成为 KnowledgeCard。
 
 ## 输出格式
 
@@ -56,6 +64,7 @@ description: Use when converting concrete reference-work analysis into reusable 
 - 每条抽象原则必须脱离单一作品语境也能成立。
 - 必须明确哪些内容不能进入 prompt、正文、素材库和生成输出。
 - 必须能被 `quality-review` 用作原创风险检查依据。
+- 必须声明 abstraction policy version、input Observation versions、confidence、copyright boundary 和所有 rejected mechanisms。
 
 ## 禁止事项
 

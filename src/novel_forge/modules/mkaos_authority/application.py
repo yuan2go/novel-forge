@@ -48,6 +48,9 @@ from novel_forge.modules.mkaos_authority.domain import (
 )
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from novel_forge.storage.mkaos_authority_repositories import MkaosAuthorityRepository
+from novel_forge.storage.source_intelligence_repositories import (
+    SourceIntelligenceRepository,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -62,6 +65,7 @@ class CommitKnowledgeCandidateCommand:
     idempotency_key: str
     trace_id: str
     correlation_id: str
+    observation_asset_version_ids: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         _require_strings(
@@ -74,7 +78,9 @@ class CommitKnowledgeCandidateCommand:
             self.trace_id,
             self.correlation_id,
         )
-        if not self.candidate or not self.evidence_spans:
+        if not self.candidate or not (
+            self.evidence_spans or self.observation_asset_version_ids
+        ):
             raise ValueError("MKAOS candidate command is incomplete")
 
 
@@ -118,6 +124,7 @@ class BuildKnowledgePackCommand:
     idempotency_key: str
     trace_id: str
     correlation_id: str
+    supersedes_pack_asset_version_id: str = ""
 
     def __post_init__(self) -> None:
         _require_strings(
@@ -177,9 +184,15 @@ class MkaosAuthorityApplication:
             "mkaos.authority.execute",
             command.project_id,
         )
-        candidate, execution, chunks, spans, candidate_hash = (
-            self._preflight_candidate(command)
-        )
+        (
+            candidate,
+            execution,
+            chunks,
+            spans,
+            observations,
+            execution_binding,
+            candidate_hash,
+        ) = self._preflight_candidate(command)
         with AuthorityUnitOfWork(self.database_url) as uow:
             existing = MkaosAuthorityRepository(uow.cursor).existing_candidate(
                 project_id=command.project_id, candidate_hash=candidate_hash
@@ -203,6 +216,13 @@ class MkaosAuthorityApplication:
             "abstraction_policy_version": command.abstraction_policy_version,
             "candidate_hash": candidate_hash,
             "execution_asset_version_id": command.execution_asset_version_id,
+            "execution_binding": execution_binding,
+            "observation_asset_version_ids": sorted(observations),
+            "lineage_mode": (
+                "OBSERVATION_ABSTRACTION"
+                if observations
+                else "MIGRATION_ONLY_DIRECT_EVIDENCE"
+            ),
             "source_expression_included": False,
             "client_idempotency_key": command.idempotency_key,
         }
@@ -215,6 +235,14 @@ class MkaosAuthorityApplication:
                     chunks[version_id]["asset_content_hash"],
                 )
                 for version_id in sorted(chunks)
+            ],
+            *[
+                _input_asset(
+                    version_id,
+                    "source_deconstruction_observation",
+                    observations[version_id]["content_hash"],
+                )
+                for version_id in sorted(observations)
             ],
         ]
         return self._admit(
@@ -381,9 +409,15 @@ class MkaosAuthorityApplication:
                 "duplicate": True,
             }
         if active is not None:
+            if command.supersedes_pack_asset_version_id != active["asset_version_id"]:
+                raise KernelError(
+                    "MKAOS_PACK_ACTIVE_CONFLICT",
+                    "target already has a different Active KnowledgePack; provide its exact AssetVersion to supersede",
+                )
+        elif command.supersedes_pack_asset_version_id:
             raise KernelError(
-                "MKAOS_PACK_ACTIVE_CONFLICT",
-                "target already has a different Active KnowledgePack; use an explicit supersede Operation",
+                "MKAOS_PACK_SUPERSEDE_TARGET_MISSING",
+                "the expected Active KnowledgePack no longer exists",
             )
         selection_payload = [
             {
@@ -422,6 +456,9 @@ class MkaosAuthorityApplication:
                     "directory_selection_used": False,
                     "learned_weight_applied": False,
                     "client_idempotency_key": command.idempotency_key,
+                    "supersedes_pack_asset_version_id": (
+                        command.supersedes_pack_asset_version_id
+                    ),
                 },
             },
             input_assets=[
@@ -432,6 +469,17 @@ class MkaosAuthorityApplication:
                     _input_asset(version_id, "knowledge_card", cards[version_id]["content_hash"])
                     for version_id in sorted(cards)
                 ],
+                *(
+                    [
+                        _input_asset(
+                            str(active["asset_version_id"]),
+                            "superseded_knowledge_pack",
+                            str(active["content_hash"]),
+                        )
+                    ]
+                    if active is not None
+                    else []
+                ),
             ],
             ready_reason="deterministic explicit-version KnowledgePack ready",
         )
@@ -443,6 +491,8 @@ class MkaosAuthorityApplication:
         dict[str, Any],
         dict[str, dict[str, Any]],
         tuple[KnowledgeEvidenceSpan, ...],
+        dict[str, dict[str, Any]],
+        dict[str, Any],
         str,
     ]:
         candidate = validate_knowledge_candidate(command.candidate)
@@ -464,6 +514,15 @@ class MkaosAuthorityApplication:
             chunks = repository.source_chunks(
                 project_id=command.project_id, asset_version_ids=chunk_ids
             )
+            source_intelligence = SourceIntelligenceRepository(uow.cursor)
+            observations = source_intelligence.observations(
+                project_id=command.project_id,
+                asset_version_ids=command.observation_asset_version_ids,
+            )
+            observation_chunks = source_intelligence.observation_source_chunk_inputs(
+                project_id=command.project_id,
+                asset_version_ids=command.observation_asset_version_ids,
+            )
         if len(chunks) != len(chunk_ids):
             raise KernelError(
                 "MKAOS_SOURCE_CHUNK_NOT_FOUND",
@@ -473,6 +532,40 @@ class MkaosAuthorityApplication:
             command.evidence_spans,
             source_chunk_sizes={key: int(value["byte_size"]) for key, value in chunks.items()},
         )
+        if len(observations) != len(set(command.observation_asset_version_ids)):
+            raise KernelError(
+                "MKAOS_OBSERVATION_NOT_FOUND",
+                "one or more deconstruction Observations are unavailable",
+            )
+        for observation in observations.values():
+            if (
+                observation["lifecycle"],
+                observation["eligibility"],
+                observation["governance"],
+            ) != ("ACTIVE", "INELIGIBLE", "CLEAR"):
+                raise KernelError(
+                    "MKAOS_OBSERVATION_INELIGIBLE",
+                    "MKAOS abstraction requires an active evidence-only Observation",
+                )
+            if observation["evidence_class"] == "FIXTURE" and not self.allow_fixture_activation:
+                raise KernelError(
+                    "MKAOS_FIXTURE_OBSERVATION_BLOCKED",
+                    "fixture Observation cannot enter the controlled MKAOS knowledge chain",
+                )
+        permitted_chunks = set().union(*observation_chunks.values())
+        if observations and set(chunks) - permitted_chunks:
+            raise KernelError(
+                "MKAOS_OBSERVATION_EVIDENCE_CONFLICT",
+                "Candidate EvidenceSpan is outside the referenced Observation lineage",
+            )
+        execution_binding = _candidate_execution_binding(
+            execution["content"],
+            fixture_protocol_only=execution_proof["fixture_protocol_only"],
+            candidate_payload_hash=_hash(candidate),
+            abstraction_policy_version=command.abstraction_policy_version,
+            evidence_spans=spans,
+            observation_asset_version_ids=tuple(sorted(observations)),
+        )
         candidate_hash = _hash(
             {
                 "candidate": candidate,
@@ -481,9 +574,19 @@ class MkaosAuthorityApplication:
                 "execution_proof": execution_proof,
                 "abstraction_policy_version": command.abstraction_policy_version,
                 "evidence_spans": [asdict(span) for span in spans],
+                "observation_asset_version_ids": sorted(observations),
+                "execution_binding": execution_binding,
             }
         )
-        return candidate, execution, chunks, spans, candidate_hash
+        return (
+            candidate,
+            execution,
+            chunks,
+            spans,
+            observations,
+            execution_binding,
+            candidate_hash,
+        )
 
     def _preflight_pack(
         self, command: BuildKnowledgePackCommand
@@ -754,16 +857,63 @@ class MkaosAuthorityApplication:
             chunks = repository.source_chunks(
                 project_id=worker.project_id, asset_version_ids=chunk_ids
             )
+            observation_ids = tuple(payload.get("observation_asset_version_ids") or ())
+            source_intelligence = SourceIntelligenceRepository(uow.cursor)
+            observations = source_intelligence.observations(
+                project_id=worker.project_id,
+                asset_version_ids=observation_ids,
+            )
+            observation_chunks = source_intelligence.observation_source_chunk_inputs(
+                project_id=worker.project_id,
+                asset_version_ids=observation_ids,
+            )
             if len(chunks) != len(chunk_ids):
                 raise KernelError(
                     "MKAOS_SOURCE_CHUNK_NOT_FOUND",
                     "evidence SourceChunk disappeared after admission",
+                )
+            if len(observations) != len(observation_ids):
+                raise KernelError(
+                    "MKAOS_OBSERVATION_NOT_FOUND",
+                    "deconstruction Observation disappeared after admission",
+                )
+            for observation in observations.values():
+                if (
+                    observation["lifecycle"],
+                    observation["eligibility"],
+                    observation["governance"],
+                ) != ("ACTIVE", "INELIGIBLE", "CLEAR"):
+                    raise KernelError(
+                        "MKAOS_OBSERVATION_INELIGIBLE",
+                        "deconstruction Observation became ineligible after admission",
+                    )
+                if (
+                    observation["evidence_class"] == "FIXTURE"
+                    and not self.allow_fixture_activation
+                ):
+                    raise KernelError(
+                        "MKAOS_FIXTURE_OBSERVATION_BLOCKED",
+                        "fixture Observation cannot enter the controlled MKAOS knowledge chain",
+                    )
+            permitted_chunks = set().union(*observation_chunks.values())
+            if observations and set(chunks) - permitted_chunks:
+                raise KernelError(
+                    "MKAOS_OBSERVATION_EVIDENCE_CONFLICT",
+                    "Candidate EvidenceSpan no longer matches Observation lineage",
                 )
             spans = validate_evidence_spans(
                 spans,
                 source_chunk_sizes={
                     key: int(value["byte_size"]) for key, value in chunks.items()
                 },
+            )
+            execution_binding = _candidate_execution_binding(
+                execution["content"],
+                fixture_protocol_only=execution_proof["fixture_protocol_only"],
+                candidate_payload_hash=_hash(candidate),
+                abstraction_policy_version=payload["abstraction_policy_version"],
+                evidence_spans=spans,
+                observation_asset_version_ids=tuple(sorted(observations)),
             )
             expected_hash = _hash(
                 {
@@ -773,9 +923,14 @@ class MkaosAuthorityApplication:
                     "execution_proof": execution_proof,
                     "abstraction_policy_version": payload["abstraction_policy_version"],
                     "evidence_spans": [asdict(span) for span in spans],
+                    "observation_asset_version_ids": sorted(observations),
+                    "execution_binding": execution_binding,
                 }
             )
-            if expected_hash != payload["candidate_hash"]:
+            if (
+                expected_hash != payload["candidate_hash"]
+                or execution_binding != payload["execution_binding"]
+            ):
                 raise KernelError(
                     "MKAOS_CANDIDATE_INPUT_DRIFT",
                     "MKAOS Candidate changed after admission",
@@ -794,10 +949,13 @@ class MkaosAuthorityApplication:
                     "asset_version_id": execution["asset_version_id"],
                     "content_hash": execution["content_hash"],
                     "proof": execution_proof,
+                    "binding": execution_binding,
                 },
                 "abstraction_policy_version": payload[
                     "abstraction_policy_version"
                 ],
+                "observation_asset_version_ids": sorted(observations),
+                "lineage_mode": payload["lineage_mode"],
                 "source_policy": {
                     "raw_source_expression_included": False,
                     "generation_eligible": False,
@@ -809,6 +967,7 @@ class MkaosAuthorityApplication:
                 "lineage": {
                     "created_by_operation_id": worker.causation_id,
                     "source_chunk_asset_version_ids": list(chunk_ids),
+                    "observation_asset_version_ids": sorted(observations),
                 },
             }
             content_hash = _hash(content)
@@ -869,6 +1028,21 @@ class MkaosAuthorityApplication:
                             "chunk_byte_start": span.chunk_byte_start,
                             "chunk_byte_end": span.chunk_byte_end,
                             "evidence_hash": span.evidence_hash,
+                            "created_by_operation_id": worker.causation_id,
+                        }
+                    )
+                dependencies = SourceIntelligenceRepository(uow.cursor)
+                for observation_id in sorted(observations):
+                    dependencies.record_dependency(
+                        {
+                            "dependency_id": str(uuid4()),
+                            "project_id": worker.project_id,
+                            "upstream_asset_version_id": observation_id,
+                            "downstream_asset_version_id": asset_version_id,
+                            "relationship": "ABSTRACTS",
+                            "selector_key": str(
+                                payload["abstraction_policy_version"]
+                            ),
                             "created_by_operation_id": worker.causation_id,
                         }
                     )
@@ -986,6 +1160,11 @@ class MkaosAuthorityApplication:
                             "source_chunk_asset_version_ids"
                         ]
                     ),
+                    "observation_asset_version_ids": list(
+                        candidate["content"]["lineage"].get(
+                            "observation_asset_version_ids", []
+                        )
+                    ),
                     "governance_decision_asset_version_id": decision_asset_version_id,
                     "created_by_operation_id": worker.causation_id,
                 },
@@ -1054,6 +1233,31 @@ class MkaosAuthorityApplication:
                         "content_hash": card_hash,
                     }
                 )
+                dependencies = SourceIntelligenceRepository(uow.cursor)
+                self._content_dependency(
+                    dependencies,
+                    worker,
+                    upstream=candidate["asset_version_id"],
+                    downstream=decision_asset_version_id,
+                    relationship="GOVERNS",
+                    selector_key=str(payload["policy_version"]),
+                )
+                self._content_dependency(
+                    dependencies,
+                    worker,
+                    upstream=candidate["asset_version_id"],
+                    downstream=card_asset_version_id,
+                    relationship="ACTIVATES",
+                    selector_key=str(payload["policy_version"]),
+                )
+                self._content_dependency(
+                    dependencies,
+                    worker,
+                    upstream=decision_asset_version_id,
+                    downstream=card_asset_version_id,
+                    relationship="ACTIVATES",
+                    selector_key=str(payload["policy_version"]),
+                )
                 self._event(
                     uow,
                     worker,
@@ -1103,9 +1307,17 @@ class MkaosAuthorityApplication:
                         "MKAOS_PACK_RECOVERY_REQUIRED",
                         "an Active KnowledgePack already materialized for this selection",
                     )
+                if active["asset_version_id"] != payload.get(
+                    "supersedes_pack_asset_version_id"
+                ):
+                    raise KernelError(
+                        "MKAOS_PACK_ACTIVE_CONFLICT",
+                        "Active KnowledgePack changed after admission",
+                    )
+            elif payload.get("supersedes_pack_asset_version_id"):
                 raise KernelError(
-                    "MKAOS_PACK_ACTIVE_CONFLICT",
-                    "target already has a different Active KnowledgePack",
+                    "MKAOS_PACK_SUPERSEDE_TARGET_MISSING",
+                    "Active KnowledgePack disappeared after admission",
                 )
             selections = validate_pack_selections(
                 tuple(
@@ -1201,6 +1413,10 @@ class MkaosAuthorityApplication:
                 "lineage": {
                     "created_by_operation_id": worker.causation_id,
                     "knowledge_card_asset_version_ids": list(identities),
+                    "supersedes_pack_asset_version_id": payload.get(
+                        "supersedes_pack_asset_version_id"
+                    )
+                    or None,
                 },
             }
             content_hash = _hash(content)
@@ -1230,6 +1446,12 @@ class MkaosAuthorityApplication:
                 governance="CLEAR",
             )
             if created:
+                if active is not None:
+                    repository.supersede_pack(
+                        project_id=worker.project_id,
+                        asset_version_id=str(active["asset_version_id"]),
+                        expected_selection_hash=str(active["selection_hash"]),
+                    )
                 repository.register_pack(
                     {
                         "knowledge_pack_id": pack_id,
@@ -1260,6 +1482,24 @@ class MkaosAuthorityApplication:
                             "created_by_operation_id": worker.causation_id,
                         }
                     )
+                dependencies = SourceIntelligenceRepository(uow.cursor)
+                for item in items:
+                    self._content_dependency(
+                        dependencies,
+                        worker,
+                        upstream=item["knowledge_card_asset_version_id"],
+                        downstream=asset_version_id,
+                        relationship="SELECTS",
+                        selector_key=str(payload["selector_policy_hash"]),
+                    )
+                self._content_dependency(
+                    dependencies,
+                    worker,
+                    upstream=target["asset_version_id"],
+                    downstream=asset_version_id,
+                    relationship="PROJECTS",
+                    selector_key=str(payload["selector_policy_hash"]),
+                )
                 self._event(
                     uow,
                     worker,
@@ -1415,6 +1655,28 @@ class MkaosAuthorityApplication:
             )
 
     @staticmethod
+    def _content_dependency(
+        repository: SourceIntelligenceRepository,
+        worker: WorkerLeaseCommand,
+        *,
+        upstream: str,
+        downstream: str,
+        relationship: str,
+        selector_key: str,
+    ) -> None:
+        repository.record_dependency(
+            {
+                "dependency_id": str(uuid4()),
+                "project_id": worker.project_id,
+                "upstream_asset_version_id": upstream,
+                "downstream_asset_version_id": downstream,
+                "relationship": relationship,
+                "selector_key": selector_key,
+                "created_by_operation_id": worker.causation_id,
+            }
+        )
+
+    @staticmethod
     def _event(
         uow: AuthorityUnitOfWork,
         worker: WorkerLeaseCommand,
@@ -1474,6 +1736,60 @@ def _hash(content: dict[str, Any]) -> str:
         content, ensure_ascii=False, sort_keys=True, separators=(",", ":")
     ).encode("utf-8")
     return "sha256:" + hashlib.sha256(encoded).hexdigest()
+
+
+def _candidate_execution_binding(
+    content: Any,
+    *,
+    fixture_protocol_only: bool,
+    candidate_payload_hash: str,
+    abstraction_policy_version: str,
+    evidence_spans: tuple[KnowledgeEvidenceSpan, ...],
+    observation_asset_version_ids: tuple[str, ...],
+) -> dict[str, Any]:
+    evidence_manifest_hash = _hash(
+        {
+            "evidence_spans": [
+                asdict(span)
+                for span in sorted(
+                    evidence_spans,
+                    key=lambda item: (
+                        item.source_chunk_asset_version_id,
+                        item.chunk_byte_start,
+                        item.chunk_byte_end,
+                        item.evidence_hash,
+                    ),
+                )
+            ]
+        }
+    )
+    expected = {
+        "schema_version": "mkaos-candidate-execution-binding.v1",
+        "candidate_payload_hash": candidate_payload_hash,
+        "abstraction_policy_version": abstraction_policy_version,
+        "evidence_manifest_hash": evidence_manifest_hash,
+        "observation_asset_version_ids": sorted(
+            set(observation_asset_version_ids)
+        ),
+    }
+    binding = (
+        content.get("mkaos_candidate_binding")
+        if isinstance(content, dict)
+        else None
+    )
+    if binding is None and fixture_protocol_only:
+        return {
+            "schema_version": expected["schema_version"],
+            "validation_status": "FIXTURE_PROTOCOL_UNBOUND",
+        }
+    if not isinstance(binding, dict) or any(
+        binding.get(key) != value for key, value in expected.items()
+    ):
+        raise KernelError(
+            "MKAOS_EXECUTION_OUTPUT_UNBOUND",
+            "execution evidence is not bound to this Candidate, policy and inputs",
+        )
+    return {**expected, "validation_status": "VERIFIED"}
 
 
 def _execution_proof(content: Any) -> dict[str, bool]:

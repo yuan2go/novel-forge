@@ -1,4 +1,5 @@
 """Verified-Blob SourceDocument commands over the shared Command Kernel."""
+
 from __future__ import annotations
 
 import hashlib
@@ -32,7 +33,21 @@ from novel_forge.modules.source_authority.definitions import (
     SOURCE_TRANSFORM_DEFINITION_VERSION,
     SOURCE_TRANSFORM_HANDLER_KEY,
     SOURCE_TRANSFORM_OPERATION,
+    SOURCE_OBSERVATION_OPERATION,
+    SOURCE_REPROCESSING_OPERATION,
+    SOURCE_CONTENT_PROFILE_OPERATION,
+    SOURCE_ANALYSIS_PLAN_OPERATION,
     source_authority_definitions,
+)
+from novel_forge.modules.source_authority.deconstruction_application import (
+    CommitDeconstructionObservationCommand,
+    PlanSourceReprocessingCommand,
+    SourceDeconstructionApplication,
+)
+from novel_forge.modules.source_authority.profiling_application import (
+    CommitSourceAnalysisPlanCommand,
+    CommitSourceContentProfileCommand,
+    SourceProfilingApplication,
 )
 from novel_forge.modules.source_authority.domain import (
     SourceChunkCandidate,
@@ -88,6 +103,9 @@ class CommitSourceTransformCommand:
     idempotency_key: str
     trace_id: str
     correlation_id: str
+    normalized_blob_id: str = ""
+    normalized_content_hash: str = ""
+    normalized_byte_size: int = 0
 
     def __post_init__(self) -> None:
         required = (
@@ -104,6 +122,13 @@ class CommitSourceTransformCommand:
         )
         if any(not value.strip() for value in required) or not self.chunks:
             raise ValueError("Source transform command is incomplete")
+        normalized_values = (
+            bool(self.normalized_blob_id),
+            bool(self.normalized_content_hash),
+            self.normalized_byte_size > 0,
+        )
+        if any(normalized_values) and not all(normalized_values):
+            raise ValueError("normalized Source identity must be complete")
 
 
 class SourceAuthorityApplication:
@@ -114,6 +139,7 @@ class SourceAuthorityApplication:
         application_build_id: str,
         commit_sha: str,
         worker_id: str = "source-authority-worker",
+        allow_fixture_observations: bool = False,
     ) -> None:
         if not database_url:
             raise ValueError("PostgreSQL database_url is required")
@@ -121,6 +147,98 @@ class SourceAuthorityApplication:
         self.application_build_id = application_build_id
         self.commit_sha = commit_sha
         self.worker_id = worker_id
+        self.deconstruction = SourceDeconstructionApplication(
+            database_url,
+            application_build_id=application_build_id,
+            commit_sha=commit_sha,
+            allow_fixture_observations=allow_fixture_observations,
+        )
+        self.profiling = SourceProfilingApplication(
+            database_url,
+            application_build_id=application_build_id,
+            commit_sha=commit_sha,
+            allow_fixture_profiles=allow_fixture_observations,
+        )
+
+    def execute_content_profile(
+        self,
+        command: CommitSourceContentProfileCommand,
+        *,
+        principal: Principal | None = None,
+    ) -> dict[str, Any]:
+        admitted = self.admit_content_profile(command, principal=principal)
+        if admitted["status"] == "SUCCEEDED":
+            return admitted
+        return self._run(str(admitted["operation_id"]), command.project_id)
+
+    def admit_content_profile(
+        self,
+        command: CommitSourceContentProfileCommand,
+        *,
+        principal: Principal | None = None,
+    ) -> dict[str, Any]:
+        self._register_definition()
+        return self.profiling.admit_profile(command, principal=principal)
+
+    def execute_analysis_plan(
+        self,
+        command: CommitSourceAnalysisPlanCommand,
+        *,
+        principal: Principal | None = None,
+    ) -> dict[str, Any]:
+        admitted = self.admit_analysis_plan(command, principal=principal)
+        if admitted["status"] == "SUCCEEDED":
+            return admitted
+        return self._run(str(admitted["operation_id"]), command.project_id)
+
+    def admit_analysis_plan(
+        self,
+        command: CommitSourceAnalysisPlanCommand,
+        *,
+        principal: Principal | None = None,
+    ) -> dict[str, Any]:
+        self._register_definition()
+        return self.profiling.admit_plan(command, principal=principal)
+
+    def execute_observation(
+        self,
+        command: CommitDeconstructionObservationCommand,
+        *,
+        principal: Principal | None = None,
+    ) -> dict[str, Any]:
+        admitted = self.admit_observation(command, principal=principal)
+        if admitted["status"] == "SUCCEEDED":
+            return admitted
+        return self._run(str(admitted["operation_id"]), command.project_id)
+
+    def admit_observation(
+        self,
+        command: CommitDeconstructionObservationCommand,
+        *,
+        principal: Principal | None = None,
+    ) -> dict[str, Any]:
+        self._register_definition()
+        return self.deconstruction.admit_observation(command, principal=principal)
+
+    def execute_reprocessing_plan(
+        self,
+        command: PlanSourceReprocessingCommand,
+        *,
+        principal: Principal | None = None,
+    ) -> dict[str, Any]:
+        admitted = self.admit_reprocessing_plan(command, principal=principal)
+        if admitted["status"] == "SUCCEEDED":
+            return admitted
+        return self._run(str(admitted["operation_id"]), command.project_id)
+
+    def admit_reprocessing_plan(
+        self,
+        command: PlanSourceReprocessingCommand,
+        *,
+        principal: Principal | None = None,
+    ) -> dict[str, Any]:
+        self._register_definition()
+        return self.deconstruction.admit_reprocessing_plan(command, principal=principal)
 
     def execute(
         self,
@@ -156,7 +274,12 @@ class SourceAuthorityApplication:
                     "SOURCE_OPERATION_RECOVERY_REQUIRED",
                     "existing SourceDocument generation is not complete; recover its Operation",
                 )
-            return {**existing, "status": "SUCCEEDED", "replayed": True, "duplicate": True}
+            return {
+                **existing,
+                "status": "SUCCEEDED",
+                "replayed": True,
+                "duplicate": True,
+            }
         self._register_definition()
         stable_idempotency_key = (
             f"source.document.register:{command.project_id}:{blob['actual_hash']}"
@@ -284,6 +407,9 @@ class SourceAuthorityApplication:
                 "chunking_policy_hash": command.chunking_policy_hash,
                 "manifest_hash": manifest_hash,
                 "chunks": [asdict(chunk) for chunk in chunks],
+                "normalized_blob_id": command.normalized_blob_id or None,
+                "normalized_content_hash": command.normalized_content_hash or None,
+                "normalized_byte_size": command.normalized_byte_size or None,
                 "client_idempotency_key": command.idempotency_key,
                 "raw_source_text_in_postgresql": False,
                 "source_chunks_are_evidence_only": True,
@@ -423,17 +549,49 @@ class SourceAuthorityApplication:
                     "SOURCE_TRANSFORM_GOVERNANCE_BLOCKED",
                     "only an eligible governed SourceDocument can be transformed",
                 )
+            normalized_size = command.normalized_byte_size or int(source["source_size"])
             chunks = validate_source_chunk_candidates(
-                command.chunks, source_size=int(source["source_size"])
+                command.chunks, source_size=normalized_size
             )
             blobs = repository.chunk_blobs_for_update(
-                tuple(chunk.blob_id for chunk in chunks)
+                tuple(
+                    dict.fromkeys(
+                        (
+                            *(chunk.blob_id for chunk in chunks),
+                            *(
+                                (command.normalized_blob_id,)
+                                if command.normalized_blob_id
+                                else ()
+                            ),
+                        )
+                    )
+                )
             )
-        if len(blobs) != len(chunks):
+        required_blob_ids = {chunk.blob_id for chunk in chunks}
+        if command.normalized_blob_id:
+            required_blob_ids.add(command.normalized_blob_id)
+        if set(blobs) != required_blob_ids:
             raise KernelError(
                 "SOURCE_CHUNK_BLOB_NOT_FOUND",
-                "one or more Source chunk Blobs do not exist",
+                "one or more normalized or Source chunk Blobs do not exist",
             )
+        if command.normalized_blob_id:
+            normalized_blob = blobs[command.normalized_blob_id]
+            if (
+                normalized_blob["project_id"] != command.project_id
+                or normalized_blob["status"] != "AVAILABLE"
+                or normalized_blob["actual_hash"] != command.normalized_content_hash
+                or normalized_blob["expected_hash"] != command.normalized_content_hash
+                or int(normalized_blob["actual_size"] or -1)
+                != command.normalized_byte_size
+                or int(normalized_blob["expected_size"]) != command.normalized_byte_size
+                or normalized_blob["actual_object_key"] != normalized_blob["object_key"]
+                or not str(normalized_blob["media_type"]).startswith("text/")
+            ):
+                raise KernelError(
+                    "SOURCE_NORMALIZED_BLOB_IDENTITY_CONFLICT",
+                    "normalized Source Blob differs from the frozen transform identity",
+                )
         for chunk in chunks:
             blob = blobs[chunk.blob_id]
             if blob["project_id"] != command.project_id:
@@ -461,6 +619,9 @@ class SourceAuthorityApplication:
                 "normalization_version": command.normalization_version,
                 "chunking_version": command.chunking_version,
                 "chunking_policy_hash": command.chunking_policy_hash,
+                "normalized_blob_id": command.normalized_blob_id or None,
+                "normalized_content_hash": command.normalized_content_hash or None,
+                "normalized_byte_size": command.normalized_byte_size or None,
                 "chunks": [asdict(chunk) for chunk in chunks],
             }
         )
@@ -538,7 +699,9 @@ class SourceAuthorityApplication:
                     worker,
                     retryable=False,
                     error_code=(
-                        exc.code if isinstance(exc, KernelError) else "SOURCE_HANDLER_FAILED"
+                        exc.code
+                        if isinstance(exc, KernelError)
+                        else "SOURCE_HANDLER_FAILED"
                     ),
                     error_message=str(exc),
                     failure_class="SOURCE_GOVERNANCE_FAILURE",
@@ -576,9 +739,7 @@ class SourceAuthorityApplication:
                 copyright_boundary=str(payload.get("copyright_boundary") or ""),
             )
             source_hash = str(blob["actual_hash"])
-            source_document_id = (
-                f"source-document:{worker.project_id}:{source_hash.removeprefix('sha256:')}"
-            )
+            source_document_id = f"source-document:{worker.project_id}:{source_hash.removeprefix('sha256:')}"
             asset_version_id = f"{source_document_id}:v1"
             content = {
                 "schema_version": "source-document-authority.v1",
@@ -591,9 +752,7 @@ class SourceAuthorityApplication:
                 "rights": {
                     "authorization": str(payload["rights_authorization"]),
                     "license_name": str(payload.get("license_name") or ""),
-                    "copyright_boundary": str(
-                        payload.get("copyright_boundary") or ""
-                    ),
+                    "copyright_boundary": str(payload.get("copyright_boundary") or ""),
                 },
                 "object_reference": {
                     "blob_id": blob["blob_id"],
@@ -704,9 +863,7 @@ class SourceAuthorityApplication:
             "content_hash": content_hash,
         }
 
-    def _execute_transform_fenced(
-        self, worker: WorkerLeaseCommand
-    ) -> dict[str, Any]:
+    def _execute_transform_fenced(self, worker: WorkerLeaseCommand) -> dict[str, Any]:
         with AuthorityUnitOfWork(self.database_url) as uow:
             require_current_fence(uow, worker)
             operation = uow.repositories.chapter_authority.operation_execution(
@@ -738,18 +895,53 @@ class SourceAuthorityApplication:
                     "SOURCE_TRANSFORM_GOVERNANCE_BLOCKED",
                     "SourceDocument is no longer eligible for transformation",
                 )
+            normalized_size = int(
+                payload.get("normalized_byte_size") or source["source_size"]
+            )
             chunks = validate_source_chunk_candidates(
                 tuple(SourceChunkCandidate(**item) for item in payload["chunks"]),
-                source_size=int(source["source_size"]),
+                source_size=normalized_size,
             )
             blobs = repository.chunk_blobs_for_update(
-                tuple(chunk.blob_id for chunk in chunks)
+                tuple(
+                    dict.fromkeys(
+                        (
+                            *(chunk.blob_id for chunk in chunks),
+                            *(
+                                (str(payload["normalized_blob_id"]),)
+                                if payload.get("normalized_blob_id")
+                                else ()
+                            ),
+                        )
+                    )
+                )
             )
-            if len(blobs) != len(chunks):
+            required_blob_ids = {chunk.blob_id for chunk in chunks}
+            if payload.get("normalized_blob_id"):
+                required_blob_ids.add(str(payload["normalized_blob_id"]))
+            if set(blobs) != required_blob_ids:
                 raise KernelError(
                     "SOURCE_CHUNK_BLOB_NOT_FOUND",
                     "one or more Source chunk Blobs disappeared",
                 )
+            if payload.get("normalized_blob_id"):
+                normalized_blob = blobs[str(payload["normalized_blob_id"])]
+                if (
+                    normalized_blob["project_id"] != worker.project_id
+                    or normalized_blob["status"] != "AVAILABLE"
+                    or normalized_blob["actual_hash"]
+                    != payload["normalized_content_hash"]
+                    or normalized_blob["expected_hash"]
+                    != payload["normalized_content_hash"]
+                    or int(normalized_blob["actual_size"] or -1)
+                    != int(payload["normalized_byte_size"])
+                    or normalized_blob["actual_object_key"]
+                    != normalized_blob["object_key"]
+                ):
+                    raise KernelError(
+                        "SOURCE_NORMALIZED_BLOB_IDENTITY_CONFLICT",
+                        "normalized Source Blob no longer matches the transform",
+                    )
             for chunk in chunks:
                 blob = blobs[chunk.blob_id]
                 if (
@@ -773,6 +965,9 @@ class SourceAuthorityApplication:
                     "normalization_version": payload["normalization_version"],
                     "chunking_version": payload["chunking_version"],
                     "chunking_policy_hash": payload["chunking_policy_hash"],
+                    "normalized_blob_id": payload.get("normalized_blob_id"),
+                    "normalized_content_hash": payload.get("normalized_content_hash"),
+                    "normalized_byte_size": payload.get("normalized_byte_size"),
                     "chunks": [asdict(chunk) for chunk in chunks],
                 }
             )
@@ -810,6 +1005,15 @@ class SourceAuthorityApplication:
                 "normalization_version": payload["normalization_version"],
                 "chunking_version": payload["chunking_version"],
                 "chunking_policy_hash": payload["chunking_policy_hash"],
+                "normalized_object_reference": (
+                    {
+                        "blob_id": payload["normalized_blob_id"],
+                        "content_hash": payload["normalized_content_hash"],
+                        "size": payload["normalized_byte_size"],
+                    }
+                    if payload.get("normalized_blob_id")
+                    else None
+                ),
                 "manifest_hash": expected_manifest_hash,
                 "chunks": chunk_rows,
                 "source_policy": {
@@ -863,11 +1067,24 @@ class SourceAuthorityApplication:
                         "chunking_policy_hash": payload["chunking_policy_hash"],
                         "manifest_hash": expected_manifest_hash,
                         "chunk_count": len(chunks),
-                        "total_chunk_bytes": sum(
-                            chunk.byte_size for chunk in chunks
+                        "total_chunk_bytes": sum(chunk.byte_size for chunk in chunks),
+                        "normalized_blob_id": payload.get("normalized_blob_id"),
+                        "normalized_content_hash": payload.get(
+                            "normalized_content_hash"
                         ),
+                        "normalized_byte_size": payload.get("normalized_byte_size"),
                     }
                 )
+                if payload.get("normalized_blob_id"):
+                    uow.repositories.asset_blobs.bind_blob(
+                        f"source-normalized-blob-reference:{transform_asset_version_id}",
+                        transform_asset_version_id,
+                        str(payload["normalized_blob_id"]),
+                        "normalized_source",
+                        0,
+                        str(blobs[str(payload["normalized_blob_id"])]["media_type"]),
+                        str(payload["normalized_content_hash"]),
+                    )
                 for chunk, row in zip(chunks, chunk_rows, strict=True):
                     blob = blobs[chunk.blob_id]
                     chunk_content = {
@@ -919,9 +1136,7 @@ class SourceAuthorityApplication:
                                 "operation_id": worker.causation_id,
                                 "attempt_id": worker.attempt_id,
                                 "fencing_token": worker.fencing_token,
-                                "source_asset_version_id": source[
-                                    "asset_version_id"
-                                ],
+                                "source_asset_version_id": source["asset_version_id"],
                                 "manifest_hash": expected_manifest_hash,
                                 "generation_context_allowed": False,
                             },
@@ -971,9 +1186,7 @@ class SourceAuthorityApplication:
                             "source_transform_id": source_transform_id,
                             "asset_version_id": transform_asset_version_id,
                             "source_document_id": source["source_document_id"],
-                            "source_asset_version_id": source[
-                                "asset_version_id"
-                            ],
+                            "source_asset_version_id": source["asset_version_id"],
                             "manifest_hash": expected_manifest_hash,
                             "chunk_count": len(chunks),
                             "trace_id": worker.trace_id,
@@ -1008,6 +1221,13 @@ class SourceAuthorityApplication:
             return self._execute_document_fenced(worker)
         if row[0] == SOURCE_TRANSFORM_OPERATION:
             return self._execute_transform_fenced(worker)
+        if row[0] in {SOURCE_OBSERVATION_OPERATION, SOURCE_REPROCESSING_OPERATION}:
+            return self.deconstruction.execute_fenced(worker, str(row[0]))
+        if row[0] in {
+            SOURCE_CONTENT_PROFILE_OPERATION,
+            SOURCE_ANALYSIS_PLAN_OPERATION,
+        }:
+            return self.profiling.execute_fenced(worker, str(row[0]))
         raise KernelError(
             "SOURCE_HANDLER_NOT_FOUND", f"unsupported Source Operation: {row[0]}"
         )
@@ -1045,7 +1265,9 @@ class SourceAuthorityApplication:
             )
             row = uow.cursor.fetchone()
         if row is None:
-            raise KernelError("SOURCE_RESULT_MISSING", "SourceDocument result is missing")
+            raise KernelError(
+                "SOURCE_RESULT_MISSING", "SourceDocument result is missing"
+            )
         return {
             "operation_id": operation_id,
             "project_id": project_id,
@@ -1074,6 +1296,23 @@ class SourceAuthorityApplication:
             raise KernelError("OPERATION_NOT_FOUND", "Source Operation does not exist")
         if row[0] == SOURCE_AUTHORITY_OPERATION:
             return self._result(operation_id, project_id, replayed=replayed)
+        if row[0] in {SOURCE_OBSERVATION_OPERATION, SOURCE_REPROCESSING_OPERATION}:
+            return self.deconstruction.result(
+                operation_id,
+                project_id,
+                definition_name=str(row[0]),
+                replayed=replayed,
+            )
+        if row[0] in {
+            SOURCE_CONTENT_PROFILE_OPERATION,
+            SOURCE_ANALYSIS_PLAN_OPERATION,
+        }:
+            return self.profiling.result(
+                operation_id,
+                project_id,
+                definition_name=str(row[0]),
+                replayed=replayed,
+            )
         if row[0] != SOURCE_TRANSFORM_OPERATION:
             raise KernelError(
                 "SOURCE_HANDLER_NOT_FOUND", f"unsupported Source Operation: {row[0]}"
@@ -1132,6 +1371,8 @@ def _is_sha256(value: str) -> bool:
 
 __all__ = [
     "CommitSourceTransformCommand",
+    "CommitDeconstructionObservationCommand",
+    "PlanSourceReprocessingCommand",
     "RegisterSourceDocumentCommand",
     "SourceAuthorityApplication",
 ]

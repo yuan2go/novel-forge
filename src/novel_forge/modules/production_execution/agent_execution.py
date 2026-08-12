@@ -77,7 +77,6 @@ def execute_agent_workspace_candidate(
             "commit_authority": "domain_authority_only",
         },
         execution_port=execution_port,
-        environment="production",
     )
     raw = dict(candidate.raw_output)
     result_kind = AgentResultKind(str(raw.get("result_kind") or ""))

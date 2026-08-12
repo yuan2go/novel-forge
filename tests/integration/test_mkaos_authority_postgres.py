@@ -3,7 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import unittest
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from decimal import Decimal
 
 from psycopg.types.json import Jsonb
@@ -25,10 +25,16 @@ from novel_forge.modules.project_authority import (
     ProjectAuthorityCommand,
 )
 from novel_forge.modules.source_authority import (
+    CommitDeconstructionObservationCommand,
     CommitSourceTransformCommand,
+    ObservationEvidenceSpan,
+    ObservationScope,
+    PlanSourceReprocessingCommand,
     RegisterSourceDocumentCommand,
+    ReprocessingTarget,
     SourceAuthorityApplication,
     SourceChunkCandidate,
+    default_analyzer_contracts,
 )
 from tests.integration.authority_postgres_support import (
     DATABASE_URL,
@@ -85,9 +91,86 @@ class MkaosAuthorityPostgresTests(unittest.TestCase):
             "chapter_plan",
             {"chapter": 1, "status": "PLANNED"},
         )
+        with transaction() as connection:
+            cursor = connection.cursor()
+            cursor.execute(
+                """
+                SELECT source_document_id, source_transform_id
+                FROM authority_source_chunk
+                WHERE asset_version_id=%s
+                """,
+                [chunk_version_id],
+            )
+            source_document_id, source_transform_id = map(str, cursor.fetchone())
+        observation_span = ObservationEvidenceSpan(
+            source_chunk_asset_version_id=chunk_version_id,
+            chunk_byte_start=0,
+            chunk_byte_end=10,
+            evidence_hash="sha256:" + hashlib.sha256(b"span-0-10").hexdigest(),
+        )
+        observation_scope = ObservationScope(
+            scale="CHAPTER",
+            range_start=1,
+            range_end=1,
+            source_document_ids=(source_document_id,),
+            label="chapter-1",
+        )
+        hook_analyzer = default_analyzer_contracts()["hook"]
+        source_application = SourceAuthorityApplication(
+            DATABASE_URL,
+            application_build_id="mkaos-authority-integration",
+            commit_sha="f" * 40,
+            allow_fixture_observations=True,
+        )
+        observation = source_application.execute_observation(
+            CommitDeconstructionObservationCommand(
+                project_id=self.project_id,
+                workspace_id=self.workspace_id,
+                execution_asset_version_id=execution_version_id,
+                scope=observation_scope,
+                analyzer=hook_analyzer,
+                observation={
+                    "findings": [
+                        {
+                            "finding_code": "hook.1",
+                            "statement": "A bounded abstract hook mechanism was observed.",
+                            "evidence_span_ids": [observation_span.evidence_span_id],
+                        }
+                    ],
+                    "confidence": 0.8,
+                    "originality_risk": "LOW_AFTER_ABSTRACTION",
+                    "knowledge_status": "NOT_ABSTRACTED",
+                },
+                evidence_spans=(observation_span,),
+                input_observation_asset_version_ids=(),
+                evidence_class="FIXTURE",
+                actor_id="fixture-observer",
+                idempotency_key=f"observation:{chunk_version_id}",
+                trace_id=f"trace:observation:{chunk_version_id}",
+                correlation_id=f"correlation:observation:{chunk_version_id}",
+            )
+        )
         candidate_command = self._candidate_command(
             chunk_version_id=chunk_version_id,
             execution_version_id=execution_version_id,
+            observation_asset_version_id=observation["asset_version_id"],
+        )
+        unrelated_chunk_version_id = self._source_chunk_version(
+            source_bytes=b"T" * 100,
+            chunk_bytes=b"unrelated governed evidence for a second source",
+        )
+        with self.assertRaises(KernelError) as mismatched_lineage:
+            self.application.admit_candidate(
+                self._candidate_command(
+                    chunk_version_id=unrelated_chunk_version_id,
+                    execution_version_id=execution_version_id,
+                    observation_asset_version_id=observation["asset_version_id"],
+                ),
+                principal=self.principal,
+            )
+        self.assertEqual(
+            mismatched_lineage.exception.code,
+            "MKAOS_OBSERVATION_EVIDENCE_CONFLICT",
         )
 
         admitted = self.application.admit_candidate(
@@ -208,6 +291,29 @@ class MkaosAuthorityPostgresTests(unittest.TestCase):
             self.application.admit_pack(conflicting_pack, principal=self.principal)
         self.assertEqual(conflict.exception.code, "MKAOS_PACK_ACTIVE_CONFLICT")
 
+        replacement = self.application.execute_pack(
+            replace(
+                conflicting_pack,
+                idempotency_key=f"pack-rebuild:{target_version_id}",
+                supersedes_pack_asset_version_id=pack["asset_version_id"],
+            ),
+            principal=self.principal,
+        )
+        self.assertNotEqual(replacement["asset_version_id"], pack["asset_version_id"])
+        pack_diff = self.query.diff_packs(
+            project_id=self.project_id,
+            knowledge_pack_id=replacement["knowledge_pack_id"],
+            against_knowledge_pack_id=pack["knowledge_pack_id"],
+        )
+        self.assertTrue(pack_diff["directly_supersedes_baseline"])
+        self.assertEqual(pack_diff["added"], [])
+        self.assertEqual(pack_diff["removed"], [])
+        self.assertEqual(len(pack_diff["changed"]), 1)
+        self.assertEqual(
+            pack_diff["changed"][0]["before"]["usage_role"], "CONSTRAINT"
+        )
+        self.assertEqual(pack_diff["changed"][0]["after"]["usage_role"], "CHECK")
+
         with transaction() as connection:
             cursor = connection.cursor()
             cursor.execute(
@@ -228,6 +334,85 @@ class MkaosAuthorityPostgresTests(unittest.TestCase):
                 [candidate["asset_version_id"]],
             )
             self.assertEqual(cursor.fetchone(), ("APPROVED", 1, 1, 1))
+            cursor.execute(
+                """
+                SELECT status, version.lifecycle
+                FROM authority_mkaos_knowledge_pack AS pack
+                JOIN authority_asset_version AS version
+                  ON version.asset_version_id=pack.asset_version_id
+                WHERE pack.asset_version_id=%s
+                """,
+                [pack["asset_version_id"]],
+            )
+            self.assertEqual(cursor.fetchone(), ("SUPERSEDED", "SUPERSEDED"))
+            cursor.execute(
+                """
+                SELECT DISTINCT relationship FROM authority_content_dependency
+                WHERE project_id=%s AND relationship IN (
+                    'ABSTRACTS', 'GOVERNS', 'ACTIVATES', 'SELECTS', 'PROJECTS'
+                ) ORDER BY relationship
+                """,
+                [self.project_id],
+            )
+            self.assertEqual(
+                [row[0] for row in cursor.fetchall()],
+                ["ABSTRACTS", "ACTIVATES", "GOVERNS", "PROJECTS", "SELECTS"],
+            )
+
+        plan = source_application.execute_reprocessing_plan(
+            PlanSourceReprocessingCommand(
+                project_id=self.project_id,
+                workspace_id=self.workspace_id,
+                targets=(
+                    ReprocessingTarget(
+                        scope=observation_scope,
+                        analyzer=replace(
+                            hook_analyzer,
+                            analyzer_version="2.0.0",
+                            prompt_version="2.0.0",
+                        ),
+                    ),
+                ),
+                cause_type="ANALYZER_UPGRADE",
+                source_transform_id=source_transform_id,
+                actor_id="source-reprocessing-operator",
+                idempotency_key=f"reprocess:{observation['asset_version_id']}",
+                trace_id=f"trace:reprocess:{observation['asset_version_id']}",
+                correlation_id=(
+                    f"correlation:reprocess:{observation['asset_version_id']}"
+                ),
+            )
+        )
+        self.assertEqual(
+            {item["action"] for item in plan["items"]},
+            {"RECOMPUTE", "REABSTRACT", "REGOVERN", "REBUILD_PROJECTION"},
+        )
+        with transaction() as connection:
+            cursor = connection.cursor()
+            cursor.execute(
+                """
+                SELECT asset.asset_type, invalidation.target_asset_version_id
+                FROM authority_content_invalidation AS invalidation
+                JOIN authority_asset_version AS version
+                  ON version.asset_version_id=invalidation.target_asset_version_id
+                JOIN authority_asset AS asset ON asset.asset_id=version.asset_id
+                WHERE invalidation.project_id=%s AND invalidation.status='OPEN'
+                ORDER BY asset.asset_type, invalidation.target_asset_version_id
+                """,
+                [self.project_id],
+            )
+            invalidated = cursor.fetchall()
+        self.assertIn(
+            ("source_deconstruction_observation", observation["asset_version_id"]),
+            invalidated,
+        )
+        self.assertIn(
+            ("knowledge_card_candidate", candidate["asset_version_id"]),
+            invalidated,
+        )
+        self.assertIn(("knowledge_card", approval["asset_version_id"]), invalidated)
+        self.assertIn(("knowledge_pack", replacement["asset_version_id"]), invalidated)
+        self.assertNotIn(("knowledge_pack", pack["asset_version_id"]), invalidated)
 
     def test_raw_source_field_and_cross_project_lineage_fail_closed(self) -> None:
         chunk_version_id = self._source_chunk_version()
@@ -268,6 +453,9 @@ class MkaosAuthorityPostgresTests(unittest.TestCase):
                 principal=self.principal,
             )
         self.assertEqual(crossed.exception.code, "MKAOS_SOURCE_CHUNK_NOT_FOUND")
+        with self.assertRaises(KernelError) as unbound:
+            self.application.admit_candidate(command, principal=self.principal)
+        self.assertEqual(unbound.exception.code, "MKAOS_EXECUTION_OUTPUT_UNBOUND")
 
     def test_fixture_candidate_cannot_activate_with_production_defaults(self) -> None:
         chunk_version_id = self._source_chunk_version()
@@ -315,7 +503,11 @@ class MkaosAuthorityPostgresTests(unittest.TestCase):
         )
 
     def _candidate_command(
-        self, *, chunk_version_id: str, execution_version_id: str
+        self,
+        *,
+        chunk_version_id: str,
+        execution_version_id: str,
+        observation_asset_version_id: str = "",
     ) -> CommitKnowledgeCandidateCommand:
         candidate = {
             "concept_name": "Escalating obligation",
@@ -354,10 +546,20 @@ class MkaosAuthorityPostgresTests(unittest.TestCase):
             idempotency_key=f"candidate:{chunk_version_id}:{execution_version_id}",
             trace_id=f"trace:candidate:{chunk_version_id}",
             correlation_id=f"correlation:candidate:{chunk_version_id}",
+            observation_asset_version_ids=(
+                (observation_asset_version_id,)
+                if observation_asset_version_id
+                else ()
+            ),
         )
 
     def _source_chunk_version(
-        self, *, project_id: str = "", workspace_id: str = ""
+        self,
+        *,
+        project_id: str = "",
+        workspace_id: str = "",
+        source_bytes: bytes = b"S" * 100,
+        chunk_bytes: bytes = b"normalized evidence bytes for abstract analysis",
     ) -> str:
         project_id = project_id or self.project_id
         workspace_id = workspace_id or self.workspace_id
@@ -366,7 +568,6 @@ class MkaosAuthorityPostgresTests(unittest.TestCase):
             application_build_id="mkaos-authority-integration",
             commit_sha="f" * 40,
         )
-        source_bytes = b"S" * 100
         source_blob = self._insert_available_blob(project_id, source_bytes)
         source = source_app.execute(
             RegisterSourceDocumentCommand(
@@ -385,7 +586,6 @@ class MkaosAuthorityPostgresTests(unittest.TestCase):
                 correlation_id=f"correlation:{source_blob}",
             )
         )
-        chunk_bytes = b"normalized evidence bytes for abstract analysis"
         chunk_blob = self._insert_available_blob(project_id, chunk_bytes)
         transformed = source_app.execute_transform(
             CommitSourceTransformCommand(

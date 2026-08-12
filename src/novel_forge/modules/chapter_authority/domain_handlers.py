@@ -51,6 +51,7 @@ def build_context_bundle(
     governed_candidates: list[dict[str, Any]] | None = None,
     version_refs: dict[str, Any] | None = None,
     token_budget: int = 6000,
+    required_asset_types: tuple[str, ...] = (),
 ) -> dict[str, Any]:
     _require_keys(plan, "chapter", "premise")
     objective = str(plan.get("chapter_objective") or plan.get("objective") or "").strip()
@@ -116,6 +117,7 @@ def build_context_bundle(
         candidates=candidates,
         token_budget=token_budget,
         version_refs=refs,
+        required_asset_types=required_asset_types,
     )
     return {
         **governed,
@@ -245,6 +247,10 @@ def build_canon_patch(
         "world_rule_snapshot": "world_rule",
         "power_state": "power_state",
         "power_state_snapshot": "power_state",
+        "plot_thread": "plot_thread",
+        "plot_thread_snapshot": "plot_thread",
+        "resource_state": "resource_state",
+        "resource_state_snapshot": "resource_state",
     }
     for segment in (context_bundle or {}).get("context_segments", []):
         asset_type = str(segment.get("asset_type") or "")

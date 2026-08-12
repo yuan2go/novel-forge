@@ -33,7 +33,7 @@ description: Use when creating or reviewing full-book outlines, volume plans, lo
 3. 规划人物关系变化、信念变化和关键代价。
 4. 定义每阶段 reader prerequisites、已 grounded 规则、人物状态和读者承诺。
 5. 规划阶段 beat path：每个阶段必须说明它 requires 什么、grounds 什么、解锁哪些后续冲突或 payoff。
-6. 安排爽点分布、情绪曲线、阶段高潮和追读钩子。
+6. 安排爽点分布、情绪曲线、阶段高潮和追读钩子；为跨章节钩子绑定 reader promise、horizon、目标 payoff window 和责任 arc。
 7. 建立伏笔设置、延迟兑现和回收计划，确保 payoff 前有足够 grounding。
 8. 检查每卷是否有明确奖励、代价、升级和更大压力。
 9. 输出全书大纲、卷纲和风险清单。
@@ -54,6 +54,7 @@ description: Use when creating or reviewing full-book outlines, volume plans, lo
 ## Beat Path
 ## 爽点分布
 ## 情绪曲线
+## Hook Horizon / Reader Promise
 ## 伏笔与回收
 ## 前 3 章目标
 ## 前 10 章目标
@@ -66,6 +67,7 @@ description: Use when creating or reviewing full-book outlines, volume plans, lo
 - 主角成长必须对应更强冲突，而不是单纯堆能力。
 - 每个阶段关键 beat 必须说明它为后续章节 grounded 了哪些规则、关系、悬念或承诺。
 - 伏笔必须有设置位置、回收窗口和剧情功能。
+- IMMEDIATE / CHAPTER / MINI_ARC / ARC / VOLUME / BOOK 各尺度 Hook 必须有责任范围和 evidence，不得用单一固定章数替代设计判断。
 - 长线规划必须服务追读，不得变成设定年表。
 
 ## 禁止事项
@@ -74,6 +76,7 @@ description: Use when creating or reviewing full-book outlines, volume plans, lo
 - 禁止让敌人升级无理由或主角升级无代价。
 - 禁止照搬已有作品卷结构。
 - 禁止让伏笔只存在于作者笔记，无法进入章节执行。
+- 禁止把长期承诺伪装成短期 cliffhanger，或创建独立重复 Hook Agent。
 
 ## 与其他模块的关系
 

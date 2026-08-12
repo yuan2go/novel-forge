@@ -374,17 +374,8 @@ class AuthorityTaskQuery:
                 "authority": False,
                 "rebuildable_index": True,
             },
-            "celery": {
-                "healthy": False,
-                "active_count": 0,
-                "reserved_count": 0,
-                "scheduled_count": 0,
-                "workers": {},
-                "disabled_for_production_authority": True,
-            },
             "task_control": {
                 "scheduler": "authority_worker",
-                "legacy_celery_enabled": False,
             },
             "queue_trend": [],
             "recent_failures": [*failed, *dead][:100],

@@ -18,6 +18,7 @@ description: Use when designing or reviewing world rules, power systems, resourc
 - 创建 WorldBible、世界模板或项目世界分支。
 - 审查世界观是否能支撑长期冲突。
 - 大纲或正文中出现规则失效、资源无代价或设定堆砌问题。
+- 定义“规则是什么”；长期系统性后果、制度适应和故事机会交给 `world-consequence-modeling`，不在本 Skill 重复推演。
 
 ## 输入要求
 
@@ -68,9 +69,10 @@ description: Use when designing or reviewing world rules, power systems, resourc
 - 禁止让强资源凭空无限供应。
 - 禁止复制具体作品的独特世界观组合。
 - 禁止让世界规则在主角需要时失效。
+- 禁止把 provider 推演出的 consequence candidate 直接写成 Accepted Canon。
 
 ## 与其他模块的关系
 
 - 上游：`TopicSeed`、`KnowledgeCard`、`MaterialCard`。
-- 下游：`CharacterCard`、`Outline`、`ChapterPlan`、`quality-review`。
+- 下游：`CharacterCard`、`Outline`、`ChapterPlan`、`quality-review`、`world-consequence-modeling`。
 - Agent：Chief Editor Agent、Draft Agent、Review Agent。

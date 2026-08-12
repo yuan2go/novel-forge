@@ -43,6 +43,9 @@ from novel_forge.modules.command_kernel.cancellation import (
 from novel_forge.modules.command_kernel.external_effect_runtime import (
     cancel_operation_external_effects,
 )
+from novel_forge.modules.command_kernel.external_effect_adapters import (
+    ExternalEffectAdapter,
+)
 from novel_forge.modules.command_kernel.operation_graph import (
     GraphCommandContext,
     coordinate_saga,
@@ -127,10 +130,10 @@ class StartBookProductionCommand:
     production_profile_version: str
     longform_context_versions: dict[str, str]
     target_chapter_count: int
+    input_mode: str
     light_recap_cadence: int = 5
     formal_recap_cadence: int = 10
     input_snapshot_id: str = ""
-    input_mode: str = "LEGACY_FIXTURE_INPUT_MODE"
 
 
 @dataclass(frozen=True, slots=True)
@@ -146,7 +149,7 @@ class SubmitBookChapterCommand:
     execution_chapter_plan_content_hash: str = ""
     parent_group_version_id: str = ""
     context_version_refs: dict[str, Any] | None = None
-    context_token_budget: int = 6000
+    context_token_budget: int = 16_000
     preparation_report: dict[str, Any] | None = None
 
 
@@ -187,6 +190,7 @@ class ChapterAuthorityCommandPort(Protocol):
 @dataclass(slots=True)
 class ChapterAuthorityCommandAdapter:
     application: ChapterAuthorityApplication
+    external_effect_adapters: dict[str, ExternalEffectAdapter]
 
     def submit(
         self, request: SingleChapterRequest, *, principal: Principal
@@ -216,10 +220,10 @@ class ChapterAuthorityCommandAdapter:
         trace_id: str,
         correlation_id: str,
     ) -> dict[str, Any]:
-        with AuthorityUnitOfWork(self.application.database_url) as uow:
-            state = uow.repositories.attempt_runtime.operation_state(
-                root_operation_id, project_id
-            )
+        state = self.application.query.require_operation_control_state(
+            project_id=project_id,
+            root_operation_id=root_operation_id,
+        )
         result = request_cancellation(
             self.application.database_url,
             CancelCommand(
@@ -240,7 +244,7 @@ class ChapterAuthorityCommandAdapter:
             actor_id=actor_id,
             trace_id=trace_id,
             correlation_id=correlation_id,
-            adapters=self.application.external_effect_adapters,
+            adapters=self.external_effect_adapters,
         )
         return {**result, "external_effect_cancellations": list(cancellations)}
 
@@ -284,7 +288,7 @@ class PostgresBookAuthority:
         application_build_id: str,
         commit_sha: str,
         failure_injector: Callable[[str], None] | None = None,
-        legacy_fixture_input_allowed: bool = True,
+        legacy_fixture_input_allowed: bool = False,
     ) -> None:
         if not database_url or not application_build_id or len(commit_sha) != 40:
             raise ValueError("PostgreSQL, build id, and full commit SHA are required")
@@ -1111,6 +1115,67 @@ class PostgresBookAuthority:
         )
         return self.require(book_run_id)
 
+    def advance_supervisor_checkpoint(
+        self,
+        book_run_id: str,
+        *,
+        expected_version: int,
+        expected_state: str,
+        target_state: BookProductionState,
+        principal: Principal,
+    ) -> str:
+        """CAS one Supervisor-selected state through Book Authority."""
+
+        book = self.require(book_run_id)
+        principal.require("book.authority.execute", str(book["project_id"]))
+        if (
+            int(book["version"]) != expected_version
+            or str(book["state"]) != expected_state
+        ):
+            raise KernelError(
+                "BOOK_SUPERVISOR_CHECKPOINT_CONFLICT",
+                "Book checkpoint changed during Supervisor Tick",
+            )
+
+        def commit_checkpoint(
+            uow: AuthorityUnitOfWork,
+            _operation_id: str,
+            checkpoint: TransactionCheckpoint,
+        ) -> dict[str, Any]:
+            checkpoint("after_domain_validation")
+            self._cas_book_state(
+                uow,
+                book_run_id=book_run_id,
+                expected_version=expected_version,
+                target_state=target_state,
+            )
+            return {
+                "previous_state": expected_state,
+                "state": target_state.value,
+                "expected_version": expected_version,
+            }
+
+        result = self._execute_mutation(
+            book=book,
+            action="supervisor_checkpoint_advance",
+            event_type="book.supervisor.checkpoint.advanced",
+            idempotency_key=(
+                f"{book['stable_idempotency_key']}:supervisor-state:"
+                f"{expected_version}:{target_state.value}"
+            ),
+            actor_id=principal.principal_id,
+            trace_id=(f"{book['root_operation_id']}:supervisor:{target_state.value}"),
+            correlation_id=str(book["root_operation_id"]),
+            causation_id=str(book["root_operation_id"]),
+            payload={
+                "previous_state": expected_state,
+                "state": target_state.value,
+                "expected_version": expected_version,
+            },
+            handler=commit_checkpoint,
+        )
+        return str(result["operation_id"])
+
     def bind_replanned_input_snapshot(
         self,
         book_run_id: str,
@@ -1321,7 +1386,7 @@ class PostgresBookAuthority:
                     payload.get("parent_group_version_id") or ""
                 ),
                 context_version_refs=payload.get("context_version_refs"),
-                context_token_budget=int(payload.get("context_token_budget") or 6000),
+                context_token_budget=int(payload.get("context_token_budget") or 16_000),
                 preparation_report=payload.get("preparation_report"),
             ),
             principal=principal,
@@ -2025,26 +2090,40 @@ class PostgresBookAuthority:
                 "BOOK_PREVIOUS_CHAPTER_STATE_MISSING",
                 "next Chapter requires accepted predecessor state snapshots",
             )
-        governed = tuple(
-            {
-                "asset_type": str(row[0]),
-                "physical_asset_type": str(row[0]),
-                "asset_version_id": str(row[1]),
-                "content_hash": str(row[2]),
-                "project_id": project_id,
-                "estimated_tokens": max(1, len(str(row[3])) // 4),
-                "safe_summary": (
-                    f"Accepted chapter {chapter_number - 1} {row[0]} state snapshot."
-                ),
-                "structured_facts": list(
-                    (row[3] or {}).get("changes") or (row[3] or {}).get("facts") or []
-                ),
-                "narrative_function": "authoritative_story_state",
-                "source_use_mode": "generation",
-                "allowed_use": "generation",
-            }
-            for row in rows
-        )
+        governed_items: list[dict[str, Any]] = []
+        for row in rows:
+            content = dict(row[3] or {})
+            safe_summary = (
+                f"Accepted chapter {chapter_number - 1} {row[0]} state snapshot."
+            )
+            structured_facts = list(
+                content.get("changes") or content.get("facts") or []
+            )
+            rendered = json.dumps(
+                {
+                    "safe_summary": safe_summary,
+                    "structured_facts": structured_facts,
+                },
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            )
+            governed_items.append(
+                {
+                    "asset_type": str(row[0]),
+                    "physical_asset_type": str(row[0]),
+                    "asset_version_id": str(row[1]),
+                    "content_hash": str(row[2]),
+                    "project_id": project_id,
+                    "estimated_tokens": max(1, len(rendered) // 4),
+                    "safe_summary": safe_summary,
+                    "structured_facts": structured_facts,
+                    "narrative_function": "authoritative_story_state",
+                    "source_use_mode": "generation",
+                    "allowed_use": "generation",
+                }
+            )
+        governed = tuple(governed_items)
         merged: dict[str, dict[str, Any]] = {
             str(item["asset_version_id"]): dict(item) for item in requested
         }
@@ -2309,6 +2388,7 @@ def book_coordinate_definition(
         "projection_consumers": ["book_authority_checkpoint"],
         "migration_owner": "book-authority",
         "policy": {
+            "execution_classification": "saga",
             "chapter_authority_state_ownership": "reference_only",
             "persistent_checkpoint_required": True,
         },

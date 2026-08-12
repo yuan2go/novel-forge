@@ -3,10 +3,6 @@ name: novel-forge-authority
 x-authority-environment: &authority-environment
   NOVEL_FORGE_ENVIRONMENT: ${NOVEL_FORGE_ENVIRONMENT:-development}
   NOVEL_FORGE_STORAGE_AUTHORITY: postgresql
-  NOVEL_FORGE_AUTHORITY_RUNTIME_PROFILE: full
-  NOVEL_FORGE_LEGACY_WRITE_ENABLED: "false"
-  NOVEL_FORGE_SILENT_LEGACY_FALLBACK_ENABLED: "false"
-  NOVEL_FORGE_POSTGRES_WRITE_THROUGH: "false"
   NOVEL_FORGE_DATABASE_URL: postgresql://novel_forge:${NOVEL_FORGE_POSTGRES_PASSWORD:-novel_forge_dev_only}@postgresql:5432/novel_forge
   NOVEL_FORGE_APPLICATION_BUILD_ID: ${NOVEL_FORGE_APPLICATION_BUILD_ID:-authority-compose-fixture}
   NOVEL_FORGE_COMMIT_SHA: ${NOVEL_FORGE_COMMIT_SHA:-0000000000000000000000000000000000000000}
@@ -30,7 +26,7 @@ x-authority-environment: &authority-environment
   NOVEL_FORGE_DB_API_INSTANCES: "1"
   NOVEL_FORGE_DB_CHAPTER_INSTANCES: "1"
   NOVEL_FORGE_DB_CONTENT_INSTANCES: "1"
-  NOVEL_FORGE_DB_SOURCE_INSTANCES: "1"
+  NOVEL_FORGE_DB_SOURCE_INSTANCES: "2"
   NOVEL_FORGE_DB_MKAOS_INSTANCES: "1"
   NOVEL_FORGE_DB_BOOK_INSTANCES: "1"
   NOVEL_FORGE_DB_OUTBOX_INSTANCES: "1"
@@ -133,7 +129,7 @@ services:
     <<: *python-service
     restart: "no"
     stop_grace_period: 15s
-    command: ["python", "-m", "novel_forge.cli", "authority-migrate"]
+    command: ["python", "-m", "novel_forge.cli.authority", "authority-migrate"]
     environment:
       <<: *authority-environment
       NOVEL_FORGE_SERVICE_NAME: authority-migration
@@ -149,7 +145,7 @@ services:
     command:
       - python
       - -m
-      - novel_forge.cli
+      - novel_forge.cli.authority
       - serve-api
       - --host
       - 0.0.0.0
@@ -254,6 +250,27 @@ services:
     labels:
       novel-forge.runtime-group: source-authority
       novel-forge.operation-definitions: source.*
+      novel-forge.concurrency: "1"
+      novel-forge.database-max-connections: "3"
+
+  source-import-worker:
+    <<: *python-service
+    command: ["novel-forge-source-import-worker"]
+    environment:
+      <<: *authority-environment
+      NOVEL_FORGE_SERVICE_NAME: source-import-worker
+      NOVEL_FORGE_DATABASE_ROLE: source
+      NOVEL_FORGE_SOURCE_IMPORT_WORKER_ID: source-import-worker-1
+      NOVEL_FORGE_SOURCE_IMPORT_GIT_CACHE_ROOT: /runtime/source-import/git-cache
+    depends_on: *worker-dependencies
+    healthcheck:
+      test: ["CMD", "python", "-m", "novel_forge.workers.healthcheck", "--worker-kind", "source_import", "--worker-id", "source-import-worker-1"]
+      interval: 5s
+      timeout: 4s
+      retries: 30
+    labels:
+      novel-forge.runtime-group: source-import
+      novel-forge.operation-definitions: source.import.*
       novel-forge.concurrency: "1"
       novel-forge.database-max-connections: "3"
 

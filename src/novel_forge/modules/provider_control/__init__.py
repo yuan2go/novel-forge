@@ -10,7 +10,6 @@ from .contracts import (
     capability_profile_from_dict,
 )
 from .scripted import ScriptedProviderAdapterV2
-from .compatibility import LegacyProviderCompatibilityAdapter
 from .openai_v2 import (
     OpenAIProviderAdapterV2,
     OpenAISdkTransport,
@@ -44,7 +43,6 @@ __all__ = [
     "ProviderQueryRequest",
     "ProviderReceipt",
     "ScriptedProviderAdapterV2",
-    "LegacyProviderCompatibilityAdapter",
     "OpenAIProviderAdapterV2",
     "OpenAISdkTransport",
     "OpenAITransportV2",

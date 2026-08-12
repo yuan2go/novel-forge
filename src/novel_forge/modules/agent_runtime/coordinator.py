@@ -337,7 +337,6 @@ class AgentTurnExecutionCoordinator:
                 "commit_authority": "domain_authority_only",
             },
             execution_port=execution_port,
-            environment="production",
         )
         try:
             envelope = AgentOutputEnvelope.from_mapping(

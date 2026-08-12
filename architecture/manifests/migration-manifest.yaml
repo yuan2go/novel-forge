@@ -1,7 +1,7 @@
 {
   "schema_version": "architecture-manifest.v1",
   "registry": "novel_forge.storage.migrations.versions:VERSION_MODULES",
-  "head": "20260806_0073_core_functional_loops",
+  "head": "20260811_0081_source_intelligence_router",
   "migration_ids": [
     "20260625_0001_initial_industrial_schema",
     "20260628_0002_query_and_release_indexes",
@@ -75,6 +75,14 @@
     "20260805_0070_agent_runtime_recovery_protocol",
     "20260805_0071_capability_pack_authority",
     "20260806_0072_capability_pack_integrity_hardening",
-    "20260806_0073_core_functional_loops"
+    "20260806_0073_core_functional_loops",
+    "20260811_0074_longform_native_intelligence",
+    "20260811_0075_source_deconstruction_intelligence",
+    "20260811_0076_source_import_runtime",
+    "20260811_0077_source_reprocessing_execution",
+    "20260811_0078_reprocessing_action_expansion",
+    "20260811_0079_source_import_scope_closure",
+    "20260811_0080_source_snapshot_governance_identity",
+    "20260811_0081_source_intelligence_router"
   ]
 }

@@ -17,9 +17,9 @@ from novel_forge.modules.story_planning_runtime import (
     StoryPlanningGenerationApplication,
 )
 
-from .governed_scheduler import BookAuthorityTick
 from .input_resolver import BookProductionInputResolver
 from .production import PostgresBookAuthority
+from .queries import PostgresBookProductionQuery
 from .supervisor import (
     BookProductionSupervisorTick,
     PostgresBookProductionSupervisor,
@@ -31,6 +31,7 @@ class BookProductionComposition:
     """Dependency container only; all durable state remains in PostgreSQL."""
 
     authority: PostgresBookAuthority
+    query: PostgresBookProductionQuery
     planning: StoryPlanningGenerationApplication
     chapter_groups: PostgresChapterGroupAuthority
     production_preparation: ProductionPreparationService
@@ -41,13 +42,8 @@ class BookProductionComposition:
     supervisor: PostgresBookProductionSupervisor
     principal: Principal
 
-    def tick(
-        self, book_run_id: str
-    ) -> BookProductionSupervisorTick | BookAuthorityTick:
-        book = self.authority.require(book_run_id)
-        if book["input_mode"] == "RESOLVED_AUTHORITY_INPUT":
-            return self.supervisor.tick(book_run_id)
-        return self.supervisor.scheduler.tick(book_run_id)
+    def tick(self, book_run_id: str) -> BookProductionSupervisorTick:
+        return self.supervisor.tick(book_run_id)
 
     def approve_replan(
         self,

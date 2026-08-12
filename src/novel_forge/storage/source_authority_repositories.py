@@ -198,14 +198,17 @@ class SourceAuthorityRepository:
                 asset_version_id, created_by_operation_id,
                 normalization_version, chunking_version,
                 chunking_policy_hash, manifest_hash, chunk_count,
-                total_chunk_bytes, status
+                total_chunk_bytes, normalized_blob_id,
+                normalized_content_hash, normalized_byte_size, status
             ) VALUES (
                 %(source_transform_id)s, %(project_id)s, %(workspace_id)s,
                 %(source_document_id)s, %(source_asset_version_id)s,
                 %(asset_version_id)s, %(created_by_operation_id)s,
                 %(normalization_version)s, %(chunking_version)s,
                 %(chunking_policy_hash)s, %(manifest_hash)s,
-                %(chunk_count)s, %(total_chunk_bytes)s, 'ACTIVE'
+                %(chunk_count)s, %(total_chunk_bytes)s,
+                %(normalized_blob_id)s, %(normalized_content_hash)s,
+                %(normalized_byte_size)s, 'ACTIVE'
             )
             """,
             row,

@@ -22,14 +22,8 @@ class BookDesignAuthorityQuery:
                        book.production_profile, book.runtime_policy,
                        book.release_identity, book.status, book.version,
                        book.current_book_asset_version_id,
-                       COALESCE(book.current_book_design_asset_version_id, ''),
-                       cutover.legacy_source, cutover.authority_target,
-                       cutover.writer_cutover_status,
-                       cutover.reader_compatibility_until,
-                       cutover.retirement_deadline
+                       COALESCE(book.current_book_design_asset_version_id, '')
                 FROM authority_book AS book
-                LEFT JOIN authority_slice_legacy_cutover AS cutover
-                  ON cutover.slice_key = 'book-book-design'
                 WHERE book.project_id = %s AND book.book_id = %s
                 """,
                 [project_id, book_id],
@@ -44,12 +38,6 @@ class BookDesignAuthorityQuery:
             "production_profile": row[6], "runtime_policy": row[7],
             "release_identity": row[8], "status": row[9], "version": int(row[10]),
             "book_asset_version_id": row[11], "active_book_design_version_id": row[12],
-            "legacy_cutover": {
-                "legacy_source": row[13], "authority_target": row[14],
-                "writer_cutover_status": row[15],
-                "reader_compatibility_until": str(row[16]) if row[16] else "",
-                "retirement_deadline": str(row[17]) if row[17] else "",
-            },
         }
 
     def list_design_versions(self, *, project_id: str, book_id: str) -> list[dict[str, Any]]:

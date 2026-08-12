@@ -1,0 +1,62 @@
+from __future__ import annotations
+
+from novel_forge.storage.migrations import LATEST_MIGRATION_ID, validate_migration_chain
+from novel_forge.storage.migrations.versions import (
+    v20260811_0080_source_snapshot_governance_identity as previous,
+    v20260811_0081_source_intelligence_router as migration,
+)
+
+
+def test_source_intelligence_router_is_forward_only_migration_head() -> None:
+    validate_migration_chain()
+    assert migration.DOWN_REVISION == previous.MIGRATION_ID
+    assert migration.FORWARD_ONLY is True
+    assert LATEST_MIGRATION_ID == migration.MIGRATION_ID
+
+
+def test_profile_and_analysis_plan_use_existing_asset_authority() -> None:
+    sql = "\n".join(migration.UPGRADE_STATEMENTS).lower()
+    for table in (
+        "authority_source_content_profile",
+        "authority_source_content_profile_input",
+        "authority_source_analysis_plan",
+    ):
+        assert f"create table {table}" in sql
+    assert "references authority_asset(asset_id)" in sql
+    assert "references authority_asset_version(asset_version_id)" in sql
+    assert "source_content_profile_asset_version_id" in sql
+    assert "source_analysis_plan_asset_version_id" in sql
+    assert "logical_document_scope" in sql
+    assert "classifier_contract_hash" in sql
+    assert "methodology_content_hash" in sql
+    assert "analysis_plan_asset_version_id" in sql
+    assert "profiles" in sql and "routes" in sql and "plans" in sql
+    assert "raw_text" not in sql
+    assert "source_text" not in sql
+    assert "sample_text" not in sql
+
+
+def test_import_identity_is_separate_from_intelligence_policy() -> None:
+    sql = "\n".join(migration.UPGRADE_STATEMENTS).lower()
+    assert "rename column analysis_profile to legacy_analysis_profile" in sql
+    assert "intelligence_policy jsonb" in sql
+    assert "intelligence_policy_hash text" in sql
+    assert "analysis_override jsonb" in sql
+    assert (
+        "import_policy_hash"
+        not in sql.split("create table authority_source_content_profile", 1)[1].split(
+            "create table authority_source_content_profile_input", 1
+        )[0]
+    )
+
+
+def test_fail_closed_status_and_recomputation_causes_are_schema_backed() -> None:
+    sql = "\n".join(migration.UPGRADE_STATEMENTS).lower()
+    assert "needs_review" in sql
+    assert "classifier_upgrade" in sql
+    assert "routing_policy_upgrade" in sql
+    assert "methodology_upgrade" in sql
+    assert "profile_override" in sql
+    assert "profiling" in sql
+    assert "analysis_planning" in sql
+    assert "authority_validate_source_profile_scope" in sql

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Run one isolated, destructive-to-its-own-project Worker Compose proof."""
+
 from __future__ import annotations
 
 import argparse
@@ -22,7 +23,9 @@ from psycopg.types.json import Jsonb
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
-COMPOSE = tuple(shlex.split(os.environ.get("NOVEL_FORGE_DOCKER_COMPOSE_BIN") or "docker compose"))
+COMPOSE = tuple(
+    shlex.split(os.environ.get("NOVEL_FORGE_DOCKER_COMPOSE_BIN") or "docker compose")
+)
 COMPOSE_FILES = ("compose.yml", "compose.worker-e2e.yml")
 WORKER_SERVICES = {
     "chapter": "chapter-authority-worker",
@@ -215,7 +218,9 @@ def _fixture_principal(project_id: str, permissions: set[str]):
     )
 
 
-def _real_minio_blob(settings: Any, project_id: str, content: bytes, label: str) -> dict[str, Any]:
+def _real_minio_blob(
+    settings: Any, project_id: str, content: bytes, label: str
+) -> dict[str, Any]:
     from io import BytesIO
 
     from novel_forge.modules.command_kernel.asset_runtime import (
@@ -306,7 +311,8 @@ def _real_minio_blob(settings: Any, project_id: str, content: bytes, label: str)
         object_key=object_key,
         actual_hash=digest,
         actual_size=int(stat.size),
-        payload_hash="sha256:" + hashlib.sha256(
+        payload_hash="sha256:"
+        + hashlib.sha256(
             f"{object_key}:{digest}:{stat.size}:{receipt_id}".encode()
         ).hexdigest(),
         evidence={
@@ -355,7 +361,10 @@ def _prepare_operation_recovery(
 
 
 def _chapter_scenario(settings: Any, control: "ComposeControl") -> dict[str, Any]:
-    from novel_forge.api.authority_dependencies import build_chapter_authority_application
+    from novel_forge.api.authority_dependencies import (
+        build_chapter_authority_application,
+        build_production_execution_composition,
+    )
     from novel_forge.modules.chapter_authority import SingleChapterRequest
     from tests.integration.test_postgresql_only_chapter_slice import (
         PostgreSQLOnlyChapterSliceTests,
@@ -366,7 +375,10 @@ def _chapter_scenario(settings: Any, control: "ComposeControl") -> dict[str, Any
     principal = _fixture_principal(
         project_id, {"chapter.authority.execute", "external_effect.execute"}
     )
-    application = build_chapter_authority_application(settings, env=os.environ)
+    execution = build_production_execution_composition(settings, env=os.environ)
+    application = build_chapter_authority_application(
+        settings, execution=execution, env=os.environ
+    )
     control.stop_target()
     admission = application.admit(
         SingleChapterRequest(
@@ -390,13 +402,19 @@ def _chapter_scenario(settings: Any, control: "ComposeControl") -> dict[str, Any
     control.start_target()
 
     def chapter_state() -> tuple[str, str, int]:
-        with _connect(settings.database_url) as connection, connection.cursor() as cursor:
+        with (
+            _connect(settings.database_url) as connection,
+            connection.cursor() as cursor,
+        ):
             cursor.execute(
                 "SELECT status FROM authority_operation WHERE operation_id=%s",
                 [admission.root_operation_id],
             )
             root = str(cursor.fetchone()[0])
-            cursor.execute("SELECT status FROM authority_saga WHERE saga_id=%s", [admission.saga_id])
+            cursor.execute(
+                "SELECT status FROM authority_saga WHERE saga_id=%s",
+                [admission.saga_id],
+            )
             saga = str(cursor.fetchone()[0])
             cursor.execute(
                 "SELECT COUNT(*) FROM authority_operation "
@@ -410,7 +428,9 @@ def _chapter_scenario(settings: Any, control: "ComposeControl") -> dict[str, Any
     terminal = _poll(
         "Chapter Saga",
         chapter_state,
-        lambda value: value[0] == "SUCCEEDED" and value[1] == "SUCCEEDED" and value[2] == 18,
+        lambda value: (
+            value[0] == "SUCCEEDED" and value[1] == "SUCCEEDED" and value[2] == 18
+        ),
         timeout=180,
     )
     execution = _operation_execution_evidence(
@@ -539,7 +559,8 @@ def _source_pipeline(
             source_document_id=str(source["source_document_id"]),
             normalization_version="normalize:v1",
             chunking_version="evidence:v1",
-            chunking_policy_hash="sha256:" + hashlib.sha256(b"worker-e2e-chunk-v1").hexdigest(),
+            chunking_policy_hash="sha256:"
+            + hashlib.sha256(b"worker-e2e-chunk-v1").hexdigest(),
             chunks=(
                 SourceChunkCandidate(
                     chunk_index=0,
@@ -622,9 +643,12 @@ def _insert_asset_version(
 ) -> str:
     asset_id = f"worker-e2e:{asset_type}:{uuid4()}"
     version_id = f"{asset_id}:v1"
-    digest = "sha256:" + hashlib.sha256(
-        json.dumps(content, sort_keys=True, separators=(",", ":")).encode()
-    ).hexdigest()
+    digest = (
+        "sha256:"
+        + hashlib.sha256(
+            json.dumps(content, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+    )
     with _connect(database_url) as connection, connection.cursor() as cursor:
         cursor.execute(
             "INSERT INTO authority_asset(asset_id,project_id,asset_type) VALUES (%s,%s,%s)",
@@ -645,7 +669,11 @@ def _insert_asset_version(
                 qualification_id,asset_version_id,policy_version,decision,evidence
             ) VALUES (%s,%s,'worker-e2e-fixture-v1','ELIGIBLE',%s)
             """,
-            [f"{version_id}:qualification", version_id, Jsonb({"fixture_protocol_only": True})],
+            [
+                f"{version_id}:qualification",
+                version_id,
+                Jsonb({"fixture_protocol_only": True}),
+            ],
         )
     return version_id
 
@@ -682,7 +710,10 @@ def _mkaos_scenario(settings: Any, control: "ComposeControl") -> dict[str, Any]:
         },
     )
     target_version = _insert_asset_version(
-        settings.database_url, project_id, "chapter_plan", {"chapter": 1, "status": "PLANNED"}
+        settings.database_url,
+        project_id,
+        "chapter_plan",
+        {"chapter": 1, "status": "PLANNED"},
     )
     principal = _fixture_principal(
         project_id,
@@ -703,9 +734,13 @@ def _mkaos_scenario(settings: Any, control: "ComposeControl") -> dict[str, Any]:
             "discipline": "organizational behavior",
             "abstract_principle": "A favor creates conflict when repayment criteria change after consent.",
             "constraints": ["Expose who changed the repayment criterion."],
-            "conflict_generators": ["The parties disagree whether the debt is settled."],
+            "conflict_generators": [
+                "The parties disagree whether the debt is settled."
+            ],
             "review_checks": ["Reject proper nouns and source-specific expression."],
-            "copyright_boundaries": ["Retain only the abstract mechanism and evidence identity."],
+            "copyright_boundaries": [
+                "Retain only the abstract mechanism and evidence identity."
+            ],
         },
         evidence_spans=(
             KnowledgeEvidenceSpan(
@@ -722,7 +757,9 @@ def _mkaos_scenario(settings: Any, control: "ComposeControl") -> dict[str, Any]:
         correlation_id=f"correlation:candidate:{execution_version}",
     )
     control.stop_target()
-    candidate_admission = application.admit_candidate(candidate_command, principal=principal)
+    candidate_admission = application.admit_candidate(
+        candidate_command, principal=principal
+    )
     stale, assert_stale = _prepare_operation_recovery(
         settings, project_id, str(candidate_admission["operation_id"])
     )
@@ -777,7 +814,9 @@ def _mkaos_scenario(settings: Any, control: "ComposeControl") -> dict[str, Any]:
         str(pack_admission["operation_id"]), project_id, replayed=False
     )
     query = MkaosAuthorityQuery(settings.database_url)
-    stored = query.require_pack(project_id=project_id, knowledge_pack_id=str(pack["knowledge_pack_id"]))
+    stored = query.require_pack(
+        project_id=project_id, knowledge_pack_id=str(pack["knowledge_pack_id"])
+    )
     execution = _operation_execution_evidence(
         settings.database_url, str(candidate_admission["operation_id"])
     )
@@ -864,8 +903,13 @@ def _runtime_job_evidence(database_url: str, runtime_job_id: str) -> dict[str, A
 
 
 def _book_scenario(settings: Any, control: "ComposeControl") -> dict[str, Any]:
-    from novel_forge.api.authority_dependencies import build_book_authority_application
+    from novel_forge.api.authority_dependencies import (
+        build_book_authority_application,
+        build_chapter_authority_application,
+        build_production_execution_composition,
+    )
     from novel_forge.modules.book_authority import (
+        PostgresBookProductionQuery,
         StartBookProductionCommand,
         SubmitBookChapterCommand,
     )
@@ -882,7 +926,16 @@ def _book_scenario(settings: Any, control: "ComposeControl") -> dict[str, Any]:
     principal = BookToChapterAuthorityVerticalPostgresTests._principal(project_id)
     candidates = PostgreSQLOnlyChapterSliceTests.release_evidence(project_id)
     versions = BookToChapterAuthorityVerticalPostgresTests._seed_book_inputs(project_id)
-    application = build_book_authority_application(settings, env=os.environ)
+    execution = build_production_execution_composition(settings, env=os.environ)
+    chapter = build_chapter_authority_application(
+        settings, execution=execution, env=os.environ
+    )
+    application = build_book_authority_application(
+        settings,
+        execution=execution,
+        chapter_application=chapter,
+        env=os.environ,
+    )
     control.stop_target()
     book = application.start(
         StartBookProductionCommand(
@@ -898,6 +951,7 @@ def _book_scenario(settings: Any, control: "ComposeControl") -> dict[str, Any]:
             production_profile_version="production-profile:v1",
             longform_context_versions=versions,
             target_chapter_count=1,
+            input_mode="LEGACY_FIXTURE_INPUT_MODE",
             light_recap_cadence=1,
             formal_recap_cadence=1,
         ),
@@ -918,7 +972,10 @@ def _book_scenario(settings: Any, control: "ComposeControl") -> dict[str, Any]:
     )
     runtime_jobs = RuntimeJobAuthority(settings.database_url)
     scheduled = schedule_book_coordination_jobs(
-        settings.database_url, runtime_jobs, limit=1, book_run_id=book.book_run_id
+        PostgresBookProductionQuery(settings.database_url),
+        runtime_jobs,
+        limit=1,
+        book_run_id=book.book_run_id,
     )
     if len(scheduled) != 1:
         raise RuntimeError("Book Runtime Job was not scheduled")
@@ -941,12 +998,17 @@ def _book_scenario(settings: Any, control: "ComposeControl") -> dict[str, Any]:
     final = _poll(
         "Book worker chain",
         book_state,
-        lambda state: state["state"] == "COMPLETED" and int(state["accepted_through_chapter"]) == 1,
+        lambda state: (
+            state["state"] == "COMPLETED"
+            and int(state["accepted_through_chapter"]) == 1
+        ),
         timeout=240,
     )
     execution = _poll(
         "recovered Book Runtime Job",
-        lambda: _runtime_job_evidence(settings.database_url, stale_claim.runtime_job_id),
+        lambda: _runtime_job_evidence(
+            settings.database_url, stale_claim.runtime_job_id
+        ),
         lambda item: item["status"] == "SUCCEEDED" and item["fencing_token"] >= 2,
     )
     stale_error = _assert_stale_runtime_job(runtime_jobs, stale_claim)
@@ -988,7 +1050,9 @@ def _book_scenario(settings: Any, control: "ComposeControl") -> dict[str, Any]:
     }
 
 
-def _insert_outbox_event(database_url: str, project_id: str, *, poison: bool = False) -> tuple[str, str]:
+def _insert_outbox_event(
+    database_url: str, project_id: str, *, poison: bool = False
+) -> tuple[str, str]:
     event_id = f"worker-e2e-event:{uuid4()}"
     outbox_id = f"worker-e2e-outbox:{uuid4()}"
     with _connect(database_url) as connection, connection.cursor() as cursor:
@@ -1007,7 +1071,13 @@ def _insert_outbox_event(database_url: str, project_id: str, *, poison: bool = F
                 outbox_id,event_id,project_id,topic,status,payload,attempt_count
             ) VALUES (%s,%s,%s,'worker.e2e','PENDING',%s,%s)
             """,
-            [outbox_id, event_id, project_id, Jsonb({"fixture": True}), 4 if poison else 0],
+            [
+                outbox_id,
+                event_id,
+                project_id,
+                Jsonb({"fixture": True}),
+                4 if poison else 0,
+            ],
         )
     return outbox_id, event_id
 
@@ -1031,7 +1101,10 @@ def _outbox_scenario(settings: Any, control: "ComposeControl") -> dict[str, Any]
     control.start_target()
 
     def outbox_state() -> tuple[Any, ...]:
-        with _connect(settings.database_url) as connection, connection.cursor() as cursor:
+        with (
+            _connect(settings.database_url) as connection,
+            connection.cursor() as cursor,
+        ):
             cursor.execute(
                 "SELECT status,claimed_by,lease_id,fencing_token,published_at IS NOT NULL,"
                 "acked_at IS NOT NULL FROM outbox_event WHERE outbox_id=%s",
@@ -1042,7 +1115,9 @@ def _outbox_scenario(settings: Any, control: "ComposeControl") -> dict[str, Any]
     terminal = _poll(
         "Outbox delivery",
         outbox_state,
-        lambda row: str(row[0]).lower() == "acked" and int(row[3]) >= 2 and row[4] and row[5],
+        lambda row: (
+            str(row[0]).lower() == "acked" and int(row[3]) >= 2 and row[4] and row[5]
+        ),
     )
     replay_delivered = stale_dispatcher.deliver(stale)
     if replay_delivered:
@@ -1100,9 +1175,19 @@ def _outbox_scenario(settings: Any, control: "ComposeControl") -> dict[str, Any]
 
 
 def _maintenance_fixtures(database_url: str) -> dict[str, str]:
-    ids = {name: f"worker-e2e-{name}:{uuid4()}" for name in (
-        "project", "definition", "operation", "attempt", "lease", "event", "outbox", "effect"
-    )}
+    ids = {
+        name: f"worker-e2e-{name}:{uuid4()}"
+        for name in (
+            "project",
+            "definition",
+            "operation",
+            "attempt",
+            "lease",
+            "event",
+            "outbox",
+            "effect",
+        )
+    }
     with _connect(database_url) as connection, connection.cursor() as cursor:
         cursor.execute(
             "INSERT INTO authority_operation_definition(name,definition_version,family,enabled,"
@@ -1120,8 +1205,15 @@ def _maintenance_fixtures(database_url: str) -> dict[str, str]:
             ) VALUES (%s,%s,'1.0.0',%s,'READY',%s,%s,%s,%s,'{}','{}','{}',
                       NOW()-INTERVAL '1 second')
             """,
-            [ids["operation"], ids["definition"], ids["project"], ids["operation"],
-             f"project:{ids['project']}", ids["operation"], f"digest:{ids['operation']}"],
+            [
+                ids["operation"],
+                ids["definition"],
+                ids["project"],
+                ids["operation"],
+                f"project:{ids['project']}",
+                ids["operation"],
+                f"digest:{ids['operation']}",
+            ],
         )
         cursor.execute(
             "INSERT INTO authority_attempt(attempt_id,operation_id,attempt_number,status,worker_id,started_at) "
@@ -1159,7 +1251,13 @@ def _maintenance_fixtures(database_url: str) -> dict[str, str]:
             ) VALUES (%s,%s,%s,'fixture.unknown',%s,'UNKNOWN',%s,'{}',
                       'unavailable-fixture-provider','fixture.query','unsupported','unsupported')
             """,
-            [ids["effect"], ids["operation"], ids["project"], ids["effect"], f"sha256:{uuid4().hex}"],
+            [
+                ids["effect"],
+                ids["operation"],
+                ids["project"],
+                ids["effect"],
+                f"sha256:{uuid4().hex}",
+            ],
         )
     return ids
 
@@ -1191,22 +1289,28 @@ def _maintenance_scenario(settings: Any, control: "ComposeControl") -> dict[str,
     scheduled_ids = [str(item["runtime_job_id"]) for item in scheduled]
 
     def maintenance_state() -> dict[str, Any]:
-        with _connect(settings.database_url) as connection, connection.cursor() as cursor:
+        with (
+            _connect(settings.database_url) as connection,
+            connection.cursor() as cursor,
+        ):
             cursor.execute(
                 "SELECT COUNT(*) FROM authority_runtime_job WHERE runtime_job_id=ANY(%s) AND status='SUCCEEDED'",
                 [scheduled_ids],
             )
             succeeded = int(cursor.fetchone()[0])
             cursor.execute(
-                "SELECT status FROM authority_operation WHERE operation_id=%s", [ids["operation"]]
+                "SELECT status FROM authority_operation WHERE operation_id=%s",
+                [ids["operation"]],
             )
             operation = str(cursor.fetchone()[0])
             cursor.execute(
-                "SELECT status FROM authority_lease_acquisition WHERE lease_id=%s", [ids["lease"]]
+                "SELECT status FROM authority_lease_acquisition WHERE lease_id=%s",
+                [ids["lease"]],
             )
             attempt_lease = str(cursor.fetchone()[0])
             cursor.execute(
-                "SELECT status FROM authority_external_effect WHERE external_effect_id=%s", [ids["effect"]]
+                "SELECT status FROM authority_external_effect WHERE external_effect_id=%s",
+                [ids["effect"]],
             )
             effect = str(cursor.fetchone()[0])
             cursor.execute(
@@ -1225,14 +1329,18 @@ def _maintenance_scenario(settings: Any, control: "ComposeControl") -> dict[str,
     terminal = _poll(
         "Maintenance Runtime Job fleet",
         maintenance_state,
-        lambda state: state["succeeded_jobs"] == len(MAINTENANCE_RUNTIME_JOB_KINDS)
-        and state["operation_status"] in {"CANCELLATION_REQUESTED", "CANCELLED"}
-        and state["attempt_lease_status"] == "EXPIRED"
-        and state["outbox_status"] in {"failed", "dead_letter", "acked"},
+        lambda state: (
+            state["succeeded_jobs"] == len(MAINTENANCE_RUNTIME_JOB_KINDS)
+            and state["operation_status"] in {"CANCELLATION_REQUESTED", "CANCELLED"}
+            and state["attempt_lease_status"] == "EXPIRED"
+            and state["outbox_status"] in {"failed", "dead_letter", "acked"}
+        ),
     )
     execution = _runtime_job_evidence(settings.database_url, stale_claim.runtime_job_id)
     if execution["status"] != "SUCCEEDED" or execution["fencing_token"] < 2:
-        raise RuntimeError("Maintenance Runtime Job was not taken over by a higher fence")
+        raise RuntimeError(
+            "Maintenance Runtime Job was not taken over by a higher fence"
+        )
     stale_error = _assert_stale_runtime_job(runtime_jobs, stale_claim)
     with _connect(settings.database_url) as connection, connection.cursor() as cursor:
         cursor.execute(
@@ -1319,12 +1427,22 @@ class ComposeControl:
         self.restart_performed = False
 
     def stop_target(self) -> None:
-        _run(_compose(self.project, "stop", "-t", "45", self.service), env=self.env, timeout=90)
+        _run(
+            _compose(self.project, "stop", "-t", "45", self.service),
+            env=self.env,
+            timeout=90,
+        )
 
     def start_target(self) -> None:
         _run(
             _compose(
-                self.project, "up", "-d", "--wait", "--wait-timeout", "120", self.service
+                self.project,
+                "up",
+                "-d",
+                "--wait",
+                "--wait-timeout",
+                "120",
+                self.service,
             ),
             env=self.env,
             timeout=180,
@@ -1365,10 +1483,12 @@ class ComposeControl:
         result = _poll(
             "worker drain",
             governance,
-            lambda item: item["idle_in_transaction"] == 0
-            and item["active_transactions"] == 0
-            and item["worker_connections"] == 0
-            and item["drained_worker_count"] >= 7,
+            lambda item: (
+                item["idle_in_transaction"] == 0
+                and item["active_transactions"] == 0
+                and item["worker_connections"] == 0
+                and item["drained_worker_count"] >= 7
+            ),
             timeout=90,
         )
         return result
@@ -1401,16 +1521,11 @@ def main() -> int:
         "NOVEL_FORGE_WORKER_E2E_MINIO_PORT": str(minio_port),
         "NOVEL_FORGE_AUTHORITY_API_PORT": str(api_port),
     }
-    database_url = (
-        f"postgresql://novel_forge:novel_forge_dev_only@127.0.0.1:{postgres_port}/novel_forge"
-    )
+    database_url = f"postgresql://novel_forge:novel_forge_dev_only@127.0.0.1:{postgres_port}/novel_forge"
     host_env = {
         **env,
         "NOVEL_FORGE_STORAGE_AUTHORITY": "postgresql",
         "NOVEL_FORGE_DATABASE_URL": database_url,
-        "NOVEL_FORGE_AUTHORITY_RUNTIME_PROFILE": "full",
-        "NOVEL_FORGE_LEGACY_WRITE_ENABLED": "false",
-        "NOVEL_FORGE_SILENT_LEGACY_FALLBACK_ENABLED": "false",
         "NOVEL_FORGE_MINIO_ENDPOINT": f"127.0.0.1:{minio_port}",
         "NOVEL_FORGE_MINIO_ACCESS_KEY": "novel_forge",
         "NOVEL_FORGE_MINIO_SECRET_KEY": "novel_forge_dev_only",
@@ -1428,7 +1543,11 @@ def main() -> int:
         up.append("--build")
     up.extend(("--wait", "--wait-timeout", "300"))
     try:
-        _run(_compose(project, "down", "--volumes", "--remove-orphans"), env=env, timeout=120)
+        _run(
+            _compose(project, "down", "--volumes", "--remove-orphans"),
+            env=env,
+            timeout=120,
+        )
         _run(_compose(project, *up), env=env, timeout=900)
         from novel_forge.infrastructure.settings import IndustrialSettings
         from novel_forge.storage.database_runtime import close_all_database_runtimes

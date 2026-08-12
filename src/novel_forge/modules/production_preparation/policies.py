@@ -16,6 +16,8 @@ CONTINUING_CHAPTER_REQUIRED_ASSET_TYPES = (
     "reward_ledger_snapshot",
     "world_rule_snapshot",
     "power_state_snapshot",
+    "plot_thread_snapshot",
+    "resource_state_snapshot",
 )
 
 COLLECTION_ASSET_TYPES = frozenset(
@@ -26,6 +28,8 @@ COLLECTION_ASSET_TYPES = frozenset(
         "reader_promise",
         "reward_item",
         "world_rule",
+        "plot_thread_snapshot",
+        "resource_state_snapshot",
         "knowledge_pack",
         "material_asset",
         "context_segment",
@@ -57,7 +61,8 @@ _BASE_ALLOWED = (
     "context_profile", "story_state_snapshot", "canon_snapshot", "character_state_snapshot",
     "relationship_state_snapshot", "timeline_snapshot", "foreshadow_snapshot",
     "promise_ledger_snapshot", "reward_ledger_snapshot", "world_rule_snapshot",
-    "power_state_snapshot", "character_card", "genre_profile", "knowledge_pack",
+    "power_state_snapshot", "plot_thread_snapshot", "resource_state_snapshot",
+    "character_card", "genre_profile", "knowledge_pack",
     "material_asset", "reader_promise", "empty_state_declaration",
     "typed_empty_state_snapshot",
     "context_segment", "context_bundle",

@@ -12,47 +12,6 @@ from novel_forge.infrastructure.settings import IndustrialSettings
 
 
 class AuthorityApiSurfaceTests(unittest.TestCase):
-    def test_track_b_minimal_profile_does_not_construct_provider_or_legacy_routes(self) -> None:
-        with tempfile.TemporaryDirectory() as directory, patch.dict(
-            "os.environ",
-            {
-                "NOVEL_FORGE_APPLICATION_BUILD_ID": "track-b-minimal-unit",
-                "NOVEL_FORGE_COMMIT_SHA": "e" * 40,
-                "NOVEL_FORGE_ENVIRONMENT": "production",
-                "NOVEL_FORGE_LOCAL_OPERATOR_PRINCIPAL_ID": "operator-unit",
-            },
-            clear=False,
-        ):
-            app = create_authority_app(
-                IndustrialSettings(
-                    root=Path(directory),
-                    environment="production",
-                    storage_authority="postgresql",
-                    authority_runtime_profile="track-b-minimal",
-                    database_url="postgresql://authority-test.invalid/test",
-                )
-            )
-            paths = set(app.openapi()["paths"])
-
-        self.assertIn("/authority/books", paths)
-        self.assertIn("/authority/books/{book_id}/design-candidates", paths)
-        self.assertIn("/ready", paths)
-        self.assertNotIn("/authority/chapters/run", paths)
-        self.assertFalse(any("provider" in path for path in paths))
-
-    def test_track_b_minimal_profile_rejects_legacy_write_or_fallback(self) -> None:
-        for field in ("legacy_write_enabled", "silent_legacy_fallback_enabled"):
-            with self.subTest(field=field), self.assertRaisesRegex(
-                ValueError, "forbids Legacy writes, dual write, and silent fallback"
-            ):
-                IndustrialSettings(
-                    root=Path("."),
-                    environment="production",
-                    storage_authority="postgresql",
-                    authority_runtime_profile="track-b-minimal",
-                    **{field: True},
-                )
-
     def test_required_product_reads_are_exposed_by_postgresql_app(self) -> None:
         with tempfile.TemporaryDirectory() as directory, patch.dict(
             "os.environ",
@@ -95,11 +54,26 @@ class AuthorityApiSurfaceTests(unittest.TestCase):
                 "/product/source-governance/documents/{source_document_id}",
                 "/product/source-governance/documents/{source_document_id}/transforms",
                 "/product/source-governance/transforms/{source_transform_id}/chunks",
+                "/product/source-governance/invalidations",
+                "/product/source-imports",
+                "/product/source-imports/preview",
+                "/product/source-imports/{import_job_id}",
+                "/product/source-imports/{import_job_id}/preview",
+                "/product/source-imports/{import_job_id}/files",
+                "/product/source-imports/{import_job_id}/work",
+                "/product/source-imports/{import_job_id}/downstream",
+                "/product/source-imports/{import_job_id}/resume",
+                "/product/source-imports/reprocessing/apply",
+                "/product/source-imports/reprocessing/{plan_asset_version_id}",
                 "/product/mkaos/knowledge-candidates",
                 "/product/mkaos/knowledge-candidates/{candidate_asset_version_id}/approve",
                 "/product/mkaos/knowledge-cards",
                 "/product/mkaos/knowledge-packs",
                 "/product/mkaos/knowledge-packs/{knowledge_pack_id}",
+                "/product/mkaos/knowledge-packs/{knowledge_pack_id}/diff",
+                "/product/temporal-query",
+                "/product/content-intelligence/pacing",
+                "/product/content-intelligence/hooks",
             }.issubset(paths)
         )
 
@@ -218,9 +192,13 @@ class AuthorityApiSurfaceTests(unittest.TestCase):
                             "idempotency_key": "mkaos-denied",
                         },
                     ),
+                    client.get(
+                        "/product/source-imports/import-denied",
+                        params={"project_id": "project-denied"},
+                    ),
                 )
 
-        self.assertEqual([response.status_code for response in responses], [403] * 10)
+        self.assertEqual([response.status_code for response in responses], [403] * 11)
 
 
 if __name__ == "__main__":

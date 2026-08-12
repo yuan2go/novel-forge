@@ -18,9 +18,6 @@ from novel_forge.modules.production_execution import (
     RouteResolver,
     RouteSnapshotRegistry,
 )
-from novel_forge.modules.production_execution.legacy import (
-    execute_legacy_model_operation,
-)
 
 
 SHA = "f" * 40
@@ -281,34 +278,6 @@ class ProductionExecutionRoutingTests(unittest.TestCase):
                 runtime_host_id="worker:2",
                 auth_profile_ref="auth-profile:secondary",
             )
-
-    def test_controlled_legacy_router_fails_before_direct_adapter_invocation(self) -> None:
-        class DirectAdapter:
-            calls = 0
-
-            def generate(self, payload, context):
-                self.calls += 1
-                return {"result": payload}
-
-        adapter = DirectAdapter()
-        with self.assertRaisesRegex(RuntimeError, "disabled"):
-            execute_legacy_model_operation(
-                adapter,
-                "generate",
-                "do not send",
-                {"runtime_environment": "production"},
-            )
-        self.assertEqual(adapter.calls, 0)
-
-        development = execute_legacy_model_operation(
-            adapter,
-            "generate",
-            "development fixture",
-            {"runtime_environment": "development"},
-        )
-        self.assertEqual(development["result"], "development fixture")
-        self.assertEqual(adapter.calls, 1)
-
 
 if __name__ == "__main__":
     unittest.main()

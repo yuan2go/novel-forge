@@ -18,7 +18,10 @@ class ArchitectureFitnessTests(unittest.TestCase):
         self.assertEqual(report["status"], "PASS", report)
         self.assertGreaterEqual(report["checked_domain_packages"], 100)
         self.assertGreaterEqual(report["checked_domain_files"], 30)
-        self.assertGreaterEqual(report["checked_provider_files"], 600)
+        self.assertEqual(
+            report["checked_provider_files"],
+            len(tuple((ROOT / "src/novel_forge").rglob("*.py"))),
+        )
         self.assertGreaterEqual(report["classified_production_entries"], 16)
 
     def test_provider_direct_call_scan_rejects_sdk_http_and_cli_bypasses(self) -> None:

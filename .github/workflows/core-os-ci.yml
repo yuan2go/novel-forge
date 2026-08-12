@@ -11,7 +11,6 @@ concurrency:
 
 env:
   PYTHONPATH: src
-  NOVEL_FORGE_POSTGRES_WRITE_STRICT: "true"
 
 # Every proof in this workflow is recomputed from the checked-out revision. A
 # repository evidence commit may summarize a run, but it is never its own
@@ -98,7 +97,7 @@ jobs:
       - run: python -m pip install -e ".[test]"
       - name: Focused Command Kernel and Authority proofs
         run: |
-          python -m novel_forge.cli authority-migrate
+          python -m novel_forge.cli.authority authority-migrate
           python scripts/run_authority_postgres_tests.py
           python -m pytest tests/integration/test_external_effect_runtime_postgres.py
       - name: Core domain migration proofs
@@ -408,7 +407,7 @@ jobs:
       - name: Migrate and qualify real Planner choice
         run: |
           mkdir -p /tmp/novel-forge-evidence
-          python -m novel_forge.cli authority-migrate
+          python -m novel_forge.cli.authority authority-migrate
           python scripts/qualify_authority_query_plans.py \
             --output "/tmp/novel-forge-evidence/query-plan-${GITHUB_SHA}.json"
       - uses: actions/upload-artifact@v4

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -220,6 +220,181 @@ class AuthoritySourceTransformCommitRequest(BaseModel):
     correlation_id: str = ""
 
 
+class AuthorityDeconstructionAnalyzerRequest(BaseModel):
+    analyzer_id: str = Field(min_length=2)
+    analyzer_version: str = Field(pattern=r"^[0-9]+(?:\.[0-9]+){0,2}$")
+    dimension: str = Field(min_length=1)
+    schema_version: str = Field(min_length=1)
+    prompt_id: str = Field(min_length=2)
+    prompt_version: str = Field(pattern=r"^[0-9]+(?:\.[0-9]+){0,2}$")
+    skill_id: str = Field(min_length=2)
+    skill_version: str = Field(pattern=r"^[0-9]+(?:\.[0-9]+){0,2}$")
+    capability_id: str = Field(min_length=2)
+    capability_version: str = Field(pattern=r"^[0-9]+(?:\.[0-9]+){0,2}$")
+    provider_policy_version: str = Field(pattern=r"^[0-9]+(?:\.[0-9]+){0,2}$")
+    aggregation_policy_version: str = Field(pattern=r"^[0-9]+(?:\.[0-9]+){0,2}$")
+    recommended_scales: list[str] = Field(min_length=1, max_length=7)
+
+
+class AuthorityDeconstructionScopeRequest(BaseModel):
+    scale: str = Field(min_length=1)
+    range_start: int = Field(ge=0)
+    range_end: int = Field(ge=0)
+    source_document_ids: list[str] = Field(min_length=1, max_length=100)
+    label: str = Field(min_length=1, max_length=500)
+
+
+class AuthorityDeconstructionEvidenceSpanRequest(BaseModel):
+    source_chunk_asset_version_id: str = Field(min_length=1)
+    chunk_byte_start: int = Field(ge=0)
+    chunk_byte_end: int = Field(gt=0)
+    evidence_hash: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
+
+
+class AuthorityDeconstructionObservationCommitRequest(BaseModel):
+    project_id: str = Field(min_length=1)
+    workspace_id: str = Field(min_length=1)
+    execution_asset_version_id: str = Field(min_length=1)
+    scope: AuthorityDeconstructionScopeRequest
+    analyzer: AuthorityDeconstructionAnalyzerRequest
+    observation: dict[str, Any]
+    evidence_spans: list[AuthorityDeconstructionEvidenceSpanRequest] = Field(
+        default_factory=list, max_length=1_000
+    )
+    input_observation_asset_version_ids: list[str] = Field(
+        default_factory=list, max_length=1_000
+    )
+    evidence_class: str = Field(min_length=1)
+    idempotency_key: str = Field(min_length=1)
+    actor_id: str = ""
+    trace_id: str = ""
+    correlation_id: str = ""
+
+
+class AuthorityReprocessingTargetRequest(BaseModel):
+    scope: AuthorityDeconstructionScopeRequest
+    analyzer: AuthorityDeconstructionAnalyzerRequest
+
+
+class AuthoritySourceReprocessingPlanRequest(BaseModel):
+    project_id: str = Field(min_length=1)
+    workspace_id: str = Field(min_length=1)
+    targets: list[AuthorityReprocessingTargetRequest] = Field(
+        min_length=1, max_length=1_000
+    )
+    cause_type: str = Field(min_length=1)
+    source_transform_id: str = ""
+    idempotency_key: str = Field(min_length=1)
+    actor_id: str = ""
+    trace_id: str = ""
+    correlation_id: str = ""
+
+
+class ProductSourceImportSourceRequest(BaseModel):
+    type: str = Field(pattern=r"^github_repository$")
+    repository: str = Field(min_length=1, max_length=2_000)
+    ref: str = Field(default="HEAD", min_length=1, max_length=255)
+
+
+class ProductSourceImportPolicyRequest(BaseModel):
+    policy_version: str = "source-import-policy.v1"
+    include_globs: list[str] = Field(
+        default_factory=lambda: ["**/*", "*"], min_length=1, max_length=100
+    )
+    exclude_globs: list[str] = Field(
+        default_factory=lambda: [
+            ".git/**",
+            "**/.git/**",
+            "node_modules/**",
+            "**/node_modules/**",
+            "**/__pycache__/**",
+        ],
+        max_length=100,
+    )
+    extension_allowlist: list[str] = Field(
+        default_factory=lambda: [
+            ".txt",
+            ".text",
+            ".md",
+            ".markdown",
+            ".json",
+            ".jsonl",
+            ".yaml",
+            ".yml",
+        ],
+        min_length=1,
+        max_length=100,
+    )
+    max_file_bytes: int = Field(default=8_000_000, gt=0)
+    max_repository_bytes: int = Field(default=500_000_000, gt=0)
+    max_files: int = Field(default=20_000, gt=0, le=100_000)
+    max_chunk_bytes: int = Field(default=12_000, gt=0, le=100_000)
+    allow_symlinks: bool = False
+    allow_submodules: bool = False
+    allow_git_lfs: bool = False
+    normalization_version: str = "source-normalization.v1"
+    chunking_version: str = "source-structural-chunking.v1"
+
+
+class ProductSourceIntelligencePolicyRequest(BaseModel):
+    policy_version: str = "source-intelligence-policy.v1"
+    classifier_id: str = "novel-forge.source-content-classifier"
+    classifier_version: str = "1.0"
+    classifier_prompt_version: str = "1.0"
+    classifier_schema_version: str = "source-content-classification.v1"
+    classifier_capability: str = "source.content.classify"
+    signal_schema_version: str = "source-profile-signals.v1"
+    sample_policy_version: str = "source-profile-sampling.v1"
+    routing_policy_version: str = "source-analysis-routing.v2"
+    logical_document_policy_version: str = "file-logical-document.v1"
+    min_confidence: float = Field(default=0.72, gt=0, le=1)
+    min_margin: float = Field(default=0.12, ge=0, le=1)
+    max_sample_chunks: int = Field(default=3, gt=0, le=12)
+    max_sample_bytes_per_chunk: int = Field(default=6_000, gt=0, le=64_000)
+    max_signal_bytes: int = Field(default=128_000, gt=0, le=1_000_000)
+
+
+class ProductSourceAnalysisOverrideRequest(BaseModel):
+    logical_document_scope_hash: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
+    content_type: str = Field(
+        pattern=(
+            r"^(WEB_NOVEL|PUBLISHED_FICTION|CLASSIC_LITERATURE|WRITING_THEORY|"
+            r"PROFESSIONAL_KNOWLEDGE|HISTORY_SOCIAL_SCIENCE|BIOGRAPHY_MEMOIR|"
+            r"PHILOSOPHY_ESSAY|PLATFORM_RULES)$"
+        )
+    )
+    reason: str = Field(min_length=20, max_length=2_000)
+    decision_ref: str = Field(min_length=1, max_length=500)
+
+
+class ProductSourceImportRequest(BaseModel):
+    project_id: str = Field(min_length=1)
+    workspace_id: str = Field(min_length=1)
+    source: ProductSourceImportSourceRequest
+    policy: ProductSourceImportPolicyRequest = Field(
+        default_factory=ProductSourceImportPolicyRequest
+    )
+    intelligence_policy: ProductSourceIntelligencePolicyRequest = Field(
+        default_factory=ProductSourceIntelligencePolicyRequest
+    )
+    analysis_override: ProductSourceAnalysisOverrideRequest | None = None
+    rights_authorization: str = Field(min_length=1)
+    license_name: str = ""
+    copyright_boundary: str = ""
+    idempotency_key: str = Field(min_length=1, max_length=255)
+    trace_id: str = ""
+    correlation_id: str = ""
+
+
+class ProductSourceReprocessingApplyRequest(BaseModel):
+    project_id: str = Field(min_length=1)
+    workspace_id: str = Field(min_length=1)
+    reprocessing_plan_asset_version_id: str = Field(min_length=1)
+    idempotency_key: str = Field(min_length=1)
+    trace_id: str = ""
+    correlation_id: str = ""
+
+
 class AuthorityMkaosEvidenceSpanRequest(BaseModel):
     source_chunk_asset_version_id: str = Field(min_length=1)
     chunk_byte_start: int = Field(ge=0)
@@ -233,7 +408,10 @@ class AuthorityMkaosKnowledgeCandidateRequest(BaseModel):
     execution_asset_version_id: str = Field(min_length=1)
     candidate: dict[str, Any]
     evidence_spans: list[AuthorityMkaosEvidenceSpanRequest] = Field(
-        min_length=1, max_length=1_000
+        default_factory=list, max_length=1_000
+    )
+    observation_asset_version_ids: list[str] = Field(
+        default_factory=list, max_length=1_000
     )
     abstraction_policy_version: str = Field(min_length=1)
     idempotency_key: str = Field(min_length=1)
@@ -272,6 +450,7 @@ class AuthorityMkaosKnowledgePackRequest(BaseModel):
     actor_id: str = ""  # compatibility-only; never trusted
     trace_id: str = ""
     correlation_id: str = ""
+    supersedes_pack_asset_version_id: str = ""
 
 
 class TaskControlRequest(BaseModel):
@@ -831,7 +1010,7 @@ class BookAuthorityStartRequest(BaseModel):
     book_id: str = Field(min_length=1)
     idempotency_key: str = Field(min_length=1)
     input_snapshot_id: str = ""
-    input_mode: str = "RESOLVED_AUTHORITY_INPUT"
+    input_mode: Literal["RESOLVED_AUTHORITY_INPUT"] = "RESOLVED_AUTHORITY_INPUT"
     book_design_version: str = ""
     book_plan_version: str = ""
     production_profile_version: str = ""
@@ -2182,6 +2361,8 @@ def product_model_map() -> dict[str, type[BaseModel]]:
         "AuthorityOutboxRecoveryRequest": AuthorityOutboxRecoveryRequest,
         "AuthoritySourceDocumentRegisterRequest": AuthoritySourceDocumentRegisterRequest,
         "AuthoritySourceTransformCommitRequest": AuthoritySourceTransformCommitRequest,
+        "ProductSourceImportRequest": ProductSourceImportRequest,
+        "ProductSourceReprocessingApplyRequest": ProductSourceReprocessingApplyRequest,
         "AuthorityMkaosKnowledgeCandidateRequest": AuthorityMkaosKnowledgeCandidateRequest,
         "AuthorityMkaosKnowledgeApprovalRequest": AuthorityMkaosKnowledgeApprovalRequest,
         "AuthorityMkaosKnowledgePackRequest": AuthorityMkaosKnowledgePackRequest,

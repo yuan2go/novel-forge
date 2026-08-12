@@ -389,6 +389,7 @@ class ArtifactPointer(_Contract):
             "PRODUCTION_ELIGIBLE",
             "NOT_SOURCE_DERIVED",
             "FIXTURE_ELIGIBLE",
+            "SOURCE_ANALYSIS_ONLY",
         }:
             raise ValueError(
                 "artifact pointer source eligibility is not execution-safe"
@@ -1456,6 +1457,7 @@ class InputManifest(_HashedContract):
             "PRODUCTION_ELIGIBLE",
             "NOT_SOURCE_DERIVED",
             "FIXTURE_ELIGIBLE",
+            "SOURCE_ANALYSIS_ONLY",
         }:
             raise ValueError("InputManifest source eligibility is not execution-safe")
         if any(
