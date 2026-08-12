@@ -1,6 +1,7 @@
 """Storage-free domain transformations for the authoritative chapter chain."""
 from __future__ import annotations
 
+import json
 from typing import Any
 
 from novel_forge.modules.command_kernel.errors import KernelError
@@ -90,25 +91,36 @@ def build_context_bundle(
         )
         for item in (governed_candidates or [])
     ]
+    plan_safe_summary = (
+        f"Chapter {plan['chapter']} objective: {objective}. "
+        f"Premise: {plan['premise']}. Scene sequence: {scene_sequence}."
+    )
+    plan_structured_facts = (
+        {"kind": "chapter", "value": plan["chapter"]},
+        {"kind": "objective", "value": objective},
+    )
+    rendered_plan_context = json.dumps(
+        {
+            "safe_summary": plan_safe_summary,
+            "structured_facts": plan_structured_facts,
+        },
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
     candidates.insert(
         0,
         ContextCandidate(
             asset_version_id=plan_asset_version_id,
             asset_type="chapter_plan",
             project_id=project_id,
-            estimated_tokens=max(1, len(str(plan)) // 4),
+            estimated_tokens=max(1, len(rendered_plan_context) // 4),
             relevance_score=1.0,
             content_digest=plan_content_hash,
             invalidation_keys=(f"chapter-plan:{plan_asset_version_id}",),
             narrative_function="current_chapter_plan",
-            safe_summary=(
-                f"Chapter {plan['chapter']} objective: {objective}. "
-                f"Premise: {plan['premise']}. Scene sequence: {scene_sequence}."
-            ),
-            structured_facts=(
-                {"kind": "chapter", "value": plan["chapter"]},
-                {"kind": "objective", "value": objective},
-            ),
+            safe_summary=plan_safe_summary,
+            structured_facts=plan_structured_facts,
         ),
     )
     refs = {**(version_refs or {}), "chapter_plan_version": plan_asset_version_id}
