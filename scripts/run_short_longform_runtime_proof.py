@@ -111,7 +111,6 @@ from run_real_capability_codex_proof import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
-BRANCH = "feat/v7-content-intelligence-and-longform-proof"
 PLANNING_PACK_ID = "story_planning_pack"
 READER_PACK_ID = "reader_outcome_pack"
 PLANNING_PACK_INITIAL_VERSION = "1.3.0"
@@ -120,6 +119,19 @@ BOOTSTRAP_DEFINITION = "short_longform.proof.bootstrap"
 BOOTSTRAP_HANDLER = "novel_forge.proof.short_longform.bootstrap"
 PROOF_QUALITY_CONTEXT_TOKEN_BUDGET = 28_000
 MAX_PROOF_QUALITY_CONTEXT_TOKEN_BUDGET = 32_000
+
+
+def _release_checkout(*, allow_dirty: bool) -> dict[str, str]:
+    """Bind proof evidence to any explicit, clean, exact-HEAD branch."""
+
+    commit_sha = _git("rev-parse", "HEAD")
+    branch = _git("branch", "--show-current")
+    dirty = _git("status", "--porcelain", "--untracked-files=normal")
+    if not branch:
+        raise RuntimeError("exact-HEAD proof requires a named Git branch")
+    if dirty and not allow_dirty:
+        raise RuntimeError("exact-HEAD proof requires a clean Git worktree")
+    return {"commit_sha": commit_sha, "branch": branch, "dirty": dirty}
 
 
 class OneShotMeasuredProviderFailure:
@@ -3276,15 +3288,12 @@ def _run_book_phase(
 def _resume_book_phase(args: argparse.Namespace) -> dict[str, Any]:
     source_path = Path(args.resume_planning_output).expanduser().resolve()
     source = json.loads(source_path.read_text(encoding="utf-8"))
-    commit_sha = _git("rev-parse", "HEAD")
-    branch = _git("branch", "--show-current")
-    dirty = _git("status", "--porcelain", "--untracked-files=normal")
+    checkout = _release_checkout(allow_dirty=args.allow_dirty)
+    commit_sha = checkout["commit_sha"]
+    branch = checkout["branch"]
+    dirty = checkout["dirty"]
     if source["release"]["commit_sha"] != commit_sha:
         raise RuntimeError("resume Planning evidence belongs to another HEAD")
-    if branch != BRANCH:
-        raise RuntimeError(f"unexpected proof branch: {branch}")
-    if dirty and not args.allow_dirty:
-        raise RuntimeError("exact-HEAD proof requires a clean Git worktree")
     planned_quality_context_budget = int(
         source["runtime"].get("quality_context_token_budget") or 0
     )
@@ -3441,13 +3450,10 @@ def _resume_book_phase(args: argparse.Namespace) -> dict[str, Any]:
 def _run(args: argparse.Namespace) -> dict[str, Any]:
     if args.resume_planning_output:
         return _resume_book_phase(args)
-    commit_sha = _git("rev-parse", "HEAD")
-    branch = _git("branch", "--show-current")
-    dirty = _git("status", "--porcelain", "--untracked-files=normal")
-    if branch != BRANCH:
-        raise RuntimeError(f"unexpected proof branch: {branch}")
-    if dirty and not args.allow_dirty:
-        raise RuntimeError("exact-HEAD proof requires a clean Git worktree")
+    checkout = _release_checkout(allow_dirty=args.allow_dirty)
+    commit_sha = checkout["commit_sha"]
+    branch = checkout["branch"]
+    dirty = checkout["dirty"]
     executable = str(Path(args.codex_executable).expanduser().resolve())
     login = subprocess.run(
         (executable, "login", "status"),

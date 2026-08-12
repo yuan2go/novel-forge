@@ -6,6 +6,8 @@ from pathlib import Path
 import sys
 from types import SimpleNamespace
 
+import pytest
+
 from novel_forge.modules.book_authority import BookProductionSupervisorTick
 
 
@@ -177,3 +179,38 @@ def test_drive_accepts_supervisor_generated_future_chapter_plan() -> None:
         proof.SupervisorAction.GENERATE_CHAPTER_PLAN,
         proof.SupervisorAction.DISPATCH_CHAPTER,
     ]
+
+
+def test_release_checkout_accepts_current_clean_campaign_branch(monkeypatch) -> None:
+    proof = _load_script()
+    values = {
+        ("rev-parse", "HEAD"): "a" * 40,
+        ("branch", "--show-current"): "codex/longform-narrative-proof-campaign",
+        ("status", "--porcelain", "--untracked-files=normal"): "",
+    }
+    monkeypatch.setattr(proof, "_git", lambda *args: values[args])
+
+    checkout = proof._release_checkout(allow_dirty=False)
+
+    assert checkout == {
+        "commit_sha": "a" * 40,
+        "branch": "codex/longform-narrative-proof-campaign",
+        "dirty": "",
+    }
+
+
+def test_release_checkout_rejects_detached_or_dirty_state(monkeypatch) -> None:
+    proof = _load_script()
+    values = {
+        ("rev-parse", "HEAD"): "a" * 40,
+        ("branch", "--show-current"): "",
+        ("status", "--porcelain", "--untracked-files=normal"): "",
+    }
+    monkeypatch.setattr(proof, "_git", lambda *args: values[args])
+    with pytest.raises(RuntimeError, match="named Git branch"):
+        proof._release_checkout(allow_dirty=False)
+
+    values[("branch", "--show-current")] = "codex/campaign"
+    values[("status", "--porcelain", "--untracked-files=normal")] = " M file"
+    with pytest.raises(RuntimeError, match="clean Git worktree"):
+        proof._release_checkout(allow_dirty=False)
