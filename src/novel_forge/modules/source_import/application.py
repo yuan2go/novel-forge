@@ -1664,7 +1664,7 @@ class SourceImportApplication:
             source_document_id=source_document_id,
             source_transform_id=transform_id,
             source_chunk_asset_version_ids=tuple(
-                item["asset_version_id"] for item in chunks
+                str(row[2]) for row in rows
             ),
             boundary_policy_version=policy.logical_document_policy_version,
             label=f"governed file document {source_document_id}",
