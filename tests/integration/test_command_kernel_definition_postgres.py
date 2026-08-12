@@ -74,13 +74,11 @@ class CommandKernelDefinitionPostgresTests(unittest.TestCase):
             first_release = uow.repositories.definitions.get_release(
                 definition["name"],
                 definition["definition_version"],
-                application_build_id=definition["application_build_id"],
                 commit_sha=definition["commit_sha"],
             )
             second_release = uow.repositories.definitions.get_release(
                 definition["name"],
                 definition["definition_version"],
-                application_build_id=next_release["application_build_id"],
                 commit_sha=next_release["commit_sha"],
             )
             uow.commit()

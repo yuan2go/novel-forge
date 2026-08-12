@@ -149,7 +149,6 @@ class OperationDefinitionReader(Protocol):
         definition_name: str,
         definition_version: str,
         *,
-        application_build_id: str,
         commit_sha: str,
     ) -> Mapping[str, Any] | None: ...
 
@@ -201,18 +200,14 @@ class RepositoryOperationDefinitionLoader:
         self,
         identities: Iterable[tuple[str, str]],
         *,
-        application_build_id: str = "",
         commit_sha: str = "",
     ) -> InMemoryOperationDefinitionCatalog:
-        if bool(application_build_id) != bool(commit_sha):
-            raise ValueError("OperationDefinition release identity must be complete")
         rows: list[Mapping[str, Any]] = []
         for definition_name, definition_version in sorted(set(identities)):
             row = (
                 self._repository.get_release(
                     definition_name,
                     definition_version,
-                    application_build_id=application_build_id,
                     commit_sha=commit_sha,
                 )
                 if commit_sha

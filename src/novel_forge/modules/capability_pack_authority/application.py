@@ -491,7 +491,6 @@ class CapabilityPackAuthorityApplication:
                 uow.repositories.definitions
             ).load(
                 identities,
-                application_build_id=self.application_build_id,
                 commit_sha=self.commit_sha,
             )
         artifact_resolver = _artifact_resolver(version["artifact_catalog"])

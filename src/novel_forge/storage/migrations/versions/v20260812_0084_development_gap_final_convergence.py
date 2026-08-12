@@ -34,7 +34,7 @@ UPGRADE_STATEMENTS = [
         definition_hash TEXT NOT NULL,
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         PRIMARY KEY(
-          name, definition_version, application_build_id, commit_sha
+          name, definition_version, commit_sha
         ),
         FOREIGN KEY(name, definition_version)
           REFERENCES authority_operation_definition(name, definition_version),

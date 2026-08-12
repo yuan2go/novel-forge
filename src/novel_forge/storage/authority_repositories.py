@@ -123,7 +123,6 @@ class OperationDefinitionRepository:
         name: str,
         version: str,
         *,
-        application_build_id: str,
         commit_sha: str,
     ) -> dict[str, Any] | None:
         definition = self.get(name, version)
@@ -131,24 +130,24 @@ class OperationDefinitionRepository:
             return None
         self.cursor.execute(
             """
-            SELECT definition_hash
+            SELECT application_build_id, definition_hash
             FROM authority_operation_definition_release
             WHERE name=%s AND definition_version=%s
-              AND application_build_id=%s AND commit_sha=%s
+              AND commit_sha=%s
             """,
-            [name, version, application_build_id, commit_sha],
+            [name, version, commit_sha],
         )
         release = self.cursor.fetchone()
         if release is None:
             return None
-        if str(release[0]) != str(definition["definition_hash"]):
+        if str(release[1]) != str(definition["definition_hash"]):
             raise KernelError(
                 "OPERATION_DEFINITION_RELEASE_INTEGRITY_ERROR",
                 "release binding differs from its semantic OperationDefinition",
             )
         return {
             **definition,
-            "application_build_id": application_build_id,
+            "application_build_id": str(release[0]),
             "commit_sha": commit_sha,
         }
 
@@ -246,7 +245,7 @@ class OperationDefinitionRepository:
         self.cursor.execute(
             """
             INSERT INTO authority_operation_definition_release(
-              name, definition_version, application_build_id, commit_sha,
+              name, definition_version, commit_sha, application_build_id,
               definition_hash
             ) VALUES (%s,%s,%s,%s,%s)
             ON CONFLICT DO NOTHING
@@ -254,8 +253,8 @@ class OperationDefinitionRepository:
             [
                 row["name"],
                 row["definition_version"],
-                row["application_build_id"],
                 row["commit_sha"],
+                row["application_build_id"],
                 digest,
             ],
         )
