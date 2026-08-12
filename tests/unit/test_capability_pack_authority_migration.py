@@ -34,6 +34,7 @@ from novel_forge.storage.migrations.versions import (
     v20260812_0082_narrative_state_contract_v2 as narrative_state_migration,
     v20260812_0083_narrative_runtime_convergence as narrative_runtime_migration,
     v20260812_0084_development_gap_final_convergence as convergence_migration,
+    v20260812_0085_corrective_action_terminal_lineage as terminal_migration,
 )
 
 
@@ -66,7 +67,8 @@ def test_capability_pack_authority_remains_in_linear_migration_chain() -> None:
     assert (
         convergence_migration.DOWN_REVISION == narrative_runtime_migration.MIGRATION_ID
     )
-    assert LATEST_MIGRATION_ID == convergence_migration.MIGRATION_ID
+    assert terminal_migration.DOWN_REVISION == convergence_migration.MIGRATION_ID
+    assert LATEST_MIGRATION_ID == terminal_migration.MIGRATION_ID
     assert migration.FORWARD_ONLY is True
 
 

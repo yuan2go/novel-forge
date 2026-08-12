@@ -85,6 +85,7 @@ from . import (
     v20260812_0082_narrative_state_contract_v2,
     v20260812_0083_narrative_runtime_convergence,
     v20260812_0084_development_gap_final_convergence,
+    v20260812_0085_corrective_action_terminal_lineage,
 )
 
 VERSION_MODULES = [
@@ -172,6 +173,7 @@ VERSION_MODULES = [
     v20260812_0082_narrative_state_contract_v2,
     v20260812_0083_narrative_runtime_convergence,
     v20260812_0084_development_gap_final_convergence,
+    v20260812_0085_corrective_action_terminal_lineage,
 ]
 
 __all__ = ["VERSION_MODULES"]

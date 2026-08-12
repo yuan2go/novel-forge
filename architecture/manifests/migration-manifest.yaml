@@ -1,7 +1,7 @@
 {
   "schema_version": "architecture-manifest.v1",
   "registry": "novel_forge.storage.migrations.versions:VERSION_MODULES",
-  "head": "20260812_0084_development_gap_final_convergence",
+  "head": "20260812_0085_corrective_action_terminal_lineage",
   "migration_ids": [
     "20260625_0001_initial_industrial_schema",
     "20260628_0002_query_and_release_indexes",
@@ -86,6 +86,7 @@
     "20260811_0081_source_intelligence_router",
     "20260812_0082_narrative_state_contract_v2",
     "20260812_0083_narrative_runtime_convergence",
-    "20260812_0084_development_gap_final_convergence"
+    "20260812_0084_development_gap_final_convergence",
+    "20260812_0085_corrective_action_terminal_lineage"
   ]
 }

@@ -1114,6 +1114,16 @@ class _QualityHandler:
                 "arc_progress",
             }
         ]
+        constraint_envelope = plan.content.get("constraint_envelope")
+        planning_evidence = (
+            {
+                "constraint_envelope": dict(constraint_envelope),
+                "constraint_violations": planning_violations,
+                "evidence_source": "chapter_quality_aggregate",
+            }
+            if isinstance(constraint_envelope, dict) and constraint_envelope
+            else None
+        )
         measurement = measure_narrative_runtime(
             story_state={
                 "accepted_through_chapter": authority_boundary.get(
@@ -1126,12 +1136,7 @@ class _QualityHandler:
                 ),
             },
             context_bundle=context.content,
-            planning_candidate={
-                "constraint_envelope": dict(
-                    plan.content.get("constraint_envelope") or {}
-                ),
-                "constraint_violations": planning_violations,
-            },
+            planning_candidate=planning_evidence,
             quality_decision=content,
             mkaos_usage_records=mkaos_usage,
             provider_usage_records=provider_usage,
@@ -1211,6 +1216,12 @@ def _provider_usage_records(
             str(content.get("stage") or ""),
         )
         ledger = dict(costs.get(key) or {})
+        total_tokens = (
+            ledger.get("total_tokens")
+            if "total_tokens" in ledger
+            else usage.get("total_tokens")
+        )
+        amount = ledger.get("amount") if "amount" in ledger else cost.get("amount")
         records.append(
             {
                 "model_call_log_asset_version_id": item.asset_version_id,
@@ -1231,10 +1242,10 @@ def _provider_usage_records(
                 "trace_id": str(
                     content.get("trace_id") or ledger.get("trace_id") or ""
                 ),
-                "total_tokens": int(
-                    ledger.get("total_tokens") or usage.get("total_tokens") or 0
+                "total_tokens": (
+                    int(total_tokens) if total_tokens is not None else None
                 ),
-                "cost": str(ledger.get("amount") or cost.get("amount") or "0"),
+                "cost": str(amount) if amount is not None else None,
                 "currency": str(ledger.get("currency") or cost.get("currency") or ""),
                 "usage_receipt_ref": str(
                     (evidence.get("production_execution") or {})

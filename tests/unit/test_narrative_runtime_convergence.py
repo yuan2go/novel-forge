@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import pytest
 
+from novel_forge.modules.chapter_authority.contracts import ChapterInputAsset
+from novel_forge.modules.chapter_authority.handlers import _provider_usage_records
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.narrative_state import (
     compact_current_state_facts,
@@ -515,6 +517,76 @@ def test_measurement_marks_present_but_unverifiable_receipts_as_not_available() 
         measurement["observations"]["mkaos_consumption"]["status"]
         == "NOT_AVAILABLE"
     )
+
+
+def test_measurement_does_not_coerce_missing_provider_usage_or_cost_to_zero() -> None:
+    measurement = measure_narrative_runtime(
+        story_state={"accepted_through_chapter": 2},
+        context_bundle={},
+        provider_usage_records=[
+            {
+                "external_effect_id": "effect-v1",
+                "trace_id": "trace-v1",
+                "usage_receipt_ref": "",
+                "cost_receipt_ref": "",
+            }
+        ],
+    )
+
+    assert measurement["metrics"]["provider_call_count"] == 1
+    assert measurement["metrics"]["provider_token_count"] is None
+    assert measurement["metrics"]["provider_cost"] is None
+    assert measurement["observations"]["provider_tokens"]["status"] == (
+        "NOT_AVAILABLE"
+    )
+    assert measurement["observations"]["provider_cost"]["status"] == (
+        "NOT_AVAILABLE"
+    )
+
+
+def test_provider_usage_plumbing_preserves_missing_token_and_cost_evidence() -> None:
+    records = _provider_usage_records(
+        (
+            ChapterInputAsset(
+                asset_version_id="model-call-v1",
+                asset_type="model_call_log",
+                content_hash="sha256:model-call",
+                content={
+                    "operation_id": "operation-v1",
+                    "attempt_id": "attempt-v1",
+                    "stage": "draft",
+                    "external_effect_id": "effect-v1",
+                    "trace_id": "trace-v1",
+                    "provider_evidence": {},
+                },
+            ),
+        )
+    )
+
+    assert records is not None
+    assert records[0]["total_tokens"] is None
+    assert records[0]["cost"] is None
+
+
+def test_measurement_does_not_observe_planning_without_frozen_constraints() -> None:
+    missing = measure_narrative_runtime(
+        story_state={"accepted_through_chapter": 2},
+        context_bundle={},
+        planning_candidate=None,
+    )
+    observed_empty = measure_narrative_runtime(
+        story_state={"accepted_through_chapter": 2},
+        context_bundle={},
+        planning_candidate={
+            "constraint_envelope": {"envelope_digest": "sha256:envelope"},
+            "constraint_violations": [],
+        },
+    )
+
+    assert missing["metrics"]["planning_drift_count"] is None
+    assert missing["observations"]["planning"]["status"] == "NOT_OBSERVED"
+    assert observed_empty["metrics"]["planning_drift_count"] == 0
+    assert observed_empty["observations"]["planning"]["status"] == "MEASURED"
 
 
 def test_context_recall_requires_an_expected_relevant_set() -> None:

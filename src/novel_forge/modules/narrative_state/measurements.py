@@ -156,19 +156,37 @@ def measure_narrative_runtime(
     provider_usage = (
         None if provider_usage_records is None else list(provider_usage_records)
     )
-    token_count = (
+    token_missing = (
         None
         if provider_usage is None
+        else [
+            item
+            for item in provider_usage
+            if item.get("total_tokens", item.get("token_count")) is None
+        ]
+    )
+    cost_missing = (
+        None
+        if provider_usage is None
+        else [
+            item
+            for item in provider_usage
+            if item.get("cost", item.get("amount")) is None
+        ]
+    )
+    token_count = (
+        None
+        if provider_usage is None or token_missing
         else sum(
-            int(item.get("total_tokens") or item.get("token_count") or 0)
+            int(item.get("total_tokens", item.get("token_count")))
             for item in provider_usage
         )
     )
     cost = (
         None
-        if provider_usage is None
+        if provider_usage is None or cost_missing
         else sum(
-            float(item.get("cost") or item.get("amount") or 0.0)
+            float(item.get("cost", item.get("amount")))
             for item in provider_usage
         )
     )
@@ -318,6 +336,8 @@ def measure_narrative_runtime(
             _MEASURED if provider_usage is not None else _NOT_OBSERVED,
             len(provider_usage or ()),
         ),
+        "provider_tokens": _availability_status(provider_usage, token_missing),
+        "provider_cost": _availability_status(provider_usage, cost_missing),
         "provider_trace": _availability_status(provider_usage, trace_missing),
         "provider_usage_receipt": _availability_status(
             provider_usage, usage_receipt_missing

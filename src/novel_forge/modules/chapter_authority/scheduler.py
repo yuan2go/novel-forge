@@ -143,8 +143,13 @@ class ChapterAuthorityScheduler:
             correlation_id=root["correlation_id"],
         )
         coordinated = coordinate_saga(self.database_url, context, saga["saga_id"])
-        if coordinated["status"] in {
-            "SUCCEEDED",
+        chapter_complete = all(
+            children.get(node, {}).get("status") == "SUCCEEDED"
+            for node in ChapterNode
+        )
+        if (
+            coordinated["status"] == "SUCCEEDED" and chapter_complete
+        ) or coordinated["status"] in {
             "FAILED_FINAL",
             "DEAD_LETTER",
             "CANCELLED",
@@ -260,10 +265,14 @@ class ChapterAuthorityScheduler:
         children: dict[ChapterNode, dict[str, Any]],
     ) -> ChapterSchedulerTick | None:
         """Run at most one bounded correction step ordered by aggregate Quality."""
+        root_key = request.idempotency_key or (
+            f"{request.project_id}:chapter:{request.chapter}:root"
+        )
         initial_quality = self._initial_operation(
             root_operation_id=str(root["operation_id"]),
             project_id=request.project_id,
             node=ChapterNode.QUALITY,
+            idempotency_key=f"{root_key}:{ChapterNode.QUALITY.value}",
         )
         if initial_quality is None or initial_quality["status"] != "SUCCEEDED":
             return None
@@ -279,9 +288,11 @@ class ChapterAuthorityScheduler:
             root_operation_id=str(root["operation_id"]),
             project_id=request.project_id,
             generation=generation,
+            root_idempotency_key=root_key,
         )
         aggregate = correction.get(ChapterNode.QUALITY)
         if aggregate is not None and aggregate["status"] == "SUCCEEDED":
+            children.update(correction)
             return None
 
         common = {
@@ -305,6 +316,18 @@ class ChapterAuthorityScheduler:
             operation = correction.get(node)
             if operation is not None and operation["status"] == "SUCCEEDED":
                 continue
+            if operation is not None and operation["status"] in {
+                "FAILED_FINAL",
+                "DEAD_LETTER",
+                "CANCELLED",
+            }:
+                return self._generation_tick(
+                    root,
+                    saga,
+                    operation,
+                    node,
+                    "quality_correction_terminal_replay",
+                )
             if operation is None:
                 inputs, dependencies = self._quality_correction_inputs(
                     request=request,
@@ -696,10 +719,14 @@ class ChapterAuthorityScheduler:
         request: SingleChapterRequest,
         node: ChapterNode,
     ) -> dict[str, str]:
+        root_key = request.idempotency_key or (
+            f"{request.project_id}:chapter:{request.chapter}:root"
+        )
         operation = self._initial_operation(
             root_operation_id=str(root["operation_id"]),
             project_id=request.project_id,
             node=node,
+            idempotency_key=f"{root_key}:{node.value}",
         )
         if operation is None or operation["status"] != "SUCCEEDED":
             raise KernelError(
@@ -709,7 +736,12 @@ class ChapterAuthorityScheduler:
         return self._primary_output(str(operation["operation_id"]), request.project_id)
 
     def _initial_operation(
-        self, *, root_operation_id: str, project_id: str, node: ChapterNode
+        self,
+        *,
+        root_operation_id: str,
+        project_id: str,
+        node: ChapterNode,
+        idempotency_key: str,
     ) -> dict[str, Any] | None:
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
@@ -722,11 +754,15 @@ class ChapterAuthorityScheduler:
                 FROM authority_operation
                 WHERE root_operation_id=%s AND project_id=%s
                   AND definition_name=%s
-                  AND idempotency_key NOT LIKE '%%:quality-correction:%%'
-                ORDER BY created_at, operation_id
+                  AND idempotency_key=%s
                 LIMIT 1
                 """,
-                [root_operation_id, project_id, node.definition_name],
+                [
+                    root_operation_id,
+                    project_id,
+                    node.definition_name,
+                    idempotency_key,
+                ],
             )
             row = uow.cursor.fetchone()
         if row is None:
@@ -740,8 +776,17 @@ class ChapterAuthorityScheduler:
         )
 
     def _correction_operations(
-        self, *, root_operation_id: str, project_id: str, generation: int
+        self,
+        *,
+        root_operation_id: str,
+        project_id: str,
+        generation: int,
+        root_idempotency_key: str,
     ) -> dict[ChapterNode, dict[str, Any]]:
+        expected_keys = [
+            f"{root_idempotency_key}:{node.value}:quality-correction:{generation}"
+            for node in ChapterNode
+        ]
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
@@ -752,10 +797,10 @@ class ChapterAuthorityScheduler:
                        )
                 FROM authority_operation
                 WHERE root_operation_id=%s AND project_id=%s
-                  AND idempotency_key LIKE %s
+                  AND idempotency_key=ANY(%s)
                 ORDER BY created_at, operation_id
                 """,
-                [root_operation_id, project_id, f"%:quality-correction:{generation}"],
+                [root_operation_id, project_id, expected_keys],
             )
             rows = uow.cursor.fetchall()
         by_definition = {node.definition_name: node for node in ChapterNode}
@@ -1065,6 +1110,11 @@ class ChapterAuthorityScheduler:
         if attempt_status in {"QUEUED", "LEASED"}:
             start_attempt(self.database_url, worker)
         try:
+            if operation["status"] == "CANCELLATION_REQUESTED":
+                raise KernelError(
+                    "CHAPTER_OPERATION_CANCELLED",
+                    "Chapter correction was cancelled before recovery execution",
+                )
             if (
                 operation["status"]
                 in {"WAITING_EXTERNAL_RESULT", "RECONCILIATION_REQUIRED"}
@@ -1224,7 +1274,7 @@ class ChapterAuthorityScheduler:
                 """
                 SELECT operation_id, project_id, workspace_id, actor_id, status,
                        definition_version, definition_snapshot, command_payload,
-                       trace_id, correlation_id
+                       trace_id, correlation_id, idempotency_key
                 FROM authority_operation
                 WHERE operation_id = %s AND project_id = %s
                   AND root_operation_id = operation_id
@@ -1249,11 +1299,15 @@ class ChapterAuthorityScheduler:
                         "command_payload",
                         "trace_id",
                         "correlation_id",
+                        "idempotency_key",
                     ),
                     row,
                     strict=True,
                 )
             )
+            initial_child_keys = [
+                f"{root['idempotency_key']}:{node.value}" for node in ChapterNode
+            ]
             uow.cursor.execute(
                 "SELECT saga_id, status FROM authority_saga WHERE root_operation_id = %s AND project_id = %s",
                 [root_operation_id, project_id],
@@ -1269,9 +1323,15 @@ class ChapterAuthorityScheduler:
                        COALESCE((definition_snapshot->'retry_policy'->>'max_attempts')::int, 1)
                 FROM authority_operation
                 WHERE root_operation_id = %s AND operation_id <> %s AND project_id = %s
+                  AND idempotency_key=ANY(%s)
                 ORDER BY created_at, operation_id
                 """,
-                [root_operation_id, root_operation_id, project_id],
+                [
+                    root_operation_id,
+                    root_operation_id,
+                    project_id,
+                    initial_child_keys,
+                ],
             )
             rows = uow.cursor.fetchall()
         by_definition = {node.definition_name: node for node in ChapterNode}

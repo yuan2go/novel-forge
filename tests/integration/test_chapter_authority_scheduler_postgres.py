@@ -26,6 +26,14 @@ from novel_forge.modules.chapter_authority.scheduler import ChapterAuthoritySche
 from novel_forge.modules.command_kernel.external_effect_adapters import (
     FakeDeterministicProvider,
 )
+from novel_forge.modules.command_kernel.attempt_runtime import (
+    WorkerResultCommand,
+    submit_attempt_result,
+)
+from novel_forge.modules.command_kernel.cancellation import (
+    CancelCommand,
+    request_cancellation,
+)
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.corrective_action import CorrectiveActionQuery
 from novel_forge.modules.production_preparation import (
@@ -94,6 +102,10 @@ class QualityCorrectionFixture(DeterministicFixtureChapterProvider):
             currency="USD",
             real_model_call=False,
         )
+
+
+class SimulatedQualityCorrectionCrash(BaseException):
+    pass
 
 
 class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
@@ -234,7 +246,9 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
                 correlation_id=identifier("corrective-correlation"),
                 application_build_id="corrective-escalation-test",
                 commit_sha="f" * 40,
-                idempotency_key=f"{project_id}:chapter:1",
+                idempotency_key=(
+                    f"{project_id}:quality-correction:caller-marker:chapter:1"
+                ),
                 preparation_report={"decision": "READY", "fixture": True},
                 context_candidates=tuple(self._release_evidence(project_id)),
             ),
@@ -282,7 +296,9 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
                 correlation_id=identifier("quality-correction-correlation"),
                 application_build_id="quality-correction-test",
                 commit_sha="f" * 40,
-                idempotency_key=f"{project_id}:chapter:1",
+                idempotency_key=(
+                    f"{project_id}:quality-correction:caller-marker:chapter:1"
+                ),
                 preparation_report={"decision": "READY", "fixture": True},
                 context_candidates=tuple(self._release_evidence(project_id)),
             ),
@@ -427,6 +443,309 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
             )
             after_replay = dict(cursor.fetchall())
         self.assertEqual(before_replay, after_replay)
+
+    def test_quality_correction_recovers_same_attempt_and_rejects_stale_fence(
+        self,
+    ) -> None:
+        project_id, admission, registry = self._crash_quality_correction(
+            "quality-correction-recovery"
+        )
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT operation.operation_id, operation.version,
+                       attempt.attempt_id, lease.fencing_token
+                FROM authority_operation AS operation
+                JOIN authority_attempt AS attempt
+                  ON attempt.operation_id=operation.operation_id
+                JOIN authority_lease_acquisition AS lease
+                  ON lease.attempt_id=attempt.attempt_id
+                WHERE operation.root_operation_id=%s
+                  AND operation.definition_name=%s
+                  AND operation.idempotency_key LIKE '%%:quality-correction:1'
+                ORDER BY lease.fencing_token DESC
+                LIMIT 1
+                """,
+                [admission.root_operation_id, ChapterNode.REVISION.definition_name],
+            )
+            operation_id, crashed_version, attempt_id, stale_fence = cursor.fetchone()
+            cursor.execute(
+                """
+                UPDATE authority_lease_acquisition
+                SET acquired_at=NOW()-INTERVAL '2 seconds',
+                    heartbeat_at=NOW()-INTERVAL '2 seconds',
+                    expires_at=NOW()-INTERVAL '1 second'
+                WHERE attempt_id=%s AND released_at IS NULL
+                """,
+                [attempt_id],
+            )
+        recovered = ChapterAuthorityScheduler(
+            DATABASE_URL,
+            registry=registry,
+            object_store_adapter=FakeDeterministicProvider("success"),
+            worker_id="quality-correction-recovery-worker",
+            permissions=frozenset({"chapter.authority.execute"}),
+        ).tick(
+            project_id=project_id,
+            root_operation_id=admission.root_operation_id,
+        )
+        self.assertEqual(recovered.node, ChapterNode.REVISION.value)
+        self.assertEqual(recovered.operation_status, "SUCCEEDED")
+        self.assertEqual(recovered.recovery_mode, "quality_correction_lease_takeover")
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT COUNT(DISTINCT operation.operation_id),
+                       COUNT(DISTINCT attempt.attempt_id),
+                       COUNT(DISTINCT output.asset_version_id),
+                       MAX(lease.fencing_token)
+                FROM authority_operation AS operation
+                JOIN authority_attempt AS attempt
+                  ON attempt.operation_id=operation.operation_id
+                JOIN authority_lease_acquisition AS lease
+                  ON lease.attempt_id=attempt.attempt_id
+                LEFT JOIN authority_operation_output_asset AS output
+                  ON output.operation_id=operation.operation_id
+                 AND output.role='primary'
+                WHERE operation.operation_id=%s
+                """,
+                [operation_id],
+            )
+            operation_count, attempt_count, output_count, current_fence = (
+                cursor.fetchone()
+            )
+        self.assertEqual((operation_count, attempt_count, output_count), (1, 1, 1))
+        self.assertGreater(current_fence, stale_fence)
+        with self.assertRaises(KernelError) as caught:
+            submit_attempt_result(
+                DATABASE_URL,
+                WorkerResultCommand(
+                    attempt_id=attempt_id,
+                    project_id=project_id,
+                    worker_id="quality-correction-crashed-worker",
+                    fencing_token=stale_fence,
+                    trace_id=identifier("stale-quality-trace"),
+                    correlation_id=identifier("stale-quality-correlation"),
+                    causation_id=operation_id,
+                    expected_operation_version=crashed_version,
+                    expected_operation_status="EXECUTING",
+                ),
+                outcome="success",
+                result={"value": "must-not-commit"},
+            )
+        self.assertEqual(caught.exception.code, "ATTEMPT_FENCING_TOKEN_STALE")
+
+    def test_quality_correction_retry_exhaustion_is_authoritative_failed(self) -> None:
+        class RetryExhaustedFixture(QualityCorrectionFixture):
+            def __init__(self) -> None:
+                super().__init__(correction_resolves=True)
+                self.correction_calls = 0
+
+            def invoke(self, request, *, stage, payload):  # type: ignore[no-untyped-def]
+                if stage == "revision" and "quality" in payload:
+                    self.correction_calls += 1
+                    raise KernelError(
+                        "MODEL_EFFECT_RETRYABLE_CORRECTION",
+                        "fixture correction remains retryable",
+                    )
+                return super().invoke(request, stage=stage, payload=payload)
+
+        project_id = identifier("quality-correction-dead-letter-project")
+        provider = RetryExhaustedFixture()
+        registry = build_chapter_handler_registry(provider)
+        admission = admit_single_chapter_saga(
+            DATABASE_URL,
+            request=SingleChapterRequest(
+                project_id=project_id,
+                workspace_id=f"workspace:{project_id}",
+                actor_id="trusted-operator",
+                chapter=1,
+                title="An Exhausted Correction",
+                premise="Retry exhaustion remains visible in corrective Authority.",
+                trace_id=identifier("quality-dead-letter-trace"),
+                correlation_id=identifier("quality-dead-letter-correlation"),
+                application_build_id="quality-dead-letter-test",
+                commit_sha="f" * 40,
+                idempotency_key=f"{project_id}:chapter:1",
+                preparation_report={"decision": "READY", "fixture": True},
+                context_candidates=tuple(self._release_evidence(project_id)),
+            ),
+            registry=registry,
+            permissions=frozenset({"chapter.authority.execute"}),
+        )
+        scheduler = ChapterAuthorityScheduler(
+            DATABASE_URL,
+            registry=registry,
+            object_store_adapter=FakeDeterministicProvider("success"),
+            worker_id="quality-dead-letter-worker",
+            permissions=frozenset({"chapter.authority.execute"}),
+        )
+        corrective = []
+        for _ in range(48):
+            try:
+                scheduler.tick(
+                    project_id=project_id,
+                    root_operation_id=admission.root_operation_id,
+                )
+            except KernelError:
+                pass
+            corrective = CorrectiveActionQuery(DATABASE_URL).list(
+                project_id=project_id, issue_type="canon_consistency"
+            )
+            if corrective and corrective[0]["status"] == "FAILED":
+                break
+        else:
+            self.fail("Quality correction retry exhaustion was not authoritative")
+        self.assertEqual(corrective[0]["resolution"], "FAILED")
+        self.assertTrue(corrective[0]["execution_operation_id"])
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT operation.status,
+                       (definition_snapshot->'retry_policy'->>'max_attempts')::int,
+                       COUNT(attempt.attempt_id)
+                FROM authority_operation AS operation
+                LEFT JOIN authority_attempt AS attempt
+                  ON attempt.operation_id=operation.operation_id
+                WHERE operation.operation_id=%s
+                GROUP BY operation.operation_id
+                """,
+                [corrective[0]["execution_operation_id"]],
+            )
+            operation_status, max_attempts, attempt_count = cursor.fetchone()
+        self.assertEqual(operation_status, "DEAD_LETTER")
+        self.assertEqual(provider.correction_calls, max_attempts)
+        self.assertEqual(attempt_count, max_attempts)
+
+    def test_quality_correction_cancellation_is_authoritative_cancelled(self) -> None:
+        project_id, admission, registry = self._crash_quality_correction(
+            "quality-correction-cancel"
+        )
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT operation.operation_id, operation.version,
+                       attempt.attempt_id
+                FROM authority_operation AS operation
+                JOIN authority_attempt AS attempt
+                  ON attempt.operation_id=operation.operation_id
+                WHERE operation.root_operation_id=%s
+                  AND operation.definition_name=%s
+                  AND operation.idempotency_key LIKE '%%:quality-correction:1'
+                """,
+                [admission.root_operation_id, ChapterNode.REVISION.definition_name],
+            )
+            operation_id, operation_version, attempt_id = cursor.fetchone()
+            cursor.execute(
+                """
+                UPDATE authority_lease_acquisition
+                SET acquired_at=NOW()-INTERVAL '2 seconds',
+                    heartbeat_at=NOW()-INTERVAL '2 seconds',
+                    expires_at=NOW()-INTERVAL '1 second'
+                WHERE attempt_id=%s AND released_at IS NULL
+                """,
+                [attempt_id],
+            )
+        request_cancellation(
+            DATABASE_URL,
+            CancelCommand(
+                operation_id=operation_id,
+                project_id=project_id,
+                actor_id="quality-correction-operator",
+                reason="cancel bounded correction",
+                expected_version=operation_version,
+                idempotency_key=identifier("quality-correction-cancel-command"),
+                trace_id=identifier("quality-correction-cancel-trace"),
+                correlation_id=identifier("quality-correction-cancel-correlation"),
+            ),
+        )
+        with self.assertRaisesRegex(KernelError, "CHAPTER_OPERATION_CANCELLED"):
+            ChapterAuthorityScheduler(
+                DATABASE_URL,
+                registry=registry,
+                object_store_adapter=FakeDeterministicProvider("success"),
+                worker_id="quality-correction-cancel-worker",
+                permissions=frozenset({"chapter.authority.execute"}),
+            ).tick(
+                project_id=project_id,
+                root_operation_id=admission.root_operation_id,
+            )
+        corrective = CorrectiveActionQuery(DATABASE_URL).list(
+            project_id=project_id, issue_type="canon_consistency"
+        )
+        self.assertEqual(corrective[0]["status"], "CANCELLED")
+        self.assertEqual(corrective[0]["resolution"], "CANCELLED")
+
+    def _crash_quality_correction(
+        self, slug: str
+    ) -> tuple[str, object, object]:
+        project_id = identifier(f"{slug}-project")
+        registry = build_chapter_handler_registry(
+            QualityCorrectionFixture(correction_resolves=True)
+        )
+        admission = admit_single_chapter_saga(
+            DATABASE_URL,
+            request=SingleChapterRequest(
+                project_id=project_id,
+                workspace_id=f"workspace:{project_id}",
+                actor_id="trusted-operator",
+                chapter=1,
+                title="A Recoverable Correction",
+                premise="A bounded correction survives its execution boundary.",
+                trace_id=identifier(f"{slug}-trace"),
+                correlation_id=identifier(f"{slug}-correlation"),
+                application_build_id=f"{slug}-test",
+                commit_sha="f" * 40,
+                idempotency_key=f"{project_id}:chapter:1",
+                preparation_report={"decision": "READY", "fixture": True},
+                context_candidates=tuple(self._release_evidence(project_id)),
+            ),
+            registry=registry,
+            permissions=frozenset({"chapter.authority.execute"}),
+        )
+        scheduler = ChapterAuthorityScheduler(
+            DATABASE_URL,
+            registry=registry,
+            object_store_adapter=FakeDeterministicProvider("success"),
+            worker_id=f"{slug}-initial-worker",
+            permissions=frozenset({"chapter.authority.execute"}),
+        )
+        for _ in range(24):
+            scheduler.tick(
+                project_id=project_id,
+                root_operation_id=admission.root_operation_id,
+            )
+            corrective = CorrectiveActionQuery(DATABASE_URL).list(
+                project_id=project_id, issue_type="canon_consistency"
+            )
+            if corrective and corrective[0]["status"] == "ADMITTED":
+                break
+        else:
+            self.fail("initial Quality action was not admitted")
+
+        triggered = False
+
+        def crash(checkpoint: str) -> None:
+            nonlocal triggered
+            if checkpoint == "after_domain_asset_materialized" and not triggered:
+                triggered = True
+                raise SimulatedQualityCorrectionCrash(checkpoint)
+
+        crashing = ChapterAuthorityScheduler(
+            DATABASE_URL,
+            registry=registry,
+            object_store_adapter=FakeDeterministicProvider("success"),
+            worker_id="quality-correction-crashed-worker",
+            permissions=frozenset({"chapter.authority.execute"}),
+            fault_injector=crash,
+        )
+        with self.assertRaises(SimulatedQualityCorrectionCrash):
+            crashing.tick(
+                project_id=project_id,
+                root_operation_id=admission.root_operation_id,
+            )
+        self.assertTrue(triggered)
+        return project_id, admission, registry
 
     def test_uncalibrated_fixture_is_a_successful_publish_block(self) -> None:
         project_id = identifier("uncalibrated-publish-block-project")

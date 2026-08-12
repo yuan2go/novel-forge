@@ -4,12 +4,17 @@
 
 - Starting Git SHA: `aa6734799c693f1d669a5b3781d69ef5d888e15f`
 - Baseline: exact `origin/main` after fetch
-- Migration head: `20260812_0084_development_gap_final_convergence` (84 migrations)
+- Baseline migration head: `20260812_0084_development_gap_final_convergence`
+- Final migration head: `20260812_0085_corrective_action_terminal_lineage`
 - Production architecture: PostgreSQL Authority, Command Kernel, Operation/Attempt/Lease/Fence, ExternalEffect, Production Execution Gateway, existing Chapter and Book runtimes
 
-No forward migration was needed in this qualification branch. Migration 0084
-already owns the non-derivable Book replan re-evaluation fact and the derived
-Corrective Action/MKAOS projections. This work does not edit migration history.
+Migration 0084 already owns the non-derivable Book replan re-evaluation fact
+and the derived Corrective Action/MKAOS projections. Final code review found
+that the 0084 Quality projection only joined successful correction Operations.
+Forward-only migration 0085 renames that projection to an explicit
+`MIGRATION_ONLY` base and wraps it with terminal Operation/Attempt and action
+AssetVersion lifecycle derivation. No history was edited and no new table or
+execution Authority was added.
 
 The production Compose smoke also found a baseline entrypoint defect outside
 the four domain gaps: Compose invoked `python -m novel_forge.cli.authority`, but
@@ -52,7 +57,11 @@ segments, Temporal Narrative State facts, ChapterPlan constraint envelope,
 aggregate Quality actions, exact-context model-call/cost evidence, Provider
 effect ids, usage/cost receipt refs, trace ids, retries, and MKAOS usage
 lineage. Metrics are nullable when their evidence is absent. Observation states
-are `MEASURED`, `NOT_OBSERVED`, `NOT_AVAILABLE`, or `NOT_APPLICABLE`.
+are `MEASURED`, `NOT_OBSERVED`, `NOT_AVAILABLE`, or `NOT_APPLICABLE`. Provider
+token and cost totals are nullable and have independent availability states;
+the runtime no longer manufactures zero when usage or cost fields are absent.
+Planning drift is measured only when the frozen plan contains an actual
+constraint envelope.
 
 Observed empty Authority evidence produces a measured zero. Missing or
 unverifiable evidence produces `null` plus its availability state. The context
@@ -76,9 +85,12 @@ Quality required_action AssetVersion
 
 The correction uses the existing root Operation, Attempt/Lease/Fence,
 ExternalEffect behavior when the configured Provider is remote, immutable
-outputs, and deterministic idempotency keys. It is not a second workflow or
-retry plane. Re-evaluation does not emit a recursive new task; an unresolved
-action is escalated after the bounded correction.
+outputs, deterministic exact idempotency keys, and the existing retry/cancel
+terminal states. It is not a second workflow or retry plane. Re-evaluation does
+not emit a recursive new task; an unresolved action is escalated after the
+bounded correction. Execution failure/cancellation and superseded action
+versions project as `FAILED`, `CANCELLED`, and `SUPERSEDED` rather than remaining
+`ADMITTED`.
 
 The existing longform path remains:
 
@@ -131,8 +143,8 @@ effect/result identity and cannot create a duplicate logical consumption row.
 |---|---|
 | Focused Source Intelligence unit + PostgreSQL matrix | 25 unit passed; 5 PostgreSQL passed |
 | Focused Chapter/Measurement/MKAOS PostgreSQL group | 16 passed before final full gate |
-| `tests/integration/test_authority_migrations_postgres.py` | 3 passed: fresh chain, historical upgrade, 0083 to 0084 upgrade |
-| `make validate` | PASS: compile, Ruff, 84 migrations, manifests, architecture fitness, Compose |
+| `tests/integration/test_authority_migrations_postgres.py` | 3 passed: fresh chain, historical upgrade, 0084 to 0085 upgrade |
+| `make validate` | PASS: compile, Ruff, 85 migrations, manifests, architecture fitness, Compose |
 | `make authority-test` | 936 passed |
 | `make authority-postgres-test` | 182 passed, 60 subtests passed |
 | Capability Pack unit validation | 183 passed, 1308 subtests passed |
@@ -164,11 +176,13 @@ runtime tests are reported as such; the TypeScript project has a real `tsc
 ## AI overengineering review
 
 The final diff adds no Agent, Judge, persona, Provider, Workflow Engine,
-Authority plane, retry runtime, proof framework, migration, DTO family,
-registry, adapter, manager, or receipt. Quality correction is deliberately one
+Authority plane, retry runtime, proof framework, DTO family, registry, adapter,
+manager, receipt, or schema table. Quality correction is deliberately one
 bounded generation over existing Chapter Operations and immutable assets. MKAOS
 consumption remains a derived Authority projection instead of a copied lineage
 record, and Source analysis retains its single canonical strategy fingerprint.
+The one forward migration only repairs derived terminal-state projection
+semantics and marks its replaced base view `MIGRATION_ONLY`.
 
 The obsolete behavior removed is semantic rather than architectural: aggregate
 Quality tasks are no longer passive projection-only records, missing narrative
