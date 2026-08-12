@@ -58,6 +58,7 @@ from .domain import (
     STORY_PLANNING_OPERATION_DEFINITION_REF,
     STORY_PLANNING_OPERATION_TIMEOUT_SECONDS,
     StoryPlanningGenerationCommand,
+    build_planning_constraint_envelope,
     canonical_hash,
 )
 
@@ -178,6 +179,15 @@ class _PlanningGenerationHandler:
             content=candidate.authority_content(
                 project_id=command.project_id,
                 book_id=command.book_id,
+                constraint_envelope=build_planning_constraint_envelope(
+                    generator_operation_name=command.generator_operation_name,
+                    frozen_inputs=tuple(inputs),
+                    input_contents={
+                        role: by_id[asset_version_id].content
+                        for role, asset_version_id in command.input_versions.items()
+                    },
+                    candidate_payload=candidate.candidate_payload,
+                ),
             ),
             qualification_policy="story-planning-candidate-only-v1",
             reference_asset_version_ids=(

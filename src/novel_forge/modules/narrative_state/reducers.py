@@ -22,6 +22,7 @@ APPEND_ONLY_KINDS = frozenset(
         NarrativeStateKind.TIMELINE_EVENT,
         NarrativeStateKind.REWARD_EVENT,
         NarrativeStateKind.THEME_MOVEMENT,
+        NarrativeStateKind.PAYOFF_EVENT,
     }
 )
 
@@ -33,11 +34,23 @@ LIFECYCLE_KINDS = frozenset(
         NarrativeStateKind.NARRATIVE_DEBT,
         NarrativeStateKind.MYSTERY_STATE,
         NarrativeStateKind.ARC_STATE,
+        NarrativeStateKind.CHARACTER_ARC,
+        NarrativeStateKind.CONFLICT_STATE,
+        NarrativeStateKind.NARRATIVE_OBLIGATION,
     }
 )
 
 TERMINAL_STATUSES = frozenset(
-    {"PAID", "CLOSED", "RESOLVED", "CANCELLED", "ABANDONED", "DEAD", "INACTIVE"}
+    {
+        "PAID",
+        "CLOSED",
+        "RESOLVED",
+        "FULFILLED",
+        "CANCELLED",
+        "ABANDONED",
+        "DEAD",
+        "INACTIVE",
+    }
 )
 
 STATE_KIND_REDUCER_SEMANTICS: dict[NarrativeStateKind, str] = {
@@ -57,6 +70,16 @@ STATE_KIND_REDUCER_SEMANTICS: dict[NarrativeStateKind, str] = {
     NarrativeStateKind.ARC_STATE: "open-close-lifecycle",
     NarrativeStateKind.REWARD_EVENT: "append-only-event",
     NarrativeStateKind.THEME_MOVEMENT: "append-only-event",
+    NarrativeStateKind.CHARACTER_KNOWLEDGE: "fact-bound-knowledge-transition",
+    NarrativeStateKind.CHARACTER_BELIEF: "proposition-bound-belief-transition",
+    NarrativeStateKind.CHARACTER_ARC: "character-arc-lifecycle-transition",
+    NarrativeStateKind.WORLD_STATE: "world-entity-aware-upsert",
+    NarrativeStateKind.FACTION_STATE: "faction-entity-aware-transition",
+    NarrativeStateKind.LOCATION_STATE: "location-entity-aware-transition",
+    NarrativeStateKind.CONSEQUENCE_STATE: "event-consequence-lifecycle-transition",
+    NarrativeStateKind.CONFLICT_STATE: "conflict-lifecycle-transition",
+    NarrativeStateKind.NARRATIVE_OBLIGATION: "unified-obligation-lifecycle",
+    NarrativeStateKind.PAYOFF_EVENT: "append-only-payoff-evidence",
 }
 
 
@@ -131,6 +154,7 @@ def reduce_story_state_v2(
         accepted_through = 0
 
     current = _indexed_current_state(prior)
+    _expire_effective_ranges(current, at_chapter=source_chapter)
     applications: list[dict[str, Any]] = []
     seen_event_ids: set[str] = set()
     for event in events:
@@ -274,11 +298,18 @@ def compact_current_state_facts(snapshot: dict[str, Any]) -> list[dict[str, Any]
                     "effective_from_chapter": int(
                         entry.get("effective_from_chapter") or 0
                     ),
+                    "effective_to_chapter": int(
+                        entry.get("effective_to_chapter") or 0
+                    ),
+                    "narrative_position": deepcopy(
+                        entry.get("narrative_position") or {}
+                    ),
                     "source_chapter": int(entry.get("source_chapter") or 0),
                     "source_event_id": str(entry.get("source_event_id") or ""),
                     "confidence": float(entry.get("confidence", 0.0)),
                     "coverage": str(entry.get("coverage") or ""),
                     "evidence": deepcopy(entry.get("evidence") or {}),
+                    "canon_status": str(entry.get("canon_status") or ""),
                 }
             )
     return facts
@@ -354,6 +385,12 @@ def _apply_event(
 
     old_state = deepcopy((previous or {}).get("state") or {})
     payload = deepcopy(event.payload)
+    expected_entity_version = int((previous or {}).get("entity_version") or 0) + 1
+    if event.event_version >= 2 and event.entity_version != expected_entity_version:
+        raise KernelError(
+            "NARRATIVE_ENTITY_VERSION_CONFLICT",
+            "Narrative entity version must advance exactly once from accepted state",
+        )
     if event.state_kind in APPEND_ONLY_KINDS:
         if previous:
             raise KernelError(
@@ -367,21 +404,29 @@ def _apply_event(
         _validate_transition(old_state, payload, event)
         _validate_character_lifecycle(old_state, payload, event)
         _validate_immutable_definition(old_state, payload, event)
+        _validate_obligation_transition(old_state, payload, event)
         new_state = _merge_state(old_state, payload, event.state_kind)
 
     return {
         "identity": event.identity.to_dict(),
         "entity_key": event.identity.entity_key,
-        "entity_version": int((previous or {}).get("entity_version") or 0) + 1,
+        "entity_version": expected_entity_version,
         "state": new_state,
         "source_event_id": event.event_id,
         "source_chapter": event.coordinate.source_chapter,
         "effective_from_chapter": event.coordinate.effective_from_chapter,
+        "effective_to_chapter": event.coordinate.effective_to_chapter,
+        "narrative_position": (
+            event.coordinate.position.to_dict()
+            if event.coordinate.position is not None
+            else {"chapter": event.coordinate.source_chapter}
+        ),
         "supersedes_event_id": event.supersedes_event_id,
         "provenance": deepcopy(event.provenance),
         "confidence": event.confidence,
         "coverage": event.coverage,
         "evidence": deepcopy(event.evidence),
+        "canon_status": event.canon_status,
     }
 
 
@@ -478,6 +523,35 @@ def _validate_character_lifecycle(
                 "NARRATIVE_CHARACTER_TERMINAL_STATE_REOPEN_FORBIDDEN",
                 "dead or invalidated character state requires explicit supersession",
             )
+
+
+def _validate_obligation_transition(
+    old: dict[str, Any], payload: dict[str, Any], event: NarrativeStateEvent
+) -> None:
+    if event.state_kind is not NarrativeStateKind.NARRATIVE_OBLIGATION:
+        return
+    previous = str(old.get("status") or "").upper()
+    following = str(payload.get("status") or previous).upper()
+    if not previous:
+        if following not in {"PROPOSED", "OPEN"}:
+            raise KernelError(
+                "NARRATIVE_OBLIGATION_INITIAL_STATUS_INVALID",
+                "new Narrative obligation must start as PROPOSED or OPEN",
+            )
+        return
+    allowed = {
+        "PROPOSED": {"PROPOSED", "OPEN", "CANCELLED"},
+        "OPEN": {"OPEN", "DEVELOPING", "DUE", "FULFILLED", "CANCELLED"},
+        "DEVELOPING": {"DEVELOPING", "DUE", "FULFILLED", "CANCELLED"},
+        "DUE": {"DUE", "FULFILLED", "CANCELLED"},
+        "FULFILLED": {"FULFILLED"},
+        "CANCELLED": {"CANCELLED"},
+    }
+    if following not in allowed.get(previous, set()):
+        raise KernelError(
+            "NARRATIVE_OBLIGATION_TRANSITION_INVALID",
+            f"Narrative obligation cannot transition from {previous} to {following}",
+        )
 
 
 def _merge_state(
@@ -591,6 +665,49 @@ def _serialized_current_state(
     }
 
 
+def expire_effective_ranges(
+    snapshot: dict[str, Any], *, at_chapter: int
+) -> dict[str, Any]:
+    """Return a projection with facts whose explicit effective range has ended removed."""
+
+    if at_chapter <= 0:
+        raise ValueError("positive narrative chapter is required")
+    projected = deepcopy(snapshot)
+    current = projected.get("current_state")
+    if not isinstance(current, dict):
+        raise KernelError(
+            "STORY_STATE_SNAPSHOT_INVALID", "current_state must be an object"
+        )
+    for kind in NarrativeStateKind:
+        if kind in APPEND_ONLY_KINDS:
+            continue
+        current[kind.value] = [
+            item
+            for item in current.get(kind.value) or ()
+            if not int(item.get("effective_to_chapter") or 0)
+            or int(item.get("effective_to_chapter") or 0) >= at_chapter
+        ]
+    return projected
+
+
+def _expire_effective_ranges(
+    current: dict[NarrativeStateKind, dict[str, dict[str, Any]]],
+    *,
+    at_chapter: int,
+) -> None:
+    for kind, entries in current.items():
+        if kind in APPEND_ONLY_KINDS:
+            continue
+        expired = [
+            key
+            for key, item in entries.items()
+            if int(item.get("effective_to_chapter") or 0)
+            and int(item.get("effective_to_chapter") or 0) < at_chapter
+        ]
+        for key in expired:
+            del entries[key]
+
+
 def _transition_hash(
     previous: dict[str, Any] | None,
     event: NarrativeStateEvent,
@@ -650,6 +767,7 @@ __all__ = [
     "LIFECYCLE_KINDS",
     "STATE_KIND_REDUCER_SEMANTICS",
     "compact_current_state_facts",
+    "expire_effective_ranges",
     "materialize_canon_snapshot_v2",
     "project_entity_state",
     "rebuild_story_state",

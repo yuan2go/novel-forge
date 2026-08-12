@@ -14,7 +14,7 @@ from novel_forge.modules.command_kernel.errors import KernelError
 from .domain import GENERATOR_CATALOG, PlanningScope
 
 
-STORY_DESIGN_VALIDATOR_VERSION = "1.1.0"
+STORY_DESIGN_VALIDATOR_VERSION = "1.2.0"
 _GENERATOR_DEFINITION_VERSION = re.compile(r"^[1-9][0-9]*\.[0-9]+\.[0-9]+$")
 _PLANNING_METADATA_MARKERS = (
     "plan chapter",
@@ -115,11 +115,21 @@ def validate_story_design_candidate(
     generator_operation_name: str,
     planning_scope: PlanningScope | str,
     logical_key: str,
+    migration_context: Mapping[str, Any] | None = None,
 ) -> StoryDesignValidationResult:
     """Validate schema, structure, semantics, generator contract and scope."""
 
     scope = PlanningScope(planning_scope)
     frozen_content = dict(content)
+    migration_boundary = dict(migration_context or {})
+    if migration_boundary and any(
+        not str(migration_boundary.get(key) or "").strip()
+        for key in ("migration_run_id", "migration_item_id", "source_hash")
+    ):
+        raise KernelError(
+            "STORY_DESIGN_MIGRATION_BOUNDARY_INVALID",
+            "migration-only validation requires run, item, and source hash identity",
+        )
     input_value = {
         "content": frozen_content,
         "project_id": project_id,
@@ -243,14 +253,99 @@ def validate_story_design_candidate(
             "objective_hash": _canonical_hash(objective.strip()),
             "objective_present": True,
             "planning_scope": scope.value,
+            "constraint_boundary": (
+                {
+                    "status": "MIGRATION_ONLY_UNAVAILABLE",
+                    "migration_run_id": migration_boundary["migration_run_id"],
+                    "migration_item_id": migration_boundary["migration_item_id"],
+                    "source_hash": migration_boundary["source_hash"],
+                    "production_runtime_eligible": False,
+                }
+                if migration_boundary
+                else {"status": "RUNTIME_ENFORCED"}
+            ),
         },
     )
+    constraint_receipt: StoryDesignValidatorReceipt | None = None
+    if generator_operation_name in {
+        "book_plan.generate",
+        "volume_plan.generate",
+        "arc_plan.generate",
+        "chapter_group_plan.generate",
+        "chapter_plan.generate",
+    }:
+        envelope = frozen_content.get("constraint_envelope")
+        if not isinstance(envelope, dict) or not envelope:
+            if migration_boundary:
+                envelope = None
+            else:
+                raise KernelError(
+                    "PLANNING_CONSTRAINT_ENVELOPE_REQUIRED",
+                    "Planning candidate requires a compiled parent constraint envelope",
+                )
+        if envelope is not None:
+            if candidate_payload.get("constraint_envelope") != envelope:
+                raise KernelError(
+                    "PLANNING_CONSTRAINT_ENVELOPE_DRIFT",
+                    "Planning candidate and Authority envelope differ",
+                )
+            envelope_body = {
+                key: value for key, value in envelope.items() if key != "envelope_digest"
+            }
+            governance = envelope.get("change_governance")
+            if (
+                envelope.get("contract_version") != "planning-constraint-envelope-v1"
+                or envelope.get("generator_operation_name") != generator_operation_name
+                or envelope.get("planning_scope") != scope.value
+                or envelope.get("permitted_change_scope") != scope.value
+                or envelope.get("envelope_digest") != _canonical_hash(envelope_body)
+                or not isinstance(envelope.get("parent_versions"), list)
+                or not isinstance(governance, dict)
+                or not governance.get(
+                    "preserve_executed_history"
+                )
+            ):
+                raise KernelError(
+                    "PLANNING_CONSTRAINT_ENVELOPE_INVALID",
+                    "Planning constraint envelope identity or governance is invalid",
+                )
+            frozen_roles = {
+                str(item.get("role") or "")
+                for item in frozen_content.get("frozen_inputs") or []
+            }
+            envelope_roles = {
+                str(item.get("role") or "") for item in envelope["parent_versions"]
+            }
+            if not frozen_roles or envelope_roles != frozen_roles:
+                raise KernelError(
+                    "PLANNING_CONSTRAINT_ENVELOPE_INVALID",
+                    "Planning constraint envelope does not cover every frozen input",
+                )
+            constraint_receipt = _receipt(
+                validation_kind="CONSTRAINT_PROPAGATION",
+                validator_name="planning-constraint-envelope-validator",
+                input_hash=input_hash,
+                evidence={
+                    "envelope_digest": envelope["envelope_digest"],
+                    "parent_role_count": len(envelope_roles),
+                    "inherited_invariant_count": len(
+                        envelope.get("inherited_invariants") or []
+                    ),
+                    "prohibited_outcome_count": len(
+                        envelope.get("prohibited_outcomes") or []
+                    ),
+                    "required_obligation_count": len(
+                        envelope.get("required_obligations") or []
+                    ),
+                },
+            )
     receipts = (
         schema,
         structural,
         semantic,
         generator_receipt,
         scope_receipt,
+        *((constraint_receipt,) if constraint_receipt else ()),
     )
     implementation_hash = (
         "sha256:" + hashlib.sha256(Path(__file__).read_bytes()).hexdigest()

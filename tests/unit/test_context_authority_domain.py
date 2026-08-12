@@ -2,6 +2,9 @@ from __future__ import annotations
 
 import unittest
 
+from novel_forge.modules.chapter_authority.chapter_plan_views import (
+    build_draft_context_view,
+)
 from novel_forge.modules.context_builder.domain import (
     CONTEXT_PROFILES,
     ContextCandidate,
@@ -191,6 +194,128 @@ class ContextAuthorityDomainTests(unittest.TestCase):
                 token_budget=16001,
                 candidates=[self.candidate("plan-v1", "chapter_plan")],
             )
+
+    def test_narrative_context_manifest_is_replayable_and_records_knowledge_use(self) -> None:
+        plan = self.candidate(
+            "plan-v12",
+            "chapter_plan",
+            estimated_tokens=80,
+            relevance_score=1.0,
+            narrative_function="current_chapter_plan",
+        )
+        knowledge = self.candidate(
+            "knowledge-pack-v4",
+            "knowledge_pack",
+            estimated_tokens=60,
+            relevance_score=0.8,
+            narrative_function="conflict_escalation_constraints",
+        )
+        state = self.candidate(
+            "story-state-v11",
+            "story_state_snapshot",
+            estimated_tokens=70,
+            relevance_score=0.9,
+            narrative_function="accepted_narrative_state",
+            structured_facts=(
+                {
+                    "state_kind": "character_knowledge",
+                    "entity_key": "character_id=hero|fact_id=fact:seal",
+                    "entity_version": 2,
+                    "effective_from_chapter": 8,
+                    "effective_to_chapter": 0,
+                    "state": {"status": "KNOWN"},
+                },
+                {
+                    "state_kind": "narrative_obligation",
+                    "entity_key": "obligation_id=obligation:seal",
+                    "entity_version": 1,
+                    "effective_from_chapter": 8,
+                    "effective_to_chapter": 0,
+                    "state": {"status": "OPEN", "obligation_type": "MYSTERY"},
+                },
+            ),
+        )
+        arguments = {
+            "project_id": "project-a",
+            "book_id": "book-a",
+            "stage": "draft",
+            "created_by_operation_id": "operation-context-12",
+            "context_profile_version": "draft-v3",
+            "token_budget": 500,
+            "narrative_position": {
+                "chapter": 12,
+                "volume_id": "volume-1",
+                "arc_id": "arc-2",
+                "sequence_id": "sequence-4",
+                "sequence_ordinal": 3,
+            },
+            "target_capability_id": "prose.chapter.draft",
+            "capability_pack_snapshot_ref": "pack-snapshot-8",
+            "authority_state_boundary": {
+                "accepted_through_chapter": 11,
+                "story_state_snapshot_version": "story-state-v11",
+                "canon_snapshot_version": "canon-v11",
+            },
+        }
+
+        first = build_authority_context_bundle(
+            **arguments,
+            candidates=(knowledge, plan, state),
+        )
+        replayed = build_authority_context_bundle(
+            **arguments,
+            candidates=(state, plan, knowledge),
+        )
+
+        self.assertEqual(
+            first["context_contract_version"], "authority-context-bundle-v5"
+        )
+        self.assertEqual(
+            first["actual_context_digest"], replayed["actual_context_digest"]
+        )
+        self.assertEqual(first["context_manifest"], replayed["context_manifest"])
+        manifest = first["context_manifest"]
+        self.assertEqual(
+            manifest["contract_version"], "narrative-context-manifest-v1"
+        )
+        self.assertEqual(manifest["narrative_position"]["chapter"], 12)
+        self.assertEqual(
+            manifest["authority_state_boundary"]["accepted_through_chapter"],
+            11,
+        )
+        self.assertEqual(
+            manifest["knowledge_usage"][0],
+            {
+                "asset_version_id": "knowledge-pack-v4",
+                "asset_type": "knowledge_pack",
+                "narrative_function": "conflict_escalation_constraints",
+                "target_capability_id": "prose.chapter.draft",
+                "capability_pack_snapshot_ref": "pack-snapshot-8",
+            },
+        )
+        self.assertTrue(
+            manifest["replay"]["input_digest"].startswith("sha256:")
+        )
+        boundaries = manifest["narrative_boundaries"]
+        self.assertEqual(
+            boundaries["character_knowledge_and_belief"][0]["state"]["status"],
+            "KNOWN",
+        )
+        self.assertEqual(
+            boundaries["unresolved_obligations"][0]["state"]["status"],
+            "OPEN",
+        )
+        provider_view = build_draft_context_view(first)
+        self.assertEqual(provider_view["narrative_position"]["chapter"], 12)
+        self.assertEqual(
+            provider_view["authority_state_boundary"]["accepted_through_chapter"],
+            11,
+        )
+        self.assertEqual(provider_view["narrative_boundaries"], boundaries)
+        self.assertEqual(
+            provider_view["context_replay_input_digest"],
+            manifest["replay"]["input_digest"],
+        )
 
 
 if __name__ == "__main__":

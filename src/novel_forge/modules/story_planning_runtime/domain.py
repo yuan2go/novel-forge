@@ -289,8 +289,17 @@ class PlanningGenerationCandidate:
             MappingProxyType(dict(self.candidate_payload)),
         )
 
-    def authority_content(self, *, project_id: str, book_id: str) -> dict[str, Any]:
+    def authority_content(
+        self,
+        *,
+        project_id: str,
+        book_id: str,
+        constraint_envelope: Mapping[str, Any] | None = None,
+    ) -> dict[str, Any]:
         payload = dict(self.candidate_payload)
+        envelope = dict(constraint_envelope or {})
+        if envelope:
+            payload["constraint_envelope"] = envelope
         return {
             **payload,
             "schema_version": "story_design.authority.v1",
@@ -302,8 +311,119 @@ class PlanningGenerationCandidate:
             "logical_key": self.logical_key,
             "candidate_payload": payload,
             "frozen_inputs": [asdict(item) for item in self.frozen_inputs],
+            "constraint_envelope": envelope,
             "execution_evidence": self.evidence.to_dict(),
         }
+
+
+def build_planning_constraint_envelope(
+    *,
+    generator_operation_name: str,
+    frozen_inputs: tuple[FrozenPlanningInput, ...],
+    input_contents: Mapping[str, Mapping[str, Any]],
+    candidate_payload: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Compile immutable parent constraints for validation and downstream execution."""
+    if generator_operation_name not in GENERATOR_SCOPE:
+        raise ValueError("Planning Generator is not supported")
+    expected_roles = set(GENERATOR_INPUT_ROLES[generator_operation_name])
+    if set(input_contents) != expected_roles:
+        raise ValueError("Planning constraint inputs must match frozen Authority roles")
+    by_role = {item.role: item for item in frozen_inputs}
+    if set(by_role) != expected_roles:
+        raise ValueError("Planning constraint input versions are incomplete")
+
+    inherited: list[dict[str, Any]] = []
+    prohibited: list[dict[str, Any]] = []
+    obligations: list[dict[str, Any]] = []
+    accepted_through = 0
+    for role in sorted(expected_roles):
+        content = dict(input_contents[role])
+        source_version = by_role[role].asset_version_id
+        for field in ("invariants", "story_constraints", "constraints"):
+            inherited.extend(
+                _constraint_records(content.get(field), role, source_version, field)
+            )
+        prohibited.extend(
+            _constraint_records(
+                content.get("prohibited_outcomes"),
+                role,
+                source_version,
+                "prohibited_outcomes",
+            )
+        )
+        obligations.extend(
+            _constraint_records(
+                content.get("required_obligation_ids")
+                or content.get("unresolved_obligation_ids"),
+                role,
+                source_version,
+                "required_obligation_ids",
+            )
+        )
+        boundary = content.get("authority_state_boundary")
+        accepted_through = max(
+            accepted_through,
+            int(content.get("accepted_through_chapter") or 0),
+            int(boundary.get("accepted_through_chapter") or 0)
+            if isinstance(boundary, dict)
+            else 0,
+        )
+
+    local_prohibited = _constraint_records(
+        candidate_payload.get("prohibited_outcomes"),
+        "candidate",
+        "UNMATERIALIZED_CANDIDATE",
+        "prohibited_outcomes",
+    )
+    body = {
+        "type": "PlanningConstraintEnvelope",
+        "contract_version": "planning-constraint-envelope-v1",
+        "generator_operation_name": generator_operation_name,
+        "planning_scope": GENERATOR_SCOPE[generator_operation_name].value,
+        "permitted_change_scope": GENERATOR_SCOPE[generator_operation_name].value,
+        "accepted_state_boundary": {
+            "accepted_through_chapter": accepted_through,
+            "future_plan_only": True,
+        },
+        "parent_versions": [
+            {
+                "role": role,
+                "asset_version_id": by_role[role].asset_version_id,
+                "content_hash": by_role[role].content_hash,
+            }
+            for role in sorted(by_role)
+        ],
+        "inherited_invariants": inherited,
+        "prohibited_outcomes": [*prohibited, *local_prohibited],
+        "required_obligations": obligations,
+        "change_governance": {
+            "requires_evidence": True,
+            "wider_scope_requires_new_plan_change": True,
+            "preserve_executed_history": True,
+        },
+    }
+    return {**body, "envelope_digest": canonical_hash(body)}
+
+
+def _constraint_records(
+    value: Any,
+    source_role: str,
+    source_version: str,
+    field: str,
+) -> list[dict[str, Any]]:
+    if value in (None, "", [], {}):
+        return []
+    items = value if isinstance(value, (list, tuple)) else [value]
+    return [
+        {
+            "source_role": source_role,
+            "source_asset_version_id": source_version,
+            "source_field": field,
+            "constraint": item,
+        }
+        for item in items
+    ]
 
 
 @dataclass(frozen=True, slots=True)
@@ -378,5 +498,6 @@ __all__ = [
     "PlanningRepairRequest",
     "PlanningValidationReport",
     "StoryPlanningGenerationCommand",
+    "build_planning_constraint_envelope",
     "canonical_hash",
 ]

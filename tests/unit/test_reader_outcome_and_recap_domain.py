@@ -113,6 +113,16 @@ class ReaderOutcomeAndRecapDomainTests(unittest.TestCase):
         )
         self.assertEqual(outputs["adjustment_proposal"]["decision_status"], "AUTHORITY_PENDING")
         self.assertIsNotNone(outputs["replan_request"])
+        actions = outputs["adjustment_proposal"]["proposed_actions"]
+        self.assertIn(
+            "CHAPTER_ADJUSTMENT",
+            {item["requested_action"] for item in actions},
+        )
+        self.assertEqual(outputs["replan_request"]["affected_scope"], "ARC")
+        self.assertTrue(outputs["replan_request"]["impact_scope"]["future_only"])
+        self.assertIn(
+            "accepted_canon", outputs["replan_request"]["preserved_invariants"]
+        )
 
     def test_ending_reachability_checkpoint_is_a_blocking_replan_reason(self) -> None:
         outputs = build_longform_recap_outputs(
@@ -134,6 +144,11 @@ class ReaderOutcomeAndRecapDomainTests(unittest.TestCase):
         self.assertEqual(
             outputs["replan_request"]["reason_refs"],
             ["ENDING_REACHABILITY_AT_RISK"],
+        )
+        self.assertEqual(outputs["replan_request"]["affected_scope"], "BOOK")
+        self.assertEqual(
+            outputs["replan_request"]["required_authority"],
+            "PLAN_CHANGE_AUTHORITY",
         )
 
 

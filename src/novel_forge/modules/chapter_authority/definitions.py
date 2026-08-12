@@ -260,6 +260,16 @@ def _definition(
             }
             for dimension in QUALITY_DIMENSIONS
         )
+        completion["required_asset_selectors"].append(
+            {
+                "selector": "narrative_runtime_measurement",
+                "output_key": "chapter.quality.narrative_runtime_measurement",
+                "role": "proof_observation",
+                "lifecycle": "ACTIVE",
+                "eligibility": "ELIGIBLE",
+                "governance": "CLEAR",
+            }
+        )
     if node is ChapterNode.EXPORT:
         completion.update(
             {

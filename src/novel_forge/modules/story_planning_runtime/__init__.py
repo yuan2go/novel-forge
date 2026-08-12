@@ -29,6 +29,7 @@ from .domain import (
     STORY_PLANNING_OPERATION_TIMEOUT_SECONDS,
     STORY_PLANNING_WORKFLOW_DEFINITION_REF,
     StoryPlanningGenerationCommand,
+    build_planning_constraint_envelope,
     canonical_hash,
 )
 from .execution import PlanningExecutionRoute, PostgresPlanningExecutionPreparer
@@ -61,6 +62,7 @@ __all__ = [
     "StoryPlanningGenerationCommand",
     "StoryPlanningGenerationApplication",
     "StoryPlanningGenerationHandlerRegistry",
+    "build_planning_constraint_envelope",
     "canonical_hash",
     "story_planning_generation_definition",
 ]

@@ -389,6 +389,11 @@ class StoryDesignMigrationAdapter:
             generator_operation_name=generator,
             planning_scope=scope,
             logical_key=logical_key,
+            migration_context={
+                "migration_run_id": context.migration_run_id,
+                "migration_item_id": context.migration_item_id,
+                "source_hash": context.source_hash,
+            },
         )
         return {
             **result.to_evidence(),

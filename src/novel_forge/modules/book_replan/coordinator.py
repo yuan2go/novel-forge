@@ -7,6 +7,8 @@ import hashlib
 from typing import Any
 from uuid import uuid4
 
+from psycopg.types.json import Jsonb
+
 from novel_forge.modules.authority_security import Principal
 from novel_forge.modules.book_authority import (
     BookProductionInputResolver,
@@ -119,7 +121,15 @@ class BookReplanCoordinator:
             return existing
         book = self.book.require(command.book_run_id)
         self._require_scope(book, command)
-        recap_operation_id = self._require_recap_lineage(command)
+        recap_lineage = self._require_recap_lineage(command)
+        recap_operation_id = str(recap_lineage["operation_id"])
+        replan_request = dict(recap_lineage["replan_request"])
+        declared_scope = str(replan_request.get("affected_scope") or "")
+        if declared_scope and declared_scope != command.affected_scope:
+            raise KernelError(
+                "BOOK_REPLAN_SCOPE_ESCALATION_FORBIDDEN",
+                "Replan command cannot exceed or change the evidence-approved scope",
+            )
         target = self._target_plan(command, int(book["accepted_through_chapter"]) + 1)
         if target["execution_scope"] == "EXECUTED":
             raise KernelError(
@@ -197,10 +207,11 @@ class BookReplanCoordinator:
                     replacement_candidate_asset_version_id,
                     generation_operation_id, plan_change_proposal_id,
                     input_snapshot_id, status, stable_idempotency_key,
-                    created_by_operation_id
+                    created_by_operation_id, impact_scope,
+                    preserved_invariants, decision_evidence
                 ) VALUES (
                     %s,%s,%s,%s,%s,%s,%s,TRUE,%s,%s,%s,%s,%s,
-                    'APPROVAL_PENDING',%s,%s
+                    'APPROVAL_PENDING',%s,%s,%s,%s,%s
                 ) ON CONFLICT(project_id, stable_idempotency_key) DO NOTHING
                 """,
                 [
@@ -218,6 +229,9 @@ class BookReplanCoordinator:
                     book["input_snapshot_id"],
                     command.idempotency_key,
                     operation_id,
+                    Jsonb(dict(replan_request.get("impact_scope") or {})),
+                    Jsonb(list(replan_request.get("preserved_invariants") or [])),
+                    Jsonb(list(replan_request.get("decision_evidence") or [])),
                 ],
             )
             uow.cursor.execute(
@@ -648,7 +662,8 @@ class BookReplanCoordinator:
                        replacement_candidate_asset_version_id,
                        generation_operation_id, plan_change_proposal_id,
                        COALESCE(input_snapshot_id,''), status,
-                       stable_idempotency_key, version
+                       stable_idempotency_key, version, impact_scope,
+                       preserved_invariants, decision_evidence
                 FROM authority_book_replan WHERE replan_id=%s
                 """,
                 [replan_id],
@@ -673,6 +688,9 @@ class BookReplanCoordinator:
             "status",
             "stable_idempotency_key",
             "version",
+            "impact_scope",
+            "preserved_invariants",
+            "decision_evidence",
         )
         return dict(zip(keys, row, strict=True))
 
@@ -694,16 +712,20 @@ class BookReplanCoordinator:
                 "Book Replan requires an Authority-resolved input snapshot",
             )
 
-    def _require_recap_lineage(self, command: CoordinateBookReplanCommand) -> str:
+    def _require_recap_lineage(
+        self, command: CoordinateBookReplanCommand
+    ) -> dict[str, Any]:
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
-                SELECT recap.operation_id
+                SELECT recap.operation_id, request_version.content
                 FROM authority_operation_output_asset AS recap
                 JOIN authority_operation_output_asset AS request
                   ON request.operation_id=recap.operation_id
                 JOIN authority_operation AS operation
                   ON operation.operation_id=recap.operation_id
+                JOIN authority_asset_version AS request_version
+                  ON request_version.asset_version_id=request.asset_version_id
                 WHERE recap.asset_version_id=%s
                   AND recap.output_key='longform.recap.report'
                   AND request.asset_version_id=%s
@@ -722,7 +744,16 @@ class BookReplanCoordinator:
                 "BOOK_REPLAN_SOURCE_INVALID",
                 "ReplanRequest must be emitted by the same successful Longform Recap",
             )
-        return str(row[0])
+        content = dict(row[1])
+        if content.get("contract_version") not in {
+            "book-replan-request-v1",
+            "book-replan-request-v2",
+        }:
+            raise KernelError(
+                "BOOK_REPLAN_SOURCE_INVALID",
+                "ReplanRequest contract is not supported",
+            )
+        return {"operation_id": str(row[0]), "replan_request": content}
 
     def _target_plan(
         self, command: CoordinateBookReplanCommand, next_chapter: int

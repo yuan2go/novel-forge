@@ -139,6 +139,22 @@ class ChapterAuthorityDefinitionTests(unittest.TestCase):
             ],
             "deterministic_continuity_report",
         )
+        quality_definition = definitions[
+            list(ChapterNode).index(ChapterNode.QUALITY)
+        ]
+        self.assertIn(
+            {
+                "selector": "narrative_runtime_measurement",
+                "output_key": "chapter.quality.narrative_runtime_measurement",
+                "role": "proof_observation",
+                "lifecycle": "ACTIVE",
+                "eligibility": "ELIGIBLE",
+                "governance": "CLEAR",
+            },
+            quality_definition["completion_contract"][
+                "required_asset_selectors"
+            ],
+        )
         self.assertEqual(
             definitions[list(ChapterNode).index(ChapterNode.EXPORT)][
                 "completion_contract"

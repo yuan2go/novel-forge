@@ -264,26 +264,50 @@ def build_longform_recap_outputs(
         "deviations": deviations,
         "blocking_count": len(blocking),
     }
+    required_actions = [
+        _required_action_for_deviation(item, chapter_range=(start, end))
+        for item in deviations
+    ]
     adjustment = {
-        "contract_version": "plan-adjustment-proposal-v1",
+        "contract_version": "plan-adjustment-proposal-v2",
         "decision_status": "AUTHORITY_PENDING",
         "mutates_plan": False,
         "reader_outcome_consumption": reader_consumption,
-        "proposed_actions": [
-            {
-                "deviation_type": item["type"],
-                "requested_action": "PLAN_IMPACT_ANALYSIS",
-                "requires_authority": "BOOK_DESIGN_AUTHORITY",
-            }
-            for item in deviations
-        ],
+        "decision_chain": {
+            "observation_range": [start, end],
+            "evidence": [item["evidence"] for item in deviations],
+            "issues": [
+                {"code": item["type"], "severity": item["severity"]}
+                for item in deviations
+            ],
+            "required_actions": required_actions,
+            "reevaluation_gate": "longform.recap",
+        },
+        "proposed_actions": required_actions,
     }
+    blocking_actions = [
+        action
+        for action in required_actions
+        if action["severity"] == "BLOCKING"
+    ]
+    affected_scope = _widest_scope(blocking_actions)
     replan = (
         {
-            "contract_version": "book-replan-request-v1",
+            "contract_version": "book-replan-request-v2",
             "decision_status": "AUTHORITY_PENDING",
             "reason_refs": [item["type"] for item in blocking],
-            "required_authority": "BOOK_DESIGN_AUTHORITY",
+            "affected_scope": affected_scope,
+            "impact_scope": {
+                "chapter_range": [start, end],
+                "future_only": True,
+            },
+            "preserved_invariants": [
+                "accepted_canon",
+                "executed_chapter_history",
+                "unaffected_active_plan_versions",
+            ],
+            "decision_evidence": blocking,
+            "required_authority": _authority_for_scope(affected_scope),
         }
         if blocking
         else None
@@ -315,6 +339,86 @@ def _add_if(
                 "evidence": dict(evidence) if isinstance(evidence, Mapping) else evidence,
             }
         )
+
+
+def _required_action_for_deviation(
+    deviation: Mapping[str, Any],
+    *,
+    chapter_range: tuple[int, int],
+) -> dict[str, Any]:
+    deviation_type = str(deviation["type"])
+    scope = {
+        "READER_CONFUSION_RISE": "CHAPTER",
+        "REPETITION_FATIGUE": "CHAPTER_GROUP",
+        "QUALITY_TREND_DECLINE": "CHAPTER_GROUP",
+        "REWARD_CADENCE_FAILURE": "ARC",
+        "PROMISE_DEBT": "ARC",
+        "MAIN_PLOT_STAGNATION": "ARC",
+        "ARC_GOAL_DRIFT": "ARC",
+        "CHARACTER_ARC_DRIFT": "ARC",
+        "CHARACTER_DISAPPEARANCE": "ARC",
+        "POWER_INFLATION": "ARC",
+        "TIMELINE_CONFLICT": "ARC",
+        "FORESHADOWING_DEBT": "ARC",
+        "STYLE_DRIFT": "CHAPTER_GROUP",
+        "PACING_DRIFT": "CHAPTER_GROUP",
+        "ANTAGONIST_PRESSURE_DROP": "ARC",
+        "PROTAGONIST_CHARM_DROP": "ARC",
+        "CANON_CONFLICT": _canon_conflict_scope(deviation.get("evidence")),
+        "ENDING_REACHABILITY_AT_RISK": "BOOK",
+    }.get(deviation_type, "CHAPTER")
+    action = {
+        "CHAPTER": "CHAPTER_ADJUSTMENT",
+        "CHAPTER_GROUP": "CHAPTER_GROUP_REPLAN",
+        "ARC": "ARC_REPLAN",
+        "VOLUME": "VOLUME_REPLAN",
+        "BOOK": "BOOK_STRATEGIC_REPLAN",
+    }[scope]
+    return {
+        "deviation_type": deviation_type,
+        "severity": str(deviation["severity"]),
+        "requested_action": action,
+        "affected_scope": scope,
+        "impact_scope": {
+            "observed_chapter_range": list(chapter_range),
+            "future_only": True,
+        },
+        "preserved_invariants": [
+            "accepted_canon",
+            "executed_chapter_history",
+        ],
+        "evidence": deviation["evidence"],
+        "requires_authority": _authority_for_scope(scope),
+    }
+
+
+def _widest_scope(actions: Sequence[Mapping[str, Any]]) -> str:
+    order = {"CHAPTER": 1, "CHAPTER_GROUP": 2, "ARC": 3, "VOLUME": 4, "BOOK": 5}
+    return max(
+        (str(item["affected_scope"]) for item in actions),
+        key=order.__getitem__,
+        default="CHAPTER",
+    )
+
+
+def _canon_conflict_scope(evidence: Any) -> str:
+    value = dict(evidence) if isinstance(evidence, Mapping) else {}
+    conflicts = [
+        dict(item)
+        for item in value.get("conflicts") or []
+        if isinstance(item, Mapping)
+    ]
+    if conflicts and all(
+        not bool(item.get("executed_content_affected"))
+        and str(item.get("target") or "").startswith("chapter:")
+        for item in conflicts
+    ):
+        return "CHAPTER_GROUP"
+    return "ARC"
+
+
+def _authority_for_scope(scope: str) -> str:
+    return "CHAPTER_AUTHORITY" if scope == "CHAPTER" else "PLAN_CHANGE_AUTHORITY"
 
 
 __all__ = [

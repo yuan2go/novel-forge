@@ -101,6 +101,17 @@ class ChapterAuthorityDomainHandlerTests(unittest.TestCase):
         self.assertEqual(canon["gate"], "PASSED")
         self.assertEqual(quality["gate"], "FAILED")
         self.assertIn("originality", quality["blocking_dimensions"])
+        self.assertTrue(quality["required_actions"])
+        self.assertTrue(
+            all(
+                item["permitted_change_scope"] == "CHAPTER"
+                for item in quality["required_actions"]
+            )
+        )
+        self.assertEqual(
+            quality["decision_chain"]["reevaluation_gate"],
+            "chapter.quality.aggregate",
+        )
         self.assertEqual(exported["release_status"], "READY_FOR_BLOB_VERIFICATION")
 
     def test_quality_and_export_fail_closed(self) -> None:

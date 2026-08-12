@@ -21,6 +21,7 @@ PLAN_FIELDS = (
     "protagonist_charm_mechanism", "serialization_function",
     "chapter_economy_function", "reader_dropoff_risks", "payoff_schedule",
     "platform_rhythm", "conflict_escalation",
+    "constraint_envelope",
 )
 LIST_FIELDS = frozenset({
     "cast", "relationship_pairs", "scene_sequence", "scene_goals", "character_goals",
@@ -218,6 +219,7 @@ def build_draft_plan_view(plan: dict[str, Any]) -> dict[str, Any]:
             "protagonist_charm_mechanism", "serialization_function",
             "chapter_economy_function", "reader_dropoff_risks", "payoff_schedule",
             "platform_rhythm", "conflict_escalation",
+            "constraint_envelope",
         )},
         "source_chapter_plan_asset_version_id": plan["source_chapter_plan_asset_version_id"],
         "source_chapter_plan_content_hash": plan["source_chapter_plan_content_hash"],
@@ -226,10 +228,20 @@ def build_draft_plan_view(plan: dict[str, Any]) -> dict[str, Any]:
 
 def build_draft_context_view(context_bundle: dict[str, Any]) -> dict[str, Any]:
     view = dict(context_bundle.get("stage_context_view") or {})
+    manifest = dict(context_bundle.get("context_manifest") or {})
+    task = dict(manifest.get("task") or {})
+    replay = dict(manifest.get("replay") or {})
     return {
         "contract_version": "draft-context-view-v1",
         "stage": "draft",
         "segments": list(view.get("segments") or view.get("context_segments") or []),
+        "target_capability_id": str(task.get("target_capability_id") or ""),
+        "narrative_position": dict(manifest.get("narrative_position") or {}),
+        "authority_state_boundary": dict(
+            manifest.get("authority_state_boundary") or {}
+        ),
+        "narrative_boundaries": dict(manifest.get("narrative_boundaries") or {}),
+        "context_replay_input_digest": str(replay.get("input_digest") or ""),
         "token_budget": context_bundle.get("token_budget"),
         "actual_context_digest": context_bundle.get("actual_context_digest"),
         "source_isolation_result": dict(context_bundle.get("source_isolation_result") or {}),

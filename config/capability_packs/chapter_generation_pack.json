@@ -396,7 +396,7 @@
         "node_id": "quality",
         "operation_name": "chapter.quality.evaluate",
         "operation_definition_ref": "chapter.quality.evaluate@2.3.1",
-        "operation_definition_hash": "sha256:bb5dd419422c81703201cb9f988b0a45f60cd81c46a459d9f5404e36c59fb45e",
+        "operation_definition_hash": "sha256:cf48c6e05fc8a307ae36b188471740c91ed43c15f9473a042e522a3ee27b0ba1",
         "handler_key": "novel_forge.chapter_authority.quality",
         "stage": "quality",
         "capability_id": "quality.aggregate",

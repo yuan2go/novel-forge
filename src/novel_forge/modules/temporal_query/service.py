@@ -10,6 +10,7 @@ from novel_forge.modules.narrative_state import (
     NarrativeLayer,
     NarrativeStateEvent,
     NarrativeStateKind,
+    expire_effective_ranges,
     project_entity_state,
     reduce_story_state_v2,
 )
@@ -149,6 +150,27 @@ class TemporalQueryService:
         fact_id: str,
         chapter: int,
     ) -> dict[str, Any]:
+        knowledge = self._entity_at(
+            project_id,
+            book_id,
+            chapter,
+            state_kind="character_knowledge",
+            entity_key=f"character_id={character_id}|fact_id={fact_id}",
+        )
+        knowledge_status = str(
+            (knowledge.get("state") or {}).get("status") or ""
+        ).upper()
+        if knowledge_status:
+            knows = knowledge_status == "KNOWN"
+            return {
+                **knowledge,
+                "state_kind": "character_knowledge",
+                "character_id": character_id,
+                "fact_id": fact_id,
+                "knows": knows,
+                "status": "FOUND",
+                "missing_reason": "",
+            }
         state = self.character_state_at(project_id, book_id, character_id, chapter)
         known = {
             str(item)
@@ -179,6 +201,55 @@ class TemporalQueryService:
             "missing_reason": "" if knows else "NO_ACCEPTED_STATE_AT_BOUNDARY",
         }
 
+    def character_believes_at(
+        self,
+        project_id: str,
+        book_id: str,
+        character_id: str,
+        proposition_id: str,
+        chapter: int,
+    ) -> dict[str, Any]:
+        return self._entity_at(
+            project_id,
+            book_id,
+            chapter,
+            state_kind="character_belief",
+            entity_key=(
+                f"character_id={character_id}|proposition_id={proposition_id}"
+            ),
+        )
+
+    def character_arc_at(
+        self,
+        project_id: str,
+        book_id: str,
+        character_id: str,
+        arc_id: str,
+        chapter: int,
+    ) -> dict[str, Any]:
+        return self._entity_at(
+            project_id,
+            book_id,
+            chapter,
+            state_kind="character_arc",
+            entity_key=f"character_id={character_id}|arc_id={arc_id}",
+        )
+
+    def conflict_at(
+        self,
+        project_id: str,
+        book_id: str,
+        conflict_id: str,
+        chapter: int,
+    ) -> dict[str, Any]:
+        return self._entity_at(
+            project_id,
+            book_id,
+            chapter,
+            state_kind="conflict_state",
+            entity_key=f"conflict_id={conflict_id}",
+        )
+
     def relationship_at(
         self,
         project_id: str,
@@ -198,9 +269,29 @@ class TemporalQueryService:
     def world_state_at(
         self, project_id: str, book_id: str, chapter: int
     ) -> dict[str, Any]:
-        return self._collection_at(
-            project_id, book_id, chapter, state_kind="world_rule"
-        )
+        collections = {
+            kind: self._collection_at(
+                project_id, book_id, chapter, state_kind=kind
+            ).get("states", [])
+            for kind in (
+                "world_state",
+                "faction_state",
+                "location_state",
+                "world_rule",
+                "consequence_state",
+            )
+        }
+        return {
+            "status": (
+                "FOUND" if any(collections.values()) else "NOT_FOUND"
+            ),
+            "project_id": project_id,
+            "book_id": book_id,
+            "as_of_chapter": chapter,
+            "boundary": "INCLUSIVE",
+            "accepted_state_only": True,
+            "collections": collections,
+        }
 
     def power_state_at(
         self, project_id: str, book_id: str, character_id: str, chapter: int
@@ -238,16 +329,43 @@ class TemporalQueryService:
     def pending_promises_at(
         self, project_id: str, book_id: str, chapter: int
     ) -> dict[str, Any]:
+        collection = self.obligations_at(
+            project_id,
+            book_id,
+            chapter,
+            obligation_types=("PROMISE",),
+            unresolved_only=True,
+        )
+        pending = list(collection.get("obligations") or ())
+        return {**collection, "states": pending, "promises": pending}
+
+    def obligations_at(
+        self,
+        project_id: str,
+        book_id: str,
+        chapter: int,
+        *,
+        obligation_types: tuple[str, ...] = (),
+        unresolved_only: bool = False,
+    ) -> dict[str, Any]:
         collection = self._collection_at(
-            project_id, book_id, chapter, state_kind="reader_promise"
+            project_id, book_id, chapter, state_kind="narrative_obligation"
         )
         pending = [
             item
             for item in collection.get("states") or ()
-            if str((item.get("state") or {}).get("status") or "OPEN").upper()
-            in {"OPEN", "PLANTED", "PROMISED", "ACTIVE", "DEFERRED"}
+            if (
+                not obligation_types
+                or str((item.get("state") or {}).get("obligation_type") or "").upper()
+                in set(obligation_types)
+            )
+            and (
+                not unresolved_only
+                or str((item.get("state") or {}).get("status") or "OPEN").upper()
+                in {"PROPOSED", "OPEN", "DEVELOPING", "DUE"}
+            )
         ]
-        return {**collection, "states": pending, "promises": pending}
+        return {**collection, "states": pending, "obligations": pending}
 
     def changes_between(
         self,
@@ -415,7 +533,7 @@ def _rebuild_as_of(
     state["as_of_chapter"] = as_of_chapter
     state["boundary"] = "INCLUSIVE"
     state["accepted_state_only"] = True
-    return state
+    return expire_effective_ranges(state, at_chapter=as_of_chapter)
 
 
 def _event_from_row(row: tuple[Any, ...]) -> TemporalStateEvent:
