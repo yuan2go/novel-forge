@@ -247,7 +247,9 @@ def test_obligation_terminal_state_requires_payoff_and_cannot_reopen() -> None:
     assert reopened_error.value.code == "NARRATIVE_TERMINAL_STATE_REOPEN_FORBIDDEN"
 
 
-def test_effective_range_is_absent_from_later_projection_without_deleting_history() -> None:
+def test_effective_range_is_absent_from_later_projection_without_deleting_history() -> (
+    None
+):
     events = _events(
         5,
         {
@@ -345,7 +347,9 @@ def test_proof_hooks_measure_without_promoting_longform_capability() -> None:
     metrics = measurement["metrics"]
     assert metrics["future_knowledge_leakage_count"] == 1
     assert metrics["obligation_overdue_count"] == 1
-    assert metrics["long_distance_context_recall_count"] == 1
+    assert metrics["long_distance_context_selected_count"] == 1
+    assert metrics["context_retrieval_recall"] is None
+    assert measurement["observations"]["expected_context"]["status"] == "NOT_OBSERVED"
     assert metrics["planning_drift_count"] == 1
     assert metrics["mkaos_consumption_count"] == 1
     assert measurement["proof_status"] == "MEASURED_NOT_QUALIFIED"
@@ -383,3 +387,41 @@ def test_measurement_derives_current_state_from_frozen_context() -> None:
 
     assert measurement["metrics"]["obligation_unresolved_count"] == 1
     assert measurement["metrics"]["obligation_overdue_count"] == 1
+
+
+def test_measurement_never_turns_missing_evidence_into_false_zero() -> None:
+    measurement = measure_narrative_runtime(
+        story_state={"accepted_through_chapter": 2},
+        context_bundle={},
+    )
+
+    metrics = measurement["metrics"]
+    assert metrics["provider_call_count"] is None
+    assert metrics["provider_token_count"] is None
+    assert metrics["provider_cost"] is None
+    assert metrics["provider_trace_missing_count"] is None
+    assert metrics["mkaos_consumption_count"] is None
+    assert metrics["planning_drift_count"] is None
+    assert measurement["observations"]["provider_usage"]["status"] == "NOT_OBSERVED"
+    assert measurement["observations"]["mkaos_consumption"]["status"] == "NOT_OBSERVED"
+    assert measurement["observations"]["planning"]["status"] == "NOT_OBSERVED"
+
+
+def test_context_recall_requires_an_expected_relevant_set() -> None:
+    measurement = measure_narrative_runtime(
+        story_state={"accepted_through_chapter": 20},
+        context_bundle={
+            "context_manifest": {
+                "narrative_position": {"chapter": 20},
+                "selected_inputs": [
+                    {"asset_version_id": "expected-v1", "relevance_score": 0.8},
+                    {"asset_version_id": "irrelevant-v1", "relevance_score": 0.1},
+                ],
+            }
+        },
+        expected_context_asset_version_ids=("expected-v1", "missing-v1"),
+    )
+
+    assert measurement["metrics"]["context_retrieval_recall"] == 0.5
+    assert measurement["metrics"]["context_retrieval_precision"] == 0.5
+    assert measurement["observations"]["expected_context"]["status"] == "MEASURED"

@@ -118,6 +118,39 @@ class OperationDefinitionRepository:
         )
         return dict(zip(fields, row, strict=True))
 
+    def get_release(
+        self,
+        name: str,
+        version: str,
+        *,
+        commit_sha: str,
+    ) -> dict[str, Any] | None:
+        definition = self.get(name, version)
+        if definition is None:
+            return None
+        self.cursor.execute(
+            """
+            SELECT application_build_id, definition_hash
+            FROM authority_operation_definition_release
+            WHERE name=%s AND definition_version=%s
+              AND commit_sha=%s
+            """,
+            [name, version, commit_sha],
+        )
+        release = self.cursor.fetchone()
+        if release is None:
+            return None
+        if str(release[1]) != str(definition["definition_hash"]):
+            raise KernelError(
+                "OPERATION_DEFINITION_RELEASE_INTEGRITY_ERROR",
+                "release binding differs from its semantic OperationDefinition",
+            )
+        return {
+            **definition,
+            "application_build_id": str(release[0]),
+            "commit_sha": commit_sha,
+        }
+
     def register(self, row: dict[str, Any]) -> dict[str, Any]:
         digest = definition_hash(row)
         parameters = {
@@ -201,16 +234,31 @@ class OperationDefinitionRepository:
             parameters,
         )
         inserted = self.cursor.fetchone()
-        if inserted is not None:
-            return {"registered": True, "definition_hash": inserted[0]}
-
-        existing = self.get(row["name"], row["definition_version"])
-        if existing is None or existing["definition_hash"] != digest:
-            raise KernelError(
-                "OPERATION_DEFINITION_VERSION_CONFLICT",
-                "operation definition name/version is already bound to different content",
-            )
-        return {"registered": False, "definition_hash": digest}
+        registered = inserted is not None
+        if not registered:
+            existing = self.get(row["name"], row["definition_version"])
+            if existing is None or existing["definition_hash"] != digest:
+                raise KernelError(
+                    "OPERATION_DEFINITION_VERSION_CONFLICT",
+                    "operation definition name/version is already bound to different content",
+                )
+        self.cursor.execute(
+            """
+            INSERT INTO authority_operation_definition_release(
+              name, definition_version, commit_sha, application_build_id,
+              definition_hash
+            ) VALUES (%s,%s,%s,%s,%s)
+            ON CONFLICT DO NOTHING
+            """,
+            [
+                row["name"],
+                row["definition_version"],
+                row["commit_sha"],
+                row["application_build_id"],
+                digest,
+            ],
+        )
+        return {"registered": registered, "definition_hash": digest}
 
 
 class OperationRepository:

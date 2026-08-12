@@ -60,7 +60,11 @@ from novel_forge.storage.source_intelligence_repositories import (
 )
 from novel_forge.storage.source_profile_repositories import SourceProfileRepository
 
-from .analysis_profiles import plan_analysis_tasks, resolve_analysis_strategy
+from .analysis_profiles import (
+    analysis_strategy_from_dict,
+    plan_analysis_tasks,
+    resolve_analysis_strategy,
+)
 from .definitions import (
     SOURCE_IMPORT_DECONSTRUCTION_OPERATION,
     SOURCE_IMPORT_PROFILING_OPERATION,
@@ -1660,7 +1664,7 @@ class SourceImportApplication:
             source_document_id=source_document_id,
             source_transform_id=transform_id,
             source_chunk_asset_version_ids=tuple(
-                item["asset_version_id"] for item in chunks
+                str(row[2]) for row in rows
             ),
             boundary_policy_version=policy.logical_document_policy_version,
             label=f"governed file document {source_document_id}",
@@ -1675,7 +1679,7 @@ class SourceImportApplication:
         stable_key = _hash(
             {
                 "logical_document_scope_hash": scope.scope_hash,
-                "intelligence_policy_hash": policy.policy_hash,
+                "profiling_policy_hash": policy.profiling_policy_hash,
                 "override_contract_hash": (override.contract_hash if override else ""),
                 "path_hints": list(source_paths),
             }
@@ -2084,7 +2088,10 @@ class SourceImportApplication:
             current
             and current["classifier_contract_hash"] == policy.classifier_contract_hash
             and current["classification_input_hash"] == evidence.input_hash
-            and current["intelligence_policy_hash"] == policy.policy_hash
+            and SourceIntelligencePolicy(
+                **dict(current["content"]["intelligence_policy"])
+            ).profiling_policy_hash
+            == policy.profiling_policy_hash
             and current["override_contract_hash"] == override_hash
         )
         if exact_profile:
@@ -2207,6 +2214,7 @@ class SourceImportApplication:
                 job,
                 scope=scope,
                 profile_asset_version_id=str(profile["asset_version_id"]),
+                resolved_content_type=str(profile["resolved_content_type"]),
             )
         else:
             with AuthorityUnitOfWork(self.database_url) as uow:
@@ -2226,12 +2234,18 @@ class SourceImportApplication:
         *,
         scope: LogicalDocumentScope,
         profile_asset_version_id: str,
+        resolved_content_type: str,
     ) -> None:
         policy = SourceIntelligencePolicy(**dict(job["intelligence_policy"]))
+        strategy = resolve_analysis_strategy(
+            SourceContentType(resolved_content_type),
+            registry=self.methodology_registry,
+            routing_policy_version=policy.routing_policy_version,
+        )
         stable_key = _hash(
             {
                 "profile_asset_version_id": profile_asset_version_id,
-                "routing_policy_version": policy.routing_policy_version,
+                "analysis_strategy_fingerprint": strategy.fingerprint,
             }
         )
         child = self._admit_child(
@@ -2251,6 +2265,8 @@ class SourceImportApplication:
                 "profile_asset_version_id": profile_asset_version_id,
                 "logical_document_scope": scope.to_dict(),
                 "routing_policy_version": policy.routing_policy_version,
+                "analysis_strategy": strategy.to_dict(),
+                "analysis_strategy_fingerprint": strategy.fingerprint,
             },
             input_assets=(
                 {
@@ -2322,11 +2338,17 @@ class SourceImportApplication:
                 status="RUNNING",
             )
             uow.commit()
-        strategy = resolve_analysis_strategy(
-            SourceContentType(str(profile["resolved_content_type"])),
-            registry=self.methodology_registry,
-            routing_policy_version=str(payload["routing_policy_version"]),
+        strategy = analysis_strategy_from_dict(
+            dict(payload["analysis_strategy"]),
+            expected_fingerprint=str(payload["analysis_strategy_fingerprint"]),
         )
+        if strategy.content_type.value != str(
+            profile["resolved_content_type"]
+        ) or strategy.routing_policy_version != str(payload["routing_policy_version"]):
+            raise KernelError(
+                "SOURCE_ANALYSIS_STRATEGY_PROFILE_CONFLICT",
+                "admission-frozen Analysis Strategy differs from its Profile or route",
+            )
         plan = self.source_authority.execute_analysis_plan(
             CommitSourceAnalysisPlanCommand(
                 project_id=worker.project_id,
@@ -2347,7 +2369,7 @@ class SourceImportApplication:
             "resolved_content_type": profile["resolved_content_type"],
             "profile_id": strategy.profile_id,
             "profile_version": strategy.profile_version,
-            "strategy_contract_hash": strategy.contract_hash,
+            "strategy_contract_hash": strategy.fingerprint,
             "methodologies": [
                 {
                     "skill_id": item.skill_id,

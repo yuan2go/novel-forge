@@ -19,6 +19,7 @@ from novel_forge.modules.chapter_authority.orchestrator import (
     SingleChapterRequest,
     _command,
     _input_nodes,
+    _measurement_evidence_inputs,
 )
 from novel_forge.modules.chapter_authority.runtime import execute_chapter_handler
 from novel_forge.modules.chapter_authority.model_effects import (
@@ -336,6 +337,19 @@ class ChapterAuthorityScheduler:
                     "content_hash": str(item["content_hash"]),
                 }
                 for item in request.context_candidates
+            )
+        if node is ChapterNode.QUALITY:
+            context_operation = children[ChapterNode.CONTEXT]
+            context_output = self._primary_output(
+                str(context_operation["operation_id"]), root["project_id"]
+            )
+            inputs.extend(
+                _measurement_evidence_inputs(
+                    self.database_url,
+                    project_id=root["project_id"],
+                    root_operation_id=str(root["operation_id"]),
+                    context_bundle_asset_version_id=context_output["asset_version_id"],
+                )
             )
         if node is ChapterNode.CANON:
             inputs.extend(

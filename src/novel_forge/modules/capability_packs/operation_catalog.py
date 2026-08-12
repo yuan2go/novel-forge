@@ -144,6 +144,14 @@ class OperationDefinitionReader(Protocol):
         self, definition_name: str, definition_version: str
     ) -> Mapping[str, Any] | None: ...
 
+    def get_release(
+        self,
+        definition_name: str,
+        definition_version: str,
+        *,
+        commit_sha: str,
+    ) -> Mapping[str, Any] | None: ...
+
 
 class InMemoryOperationDefinitionCatalog:
     def __init__(self, definitions: Iterable[Mapping[str, Any]]) -> None:
@@ -189,16 +197,27 @@ class RepositoryOperationDefinitionLoader:
         self._repository = repository
 
     def load(
-        self, identities: Iterable[tuple[str, str]]
+        self,
+        identities: Iterable[tuple[str, str]],
+        *,
+        commit_sha: str = "",
     ) -> InMemoryOperationDefinitionCatalog:
         rows: list[Mapping[str, Any]] = []
         for definition_name, definition_version in sorted(set(identities)):
-            row = self._repository.get(definition_name, definition_version)
+            row = (
+                self._repository.get_release(
+                    definition_name,
+                    definition_version,
+                    commit_sha=commit_sha,
+                )
+                if commit_sha
+                else self._repository.get(definition_name, definition_version)
+            )
             if row is None:
                 raise KeyError(
                     f"operation definition not found: {definition_name}@{definition_version}"
                 )
-            calculated = definition_hash(row)
+            calculated = definition_hash(dict(row))
             persisted = str(row.get("definition_hash") or "")
             if persisted and persisted != calculated:
                 raise ValueError(

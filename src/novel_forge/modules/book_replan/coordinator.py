@@ -56,6 +56,7 @@ _SNAPSHOT_ROLE_FIELDS = (
     "promise_ledger_version",
 )
 
+
 @dataclass(frozen=True, slots=True)
 class CoordinateBookReplanCommand:
     project_id: str
@@ -88,6 +89,34 @@ class CoordinateBookReplanCommand:
             or self.affected_scope not in SCOPE_GENERATOR
         ):
             raise ValueError("Book Replan command is incomplete")
+
+
+@dataclass(frozen=True, slots=True)
+class ReevaluateBookReplanCommand:
+    project_id: str
+    workspace_id: str
+    replan_id: str
+    source_recap_asset_version_id: str
+    deviation_report_asset_version_id: str
+    idempotency_key: str
+    trace_id: str
+    correlation_id: str
+
+    def __post_init__(self) -> None:
+        if any(
+            not value.strip()
+            for value in (
+                self.project_id,
+                self.workspace_id,
+                self.replan_id,
+                self.source_recap_asset_version_id,
+                self.deviation_report_asset_version_id,
+                self.idempotency_key,
+                self.trace_id,
+                self.correlation_id,
+            )
+        ):
+            raise ValueError("Book Replan reevaluation command is incomplete")
 
 
 class BookReplanCoordinator:
@@ -651,6 +680,122 @@ class BookReplanCoordinator:
             "chapter_plan_projection": chapter_plan_projection,
         }
 
+    def reevaluate(self, command: ReevaluateBookReplanCommand) -> dict[str, Any]:
+        """Close or escalate an applied Replan from a later Longform Recap."""
+        self.principal.require("book.authority.execute", command.project_id)
+        replan = self.require(command.replan_id)
+        if replan["project_id"] != command.project_id or replan["status"] != "RESUMED":
+            raise KernelError(
+                "BOOK_REPLAN_REEVALUATION_NOT_READY",
+                "only a resumed Replan in the same Project can be reevaluated",
+            )
+        book = self.book.require(replan["book_run_id"])
+        if str(book["workspace_id"]) != command.workspace_id:
+            raise KernelError(
+                "BOOK_REPLAN_SCOPE_MISMATCH",
+                "Replan reevaluation belongs to another Workspace",
+            )
+        evidence = self._require_reevaluation_lineage(command, replan)
+        remaining = sorted(
+            set(evidence["original_issue_types"])
+            & set(evidence["observed_issue_types"])
+        )
+        gate_result = "FAILED" if remaining else "PASSED"
+        resolution = "ESCALATED" if remaining else "RESOLVED"
+        reevaluation_id = (
+            "book-replan-reevaluation:"
+            + hashlib.sha256(
+                f"{command.project_id}:{command.replan_id}:{command.idempotency_key}".encode()
+            ).hexdigest()
+        )
+
+        def record_reevaluation(
+            uow: AuthorityUnitOfWork,
+            operation_id: str,
+            checkpoint: TransactionCheckpoint,
+        ) -> dict[str, Any]:
+            checkpoint("after_domain_validation")
+            uow.cursor.execute(
+                """
+                INSERT INTO authority_book_replan_reevaluation(
+                  reevaluation_id, replan_id, project_id,
+                  source_recap_asset_version_id,
+                  deviation_report_asset_version_id,
+                  evaluation_operation_id, gate_result, resolution,
+                  remaining_issue_types, evidence_refs,
+                  stable_idempotency_key
+                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                ON CONFLICT(project_id,replan_id,stable_idempotency_key)
+                DO NOTHING
+                """,
+                [
+                    reevaluation_id,
+                    command.replan_id,
+                    command.project_id,
+                    command.source_recap_asset_version_id,
+                    command.deviation_report_asset_version_id,
+                    operation_id,
+                    gate_result,
+                    resolution,
+                    Jsonb(remaining),
+                    Jsonb(
+                        [
+                            replan["replan_request_asset_version_id"],
+                            replan["replacement_candidate_asset_version_id"],
+                            command.source_recap_asset_version_id,
+                            command.deviation_report_asset_version_id,
+                        ]
+                    ),
+                    command.idempotency_key,
+                ],
+            )
+            self._event(
+                uow,
+                operation_id=operation_id,
+                project_id=command.project_id,
+                replan_id=command.replan_id,
+                event_type="book.replan.reevaluated",
+                correlation_id=command.correlation_id,
+                payload={
+                    "gate_result": gate_result,
+                    "resolution": resolution,
+                    "remaining_issue_types": remaining,
+                    "source_recap_asset_version_id": (
+                        command.source_recap_asset_version_id
+                    ),
+                },
+            )
+            checkpoint("after_outbox_insert")
+            return {
+                "reevaluation_id": reevaluation_id,
+                "replan_id": command.replan_id,
+                "evaluation_operation_id": operation_id,
+                "gate_result": gate_result,
+                "resolution": resolution,
+                "remaining_issue_types": remaining,
+            }
+
+        return self._run_checkpoint(
+            project_id=command.project_id,
+            workspace_id=command.workspace_id,
+            book_id=replan["book_id"],
+            idempotency_key=f"{command.idempotency_key}:record",
+            trace_id=command.trace_id,
+            correlation_id=command.correlation_id,
+            causation_operation_id=evidence["evaluation_source_operation_id"],
+            payload={
+                "transition": "REEVALUATED",
+                "replan_id": command.replan_id,
+                "source_recap_asset_version_id": (
+                    command.source_recap_asset_version_id
+                ),
+                "deviation_report_asset_version_id": (
+                    command.deviation_report_asset_version_id
+                ),
+            },
+            handler=record_reevaluation,
+        )
+
     def require(self, replan_id: str) -> dict[str, Any]:
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
@@ -754,6 +899,84 @@ class BookReplanCoordinator:
                 "ReplanRequest contract is not supported",
             )
         return {"operation_id": str(row[0]), "replan_request": content}
+
+    def _require_reevaluation_lineage(
+        self,
+        command: ReevaluateBookReplanCommand,
+        replan: dict[str, Any],
+    ) -> dict[str, Any]:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT evaluation.operation_id,
+                       source_version.content,
+                       evaluation_version.content,
+                       request_version.content->'reason_refs',
+                       deviation_version.content->'deviations'
+                FROM authority_operation_output_asset AS recap
+                JOIN authority_operation_output_asset AS deviation
+                  ON deviation.operation_id=recap.operation_id
+                JOIN authority_operation AS evaluation
+                  ON evaluation.operation_id=recap.operation_id
+                 AND evaluation.status='SUCCEEDED'
+                JOIN authority_asset_version AS deviation_version
+                  ON deviation_version.asset_version_id=deviation.asset_version_id
+                JOIN authority_asset_version AS evaluation_version
+                  ON evaluation_version.asset_version_id=recap.asset_version_id
+                JOIN authority_operation_output_asset AS source_recap
+                  ON source_recap.asset_version_id=%s
+                 AND source_recap.output_key='longform.recap.report'
+                JOIN authority_operation AS source
+                  ON source.operation_id=source_recap.operation_id
+                 AND source.status='SUCCEEDED'
+                JOIN authority_asset_version AS source_version
+                  ON source_version.asset_version_id=source_recap.asset_version_id
+                JOIN authority_asset_version AS request_version
+                  ON request_version.asset_version_id=%s
+                WHERE recap.asset_version_id=%s
+                  AND recap.output_key='longform.recap.report'
+                  AND deviation.asset_version_id=%s
+                  AND deviation.output_key='longform.recap.deviation_report'
+                  AND evaluation.project_id=%s
+                """,
+                [
+                    replan["source_recap_asset_version_id"],
+                    replan["replan_request_asset_version_id"],
+                    command.source_recap_asset_version_id,
+                    command.deviation_report_asset_version_id,
+                    command.project_id,
+                ],
+            )
+            row = uow.cursor.fetchone()
+        source_content = dict(row[1]) if row is not None else {}
+        evaluation_content = dict(row[2]) if row is not None else {}
+        source_range = list(source_content.get("chapter_range") or [])
+        evaluation_range = list(evaluation_content.get("chapter_range") or [])
+        try:
+            is_later_position = (
+                len(source_range) == 2
+                and len(evaluation_range) == 2
+                and int(evaluation_range[1]) > int(source_range[1])
+            )
+        except (TypeError, ValueError):
+            is_later_position = False
+        if (
+            row is None
+            or source_content.get("book_id") != replan["book_id"]
+            or evaluation_content.get("book_id") != replan["book_id"]
+            or not is_later_position
+        ):
+            raise KernelError(
+                "BOOK_REPLAN_REEVALUATION_SOURCE_INVALID",
+                "reevaluation requires a later narrative-position Longform Recap and its deviation report",
+            )
+        return {
+            "evaluation_source_operation_id": str(row[0]),
+            "original_issue_types": [str(item) for item in (row[3] or [])],
+            "observed_issue_types": [
+                str(item.get("type") or "") for item in (row[4] or [])
+            ],
+        }
 
     def _target_plan(
         self, command: CoordinateBookReplanCommand, next_chapter: int

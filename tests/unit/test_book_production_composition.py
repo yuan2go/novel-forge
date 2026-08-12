@@ -75,6 +75,9 @@ class BookProductionCompositionTests(unittest.TestCase):
         self.assertIs(composition.plan_change.planning, planning_authority)
         self.assertIs(composition.replan.book, book)
         self.assertIs(composition.replan.planning, planning)
+        self.assertEqual(
+            composition.corrective_actions.database_url, "postgresql://authority"
+        )
         self.assertIs(composition.supervisor.authority, book)
         self.assertIs(composition.supervisor.query, composition.query)
         self.assertIs(composition.supervisor.scheduler.query, composition.query)
@@ -102,6 +105,7 @@ class BookProductionCompositionTests(unittest.TestCase):
             plan_change=SimpleNamespace(),
             input_resolver=SimpleNamespace(),
             replan=SimpleNamespace(),
+            corrective_actions=SimpleNamespace(),
             supervisor=supervisor,
             principal=Principal(
                 principal_id="trusted-operator",
@@ -150,6 +154,7 @@ class BookProductionCompositionTests(unittest.TestCase):
             plan_change=SimpleNamespace(),
             input_resolver=SimpleNamespace(),
             replan=replan,
+            corrective_actions=SimpleNamespace(),
             supervisor=SimpleNamespace(),
             principal=Principal(
                 principal_id="trusted-operator",
@@ -191,6 +196,7 @@ class BookProductionCompositionTests(unittest.TestCase):
             plan_change=SimpleNamespace(),
             input_resolver=SimpleNamespace(),
             replan=replan,
+            corrective_actions=SimpleNamespace(),
             supervisor=SimpleNamespace(),
             principal=Principal(
                 principal_id="book-worker",

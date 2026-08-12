@@ -84,6 +84,7 @@ from . import (
     v20260811_0081_source_intelligence_router,
     v20260812_0082_narrative_state_contract_v2,
     v20260812_0083_narrative_runtime_convergence,
+    v20260812_0084_development_gap_final_convergence,
 )
 
 VERSION_MODULES = [
@@ -170,6 +171,7 @@ VERSION_MODULES = [
     v20260811_0081_source_intelligence_router,
     v20260812_0082_narrative_state_contract_v2,
     v20260812_0083_narrative_runtime_convergence,
+    v20260812_0084_development_gap_final_convergence,
 ]
 
 __all__ = ["VERSION_MODULES"]

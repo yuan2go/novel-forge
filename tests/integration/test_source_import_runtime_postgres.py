@@ -45,6 +45,8 @@ from novel_forge.modules.source_import import (
     SourceMethodologyRegistry,
 )
 from novel_forge.modules.source_import.methodologies import METHODOLOGY_VERSIONS
+from novel_forge.modules.source_import import analysis_profiles
+from novel_forge.modules.source_import.profiling import SourceContentType
 from novel_forge.modules.source_authority import (
     PlanSourceReprocessingCommand,
     ReprocessingTarget,
@@ -146,12 +148,12 @@ class SourceImportRuntimePostgresTests(unittest.TestCase):
         self.git_adapter = git_adapter
         settings = IndustrialSettings(root=self.root, database_url=DATABASE_URL)
         env = {
-                "NOVEL_FORGE_ENVIRONMENT": "test",
-                "NOVEL_FORGE_DRAFT_PROVIDER": "mock",
-                "NOVEL_FORGE_REVIEW_PROVIDER": "mock",
-                "NOVEL_FORGE_REVISION_PROVIDER": "mock",
-                "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": str(self.object_root),
-                "NOVEL_FORGE_COMMIT_SHA": "e" * 40,
+            "NOVEL_FORGE_ENVIRONMENT": "test",
+            "NOVEL_FORGE_DRAFT_PROVIDER": "mock",
+            "NOVEL_FORGE_REVIEW_PROVIDER": "mock",
+            "NOVEL_FORGE_REVISION_PROVIDER": "mock",
+            "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": str(self.object_root),
+            "NOVEL_FORGE_COMMIT_SHA": "e" * 40,
         }
         self.production_execution = build_production_execution_composition(
             settings, env=env
@@ -992,46 +994,142 @@ The algorithm trades availability against coordination and failure tolerance.
             + "\n<!-- governed methodology revision 1.1 -->\n",
             encoding="utf-8",
         )
-        versions = {
-            **METHODOLOGY_VERSIONS,
-            "multidisciplinary-knowledge": "1.1.0",
-        }
-        upgraded_registry = SourceMethodologyRegistry(skill_root, versions=versions)
-        self.application.methodology_registry = upgraded_registry
-        self.execution_port.methodology_registry = upgraded_registry
+        content_upgraded_registry = SourceMethodologyRegistry(
+            skill_root, versions=METHODOLOGY_VERSIONS
+        )
+        self.application.methodology_registry = content_upgraded_registry
+        self.execution_port.methodology_registry = content_upgraded_registry
         before_skill = self._source_intelligence_counts()
         invalidations_before_skill = self._invalidation_counts()
-        upgraded = self._create_import(
-            "heterogeneous-skill-upgrade",
+        content_upgraded = self._create_import(
+            "heterogeneous-skill-content-upgrade",
             heterogeneous_commit,
             intelligence_policy=classifier_policy,
         )
         self.scheduler.run_or_recover(
-            operation_id=upgraded["operation_id"], project_id=self.project_id
+            operation_id=content_upgraded["operation_id"], project_id=self.project_id
         )
         self._run_ready_source_operations()
-        after_skill = self._source_intelligence_counts()
+        after_content = self._source_intelligence_counts()
         self.assertEqual(
-            after_skill["source_documents"], before_skill["source_documents"]
+            after_content["source_documents"], before_skill["source_documents"]
         )
-        self.assertEqual(after_skill["transforms"], before_skill["transforms"])
-        self.assertEqual(after_skill["profiles"], before_skill["profiles"])
-        self.assertEqual(after_skill["plans"], before_skill["plans"] + 1)
-        self.assertEqual(after_skill["observations"], before_skill["observations"] + 7)
+        self.assertEqual(after_content["transforms"], before_skill["transforms"])
+        self.assertEqual(after_content["profiles"], before_skill["profiles"])
+        self.assertEqual(after_content["plans"], before_skill["plans"] + 1)
         self.assertEqual(
-            after_skill["knowledge_candidates"],
+            after_content["observations"], before_skill["observations"] + 7
+        )
+        self.assertEqual(
+            after_content["knowledge_candidates"],
             before_skill["knowledge_candidates"] + 7,
         )
-        upgraded_routes = self._document_routes(upgraded["import_job_id"])
-        professional_methodologies = upgraded_routes["professional.md"]["methodologies"]
-        self.assertEqual(professional_methodologies[0]["skill_version"], "1.1.0")
+        content_routes = self._document_routes(content_upgraded["import_job_id"])
+        professional_methodologies = content_routes["professional.md"]["methodologies"]
+        self.assertEqual(professional_methodologies[0]["skill_version"], "1.0.0")
         self.assertEqual(
             professional_methodologies[0]["methodology_content_hash"],
-            upgraded_registry.require("multidisciplinary-knowledge").content_digest,
+            content_upgraded_registry.require(
+                "multidisciplinary-knowledge"
+            ).content_digest,
+        )
+
+        version_upgraded_registry = SourceMethodologyRegistry(
+            skill_root,
+            versions={
+                **METHODOLOGY_VERSIONS,
+                "multidisciplinary-knowledge": "1.1.0",
+            },
+        )
+        self.application.methodology_registry = version_upgraded_registry
+        self.execution_port.methodology_registry = version_upgraded_registry
+        before_version = self._source_intelligence_counts()
+        version_upgraded = self._create_import(
+            "heterogeneous-skill-version-upgrade",
+            heterogeneous_commit,
+            intelligence_policy=classifier_policy,
+        )
+        self.scheduler.run_or_recover(
+            operation_id=version_upgraded["operation_id"], project_id=self.project_id
+        )
+        self._run_ready_source_operations()
+        after_version = self._source_intelligence_counts()
+        self.assertEqual(
+            after_version["source_documents"], before_version["source_documents"]
+        )
+        self.assertEqual(after_version["transforms"], before_version["transforms"])
+        self.assertEqual(after_version["profiles"], before_version["profiles"])
+        self.assertEqual(after_version["plans"], before_version["plans"] + 1)
+        self.assertEqual(
+            after_version["observations"], before_version["observations"] + 7
+        )
+        self.assertEqual(
+            after_version["knowledge_candidates"],
+            before_version["knowledge_candidates"] + 7,
+        )
+        version_routes = self._document_routes(version_upgraded["import_job_id"])
+        self.assertEqual(
+            version_routes["professional.md"]["methodologies"][0]["skill_version"],
+            "1.1.0",
         )
         self.assertGreater(
             self._invalidation_counts().get("METHODOLOGY_UPGRADE", 0),
             invalidations_before_skill.get("METHODOLOGY_UPGRADE", 0),
+        )
+
+        routing_policy = replace(
+            classifier_policy,
+            routing_policy_version="source-analysis-routing.v3",
+        )
+        before_routing = self._source_intelligence_counts()
+        routing_upgraded = self._create_import(
+            "heterogeneous-routing-upgrade",
+            heterogeneous_commit,
+            intelligence_policy=routing_policy,
+        )
+        self.scheduler.run_or_recover(
+            operation_id=routing_upgraded["operation_id"], project_id=self.project_id
+        )
+        self._run_ready_source_operations()
+        after_routing = self._source_intelligence_counts()
+        self.assertEqual(
+            after_routing["source_documents"], before_routing["source_documents"]
+        )
+        self.assertEqual(after_routing["transforms"], before_routing["transforms"])
+        self.assertEqual(after_routing["profiles"], before_routing["profiles"])
+        self.assertEqual(after_routing["plans"], before_routing["plans"] + 2)
+        self.assertEqual(
+            after_routing["observations"], before_routing["observations"] + 16
+        )
+
+        profile_type = SourceContentType.PROFESSIONAL_KNOWLEDGE
+        original_profile = analysis_profiles._PROFILES[profile_type]
+        before_profile = self._source_intelligence_counts()
+        try:
+            analysis_profiles._PROFILES[profile_type] = replace(
+                original_profile, profile_version="2.1"
+            )
+            profile_upgraded = self._create_import(
+                "heterogeneous-profile-upgrade",
+                heterogeneous_commit,
+                intelligence_policy=routing_policy,
+            )
+            self.scheduler.run_or_recover(
+                operation_id=profile_upgraded["operation_id"],
+                project_id=self.project_id,
+            )
+            self._run_ready_source_operations()
+        finally:
+            analysis_profiles._PROFILES[profile_type] = original_profile
+        after_profile = self._source_intelligence_counts()
+        self.assertEqual(
+            after_profile["source_documents"], before_profile["source_documents"]
+        )
+        self.assertEqual(after_profile["transforms"], before_profile["transforms"])
+        self.assertEqual(after_profile["profiles"], before_profile["profiles"])
+        self.assertEqual(after_profile["plans"], before_profile["plans"] + 1)
+        self.assertEqual(
+            after_profile["observations"], before_profile["observations"] + 7
         )
 
     def test_product_api_previews_repository_without_low_level_inputs(self) -> None:

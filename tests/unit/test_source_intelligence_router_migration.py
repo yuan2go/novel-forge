@@ -6,6 +6,7 @@ from novel_forge.storage.migrations.versions import (
     v20260811_0081_source_intelligence_router as migration,
     v20260812_0082_narrative_state_contract_v2 as narrative_state_migration,
     v20260812_0083_narrative_runtime_convergence as narrative_runtime_migration,
+    v20260812_0084_development_gap_final_convergence as convergence_migration,
 )
 
 
@@ -14,8 +15,14 @@ def test_source_intelligence_router_is_forward_only_migration_head() -> None:
     assert migration.DOWN_REVISION == previous.MIGRATION_ID
     assert migration.FORWARD_ONLY is True
     assert narrative_state_migration.DOWN_REVISION == migration.MIGRATION_ID
-    assert narrative_runtime_migration.DOWN_REVISION == narrative_state_migration.MIGRATION_ID
-    assert LATEST_MIGRATION_ID == narrative_runtime_migration.MIGRATION_ID
+    assert (
+        narrative_runtime_migration.DOWN_REVISION
+        == narrative_state_migration.MIGRATION_ID
+    )
+    assert (
+        convergence_migration.DOWN_REVISION == narrative_runtime_migration.MIGRATION_ID
+    )
+    assert LATEST_MIGRATION_ID == convergence_migration.MIGRATION_ID
 
 
 def test_profile_and_analysis_plan_use_existing_asset_authority() -> None:

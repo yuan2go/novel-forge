@@ -532,8 +532,19 @@ class ExternalEffectChapterModelPort:
                     "recovered_completed_effect": True,
                 },
             )
-            self._record_model_call(request, stage, completed, logical_ref)
-            self._ensure_cost_evidence(request, stage, completed)
+            self._record_model_call(
+                request,
+                stage,
+                completed,
+                logical_ref,
+                external_effect_id=str(effect["external_effect_id"]),
+            )
+            self._ensure_cost_evidence(
+                request,
+                stage,
+                completed,
+                external_effect_id=str(effect["external_effect_id"]),
+            )
             if frozen_work_order is not None and execution_binding is not None:
                 self.agent_binding_recorder.accept_candidate(
                     frozen_work_order,
@@ -591,6 +602,7 @@ class ExternalEffectChapterModelPort:
                     stage,
                     dispatched=dispatched,
                     logical_ref=logical_ref,
+                    external_effect_id=str(effect["external_effect_id"]),
                 )
                 self._record_failed_cost_evidence(
                     request,
@@ -598,6 +610,7 @@ class ExternalEffectChapterModelPort:
                     dispatched=dispatched,
                     usage=usage,
                     cost=cost,
+                    external_effect_id=str(effect["external_effect_id"]),
                 )
             _raise_model_effect_failure(dispatched)
         result = ModelProviderResult.from_evidence(
@@ -617,8 +630,19 @@ class ExternalEffectChapterModelPort:
                 "fixture": not result.real_model_call,
             },
         )
-        self._record_model_call(request, stage, result, logical_ref)
-        self._ensure_cost_evidence(request, stage, result)
+        self._record_model_call(
+            request,
+            stage,
+            result,
+            logical_ref,
+            external_effect_id=str(effect["external_effect_id"]),
+        )
+        self._ensure_cost_evidence(
+            request,
+            stage,
+            result,
+            external_effect_id=str(effect["external_effect_id"]),
+        )
         if frozen_work_order is not None and execution_binding is not None:
             self.agent_binding_recorder.accept_candidate(
                 frozen_work_order,
@@ -750,6 +774,7 @@ class ExternalEffectChapterModelPort:
         stage: str,
         result: ModelProviderResult,
         logical_ref: str,
+        external_effect_id: str = "",
     ) -> None:
         try:
             self.query.require(project_id=request.project_id, logical_ref=logical_ref)
@@ -773,8 +798,11 @@ class ExternalEffectChapterModelPort:
                 content={
                     "type": "model_call_log",
                     "operation_id": request.operation_id,
+                    "attempt_id": request.attempt_id,
                     "project_id": request.project_id,
                     "stage": stage,
+                    "trace_id": request.trace_id,
+                    "external_effect_id": external_effect_id,
                     "provider_evidence": result.to_evidence(),
                 },
                 qualification_policy="model-call-evidence-v1",
@@ -790,6 +818,7 @@ class ExternalEffectChapterModelPort:
         *,
         dispatched: dict[str, Any],
         logical_ref: str,
+        external_effect_id: str = "",
     ) -> None:
         try:
             self.query.require(project_id=request.project_id, logical_ref=logical_ref)
@@ -822,8 +851,11 @@ class ExternalEffectChapterModelPort:
                 content={
                     "type": "model_call_log",
                     "operation_id": request.operation_id,
+                    "attempt_id": request.attempt_id,
                     "project_id": request.project_id,
                     "stage": stage,
+                    "trace_id": request.trace_id,
+                    "external_effect_id": external_effect_id,
                     "call_status": str(dispatched.get("outcome") or "").upper(),
                     "accepted_candidate": False,
                     "failure_code": str(
@@ -847,6 +879,7 @@ class ExternalEffectChapterModelPort:
         dispatched: dict[str, Any],
         usage: Mapping[str, Any],
         cost: Mapping[str, Any],
+        external_effect_id: str = "",
     ) -> None:
         logical_ref = _cost_log_ref(request.operation_id, request.attempt_id, stage)
         try:
@@ -873,8 +906,11 @@ class ExternalEffectChapterModelPort:
                 content={
                     "type": "cost_ledger",
                     "operation_id": request.operation_id,
+                    "attempt_id": request.attempt_id,
                     "project_id": request.project_id,
                     "stage": stage,
+                    "trace_id": request.trace_id,
+                    "external_effect_id": external_effect_id,
                     "availability": "AVAILABLE",
                     "amount": str(cost.get("amount") or "0"),
                     "currency": str(cost.get("currency") or "USD"),
@@ -907,6 +943,7 @@ class ExternalEffectChapterModelPort:
         request: ChapterHandlerRequest,
         stage: str,
         result: ModelProviderResult,
+        external_effect_id: str = "",
     ) -> None:
         logical_ref = _cost_log_ref(request.operation_id, request.attempt_id, stage)
         try:
@@ -931,8 +968,11 @@ class ExternalEffectChapterModelPort:
                 content={
                     "type": "cost_ledger",
                     "operation_id": request.operation_id,
+                    "attempt_id": request.attempt_id,
                     "project_id": request.project_id,
                     "stage": stage,
+                    "trace_id": request.trace_id,
+                    "external_effect_id": external_effect_id,
                     "availability": "AVAILABLE",
                     "amount": result.cost_amount,
                     "currency": result.currency,

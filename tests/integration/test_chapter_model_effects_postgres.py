@@ -10,6 +10,7 @@ from novel_forge.api.authority_dependencies import (
     build_chapter_authority_application,
     build_production_execution_composition,
 )
+from novel_forge.modules.authority_security import Principal, PrincipalType
 from novel_forge.infrastructure.settings import IndustrialSettings
 from novel_forge.modules.chapter_authority.contracts import ChapterHandlerRequest
 from novel_forge.modules.chapter_authority.model_effects import (
@@ -32,12 +33,14 @@ from novel_forge.modules.production_execution import (
     AuthorityExecutionRecoveryStore,
     ExecutionOutcome,
 )
+from novel_forge.modules.mkaos_authority import MkaosAuthorityQuery
 from tests.integration.authority_postgres_support import (
     DATABASE_URL,
     ensure_migrated,
     identifier,
     insert_definition,
     insert_operation,
+    seed_authority_project_book,
     transaction,
 )
 
@@ -180,7 +183,15 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
             inputs=(),
         )
 
-    def _release_evidence(self, project_id: str) -> tuple[dict[str, object], ...]:
+    def _release_evidence(
+        self, project_id: str, *, with_mkaos: bool = False
+    ) -> tuple[dict[str, object], ...]:
+        if with_mkaos:
+            seed_authority_project_book(
+                project_id=project_id,
+                workspace_id=f"workspace:{project_id}",
+                book_id=f"book:{project_id}",
+            )
         candidates: list[dict[str, object]] = [
             {
                 "asset_version_id": f"{project_id}:chapter-plan-v1",
@@ -309,6 +320,36 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
             }
             for group, dimensions in QUALITY_GROUPS.items()
         )
+        if with_mkaos:
+            candidates.append(
+                {
+                    "asset_version_id": f"{project_id}:knowledge-pack-v1",
+                    "asset_type": "knowledge_pack",
+                    "project_id": project_id,
+                    "safe_summary": "Use visible irreversible costs for public promises.",
+                    "structured_facts": [
+                        {
+                            "key": "craft_constraint",
+                            "value": "Make the consequence observable in-scene.",
+                        }
+                    ],
+                    "estimated_tokens": 24,
+                    "narrative_function": "craft_constraint",
+                    "content": {
+                        "contract_version": "mkaos-knowledge-pack-v1",
+                        "book_id": f"book:{project_id}",
+                        "safe_summary": (
+                            "Use visible irreversible costs for public promises."
+                        ),
+                        "structured_facts": [
+                            {
+                                "key": "craft_constraint",
+                                "value": "Make the consequence observable in-scene.",
+                            }
+                        ],
+                    },
+                }
+            )
         with transaction() as connection, connection.cursor() as cursor:
             for candidate in candidates:
                 content = dict(
@@ -356,6 +397,86 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                         f"{candidate['asset_version_id']}:qualification",
                         candidate["asset_version_id"],
                     ],
+                )
+            if with_mkaos:
+                definition_name = identifier("mkaos-pack-definition")
+                operation_id = identifier("mkaos-pack-operation")
+                insert_definition(cursor, definition_name)
+                insert_operation(
+                    cursor,
+                    operation_id=operation_id,
+                    definition_name=definition_name,
+                    project_id=project_id,
+                    status="SUCCEEDED",
+                )
+                card_asset_id = f"{project_id}:knowledge-card"
+                card_version_id = f"{card_asset_id}:v1"
+                card_content = {
+                    "safe_summary": "Public promises require an observable cost.",
+                    "structured_facts": [
+                        {
+                            "key": "craft_constraint",
+                            "value": "Make the cost irreversible and visible.",
+                        }
+                    ],
+                }
+                card_hash = (
+                    "sha256:"
+                    + hashlib.sha256(
+                        json.dumps(
+                            card_content, sort_keys=True, separators=(",", ":")
+                        ).encode()
+                    ).hexdigest()
+                )
+                cursor.execute(
+                    "INSERT INTO authority_asset(asset_id, project_id, asset_type) VALUES (%s,%s,'knowledge_card')",
+                    [card_asset_id, project_id],
+                )
+                cursor.execute(
+                    """
+                    INSERT INTO authority_asset_version(
+                      asset_version_id, asset_id, version_number, lifecycle,
+                      eligibility, governance, content, content_hash, schema_version
+                    ) VALUES (%s,%s,1,'ACTIVE','ELIGIBLE','CLEAR',%s,%s,'integration-fixture.v1')
+                    """,
+                    [
+                        card_version_id,
+                        card_asset_id,
+                        json.dumps(card_content),
+                        card_hash,
+                    ],
+                )
+                pack_version_id = f"{project_id}:knowledge-pack-v1"
+                pack_asset_id = f"{pack_version_id}:asset"
+                cursor.execute(
+                    """
+                    INSERT INTO authority_mkaos_knowledge_pack(
+                      knowledge_pack_id, project_id, workspace_id,
+                      asset_version_id, target_asset_version_id,
+                      created_by_operation_id, selector_policy_version,
+                      selector_policy_hash, selection_hash, item_count, status
+                    ) VALUES (%s,%s,%s,%s,%s,%s,'integration-selector-v1',%s,%s,1,'ACTIVE')
+                    """,
+                    [
+                        pack_asset_id,
+                        project_id,
+                        f"workspace:{project_id}",
+                        pack_version_id,
+                        f"{project_id}:chapter-plan-v1",
+                        operation_id,
+                        "sha256:" + hashlib.sha256(b"selector").hexdigest(),
+                        "sha256:" + hashlib.sha256(b"selection").hexdigest(),
+                    ],
+                )
+                cursor.execute(
+                    """
+                    INSERT INTO authority_mkaos_knowledge_pack_item(
+                      knowledge_pack_id, knowledge_pack_asset_version_id,
+                      knowledge_card_asset_version_id, ordinal, usage_role,
+                      frozen_weight, created_by_operation_id
+                    ) VALUES (%s,%s,%s,0,'CONSTRAINT',1.0,%s)
+                    """,
+                    [pack_asset_id, pack_version_id, card_version_id, operation_id],
                 )
         return tuple(candidates)
 
@@ -468,6 +589,65 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
             )
             self.assertEqual(cursor.fetchone()[0], "UNKNOWN")
 
+    def test_context_selection_is_not_consumption_before_provider_execution(
+        self,
+    ) -> None:
+        project_id = identifier("mkaos-selection-only-project")
+        worker_id = "mkaos-selection-worker"
+        with tempfile.TemporaryDirectory() as directory:
+            settings = IndustrialSettings(
+                root=Path(directory), database_url=DATABASE_URL
+            )
+            env = {
+                "NOVEL_FORGE_ENVIRONMENT": "test",
+                "NOVEL_FORGE_DRAFT_PROVIDER": "mock",
+                "NOVEL_FORGE_REVIEW_PROVIDER": "mock",
+                "NOVEL_FORGE_REVISION_PROVIDER": "mock",
+                "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": str(
+                    Path(directory) / "objects"
+                ),
+                "NOVEL_FORGE_COMMIT_SHA": "e" * 40,
+            }
+            execution = build_production_execution_composition(settings, env=env)
+            application = build_chapter_authority_application(
+                settings, execution=execution, env=env
+            )
+            principal = Principal(
+                principal_id=worker_id,
+                principal_type=PrincipalType.WORKER,
+                permissions=frozenset({"chapter.authority.execute"}),
+                project_scope=frozenset({project_id}),
+                authentication_source="integration-test",
+            )
+            admission = application.admit(
+                SingleChapterRequest(
+                    project_id=project_id,
+                    workspace_id=f"workspace:{project_id}",
+                    actor_id=worker_id,
+                    chapter=1,
+                    title="Selection Is Not Consumption",
+                    premise="A selected rule has not yet reached a provider.",
+                    trace_id=identifier("selection-trace"),
+                    correlation_id=identifier("selection-correlation"),
+                    application_build_id="mkaos-selection-test",
+                    commit_sha="e" * 40,
+                    context_candidates=self._release_evidence(
+                        project_id, with_mkaos=True
+                    ),
+                ),
+                principal=principal,
+            )
+            scheduler = application.scheduler(principal=principal)
+            for _ in range(2):
+                scheduler.tick(
+                    project_id=project_id,
+                    root_operation_id=admission.root_operation_id,
+                )
+
+        query = MkaosAuthorityQuery(DATABASE_URL)
+        self.assertEqual(len(query.list_runtime_selections(project_id=project_id)), 1)
+        self.assertEqual(query.list_runtime_usage(project_id=project_id), [])
+
     def test_full_chapter_slice_uses_unified_execution_gateway_and_commit_manifests(
         self,
     ) -> None:
@@ -492,21 +672,20 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
             application = build_chapter_authority_application(
                 settings, execution=execution, env=env
             )
-            result = application.run(
-                SingleChapterRequest(
-                    project_id=project_id,
-                    workspace_id=f"workspace:{project_id}",
-                    actor_id="chapter-gateway-worker",
-                    chapter=1,
-                    title="A Visible Gateway Cost",
-                    premise="A gateway-bound public promise becomes irreversible.",
-                    trace_id=identifier("trace"),
-                    correlation_id=identifier("correlation"),
-                    application_build_id="chapter-gateway-test",
-                    commit_sha="e" * 40,
-                    context_candidates=self._release_evidence(project_id),
-                )
+            chapter_request = SingleChapterRequest(
+                project_id=project_id,
+                workspace_id=f"workspace:{project_id}",
+                actor_id="chapter-gateway-worker",
+                chapter=1,
+                title="A Visible Gateway Cost",
+                premise="A gateway-bound public promise becomes irreversible.",
+                trace_id=identifier("trace"),
+                correlation_id=identifier("correlation"),
+                application_build_id="chapter-gateway-test",
+                commit_sha="e" * 40,
+                context_candidates=self._release_evidence(project_id, with_mkaos=True),
             )
+            result = application.run(chapter_request)
 
             self.assertEqual(result.root_status, "SUCCEEDED")
             self.assertEqual(result.saga_status, "SUCCEEDED")
@@ -621,6 +800,37 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
             )
             cursor.execute(
                 """
+                SELECT version.content
+                FROM authority_operation_output_asset AS binding
+                JOIN authority_asset AS asset ON asset.asset_id=binding.asset_id
+                JOIN authority_asset_version AS version
+                  ON version.asset_version_id=binding.asset_version_id
+                JOIN authority_operation AS operation
+                  ON operation.operation_id=binding.operation_id
+                WHERE operation.root_operation_id=%s
+                  AND asset.asset_type='narrative_runtime_measurement'
+                """,
+                [result.root_operation_id],
+            )
+            measurement = dict(cursor.fetchone()[0])
+            self.assertEqual(
+                measurement["observations"]["provider_usage"]["status"],
+                "MEASURED",
+            )
+            self.assertEqual(measurement["metrics"]["provider_call_count"], 10)
+            self.assertEqual(measurement["metrics"]["provider_token_count"], 0)
+            self.assertEqual(measurement["metrics"]["provider_cost"], 0.0)
+            self.assertEqual(measurement["metrics"]["provider_trace_missing_count"], 0)
+            self.assertEqual(
+                measurement["observations"]["planning"]["status"], "MEASURED"
+            )
+            self.assertEqual(
+                measurement["observations"]["mkaos_consumption"]["status"],
+                "MEASURED",
+            )
+            self.assertEqual(measurement["metrics"]["mkaos_consumption_count"], 1)
+            cursor.execute(
+                """
                 SELECT COUNT(*),
                        BOOL_AND(
                          (version.content -> 'record' -> 'result' ->> 'normalized_output_ref') <> ''
@@ -653,6 +863,39 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                 [project_id],
             )
             recovery_execution_id = str(cursor.fetchone()[0])
+
+        selections = MkaosAuthorityQuery(DATABASE_URL).list_runtime_selections(
+            project_id=project_id
+        )
+        usage = MkaosAuthorityQuery(DATABASE_URL).list_runtime_usage(
+            project_id=project_id
+        )
+        self.assertEqual(len(selections), 1)
+        self.assertEqual(len(usage), 10)
+        self.assertTrue(all(item["attempt_id"] for item in usage))
+        self.assertTrue(all(item["external_effect_id"] for item in usage))
+        self.assertTrue(
+            all(item["capability_id"].startswith("model.") for item in usage)
+        )
+        self.assertTrue(all("capability_pack_snapshot_id" in item for item in usage))
+        self.assertTrue(all(item["result_asset_version_id"] for item in usage))
+        self.assertEqual(
+            len(usage),
+            len(
+                {
+                    (
+                        item["external_effect_id"],
+                        item["knowledge_card_asset_version_id"],
+                        item["result_asset_version_id"],
+                    )
+                    for item in usage
+                }
+            ),
+        )
+        self.assertEqual(
+            MkaosAuthorityQuery(DATABASE_URL).list_runtime_usage(project_id=project_id),
+            usage,
+        )
 
         recovered = AuthorityExecutionRecoveryStore(
             DATABASE_URL,

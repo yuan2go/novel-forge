@@ -1,4 +1,5 @@
 """Storage-free chapter handlers for PostgreSQL authority execution."""
+
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
@@ -13,6 +14,7 @@ from novel_forge.modules.chapter_authority.contracts import (
     ChapterHandlerOutput,
     ChapterHandlerRegistry,
     ChapterHandlerRequest,
+    ChapterInputAsset,
     ChapterNode,
     resolve_stage_context_token_budget,
 )
@@ -101,7 +103,9 @@ class DeterministicFixtureChapterProvider:
                     f"{draft['text']} The protagonist surrenders the only safe route home "
                     "before the witnesses leave, making the cost irreversible."
                 ),
-                "resolved_issue_codes": [str(item["code"]) for item in review["issues"]],
+                "resolved_issue_codes": [
+                    str(item["code"]) for item in review["issues"]
+                ],
                 "canon_assertions": [
                     {
                         "subject": "protagonist",
@@ -126,7 +130,9 @@ class DeterministicFixtureChapterProvider:
         else:
             from novel_forge.modules.command_kernel.errors import KernelError
 
-            raise KernelError("MODEL_EFFECT_STAGE_UNSUPPORTED", f"unsupported fixture stage: {stage}")
+            raise KernelError(
+                "MODEL_EFFECT_STAGE_UNSUPPORTED", f"unsupported fixture stage: {stage}"
+            )
         return ModelProviderResult(
             output=output,
             provider_id=self.provider_id,
@@ -149,7 +155,8 @@ class _PlanHandler:
         if (
             request.command.get("chapter_plan_asset_version_id")
             != source_plan.asset_version_id
-            or request.command.get("chapter_plan_content_hash") != source_plan.content_hash
+            or request.command.get("chapter_plan_content_hash")
+            != source_plan.content_hash
         ):
             raise KernelError(
                 "CHAPTER_PLAN_FROZEN_IDENTITY_MISMATCH",
@@ -202,14 +209,16 @@ class _PlanHandler:
                 "workspace_id": request.workspace_id,
                 "quality_profile_version_id": next(
                     (
-                        item["asset_version_id"] for item in selected
+                        item["asset_version_id"]
+                        for item in selected
                         if item["asset_type"] in {"quality_profile", "quality_rubric"}
                     ),
                     "",
                 ),
                 "platform_profile_version_id": next(
                     (
-                        item["asset_version_id"] for item in selected
+                        item["asset_version_id"]
+                        for item in selected
                         if item["asset_type"] == "platform_profile"
                     ),
                     "",
@@ -223,13 +232,20 @@ class _PlanHandler:
                 "risk_summary": [],
             }
         manifest["created_by_operation_id"] = request.operation_id
-        manifest["manifest_digest"] = "sha256:" + hashlib.sha256(
-            json.dumps(
-                {key: value for key, value in manifest.items() if key != "manifest_digest"},
-                sort_keys=True,
-                separators=(",", ":"),
-            ).encode()
-        ).hexdigest()
+        manifest["manifest_digest"] = (
+            "sha256:"
+            + hashlib.sha256(
+                json.dumps(
+                    {
+                        key: value
+                        for key, value in manifest.items()
+                        if key != "manifest_digest"
+                    },
+                    sort_keys=True,
+                    separators=(",", ":"),
+                ).encode()
+            ).hexdigest()
+        )
         auxiliary = (
             ChapterAuxiliaryOutput(
                 asset_type="production_input_manifest",
@@ -266,12 +282,21 @@ class _PlanHandler:
 @dataclass(frozen=True, slots=True)
 class _ContextHandler:
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
-        plan = next((item for item in request.inputs if item.asset_type == "chapter_plan"), None)
+        plan = next(
+            (item for item in request.inputs if item.asset_type == "chapter_plan"), None
+        )
         if plan is None:
             from novel_forge.modules.command_kernel.errors import KernelError
-            raise KernelError("CHAPTER_HANDLER_INPUT_INVALID", "generated chapter plan is missing")
+
+            raise KernelError(
+                "CHAPTER_HANDLER_INPUT_INVALID", "generated chapter plan is missing"
+            )
         manifest_asset = next(
-            (item for item in request.inputs if item.asset_type == "production_input_manifest"),
+            (
+                item
+                for item in request.inputs
+                if item.asset_type == "production_input_manifest"
+            ),
             None,
         )
         manifest = (
@@ -293,7 +318,9 @@ class _ContextHandler:
             for item in request.inputs
             if item is not plan and item.asset_type != "production_input_manifest"
         ]
-        if set(candidate_metadata) != {item.asset_version_id for item in frozen_candidates}:
+        if set(candidate_metadata) != {
+            item.asset_version_id for item in frozen_candidates
+        }:
             from novel_forge.modules.command_kernel.errors import KernelError
 
             raise KernelError(
@@ -316,8 +343,16 @@ class _ContextHandler:
                     "asset_type": str(metadata.get("asset_type") or item.asset_type),
                     "physical_asset_type": item.asset_type,
                     "content_digest": item.content_hash,
-                    "safe_summary": str(item.content.get("safe_summary") or metadata.get("safe_summary") or ""),
-                    "structured_facts": list(item.content.get("structured_facts") or metadata.get("structured_facts") or []),
+                    "safe_summary": str(
+                        item.content.get("safe_summary")
+                        or metadata.get("safe_summary")
+                        or ""
+                    ),
+                    "structured_facts": list(
+                        item.content.get("structured_facts")
+                        or metadata.get("structured_facts")
+                        or []
+                    ),
                 }
             )
         available_candidate_types = {
@@ -328,9 +363,7 @@ class _ContextHandler:
             "platform_profile",
         }
         if int(plan.content["chapter"]) > 1:
-            required_candidate_types.update(
-                CONTINUING_CHAPTER_REQUIRED_ASSET_TYPES
-            )
+            required_candidate_types.update(CONTINUING_CHAPTER_REQUIRED_ASSET_TYPES)
         bundle = build_context_bundle(
             plan=plan.content,
             plan_asset_version_id=plan.asset_version_id,
@@ -341,13 +374,9 @@ class _ContextHandler:
             version_refs=dict(request.command.get("context_version_refs", {})),
             required_asset_types=(
                 "chapter_plan",
-                *sorted(
-                    required_candidate_types & available_candidate_types
-                ),
+                *sorted(required_candidate_types & available_candidate_types),
             ),
-            token_budget=int(
-                request.command.get("context_token_budget", 6000)
-            ),
+            token_budget=int(request.command.get("context_token_budget", 6000)),
             book_id=str(
                 request.command.get("book_id")
                 or plan.content.get("book_id")
@@ -380,8 +409,7 @@ class _ContextHandler:
         context_rejected_ids = {
             str(item.get("asset_version_id") or "")
             for item in bundle.get("rejected_asset_versions", [])
-            if str(item.get("asset_version_id") or "")
-            != plan.asset_version_id
+            if str(item.get("asset_version_id") or "") != plan.asset_version_id
         }
         consistent = (
             bool(manifest)
@@ -392,6 +420,7 @@ class _ContextHandler:
         )
         if not consistent:
             from novel_forge.modules.command_kernel.errors import KernelError
+
             raise KernelError(
                 "CONTEXT_MANIFEST_CONSISTENCY_FAILED",
                 "Manifest, frozen inputs, and Context selection partition differ: "
@@ -499,7 +528,11 @@ class _RevisionHandler:
         revised = self.provider.invoke(
             request,
             stage="revision",
-            payload={"draft": draft.content, "review": review.content, "context": context.content},
+            payload={
+                "draft": draft.content,
+                "review": review.content,
+                "context": context.content,
+            },
         )
         return _model_output(
             ChapterNode.REVISION,
@@ -554,6 +587,8 @@ class _ReReviewHandler:
             request=request,
             generated=reviewed,
         )
+
+
 @dataclass(frozen=True, slots=True)
 class _CanonHandler:
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
@@ -567,7 +602,10 @@ class _CanonHandler:
         ]
         resolved_extraction = resolve_canon_extraction(
             extraction=extraction.content,
-            proposal={**proposal.content, "asset_version_id": proposal.asset_version_id},
+            proposal={
+                **proposal.content,
+                "asset_version_id": proposal.asset_version_id,
+            },
             decisions=decisions,
         )
         context = request.require_input("context_bundle")
@@ -731,19 +769,23 @@ class _QualityGroupHandler:
             )
             provider_entries = []
             for item in generated.output.get("dimensions", []):
-                provider_entries.append({
-                    **dict(item),
-                    "target_asset_version_id": revision.asset_version_id,
-                    "calibration_status": "PROVIDER_UNCALIBRATED",
-                    "provider_verified": True,
-                })
+                provider_entries.append(
+                    {
+                        **dict(item),
+                        "target_asset_version_id": revision.asset_version_id,
+                        "calibration_status": "PROVIDER_UNCALIBRATED",
+                        "provider_verified": True,
+                    }
+                )
             context_content["context_segments"] = [
                 *list(context.content.get("context_segments", [])),
                 {
                     "asset_version_id": f"external-effect:{request.operation_id}",
                     "narrative_function": "quality_evidence",
                     "source_expression_included": False,
-                    "structured_facts": [{"key": "dimension_evidence", "value": provider_entries}],
+                    "structured_facts": [
+                        {"key": "dimension_evidence", "value": provider_entries}
+                    ],
                 },
             ]
             fixture = not generated.real_model_call
@@ -879,19 +921,28 @@ class _QualityGroupHandler:
 @dataclass(frozen=True, slots=True)
 class _QualityHandler:
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
+        plan = request.require_input("chapter_plan")
         revision = request.require_input("draft_version")
         review = request.require_input("re_review_report")
         canon = request.require_input("canon_patch")
         context = request.require_input("context_bundle")
         groups = [
-            item for item in request.inputs
+            item
+            for item in request.inputs
             if item.asset_type == "chapter_quality_group_report"
         ]
         if {str(item.content.get("group")) for item in groups} != {
-            "structural", "commercial", "source_originality", "longform", "platform"
+            "structural",
+            "commercial",
+            "source_originality",
+            "longform",
+            "platform",
         }:
             from novel_forge.modules.command_kernel.errors import KernelError
-            raise KernelError("QUALITY_FANIN_INCOMPLETE", "all five quality groups are required")
+
+            raise KernelError(
+                "QUALITY_FANIN_INCOMPLETE", "all five quality groups are required"
+            )
         group_reports = [
             dimension
             for group in groups
@@ -970,9 +1021,50 @@ class _QualityHandler:
             )
         )
         manifest = dict(context.content.get("context_manifest") or {})
-        authority_boundary = dict(
-            manifest.get("authority_state_boundary") or {}
+        authority_boundary = dict(manifest.get("authority_state_boundary") or {})
+        provider_usage = _provider_usage_records(request.inputs)
+        knowledge_usage = list(manifest.get("knowledge_usage") or [])
+        mkaos_usage = (
+            [
+                {
+                    **dict(item),
+                    "context_manifest_asset_version_id": context.asset_version_id,
+                    "provider_external_effect_ids": sorted(
+                        {
+                            str(record.get("external_effect_id") or "")
+                            for record in provider_usage
+                            if str(record.get("external_effect_id") or "")
+                        }
+                    ),
+                    "result_asset_version_id": revision.asset_version_id,
+                }
+                for item in knowledge_usage
+            ]
+            if provider_usage is not None
+            else None
         )
+        planning_violations = [
+            {
+                "dimension": str(item.get("observation") or ""),
+                "evidence_asset_version_ids": list(
+                    item.get("evidence_asset_version_ids") or []
+                ),
+                "issue": dict(item.get("issue") or {}),
+            }
+            for item in content.get("required_actions", [])
+            if str(item.get("observation") or "")
+            in {
+                "canon_consistency",
+                "character_motivation_drift",
+                "relationship_continuity",
+                "timeline_consistency",
+                "foreshadow_status",
+                "promise_payoff_debt",
+                "world_rule_conflict",
+                "power_state_conflict",
+                "arc_progress",
+            }
+        ]
         measurement = measure_narrative_runtime(
             story_state={
                 "accepted_through_chapter": authority_boundary.get(
@@ -985,7 +1077,15 @@ class _QualityHandler:
                 ),
             },
             context_bundle=context.content,
+            planning_candidate={
+                "constraint_envelope": dict(
+                    plan.content.get("constraint_envelope") or {}
+                ),
+                "constraint_violations": planning_violations,
+            },
             quality_decision=content,
+            mkaos_usage_records=mkaos_usage,
+            provider_usage_records=provider_usage,
         )
         measurement_output = ChapterAuxiliaryOutput(
             asset_type="narrative_runtime_measurement",
@@ -1005,15 +1105,19 @@ class _QualityHandler:
                         review.asset_version_id,
                         canon.asset_version_id,
                         context.asset_version_id,
+                        plan.asset_version_id,
+                        *(
+                            item.asset_version_id
+                            for item in request.inputs
+                            if item.asset_type in {"model_call_log", "cost_ledger"}
+                        ),
                         *(item.asset_version_id for item in groups),
                     }
                 )
             ),
             evidence={
                 "proof_status": measurement["proof_status"],
-                "context_digest": context.content.get(
-                    "actual_context_digest", ""
-                ),
+                "context_digest": context.content.get("actual_context_digest", ""),
                 "production_verified": False,
             },
         )
@@ -1029,6 +1133,77 @@ class _QualityHandler:
                 measurement_output,
             ),
         )
+
+
+def _provider_usage_records(
+    inputs: tuple[ChapterInputAsset, ...],
+) -> list[dict[str, Any]] | None:
+    costs = {
+        (
+            str(item.content.get("operation_id") or ""),
+            str(item.content.get("attempt_id") or ""),
+            str(item.content.get("stage") or ""),
+        ): item.content
+        for item in inputs
+        if item.asset_type == "cost_ledger"
+    }
+    model_calls = [item for item in inputs if item.asset_type == "model_call_log"]
+    if not model_calls:
+        return None
+    records: list[dict[str, Any]] = []
+    for item in model_calls:
+        content = dict(item.content)
+        evidence = dict(content.get("provider_evidence") or {})
+        usage = dict(evidence.get("usage") or {})
+        cost = dict(evidence.get("cost") or {})
+        key = (
+            str(content.get("operation_id") or ""),
+            str(content.get("attempt_id") or ""),
+            str(content.get("stage") or ""),
+        )
+        ledger = dict(costs.get(key) or {})
+        records.append(
+            {
+                "model_call_log_asset_version_id": item.asset_version_id,
+                "operation_id": key[0],
+                "attempt_id": key[1],
+                "stage": key[2],
+                "external_effect_id": str(
+                    content.get("external_effect_id")
+                    or ledger.get("external_effect_id")
+                    or ""
+                ),
+                "provider_id": str(
+                    evidence.get("provider_id") or ledger.get("provider_id") or ""
+                ),
+                "model_id": str(
+                    evidence.get("model_id") or ledger.get("model_id") or ""
+                ),
+                "trace_id": str(
+                    content.get("trace_id") or ledger.get("trace_id") or ""
+                ),
+                "total_tokens": int(
+                    ledger.get("total_tokens") or usage.get("total_tokens") or 0
+                ),
+                "cost": str(ledger.get("amount") or cost.get("amount") or "0"),
+                "currency": str(ledger.get("currency") or cost.get("currency") or ""),
+                "usage_receipt_ref": str(
+                    (evidence.get("production_execution") or {})
+                    .get("execution_result", {})
+                    .get("usage_receipt_ref")
+                    or ""
+                ),
+                "cost_receipt_ref": str(
+                    (evidence.get("production_execution") or {})
+                    .get("execution_result", {})
+                    .get("cost_receipt_ref")
+                    or ""
+                ),
+                "accepted_candidate": bool(content.get("accepted_candidate", True)),
+                "retry_count": 0 if content.get("accepted_candidate", True) else 1,
+            }
+        )
+    return records
 
 
 @dataclass(frozen=True, slots=True)
@@ -1117,11 +1292,22 @@ def build_chapter_handler_registry(
     registry.register(ChapterNode.CANON_EXTRACTION, _CanonExtractionHandler(provider))
     registry.register(ChapterNode.CANON_PROPOSAL, _CanonProposalHandler())
     registry.register(ChapterNode.CANON, _CanonHandler())
-    registry.register(ChapterNode.QUALITY_STRUCTURAL, _QualityGroupHandler("structural", provider))
-    registry.register(ChapterNode.QUALITY_COMMERCIAL, _QualityGroupHandler("commercial", provider))
-    registry.register(ChapterNode.QUALITY_SOURCE_ORIGINALITY, _QualityGroupHandler("source_originality", provider))
-    registry.register(ChapterNode.QUALITY_LONGFORM, _QualityGroupHandler("longform", provider))
-    registry.register(ChapterNode.QUALITY_PLATFORM, _QualityGroupHandler("platform", provider))
+    registry.register(
+        ChapterNode.QUALITY_STRUCTURAL, _QualityGroupHandler("structural", provider)
+    )
+    registry.register(
+        ChapterNode.QUALITY_COMMERCIAL, _QualityGroupHandler("commercial", provider)
+    )
+    registry.register(
+        ChapterNode.QUALITY_SOURCE_ORIGINALITY,
+        _QualityGroupHandler("source_originality", provider),
+    )
+    registry.register(
+        ChapterNode.QUALITY_LONGFORM, _QualityGroupHandler("longform", provider)
+    )
+    registry.register(
+        ChapterNode.QUALITY_PLATFORM, _QualityGroupHandler("platform", provider)
+    )
     registry.register(ChapterNode.QUALITY, _QualityHandler())
     registry.register(ChapterNode.PUBLISH_GATE, _PublishGateHandler())
     registry.register(ChapterNode.EXPORT, _ExportHandler())

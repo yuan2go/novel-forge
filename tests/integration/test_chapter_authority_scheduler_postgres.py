@@ -27,6 +27,7 @@ from novel_forge.modules.command_kernel.external_effect_adapters import (
     FakeDeterministicProvider,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.corrective_action import CorrectiveActionQuery
 from novel_forge.modules.production_preparation import (
     PostgresProductionAssetResolver,
     ProductionPreparationRequest,
@@ -126,6 +127,89 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
         self.assertFalse(publish_gate["external_publish_permitted"])
         self.assertFalse(publish_gate["production_verified"])
         self.assertTrue(publish_gate["fixture_protocol_only"])
+        corrective = CorrectiveActionQuery(DATABASE_URL).list(
+            project_id=project_id, issue_type="COST_NOT_CONCRETE"
+        )
+        self.assertEqual(len(corrective), 1)
+        self.assertEqual(corrective[0]["status"], "RESOLVED")
+        self.assertEqual(corrective[0]["gate_result"], "PASSED")
+        self.assertTrue(corrective[0]["execution_operation_id"])
+        self.assertTrue(corrective[0]["result_asset_version_ids"])
+        self.assertTrue(corrective[0]["evaluation_operation_id"])
+        self.assertEqual(corrective[0]["lifecycle"][-1], "RESOLVED")
+
+    def test_failed_rereview_escalates_the_corrective_issue(self) -> None:
+        class FailedRereviewFixture(DeterministicFixtureChapterProvider):
+            def invoke(self, request, *, stage, payload):  # type: ignore[no-untyped-def]
+                if stage != "rereview":
+                    return super().invoke(request, stage=stage, payload=payload)
+                return ModelProviderResult(
+                    output={
+                        "decision": "NEEDS_REVISION",
+                        "score": 70,
+                        "issues": [
+                            {
+                                "code": "COST_NOT_CONCRETE",
+                                "severity": "blocking",
+                                "message": "The cost remains abstract.",
+                            }
+                        ],
+                        "resolved_issue_codes": [],
+                    },
+                    provider_id=self.provider_id,
+                    model_id="deterministic-fixture-model-v1",
+                    prompt_version="chapter-rereview-fixture-v1",
+                    skill_version="deterministic-fixture-v1",
+                    input_tokens=0,
+                    output_tokens=0,
+                    cost_amount="0",
+                    currency="USD",
+                    real_model_call=False,
+                )
+
+        project_id = identifier("corrective-escalation-project")
+        registry = build_chapter_handler_registry(FailedRereviewFixture())
+        admission = admit_single_chapter_saga(
+            DATABASE_URL,
+            request=SingleChapterRequest(
+                project_id=project_id,
+                workspace_id=f"workspace:{project_id}",
+                actor_id="trusted-operator",
+                chapter=1,
+                title="An Unresolved Cost",
+                premise="The first repair does not make the consequence concrete.",
+                trace_id=identifier("corrective-trace"),
+                correlation_id=identifier("corrective-correlation"),
+                application_build_id="corrective-escalation-test",
+                commit_sha="f" * 40,
+                idempotency_key=f"{project_id}:chapter:1",
+                preparation_report={"decision": "READY", "fixture": True},
+                context_candidates=tuple(self._release_evidence(project_id)),
+            ),
+            registry=registry,
+            permissions=frozenset({"chapter.authority.execute"}),
+        )
+        scheduler = ChapterAuthorityScheduler(
+            DATABASE_URL,
+            registry=registry,
+            object_store_adapter=FakeDeterministicProvider("success"),
+            worker_id="corrective-fixture-worker",
+            permissions=frozenset({"chapter.authority.execute"}),
+        )
+        for _ in range(6):
+            tick = scheduler.tick(
+                project_id=project_id,
+                root_operation_id=admission.root_operation_id,
+            )
+        self.assertEqual(tick.node, ChapterNode.REREVIEW.value)
+
+        corrective = CorrectiveActionQuery(DATABASE_URL).list(
+            project_id=project_id, issue_type="COST_NOT_CONCRETE"
+        )
+        self.assertEqual(len(corrective), 1)
+        self.assertEqual(corrective[0]["status"], "ESCALATED")
+        self.assertEqual(corrective[0]["gate_result"], "FAILED")
+        self.assertEqual(corrective[0]["resolution"], "ESCALATED")
 
     def test_uncalibrated_fixture_is_a_successful_publish_block(self) -> None:
         project_id = identifier("uncalibrated-publish-block-project")
@@ -431,9 +515,7 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
         character = canon_patch["state_changes"]["character_state"][0]
         self.assertEqual(character["status"], "dead")
         self.assertEqual(
-            character["approval_resolution"][
-                "approval_decision_asset_version_id"
-            ],
+            character["approval_resolution"]["approval_decision_asset_version_id"],
             decision["asset_version_id"],
         )
 
@@ -858,6 +940,7 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
                     """,
                     [version_id, asset_id, json.dumps(content), content_hash],
                 )
+
     @staticmethod
     def _release_evidence(
         project_id: str, *, with_waiver: bool = True

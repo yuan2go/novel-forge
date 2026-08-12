@@ -119,6 +119,17 @@ class SourceIntelligencePolicy:
     def policy_hash(self) -> str:
         return canonical_hash(asdict(self))
 
+    @property
+    def profiling_policy_hash(self) -> str:
+        """Identity of fields that can change classification or resolution."""
+        return canonical_hash(
+            {
+                key: value
+                for key, value in asdict(self).items()
+                if key != "routing_policy_version"
+            }
+        )
+
 
 @dataclass(frozen=True, slots=True)
 class SourceAnalysisOverride:
