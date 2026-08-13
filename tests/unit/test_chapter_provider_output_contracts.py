@@ -110,6 +110,9 @@ def test_chapter_planning_prompt_requires_executable_narrative_plan() -> None:
     assert "expected exit state" in contract
     assert "Do not put Reader Knowledge or Disclosure" in contract
     assert "mixed audience" in contract
+    assert "HINT -> HINTED" in contract
+    assert "WITHHOLD does not advance" in contract
+    assert "Use resource_state only for a quantifiable balance" in contract
 
 
 def test_quality_prompt_and_schema_version_require_dimension_evidence() -> None:

@@ -401,6 +401,32 @@ class DeterministicContinuityValidatorTests(unittest.TestCase):
             {item["conflict_code"] for item in mismatched["violations"]},
         )
 
+    def test_withheld_reader_boundary_requires_no_reader_state_mutation(self) -> None:
+        report = validate_deterministic_continuity(
+            chapter=3,
+            historical_state={},
+            extraction={"reader_knowledge_changes": [], "disclosure_events": []},
+            planned_execution={
+                "knowledge_boundaries": [
+                    {
+                        "layer": "READER_KNOWLEDGE",
+                        "fact_id": "fact:traitor",
+                        "status": "WITHHELD",
+                    }
+                ],
+                "disclosures": [
+                    {
+                        "disclosure_id": "disclosure:traitor",
+                        "fact_id": "fact:traitor",
+                        "audience": "READER",
+                        "mode": "WITHHOLD",
+                    }
+                ],
+            },
+        )
+
+        self.assertEqual(report["gate"], "PASSED")
+
 
 if __name__ == "__main__":
     unittest.main()

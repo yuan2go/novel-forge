@@ -145,6 +145,24 @@ def test_planning_provider_schema_is_codex_strict(
         assert "character_arc" in state_kinds
         assert "reader_knowledge" not in state_kinds
         assert "official_record_status" not in state_kinds
+        knowledge = schema["properties"]["knowledge_boundaries"]
+        assert knowledge["maxItems"] == 12
+        assert knowledge["items"]["properties"]["status"]["enum"] == [
+            "TRUE",
+            "FALSE",
+            "UNKNOWN",
+            "HINTED",
+            "SUSPECTED",
+            "KNOWN",
+            "MISDIRECTED",
+            "WITHHELD",
+            "FORGOTTEN",
+            "BELIEVES",
+            "DOUBTS",
+            "DISBELIEVES",
+            "UNCERTAIN",
+        ]
+        assert schema["properties"]["required_state_transitions"]["maxItems"] == 8
 
 
 def test_volume_and_chapter_provider_contracts_bind_timeline_segments() -> None:
@@ -292,6 +310,33 @@ def test_chapter_contract_derives_reader_knowledge_from_disclosure_mode() -> Non
             execution_scope=PlanExecutionScope.PLANNED,
             content=content,
         )
+
+
+def test_chapter_contract_accepts_withheld_reader_boundary_without_state_advance() -> None:
+    content = planning_fixture_response(
+        "chapter_plan.generate",
+        {
+            "planning_command": {
+                "logical_key": "chapter:2",
+                "parent_version_id": "chapter-group:v1",
+                "input_versions": {"arc_plans": "arc:v1"},
+            }
+        },
+    )
+    content["knowledge_boundaries"][0]["status"] = "WITHHELD"
+    content["disclosures"][0]["mode"] = "WITHHOLD"
+
+    contract = validate_planning_contract(
+        project_id="project-1",
+        book_id="book-1",
+        contract_type=PlanContractType.CHAPTER,
+        asset_version_id="chapter:v2",
+        parent_version_id="chapter-group:v1",
+        execution_scope=PlanExecutionScope.PLANNED,
+        content=content,
+    )
+
+    assert contract.content["knowledge_boundaries"][0]["status"] == "WITHHELD"
 
 
 def test_chapter_contract_preserves_explicit_empty_arc_contribution_policy() -> None:

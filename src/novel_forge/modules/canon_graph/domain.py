@@ -1119,6 +1119,8 @@ def _validate_planned_execution(
             continue
         fact_id = str(boundary.get("fact_id") or "")
         expected_status = str(boundary.get("status") or "").upper()
+        if expected_status in {"WITHHELD", "UNKNOWN"}:
+            continue
         if actual_reader_knowledge.get(fact_id) != expected_status:
             conflicts.append(
                 _conflict(

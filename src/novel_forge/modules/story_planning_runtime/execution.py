@@ -535,6 +535,7 @@ def _canonical_narrative_provider_properties(
         "arc_schedule": {
             "type": "array",
             "minItems": 1,
+            "maxItems": 8,
             "items": _strict_object(
                 {
                     "arc_plan_version_id": string,
@@ -559,6 +560,7 @@ def _canonical_narrative_provider_properties(
         "character_participation": {
             "type": "array",
             "minItems": 1,
+            "maxItems": 12,
             "items": _strict_object(
                 {
                     "character_id": string,
@@ -578,6 +580,7 @@ def _canonical_narrative_provider_properties(
         },
         "knowledge_boundaries": {
             "type": "array",
+            "maxItems": 12,
             "items": _strict_object(
                 {
                     "layer": {
@@ -591,12 +594,36 @@ def _canonical_narrative_provider_properties(
                     },
                     "subject_id": string,
                     "fact_id": string,
-                    "status": string,
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "TRUE",
+                            "FALSE",
+                            "UNKNOWN",
+                            "HINTED",
+                            "SUSPECTED",
+                            "KNOWN",
+                            "MISDIRECTED",
+                            "WITHHELD",
+                            "FORGOTTEN",
+                            "BELIEVES",
+                            "DOUBTS",
+                            "DISBELIEVES",
+                            "UNCERTAIN",
+                        ],
+                        "description": (
+                            "Typed epistemic status. Reader Knowledge must use: "
+                            "HINTED for HINT, SUSPECTED for PARTIAL, MISDIRECTED "
+                            "for MISDIRECT, KNOWN for CONFIRM, or WITHHELD for "
+                            "WITHHOLD."
+                        ),
+                    },
                 }
             ),
         },
         "disclosures": {
             "type": "array",
+            "maxItems": 12,
             "items": _strict_object(
                 {
                     "disclosure_id": string,
@@ -619,6 +646,7 @@ def _canonical_narrative_provider_properties(
         },
         "required_state_transitions": {
             "type": "array",
+            "maxItems": 8,
             "items": _strict_object(
                 {
                     "state_kind": {

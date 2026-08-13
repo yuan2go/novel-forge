@@ -2051,9 +2051,17 @@ def _stage_semantic_contract(
                 "the state kind's stable Authority identifier. Do not put Reader "
                 "Knowledge or Disclosure in required_state_transitions: Reader "
                 "Knowledge is fulfilled only by a planned Disclosure whose mode "
-                "deterministically yields the knowledge boundary status. Use audience "
+                "deterministically yields the knowledge boundary status: HINT -> "
+                "HINTED, PARTIAL -> SUSPECTED, MISDIRECT -> MISDIRECTED, CONFIRM -> "
+                "KNOWN, WITHHOLD -> WITHHELD. WITHHOLD does not advance accepted "
+                "Reader Knowledge. Use audience "
                 "READER or ALL for reader-facing disclosure; represent a mixed audience "
-                "as separate Disclosure events with stable identities."
+                "as separate Disclosure events with stable identities. Commit only "
+                "state transitions that this chapter can visibly execute and Canon "
+                "extraction can type. Use resource_state only for a quantifiable "
+                "balance with a stable entity/resource identity; object custody, "
+                "location, ownership, or protection belongs in Canon facts or another "
+                "typed state."
             )
         return _bind_language_contract(contract, required_language)
     if stage == "revision":
