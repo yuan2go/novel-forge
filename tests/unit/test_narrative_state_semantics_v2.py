@@ -6,6 +6,7 @@ import pytest
 
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.narrative_state import (
+    compact_canon_facts,
     compact_current_state_facts,
     events_from_canon_patch,
     events_from_chapter_outcome,
@@ -344,6 +345,61 @@ def test_compact_context_has_one_current_fact_per_materialized_entity() -> None:
         item["state_kind"] in {"canon_fact", "timeline_event", "reward_event", "theme_movement"}
         for item in facts
     )
+
+
+def test_compact_context_keeps_narrative_truth_and_digested_lineage() -> None:
+    outcome_version, outcome = _outcome(
+        1,
+        {
+            "character_state": [
+                {
+                    "character_id": "character:lin",
+                    "canonical_name": "Lin Qiao",
+                    "location": "archive",
+                    "approval_resolution": {"decision": "APPROVE"},
+                    "change_reasons": ["provider extraction metadata"],
+                    "model_id": "model-a",
+                    "provider_id": "provider-a",
+                }
+            ]
+        },
+    )
+    snapshot = reduce_story_state_v2(
+        previous=None,
+        events=events_from_chapter_outcome(outcome_version, outcome),
+        chapter_outcome_asset_version_id=outcome_version,
+        chapter_outcome_id=outcome["chapter_outcome_id"],
+    )
+
+    story_fact = compact_current_state_facts(snapshot)[0]
+    original = snapshot["current_state"]["character_state"][0]
+    assert story_fact["state"]["location"] == "archive"
+    assert story_fact["source_event_id"] == original["source_event_id"]
+    assert story_fact["evidence_digest"].startswith("sha256:")
+    assert "approval_resolution" not in story_fact["state"]
+    assert "change_reasons" not in story_fact["state"]
+    assert "model_id" not in story_fact["state"]
+    assert original["state"]["model_id"] == "model-a"
+
+    canon = {
+        "contract_version": "canon-snapshot-v2",
+        "current_facts": [
+            {
+                **original,
+                "state": {
+                    **original["state"],
+                    "statement": "The revision trace remains visible.",
+                },
+            }
+        ],
+    }
+    canon_fact = compact_canon_facts(canon)[0]
+    assert canon_fact["state"]["statement"] == (
+        "The revision trace remains visible."
+    )
+    assert canon_fact["source_event_id"] == original["source_event_id"]
+    assert canon_fact["evidence_digest"].startswith("sha256:")
+    assert "provider_id" not in canon_fact["state"]
 
 
 def test_death_is_visible_only_after_acceptance_and_cannot_silently_reopen() -> None:

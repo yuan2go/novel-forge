@@ -13,6 +13,7 @@ from novel_forge.modules.production_preparation.contracts import (
 )
 from novel_forge.modules.production_preparation.service import ProductionPreparationService
 from novel_forge.modules.production_preparation.policies import STAGE_PROFILES
+from novel_forge.modules.chapter_authority.domain_handlers import build_context_bundle
 
 
 class _Resolver:
@@ -421,6 +422,112 @@ class ProductionPreparationTests(unittest.TestCase):
                 "character_id=character-2",
             },
         )
+
+    def test_continuing_state_and_canon_fit_frozen_draft_budget(self) -> None:
+        required = (
+            "chapter_plan",
+            "world_bible",
+            "style_policy",
+            "quality_rubric",
+            "platform_profile",
+            "story_state_snapshot",
+            "canon_snapshot",
+        )
+        collections = {kind: [_asset(kind)] for kind in required}
+        plan = collections["chapter_plan"][0]
+        collections["chapter_plan"][0] = replace(
+            plan,
+            content={**plan.content, "chapter": 2},
+        )
+        operational = {
+            "approval_resolution": {"decision": "APPROVE"},
+            "change_reasons": ["x" * 500],
+            "model_id": "model-a",
+            "provider_id": "provider-a",
+            "prompt_version": "prompt-a",
+            "source_revision_asset_version_id": "revision:" + "x" * 200,
+        }
+        story = collections["story_state_snapshot"][0]
+        story_entries = [
+            {
+                "entity_key": f"character_id=character-{index}",
+                "entity_version": 1,
+                "state": {
+                    "character_id": f"character-{index}",
+                    "summary": "n" * 300,
+                    **operational,
+                },
+                "source_event_id": f"narrative-event:{index}:" + "a" * 64,
+                "source_chapter": 1,
+                "effective_from_chapter": 1,
+                "confidence": 1.0,
+                "coverage": "EXPLICIT",
+                "evidence": {"excerpt": "e" * 500},
+                "canon_status": "APPROVED_CANON_PATCH",
+            }
+            for index in range(32)
+        ]
+        collections["story_state_snapshot"][0] = replace(
+            story,
+            content={
+                **story.content,
+                "current_state": {"character_state": story_entries},
+            },
+        )
+        canon = collections["canon_snapshot"][0]
+        collections["canon_snapshot"][0] = replace(
+            canon,
+            content={
+                **canon.content,
+                "current_facts": [
+                    {
+                        **story_entries[index],
+                        "entity_key": f"fact_id=fact-{index}",
+                        "state": {
+                            "fact_id": f"fact-{index}",
+                            "statement": "c" * 300,
+                            **operational,
+                        },
+                    }
+                    for index in range(15)
+                ],
+            },
+        )
+
+        result = ProductionPreparationService(_MultiResolver(collections)).prepare(
+            ProductionPreparationRequest(
+                project_id="project-1",
+                workspace_id="workspace-1",
+                book_id="book-1",
+                chapter=2,
+                title_override="Chapter Two",
+                premise_override="State and Canon must both continue.",
+                context_token_budget=16_000,
+                idempotency_key="chapter-2-budget-regression",
+            )
+        )
+        self.assertEqual(result.report.decision, "READY")
+        assert result.command is not None
+        bundle = build_context_bundle(
+            plan=collections["chapter_plan"][0].content,
+            plan_asset_version_id=collections["chapter_plan"][0].asset_version_id,
+            plan_content_hash=collections["chapter_plan"][0].content_hash,
+            project_id="project-1",
+            book_id="book-1",
+            created_by_operation_id="operation:context-budget-regression",
+            governed_candidates=[dict(item) for item in result.command.context_candidates],
+            version_refs=dict(result.command.context_version_refs),
+            token_budget=16_000,
+            required_asset_types=("story_state_snapshot", "canon_snapshot"),
+        )
+        selected_types = {
+            item["asset_type"]
+            for item in bundle["context_manifest"]["selected_inputs"]
+        }
+        self.assertTrue(
+            {"story_state_snapshot", "canon_snapshot"}.issubset(selected_types)
+        )
+        self.assertLessEqual(bundle["estimated_tokens"], 16_000)
 
     def test_current_collection_snapshot_is_not_blocked_by_historical_versions(self) -> None:
         state_types = ("story_state_snapshot", "canon_snapshot")

@@ -7,7 +7,10 @@ from datetime import datetime, timezone
 from typing import Protocol
 
 from novel_forge.modules.command_kernel.errors import KernelError
-from novel_forge.modules.narrative_state import compact_current_state_facts
+from novel_forge.modules.narrative_state import (
+    compact_canon_facts,
+    compact_current_state_facts,
+)
 from novel_forge.modules.chapter_authority.chapter_plan_views import (
     normalize_authoritative_chapter_plan,
     qualification_profile_for_plan,
@@ -327,7 +330,7 @@ class ProductionPreparationService:
                     "CANON_SNAPSHOT_CONTRACT_UNSUPPORTED",
                     "execution context accepts only Canon snapshot v2",
                 )
-            structured_facts = list(item.content.get("current_facts") or [])
+            structured_facts = compact_canon_facts(item.content)
             safe_summary = (
                 "Compact authoritative Canon truth through Chapter "
                 f"{item.content.get('accepted_through_chapter')}."

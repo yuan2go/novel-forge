@@ -63,7 +63,10 @@ from novel_forge.modules.command_kernel.service import (
     admit_command,
     execute_transaction_command,
 )
-from novel_forge.modules.narrative_state import compact_current_state_facts
+from novel_forge.modules.narrative_state import (
+    compact_canon_facts,
+    compact_current_state_facts,
+)
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 
@@ -2181,7 +2184,7 @@ class PostgresBookAuthority:
             structured_facts = (
                 compact_current_state_facts(content)
                 if row[0] == "story_state_snapshot"
-                else list(content.get("current_facts") or [])
+                else compact_canon_facts(content)
             )
             rendered = json.dumps(
                 {
