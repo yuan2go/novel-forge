@@ -13,6 +13,56 @@ STATE_ASSET_TYPES = (
     "story_state_snapshot",
 )
 
+# Provider quality judges need narrative meaning and stable identity, not the
+# extraction transport/evidence envelope retained by PostgreSQL Authority.  The
+# full candidate remains addressable through its Canon Patch AssetVersion and
+# the digests emitted by this view.
+_AUTHORITY_EVIDENCE_KEYS = frozenset(
+    {
+        "approval_requirement",
+        "approval_resolution",
+        "confidence",
+        "evidence_end",
+        "evidence_start",
+        "extraction_evidence",
+        "extractor_type",
+        "model_id",
+        "prompt_version",
+        "provider_id",
+        "source_id",
+        "source_revision_asset_version_id",
+    }
+)
+
+_CONFLICT_CANDIDATE_SUMMARY_KEYS = (
+    "entity_key",
+    "subject",
+    "predicate",
+    "object",
+    "character_id",
+    "source_id",
+    "source_character_id",
+    "target_id",
+    "target_character_id",
+    "arc_id",
+    "thread_id",
+    "rule_id",
+    "fact_id",
+    "proposition_id",
+    "disclosure_id",
+    "audience",
+    "disclosure_mode",
+    "impact_type",
+    "from_state",
+    "from_status",
+    "from_stage",
+    "from_tier",
+    "state",
+    "status",
+    "stage",
+    "tier",
+)
+
 
 class TokenEstimator(Protocol):
     def estimate(self, value: str) -> int: ...
@@ -236,7 +286,9 @@ def build_quality_context_view(
             **common,
             "revision_text": str(revision.get("text") or ""),
             "canon_patch_asset_version_id": canon_asset_version_id,
-            "canon_conflicts": canon.get("conflicts", []),
+            "canon_conflicts": _project_canon_conflicts(
+                list(canon.get("conflicts") or [])
+            ),
             "previous_state_snapshots": previous_states,
             "current_state_candidates": current_states,
             "governed_world_rules": _segments_of_type(segments, "world_bible"),
@@ -278,7 +330,7 @@ def build_quality_context_view(
         token_budget=token_budget,
     )
     body["coverage_report"] = coverage
-    body["contract_version"] = "stage-quality-context-v3"
+    body["contract_version"] = "stage-quality-context-v4"
     body["context_digest"] = _digest(body)
     final_tokens = _estimate_payload(body, estimator)
     if final_tokens > token_budget:
@@ -437,7 +489,9 @@ def _group_current_state_candidates(
                     ),
                     "qualification": "CANDIDATE",
                     "previous_asset_version_ids": [],
-                    "structured_facts": identity_changes,
+                    "structured_facts": [
+                        _project_narrative_value(item) for item in identity_changes
+                    ],
                     "declared_empty": False,
                     "compressed": False,
                     "omitted_fact_count": 0,
@@ -484,25 +538,9 @@ def _state_identity(item: dict[str, Any], state_type: str) -> str:
 def _longform_chapter_plan_view(chapter_plan: dict[str, Any]) -> dict[str, Any]:
     """Freeze only long-form obligations, never the full provider/source envelope."""
 
-    fields = (
+    canonical_fields = (
         "chapter",
         "title",
-        "premise",
-        "objective",
-        "chapter_objective",
-        "primary_function",
-        "secondary_functions",
-        "required_state_delta",
-        "required_arc_contributions",
-        "actual_arc_contributions",
-        "reader_promise_actions",
-        "promise_action",
-        "foreshadow_action",
-        "reward_setup",
-        "reward_payoff",
-        "reward_action",
-        "chapter_hook",
-        "ending_hook",
         "prohibited_outcomes",
         "next_chapter_bridge",
         "narrative_architecture_version",
@@ -516,10 +554,115 @@ def _longform_chapter_plan_view(chapter_plan: dict[str, Any]) -> dict[str, Any]:
         "disclosures",
         "required_state_transitions",
         "reader_experience",
-        "scene_plan",
         "expected_exit_state",
     )
-    return {field: chapter_plan[field] for field in fields if field in chapter_plan}
+    view = {
+        field: chapter_plan[field]
+        for field in canonical_fields
+        if field in chapter_plan
+    }
+    view["scene_plan"] = [
+        {
+            field: scene[field]
+            for field in (
+                "scene_id",
+                "scene_group_id",
+                "goal",
+                "participants",
+            )
+            if field in scene
+        }
+        for scene in chapter_plan.get("scene_plan") or []
+        if isinstance(scene, dict)
+    ]
+    # Older accepted plans remain readable without duplicating their legacy
+    # aliases into plans that already carry the canonical execution contract.
+    if not chapter_plan.get("narrative_architecture_version"):
+        for field in (
+            "premise",
+            "objective",
+            "chapter_objective",
+            "primary_function",
+            "secondary_functions",
+            "required_state_delta",
+            "required_arc_contributions",
+            "actual_arc_contributions",
+            "reader_promise_actions",
+            "promise_action",
+            "foreshadow_action",
+            "reward_setup",
+            "reward_payoff",
+            "reward_action",
+            "chapter_hook",
+            "ending_hook",
+        ):
+            if field in chapter_plan:
+                view[field] = chapter_plan[field]
+    return view
+
+
+def _project_canon_conflicts(conflicts: list[Any]) -> list[dict[str, Any]]:
+    """Deduplicate conflict evidence while preserving corrective semantics."""
+
+    projected: list[dict[str, Any]] = []
+    for raw in conflicts:
+        if not isinstance(raw, dict):
+            continue
+        candidate = raw.get("candidate_version")
+        item = {
+            key: raw[key]
+            for key in (
+                "severity",
+                "conflict_code",
+                "approval_requirement",
+                "recommended_resolution",
+            )
+            if raw.get(key) not in (None, "", [], {})
+        }
+        existing = _project_narrative_value(raw.get("existing_version"))
+        if existing not in (None, "", [], {}):
+            item["expected_version"] = existing
+        if candidate not in (None, "", [], {}):
+            item["candidate_digest"] = _digest({"candidate": candidate})
+            if isinstance(candidate, list):
+                item["candidate_count"] = len(candidate)
+            else:
+                item["candidate_summary"] = _conflict_candidate_summary(candidate)
+        item["conflict_digest"] = _digest({"conflict": raw})
+        projected.append(item)
+    return projected
+
+
+def _conflict_candidate_summary(value: Any) -> Any:
+    if not isinstance(value, dict):
+        return _project_narrative_value(value)
+    summary = {
+        key: _project_narrative_value(value[key])
+        for key in _CONFLICT_CANDIDATE_SUMMARY_KEYS
+        if value.get(key) not in (None, "", [], {})
+    }
+    return summary or {"semantic_digest": _digest({"candidate": value})}
+
+
+def _project_narrative_value(value: Any) -> Any:
+    """Remove null transport metadata from a task-specific narrative view."""
+
+    if isinstance(value, dict):
+        return {
+            str(key): projected
+            for key, raw in value.items()
+            if key not in _AUTHORITY_EVIDENCE_KEYS
+            and (projected := _project_narrative_value(raw))
+            not in (None, "", [], {})
+        }
+    if isinstance(value, list):
+        return [
+            projected
+            for raw in value
+            if (projected := _project_narrative_value(raw))
+            not in (None, "", [], {})
+        ]
+    return value
 
 
 def _fit_quality_context(
@@ -635,7 +778,7 @@ def _estimate_final_quality_context(
     envelope = {
         **body,
         "coverage_report": coverage,
-        "contract_version": "stage-quality-context-v3",
+        "contract_version": "stage-quality-context-v4",
         # The digest value is fixed-width. Its value does not affect the token
         # estimate, so a placeholder avoids a circular digest dependency.
         "context_digest": "sha256:" + ("0" * 64),

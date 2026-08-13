@@ -216,6 +216,49 @@ class DeterministicContinuityValidatorTests(unittest.TestCase):
         )
         self.assertEqual(matched["gate"], "PASSED")
 
+    def test_planned_execution_accepts_exact_generic_entity_identity(self) -> None:
+        planned = {
+            "required_state_transitions": [
+                {
+                    "state_kind": "character_arc",
+                    "entity_key": "alice:arc:accountability",
+                    "from_state": "DENIAL",
+                    "to_state": "COMMITTED",
+                },
+                {
+                    "state_kind": "foreshadow_state",
+                    "entity_key": "obligation:explain-ledger",
+                    "from_state": "UNGROUNDED",
+                    "to_state": "GROUNDED",
+                },
+            ]
+        }
+
+        report = validate_deterministic_continuity(
+            chapter=1,
+            historical_state={},
+            extraction={
+                "character_arc_changes": [
+                    {
+                        "entity_id": "alice:arc:accountability",
+                        "character_id": "alice",
+                        "arc_id": "alice:arc:accountability",
+                        "state": "COMMITTED",
+                    }
+                ],
+                "foreshadow_changes": [
+                    {
+                        "entity_id": "obligation:explain-ledger",
+                        "thread_id": "thread:ledger",
+                        "state": "GROUNDED",
+                    }
+                ],
+            },
+            planned_execution=planned,
+        )
+
+        self.assertEqual(report["gate"], "PASSED")
+
     def test_explicit_transition_and_balance_invariants_block(self) -> None:
         report = validate_deterministic_continuity(
             chapter=40,

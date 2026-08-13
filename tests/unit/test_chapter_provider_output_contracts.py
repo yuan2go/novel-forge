@@ -198,7 +198,8 @@ def test_canon_prompt_requires_character_knowledge_precondition_closure() -> Non
     assert "never add unsupported knowledge merely to satisfy validation" in contract
     assert "Story Truth, Character Knowledge, Character Belief" in contract
     assert "a belief may be false" in contract
-    assert "Emit reader-facing disclosure_events only" in contract
+    assert "including character-facing events" in contract
+    assert "reader-facing Disclosure alone" in contract
     assert "deterministically projected into Reader Knowledge" in contract
 
 

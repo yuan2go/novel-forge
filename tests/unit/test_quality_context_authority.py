@@ -107,6 +107,7 @@ def _view(
         chapter_plan={
             "chapter": 2,
             "title": "The Cost of Memory",
+            "narrative_architecture_version": "canonical-narrative-architecture-v1",
             "safe_summary": "A clerk preserves evidence at a personal cost.",
             "chapter_function": "promise payoff",
             "chapter_objective": "make the cost visible",
@@ -243,6 +244,70 @@ class QualityContextAuthorityTests(unittest.TestCase):
 
         self.assertNotIn("source_extensions", view["chapter_plan"])
         self.assertEqual(view["chapter_plan"]["chapter"], 2)
+
+    def test_longform_projects_authority_evidence_before_budgeting(self) -> None:
+        extraction_candidate = {
+            "disclosure_id": "disclosure:reader:fact-1",
+            "fact_id": "fact-1",
+            "audience": "READER",
+            "disclosure_mode": "CONFIRM",
+            "presentation_channel": "The contradiction is shown directly.",
+            "model_id": "provider-model",
+            "provider_id": "provider",
+            "prompt_version": "prompt-v1",
+            "source_revision_asset_version_id": "revision-v2",
+            "approval_resolution": {"decision": "APPROVE"},
+            "extraction_evidence": {"raw": "x" * 12_000},
+        }
+        conflict = {
+            "severity": "blocking",
+            "conflict_code": "PLANNED_DISCLOSURE_MISSING",
+            "existing_version": {
+                "disclosure_id": "disclosure:character:fact-1",
+                "fact_id": "fact-1",
+                "audience": "ALICE",
+                "mode": "CONFIRM",
+            },
+            "candidate_version": [extraction_candidate] * 6,
+            "evidence": {
+                "existing": {"duplicated": "x" * 12_000},
+                "candidate": [extraction_candidate] * 6,
+            },
+            "approval_requirement": "REQUIRED",
+            "recommended_resolution": "extract the planned presentation event",
+        }
+        view = _view(
+            "longform",
+            token_budget=6_000,
+            canon={
+                "conflicts": [conflict] * 3,
+                "state_changes": {"disclosure_event": [extraction_candidate]},
+            },
+        )
+
+        serialized = str(view)
+        self.assertNotIn("extraction_evidence", serialized)
+        self.assertNotIn("provider-model", serialized)
+        self.assertNotIn("evidence", view["canon_conflicts"][0])
+        self.assertEqual(view["canon_conflicts"][0]["candidate_count"], 6)
+        self.assertEqual(
+            view["current_state_candidates"]["disclosure_event"]
+            ["disclosure_event:project"][0]["structured_facts"][0]
+            ["presentation_channel"],
+            "The contradiction is shown directly.",
+        )
+        self.assertLessEqual(
+            view["coverage_report"]["token_estimate"],
+            view["coverage_report"]["token_budget"],
+        )
+
+    def test_canonical_longform_plan_does_not_repeat_legacy_aliases(self) -> None:
+        view = _view("longform")
+
+        self.assertIn("chapter_intent", view["chapter_plan"])
+        self.assertIn("scene_plan", view["chapter_plan"])
+        self.assertNotIn("chapter_objective", view["chapter_plan"])
+        self.assertNotIn("reader_promise_actions", view["chapter_plan"])
 
     def test_longform_preserves_multiple_entities_and_emits_coverage(self) -> None:
         bundle = _bundle()

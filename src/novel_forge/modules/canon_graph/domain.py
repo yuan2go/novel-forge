@@ -1164,7 +1164,12 @@ _HISTORICAL_STATE_KIND = {
 
 
 def _candidate_entity_keys(state_kind: str, item: dict[str, Any]) -> set[str]:
-    direct = str(item.get("entity_key") or "")
+    # Provider extraction schemas expose ``entity_id`` as the stable generic
+    # identity for state kinds whose domain-specific aliases vary.  Treat it as
+    # an exact Authority identity before constructing composite aliases; this
+    # keeps Chapter execution reconciliation aligned with the planner's frozen
+    # entity_key without weakening compare-and-set value checks.
+    direct = str(item.get("entity_key") or item.get("entity_id") or "")
     components = [
         _identity_component(item, aliases)
         for aliases in _PLANNED_IDENTITY_FIELDS.get(state_kind, ())
