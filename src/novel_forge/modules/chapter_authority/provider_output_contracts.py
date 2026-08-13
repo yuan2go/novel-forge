@@ -58,6 +58,17 @@ def _object_schema(
     }
 
 
+def _nullable(schema: dict[str, Any]) -> dict[str, Any]:
+    """Represent a business-optional field in a Codex strict output schema."""
+
+    value = dict(schema)
+    expected = value.get("type")
+    if not isinstance(expected, str):
+        raise ValueError("nullable schema requires one concrete JSON type")
+    value["type"] = [expected, "null"]
+    return value
+
+
 def _draft_schema() -> dict[str, Any]:
     return _object_schema(
         {"text": {"type": "string", "minLength": 1}},
@@ -130,7 +141,7 @@ def _canon_schema() -> dict[str, Any]:
             "predicate": {"type": "string", "minLength": 1},
             "object": {"type": "string", "minLength": 1},
             "effective_from_chapter": {"type": "number", "minimum": 1},
-            "supersedes_event_id": {"type": "string"},
+            "supersedes_event_id": _nullable({"type": "string"}),
             **evidence_fields,
         },
         required=(
@@ -138,6 +149,7 @@ def _canon_schema() -> dict[str, Any]:
             "predicate",
             "object",
             "effective_from_chapter",
+            "supersedes_event_id",
             *evidence_fields,
         ),
     )
@@ -147,52 +159,57 @@ def _canon_schema() -> dict[str, Any]:
         "bundled fact or use precise relation-specific predicates; never emit different "
         "objects in the same semantic slot."
     )
+    change_properties = {
+        "summary": {"type": "string", "minLength": 1},
+        "effective_from_chapter": {"type": "number", "minimum": 1},
+        "supersedes_event_id": {"type": "string"},
+        "character_id": {"type": "string"},
+        "source_id": {"type": "string"},
+        "target_id": {"type": "string"},
+        "thread_id": {"type": "string"},
+        "promise_id": {"type": "string"},
+        "rule_id": {"type": "string"},
+        "entity_id": {"type": "string"},
+        "resource_id": {"type": "string"},
+        "status": {"type": "string"},
+        "from_status": {"type": "string"},
+        "from_state": {"type": "string"},
+        "life_status": {"type": "string"},
+        "action_state": {"type": "string"},
+        "canonical_name": {"type": "string"},
+        "transition_kind": {"type": "string"},
+        "state": {"type": "string"},
+        "tier": {"type": "number"},
+        "from_tier": {"type": "number"},
+        "balance_before": {"type": "number"},
+        "delta": {"type": "number"},
+        "balance_after": {"type": "number"},
+        "exception": {"type": "boolean"},
+        "resurrection_authorized": {"type": "boolean"},
+        "allow_negative_balance": {"type": "boolean"},
+        "payoff_evidence": {"type": "string"},
+        "cost": {"type": "string"},
+        "requires_fact_ids": {
+            "type": "array",
+            "items": {"type": "string"},
+        },
+        "acquired_fact_ids": {
+            "type": "array",
+            "items": {"type": "string"},
+        },
+        "change_reasons": {
+            "type": "array",
+            "items": {"type": "string"},
+        },
+        **evidence_fields,
+    }
+    change_required = {"summary", *evidence_fields}
     change = _object_schema(
         {
-            "summary": {"type": "string", "minLength": 1},
-            "effective_from_chapter": {"type": "number", "minimum": 1},
-            "supersedes_event_id": {"type": "string"},
-            "character_id": {"type": "string"},
-            "source_id": {"type": "string"},
-            "target_id": {"type": "string"},
-            "thread_id": {"type": "string"},
-            "promise_id": {"type": "string"},
-            "rule_id": {"type": "string"},
-            "entity_id": {"type": "string"},
-            "resource_id": {"type": "string"},
-            "status": {"type": "string"},
-            "from_status": {"type": "string"},
-            "from_state": {"type": "string"},
-            "life_status": {"type": "string"},
-            "action_state": {"type": "string"},
-            "canonical_name": {"type": "string"},
-            "transition_kind": {"type": "string"},
-            "state": {"type": "string"},
-            "tier": {"type": "number"},
-            "from_tier": {"type": "number"},
-            "balance_before": {"type": "number"},
-            "delta": {"type": "number"},
-            "balance_after": {"type": "number"},
-            "exception": {"type": "boolean"},
-            "resurrection_authorized": {"type": "boolean"},
-            "allow_negative_balance": {"type": "boolean"},
-            "payoff_evidence": {"type": "string"},
-            "cost": {"type": "string"},
-            "requires_fact_ids": {
-                "type": "array",
-                "items": {"type": "string"},
-            },
-            "acquired_fact_ids": {
-                "type": "array",
-                "items": {"type": "string"},
-            },
-            "change_reasons": {
-                "type": "array",
-                "items": {"type": "string"},
-            },
-            **evidence_fields,
+            key: (schema if key in change_required else _nullable(schema))
+            for key, schema in change_properties.items()
         },
-        required=("summary", *evidence_fields),
+        required=tuple(change_properties),
     )
     return _object_schema(
         {
@@ -314,7 +331,7 @@ def chapter_provider_output_schema(stage: str) -> dict[str, Any]:
 
 def chapter_provider_output_schema_ref(stage: str) -> str:
     chapter_provider_output_schema(stage)
-    version = "v2" if stage in _QUALITY_STAGES else "v1"
+    version = "v2" if stage in {*_QUALITY_STAGES, "canon_extraction"} else "v1"
     return f"schema:chapter-provider-output:{stage}:{version}"
 
 
@@ -357,6 +374,7 @@ def validate_chapter_provider_output_semantics(
 
     normalized = json.loads(json.dumps(value, ensure_ascii=False))
     if stage == "canon_extraction":
+        normalized = _without_null_object_properties(normalized)
         fingerprints: dict[tuple[object, ...], str] = {}
         for field in _CANON_FIELDS:
             for item in normalized.get(field, []):
@@ -444,6 +462,15 @@ def _validate(
     if enforce_dialect and schema.get("$schema") != _SCHEMA_DIALECT:
         raise ValueError("unsupported JSON Schema dialect")
     expected = schema.get("type")
+    if isinstance(expected, list):
+        allowed = tuple(str(item) for item in expected)
+        if value is None and "null" in allowed:
+            return
+        concrete = tuple(item for item in allowed if item != "null")
+        if len(concrete) != 1:
+            raise ValueError(f"{path} uses unsupported schema type union {expected}")
+        _validate({**schema, "type": concrete[0]}, value, path=path)
+        return
     if expected == "object":
         if not isinstance(value, dict):
             raise ValueError(f"{path} must be an object")
@@ -499,9 +526,24 @@ def _validate(
             raise ValueError(f"{path} must be at least {minimum}")
         if maximum is not None and value > maximum:
             raise ValueError(f"{path} must be at most {maximum}")
+    elif expected == "boolean":
+        if not isinstance(value, bool):
+            raise ValueError(f"{path} must be a boolean")
     elif expected is not None:
         raise ValueError(f"{path} uses unsupported schema type {expected}")
     if "enum" in schema and value not in schema["enum"]:
         raise ValueError(f"{path} is not one of the allowed values")
     if "const" in schema and value != schema["const"]:
         raise ValueError(f"{path} must equal the frozen constant")
+
+
+def _without_null_object_properties(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {
+            key: _without_null_object_properties(item)
+            for key, item in value.items()
+            if item is not None
+        }
+    if isinstance(value, list):
+        return [_without_null_object_properties(item) for item in value]
+    return value

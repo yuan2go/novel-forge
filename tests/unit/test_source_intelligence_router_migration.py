@@ -9,6 +9,7 @@ from novel_forge.storage.migrations.versions import (
     v20260812_0084_development_gap_final_convergence as convergence_migration,
     v20260812_0085_corrective_action_terminal_lineage as terminal_migration,
     v20260812_0086_corrective_generation_terminal_lineage as generation_migration,
+    v20260813_0087_book_initial_narrative_state_binding as initial_state_migration,
 )
 
 
@@ -26,7 +27,8 @@ def test_source_intelligence_router_is_forward_only_migration_head() -> None:
     )
     assert terminal_migration.DOWN_REVISION == convergence_migration.MIGRATION_ID
     assert generation_migration.DOWN_REVISION == terminal_migration.MIGRATION_ID
-    assert LATEST_MIGRATION_ID == generation_migration.MIGRATION_ID
+    assert initial_state_migration.DOWN_REVISION == generation_migration.MIGRATION_ID
+    assert LATEST_MIGRATION_ID == initial_state_migration.MIGRATION_ID
 
 
 def test_profile_and_analysis_plan_use_existing_asset_authority() -> None:

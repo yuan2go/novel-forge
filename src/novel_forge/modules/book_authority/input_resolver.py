@@ -47,6 +47,13 @@ _ACTIVE_ROLE_TYPES: Mapping[str, tuple[str, ...]] = MappingProxyType(
     }
 )
 
+_OPTIONAL_INITIAL_STATE_ROLE_TYPES: Mapping[str, tuple[str, ...]] = MappingProxyType(
+    {
+        "initial_story_state_version": ("story_state_snapshot",),
+        "initial_canon_snapshot_version": ("canon_snapshot",),
+    }
+)
+
 
 @dataclass(frozen=True, slots=True)
 class ResolveBookProductionInputCommand:
@@ -80,13 +87,21 @@ class ResolveBookProductionInputCommand:
         override_roles = [
             role for role, _version_id in self.role_asset_version_overrides
         ]
+        initial_roles = set(override_roles) & set(
+            _OPTIONAL_INITIAL_STATE_ROLE_TYPES
+        )
         if (
             len(override_roles) != len(set(override_roles))
-            or any(role not in _ACTIVE_ROLE_TYPES for role in override_roles)
+            or any(
+                role
+                not in {*_ACTIVE_ROLE_TYPES, *_OPTIONAL_INITIAL_STATE_ROLE_TYPES}
+                for role in override_roles
+            )
             or any(
                 not role.strip() or not version_id.strip()
                 for role, version_id in self.role_asset_version_overrides
             )
+            or (initial_roles and initial_roles != set(_OPTIONAL_INITIAL_STATE_ROLE_TYPES))
         ):
             raise ValueError("Book Production role overrides are invalid")
 
@@ -113,6 +128,8 @@ class BookProductionInputSnapshot:
     quality_trend_version: str
     reward_ledger_version: str
     promise_ledger_version: str
+    initial_story_state_version: str
+    initial_canon_snapshot_version: str
     capability_pack_deployment_refs: tuple[str, ...]
     release_sha: str
     snapshot_hash: str
@@ -206,7 +223,10 @@ class BookProductionInputResolver:
                        reader_contract_version, platform_profile_version,
                        character_state_version, foreshadowing_state_version,
                        quality_trend_version, reward_ledger_version,
-                       promise_ledger_version, capability_pack_deployment_refs,
+                       promise_ledger_version,
+                       COALESCE(initial_story_state_version, ''),
+                       COALESCE(initial_canon_snapshot_version, ''),
+                       capability_pack_deployment_refs,
                        release_sha, snapshot_hash, resolved_by_operation_id
                 FROM authority_book_production_input_snapshot
                 WHERE snapshot_id=%s
@@ -221,7 +241,7 @@ class BookProductionInputResolver:
             )
         values = list(row)
         values[9] = tuple(str(item) for item in values[9])
-        values[20] = tuple(str(item) for item in values[20])
+        values[22] = tuple(str(item) for item in values[22])
         return BookProductionInputSnapshot(*values)
 
     def _execute_transaction(
@@ -279,11 +299,13 @@ class BookProductionInputResolver:
                 reader_contract_version, platform_profile_version,
                 character_state_version, foreshadowing_state_version,
                 quality_trend_version, reward_ledger_version,
-                promise_ledger_version, capability_pack_deployment_refs,
+                promise_ledger_version, initial_story_state_version,
+                initial_canon_snapshot_version, capability_pack_deployment_refs,
                 release_sha, snapshot_hash, resolved_by_operation_id
             ) VALUES (
                 %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NULLIF(%s, ''),
-                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                %s, %s, %s, %s, %s, %s, %s, %s, %s, NULLIF(%s, ''),
+                NULLIF(%s, ''), %s, %s, %s, %s
             ) ON CONFLICT (snapshot_hash) DO NOTHING
             """,
             [
@@ -307,6 +329,8 @@ class BookProductionInputResolver:
                 resolved["quality_trend_version"],
                 resolved["reward_ledger_version"],
                 resolved["promise_ledger_version"],
+                resolved["initial_story_state_version"],
+                resolved["initial_canon_snapshot_version"],
                 Jsonb(resolved["capability_pack_deployment_refs"]),
                 resolved["release_sha"],
                 resolved["snapshot_hash"],
@@ -381,6 +405,23 @@ class BookProductionInputResolver:
             )
             for role, asset_types in _ACTIVE_ROLE_TYPES.items()
         }
+        overrides = dict(command.role_asset_version_overrides)
+        initial_roles = {
+            role: self._active_role_asset(
+                cursor,
+                command=command,
+                role=role,
+                asset_types=asset_types,
+                requested_profile="",
+            )
+            for role, asset_types in _OPTIONAL_INITIAL_STATE_ROLE_TYPES.items()
+            if role in overrides
+        }
+        self._validate_initial_narrative_state_pair(
+            project_id=command.project_id,
+            book_id=command.book_id,
+            initial_roles=initial_roles,
+        )
         self._validate_plan_hierarchy(plans)
         book_design = self._asset_content(cursor, str(book[1]), command.project_id)
         book_plan = plans["BOOK"][0]
@@ -408,12 +449,69 @@ class BookProductionInputResolver:
                 else ""
             ),
             **{role: item["asset_version_id"] for role, item in roles.items()},
+            **{
+                role: (
+                    initial_roles[role]["asset_version_id"]
+                    if role in initial_roles
+                    else ""
+                )
+                for role in _OPTIONAL_INITIAL_STATE_ROLE_TYPES
+            },
             "capability_pack_deployment_refs": deployments,
             "release_sha": self.commit_sha,
         }
         value["snapshot_hash"] = canonical_hash(value)
         value["snapshot_id"] = value["snapshot_hash"]
         return value
+
+    @staticmethod
+    def _validate_initial_narrative_state_pair(
+        *,
+        project_id: str,
+        book_id: str,
+        initial_roles: Mapping[str, dict[str, Any]],
+    ) -> None:
+        if not initial_roles:
+            return
+        if set(initial_roles) != set(_OPTIONAL_INITIAL_STATE_ROLE_TYPES):
+            raise KernelError(
+                "BOOK_INITIAL_NARRATIVE_STATE_INCOMPLETE",
+                "initial Story State and Canon must be resolved together",
+            )
+        story = dict(initial_roles["initial_story_state_version"]["content"])
+        canon = dict(initial_roles["initial_canon_snapshot_version"]["content"])
+        if (
+            story.get("contract_version") != "story-state-snapshot-v2"
+            or canon.get("contract_version") != "canon-snapshot-v2"
+            or story.get("project_id") != project_id
+            or canon.get("project_id") != project_id
+            or story.get("book_id") != book_id
+            or canon.get("book_id") != book_id
+            or int(story.get("accepted_through_chapter", -1)) != 0
+            or int(canon.get("accepted_through_chapter", -1)) != 0
+            or story.get("initial_state_boundary")
+            != "BOOK_PRODUCTION_INPUT_SNAPSHOT"
+            or canon.get("initial_state_boundary")
+            != "BOOK_PRODUCTION_INPUT_SNAPSHOT"
+            or not str(story.get("campaign_contract_identity") or "").startswith(
+                "sha256:"
+            )
+            or story.get("campaign_contract_identity")
+            != canon.get("campaign_contract_identity")
+            or canon.get("story_state_hash") != story.get("state_hash")
+            or story.get("state_hash")
+            != canonical_hash(
+                {key: value for key, value in story.items() if key != "state_hash"}
+            )
+            or canon.get("canon_hash")
+            != canonical_hash(
+                {key: value for key, value in canon.items() if key != "canon_hash"}
+            )
+        ):
+            raise KernelError(
+                "BOOK_INITIAL_NARRATIVE_STATE_INVALID",
+                "initial Story State and Canon must be scoped, integrity-bound v2 inputs",
+            )
 
     @staticmethod
     def _active_plans(
@@ -691,6 +789,7 @@ class BookProductionInputResolver:
             "current_volume_plan_version",
             "current_chapter_group_plan_version",
             *_ACTIVE_ROLE_TYPES.keys(),
+            *_OPTIONAL_INITIAL_STATE_ROLE_TYPES.keys(),
         )
         values = [str(snapshot[key]) for key in scalar if snapshot.get(key)]
         values.extend(str(item) for item in snapshot["active_arc_plan_versions"])

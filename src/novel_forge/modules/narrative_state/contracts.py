@@ -421,13 +421,31 @@ _LEGACY_OBLIGATION_KINDS = frozenset(
     }
 )
 
-_OBLIGATION_PATCH_FIELDS: tuple[tuple[str, NarrativeObligationType], ...] = (
-    ("promise_changes", NarrativeObligationType.PROMISE),
-    ("foreshadow_changes", NarrativeObligationType.FORESHADOWING),
-    ("mystery_actions", NarrativeObligationType.MYSTERY),
-    ("conflict_changes", NarrativeObligationType.CONFLICT),
-    ("plot_thread_changes", NarrativeObligationType.OPEN_LOOP),
-    ("open_loop_changes", NarrativeObligationType.OPEN_LOOP),
+_LEGACY_OBLIGATION_IDENTITY_FIELDS = {
+    NarrativeStateKind.FORESHADOW_STATE: ("entity_id", "thread_id"),
+    NarrativeStateKind.READER_PROMISE: ("promise_id",),
+    NarrativeStateKind.PLOT_THREAD: ("thread_id",),
+    NarrativeStateKind.NARRATIVE_DEBT: ("debt_id",),
+    NarrativeStateKind.MYSTERY_STATE: ("mystery_id", "entity_id"),
+}
+
+_OBLIGATION_PATCH_FIELDS: tuple[
+    tuple[str, NarrativeObligationType, tuple[str, ...]], ...
+] = (
+    ("promise_changes", NarrativeObligationType.PROMISE, ("promise_id",)),
+    (
+        "foreshadow_changes",
+        NarrativeObligationType.FORESHADOWING,
+        ("entity_id", "thread_id"),
+    ),
+    (
+        "mystery_actions",
+        NarrativeObligationType.MYSTERY,
+        ("mystery_id", "entity_id"),
+    ),
+    ("conflict_changes", NarrativeObligationType.CONFLICT, ("conflict_id",)),
+    ("plot_thread_changes", NarrativeObligationType.OPEN_LOOP, ("thread_id",)),
+    ("open_loop_changes", NarrativeObligationType.OPEN_LOOP, ("thread_id",)),
 )
 
 _SNAPSHOT_KIND_ALIASES = {
@@ -501,7 +519,13 @@ def events_from_canon_patch(
                 }[kind]
                 changes[NarrativeStateKind.NARRATIVE_OBLIGATION].extend(
                     _normalize_obligation(
-                        item, obligation_type, source_chapter, legacy_adapter=True
+                        item,
+                        obligation_type,
+                        source_chapter,
+                        legacy_adapter=True,
+                        legacy_identity_fields=(
+                            _LEGACY_OBLIGATION_IDENTITY_FIELDS[kind]
+                        ),
                     )
                     for item in items
                 )
@@ -525,10 +549,14 @@ def events_from_canon_patch(
             continue
         for field in fields:
             changes[kind].extend(_object_items(canon_patch.get(field)))
-    for field, obligation_type in _OBLIGATION_PATCH_FIELDS:
+    for field, obligation_type, identity_fields in _OBLIGATION_PATCH_FIELDS:
         changes[NarrativeStateKind.NARRATIVE_OBLIGATION].extend(
             _normalize_obligation(
-                item, obligation_type, source_chapter, legacy_adapter=True
+                item,
+                obligation_type,
+                source_chapter,
+                legacy_adapter=True,
+                legacy_identity_fields=identity_fields,
             )
             for item in _object_items(canon_patch.get(field))
         )
@@ -546,7 +574,13 @@ def events_from_canon_patch(
                 }[kind]
                 changes[NarrativeStateKind.NARRATIVE_OBLIGATION].extend(
                     _normalize_obligation(
-                        item, obligation_type, source_chapter, legacy_adapter=True
+                        item,
+                        obligation_type,
+                        source_chapter,
+                        legacy_adapter=True,
+                        legacy_identity_fields=(
+                            _LEGACY_OBLIGATION_IDENTITY_FIELDS[kind]
+                        ),
                     )
                     for item in items
                 )
@@ -997,10 +1031,15 @@ def _normalize_obligation(
     source_chapter: int,
     *,
     legacy_adapter: bool = False,
+    legacy_identity_fields: tuple[str, ...] = (),
 ) -> dict[str, Any]:
     value = dict(raw)
     obligation_id = str(
         value.get("obligation_id")
+        or next(
+            (value.get(field) for field in legacy_identity_fields if value.get(field)),
+            "",
+        )
         or value.get("promise_id")
         or value.get("thread_id")
         or value.get("mystery_id")

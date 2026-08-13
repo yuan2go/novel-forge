@@ -372,6 +372,11 @@ def validate_deterministic_continuity(
         for kind, values in historical_state.items()
     }
     conflicts: list[dict[str, Any]] = []
+    _validate_transition_preconditions(
+        conflicts,
+        state=state,
+        extraction=extraction,
+    )
     for event in extraction.get("timeline_event_candidates", []):
         event_chapter = int(event.get("effective_from_chapter", chapter))
         if event_chapter > chapter:
@@ -615,6 +620,124 @@ def _state_items(values: list[dict[str, Any]]) -> list[dict[str, Any]]:
         else:
             flattened.append(item)
     return flattened
+
+
+_TRANSITION_PRECONDITION_SPECS = (
+    ("character_state_changes", ("character_state",), (("character_id",),)),
+    (
+        "relationship_changes",
+        ("relationship_state",),
+        (
+            ("source_id", "source_character_id"),
+            ("target_id", "target_character_id"),
+        ),
+    ),
+    ("timeline_event_candidates", ("timeline_snapshot",), (("event_id",),)),
+    (
+        "foreshadow_changes",
+        ("foreshadow_state", "narrative_obligation"),
+        (("entity_id", "foreshadow_id", "thread_id", "obligation_id"),),
+    ),
+    (
+        "promise_changes",
+        ("reader_promise", "narrative_obligation"),
+        (("promise_id", "obligation_id"),),
+    ),
+    ("world_rule_usages", ("world_rule",), (("rule_id",),)),
+    ("power_state_changes", ("power_state",), (("character_id",),)),
+    (
+        "plot_thread_changes",
+        ("plot_thread", "narrative_obligation"),
+        (("thread_id", "obligation_id"),),
+    ),
+    (
+        "resource_state_changes",
+        ("resource_state",),
+        (("entity_id",), ("resource_id",)),
+    ),
+    (
+        "antagonist_pressure_changes",
+        ("antagonist_state",),
+        (("antagonist_id", "entity_id"),),
+    ),
+)
+
+
+def _identity_component(item: dict[str, Any], aliases: tuple[str, ...]) -> str:
+    return next(
+        (str(item[key]) for key in aliases if item.get(key) not in {None, ""}),
+        "",
+    )
+
+
+def _validate_transition_preconditions(
+    conflicts: list[dict[str, Any]],
+    *,
+    state: dict[str, list[dict[str, Any]]],
+    extraction: dict[str, Any],
+) -> None:
+    """Reject narrative CAS claims that are not backed by accepted state.
+
+    ``from_*`` is an Authority compare-and-set precondition, not a description of
+    background state inferred from prose or Story Design.  Keeping this check in
+    Canon validation prevents an invalid patch from surviving every Chapter gate
+    only to fail during Book acceptance.
+    """
+
+    for field, state_kinds, identity_aliases in _TRANSITION_PRECONDITION_SPECS:
+        accepted = [item for kind in state_kinds for item in state.get(kind, [])]
+        for change in extraction.get(field, []):
+            declared = tuple(
+                (from_key, current_key)
+                for from_key, current_key in (
+                    ("from_status", "status"),
+                    ("from_state", "state"),
+                    ("from_tier", "tier"),
+                )
+                if from_key in change
+            )
+            if not declared:
+                continue
+            identity = tuple(
+                _identity_component(change, aliases) for aliases in identity_aliases
+            )
+            existing = next(
+                (
+                    item
+                    for item in accepted
+                    if tuple(
+                        _identity_component(item, aliases)
+                        for aliases in identity_aliases
+                    )
+                    == identity
+                ),
+                None,
+            )
+            if existing is None:
+                conflicts.append(
+                    _conflict(
+                        "NARRATIVE_TRANSITION_BASELINE_MISSING",
+                        None,
+                        change,
+                        "omit from_* for a first occurrence or bind the accepted Story State baseline",
+                    )
+                )
+                continue
+            mismatches = [
+                from_key
+                for from_key, current_key in declared
+                if current_key not in existing
+                or str(change[from_key]) != str(existing[current_key])
+            ]
+            if mismatches:
+                conflicts.append(
+                    _conflict(
+                        "NARRATIVE_TRANSITION_PRECONDITION_FAILED",
+                        existing,
+                        change,
+                        "set every from_* field to the exact accepted Story State value",
+                    )
+                )
 
 
 def _validate_lifecycle_transition(

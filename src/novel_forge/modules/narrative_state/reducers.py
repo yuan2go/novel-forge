@@ -53,6 +53,25 @@ TERMINAL_STATUSES = frozenset(
     }
 )
 
+# These fields govern extraction and approval, but they are not part of the
+# narrative truth a model needs to continue the story.  The immutable accepted
+# AssetVersion retains them in full; Context carries the exact source event and
+# a digest of its evidence instead of repeating this metadata for every fact.
+CONTEXT_OMITTED_OPERATIONAL_STATE_FIELDS = frozenset(
+    {
+        "approval_resolution",
+        "approval_requirement",
+        "change_reasons",
+        "evidence_end",
+        "evidence_start",
+        "extractor_type",
+        "model_id",
+        "prompt_version",
+        "provider_id",
+        "source_revision_asset_version_id",
+    }
+)
+
 STATE_KIND_REDUCER_SEMANTICS: dict[NarrativeStateKind, str] = {
     NarrativeStateKind.CANON_FACT: "supersession-aware-upsert",
     NarrativeStateKind.TIMELINE_EVENT: "append-only-event",
@@ -290,29 +309,60 @@ def compact_current_state_facts(snapshot: dict[str, Any]) -> list[dict[str, Any]
                     "current state entries must be objects",
                 )
             facts.append(
-                {
-                    "state_kind": kind.value,
-                    "entity_key": str(entry.get("entity_key") or ""),
-                    "entity_version": int(entry.get("entity_version") or 0),
-                    "state": deepcopy(entry.get("state") or {}),
-                    "effective_from_chapter": int(
-                        entry.get("effective_from_chapter") or 0
-                    ),
-                    "effective_to_chapter": int(
-                        entry.get("effective_to_chapter") or 0
-                    ),
-                    "narrative_position": deepcopy(
-                        entry.get("narrative_position") or {}
-                    ),
-                    "source_chapter": int(entry.get("source_chapter") or 0),
-                    "source_event_id": str(entry.get("source_event_id") or ""),
-                    "confidence": float(entry.get("confidence", 0.0)),
-                    "coverage": str(entry.get("coverage") or ""),
-                    "evidence": deepcopy(entry.get("evidence") or {}),
-                    "canon_status": str(entry.get("canon_status") or ""),
-                }
+                _compact_context_fact(
+                    entry,
+                    state_kind=kind.value,
+                )
             )
     return facts
+
+
+def compact_canon_facts(snapshot: dict[str, Any]) -> list[dict[str, Any]]:
+    """Project accepted Canon truth without duplicating Authority metadata."""
+
+    if snapshot.get("contract_version") != "canon-snapshot-v2":
+        raise KernelError(
+            "CANON_SNAPSHOT_CONTRACT_UNSUPPORTED",
+            "execution context accepts only compact Canon snapshot v2",
+        )
+    facts: list[dict[str, Any]] = []
+    for entry in snapshot.get("current_facts") or ():
+        if not isinstance(entry, dict):
+            raise KernelError(
+                "CANON_SNAPSHOT_INVALID",
+                "current Canon facts must be objects",
+            )
+        facts.append(_compact_context_fact(entry))
+    return facts
+
+
+def _compact_context_fact(
+    entry: dict[str, Any], *, state_kind: str = ""
+) -> dict[str, Any]:
+    state = {
+        str(key): deepcopy(value)
+        for key, value in (entry.get("state") or {}).items()
+        if key not in CONTEXT_OMITTED_OPERATIONAL_STATE_FIELDS
+    }
+    evidence = deepcopy(entry.get("evidence") or {})
+    fact = {
+        "entity_key": str(entry.get("entity_key") or ""),
+        "entity_version": int(entry.get("entity_version") or 0),
+        "state": state,
+        "effective_from_chapter": int(entry.get("effective_from_chapter") or 0),
+        "effective_to_chapter": int(entry.get("effective_to_chapter") or 0),
+        "narrative_position": deepcopy(entry.get("narrative_position") or {}),
+        "source_chapter": int(entry.get("source_chapter") or 0),
+        "source_event_id": str(entry.get("source_event_id") or ""),
+        "confidence": float(entry.get("confidence", 0.0)),
+        "coverage": str(entry.get("coverage") or ""),
+        "evidence_digest": "sha256:"
+        + hashlib.sha256(_canonical_json(evidence).encode()).hexdigest(),
+        "canon_status": str(entry.get("canon_status") or ""),
+    }
+    if state_kind:
+        fact = {"state_kind": state_kind, **fact}
+    return fact
 
 
 def materialize_canon_snapshot_v2(
@@ -766,6 +816,7 @@ __all__ = [
     "APPEND_ONLY_KINDS",
     "LIFECYCLE_KINDS",
     "STATE_KIND_REDUCER_SEMANTICS",
+    "compact_canon_facts",
     "compact_current_state_facts",
     "expire_effective_ranges",
     "materialize_canon_snapshot_v2",

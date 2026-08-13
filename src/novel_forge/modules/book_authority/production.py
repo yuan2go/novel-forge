@@ -63,7 +63,10 @@ from novel_forge.modules.command_kernel.service import (
     admit_command,
     execute_transaction_command,
 )
-from novel_forge.modules.narrative_state import compact_current_state_facts
+from novel_forge.modules.narrative_state import (
+    compact_canon_facts,
+    compact_current_state_facts,
+)
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 
@@ -775,6 +778,14 @@ class PostgresBookAuthority:
                         str(book["active_canon_snapshot_version_id"]),
                     ),
                 ),
+            )
+        elif (
+            int(request["chapter_number"]) == 1
+            and book["input_mode"] == "RESOLVED_AUTHORITY_INPUT"
+        ):
+            acceptance_inputs = (
+                *acceptance_inputs,
+                *self._initial_narrative_state_inputs(book=book, request=request),
             )
         stable_key = f"{request['stable_idempotency_key']}:accept"
         admission = self.outcomes.admit(
@@ -1765,6 +1776,8 @@ class PostgresBookAuthority:
                        platform_profile_version, character_state_version,
                        foreshadowing_state_version, quality_trend_version,
                        reward_ledger_version, promise_ledger_version,
+                       COALESCE(initial_story_state_version, ''),
+                       COALESCE(initial_canon_snapshot_version, ''),
                        profile.content
                 FROM authority_book_production_input_snapshot AS snapshot
                 JOIN authority_asset_version AS profile
@@ -1810,7 +1823,7 @@ class PostgresBookAuthority:
             or command.longform_context_versions["arc_plan_version"]
             not in {str(item) for item in row[7]}
             or command.target_chapter_count
-            != int(dict(row[17]).get("target_chapter_count") or 0)
+            != int(dict(row[19]).get("target_chapter_count") or 0)
         ):
             raise KernelError(
                 "BOOK_PRODUCTION_INPUT_SNAPSHOT_DRIFT",
@@ -1821,6 +1834,7 @@ class PostgresBookAuthority:
         if row[8]:
             values.append(str(row[8]))
         values.extend(str(item) for item in row[9:17])
+        values.extend(str(item) for item in row[17:19] if item)
         return tuple(dict.fromkeys(values))
 
     def require_chapter_request(self, chapter_request_id: str) -> dict[str, Any]:
@@ -2030,6 +2044,59 @@ class PostgresBookAuthority:
             "canon_snapshot_asset_version_id": str(row[3]),
         }
 
+    def _initial_narrative_state_inputs(
+        self, *, book: dict[str, Any], request: dict[str, Any]
+    ) -> tuple[dict[str, str], ...]:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT COALESCE(initial_story_state_version, ''),
+                       COALESCE(initial_canon_snapshot_version, '')
+                FROM authority_book_production_input_snapshot
+                WHERE snapshot_id=%s AND project_id=%s AND book_id=%s
+                """,
+                [
+                    book["input_snapshot_id"],
+                    book["project_id"],
+                    book["book_id"],
+                ],
+            )
+            row = uow.cursor.fetchone()
+        if row is None:
+            raise KernelError(
+                "BOOK_INPUT_SNAPSHOT_MISSING",
+                "Book initial Narrative State requires its frozen input snapshot",
+            )
+        versions = tuple(str(item or "") for item in row)
+        if not any(versions):
+            return ()
+        if not all(versions):
+            raise KernelError(
+                "BOOK_INITIAL_NARRATIVE_STATE_INCOMPLETE",
+                "initial Story State and Canon must advance together",
+            )
+        expected = dict(
+            zip(("story_state_snapshot", "canon_snapshot"), versions, strict=True)
+        )
+        submitted = dict(request.get("command_payload") or {})
+        candidates = tuple(submitted.get("context_candidates") or ())
+        observed: dict[str, list[str]] = {key: [] for key in expected}
+        for candidate in candidates:
+            asset_type = str(candidate.get("asset_type") or "")
+            if asset_type in observed:
+                observed[asset_type].append(
+                    str(candidate.get("asset_version_id") or "")
+                )
+        if any(observed[key] != [version] for key, version in expected.items()):
+            raise KernelError(
+                "BOOK_INITIAL_NARRATIVE_STATE_CONTEXT_LINEAGE_MISSING",
+                "Chapter 1 did not consume the frozen initial Story State and Canon pair",
+            )
+        return self.resolve_asset_refs(
+            project_id=str(book["project_id"]),
+            asset_version_ids=versions,
+        )
+
     def _context_candidates_for_dispatch(
         self,
         *,
@@ -2117,7 +2184,7 @@ class PostgresBookAuthority:
             structured_facts = (
                 compact_current_state_facts(content)
                 if row[0] == "story_state_snapshot"
-                else list(content.get("current_facts") or [])
+                else compact_canon_facts(content)
             )
             rendered = json.dumps(
                 {
@@ -2424,6 +2491,72 @@ def book_coordinate_definition(
     }
 
 
+def _select_chapter_acceptance_outputs(
+    evidence: dict[str, Any],
+) -> dict[str, dict[str, Any]]:
+    """Resolve the accepted generation through final release lineage."""
+
+    outputs = list(evidence.get("outputs") or ())
+    by_type: dict[str, list[dict[str, Any]]] = {}
+    for item in outputs:
+        by_type.setdefault(str(item["asset_type"]), []).append(item)
+    lineage_roots = (
+        "chapter_plan",
+        "release_package",
+        "final_release_gate_report",
+    )
+    missing = [
+        asset_type
+        for asset_type in lineage_roots
+        if len(by_type.get(asset_type, ())) != 1
+    ]
+    if missing:
+        raise KernelError(
+            "BOOK_CHAPTER_ACCEPTANCE_EVIDENCE_MISSING",
+            "missing unique Chapter outputs: " + ", ".join(missing),
+        )
+    selected = {key: by_type[key][0] for key in lineage_roots}
+    final_gate = selected["final_release_gate_report"]["content"]
+    release = selected["release_package"]["content"]
+    accepted_versions = final_gate.get("accepted_asset_version_ids")
+    if not isinstance(accepted_versions, dict):
+        raise KernelError(
+            "BOOK_CHAPTER_ACCEPTANCE_EVIDENCE_MISSING",
+            "final release gate has no accepted asset lineage",
+        )
+    expected_versions = {
+        "draft_version": str(release.get("source_asset_version_id") or ""),
+        "re_review_report": str(accepted_versions.get("rereview") or ""),
+        "canon_patch": str(accepted_versions.get("canon") or ""),
+        "quality_score_report": str(accepted_versions.get("quality") or ""),
+        "release_package": str(accepted_versions.get("export") or ""),
+    }
+    output_by_version = {
+        str(item.get("asset_version_id") or ""): item for item in outputs
+    }
+    invalid_lineage = [
+        asset_type
+        for asset_type, asset_version_id in expected_versions.items()
+        if not asset_version_id
+        or asset_version_id not in output_by_version
+        or str(output_by_version[asset_version_id].get("asset_type") or "")
+        != asset_type
+    ]
+    if invalid_lineage:
+        raise KernelError(
+            "BOOK_CHAPTER_ACCEPTANCE_EVIDENCE_MISSING",
+            "final release asset lineage is incomplete: "
+            + ", ".join(invalid_lineage),
+        )
+    selected.update(
+        {
+            asset_type: output_by_version[asset_version_id]
+            for asset_type, asset_version_id in expected_versions.items()
+        }
+    )
+    return selected
+
+
 def _validate_chapter_acceptance_evidence(
     *,
     request: dict[str, Any],
@@ -2446,26 +2579,12 @@ def _validate_chapter_acceptance_evidence(
         "release_package",
         "final_release_gate_report",
     )
-    outputs = list(evidence.get("outputs") or ())
-    by_type: dict[str, list[dict[str, Any]]] = {}
-    for item in outputs:
-        by_type.setdefault(str(item["asset_type"]), []).append(item)
-    missing = [
-        asset_type
-        for asset_type in required_types
-        if len(by_type.get(asset_type, ())) != 1
-    ]
-    if missing:
-        raise KernelError(
-            "BOOK_CHAPTER_ACCEPTANCE_EVIDENCE_MISSING",
-            "missing unique Chapter outputs: " + ", ".join(missing),
-        )
-    selected = {key: by_type[key][0] for key in required_types}
+    selected = _select_chapter_acceptance_outputs(evidence)
     final_gate = selected["final_release_gate_report"]["content"]
+    release = selected["release_package"]["content"]
     quality = selected["quality_score_report"]["content"]
     rereview = selected["re_review_report"]["content"]
     canon = selected["canon_patch"]["content"]
-    release = selected["release_package"]["content"]
     plan = selected["chapter_plan"]["content"]
     submitted = dict(request.get("command_payload") or {})
     execution_plan_version = str(

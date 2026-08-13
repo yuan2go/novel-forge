@@ -490,35 +490,82 @@ def _fit_quality_context(
     report_reserve = min(512, max(128, token_budget // 8))
     content_budget = max(1, token_budget - report_reserve)
     while _estimate_payload(body, estimator) > content_budget:
-        candidate = next(
-            (
-                row for row in reversed(rows)
-                if any(not _critical_fact(fact) for fact in row.get("structured_facts") or [])
-            ),
-            None,
-        )
-        if candidate is None:
-            if _compact_noncritical_current_candidate_rows(body):
-                rows = list(_state_rows(body))
-                continue
+        if not _compress_one_noncritical_fact(body, rows):
             raise KernelError(
                 "QUALITY_CONTEXT_CRITICAL_OVERFLOW",
                 "quality context identity and critical evidence exceed the frozen token budget",
             )
-        facts = list(candidate.get("structured_facts") or [])
-        remove_index = max(
-            index for index, fact in enumerate(facts) if not _critical_fact(fact)
+        rows = list(_state_rows(body))
+
+    # The coverage report is variable-sized because entity coverage is explicit.
+    # A fixed reserve can therefore fit the evidence body yet overflow once the
+    # report, contract version, and digest are serialized. Re-evaluate the actual
+    # final envelope and only remove additional noncritical facts. Identity rows,
+    # AssetVersion lineage, and critical facts remain fail-closed.
+    while True:
+        coverage = _quality_context_coverage_report(
+            body,
+            rows=rows,
+            estimator=estimator,
+            token_budget=token_budget,
         )
-        facts.pop(remove_index)
-        candidate["structured_facts"] = facts
-        candidate["compressed"] = True
-        candidate["omitted_fact_count"] = int(
-            candidate.get("omitted_fact_count") or 0
-        ) + 1
-        if not facts:
-            _drop_redundant_empty_row_fields(candidate)
+        if _estimate_final_quality_context(body, coverage, estimator) <= token_budget:
+            return coverage
+        if not _compress_one_noncritical_fact(body, rows):
+            raise KernelError(
+                "QUALITY_CONTEXT_CRITICAL_OVERFLOW",
+                "quality context identity and critical evidence exceed the frozen token budget",
+            )
+        rows = list(_state_rows(body))
+
+
+def _compress_one_noncritical_fact(
+    body: dict[str, Any], rows: list[dict[str, Any]]
+) -> bool:
+    candidate = next(
+        (
+            row for row in reversed(rows)
+            if any(
+                not _critical_fact(fact)
+                for fact in row.get("structured_facts") or []
+            )
+        ),
+        None,
+    )
+    if candidate is None:
+        return _compact_noncritical_current_candidate_rows(body)
+    facts = list(candidate.get("structured_facts") or [])
+    remove_index = max(
+        index for index, fact in enumerate(facts) if not _critical_fact(fact)
+    )
+    facts.pop(remove_index)
+    candidate["structured_facts"] = facts
+    candidate["compressed"] = True
+    candidate["omitted_fact_count"] = int(
+        candidate.get("omitted_fact_count") or 0
+    ) + 1
+    if not facts:
+        _drop_redundant_empty_row_fields(candidate)
+    return True
+
+
+def _quality_context_coverage_report(
+    body: dict[str, Any],
+    *,
+    rows: list[dict[str, Any]],
+    estimator: TokenEstimator,
+    token_budget: int,
+) -> dict[str, Any]:
+    # One accepted snapshot may be expanded into many entity-scoped rows. The
+    # coverage report records the selected AssetVersion identity, not a second
+    # copy of the row-to-version relationship, so keep it set-valued. Entity
+    # coverage remains explicit in ``included_entities`` below.
     selected_versions = sorted(
-        str(row.get("asset_version_id") or "") for row in rows if row.get("asset_version_id")
+        {
+            str(row.get("asset_version_id") or "")
+            for row in rows
+            if row.get("asset_version_id")
+        }
     )
     included_entities = sorted(
         identity
@@ -541,6 +588,22 @@ def _fit_quality_context(
         "repair_actions": [],
         "contract_version": "quality-context-coverage-v1",
     }
+
+
+def _estimate_final_quality_context(
+    body: dict[str, Any],
+    coverage: dict[str, Any],
+    estimator: TokenEstimator,
+) -> int:
+    envelope = {
+        **body,
+        "coverage_report": coverage,
+        "contract_version": "stage-quality-context-v2",
+        # The digest value is fixed-width. Its value does not affect the token
+        # estimate, so a placeholder avoids a circular digest dependency.
+        "context_digest": "sha256:" + ("0" * 64),
+    }
+    return _estimate_payload(envelope, estimator)
 
 
 def _drop_redundant_empty_row_fields(row: dict[str, Any]) -> None:

@@ -64,6 +64,20 @@ def test_quality_prompt_and_schema_version_require_dimension_evidence() -> None:
         chapter_provider_output_schema_ref("draft")
         == "schema:chapter-provider-output:draft:v1"
     )
+    assert (
+        chapter_provider_output_schema_ref("canon_extraction")
+        == "schema:chapter-provider-output:canon_extraction:v2"
+    )
+
+
+def test_longform_quality_prompt_distinguishes_proven_noop_from_missing_state() -> None:
+    contract = _stage_semantic_contract("quality_longform")
+
+    assert "no state-changing use or claim" in contract
+    assert "current state candidates contain no transition" in contract
+    assert "PASSED with concrete no-op evidence" in contract
+    assert "claims a state or transition" in contract
+    assert "INSUFFICIENT_EVIDENCE" in contract
 
 
 def test_canon_prompt_explains_unique_semantic_slot_encoding() -> None:
@@ -73,6 +87,24 @@ def test_canon_prompt_explains_unique_semantic_slot_encoding() -> None:
     assert "at most once" in contract
     assert "authorizes_testimony" in contract
     assert "authorizes_public_identification" in contract
+
+
+def test_canon_prompt_binds_transition_preconditions_to_accepted_state() -> None:
+    contract = _stage_semantic_contract("canon_extraction")
+
+    assert "accepted Story State" in contract
+    assert "first occurrence" in contract
+    assert "omit from_status, from_state, and from_tier" in contract
+
+
+def test_canon_prompt_binds_fact_supersession_to_accepted_canon_event() -> None:
+    contract = _stage_semantic_contract("canon_extraction")
+
+    assert "accepted Canon facts" in contract
+    assert "source_event_id" in contract
+    assert "supersedes_event_id" in contract
+    assert "omit the redundant fact" in contract
+    assert "Never paraphrase an unchanged accepted fact" in contract
 
 
 def _valid(stage: str) -> dict[str, object]:
@@ -103,6 +135,7 @@ def _valid(stage: str) -> dict[str, object]:
                         "predicate": "made_choice",
                         "object": "exposed_record",
                         "effective_from_chapter": 1,
+                        "supersedes_event_id": None,
                         "evidence_start": 0,
                         "evidence_end": 24,
                         "confidence": 0.91,
@@ -185,6 +218,43 @@ def test_every_model_stage_has_a_strict_schema_and_accepts_its_contract(
     )
 
 
+def test_every_model_stage_schema_is_codex_strict_json_schema_compatible() -> None:
+    """Codex strict output schemas must require every declared object property."""
+
+    def assert_strict_object_contract(value: object, *, path: str) -> None:
+        if isinstance(value, list):
+            for index, item in enumerate(value):
+                assert_strict_object_contract(item, path=f"{path}[{index}]")
+            return
+        if not isinstance(value, dict):
+            return
+        if value.get("type") == "object":
+            properties = value.get("properties")
+            assert isinstance(properties, dict), path
+            assert set(value.get("required") or ()) == set(properties), path
+            assert value.get("additionalProperties") is False, path
+        for key, item in value.items():
+            assert_strict_object_contract(item, path=f"{path}.{key}")
+
+    for stage in (
+        "draft",
+        "review",
+        "revision",
+        "rereview",
+        "canon_extraction",
+        "quality_structural",
+        "quality_commercial",
+        "quality_source_originality",
+        "quality_longform",
+        "quality_platform",
+        "reader_outcome",
+    ):
+        assert_strict_object_contract(
+            chapter_provider_output_schema(stage),
+            path=f"$.{stage}",
+        )
+
+
 def test_schema_validation_rejects_missing_required_field_before_semantics() -> None:
     with pytest.raises(KernelError) as raised:
         validate_chapter_provider_output_schema("review", {"score": 72})
@@ -213,6 +283,37 @@ def test_schema_validation_does_not_treat_boolean_as_number() -> None:
 
     assert raised.value.code == "CHAPTER_PROVIDER_OUTPUT_SCHEMA_INVALID"
     assert "confidence" in str(raised.value)
+
+
+def test_schema_validation_supports_nullable_boolean_canon_fields() -> None:
+    value = deepcopy(_valid("canon_extraction"))
+    change_schema = chapter_provider_output_schema("canon_extraction")["properties"][
+        "character_state_changes"
+    ]["items"]
+    value["character_state_changes"] = [
+        {
+            key: (
+                False
+                if key == "resurrection_authorized"
+                else None
+                if "null" in schema.get("type", [])
+                else "character remains alive"
+                if key == "summary"
+                else "CHARACTER_STATE_CONFIRMED"
+                if key == "impact_type"
+                else 0
+                if key == "evidence_start"
+                else 1
+                if key == "evidence_end"
+                else 0.9
+            )
+            for key, schema in change_schema["properties"].items()
+        }
+    ]
+
+    assert validate_chapter_provider_output_schema("canon_extraction", value) == value
+    normalized = validate_chapter_provider_output_semantics("canon_extraction", value)
+    assert normalized["character_state_changes"][0]["resurrection_authorized"] is False
 
 
 def test_quality_schema_requires_evidence_for_every_dimension() -> None:
@@ -249,11 +350,14 @@ def test_shared_schema_validation_supports_integer_const_and_max_items() -> None
         "additionalProperties": False,
     }
 
-    assert validate_chapter_provider_output_against_schema(
-        "planning-proof",
-        schema,
-        {"chapter": 3, "scope": "chapter:3", "beats": ["choice"]},
-    )["chapter"] == 3
+    assert (
+        validate_chapter_provider_output_against_schema(
+            "planning-proof",
+            schema,
+            {"chapter": 3, "scope": "chapter:3", "beats": ["choice"]},
+        )["chapter"]
+        == 3
+    )
     with pytest.raises(KernelError, match="frozen constant"):
         validate_chapter_provider_output_against_schema(
             "planning-proof",
@@ -309,7 +413,9 @@ def test_canon_semantics_accepts_exact_duplicate_for_authority_deduplication() -
     value = _valid("canon_extraction")
     value["canon_facts"].append(dict(value["canon_facts"][0]))
 
-    assert validate_chapter_provider_output_semantics("canon_extraction", value) == value
+    normalized = validate_chapter_provider_output_semantics("canon_extraction", value)
+
+    assert "supersedes_event_id" not in normalized["canon_facts"][0]
 
 
 def test_revision_schema_tells_provider_text_is_reader_facing_prose_only() -> None:

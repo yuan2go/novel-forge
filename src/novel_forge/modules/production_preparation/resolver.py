@@ -200,6 +200,13 @@ class PostgresProductionAssetResolver:
         )
         if accepted_scope is not None:
             asset = self._bind_acceptance_scope(asset, *accepted_scope)
+        else:
+            initial_scope = self._initial_snapshot_scope(
+                project_id=project_id,
+                asset_version_id=asset_version_id,
+            )
+            if initial_scope is not None:
+                asset = self._bind_initial_state_scope(asset, *initial_scope)
         return asset
 
     def _accepted_snapshot_scope(
@@ -232,6 +239,35 @@ class PostgresProductionAssetResolver:
             else None
         )
 
+    def _initial_snapshot_scope(
+        self, *, project_id: str, asset_version_id: str
+    ) -> tuple[str, str] | None:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT snapshot.book_id, binding.binding_id
+                FROM authority_book_production_input_snapshot AS snapshot
+                JOIN authority_book_production_input_binding AS binding
+                  ON binding.snapshot_id=snapshot.snapshot_id
+                 AND binding.project_id=snapshot.project_id
+                 AND binding.book_id=snapshot.book_id
+                JOIN authority_book_production AS production
+                  ON production.book_run_id=binding.book_run_id
+                 AND production.project_id=binding.project_id
+                 AND production.input_mode='RESOLVED_AUTHORITY_INPUT'
+                WHERE snapshot.project_id=%s
+                  AND (
+                    snapshot.initial_story_state_version=%s
+                    OR snapshot.initial_canon_snapshot_version=%s
+                  )
+                ORDER BY binding.created_at DESC
+                LIMIT 1
+                """,
+                [project_id, asset_version_id, asset_version_id],
+            )
+            row = uow.cursor.fetchone()
+        return (str(row[0]), str(row[1])) if row is not None else None
+
     @staticmethod
     def _bind_acceptance_scope(
         asset: ResolvedProductionAsset,
@@ -253,6 +289,36 @@ class PostgresProductionAssetResolver:
                 "accepted_through_chapter": accepted_chapter,
                 "book_id": book_id,
                 "acceptance_id": acceptance_id,
+                "_authority_acceptance_bound": True,
+            }
+        )
+        return replace(asset, content=content)
+
+    @staticmethod
+    def _bind_initial_state_scope(
+        asset: ResolvedProductionAsset,
+        book_id: str,
+        binding_id: str,
+    ) -> ResolvedProductionAsset:
+        content = dict(asset.content)
+        declared = content.get("chapter", content.get("chapter_number"))
+        if declared is not None and int(declared) != 0:
+            raise KernelError(
+                "PREPARATION_INITIAL_STATE_CHAPTER_MISMATCH",
+                "initial Narrative State must describe the pre-Chapter-1 boundary",
+            )
+        if content.get("initial_state_boundary") != "BOOK_PRODUCTION_INPUT_SNAPSHOT":
+            raise KernelError(
+                "PREPARATION_INITIAL_STATE_BOUNDARY_INVALID",
+                "initial Narrative State is not governed as a Book input snapshot",
+            )
+        content.update(
+            {
+                "chapter": 0,
+                "chapter_number": 0,
+                "accepted_through_chapter": 0,
+                "book_id": book_id,
+                "book_input_binding_id": binding_id,
                 "_authority_acceptance_bound": True,
             }
         )

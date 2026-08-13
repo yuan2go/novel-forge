@@ -1911,6 +1911,18 @@ def _stage_semantic_contract(stage: str) -> str:
     if stage == "canon_extraction":
         return (
             "Extract only facts and state changes supported by the revised chapter. "
+            "Treat from_status, from_state, and from_tier only as compare-and-set "
+            "preconditions against the exact accepted Story State supplied in the "
+            "governed context. For a first occurrence with no accepted entity baseline, "
+            "omit from_status, from_state, and from_tier; never infer them from prose, "
+            "Story Design assets, plans, or ordinary background conditions. "
+            "For canon_facts, compare each (subject, predicate) slot with the accepted "
+            "Canon facts supplied in the governed context. If the chapter does not "
+            "materially change an accepted fact, omit the redundant fact or reuse its "
+            "object exactly. If the chapter changes, refines, or replaces that fact, "
+            "copy the accepted fact's exact source_event_id into supersedes_event_id. "
+            "Never paraphrase an unchanged accepted fact into a different object, and "
+            "never invent a supersession identity. "
             "Within canon_facts, each (subject, predicate, impact_type) tuple may occur "
             "at most once. When one subject has multiple objects for a broad relation, "
             "either combine them into one object when they are one bundled fact, or use "
@@ -1920,13 +1932,24 @@ def _stage_semantic_contract(stage: str) -> str:
             "for the same semantic tuple."
         )
     if stage.startswith("quality_"):
-        return (
+        contract = (
             "Evaluate only the requested dimensions. Every returned dimension must "
             "include at least one concrete evidence location, including policy-"
             "compliance dimensions. Use PASSED only when the supplied chapter or "
             "governed context directly supports the claim; otherwise use "
             "INSUFFICIENT_EVIDENCE, REQUIRES_HUMAN_REVIEW, or FAILED as appropriate."
         )
+        if stage == "quality_longform":
+            contract += (
+                " For world_rule_conflict and power_state_conflict, distinguish a "
+                "proven no-op from missing comparison state: when the chapter directly "
+                "shows no state-changing use or claim and current state candidates "
+                "contain no transition, return PASSED with concrete no-op evidence; "
+                "do not require the chapter to exercise the rule or power. When the "
+                "chapter claims a state or transition but the governed comparison "
+                "baseline is unavailable, return INSUFFICIENT_EVIDENCE."
+            )
+        return contract
     return "Return only the stage result defined by the frozen output schema."
 
 

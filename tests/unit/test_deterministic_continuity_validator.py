@@ -8,6 +8,89 @@ from novel_forge.modules.canon_graph.domain import (
 
 
 class DeterministicContinuityValidatorTests(unittest.TestCase):
+    def test_foreshadow_transition_matches_canonical_entity_across_obligation_adapter(
+        self,
+    ) -> None:
+        report = validate_deterministic_continuity(
+            chapter=2,
+            historical_state={
+                "narrative_obligation": [
+                    {
+                        "entity_id": "foreshadow:mount-markers",
+                        "obligation_id": "promise:explain-mount-markers",
+                        "state": "PLANTED_UNINTERPRETED",
+                        "status": "OPEN",
+                    }
+                ]
+            },
+            extraction={
+                "foreshadow_changes": [
+                    {
+                        "entity_id": "foreshadow:mount-markers",
+                        "thread_id": "thread:record-contradiction",
+                        "promise_id": "promise:explain-mount-markers",
+                        "from_state": "PLANTED_UNINTERPRETED",
+                        "from_status": "OPEN",
+                        "state": "EDGE_ANOMALY_OBSERVED_UNAUTHENTICATED",
+                        "status": "OPEN",
+                    }
+                ]
+            },
+        )
+
+        self.assertEqual(report["gate"], "PASSED")
+        self.assertNotIn(
+            "NARRATIVE_TRANSITION_BASELINE_MISSING",
+            {item["conflict_code"] for item in report["violations"]},
+        )
+
+    def test_transition_preconditions_require_an_accepted_entity_baseline(self) -> None:
+        report = validate_deterministic_continuity(
+            chapter=1,
+            historical_state={},
+            extraction={
+                "character_state_changes": [
+                    {
+                        "character_id": "hero",
+                        "from_status": "IN_GOOD_STANDING",
+                        "status": "UNDER_REVIEW",
+                    }
+                ],
+                "timeline_event_candidates": [
+                    {
+                        "event_id": "event-1",
+                        "from_state": "ROUTINE",
+                        "state": "DISPUTED",
+                    }
+                ],
+                "foreshadow_changes": [
+                    {
+                        "thread_id": "thread-1",
+                        "from_status": "UNSET",
+                        "status": "PLANTED",
+                    }
+                ],
+                "antagonist_pressure_changes": [
+                    {
+                        "entity_id": "faction-1",
+                        "from_state": "DORMANT",
+                        "state": "WATCHING",
+                    }
+                ],
+            },
+        )
+
+        missing = [
+            item
+            for item in report["violations"]
+            if item["conflict_code"] == "NARRATIVE_TRANSITION_BASELINE_MISSING"
+        ]
+        self.assertEqual(report["gate"], "BLOCKED")
+        self.assertEqual(len(missing), 4)
+        self.assertTrue(
+            all(item["evidence"]["existing"] is None for item in missing)
+        )
+
     def test_explicit_temporal_identity_death_knowledge_and_graph_rules_block(
         self,
     ) -> None:

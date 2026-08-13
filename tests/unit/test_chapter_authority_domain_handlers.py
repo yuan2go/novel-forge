@@ -157,6 +157,69 @@ class ChapterAuthorityDomainHandlerTests(unittest.TestCase):
         self.assertEqual(rejected, {"world-version-large"})
         self.assertTrue(selected.isdisjoint(rejected))
 
+    def test_large_typed_plan_uses_rendered_context_size_and_keeps_continuing_state(
+        self,
+    ) -> None:
+        plan = {
+            **build_chapter_plan(
+                chapter=2,
+                title="A continuing chapter",
+                premise="The accepted state must survive a large typed planning payload.",
+                trace_id="trace-continuing-context-budget",
+            ),
+            "typed_planning_evidence": "x" * 50_000,
+        }
+        continuing = [
+            {
+                "asset_version_id": asset_version_id,
+                "asset_type": asset_type,
+                "physical_asset_type": asset_type,
+                "project_id": "project-a",
+                "estimated_tokens": estimated_tokens,
+                "safe_summary": f"Accepted {asset_type}.",
+                "structured_facts": [{"kind": asset_type, "value": "current"}],
+                "allowed_use": "generation",
+            }
+            for asset_version_id, asset_type, estimated_tokens in (
+                ("story-state-v1", "story_state_snapshot", 2_556),
+                ("canon-v1", "canon_snapshot", 5_597),
+                ("quality-v1", "quality_rubric", 51),
+                ("platform-v1", "platform_profile", 281),
+            )
+        ]
+
+        bundle = build_context_bundle(
+            plan=plan,
+            plan_asset_version_id="typed-plan-v2",
+            plan_content_hash="sha256:typed-plan-v2",
+            project_id="project-a",
+            governed_candidates=continuing,
+            required_asset_types=(
+                "chapter_plan",
+                "story_state_snapshot",
+                "canon_snapshot",
+                "quality_rubric",
+                "platform_profile",
+            ),
+            token_budget=16_000,
+        )
+
+        self.assertTrue(
+            {
+                "typed-plan-v2",
+                "story-state-v1",
+                "canon-v1",
+                "quality-v1",
+                "platform-v1",
+            }.issubset(set(bundle["selected_asset_version_ids"]))
+        )
+        plan_segment = next(
+            item
+            for item in bundle["context_segments"]
+            if item["asset_type"] == "chapter_plan"
+        )
+        self.assertLess(plan_segment["token_count"], 1_000)
+
     def test_post_blob_final_release_fails_closed_and_binds_receipt(self) -> None:
         common = {
             "project_id": "project-a",

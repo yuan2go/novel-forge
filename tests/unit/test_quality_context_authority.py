@@ -73,13 +73,14 @@ def _view(
     *,
     token_budget: int = 6000,
     canon: dict | None = None,
+    revision_text: str = "A governed revision with an explicit cost.",
 ) -> dict:
     return build_quality_context_view(
         group=group,
         revision={
             "chapter": 2,
             "title": "The Cost of Memory",
-            "text": "A governed revision with an explicit cost.",
+            "text": revision_text,
         },
         revision_asset_version_id="revision-v2",
         chapter_plan={
@@ -200,6 +201,87 @@ class QualityContextAuthorityTests(unittest.TestCase):
         identities = view["previous_state_snapshots"]["story_state_snapshot"]
         self.assertIn("character_id=alice", identities)
         self.assertIn("character_id=bob", identities)
+        self.assertLessEqual(
+            view["coverage_report"]["token_estimate"],
+            view["coverage_report"]["token_budget"],
+        )
+
+    def test_longform_coverage_deduplicates_shared_snapshot_versions_within_budget(self) -> None:
+        bundle = _bundle()
+        story = next(
+            item
+            for item in bundle["context_segments"]
+            if item["asset_type"] == "story_state_snapshot"
+        )
+        story["structured_facts"] = [
+            {
+                "state_kind": "character_state",
+                "entity_key": f"character_id=character-{index:02d}",
+                "state": {
+                    "character_id": f"character-{index:02d}",
+                    "detail": "x" * 600,
+                },
+            }
+            for index in range(40)
+        ]
+
+        view = _view(
+            "longform",
+            bundle,
+            token_budget=18_000,
+            canon={"conflicts": [], "state_changes": {}},
+            revision_text="r" * 10_000,
+        )
+
+        selected_versions = view["coverage_report"]["selected_asset_versions"]
+        self.assertEqual(selected_versions, sorted(set(selected_versions)))
+        self.assertEqual(
+            len(view["previous_state_snapshots"]["story_state_snapshot"]),
+            40,
+        )
+        self.assertLessEqual(
+            view["coverage_report"]["token_estimate"],
+            view["coverage_report"]["token_budget"],
+        )
+
+    def test_longform_reserves_the_actual_variable_coverage_report_size(self) -> None:
+        bundle = _bundle()
+        story = next(
+            item
+            for item in bundle["context_segments"]
+            if item["asset_type"] == "story_state_snapshot"
+        )
+        story["structured_facts"] = [
+            {
+                "state_kind": "character_state",
+                "entity_key": (
+                    "character_id=character-with-a-deliberately-long-proof-identity-"
+                    f"{index:03d}"
+                ),
+                "state": {
+                    "character_id": f"character-{index:03d}",
+                    "detail": "x" * 1_200,
+                },
+            }
+            for index in range(40)
+        ]
+
+        view = _view(
+            "longform",
+            bundle,
+            token_budget=28_000,
+            canon={"conflicts": [], "state_changes": {}},
+            revision_text="r" * 11_000,
+        )
+
+        self.assertEqual(
+            len(view["coverage_report"]["included_entities"]),
+            41,
+        )
+        self.assertEqual(
+            view["coverage_report"]["selected_asset_versions"],
+            sorted(set(view["coverage_report"]["selected_asset_versions"])),
+        )
         self.assertLessEqual(
             view["coverage_report"]["token_estimate"],
             view["coverage_report"]["token_budget"],
