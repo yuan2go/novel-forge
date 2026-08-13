@@ -636,7 +636,7 @@ _TRANSITION_PRECONDITION_SPECS = (
     (
         "foreshadow_changes",
         ("foreshadow_state", "narrative_obligation"),
-        (("thread_id", "obligation_id"),),
+        (("entity_id", "foreshadow_id", "thread_id", "obligation_id"),),
     ),
     (
         "promise_changes",

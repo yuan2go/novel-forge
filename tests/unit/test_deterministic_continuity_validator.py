@@ -8,6 +8,42 @@ from novel_forge.modules.canon_graph.domain import (
 
 
 class DeterministicContinuityValidatorTests(unittest.TestCase):
+    def test_foreshadow_transition_matches_canonical_entity_across_obligation_adapter(
+        self,
+    ) -> None:
+        report = validate_deterministic_continuity(
+            chapter=2,
+            historical_state={
+                "narrative_obligation": [
+                    {
+                        "entity_id": "foreshadow:mount-markers",
+                        "obligation_id": "promise:explain-mount-markers",
+                        "state": "PLANTED_UNINTERPRETED",
+                        "status": "OPEN",
+                    }
+                ]
+            },
+            extraction={
+                "foreshadow_changes": [
+                    {
+                        "entity_id": "foreshadow:mount-markers",
+                        "thread_id": "thread:record-contradiction",
+                        "promise_id": "promise:explain-mount-markers",
+                        "from_state": "PLANTED_UNINTERPRETED",
+                        "from_status": "OPEN",
+                        "state": "EDGE_ANOMALY_OBSERVED_UNAUTHENTICATED",
+                        "status": "OPEN",
+                    }
+                ]
+            },
+        )
+
+        self.assertEqual(report["gate"], "PASSED")
+        self.assertNotIn(
+            "NARRATIVE_TRANSITION_BASELINE_MISSING",
+            {item["conflict_code"] for item in report["violations"]},
+        )
+
     def test_transition_preconditions_require_an_accepted_entity_baseline(self) -> None:
         report = validate_deterministic_continuity(
             chapter=1,
