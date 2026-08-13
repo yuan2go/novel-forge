@@ -15,8 +15,9 @@ from novel_forge.modules.runtime_proof import (
 
 
 ROOT = Path(__file__).resolve().parents[2]
-CONTRACT_PATH = (
-    ROOT / "config" / "proof_campaigns" / "longform_narrative_v1.json"
+CONTRACT_PATH = ROOT / "config" / "proof_campaigns" / "longform_narrative_v1.json"
+CANONICAL_CONTRACT_PATH = (
+    ROOT / "config" / "proof_campaigns" / "longform_narrative_v2.json"
 )
 
 
@@ -56,11 +57,12 @@ def _minimal_contract() -> dict[str, object]:
         },
         "ground_truth": {
             "world_rules": [
-                {"fact_id": "rule:revision-traces", "statement": "Revisions leave traces."}
+                {
+                    "fact_id": "rule:revision-traces",
+                    "statement": "Revisions leave traces.",
+                }
             ],
-            "characters": [
-                {"character_id": "lin-qiao", "name": "Lin Qiao"}
-            ],
+            "characters": [{"character_id": "lin-qiao", "name": "Lin Qiao"}],
             "knowledge_matrix": [
                 {
                     "fact_id": "fact:living-witness",
@@ -108,8 +110,7 @@ def _minimal_contract() -> dict[str, object]:
         "runtime_bindings": {
             "capability_pack_id": "chapter_generation_pack",
             "capability_pack_version": "1.1.0",
-            "capability_pack_manifest_hash": "sha256:"
-            + "a" * 64,
+            "capability_pack_manifest_hash": "sha256:" + "a" * 64,
             "skill_bindings": [
                 {
                     "skill_ref": "prose-generation",
@@ -131,9 +132,7 @@ def test_contract_expands_one_frozen_book_to_three_hundred_chapters() -> None:
     contract = LongformCampaignContract.from_mapping(_minimal_contract())
 
     assert contract.target_chapters == 300
-    assert [row["chapter"] for row in contract.chapter_matrix] == list(
-        range(1, 301)
-    )
+    assert [row["chapter"] for row in contract.chapter_matrix] == list(range(1, 301))
     assert contract.chapter_matrix[29]["volume"] == 1
     assert contract.chapter_matrix[30]["volume"] == 2
     assert contract.checkpoint_chapters == (30, 100, 300)
@@ -144,7 +143,9 @@ def test_contract_rejects_mutable_ground_truth_or_thresholds() -> None:
     payload = _minimal_contract()
     payload["freeze_policy"]["ground_truth_mutable_after_chapter_1"] = True
 
-    with pytest.raises(ValueError, match="Ground Truth and thresholds must be immutable"):
+    with pytest.raises(
+        ValueError, match="Ground Truth and thresholds must be immutable"
+    ):
         LongformCampaignContract.from_mapping(payload)
 
 
@@ -177,7 +178,9 @@ def test_proof_language_gate_rejects_english_prose() -> None:
     assert result["reason"] == "PROSE_NOT_PRIMARILY_ZH_CN"
 
 
-def test_contract_rejects_non_contiguous_pattern_and_invalid_obligation_window() -> None:
+def test_contract_rejects_non_contiguous_pattern_and_invalid_obligation_window() -> (
+    None
+):
     payload = _minimal_contract()
     payload["book"]["chapter_pattern"][9]["offset"] = 11
 
@@ -218,6 +221,18 @@ def test_repository_contract_has_stable_declared_identity() -> None:
     drifted = deepcopy(raw)
     drifted["proof_thresholds"]["minimum_context_recall"] = 0.5
     drifted.pop("contract_identity")
-    assert contract_identity(LongformCampaignContract.from_mapping(drifted)) != raw[
-        "contract_identity"
-    ]
+    assert (
+        contract_identity(LongformCampaignContract.from_mapping(drifted))
+        != raw["contract_identity"]
+    )
+
+
+def test_canonical_architecture_campaign_versions_the_frozen_contract() -> None:
+    contract = load_campaign_contract(CANONICAL_CONTRACT_PATH)
+    raw = json.loads(CANONICAL_CONTRACT_PATH.read_text(encoding="utf-8"))
+
+    assert contract.campaign_id == "longform-narrative-v2"
+    assert contract.campaign_version == 2
+    assert contract.migration_head == "20260814_0088_canonical_narrative_architecture"
+    assert raw["runtime_bindings"]["capability_pack_version"] == "1.2.0"
+    assert contract_identity(contract) == raw["contract_identity"]

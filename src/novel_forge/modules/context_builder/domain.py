@@ -439,6 +439,8 @@ def _narrative_boundaries(
     segments: Iterable[ContextSegment],
 ) -> dict[str, list[dict[str, Any]]]:
     knowledge: list[dict[str, Any]] = []
+    reader_knowledge: list[dict[str, Any]] = []
+    disclosures: list[dict[str, Any]] = []
     obligations: list[dict[str, Any]] = []
     state_constraints: list[dict[str, Any]] = []
     for segment in segments:
@@ -459,6 +461,10 @@ def _narrative_boundaries(
             }
             if kind in {"character_knowledge", "character_belief"}:
                 knowledge.append({**base, "state": state})
+            elif kind == "reader_knowledge":
+                reader_knowledge.append({**base, "state": state})
+            elif kind == "disclosure_event":
+                disclosures.append({**base, "state": state})
             elif kind == "narrative_obligation":
                 if str(state.get("status") or "").upper() not in {
                     "FULFILLED",
@@ -482,6 +488,8 @@ def _narrative_boundaries(
 
     return {
         "character_knowledge_and_belief": sorted(knowledge, key=order),
+        "reader_knowledge": sorted(reader_knowledge, key=order),
+        "disclosure_events": sorted(disclosures, key=order),
         "unresolved_obligations": sorted(obligations, key=order),
         "current_state_constraints": sorted(state_constraints, key=order),
     }

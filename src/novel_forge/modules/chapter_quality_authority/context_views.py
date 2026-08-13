@@ -102,13 +102,9 @@ def compile_platform_policy(
             rules.get("rhythm") or facts.get("rhythm_expectations") or ()
         ),
         publish_metadata_rules=dict(
-            rules.get("publish_metadata")
-            or facts.get("publish_metadata_rules")
-            or {}
+            rules.get("publish_metadata") or facts.get("publish_metadata_rules") or {}
         ),
-        policy_digest=_digest(
-            {"source": profile_asset_version_id, "facts": facts}
-        ),
+        policy_digest=_digest({"source": profile_asset_version_id, "facts": facts}),
     )
 
 
@@ -127,10 +123,16 @@ def build_quality_context_view(
     token_estimator: TokenEstimator | None = None,
 ) -> dict[str, Any]:
     if token_budget <= 0:
-        raise KernelError("QUALITY_CONTEXT_BUDGET_INVALID", "quality token budget must be positive")
+        raise KernelError(
+            "QUALITY_CONTEXT_BUDGET_INVALID", "quality token budget must be positive"
+        )
     estimator = token_estimator or ConservativeTokenEstimator()
     if group not in {
-        "structural", "commercial", "source_originality", "longform", "platform"
+        "structural",
+        "commercial",
+        "source_originality",
+        "longform",
+        "platform",
     }:
         raise KernelError("QUALITY_GROUP_INVALID", "quality context group is invalid")
     manifest = dict(context_bundle.get("production_input_manifest") or {})
@@ -165,6 +167,8 @@ def build_quality_context_view(
             "readability_policy": quality_policy.thresholds,
             "mobile_reading_policy": quality_policy.thresholds,
             "format_policy": platform_policy.format_rules,
+            "chapter_intent": chapter_plan.get("chapter_intent"),
+            "scene_plan": chapter_plan.get("scene_plan", []),
         }
     elif group == "commercial":
         body = {
@@ -176,7 +180,9 @@ def build_quality_context_view(
             "reader_promise_actions": chapter_plan.get("reader_promise_actions", []),
             "reward_setup": chapter_plan.get("reward_setup", []),
             "reward_payoff": chapter_plan.get("reward_payoff", []),
-            "protagonist_charm_mechanism": chapter_plan.get("protagonist_charm_mechanism"),
+            "protagonist_charm_mechanism": chapter_plan.get(
+                "protagonist_charm_mechanism"
+            ),
             "antagonist_pressure": chapter_plan.get("antagonist_pressure"),
             "suspense_curve": chapter_plan.get("suspense_curve", []),
             "emotional_curve": chapter_plan.get("emotional_curve", []),
@@ -184,6 +190,11 @@ def build_quality_context_view(
             "serialization_function": chapter_plan.get("serialization_function"),
             "opening_state": chapter_plan.get("opening_state"),
             "next_chapter_bridge": chapter_plan.get("next_chapter_bridge"),
+            "chapter_intent": chapter_plan.get("chapter_intent"),
+            "arc_schedule": chapter_plan.get("arc_schedule", []),
+            "setups": chapter_plan.get("setups", []),
+            "payoffs": chapter_plan.get("payoffs", []),
+            "reader_experience": chapter_plan.get("reader_experience", {}),
         }
     elif group == "source_originality":
         governed_segments = [
@@ -208,7 +219,9 @@ def build_quality_context_view(
             "revision_text": str(revision.get("text") or ""),
             "source_governance": manifest.get("source_governance", {}),
             "context_manifest": context_bundle.get("context_manifest", {}),
-            "source_isolation_result": context_bundle.get("source_isolation_result", {}),
+            "source_isolation_result": context_bundle.get(
+                "source_isolation_result", {}
+            ),
             "copyright_boundary": context_bundle.get("copyright_boundary"),
             "governed_segment_identities": governed_segments,
             "source_expression_excluded": True,
@@ -253,9 +266,7 @@ def build_quality_context_view(
             "compiled_platform_policy": asdict(platform_policy),
             "publish_metadata_candidate": {
                 "chapter": revision.get("chapter"),
-                "title": str(
-                    revision.get("title") or chapter_plan.get("title") or ""
-                ),
+                "title": str(revision.get("title") or chapter_plan.get("title") or ""),
                 "summary": str(summary),
             },
         }
@@ -278,7 +289,9 @@ def build_quality_context_view(
     return body
 
 
-def _require_profile_segment(version_id: str, segment: dict[str, Any], label: str) -> None:
+def _require_profile_segment(
+    version_id: str, segment: dict[str, Any], label: str
+) -> None:
     if not version_id or segment.get("asset_version_id") != version_id:
         raise KernelError(
             "QUALITY_PROFILE_VERSION_MISSING",
@@ -311,7 +324,8 @@ def _segments_of_type(
             "content_digest": item.get("content_digest"),
             "structured_facts": item.get("structured_facts", []),
         }
-        for item in segments if item.get("asset_type") == asset_type
+        for item in segments
+        if item.get("asset_type") == asset_type
     ]
 
 
@@ -330,30 +344,36 @@ def _group_state_segments(
             for fact in facts:
                 if not isinstance(fact, dict):
                     continue
-                identity = str(fact.get("entity_key") or _state_identity(fact, state_type))
+                identity = str(
+                    fact.get("entity_key") or _state_identity(fact, state_type)
+                )
                 rows = grouped[state_type].setdefault(identity, [])
                 if rows and rows[-1].get("asset_version_id") == item.get(
                     "asset_version_id"
                 ):
                     rows[-1]["structured_facts"].append(fact)
                 else:
-                    rows.append({
-                        "asset_version_id": item.get("asset_version_id"),
-                        "entity_id": identity,
-                        "relationship_pair": None,
-                        "content_digest": item.get("content_digest"),
-                        "chapter": item.get("chapter"),
-                        "qualification": item.get("qualification", "ELIGIBLE"),
-                        "structured_facts": [fact],
-                        "declared_empty": False,
-                        "compressed": False,
-                        "omitted_fact_count": 0,
-                    })
+                    rows.append(
+                        {
+                            "asset_version_id": item.get("asset_version_id"),
+                            "entity_id": identity,
+                            "relationship_pair": None,
+                            "content_digest": item.get("content_digest"),
+                            "chapter": item.get("chapter"),
+                            "qualification": item.get("qualification", "ELIGIBLE"),
+                            "structured_facts": [fact],
+                            "declared_empty": False,
+                            "compressed": False,
+                            "omitted_fact_count": 0,
+                        }
+                    )
             continue
         identity = _state_identity(item, state_type)
         declared_empty = bool(
             item.get("declared_empty")
-            or any(isinstance(fact, dict) and fact.get("declared_empty") for fact in facts)
+            or any(
+                isinstance(fact, dict) and fact.get("declared_empty") for fact in facts
+            )
         )
         # The row-level flag is the canonical empty-state fact. Keeping the
         # ContextSegment's duplicate structured marker wastes scarce judge
@@ -376,7 +396,12 @@ def _group_state_segments(
         )
     for state in grouped.values():
         for rows in state.values():
-            rows.sort(key=lambda row: (int(row.get("chapter") or 0), str(row["asset_version_id"])))
+            rows.sort(
+                key=lambda row: (
+                    int(row.get("chapter") or 0),
+                    str(row["asset_version_id"]),
+                )
+            )
     return grouped
 
 
@@ -479,6 +504,19 @@ def _longform_chapter_plan_view(chapter_plan: dict[str, Any]) -> dict[str, Any]:
         "ending_hook",
         "prohibited_outcomes",
         "next_chapter_bridge",
+        "narrative_architecture_version",
+        "narrative_segment_ref",
+        "chapter_intent",
+        "arc_schedule",
+        "setups",
+        "payoffs",
+        "character_participation",
+        "knowledge_boundaries",
+        "disclosures",
+        "required_state_transitions",
+        "reader_experience",
+        "scene_plan",
+        "expected_exit_state",
     )
     return {field: chapter_plan[field] for field in fields if field in chapter_plan}
 
@@ -524,10 +562,10 @@ def _compress_one_noncritical_fact(
 ) -> bool:
     candidate = next(
         (
-            row for row in reversed(rows)
+            row
+            for row in reversed(rows)
             if any(
-                not _critical_fact(fact)
-                for fact in row.get("structured_facts") or []
+                not _critical_fact(fact) for fact in row.get("structured_facts") or []
             )
         ),
         None,
@@ -541,9 +579,7 @@ def _compress_one_noncritical_fact(
     facts.pop(remove_index)
     candidate["structured_facts"] = facts
     candidate["compressed"] = True
-    candidate["omitted_fact_count"] = int(
-        candidate.get("omitted_fact_count") or 0
-    ) + 1
+    candidate["omitted_fact_count"] = int(candidate.get("omitted_fact_count") or 0) + 1
     if not facts:
         _drop_redundant_empty_row_fields(candidate)
     return True
@@ -704,13 +740,23 @@ def _estimate_payload(payload: dict[str, Any], estimator: TokenEstimator) -> int
 
 
 def _digest(payload: dict[str, Any]) -> str:
-    return "sha256:" + hashlib.sha256(
-        json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str).encode()
-    ).hexdigest()
+    return (
+        "sha256:"
+        + hashlib.sha256(
+            json.dumps(
+                payload, sort_keys=True, separators=(",", ":"), default=str
+            ).encode()
+        ).hexdigest()
+    )
 
 
 __all__ = [
-    "CompiledPlatformPolicy", "CompiledQualityPolicy", "ConservativeTokenEstimator",
-    "STATE_ASSET_TYPES", "TokenEstimator",
-    "build_quality_context_view", "compile_platform_policy", "compile_quality_policy",
+    "CompiledPlatformPolicy",
+    "CompiledQualityPolicy",
+    "ConservativeTokenEstimator",
+    "STATE_ASSET_TYPES",
+    "TokenEstimator",
+    "build_quality_context_view",
+    "compile_platform_policy",
+    "compile_quality_policy",
 ]

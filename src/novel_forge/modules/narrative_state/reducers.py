@@ -23,6 +23,7 @@ APPEND_ONLY_KINDS = frozenset(
         NarrativeStateKind.REWARD_EVENT,
         NarrativeStateKind.THEME_MOVEMENT,
         NarrativeStateKind.PAYOFF_EVENT,
+        NarrativeStateKind.DISCLOSURE_EVENT,
     }
 )
 
@@ -92,6 +93,8 @@ STATE_KIND_REDUCER_SEMANTICS: dict[NarrativeStateKind, str] = {
     NarrativeStateKind.CHARACTER_KNOWLEDGE: "fact-bound-knowledge-transition",
     NarrativeStateKind.CHARACTER_BELIEF: "proposition-bound-belief-transition",
     NarrativeStateKind.CHARACTER_ARC: "character-arc-lifecycle-transition",
+    NarrativeStateKind.READER_KNOWLEDGE: "reader-epistemic-transition",
+    NarrativeStateKind.DISCLOSURE_EVENT: "append-only-presentation-evidence",
     NarrativeStateKind.WORLD_STATE: "world-entity-aware-upsert",
     NarrativeStateKind.FACTION_STATE: "faction-entity-aware-transition",
     NarrativeStateKind.LOCATION_STATE: "location-entity-aware-transition",

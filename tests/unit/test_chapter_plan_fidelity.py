@@ -11,6 +11,105 @@ from novel_forge.modules.command_kernel.errors import KernelError
 
 
 class ChapterPlanFidelityTests(unittest.TestCase):
+    def test_execution_contract_survives_normalization_and_provider_view(self) -> None:
+        execution = {
+            "chapter_intent": "Turn suspicion into a costly public choice.",
+            "arc_schedule": [
+                {
+                    "arc_plan_version_id": "arc-v1",
+                    "role": "PRIMARY",
+                    "segment_id": "arc-segment-2",
+                    "expected_movement": "denial to admission",
+                }
+            ],
+            "setups": [{"obligation_id": "setup-1", "action": "PLANT"}],
+            "payoffs": [{"obligation_id": "promise-1", "action": "ADVANCE"}],
+            "character_participation": [
+                {
+                    "character_id": "protagonist",
+                    "goal": "protect the witness",
+                    "trajectory_refs": ["character-arc:protagonist"],
+                    "known_fact_ids": ["fact:ledger"],
+                    "unknown_fact_ids": ["fact:traitor"],
+                    "belief_refs": ["belief:safety-through-silence"],
+                    "expected_change": "accept public accountability",
+                }
+            ],
+            "knowledge_boundaries": [
+                {
+                    "layer": "CHARACTER_KNOWLEDGE",
+                    "subject_id": "protagonist",
+                    "fact_id": "fact:ledger",
+                    "status": "KNOWN",
+                }
+            ],
+            "disclosures": [
+                {
+                    "disclosure_id": "disclosure-1",
+                    "fact_id": "fact:traitor",
+                    "audience": "READER",
+                    "mode": "HINT",
+                    "presentation_channel": "OBJECT_DETAIL",
+                }
+            ],
+            "required_state_transitions": [
+                {
+                    "state_kind": "character_arc",
+                    "entity_key": "protagonist:accountability",
+                    "from_state": "DENIAL",
+                    "to_state": "COMMITTED",
+                }
+            ],
+            "reader_experience": {
+                "entry_question": "Will she stay silent?",
+                "target_emotion": "costly relief",
+                "exit_question": "Who leaked the witness name?",
+            },
+            "scene_plan": [
+                {
+                    "scene_id": "scene-1",
+                    "scene_group_id": "group-1",
+                    "goal": "secure the ledger",
+                    "conflict": "the rival arrives first",
+                    "participants": ["protagonist", "rival"],
+                    "arc_progress": ["arc-v1"],
+                    "information_gain": ["fact:traitor"],
+                    "state_transitions": ["protagonist:accountability"],
+                    "entry_state": "private suspicion",
+                    "exit_state": "public accusation",
+                    "reader_effect": "relief becomes dread",
+                    "beats": ["discover", "choose", "pay"],
+                }
+            ],
+            "expected_exit_state": {
+                "summary": "The witness is safe but the conspiracy is alerted."
+            },
+        }
+        source = {
+            "project_id": "project-1",
+            "chapter": 8,
+            "title": "The Witness",
+            "premise": "Silence becomes impossible.",
+            "chapter_function": "reversal",
+            "chapter_objective": "Force a public choice.",
+            "scene_sequence": execution["scene_plan"],
+            "chapter_hook": "The witness name appears online.",
+            **execution,
+        }
+
+        normalized, _ = normalize_authoritative_chapter_plan(
+            project_id="project-1",
+            expected_chapter=8,
+            content=source,
+            asset_version_id="plan-v8",
+            content_hash="sha256:v8",
+        )
+        view = build_draft_plan_view(normalized)
+
+        self.assertEqual(normalized["contract_version"], "authoritative-chapter-plan-v4")
+        for key, value in execution.items():
+            self.assertEqual(view[key], value)
+
     def test_rich_plan_survives_normalization_and_draft_view(self) -> None:
         source = {
             "project_id": "project-1", "chapter": 7, "title": "The Debt",

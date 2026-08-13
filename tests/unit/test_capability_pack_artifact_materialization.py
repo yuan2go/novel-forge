@@ -125,7 +125,7 @@ def _registered_version_and_snapshot():
         prompt_system_instruction_hash=system.content_hash,
         prompt_template_ref=f"{template.ref}@{template.version}",
         prompt_template_hash=template.content_hash,
-        prompt_compiler_version="chapter-prompt-compiler:v1",
+        prompt_compiler_version="chapter-prompt-compiler:v2",
         skill_ref=skill.ref,
         skill_version=skill.version,
         skill_content_hash=skill.content_hash,
@@ -259,8 +259,8 @@ def test_codex_prompt_materializes_typed_target_scope_as_json() -> None:
             "context_selection": [
                 {
                     "asset_version_id": "context:v1",
-                    "content": {
-                        "segments": [],
+                        "content": {
+                            "context_segments": [],
                         "language_contract": {
                             "required_language": "zh-CN",
                             "reader_facing_prose": "REQUIRED",
@@ -287,3 +287,9 @@ def test_codex_prompt_materializes_typed_target_scope_as_json() -> None:
     assert "governed reader-facing language is zh-CN" in prompt
     assert evidence["required_reader_facing_language"] == "zh-CN"
     assert evidence["fully_rendered_prompt_hash"].startswith("sha256:")
+    assert evidence["provider_view"]["representation_policy"] == (
+        "authority-projection-task-provider-v1"
+    )
+    assert evidence["provider_view"]["provider_context_estimated_tokens"] > 0
+    assert '"contract_version":"provider-task-view-v1"' in prompt
+    assert '"contract_version":"provider-context-view-v1"' in prompt

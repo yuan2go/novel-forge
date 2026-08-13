@@ -230,6 +230,43 @@ class DeterministicContinuityValidatorTests(unittest.TestCase):
         self.assertEqual(report["violations"], [])
         self.assertFalse(report["used_text_heuristics"])
 
+    def test_reader_knowledge_requires_reader_facing_disclosure(self) -> None:
+        blocked = validate_deterministic_continuity(
+            chapter=3,
+            historical_state={},
+            extraction={
+                "reader_knowledge_changes": [
+                    {"fact_id": "fact:traitor", "status": "KNOWN"}
+                ],
+                "disclosure_events": [],
+            },
+        )
+        passed = validate_deterministic_continuity(
+            chapter=3,
+            historical_state={},
+            extraction={
+                "reader_knowledge_changes": [
+                    {"fact_id": "fact:traitor", "status": "HINTED"}
+                ],
+                "disclosure_events": [
+                    {
+                        "disclosure_id": "disclosure:traitor",
+                        "fact_id": "fact:traitor",
+                        "audience": "READER",
+                        "disclosure_mode": "HINT",
+                        "presentation_channel": "OBJECT_DETAIL",
+                    }
+                ],
+            },
+        )
+
+        self.assertEqual(blocked["gate"], "BLOCKED")
+        self.assertEqual(
+            blocked["violations"][0]["conflict_code"],
+            "READER_KNOWLEDGE_WITHOUT_DISCLOSURE",
+        )
+        self.assertEqual(passed["gate"], "PASSED")
+
 
 if __name__ == "__main__":
     unittest.main()

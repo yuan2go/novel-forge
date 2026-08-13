@@ -33,7 +33,6 @@ from novel_forge.modules.chapter_authority.domain_handlers import (
 )
 from novel_forge.modules.chapter_authority.chapter_plan_views import (
     ChapterPlanQualificationProfile,
-    build_draft_context_view,
     build_draft_plan_view,
     build_draft_style_view,
     normalize_authoritative_chapter_plan,
@@ -474,7 +473,6 @@ class _DraftHandler:
             stage="draft",
             payload={
                 "plan": build_draft_plan_view(plan.content),
-                "context": build_draft_context_view(context.content),
                 "style": build_draft_style_view(context.content),
             },
         )
@@ -501,7 +499,7 @@ class _ReviewHandler:
         reviewed = self.provider.invoke(
             request,
             stage="review",
-            payload={"draft": draft.content, "context": context.content},
+            payload={"draft": draft.content},
         )
         return _model_output(
             ChapterNode.REVIEW,
@@ -537,7 +535,6 @@ class _RevisionHandler:
                     "draft": revision.content,
                     "quality": quality.content,
                     "required_actions": [item.content for item in quality_tasks],
-                    "context": context.content,
                 },
             )
             return _model_output(
@@ -568,7 +565,6 @@ class _RevisionHandler:
             payload={
                 "draft": draft.content,
                 "review": review.content,
-                "context": context.content,
             },
         )
         return _model_output(
@@ -605,7 +601,6 @@ class _ReReviewHandler:
                 "original_draft": draft.content,
                 "review": review.content,
                 "revision": revision.content,
-                "context": context.content,
             },
         )
         return _model_output(
@@ -724,7 +719,7 @@ class _CanonExtractionHandler:
             generated = self.provider.invoke(
                 request,
                 stage="canon_extraction",
-                payload={"revision": revision.content, "context": context.content},
+                payload={"revision": revision.content},
             )
             provider_extraction = _canon_provider_extraction(generated)
         content = build_canon_extraction(

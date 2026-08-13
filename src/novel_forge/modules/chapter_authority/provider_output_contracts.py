@@ -29,6 +29,12 @@ _CANON_FIELDS = (
     "narrative_pattern_fingerprints",
     "theme_movements",
     "antagonist_pressure_changes",
+    "character_knowledge_changes",
+    "character_belief_changes",
+    "character_arc_changes",
+    "arc_state_changes",
+    "reader_knowledge_changes",
+    "disclosure_events",
 )
 _READER_STATE_FIELDS = (
     "continue_intent",
@@ -201,6 +207,14 @@ def _canon_schema() -> dict[str, Any]:
             "type": "array",
             "items": {"type": "string"},
         },
+        "fact_id": {"type": "string"},
+        "proposition_id": {"type": "string"},
+        "disclosure_id": {"type": "string"},
+        "arc_id": {"type": "string"},
+        "audience": {"type": "string"},
+        "disclosure_mode": {"type": "string"},
+        "presentation_channel": {"type": "string"},
+        "belief_confidence": {"type": "number", "minimum": 0, "maximum": 1},
         **evidence_fields,
     }
     change_required = {"summary", *evidence_fields}
@@ -331,7 +345,13 @@ def chapter_provider_output_schema(stage: str) -> dict[str, Any]:
 
 def chapter_provider_output_schema_ref(stage: str) -> str:
     chapter_provider_output_schema(stage)
-    version = "v2" if stage in {*_QUALITY_STAGES, "canon_extraction"} else "v1"
+    version = (
+        "v3"
+        if stage == "canon_extraction"
+        else "v2"
+        if stage in _QUALITY_STAGES
+        else "v1"
+    )
     return f"schema:chapter-provider-output:{stage}:{version}"
 
 
@@ -375,6 +395,22 @@ def validate_chapter_provider_output_semantics(
     normalized = json.loads(json.dumps(value, ensure_ascii=False))
     if stage == "canon_extraction":
         normalized = _without_null_object_properties(normalized)
+        for change in normalized.get("resource_state_changes", []):
+            before = change.get("balance_before")
+            delta = change.get("delta")
+            after = change.get("balance_after")
+            if delta is None:
+                if after is None:
+                    raise KernelError(
+                        "CHAPTER_PROVIDER_OUTPUT_SEMANTIC_INVALID",
+                        "initial Resource State requires balance_after",
+                    )
+                change["balance"] = after
+            elif before is None or after is None or float(before) + float(delta) != float(after):
+                raise KernelError(
+                    "CHAPTER_PROVIDER_OUTPUT_SEMANTIC_INVALID",
+                    "Resource transition requires balance_before + delta = balance_after",
+                )
         fingerprints: dict[tuple[object, ...], str] = {}
         for field in _CANON_FIELDS:
             for item in normalized.get(field, []):

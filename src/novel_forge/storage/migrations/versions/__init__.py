@@ -88,6 +88,7 @@ from . import (
     v20260812_0085_corrective_action_terminal_lineage,
     v20260812_0086_corrective_generation_terminal_lineage,
     v20260813_0087_book_initial_narrative_state_binding,
+    v20260814_0088_canonical_narrative_architecture,
 )
 
 VERSION_MODULES = [
@@ -178,6 +179,7 @@ VERSION_MODULES = [
     v20260812_0085_corrective_action_terminal_lineage,
     v20260812_0086_corrective_generation_terminal_lineage,
     v20260813_0087_book_initial_narrative_state_binding,
+    v20260814_0088_canonical_narrative_architecture,
 ]
 
 __all__ = ["VERSION_MODULES"]

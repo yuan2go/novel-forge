@@ -125,8 +125,12 @@ def test_planning_provider_schema_is_codex_strict(
         "input:a",
         "input:b",
     ]
-    if contract_type is not PlanContractType.BOOK:
+    if contract_type not in {PlanContractType.BOOK, PlanContractType.ARC}:
         assert schema["properties"]["parent_version_id"]["const"] == "parent:v1"
+    if contract_type is PlanContractType.ARC:
+        assert "parent_version_id" not in schema["properties"]
+        assert schema["properties"]["thread_id"]["minLength"] == 1
+        assert schema["properties"]["arc_segments"]["minItems"] == 1
     if contract_type in {PlanContractType.VOLUME, PlanContractType.CHAPTER_GROUP}:
         assert schema["properties"]["chapter_range"]["minItems"] == 2
         assert schema["properties"]["chapter_range"]["maxItems"] == 2
@@ -135,6 +139,43 @@ def test_planning_provider_schema_is_codex_strict(
         assert schema["properties"]["title"]["maxLength"] == 120
         assert schema["properties"]["premise"]["maxLength"] == 320
         assert "reader-facing" in schema["properties"]["title"]["description"]
+
+
+def test_volume_and_chapter_provider_contracts_bind_timeline_segments() -> None:
+    volume = planning_provider_output_schema(PlanContractType.VOLUME)
+    chapter = planning_provider_output_schema(
+        PlanContractType.CHAPTER,
+        parent_version_id="group:v1",
+        arc_plan_version_id="arc:v1",
+    )
+
+    assert volume["properties"]["narrative_segments"]["minItems"] == 1
+    assert set(volume["properties"]["narrative_segments"]["items"]["required"]) == {
+        "segment_id",
+        "objective",
+        "chapter_range",
+        "entry_state_ref",
+        "exit_state_spec",
+        "arc_checkpoint_refs",
+    }
+    assert set(chapter["properties"]["narrative_segment_ref"]["required"]) == {
+        "volume_plan_version_id",
+        "segment_id",
+    }
+    for field in (
+        "chapter_intent",
+        "arc_schedule",
+        "setups",
+        "payoffs",
+        "character_participation",
+        "knowledge_boundaries",
+        "disclosures",
+        "required_state_transitions",
+        "reader_experience",
+        "scene_plan",
+        "expected_exit_state",
+    ):
+        assert field in chapter["required"]
 
 
 def test_chapter_group_contract_rejects_non_pair_range_as_governed_error() -> None:
@@ -204,6 +245,7 @@ def test_chapter_contract_preserves_explicit_empty_arc_contribution_policy() -> 
         },
     )
     content["required_arc_contributions"] = []
+    content.pop("narrative_architecture_version")
 
     contract = validate_planning_contract(
         project_id="project-1",
@@ -439,7 +481,9 @@ def test_planning_agent_cannot_claim_chapter_commit_authority() -> None:
 def test_planning_constraint_envelope_propagates_parent_invariants_and_scope() -> None:
     command = _command("chapter_plan.generate")
     inputs = _inputs(command)
-    contents = {role: {} for role in GENERATOR_INPUT_ROLES[command.generator_operation_name]}
+    contents = {
+        role: {} for role in GENERATOR_INPUT_ROLES[command.generator_operation_name]
+    }
     contents["book_plan"] = {
         "invariants": ["the succession law cannot be waived"],
         "prohibited_outcomes": ["the dead regent returns alive"],

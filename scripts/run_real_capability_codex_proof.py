@@ -78,7 +78,7 @@ from novel_forge.storage.object_store import MinioObjectStore
 ROOT = Path(__file__).resolve().parents[1]
 PACK_PATH = ROOT / "config/capability_packs/chapter_generation_pack.json"
 PACK_ID = "chapter_generation_pack"
-PACK_VERSION = "1.1.0"
+PACK_VERSION = "1.2.0"
 WORKFLOW_REF = CHAPTER_MODEL_WORKFLOW_DEFINITION_REF
 MODEL_STAGES = (
     "draft",

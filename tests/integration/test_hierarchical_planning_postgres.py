@@ -116,9 +116,7 @@ class HierarchicalPlanningPostgresTests(unittest.TestCase):
             PlanContractType.BOOK,
             "book:other",
         )
-        with self.assertRaisesRegex(
-            KernelError, "PLANNING_PARENT_BINDING_INVALID"
-        ):
+        with self.assertRaisesRegex(KernelError, "PLANNING_PARENT_BINDING_INVALID"):
             self._activate_and_bind(
                 PlanContractType.CHAPTER,
                 "chapter:bad-parent",
@@ -182,10 +180,7 @@ class HierarchicalPlanningPostgresTests(unittest.TestCase):
                 """,
                 [self.project_id],
             )
-            edges = {
-                (str(row[0]), str(row[1]))
-                for row in uow.cursor.fetchall()
-            }
+            edges = {(str(row[0]), str(row[1])) for row in uow.cursor.fetchall()}
             uow.cursor.execute(
                 """
                 SELECT COUNT(*)
@@ -216,6 +211,116 @@ class HierarchicalPlanningPostgresTests(unittest.TestCase):
         )
         self.assertEqual(arc_containment_count, 0)
 
+    def test_canonical_segment_arc_and_chapter_execution_views_compose(self) -> None:
+        book = self._activate_and_bind(PlanContractType.BOOK, "book:canonical")
+        volume = self._activate_and_bind(
+            PlanContractType.VOLUME,
+            "volume:canonical",
+            parent=book,
+            extra={
+                "narrative_architecture_version": "canonical-narrative-v1",
+                "narrative_segments": [
+                    {
+                        "segment_id": "segment:commitment",
+                        "objective": "force public commitment",
+                        "chapter_range": [1, 3],
+                        "entry_state_ref": "story-state:v0",
+                        "exit_state_spec": {"summary": "commitment is public"},
+                        "arc_checkpoint_refs": ["arc:accountability"],
+                    }
+                ],
+            },
+        )
+        arc = self._activate_and_bind(
+            PlanContractType.ARC,
+            "arc:canonical",
+            extra={
+                "narrative_architecture_version": "canonical-narrative-v1",
+                "thread_id": "thread:accountability",
+                "cross_volume_scope": [volume["asset_version_id"]],
+                "arc_segments": [
+                    {
+                        "segment_id": "arc-segment:choice",
+                        "volume_plan_version_id": volume["asset_version_id"],
+                        "narrative_segment_id": "segment:commitment",
+                        "objective": "denial becomes action",
+                        "entry_state_ref": "arc-state:denial",
+                        "exit_state_spec": {"summary": "action has cost"},
+                        "status": "PLANNED",
+                    }
+                ],
+                "arc_relations": [],
+            },
+        )
+        group = self._activate_and_bind(
+            PlanContractType.CHAPTER_GROUP,
+            "group:canonical",
+            parent=volume,
+            extra={
+                "narrative_architecture_version": "canonical-narrative-v1",
+                "narrative_segment_ref": {
+                    "volume_plan_version_id": volume["asset_version_id"],
+                    "segment_id": "segment:commitment",
+                },
+            },
+        )
+        chapter = self._activate_and_bind(
+            PlanContractType.CHAPTER,
+            "chapter:canonical",
+            parent=group,
+            extra={
+                "narrative_architecture_version": "canonical-narrative-v1",
+                "narrative_segment_ref": {
+                    "volume_plan_version_id": volume["asset_version_id"],
+                    "segment_id": "segment:commitment",
+                },
+                "chapter_intent": "make the choice visible",
+                "arc_schedule": [
+                    {
+                        "arc_plan_version_id": arc["asset_version_id"],
+                        "role": "PRIMARY",
+                        "segment_id": "arc-segment:choice",
+                        "expected_movement": "denial to action",
+                    }
+                ],
+                "required_arc_contributions": [
+                    {
+                        "arc_plan_version_id": arc["asset_version_id"],
+                        "contribution": "denial becomes visible action",
+                    }
+                ],
+                "setups": [],
+                "payoffs": [],
+                "character_participation": [{"character_id": "character:lin"}],
+                "knowledge_boundaries": [{"fact_id": "fact:ledger"}],
+                "disclosures": [{"disclosure_id": "disclosure:ledger"}],
+                "required_state_transitions": [{"entity_key": "character:lin"}],
+                "reader_experience": {"target_emotion": "costly relief"},
+                "scene_plan": [{"scene_id": "scene:1"}],
+                "expected_exit_state": {"summary": "the choice is public"},
+            },
+        )
+
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                "SELECT narrative_segment_id FROM authority_narrative_segment_projection "
+                "WHERE project_id=%s AND volume_plan_version_id=%s",
+                [self.project_id, volume["asset_version_id"]],
+            )
+            self.assertEqual(uow.cursor.fetchone()[0], "segment:commitment")
+            uow.cursor.execute(
+                "SELECT thread_id FROM authority_narrative_arc_graph_projection "
+                "WHERE project_id=%s AND arc_plan_version_id=%s",
+                [self.project_id, arc["asset_version_id"]],
+            )
+            self.assertEqual(uow.cursor.fetchone()[0], "thread:accountability")
+            uow.cursor.execute(
+                "SELECT chapter_intent FROM authority_chapter_execution_plan_projection "
+                "WHERE project_id=%s AND chapter_plan_version_id=%s",
+                [self.project_id, chapter["asset_version_id"]],
+            )
+            self.assertEqual(uow.cursor.fetchone()[0], "make the choice visible")
+
     def test_active_plan_unique_and_frozen_replacement_requires_approval(
         self,
     ) -> None:
@@ -229,9 +334,7 @@ class HierarchicalPlanningPostgresTests(unittest.TestCase):
             "book:main",
             label="replacement",
         )
-        with self.assertRaisesRegex(
-            KernelError, "FROZEN_PLAN_APPROVAL_REQUIRED"
-        ):
+        with self.assertRaisesRegex(KernelError, "FROZEN_PLAN_APPROVAL_REQUIRED"):
             self.planning.bind_active_contract(
                 project_id=self.project_id,
                 book_id=self.book_id,
@@ -352,15 +455,15 @@ class HierarchicalPlanningPostgresTests(unittest.TestCase):
             story_design_operation_id = str(uow.cursor.fetchone()[0])
         self.assertEqual(first["operation_id"], replay["operation_id"])
         self.assertTrue(replay["replayed"])
-        self.assertEqual(tuple(operation), ("SUCCEEDED", "planning.binding.activate", 0))
+        self.assertEqual(
+            tuple(operation), ("SUCCEEDED", "planning.binding.activate", 0)
+        )
         self.assertEqual(outbox_count, 1)
         self.assertNotEqual(first["operation_id"], story_design_operation_id)
         self.assertEqual(first["created_by_operation_id"], first["operation_id"])
 
     def test_binding_rolls_back_business_outbox_and_operation_on_fault(self) -> None:
-        asset_version_id = self._activate_design(
-            PlanContractType.BOOK, "book:rollback"
-        )
+        asset_version_id = self._activate_design(PlanContractType.BOOK, "book:rollback")
 
         def inject(point: str) -> None:
             if point == "after_outbox_insert":
@@ -469,15 +572,15 @@ class HierarchicalPlanningPostgresTests(unittest.TestCase):
         )
         suffix = label or str(self.counter)
         asset_id = (
-            f"{self.project_id}:{contract_type.value.lower()}:"
-            f"{logical_key}:{suffix}"
+            f"{self.project_id}:{contract_type.value.lower()}:{logical_key}:{suffix}"
         )
         version_id = f"{asset_id}:v1"
-        content_hash = "sha256:" + hashlib.sha256(
-            json.dumps(
-                content, sort_keys=True, separators=(",", ":")
-            ).encode()
-        ).hexdigest()
+        content_hash = (
+            "sha256:"
+            + hashlib.sha256(
+                json.dumps(content, sort_keys=True, separators=(",", ":")).encode()
+            ).hexdigest()
+        )
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
             uow.cursor.execute(
                 """
@@ -633,26 +736,16 @@ class HierarchicalPlanningPostgresTests(unittest.TestCase):
                     "emotion_curve": ["uncertainty", "resolve", "cost"],
                     "antagonist_actions": ["observe", "contain", "counter"],
                     "chapter_function_matrix": [
-                        self._chapter_matrix_row(
-                            1, "DISCOVERY", "new threat"
-                        ),
-                        self._chapter_matrix_row(
-                            2, "ESCALATION", "cost revealed"
-                        ),
-                        self._chapter_matrix_row(
-                            3, "REVERSAL", "choice demanded"
-                        ),
+                        self._chapter_matrix_row(1, "DISCOVERY", "new threat"),
+                        self._chapter_matrix_row(2, "ESCALATION", "cost revealed"),
+                        self._chapter_matrix_row(3, "REVERSAL", "choice demanded"),
                     ],
                     "chapter_range": [1, 3],
                     "cost_range": [100, 300],
                 }
             )
         else:
-            values.update(
-                self._chapter_matrix_row(
-                    1, "DISCOVERY", "new threat"
-                )
-            )
+            values.update(self._chapter_matrix_row(1, "DISCOVERY", "new threat"))
             values["required_arc_contributions"] = []
         values.update(extra or {})
         return values

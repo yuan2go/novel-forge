@@ -1652,9 +1652,7 @@ def _run_planning(
     )
     for generator, logical_key, explicit_parent in sequence:
         parent = explicit_parent
-        if generator == "arc_plan.generate":
-            parent = activated["volume_plan.generate"]
-        elif generator == "chapter_group_plan.generate":
+        if generator == "chapter_group_plan.generate":
             parent = activated["volume_plan.generate"]
         elif generator == "chapter_plan.generate":
             parent = activated["chapter_group_plan.generate"]

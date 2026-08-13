@@ -22,6 +22,10 @@ PLAN_FIELDS = (
     "chapter_economy_function", "reader_dropoff_risks", "payoff_schedule",
     "platform_rhythm", "conflict_escalation",
     "constraint_envelope",
+    "narrative_architecture_version", "narrative_segment_ref", "chapter_intent",
+    "arc_schedule", "setups", "payoffs", "character_participation",
+    "knowledge_boundaries", "disclosures", "required_state_transitions",
+    "reader_experience", "scene_plan", "expected_exit_state",
 )
 LIST_FIELDS = frozenset({
     "cast", "relationship_pairs", "scene_sequence", "scene_goals", "character_goals",
@@ -30,6 +34,8 @@ LIST_FIELDS = frozenset({
     "foreshadow_actions", "canon_expected_changes", "world_rule_usages",
     "power_state_changes", "prohibited_outcomes", "style_constraints", "quality_targets",
     "reader_dropoff_risks", "payoff_schedule", "platform_rhythm", "conflict_escalation",
+    "arc_schedule", "setups", "payoffs", "character_participation",
+    "knowledge_boundaries", "disclosures", "required_state_transitions", "scene_plan",
 })
 
 
@@ -159,7 +165,7 @@ def normalize_authoritative_chapter_plan(
         "source_chapter_plan_asset_version_id": asset_version_id,
         "source_chapter_plan_content_hash": content_hash,
         "source_schema_version": str(content.get("schema_version") or content.get("contract_version") or "legacy"),
-        "contract_version": "authoritative-chapter-plan-v3",
+        "contract_version": "authoritative-chapter-plan-v4",
     }
     for field in PLAN_FIELDS:
         if field in {"chapter_objective", "scene_sequence", "chapter_hook"}:
@@ -220,6 +226,11 @@ def build_draft_plan_view(plan: dict[str, Any]) -> dict[str, Any]:
             "chapter_economy_function", "reader_dropoff_risks", "payoff_schedule",
             "platform_rhythm", "conflict_escalation",
             "constraint_envelope",
+            "narrative_architecture_version", "narrative_segment_ref",
+            "chapter_intent", "arc_schedule", "setups", "payoffs",
+            "character_participation", "knowledge_boundaries", "disclosures",
+            "required_state_transitions", "reader_experience", "scene_plan",
+            "expected_exit_state",
         )},
         "source_chapter_plan_asset_version_id": plan["source_chapter_plan_asset_version_id"],
         "source_chapter_plan_content_hash": plan["source_chapter_plan_content_hash"],

@@ -62,6 +62,9 @@ from novel_forge.modules.story_planning_runtime import (
     canonical_hash,
     story_planning_generation_definition,
 )
+from novel_forge.modules.story_planning_runtime.execution import (
+    planning_fixture_response,
+)
 from novel_forge.modules.story_design_authority import GENERATOR_CATALOG
 from novel_forge.modules.production_execution.capability_registry import (
     PLANNING_TIMEOUT_POLICY_VERSION,
@@ -428,6 +431,18 @@ def _planning_contract(command: StoryPlanningGenerationCommand) -> dict[str, Any
             contribution["arc_plan_version_id"] = command.input_versions["arc_plans"]
     if command.parent_version_id:
         payload["parent_version_id"] = command.parent_version_id
+    payload.update(
+        planning_fixture_response(
+            command.generator_operation_name,
+            {
+                "planning_command": {
+                    "logical_key": command.logical_key,
+                    "parent_version_id": command.parent_version_id,
+                    "input_versions": dict(command.input_versions),
+                }
+            },
+        )
+    )
     assert set(TYPE_FIELDS[contract_type]).issubset(payload)
     return payload
 
@@ -724,7 +739,7 @@ def _activate_plan_chain(
             generator_operation_name=generator,
             logical_key=logical,
             input_versions=inputs,
-            parent_version_id=parent,
+            parent_version_id="" if generator == "arc_plan.generate" else parent,
             idempotency_key=f"{project_id}:{generator}",
             trace_id=f"trace:{generator}",
             correlation_id=f"correlation:{project_id}",
@@ -868,10 +883,35 @@ def test_five_planning_generators_repair_activate_and_replay_in_postgres() -> No
                 activated["chapter_plan.generate"],
                 "story_planning.chapter_plan.materialize",
                 "SUCCEEDED",
-                "The Door Closes",
-                "The protagonist makes a witnessed choice.",
+                "Chapter 1: The Door Closes",
+                "Chapter 1 forces the protagonist into a witnessed choice.",
             )
         ]
+        uow.cursor.execute(
+            """
+            SELECT segment.narrative_segment_id,
+                   arc.thread_id,
+                   chapter.chapter_intent,
+                   jsonb_array_length(chapter.arc_schedule),
+                   jsonb_array_length(chapter.scene_plan)
+            FROM authority_narrative_segment_projection AS segment
+            JOIN authority_narrative_arc_graph_projection AS arc
+              ON arc.project_id=segment.project_id
+             AND arc.book_id=segment.book_id
+            JOIN authority_chapter_execution_plan_projection AS chapter
+              ON chapter.project_id=segment.project_id
+             AND chapter.book_id=segment.book_id
+            WHERE segment.project_id=%s
+            """,
+            [project_id],
+        )
+        assert uow.cursor.fetchone() == (
+            "narrative-segment:1",
+            "thread:central-conflict",
+            "Force a witnessed choice that advances the central conflict.",
+            1,
+            1,
+        )
         uow.cursor.execute(
             """
             SELECT generation_id

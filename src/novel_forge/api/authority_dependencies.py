@@ -495,7 +495,7 @@ def build_production_execution_composition(
             template_artifact = repository_artifacts.resolve(
                 ArtifactKind.PROMPT_TEMPLATE,
                 "prompt-template:chapter-generation-pack",
-                "v1",
+                "v2",
             )
             skill_artifact = next(
                 item
@@ -556,7 +556,7 @@ def build_production_execution_composition(
             skill_content_hash=skill_content_hash,
             prompt_compiler_version=str(
                 values.get("NOVEL_FORGE_PROMPT_COMPILER_VERSION")
-                or "chapter-prompt-compiler:v1"
+                or "chapter-prompt-compiler:v2"
             ),
             output_schema_ref=capability_definition.output_schema_ref,
             release_sha=release_sha,

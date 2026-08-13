@@ -1,4 +1,5 @@
 """Pure contracts and validators for hierarchical story planning."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -147,19 +148,26 @@ def validate_planning_contract(
             "PLANNING_CONTRACT_INCOMPLETE",
             f"{contract_type.value} contract missing: {', '.join(missing)}",
         )
-    if contract_type in {
-        PlanContractType.VOLUME,
-        PlanContractType.CHAPTER_GROUP,
-        PlanContractType.CHAPTER,
-    } and not parent_version_id:
+    if (
+        contract_type
+        in {
+            PlanContractType.VOLUME,
+            PlanContractType.CHAPTER_GROUP,
+            PlanContractType.CHAPTER,
+        }
+        and not parent_version_id
+    ):
         raise KernelError(
             "PLANNING_PARENT_VERSION_REQUIRED",
             f"{contract_type.value} requires a frozen parent version",
         )
-    if contract_type is PlanContractType.BOOK and parent_version_id:
+    if (
+        contract_type in {PlanContractType.BOOK, PlanContractType.ARC}
+        and parent_version_id
+    ):
         raise KernelError(
             "PLANNING_PARENT_VERSION_INVALID",
-            "BookPlan cannot have a containment parent",
+            f"{contract_type.value} cannot have a containment parent",
         )
     if (
         content.get("project_id", project_id) != project_id
@@ -200,6 +208,8 @@ def validate_planning_contract(
         )
     if contract_type is PlanContractType.CHAPTER:
         _validate_chapter_arc_contributions(content["required_arc_contributions"])
+    if content.get("narrative_architecture_version") == "canonical-narrative-v1":
+        _validate_canonical_narrative_contract(contract_type, content)
     return PlanningContract(
         project_id=project_id,
         book_id=book_id,
@@ -211,6 +221,119 @@ def validate_planning_contract(
         execution_scope=execution_scope,
         content=dict(content),
     )
+
+
+def _validate_canonical_narrative_contract(
+    contract_type: PlanContractType, content: dict[str, Any]
+) -> None:
+    if contract_type is PlanContractType.VOLUME:
+        segments = content.get("narrative_segments")
+        if not isinstance(segments, list) or not segments:
+            raise KernelError(
+                "NARRATIVE_SEGMENT_REQUIRED",
+                "canonical VolumePlan requires at least one Narrative Segment",
+            )
+        seen: set[str] = set()
+        volume_start, volume_end = map(int, content["chapter_range"])
+        for segment in segments:
+            segment_id = str((segment or {}).get("segment_id") or "")
+            chapter_range = (segment or {}).get("chapter_range")
+            if (
+                not segment_id
+                or segment_id in seen
+                or not isinstance(chapter_range, list)
+                or len(chapter_range) != 2
+            ):
+                raise KernelError(
+                    "NARRATIVE_SEGMENT_INVALID",
+                    "Narrative Segment identity and two-boundary chapter range are required",
+                )
+            start, end = map(int, chapter_range)
+            if start < volume_start or end > volume_end or end < start:
+                raise KernelError(
+                    "NARRATIVE_SEGMENT_RANGE_INVALID",
+                    "Narrative Segment range must be contained by its Volume",
+                )
+            seen.add(segment_id)
+        return
+    if contract_type is PlanContractType.ARC:
+        thread_id = str(content.get("thread_id") or "")
+        segments = content.get("arc_segments")
+        if not thread_id or not isinstance(segments, list) or not segments:
+            raise KernelError(
+                "NARRATIVE_ARC_GRAPH_INVALID",
+                "canonical ArcPlan requires a Thread identity and Arc Segments",
+            )
+        volume_scope = {str(item) for item in content.get("cross_volume_scope") or ()}
+        declared = {
+            str(item.get("volume_plan_version_id") or "")
+            for item in segments
+            if isinstance(item, dict)
+        }
+        if "" in declared or not declared.issubset(volume_scope):
+            raise KernelError(
+                "NARRATIVE_ARC_SEGMENT_SCOPE_INVALID",
+                "every Arc Segment must bind a Volume in cross_volume_scope",
+            )
+        return
+    if contract_type in {PlanContractType.CHAPTER_GROUP, PlanContractType.CHAPTER}:
+        segment_ref = content.get("narrative_segment_ref")
+        if not isinstance(segment_ref, dict) or not all(
+            str(segment_ref.get(key) or "")
+            for key in ("volume_plan_version_id", "segment_id")
+        ):
+            raise KernelError(
+                "NARRATIVE_SEGMENT_REFERENCE_INVALID",
+                f"canonical {contract_type.value} must bind one Narrative Segment",
+            )
+    if contract_type is not PlanContractType.CHAPTER:
+        return
+    required = (
+        "chapter_intent",
+        "arc_schedule",
+        "character_participation",
+        "knowledge_boundaries",
+        "disclosures",
+        "required_state_transitions",
+        "reader_experience",
+        "scene_plan",
+        "expected_exit_state",
+    )
+    missing = [field for field in required if not content.get(field)]
+    if missing:
+        raise KernelError(
+            "CHAPTER_EXECUTION_PLAN_INCOMPLETE",
+            "canonical ChapterPlan missing: " + ", ".join(missing),
+        )
+    allowed_roles = {"PRIMARY", "SECONDARY", "TOUCH", "SETUP", "PAYOFF", "HOLD"}
+    schedule = [item for item in content["arc_schedule"] if isinstance(item, dict)]
+    if len(schedule) != len(content["arc_schedule"]) or any(
+        str(item.get("role") or "") not in allowed_roles for item in schedule
+    ):
+        raise KernelError(
+            "CHAPTER_ARC_SCHEDULE_INVALID",
+            "Chapter Arc schedule uses an unsupported role",
+        )
+    if sum(str(item.get("role") or "") == "PRIMARY" for item in schedule) != 1:
+        raise KernelError(
+            "CHAPTER_PRIMARY_ARC_INVALID",
+            "canonical ChapterPlan requires exactly one Primary Arc",
+        )
+    scheduled_arcs = [str(item.get("arc_plan_version_id") or "") for item in schedule]
+    contribution_arcs = {
+        str(item.get("arc_plan_version_id") or "")
+        for item in content.get("required_arc_contributions") or ()
+        if isinstance(item, dict)
+    }
+    if (
+        any(not item for item in scheduled_arcs)
+        or len(set(scheduled_arcs)) != len(scheduled_arcs)
+        or not set(scheduled_arcs).issubset(contribution_arcs)
+    ):
+        raise KernelError(
+            "CHAPTER_ARC_REFERENCE_INVALID",
+            "Chapter Arc schedule must uniquely reference frozen required Arc contributions",
+        )
 
 
 def _validate_chapter_arc_contributions(value: Any) -> None:
@@ -227,9 +350,7 @@ def _validate_chapter_arc_contributions(value: Any) -> None:
                 "Chapter required Arc contribution must be an object",
             )
         arc_version = str(
-            contribution.get("arc_plan_version_id")
-            or contribution.get("arc_id")
-            or ""
+            contribution.get("arc_plan_version_id") or contribution.get("arc_id") or ""
         )
         if not arc_version:
             raise KernelError(
@@ -295,18 +416,14 @@ def validate_chapter_function_matrix(
             issues.append(
                 {
                     "code": "PRIMARY_FUNCTION_REPETITION",
-                    "chapters": [
-                        item.get("chapter_number") for item in window
-                    ],
+                    "chapters": [item.get("chapter_number") for item in window],
                 }
             )
         if len({item.get("ending_hook") for item in window}) == 1:
             issues.append(
                 {
                     "code": "ENDING_HOOK_HOMOGENEITY",
-                    "chapters": [
-                        item.get("chapter_number") for item in window
-                    ],
+                    "chapters": [item.get("chapter_number") for item in window],
                 }
             )
     blocking = bool(issues)

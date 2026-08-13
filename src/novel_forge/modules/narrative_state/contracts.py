@@ -42,6 +42,8 @@ class NarrativeStateKind(StrEnum):
     CHARACTER_KNOWLEDGE = "character_knowledge"
     CHARACTER_BELIEF = "character_belief"
     CHARACTER_ARC = "character_arc"
+    READER_KNOWLEDGE = "reader_knowledge"
+    DISCLOSURE_EVENT = "disclosure_event"
     WORLD_STATE = "world_state"
     FACTION_STATE = "faction_state"
     LOCATION_STATE = "location_state"
@@ -402,6 +404,8 @@ _PATCH_FIELDS: dict[NarrativeStateKind, tuple[str, ...]] = {
     NarrativeStateKind.CHARACTER_KNOWLEDGE: ("character_knowledge_changes",),
     NarrativeStateKind.CHARACTER_BELIEF: ("character_belief_changes",),
     NarrativeStateKind.CHARACTER_ARC: ("character_arc_changes",),
+    NarrativeStateKind.READER_KNOWLEDGE: ("reader_knowledge_changes",),
+    NarrativeStateKind.DISCLOSURE_EVENT: ("disclosure_events",),
     NarrativeStateKind.WORLD_STATE: ("world_state_changes",),
     NarrativeStateKind.FACTION_STATE: ("faction_state_changes",),
     NarrativeStateKind.LOCATION_STATE: ("location_state_changes",),
@@ -901,6 +905,10 @@ def _identity_for(
         )
     elif state_kind is NarrativeStateKind.CHARACTER_ARC:
         fields = ("character_id", "arc_id")
+    elif state_kind is NarrativeStateKind.READER_KNOWLEDGE:
+        fields = ("proposition_id" if raw.get("proposition_id") else "fact_id",)
+    elif state_kind is NarrativeStateKind.DISCLOSURE_EVENT:
+        fields = ("disclosure_id",)
     elif state_kind is NarrativeStateKind.RELATIONSHIP_STATE:
         fields = (
             "source_id" if raw.get("source_id") else "source_character_id",
@@ -982,6 +990,7 @@ def _semantics_for(
         NarrativeStateKind.REWARD_EVENT,
         NarrativeStateKind.THEME_MOVEMENT,
         NarrativeStateKind.PAYOFF_EVENT,
+        NarrativeStateKind.DISCLOSURE_EVENT,
     }:
         return ReducerSemantics.APPEND
     if state_kind is NarrativeStateKind.RESOURCE_STATE and payload.get("delta") is not None:
@@ -1169,6 +1178,30 @@ def _validate_event_payload(
             raise KernelError(
                 "CHARACTER_BELIEF_CONFIDENCE_INVALID",
                 "Character Belief confidence must be between zero and one",
+            )
+    if state_kind is NarrativeStateKind.READER_KNOWLEDGE:
+        if str(payload.get("status") or "").upper() not in {
+            "UNKNOWN",
+            "HINTED",
+            "SUSPECTED",
+            "KNOWN",
+            "MISDIRECTED",
+            "CORRECTED",
+        }:
+            raise KernelError(
+                "READER_KNOWLEDGE_STATUS_INVALID",
+                "Reader Knowledge requires a typed epistemic status",
+            )
+    if state_kind is NarrativeStateKind.DISCLOSURE_EVENT:
+        if (
+            str(payload.get("disclosure_mode") or "").upper()
+            not in {"HINT", "PARTIAL", "MISDIRECT", "CONFIRM", "WITHHOLD"}
+            or not str(payload.get("audience") or "")
+            or not str(payload.get("presentation_channel") or "")
+        ):
+            raise KernelError(
+                "DISCLOSURE_EVENT_CONTRACT_INVALID",
+                "Disclosure requires mode, audience, and presentation channel",
             )
     if state_kind is NarrativeStateKind.NARRATIVE_OBLIGATION:
         required = ("obligation_id", "obligation_type", "status", "priority")

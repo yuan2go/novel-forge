@@ -22,6 +22,12 @@ SEMANTIC_CHANGE_FIELDS = {
     "narrative_pattern_fingerprints": "narrative_pattern_fingerprints",
     "theme_movements": "theme_movements",
     "antagonist_pressure_changes": "antagonist_pressure_changes",
+    "character_knowledge_changes": "character_knowledge",
+    "character_belief_changes": "character_belief",
+    "character_arc_changes": "character_arc",
+    "arc_state_changes": "arc_state",
+    "reader_knowledge_changes": "reader_knowledge",
+    "disclosure_events": "disclosure_event",
 }
 
 # Provider response keys are an extraction API, not Narrative State identity.
@@ -42,6 +48,12 @@ PROVIDER_SEMANTIC_CHANGE_FIELDS = {
     "narrative_pattern_fingerprints": "narrative_pattern_fingerprints",
     "theme_movements": "theme_movements",
     "antagonist_pressure_changes": "antagonist_pressure_changes",
+    "character_knowledge_changes": "character_knowledge_changes",
+    "character_belief_changes": "character_belief_changes",
+    "character_arc_changes": "character_arc_changes",
+    "arc_state_changes": "arc_state_changes",
+    "reader_knowledge_changes": "reader_knowledge_changes",
+    "disclosure_events": "disclosure_events",
 }
 
 HIGH_IMPACT_CHANGE_TYPES = {
@@ -121,9 +133,22 @@ def extract_canon_candidates(
         "antagonist_pressure_changes": list(
             revision.get("antagonist_pressure_changes", [])
         ),
+        "character_knowledge_changes": list(
+            revision.get("character_knowledge_changes", [])
+        ),
+        "character_belief_changes": list(
+            revision.get("character_belief_changes", [])
+        ),
+        "character_arc_changes": list(revision.get("character_arc_changes", [])),
+        "arc_state_changes": list(revision.get("arc_state_changes", [])),
+        "reader_knowledge_changes": list(
+            revision.get("reader_knowledge_changes", [])
+        ),
+        "disclosure_events": list(revision.get("disclosure_events", [])),
     }
     _merge_semantic_changes(changes, provider_extraction or {}, source="provider_semantic_extractor")
     _merge_operator_annotations(changes, annotations)
+    _normalize_resource_changes(changes["resource_state_changes"])
     evidence_changes = {
         key: [
             _with_extraction_evidence(
@@ -293,6 +318,32 @@ def _merge_operator_annotations(
         if field not in target or not isinstance(change, dict):
             raise KernelError("CANON_ANNOTATION_INVALID", "operator annotation is not typed")
         target[field].append({**change, "extractor_type": "operator_annotation"})
+
+
+def _normalize_resource_changes(changes: list[dict[str, Any]]) -> None:
+    """Close the extraction/reducer boundary without weakening balance semantics."""
+
+    for change in changes:
+        if change.get("delta") is None:
+            balance = change.get("balance", change.get("balance_after"))
+            if balance is None:
+                raise KernelError(
+                    "CANON_RESOURCE_BASELINE_INVALID",
+                    "initial Resource State requires balance or balance_after",
+                )
+            change["balance"] = balance
+            continue
+        before = change.get("balance_before")
+        after = change.get("balance_after")
+        if (
+            before is None
+            or after is None
+            or float(before) + float(change["delta"]) != float(after)
+        ):
+            raise KernelError(
+                "CANON_RESOURCE_TRANSITION_INVALID",
+                "Resource transition requires balance_before + delta = balance_after",
+            )
 
 
 def _with_extraction_evidence(
@@ -593,10 +644,30 @@ def validate_deterministic_continuity(
                     "reconcile balance_before + delta with the accepted resource state",
                 )
             )
+    disclosures = {
+        str(item.get("fact_id") or item.get("proposition_id") or "")
+        for item in extraction.get("disclosure_events", [])
+        if str(item.get("audience") or "").upper() in {"READER", "ALL"}
+        and str(item.get("disclosure_mode") or "").upper() != "WITHHOLD"
+    }
+    for change in extraction.get("reader_knowledge_changes", []):
+        fact_id = str(change.get("fact_id") or change.get("proposition_id") or "")
+        if (
+            str(change.get("status") or "").upper() != "UNKNOWN"
+            and fact_id not in disclosures
+        ):
+            conflicts.append(
+                _conflict(
+                    "READER_KNOWLEDGE_WITHOUT_DISCLOSURE",
+                    {"reader_knowledge": "not advanced by Truth alone"},
+                    change,
+                    "bind a supported reader-facing Disclosure event or omit the Reader Knowledge change",
+                )
+            )
     return {
         "gate": "BLOCKED" if conflicts else "PASSED",
         "violations": conflicts,
-        "deterministic_rule_count": 11,
+        "deterministic_rule_count": 12,
         "used_text_heuristics": False,
         "semantic_judgment_required": [
             "CHARACTER_MOTIVATION",
@@ -654,6 +725,26 @@ _TRANSITION_PRECONDITION_SPECS = (
         "resource_state_changes",
         ("resource_state",),
         (("entity_id",), ("resource_id",)),
+    ),
+    (
+        "character_knowledge_changes",
+        ("character_knowledge",),
+        (("character_id",), ("fact_id", "proposition_id")),
+    ),
+    (
+        "character_belief_changes",
+        ("character_belief",),
+        (("character_id",), ("proposition_id", "fact_id")),
+    ),
+    (
+        "character_arc_changes",
+        ("character_arc",),
+        (("character_id",), ("arc_id",)),
+    ),
+    (
+        "reader_knowledge_changes",
+        ("reader_knowledge",),
+        (("fact_id", "proposition_id"),),
     ),
     (
         "antagonist_pressure_changes",
@@ -793,6 +884,12 @@ def _narrative_state_changes(
         "resource_state": extraction.get("resource_state_changes", []),
         "theme_movement": extraction.get("theme_movements", []),
         "antagonist_state": extraction.get("antagonist_pressure_changes", []),
+        "character_knowledge": extraction.get("character_knowledge_changes", []),
+        "character_belief": extraction.get("character_belief_changes", []),
+        "character_arc": extraction.get("character_arc_changes", []),
+        "arc_state": extraction.get("arc_state_changes", []),
+        "reader_knowledge": extraction.get("reader_knowledge_changes", []),
+        "disclosure_event": extraction.get("disclosure_events", []),
     }
     return {key: list(values) for key, values in changes.items() if values}
 

@@ -33,6 +33,12 @@ CANON_FIELDS = (
     "narrative_pattern_fingerprints",
     "theme_movements",
     "antagonist_pressure_changes",
+    "character_knowledge_changes",
+    "character_belief_changes",
+    "character_arc_changes",
+    "arc_state_changes",
+    "reader_knowledge_changes",
+    "disclosure_events",
 )
 
 
@@ -99,7 +105,7 @@ def test_quality_prompt_and_schema_version_require_dimension_evidence() -> None:
     )
     assert (
         chapter_provider_output_schema_ref("canon_extraction")
-        == "schema:chapter-provider-output:canon_extraction:v2"
+        == "schema:chapter-provider-output:canon_extraction:v3"
     )
 
 
@@ -151,6 +157,78 @@ def test_canon_prompt_requires_character_knowledge_precondition_closure() -> Non
         in contract.lower()
     )
     assert "never add unsupported knowledge merely to satisfy validation" in contract
+    assert "Story Truth, Character Knowledge, Character Belief" in contract
+    assert "a belief may be false" in contract
+    assert "reader_knowledge_changes require a supported disclosure_events" in contract
+
+
+def test_canon_semantics_normalizes_initial_resource_balance() -> None:
+    value = _valid("canon_extraction")
+    value["resource_state_changes"] = [
+        {
+            "summary": "The protagonist starts with three credits.",
+            "effective_from_chapter": 1,
+            "supersedes_event_id": None,
+            "character_id": None,
+            "source_id": None,
+            "target_id": None,
+            "thread_id": None,
+            "promise_id": None,
+            "rule_id": None,
+            "entity_id": "protagonist",
+            "resource_id": "credits",
+            "status": None,
+            "from_status": None,
+            "from_state": None,
+            "life_status": None,
+            "action_state": None,
+            "canonical_name": None,
+            "transition_kind": None,
+            "state": None,
+            "tier": None,
+            "from_tier": None,
+            "balance_before": None,
+            "delta": None,
+            "balance_after": 3,
+            "exception": None,
+            "resurrection_authorized": None,
+            "allow_negative_balance": None,
+            "payoff_evidence": None,
+            "cost": None,
+            "requires_fact_ids": None,
+            "acquired_fact_ids": None,
+            "change_reasons": None,
+            "fact_id": None,
+            "proposition_id": None,
+            "disclosure_id": None,
+            "arc_id": None,
+            "audience": None,
+            "disclosure_mode": None,
+            "presentation_channel": None,
+            "belief_confidence": None,
+            "evidence_start": 0,
+            "evidence_end": 12,
+            "confidence": 0.9,
+            "impact_type": "resource_baseline",
+        }
+    ]
+
+    structural = validate_chapter_provider_output_schema("canon_extraction", value)
+    normalized = validate_chapter_provider_output_semantics(
+        "canon_extraction", structural
+    )
+
+    assert normalized["resource_state_changes"][0]["balance"] == 3
+
+
+def test_canon_schema_exposes_epistemic_and_presentation_changes() -> None:
+    schema = chapter_provider_output_schema("canon_extraction")
+
+    assert set(("reader_knowledge_changes", "disclosure_events")).issubset(
+        schema["properties"]
+    )
+    change = schema["properties"]["disclosure_events"]["items"]["properties"]
+    assert {"fact_id", "disclosure_id", "audience", "disclosure_mode"}.issubset(change)
 
 
 def _valid(stage: str) -> dict[str, object]:

@@ -76,6 +76,11 @@ from novel_forge.modules.chapter_authority.provider_output_contracts import (
     chapter_provider_output_schema,
     chapter_provider_output_schema_ref,
 )
+from novel_forge.modules.chapter_authority.provider_views import (
+    build_provider_context_view,
+    build_provider_knowledge_view,
+    build_provider_task_view,
+)
 from novel_forge.modules.chapter_authority.definitions import (
     CHAPTER_MODEL_WORKFLOW_DEFINITION_REF,
 )
@@ -1999,7 +2004,13 @@ def _stage_semantic_contract(
             "availability is not automatically character knowledge. If the prose and "
             "governed context do not establish the knowledge, omit the unsupported "
             "action or requirement; never add unsupported knowledge merely to satisfy "
-            "validation. "
+            "validation. Keep Story Truth, Character Knowledge, Character Belief, "
+            "Reader Knowledge, and presentation separate: a Canon fact does not by "
+            "itself make any character or the reader aware of it; a belief may be "
+            "false; reader_knowledge_changes require a supported disclosure_events "
+            "presentation in this chapter. Record how the information was presented "
+            "through disclosure_mode, audience, and presentation_channel rather than "
+            "copying Truth into every epistemic layer. "
             "Within canon_facts, each (subject, predicate, impact_type) tuple may occur "
             "at most once. When one subject has multiple objects for a broad relation, "
             "either combine them into one object when they are one bundled fact, or use "
@@ -2091,11 +2102,27 @@ def _materialize_production_codex_prompt(
             "CHAPTER_CAPABILITY_MATERIALIZATION_INVALID",
             "Capability Context, Knowledge, Tool, or Schema selection is incomplete",
         )
+    context_content = context[0].get("content")
+    if not isinstance(context_content, Mapping):
+        raise KernelError(
+            "CHAPTER_CAPABILITY_MATERIALIZATION_INVALID",
+            "Capability Context selection has no ContextBundle content",
+        )
+    task_view = build_provider_task_view(stage, inputs)
+    context_view = build_provider_context_view(stage, context_content, task_view)
+    knowledge_view = build_provider_knowledge_view(
+        item for item in knowledge if isinstance(item, Mapping)
+    )
+    if not knowledge_view:
+        raise KernelError(
+            "CHAPTER_CAPABILITY_MATERIALIZATION_INVALID",
+            "Provider Knowledge projection is empty",
+        )
     replacements = {
         "{{stage}}": stage,
         "{{target_scope}}": _canonical(request.target_scope.to_dict()),
-        "{{input_manifest}}": _canonical(inputs),
-        "{{context_bundle}}": _canonical(context[0].get("content")),
+        "{{input_manifest}}": _canonical(task_view),
+        "{{context_bundle}}": _canonical(context_view),
         "{{output_schema_ref}}": str(schema.get("ref") or ""),
     }
     rendered_template = template_text
@@ -2112,7 +2139,7 @@ def _materialize_production_codex_prompt(
             "CHAPTER_CAPABILITY_TOOL_UNAUTHORIZED",
             "Codex execution permits only the governed provider invocation",
         )
-    required_language = _required_language_from_context(context[0].get("content"))
+    required_language = _required_language_from_context(context_content)
     stage_semantic_contract = _stage_semantic_contract(
         stage, required_language=required_language
     )
@@ -2121,7 +2148,7 @@ def _materialize_production_codex_prompt(
             "<system_instruction>\n" + system_text + "\n</system_instruction>",
             "<governed_skill>\n" + skill_text + "\n</governed_skill>",
             "<required_knowledge>\n"
-            + _canonical(knowledge)
+            + _canonical(knowledge_view)
             + "\n</required_knowledge>",
             "<tool_policy>\n"
             + _canonical(tools)
@@ -2134,6 +2161,28 @@ def _materialize_production_codex_prompt(
         )
     )
     prompt_hash = "sha256:" + hashlib.sha256(prompt.encode("utf-8")).hexdigest()
+    component_characters = {
+        "system_instruction": len(system_text),
+        "governed_skill": len(skill_text),
+        "provider_knowledge": len(_canonical(knowledge_view)),
+        "provider_task_view": len(_canonical(task_view)),
+        "provider_context_view": len(_canonical(context_view)),
+        "tool_policy": len(_canonical(tools)),
+        "stage_semantic_contract": len(stage_semantic_contract),
+        "output_schema": len(_canonical(schema["content"])),
+        "fully_rendered_prompt": len(prompt),
+    }
+    component_tokens = {
+        key: max(1, count // 4) for key, count in component_characters.items()
+    }
+    authority_context_tokens = int(context_content.get("estimated_tokens") or 0)
+    provider_context_tokens = component_tokens["provider_context_view"]
+    semantic_input_tokens = max(
+        1,
+        provider_context_tokens
+        + component_tokens["provider_task_view"]
+        + component_tokens["provider_knowledge"],
+    )
     evidence = {
         "materialization_hash": str(materialization.get("materialization_hash") or ""),
         "fully_rendered_prompt_hash": prompt_hash,
@@ -2156,6 +2205,23 @@ def _materialize_production_codex_prompt(
         "allowed_tools": list(allowed),
         "output_schema_ref": str(schema.get("ref") or ""),
         "output_schema_hash": str(schema.get("content_hash") or ""),
+        "provider_view": {
+            "task_contract_version": task_view["contract_version"],
+            "context_contract_version": context_view["contract_version"],
+            "selection_explanation": context_view["selection_explanation"],
+            "component_characters": component_characters,
+            "component_estimated_tokens": component_tokens,
+            "authority_context_estimated_tokens": authority_context_tokens,
+            "provider_context_estimated_tokens": provider_context_tokens,
+            "context_projection_ratio": round(
+                provider_context_tokens / max(1, authority_context_tokens), 6
+            ),
+            "rendered_prompt_to_semantic_input_ratio": round(
+                component_tokens["fully_rendered_prompt"] / semantic_input_tokens,
+                6,
+            ),
+            "representation_policy": "authority-projection-task-provider-v1",
+        },
     }
     return prompt, evidence
 

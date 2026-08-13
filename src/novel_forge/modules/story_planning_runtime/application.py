@@ -1271,7 +1271,6 @@ class StoryPlanningGenerationApplication:
             )
         expected_parent_role = {
             "volume_plan.generate": "book_plan",
-            "arc_plan.generate": "volume_plan",
             "chapter_group_plan.generate": "volume_plan",
             "chapter_plan.generate": "chapter_group_plan",
         }.get(command.generator_operation_name)
@@ -1279,7 +1278,8 @@ class StoryPlanningGenerationApplication:
             if command.parent_version_id:
                 raise KernelError(
                     "PLANNING_GENERATION_PARENT_INVALID",
-                    "BookPlan generation cannot declare a parent Plan",
+                    f"{command.planning_scope.value} generation cannot declare a "
+                    "containment parent Plan",
                 )
         elif command.parent_version_id != command.input_versions[expected_parent_role]:
             raise KernelError(
@@ -1289,7 +1289,6 @@ class StoryPlanningGenerationApplication:
             )
         plan_relationships = (
             ("volume_plan", "book_plan"),
-            ("arc_plans", "volume_plan"),
             ("chapter_group_plan", "volume_plan"),
         )
         for child_role, parent_role in plan_relationships:
@@ -1644,7 +1643,7 @@ def chapter_plan_projection_definition(
 
 
 def _chapter_runtime_projection(candidate: dict[str, Any]) -> dict[str, Any]:
-    """Adapt the typed Planning contract to ChapterPlan v3 without model I/O."""
+    """Project one generated execution contract without inventing narrative state."""
 
     primary = str(candidate.get("primary_function") or "progression")
     objective = str(candidate.get("objective") or candidate.get("premise") or "")
@@ -1664,16 +1663,7 @@ def _chapter_runtime_projection(candidate: dict[str, Any]) -> dict[str, Any]:
         "premise": str(candidate.get("premise") or objective),
         "chapter_function": primary,
         "chapter_objective": objective,
-        "scene_sequence": required_events
-        or [
-            {
-                "goal": objective,
-                "conflict": hard_constraints[0]
-                if hard_constraints
-                else "the objective demands a visible cost",
-                "turn": hook,
-            }
-        ],
+        "scene_sequence": list(candidate.get("scene_plan") or required_events),
         "chapter_hook": hook,
         "conflict_chain": hard_constraints
         or ["the objective meets escalating resistance"],
@@ -1691,6 +1681,27 @@ def _chapter_runtime_projection(candidate: dict[str, Any]) -> dict[str, Any]:
         "reward_setup": required_payoffs or ["the promised consequence is prepared"],
         "reward_payoff": required_payoffs or ["the chapter pays a local consequence"],
         "conflict_escalation": ["resistance", "choice", "irreversible cost"],
+        "chapter_intent": candidate.get("chapter_intent"),
+        "arc_schedule": list(candidate.get("arc_schedule") or ()),
+        "setups": list(candidate.get("setups") or ()),
+        "payoffs": list(candidate.get("payoffs") or ()),
+        "character_participation": list(
+            candidate.get("character_participation") or ()
+        ),
+        "knowledge_boundaries": list(candidate.get("knowledge_boundaries") or ()),
+        "disclosures": list(candidate.get("disclosures") or ()),
+        "required_state_transitions": list(
+            candidate.get("required_state_transitions") or ()
+        ),
+        "reader_experience": dict(candidate.get("reader_experience") or {}),
+        "scene_plan": list(candidate.get("scene_plan") or ()),
+        "expected_exit_state": dict(candidate.get("expected_exit_state") or {}),
+        "narrative_segment_ref": dict(
+            candidate.get("narrative_segment_ref") or {}
+        ),
+        "narrative_architecture_version": str(
+            candidate.get("narrative_architecture_version") or ""
+        ),
     }
 
 

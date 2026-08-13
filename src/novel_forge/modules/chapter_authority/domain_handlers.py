@@ -153,6 +153,7 @@ def build_context_bundle(
             "canon_snapshot_version": refs.get("canon_snapshot_version", ""),
         },
     )
+    task_narrative_projection = _task_narrative_projection(plan)
     return {
         **governed,
         "chapter": plan["chapter"],
@@ -165,6 +166,81 @@ def build_context_bundle(
             "copyright_boundary": "project-owned and abstract eligible context only",
         },
         "forbidden_source_count": 0,
+        "task_narrative_projection": task_narrative_projection,
+        "provider_projection_contract_version": "minimum-sufficient-context-v1",
+    }
+
+
+def _task_narrative_projection(plan: dict[str, Any]) -> dict[str, Any]:
+    """Freeze selectors needed to project later Chapter stages without chat memory."""
+
+    characters: set[str] = set()
+    arcs: set[str] = set()
+    facts: set[str] = set()
+    beliefs: set[str] = set()
+    disclosures: set[str] = set()
+    state_entities: set[str] = set()
+    obligations: set[str] = set()
+    world_rules: set[str] = set()
+    for item in plan.get("character_participation") or ():
+        if not isinstance(item, dict):
+            continue
+        characters.add(str(item.get("character_id") or ""))
+        arcs.update(str(value) for value in item.get("trajectory_refs") or ())
+        facts.update(str(value) for value in item.get("known_fact_ids") or ())
+        facts.update(str(value) for value in item.get("unknown_fact_ids") or ())
+        beliefs.update(str(value) for value in item.get("belief_refs") or ())
+    for item in plan.get("cast") or ():
+        characters.add(
+            str(item.get("character_id") or item.get("id") or "")
+            if isinstance(item, dict)
+            else str(item)
+        )
+    for item in plan.get("arc_schedule") or ():
+        if isinstance(item, dict):
+            arcs.update(
+                str(item.get(key) or "")
+                for key in ("arc_plan_version_id", "segment_id")
+            )
+    for item in plan.get("knowledge_boundaries") or ():
+        if isinstance(item, dict):
+            characters.add(str(item.get("subject_id") or ""))
+            facts.add(str(item.get("fact_id") or item.get("proposition_id") or ""))
+    for item in plan.get("disclosures") or ():
+        if isinstance(item, dict):
+            disclosures.add(str(item.get("disclosure_id") or ""))
+            facts.add(str(item.get("fact_id") or item.get("proposition_id") or ""))
+    for item in plan.get("required_state_transitions") or ():
+        if isinstance(item, dict):
+            state_entities.add(str(item.get("entity_key") or ""))
+    for field in ("setups", "payoffs"):
+        for item in plan.get(field) or ():
+            if isinstance(item, dict):
+                obligations.add(str(item.get("obligation_id") or ""))
+    for item in plan.get("world_rule_usages") or ():
+        if isinstance(item, dict):
+            world_rules.add(str(item.get("rule_id") or ""))
+    segment_ref = dict(plan.get("narrative_segment_ref") or {})
+
+    def clean(values: set[str]) -> list[str]:
+        return sorted(value for value in values if value)
+
+    return {
+        "contract_version": "chapter-task-narrative-projection-v1",
+        "chapter": int(plan["chapter"]),
+        "narrative_segment_ref": {
+            key: str(segment_ref.get(key) or "")
+            for key in ("volume_plan_version_id", "segment_id")
+            if segment_ref.get(key)
+        },
+        "character_ids": clean(characters),
+        "arc_refs": clean(arcs),
+        "fact_refs": clean(facts),
+        "belief_refs": clean(beliefs),
+        "disclosure_refs": clean(disclosures),
+        "state_entity_refs": clean(state_entities),
+        "obligation_refs": clean(obligations),
+        "world_rule_refs": clean(world_rules),
     }
 
 

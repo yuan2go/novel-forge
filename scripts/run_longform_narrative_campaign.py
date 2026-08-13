@@ -834,7 +834,9 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
                 ),
                 "failures": failures,
                 "last_supervisor_ticks": supervisor_ticks[-50:],
-                "status": "RUNNING" if chapter_number < target else "CHECKPOINT_REACHED",
+                "status": "RUNNING"
+                if chapter_number < target
+                else "CHECKPOINT_REACHED",
             }
             _write_json(checkpoint_path, partial)
         book = composition.authority.require(book_run_id)
@@ -864,9 +866,7 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
             }
         )
         _write_json(checkpoint_path, result)
-        _write_json(
-            output_root / "evidence" / f"checkpoint-{through:04d}.json", result
-        )
+        _write_json(output_root / "evidence" / f"checkpoint-{through:04d}.json", result)
         return result
     except BaseException as exc:
         failure = {
@@ -875,9 +875,7 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
             "error_type": type(exc).__name__,
             "error": str(exc),
             "accepted_through_chapter": int(
-                composition.authority.require(book_run_id)[
-                    "accepted_through_chapter"
-                ]
+                composition.authority.require(book_run_id)["accepted_through_chapter"]
             ),
         }
         failures.append(failure)
@@ -929,9 +927,7 @@ def main() -> int:
     parser.add_argument("--output-root", required=True)
     parser.add_argument(
         "--contract",
-        default=str(
-            ROOT / "config" / "proof_campaigns" / "longform_narrative_v1.json"
-        ),
+        default=str(ROOT / "config" / "proof_campaigns" / "longform_narrative_v2.json"),
     )
     parser.add_argument("--target-chapter", type=int, required=True)
     parser.add_argument(

@@ -202,7 +202,7 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
         "logical_key": logical_key,
         "objective": f"Governed objective for {logical_key}",
         "entry_state_ref": "story-state:entry",
-        "exit_state_spec": {"progress": "advanced"},
+        "exit_state_spec": {"summary": "the governed objective advances"},
         "hard_constraints": [],
         "soft_constraints": [],
         "required_events": [],
@@ -249,6 +249,17 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
             "settlement": "new obligation",
             "next_volume_bridge": "wider threat",
             "chapter_range": [1, 3],
+            "narrative_architecture_version": "canonical-narrative-v1",
+            "narrative_segments": [
+                {
+                    "segment_id": "narrative-segment:1",
+                    "objective": "Turn private doubt into public commitment",
+                    "chapter_range": [1, 3],
+                    "entry_state_ref": str(versions.get("story_state") or "story:entry"),
+                    "exit_state_spec": {"summary": "commitment creates a wider threat"},
+                    "arc_checkpoint_refs": [str(versions.get("arc_plans") or "arc:primary")],
+                }
+            ],
         },
         PlanContractType.ARC: {
             "arc_type": "character-conflict",
@@ -261,7 +272,21 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
             "consequence": "new opposition",
             "dependencies": [],
             "closure_conditions": ["choice demonstrated"],
-            "cross_volume_scope": [parent_version_id],
+            "cross_volume_scope": [str(versions.get("volume_plan") or parent_version_id)],
+            "narrative_architecture_version": "canonical-narrative-v1",
+            "thread_id": "thread:central-conflict",
+            "arc_segments": [
+                {
+                    "segment_id": "arc-segment:1",
+                    "volume_plan_version_id": str(versions.get("volume_plan") or parent_version_id),
+                    "narrative_segment_id": "narrative-segment:1",
+                    "objective": "denial becomes an accountable choice",
+                    "entry_state_ref": "arc-state:denial",
+                    "exit_state_spec": {"summary": "the choice has a visible cost"},
+                    "status": "PLANNED",
+                }
+            ],
+            "arc_relations": [],
         },
         PlanContractType.CHAPTER_GROUP: {
             "local_objective": "Turn private doubt into public commitment",
@@ -288,6 +313,11 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
                     "expectation": "choice advances",
                 }
             ],
+            "narrative_architecture_version": "canonical-narrative-v1",
+            "narrative_segment_ref": {
+                "volume_plan_version_id": str(versions.get("volume_plan") or parent_version_id),
+                "segment_id": "narrative-segment:1",
+            },
         },
         PlanContractType.CHAPTER: {
             **_chapter_function_row(chapter_number, "setup", "door closes"),
@@ -296,6 +326,80 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
             "premise": (
                 f"Chapter {chapter_number} forces the protagonist into a witnessed choice."
             ),
+            "narrative_architecture_version": "canonical-narrative-v1",
+            "narrative_segment_ref": {
+                "volume_plan_version_id": str(versions.get("volume_plan") or "volume:1"),
+                "segment_id": "narrative-segment:1",
+            },
+            "chapter_intent": "Force a witnessed choice that advances the central conflict.",
+            "arc_schedule": [
+                {
+                    "arc_plan_version_id": str(versions.get("arc_plans") or "arc:primary"),
+                    "role": "PRIMARY",
+                    "segment_id": "arc-segment:1",
+                    "expected_movement": "denial becomes accountable action",
+                }
+            ],
+            "setups": [{"obligation_id": "setup:consequence", "action": "PLANT"}],
+            "payoffs": [{"obligation_id": "promise:choice", "action": "ADVANCE"}],
+            "character_participation": [
+                {
+                    "character_id": "protagonist",
+                    "goal": "preserve agency while protecting the witness",
+                    "trajectory_refs": ["character-arc:accountability"],
+                    "known_fact_ids": [],
+                    "unknown_fact_ids": ["fact:hidden-cost"],
+                    "belief_refs": ["belief:safety-through-silence"],
+                    "expected_change": "accept a public cost",
+                }
+            ],
+            "knowledge_boundaries": [
+                {
+                    "layer": "READER_KNOWLEDGE",
+                    "subject_id": "reader",
+                    "fact_id": "fact:hidden-cost",
+                    "status": "HINTED",
+                }
+            ],
+            "disclosures": [
+                {
+                    "disclosure_id": "disclosure:hidden-cost",
+                    "fact_id": "fact:hidden-cost",
+                    "audience": "READER",
+                    "mode": "HINT",
+                    "presentation_channel": "CONSEQUENCE",
+                }
+            ],
+            "required_state_transitions": [
+                {
+                    "state_kind": "character_arc",
+                    "entity_key": "protagonist:accountability",
+                    "from_state": "DENIAL",
+                    "to_state": "COMMITTED",
+                }
+            ],
+            "reader_experience": {
+                "entry_question": "Will the protagonist stay silent?",
+                "target_emotion": "costly relief",
+                "exit_question": "Who will exploit the public choice?",
+            },
+            "scene_plan": [
+                {
+                    "scene_id": f"chapter:{chapter_number}:scene:1",
+                    "scene_group_id": f"chapter:{chapter_number}:group:1",
+                    "goal": "make the choice unavoidable",
+                    "conflict": "resistance turns private risk into public cost",
+                    "participants": ["protagonist"],
+                    "arc_progress": [str(versions.get("arc_plans") or "arc:primary")],
+                    "information_gain": ["fact:hidden-cost"],
+                    "state_transitions": ["protagonist:accountability"],
+                    "entry_state": "private denial",
+                    "exit_state": "public commitment",
+                    "reader_effect": "relief converts to anticipation",
+                    "beats": ["pressure", "choice", "consequence"],
+                }
+            ],
+            "expected_exit_state": {"summary": "public commitment creates a new opposition"},
         },
     }
     payload.update(by_type[contract_type])
@@ -313,6 +417,176 @@ def _strict_object(properties: dict[str, Any]) -> dict[str, Any]:
         "properties": properties,
         "required": list(properties),
         "additionalProperties": False,
+    }
+
+
+def _canonical_narrative_provider_properties(
+    contract_type: PlanContractType,
+) -> dict[str, Any]:
+    string = {"type": "string", "minLength": 1}
+    string_array = {"type": "array", "items": string}
+    state_spec = _strict_object({"summary": string})
+    architecture = {
+        "narrative_architecture_version": {
+            "type": "string",
+            "const": "canonical-narrative-v1",
+        }
+    }
+    segment_ref = _strict_object(
+        {"volume_plan_version_id": string, "segment_id": string}
+    )
+    if contract_type is PlanContractType.VOLUME:
+        return {
+            **architecture,
+            "narrative_segments": {
+                "type": "array",
+                "minItems": 1,
+                "items": _strict_object(
+                    {
+                        "segment_id": string,
+                        "objective": string,
+                        "chapter_range": {
+                            "type": "array",
+                            "minItems": 2,
+                            "maxItems": 2,
+                            "items": {"type": "integer", "minimum": 1},
+                        },
+                        "entry_state_ref": string,
+                        "exit_state_spec": state_spec,
+                        "arc_checkpoint_refs": string_array,
+                    }
+                ),
+            },
+        }
+    if contract_type is PlanContractType.ARC:
+        return {
+            **architecture,
+            "thread_id": string,
+            "arc_segments": {
+                "type": "array",
+                "minItems": 1,
+                "items": _strict_object(
+                    {
+                        "segment_id": string,
+                        "volume_plan_version_id": string,
+                        "narrative_segment_id": string,
+                        "objective": string,
+                        "entry_state_ref": string,
+                        "exit_state_spec": state_spec,
+                        "status": {
+                            "type": "string",
+                            "enum": ["PLANNED", "ACTIVE", "HELD", "CLOSED"],
+                        },
+                    }
+                ),
+            },
+            "arc_relations": string_array,
+        }
+    if contract_type is PlanContractType.CHAPTER_GROUP:
+        return {**architecture, "narrative_segment_ref": segment_ref}
+    if contract_type is not PlanContractType.CHAPTER:
+        return {}
+    obligation = _strict_object({"obligation_id": string, "action": string})
+    return {
+        **architecture,
+        "narrative_segment_ref": segment_ref,
+        "chapter_intent": string,
+        "arc_schedule": {
+            "type": "array",
+            "minItems": 1,
+            "items": _strict_object(
+                {
+                    "arc_plan_version_id": string,
+                    "role": {
+                        "type": "string",
+                        "enum": ["PRIMARY", "SECONDARY", "TOUCH", "SETUP", "PAYOFF", "HOLD"],
+                    },
+                    "segment_id": string,
+                    "expected_movement": string,
+                }
+            ),
+        },
+        "setups": {"type": "array", "items": obligation},
+        "payoffs": {"type": "array", "items": obligation},
+        "character_participation": {
+            "type": "array",
+            "minItems": 1,
+            "items": _strict_object(
+                {
+                    "character_id": string,
+                    "goal": string,
+                    "trajectory_refs": string_array,
+                    "known_fact_ids": string_array,
+                    "unknown_fact_ids": string_array,
+                    "belief_refs": string_array,
+                    "expected_change": string,
+                }
+            ),
+        },
+        "knowledge_boundaries": {
+            "type": "array",
+            "items": _strict_object(
+                {
+                    "layer": {
+                        "type": "string",
+                        "enum": ["STORY_TRUTH", "CHARACTER_KNOWLEDGE", "CHARACTER_BELIEF", "READER_KNOWLEDGE"],
+                    },
+                    "subject_id": string,
+                    "fact_id": string,
+                    "status": string,
+                }
+            ),
+        },
+        "disclosures": {
+            "type": "array",
+            "items": _strict_object(
+                {
+                    "disclosure_id": string,
+                    "fact_id": string,
+                    "audience": string,
+                    "mode": {
+                        "type": "string",
+                        "enum": ["HINT", "PARTIAL", "MISDIRECT", "CONFIRM", "WITHHOLD"],
+                    },
+                    "presentation_channel": string,
+                }
+            ),
+        },
+        "required_state_transitions": {
+            "type": "array",
+            "items": _strict_object(
+                {
+                    "state_kind": string,
+                    "entity_key": string,
+                    "from_state": string,
+                    "to_state": string,
+                }
+            ),
+        },
+        "reader_experience": _strict_object(
+            {"entry_question": string, "target_emotion": string, "exit_question": string}
+        ),
+        "scene_plan": {
+            "type": "array",
+            "minItems": 1,
+            "items": _strict_object(
+                {
+                    "scene_id": string,
+                    "scene_group_id": string,
+                    "goal": string,
+                    "conflict": string,
+                    "participants": string_array,
+                    "arc_progress": string_array,
+                    "information_gain": string_array,
+                    "state_transitions": string_array,
+                    "entry_state": string,
+                    "exit_state": string,
+                    "reader_effect": string,
+                    "beats": string_array,
+                }
+            ),
+        },
+        "expected_exit_state": state_spec,
     }
 
 
@@ -423,13 +697,7 @@ def planning_provider_output_schema(
         if field in strings:
             properties[field] = string
         elif field in arrays:
-            if field == "cross_volume_scope" and parent_version_id:
-                properties[field] = {
-                    "type": "array",
-                    "items": {"type": "string", "const": parent_version_id},
-                }
-            else:
-                properties[field] = string_array
+            properties[field] = string_array
         elif field == "ending_contract":
             properties[field] = _strict_object({"outcome": string})
         elif field == "length_strategy":
@@ -503,7 +771,8 @@ def planning_provider_output_schema(
             }
         else:
             raise ValueError(f"Planning Provider schema missing field: {field}")
-    if contract_type is not PlanContractType.BOOK:
+    properties.update(_canonical_narrative_provider_properties(contract_type))
+    if contract_type not in {PlanContractType.BOOK, PlanContractType.ARC}:
         properties["parent_version_id"] = (
             {"type": "string", "const": parent_version_id}
             if parent_version_id

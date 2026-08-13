@@ -292,21 +292,23 @@ def default_chapter_artifact_resolver(
                 source,
             )
         )
-    for kind, ref, source in (
+    for kind, ref, version, source in (
         (
             ArtifactKind.PROMPT_SYSTEM_INSTRUCTION,
             "prompt-system:chapter-generation-pack",
+            "v1",
             "config/capability_packs/artifacts/chapter_generation_system_instruction.md",
         ),
         (
             ArtifactKind.PROMPT_TEMPLATE,
             "prompt-template:chapter-generation-pack",
+            "v2",
             "config/capability_packs/artifacts/chapter_generation_template.md",
         ),
     ):
         text = (root / source).read_bytes().decode("utf-8", errors="strict")
         artifacts.append(
-            _artifact(kind, ref, "v1", {"text": text.replace("\r\n", "\n")}, source)
+            _artifact(kind, ref, version, {"text": text.replace("\r\n", "\n")}, source)
         )
 
     signed_catalog = ExplicitArtifactResolver.from_catalog_file(
