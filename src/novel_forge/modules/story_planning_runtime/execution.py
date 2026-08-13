@@ -85,6 +85,12 @@ _PLANNING_STAGES = frozenset(
     }
 )
 
+# A retryable provider outcome must remain retryable at the Operation boundary.
+# With a single Effect attempt, the Effect dead-letters immediately and the
+# Content scheduler incorrectly receives a final provider failure even though
+# the Planning Operation still has retries available.
+PLANNING_EXTERNAL_EFFECT_MAX_ATTEMPTS = 2
+
 
 @dataclass(frozen=True, slots=True)
 class PlanningExecutionRoute:
@@ -1106,7 +1112,7 @@ class PostgresPlanningExecutionPreparer:
             capability=definition.capability,
             stable_idempotency_key=stable_key,
             request_payload=request_payload,
-            max_attempts=1,
+            max_attempts=PLANNING_EXTERNAL_EFFECT_MAX_ATTEMPTS,
             reversible=False,
             completion_policy="synchronous_final",
             model_id=planning_route.model_profile.model_id,
@@ -1635,6 +1641,7 @@ class PostgresPlanningExecutionPreparer:
 
 
 __all__ = [
+    "PLANNING_EXTERNAL_EFFECT_MAX_ATTEMPTS",
     "PostgresPlanningExecutionPreparer",
     "planning_fixture_response",
     "planning_provider_output_schema",

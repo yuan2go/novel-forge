@@ -28,6 +28,7 @@ from novel_forge.modules.story_planning_runtime import (
     story_planning_generation_definition,
 )
 from novel_forge.modules.story_planning_runtime.execution import (
+    PLANNING_EXTERNAL_EFFECT_MAX_ATTEMPTS,
     planning_fixture_response,
     planning_provider_output_schema,
 )
@@ -49,6 +50,19 @@ def test_real_planning_definition_versions_the_bounded_xhigh_timeout() -> None:
     assert definition["timeout_policy"] == {
         "operation_timeout_seconds": STORY_PLANNING_OPERATION_TIMEOUT_SECONDS
     }
+
+
+def test_planning_provider_effect_preserves_one_retry_before_dead_letter() -> None:
+    definition = story_planning_generation_definition(
+        application_build_id="unit-test-build",
+        commit_sha="a" * 40,
+    )
+
+    assert PLANNING_EXTERNAL_EFFECT_MAX_ATTEMPTS == 2
+    assert (
+        definition["retry_policy"]["max_attempts"]
+        > PLANNING_EXTERNAL_EFFECT_MAX_ATTEMPTS
+    )
 
 
 @pytest.mark.parametrize(
