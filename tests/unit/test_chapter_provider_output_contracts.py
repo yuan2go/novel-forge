@@ -183,6 +183,16 @@ def test_canon_prompt_requires_character_knowledge_precondition_closure() -> Non
     assert "deterministically projected into Reader Knowledge" in contract
 
 
+def test_canon_prompt_separates_numeric_resource_balance_from_object_status() -> None:
+    contract = _stage_semantic_contract("canon_extraction")
+
+    assert "resource_state_changes only for quantifiable resource balances" in contract
+    assert "initial resource baseline must set balance_after" in contract
+    assert "balance_before, delta, and balance_after" in contract
+    assert "custody, location, protection, ownership" in contract
+    assert "leave resource_state_changes empty" in contract
+
+
 def test_canon_semantics_normalizes_initial_resource_balance() -> None:
     value = _valid("canon_extraction")
     value["resource_state_changes"] = [

@@ -2112,7 +2112,15 @@ def _stage_semantic_contract(
             "precise relation-specific predicates. For example, encode separate consent "
             "facts as authorizes_testimony and authorizes_public_identification instead "
             "of repeating authorizes with two objects. Never emit two different objects "
-            "for the same semantic tuple.",
+            "for the same semantic tuple. "
+            "Use resource_state_changes only for quantifiable resource balances. An "
+            "initial resource baseline must set balance_after; a later transition must "
+            "set balance_before, delta, and balance_after with exact arithmetic. Do not "
+            "encode custody, location, protection, ownership, or other qualitative "
+            "object status as a Resource State merely because the object is a story "
+            "resource; represent supported qualitative changes as precise canon_facts "
+            "or timeline_events instead. If the prose supplies no numeric balance, "
+            "leave resource_state_changes empty.",
             required_language,
         )
     if stage.startswith("quality_"):
