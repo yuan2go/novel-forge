@@ -70,6 +70,16 @@ def test_quality_prompt_and_schema_version_require_dimension_evidence() -> None:
     )
 
 
+def test_longform_quality_prompt_distinguishes_proven_noop_from_missing_state() -> None:
+    contract = _stage_semantic_contract("quality_longform")
+
+    assert "no state-changing use or claim" in contract
+    assert "current state candidates contain no transition" in contract
+    assert "PASSED with concrete no-op evidence" in contract
+    assert "claims a state or transition" in contract
+    assert "INSUFFICIENT_EVIDENCE" in contract
+
+
 def test_canon_prompt_explains_unique_semantic_slot_encoding() -> None:
     contract = _stage_semantic_contract("canon_extraction")
 

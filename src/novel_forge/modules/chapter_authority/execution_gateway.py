@@ -1925,13 +1925,24 @@ def _stage_semantic_contract(stage: str) -> str:
             "for the same semantic tuple."
         )
     if stage.startswith("quality_"):
-        return (
+        contract = (
             "Evaluate only the requested dimensions. Every returned dimension must "
             "include at least one concrete evidence location, including policy-"
             "compliance dimensions. Use PASSED only when the supplied chapter or "
             "governed context directly supports the claim; otherwise use "
             "INSUFFICIENT_EVIDENCE, REQUIRES_HUMAN_REVIEW, or FAILED as appropriate."
         )
+        if stage == "quality_longform":
+            contract += (
+                " For world_rule_conflict and power_state_conflict, distinguish a "
+                "proven no-op from missing comparison state: when the chapter directly "
+                "shows no state-changing use or claim and current state candidates "
+                "contain no transition, return PASSED with concrete no-op evidence; "
+                "do not require the chapter to exercise the rule or power. When the "
+                "chapter claims a state or transition but the governed comparison "
+                "baseline is unavailable, return INSUFFICIENT_EVIDENCE."
+            )
+        return contract
     return "Return only the stage result defined by the frozen output schema."
 
 
