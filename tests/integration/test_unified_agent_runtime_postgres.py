@@ -249,7 +249,7 @@ class UnifiedAgentRuntimePostgresTests(unittest.TestCase):
                        retry_policy, timeout_policy, approval_policy,
                        compensation_policy, completion_contract
                 FROM authority_operation_definition
-                WHERE name='chapter.draft.generate' AND definition_version='2.3.1'
+                WHERE name='chapter.draft.generate' AND definition_version='2.3.2'
                 """
             ).fetchone()
         assert authority is not None
@@ -369,7 +369,7 @@ class UnifiedAgentRuntimePostgresTests(unittest.TestCase):
 
         node = CompiledWorkflowNode(
             ordinal=3, node_id="draft",
-            definition_name="chapter.draft.generate", definition_version="2.3.1",
+            definition_name="chapter.draft.generate", definition_version="2.3.2",
             definition_hash=str(authority[0]), handler_key=str(authority[1]),
             handler_contract_version=str(authority[2]),
             capability_id=capability.capability_id,

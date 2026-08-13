@@ -2043,7 +2043,17 @@ def _stage_semantic_contract(
                 "references, declare Primary/Secondary/Touch/Hold Arc work, knowledge "
                 "boundaries, disclosures, causal character and state transitions, "
                 "scene or scene-group execution units, reader experience, and the "
-                "expected exit state."
+                "expected exit state. Every required_state_transitions[].state_kind "
+                "must use the schema's canonical Narrative State vocabulary. Use exact "
+                "stable identities in entity_key: character_id for character_state; "
+                "source_id:target_id for relationship_state; character_id:arc_id for "
+                "character_arc; character_id:fact_id for character_knowledge; and "
+                "the state kind's stable Authority identifier. Do not put Reader "
+                "Knowledge or Disclosure in required_state_transitions: Reader "
+                "Knowledge is fulfilled only by a planned Disclosure whose mode "
+                "deterministically yields the knowledge boundary status. Use audience "
+                "READER or ALL for reader-facing disclosure; represent a mixed audience "
+                "as separate Disclosure events with stable identities."
             )
         return _bind_language_contract(contract, required_language)
     if stage == "revision":
@@ -2106,6 +2116,13 @@ def _stage_semantic_contract(
             "information was presented "
             "through disclosure_mode, audience, and presentation_channel rather than "
             "copying Truth into every epistemic layer. "
+            "Reconcile the frozen execution_expectations exactly. For every required "
+            "state transition supported by the chapter, emit one change in the "
+            "corresponding typed array with the exact planned identity and to_state; "
+            "do not paraphrase either. Omit from_* only when the governed context has "
+            "no accepted baseline. For every planned disclosure, copy disclosure_id, "
+            "fact_id, audience, and mode exactly; do not expand the audience. Reader "
+            "Knowledge will be derived after the Disclosure is accepted. "
             "Within canon_facts, each (subject, predicate, impact_type) tuple may occur "
             "at most once. When one subject has multiple objects for a broad relation, "
             "either combine them into one object when they are one bundled fact, or use "
@@ -2140,6 +2157,24 @@ def _stage_semantic_contract(
                 "do not require the chapter to exercise the rule or power. When the "
                 "chapter claims a state or transition but the governed comparison "
                 "baseline is unavailable, return INSUFFICIENT_EVIDENCE."
+            )
+            contract += (
+                " Treat canon_conflicts as the authoritative deterministic continuity "
+                "result: when it is empty, do not invent a Canon conflict. Compare "
+                "world-rule usages against governed_world_rules in the Quality Context; "
+                "when the exact rule and its limits are present and the chapter stays "
+                "within them, return PASSED with concrete rule-and-prose evidence."
+            )
+        if stage == "quality_platform":
+            contract += (
+                " Evaluate ai_content_policy only against the exact "
+                "compiled_platform_policy and its release_scope. When governed assisted "
+                "content is allowed for internal Provider validation and the chapter "
+                "meets the listed content requirements, return PASSED with concrete "
+                "policy and prose evidence. Do not duplicate source-lineage, copyright, "
+                "or originality review in ai_content_policy; those are independently "
+                "governed dimensions. A separate human approval required for external "
+                "publication is not a defect in an internal validation release."
             )
         if required_language:
             contract += (

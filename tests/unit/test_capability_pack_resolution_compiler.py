@@ -39,7 +39,10 @@ from novel_forge.modules.capability_packs.versioning import (
     ReadOnlyPackCatalog,
 )
 from novel_forge.modules.chapter_authority.contracts import ChapterNode
-from novel_forge.modules.chapter_authority.definitions import chapter_operation_definitions
+from novel_forge.modules.chapter_authority.definitions import (
+    CHAPTER_MODEL_EFFECT_DEFINITION_VERSION,
+    chapter_operation_definitions,
+)
 from novel_forge.modules.command_kernel.lifecycle import AttemptStatus, OperationStatus
 from novel_forge.modules.production_execution.capability_registry import default_capability_registry
 from novel_forge.storage.authority_repositories import definition_hash
@@ -233,7 +236,9 @@ class CapabilityPackP1ATests(unittest.TestCase):
     def test_current_chapter_operations_all_resolve(self) -> None:
         catalog = chapter_operation_definition_catalog(release_sha=FIXTURE_RELEASE_SHA)
         for node in ChapterNode:
-            definition = catalog.resolve(node.definition_name, "2.3.1")
+            definition = catalog.resolve(
+                node.definition_name, CHAPTER_MODEL_EFFECT_DEFINITION_VERSION
+            )
             self.assertEqual(definition.handler_key, node.handler_key)
             self.assertTrue(definition.definition_hash.startswith("sha256:"))
 

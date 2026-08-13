@@ -108,6 +108,8 @@ def test_chapter_planning_prompt_requires_executable_narrative_plan() -> None:
     assert "knowledge boundaries" in contract
     assert "scene or scene-group execution units" in contract
     assert "expected exit state" in contract
+    assert "Do not put Reader Knowledge or Disclosure" in contract
+    assert "mixed audience" in contract
 
 
 def test_quality_prompt_and_schema_version_require_dimension_evidence() -> None:
@@ -137,6 +139,18 @@ def test_longform_quality_prompt_distinguishes_proven_noop_from_missing_state() 
     assert "PASSED with concrete no-op evidence" in contract
     assert "claims a state or transition" in contract
     assert "INSUFFICIENT_EVIDENCE" in contract
+    assert "canon_conflicts as the authoritative deterministic" in contract
+    assert "governed_world_rules" in contract
+
+
+def test_platform_quality_prompt_scopes_internal_assisted_content_policy() -> None:
+    contract = _stage_semantic_contract("quality_platform")
+
+    assert "compiled_platform_policy" in contract
+    assert "release_scope" in contract
+    assert "internal Provider validation" in contract
+    assert "Do not duplicate source-lineage" in contract
+    assert "external publication is not a defect" in contract
 
 
 def test_canon_prompt_explains_unique_semantic_slot_encoding() -> None:
@@ -146,6 +160,8 @@ def test_canon_prompt_explains_unique_semantic_slot_encoding() -> None:
     assert "at most once" in contract
     assert "authorizes_testimony" in contract
     assert "authorizes_public_identification" in contract
+    assert "copy disclosure_id" in contract
+    assert "do not expand the audience" in contract
 
 
 def test_canon_prompt_binds_transition_preconditions_to_accepted_state() -> None:

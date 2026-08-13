@@ -186,12 +186,13 @@ def build_context_bundle(
         "forbidden_source_count": 0,
         "task_narrative_projection": task_narrative_projection,
         "chapter_execution_expectations": {
-            "contract_version": "chapter-execution-expectations-v1",
+            "contract_version": "chapter-execution-expectations-v2",
             "chapter_plan_asset_version_id": plan_asset_version_id,
             "required_state_transitions": list(
                 plan.get("required_state_transitions") or []
             ),
             "disclosures": list(plan.get("disclosures") or []),
+            "knowledge_boundaries": list(plan.get("knowledge_boundaries") or []),
             "expected_exit_state": dict(plan.get("expected_exit_state") or {}),
         },
         "provider_projection_contract_version": "minimum-sufficient-context-v1",

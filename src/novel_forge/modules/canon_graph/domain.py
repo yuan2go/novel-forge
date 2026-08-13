@@ -1104,6 +1104,30 @@ def _validate_planned_execution(
                     "extract the planned presentation event or revise the future plan",
                 )
             )
+    actual_reader_knowledge = {
+        str(item.get("fact_id") or item.get("proposition_id") or ""): str(
+            item.get("status") or ""
+        ).upper()
+        for item in extraction.get("reader_knowledge_changes", [])
+        if isinstance(item, dict)
+    }
+    for boundary in planned_execution.get("knowledge_boundaries") or ():
+        if (
+            not isinstance(boundary, dict)
+            or str(boundary.get("layer") or "").upper() != "READER_KNOWLEDGE"
+        ):
+            continue
+        fact_id = str(boundary.get("fact_id") or "")
+        expected_status = str(boundary.get("status") or "").upper()
+        if actual_reader_knowledge.get(fact_id) != expected_status:
+            conflicts.append(
+                _conflict(
+                    "PLANNED_READER_KNOWLEDGE_MISMATCH",
+                    boundary,
+                    {"derived_status": actual_reader_knowledge.get(fact_id)},
+                    "derive the planned Reader Knowledge status from the accepted Disclosure mode",
+                )
+            )
 
 
 _PLANNED_IDENTITY_FIELDS: dict[str, tuple[tuple[str, ...], ...]] = {

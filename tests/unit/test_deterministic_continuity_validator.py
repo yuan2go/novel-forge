@@ -357,6 +357,50 @@ class DeterministicContinuityValidatorTests(unittest.TestCase):
         self.assertEqual(mismatched["gate"], "BLOCKED")
         self.assertEqual(passed["gate"], "PASSED")
 
+    def test_planned_reader_knowledge_is_reconciled_from_accepted_disclosure(self) -> None:
+        planned = {
+            "knowledge_boundaries": [
+                {
+                    "layer": "READER_KNOWLEDGE",
+                    "subject_id": "reader",
+                    "fact_id": "fact:traitor",
+                    "status": "KNOWN",
+                }
+            ],
+            "disclosures": [
+                {
+                    "disclosure_id": "disclosure:traitor",
+                    "fact_id": "fact:traitor",
+                    "audience": "READER",
+                    "mode": "CONFIRM",
+                }
+            ],
+        }
+        mismatched = validate_deterministic_continuity(
+            chapter=3,
+            historical_state={},
+            extraction={
+                "reader_knowledge_changes": [
+                    {"fact_id": "fact:traitor", "status": "HINTED"}
+                ],
+                "disclosure_events": [
+                    {
+                        "disclosure_id": "disclosure:traitor",
+                        "fact_id": "fact:traitor",
+                        "audience": "READER",
+                        "disclosure_mode": "CONFIRM",
+                    }
+                ],
+            },
+            planned_execution=planned,
+        )
+
+        self.assertEqual(mismatched["gate"], "BLOCKED")
+        self.assertIn(
+            "PLANNED_READER_KNOWLEDGE_MISMATCH",
+            {item["conflict_code"] for item in mismatched["violations"]},
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

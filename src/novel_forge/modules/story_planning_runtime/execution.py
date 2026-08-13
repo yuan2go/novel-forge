@@ -37,6 +37,7 @@ from novel_forge.modules.command_kernel.external_effect_runtime import (
     read_succeeded_external_effect,
 )
 from novel_forge.modules.hierarchical_planning.domain import (
+    CHAPTER_EXECUTION_STATE_KINDS,
     TYPE_FIELDS,
     PlanContractType,
 )
@@ -600,7 +601,14 @@ def _canonical_narrative_provider_properties(
                 {
                     "disclosure_id": string,
                     "fact_id": string,
-                    "audience": string,
+                    "audience": {
+                        **string,
+                        "description": (
+                            "Use READER or ALL for a reader-facing Disclosure, or one "
+                            "exact character_id for character presentation. Create "
+                            "separate Disclosure events for mixed audiences."
+                        ),
+                    },
                     "mode": {
                         "type": "string",
                         "enum": ["HINT", "PARTIAL", "MISDIRECT", "CONFIRM", "WITHHOLD"],
@@ -613,8 +621,24 @@ def _canonical_narrative_provider_properties(
             "type": "array",
             "items": _strict_object(
                 {
-                    "state_kind": string,
-                    "entity_key": string,
+                    "state_kind": {
+                        "type": "string",
+                        "enum": sorted(CHAPTER_EXECUTION_STATE_KINDS),
+                        "description": (
+                            "Canonical Narrative State kind accepted by the Chapter "
+                            "execution reconciler; never invent a domain-local kind."
+                        ),
+                    },
+                    "entity_key": {
+                        **string,
+                        "description": (
+                            "Exact canonical identity used by extraction: character_id; "
+                            "source_id:target_id for relationships; character_id:arc_id "
+                            "for character arcs; character_id:fact_id for knowledge; "
+                            "otherwise the state kind's "
+                            "stable Authority identifier."
+                        ),
+                    },
                     "from_state": string,
                     "to_state": string,
                 }

@@ -239,6 +239,7 @@ def build_quality_context_view(
             "canon_conflicts": canon.get("conflicts", []),
             "previous_state_snapshots": previous_states,
             "current_state_candidates": current_states,
+            "governed_world_rules": _segments_of_type(segments, "world_bible"),
             "volume_arc": _segments_of_type(segments, "volume_arc"),
             "arc_progress": _segments_of_type(segments, "arc_progress_report"),
             "previous_recap": _segments_of_type(segments, "longform_recap_report"),
@@ -277,7 +278,7 @@ def build_quality_context_view(
         token_budget=token_budget,
     )
     body["coverage_report"] = coverage
-    body["contract_version"] = "stage-quality-context-v2"
+    body["contract_version"] = "stage-quality-context-v3"
     body["context_digest"] = _digest(body)
     final_tokens = _estimate_payload(body, estimator)
     if final_tokens > token_budget:
@@ -634,7 +635,7 @@ def _estimate_final_quality_context(
     envelope = {
         **body,
         "coverage_report": coverage,
-        "contract_version": "stage-quality-context-v2",
+        "contract_version": "stage-quality-context-v3",
         # The digest value is fixed-width. Its value does not affect the token
         # estimate, so a placeholder avoids a circular digest dependency.
         "context_digest": "sha256:" + ("0" * 64),

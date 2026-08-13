@@ -47,6 +47,18 @@ def _bundle() -> dict:
             "structured_facts": [{"promise": "the cost becomes visible"}],
             "source_expression_included": False,
         },
+        {
+            "asset_version_id": "world-bible-v1",
+            "asset_type": "world_bible",
+            "content_digest": "sha256:world-bible",
+            "structured_facts": [
+                {
+                    "rule_id": "rule:public-record",
+                    "rule": "Public records require a witnessed filing.",
+                }
+            ],
+            "source_expression_included": False,
+        },
     ]
     segments.extend(
         {
@@ -153,6 +165,10 @@ class QualityContextAuthorityTests(unittest.TestCase):
                 "state_kind"
             ],
             "character_arc",
+        )
+        self.assertEqual(
+            views["longform"]["governed_world_rules"][0]["asset_version_id"],
+            "world-bible-v1",
         )
         self.assertEqual(views["structural"]["scene_plan"][0]["scene_id"], "scene:2:1")
         self.assertEqual(views["commercial"]["arc_schedule"][0]["role"], "PRIMARY")

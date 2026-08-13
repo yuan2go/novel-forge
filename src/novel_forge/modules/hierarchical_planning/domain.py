@@ -114,6 +114,33 @@ TYPE_FIELDS = {
     ),
 }
 
+# Only state kinds that the Canon extraction boundary can materialize and the
+# deterministic execution reconciler can identify are valid Chapter commitments.
+CHAPTER_EXECUTION_STATE_KINDS = frozenset(
+    {
+        "character_state",
+        "relationship_state",
+        "foreshadow_state",
+        "reader_promise",
+        "world_rule",
+        "power_state",
+        "plot_thread",
+        "resource_state",
+        "character_knowledge",
+        "character_belief",
+        "character_arc",
+        "arc_state",
+        "antagonist_state",
+    }
+)
+
+READER_DISCLOSURE_STATUS = {
+    "HINT": "HINTED",
+    "PARTIAL": "SUSPECTED",
+    "MISDIRECT": "MISDIRECTED",
+    "CONFIRM": "KNOWN",
+}
+
 
 @dataclass(frozen=True, slots=True)
 class PlanningContract:
@@ -305,6 +332,16 @@ def _validate_canonical_narrative_contract(
             "CHAPTER_EXECUTION_PLAN_INCOMPLETE",
             "canonical ChapterPlan missing: " + ", ".join(missing),
         )
+    transitions = content["required_state_transitions"]
+    if not isinstance(transitions, list) or any(
+        not isinstance(item, dict)
+        or str(item.get("state_kind") or "") not in CHAPTER_EXECUTION_STATE_KINDS
+        for item in transitions
+    ):
+        raise KernelError(
+            "CHAPTER_STATE_TRANSITION_KIND_INVALID",
+            "Chapter execution transitions must use the canonical Narrative State vocabulary",
+        )
     allowed_roles = {"PRIMARY", "SECONDARY", "TOUCH", "SETUP", "PAYOFF", "HOLD"}
     schedule = [item for item in content["arc_schedule"] if isinstance(item, dict)]
     if len(schedule) != len(content["arc_schedule"]) or any(
@@ -319,6 +356,29 @@ def _validate_canonical_narrative_contract(
             "CHAPTER_PRIMARY_ARC_INVALID",
             "canonical ChapterPlan requires exactly one Primary Arc",
         )
+    disclosures = [
+        item for item in content["disclosures"] if isinstance(item, dict)
+    ]
+    reader_boundaries = [
+        item
+        for item in content["knowledge_boundaries"]
+        if isinstance(item, dict)
+        and str(item.get("layer") or "").upper() == "READER_KNOWLEDGE"
+    ]
+    for boundary in reader_boundaries:
+        fact_id = str(boundary.get("fact_id") or "")
+        expected_status = str(boundary.get("status") or "").upper()
+        matching_statuses = {
+            READER_DISCLOSURE_STATUS.get(str(item.get("mode") or "").upper())
+            for item in disclosures
+            if str(item.get("fact_id") or "") == fact_id
+            and str(item.get("audience") or "").upper() in {"READER", "ALL"}
+        }
+        if not fact_id or expected_status not in matching_statuses:
+            raise KernelError(
+                "CHAPTER_READER_KNOWLEDGE_DERIVATION_INVALID",
+                "Reader Knowledge must match the status derived from one reader-facing Disclosure",
+            )
     scheduled_arcs = [str(item.get("arc_plan_version_id") or "") for item in schedule]
     contribution_arcs = {
         str(item.get("arc_plan_version_id") or "")
@@ -441,6 +501,8 @@ def validate_chapter_function_matrix(
 
 
 __all__ = [
+    "CHAPTER_EXECUTION_STATE_KINDS",
+    "READER_DISCLOSURE_STATUS",
     "COMMON_FIELDS",
     "PlanContractType",
     "PlanExecutionScope",

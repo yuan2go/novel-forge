@@ -139,6 +139,12 @@ def test_planning_provider_schema_is_codex_strict(
         assert schema["properties"]["title"]["maxLength"] == 120
         assert schema["properties"]["premise"]["maxLength"] == 320
         assert "reader-facing" in schema["properties"]["title"]["description"]
+        state_kinds = schema["properties"]["required_state_transitions"]["items"][
+            "properties"
+        ]["state_kind"]["enum"]
+        assert "character_arc" in state_kinds
+        assert "reader_knowledge" not in state_kinds
+        assert "official_record_status" not in state_kinds
 
 
 def test_volume_and_chapter_provider_contracts_bind_timeline_segments() -> None:
@@ -221,6 +227,61 @@ def test_chapter_contract_rejects_duplicate_arc_contribution_identity() -> None:
 
     with pytest.raises(
         KernelError, match="PLANNING_ARC_CONTRIBUTION_IDENTITY_DUPLICATE"
+    ):
+        validate_planning_contract(
+            project_id="project-1",
+            book_id="book-1",
+            contract_type=PlanContractType.CHAPTER,
+            asset_version_id="chapter:v2",
+            parent_version_id="chapter-group:v1",
+            execution_scope=PlanExecutionScope.PLANNED,
+            content=content,
+        )
+
+
+def test_chapter_contract_rejects_noncanonical_state_kind() -> None:
+    content = planning_fixture_response(
+        "chapter_plan.generate",
+        {
+            "planning_command": {
+                "logical_key": "chapter:2",
+                "parent_version_id": "chapter-group:v1",
+                "input_versions": {"arc_plans": "arc:v1"},
+            }
+        },
+    )
+    content["required_state_transitions"][0]["state_kind"] = (
+        "official_record_status"
+    )
+
+    with pytest.raises(KernelError, match="CHAPTER_STATE_TRANSITION_KIND_INVALID"):
+        validate_planning_contract(
+            project_id="project-1",
+            book_id="book-1",
+            contract_type=PlanContractType.CHAPTER,
+            asset_version_id="chapter:v2",
+            parent_version_id="chapter-group:v1",
+            execution_scope=PlanExecutionScope.PLANNED,
+            content=content,
+        )
+
+
+def test_chapter_contract_derives_reader_knowledge_from_disclosure_mode() -> None:
+    content = planning_fixture_response(
+        "chapter_plan.generate",
+        {
+            "planning_command": {
+                "logical_key": "chapter:2",
+                "parent_version_id": "chapter-group:v1",
+                "input_versions": {"arc_plans": "arc:v1"},
+            }
+        },
+    )
+    content["knowledge_boundaries"][0]["status"] = "KNOWN"
+    content["disclosures"][0]["mode"] = "HINT"
+
+    with pytest.raises(
+        KernelError, match="CHAPTER_READER_KNOWLEDGE_DERIVATION_INVALID"
     ):
         validate_planning_contract(
             project_id="project-1",
