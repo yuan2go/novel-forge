@@ -52,16 +52,16 @@ def test_real_planning_definition_versions_the_bounded_xhigh_timeout() -> None:
     }
 
 
-def test_planning_provider_effect_preserves_one_retry_before_dead_letter() -> None:
+def test_planning_provider_effect_shares_the_operation_retry_budget() -> None:
     definition = story_planning_generation_definition(
         application_build_id="unit-test-build",
         commit_sha="a" * 40,
     )
 
-    assert PLANNING_EXTERNAL_EFFECT_MAX_ATTEMPTS == 2
+    assert PLANNING_EXTERNAL_EFFECT_MAX_ATTEMPTS == 3
     assert (
         definition["retry_policy"]["max_attempts"]
-        > PLANNING_EXTERNAL_EFFECT_MAX_ATTEMPTS
+        == PLANNING_EXTERNAL_EFFECT_MAX_ATTEMPTS
     )
 
 

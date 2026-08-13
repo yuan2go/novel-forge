@@ -5,6 +5,7 @@ from copy import deepcopy
 import pytest
 
 from novel_forge.modules.chapter_authority.execution_gateway import (
+    _required_language_from_context,
     _stage_semantic_contract,
 )
 from novel_forge.modules.chapter_authority.provider_output_contracts import (
@@ -41,6 +42,38 @@ def test_revision_prompt_requires_issue_resolution_and_language_continuity() -> 
     assert "Resolve every supplied review issue" in contract
     assert "Preserve the reader-facing language" in contract
     assert "resolved_issue_codes" in contract
+
+
+def test_zh_cn_language_contract_overrides_legacy_revision_language() -> None:
+    contract = _stage_semantic_contract("revision", required_language="zh-CN")
+
+    assert "zh-CN" in contract
+    assert "Simplified Chinese" in contract
+    assert "even when the input draft uses another language" in contract
+
+
+def test_language_contract_is_discovered_in_governed_context_only() -> None:
+    assert (
+        _required_language_from_context(
+            {
+                "context_segments": [
+                    {
+                        "structured_facts": [
+                            {
+                                "key": "language_contract",
+                                "value": {
+                                    "required_language": "zh-CN",
+                                    "reader_facing_prose": "REQUIRED",
+                                },
+                            }
+                        ]
+                    }
+                ]
+            }
+        )
+        == "zh-CN"
+    )
+    assert _required_language_from_context({"language": "English"}) is None
 
 
 def test_rereview_prompt_reports_only_acceptance_blocking_defects() -> None:

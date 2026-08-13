@@ -12,6 +12,7 @@ from .longform_campaign import (
     CHECKPOINT_CHAPTERS,
     LongformCampaignContract,
     contract_identity,
+    evaluate_proof_language,
     load_campaign_contract,
 )
 
@@ -24,6 +25,7 @@ __all__ = [
     "ProofCheck",
     "ShortLongformProofEvaluation",
     "contract_identity",
+    "evaluate_proof_language",
     "evaluate_short_longform_evidence",
     "load_campaign_contract",
 ]

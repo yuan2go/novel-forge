@@ -9,6 +9,7 @@ import pytest
 from novel_forge.modules.runtime_proof import (
     LongformCampaignContract,
     contract_identity,
+    evaluate_proof_language,
     load_campaign_contract,
 )
 
@@ -28,6 +29,7 @@ def _minimal_contract() -> dict[str, object]:
         "migration_head": "20260812_0086_corrective_generation_terminal_lineage",
         "book": {
             "title": "The Ledger Under Rain",
+            "language": "zh-CN",
             "target_chapters": 300,
             "volumes": [
                 {
@@ -144,6 +146,35 @@ def test_contract_rejects_mutable_ground_truth_or_thresholds() -> None:
 
     with pytest.raises(ValueError, match="Ground Truth and thresholds must be immutable"):
         LongformCampaignContract.from_mapping(payload)
+
+
+def test_contract_requires_the_frozen_simplified_chinese_language() -> None:
+    payload = _minimal_contract()
+    payload["book"]["language"] = "en-US"
+
+    with pytest.raises(ValueError, match="book.language must equal zh-CN"):
+        LongformCampaignContract.from_mapping(payload)
+
+
+def test_proof_language_gate_accepts_primarily_chinese_prose() -> None:
+    result = evaluate_proof_language(
+        "林乔把旧账册压在桌上，逐页核对未曾改变的编号。Ledger 17仍在原处，她抬头看向证人。",
+        required_language="zh-CN",
+    )
+
+    assert result["status"] == "PASSED"
+    assert result["required_language"] == "zh-CN"
+    assert result["han_character_ratio"] >= 0.6
+
+
+def test_proof_language_gate_rejects_english_prose() -> None:
+    result = evaluate_proof_language(
+        "Lin Qiao put the ledger on the table and asked the witness to sign it.",
+        required_language="zh-CN",
+    )
+
+    assert result["status"] == "FAILED"
+    assert result["reason"] == "PROSE_NOT_PRIMARILY_ZH_CN"
 
 
 def test_contract_rejects_non_contiguous_pattern_and_invalid_obligation_window() -> None:

@@ -32,6 +32,7 @@ from novel_forge.modules.command_kernel.external_effect_runtime import (
     EffectCommandContext,
     dispatch_external_effect,
     plan_external_effect,
+    read_succeeded_external_effect,
 )
 from novel_forge.modules.hierarchical_planning.domain import (
     TYPE_FIELDS,
@@ -70,6 +71,7 @@ from novel_forge.storage.database_runtime import get_database_runtime
 from .binder import PreparedPlanningExecution
 from .domain import (
     FrozenPlanningInput,
+    STORY_PLANNING_MAX_ATTEMPTS,
     StoryPlanningGenerationCommand,
     canonical_hash,
 )
@@ -85,11 +87,11 @@ _PLANNING_STAGES = frozenset(
     }
 )
 
-# A retryable provider outcome must remain retryable at the Operation boundary.
-# With a single Effect attempt, the Effect dead-letters immediately and the
-# Content scheduler incorrectly receives a final provider failure even though
-# the Planning Operation still has retries available.
-PLANNING_EXTERNAL_EFFECT_MAX_ATTEMPTS = 2
+# Planning has one retry owner: every Operation Attempt may advance the same
+# ExternalEffect by at most one dispatch generation. Sharing the bound keeps
+# the Effect from terminalizing while the Operation still has retry budget and
+# prevents nested retry amplification.
+PLANNING_EXTERNAL_EFFECT_MAX_ATTEMPTS = STORY_PLANNING_MAX_ATTEMPTS
 
 
 @dataclass(frozen=True, slots=True)
@@ -674,6 +676,7 @@ class _PlanningPepPort:
     reservation_id: str
     binding: _PlanningExecutionBinding
     adapter: _PlanningGatewayEffectAdapter
+    recovered_completion: dict[str, Any] | None
     writer: AuthorityAssetWriter
     post_provider_fault_injector: Callable[[str], None]
 
@@ -686,7 +689,7 @@ class _PlanningPepPort:
                 "PLANNING_PEP_CAPABILITY_DRIFT",
                 "Planning command differs from the frozen execution capability",
             )
-        dispatched = dispatch_external_effect(
+        dispatched = self.recovered_completion or dispatch_external_effect(
             self.database_url,
             self.context,
             effect_id=self.effect_id,
@@ -694,6 +697,9 @@ class _PlanningPepPort:
             lease_seconds=self.lease_seconds,
             adapter=self.adapter,
         )
+        recovered_completion = self.recovered_completion is not None
+        if recovered_completion:
+            dispatched = {**dispatched, "outcome": "success"}
         if dispatched["outcome"] != "success":
             resolve_provider_budget_failure(
                 self.database_url,
@@ -756,6 +762,7 @@ class _PlanningPepPort:
                 amount=amount,
                 total_tokens=total_tokens,
                 accepted_candidate=False,
+                recovered_completion=recovered_completion,
                 failure={"code": exc.code, "message": str(exc)},
             )
             raise
@@ -766,6 +773,7 @@ class _PlanningPepPort:
             amount=amount,
             total_tokens=total_tokens,
             accepted_candidate=True,
+            recovered_completion=recovered_completion,
         )
         execution_result = production.get("execution_result")
         if not isinstance(execution_result, Mapping):
@@ -823,6 +831,7 @@ class _PlanningPepPort:
         amount: str,
         total_tokens: int,
         accepted_candidate: bool,
+        recovered_completion: bool,
         failure: Mapping[str, Any] | None = None,
     ) -> None:
         self._record_evidence(
@@ -830,9 +839,13 @@ class _PlanningPepPort:
             {
                 **dict(evidence),
                 "candidate_accepted": accepted_candidate,
+                "provider_invoked_this_attempt": not recovered_completion,
+                "recovered_external_effect_success": recovered_completion,
                 "post_provider_failure": dict(failure or {}),
             },
         )
+        if recovered_completion:
+            return
         self._record_evidence(
             "cost_ledger",
             {
@@ -843,6 +856,8 @@ class _PlanningPepPort:
                 "usage": dict(usage),
                 "cost": dict(cost),
                 "candidate_accepted": accepted_candidate,
+                "provider_invoked_this_attempt": True,
+                "recovered_external_effect_success": False,
                 "post_provider_failure": dict(failure or {}),
             },
         )
@@ -1037,7 +1052,7 @@ class PostgresPlanningExecutionPreparer:
             "production_execution/capability_materializations/"
             + _token(f"{command.project_id}:{operation_id}:{attempt_id}:planning")
         )
-        materialization_document = self._ensure_contract(
+        self._ensure_contract(
             operation_id=operation_id,
             project_id=command.project_id,
             logical_ref=materialization_ref,
@@ -1053,9 +1068,7 @@ class PostgresPlanningExecutionPreparer:
             trace_id=command.trace_id,
             correlation_id=command.correlation_id,
         )
-        stable_key = (
-            f"{operation_id}:{attempt_id}:{definition.capability}:planning-pep-v1"
-        )
+        stable_key = f"{operation_id}:{definition.capability}:planning-pep-v2"
         planning_route = self.planning_route
         request_payload = {
             "stage": command.generator_operation_name,
@@ -1083,26 +1096,7 @@ class PostgresPlanningExecutionPreparer:
             },
             "trace_id": command.trace_id,
             "correlation_id": command.correlation_id,
-            "_production_execution": {
-                "operation_id": operation_id,
-                "attempt_id": attempt_id,
-                "fencing_token": fencing_token,
-                "project_id": command.project_id,
-                "workspace_id": command.workspace_id,
-                "book_id": command.book_id,
-                "worker_id": worker_id,
-                "capability_runtime": {
-                    "snapshot_id": attempt_snapshot.snapshot_id,
-                    "snapshot_hash": attempt_snapshot.snapshot_hash,
-                    "materialization_asset_version_id": (
-                        materialization_document.asset_version_id
-                    ),
-                    "materialization_content_hash": (
-                        materialization_document.content_hash
-                    ),
-                    "materialization_hash": materialization["materialization_hash"],
-                },
-            },
+            "operation_id": operation_id,
         }
         effect = plan_external_effect(
             self.database_url,
@@ -1123,21 +1117,38 @@ class PostgresPlanningExecutionPreparer:
             ),
         )
         effect_id = str(effect["external_effect_id"])
-        reservation = reserve_provider_budget(
-            self.database_url,
-            BudgetReservationRequest(
-                operation_id=operation_id,
-                external_effect_id=effect_id,
-                project_id=command.project_id,
-                stable_idempotency_key=f"budget:{stable_key}",
-                provider=self.execution_transport.provider,
-                currency="USD",
-                estimated_amount=self.max_cost_per_call,
-                estimated_tokens=0,
-                caps=self.budget_caps,
-            ),
+        effect_context = EffectCommandContext(
+            operation_id=operation_id,
+            project_id=command.project_id,
+            actor_id=worker_id,
+            trace_id=command.trace_id,
+            correlation_id=command.correlation_id,
         )
-        request_payload["external_effect_id"] = effect_id
+        recovered_completion = read_succeeded_external_effect(
+            self.database_url,
+            effect_context,
+            effect_id=effect_id,
+        )
+        if recovered_completion is None:
+            reservation = reserve_provider_budget(
+                self.database_url,
+                BudgetReservationRequest(
+                    operation_id=operation_id,
+                    external_effect_id=effect_id,
+                    project_id=command.project_id,
+                    stable_idempotency_key=(
+                        f"budget:{stable_key}:attempt:{attempt_id}"
+                    ),
+                    provider=self.execution_transport.provider,
+                    currency="USD",
+                    estimated_amount=self.max_cost_per_call,
+                    estimated_tokens=0,
+                    caps=self.budget_caps,
+                ),
+            )
+            reservation_id = str(reservation["reservation_id"])
+        else:
+            reservation_id = str(recovered_completion["budget_reservation_id"])
         binding, contract_documents = self._execution_binding(
             operation_id=operation_id,
             attempt_id=attempt_id,
@@ -1150,7 +1161,7 @@ class PostgresPlanningExecutionPreparer:
             input_documents=input_documents,
             effect_id=effect_id,
             stable_key=stable_key,
-            reservation_id=str(reservation["reservation_id"]),
+            reservation_id=reservation_id,
             output_schema_ref=output_schema_ref,
             frozen=frozen,
         )
@@ -1168,9 +1179,10 @@ class PostgresPlanningExecutionPreparer:
                 context=effect_context,
                 effect_id=effect_id,
                 stable_key=stable_key,
-                reservation_id=str(reservation["reservation_id"]),
+                reservation_id=reservation_id,
                 binding=binding,
                 adapter=adapter,
+                recovered_completion=recovered_completion,
                 writer=self.writer,
                 post_provider_fault_injector=self.post_provider_fault_injector,
             ),
@@ -1398,7 +1410,11 @@ class PostgresPlanningExecutionPreparer:
             correlation_id=command.correlation_id,
         )
         request = ExecutionRequest(
-            execution_id=f"planning-execution:{effect_id}",
+            # The ExternalEffect owns the stable Provider idempotency identity;
+            # each Operation Attempt owns one gateway execution record.  Reusing
+            # the execution_id would conflict with the new Attempt fence and
+            # budget reservation even though the Effect itself is unchanged.
+            execution_id=f"planning-execution:{effect_id}:{attempt_id}",
             operation_id=operation_id,
             root_operation_id=graph["root_operation_id"],
             saga_id=graph["saga_id"],

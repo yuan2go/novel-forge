@@ -224,6 +224,14 @@ def test_legacy_obligation_kinds_keep_source_identity_when_linked() -> None:
                     "status": "OPEN",
                 }
             ],
+            "mystery_state": [
+                {
+                    "mystery_id": "mystery:recorded-subject",
+                    "promise_id": "promise:resolve-record",
+                    "thread_id": "thread:revised-record",
+                    "status": "OPEN",
+                }
+            ],
         },
     )
 
@@ -234,6 +242,7 @@ def test_legacy_obligation_kinds_keep_source_identity_when_linked() -> None:
         "obligation_id=thread:revised-record",
         "obligation_id=promise:resolve-record",
         "obligation_id=foreshadow:recorded-subject",
+        "obligation_id=mystery:recorded-subject",
     }
 
 
@@ -263,6 +272,223 @@ def test_initial_legacy_active_plot_thread_opens_unified_obligation() -> None:
 
     assert obligation["state"]["status"] == "OPEN"
     assert obligation["state"]["lifecycle_migration"]["source_status"] == "ACTIVE"
+
+
+@pytest.mark.parametrize(
+    ("state_kind", "identity", "entity_key"),
+    (
+        (
+            "reader_promise",
+            {"promise_id": "promise:active"},
+            "obligation_id=promise:active",
+        ),
+        ("plot_thread", {"thread_id": "thread:active"}, "obligation_id=thread:active"),
+        (
+            "mystery_state",
+            {"mystery_id": "mystery:active"},
+            "obligation_id=mystery:active",
+        ),
+        (
+            "foreshadow_state",
+            {"entity_id": "foreshadow:active"},
+            "obligation_id=foreshadow:active",
+        ),
+    ),
+)
+def test_new_legacy_active_obligation_kinds_open(
+    state_kind: str,
+    identity: dict[str, str],
+    entity_key: str,
+) -> None:
+    version, outcome = _outcome(
+        1,
+        {state_kind: [{**identity, "status": "ACTIVE", "impact_type": "NEW"}]},
+    )
+
+    state = rebuild_story_state([(version, outcome)])
+
+    assert (
+        project_entity_state(state, "narrative_obligation", entity_key)["state"][
+            "status"
+        ]
+        == "OPEN"
+    )
+
+
+def test_existing_developing_legacy_active_does_not_regress() -> None:
+    state = rebuild_story_state(
+        [
+            _outcome(1, {"plot_thread": [{"thread_id": "thread:p", "status": "OPEN"}]}),
+            _outcome(
+                2,
+                {
+                    "plot_thread": [
+                        {
+                            "thread_id": "thread:p",
+                            "from_status": "OPEN",
+                            "status": "DEVELOPED",
+                        }
+                    ]
+                },
+            ),
+            _outcome(
+                3, {"plot_thread": [{"thread_id": "thread:p", "status": "ACTIVE"}]}
+            ),
+        ]
+    )
+
+    assert (
+        project_entity_state(state, "narrative_obligation", "obligation_id=thread:p")[
+            "state"
+        ]["status"]
+        == "DEVELOPING"
+    )
+
+
+def test_legacy_active_from_status_is_liveness_not_open_precondition() -> None:
+    state = rebuild_story_state(
+        [
+            _outcome(1, {"plot_thread": [{"thread_id": "thread:p", "status": "OPEN"}]}),
+            _outcome(
+                2,
+                {
+                    "plot_thread": [
+                        {
+                            "thread_id": "thread:p",
+                            "from_status": "OPEN",
+                            "status": "DEVELOPED",
+                        }
+                    ]
+                },
+            ),
+            _outcome(
+                3,
+                {
+                    "plot_thread": [
+                        {
+                            "thread_id": "thread:p",
+                            "from_status": "ACTIVE",
+                            "status": "ACTIVE",
+                        }
+                    ]
+                },
+            ),
+        ]
+    )
+
+    assert (
+        project_entity_state(state, "narrative_obligation", "obligation_id=thread:p")[
+            "state"
+        ]["status"]
+        == "DEVELOPING"
+    )
+
+
+def test_explicit_legacy_progress_signal_advances_open_to_developing() -> None:
+    state = rebuild_story_state(
+        [
+            _outcome(1, {"plot_thread": [{"thread_id": "thread:p", "status": "OPEN"}]}),
+            _outcome(
+                2,
+                {
+                    "plot_thread": [
+                        {
+                            "thread_id": "thread:p",
+                            "status": "ACTIVE",
+                            "state": "DEVELOPING",
+                            "transition_kind": "THREAD_DEVELOPED",
+                            "impact_type": "UPDATE",
+                        }
+                    ]
+                },
+            ),
+        ]
+    )
+
+    assert (
+        project_entity_state(state, "narrative_obligation", "obligation_id=thread:p")[
+            "state"
+        ]["status"]
+        == "DEVELOPING"
+    )
+
+
+def test_terminal_legacy_active_obligation_does_not_reopen() -> None:
+    state = rebuild_story_state(
+        [
+            _outcome(1, {"plot_thread": [{"thread_id": "thread:p", "status": "OPEN"}]}),
+            _outcome(
+                2,
+                {
+                    "plot_thread": [
+                        {
+                            "thread_id": "thread:p",
+                            "from_status": "OPEN",
+                            "status": "RESOLVED",
+                            "payoff_evidence": "The thread closes with accepted evidence.",
+                        }
+                    ]
+                },
+            ),
+            _outcome(
+                3, {"plot_thread": [{"thread_id": "thread:p", "status": "ACTIVE"}]}
+            ),
+        ]
+    )
+
+    assert (
+        project_entity_state(state, "narrative_obligation", "obligation_id=thread:p")[
+            "state"
+        ]["status"]
+        == "FULFILLED"
+    )
+
+
+def test_obligation_supersession_must_target_current_same_identity_event() -> None:
+    first_version, first_outcome = _outcome(
+        1, {"plot_thread": [{"thread_id": "thread:p", "status": "OPEN"}]}
+    )
+    first_event_id = first_outcome["state_events"][0]["event_id"]
+    second_version, second_outcome = _outcome(
+        2,
+        {
+            "plot_thread": [
+                {
+                    "thread_id": "thread:p",
+                    "status": "DEVELOPED",
+                    "supersedes_event_id": first_event_id,
+                }
+            ]
+        },
+    )
+
+    state = rebuild_story_state(
+        [(first_version, first_outcome), (second_version, second_outcome)]
+    )
+    assert (
+        project_entity_state(state, "narrative_obligation", "obligation_id=thread:p")[
+            "state"
+        ]["status"]
+        == "DEVELOPING"
+    )
+
+    _wrong_version, wrong_outcome = _outcome(
+        2,
+        {
+            "plot_thread": [
+                {
+                    "thread_id": "thread:p",
+                    "status": "DEVELOPED",
+                    "supersedes_event_id": "event:another-obligation",
+                }
+            ]
+        },
+    )
+    with pytest.raises(KernelError) as mismatch:
+        rebuild_story_state(
+            [(first_version, first_outcome), (second_version, wrong_outcome)]
+        )
+    assert mismatch.value.code == "NARRATIVE_SUPERSESSION_TARGET_INVALID"
 
 
 def test_current_state_is_entity_aware_and_not_a_history_of_character_changes() -> None:

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from dataclasses import replace
 import hashlib
 from pathlib import Path
 import tempfile
@@ -66,6 +67,8 @@ from novel_forge.modules.production_execution.capability_registry import (
     PLANNING_TIMEOUT_POLICY_VERSION,
     default_capability_registry,
 )
+from novel_forge.modules.production_execution.contracts import ExecutionOutcome
+from novel_forge.modules.production_execution.gateway import ProductionExecutionGateway
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from tests.integration.authority_postgres_support import (
     DATABASE_URL,
@@ -1055,7 +1058,9 @@ def test_planning_retry_reuses_frozen_pack_after_measured_provider_result() -> N
         attempts = uow.cursor.fetchall()
         uow.cursor.execute(
             """
-            SELECT asset.asset_type, version.content->>'candidate_accepted'
+            SELECT asset.asset_type, version.content->>'candidate_accepted',
+                   version.content->>'provider_invoked_this_attempt',
+                   version.content->>'recovered_external_effect_success'
             FROM authority_operation_output_asset AS binding
             JOIN authority_asset_version AS version
               ON version.asset_version_id=binding.asset_version_id
@@ -1087,6 +1092,20 @@ def test_planning_retry_reuses_frozen_pack_after_measured_provider_result() -> N
             [result.generation_operation_id],
         )
         operation_status = str(uow.cursor.fetchone()[0])
+        uow.cursor.execute(
+            """
+            SELECT COUNT(DISTINCT effect.external_effect_id),
+                   COUNT(DISTINCT dispatch.dispatch_id),
+                   array_agg(DISTINCT dispatch.generation ORDER BY dispatch.generation)
+            FROM authority_external_effect AS effect
+            JOIN authority_external_effect_dispatch AS dispatch
+              ON dispatch.external_effect_id=effect.external_effect_id
+            WHERE effect.operation_id=%s
+              AND effect.effect_type='model.invoke'
+            """,
+            [result.generation_operation_id],
+        )
+        effect_count, dispatch_count, dispatch_generations = uow.cursor.fetchone()
     assert [(row[0], row[1]) for row in attempts] == [
         (1, "FAILED_RETRYABLE"),
         # Planning remains approval-gated after Provider success, so the
@@ -1101,12 +1120,197 @@ def test_planning_retry_reuses_frozen_pack_after_measured_provider_result() -> N
     assert attempts[0][5] == attempts[1][5] == baseline_deployment_id
     assert attempts[1][5] != replacement_deployment.deployment_id
     assert evidence == [
-        ("cost_ledger", "false"),
-        ("cost_ledger", "true"),
-        ("model_call_log", "false"),
-        ("model_call_log", "true"),
+        ("cost_ledger", "false", "true", "false"),
+        ("model_call_log", "false", "true", "false"),
+        ("model_call_log", "true", "false", "true"),
     ]
+    assert (effect_count, dispatch_count, dispatch_generations) == (1, 1, [1])
     assert candidate_count == 1
+
+
+def test_planning_provider_timeout_retries_same_effect_then_succeeds(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    harness = CapabilityPackPostgresHarness("planning-provider-timeout-retry")
+    _activate_planning_pack(harness)
+    generic = _seed_inputs(harness.project_id, harness.book_ids[0])
+    principal = _principal(harness.project_id)
+    original_reconcile = ProductionExecutionGateway.reconcile
+    reconciliations = 0
+
+    def timeout_once(self, handle):
+        nonlocal reconciliations
+        result = original_reconcile(self, handle)
+        reconciliations += 1
+        if reconciliations == 1:
+            return replace(result, outcome=ExecutionOutcome.TIMED_OUT)
+        return result
+
+    monkeypatch.setattr(ProductionExecutionGateway, "reconcile", timeout_once)
+    with tempfile.TemporaryDirectory(prefix="planning-provider-timeout-") as root:
+        settings = IndustrialSettings(
+            root=root,
+            environment="development",
+            storage_authority="postgresql",
+            database_url=DATABASE_URL,
+        )
+        env = {
+            "NOVEL_FORGE_ENVIRONMENT": "development",
+            "NOVEL_FORGE_APPLICATION_BUILD_ID": "planning-provider-timeout-retry",
+            "NOVEL_FORGE_COMMIT_SHA": RELEASE_SHA,
+            "NOVEL_FORGE_MODEL_PROVIDER": "scripted_provider_v2",
+            "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": root,
+            "NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID": harness.pack_id,
+        }
+        execution = build_production_execution_composition(settings, env=env)
+        planning = build_story_planning_generation_application(
+            settings, execution=execution, env=env
+        )
+        command = StoryPlanningGenerationCommand(
+            project_id=harness.project_id,
+            workspace_id=harness.workspace_id,
+            book_id=harness.book_ids[0],
+            actor_id=principal.principal_id,
+            generator_operation_name="book_plan.generate",
+            logical_key=f"{harness.book_ids[0]}:timeout-retry",
+            input_versions={
+                role: generic[role]
+                for role in GENERATOR_INPUT_ROLES["book_plan.generate"]
+            },
+            idempotency_key=f"{harness.project_id}:timeout-retry",
+            trace_id=f"trace:{harness.project_id}:timeout-retry",
+            correlation_id=f"correlation:{harness.project_id}",
+        )
+        with pytest.raises(KernelError) as first:
+            planning.generate(command, principal=principal)
+        assert first.value.code == "MODEL_EFFECT_RETRYABLE_PLANNING"
+
+        result = planning.generate(command, principal=principal)
+        execution.close()
+
+    assert result.status is PlanningGenerationStatus.APPROVAL_PENDING
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute(
+            """
+            SELECT effect.status, COUNT(DISTINCT effect.external_effect_id),
+                   COUNT(DISTINCT dispatch.dispatch_id),
+                   array_agg(dispatch.generation ORDER BY dispatch.generation)
+            FROM authority_external_effect AS effect
+            JOIN authority_external_effect_dispatch AS dispatch
+              ON dispatch.external_effect_id=effect.external_effect_id
+            WHERE effect.operation_id=%s
+            GROUP BY effect.status
+            """,
+            [result.generation_operation_id],
+        )
+        effect_status, effect_count, dispatch_count, generations = uow.cursor.fetchone()
+        uow.cursor.execute(
+            """
+            SELECT COUNT(*) FROM authority_operation_output_asset
+            WHERE operation_id=%s AND output_key='story_planning.candidate'
+            """,
+            [result.generation_operation_id],
+        )
+        candidate_count = int(uow.cursor.fetchone()[0])
+    assert reconciliations == 2
+    assert (effect_status, effect_count, dispatch_count, generations) == (
+        "SUCCEEDED",
+        1,
+        2,
+        [1, 2],
+    )
+    assert candidate_count == 1
+
+
+def test_planning_repeated_provider_timeout_exhausts_one_bounded_effect(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    harness = CapabilityPackPostgresHarness("planning-provider-timeout-exhausted")
+    _activate_planning_pack(harness)
+    generic = _seed_inputs(harness.project_id, harness.book_ids[0])
+    principal = _principal(harness.project_id)
+    original_reconcile = ProductionExecutionGateway.reconcile
+
+    def always_timeout(self, handle):
+        return replace(
+            original_reconcile(self, handle), outcome=ExecutionOutcome.TIMED_OUT
+        )
+
+    monkeypatch.setattr(ProductionExecutionGateway, "reconcile", always_timeout)
+    with tempfile.TemporaryDirectory(prefix="planning-provider-exhausted-") as root:
+        settings = IndustrialSettings(
+            root=root,
+            environment="development",
+            storage_authority="postgresql",
+            database_url=DATABASE_URL,
+        )
+        env = {
+            "NOVEL_FORGE_ENVIRONMENT": "development",
+            "NOVEL_FORGE_APPLICATION_BUILD_ID": "planning-provider-timeout-exhausted",
+            "NOVEL_FORGE_COMMIT_SHA": RELEASE_SHA,
+            "NOVEL_FORGE_MODEL_PROVIDER": "scripted_provider_v2",
+            "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": root,
+            "NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID": harness.pack_id,
+        }
+        execution = build_production_execution_composition(settings, env=env)
+        planning = build_story_planning_generation_application(
+            settings, execution=execution, env=env
+        )
+        command = StoryPlanningGenerationCommand(
+            project_id=harness.project_id,
+            workspace_id=harness.workspace_id,
+            book_id=harness.book_ids[0],
+            actor_id=principal.principal_id,
+            generator_operation_name="book_plan.generate",
+            logical_key=f"{harness.book_ids[0]}:timeout-exhausted",
+            input_versions={
+                role: generic[role]
+                for role in GENERATOR_INPUT_ROLES["book_plan.generate"]
+            },
+            idempotency_key=f"{harness.project_id}:timeout-exhausted",
+            trace_id=f"trace:{harness.project_id}:timeout-exhausted",
+            correlation_id=f"correlation:{harness.project_id}",
+        )
+        errors: list[str] = []
+        for _attempt in range(3):
+            with pytest.raises(KernelError) as raised:
+                planning.generate(command, principal=principal)
+            errors.append(raised.value.code)
+        execution.close()
+
+    assert errors == [
+        "MODEL_EFFECT_RETRYABLE_PLANNING",
+        "MODEL_EFFECT_RETRYABLE_PLANNING",
+        "MODEL_EFFECT_FINAL_PLANNING",
+    ]
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute(
+            """
+            SELECT operation.status, effect.status,
+                   COUNT(DISTINCT effect.external_effect_id),
+                   COUNT(DISTINCT dispatch.dispatch_id),
+                   array_agg(dispatch.generation ORDER BY dispatch.generation)
+            FROM authority_operation AS operation
+            JOIN authority_external_effect AS effect
+              ON effect.operation_id=operation.operation_id
+            JOIN authority_external_effect_dispatch AS dispatch
+              ON dispatch.external_effect_id=effect.external_effect_id
+            WHERE operation.project_id=%s
+              AND operation.definition_name='story_planning.generate'
+            GROUP BY operation.status, effect.status
+            """,
+            [harness.project_id],
+        )
+        status, effect_status, effect_count, dispatch_count, generations = (
+            uow.cursor.fetchone()
+        )
+    assert (status, effect_status, effect_count, dispatch_count, generations) == (
+        "FAILED_FINAL",
+        "DEAD_LETTER",
+        1,
+        3,
+        [1, 2, 3],
+    )
 
 
 @pytest.mark.parametrize("runtime_path", ("NO_REPLAN", "EXPLICIT_REPLAN_APPROVAL"))

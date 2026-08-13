@@ -1888,28 +1888,90 @@ class PostgresProductionExecutionPayloadResolver:
         raise ValueError("unsupported Source intelligence execution kind")
 
 
-def _stage_semantic_contract(stage: str) -> str:
+def _required_language_from_context(value: Any) -> str | None:
+    """Read only explicit governed language contracts from materialized context."""
+
+    languages: set[str] = set()
+
+    def visit(item: Any) -> None:
+        if isinstance(item, Mapping):
+            contract = item.get("language_contract")
+            if isinstance(contract, Mapping):
+                required = str(contract.get("required_language") or "").strip()
+                if required:
+                    languages.add(required)
+            if item.get("key") == "language_contract":
+                nested = item.get("value")
+                if isinstance(nested, Mapping):
+                    required = str(nested.get("required_language") or "").strip()
+                    if required:
+                        languages.add(required)
+            for nested in item.values():
+                visit(nested)
+        elif isinstance(item, (list, tuple)):
+            for nested in item:
+                visit(nested)
+
+    visit(value)
+    if len(languages) > 1:
+        raise KernelError(
+            "CHAPTER_LANGUAGE_CONTRACT_CONFLICT",
+            "governed Context contains conflicting reader-facing languages",
+        )
+    return next(iter(languages), None)
+
+
+def _language_semantic_contract(required_language: str | None) -> str:
+    if not required_language:
+        return ""
+    if required_language != "zh-CN":
+        raise KernelError(
+            "CHAPTER_LANGUAGE_CONTRACT_UNSUPPORTED",
+            f"unsupported governed reader-facing language: {required_language}",
+        )
+    return (
+        "The governed reader-facing language is zh-CN. Write reader-facing titles, "
+        "synopses, chapter prose, revision prose, and explanatory review evidence "
+        "primarily in Simplified Chinese. Keep schema keys and stable identifiers "
+        "unchanged, and do not translate identifiers."
+    )
+
+
+def _stage_semantic_contract(
+    stage: str, *, required_language: str | None = None
+) -> str:
     if stage == "revision":
-        return (
+        revision_language = (
+            "Revise the reader-facing prose into the governed language even when the "
+            "input draft uses another language. Do not preserve a conflicting input "
+            "language. "
+            if required_language
+            else (
+                "Preserve the reader-facing language of the input chapter and do not "
+                "introduce unexplained code-switching. "
+            )
+        )
+        return _bind_language_contract(
             "Return text as final reader-facing revised chapter prose only. "
             "Resolve every supplied review issue in the prose, prioritizing blocking and "
             "major issues; list a code in resolved_issue_codes only after the edit is "
-            "actually present. Preserve the reader-facing language of the input chapter "
-            "and do not introduce unexplained code-switching. Do not put a serialized "
+            f"actually present. {revision_language}Do not put a serialized "
             "JSON object inside text. Do not include analysis, self-checks, change logs, "
-            "revision evidence, or operator-facing appendices in text."
+            "revision evidence, or operator-facing appendices in text.",
+            required_language,
         )
     if stage == "rereview":
-        return (
+        return _bind_language_contract(
             "Independently verify the revised chapter against the supplied review. "
             "Report in issues only defects that remain acceptance-blocking: an unresolved "
             "blocking or major issue, or a material regression that prevents acceptance. "
             "Do not report optional minor polish or taste preferences in issues. If no "
             "acceptance-blocking defect remains, return issues=[] and an evidence-based "
-            "score. Never suppress an actual blocking or major defect."
+            "score. Never suppress an actual blocking or major defect.",
+            required_language,
         )
     if stage == "canon_extraction":
-        return (
+        return _bind_language_contract(
             "Extract only facts and state changes supported by the revised chapter. "
             "Treat from_status, from_state, and from_tier only as compare-and-set "
             "preconditions against the exact accepted Story State supplied in the "
@@ -1937,7 +1999,8 @@ def _stage_semantic_contract(stage: str) -> str:
             "precise relation-specific predicates. For example, encode separate consent "
             "facts as authorizes_testimony and authorizes_public_identification instead "
             "of repeating authorizes with two objects. Never emit two different objects "
-            "for the same semantic tuple."
+            "for the same semantic tuple.",
+            required_language,
         )
     if stage.startswith("quality_"):
         contract = (
@@ -1957,8 +2020,22 @@ def _stage_semantic_contract(stage: str) -> str:
                 "chapter claims a state or transition but the governed comparison "
                 "baseline is unavailable, return INSUFFICIENT_EVIDENCE."
             )
-        return contract
-    return "Return only the stage result defined by the frozen output schema."
+        if required_language:
+            contract += (
+                " For a requested language, platform, or format dimension, treat prose "
+                "that is not primarily Simplified Chinese as FAILED; Authority "
+                "acceptance alone is not evidence of language compliance."
+            )
+        return _bind_language_contract(contract, required_language)
+    return _bind_language_contract(
+        "Return only the stage result defined by the frozen output schema.",
+        required_language,
+    )
+
+
+def _bind_language_contract(contract: str, required_language: str | None) -> str:
+    language_contract = _language_semantic_contract(required_language)
+    return f"{language_contract} {contract}" if language_contract else contract
 
 
 def _materialize_production_codex_prompt(
@@ -2028,7 +2105,10 @@ def _materialize_production_codex_prompt(
             "CHAPTER_CAPABILITY_TOOL_UNAUTHORIZED",
             "Codex execution permits only the governed provider invocation",
         )
-    stage_semantic_contract = _stage_semantic_contract(stage)
+    required_language = _required_language_from_context(context[0].get("content"))
+    stage_semantic_contract = _stage_semantic_contract(
+        stage, required_language=required_language
+    )
     prompt = "\n\n".join(
         (
             "<system_instruction>\n" + system_text + "\n</system_instruction>",
@@ -2050,6 +2130,7 @@ def _materialize_production_codex_prompt(
     evidence = {
         "materialization_hash": str(materialization.get("materialization_hash") or ""),
         "fully_rendered_prompt_hash": prompt_hash,
+        "required_reader_facing_language": required_language,
         "system_instruction": {
             key: system.get(key) for key in ("ref", "version", "content_hash")
         },

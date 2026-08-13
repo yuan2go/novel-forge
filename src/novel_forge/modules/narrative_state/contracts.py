@@ -1053,6 +1053,7 @@ def _normalize_obligation(
             "Narrative obligation requires an explicit stable identity",
         )
     status_alias = str(value.get("status") or "OPEN").upper()
+    from_status_alias = str(value.get("from_status") or "").upper()
     status_map = {
         "PLANTED": "OPEN",
         "PROMISED": "OPEN",
@@ -1126,6 +1127,7 @@ def _normalize_obligation(
                 {
                     "legacy_adapter": True,
                     "source_status": status_alias,
+                    "source_from_status": from_status_alias,
                     "target_window_inferred": False,
                 }
                 if legacy_adapter
