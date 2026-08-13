@@ -175,6 +175,12 @@ def test_planning_provider_view_uses_command_and_projected_inputs_only() -> None
                     "content_hash": "sha256:authority-evidence",
                     "content": {
                         "premise": "Truth requires a visible cost.",
+                        "candidate_payload": {
+                            "premise": "duplicated Provider candidate"
+                        },
+                        "constraint_envelope": {"envelope_digest": "sha256:audit"},
+                        "execution_evidence": {"attempt_id": "attempt:audit"},
+                        "frozen_inputs": [{"asset_version_id": "authority:audit"}],
                         "trace_id": "trace:authority-only",
                         "evidence_level": "CONTROLLED_PROOF_BOOTSTRAP",
                         "runtime_result": False,
