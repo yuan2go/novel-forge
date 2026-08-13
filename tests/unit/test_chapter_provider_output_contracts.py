@@ -107,6 +107,19 @@ def test_canon_prompt_binds_fact_supersession_to_accepted_canon_event() -> None:
     assert "Never paraphrase an unchanged accepted fact" in contract
 
 
+def test_canon_prompt_requires_character_knowledge_precondition_closure() -> None:
+    contract = _stage_semantic_contract("canon_extraction")
+
+    assert "requires_fact_ids" in contract
+    assert "acquired_fact_ids" in contract
+    assert "character-specific epistemic preconditions" in contract
+    assert (
+        "world-rule availability is not automatically character knowledge"
+        in contract.lower()
+    )
+    assert "never add unsupported knowledge merely to satisfy validation" in contract
+
+
 def _valid(stage: str) -> dict[str, object]:
     if stage == "draft":
         return {"text": "The choice closes the only safe road home."}

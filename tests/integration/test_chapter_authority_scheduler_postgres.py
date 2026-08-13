@@ -133,6 +133,73 @@ class DownstreamRetryExhaustedFixture(QualityCorrectionFixture):
         return super().invoke(request, stage=stage, payload=payload)
 
 
+class CanonConflictQualityCorrectionFixture(DeterministicFixtureChapterProvider):
+    supports_semantic_extraction = True
+
+    def invoke(self, request, *, stage, payload):  # type: ignore[no-untyped-def]
+        if stage == "revision" and "quality" in payload:
+            draft = payload["draft"]
+            return self._result(
+                stage,
+                {
+                    "text": (
+                        f"{draft['text']} The governed exception consumes one "
+                        "irreplaceable seal as its explicit cost."
+                    )
+                },
+            )
+        if stage == "canon_extraction":
+            text = str(payload["revision"].get("text") or "")
+            corrected = "explicit cost" in text
+            output = {
+                field: []
+                for field in (
+                    "canon_facts",
+                    "character_state_changes",
+                    "relationship_changes",
+                    "timeline_events",
+                    "foreshadow_changes",
+                    "promise_changes",
+                    "reward_changes",
+                    "world_rule_usages",
+                    "power_state_changes",
+                    "plot_thread_changes",
+                    "resource_state_changes",
+                    "narrative_pattern_fingerprints",
+                    "theme_movements",
+                    "antagonist_pressure_changes",
+                )
+            }
+            output["world_rule_usages"] = [
+                {
+                    "rule_id": "rule:governed-exception-cost",
+                    "state": "EXERCISED",
+                    "exception": True,
+                    "cost": "one irreplaceable seal" if corrected else "",
+                    "evidence_start": 0,
+                    "evidence_end": max(1, len(text)),
+                    "confidence": 0.99,
+                    "impact_type": "world_rule_use",
+                }
+            ]
+            return self._result(stage, output)
+        return super().invoke(request, stage=stage, payload=payload)
+
+    def _result(self, stage: str, output: dict[str, object]) -> ModelProviderResult:
+        return ModelProviderResult(
+            output=output,
+            provider_id=self.provider_id,
+            model_id="canon-conflict-correction-fixture-v1",
+            prompt_version=f"{stage}-fixture-v1",
+            skill_version="canon-conflict-correction-fixture-v1",
+            input_tokens=0,
+            output_tokens=0,
+            cost_amount="0",
+            currency="USD",
+            real_model_call=False,
+        )
+
+
 class SimulatedQualityCorrectionCrash(BaseException):
     pass
 
@@ -419,6 +486,110 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
                 ],
             )
             self.assertTrue(cursor.fetchone()[0])
+
+    def test_canon_block_becomes_one_bounded_quality_correction_without_retry(
+        self,
+    ) -> None:
+        project_id = identifier("canon-quality-correction-project")
+        registry = build_chapter_handler_registry(
+            CanonConflictQualityCorrectionFixture()
+        )
+        root_key = f"{project_id}:chapter:1"
+        admission = admit_single_chapter_saga(
+            DATABASE_URL,
+            request=SingleChapterRequest(
+                project_id=project_id,
+                workspace_id=f"workspace:{project_id}",
+                actor_id="trusted-operator",
+                chapter=1,
+                title="A Cost Bound to Canon",
+                premise="A governed exception must expose and pay its exact cost.",
+                trace_id=identifier("canon-quality-trace"),
+                correlation_id=identifier("canon-quality-correlation"),
+                application_build_id="canon-quality-correction-test",
+                commit_sha="f" * 40,
+                idempotency_key=root_key,
+                preparation_report={"decision": "READY", "fixture": True},
+                context_candidates=tuple(self._release_evidence(project_id)),
+            ),
+            registry=registry,
+            permissions=frozenset({"chapter.authority.execute"}),
+        )
+        scheduler = ChapterAuthorityScheduler(
+            DATABASE_URL,
+            registry=registry,
+            object_store_adapter=FakeDeterministicProvider("success"),
+            worker_id="canon-quality-correction-worker",
+            permissions=frozenset({"chapter.authority.execute"}),
+        )
+
+        for _ in range(80):
+            terminal = scheduler.tick(
+                project_id=project_id,
+                root_operation_id=admission.root_operation_id,
+            )
+            if terminal.saga_status == "SUCCEEDED":
+                break
+        else:
+            self.fail("Canon-blocked quality correction did not complete")
+
+        corrective = CorrectiveActionQuery(DATABASE_URL).list(
+            project_id=project_id,
+            issue_type="canon_consistency",
+        )
+        self.assertTrue(corrective)
+        self.assertTrue(all(item["status"] == "RESOLVED" for item in corrective))
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT operation.status, COUNT(attempt.attempt_id),
+                       array_agg(attempt.status ORDER BY attempt.attempt_number),
+                       version.content
+                FROM authority_operation AS operation
+                JOIN authority_attempt AS attempt
+                  ON attempt.operation_id=operation.operation_id
+                JOIN authority_operation_output_asset AS binding
+                  ON binding.operation_id=operation.operation_id
+                 AND binding.role='primary'
+                JOIN authority_asset_version AS version
+                  ON version.asset_version_id=binding.asset_version_id
+                WHERE operation.root_operation_id=%s
+                  AND operation.idempotency_key=%s
+                GROUP BY operation.status, version.content
+                """,
+                [admission.root_operation_id, f"{root_key}:quality"],
+            )
+            initial_status, attempt_count, attempt_statuses, initial_quality = (
+                cursor.fetchone()
+            )
+            cursor.execute(
+                """
+                SELECT version.content
+                FROM authority_operation AS operation
+                JOIN authority_operation_output_asset AS binding
+                  ON binding.operation_id=operation.operation_id
+                 AND binding.role='primary'
+                JOIN authority_asset_version AS version
+                  ON version.asset_version_id=binding.asset_version_id
+                WHERE operation.root_operation_id=%s
+                  AND operation.idempotency_key=%s
+                """,
+                [
+                    admission.root_operation_id,
+                    f"{root_key}:quality:quality-correction:1",
+                ],
+            )
+            corrected_quality = cursor.fetchone()[0]
+
+        self.assertEqual(initial_status, "SUCCEEDED")
+        self.assertEqual(attempt_count, 1)
+        self.assertEqual(attempt_statuses, ["SUCCEEDED"])
+        self.assertEqual(initial_quality["gate"], "FAILED")
+        self.assertEqual(
+            initial_quality["decision_chain"]["source_gate_failures"]["canon"],
+            "BLOCKED",
+        )
+        self.assertNotEqual(corrected_quality["gate"], "FAILED")
 
     def test_quality_issue_escalates_when_bounded_reevaluation_still_fails(
         self,
