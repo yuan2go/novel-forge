@@ -22,9 +22,9 @@ from novel_forge.modules.story_design_authority import PlanningScope
 _CONTENT_HASH = re.compile(r"^sha256:[0-9a-f]{64}$")
 
 
-STORY_PLANNING_OPERATION_DEFINITION_REF = "story_planning.generate@1.2.0"
-STORY_PLANNING_WORKFLOW_DEFINITION_REF = "story_planning_generators@1.2.0"
-STORY_PLANNING_OPERATION_TIMEOUT_SECONDS = 600
+STORY_PLANNING_OPERATION_DEFINITION_REF = "story_planning.generate@1.3.0"
+STORY_PLANNING_WORKFLOW_DEFINITION_REF = "story_planning_generators@1.3.0"
+STORY_PLANNING_OPERATION_TIMEOUT_SECONDS = 1_800
 STORY_PLANNING_MAX_ATTEMPTS = 3
 
 

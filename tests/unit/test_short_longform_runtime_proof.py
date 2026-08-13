@@ -46,8 +46,8 @@ def test_proof_object_store_buckets_are_stable_and_run_isolated(tmp_path: Path) 
 def test_retry_installs_a_new_immutable_planning_pack_version() -> None:
     proof = _load_script()
 
-    assert proof.PLANNING_PACK_INITIAL_VERSION == "1.3.0"
-    assert proof.PLANNING_PACK_RECOVERY_VERSION == "1.4.0"
+    assert proof.PLANNING_PACK_INITIAL_VERSION == "1.5.0"
+    assert proof.PLANNING_PACK_RECOVERY_VERSION == "1.6.0"
     assert proof.PLANNING_PACK_INITIAL_VERSION != proof.PLANNING_PACK_RECOVERY_VERSION
 
 
