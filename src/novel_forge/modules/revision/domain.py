@@ -127,6 +127,18 @@ def apply_quality_revision_result(
             "QUALITY_REVISION_LINEAGE_CONFLICT",
             "Quality correction task scope does not match its frozen target revision",
         )
+    source_text = str(revision.get("text") or "").strip()
+    minimum_preserved_ratio = 0.6
+    if (
+        len(source_text) >= 500
+        and "chapter_length" not in frozen
+        and len(text) < len(source_text) * minimum_preserved_ratio
+    ):
+        raise KernelError(
+            "QUALITY_REVISION_SCOPE_INVALID",
+            "bounded Quality correction cannot replace a complete chapter with a "
+            "truncated summary or excerpt",
+        )
     return {
         **revision,
         "text": text,
@@ -138,7 +150,7 @@ def apply_quality_revision_result(
         "quality_action_observations": sorted(frozen),
         "context_bundle_version_id": context_bundle_version_id,
         "provider_evidence": dict(provider_evidence),
-        "revision_contract_version": "quality-corrective-revision-v1",
+        "revision_contract_version": "quality-corrective-revision-v2",
     }
 
 

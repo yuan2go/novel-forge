@@ -41,6 +41,9 @@ def test_revision_prompt_requires_issue_resolution_and_language_continuity() -> 
     assert "Resolve every supplied review issue" in contract
     assert "Preserve the reader-facing language" in contract
     assert "resolved_issue_codes" in contract
+    assert "smallest bounded edit" in contract
+    assert "preserve all unrelated scenes" in contract
+    assert "Never replace the full chapter with a summary or excerpt" in contract
 
 
 def test_rereview_prompt_reports_only_acceptance_blocking_defects() -> None:

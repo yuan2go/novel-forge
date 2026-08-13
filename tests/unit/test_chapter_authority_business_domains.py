@@ -200,6 +200,85 @@ class ChapterAuthorityBusinessDomainTests(unittest.TestCase):
                 provider_evidence={},
             )
 
+    def test_quality_local_repair_rejects_catastrophic_chapter_truncation(
+        self,
+    ) -> None:
+        source_text = " ".join(
+            f"Sentence {index} preserves a governed scene beat."
+            for index in range(80)
+        )
+        quality = {
+            "project_id": "project-a",
+            "required_actions": [
+                {
+                    "observation": "canon_consistency",
+                    "required_action": "LOCAL_REPAIR",
+                    "status": "OPEN",
+                }
+            ],
+        }
+        task = {
+            "project_id": "project-a",
+            "observation": "canon_consistency",
+            "required_action": "LOCAL_REPAIR",
+            "status": "OPEN",
+            "target_revision_asset_version_id": "revision-v1",
+        }
+
+        with self.assertRaisesRegex(
+            KernelError,
+            "QUALITY_REVISION_SCOPE_INVALID",
+        ):
+            apply_quality_revision_result(
+                project_id="project-a",
+                revision={"chapter": 1, "title": "Cost", "text": source_text},
+                revision_asset_version_id="revision-v1",
+                quality=quality,
+                quality_asset_version_id="quality-v1",
+                revision_tasks=(task,),
+                revision_task_asset_version_ids=("revision-task-v1",),
+                context_bundle_version_id="context-v1",
+                result={"text": "A short replacement summary."},
+                provider_evidence={"provider_id": "fixture"},
+            )
+
+    def test_chapter_length_correction_may_make_a_large_bounded_reduction(
+        self,
+    ) -> None:
+        source_text = "x" * 1200
+        quality = {
+            "project_id": "project-a",
+            "required_actions": [
+                {
+                    "observation": "chapter_length",
+                    "required_action": "LOCAL_REPAIR",
+                    "status": "OPEN",
+                }
+            ],
+        }
+        task = {
+            "project_id": "project-a",
+            "observation": "chapter_length",
+            "required_action": "LOCAL_REPAIR",
+            "status": "OPEN",
+            "target_revision_asset_version_id": "revision-v1",
+        }
+
+        corrected = apply_quality_revision_result(
+            project_id="project-a",
+            revision={"chapter": 1, "title": "Cost", "text": source_text},
+            revision_asset_version_id="revision-v1",
+            quality=quality,
+            quality_asset_version_id="quality-v1",
+            revision_tasks=(task,),
+            revision_task_asset_version_ids=("revision-task-v1",),
+            context_bundle_version_id="context-v1",
+            result={"text": "x" * 400},
+            provider_evidence={"provider_id": "fixture"},
+        )
+
+        self.assertEqual(len(corrected["text"]), 400)
+
     def test_canon_quality_and_publish_use_structured_evidence(self) -> None:
         review = self.review()
         revision = self.revision(review)
