@@ -27,6 +27,10 @@ from novel_forge.modules.capability_packs.compiler import (
     CompiledWorkflowNode,
 )
 from novel_forge.modules.chapter_authority.orchestrator import SingleChapterRequest
+from novel_forge.modules.chapter_authority.definitions import (
+    CHAPTER_MODEL_EFFECT_DEFINITION_VERSION,
+    CHAPTER_MODEL_WORKFLOW_DEFINITION_REF,
+)
 from tests.integration.authority_postgres_support import (
     DATABASE_URL,
     connect,
@@ -38,6 +42,9 @@ from tests.integration import test_chapter_authority_scheduler_postgres as chapt
 
 
 RELEASE_SHA = "a" * 40
+DRAFT_OPERATION_DEFINITION_REF = (
+    f"chapter.draft.generate@{CHAPTER_MODEL_EFFECT_DEFINITION_VERSION}"
+)
 
 
 def _hash(value: object) -> str:
@@ -249,8 +256,9 @@ class UnifiedAgentRuntimePostgresTests(unittest.TestCase):
                        retry_policy, timeout_policy, approval_policy,
                        compensation_policy, completion_contract
                 FROM authority_operation_definition
-                WHERE name='chapter.draft.generate' AND definition_version='2.3.6'
-                """
+                WHERE name='chapter.draft.generate' AND definition_version=%s
+                """,
+                [CHAPTER_MODEL_EFFECT_DEFINITION_VERSION],
             ).fetchone()
         assert authority is not None
         capability = AgentCapability(
@@ -369,7 +377,8 @@ class UnifiedAgentRuntimePostgresTests(unittest.TestCase):
 
         node = CompiledWorkflowNode(
             ordinal=3, node_id="draft",
-            definition_name="chapter.draft.generate", definition_version="2.3.6",
+            definition_name="chapter.draft.generate",
+            definition_version=CHAPTER_MODEL_EFFECT_DEFINITION_VERSION,
             definition_hash=str(authority[0]), handler_key=str(authority[1]),
             handler_contract_version=str(authority[2]),
             capability_id=capability.capability_id,
@@ -405,18 +414,20 @@ class UnifiedAgentRuntimePostgresTests(unittest.TestCase):
                     """
                     SELECT COALESCE(MAX(binding_version), 0) + 1
                     FROM authority_chapter_node_agent_binding
-                    WHERE workflow_definition_ref='chapter_authority_slice@2.3.1'
+                    WHERE workflow_definition_ref=%s
                       AND workflow_node_id='draft'
-                    """
+                    """,
+                    [CHAPTER_MODEL_WORKFLOW_DEFINITION_REF],
                 ).fetchone()[0]
             )
             activation_row = connection.execute(
                 """
                 SELECT activation_version
                 FROM authority_chapter_node_agent_binding_activation
-                WHERE workflow_definition_ref='chapter_authority_slice@2.3.1'
+                WHERE workflow_definition_ref=%s
                   AND workflow_node_id='draft'
-                """
+                """,
+                [CHAPTER_MODEL_WORKFLOW_DEFINITION_REF],
             ).fetchone()
             expected_activation_version = (
                 int(activation_row[0]) if activation_row is not None else 0
@@ -432,9 +443,9 @@ class UnifiedAgentRuntimePostgresTests(unittest.TestCase):
                 payload={
                     "authority_mode": "DEVELOPMENT_FIXTURE",
                     "binding_id": binding_id, "binding_version": binding_version,
-                    "workflow_definition_ref": "chapter_authority_slice@2.3.1",
+                    "workflow_definition_ref": CHAPTER_MODEL_WORKFLOW_DEFINITION_REF,
                     "workflow_node_id": "draft",
-                    "operation_definition_ref": "chapter.draft.generate@2.3.1",
+                    "operation_definition_ref": DRAFT_OPERATION_DEFINITION_REF,
                     "operation_definition_hash": str(authority[0]),
                     "agent_definition_ref": f"{definition.agent_id}@1",
                     "agent_definition_hash": definition.definition_hash,
@@ -464,7 +475,7 @@ class UnifiedAgentRuntimePostgresTests(unittest.TestCase):
                 expected_activation_version=expected_activation_version,
                 payload={
                     "authority_mode": "DEVELOPMENT_FIXTURE",
-                    "workflow_definition_ref": "chapter_authority_slice@2.3.1",
+                    "workflow_definition_ref": CHAPTER_MODEL_WORKFLOW_DEFINITION_REF,
                     "workflow_node_id": "draft", "binding_id": binding_id,
                     "binding_version": binding_version, "status": "ACTIVE",
                     "reason": "fixture activation",

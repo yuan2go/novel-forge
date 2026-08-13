@@ -291,12 +291,53 @@ class HierarchicalPlanningPostgresTests(unittest.TestCase):
                 ],
                 "setups": [],
                 "payoffs": [],
-                "character_participation": [{"character_id": "character:lin"}],
-                "knowledge_boundaries": [{"fact_id": "fact:ledger"}],
-                "disclosures": [{"disclosure_id": "disclosure:ledger"}],
-                "required_state_transitions": [{"entity_key": "character:lin"}],
+                "character_participation": [
+                    {
+                        "character_id": "character:lin",
+                        "role": "PROTAGONIST",
+                        "trajectory_ref": "character-arc:accountability",
+                        "causal_trigger": "publicly accepts custody",
+                        "entry_emotion": "guarded",
+                        "exit_emotion": "costly resolve",
+                        "resource_changes": ["personal-liability:+1"],
+                        "relationship_changes": ["witness:conditional-trust"],
+                    }
+                ],
+                "knowledge_boundaries": [
+                    {
+                        "layer": "READER_KNOWLEDGE",
+                        "fact_id": "fact:ledger",
+                        "subject_id": "READER",
+                        "status": "KNOWN",
+                    }
+                ],
+                "disclosures": [
+                    {
+                        "disclosure_id": "disclosure:ledger",
+                        "fact_id": "fact:ledger",
+                        "audience": "READER",
+                        "mode": "CONFIRM",
+                        "presentation_channel": "the signed custody record",
+                    }
+                ],
+                "required_state_transitions": [
+                    {
+                        "state_kind": "character_state",
+                        "entity_key": "character:lin",
+                        "from_state": "avoids responsibility",
+                        "to_state": "accepts public responsibility",
+                    }
+                ],
                 "reader_experience": {"target_emotion": "costly relief"},
-                "scene_plan": [{"scene_id": "scene:1"}],
+                "scene_plan": [
+                    {
+                        "scene_id": "scene:1",
+                        "goal": "make the custody choice public",
+                        "participants": ["character:lin"],
+                        "entry_state": "custody is deniable",
+                        "exit_state": "custody is signed and witnessed",
+                    }
+                ],
                 "expected_exit_state": {"summary": "the choice is public"},
             },
         )
