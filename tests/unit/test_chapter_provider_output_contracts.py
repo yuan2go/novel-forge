@@ -97,6 +97,16 @@ def test_canon_prompt_binds_transition_preconditions_to_accepted_state() -> None
     assert "omit from_status, from_state, and from_tier" in contract
 
 
+def test_canon_prompt_binds_fact_supersession_to_accepted_canon_event() -> None:
+    contract = _stage_semantic_contract("canon_extraction")
+
+    assert "accepted Canon facts" in contract
+    assert "source_event_id" in contract
+    assert "supersedes_event_id" in contract
+    assert "omit the redundant fact" in contract
+    assert "Never paraphrase an unchanged accepted fact" in contract
+
+
 def _valid(stage: str) -> dict[str, object]:
     if stage == "draft":
         return {"text": "The choice closes the only safe road home."}
