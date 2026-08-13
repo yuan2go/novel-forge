@@ -147,6 +147,84 @@ def test_provider_context_is_one_bounded_representation_not_authority_bundle() -
     assert heavy["selection_explanation"]["omitted_fact_count"] == 1000
 
 
+def test_planning_provider_view_uses_command_and_projected_inputs_only() -> None:
+    task = build_provider_task_view(
+        "book_plan.generate",
+        {
+            "planning_command": {
+                "logical_key": "book:main",
+                "planning_scope": "BOOK",
+                "input_versions": {"book_design": "book-design:v1"},
+                "trace_id": "trace:authority-only",
+            },
+            "frozen_inputs": [{"content_hash": "sha256:authority-evidence"}],
+        },
+    )
+    view = build_provider_context_view(
+        "book_plan.generate",
+        {
+            "schema_version": "novelos.planning_context_bundle.v1",
+            "book_id": "book-1",
+            "logical_key": "book:main",
+            "planning_scope": "BOOK",
+            "input_versions": [
+                {
+                    "role": "book_design",
+                    "asset_version_id": "book-design:v1",
+                    "asset_type": "book_design",
+                    "content_hash": "sha256:authority-evidence",
+                    "content": {
+                        "premise": "Truth requires a visible cost.",
+                        "trace_id": "trace:authority-only",
+                        "evidence_level": "CONTROLLED_PROOF_BOOTSTRAP",
+                        "runtime_result": False,
+                    },
+                }
+            ],
+        },
+        task,
+    )
+
+    serialized = json.dumps({"task": task, "context": view}, sort_keys=True)
+    assert task["planning_command"]["logical_key"] == "book:main"
+    assert "frozen_inputs" not in serialized
+    assert "authority-evidence" not in serialized
+    assert "authority-only" not in serialized
+    assert "CONTROLLED_PROOF_BOOTSTRAP" not in serialized
+    assert view["segments"][0]["content"] == {
+        "premise": "Truth requires a visible cost."
+    }
+    assert view["selection_explanation"]["policy"] == (
+        "minimum-sufficient-planning-context-v1"
+    )
+
+
+def test_planning_provider_context_is_deterministically_bounded() -> None:
+    with pytest.raises(Exception) as raised:
+        build_provider_context_view(
+            "book_plan.generate",
+            {
+                "schema_version": "novelos.planning_context_bundle.v1",
+                "input_versions": [
+                    {
+                        "role": "book_design",
+                        "asset_version_id": "book-design:v1",
+                        "asset_type": "book_design",
+                        "content": {"premise": "x" * 70_000},
+                    }
+                ],
+            },
+            build_provider_task_view(
+                "book_plan.generate",
+                {"planning_command": {"logical_key": "book:main"}},
+            ),
+        )
+
+    assert getattr(raised.value, "code", "") == (
+        "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED"
+    )
+
+
 def test_state_context_without_task_projection_fails_closed() -> None:
     context = _context(1)
     context.pop("task_narrative_projection")

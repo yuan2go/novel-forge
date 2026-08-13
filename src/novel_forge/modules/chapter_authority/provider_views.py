@@ -20,6 +20,15 @@ _MAX_SUMMARY_CHARACTERS = 1200
 _MAX_PROVIDER_CONTEXT_CHARACTERS = 65_536
 _MAX_PROVIDER_KNOWLEDGE_CHARACTERS = 65_536
 _STATE_ASSET_TYPES = {"story_state_snapshot", "canon_snapshot"}
+_PLANNING_STAGES = frozenset(
+    {
+        "book_plan.generate",
+        "volume_plan.generate",
+        "arc_plan.generate",
+        "chapter_group_plan.generate",
+        "chapter_plan.generate",
+    }
+)
 _REFERENCE_FIELD_SUFFIXES = ("_id", "_ids", "_ref", "_refs")
 _OPERATIONAL_KEYS = {
     "actual_context",
@@ -28,9 +37,11 @@ _OPERATIONAL_KEYS = {
     "context_digest",
     "context_manifest",
     "created_by_operation_id",
+    "evidence_level",
     "normalized_digest",
     "provider_evidence",
     "qualification",
+    "runtime_result",
     "source_chapter_plan_asset_version_id",
     "source_chapter_plan_content_hash",
     "source_extensions",
@@ -42,6 +53,14 @@ _OPERATIONAL_KEYS = {
 def build_provider_task_view(stage: str, inputs: Mapping[str, Any]) -> dict[str, Any]:
     """Return one non-duplicated stage payload without Authority audit metadata."""
 
+    if stage in _PLANNING_STAGES:
+        command = inputs.get("planning_command")
+        if not isinstance(command, Mapping):
+            raise KernelError(
+                "PLANNING_PROVIDER_TASK_VIEW_INVALID",
+                "Planning Provider Task View requires the frozen planning command",
+            )
+        return _task(stage, planning_command=_compact(command))
     if stage == "draft":
         return _task(
             stage,
@@ -230,6 +249,8 @@ def build_provider_context_view(
 ) -> dict[str, Any]:
     """Project Minimum Sufficient Context with deterministic bounded cardinality."""
 
+    if stage in _PLANNING_STAGES:
+        return _build_planning_context_view(stage, context_bundle)
     segments = context_bundle.get("context_segments")
     if not isinstance(segments, list):
         raise KernelError(
@@ -371,6 +392,71 @@ def build_provider_context_view(
             "CHAPTER_PROVIDER_CONTEXT_BUDGET_EXCEEDED",
             "projected Provider Context exceeds its deterministic size boundary; "
             "rebuild the task projection with fewer accepted facts",
+        )
+    return view
+
+
+def _build_planning_context_view(
+    stage: str, context_bundle: Mapping[str, Any]
+) -> dict[str, Any]:
+    """Project the Planning Authority bundle without its audit representation."""
+
+    if context_bundle.get("schema_version") != "novelos.planning_context_bundle.v1":
+        raise KernelError(
+            "PLANNING_PROVIDER_CONTEXT_VIEW_INVALID",
+            "Planning Provider Context requires the canonical Planning ContextBundle",
+        )
+    raw_inputs = context_bundle.get("input_versions")
+    if not isinstance(raw_inputs, list) or not raw_inputs:
+        raise KernelError(
+            "PLANNING_PROVIDER_CONTEXT_VIEW_INVALID",
+            "Planning Provider Context requires frozen input versions",
+        )
+    if len(raw_inputs) > _MAX_SEGMENTS:
+        raise KernelError(
+            "PLANNING_PROVIDER_CONTEXT_PROJECTION_TOO_BROAD",
+            "Planning frozen inputs exceed the bounded segment limit",
+        )
+    projected: list[dict[str, Any]] = []
+    for raw in raw_inputs:
+        if not isinstance(raw, Mapping) or not isinstance(raw.get("content"), Mapping):
+            raise KernelError(
+                "PLANNING_PROVIDER_CONTEXT_VIEW_INVALID",
+                "Planning frozen inputs require typed provider-safe content",
+            )
+        projected.append(
+            {
+                "role": str(raw.get("role") or ""),
+                "asset_version_id": str(raw.get("asset_version_id") or ""),
+                "asset_type": str(raw.get("asset_type") or ""),
+                "content": _compact(raw["content"]),
+            }
+        )
+    view = {
+        "contract_version": "provider-context-view-v1",
+        "stage": stage,
+        "narrative_position": {
+            "book_id": str(context_bundle.get("book_id") or ""),
+            "logical_key": str(context_bundle.get("logical_key") or ""),
+            "planning_scope": str(context_bundle.get("planning_scope") or ""),
+        },
+        "accepted_state_boundary": {"accepted_through_chapter": 0},
+        "segments": projected,
+        "selection_explanation": {
+            "policy": "minimum-sufficient-planning-context-v1",
+            "included_segment_count": len(projected),
+            "included_fact_count": 0,
+            "omitted_segment_count": 0,
+            "omitted_fact_count": 0,
+            "maximum_segments": _MAX_SEGMENTS,
+            "maximum_facts_per_segment": _MAX_FACTS_PER_SEGMENT,
+            "maximum_serialized_characters": _MAX_PROVIDER_CONTEXT_CHARACTERS,
+        },
+    }
+    if _serialized_character_count(view) > _MAX_PROVIDER_CONTEXT_CHARACTERS:
+        raise KernelError(
+            "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED",
+            "projected Planning Provider Context exceeds its deterministic size boundary",
         )
     return view
 
