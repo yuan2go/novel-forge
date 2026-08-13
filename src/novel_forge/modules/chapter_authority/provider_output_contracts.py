@@ -33,7 +33,6 @@ _CANON_FIELDS = (
     "character_belief_changes",
     "character_arc_changes",
     "arc_state_changes",
-    "reader_knowledge_changes",
     "disclosure_events",
 )
 _READER_STATE_FIELDS = (
@@ -180,11 +179,13 @@ def _canon_schema() -> dict[str, Any]:
         "status": {"type": "string"},
         "from_status": {"type": "string"},
         "from_state": {"type": "string"},
+        "from_stage": {"type": "string"},
         "life_status": {"type": "string"},
         "action_state": {"type": "string"},
         "canonical_name": {"type": "string"},
         "transition_kind": {"type": "string"},
         "state": {"type": "string"},
+        "stage": {"type": "string"},
         "tier": {"type": "number"},
         "from_tier": {"type": "number"},
         "balance_before": {"type": "number"},
@@ -346,7 +347,7 @@ def chapter_provider_output_schema(stage: str) -> dict[str, Any]:
 def chapter_provider_output_schema_ref(stage: str) -> str:
     chapter_provider_output_schema(stage)
     version = (
-        "v3"
+        "v4"
         if stage == "canon_extraction"
         else "v2"
         if stage in _QUALITY_STAGES
@@ -406,7 +407,11 @@ def validate_chapter_provider_output_semantics(
                         "initial Resource State requires balance_after",
                     )
                 change["balance"] = after
-            elif before is None or after is None or float(before) + float(delta) != float(after):
+            elif (
+                before is None
+                or after is None
+                or float(before) + float(delta) != float(after)
+            ):
                 raise KernelError(
                     "CHAPTER_PROVIDER_OUTPUT_SEMANTIC_INVALID",
                     "Resource transition requires balance_before + delta = balance_after",

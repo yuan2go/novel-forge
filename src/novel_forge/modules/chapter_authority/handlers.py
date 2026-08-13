@@ -686,7 +686,7 @@ class _CanonHandler:
             ),
             evidence={
                 "authority_family": "chapter",
-                "validator": "deterministic-continuity-v1",
+                "validator": "deterministic-continuity-v2",
                 "semantic_judge_used": False,
             },
         )
@@ -719,7 +719,12 @@ class _CanonExtractionHandler:
             generated = self.provider.invoke(
                 request,
                 stage="canon_extraction",
-                payload={"revision": revision.content},
+                payload={
+                    "revision": revision.content,
+                    "execution_expectations": dict(
+                        context.content.get("chapter_execution_expectations") or {}
+                    ),
+                },
             )
             provider_extraction = _canon_provider_extraction(generated)
         content = build_canon_extraction(
@@ -1019,44 +1024,46 @@ class _QualityHandler:
             )
             for report in content["evidence_reports"]
         )
-        action_outputs = tuple(
-            ChapterAuxiliaryOutput(
-                asset_type="revision_task",
-                output_key=f"chapter.quality.required_action.{ordinal}",
-                role="required_action",
-                content={
-                    **dict(action),
-                    "type": "GovernedRevisionTask",
-                    "contract_version": "governed-revision-task-v1",
-                    "project_id": request.project_id,
-                    "chapter": int(content["chapter"]),
-                    "target_revision_asset_version_id": revision.asset_version_id,
-                    "source_quality_operation_id": request.operation_id,
-                    "status": "OPEN",
-                    "mutates_accepted_canon": False,
-                },
-                reference_asset_version_ids=tuple(
-                    sorted(
-                        {
-                            revision.asset_version_id,
-                            review.asset_version_id,
-                            canon.asset_version_id,
-                            context.asset_version_id,
-                            *action.get("evidence_asset_version_ids", []),
-                        }
-                    )
-                ),
-                evidence={
-                    "required_authority": action["required_authority"],
-                    "reevaluation_gate": action["reevaluation_gate"],
-                },
+        action_outputs = (
+            tuple(
+                ChapterAuxiliaryOutput(
+                    asset_type="revision_task",
+                    output_key=f"chapter.quality.required_action.{ordinal}",
+                    role="required_action",
+                    content={
+                        **dict(action),
+                        "type": "GovernedRevisionTask",
+                        "contract_version": "governed-revision-task-v1",
+                        "project_id": request.project_id,
+                        "chapter": int(content["chapter"]),
+                        "target_revision_asset_version_id": revision.asset_version_id,
+                        "source_quality_operation_id": request.operation_id,
+                        "status": "OPEN",
+                        "mutates_accepted_canon": False,
+                    },
+                    reference_asset_version_ids=tuple(
+                        sorted(
+                            {
+                                revision.asset_version_id,
+                                review.asset_version_id,
+                                canon.asset_version_id,
+                                context.asset_version_id,
+                                *action.get("evidence_asset_version_ids", []),
+                            }
+                        )
+                    ),
+                    evidence={
+                        "required_authority": action["required_authority"],
+                        "reevaluation_gate": action["reevaluation_gate"],
+                    },
+                )
+                for ordinal, action in enumerate(
+                    content.get("required_actions", []), start=1
+                )
             )
-            for ordinal, action in enumerate(
-                content.get("required_actions", []), start=1
-            )
-        ) if not any(
-            item.asset_type == "revision_task" for item in request.inputs
-        ) else ()
+            if not any(item.asset_type == "revision_task" for item in request.inputs)
+            else ()
+        )
         manifest = dict(context.content.get("context_manifest") or {})
         authority_boundary = dict(manifest.get("authority_state_boundary") or {})
         provider_usage = _provider_usage_records(request.inputs)

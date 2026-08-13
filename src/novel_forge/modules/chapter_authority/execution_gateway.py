@@ -1413,6 +1413,53 @@ def default_chapter_fixture_response(
             revision.get("text") or "The protagonist gives up the safe route home."
         )
         evidence_end = max(1, min(len(text), 40))
+        expectations = (
+            inputs.get("execution_expectations")
+            if isinstance(inputs.get("execution_expectations"), Mapping)
+            else {}
+        )
+        character_arc_changes = []
+        for transition in expectations.get("required_state_transitions") or ():
+            if (
+                not isinstance(transition, Mapping)
+                or str(transition.get("state_kind") or "") != "character_arc"
+            ):
+                continue
+            character_id, _, arc_suffix = str(
+                transition.get("entity_key") or ""
+            ).partition(":")
+            change = {
+                "summary": "The planned character trajectory advances.",
+                "effective_from_chapter": int(revision.get("chapter") or 1),
+                "character_id": character_id,
+                "arc_id": f"character-arc:{arc_suffix}",
+                "state": str(transition.get("to_state") or ""),
+                "evidence_start": 0,
+                "evidence_end": evidence_end,
+                "confidence": 0.99,
+                "impact_type": "character_arc_progression",
+            }
+            if int(revision.get("chapter") or 1) > 1:
+                change["from_state"] = str(transition.get("from_state") or "")
+            character_arc_changes.append(change)
+        disclosure_events = [
+            {
+                "summary": "The planned reader-facing disclosure is presented.",
+                "effective_from_chapter": int(revision.get("chapter") or 1),
+                "disclosure_id": str(item.get("disclosure_id") or ""),
+                "fact_id": str(item.get("fact_id") or ""),
+                "audience": str(item.get("audience") or ""),
+                "disclosure_mode": str(item.get("mode") or ""),
+                "presentation_channel": str(item.get("presentation_channel") or ""),
+                "evidence_start": 0,
+                "evidence_end": evidence_end,
+                "confidence": 0.99,
+                "impact_type": "reader_disclosure",
+            }
+            for item in expectations.get("disclosures") or ()
+            if isinstance(item, Mapping)
+            and str(item.get("mode") or "").upper() != "WITHHOLD"
+        ]
         empty_fields = {
             "character_state_changes": [],
             "relationship_changes": [],
@@ -1427,6 +1474,11 @@ def default_chapter_fixture_response(
             "narrative_pattern_fingerprints": [],
             "theme_movements": [],
             "antagonist_pressure_changes": [],
+            "character_knowledge_changes": [],
+            "character_belief_changes": [],
+            "character_arc_changes": character_arc_changes,
+            "arc_state_changes": [],
+            "disclosure_events": disclosure_events,
         }
         return {
             "canon_facts": [
@@ -2007,8 +2059,9 @@ def _stage_semantic_contract(
             "validation. Keep Story Truth, Character Knowledge, Character Belief, "
             "Reader Knowledge, and presentation separate: a Canon fact does not by "
             "itself make any character or the reader aware of it; a belief may be "
-            "false; reader_knowledge_changes require a supported disclosure_events "
-            "presentation in this chapter. Record how the information was presented "
+            "false. Emit reader-facing disclosure_events only; accepted Disclosure "
+            "is deterministically projected into Reader Knowledge. Record how the "
+            "information was presented "
             "through disclosure_mode, audience, and presentation_channel rather than "
             "copying Truth into every epistemic layer. "
             "Within canon_facts, each (subject, predicate, impact_type) tuple may occur "
@@ -2559,10 +2612,7 @@ class ProductionExecutionGatewayExternalEffectAdapter:
         """Register a domain-owned binder without importing its semantics here."""
 
         normalized = domain.strip().lower()
-        if (
-            not normalized
-            or normalized in self.execution_binders
-        ):
+        if not normalized or normalized in self.execution_binders:
             raise ValueError("execution binder domain is missing or already registered")
         if not callable(getattr(binder, "bind", None)):
             raise ValueError("execution binder must materialize a frozen request")

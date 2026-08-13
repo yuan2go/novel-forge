@@ -87,9 +87,7 @@ class DeterministicContinuityValidatorTests(unittest.TestCase):
         ]
         self.assertEqual(report["gate"], "BLOCKED")
         self.assertEqual(len(missing), 4)
-        self.assertTrue(
-            all(item["evidence"]["existing"] is None for item in missing)
-        )
+        self.assertTrue(all(item["evidence"]["existing"] is None for item in missing))
 
     def test_explicit_temporal_identity_death_knowledge_and_graph_rules_block(
         self,
@@ -141,8 +139,82 @@ class DeterministicContinuityValidatorTests(unittest.TestCase):
         )
         self.assertEqual(
             report["semantic_judgment_required"],
-            ["CHARACTER_MOTIVATION", "EMOTIONAL_PLAUSIBILITY", "OOC"],
+            [
+                "CHARACTER_MOTIVATION",
+                "EMOTIONAL_PLAUSIBILITY",
+                "OOC",
+                "EXPECTED_EXIT_STATE",
+            ],
         )
+
+    def test_chapter_execution_transitions_and_disclosures_are_acceptance_gates(
+        self,
+    ) -> None:
+        planned = {
+            "required_state_transitions": [
+                {
+                    "state_kind": "character_arc",
+                    "entity_key": "protagonist:accountability",
+                    "from_state": "DENIAL",
+                    "to_state": "COMMITTED",
+                }
+            ],
+            "disclosures": [
+                {
+                    "disclosure_id": "disclosure:hidden-cost",
+                    "fact_id": "fact:hidden-cost",
+                    "audience": "READER",
+                    "mode": "HINT",
+                }
+            ],
+        }
+        missing = validate_deterministic_continuity(
+            chapter=2,
+            historical_state={},
+            extraction={},
+            planned_execution=planned,
+        )
+        matched = validate_deterministic_continuity(
+            chapter=2,
+            historical_state={
+                "character_arc": [
+                    {
+                        "character_id": "protagonist",
+                        "arc_id": "character-arc:accountability",
+                        "state": "DENIAL",
+                    }
+                ]
+            },
+            extraction={
+                "character_arc_changes": [
+                    {
+                        "character_id": "protagonist",
+                        "arc_id": "character-arc:accountability",
+                        "from_state": "DENIAL",
+                        "state": "COMMITTED",
+                    }
+                ],
+                "disclosure_events": [
+                    {
+                        "disclosure_id": "disclosure:hidden-cost",
+                        "fact_id": "fact:hidden-cost",
+                        "audience": "READER",
+                        "disclosure_mode": "HINT",
+                    }
+                ],
+                "reader_knowledge_changes": [
+                    {"fact_id": "fact:hidden-cost", "status": "HINTED"}
+                ],
+            },
+            planned_execution=planned,
+        )
+
+        self.assertEqual(missing["gate"], "BLOCKED")
+        self.assertEqual(
+            {item["conflict_code"] for item in missing["violations"]},
+            {"PLANNED_STATE_TRANSITION_MISSING", "PLANNED_DISCLOSURE_MISSING"},
+        )
+        self.assertEqual(matched["gate"], "PASSED")
 
     def test_explicit_transition_and_balance_invariants_block(self) -> None:
         report = validate_deterministic_continuity(
@@ -241,6 +313,23 @@ class DeterministicContinuityValidatorTests(unittest.TestCase):
                 "disclosure_events": [],
             },
         )
+        mismatched = validate_deterministic_continuity(
+            chapter=3,
+            historical_state={},
+            extraction={
+                "reader_knowledge_changes": [
+                    {"fact_id": "fact:traitor", "status": "KNOWN"}
+                ],
+                "disclosure_events": [
+                    {
+                        "disclosure_id": "disclosure:traitor",
+                        "fact_id": "fact:traitor",
+                        "audience": "READER",
+                        "disclosure_mode": "HINT",
+                    }
+                ],
+            },
+        )
         passed = validate_deterministic_continuity(
             chapter=3,
             historical_state={},
@@ -263,8 +352,9 @@ class DeterministicContinuityValidatorTests(unittest.TestCase):
         self.assertEqual(blocked["gate"], "BLOCKED")
         self.assertEqual(
             blocked["violations"][0]["conflict_code"],
-            "READER_KNOWLEDGE_WITHOUT_DISCLOSURE",
+            "READER_KNOWLEDGE_DISCLOSURE_MISMATCH",
         )
+        self.assertEqual(mismatched["gate"], "BLOCKED")
         self.assertEqual(passed["gate"], "PASSED")
 
 

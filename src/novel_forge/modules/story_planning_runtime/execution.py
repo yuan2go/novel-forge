@@ -190,6 +190,10 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
     parent_version_id = str(command.get("parent_version_id") or "")
     input_versions = command.get("input_versions")
     versions = dict(input_versions) if isinstance(input_versions, Mapping) else {}
+    arc_scope = [
+        str(versions.get("volume_plan") or parent_version_id),
+        *(str(item) for item in command.get("arc_scope_volume_plan_version_ids") or ()),
+    ]
     contract_type = {
         "book_plan.generate": PlanContractType.BOOK,
         "volume_plan.generate": PlanContractType.VOLUME,
@@ -255,9 +259,13 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
                     "segment_id": "narrative-segment:1",
                     "objective": "Turn private doubt into public commitment",
                     "chapter_range": [1, 3],
-                    "entry_state_ref": str(versions.get("story_state") or "story:entry"),
+                    "entry_state_ref": str(
+                        versions.get("story_state") or "story:entry"
+                    ),
                     "exit_state_spec": {"summary": "commitment creates a wider threat"},
-                    "arc_checkpoint_refs": [str(versions.get("arc_plans") or "arc:primary")],
+                    "arc_checkpoint_refs": [
+                        str(versions.get("arc_plans") or "arc:primary")
+                    ],
                 }
             ],
         },
@@ -272,19 +280,20 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
             "consequence": "new opposition",
             "dependencies": [],
             "closure_conditions": ["choice demonstrated"],
-            "cross_volume_scope": [str(versions.get("volume_plan") or parent_version_id)],
+            "cross_volume_scope": arc_scope,
             "narrative_architecture_version": "canonical-narrative-v1",
             "thread_id": "thread:central-conflict",
             "arc_segments": [
                 {
-                    "segment_id": "arc-segment:1",
-                    "volume_plan_version_id": str(versions.get("volume_plan") or parent_version_id),
+                    "segment_id": f"arc-segment:{index}",
+                    "volume_plan_version_id": volume_plan_version_id,
                     "narrative_segment_id": "narrative-segment:1",
                     "objective": "denial becomes an accountable choice",
                     "entry_state_ref": "arc-state:denial",
                     "exit_state_spec": {"summary": "the choice has a visible cost"},
                     "status": "PLANNED",
                 }
+                for index, volume_plan_version_id in enumerate(arc_scope, start=1)
             ],
             "arc_relations": [],
         },
@@ -315,7 +324,9 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
             ],
             "narrative_architecture_version": "canonical-narrative-v1",
             "narrative_segment_ref": {
-                "volume_plan_version_id": str(versions.get("volume_plan") or parent_version_id),
+                "volume_plan_version_id": str(
+                    versions.get("volume_plan") or parent_version_id
+                ),
                 "segment_id": "narrative-segment:1",
             },
         },
@@ -328,13 +339,17 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
             ),
             "narrative_architecture_version": "canonical-narrative-v1",
             "narrative_segment_ref": {
-                "volume_plan_version_id": str(versions.get("volume_plan") or "volume:1"),
+                "volume_plan_version_id": str(
+                    versions.get("volume_plan") or "volume:1"
+                ),
                 "segment_id": "narrative-segment:1",
             },
             "chapter_intent": "Force a witnessed choice that advances the central conflict.",
             "arc_schedule": [
                 {
-                    "arc_plan_version_id": str(versions.get("arc_plans") or "arc:primary"),
+                    "arc_plan_version_id": str(
+                        versions.get("arc_plans") or "arc:primary"
+                    ),
                     "role": "PRIMARY",
                     "segment_id": "arc-segment:1",
                     "expected_movement": "denial becomes accountable action",
@@ -351,6 +366,11 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
                     "unknown_fact_ids": ["fact:hidden-cost"],
                     "belief_refs": ["belief:safety-through-silence"],
                     "expected_change": "accept a public cost",
+                    "causal_trigger": "the witness is exposed by the delayed choice",
+                    "entry_emotion": "defensive fear",
+                    "exit_emotion": "costly resolve",
+                    "resource_changes": ["safety decreases; agency increases"],
+                    "relationship_changes": ["the witness gains conditional trust"],
                 }
             ],
             "knowledge_boundaries": [
@@ -399,7 +419,9 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
                     "beats": ["pressure", "choice", "consequence"],
                 }
             ],
-            "expected_exit_state": {"summary": "public commitment creates a new opposition"},
+            "expected_exit_state": {
+                "summary": "public commitment creates a new opposition"
+            },
         },
     }
     payload.update(by_type[contract_type])
@@ -499,7 +521,14 @@ def _canonical_narrative_provider_properties(
                     "arc_plan_version_id": string,
                     "role": {
                         "type": "string",
-                        "enum": ["PRIMARY", "SECONDARY", "TOUCH", "SETUP", "PAYOFF", "HOLD"],
+                        "enum": [
+                            "PRIMARY",
+                            "SECONDARY",
+                            "TOUCH",
+                            "SETUP",
+                            "PAYOFF",
+                            "HOLD",
+                        ],
                     },
                     "segment_id": string,
                     "expected_movement": string,
@@ -520,6 +549,11 @@ def _canonical_narrative_provider_properties(
                     "unknown_fact_ids": string_array,
                     "belief_refs": string_array,
                     "expected_change": string,
+                    "causal_trigger": string,
+                    "entry_emotion": string,
+                    "exit_emotion": string,
+                    "resource_changes": string_array,
+                    "relationship_changes": string_array,
                 }
             ),
         },
@@ -529,7 +563,12 @@ def _canonical_narrative_provider_properties(
                 {
                     "layer": {
                         "type": "string",
-                        "enum": ["STORY_TRUTH", "CHARACTER_KNOWLEDGE", "CHARACTER_BELIEF", "READER_KNOWLEDGE"],
+                        "enum": [
+                            "STORY_TRUTH",
+                            "CHARACTER_KNOWLEDGE",
+                            "CHARACTER_BELIEF",
+                            "READER_KNOWLEDGE",
+                        ],
                     },
                     "subject_id": string,
                     "fact_id": string,
@@ -564,7 +603,11 @@ def _canonical_narrative_provider_properties(
             ),
         },
         "reader_experience": _strict_object(
-            {"entry_question": string, "target_emotion": string, "exit_question": string}
+            {
+                "entry_question": string,
+                "target_emotion": string,
+                "exit_question": string,
+            }
         ),
         "scene_plan": {
             "type": "array",
@@ -1341,6 +1384,9 @@ class PostgresPlanningExecutionPreparer:
                     "planning_scope": command.planning_scope.value,
                     "parent_version_id": command.parent_version_id,
                     "input_versions": dict(command.input_versions),
+                    "arc_scope_volume_plan_version_ids": list(
+                        command.arc_scope_volume_plan_version_ids
+                    ),
                     "change_evidence_version_ids": list(
                         command.change_evidence_version_ids
                     ),
@@ -1389,9 +1435,7 @@ class PostgresPlanningExecutionPreparer:
                         "materialization_content_hash": (
                             materialization_document.content_hash
                         ),
-                        "materialization_hash": materialization[
-                            "materialization_hash"
-                        ],
+                        "materialization_hash": materialization["materialization_hash"],
                     }
                 },
             }
@@ -1845,8 +1889,7 @@ class PostgresPlanningExecutionPreparer:
             if (
                 document.asset_type not in {"longform_recap", "replan_request"}
                 or document.governance != "CLEAR"
-                or document.eligibility
-                not in {"ELIGIBLE", "PRODUCTION_ELIGIBLE"}
+                or document.eligibility not in {"ELIGIBLE", "PRODUCTION_ELIGIBLE"}
             ):
                 raise KernelError(
                     "PLANNING_CONTEXT_CHANGE_EVIDENCE_INVALID",

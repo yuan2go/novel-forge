@@ -20,6 +20,7 @@ _MAX_SUMMARY_CHARACTERS = 1200
 _MAX_PROVIDER_CONTEXT_CHARACTERS = 65_536
 _MAX_PROVIDER_KNOWLEDGE_CHARACTERS = 65_536
 _STATE_ASSET_TYPES = {"story_state_snapshot", "canon_snapshot"}
+_REFERENCE_FIELD_SUFFIXES = ("_id", "_ids", "_ref", "_refs")
 _OPERATIONAL_KEYS = {
     "actual_context",
     "actual_context_digest",
@@ -73,7 +74,11 @@ def build_provider_task_view(stage: str, inputs: Mapping[str, Any]) -> dict[str,
             prior_blocking_issues=issues,
         )
     if stage == "canon_extraction":
-        return _task(stage, accepted_revision=_prose(inputs.get("revision")))
+        return _task(
+            stage,
+            accepted_revision=_prose(inputs.get("revision")),
+            execution_expectations=_compact(inputs.get("execution_expectations")),
+        )
     if stage.startswith("quality_"):
         return _task(
             stage,
@@ -93,6 +98,129 @@ def build_provider_task_view(stage: str, inputs: Mapping[str, Any]) -> dict[str,
         "CHAPTER_PROVIDER_TASK_VIEW_UNSUPPORTED",
         f"Provider Task View is not defined for stage {stage}",
     )
+
+
+def build_task_narrative_projection(plan: Mapping[str, Any]) -> dict[str, Any]:
+    """Freeze typed selectors used by Preparation and every later Provider stage."""
+
+    characters: set[str] = set()
+    arcs: set[str] = set()
+    facts: set[str] = set()
+    beliefs: set[str] = set()
+    disclosures: set[str] = set()
+    state_entities: set[str] = set()
+    obligations: set[str] = set()
+    world_rules: set[str] = set()
+    character_development: list[dict[str, Any]] = []
+    for item in plan.get("character_participation") or ():
+        if not isinstance(item, Mapping):
+            continue
+        characters.add(str(item.get("character_id") or ""))
+        arcs.update(str(value) for value in item.get("trajectory_refs") or ())
+        facts.update(str(value) for value in item.get("known_fact_ids") or ())
+        facts.update(str(value) for value in item.get("unknown_fact_ids") or ())
+        beliefs.update(str(value) for value in item.get("belief_refs") or ())
+        character_development.append(
+            {
+                key: deepcopy(item.get(key))
+                for key in (
+                    "character_id",
+                    "trajectory_refs",
+                    "causal_trigger",
+                    "entry_emotion",
+                    "exit_emotion",
+                    "resource_changes",
+                    "relationship_changes",
+                    "expected_change",
+                )
+                if item.get(key) not in (None, "", [])
+            }
+        )
+    for item in plan.get("cast") or ():
+        characters.add(
+            str(item.get("character_id") or item.get("id") or "")
+            if isinstance(item, Mapping)
+            else str(item)
+        )
+    for item in plan.get("arc_schedule") or ():
+        if isinstance(item, Mapping):
+            arcs.update(
+                str(item.get(key) or "")
+                for key in ("arc_plan_version_id", "segment_id")
+            )
+    for item in plan.get("knowledge_boundaries") or ():
+        if isinstance(item, Mapping):
+            if str(item.get("layer") or "").upper() in {
+                "CHARACTER_KNOWLEDGE",
+                "CHARACTER_BELIEF",
+            }:
+                characters.add(str(item.get("subject_id") or ""))
+            facts.add(str(item.get("fact_id") or item.get("proposition_id") or ""))
+    for item in plan.get("disclosures") or ():
+        if isinstance(item, Mapping):
+            disclosures.add(str(item.get("disclosure_id") or ""))
+            facts.add(str(item.get("fact_id") or item.get("proposition_id") or ""))
+    for item in plan.get("required_state_transitions") or ():
+        if isinstance(item, Mapping):
+            state_entities.add(str(item.get("entity_key") or ""))
+    for field in ("setups", "payoffs"):
+        for item in plan.get(field) or ():
+            if isinstance(item, Mapping):
+                obligations.add(str(item.get("obligation_id") or ""))
+    for item in plan.get("world_rule_usages") or ():
+        if isinstance(item, Mapping):
+            world_rules.add(str(item.get("rule_id") or ""))
+    segment_ref = dict(plan.get("narrative_segment_ref") or {})
+
+    def clean(values: set[str]) -> list[str]:
+        return sorted(value for value in values if value)
+
+    return {
+        "contract_version": "chapter-task-narrative-projection-v1",
+        "chapter": int(plan["chapter"]),
+        "narrative_segment_ref": {
+            key: str(segment_ref.get(key) or "")
+            for key in ("volume_plan_version_id", "segment_id")
+            if segment_ref.get(key)
+        },
+        "character_ids": clean(characters),
+        "arc_refs": clean(arcs),
+        "fact_refs": clean(facts),
+        "belief_refs": clean(beliefs),
+        "disclosure_refs": clean(disclosures),
+        "state_entity_refs": clean(state_entities),
+        "obligation_refs": clean(obligations),
+        "world_rule_refs": clean(world_rules),
+        "character_development": character_development,
+    }
+
+
+def project_narrative_state_facts(
+    facts: Iterable[Mapping[str, Any]],
+    *,
+    projection: Mapping[str, Any],
+    chapter: int,
+) -> list[dict[str, Any]]:
+    """Bound state-bearing inputs before Context Builder performs token selection."""
+
+    materialized = [dict(item) for item in facts]
+    selectors = _selectors(projection, {})
+    if not selectors:
+        if len(materialized) <= _MAX_FACTS_PER_SEGMENT:
+            return deepcopy(materialized)
+        raise KernelError(
+            "CHAPTER_PROVIDER_CONTEXT_PROJECTION_REQUIRED",
+            "long-history Narrative State requires typed Chapter execution selectors",
+        )
+    selected = [
+        item for item in materialized if _state_fact_relevant(item, selectors, chapter)
+    ]
+    if len(selected) > _MAX_FACTS_PER_SEGMENT:
+        raise KernelError(
+            "CHAPTER_PROVIDER_CONTEXT_PROJECTION_TOO_BROAD",
+            "Chapter execution selectors resolve more than the bounded fact limit",
+        )
+    return deepcopy(selected)
 
 
 def build_provider_context_view(
@@ -166,7 +294,16 @@ def build_provider_context_view(
             selected_facts = [
                 item
                 for item in facts
-                if _state_fact_relevant(item, selectors, context_bundle)
+                if _state_fact_relevant(
+                    item,
+                    selectors,
+                    int(
+                        dict(context_bundle.get("context_manifest") or {})
+                        .get("narrative_position", {})
+                        .get("chapter", 0)
+                        or 0
+                    ),
+                )
             ]
         included_facts = selected_facts[:_MAX_FACTS_PER_SEGMENT]
         omitted_facts += len(facts) - len(included_facts)
@@ -366,7 +503,7 @@ def _selectors(
 def _state_fact_relevant(
     fact: Mapping[str, Any],
     selectors: frozenset[str],
-    context_bundle: Mapping[str, Any],
+    chapter: int,
 ) -> bool:
     state_kind = str(fact.get("state_kind") or "")
     state = fact.get("state") or {}
@@ -374,12 +511,6 @@ def _state_fact_relevant(
         status = str(state.get("status") or "").upper()
         priority = str(state.get("priority") or "").upper()
         window = state.get("target_window") or {}
-        chapter = int(
-            dict(context_bundle.get("context_manifest") or {})
-            .get("narrative_position", {})
-            .get("chapter", 0)
-            or 0
-        )
         due = (
             isinstance(window, Mapping)
             and str(window.get("status") or "") == "SCHEDULED"
@@ -391,17 +522,51 @@ def _state_fact_relevant(
             return True
     if not selectors:
         return False
-    serialized = json.dumps(
-        {"entity_key": fact.get("entity_key"), "state": state},
-        ensure_ascii=False,
-        sort_keys=True,
-        separators=(",", ":"),
+    return bool(selectors & _state_fact_references(fact))
+
+
+def _state_fact_references(fact: Mapping[str, Any]) -> frozenset[str]:
+    """Extract exact typed references without coupling selection to JSON text."""
+
+    references: set[str] = set()
+
+    def visit(value: Any, *, field: str = "") -> None:
+        if isinstance(value, Mapping):
+            for key, item in value.items():
+                visit(item, field=str(key))
+            return
+        if isinstance(value, (list, tuple)):
+            for item in value:
+                visit(item, field=field)
+            return
+        if value in (None, ""):
+            return
+        text = str(value).strip()
+        if not text:
+            return
+        if field == "entity_key":
+            references.add(text)
+            for component in text.split("|"):
+                _, separator, identity = component.partition("=")
+                if separator and identity:
+                    references.add(identity)
+            return
+        if field.endswith(_REFERENCE_FIELD_SUFFIXES):
+            references.add(text)
+
+    visit(
+        {
+            "entity_key": fact.get("entity_key"),
+            "state": fact.get("state") or {},
+        }
     )
-    return any(selector in serialized for selector in selectors)
+    return frozenset(references)
 
 
 __all__ = [
     "build_provider_context_view",
     "build_provider_knowledge_view",
     "build_provider_task_view",
+    "build_task_narrative_projection",
+    "project_narrative_state_facts",
 ]

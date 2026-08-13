@@ -1175,6 +1175,11 @@ def _normalize_model_output(stage: str, raw: dict[str, Any]) -> dict[str, Any]:
             "narrative_pattern_fingerprints",
             "theme_movements",
             "antagonist_pressure_changes",
+            "character_knowledge_changes",
+            "character_belief_changes",
+            "character_arc_changes",
+            "arc_state_changes",
+            "disclosure_events",
         )
         normalized_extraction: dict[str, list[dict[str, Any]]] = {}
         for field in fields:

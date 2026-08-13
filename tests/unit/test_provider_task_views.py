@@ -165,6 +165,25 @@ def test_state_context_without_task_projection_fails_closed() -> None:
         raise AssertionError("state-bearing context bypassed task projection")
 
 
+def test_provider_context_matches_typed_references_not_substrings() -> None:
+    context = _context(0)
+    context["context_segments"][0]["structured_facts"] = [
+        {
+            "state_kind": "character_state",
+            "entity_key": "character_id=character:linette",
+            "state": {"character_id": "character:linette", "location": "archive"},
+        }
+    ]
+
+    view = build_provider_context_view(
+        "draft",
+        context,
+        build_provider_task_view("draft", {"plan": _plan()}),
+    )
+
+    assert "character:linette" not in json.dumps(view, ensure_ascii=False)
+
+
 def test_oversized_projected_context_fails_closed() -> None:
     context = _context(0)
     context["context_segments"][0]["structured_facts"][0]["state"]["notes"] = (

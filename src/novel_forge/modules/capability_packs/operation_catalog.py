@@ -309,7 +309,7 @@ def story_planning_workflow_binding_catalog() -> WorkflowBindingCatalog:
     )
     return WorkflowBindingCatalog(
         "story_planning_generators",
-        "1.1.0",
+        "1.2.0",
         (
             WorkflowBinding(
                 node_id=node_id,

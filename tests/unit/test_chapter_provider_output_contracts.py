@@ -37,7 +37,6 @@ CANON_FIELDS = (
     "character_belief_changes",
     "character_arc_changes",
     "arc_state_changes",
-    "reader_knowledge_changes",
     "disclosure_events",
 )
 
@@ -105,7 +104,7 @@ def test_quality_prompt_and_schema_version_require_dimension_evidence() -> None:
     )
     assert (
         chapter_provider_output_schema_ref("canon_extraction")
-        == "schema:chapter-provider-output:canon_extraction:v3"
+        == "schema:chapter-provider-output:canon_extraction:v4"
     )
 
 
@@ -159,7 +158,8 @@ def test_canon_prompt_requires_character_knowledge_precondition_closure() -> Non
     assert "never add unsupported knowledge merely to satisfy validation" in contract
     assert "Story Truth, Character Knowledge, Character Belief" in contract
     assert "a belief may be false" in contract
-    assert "reader_knowledge_changes require a supported disclosure_events" in contract
+    assert "Emit reader-facing disclosure_events only" in contract
+    assert "deterministically projected into Reader Knowledge" in contract
 
 
 def test_canon_semantics_normalizes_initial_resource_balance() -> None:
@@ -180,11 +180,13 @@ def test_canon_semantics_normalizes_initial_resource_balance() -> None:
             "status": None,
             "from_status": None,
             "from_state": None,
+            "from_stage": None,
             "life_status": None,
             "action_state": None,
             "canonical_name": None,
             "transition_kind": None,
             "state": None,
+            "stage": None,
             "tier": None,
             "from_tier": None,
             "balance_before": None,
@@ -224,9 +226,8 @@ def test_canon_semantics_normalizes_initial_resource_balance() -> None:
 def test_canon_schema_exposes_epistemic_and_presentation_changes() -> None:
     schema = chapter_provider_output_schema("canon_extraction")
 
-    assert set(("reader_knowledge_changes", "disclosure_events")).issubset(
-        schema["properties"]
-    )
+    assert "reader_knowledge_changes" not in schema["properties"]
+    assert "disclosure_events" in schema["properties"]
     change = schema["properties"]["disclosure_events"]["items"]["properties"]
     assert {"fact_id", "disclosure_id", "audience", "disclosure_mode"}.issubset(change)
 

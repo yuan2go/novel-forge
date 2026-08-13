@@ -72,7 +72,12 @@ class ChapterAuthorityDomainHandlerTests(unittest.TestCase):
             revision=revision,
             revision_asset_version_id="revision-version-1",
             context_bundle_version_id="context-version-1",
-            result={"decision": "PASSED", "score": 88, "issues": [], "resolved_issue_codes": ["COST_NOT_CONCRETE"]},
+            result={
+                "decision": "PASSED",
+                "score": 88,
+                "issues": [],
+                "resolved_issue_codes": ["COST_NOT_CONCRETE"],
+            },
             provider_evidence={"provider_id": "fixture", "real_model_call": False},
             project_id="project-a",
         )
@@ -123,7 +128,78 @@ class ChapterAuthorityDomainHandlerTests(unittest.TestCase):
                 canon_asset_version_id="canon-version-1",
             )
 
-    def test_context_bundle_accounts_for_optional_inputs_rejected_by_budget(self) -> None:
+    def test_compact_state_entity_key_rehydrates_transition_baseline(self) -> None:
+        canon = build_canon_patch(
+            revision={"chapter": 2, "text": "The commitment has a consequence."},
+            revision_asset_version_id="revision-version-2",
+            context_bundle_version_id="context-version-2",
+            extraction={
+                "project_id": "project-a",
+                "chapter": 2,
+                "canon_assertion_candidates": [],
+                "character_arc_changes": [
+                    {
+                        "character_id": "protagonist",
+                        "arc_id": "character-arc:accountability",
+                        "from_state": "COMMITTED",
+                        "state": "CONSEQUENT",
+                    }
+                ],
+                "disclosure_events": [],
+                "reader_knowledge_changes": [],
+            },
+            project_id="project-a",
+            context_bundle={
+                "context_segments": [
+                    {
+                        "asset_type": "story_state_snapshot",
+                        "asset_version_id": "story-state-v1",
+                        "structured_facts": [
+                            {
+                                "state_kind": "character_arc",
+                                "entity_key": (
+                                    "character_id=protagonist|"
+                                    "arc_id=character-arc:accountability"
+                                ),
+                                "source_event_id": "event:arc:v1",
+                                "state": {"state": "COMMITTED"},
+                            }
+                        ],
+                    },
+                    {
+                        "asset_type": "canon_snapshot",
+                        "asset_version_id": "canon-v1",
+                        "structured_facts": [
+                            {
+                                "source_event_id": "event:canon:v1",
+                                "state": {
+                                    "subject": "chapter:1",
+                                    "predicate": "accepted",
+                                    "object": "true",
+                                },
+                            }
+                        ],
+                    },
+                ],
+                "chapter_execution_expectations": {
+                    "required_state_transitions": [
+                        {
+                            "state_kind": "character_arc",
+                            "entity_key": "protagonist:accountability",
+                            "from_state": "COMMITTED",
+                            "to_state": "CONSEQUENT",
+                        }
+                    ],
+                    "disclosures": [],
+                },
+            },
+        )
+
+        self.assertEqual(canon["gate"], "PASSED")
+
+    def test_context_bundle_accounts_for_optional_inputs_rejected_by_budget(
+        self,
+    ) -> None:
         plan = build_chapter_plan(
             chapter=1,
             title="A bounded context",
@@ -249,14 +325,24 @@ class ChapterAuthorityDomainHandlerTests(unittest.TestCase):
             "context_bundle_version_id": "context-v1",
         }
         verified_blob = {
-            "blob_id": "blob-1", "role": "content", "provider": "fixture-store",
-            "receipt_provider": "fixture-store", "object_key": "chapter.txt",
-            "expected_hash": "sha256:text", "actual_hash": "sha256:text",
-            "content_hash": "sha256:text", "expected_size": 4, "actual_size": 4,
-            "media_type": "text/plain", "status": "AVAILABLE",
-            "external_effect_id": "effect-1", "capability": "object_store.put",
-            "effect_status": "SUCCEEDED", "dispatch_id": "dispatch-1",
-            "dispatch_status": "SUCCEEDED", "receipt_id": "receipt-1",
+            "blob_id": "blob-1",
+            "role": "content",
+            "provider": "fixture-store",
+            "receipt_provider": "fixture-store",
+            "object_key": "chapter.txt",
+            "expected_hash": "sha256:text",
+            "actual_hash": "sha256:text",
+            "content_hash": "sha256:text",
+            "expected_size": 4,
+            "actual_size": 4,
+            "media_type": "text/plain",
+            "status": "AVAILABLE",
+            "external_effect_id": "effect-1",
+            "capability": "object_store.put",
+            "effect_status": "SUCCEEDED",
+            "dispatch_id": "dispatch-1",
+            "dispatch_status": "SUCCEEDED",
+            "receipt_id": "receipt-1",
             "receipt_status": "VERIFIED",
         }
         report = build_final_release_gate(
@@ -273,7 +359,9 @@ class ChapterAuthorityDomainHandlerTests(unittest.TestCase):
                 export_blobs=({**verified_blob, "actual_hash": "sha256:tampered"},),
             )
 
-    def test_authority_context_consumes_governed_mkaos_and_source_decisions(self) -> None:
+    def test_authority_context_consumes_governed_mkaos_and_source_decisions(
+        self,
+    ) -> None:
         plan = build_chapter_plan(
             chapter=1,
             title="Governed context",
@@ -288,24 +376,35 @@ class ChapterAuthorityDomainHandlerTests(unittest.TestCase):
             created_by_operation_id="operation-context",
             governed_candidates=[
                 {
-                    "asset_version_id": "pack-v1", "asset_type": "knowledge_pack",
-                    "project_id": "project-a", "estimated_tokens": 100, "score": .9,
-                    "allowed_use": "generation", "source_policy_version": "policy-v1",
+                    "asset_version_id": "pack-v1",
+                    "asset_type": "knowledge_pack",
+                    "project_id": "project-a",
+                    "estimated_tokens": 100,
+                    "score": 0.9,
+                    "allowed_use": "generation",
+                    "source_policy_version": "policy-v1",
                 },
                 {
-                    "asset_version_id": "review-only-v1", "asset_type": "knowledge_pack",
-                    "project_id": "project-a", "estimated_tokens": 100,
+                    "asset_version_id": "review-only-v1",
+                    "asset_type": "knowledge_pack",
+                    "project_id": "project-a",
+                    "estimated_tokens": 100,
                     "source_use_mode": "review_only",
                 },
                 {
-                    "asset_version_id": "foreign-v1", "asset_type": "knowledge_pack",
-                    "project_id": "project-b", "estimated_tokens": 100,
+                    "asset_version_id": "foreign-v1",
+                    "asset_type": "knowledge_pack",
+                    "project_id": "project-b",
+                    "estimated_tokens": 100,
                 },
             ],
         )
         self.assertEqual(bundle["knowledge_pack_versions"], ["pack-v1"])
         self.assertEqual(bundle["source_policy_versions"], ["policy-v1"])
-        reasons = {item["asset_version_id"]: item["reason"] for item in bundle["rejected_asset_versions"]}
+        reasons = {
+            item["asset_version_id"]: item["reason"]
+            for item in bundle["rejected_asset_versions"]
+        }
         self.assertEqual(reasons["review-only-v1"], "source_mode:review_only")
         self.assertEqual(reasons["foreign-v1"], "cross_project")
         with self.assertRaisesRegex(KernelError, "CHAPTER_QUALITY_GATE_BLOCKED"):

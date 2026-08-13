@@ -371,6 +371,58 @@ def test_planning_change_evidence_cannot_alias_generator_input() -> None:
         )
 
 
+def test_arc_generation_freezes_multi_volume_scope_as_authority_inputs() -> None:
+    base = _command("arc_plan.generate")
+    command = StoryPlanningGenerationCommand(
+        project_id=base.project_id,
+        workspace_id=base.workspace_id,
+        book_id=base.book_id,
+        actor_id=base.actor_id,
+        generator_operation_name=base.generator_operation_name,
+        logical_key=base.logical_key,
+        input_versions=base.input_versions,
+        arc_scope_volume_plan_version_ids=("volume:v2", "volume:v3"),
+        idempotency_key=base.idempotency_key,
+        trace_id=base.trace_id,
+        correlation_id=base.correlation_id,
+    )
+    scope_inputs = (
+        *_inputs(command),
+        FrozenPlanningInput("arc_scope_volume:1", "volume:v2", HASH, "volume_plan"),
+        FrozenPlanningInput("arc_scope_volume:2", "volume:v3", HASH, "volume_plan"),
+    )
+    contents = {item.role: {} for item in scope_inputs}
+
+    fixture = planning_fixture_response(
+        "arc_plan.generate",
+        {
+            "planning_command": {
+                "logical_key": command.logical_key,
+                "input_versions": dict(command.input_versions),
+                "arc_scope_volume_plan_version_ids": list(
+                    command.arc_scope_volume_plan_version_ids
+                ),
+            }
+        },
+    )
+    envelope = build_planning_constraint_envelope(
+        generator_operation_name=command.generator_operation_name,
+        frozen_inputs=scope_inputs,
+        input_contents=contents,
+        candidate_payload=fixture,
+    )
+
+    assert fixture["cross_volume_scope"] == [
+        command.input_versions["volume_plan"],
+        "volume:v2",
+        "volume:v3",
+    ]
+    assert {item["volume_plan_version_id"] for item in fixture["arc_segments"]} == set(
+        fixture["cross_volume_scope"]
+    )
+    assert len(envelope["parent_versions"]) == len(scope_inputs)
+
+
 class _ExecutionPort:
     production_execution_gateway_backed = True
     external_effect_backed = True

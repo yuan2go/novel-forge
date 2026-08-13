@@ -439,6 +439,9 @@ def _planning_contract(command: StoryPlanningGenerationCommand) -> dict[str, Any
                     "logical_key": command.logical_key,
                     "parent_version_id": command.parent_version_id,
                     "input_versions": dict(command.input_versions),
+                    "arc_scope_volume_plan_version_ids": list(
+                        command.arc_scope_volume_plan_version_ids
+                    ),
                 }
             },
         )
@@ -699,6 +702,7 @@ def _activate_plan_chain(
     principal: Principal,
     application: StoryPlanningGenerationApplication,
     assert_replay: bool = False,
+    multi_volume_arc: bool = False,
 ) -> dict[str, str]:
     activated: dict[str, str] = {}
     parent = ""
@@ -740,6 +744,11 @@ def _activate_plan_chain(
             logical_key=logical,
             input_versions=inputs,
             parent_version_id="" if generator == "arc_plan.generate" else parent,
+            arc_scope_volume_plan_version_ids=(
+                (activated["volume_plan.generate:secondary"],)
+                if generator == "arc_plan.generate" and multi_volume_arc
+                else ()
+            ),
             idempotency_key=f"{project_id}:{generator}",
             trace_id=f"trace:{generator}",
             correlation_id=f"correlation:{project_id}",
@@ -769,6 +778,46 @@ def _activate_plan_chain(
             == generated.candidate_asset_version_id
         )
         activated[generator] = generated.candidate_asset_version_id
+        if generator == "volume_plan.generate" and multi_volume_arc:
+            secondary_command = StoryPlanningGenerationCommand(
+                project_id=project_id,
+                workspace_id=workspace_id,
+                book_id=book_id,
+                actor_id=principal.principal_id,
+                generator_operation_name=generator,
+                logical_key="volume:2",
+                input_versions={
+                    role: (
+                        activated["book_plan.generate"]
+                        if role == "book_plan"
+                        else generic[role]
+                    )
+                    for role in GENERATOR_INPUT_ROLES[generator]
+                },
+                parent_version_id=activated["book_plan.generate"],
+                idempotency_key=f"{project_id}:{generator}:secondary",
+                trace_id=f"trace:{generator}:secondary",
+                correlation_id=f"correlation:{project_id}",
+            )
+            secondary = application.generate(secondary_command, principal=principal)
+            assert secondary.status is PlanningGenerationStatus.APPROVAL_PENDING
+            application.approve_candidate(
+                secondary.candidate_asset_version_id,
+                principal=principal,
+                idempotency_key=f"{secondary_command.idempotency_key}:approve",
+                trace_id=secondary_command.trace_id,
+                correlation_id=secondary_command.correlation_id,
+            )
+            application.activate_candidate(
+                secondary.candidate_asset_version_id,
+                principal=principal,
+                idempotency_key=f"{secondary_command.idempotency_key}:activate",
+                trace_id=secondary_command.trace_id,
+                correlation_id=secondary_command.correlation_id,
+            )
+            activated["volume_plan.generate:secondary"] = (
+                secondary.candidate_asset_version_id
+            )
         if generator in {
             "book_plan.generate",
             "volume_plan.generate",
@@ -813,6 +862,7 @@ def test_five_planning_generators_repair_activate_and_replay_in_postgres() -> No
         principal=principal,
         application=application,
         assert_replay=True,
+        multi_volume_arc=True,
     )
 
     repair_inputs = {
@@ -854,7 +904,7 @@ def test_five_planning_generators_repair_activate_and_replay_in_postgres() -> No
             [project_id, activated["arc_plan.generate"]],
         )
         assert set(uow.cursor.fetchall()) == {
-            ("VOLUME", "VOLUME_SPAN", 1),
+            ("VOLUME", "VOLUME_SPAN", 2),
             ("CHAPTER_GROUP", "PRIMARY", 1),
             ("CHAPTER_GROUP", "REQUIRED_CONTRIBUTION", 1),
             ("CHAPTER_GROUP", "CHECKPOINT_EXPECTATION", 1),
@@ -1278,9 +1328,7 @@ def test_planning_provider_timeout_retries_same_effect_then_succeeds(
         2,
         [1, 2],
     )
-    capability_runtime = effect_request["_production_execution"][
-        "capability_runtime"
-    ]
+    capability_runtime = effect_request["_production_execution"]["capability_runtime"]
     assert capability_runtime["snapshot_hash"]
     assert capability_runtime["materialization_asset_version_id"]
     assert capability_runtime["materialization_content_hash"]

@@ -180,9 +180,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
             *[
                 {
                     **next(
-                        item
-                        for item in outputs
-                        if item["asset_type"] == asset_type
+                        item for item in outputs if item["asset_type"] == asset_type
                     ),
                     "asset_version_id": f"{asset_type}:superseded",
                     "content_hash": f"sha256:{asset_type}:superseded",
@@ -672,7 +670,9 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                     project_id
                 )
             )
-            plans = self._seed_two_chapter_plans(project_id, candidates)
+            plans = self._seed_two_chapter_plans(
+                project_id, candidates, canonical_execution=True
+            )
             longform_versions = self._seed_book_inputs(project_id)
             book = authority.start(
                 StartBookProductionCommand(
@@ -806,11 +806,66 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                     [project_id, f"book:{project_id}"],
                 )
                 current_projection = uow.cursor.fetchone()
+                uow.cursor.execute(
+                    """
+                    SELECT version.content
+                    FROM authority_operation_output_asset AS output
+                    JOIN authority_operation AS operation
+                      ON operation.operation_id=output.operation_id
+                    JOIN authority_asset_version AS version
+                      ON version.asset_version_id=output.asset_version_id
+                    WHERE operation.project_id=%s
+                      AND operation.definition_name='chapter.context.build'
+                      AND output.output_key='chapter.context'
+                    ORDER BY operation.created_at
+                    """,
+                    [project_id],
+                )
+                context_bundles = [dict(row[0]) for row in uow.cursor.fetchall()]
+                uow.cursor.execute(
+                    """
+                    SELECT COUNT(*), BOOL_AND(version.content->>'gate'='PASSED')
+                    FROM authority_operation_output_asset AS output
+                    JOIN authority_operation AS operation
+                      ON operation.operation_id=output.operation_id
+                    JOIN authority_asset_version AS version
+                      ON version.asset_version_id=output.asset_version_id
+                    WHERE operation.project_id=%s
+                      AND operation.definition_name='chapter.canon.update'
+                      AND output.output_key='chapter.canon'
+                    """,
+                    [project_id],
+                )
+                canon_gate_count, all_canon_gates_passed = uow.cursor.fetchone()
             self.assertEqual(delegation_statuses, {"ACCEPTED": 2})
             self.assertEqual(acceptance_count, 2)
             self.assertGreater(int(event_projection_count), 0)
             self.assertEqual(int(latest_event_chapter), 2)
             self.assertEqual(int(current_projection[0]), 2)
+            current_state = dict(current_projection[1])["current_state"]
+            self.assertEqual(
+                current_state["character_arc"][0]["state"]["state"],
+                "CONSEQUENT",
+            )
+            self.assertEqual(current_state["character_arc"][0]["entity_version"], 2)
+            self.assertEqual(
+                current_state["reader_knowledge"][0]["state"]["status"],
+                "KNOWN",
+            )
+            self.assertEqual(len(current_state["disclosure_event"]), 2)
+            self.assertEqual(len(context_bundles), 2)
+            self.assertEqual(
+                context_bundles[1]["chapter_execution_expectations"][
+                    "required_state_transitions"
+                ][0]["from_state"],
+                "COMMITTED",
+            )
+            self.assertEqual(
+                context_bundles[1]["task_narrative_projection"]["character_ids"],
+                ["protagonist"],
+            )
+            self.assertGreaterEqual(int(canon_gate_count), 2)
+            self.assertTrue(all_canon_gates_passed)
 
             rebuilt = NarrativeStateRebuildService(DATABASE_URL).rebuild(
                 project_id=project_id,
@@ -1257,17 +1312,170 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
 
     @staticmethod
     def _seed_two_chapter_plans(
-        project_id: str, candidates: list[dict[str, object]]
+        project_id: str,
+        candidates: list[dict[str, object]],
+        *,
+        canonical_execution: bool = False,
     ) -> dict[int, dict[str, object]]:
         first = next(
             dict(item) for item in candidates if item["asset_type"] == "chapter_plan"
         )
+        if canonical_execution:
+            first_content = {
+                **dict(first["content"]),
+                "narrative_architecture_version": "canonical-narrative-v1",
+                "narrative_segment_ref": {
+                    "volume_plan_version_id": "volume-plan:v1",
+                    "segment_id": "narrative-segment:1",
+                },
+                "chapter_intent": "Turn denial into a witnessed commitment.",
+                "arc_schedule": [
+                    {
+                        "arc_plan_version_id": "arc-plan:v1",
+                        "role": "PRIMARY",
+                        "segment_id": "arc-segment:1",
+                        "expected_movement": "denial becomes commitment",
+                    }
+                ],
+                "setups": [],
+                "payoffs": [],
+                "character_participation": [
+                    {
+                        "character_id": "protagonist",
+                        "goal": "protect the witness",
+                        "trajectory_refs": ["character-arc:accountability"],
+                        "known_fact_ids": [],
+                        "unknown_fact_ids": ["fact:hidden-cost"],
+                        "belief_refs": ["belief:safety-through-silence"],
+                        "expected_change": "accept public accountability",
+                        "causal_trigger": "the safe route closes",
+                        "entry_emotion": "defensive fear",
+                        "exit_emotion": "costly resolve",
+                        "resource_changes": ["safety decreases"],
+                        "relationship_changes": ["witness trust increases"],
+                    }
+                ],
+                "knowledge_boundaries": [
+                    {
+                        "layer": "READER_KNOWLEDGE",
+                        "subject_id": "reader",
+                        "fact_id": "fact:hidden-cost",
+                        "status": "HINTED",
+                    }
+                ],
+                "disclosures": [
+                    {
+                        "disclosure_id": "disclosure:hidden-cost:hint",
+                        "fact_id": "fact:hidden-cost",
+                        "audience": "READER",
+                        "mode": "HINT",
+                        "presentation_channel": "CONSEQUENCE",
+                    }
+                ],
+                "required_state_transitions": [
+                    {
+                        "state_kind": "character_arc",
+                        "entity_key": "protagonist:accountability",
+                        "from_state": "DENIAL",
+                        "to_state": "COMMITTED",
+                    }
+                ],
+                "reader_experience": {
+                    "entry_question": "Will the protagonist stay silent?",
+                    "target_emotion": "costly relief",
+                    "exit_question": "Who will exploit the choice?",
+                },
+                "scene_plan": [
+                    {
+                        "scene_id": "chapter:1:scene:1",
+                        "scene_group_id": "chapter:1:group:1",
+                        "goal": "make the choice unavoidable",
+                        "conflict": "silence endangers the witness",
+                        "participants": ["protagonist"],
+                        "arc_progress": ["arc-plan:v1"],
+                        "information_gain": ["fact:hidden-cost"],
+                        "state_transitions": ["protagonist:accountability"],
+                        "entry_state": "private denial",
+                        "exit_state": "public commitment",
+                        "reader_effect": "relief becomes anticipation",
+                        "beats": ["pressure", "choice", "cost"],
+                    }
+                ],
+                "expected_exit_state": {
+                    "summary": "The protagonist is publicly committed."
+                },
+            }
+            first_hash = (
+                "sha256:"
+                + hashlib.sha256(
+                    json.dumps(
+                        first_content, sort_keys=True, separators=(",", ":")
+                    ).encode()
+                ).hexdigest()
+            )
+            first = {
+                **first,
+                "asset_version_id": f"{project_id}:canonical-chapter-plan-v1",
+                "content_hash": first_hash,
+                "content": first_content,
+            }
         second_content = {
             **dict(first["content"]),
             "chapter": 2,
             "title": "The Debt Compounds",
             "chapter_objective": "Escalate the cost created by chapter one.",
         }
+        if canonical_execution:
+            second_content.update(
+                {
+                    "chapter_intent": "Turn commitment into an irreversible consequence.",
+                    "character_participation": [
+                        {
+                            **second_content["character_participation"][0],
+                            "expected_change": "accept the consequence of accountability",
+                            "entry_emotion": "costly resolve",
+                            "exit_emotion": "sober determination",
+                        }
+                    ],
+                    "knowledge_boundaries": [
+                        {
+                            "layer": "READER_KNOWLEDGE",
+                            "subject_id": "reader",
+                            "fact_id": "fact:hidden-cost",
+                            "status": "KNOWN",
+                        }
+                    ],
+                    "disclosures": [
+                        {
+                            "disclosure_id": "disclosure:hidden-cost:confirm",
+                            "fact_id": "fact:hidden-cost",
+                            "audience": "READER",
+                            "mode": "CONFIRM",
+                            "presentation_channel": "CONSEQUENCE",
+                        }
+                    ],
+                    "required_state_transitions": [
+                        {
+                            "state_kind": "character_arc",
+                            "entity_key": "protagonist:accountability",
+                            "from_state": "COMMITTED",
+                            "to_state": "CONSEQUENT",
+                        }
+                    ],
+                    "scene_plan": [
+                        {
+                            **second_content["scene_plan"][0],
+                            "scene_id": "chapter:2:scene:1",
+                            "scene_group_id": "chapter:2:group:1",
+                            "entry_state": "public commitment",
+                            "exit_state": "irreversible consequence",
+                        }
+                    ],
+                    "expected_exit_state": {
+                        "summary": "The commitment now carries an irreversible consequence."
+                    },
+                }
+            )
         second_hash = (
             "sha256:"
             + hashlib.sha256(
@@ -1283,6 +1491,28 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
             "content": second_content,
         }
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            if canonical_execution:
+                uow.cursor.execute(
+                    """
+                    INSERT INTO authority_asset(asset_id, project_id, asset_type)
+                    VALUES (%s, %s, 'chapter_plan')
+                    """,
+                    [f"{project_id}:canonical-chapter-plan-1", project_id],
+                )
+                uow.cursor.execute(
+                    """
+                    INSERT INTO authority_asset_version(
+                        asset_version_id, asset_id, version_number, lifecycle,
+                        eligibility, governance, content, content_hash, schema_version
+                    ) VALUES (%s, %s, 1, 'ACTIVE', 'ELIGIBLE', 'CLEAR', %s, %s, 'chapter-plan.v4')
+                    """,
+                    [
+                        first["asset_version_id"],
+                        f"{project_id}:canonical-chapter-plan-1",
+                        json.dumps(first["content"]),
+                        first["content_hash"],
+                    ],
+                )
             uow.cursor.execute(
                 """
                 INSERT INTO authority_asset(asset_id, project_id, asset_type)
@@ -1295,13 +1525,18 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                 INSERT INTO authority_asset_version(
                     asset_version_id, asset_id, version_number, lifecycle,
                     eligibility, governance, content, content_hash, schema_version
-                ) VALUES (%s, %s, 1, 'ACTIVE', 'ELIGIBLE', 'CLEAR', %s, %s, 'integration-fixture.v1')
+                ) VALUES (%s, %s, 1, 'ACTIVE', 'ELIGIBLE', 'CLEAR', %s, %s, %s)
                 """,
                 [
                     second["asset_version_id"],
                     f"{project_id}:chapter-plan-2",
                     json.dumps(second_content),
                     second_hash,
+                    (
+                        "chapter-plan.v4"
+                        if canonical_execution
+                        else "integration-fixture.v1"
+                    ),
                 ],
             )
             uow.commit()
