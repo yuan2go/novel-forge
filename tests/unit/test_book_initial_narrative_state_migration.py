@@ -17,3 +17,5 @@ def test_initial_narrative_state_migration_is_forward_pair_binding() -> None:
     assert "authority_book_input_initial_narrative_pair_check" in sql
     assert "initial_story_state_version IS NULL" in sql
     assert "initial_story_state_version IS NOT NULL" in sql
+    assert "idx_book_input_initial_story_state" in sql
+    assert "idx_book_input_initial_canon_snapshot" in sql

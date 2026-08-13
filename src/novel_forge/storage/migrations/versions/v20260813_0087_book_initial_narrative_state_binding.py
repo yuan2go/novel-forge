@@ -30,6 +30,16 @@ UPGRADE_STATEMENTS = [
        AND initial_canon_snapshot_version IS NOT NULL)
     )
     """,
+    """
+    CREATE INDEX idx_book_input_initial_story_state
+    ON authority_book_production_input_snapshot(initial_story_state_version)
+    WHERE initial_story_state_version IS NOT NULL
+    """,
+    """
+    CREATE INDEX idx_book_input_initial_canon_snapshot
+    ON authority_book_production_input_snapshot(initial_canon_snapshot_version)
+    WHERE initial_canon_snapshot_version IS NOT NULL
+    """,
 ]
 
 

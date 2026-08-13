@@ -776,7 +776,10 @@ class PostgresBookAuthority:
                     ),
                 ),
             )
-        elif int(request["chapter_number"]) == 1:
+        elif (
+            int(request["chapter_number"]) == 1
+            and book["input_mode"] == "RESOLVED_AUTHORITY_INPUT"
+        ):
             acceptance_inputs = (
                 *acceptance_inputs,
                 *self._initial_narrative_state_inputs(book=book, request=request),
