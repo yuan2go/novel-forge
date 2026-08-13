@@ -4,6 +4,9 @@ import json
 from typing import Any, Mapping
 
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.narrative_state.contracts import (
+    atomize_character_knowledge_changes,
+)
 
 
 _SCHEMA_DIALECT = "https://json-schema.org/draft/2020-12/schema"
@@ -268,7 +271,7 @@ def _canon_schema() -> dict[str, Any]:
         },
         required=tuple(change_properties),
     )
-    return _object_schema(
+    schema = _object_schema(
         {
             field: {
                 "type": "array",
@@ -279,6 +282,11 @@ def _canon_schema() -> dict[str, Any]:
         },
         required=_CANON_FIELDS,
     )
+    schema["properties"]["character_knowledge_changes"]["description"] = (
+        "Atomic Character Knowledge events. Emit one item per character and fact or "
+        "proposition identity; do not bundle multiple acquired_fact_ids into one item."
+    )
+    return schema
 
 
 def _quality_schema() -> dict[str, Any]:
@@ -389,7 +397,7 @@ def chapter_provider_output_schema(stage: str) -> dict[str, Any]:
 def chapter_provider_output_schema_ref(stage: str) -> str:
     chapter_provider_output_schema(stage)
     version = (
-        "v4"
+        "v5"
         if stage == "canon_extraction"
         else "v2"
         if stage in _QUALITY_STAGES
@@ -438,6 +446,17 @@ def validate_chapter_provider_output_semantics(
     normalized = json.loads(json.dumps(value, ensure_ascii=False))
     if stage == "canon_extraction":
         normalized = _without_null_object_properties(normalized)
+        try:
+            normalized["character_knowledge_changes"] = (
+                atomize_character_knowledge_changes(
+                    normalized.get("character_knowledge_changes", [])
+                )
+            )
+        except KernelError as exc:
+            raise KernelError(
+                "CHAPTER_PROVIDER_OUTPUT_SEMANTIC_INVALID",
+                str(exc),
+            ) from exc
         for change in normalized.get("resource_state_changes", []):
             before = change.get("balance_before")
             delta = change.get("delta")

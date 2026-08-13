@@ -5,7 +5,7 @@
     "name": "Chapter Generation Pack",
     "domain": "chapter_production",
     "capability_type": "production_workflow",
-    "version": "1.7.0",
+    "version": "1.8.0",
     "owner": "novel-os-core",
     "status": "CANDIDATE",
     "lifecycle": "VALIDATION",

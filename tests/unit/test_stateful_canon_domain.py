@@ -89,6 +89,42 @@ class StatefulCanonDomainTests(unittest.TestCase):
             "derived_disclosure_projection",
         )
 
+    def test_character_knowledge_bundle_becomes_atomic_canon_state(self) -> None:
+        extraction = extract_canon_candidates(
+            project_id="project-a",
+            revision={"chapter": 2, "text": "The witness reads both entries."},
+            revision_asset_version_id="revision-v2",
+            context_bundle_version_id="context-v2",
+            provider_extraction={
+                "character_knowledge_changes": [
+                    {
+                        "character_id": "character:lin",
+                        "acquired_fact_ids": ["fact:first", "fact:second"],
+                        "status": "KNOWN",
+                        "effective_from_chapter": 2,
+                    }
+                ]
+            },
+        )
+        update = build_canon_update(
+            project_id="project-a",
+            revision_asset_version_id="revision-v2",
+            context_bundle_version_id="context-v2",
+            extraction=extraction,
+            historical_state={},
+        )
+
+        self.assertEqual(
+            [
+                (item["character_id"], item["fact_id"], item["entity_version"])
+                for item in update["state_changes"]["character_knowledge"]
+            ],
+            [
+                ("character:lin", "fact:first", 1),
+                ("character:lin", "fact:second", 1),
+            ],
+        )
+
     def test_historical_state_detects_typed_cross_chapter_conflicts(self) -> None:
         state = {
             "canon_snapshot": [

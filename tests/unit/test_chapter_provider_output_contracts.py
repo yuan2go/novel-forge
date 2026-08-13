@@ -130,7 +130,7 @@ def test_quality_prompt_and_schema_version_require_dimension_evidence() -> None:
     )
     assert (
         chapter_provider_output_schema_ref("canon_extraction")
-        == "schema:chapter-provider-output:canon_extraction:v4"
+        == "schema:chapter-provider-output:canon_extraction:v5"
     )
 
 
@@ -189,7 +189,8 @@ def test_canon_prompt_requires_character_knowledge_precondition_closure() -> Non
     contract = _stage_semantic_contract("canon_extraction")
 
     assert "requires_fact_ids" in contract
-    assert "acquired_fact_ids" in contract
+    assert "atomic character_knowledge_changes item with fact_id" in contract
+    assert "never bundle multiple newly learned facts" in contract
     assert "character-specific epistemic preconditions" in contract
     assert (
         "world-rule availability is not automatically character knowledge"
@@ -272,6 +273,51 @@ def test_canon_semantics_normalizes_initial_resource_balance() -> None:
     )
 
     assert normalized["resource_state_changes"][0]["balance"] == 3
+
+
+def test_canon_semantics_atomizes_legacy_character_knowledge_bundle() -> None:
+    value = _valid("canon_extraction")
+    change_schema = chapter_provider_output_schema("canon_extraction")["properties"][
+        "character_knowledge_changes"
+    ]["items"]
+    bundled = {
+        key: (
+            "The witness learns both ledger facts."
+            if key == "summary"
+            else "character:lin"
+            if key == "character_id"
+            else ["fact:ledger-owner", "fact:ledger-date", "fact:ledger-owner"]
+            if key == "acquired_fact_ids"
+            else "CHARACTER_KNOWLEDGE_ACQUIRED"
+            if key == "impact_type"
+            else 0
+            if key == "evidence_start"
+            else 42
+            if key == "evidence_end"
+            else 0.95
+            if key == "confidence"
+            else None
+        )
+        for key in change_schema["properties"]
+    }
+    value["character_knowledge_changes"] = [bundled]
+
+    structural = validate_chapter_provider_output_schema("canon_extraction", value)
+    normalized = validate_chapter_provider_output_semantics(
+        "canon_extraction", structural
+    )
+
+    assert [
+        (item["character_id"], item["fact_id"])
+        for item in normalized["character_knowledge_changes"]
+    ] == [
+        ("character:lin", "fact:ledger-owner"),
+        ("character:lin", "fact:ledger-date"),
+    ]
+    assert all(
+        "acquired_fact_ids" not in item
+        for item in normalized["character_knowledge_changes"]
+    )
 
 
 def test_canon_schema_exposes_epistemic_and_presentation_changes() -> None:

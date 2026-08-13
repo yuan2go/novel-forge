@@ -6,6 +6,9 @@ import hashlib
 from typing import Any, Iterable, Protocol
 
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.narrative_state.contracts import (
+    atomize_character_knowledge_changes,
+)
 
 
 SEMANTIC_CHANGE_FIELDS = {
@@ -156,6 +159,9 @@ def extract_canon_candidates(
     )
     _merge_operator_annotations(changes, annotations)
     _normalize_resource_changes(changes["resource_state_changes"])
+    changes["character_knowledge_changes"] = atomize_character_knowledge_changes(
+        changes["character_knowledge_changes"]
+    )
     changes["reader_knowledge_changes"] = _derive_reader_knowledge_changes(
         changes["disclosure_events"]
     )
@@ -211,7 +217,7 @@ def extract_canon_candidates(
         "digest_identity_only": semantic_count == 0,
         "semantic_coverage": "INSUFFICIENT" if semantic_count == 0 else "EXTRACTED",
         "provider_assertions_optional": True,
-        "canon_extraction_contract_version": "canon-semantic-extraction-v2",
+        "canon_extraction_contract_version": "canon-semantic-extraction-v3",
     }
 
 
@@ -294,7 +300,7 @@ def build_canon_update(
         "state_changes": state_changes,
         "rebuildable": True,
         "rollback_aware": True,
-        "canon_contract_version": "canon-update-domain-v5",
+        "canon_contract_version": "canon-update-domain-v6",
     }
 
 

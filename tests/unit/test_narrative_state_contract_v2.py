@@ -114,6 +114,35 @@ def test_v2_event_rejects_future_effective_state_and_missing_identity() -> None:
     }
 
 
+def test_canon_read_boundary_upgrades_bundled_character_knowledge() -> None:
+    events = events_from_canon_patch(
+        project_id="project-hundred-chapters",
+        book_id="book-river-city",
+        source_chapter=30,
+        chapter_outcome_id="outcome-30",
+        canon_patch_asset_version_id="canon-30",
+        accepted_draft_asset_version_id="draft-30",
+        source_operation_id="operation-30",
+        trace_id="trace-30",
+        canon_patch={
+            "state_changes": {
+                "character_knowledge": [
+                    {
+                        "character_id": "character:lin",
+                        "acquired_fact_ids": ["fact:first", "fact:second"],
+                        "status": "KNOWN",
+                    }
+                ]
+            }
+        },
+    )
+
+    assert [event.identity.entity_key for event in events] == [
+        "character_id=character:lin|fact_id=fact:first",
+        "character_id=character:lin|fact_id=fact:second",
+    ]
+
+
 def test_v1_outcome_is_adapted_only_at_the_read_boundary() -> None:
     events = events_from_chapter_outcome(
         "legacy-outcome-v1",

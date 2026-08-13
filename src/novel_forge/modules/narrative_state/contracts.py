@@ -53,6 +53,53 @@ class NarrativeStateKind(StrEnum):
     PAYOFF_EVENT = "payoff_event"
 
 
+def atomize_character_knowledge_changes(
+    changes: Iterable[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Normalize Character Knowledge to one character/proposition identity per event.
+
+    Older extraction prompts used ``acquired_fact_ids`` as a convenient bundle.  A
+    bundled record cannot participate in Narrative State compare-and-set semantics:
+    its durable identity is the pair ``(character_id, fact_id|proposition_id)``.
+    Expand that compatibility shape at the authority boundary while keeping direct,
+    already-atomic identities unchanged.
+    """
+
+    atoms: list[dict[str, Any]] = []
+    for raw in changes:
+        change = dict(raw)
+        character_id = str(change.get("character_id") or "").strip()
+        fact_id = str(change.get("fact_id") or "").strip()
+        proposition_id = str(change.get("proposition_id") or "").strip()
+        acquired_fact_ids = tuple(
+            dict.fromkeys(
+                str(item).strip()
+                for item in change.get("acquired_fact_ids") or ()
+                if str(item).strip()
+            )
+        )
+        if not character_id or not (fact_id or proposition_id or acquired_fact_ids):
+            raise KernelError(
+                "NARRATIVE_CHARACTER_KNOWLEDGE_IDENTITY_INVALID",
+                "character knowledge requires character_id and one fact_id or proposition_id",
+            )
+
+        if fact_id or proposition_id:
+            atom = dict(change)
+            atom.pop("acquired_fact_ids", None)
+            atoms.append(atom)
+
+        for acquired_fact_id in acquired_fact_ids:
+            if fact_id and acquired_fact_id == fact_id:
+                continue
+            atom = dict(change)
+            atom.pop("acquired_fact_ids", None)
+            atom.pop("proposition_id", None)
+            atom["fact_id"] = acquired_fact_id
+            atoms.append(atom)
+    return atoms
+
+
 class NarrativeObligationType(StrEnum):
     PROMISE = "PROMISE"
     FORESHADOWING = "FORESHADOWING"
@@ -590,6 +637,15 @@ def events_from_canon_patch(
                 )
             else:
                 changes[kind].extend(items)
+
+    # Recover Canon patches created before Character Knowledge became an atomic
+    # character/proposition event.  This is a deterministic read-boundary upgrade;
+    # the immutable source patch remains untouched and event identities stay stable.
+    changes[NarrativeStateKind.CHARACTER_KNOWLEDGE] = (
+        atomize_character_knowledge_changes(
+            changes[NarrativeStateKind.CHARACTER_KNOWLEDGE]
+        )
+    )
 
     events: list[NarrativeStateEvent] = []
     for kind in NarrativeStateKind:
