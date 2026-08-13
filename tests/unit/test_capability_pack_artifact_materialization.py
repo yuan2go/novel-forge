@@ -292,4 +292,4 @@ def test_codex_prompt_materializes_typed_target_scope_as_json() -> None:
     )
     assert evidence["provider_view"]["provider_context_estimated_tokens"] > 0
     assert '"contract_version":"provider-task-view-v1"' in prompt
-    assert '"contract_version":"provider-context-view-v1"' in prompt
+    assert '"contract_version":"provider-context-view-v2"' in prompt
