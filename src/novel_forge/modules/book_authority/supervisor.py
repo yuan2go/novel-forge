@@ -366,6 +366,26 @@ class PostgresBookProductionSupervisor:
                     "canon_snapshot": previous_canon,
                 }
             )
+        else:
+            snapshot = self.query.require_input_snapshot(str(book["input_snapshot_id"]))
+            initial_story_state = str(
+                snapshot.get("initial_story_state_version") or ""
+            )
+            initial_canon = str(
+                snapshot.get("initial_canon_snapshot_version") or ""
+            )
+            if bool(initial_story_state) != bool(initial_canon):
+                raise KernelError(
+                    "BOOK_INITIAL_NARRATIVE_STATE_INCOMPLETE",
+                    "initial Story State and Canon must be prepared together",
+                )
+            if initial_story_state:
+                explicit_overrides.update(
+                    {
+                        "story_state_snapshot": initial_story_state,
+                        "canon_snapshot": initial_canon,
+                    }
+                )
         preparation = self.production_preparation.prepare(
             self._chapter_preparation_request(
                 book=book,

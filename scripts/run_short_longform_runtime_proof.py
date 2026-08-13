@@ -83,6 +83,7 @@ from novel_forge.modules.project_authority import (
     ProjectAuthorityApplication,
     ProjectAuthorityCommand,
 )
+from novel_forge.modules.narrative_state import NarrativeStateKind
 from novel_forge.modules.story_planning_runtime import (
     GENERATOR_INPUT_ROLES,
     PlanningGenerationStatus,
@@ -356,6 +357,216 @@ def _campaign_chapter_matrix(
     return tuple(rows)
 
 
+def _campaign_initial_narrative_snapshots(
+    *,
+    project_id: str,
+    book_id: str,
+    campaign_contract: Mapping[str, Any],
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Compile frozen pre-Chapter-1 truth into one integrity-bound v2 pair."""
+
+    contract_identity = str(campaign_contract.get("contract_identity") or "")
+    if not project_id or not book_id or not contract_identity.startswith("sha256:"):
+        raise ValueError("initial Narrative State requires frozen Campaign identity")
+    ground_truth = dict(campaign_contract["ground_truth"])
+    current: dict[str, list[dict[str, Any]]] = {
+        kind.value: [] for kind in NarrativeStateKind
+    }
+
+    def add(
+        kind: NarrativeStateKind,
+        *,
+        components: tuple[tuple[str, str], ...],
+        state: Mapping[str, Any],
+    ) -> None:
+        if any(not key or not value for key, value in components):
+            raise ValueError(f"initial {kind.value} identity is incomplete")
+        entity_key = "|".join(f"{key}={value}" for key, value in components)
+        evidence = {
+            "mode": "FROZEN_PROOF_CONTRACT_INITIAL_STATE",
+            "campaign_contract_identity": contract_identity,
+        }
+        source_event_id = "narrative-initial-state:sha256:" + hashlib.sha256(
+            json.dumps(
+                {
+                    "kind": kind.value,
+                    "entity_key": entity_key,
+                    "state": dict(state),
+                    "campaign_contract_identity": contract_identity,
+                },
+                ensure_ascii=False,
+                separators=(",", ":"),
+                sort_keys=True,
+            ).encode()
+        ).hexdigest()
+        current[kind.value].append(
+            {
+                "identity": {
+                    "identity_kind": kind.value,
+                    "entity_key": entity_key,
+                    "components": dict(components),
+                },
+                "entity_key": entity_key,
+                "entity_version": 1,
+                "state": dict(state),
+                "source_event_id": source_event_id,
+                "source_chapter": 0,
+                "effective_from_chapter": 0,
+                "effective_to_chapter": 0,
+                "narrative_position": {"chapter": 0},
+                "supersedes_event_id": "",
+                "provenance": evidence,
+                "confidence": 1.0,
+                "coverage": "FROZEN_INITIAL_STATE",
+                "evidence": evidence,
+                "canon_status": "ACTIVE_STORY_DESIGN_INITIAL_STATE",
+            }
+        )
+
+    for character in ground_truth.get("characters") or ():
+        raw = dict(character)
+        character_id = f"character:{str(raw['character_id']).removeprefix('character:')}"
+        add(
+            NarrativeStateKind.CHARACTER_STATE,
+            components=(("character_id", character_id),),
+            state={**raw, "character_id": character_id, "status": "ACTIVE"},
+        )
+    for relationship in ground_truth.get("relationships") or ():
+        raw = dict(relationship)
+        participants = list(raw.get("participants") or ())
+        if len(participants) != 2:
+            raise ValueError("initial relationship requires exactly two participants")
+        source_id, target_id = (
+            f"character:{str(item).removeprefix('character:')}"
+            for item in participants
+        )
+        add(
+            NarrativeStateKind.RELATIONSHIP_STATE,
+            components=(("source_id", source_id), ("target_id", target_id)),
+            state={
+                **raw,
+                "source_id": source_id,
+                "target_id": target_id,
+                "status": str(raw.get("chapter_1") or "INITIAL"),
+            },
+        )
+    for rule in ground_truth.get("world_rules") or ():
+        raw = dict(rule)
+        rule_id = str(raw["fact_id"])
+        add(
+            NarrativeStateKind.WORLD_RULE,
+            components=(("rule_id", rule_id),),
+            state={**raw, "rule_id": rule_id, "status": "ENFORCED"},
+        )
+        add(
+            NarrativeStateKind.CANON_FACT,
+            components=(("subject", rule_id), ("predicate", "definition")),
+            state={
+                "subject": rule_id,
+                "predicate": "definition",
+                "object": str(raw["statement"]),
+                "status": "ACTIVE",
+            },
+        )
+    for faction in ground_truth.get("factions") or ():
+        raw = dict(faction)
+        faction_id = str(raw["faction_id"])
+        add(
+            NarrativeStateKind.FACTION_STATE,
+            components=(("faction_id", faction_id),),
+            state={**raw, "faction_id": faction_id, "status": "ACTIVE"},
+        )
+    for resource in ground_truth.get("resources") or ():
+        raw = dict(resource)
+        resource_id = str(raw["resource_id"])
+        balance = raw.get("initial")
+        if isinstance(balance, bool) or not isinstance(balance, (int, float)):
+            raise ValueError(f"initial Resource balance is invalid: {resource_id}")
+        add(
+            NarrativeStateKind.RESOURCE_STATE,
+            components=(("entity_id", resource_id), ("resource_id", resource_id)),
+            state={
+                **raw,
+                "entity_id": resource_id,
+                "resource_id": resource_id,
+                "balance": balance,
+                "status": "AVAILABLE",
+            },
+        )
+    for entries in current.values():
+        entries.sort(key=lambda item: str(item["entity_key"]))
+
+    story_state: dict[str, Any] = {
+        "type": "StoryStateSnapshot",
+        "contract_version": "story-state-snapshot-v2",
+        "layer": "CURRENT_STATE",
+        "project_id": project_id,
+        "book_id": book_id,
+        "scope": {"project_id": project_id, "book_id": book_id},
+        "accepted_through_chapter": 0,
+        "chapter": 0,
+        "chapter_number": 0,
+        "state_version": 0,
+        "based_on_chapter_outcome_asset_version_id": "",
+        "based_on_chapter_outcome_id": "",
+        "previous_story_state_asset_version_id": "",
+        "current_state": current,
+        "reducer_applications": [],
+        "accepted_state_only": True,
+        "replayable_from": (
+            "FROZEN_BOOK_PRODUCTION_INPUT_PLUS_COMMITTED_BOOK_CHAPTER_ACCEPTANCE"
+        ),
+        "initial_state_boundary": "BOOK_PRODUCTION_INPUT_SNAPSHOT",
+        "campaign_contract_identity": contract_identity,
+        "evidence_level": "CONTROLLED_PROOF_BOOTSTRAP",
+        "runtime_result": False,
+    }
+    story_state["state_hash"] = "sha256:" + hashlib.sha256(
+        json.dumps(
+            story_state,
+            ensure_ascii=False,
+            separators=(",", ":"),
+            sort_keys=True,
+        ).encode()
+    ).hexdigest()
+    canon: dict[str, Any] = {
+        "type": "CanonSnapshot",
+        "contract_version": "canon-snapshot-v2",
+        "layer": "TRUTH",
+        "authority": {
+            "status": "FROZEN_BOOK_PRODUCTION_INPUT",
+            "required_boundary": "BOOK_PRODUCTION_INPUT_SNAPSHOT",
+        },
+        "project_id": project_id,
+        "book_id": book_id,
+        "scope": {"project_id": project_id, "book_id": book_id},
+        "accepted_through_chapter": 0,
+        "chapter": 0,
+        "chapter_number": 0,
+        "current_facts": deepcopy(current[NarrativeStateKind.CANON_FACT.value]),
+        "based_on_chapter_outcome_asset_version_id": "",
+        "previous_canon_asset_version_id": "",
+        "story_state_hash": story_state["state_hash"],
+        "accepted_state_only": True,
+        "rebuildable_from": (
+            "FROZEN_BOOK_PRODUCTION_INPUT_PLUS_COMMITTED_BOOK_CHAPTER_ACCEPTANCE"
+        ),
+        "initial_state_boundary": "BOOK_PRODUCTION_INPUT_SNAPSHOT",
+        "campaign_contract_identity": contract_identity,
+        "evidence_level": "CONTROLLED_PROOF_BOOTSTRAP",
+        "runtime_result": False,
+    }
+    canon["canon_hash"] = "sha256:" + hashlib.sha256(
+        json.dumps(
+            canon,
+            ensure_ascii=False,
+            separators=(",", ":"),
+            sort_keys=True,
+        ).encode()
+    ).hexdigest()
+    return story_state, canon
+
+
 def _bootstrap_assets(
     database_url: str,
     *,
@@ -473,6 +684,11 @@ def _bootstrap_assets(
     if campaign_contract is not None:
         book = dict(campaign_contract["book"])
         ground_truth = dict(campaign_contract["ground_truth"])
+        initial_story_state, initial_canon = _campaign_initial_narrative_snapshots(
+            project_id=project_id,
+            book_id=book_id,
+            campaign_contract=campaign_contract,
+        )
         target_chapters = int(book["target_chapters"])
         world_bible = _proof_world_bible_content()
         world_bible["safe_summary"] = (
@@ -531,19 +747,12 @@ def _bootstrap_assets(
                     },
                 ),
                 "story_state": (
-                    "story_state",
-                    {
-                        "chapter_number": 0,
-                        "facts": [],
-                        "knowledge_matrix": ground_truth["knowledge_matrix"],
-                    },
+                    "story_state_snapshot",
+                    initial_story_state,
                 ),
                 "canon_snapshot": (
                     "canon_snapshot",
-                    {
-                        "chapter_number": 0,
-                        "facts": ground_truth["world_rules"],
-                    },
+                    initial_canon,
                 ),
                 "arc_portfolio": (
                     "arc_portfolio",
@@ -625,13 +834,17 @@ def _bootstrap_assets(
         checkpoint("after_domain_validation")
         versions: dict[str, str] = {}
         for label, (asset_type, raw_content) in rows.items():
-            content = {
-                "book_id": book_id,
-                "evidence_level": "CONTROLLED_PROOF_BOOTSTRAP",
-                "runtime_result": False,
-                "safe_summary": f"Controlled bootstrap input for {label}.",
-                **raw_content,
-            }
+            content = (
+                dict(raw_content)
+                if asset_type in {"story_state_snapshot", "canon_snapshot"}
+                else {
+                    "book_id": book_id,
+                    "evidence_level": "CONTROLLED_PROOF_BOOTSTRAP",
+                    "runtime_result": False,
+                    "safe_summary": f"Controlled bootstrap input for {label}.",
+                    **raw_content,
+                }
+            )
             document = uow.repositories.asset_documents.materialize_output(
                 AuthorityAssetWriteCommand(
                     operation_id=operation_id,

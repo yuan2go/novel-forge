@@ -50,6 +50,7 @@ from run_short_longform_runtime_proof import (
     _accept_chapter,
     _bootstrap_assets,
     _bootstrap_chapter_profiles,
+    _campaign_initial_narrative_snapshots as _build_campaign_initial_snapshots,
     _chapter_outputs,
     _codex_version,
     _complete_reader_sidecar,
@@ -69,6 +70,16 @@ ALLOWED_TARGETS = frozenset({1, 30, 100, 300})
 SCHEMA_VERSION = "novel-forge.longform-proof-campaign-checkpoint.v1"
 
 
+def _campaign_initial_narrative_snapshots(
+    *, project_id: str, book_id: str, campaign_contract: Mapping[str, Any]
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    return _build_campaign_initial_snapshots(
+        project_id=project_id,
+        book_id=book_id,
+        campaign_contract=campaign_contract,
+    )
+
+
 def _validate_target(value: int) -> int:
     if value not in ALLOWED_TARGETS:
         raise ValueError("target chapter must be one of 1, 30, 100, or 300")
@@ -77,6 +88,8 @@ def _validate_target(value: int) -> int:
 
 def _classify_failure(error: BaseException) -> str:
     message = f"{type(error).__name__}: {error}".casefold()
+    if "narrative_resource_state_missing" in message:
+        return "PROOF_HARNESS_DEFECT"
     if any(word in message for word in ("credential", "provider", "codex login")):
         return "PROVIDER_FAILURE"
     if any(word in message for word in ("postgres", "minio", "connection refused")):
@@ -472,6 +485,16 @@ def _start_or_require_book(
             idempotency_key=f"{state['project_id']}:book-input:initial",
             trace_id=f"trace:{state['project_id']}:book-input:initial",
             correlation_id=f"correlation:{state['project_id']}",
+            role_asset_version_overrides=(
+                (
+                    "initial_story_state_version",
+                    state["bootstrap"]["story_state"],
+                ),
+                (
+                    "initial_canon_snapshot_version",
+                    state["bootstrap"]["canon_snapshot"],
+                ),
+            ),
         ),
         principal=operator,
     )

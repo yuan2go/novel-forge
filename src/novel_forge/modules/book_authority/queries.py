@@ -346,7 +346,9 @@ class PostgresBookProductionQuery:
                 SELECT book_plan_version, current_volume_plan_version,
                        active_arc_plan_versions, character_state_version,
                        foreshadowing_state_version, quality_trend_version,
-                       reward_ledger_version, promise_ledger_version
+                       reward_ledger_version, promise_ledger_version,
+                       COALESCE(initial_story_state_version, ''),
+                       COALESCE(initial_canon_snapshot_version, '')
                 FROM authority_book_production_input_snapshot
                 WHERE snapshot_id=%s
                 """,
@@ -366,6 +368,8 @@ class PostgresBookProductionQuery:
             "quality_trend_version",
             "reward_ledger_version",
             "promise_ledger_version",
+            "initial_story_state_version",
+            "initial_canon_snapshot_version",
         )
         return dict(zip(keys, row, strict=True))
 
