@@ -198,6 +198,45 @@ def _at(chapter: int) -> dict:
     )
 
 
+def test_legacy_obligation_kinds_keep_source_identity_when_linked() -> None:
+    _, outcome = _outcome(
+        2,
+        {
+            "plot_thread": [
+                {
+                    "thread_id": "thread:revised-record",
+                    "promise_id": "promise:resolve-record",
+                    "status": "ACTIVE",
+                }
+            ],
+            "reader_promise": [
+                {
+                    "promise_id": "promise:resolve-record",
+                    "thread_id": "thread:revised-record",
+                    "status": "OPEN",
+                }
+            ],
+            "foreshadow_state": [
+                {
+                    "entity_id": "foreshadow:recorded-subject",
+                    "promise_id": "promise:resolve-record",
+                    "thread_id": "thread:revised-record",
+                    "status": "OPEN",
+                }
+            ],
+        },
+    )
+
+    identities = {
+        event["identity"]["entity_key"] for event in outcome["state_events"]
+    }
+    assert identities == {
+        "obligation_id=thread:revised-record",
+        "obligation_id=promise:resolve-record",
+        "obligation_id=foreshadow:recorded-subject",
+    }
+
+
 def test_current_state_is_entity_aware_and_not_a_history_of_character_changes() -> None:
     state = _at(100)
     lin = project_entity_state(state, "character_state", "character_id=character:lin")
