@@ -101,8 +101,9 @@ def _activate_planning_pack(harness: CapabilityPackPostgresHarness) -> str:
             """
             SELECT definition_hash
             FROM authority_operation_definition
-            WHERE name='story_planning.generate' AND definition_version='1.1.0'
-            """
+            WHERE name=%s AND definition_version=%s
+            """,
+            (definition["name"], definition["definition_version"]),
         )
         definition_hash = str(uow.cursor.fetchone()[0])
         uow.commit()
@@ -1880,7 +1881,9 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
 
     def run_chapter(chapter_runtime, root_operation_id: str) -> None:
         scheduler = chapter_runtime.scheduler(principal=worker_principal)
-        for _ in range(len(ChapterNode) + 4):
+        # One Chapter execution may include the single bounded Quality correction
+        # generation in addition to the primary node graph.
+        for _ in range(len(ChapterNode) * 2 + 4):
             tick = scheduler.tick(
                 project_id=project_id,
                 root_operation_id=root_operation_id,

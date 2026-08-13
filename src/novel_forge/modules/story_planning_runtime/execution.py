@@ -187,6 +187,10 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
         raise ValueError("Planning fixture requires its frozen command")
     logical_key = str(command.get("logical_key") or "")
     chapter_number = _logical_chapter_number(logical_key)
+    arc_entry_state = _fixture_character_arc_stage(max(0, chapter_number - 1))
+    arc_exit_state = _fixture_character_arc_stage(max(1, chapter_number))
+    disclosure_mode = "HINT" if chapter_number <= 1 else "CONFIRM"
+    reader_knowledge_status = "HINTED" if chapter_number <= 1 else "KNOWN"
     parent_version_id = str(command.get("parent_version_id") or "")
     input_versions = command.get("input_versions")
     versions = dict(input_versions) if isinstance(input_versions, Mapping) else {}
@@ -352,7 +356,9 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
                     ),
                     "role": "PRIMARY",
                     "segment_id": "arc-segment:1",
-                    "expected_movement": "denial becomes accountable action",
+                    "expected_movement": (
+                        f"{arc_entry_state} becomes {arc_exit_state}"
+                    ),
                 }
             ],
             "setups": [{"obligation_id": "setup:consequence", "action": "PLANT"}],
@@ -378,15 +384,15 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
                     "layer": "READER_KNOWLEDGE",
                     "subject_id": "reader",
                     "fact_id": "fact:hidden-cost",
-                    "status": "HINTED",
+                    "status": reader_knowledge_status,
                 }
             ],
             "disclosures": [
                 {
-                    "disclosure_id": "disclosure:hidden-cost",
+                    "disclosure_id": f"disclosure:hidden-cost:chapter:{chapter_number}",
                     "fact_id": "fact:hidden-cost",
                     "audience": "READER",
-                    "mode": "HINT",
+                    "mode": disclosure_mode,
                     "presentation_channel": "CONSEQUENCE",
                 }
             ],
@@ -394,8 +400,8 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
                 {
                     "state_kind": "character_arc",
                     "entity_key": "protagonist:accountability",
-                    "from_state": "DENIAL",
-                    "to_state": "COMMITTED",
+                    "from_state": arc_entry_state,
+                    "to_state": arc_exit_state,
                 }
             ],
             "reader_experience": {
@@ -413,14 +419,14 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
                     "arc_progress": [str(versions.get("arc_plans") or "arc:primary")],
                     "information_gain": ["fact:hidden-cost"],
                     "state_transitions": ["protagonist:accountability"],
-                    "entry_state": "private denial",
-                    "exit_state": "public commitment",
+                    "entry_state": arc_entry_state,
+                    "exit_state": arc_exit_state,
                     "reader_effect": "relief converts to anticipation",
                     "beats": ["pressure", "choice", "consequence"],
                 }
             ],
             "expected_exit_state": {
-                "summary": "public commitment creates a new opposition"
+                "summary": f"character arc reaches {arc_exit_state}"
             },
         },
     }
@@ -431,6 +437,18 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
     if parent_version_id:
         payload["parent_version_id"] = parent_version_id
     return payload
+
+
+def _fixture_character_arc_stage(boundary: int) -> str:
+    """Return a deterministic causal stage for scripted multi-chapter fixtures."""
+
+    named = {
+        0: "DENIAL",
+        1: "COMMITTED",
+        2: "CONSEQUENT",
+        3: "OWNED",
+    }
+    return named.get(boundary, f"INTEGRATED_{boundary}")
 
 
 def _strict_object(properties: dict[str, Any]) -> dict[str, Any]:
