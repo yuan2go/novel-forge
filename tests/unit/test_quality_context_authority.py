@@ -244,6 +244,49 @@ class QualityContextAuthorityTests(unittest.TestCase):
             view["coverage_report"]["token_budget"],
         )
 
+    def test_longform_reserves_the_actual_variable_coverage_report_size(self) -> None:
+        bundle = _bundle()
+        story = next(
+            item
+            for item in bundle["context_segments"]
+            if item["asset_type"] == "story_state_snapshot"
+        )
+        story["structured_facts"] = [
+            {
+                "state_kind": "character_state",
+                "entity_key": (
+                    "character_id=character-with-a-deliberately-long-proof-identity-"
+                    f"{index:03d}"
+                ),
+                "state": {
+                    "character_id": f"character-{index:03d}",
+                    "detail": "x" * 1_200,
+                },
+            }
+            for index in range(40)
+        ]
+
+        view = _view(
+            "longform",
+            bundle,
+            token_budget=28_000,
+            canon={"conflicts": [], "state_changes": {}},
+            revision_text="r" * 11_000,
+        )
+
+        self.assertEqual(
+            len(view["coverage_report"]["included_entities"]),
+            41,
+        )
+        self.assertEqual(
+            view["coverage_report"]["selected_asset_versions"],
+            sorted(set(view["coverage_report"]["selected_asset_versions"])),
+        )
+        self.assertLessEqual(
+            view["coverage_report"]["token_estimate"],
+            view["coverage_report"]["token_budget"],
+        )
+
     def test_critical_identity_overflow_fails_closed(self) -> None:
         with self.assertRaisesRegex(KernelError, "CRITICAL_OVERFLOW"):
             _view("longform", token_budget=50)
