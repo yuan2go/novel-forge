@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import ast
 import importlib.util
+import json
 from pathlib import Path
 import sys
 from types import SimpleNamespace
@@ -27,6 +28,20 @@ def _load_script():
         return module
     finally:
         sys.path.remove(str(scripts))
+
+
+def test_real_proof_pack_identity_is_loaded_from_the_governed_manifest() -> None:
+    proof = _load_script()
+    manifest = json.loads(
+        (Path(__file__).resolve().parents[2]
+         / "config/capability_packs/chapter_generation_pack.json").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    globals_ = proof._install_pack.__globals__
+    assert globals_["PACK_ID"] == manifest["identity"]["pack_id"]
+    assert globals_["PACK_VERSION"] == manifest["identity"]["version"]
 
 
 def test_proof_object_store_buckets_are_stable_and_run_isolated(tmp_path: Path) -> None:
