@@ -14,6 +14,7 @@ from novel_forge.modules.capability_pack_authority import (
 from novel_forge.modules.capability_pack_authority.runtime import (
     CapabilityPackRuntimeResolver,
 )
+from novel_forge.modules.book_design_authority import BookDesignAuthorityQuery
 from novel_forge.modules.command_kernel.asset_commands import (
     AuthorityAssetWriteCommand,
 )
@@ -1592,6 +1593,27 @@ class PostgresPlanningExecutionPreparer:
                     "content": document.content,
                 }
             )
+        book = BookDesignAuthorityQuery(self.database_url).require_book(
+            project_id=command.project_id,
+            book_id=command.book_id,
+        )
+        if str(book["workspace_id"]) != command.workspace_id:
+            raise KernelError(
+                "PLANNING_BOOK_SCOPE_DRIFT",
+                "Planning command differs from the authoritative Book workspace",
+            )
+        production_profile = book.get("production_profile")
+        if not isinstance(production_profile, Mapping):
+            raise KernelError(
+                "PLANNING_BOOK_PRODUCTION_PROFILE_INVALID",
+                "Planning requires an object-valued Book production profile",
+            )
+        language_contract = production_profile.get("language_contract")
+        if language_contract is not None and not isinstance(language_contract, Mapping):
+            raise KernelError(
+                "PLANNING_LANGUAGE_CONTRACT_INVALID",
+                "Book Authority language contract must be an object",
+            )
         content = {
             "schema_version": "novelos.planning_context_bundle.v1",
             "project_id": command.project_id,
@@ -1603,6 +1625,11 @@ class PostgresPlanningExecutionPreparer:
             "token_budget": 16000,
             "source_isolation": "ABSTRACT_ASSETS_ONLY",
             "trace_id": command.trace_id,
+            **(
+                {"language_contract": dict(language_contract)}
+                if isinstance(language_contract, Mapping)
+                else {}
+            ),
         }
         logical_ref = f"planning/context_bundles/{operation_id}-{attempt_id}.json"
         try:

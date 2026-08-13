@@ -1250,6 +1250,120 @@ def test_planning_provider_timeout_retries_same_effect_then_succeeds(
     assert candidate_count == 1
 
 
+def test_non_book_planning_context_binds_book_authority_language_contract() -> None:
+    harness = CapabilityPackPostgresHarness("planning-volume-language-contract")
+    _activate_planning_pack(harness)
+    book_id = harness.book_ids[0]
+    generic = _seed_inputs(harness.project_id, book_id)
+    principal = _principal(harness.project_id)
+    language_contract = {
+        "required_language": "zh-CN",
+        "reader_facing_prose": "REQUIRED",
+        "proof_gate": "PRIMARILY_REQUIRED_LANGUAGE",
+    }
+    with transaction() as connection, connection.cursor() as cursor:
+        cursor.execute(
+            """
+            UPDATE authority_book
+            SET production_profile=%s
+            WHERE project_id=%s AND book_id=%s
+            """,
+            [
+                Jsonb({"language_contract": language_contract}),
+                harness.project_id,
+                book_id,
+            ],
+        )
+    with tempfile.TemporaryDirectory(prefix="planning-volume-language-") as root:
+        settings = IndustrialSettings(
+            root=root,
+            environment="development",
+            storage_authority="postgresql",
+            database_url=DATABASE_URL,
+        )
+        env = {
+            "NOVEL_FORGE_ENVIRONMENT": "development",
+            "NOVEL_FORGE_APPLICATION_BUILD_ID": "planning-volume-language-contract",
+            "NOVEL_FORGE_COMMIT_SHA": RELEASE_SHA,
+            "NOVEL_FORGE_MODEL_PROVIDER": "scripted_provider_v2",
+            "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": root,
+            "NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID": harness.pack_id,
+        }
+        execution = build_production_execution_composition(settings, env=env)
+        planning = build_story_planning_generation_application(
+            settings, execution=execution, env=env
+        )
+        book_command = StoryPlanningGenerationCommand(
+            project_id=harness.project_id,
+            workspace_id=harness.workspace_id,
+            book_id=book_id,
+            actor_id=principal.principal_id,
+            generator_operation_name="book_plan.generate",
+            logical_key="book:main",
+            input_versions={
+                role: generic[role]
+                for role in GENERATOR_INPUT_ROLES["book_plan.generate"]
+            },
+            idempotency_key=f"{harness.project_id}:book-language-parent",
+            trace_id=f"trace:{harness.project_id}:book-language-parent",
+            correlation_id=f"correlation:{harness.project_id}",
+        )
+        book_plan = planning.generate(book_command, principal=principal)
+        planning.approve_candidate(
+            book_plan.candidate_asset_version_id,
+            principal=principal,
+            idempotency_key=f"{harness.project_id}:book-language-parent:approve",
+            trace_id=f"trace:{harness.project_id}:book-language-parent:approve",
+            correlation_id=f"correlation:{harness.project_id}",
+        )
+        planning.activate_candidate(
+            book_plan.candidate_asset_version_id,
+            principal=principal,
+            idempotency_key=f"{harness.project_id}:book-language-parent:activate",
+            trace_id=f"trace:{harness.project_id}:book-language-parent:activate",
+            correlation_id=f"correlation:{harness.project_id}",
+        )
+        command = StoryPlanningGenerationCommand(
+            project_id=harness.project_id,
+            workspace_id=harness.workspace_id,
+            book_id=book_id,
+            actor_id=principal.principal_id,
+            generator_operation_name="volume_plan.generate",
+            logical_key="volume:1",
+            input_versions={
+                role: (
+                    book_plan.candidate_asset_version_id
+                    if role == "book_plan"
+                    else generic[role]
+                )
+                for role in GENERATOR_INPUT_ROLES["volume_plan.generate"]
+            },
+            parent_version_id=book_plan.candidate_asset_version_id,
+            idempotency_key=f"{harness.project_id}:volume-language",
+            trace_id=f"trace:{harness.project_id}:volume-language",
+            correlation_id=f"correlation:{harness.project_id}",
+        )
+        result = planning.generate(command, principal=principal)
+        execution.close()
+
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute(
+            """
+            SELECT version.content
+            FROM authority_operation_output_asset AS output
+            JOIN authority_asset_version AS version
+              ON version.asset_version_id=output.asset_version_id
+            WHERE output.operation_id=%s
+              AND output.output_key='planning.context_bundle'
+            """,
+            [result.generation_operation_id],
+        )
+        context = uow.cursor.fetchone()[0]
+
+    assert result.status is PlanningGenerationStatus.APPROVAL_PENDING
+    assert context["language_contract"] == language_contract
+
+
 def test_planning_repeated_provider_timeout_exhausts_one_bounded_effect(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
