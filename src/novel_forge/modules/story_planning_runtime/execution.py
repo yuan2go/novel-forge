@@ -463,6 +463,8 @@ def _strict_object(properties: dict[str, Any]) -> dict[str, Any]:
 
 def _canonical_narrative_provider_properties(
     contract_type: PlanContractType,
+    *,
+    arc_plan_version_id: str = "",
 ) -> dict[str, Any]:
     string = {"type": "string", "minLength": 1}
     string_array = {"type": "array", "items": string}
@@ -528,6 +530,11 @@ def _canonical_narrative_provider_properties(
     if contract_type is not PlanContractType.CHAPTER:
         return {}
     obligation = _strict_object({"obligation_id": string, "action": string})
+    scheduled_arc_ref = (
+        {"type": "string", "const": arc_plan_version_id}
+        if arc_plan_version_id
+        else string
+    )
     return {
         **architecture,
         "narrative_segment_ref": segment_ref,
@@ -535,10 +542,13 @@ def _canonical_narrative_provider_properties(
         "arc_schedule": {
             "type": "array",
             "minItems": 1,
-            "maxItems": 8,
+            # The current Planning command freezes one ArcPlan Authority
+            # version. Its role is one classification for this chapter, not
+            # one row per Arc Segment or narrative function.
+            "maxItems": 1 if arc_plan_version_id else 8,
             "items": _strict_object(
                 {
-                    "arc_plan_version_id": string,
+                    "arc_plan_version_id": scheduled_arc_ref,
                     "role": {
                         "type": "string",
                         "enum": [
@@ -549,6 +559,11 @@ def _canonical_narrative_provider_properties(
                             "PAYOFF",
                             "HOLD",
                         ],
+                        "description": (
+                            "Choose the single dominant role of this frozen Arc "
+                            "for the chapter; never repeat one Arc for multiple "
+                            "segments or functions."
+                        ),
                     },
                     "segment_id": string,
                     "expected_movement": string,
@@ -884,7 +899,12 @@ def planning_provider_output_schema(
             }
         else:
             raise ValueError(f"Planning Provider schema missing field: {field}")
-    properties.update(_canonical_narrative_provider_properties(contract_type))
+    properties.update(
+        _canonical_narrative_provider_properties(
+            contract_type,
+            arc_plan_version_id=arc_plan_version_id,
+        )
+    )
     if contract_type not in {PlanContractType.BOOK, PlanContractType.ARC}:
         properties["parent_version_id"] = (
             {"type": "string", "const": parent_version_id}

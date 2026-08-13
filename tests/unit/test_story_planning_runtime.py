@@ -136,6 +136,16 @@ def test_planning_provider_schema_is_codex_strict(
         assert schema["properties"]["chapter_range"]["maxItems"] == 2
     if contract_type is PlanContractType.CHAPTER:
         assert schema["properties"]["required_arc_contributions"]["maxItems"] == 1
+        assert schema["properties"]["arc_schedule"]["maxItems"] == 1
+        assert (
+            schema["properties"]["arc_schedule"]["items"]["properties"]
+            ["arc_plan_version_id"]["const"]
+            == "arc:v1"
+        )
+        assert "never repeat one Arc" in (
+            schema["properties"]["arc_schedule"]["items"]["properties"]
+            ["role"]["description"]
+        )
         assert schema["properties"]["title"]["maxLength"] == 120
         assert schema["properties"]["premise"]["maxLength"] == 320
         assert "reader-facing" in schema["properties"]["title"]["description"]
