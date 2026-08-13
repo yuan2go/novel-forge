@@ -12,6 +12,10 @@ import json
 from typing import Any, Iterable, Mapping
 
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.narrative_state import (
+    compact_canon_facts,
+    compact_current_state_facts,
+)
 
 
 _MAX_SEGMENTS = 24
@@ -30,6 +34,85 @@ _PLANNING_STAGES = frozenset(
     }
 )
 _REFERENCE_FIELD_SUFFIXES = ("_id", "_ids", "_ref", "_refs")
+_MAX_PLANNING_STRING_CHARACTERS = 2_000
+_MAX_PLANNING_LIST_ITEMS = 12
+_PLANNING_ROLE_FIELDS: dict[str, tuple[str, ...]] = {
+    "book_plan": (
+        "objective",
+        "reader_promise",
+        "central_conflict_engine",
+        "protagonist_transformation",
+        "antagonist_escalation",
+        "world_evolution",
+        "relationship_evolution",
+        "theme_evolution",
+        "ending_contract",
+        "volume_skeleton",
+        "major_turns",
+        "climax_distribution",
+        "long_promise_payoff",
+        "hard_constraints",
+        "required_payoffs",
+        "forbidden_events",
+        "forbidden_payoffs",
+    ),
+    "volume_plan": (
+        "objective",
+        "volume_function",
+        "stage_conflict",
+        "stage_antagonist",
+        "irreversible_change",
+        "midpoint",
+        "climax",
+        "settlement",
+        "next_volume_bridge",
+        "chapter_range",
+        "narrative_segments",
+        "hard_constraints",
+        "required_payoffs",
+        "forbidden_events",
+        "forbidden_payoffs",
+    ),
+    "arc_plans": (
+        "thread_id",
+        "arc_type",
+        "objective",
+        "resistance",
+        "escalation",
+        "turn",
+        "choice",
+        "cost",
+        "result",
+        "consequence",
+        "dependencies",
+        "closure_conditions",
+        "cross_volume_scope",
+        "arc_segments",
+        "arc_relations",
+        "hard_constraints",
+        "forbidden_events",
+        "forbidden_payoffs",
+    ),
+    "chapter_group_plan": (
+        "objective",
+        "local_objective",
+        "trigger",
+        "resistance_escalation",
+        "turn",
+        "local_climax",
+        "information_release",
+        "emotion_curve",
+        "antagonist_actions",
+        "chapter_range",
+        "cost_range",
+        "narrative_segment_ref",
+        "chapter_function_matrix",
+        "hard_constraints",
+        "required_payoffs",
+        "forbidden_events",
+        "forbidden_payoffs",
+    ),
+}
 _OPERATIONAL_KEYS = {
     "actual_context",
     "actual_context_digest",
@@ -358,7 +441,7 @@ def build_provider_context_view(
         else {}
     )
     view = {
-        "contract_version": "provider-context-view-v1",
+        "contract_version": "provider-context-view-v2",
         "stage": stage,
         "narrative_position": {
             key: position[key]
@@ -379,7 +462,7 @@ def build_provider_context_view(
         "task_narrative_projection": _compact(dict(projection)),
         "segments": rendered,
         "selection_explanation": {
-            "policy": "minimum-sufficient-context-v1",
+            "policy": "minimum-sufficient-context-v2",
             "included_segment_count": len(rendered),
             "included_fact_count": sum(
                 len(item["structured_facts"]) for item in rendered
@@ -421,23 +504,36 @@ def _build_planning_context_view(
             "PLANNING_PROVIDER_CONTEXT_PROJECTION_TOO_BROAD",
             "Planning frozen inputs exceed the bounded segment limit",
         )
+    chapter = _planning_chapter(context_bundle)
+    selectors = _planning_selectors(raw_inputs, chapter=chapter)
     projected: list[dict[str, Any]] = []
+    omitted_items = 0
+    truncated_characters = 0
     for raw in raw_inputs:
         if not isinstance(raw, Mapping) or not isinstance(raw.get("content"), Mapping):
             raise KernelError(
                 "PLANNING_PROVIDER_CONTEXT_VIEW_INVALID",
                 "Planning frozen inputs require typed provider-safe content",
             )
+        content, omitted, truncated = _project_planning_content(
+            stage=stage,
+            role=str(raw.get("role") or ""),
+            content=raw["content"],
+            chapter=chapter,
+            selectors=selectors,
+        )
+        omitted_items += omitted
+        truncated_characters += truncated
         projected.append(
             {
                 "role": str(raw.get("role") or ""),
                 "asset_version_id": str(raw.get("asset_version_id") or ""),
                 "asset_type": str(raw.get("asset_type") or ""),
-                "content": _compact(raw["content"]),
+                "content": content,
             }
         )
     view = {
-        "contract_version": "provider-context-view-v1",
+        "contract_version": "provider-context-view-v2",
         "stage": stage,
         "narrative_position": {
             "book_id": str(context_bundle.get("book_id") or ""),
@@ -447,11 +543,13 @@ def _build_planning_context_view(
         "accepted_state_boundary": {"accepted_through_chapter": 0},
         "segments": projected,
         "selection_explanation": {
-            "policy": "minimum-sufficient-planning-context-v1",
+            "policy": "minimum-sufficient-planning-context-v2",
             "included_segment_count": len(projected),
             "included_fact_count": 0,
             "omitted_segment_count": 0,
             "omitted_fact_count": 0,
+            "omitted_item_count": omitted_items,
+            "truncated_character_count": truncated_characters,
             "maximum_segments": _MAX_SEGMENTS,
             "maximum_facts_per_segment": _MAX_FACTS_PER_SEGMENT,
             "maximum_serialized_characters": _MAX_PROVIDER_CONTEXT_CHARACTERS,
@@ -463,6 +561,182 @@ def _build_planning_context_view(
             "projected Planning Provider Context exceeds its deterministic size boundary",
         )
     return view
+
+
+def _planning_chapter(context_bundle: Mapping[str, Any]) -> int:
+    logical_key = str(context_bundle.get("logical_key") or "")
+    parts = logical_key.split(":")
+    if len(parts) >= 2 and parts[0] == "chapter" and parts[1].isdigit():
+        return int(parts[1])
+    return 0
+
+
+def _planning_selectors(
+    raw_inputs: Iterable[Mapping[str, Any]], *, chapter: int
+) -> frozenset[str]:
+    references: set[str] = set()
+
+    def visit(value: Any, *, field: str = "") -> None:
+        if isinstance(value, Mapping):
+            for key, item in value.items():
+                visit(item, field=str(key))
+            return
+        if isinstance(value, (list, tuple)):
+            for item in value:
+                visit(item, field=field)
+            return
+        if value in (None, ""):
+            return
+        text = str(value).strip()
+        if field == "entity_key":
+            references.add(text)
+            for component in text.split("|"):
+                _, separator, identity = component.partition("=")
+                if separator and identity:
+                    references.add(identity)
+        elif field.endswith(_REFERENCE_FIELD_SUFFIXES):
+            references.add(text)
+
+    for raw in raw_inputs:
+        role = str(raw.get("role") or "")
+        if role in {"story_state", "canon_snapshot"}:
+            continue
+        content = raw.get("content")
+        if not isinstance(content, Mapping):
+            continue
+        if role == "chapter_group_plan" and chapter:
+            local = [
+                item
+                for item in content.get("chapter_function_matrix") or ()
+                if isinstance(item, Mapping)
+                and int(item.get("chapter_number") or 0) == chapter
+            ]
+            visit(local)
+        else:
+            visit(content)
+    return frozenset(references)
+
+
+def _project_planning_content(
+    *,
+    stage: str,
+    role: str,
+    content: Mapping[str, Any],
+    chapter: int,
+    selectors: frozenset[str],
+) -> tuple[dict[str, Any], int, int]:
+    if role == "story_state" and content.get("contract_version") == (
+        "story-state-snapshot-v2"
+    ):
+        facts = project_narrative_state_facts(
+            compact_current_state_facts(dict(content)),
+            projection={"state_entity_refs": sorted(selectors)},
+            chapter=chapter,
+        )
+        return (
+            {
+                "contract_version": "planning-state-projection-v1",
+                "accepted_through_chapter": int(
+                    content.get("accepted_through_chapter") or 0
+                ),
+                "facts": facts,
+            },
+            0,
+            0,
+        )
+    if role == "canon_snapshot" and content.get("contract_version") == (
+        "canon-snapshot-v2"
+    ):
+        facts = project_narrative_state_facts(
+            compact_canon_facts(dict(content)),
+            projection={"state_entity_refs": sorted(selectors)},
+            chapter=chapter,
+        )
+        return (
+            {
+                "contract_version": "planning-canon-projection-v1",
+                "accepted_through_chapter": int(
+                    content.get("accepted_through_chapter") or 0
+                ),
+                "facts": facts,
+            },
+            0,
+            0,
+        )
+
+    compacted = _compact(content)
+    allowed_fields = _PLANNING_ROLE_FIELDS.get(role)
+    if allowed_fields is not None:
+        compacted = {
+            field: deepcopy(compacted[field])
+            for field in allowed_fields
+            if field in compacted
+        }
+    if role == "chapter_group_plan" and chapter:
+        matrix = compacted.get("chapter_function_matrix") or []
+        compacted["chapter_function_matrix"] = [
+            item
+            for item in matrix
+            if isinstance(item, Mapping)
+            and int(item.get("chapter_number") or 0) == chapter
+        ]
+    for field in ("narrative_segments", "arc_segments"):
+        values = compacted.get(field)
+        if chapter and isinstance(values, list):
+            local = [
+                item
+                for item in values
+                if isinstance(item, Mapping)
+                and _chapter_in_range(chapter, item.get("chapter_range"))
+            ]
+            if local:
+                compacted[field] = local
+    bounded, omitted, truncated = _bound_planning_value(compacted)
+    if not isinstance(bounded, dict):
+        raise KernelError(
+            "PLANNING_PROVIDER_CONTEXT_VIEW_INVALID",
+            f"Planning role {role} did not project to an object for {stage}",
+        )
+    return bounded, omitted, truncated
+
+
+def _chapter_in_range(chapter: int, value: Any) -> bool:
+    return (
+        isinstance(value, (list, tuple))
+        and len(value) == 2
+        and int(value[0]) <= chapter <= int(value[1])
+    )
+
+
+def _bound_planning_value(value: Any) -> tuple[Any, int, int]:
+    if isinstance(value, Mapping):
+        result: dict[str, Any] = {}
+        omitted = 0
+        truncated = 0
+        for key, item in value.items():
+            child, child_omitted, child_truncated = _bound_planning_value(item)
+            result[str(key)] = child
+            omitted += child_omitted
+            truncated += child_truncated
+        return result, omitted, truncated
+    if isinstance(value, (list, tuple)):
+        materialized = list(value)
+        result: list[Any] = []
+        omitted = max(0, len(materialized) - _MAX_PLANNING_LIST_ITEMS)
+        truncated = 0
+        for item in materialized[:_MAX_PLANNING_LIST_ITEMS]:
+            child, child_omitted, child_truncated = _bound_planning_value(item)
+            result.append(child)
+            omitted += child_omitted
+            truncated += child_truncated
+        return result, omitted, truncated
+    if isinstance(value, str) and len(value) > _MAX_PLANNING_STRING_CHARACTERS:
+        return (
+            value[:_MAX_PLANNING_STRING_CHARACTERS],
+            0,
+            len(value) - _MAX_PLANNING_STRING_CHARACTERS,
+        )
+    return deepcopy(value), 0, 0
 
 
 def build_provider_knowledge_view(

@@ -201,34 +201,116 @@ def test_planning_provider_view_uses_command_and_projected_inputs_only() -> None
         "premise": "Truth requires a visible cost."
     }
     assert view["selection_explanation"]["policy"] == (
-        "minimum-sufficient-planning-context-v1"
+        "minimum-sufficient-planning-context-v2"
     )
 
 
 def test_planning_provider_context_is_deterministically_bounded() -> None:
-    with pytest.raises(Exception) as raised:
-        build_provider_context_view(
+    view = build_provider_context_view(
+        "book_plan.generate",
+        {
+            "schema_version": "novelos.planning_context_bundle.v1",
+            "input_versions": [
+                {
+                    "role": "book_design",
+                    "asset_version_id": "book-design:v1",
+                    "asset_type": "book_design",
+                    "content": {"premise": "x" * 70_000},
+                }
+            ],
+        },
+        build_provider_task_view(
             "book_plan.generate",
-            {
-                "schema_version": "novelos.planning_context_bundle.v1",
-                "input_versions": [
-                    {
-                        "role": "book_design",
-                        "asset_version_id": "book-design:v1",
-                        "asset_type": "book_design",
-                        "content": {"premise": "x" * 70_000},
-                    }
-                ],
-            },
-            build_provider_task_view(
-                "book_plan.generate",
-                {"planning_command": {"logical_key": "book:main"}},
-            ),
-        )
-
-    assert getattr(raised.value, "code", "") == (
-        "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED"
+            {"planning_command": {"logical_key": "book:main"}},
+        ),
     )
+
+    assert len(json.dumps(view, ensure_ascii=False)) < 65_536
+    assert view["selection_explanation"]["truncated_character_count"] == 68_000
+
+
+def test_chapter_planning_projects_local_plan_and_long_state_before_provider() -> None:
+    current_state = {
+        "character_state": [
+            {
+                "entity_key": f"character_id={character_id}",
+                "entity_version": 1,
+                "state": {"character_id": character_id, "location": "Hangzhou"},
+                "source_event_id": f"event:{character_id}",
+                "source_chapter": 30,
+                "effective_from_chapter": 30,
+                "confidence": 1.0,
+                "coverage": "EXPLICIT",
+                "evidence": {},
+            }
+            for character_id in (
+                "hero",
+                *(f"irrelevant-{index}" for index in range(3_000)),
+            )
+        ]
+    }
+    task = build_provider_task_view(
+        "chapter_plan.generate",
+        {"planning_command": {"logical_key": "chapter:31"}},
+    )
+    view = build_provider_context_view(
+        "chapter_plan.generate",
+        {
+            "schema_version": "novelos.planning_context_bundle.v1",
+            "logical_key": "chapter:31",
+            "input_versions": [
+                {
+                    "role": "book_plan",
+                    "asset_version_id": "book:v1",
+                    "asset_type": "planning_generation_candidate",
+                    "content": {
+                        "objective": "Preserve accountable truth.",
+                        "candidate_payload": {"duplicate": "x" * 100_000},
+                    },
+                },
+                {
+                    "role": "chapter_group_plan",
+                    "asset_version_id": "group:v1",
+                    "asset_type": "planning_generation_candidate",
+                    "content": {
+                        "objective": "Force a public choice.",
+                        "chapter_function_matrix": [
+                            {
+                                "chapter_number": number,
+                                "character_id": "hero" if number == 31 else "extra",
+                                "primary_function": "advance",
+                            }
+                            for number in range(28, 36)
+                        ],
+                    },
+                },
+                {
+                    "role": "story_state",
+                    "asset_version_id": "state:v30",
+                    "asset_type": "story_state_snapshot",
+                    "content": {
+                        "contract_version": "story-state-snapshot-v2",
+                        "accepted_through_chapter": 30,
+                        "current_state": current_state,
+                    },
+                },
+            ],
+        },
+        task,
+    )
+
+    serialized = json.dumps(view, ensure_ascii=False)
+    group = next(item for item in view["segments"] if item["role"] == "chapter_group_plan")
+    state = next(item for item in view["segments"] if item["role"] == "story_state")
+    assert [
+        item["chapter_number"]
+        for item in group["content"]["chapter_function_matrix"]
+    ] == [31]
+    assert len(state["content"]["facts"]) == 1
+    assert state["content"]["facts"][0]["state"]["character_id"] == "hero"
+    assert "irrelevant-2999" not in serialized
+    assert "candidate_payload" not in serialized
+    assert len(serialized) < 65_536
 
 
 def test_state_context_without_task_projection_fails_closed() -> None:

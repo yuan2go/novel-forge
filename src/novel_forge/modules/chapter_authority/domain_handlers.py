@@ -195,7 +195,7 @@ def build_context_bundle(
             "knowledge_boundaries": list(plan.get("knowledge_boundaries") or []),
             "expected_exit_state": dict(plan.get("expected_exit_state") or {}),
         },
-        "provider_projection_contract_version": "minimum-sufficient-context-v1",
+        "provider_projection_contract_version": "minimum-sufficient-context-v2",
     }
 
 
