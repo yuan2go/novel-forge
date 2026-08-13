@@ -275,17 +275,35 @@ def _canon_schema() -> dict[str, Any]:
         {
             field: {
                 "type": "array",
-                "items": fact if field == "canon_facts" else change,
+                # Each semantic array owns its schema.  Sharing ``change`` here
+                # lets a field-specific refinement silently mutate every other
+                # Canon change contract.
+                "items": (
+                    fact
+                    if field == "canon_facts"
+                    else json.loads(json.dumps(change))
+                ),
                 **({"minItems": 1} if field == "canon_facts" else {}),
             }
             for field in _CANON_FIELDS
         },
         required=_CANON_FIELDS,
     )
-    schema["properties"]["character_knowledge_changes"]["description"] = (
+    knowledge_changes = schema["properties"]["character_knowledge_changes"]
+    knowledge_changes["description"] = (
         "Atomic Character Knowledge events. Emit one item per character and fact or "
-        "proposition identity; do not bundle multiple acquired_fact_ids into one item."
+        "proposition identity; set status to UNKNOWN, SUSPECTED, KNOWN, or FORGOTTEN; "
+        "leave the generic state field null; do not bundle multiple acquired_fact_ids."
     )
+    knowledge_change = knowledge_changes["items"]
+    knowledge_change["properties"]["status"] = {
+        "type": "string",
+        "enum": ["UNKNOWN", "SUSPECTED", "KNOWN", "FORGOTTEN"],
+    }
+    knowledge_change["properties"]["state"] = {
+        "type": ["string", "null"],
+        "enum": [None],
+    }
     return schema
 
 
@@ -397,7 +415,7 @@ def chapter_provider_output_schema(stage: str) -> dict[str, Any]:
 def chapter_provider_output_schema_ref(stage: str) -> str:
     chapter_provider_output_schema(stage)
     version = (
-        "v5"
+        "v6"
         if stage == "canon_extraction"
         else "v2"
         if stage in _QUALITY_STAGES

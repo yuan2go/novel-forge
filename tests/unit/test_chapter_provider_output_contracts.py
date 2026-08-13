@@ -130,7 +130,7 @@ def test_quality_prompt_and_schema_version_require_dimension_evidence() -> None:
     )
     assert (
         chapter_provider_output_schema_ref("canon_extraction")
-        == "schema:chapter-provider-output:canon_extraction:v5"
+        == "schema:chapter-provider-output:canon_extraction:v6"
     )
 
 
@@ -290,6 +290,8 @@ def test_canon_semantics_atomizes_legacy_character_knowledge_bundle() -> None:
             if key == "acquired_fact_ids"
             else "CHARACTER_KNOWLEDGE_ACQUIRED"
             if key == "impact_type"
+            else "KNOWN"
+            if key == "status"
             else 0
             if key == "evidence_start"
             else 42
@@ -318,6 +320,37 @@ def test_canon_semantics_atomizes_legacy_character_knowledge_bundle() -> None:
         "acquired_fact_ids" not in item
         for item in normalized["character_knowledge_changes"]
     )
+    assert all(
+        item["status"] == "KNOWN" and "state" not in item
+        for item in normalized["character_knowledge_changes"]
+    )
+
+
+def test_canon_schema_rejects_character_knowledge_state_alias() -> None:
+    value = _valid("canon_extraction")
+    change_schema = chapter_provider_output_schema("canon_extraction")["properties"][
+        "character_knowledge_changes"
+    ]["items"]
+    change = {
+        key: (
+            "The witness learns the ledger fact."
+            if key == "summary"
+            else "character:lin"
+            if key == "character_id"
+            else "fact:ledger-owner"
+            if key == "fact_id"
+            else "KNOWN"
+            if key == "state"
+            else None
+        )
+        for key in change_schema["properties"]
+    }
+    value["character_knowledge_changes"] = [change]
+
+    with pytest.raises(KernelError) as error:
+        validate_chapter_provider_output_schema("canon_extraction", value)
+
+    assert error.value.code == "CHAPTER_PROVIDER_OUTPUT_SCHEMA_INVALID"
 
 
 def test_canon_schema_exposes_epistemic_and_presentation_changes() -> None:

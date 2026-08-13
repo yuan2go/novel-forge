@@ -217,7 +217,7 @@ def extract_canon_candidates(
         "digest_identity_only": semantic_count == 0,
         "semantic_coverage": "INSUFFICIENT" if semantic_count == 0 else "EXTRACTED",
         "provider_assertions_optional": True,
-        "canon_extraction_contract_version": "canon-semantic-extraction-v3",
+        "canon_extraction_contract_version": "canon-semantic-extraction-v4",
     }
 
 

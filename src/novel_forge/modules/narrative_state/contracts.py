@@ -53,6 +53,11 @@ class NarrativeStateKind(StrEnum):
     PAYOFF_EVENT = "payoff_event"
 
 
+_CHARACTER_KNOWLEDGE_STATUSES = frozenset(
+    {"UNKNOWN", "SUSPECTED", "KNOWN", "FORGOTTEN"}
+)
+
+
 def atomize_character_knowledge_changes(
     changes: Iterable[dict[str, Any]],
 ) -> list[dict[str, Any]]:
@@ -68,6 +73,25 @@ def atomize_character_knowledge_changes(
     atoms: list[dict[str, Any]] = []
     for raw in changes:
         change = dict(raw)
+        status = str(change.get("status") or "").strip().upper()
+        state_alias = str(change.get("state") or "").strip().upper()
+        if status and state_alias and status != state_alias:
+            raise KernelError(
+                "NARRATIVE_CHARACTER_KNOWLEDGE_STATUS_CONFLICT",
+                "character knowledge state and status aliases disagree",
+            )
+        status = status or state_alias
+        if status not in _CHARACTER_KNOWLEDGE_STATUSES:
+            raise KernelError(
+                "NARRATIVE_CHARACTER_KNOWLEDGE_STATUS_INVALID",
+                "character knowledge requires UNKNOWN, SUSPECTED, KNOWN, or FORGOTTEN",
+            )
+        # ``state`` was emitted by the v5 Provider schema even though the durable
+        # Narrative State vocabulary has always named this field ``status``.  Make
+        # the read-boundary upgrade deterministic, then persist only one canonical
+        # representation for new extraction and Canon assets.
+        change["status"] = status
+        change.pop("state", None)
         character_id = str(change.get("character_id") or "").strip()
         fact_id = str(change.get("fact_id") or "").strip()
         proposition_id = str(change.get("proposition_id") or "").strip()
@@ -1208,12 +1232,10 @@ def _validate_event_payload(
     state_kind: NarrativeStateKind, payload: dict[str, Any]
 ) -> None:
     if state_kind is NarrativeStateKind.CHARACTER_KNOWLEDGE:
-        if str(payload.get("status") or "").upper() not in {
-            "UNKNOWN",
-            "SUSPECTED",
-            "KNOWN",
-            "FORGOTTEN",
-        }:
+        if (
+            str(payload.get("status") or "").upper()
+            not in _CHARACTER_KNOWLEDGE_STATUSES
+        ):
             raise KernelError(
                 "CHARACTER_KNOWLEDGE_STATUS_INVALID",
                 "Character Knowledge requires UNKNOWN, SUSPECTED, KNOWN, or FORGOTTEN",

@@ -130,7 +130,8 @@ def test_canon_read_boundary_upgrades_bundled_character_knowledge() -> None:
                     {
                         "character_id": "character:lin",
                         "acquired_fact_ids": ["fact:first", "fact:second"],
-                        "status": "KNOWN",
+                        # Immutable v5 Canon patches used the generic Provider alias.
+                        "state": "KNOWN",
                     }
                 ]
             }
@@ -141,6 +142,8 @@ def test_canon_read_boundary_upgrades_bundled_character_knowledge() -> None:
         "character_id=character:lin|fact_id=fact:first",
         "character_id=character:lin|fact_id=fact:second",
     ]
+    assert all(event.payload["status"] == "KNOWN" for event in events)
+    assert all("state" not in event.payload for event in events)
 
 
 def test_v1_outcome_is_adapted_only_at_the_read_boundary() -> None:
