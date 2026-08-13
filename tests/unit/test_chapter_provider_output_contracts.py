@@ -594,6 +594,64 @@ def test_canon_semantics_accepts_exact_duplicate_for_authority_deduplication() -
     assert "supersedes_event_id" not in normalized["canon_facts"][0]
 
 
+def test_canon_semantics_allows_distinct_disclosures_from_one_prose_span() -> None:
+    value = _valid("canon_extraction")
+    shared = {
+        "summary": "The record is shown.",
+        "effective_from_chapter": 1,
+        "supersedes_event_id": None,
+        "fact_id": "fact:record",
+        "disclosure_mode": "CONFIRM",
+        "evidence_start": 10,
+        "evidence_end": 40,
+        "confidence": 1.0,
+        "impact_type": "DISCLOSURE",
+    }
+    value["disclosure_events"] = [
+        {
+            **shared,
+            "disclosure_id": "disclosure:record:reader",
+            "audience": "READER",
+        },
+        {
+            **shared,
+            "disclosure_id": "disclosure:record:alice",
+            "audience": "alice",
+        },
+    ]
+
+    normalized = validate_chapter_provider_output_semantics(
+        "canon_extraction", value
+    )
+
+    assert len(normalized["disclosure_events"]) == 2
+
+
+def test_canon_semantics_rejects_conflicting_disclosure_identity() -> None:
+    value = _valid("canon_extraction")
+    shared = {
+        "summary": "The record is shown.",
+        "effective_from_chapter": 1,
+        "supersedes_event_id": None,
+        "fact_id": "fact:record",
+        "disclosure_id": "disclosure:record:reader",
+        "audience": "READER",
+        "evidence_start": 10,
+        "evidence_end": 40,
+        "confidence": 1.0,
+        "impact_type": "DISCLOSURE",
+    }
+    value["disclosure_events"] = [
+        {**shared, "disclosure_mode": "HINT"},
+        {**shared, "disclosure_mode": "CONFIRM"},
+    ]
+
+    with pytest.raises(KernelError) as raised:
+        validate_chapter_provider_output_semantics("canon_extraction", value)
+
+    assert raised.value.code == "CHAPTER_PROVIDER_OUTPUT_SEMANTIC_INVALID"
+
+
 def test_revision_schema_tells_provider_text_is_reader_facing_prose_only() -> None:
     text_schema = chapter_provider_output_schema("revision")["properties"]["text"]
 

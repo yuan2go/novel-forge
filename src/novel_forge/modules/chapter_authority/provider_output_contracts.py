@@ -35,6 +35,48 @@ _CANON_FIELDS = (
     "arc_state_changes",
     "disclosure_events",
 )
+_CANON_SEMANTIC_IDENTITIES: dict[str, tuple[tuple[str, ...], ...]] = {
+    "character_state_changes": (("entity_id",), ("character_id",)),
+    "relationship_changes": (
+        ("entity_id",),
+        ("source_id", "target_id"),
+    ),
+    "timeline_events": (("entity_id",),),
+    "foreshadow_changes": (("entity_id",), ("promise_id",), ("thread_id",)),
+    "promise_changes": (("entity_id",), ("promise_id",)),
+    "reward_changes": (("entity_id",),),
+    "world_rule_usages": (("entity_id",), ("rule_id",)),
+    "power_state_changes": (("entity_id",), ("character_id",)),
+    "plot_thread_changes": (("entity_id",), ("thread_id",)),
+    "resource_state_changes": (("entity_id", "resource_id"),),
+    "narrative_pattern_fingerprints": (("entity_id",),),
+    "theme_movements": (("entity_id",), ("thread_id",)),
+    "antagonist_pressure_changes": (
+        ("entity_id",),
+        ("source_id", "target_id"),
+        ("character_id",),
+    ),
+    "character_knowledge_changes": (
+        ("entity_id",),
+        ("character_id", "fact_id"),
+        ("character_id", "proposition_id"),
+    ),
+    "character_belief_changes": (
+        ("entity_id",),
+        ("character_id", "proposition_id"),
+        ("character_id", "fact_id"),
+    ),
+    "character_arc_changes": (
+        ("entity_id",),
+        ("character_id", "arc_id"),
+    ),
+    "arc_state_changes": (("entity_id",), ("arc_id",)),
+    "disclosure_events": (
+        ("disclosure_id",),
+        ("audience", "fact_id"),
+        ("audience", "proposition_id"),
+    ),
+}
 _READER_STATE_FIELDS = (
     "continue_intent",
     "curiosity",
@@ -419,22 +461,15 @@ def validate_chapter_provider_output_semantics(
         fingerprints: dict[tuple[object, ...], str] = {}
         for field in _CANON_FIELDS:
             for item in normalized.get(field, []):
-                impact = str(item.get("impact_type") or field)
                 if field == "canon_facts":
                     slot: tuple[object, ...] = (
                         field,
                         str(item.get("subject") or ""),
-                        impact,
+                        str(item.get("impact_type") or field),
                         str(item.get("predicate") or ""),
                     )
                 else:
-                    slot = (
-                        field,
-                        "",
-                        impact,
-                        float(item.get("evidence_start") or 0),
-                        float(item.get("evidence_end") or 0),
-                    )
+                    slot = _canon_change_semantic_slot(field, item)
                 fingerprint = json.dumps(
                     item, ensure_ascii=False, sort_keys=True, separators=(",", ":")
                 )
@@ -491,6 +526,28 @@ def validate_chapter_provider_output_semantics(
             "Revision output requires unique resolved issue codes",
         )
     return normalized
+
+
+def _canon_change_semantic_slot(
+    field: str, item: Mapping[str, Any]
+) -> tuple[object, ...]:
+    """Return a domain identity, never an evidence-location heuristic.
+
+    One passage may legitimately produce multiple audience-specific Disclosure
+    events or multiple typed state changes.  Where the Provider omitted every
+    stable identity, deterministic validation cannot prove a collision, so the
+    full normalized value is used as a conservative exact-dedup key.
+    """
+
+    for fields in _CANON_SEMANTIC_IDENTITIES.get(field, ()):
+        values = tuple(str(item.get(key) or "") for key in fields)
+        if all(values):
+            return (field, *fields, *values)
+    return (
+        field,
+        "unresolved_identity",
+        json.dumps(item, ensure_ascii=False, sort_keys=True, separators=(",", ":")),
+    )
 
 
 def _validate(

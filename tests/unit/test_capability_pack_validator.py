@@ -55,7 +55,7 @@ class CapabilityPackValidatorTests(unittest.TestCase):
 
         self.assertTrue(report.ok, report.errors)
         self.assertEqual(report.pack_id, "chapter_generation_pack")
-        self.assertEqual(report.version, "1.6.0")
+        self.assertEqual(report.version, "1.7.0")
         self.assertEqual(len(manifest.workflow_template.nodes), 18)
         self.assertTrue(report.manifest_hash.startswith("sha256:"))
 
