@@ -515,6 +515,41 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                 dict(cursor.fetchall()), {"cost_ledger": 1, "model_call_log": 1}
             )
 
+    def test_effect_timeout_uses_frozen_operation_policy_not_worker_lease(self) -> None:
+        request = self._request()
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                UPDATE authority_operation
+                SET definition_snapshot = jsonb_build_object(
+                    'timeout_policy',
+                    jsonb_build_object('operation_timeout_seconds', 600)
+                )
+                WHERE operation_id=%s AND project_id=%s
+                """,
+                [request.operation_id, request.project_id],
+            )
+        port = ExternalEffectChapterModelPort(
+            DATABASE_URL,
+            adapter=_ModelAdapter(),
+            worker_id="model-timeout-policy-worker",
+            lease_seconds=7,
+            max_cost_per_call="0.01",
+        )
+
+        port.invoke(request, stage="draft", payload={"prompt": "write"})
+
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT request_timeout_seconds
+                FROM authority_external_effect
+                WHERE operation_id=%s
+                """,
+                [request.operation_id],
+            )
+            self.assertEqual(cursor.fetchone()[0], 600)
+
     def test_retryable_model_failure_records_usage_cost_and_no_candidate(self) -> None:
         request = self._request()
         port = ExternalEffectChapterModelPort(
