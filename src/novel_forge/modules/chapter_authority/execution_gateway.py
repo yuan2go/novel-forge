@@ -102,6 +102,16 @@ _STAGES = frozenset(
     }
 )
 
+_PLANNING_STAGES = frozenset(
+    {
+        "book_plan.generate",
+        "volume_plan.generate",
+        "arc_plan.generate",
+        "chapter_group_plan.generate",
+        "chapter_plan.generate",
+    }
+)
+
 _STAGE_CAPABILITIES = {
     "draft": CapabilityId.PROSE_CHAPTER_DRAFT,
     "review": CapabilityId.REVIEW_CHAPTER_EVALUATE,
@@ -2004,6 +2014,38 @@ def _language_semantic_contract(required_language: str | None) -> str:
 def _stage_semantic_contract(
     stage: str, *, required_language: str | None = None
 ) -> str:
+    if stage in _PLANNING_STAGES:
+        contract = (
+            "Return only the planning candidate defined by the frozen output schema. "
+            "Every field ending in _version_id, _version_ids, _ref, or _refs is an "
+            "immutable Authority reference: copy the exact supplied identifier "
+            "verbatim and never replace it with a logical label, ordinal, title, or "
+            "newly invented identifier. Keep Timeline containers and cross-cutting "
+            "Narrative Arcs orthogonal. "
+        )
+        if stage == "arc_plan.generate":
+            contract += (
+                "Set cross_volume_scope to exactly the ordered VolumePlan Authority "
+                "version identifiers supplied by planning_command.input_versions."
+                "volume_plan followed by planning_command."
+                "arc_scope_volume_plan_version_ids. Each arc_segments[]."
+                "volume_plan_version_id must copy one identifier from that exact "
+                "scope, and each narrative_segment_id must copy a Narrative Segment "
+                "identifier from the corresponding supplied VolumePlan. Never use a "
+                "logical label such as volume:1 in cross_volume_scope or a "
+                "volume_plan_version_id. Thread -> Arc -> Arc Segment is the "
+                "cross-volume graph; Volume -> Narrative Segment remains the "
+                "Timeline plan."
+            )
+        elif stage == "chapter_plan.generate":
+            contract += (
+                "Produce an executable Chapter plan: bind its exact Timeline and Arc "
+                "references, declare Primary/Secondary/Touch/Hold Arc work, knowledge "
+                "boundaries, disclosures, causal character and state transitions, "
+                "scene or scene-group execution units, reader experience, and the "
+                "expected exit state."
+            )
+        return _bind_language_contract(contract, required_language)
     if stage == "revision":
         revision_language = (
             "Revise the reader-facing prose into the governed language even when the "

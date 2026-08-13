@@ -89,6 +89,27 @@ def test_rereview_prompt_reports_only_acceptance_blocking_defects() -> None:
     assert "issues=[]" in contract
 
 
+def test_arc_planning_prompt_requires_exact_authority_scope_references() -> None:
+    contract = _stage_semantic_contract("arc_plan.generate")
+
+    assert "immutable Authority reference" in contract
+    assert "cross_volume_scope to exactly the ordered VolumePlan Authority" in contract
+    assert "planning_command.input_versions.volume_plan" in contract
+    assert "arc_scope_volume_plan_version_ids" in contract
+    assert "Never use a logical label such as volume:1" in contract
+    assert "Thread -> Arc -> Arc Segment" in contract
+
+
+def test_chapter_planning_prompt_requires_executable_narrative_plan() -> None:
+    contract = _stage_semantic_contract("chapter_plan.generate")
+
+    assert "executable Chapter plan" in contract
+    assert "Primary/Secondary/Touch/Hold" in contract
+    assert "knowledge boundaries" in contract
+    assert "scene or scene-group execution units" in contract
+    assert "expected exit state" in contract
+
+
 def test_quality_prompt_and_schema_version_require_dimension_evidence() -> None:
     contract = _stage_semantic_contract("quality_platform")
 
