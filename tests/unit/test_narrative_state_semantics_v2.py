@@ -237,6 +237,34 @@ def test_legacy_obligation_kinds_keep_source_identity_when_linked() -> None:
     }
 
 
+def test_initial_legacy_active_plot_thread_opens_unified_obligation() -> None:
+    _, outcome = _outcome(
+        1,
+        {
+            "plot_thread": [
+                {
+                    "thread_id": "thread:impossible-death-record",
+                    "promise_id": "promise:post-death-marker-explanation",
+                    "status": "ACTIVE",
+                    "state": "OPEN",
+                    "transition_kind": "THREAD_OPENED",
+                    "impact_type": "NEW",
+                }
+            ]
+        },
+    )
+
+    state = rebuild_story_state([("outcome-v1", outcome)])
+    obligation = project_entity_state(
+        state,
+        "narrative_obligation",
+        "obligation_id=thread:impossible-death-record",
+    )
+
+    assert obligation["state"]["status"] == "OPEN"
+    assert obligation["state"]["lifecycle_migration"]["source_status"] == "ACTIVE"
+
+
 def test_current_state_is_entity_aware_and_not_a_history_of_character_changes() -> None:
     state = _at(100)
     lin = project_entity_state(state, "character_state", "character_id=character:lin")

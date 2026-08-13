@@ -1056,7 +1056,11 @@ def _normalize_obligation(
     status_map = {
         "PLANTED": "OPEN",
         "PROMISED": "OPEN",
-        "ACTIVE": "DEVELOPING",
+        # Legacy plot-thread ACTIVE means that the thread remains open.  It is
+        # not evidence that the unified obligation has already advanced from
+        # OPEN to DEVELOPING; mapping it to DEVELOPING makes a Chapter 1
+        # obligation violate the fail-closed initial-transition invariant.
+        "ACTIVE": "OPEN",
         "DEVELOPED": "DEVELOPING",
         "PAID": "FULFILLED",
         "RESOLVED": "FULFILLED",
