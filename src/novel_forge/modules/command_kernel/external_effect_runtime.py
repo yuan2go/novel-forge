@@ -170,6 +170,54 @@ def read_succeeded_external_effect(
         }
 
 
+def read_external_effect_intent(
+    database_url: str,
+    context: EffectCommandContext,
+    *,
+    effect_type: str,
+    stable_idempotency_key: str,
+) -> dict[str, Any] | None:
+    """Read an immutable Effect intent owned by the executing Operation.
+
+    Retry preparation uses this to reuse the first Attempt's frozen Provider
+    materialization without weakening the Effect request-hash conflict check.
+    """
+
+    if not effect_type or not stable_idempotency_key:
+        raise KernelError(
+            "COMMAND_SCHEMA_INVALID", "external effect lookup identity is incomplete"
+        )
+    with AuthorityUnitOfWork(database_url) as uow:
+        repository = uow.repositories.external_effects
+        _require_context(repository, context)
+        uow.cursor.execute(
+            """
+            SELECT external_effect_id
+            FROM authority_external_effect
+            WHERE operation_id=%s AND project_id=%s AND effect_type=%s
+              AND stable_idempotency_key=%s
+            FOR UPDATE
+            """,
+            [
+                context.operation_id,
+                context.project_id,
+                effect_type,
+                stable_idempotency_key,
+            ],
+        )
+        row = uow.cursor.fetchone()
+        if row is None:
+            return None
+        effect = repository.get_for_update(str(row[0]))
+        _require_project(effect, context.project_id)
+        if effect["operation_id"] != context.operation_id:
+            raise KernelError(
+                "EFFECT_OPERATION_CONFLICT",
+                "ExternalEffect belongs to another Operation",
+            )
+        return effect
+
+
 def plan_external_effect(
     database_url: str,
     context: EffectCommandContext,

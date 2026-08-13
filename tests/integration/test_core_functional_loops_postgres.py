@@ -1194,16 +1194,25 @@ def test_planning_provider_timeout_retries_same_effect_then_succeeds(
             """
             SELECT effect.status, COUNT(DISTINCT effect.external_effect_id),
                    COUNT(DISTINCT dispatch.dispatch_id),
-                   array_agg(dispatch.generation ORDER BY dispatch.generation)
+                   array_agg(dispatch.generation ORDER BY dispatch.generation),
+                   effect.request_payload, effect.request_timeout_seconds
             FROM authority_external_effect AS effect
             JOIN authority_external_effect_dispatch AS dispatch
               ON dispatch.external_effect_id=effect.external_effect_id
             WHERE effect.operation_id=%s
-            GROUP BY effect.status
+            GROUP BY effect.status, effect.request_payload,
+                     effect.request_timeout_seconds
             """,
             [result.generation_operation_id],
         )
-        effect_status, effect_count, dispatch_count, generations = uow.cursor.fetchone()
+        (
+            effect_status,
+            effect_count,
+            dispatch_count,
+            generations,
+            effect_request,
+            request_timeout_seconds,
+        ) = uow.cursor.fetchone()
         uow.cursor.execute(
             """
             SELECT COUNT(*) FROM authority_operation_output_asset
@@ -1212,6 +1221,16 @@ def test_planning_provider_timeout_retries_same_effect_then_succeeds(
             [result.generation_operation_id],
         )
         candidate_count = int(uow.cursor.fetchone()[0])
+        uow.cursor.execute(
+            """
+            SELECT COUNT(*)
+            FROM authority_asset
+            WHERE project_id=%s
+              AND asset_type='capability_materialization_manifest'
+            """,
+            [harness.project_id],
+        )
+        materialization_count = int(uow.cursor.fetchone()[0])
     assert reconciliations == 2
     assert (effect_status, effect_count, dispatch_count, generations) == (
         "SUCCEEDED",
@@ -1219,6 +1238,15 @@ def test_planning_provider_timeout_retries_same_effect_then_succeeds(
         2,
         [1, 2],
     )
+    capability_runtime = effect_request["_production_execution"][
+        "capability_runtime"
+    ]
+    assert capability_runtime["snapshot_hash"]
+    assert capability_runtime["materialization_asset_version_id"]
+    assert capability_runtime["materialization_content_hash"]
+    assert capability_runtime["materialization_hash"]
+    assert request_timeout_seconds == STORY_PLANNING_OPERATION_TIMEOUT_SECONDS
+    assert materialization_count == 1
     assert candidate_count == 1
 
 

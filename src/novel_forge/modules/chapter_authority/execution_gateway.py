@@ -1484,18 +1484,23 @@ def default_chapter_fixture_response(
     raise ValueError(f"unsupported fixture stage: {stage}")
 
 
-def _provider_process_timeout_seconds(external_effect_timeout_seconds: int) -> int:
-    """Keep a frozen margin for receipt persistence before the Effect deadline."""
+def _provider_process_timeout_seconds(
+    external_effect_timeout_seconds: int, *, max_attempts: int = 1
+) -> int:
+    """Bound each call inside the immutable total Effect deadline."""
 
-    if external_effect_timeout_seconds <= 1:
+    if max_attempts <= 0:
+        raise ValueError("ExternalEffect max_attempts must be positive")
+    attempt_window = external_effect_timeout_seconds // max_attempts
+    if attempt_window <= 1:
         raise ValueError(
             "ExternalEffect timeout must leave time to persist Provider evidence"
         )
     settlement_headroom = max(
         1,
-        min(30, external_effect_timeout_seconds // 10),
+        min(30, attempt_window // 10),
     )
-    return external_effect_timeout_seconds - settlement_headroom
+    return attempt_window - settlement_headroom
 
 
 class PostgresProductionExecutionPayloadResolver:
@@ -1529,7 +1534,8 @@ class PostgresProductionExecutionPayloadResolver:
             with connection.cursor() as cursor:
                 cursor.execute(
                     """
-                    SELECT request_payload, request_timeout_seconds, request_hash
+                    SELECT request_payload, request_timeout_seconds, request_hash,
+                           max_attempts
                     FROM authority_external_effect
                     WHERE external_effect_id = %s AND operation_id = %s AND project_id = %s
                     """,
@@ -1656,7 +1662,8 @@ class PostgresProductionExecutionPayloadResolver:
             input_text=input_text,
             working_directory=self.working_directory,
             timeout_seconds=_provider_process_timeout_seconds(
-                external_effect_timeout_seconds
+                external_effect_timeout_seconds,
+                max_attempts=int(row[3] or 1),
             ),
             output_schema_version=(
                 str(output_schema.get("ref") or "")

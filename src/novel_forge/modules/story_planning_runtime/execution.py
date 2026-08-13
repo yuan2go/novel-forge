@@ -32,6 +32,7 @@ from novel_forge.modules.command_kernel.external_effect_runtime import (
     EffectCommandContext,
     dispatch_external_effect,
     plan_external_effect,
+    read_external_effect_intent,
     read_succeeded_external_effect,
 )
 from novel_forge.modules.hierarchical_planning.domain import (
@@ -72,6 +73,7 @@ from .binder import PreparedPlanningExecution
 from .domain import (
     FrozenPlanningInput,
     STORY_PLANNING_MAX_ATTEMPTS,
+    STORY_PLANNING_OPERATION_TIMEOUT_SECONDS,
     StoryPlanningGenerationCommand,
     canonical_hash,
 )
@@ -1052,15 +1054,6 @@ class PostgresPlanningExecutionPreparer:
             "production_execution/capability_materializations/"
             + _token(f"{command.project_id}:{operation_id}:{attempt_id}:planning")
         )
-        self._ensure_contract(
-            operation_id=operation_id,
-            project_id=command.project_id,
-            logical_ref=materialization_ref,
-            asset_type="capability_materialization_manifest",
-            contract=materialization,
-            trace_id=command.trace_id,
-            correlation_id=command.correlation_id,
-        )
         effect_context = EffectCommandContext(
             operation_id=operation_id,
             project_id=command.project_id,
@@ -1070,7 +1063,7 @@ class PostgresPlanningExecutionPreparer:
         )
         stable_key = f"{operation_id}:{definition.capability}:planning-pep-v2"
         planning_route = self.planning_route
-        request_payload = {
+        stable_request_payload = {
             "stage": command.generator_operation_name,
             "input": {
                 "planning_command": {
@@ -1098,6 +1091,89 @@ class PostgresPlanningExecutionPreparer:
             "correlation_id": command.correlation_id,
             "operation_id": operation_id,
         }
+        existing_intent = read_external_effect_intent(
+            self.database_url,
+            effect_context,
+            effect_type="model.invoke",
+            stable_idempotency_key=stable_key,
+        )
+        if existing_intent is None:
+            materialization_document = self._ensure_contract(
+                operation_id=operation_id,
+                project_id=command.project_id,
+                logical_ref=materialization_ref,
+                asset_type="capability_materialization_manifest",
+                contract=materialization,
+                trace_id=command.trace_id,
+                correlation_id=command.correlation_id,
+            )
+            request_payload = {
+                **stable_request_payload,
+                "_production_execution": {
+                    "capability_runtime": {
+                        "snapshot_id": attempt_snapshot.snapshot_id,
+                        "snapshot_hash": attempt_snapshot.snapshot_hash,
+                        "materialization_asset_version_id": (
+                            materialization_document.asset_version_id
+                        ),
+                        "materialization_content_hash": (
+                            materialization_document.content_hash
+                        ),
+                        "materialization_hash": materialization[
+                            "materialization_hash"
+                        ],
+                    }
+                },
+            }
+        else:
+            request_payload = dict(existing_intent["request_payload"])
+            frozen_request = {
+                key: value
+                for key, value in request_payload.items()
+                if key != "_production_execution"
+            }
+            metadata = request_payload.get("_production_execution")
+            capability_runtime = (
+                metadata.get("capability_runtime")
+                if isinstance(metadata, Mapping)
+                else None
+            )
+            if (
+                frozen_request != stable_request_payload
+                or existing_intent["provider"] != self.execution_transport.provider
+                or existing_intent["capability"] != definition.capability
+                or int(existing_intent["max_attempts"])
+                != PLANNING_EXTERNAL_EFFECT_MAX_ATTEMPTS
+                or not isinstance(capability_runtime, Mapping)
+                or str(capability_runtime.get("snapshot_hash") or "")
+                != attempt_snapshot.snapshot_hash
+            ):
+                raise KernelError(
+                    "PLANNING_EFFECT_INTENT_DRIFT",
+                    "Planning retry differs from the first frozen Provider intent",
+                )
+            materialization_document = self.query.require(
+                project_id=command.project_id,
+                asset_version_id=str(
+                    capability_runtime.get("materialization_asset_version_id") or ""
+                ),
+            )
+            materialization = materialization_document.content.get(
+                "contract", materialization_document.content
+            )
+            if (
+                materialization_document.asset_type
+                != "capability_materialization_manifest"
+                or materialization_document.content_hash
+                != str(capability_runtime.get("materialization_content_hash") or "")
+                or not isinstance(materialization, Mapping)
+                or str(materialization.get("materialization_hash") or "")
+                != str(capability_runtime.get("materialization_hash") or "")
+            ):
+                raise KernelError(
+                    "CAPABILITY_PACK_SNAPSHOT_INCONSISTENT",
+                    "Planning retry materialization differs from the frozen Effect",
+                )
         effect = plan_external_effect(
             self.database_url,
             effect_context,
@@ -1110,7 +1186,7 @@ class PostgresPlanningExecutionPreparer:
             reversible=False,
             completion_policy="synchronous_final",
             model_id=planning_route.model_profile.model_id,
-            request_timeout_seconds=self.lease_seconds * 5,
+            request_timeout_seconds=STORY_PLANNING_OPERATION_TIMEOUT_SECONDS,
             reconciliation_mode=self.execution_transport.reconciliation_mode,
             provider_capability_profile=(
                 self.execution_transport.capability_profile.to_dict()
