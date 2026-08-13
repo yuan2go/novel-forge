@@ -517,8 +517,16 @@ def _fit_quality_context(
         ) + 1
         if not facts:
             _drop_redundant_empty_row_fields(candidate)
+    # One accepted snapshot may be expanded into many entity-scoped rows. The
+    # coverage report records the selected AssetVersion identity, not a second
+    # copy of the row-to-version relationship, so keep it set-valued. Entity
+    # coverage remains explicit in ``included_entities`` below.
     selected_versions = sorted(
-        str(row.get("asset_version_id") or "") for row in rows if row.get("asset_version_id")
+        {
+            str(row.get("asset_version_id") or "")
+            for row in rows
+            if row.get("asset_version_id")
+        }
     )
     included_entities = sorted(
         identity
