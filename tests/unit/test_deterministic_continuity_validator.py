@@ -259,6 +259,61 @@ class DeterministicContinuityValidatorTests(unittest.TestCase):
 
         self.assertEqual(report["gate"], "PASSED")
 
+    def test_planned_execution_uses_frozen_precondition_when_extraction_omits_it(
+        self,
+    ) -> None:
+        planned = {
+            "required_state_transitions": [
+                {
+                    "state_kind": "world_rule",
+                    "entity_key": "rule:revision-traces",
+                    "from_state": "UNGROUNDED",
+                    "to_state": "GROUNDED",
+                }
+            ]
+        }
+
+        report = validate_deterministic_continuity(
+            chapter=1,
+            historical_state={
+                "world_rule": [
+                    {"rule_id": "rule:revision-traces", "state": "UNGROUNDED"}
+                ]
+            },
+            extraction={
+                "world_rule_usages": [
+                    {
+                        "rule_id": "rule:revision-traces",
+                        "state": "GROUNDED",
+                    }
+                ]
+            },
+            planned_execution=planned,
+        )
+
+        self.assertEqual(report["gate"], "PASSED")
+
+        mismatched = validate_deterministic_continuity(
+            chapter=1,
+            historical_state={
+                "world_rule": [
+                    {"rule_id": "rule:revision-traces", "state": "UNGROUNDED"}
+                ]
+            },
+            extraction={
+                "world_rule_usages": [
+                    {
+                        "rule_id": "rule:revision-traces",
+                        "from_state": "CONTRADICTED",
+                        "state": "GROUNDED",
+                    }
+                ]
+            },
+            planned_execution=planned,
+        )
+
+        self.assertEqual(mismatched["gate"], "BLOCKED")
+
     def test_explicit_transition_and_balance_invariants_block(self) -> None:
         report = validate_deterministic_continuity(
             chapter=40,

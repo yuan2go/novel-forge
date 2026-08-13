@@ -1054,10 +1054,16 @@ def _validate_planned_execution(
             actual_from = _transition_value(item, prefix="from")
             if not accepted_candidates:
                 return not actual_from
-            return actual_from == expected_from and any(
+            baseline_matches = any(
                 _current_state_value(accepted) == expected_from
                 for accepted in accepted_candidates
             )
+            # The frozen execution plan owns the compare-and-set precondition.
+            # Provider extraction may repeat that precondition, but does not need
+            # to duplicate it when the exact accepted baseline is already bound.
+            # A repeated value must still agree, so extraction cannot override
+            # either the plan or accepted Story State.
+            return baseline_matches and actual_from in {"", expected_from}
 
         if not any(matches(item) for item in candidates):
             conflicts.append(

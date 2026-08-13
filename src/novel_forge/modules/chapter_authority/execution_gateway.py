@@ -2158,6 +2158,19 @@ def _stage_semantic_contract(
             "governed context directly supports the claim; otherwise use "
             "INSUFFICIENT_EVIDENCE, REQUIRES_HUMAN_REVIEW, or FAILED as appropriate."
         )
+        if stage == "quality_source_originality":
+            contract += (
+                " Judge originality as differentiated execution within the supplied "
+                "project-owned task and the governed source boundary. Universal "
+                "comparison against every published work is not required and its "
+                "absence alone is not a reason for REQUIRES_HUMAN_REVIEW. When source "
+                "isolation is clear, no reference expression or suspicious overlap is "
+                "present, and the prose contains concrete project-specific causal "
+                "choices, originality may PASS with provider-uncalibrated evidence. "
+                "Use REQUIRES_HUMAN_REVIEW only for an identified similarity, lineage, "
+                "or attribution ambiguity that cannot be resolved from the governed "
+                "inputs; name that specific risk in the evidence."
+            )
         if stage == "quality_longform":
             contract += (
                 " For world_rule_conflict and power_state_conflict, distinguish a "
