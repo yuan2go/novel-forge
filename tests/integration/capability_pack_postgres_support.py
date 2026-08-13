@@ -129,6 +129,10 @@ class CapabilityPackPostgresHarness:
         self.approver = self.principal("approver", *PACK_PERMISSIONS)
         self.agent_admin = self.principal("agent-admin", "agent.authority.admin")
         self._base_manifest = json.loads(PACK_PATH.read_text(encoding="utf-8"))
+        workflow = self._base_manifest["workflow_template"]
+        self.workflow_definition_ref = (
+            f"{workflow['workflow_id']}@{workflow['workflow_version']}"
+        )
         self._base_catalog = {
             "schema_version": "novelos.capability_pack.artifact_catalog.v1",
             "artifacts": [
@@ -183,7 +187,7 @@ class CapabilityPackPostgresHarness:
             "allowed_book_ids": list(
                 book_ids if book_ids is not None else self.book_ids
             ),
-            "allowed_workflow_definition_refs": ["chapter_authority_slice@2.3.1"],
+            "allowed_workflow_definition_refs": [self.workflow_definition_ref],
             "allow_canary": allow_canary,
             "allow_percentage_rollout": allow_percentage_rollout,
             "allow_full_rollout": allow_full_rollout,
@@ -374,7 +378,7 @@ class CapabilityPackPostgresHarness:
             project_id=self.project_id,
             workspace_id=self.workspace_id,
             book_id=book_id if book_id is not None else self.book_ids[0],
-            workflow_definition_ref="chapter_authority_slice@2.3.1",
+            workflow_definition_ref=self.workflow_definition_ref,
             workflow_node_id=workflow_node_id,
             environment="development",
             runtime_profile="development",
