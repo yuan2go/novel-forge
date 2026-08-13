@@ -404,6 +404,50 @@ class CommandKernelAttemptRuntimePostgresTests(unittest.TestCase):
             )
             self.assertEqual(cursor.fetchone(), ("DEAD_LETTER", 1))
 
+    def test_forward_recovery_ready_exhaustion_dead_letters_without_new_attempt(
+        self,
+    ) -> None:
+        project_id, operation_id = self._operation("READY")
+        with transaction() as connection, connection.cursor() as cursor:
+            insert_attempt(
+                cursor,
+                attempt_id=identifier("attempt-forward-recovery-1"),
+                operation_id=operation_id,
+                attempt_number=1,
+                status="FAILED_RETRYABLE",
+            )
+            insert_attempt(
+                cursor,
+                attempt_id=identifier("attempt-forward-recovery-2"),
+                operation_id=operation_id,
+                attempt_number=2,
+                status="FAILED_RETRYABLE",
+            )
+
+        result = create_attempt(
+            DATABASE_URL,
+            operation_id=operation_id,
+            project_id=project_id,
+            max_attempts=2,
+            trace_id=identifier("trace"),
+            correlation_id=identifier("correlation"),
+        )
+
+        self.assertTrue(result["dead_letter"])
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT operation.status, COUNT(attempt.attempt_id)
+                FROM authority_operation AS operation
+                LEFT JOIN authority_attempt AS attempt
+                  ON attempt.operation_id=operation.operation_id
+                WHERE operation.operation_id=%s
+                GROUP BY operation.status
+                """,
+                [operation_id],
+            )
+            self.assertEqual(cursor.fetchone(), ("DEAD_LETTER", 2))
+
     def test_retry_creates_a_new_attempt_and_moves_operation_back_to_ready(self) -> None:
         project_id, operation_id = self._operation("READY")
         first_attempt = self._create_and_queue(project_id, operation_id)

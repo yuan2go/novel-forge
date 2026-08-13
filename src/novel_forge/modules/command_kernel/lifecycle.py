@@ -70,6 +70,10 @@ OPERATION_TRANSITIONS: dict[OperationStatus, frozenset[OperationStatus]] = {
             OperationStatus.WAITING_CHILDREN,
             OperationStatus.WAITING_APPROVAL,
             OperationStatus.CANCELLATION_REQUESTED,
+            # A Saga forward-recovery pass may promote FAILED_RETRYABLE back
+            # to READY before the scheduler observes that the frozen Attempt
+            # budget is already exhausted.
+            OperationStatus.DEAD_LETTER,
         }
     ),
     OperationStatus.EXECUTING: frozenset(

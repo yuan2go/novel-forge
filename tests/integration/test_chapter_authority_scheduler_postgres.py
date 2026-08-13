@@ -893,6 +893,92 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
             )
             self.assertEqual(cursor.fetchone(), terminal_state)
 
+    def test_canon_extraction_forward_recovery_exhaustion_dead_letters(self) -> None:
+        class CanonExtractionRetryExhaustedFixture(
+            DeterministicFixtureChapterProvider
+        ):
+            supports_semantic_extraction = True
+
+            def __init__(self) -> None:
+                self.canon_extraction_calls = 0
+
+            def invoke(self, request, *, stage, payload):  # type: ignore[no-untyped-def]
+                if stage == "canon_extraction":
+                    self.canon_extraction_calls += 1
+                    raise KernelError(
+                        "MODEL_EFFECT_RETRYABLE_CANON_EXTRACTION",
+                        "fixture Canon extraction remains retryable",
+                    )
+                return super().invoke(request, stage=stage, payload=payload)
+
+        project_id = identifier("canon-extraction-dead-letter-project")
+        provider = CanonExtractionRetryExhaustedFixture()
+        registry = build_chapter_handler_registry(provider)
+        admission = admit_single_chapter_saga(
+            DATABASE_URL,
+            request=SingleChapterRequest(
+                project_id=project_id,
+                workspace_id=f"workspace:{project_id}",
+                actor_id="trusted-operator",
+                chapter=1,
+                title="An Exhausted Canon Extraction",
+                premise="Retry exhaustion remains visible in Chapter Authority.",
+                trace_id=identifier("canon-dead-letter-trace"),
+                correlation_id=identifier("canon-dead-letter-correlation"),
+                application_build_id="canon-dead-letter-test",
+                commit_sha="f" * 40,
+                idempotency_key=f"{project_id}:chapter:1",
+                preparation_report={"decision": "READY", "fixture": True},
+                context_candidates=tuple(self._release_evidence(project_id)),
+            ),
+            registry=registry,
+            permissions=frozenset({"chapter.authority.execute"}),
+        )
+        scheduler = ChapterAuthorityScheduler(
+            DATABASE_URL,
+            registry=registry,
+            object_store_adapter=FakeDeterministicProvider("success"),
+            worker_id="canon-dead-letter-worker",
+            permissions=frozenset({"chapter.authority.execute"}),
+        )
+        operation_state = None
+        for _ in range(48):
+            try:
+                scheduler.tick(
+                    project_id=project_id,
+                    root_operation_id=admission.root_operation_id,
+                )
+            except KernelError:
+                pass
+            with transaction() as connection, connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT operation.status,
+                           (operation.definition_snapshot->'retry_policy'->>'max_attempts')::int,
+                           COUNT(attempt.attempt_id)
+                    FROM authority_operation AS operation
+                    LEFT JOIN authority_attempt AS attempt
+                      ON attempt.operation_id=operation.operation_id
+                    WHERE operation.root_operation_id=%s
+                      AND operation.definition_name=%s
+                    GROUP BY operation.operation_id
+                    """,
+                    [
+                        admission.root_operation_id,
+                        ChapterNode.CANON_EXTRACTION.definition_name,
+                    ],
+                )
+                operation_state = cursor.fetchone()
+            if operation_state is not None and operation_state[0] == "DEAD_LETTER":
+                break
+        else:
+            self.fail("Canon extraction retry exhaustion was not authoritative")
+
+        operation_status, max_attempts, attempt_count = operation_state
+        self.assertEqual(operation_status, "DEAD_LETTER")
+        self.assertEqual(provider.canon_extraction_calls, max_attempts)
+        self.assertEqual(attempt_count, max_attempts)
+
     def test_quality_correction_cancellation_is_authoritative_cancelled(self) -> None:
         project_id, admission, registry = self._crash_quality_correction(
             "quality-correction-cancel"
