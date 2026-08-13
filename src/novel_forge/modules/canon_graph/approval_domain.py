@@ -13,6 +13,61 @@ CANON_DECISIONS = frozenset({
 })
 
 
+_SEMANTIC_IDENTITY_FIELDS: dict[str, tuple[tuple[str, ...], ...]] = {
+    "canon_assertion_candidates": (("subject", "predicate"),),
+    "character_state_changes": (("entity_id",), ("character_id",)),
+    "relationship_changes": (
+        ("entity_id",),
+        ("source_id", "target_id"),
+        ("source_character_id", "target_character_id"),
+    ),
+    "timeline_event_candidates": (("entity_id",), ("event_id",)),
+    "foreshadow_changes": (
+        ("entity_id",),
+        ("foreshadow_id",),
+        ("promise_id",),
+        ("thread_id",),
+    ),
+    "promise_changes": (("entity_id",), ("promise_id",)),
+    "reward_changes": (("entity_id",), ("reward_id",)),
+    "world_rule_usages": (("entity_id",), ("rule_id",)),
+    "power_state_changes": (("entity_id",), ("character_id",)),
+    "plot_thread_changes": (("entity_id",), ("thread_id",)),
+    "resource_state_changes": (("entity_id", "resource_id"),),
+    "narrative_pattern_fingerprints": (
+        ("entity_id",),
+        ("fingerprint_id",),
+    ),
+    "theme_movements": (("entity_id",), ("thread_id",)),
+    "antagonist_pressure_changes": (
+        ("entity_id",),
+        ("antagonist_id",),
+        ("source_id", "target_id"),
+        ("character_id",),
+    ),
+    "character_knowledge_changes": (
+        ("entity_id",),
+        ("character_id", "fact_id"),
+        ("character_id", "proposition_id"),
+    ),
+    "character_belief_changes": (
+        ("entity_id",),
+        ("character_id", "proposition_id"),
+        ("character_id", "fact_id"),
+    ),
+    "character_arc_changes": (
+        ("entity_id",),
+        ("character_id", "arc_id"),
+    ),
+    "arc_state_changes": (("entity_id",), ("arc_id",)),
+    "disclosure_events": (
+        ("disclosure_id",),
+        ("audience", "fact_id"),
+        ("audience", "proposition_id"),
+    ),
+}
+
+
 def build_canon_change_proposal(*, project_id: str, extraction: dict[str, Any], extraction_asset_version_id: str) -> dict[str, Any]:
     if extraction.get("project_id") != project_id or not extraction_asset_version_id:
         raise KernelError("CANON_PROPOSAL_INPUT_INVALID", "project-scoped extraction is required")
@@ -49,18 +104,12 @@ def build_canon_change_proposal(*, project_id: str, extraction: dict[str, Any], 
             previous_project = str(evidence.get("previous_state_project_id") or project_id)
             if previous_project != project_id:
                 raise KernelError("CROSS_PROJECT_REFERENCE", "previous Canon state belongs to another project")
-            predicate = str(item.get("predicate") or "")
-            semantic_slot = (
-                {"predicate": predicate}
-                if predicate
-                else {"evidence_span": span}
-            )
+            identity_components = _semantic_identity_components(field, item)
             semantic_identity = json.dumps(
                 {
                     "field": field,
-                    "entity_id": entity_id,
                     "impact": impact,
-                    "semantic_slot": semantic_slot,
+                    "identity": identity_components,
                 },
                 sort_keys=True,
                 separators=(",", ":"),
@@ -99,8 +148,25 @@ def build_canon_change_proposal(*, project_id: str, extraction: dict[str, Any], 
         "changes": changes,
         "approval_required_change_ids": [item["change_id"] for item in changes if item["approval_requirement"] == "REQUIRED"],
         "risk_summary": [{"change_id": item["change_id"], "impact_level": item["impact_level"], "change_type": item["change_type"]} for item in changes],
-        "contract_version": "canon-change-proposal-v1",
+        "contract_version": "canon-change-proposal-v2",
     }
+
+
+def _semantic_identity_components(
+    field: str, item: dict[str, Any]
+) -> tuple[tuple[str, str], ...]:
+    """Resolve domain identity without treating an evidence location as identity."""
+
+    for fields in _SEMANTIC_IDENTITY_FIELDS.get(field, ()):
+        components = tuple(
+            (name, str(item.get(name) or "").strip()) for name in fields
+        )
+        if all(value for _, value in components):
+            return components
+    # Unresolved identities cannot be proven equivalent.  Preserve exact duplicate
+    # suppression without collapsing unrelated events that share a prose span.
+    payload = json.dumps(item, sort_keys=True, separators=(",", ":"))
+    return (("unresolved_payload_sha256", hashlib.sha256(payload.encode()).hexdigest()),)
 
 
 def _valid_span(span: dict[str, Any]) -> bool:

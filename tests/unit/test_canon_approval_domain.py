@@ -145,6 +145,62 @@ class CanonApprovalDomainTests(unittest.TestCase):
                 extraction_asset_version_id="extraction-v2",
             )
 
+    def test_disclosure_identity_is_not_derived_from_shared_evidence_span(self) -> None:
+        candidate = extraction()
+        shared = {
+            "fact_id": "fact:witness-alive",
+            "impact_type": "DISCLOSURE",
+            "confidence": .9,
+            "disclosure_mode": "CONFIRM",
+            "extraction_evidence": {"span": {"start": 10, "end": 20}},
+        }
+        candidate["disclosure_events"] = [
+            {
+                **shared,
+                "disclosure_id": "disclosure:witness:character",
+                "audience": "character:lin",
+            },
+            {
+                **shared,
+                "disclosure_id": "disclosure:witness:reader",
+                "audience": "READER",
+            },
+        ]
+
+        proposal = build_canon_change_proposal(
+            project_id="project-a",
+            extraction=candidate,
+            extraction_asset_version_id="extraction-v2",
+        )
+
+        disclosures = [
+            item for item in proposal["changes"]
+            if item["change_field"] == "disclosure_events"
+        ]
+        self.assertEqual(len(disclosures), 2)
+
+    def test_same_disclosure_identity_with_conflicting_audience_is_rejected(self) -> None:
+        candidate = extraction()
+        shared = {
+            "disclosure_id": "disclosure:witness",
+            "fact_id": "fact:witness-alive",
+            "impact_type": "DISCLOSURE",
+            "confidence": .9,
+            "disclosure_mode": "CONFIRM",
+            "extraction_evidence": {"span": {"start": 10, "end": 20}},
+        }
+        candidate["disclosure_events"] = [
+            {**shared, "audience": "character:lin"},
+            {**shared, "audience": "READER"},
+        ]
+
+        with self.assertRaisesRegex(KernelError, "CANON_EXTRACTION_CONTRADICTION"):
+            build_canon_change_proposal(
+                project_id="project-a",
+                extraction=candidate,
+                extraction_asset_version_id="extraction-v2",
+            )
+
 
 if __name__ == "__main__":
     unittest.main()
