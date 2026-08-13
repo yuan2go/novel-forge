@@ -257,7 +257,16 @@ def test_codex_prompt_materializes_typed_target_scope_as_json() -> None:
                 },
             },
             "context_selection": [
-                {"asset_version_id": "context:v1", "content": {"segments": []}}
+                {
+                    "asset_version_id": "context:v1",
+                    "content": {
+                        "segments": [],
+                        "language_contract": {
+                            "required_language": "zh-CN",
+                            "reader_facing_prose": "REQUIRED",
+                        },
+                    },
+                }
             ],
             "knowledge_selection": [
                 {"content_hash": HASH, "content": {"rules": ["cost"]}}
@@ -275,4 +284,6 @@ def test_codex_prompt_materializes_typed_target_scope_as_json() -> None:
     )
 
     assert '"scope_kind":"chapter"' in prompt
+    assert "governed reader-facing language is zh-CN" in prompt
+    assert evidence["required_reader_facing_language"] == "zh-CN"
     assert evidence["fully_rendered_prompt_hash"].startswith("sha256:")

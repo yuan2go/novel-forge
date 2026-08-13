@@ -87,6 +87,7 @@ from novel_forge.modules.narrative_state import NarrativeStateKind
 from novel_forge.modules.story_planning_runtime import (
     GENERATOR_INPUT_ROLES,
     PlanningGenerationStatus,
+    STORY_PLANNING_MAX_ATTEMPTS,
     StoryPlanningGenerationCommand,
 )
 from novel_forge.modules.story_planning_runtime.application import (
@@ -690,6 +691,11 @@ def _bootstrap_assets(
             campaign_contract=campaign_contract,
         )
         target_chapters = int(book["target_chapters"])
+        language_contract = {
+            "required_language": str(book["language"]),
+            "reader_facing_prose": "REQUIRED",
+            "proof_gate": "PRIMARILY_REQUIRED_LANGUAGE",
+        }
         world_bible = _proof_world_bible_content()
         world_bible["safe_summary"] = (
             "Frozen world rules and institutional constraints from the long-form "
@@ -737,6 +743,20 @@ def _bootstrap_assets(
                     "reader_promise",
                     {"promise": book["reader_promise"]},
                 ),
+                "platform_profile": (
+                    "platform_profile",
+                    {
+                        **_proof_platform_profile_content(),
+                        "language_contract": language_contract,
+                        "structured_facts": [
+                            *_proof_platform_profile_content()["structured_facts"],
+                            {
+                                "key": "language_contract",
+                                "value": language_contract,
+                            },
+                        ],
+                    },
+                ),
                 "production_profile": (
                     "production_profile",
                     {
@@ -744,6 +764,7 @@ def _bootstrap_assets(
                         "target_chapter_count": target_chapters,
                         "campaign_id": campaign_contract["campaign_id"],
                         "campaign_version": campaign_contract["campaign_version"],
+                        "language_contract": language_contract,
                     },
                 ),
                 "story_state": (
@@ -818,6 +839,7 @@ def _bootstrap_assets(
                     "required_payoff": chapter["volume_reward"],
                     "cost": chapter["volume_cost"],
                     "prohibited_outcomes": ["silent reset", "future knowledge leak"],
+                    "language_contract": language_contract,
                 },
             )
     with AuthorityUnitOfWork(database_url) as uow:
@@ -1096,6 +1118,15 @@ def _seed_project_and_active_design(
             "target_chapters": 3,
         }
     )
+    language_contract = (
+        {
+            "required_language": str(campaign_book["language"]),
+            "reader_facing_prose": "REQUIRED",
+            "proof_gate": "PRIMARILY_REQUIRED_LANGUAGE",
+        }
+        if campaign_contract is not None
+        else None
+    )
     ProjectAuthorityApplication(
         database_url, application_build_id=build_id, commit_sha=commit_sha
     ).execute(
@@ -1130,7 +1161,14 @@ def _seed_project_and_active_design(
             payload={
                 "schema_version": "book-authority.v1",
                 "title": campaign_book["title"],
-                "production_profile": {"environment": "validation"},
+                "production_profile": {
+                    "environment": "validation",
+                    **(
+                        {"language_contract": language_contract}
+                        if language_contract is not None
+                        else {}
+                    ),
+                },
                 "runtime_policy": {"legacy_write": False, "silent_fallback": False},
                 "release_identity": f"{build_id}@{commit_sha}",
             },
@@ -1443,6 +1481,28 @@ def _approve_activate(
     )
 
 
+def _generate_planning_with_bounded_retry(
+    planning: Any,
+    command: StoryPlanningGenerationCommand,
+    *,
+    principal: Principal,
+) -> Any:
+    """Drive one synchronous Planning command through its shared retry budget."""
+
+    last_retryable: KernelError | None = None
+    for _attempt_number in range(1, STORY_PLANNING_MAX_ATTEMPTS + 1):
+        try:
+            return planning.generate(command, principal=principal)
+        except KernelError as exc:
+            if exc.code != "MODEL_EFFECT_RETRYABLE_PLANNING":
+                raise
+            last_retryable = exc
+    raise KernelError(
+        "PLANNING_RETRY_CONTRACT_VIOLATION",
+        "Planning remained retryable after its frozen Operation budget was exhausted",
+    ) from last_retryable
+
+
 def _run_planning(
     *,
     database_url: str,
@@ -1617,7 +1677,11 @@ def _run_planning(
             trace_id=f"trace:{key}",
             correlation_id=f"correlation:{project_id}",
         )
-        item = planning.generate(command, principal=principal)
+        item = _generate_planning_with_bounded_retry(
+            planning,
+            command,
+            principal=principal,
+        )
         activation = _approve_activate(planning, item, principal=principal, key=key)
         activated[generator] = item.candidate_asset_version_id
         if generator == "chapter_plan.generate":
@@ -3056,31 +3120,33 @@ def _generate_chapter_plan(
     key_suffix: str = "initial",
 ) -> tuple[str, dict[str, Any]]:
     key = f"{project_id}:chapter-plan:{chapter_number}:{key_suffix}"
-    generated = planning.generate(
-        StoryPlanningGenerationCommand(
-            project_id=project_id,
-            workspace_id=workspace_id,
-            book_id=book_id,
-            actor_id=principal.principal_id,
-            generator_operation_name="chapter_plan.generate",
-            logical_key=f"chapter:{chapter_number}",
-            input_versions=_planning_inputs(
-                "chapter_plan.generate",
-                bootstrap=bootstrap,
-                book_design_version=book_design_version,
-                activated=activated,
-                chapter_number=chapter_number,
-                previous_outcome=str(
-                    runtime_inputs.get("previous_chapter_outcome") or ""
-                ),
-                story_state=str(runtime_inputs.get("story_state") or ""),
-                runtime_inputs=runtime_inputs,
+    command = StoryPlanningGenerationCommand(
+        project_id=project_id,
+        workspace_id=workspace_id,
+        book_id=book_id,
+        actor_id=principal.principal_id,
+        generator_operation_name="chapter_plan.generate",
+        logical_key=f"chapter:{chapter_number}",
+        input_versions=_planning_inputs(
+            "chapter_plan.generate",
+            bootstrap=bootstrap,
+            book_design_version=book_design_version,
+            activated=activated,
+            chapter_number=chapter_number,
+            previous_outcome=str(
+                runtime_inputs.get("previous_chapter_outcome") or ""
             ),
-            parent_version_id=activated["chapter_group_plan.generate"],
-            idempotency_key=key,
-            trace_id=f"trace:{key}",
-            correlation_id=f"correlation:{project_id}",
+            story_state=str(runtime_inputs.get("story_state") or ""),
+            runtime_inputs=runtime_inputs,
         ),
+        parent_version_id=activated["chapter_group_plan.generate"],
+        idempotency_key=key,
+        trace_id=f"trace:{key}",
+        correlation_id=f"correlation:{project_id}",
+    )
+    generated = _generate_planning_with_bounded_retry(
+        planning,
+        command,
         principal=principal,
     )
     activation = _approve_activate(planning, generated, principal=principal, key=key)

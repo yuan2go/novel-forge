@@ -51,6 +51,10 @@ class AuthorityWorkerExecutionTests(unittest.TestCase):
                 WorkerFailureClass.MANUAL_INTERVENTION,
             ),
             (
+                KernelError("CHAPTER_QUALITY_GATE_FAILED", "deterministic gate failed"),
+                WorkerFailureClass.FINAL_FAILURE,
+            ),
+            (
                 KernelError("MODEL_EFFECT_TIMEOUT", "provider timed out"),
                 WorkerFailureClass.RETRYABLE,
             ),

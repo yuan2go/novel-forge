@@ -55,6 +55,7 @@ from .domain import (
     FrozenPlanningInput,
     PlanningGenerationResult,
     PlanningGenerationStatus,
+    STORY_PLANNING_MAX_ATTEMPTS,
     STORY_PLANNING_OPERATION_DEFINITION_REF,
     STORY_PLANNING_OPERATION_TIMEOUT_SECONDS,
     StoryPlanningGenerationCommand,
@@ -1738,7 +1739,10 @@ def story_planning_generation_definition(
         },
         "idempotency_scope": "book:story-planning-generation",
         "concurrency_key_template": "book:{book_id}:planning:{logical_key}",
-        "retry_policy": {"max_attempts": 3, "dead_letter_on_exhausted": True},
+        "retry_policy": {
+            "max_attempts": STORY_PLANNING_MAX_ATTEMPTS,
+            "dead_letter_on_exhausted": True,
+        },
         "timeout_policy": {
             "operation_timeout_seconds": STORY_PLANNING_OPERATION_TIMEOUT_SECONDS
         },

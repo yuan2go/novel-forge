@@ -42,6 +42,7 @@ _DEAD_LETTER_CODES = frozenset(
     }
 )
 _MANUAL_INTERVENTION_CODES = frozenset({"CHAPTER_QUALITY_GATE_BLOCKED"})
+_FINAL_FAILURE_CODES = frozenset({"CHAPTER_QUALITY_GATE_FAILED"})
 
 
 class WorkerProgrammingError(RuntimeError):
@@ -221,6 +222,8 @@ class WorkerFailureClassifier:
         if code == "MODEL_EFFECT_TIMEOUT" or code.startswith("MODEL_EFFECT_RETRYABLE_"):
             return WorkerFailureClass.RETRYABLE
         if code.startswith("MODEL_EFFECT_FINAL_"):
+            return WorkerFailureClass.FINAL_FAILURE
+        if code in _FINAL_FAILURE_CODES:
             return WorkerFailureClass.FINAL_FAILURE
         if any(
             marker in code

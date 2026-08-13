@@ -51,16 +51,11 @@ def create_attempt(
             )
         attempt_number = uow.repositories.attempt_runtime.next_attempt_number(operation_id)
         if attempt_number > max_attempts:
-            if operation["status"] != "FAILED_RETRYABLE":
-                raise KernelError(
-                    "ATTEMPT_RETRY_EXHAUSTED",
-                    "attempt policy is exhausted before operation retry",
-                )
             _cas_operation(
                 uow,
                 operation_id=operation_id,
                 project_id=project_id,
-                expected_status="FAILED_RETRYABLE",
+                expected_status=operation["status"],
                 expected_version=operation["version"],
                 target_status="DEAD_LETTER",
                 actor_id="kernel.scheduler",

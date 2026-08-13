@@ -435,6 +435,7 @@ def _apply_event(
 
     old_state = deepcopy((previous or {}).get("state") or {})
     payload = deepcopy(event.payload)
+    _resolve_legacy_active_obligation(old_state, payload, event)
     expected_entity_version = int((previous or {}).get("entity_version") or 0) + 1
     if event.event_version >= 2 and event.entity_version != expected_entity_version:
         raise KernelError(
@@ -602,6 +603,37 @@ def _validate_obligation_transition(
             "NARRATIVE_OBLIGATION_TRANSITION_INVALID",
             f"Narrative obligation cannot transition from {previous} to {following}",
         )
+
+
+def _resolve_legacy_active_obligation(
+    old: dict[str, Any], payload: dict[str, Any], event: NarrativeStateEvent
+) -> None:
+    """Interpret legacy ACTIVE as liveness, not a canonical lifecycle phase."""
+
+    if event.state_kind is not NarrativeStateKind.NARRATIVE_OBLIGATION:
+        return
+    migration = payload.get("lifecycle_migration")
+    if (
+        not isinstance(migration, dict)
+        or not migration.get("legacy_adapter")
+        or str(migration.get("source_status") or "").upper() != "ACTIVE"
+    ):
+        return
+    previous = str(old.get("status") or "").upper()
+    progress_vocabulary = " ".join(
+        str(payload.get(key) or "").upper() for key in ("state", "transition_kind")
+    )
+    explicit_progress = any(
+        marker in progress_vocabulary for marker in ("DEVELOP", "PROGRESS", "ADVANC")
+    )
+    if explicit_progress:
+        payload["status"] = "DEVELOPING"
+    elif previous:
+        payload["status"] = previous
+    else:
+        payload["status"] = "OPEN"
+    if previous and str(migration.get("source_from_status") or "").upper() == "ACTIVE":
+        payload["from_status"] = previous
 
 
 def _merge_state(

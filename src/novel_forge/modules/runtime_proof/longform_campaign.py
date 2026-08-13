@@ -17,6 +17,8 @@ SCHEMA_VERSION = "novel-forge.longform-proof-contract.v1"
 TARGET_CHAPTERS = 300
 CHAPTERS_PER_VOLUME = 30
 CHECKPOINT_CHAPTERS = (30, 100, 300)
+REQUIRED_LANGUAGE = "zh-CN"
+MINIMUM_ZH_CN_HAN_RATIO = 0.60
 
 
 def _mapping(value: Any, *, field: str) -> dict[str, Any]:
@@ -99,6 +101,7 @@ class LongformCampaignContract:
     campaign_version: int
     baseline_git_sha: str
     migration_head: str
+    language: str
     target_chapters: int
     checkpoint_chapters: tuple[int, ...]
     chapter_matrix: tuple[dict[str, Any], ...]
@@ -139,6 +142,9 @@ class LongformCampaignContract:
 
         book = _mapping(payload.get("book"), field="book")
         _nonempty(book.get("title"), field="book.title")
+        language = _nonempty(book.get("language"), field="book.language")
+        if language != REQUIRED_LANGUAGE:
+            raise ValueError(f"book.language must equal {REQUIRED_LANGUAGE}")
         target_chapters = int(book.get("target_chapters") or 0)
         if target_chapters != TARGET_CHAPTERS:
             raise ValueError("Campaign target_chapters must equal 300")
@@ -304,6 +310,7 @@ class LongformCampaignContract:
             campaign_version=campaign_version,
             baseline_git_sha=baseline_git_sha.lower(),
             migration_head=migration_head,
+            language=language,
             target_chapters=target_chapters,
             checkpoint_chapters=checkpoint_chapters,
             chapter_matrix=chapter_matrix,
@@ -319,6 +326,48 @@ class LongformCampaignContract:
 def contract_identity(contract: LongformCampaignContract) -> str:
     digest = hashlib.sha256(contract._canonical_payload.encode("utf-8")).hexdigest()
     return "sha256:" + digest
+
+
+def evaluate_proof_language(
+    text: str,
+    *,
+    required_language: str,
+) -> dict[str, Any]:
+    """Fail-closed language evaluation for reader-facing Proof prose.
+
+    Authority acceptance remains untouched.  This independent Proof check counts
+    Han characters and ASCII Latin letters, ignoring punctuation and numerals.
+    """
+
+    han_characters = sum(
+        1
+        for character in text
+        if "\u3400" <= character <= "\u4dbf" or "\u4e00" <= character <= "\u9fff"
+    )
+    latin_characters = sum(
+        1 for character in text if "a" <= character.casefold() <= "z"
+    )
+    considered_characters = han_characters + latin_characters
+    ratio = han_characters / considered_characters if considered_characters else 0.0
+    if required_language != REQUIRED_LANGUAGE:
+        status = "FAILED"
+        reason = "UNSUPPORTED_REQUIRED_LANGUAGE"
+    elif han_characters == 0 or ratio < MINIMUM_ZH_CN_HAN_RATIO:
+        status = "FAILED"
+        reason = "PROSE_NOT_PRIMARILY_ZH_CN"
+    else:
+        status = "PASSED"
+        reason = "PROSE_PRIMARILY_ZH_CN"
+    return {
+        "status": status,
+        "reason": reason,
+        "required_language": required_language,
+        "han_characters": han_characters,
+        "latin_characters": latin_characters,
+        "considered_characters": considered_characters,
+        "han_character_ratio": round(ratio, 6),
+        "minimum_han_character_ratio": MINIMUM_ZH_CN_HAN_RATIO,
+    }
 
 
 def load_campaign_contract(path: str | Path) -> LongformCampaignContract:
@@ -340,5 +389,6 @@ __all__ = [
     "CHECKPOINT_CHAPTERS",
     "LongformCampaignContract",
     "contract_identity",
+    "evaluate_proof_language",
     "load_campaign_contract",
 ]

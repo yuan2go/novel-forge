@@ -36,7 +36,7 @@ def _load_script():
         sys.path.remove(str(scripts))
 
 
-@pytest.mark.parametrize("target", (1, 30, 100, 300))
+@pytest.mark.parametrize("target", (1, 2, 5, 30, 100, 300))
 def test_campaign_accepts_bounded_cumulative_targets(target: int) -> None:
     campaign = _load_script()
 
@@ -49,6 +49,17 @@ def test_campaign_rejects_non_checkpoint_targets(target: int) -> None:
 
     with pytest.raises(ValueError, match="target chapter"):
         campaign._validate_target(target)
+
+
+def test_language_contract_failure_is_distinct_from_authority_acceptance() -> None:
+    campaign = _load_script()
+
+    assert (
+        campaign._classify_failure(
+            RuntimeError("PROOF_LANGUAGE_CONTRACT_FAILED: accepted English prose")
+        )
+        == "PROOF_CONTRACT_FAILURE"
+    )
 
 
 @pytest.mark.parametrize(
@@ -105,6 +116,30 @@ def test_resume_checkpoint_must_match_contract_release_and_target() -> None:
             contract_identity="sha256:" + "a" * 64,
             commit_sha="b" * 40,
             target_chapter=1,
+        )
+
+
+def test_resume_cannot_turn_authority_accepted_wrong_language_into_proof_pass() -> None:
+    campaign = _load_script()
+    checkpoint = {
+        "contract_identity": "sha256:" + "a" * 64,
+        "release": {"commit_sha": "b" * 40},
+        "accepted_through_chapter": 1,
+        "chapter_exports": [
+            {
+                "chapter": 1,
+                "authority_acceptance_status": "ACCEPTED",
+                "proof_acceptance_status": "FAILED",
+            }
+        ],
+    }
+
+    with pytest.raises(RuntimeError, match="Proof-invalid accepted Chapter"):
+        campaign._validate_resume_checkpoint(
+            checkpoint,
+            contract_identity="sha256:" + "a" * 64,
+            commit_sha="b" * 40,
+            target_chapter=2,
         )
 
 

@@ -31,35 +31,53 @@ def evaluate_quality_evidence(
         raise KernelError("QUALITY_INPUT_INVALID", "versioned quality lineage is required")
     if review.get("report_type") != "ReReviewReport":
         raise KernelError("QUALITY_REREVIEW_REQUIRED", "latest eligible Re-review is required")
-    if review.get("decision") != "PASSED" or int(review.get("blocking_issue_count", 0)):
-        raise KernelError("CHAPTER_QUALITY_GATE_FAILED", "Re-review has unresolved blockers")
-    if canon.get("gate") != "PASSED" or canon.get("conflicts"):
-        raise KernelError("CHAPTER_QUALITY_GATE_FAILED", "Canon evidence is blocked")
     if not str(revision.get("text") or "").strip():
-        raise KernelError("CHAPTER_QUALITY_GATE_FAILED", "Revision has no content")
+        raise KernelError("QUALITY_REVISION_CONTENT_MISSING", "Revision has no content")
+
+    rereview_passed = (
+        review.get("decision") == "PASSED"
+        and not int(review.get("blocking_issue_count", 0))
+    )
+    canon_passed = canon.get("gate") == "PASSED" and not canon.get("conflicts")
 
     dimensions: list[dict[str, Any]] = [
         _dimension(
             dimension="structural_evidence",
             gate_type="structural_quality_gate",
             score=float(review.get("score", 0.0)),
-            gate_status="PASSED",
+            gate_status="PASSED" if rereview_passed else "FAILED",
             evidence_asset_version_id=review_asset_version_id,
             weight=.25,
             blocking=True,
             calibration_status=_review_calibration(review),
             source=_review_source(review),
+            source_gate=str(review.get("decision") or "UNKNOWN"),
+            issue_codes=sorted(
+                {
+                    str(item.get("code") or "REREVIEW_BLOCKER")
+                    for item in review.get("issues", [])
+                    if isinstance(item, dict)
+                }
+            ),
         ),
         _dimension(
             dimension="canon_consistency",
             gate_type="longform_quality_gate",
             score=None,
-            gate_status="PASSED",
+            gate_status="PASSED" if canon_passed else "FAILED",
             evidence_asset_version_id=canon_asset_version_id,
             weight=.15,
             blocking=True,
             calibration_status="DETERMINISTIC",
             source="deterministic_extractor",
+            source_gate=str(canon.get("gate") or "UNKNOWN"),
+            issue_codes=sorted(
+                {
+                    str(item.get("conflict_code") or "CANON_CONFLICT")
+                    for item in canon.get("conflicts", [])
+                    if isinstance(item, dict)
+                }
+            ),
         ),
     ]
     for report in evidence_reports:
@@ -144,9 +162,19 @@ def evaluate_quality_evidence(
             "issues": [item["issue"] for item in required_actions],
             "required_actions": required_actions,
             "reevaluation_gate": "chapter.quality.aggregate",
+            "source_gate_failures": {
+                "rereview": (
+                    ""
+                    if rereview_passed
+                    else str(review.get("decision") or "UNKNOWN")
+                ),
+                "canon": (
+                    "" if canon_passed else str(canon.get("gate") or "UNKNOWN")
+                ),
+            },
         },
         "required_actions": required_actions,
-        "quality_contract_version": "chapter-quality-aggregate-v3",
+        "quality_contract_version": "chapter-quality-aggregate-v4",
     }
 
 

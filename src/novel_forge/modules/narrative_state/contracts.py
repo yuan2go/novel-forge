@@ -1053,10 +1053,15 @@ def _normalize_obligation(
             "Narrative obligation requires an explicit stable identity",
         )
     status_alias = str(value.get("status") or "OPEN").upper()
+    from_status_alias = str(value.get("from_status") or "").upper()
     status_map = {
         "PLANTED": "OPEN",
         "PROMISED": "OPEN",
-        "ACTIVE": "DEVELOPING",
+        # Legacy plot-thread ACTIVE means that the thread remains open.  It is
+        # not evidence that the unified obligation has already advanced from
+        # OPEN to DEVELOPING; mapping it to DEVELOPING makes a Chapter 1
+        # obligation violate the fail-closed initial-transition invariant.
+        "ACTIVE": "OPEN",
         "DEVELOPED": "DEVELOPING",
         "PAID": "FULFILLED",
         "RESOLVED": "FULFILLED",
@@ -1122,6 +1127,7 @@ def _normalize_obligation(
                 {
                     "legacy_adapter": True,
                     "source_status": status_alias,
+                    "source_from_status": from_status_alias,
                     "target_window_inferred": False,
                 }
                 if legacy_adapter

@@ -9,6 +9,7 @@ from types import SimpleNamespace
 import pytest
 
 from novel_forge.modules.book_authority import BookProductionSupervisorTick
+from novel_forge.modules.command_kernel.errors import KernelError
 
 
 def _load_script():
@@ -48,6 +49,52 @@ def test_retry_installs_a_new_immutable_planning_pack_version() -> None:
     assert proof.PLANNING_PACK_INITIAL_VERSION == "1.3.0"
     assert proof.PLANNING_PACK_RECOVERY_VERSION == "1.4.0"
     assert proof.PLANNING_PACK_INITIAL_VERSION != proof.PLANNING_PACK_RECOVERY_VERSION
+
+
+def test_synchronous_planning_composition_drives_retryable_attempt_to_success() -> None:
+    proof = _load_script()
+    calls: list[int] = []
+    expected = object()
+
+    class Planning:
+        def generate(self, _command, *, principal):
+            calls.append(len(calls) + 1)
+            assert principal == "operator"
+            if len(calls) == 1:
+                raise KernelError(
+                    "MODEL_EFFECT_RETRYABLE_PLANNING",
+                    "controlled timeout",
+                )
+            return expected
+
+    result = proof._generate_planning_with_bounded_retry(
+        Planning(),
+        object(),
+        principal="operator",
+    )
+
+    assert result is expected
+    assert calls == [1, 2]
+
+
+def test_synchronous_planning_composition_does_not_retry_terminal_failure() -> None:
+    proof = _load_script()
+    calls: list[int] = []
+
+    class Planning:
+        def generate(self, _command, *, principal):
+            calls.append(1)
+            raise KernelError("MODEL_EFFECT_FINAL_PLANNING", "terminal")
+
+    with pytest.raises(KernelError) as raised:
+        proof._generate_planning_with_bounded_retry(
+            Planning(),
+            object(),
+            principal="operator",
+        )
+
+    assert raised.value.code == "MODEL_EFFECT_FINAL_PLANNING"
+    assert calls == [1]
 
 
 def test_proof_uses_a_bounded_explicit_quality_context_budget() -> None:

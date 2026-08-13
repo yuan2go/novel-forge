@@ -29,6 +29,7 @@ from novel_forge.modules.capability_packs.longform_profiles import (
 )
 from novel_forge.modules.runtime_proof import (
     contract_identity,
+    evaluate_proof_language,
     load_campaign_contract,
 )
 from novel_forge.storage.migrations import run_migrations
@@ -66,7 +67,7 @@ from run_short_longform_runtime_proof import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
-ALLOWED_TARGETS = frozenset({1, 30, 100, 300})
+ALLOWED_TARGETS = frozenset({1, 2, 5, 30, 100, 300})
 SCHEMA_VERSION = "novel-forge.longform-proof-campaign-checkpoint.v1"
 
 
@@ -82,12 +83,14 @@ def _campaign_initial_narrative_snapshots(
 
 def _validate_target(value: int) -> int:
     if value not in ALLOWED_TARGETS:
-        raise ValueError("target chapter must be one of 1, 30, 100, or 300")
+        raise ValueError("target chapter must be one of 1, 2, 5, 30, 100, or 300")
     return value
 
 
 def _classify_failure(error: BaseException) -> str:
     message = f"{type(error).__name__}: {error}".casefold()
+    if "proof_language_contract_failed" in message:
+        return "PROOF_CONTRACT_FAILURE"
     if "narrative_resource_state_missing" in message:
         return "PROOF_HARNESS_DEFECT"
     if any(word in message for word in ("credential", "provider", "codex login")):
@@ -120,6 +123,16 @@ def _validate_resume_checkpoint(
     accepted = int(checkpoint.get("accepted_through_chapter") or 0)
     if target_chapter < accepted:
         raise RuntimeError("target chapter is behind the durable cursor")
+    invalid_exports = [
+        item
+        for item in checkpoint.get("chapter_exports") or []
+        if not isinstance(item, Mapping)
+        or item.get("proof_acceptance_status") != "PASSED"
+    ]
+    if invalid_exports:
+        raise RuntimeError(
+            "resume checkpoint contains a Proof-invalid accepted Chapter"
+        )
 
 
 def _validate_frozen_provider_policy(
@@ -539,6 +552,7 @@ def _export_chapter(
     project_id: str,
     request: Mapping[str, Any],
     output_root: Path,
+    required_language: str,
 ) -> dict[str, Any]:
     evidence = authority.chapter_port.require_acceptance_evidence(
         project_id=project_id,
@@ -558,12 +572,20 @@ def _export_chapter(
     path = output_root / "novel" / "chapters" / f"chapter-{chapter_number:04d}.md"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text + "\n", encoding="utf-8")
+    language_evaluation = evaluate_proof_language(
+        text, required_language=required_language
+    )
     return {
         "chapter": chapter_number,
         "path": str(path),
         "characters": len(text),
         "draft_asset_version_id": draft["asset_version_id"],
         "draft_content_hash": draft["content_hash"],
+        "authority_acceptance_status": "ACCEPTED",
+        "proof_acceptance_status": (
+            "PASSED" if language_evaluation["status"] == "PASSED" else "FAILED"
+        ),
+        "language_evaluation": language_evaluation,
     }
 
 
@@ -767,14 +789,20 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
                 chapter_request_id=str(request["chapter_request_id"]),
             )
             supervisor_ticks.extend(reader_ticks)
-            chapter_exports.append(
-                _export_chapter(
-                    authority=composition.authority,
-                    project_id=state["project_id"],
-                    request=request,
-                    output_root=output_root,
-                )
+            chapter_export = _export_chapter(
+                authority=composition.authority,
+                project_id=state["project_id"],
+                request=request,
+                output_root=output_root,
+                required_language=contract.language,
             )
+            chapter_exports.append(chapter_export)
+            if chapter_export["proof_acceptance_status"] != "PASSED":
+                raise RuntimeError(
+                    "PROOF_LANGUAGE_CONTRACT_FAILED: Authority accepted Chapter "
+                    f"{chapter_number}, but its reader-facing prose is not primarily "
+                    f"{contract.language}"
+                )
             partial = {
                 "schema_version": SCHEMA_VERSION,
                 "created_at": datetime.now().astimezone().isoformat(),
@@ -798,6 +826,12 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
                 "accepted_through_chapter": chapter_number,
                 "requested_target_chapter": target,
                 "chapter_exports": chapter_exports,
+                "proof_language_status": "PASSED",
+                "proof_acceptance_status": (
+                    "CHAPTER_CHECKPOINT_PASSED"
+                    if target in {1, 2, 5}
+                    else "PENDING_DEDICATED_VALIDATION"
+                ),
                 "failures": failures,
                 "last_supervisor_ticks": supervisor_ticks[-50:],
                 "status": "RUNNING" if chapter_number < target else "CHECKPOINT_REACHED",
@@ -823,8 +857,8 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
                 "combined_novel": str(combined),
                 "measurements": measurements,
                 "proof_verdict": (
-                    "NOT_EVALUATED"
-                    if target == 1
+                    "CHAPTER_CHECKPOINT_PASSED"
+                    if target in {1, 2, 5}
                     else "PENDING_DEDICATED_VALIDATION"
                 ),
             }
@@ -870,6 +904,16 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
             "accepted_through_chapter": failure["accepted_through_chapter"],
             "requested_target_chapter": target,
             "chapter_exports": chapter_exports,
+            "proof_language_status": (
+                "FAILED"
+                if failure["category"] == "PROOF_CONTRACT_FAILURE"
+                else "INCOMPLETE"
+            ),
+            "proof_acceptance_status": (
+                "FAILED"
+                if failure["category"] == "PROOF_CONTRACT_FAILURE"
+                else "INCOMPLETE"
+            ),
             "failures": failures,
             "status": "FAILED",
         }

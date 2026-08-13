@@ -248,13 +248,27 @@ class ChapterAuthorityBusinessDomainTests(unittest.TestCase):
             existing_facts=[{"subject": "alliance", "predicate": "status", "object": "active"}],
         )
         self.assertEqual(canon["gate"], "BLOCKED")
-        with self.assertRaisesRegex(KernelError, "CHAPTER_QUALITY_GATE_FAILED"):
-            evaluate_quality_evidence(
-                project_id="project-a", revision=revision,
-                revision_asset_version_id="revision-v1", review=rereview,
-                review_asset_version_id="rereview-v1", canon=canon,
-                canon_asset_version_id="canon-v1", context_bundle_version_id="context-v1",
-            )
+        quality = evaluate_quality_evidence(
+            project_id="project-a", revision=revision,
+            revision_asset_version_id="revision-v1", review=rereview,
+            review_asset_version_id="rereview-v1", canon=canon,
+            canon_asset_version_id="canon-v1", context_bundle_version_id="context-v1",
+        )
+
+        self.assertEqual(quality["gate"], "FAILED")
+        self.assertIn("canon_consistency", quality["blocking_dimensions"])
+        self.assertEqual(
+            quality["required_actions"][0]["issue"]["code"],
+            "QUALITY_CANON_CONSISTENCY_FAILED",
+        )
+        self.assertEqual(
+            quality["required_actions"][0]["evidence_asset_version_ids"],
+            ["canon-v1"],
+        )
+        self.assertEqual(
+            quality["decision_chain"]["source_gate_failures"]["canon"],
+            "BLOCKED",
+        )
 
     def test_internal_publish_accepts_only_real_provider_uncalibrated_passes(self) -> None:
         gate_types = {
