@@ -418,22 +418,6 @@ def _validate_canonical_narrative_contract(
                 "NARRATIVE_SEGMENT_COVERAGE_INVALID",
                 "Narrative Segments must cover the Volume exactly without gaps or overlaps",
             )
-        if error_prefix == "WORLD" and (
-            str(item["visibility"]) not in WORLD_VISIBILITY_VALUES
-            or str(item["accessibility"]) not in WORLD_ACCESSIBILITY_VALUES
-        ):
-            raise KernelError(
-                "WORLD_REALIZATION_DIMENSION_INVALID",
-                "World visibility and accessibility must use governed values",
-            )
-        if error_prefix == "CHARACTER" and (
-            str(item["scope"]) not in CHARACTER_SCOPE_VALUES
-            or str(item["reach"]) not in CHARACTER_REACH_VALUES
-        ):
-            raise KernelError(
-                "CHARACTER_REALIZATION_DIMENSION_INVALID",
-                "Character scope and reach must use governed values",
-            )
         return
     if contract_type is PlanContractType.ARC:
         thread_id = str(content.get("thread_id") or "")
@@ -754,7 +738,7 @@ def _validate_progressive_planning_contract(
                     "NARRATIVE_DEBT_PROJECTION_IDENTITY_INVALID",
                     "overdue obligation count must bind the exact accepted identities",
                 )
-            if len(overdue_ids) > int(budget["max_overdue_obligations"]):
+            if overdue_ids:
                 _require_exact_overdue_obligation_actions(
                     content,
                     overdue_ids=overdue_ids,
@@ -886,25 +870,55 @@ def _effective_narrative_load_limits(
 def _require_exact_overdue_obligation_actions(
     content: dict[str, Any], *, overdue_ids: set[str], accepted_through_chapter: int
 ) -> None:
+    governed_actions = {
+        "PAYOFF",
+        "RESOLVE",
+        "RESCHEDULE",
+        "EXPLICIT_GOVERNANCE_ACTION",
+    }
     actions = {
         str(item.get("obligation_id") or ""): item
         for item in content.get("payoffs") or ()
         if isinstance(item, dict)
-        and str(item.get("action") or "").upper() in {"PAYOFF", "RESOLVE", "RESCHEDULE"}
+        and str(item.get("action") or "").upper() in governed_actions
     }
     unresolved = sorted(overdue_ids - set(actions))
     invalid_reschedules = sorted(
         obligation_id
         for obligation_id in overdue_ids & set(actions)
         if str(actions[obligation_id].get("action") or "").upper() == "RESCHEDULE"
-        and int(actions[obligation_id].get("due_chapter") or 0)
-        <= accepted_through_chapter
+        and (
+            not isinstance(actions[obligation_id].get("due_chapter"), int)
+            or int(actions[obligation_id]["due_chapter"])
+            <= accepted_through_chapter
+        )
     )
-    if unresolved or invalid_reschedules:
+    invalid_governance = sorted(
+        obligation_id
+        for obligation_id in overdue_ids & set(actions)
+        if str(actions[obligation_id].get("action") or "").upper()
+        == "EXPLICIT_GOVERNANCE_ACTION"
+        and (
+            not str(
+                actions[obligation_id].get("governance_action_asset_version_id")
+                or ""
+            )
+            or re.fullmatch(
+                r"sha256:[0-9a-f]{64}",
+                str(
+                    actions[obligation_id].get("governance_action_content_hash")
+                    or ""
+                ),
+            )
+            is None
+        )
+    )
+    if unresolved or invalid_reschedules or invalid_governance:
         raise KernelError(
             "NARRATIVE_DEBT_PAYDOWN_REQUIRED",
-            "overdue accepted obligations require exact Payoff, Resolve, or valid Reschedule actions; "
-            f"unresolved={unresolved}, invalid_reschedules={invalid_reschedules}",
+            "overdue accepted obligations require exact Payoff, Resolve, valid Reschedule, or governed actions; "
+            f"unresolved={unresolved}, invalid_reschedules={invalid_reschedules}, "
+            f"invalid_governance={invalid_governance}",
         )
 
 
@@ -985,6 +999,22 @@ def _validate_realization_manifest(
             raise KernelError(
                 f"{error_prefix}_REALIZATION_HORIZON_INVALID",
                 "a CURRENT entity cannot be less realized than its Planning horizon",
+            )
+        if error_prefix == "WORLD" and (
+            str(item["visibility"]) not in WORLD_VISIBILITY_VALUES
+            or str(item["accessibility"]) not in WORLD_ACCESSIBILITY_VALUES
+        ):
+            raise KernelError(
+                "WORLD_REALIZATION_DIMENSION_INVALID",
+                "World visibility and accessibility must use governed values",
+            )
+        if error_prefix == "CHARACTER" and (
+            str(item["scope"]) not in CHARACTER_SCOPE_VALUES
+            or str(item["reach"]) not in CHARACTER_REACH_VALUES
+        ):
+            raise KernelError(
+                "CHARACTER_REALIZATION_DIMENSION_INVALID",
+                "Character scope and reach must use governed values",
             )
         for field, (expected_domain_type, many) in reference_fields.items():
             refs = item.get(field)
