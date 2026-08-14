@@ -203,6 +203,60 @@ def normalize_character_belief_changes(
     return normalized
 
 
+def normalize_relationship_state_changes(
+    changes: Iterable[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Canonicalize relationship endpoints without inventing graph identity.
+
+    Canon Provider schemas through v7 exposed the generic ``character_id`` field,
+    so an otherwise typed relationship could use it for the source endpoint while
+    also supplying ``target_id``.  Upgrade that immutable shape at read boundaries,
+    reject conflicting aliases, and retain only ``source_id``/``target_id`` for new
+    Narrative State events.
+    """
+
+    normalized: list[dict[str, Any]] = []
+    for raw in changes:
+        change = dict(raw)
+        source_values = {
+            str(change[key]).strip()
+            for key in ("source_id", "source_character_id", "character_id")
+            if change.get(key) not in {None, ""}
+        }
+        target_values = {
+            str(change[key]).strip()
+            for key in ("target_id", "target_character_id")
+            if change.get(key) not in {None, ""}
+        }
+        if len(source_values) > 1 or len(target_values) > 1:
+            raise KernelError(
+                "NARRATIVE_RELATIONSHIP_IDENTITY_CONFLICT",
+                "relationship endpoint aliases disagree",
+            )
+        source_id = next(iter(source_values), "")
+        target_id = next(iter(target_values), "")
+        if not source_id or not target_id:
+            raise KernelError(
+                "NARRATIVE_RELATIONSHIP_IDENTITY_INVALID",
+                "relationship state requires source_id and target_id",
+            )
+        if source_id == target_id and not change.get("allow_self_relation"):
+            raise KernelError(
+                "NARRATIVE_RELATIONSHIP_SELF_REFERENCE_INVALID",
+                "relationship endpoints must be distinct",
+            )
+        change["source_id"] = source_id
+        change["target_id"] = target_id
+        for alias in (
+            "source_character_id",
+            "target_character_id",
+            "character_id",
+        ):
+            change.pop(alias, None)
+        normalized.append(change)
+    return normalized
+
+
 class NarrativeObligationType(StrEnum):
     PROMISE = "PROMISE"
     FORESHADOWING = "FORESHADOWING"
@@ -752,6 +806,11 @@ def events_from_canon_patch(
     changes[NarrativeStateKind.CHARACTER_BELIEF] = (
         normalize_character_belief_changes(
             changes[NarrativeStateKind.CHARACTER_BELIEF]
+        )
+    )
+    changes[NarrativeStateKind.RELATIONSHIP_STATE] = (
+        normalize_relationship_state_changes(
+            changes[NarrativeStateKind.RELATIONSHIP_STATE]
         )
     )
 

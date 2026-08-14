@@ -7,6 +7,7 @@ from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.narrative_state.contracts import (
     atomize_character_knowledge_changes,
     normalize_character_belief_changes,
+    normalize_relationship_state_changes,
 )
 
 
@@ -42,7 +43,6 @@ _CANON_FIELDS = (
 _CANON_SEMANTIC_IDENTITIES: dict[str, tuple[tuple[str, ...], ...]] = {
     "character_state_changes": (("entity_id",), ("character_id",)),
     "relationship_changes": (
-        ("entity_id",),
         ("source_id", "target_id"),
     ),
     "timeline_events": (("entity_id",),),
@@ -333,6 +333,22 @@ def _canon_schema() -> dict[str, Any]:
             "type": ["string", "null"],
             "enum": [None],
         }
+    relationship_changes = schema["properties"]["relationship_changes"]
+    relationship_changes["description"] = (
+        "Typed directed relationship transitions. Copy the exact source_id and "
+        "target_id endpoints; entity_id is descriptive only and cannot replace "
+        "either graph endpoint. Leave the generic character_id field null."
+    )
+    relationship_change = relationship_changes["items"]
+    for endpoint in ("source_id", "target_id"):
+        relationship_change["properties"][endpoint] = {
+            "type": "string",
+            "minLength": 1,
+        }
+    relationship_change["properties"]["character_id"] = {
+        "type": ["string", "null"],
+        "enum": [None],
+    }
     disclosure_changes = schema["properties"]["disclosure_events"]
     disclosure_changes["description"] = (
         "Typed presentation events. Copy a stable disclosure_id, one fact or "
@@ -467,7 +483,7 @@ def chapter_provider_output_schema(stage: str) -> dict[str, Any]:
 def chapter_provider_output_schema_ref(stage: str) -> str:
     chapter_provider_output_schema(stage)
     version = (
-        "v7"
+        "v8"
         if stage == "canon_extraction"
         else "v2"
         if stage in _QUALITY_STAGES
@@ -525,6 +541,11 @@ def validate_chapter_provider_output_semantics(
             normalized["character_belief_changes"] = (
                 normalize_character_belief_changes(
                     normalized.get("character_belief_changes", [])
+                )
+            )
+            normalized["relationship_changes"] = (
+                normalize_relationship_state_changes(
+                    normalized.get("relationship_changes", [])
                 )
             )
         except KernelError as exc:

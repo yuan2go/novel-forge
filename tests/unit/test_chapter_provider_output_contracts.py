@@ -130,7 +130,7 @@ def test_quality_prompt_and_schema_version_require_dimension_evidence() -> None:
     )
     assert (
         chapter_provider_output_schema_ref("canon_extraction")
-        == "schema:chapter-provider-output:canon_extraction:v7"
+        == "schema:chapter-provider-output:canon_extraction:v8"
     )
 
 
@@ -203,6 +203,8 @@ def test_canon_prompt_requires_character_knowledge_precondition_closure() -> Non
     assert "a belief may be false" in contract
     assert "use only stance with BELIEVES, DOUBTS" in contract
     assert "from_stance only for an exact accepted baseline" in contract
+    assert "source_id and target_id" in contract
+    assert "entity_id cannot replace an endpoint" in contract
     assert "including character-facing events" in contract
     assert "reader-facing Disclosure alone" in contract
     assert "deterministically projected into Reader Knowledge" in contract
@@ -436,6 +438,61 @@ def test_canon_schema_rejects_character_belief_status_alias() -> None:
         validate_chapter_provider_output_schema("canon_extraction", value)
 
     assert error.value.code == "CHAPTER_PROVIDER_OUTPUT_SCHEMA_INVALID"
+
+
+def test_canon_schema_requires_typed_relationship_endpoints() -> None:
+    value = _valid("canon_extraction")
+    change_schema = chapter_provider_output_schema("canon_extraction")["properties"][
+        "relationship_changes"
+    ]["items"]
+    assert change_schema["properties"]["source_id"] == {
+        "type": "string",
+        "minLength": 1,
+    }
+    assert change_schema["properties"]["target_id"] == {
+        "type": "string",
+        "minLength": 1,
+    }
+    change = {
+        key: (
+            "Lin and Mei enter a wary alliance."
+            if key == "summary"
+            else "lin-qiao:mei-an"
+            if key == "entity_id"
+            else "lin-qiao"
+            if key == "character_id"
+            else "mei-an"
+            if key == "target_id"
+            else 0
+            if key == "evidence_start"
+            else 42
+            if key == "evidence_end"
+            else 0.95
+            if key == "confidence"
+            else "RELATIONSHIP_STATE_CHANGE"
+            if key == "impact_type"
+            else None
+        )
+        for key in change_schema["properties"]
+    }
+    value["relationship_changes"] = [change]
+
+    with pytest.raises(KernelError) as error:
+        validate_chapter_provider_output_schema("canon_extraction", value)
+
+    assert error.value.code == "CHAPTER_PROVIDER_OUTPUT_SCHEMA_INVALID"
+    assert "character_id" in str(error.value)
+
+    change["character_id"] = None
+    change["source_id"] = "lin-qiao"
+    structural = validate_chapter_provider_output_schema("canon_extraction", value)
+    normalized = validate_chapter_provider_output_semantics(
+        "canon_extraction", structural
+    )
+    relationship = normalized["relationship_changes"][0]
+    assert relationship["source_id"] == "lin-qiao"
+    assert relationship["target_id"] == "mei-an"
+    assert "character_id" not in relationship
 
 
 def test_canon_schema_exposes_epistemic_and_presentation_changes() -> None:

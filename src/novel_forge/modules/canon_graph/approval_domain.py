@@ -17,7 +17,6 @@ _SEMANTIC_IDENTITY_FIELDS: dict[str, tuple[tuple[str, ...], ...]] = {
     "canon_assertion_candidates": (("subject", "predicate"),),
     "character_state_changes": (("entity_id",), ("character_id",)),
     "relationship_changes": (
-        ("entity_id",),
         ("source_id", "target_id"),
         ("source_character_id", "target_character_id"),
     ),

@@ -234,5 +234,5 @@ def test_canonical_architecture_campaign_versions_the_frozen_contract() -> None:
     assert contract.campaign_id == "longform-narrative-v2"
     assert contract.campaign_version == 2
     assert contract.migration_head == "20260814_0088_canonical_narrative_architecture"
-    assert raw["runtime_bindings"]["capability_pack_version"] == "1.10.0"
+    assert raw["runtime_bindings"]["capability_pack_version"] == "1.11.0"
     assert contract_identity(contract) == raw["contract_identity"]

@@ -145,6 +145,38 @@ class CanonApprovalDomainTests(unittest.TestCase):
                 extraction_asset_version_id="extraction-v2",
             )
 
+    def test_relationship_identity_uses_graph_endpoints_not_generic_entity_id(
+        self,
+    ) -> None:
+        candidate = extraction()
+        candidate["relationship_changes"] = [
+            {
+                "entity_id": "relationship:invented:a",
+                "source_id": "hero",
+                "target_id": "witness",
+                "state": "WARY",
+                "impact_type": "RELATIONSHIP_STATE_CHANGE",
+                "confidence": 0.9,
+                "extraction_evidence": {"span": {"start": 10, "end": 20}},
+            },
+            {
+                "entity_id": "relationship:invented:b",
+                "source_id": "hero",
+                "target_id": "witness",
+                "state": "TRUSTED",
+                "impact_type": "RELATIONSHIP_STATE_CHANGE",
+                "confidence": 0.9,
+                "extraction_evidence": {"span": {"start": 21, "end": 30}},
+            },
+        ]
+
+        with self.assertRaisesRegex(KernelError, "CANON_EXTRACTION_CONTRADICTION"):
+            build_canon_change_proposal(
+                project_id="project-a",
+                extraction=candidate,
+                extraction_asset_version_id="extraction-v2",
+            )
+
     def test_disclosure_identity_is_not_derived_from_shared_evidence_span(self) -> None:
         candidate = extraction()
         shared = {
