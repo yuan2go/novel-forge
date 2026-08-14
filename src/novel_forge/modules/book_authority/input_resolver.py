@@ -152,6 +152,81 @@ class BookProductionInputSnapshot:
         return asdict(self)
 
 
+def _select_current_volume_from_portfolio(
+    volumes: list[dict[str, Any]], *, chapter_cursor: int
+) -> dict[str, Any]:
+    matches: list[dict[str, Any]] = []
+    previous_end = 0
+    for volume in volumes:
+        chapter_range = volume["content"].get("chapter_range")
+        if (
+            not isinstance(chapter_range, list)
+            or len(chapter_range) != 2
+            or any(
+                not isinstance(item, int) or isinstance(item, bool)
+                for item in chapter_range
+            )
+        ):
+            raise KernelError(
+                "BOOK_PRODUCTION_VOLUME_RANGE_INVALID",
+                "every Volume Portfolio member requires an integer chapter range",
+            )
+        start, end = chapter_range
+        if start != previous_end + 1 or end < start:
+            raise KernelError(
+                "BOOK_PRODUCTION_VOLUME_PORTFOLIO_OVERLAP",
+                "Volume Portfolio ranges must be ordered, contiguous, and start at chapter 1",
+            )
+        previous_end = end
+        if start <= chapter_cursor <= end:
+            matches.append(volume)
+    if len(matches) != 1:
+        raise KernelError(
+            "BOOK_PRODUCTION_CURRENT_VOLUME_AMBIGUOUS",
+            "accepted chapter cursor must resolve exactly one current VolumePlan",
+        )
+    return matches[0]
+
+
+def project_current_plan_cursor(
+    *,
+    volumes: list[dict[str, Any]],
+    arcs: list[dict[str, Any]],
+    chapter_cursor: int,
+) -> tuple[dict[str, Any], tuple[str, ...]]:
+    """Derive the current Volume and complete relevant Arc set from one portfolio."""
+
+    current = _select_current_volume_from_portfolio(
+        volumes, chapter_cursor=chapter_cursor
+    )
+    volume_ids = [str(item["asset_version_id"]) for item in volumes]
+    for arc in arcs:
+        scope = [str(item) for item in arc["content"].get("cross_volume_scope") or ()]
+        if (
+            not scope
+            or len(scope) != len(set(scope))
+            or not set(scope).issubset(volume_ids)
+            or scope != [item for item in volume_ids if item in set(scope)]
+        ):
+            raise KernelError(
+                "BOOK_PRODUCTION_ARC_VOLUME_INVALID",
+                "Canonical Arc scope must be a non-empty ordered subset of the Volume Portfolio",
+            )
+    current_id = str(current["asset_version_id"])
+    relevant = tuple(
+        str(arc["asset_version_id"])
+        for arc in arcs
+        if current_id
+        in {str(item) for item in arc["content"].get("cross_volume_scope") or ()}
+    )
+    if not relevant:
+        raise KernelError(
+            "BOOK_PRODUCTION_CURRENT_ARC_MISSING",
+            "current Volume has no narratively relevant Canonical Arc",
+        )
+    return current, relevant
+
+
 class BookProductionInputResolver:
     def __init__(
         self,
@@ -168,9 +243,7 @@ class BookProductionInputResolver:
         self.database_url = database_url
         self.application_build_id = application_build_id
         self.commit_sha = commit_sha
-        self.allow_scripted_qualification_fixture = (
-            allow_scripted_qualification_fixture
-        )
+        self.allow_scripted_qualification_fixture = allow_scripted_qualification_fixture
 
     def resolve(
         self,
@@ -779,7 +852,7 @@ class BookProductionInputResolver:
                        THEN (version.content->'chapter_range'->>0)::INTEGER
                        ELSE 0
                      END,
-                     active.activated_at DESC,
+                     active.activated_at ASC,
                      binding.logical_key
             """,
             [command.project_id, command.book_id],
@@ -819,37 +892,9 @@ class BookProductionInputResolver:
     def _select_current_volume(
         volumes: list[dict[str, Any]], *, chapter_cursor: int
     ) -> dict[str, Any]:
-        matches: list[dict[str, Any]] = []
-        previous_end = 0
-        for volume in volumes:
-            chapter_range = volume["content"].get("chapter_range")
-            if (
-                not isinstance(chapter_range, list)
-                or len(chapter_range) != 2
-                or any(
-                    not isinstance(item, int) or isinstance(item, bool)
-                    for item in chapter_range
-                )
-            ):
-                raise KernelError(
-                    "BOOK_PRODUCTION_VOLUME_RANGE_INVALID",
-                    "every Volume Portfolio member requires an integer chapter range",
-                )
-            start, end = chapter_range
-            if start != previous_end + 1 or end < start:
-                raise KernelError(
-                    "BOOK_PRODUCTION_VOLUME_PORTFOLIO_OVERLAP",
-                    "Volume Portfolio ranges must be ordered, contiguous, and start at chapter 1",
-                )
-            previous_end = end
-            if start <= chapter_cursor <= end:
-                matches.append(volume)
-        if len(matches) != 1:
-            raise KernelError(
-                "BOOK_PRODUCTION_CURRENT_VOLUME_AMBIGUOUS",
-                "accepted chapter cursor must resolve exactly one current VolumePlan",
-            )
-        return matches[0]
+        return _select_current_volume_from_portfolio(
+            volumes, chapter_cursor=chapter_cursor
+        )
 
     @staticmethod
     def _validate_plan_hierarchy(

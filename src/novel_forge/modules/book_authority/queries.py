@@ -7,6 +7,9 @@ from datetime import datetime
 from typing import Any, Iterable
 
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.book_authority.input_resolver import (
+    project_current_plan_cursor,
+)
 from novel_forge.modules.story_design_authority import required_qualification_profiles
 from novel_forge.modules.story_planning_runtime.domain import canonical_hash
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
@@ -136,6 +139,41 @@ class PostgresBookProductionQuery:
             )
             for row in rows
         )
+
+    def governance_action_versions(
+        self, *, project_id: str, input_version_ids: tuple[str, ...]
+    ) -> tuple[str, ...]:
+        """Project governed overrides inherited by the supplied plan inputs."""
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT version.content
+                FROM authority_asset_version AS version
+                JOIN authority_asset AS asset ON asset.asset_id=version.asset_id
+                WHERE asset.project_id=%s
+                  AND version.asset_version_id=ANY(%s::text[])
+                """,
+                [project_id, list(input_version_ids)],
+            )
+            contents = [dict(row[0]) for row in uow.cursor.fetchall()]
+        actions: list[str] = []
+        for content in contents:
+            envelope = content.get("constraint_envelope")
+            policy = (
+                envelope.get("narrative_load_policy")
+                if isinstance(envelope, dict)
+                else content.get("narrative_load_policy")
+            )
+            if not isinstance(policy, dict):
+                continue
+            for override in policy.get("governed_overrides") or ():
+                if isinstance(override, dict):
+                    asset_version_id = str(
+                        override.get("governance_action_asset_version_id") or ""
+                    )
+                    if asset_version_id and asset_version_id not in actions:
+                        actions.append(asset_version_id)
+        return tuple(actions)
 
     def latest_eligible_role_asset(
         self,
@@ -346,6 +384,7 @@ class PostgresBookProductionQuery:
             uow.cursor.execute(
                 """
                 SELECT book_plan_version, current_volume_plan_version,
+                       volume_portfolio_plan_versions,
                        arc_portfolio_plan_versions,
                        current_relevant_arc_plan_versions,
                        active_arc_plan_versions, character_state_version,
@@ -368,6 +407,7 @@ class PostgresBookProductionQuery:
         keys = (
             "book_plan_version",
             "current_volume_plan_version",
+            "volume_portfolio_plan_versions",
             "arc_portfolio_plan_versions",
             "current_relevant_arc_plan_versions",
             "active_arc_plan_versions",
@@ -383,6 +423,67 @@ class PostgresBookProductionQuery:
             "design_qualification_hash",
         )
         return dict(zip(keys, row, strict=True))
+
+    def require_cursor_plan_projection(
+        self, *, snapshot_id: str, chapter_cursor: int
+    ) -> dict[str, Any]:
+        snapshot = self.require_input_snapshot(snapshot_id)
+        volume_ids = tuple(
+            str(item) for item in snapshot["volume_portfolio_plan_versions"]
+        )
+        arc_ids = tuple(str(item) for item in snapshot["arc_portfolio_plan_versions"])
+        portfolio_ids = (*volume_ids, *arc_ids)
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT binding.asset_version_id, binding.contract_type,
+                       binding.freshness, version.content, version.content_hash
+                FROM active_story_plan_version AS active
+                JOIN story_plan_binding AS binding
+                  ON binding.binding_id=active.binding_id
+                JOIN authority_asset_version AS version
+                  ON version.asset_version_id=binding.asset_version_id
+                WHERE binding.asset_version_id=ANY(%s)
+                  AND version.lifecycle='ACTIVE'
+                  AND version.eligibility='ELIGIBLE'
+                  AND version.governance='CLEAR'
+                """,
+                [list(portfolio_ids)],
+            )
+            rows = uow.cursor.fetchall()
+        by_id = {str(row[0]): row for row in rows}
+        if (
+            len(portfolio_ids) != len(set(portfolio_ids))
+            or set(by_id) != set(portfolio_ids)
+            or any(str(row[2]) != "CURRENT" for row in rows)
+            or any(
+                str(by_id[item][1]) != expected
+                for expected, ids in (("VOLUME", volume_ids), ("ARC", arc_ids))
+                for item in ids
+            )
+        ):
+            raise KernelError(
+                "BOOK_INPUT_PORTFOLIO_STALE",
+                "frozen global Volume/Arc portfolio is no longer current and complete",
+            )
+        volumes = [
+            {"asset_version_id": item, "content": dict(by_id[item][3])}
+            for item in volume_ids
+        ]
+        arcs = [
+            {"asset_version_id": item, "content": dict(by_id[item][3])}
+            for item in arc_ids
+        ]
+        volume, relevant_arcs = project_current_plan_cursor(
+            volumes=volumes,
+            arcs=arcs,
+            chapter_cursor=chapter_cursor,
+        )
+        return {
+            "chapter_cursor": chapter_cursor,
+            "volume_plan_version": str(volume["asset_version_id"]),
+            "arc_plan_versions": relevant_arcs,
+        }
 
     def require_chapter_production_admission(
         self,
@@ -400,6 +501,10 @@ class PostgresBookProductionQuery:
                 "CHAPTER_PRODUCTION_SEQUENCE_INVALID",
                 "Chapter production admission must target the next unaccepted chapter",
             )
+        cursor_projection = self.require_cursor_plan_projection(
+            snapshot_id=snapshot_id,
+            chapter_cursor=chapter_number,
+        )
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
@@ -520,6 +625,7 @@ class PostgresBookProductionQuery:
             if (
                 str(group[1]) != chapter_group_plan_version_id
                 or str(chapter[1]) != chapter_plan_version_id
+                or str(group[2]) != str(cursor_projection["volume_plan_version"])
                 or str(chapter[2]) != chapter_group_plan_version_id
                 or str(group[3]) != "FROZEN"
                 or str(chapter[3]) != "FROZEN"
@@ -555,6 +661,22 @@ class PostgresBookProductionQuery:
                     "Narrative Scheduling must contain one row for the target Chapter",
                 )
             schedule_row = matrix_rows[0]
+            scheduled_arcs = {
+                str(item.get("arc_plan_version_id") or "")
+                for item in schedule_row.get("arc_cadence") or ()
+                if isinstance(item, dict) and str(item.get("action") or "") != "DORMANT"
+            }
+            if (
+                not scheduled_arcs
+                or "" in scheduled_arcs
+                or not scheduled_arcs.issubset(
+                    set(cursor_projection["arc_plan_versions"])
+                )
+            ):
+                raise KernelError(
+                    "CHAPTER_PRODUCTION_ARC_PROJECTION_STALE",
+                    "Scheduling Arc cadence must be a subset of the cursor-projected global portfolio",
+                )
             scheduled_fields = (
                 "primary_function",
                 "secondary_functions",
@@ -693,6 +815,10 @@ class PostgresBookProductionQuery:
             "book_version": int(snapshot[2]),
             "chapter_number": chapter_number,
             "accepted_through_chapter": accepted_through_chapter,
+            "current_volume_plan_version": cursor_projection["volume_plan_version"],
+            "current_relevant_arc_plan_versions": list(
+                cursor_projection["arc_plan_versions"]
+            ),
             "chapter_group_plan_version_id": chapter_group_plan_version_id,
             "chapter_plan_version_id": chapter_plan_version_id,
             "receipts": sorted(

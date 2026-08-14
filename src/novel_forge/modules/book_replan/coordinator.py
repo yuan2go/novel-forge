@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 import hashlib
 from typing import Any
 from uuid import uuid4
@@ -183,11 +183,44 @@ class BookReplanCoordinator:
                 "ordinary Replan cannot modify an Executed plan",
             )
         generator = SCOPE_GENERATOR[command.affected_scope]
-        inputs = self._replacement_inputs(
+        (
+            inputs,
+            frozen_related_arc_plan_version_ids,
+            governance_action_version_ids,
+        ) = self._replacement_inputs(
             command.project_id,
             target_asset_version_id=target["asset_version_id"],
             generator=generator,
         )
+        arc_scope_volume_plan_version_ids: tuple[str, ...] = ()
+        related_arc_plan_version_ids: tuple[str, ...] = ()
+        dependent_arc_plan_version_ids: tuple[str, ...] = ()
+        if generator == "arc_plan.generate":
+            original_scope = tuple(
+                str(item) for item in target["content"].get("cross_volume_scope") or ()
+            )
+            primary_volume = str(inputs.get("volume_plan") or "")
+            if not original_scope or original_scope[0] != primary_volume:
+                raise KernelError(
+                    "BOOK_REPLAN_ARC_SCOPE_STALE",
+                    "Arc replacement must preserve its ordered primary Volume scope",
+                )
+            arc_scope_volume_plan_version_ids = original_scope[1:]
+            related_arc_plan_version_ids = self._related_arc_versions(
+                project_id=command.project_id,
+                book_id=command.book_id,
+                dependent_arc_plan_version_id=str(target["asset_version_id"]),
+            )
+            dependent_arc_plan_version_ids = self._dependent_arc_versions(
+                project_id=command.project_id,
+                book_id=command.book_id,
+                source_arc_plan_version_id=str(target["asset_version_id"]),
+            )
+        elif generator in {
+            "chapter_group_plan.generate",
+            "chapter_plan.generate",
+        }:
+            related_arc_plan_version_ids = frozen_related_arc_plan_version_ids
         generated = self.planning.generate(
             StoryPlanningGenerationCommand(
                 project_id=command.project_id,
@@ -198,10 +231,14 @@ class BookReplanCoordinator:
                 logical_key=target["logical_key"],
                 input_versions=inputs,
                 parent_version_id=target["parent_version_id"],
+                arc_scope_volume_plan_version_ids=(arc_scope_volume_plan_version_ids),
+                related_arc_plan_version_ids=related_arc_plan_version_ids,
+                dependent_arc_plan_version_ids=dependent_arc_plan_version_ids,
                 change_evidence_version_ids=(
                     command.source_recap_asset_version_id,
                     command.replan_request_asset_version_id,
                 ),
+                governance_action_version_ids=governance_action_version_ids,
                 idempotency_key=f"{command.idempotency_key}:replacement-candidate",
                 trace_id=command.trace_id,
                 correlation_id=recap_operation_id,
@@ -1058,7 +1095,7 @@ class BookReplanCoordinator:
         *,
         target_asset_version_id: str,
         generator: str,
-    ) -> dict[str, str]:
+    ) -> tuple[dict[str, str], tuple[str, ...], tuple[str, ...]]:
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
@@ -1085,7 +1122,17 @@ class BookReplanCoordinator:
                 "BOOK_REPLAN_INPUT_ROLE_MISMATCH",
                 "target plan input roles differ from replacement Generator",
             )
-        return result
+        related_arcs = tuple(
+            str(item["asset_version_id"])
+            for item in row[0]
+            if str(item["role"]).startswith("related_arc:")
+        )
+        governance_actions = tuple(
+            str(item["asset_version_id"])
+            for item in row[0]
+            if str(item["role"]).startswith("narrative_governance_action:")
+        )
+        return result, related_arcs, governance_actions
 
     def _regenerate_future_plan(
         self, replan: dict[str, Any], proposal: dict[str, Any]
@@ -1132,8 +1179,27 @@ class BookReplanCoordinator:
             volume_replacements[current_volume_before] = replacement_id
 
         if approved_scope in {"BOOK", "VOLUME", "NARRATIVE_SEGMENT"}:
-            regenerated_arcs: list[str] = []
-            for arc_plan_id in arc_plan_ids:
+            initially_impacted = {
+                arc_plan_id
+                for arc_plan_id in arc_plan_ids
+                if approved_scope == "BOOK"
+                or current_volume_before
+                in {
+                    str(item)
+                    for item in self._plan_by_asset(
+                        replan["project_id"], replan["book_id"], arc_plan_id
+                    )["content"].get("cross_volume_scope")
+                    or ()
+                }
+            }
+            ordered_impacted = self._arc_regeneration_order(
+                project_id=replan["project_id"],
+                book_id=replan["book_id"],
+                portfolio_arc_plan_version_ids=tuple(arc_plan_ids),
+                initially_impacted_arc_plan_version_ids=initially_impacted,
+            )
+            arc_replacements: dict[str, str] = {}
+            for arc_plan_id in ordered_impacted:
                 arc_target = self._plan_by_asset(
                     replan["project_id"], replan["book_id"], arc_plan_id
                 )
@@ -1141,30 +1207,45 @@ class BookReplanCoordinator:
                     str(item)
                     for item in arc_target["content"].get("cross_volume_scope") or ()
                 ]
-                if approved_scope != "BOOK" and current_volume_before not in old_scope:
-                    regenerated_arcs.append(arc_plan_id)
-                    continue
-                scoped_volumes = [volume_replacements[item] for item in old_scope]
-                primary_volume_id = scoped_volumes[0]
-                regenerated_arcs.append(
-                    self._generate_approved_replacement(
-                        replan=replan,
-                        proposal=proposal,
-                        book=book,
-                        generator="arc_plan.generate",
-                        logical_key=arc_target["logical_key"],
-                        parent_version_id="",
-                        overrides={
-                            "book_plan": book_plan_id,
-                            "volume_plan": primary_volume_id,
-                        },
-                        expected_active_asset_version_id=arc_target["asset_version_id"],
-                        arc_scope_volume_plan_version_ids=tuple(
-                            item for item in scoped_volumes if item != primary_volume_id
-                        ),
+                scoped_volumes = [
+                    volume_replacements.get(item, item) for item in old_scope
+                ]
+                related_versions = tuple(
+                    arc_replacements.get(item, item)
+                    for item in self._related_arc_versions(
+                        project_id=replan["project_id"],
+                        book_id=replan["book_id"],
+                        dependent_arc_plan_version_id=arc_plan_id,
                     )
                 )
-            arc_plan_ids = regenerated_arcs
+                dependent_versions = tuple(
+                    arc_replacements.get(item, item)
+                    for item in self._dependent_arc_versions(
+                        project_id=replan["project_id"],
+                        book_id=replan["book_id"],
+                        source_arc_plan_version_id=arc_plan_id,
+                    )
+                )
+                primary_volume_id = scoped_volumes[0]
+                arc_replacements[arc_plan_id] = self._generate_approved_replacement(
+                    replan=replan,
+                    proposal=proposal,
+                    book=book,
+                    generator="arc_plan.generate",
+                    logical_key=arc_target["logical_key"],
+                    parent_version_id="",
+                    overrides={
+                        "book_plan": book_plan_id,
+                        "volume_plan": primary_volume_id,
+                    },
+                    expected_active_asset_version_id=arc_target["asset_version_id"],
+                    arc_scope_volume_plan_version_ids=tuple(
+                        item for item in scoped_volumes if item != primary_volume_id
+                    ),
+                    related_arc_plan_version_ids=related_versions,
+                    dependent_arc_plan_version_ids=dependent_versions,
+                )
+            arc_plan_ids = [arc_replacements.get(item, item) for item in arc_plan_ids]
         elif approved_scope in {"ARC", "ARC_SEGMENT"}:
             target_arc_id = str(replan["target_asset_version_id"])
             arc_plan_ids = self._replace_portfolio_version(
@@ -1184,8 +1265,7 @@ class BookReplanCoordinator:
                 )
                 old_scope = tuple(
                     str(item)
-                    for item in arc_target["content"].get("cross_volume_scope")
-                    or ()
+                    for item in arc_target["content"].get("cross_volume_scope") or ()
                 )
                 related_versions = tuple(
                     arc_replacements.get(item, item)
@@ -1193,6 +1273,14 @@ class BookReplanCoordinator:
                         project_id=replan["project_id"],
                         book_id=replan["book_id"],
                         dependent_arc_plan_version_id=related_arc_id,
+                    )
+                )
+                dependent_versions = tuple(
+                    arc_replacements.get(item, item)
+                    for item in self._dependent_arc_versions(
+                        project_id=replan["project_id"],
+                        book_id=replan["book_id"],
+                        source_arc_plan_version_id=related_arc_id,
                     )
                 )
                 regenerated = self._generate_approved_replacement(
@@ -1209,6 +1297,7 @@ class BookReplanCoordinator:
                     expected_active_asset_version_id=related_arc_id,
                     arc_scope_volume_plan_version_ids=old_scope[1:],
                     related_arc_plan_version_ids=related_versions,
+                    dependent_arc_plan_version_ids=dependent_versions,
                 )
                 arc_replacements[related_arc_id] = regenerated
                 arc_plan_ids = self._replace_portfolio_version(
@@ -1345,6 +1434,62 @@ class BookReplanCoordinator:
             )
             return tuple(str(row[0]) for row in uow.cursor.fetchall())
 
+    def _arc_regeneration_order(
+        self,
+        *,
+        project_id: str,
+        book_id: str,
+        portfolio_arc_plan_version_ids: tuple[str, ...],
+        initially_impacted_arc_plan_version_ids: set[str],
+    ) -> tuple[str, ...]:
+        portfolio = tuple(dict.fromkeys(portfolio_arc_plan_version_ids))
+        if not initially_impacted_arc_plan_version_ids.issubset(portfolio):
+            raise KernelError(
+                "BOOK_REPLAN_ARC_PORTFOLIO_STALE",
+                "Arc regeneration target is outside the frozen global portfolio",
+            )
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT source_asset_version_id, dependent_asset_version_id
+                FROM asset_dependency_edge
+                WHERE project_id=%s AND book_id=%s
+                  AND dependency_type='ARC_RELATION'
+                  AND source_asset_version_id=ANY(%s)
+                  AND dependent_asset_version_id=ANY(%s)
+                """,
+                [project_id, book_id, list(portfolio), list(portfolio)],
+            )
+            edges = tuple((str(row[0]), str(row[1])) for row in uow.cursor.fetchall())
+        impacted = set(initially_impacted_arc_plan_version_ids)
+        while True:
+            expanded = impacted | {
+                dependent for source, dependent in edges if source in impacted
+            }
+            if expanded == impacted:
+                break
+            impacted = expanded
+        incoming = {
+            item: {source for source, dependent in edges if dependent == item}
+            for item in impacted
+        }
+        pending = set(impacted)
+        ordered: list[str] = []
+        while pending:
+            ready = [
+                item
+                for item in portfolio
+                if item in pending and not (incoming[item] & pending)
+            ]
+            if not ready:
+                raise KernelError(
+                    "BOOK_REPLAN_ARC_RELATION_CYCLE",
+                    "Arc relation closure cannot be regenerated deterministically",
+                )
+            ordered.extend(ready)
+            pending.difference_update(ready)
+        return tuple(ordered)
+
     def _related_arc_versions(
         self,
         *,
@@ -1366,6 +1511,27 @@ class BookReplanCoordinator:
             )
             return tuple(str(row[0]) for row in uow.cursor.fetchall())
 
+    def _dependent_arc_versions(
+        self,
+        *,
+        project_id: str,
+        book_id: str,
+        source_arc_plan_version_id: str,
+    ) -> tuple[str, ...]:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT dependent_asset_version_id
+                FROM asset_dependency_edge
+                WHERE project_id=%s AND book_id=%s
+                  AND source_asset_version_id=%s
+                  AND dependency_type='ARC_RELATION'
+                ORDER BY dependent_asset_version_id
+                """,
+                [project_id, book_id, source_arc_plan_version_id],
+            )
+            return tuple(str(row[0]) for row in uow.cursor.fetchall())
+
     def _generate_approved_replacement(
         self,
         *,
@@ -1379,11 +1545,20 @@ class BookReplanCoordinator:
         expected_active_asset_version_id: str,
         arc_scope_volume_plan_version_ids: tuple[str, ...] = (),
         related_arc_plan_version_ids: tuple[str, ...] = (),
+        dependent_arc_plan_version_ids: tuple[str, ...] = (),
     ) -> str:
         inputs = self._latest_generator_inputs(
             book,
             generator=generator,
             overrides=overrides,
+        )
+        governance_action_version_ids = (
+            self._frozen_governance_action_versions(
+                project_id=replan["project_id"],
+                candidate_asset_version_id=expected_active_asset_version_id,
+            )
+            if expected_active_asset_version_id
+            else ()
         )
         suffix = generator.removesuffix(".generate").replace("_", "-")
         result = self.planning.generate(
@@ -1398,10 +1573,12 @@ class BookReplanCoordinator:
                 parent_version_id=parent_version_id,
                 arc_scope_volume_plan_version_ids=(arc_scope_volume_plan_version_ids),
                 related_arc_plan_version_ids=related_arc_plan_version_ids,
+                dependent_arc_plan_version_ids=dependent_arc_plan_version_ids,
                 change_evidence_version_ids=(
                     replan["source_recap_asset_version_id"],
                     replan["replan_request_asset_version_id"],
                 ),
+                governance_action_version_ids=governance_action_version_ids,
                 idempotency_key=(
                     f"{replan['stable_idempotency_key']}:regenerate:{suffix}:"
                     f"{logical_key}"
@@ -1453,6 +1630,30 @@ class BookReplanCoordinator:
             ),
         )
         return result.candidate_asset_version_id
+
+    def _frozen_governance_action_versions(
+        self, *, project_id: str, candidate_asset_version_id: str
+    ) -> tuple[str, ...]:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT input_snapshot
+                FROM authority_story_planning_generation
+                WHERE project_id=%s AND candidate_asset_version_id=%s
+                """,
+                [project_id, candidate_asset_version_id],
+            )
+            row = uow.cursor.fetchone()
+        if row is None:
+            raise KernelError(
+                "BOOK_REPLAN_TARGET_GENERATION_MISSING",
+                "replacement target lacks immutable generation lineage",
+            )
+        return tuple(
+            str(item["asset_version_id"])
+            for item in row[0]
+            if str(item["role"]).startswith("narrative_governance_action:")
+        )
 
     def _plan_by_asset(
         self, project_id: str, book_id: str, asset_version_id: str
@@ -1716,8 +1917,7 @@ class BookReplanCoordinator:
         return tuple(sorted(overrides.items()))
 
     def _snapshot(self, snapshot_id: str) -> dict[str, Any]:
-        snapshot = self.input_resolver.require(snapshot_id).to_dict()
-        return snapshot
+        return asdict(self.input_resolver.require(snapshot_id))
 
     def _latest_active_asset(
         self, project_id: str, book_id: str, asset_types: tuple[str, ...]

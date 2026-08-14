@@ -1,4 +1,5 @@
 """Command/Attempt-backed semantic lifecycle for Story Design assets."""
+
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
@@ -38,7 +39,7 @@ from .domain import (
 
 
 STORY_DESIGN_TRANSITION_DEFINITION = "story_design.lifecycle.transition"
-STORY_DESIGN_TRANSITION_VERSION = "1.0.0"
+STORY_DESIGN_TRANSITION_VERSION = "1.1.0"
 STORY_DESIGN_TRANSITION_HANDLER = (
     "novel_forge.story_design_authority.lifecycle_transition"
 )
@@ -64,9 +65,7 @@ class StoryDesignTransitionCommand:
 
 
 class _TransitionHandler:
-    def execute(
-        self, request: AuthorityHandlerRequest
-    ) -> AuthorityHandlerOutput:
+    def execute(self, request: AuthorityHandlerRequest) -> AuthorityHandlerOutput:
         payload = request.command.get("payload")
         if not isinstance(payload, dict):
             raise KernelError(
@@ -109,9 +108,7 @@ class _TransitionHandler:
                 "candidate_type": generator.output_candidate_type,
                 "transition": transition.value,
                 "expected_version": int(payload["expected_version"]),
-                "planning_scope": PlanningScope(
-                    str(payload["planning_scope"])
-                ).value,
+                "planning_scope": PlanningScope(str(payload["planning_scope"])).value,
                 "source_kind": str(payload["source_kind"]),
                 "evidence": dict(payload.get("evidence") or {}),
             },
@@ -227,9 +224,7 @@ class PostgresStoryDesignAssetAuthority:
             },
             context=AdmissionContext(
                 actor_id=principal.principal_id,
-                permissions=frozenset(
-                    {"story_design.authority.execute"}
-                ),
+                permissions=frozenset({"story_design.authority.execute"}),
                 available_handlers=self.registry.available_handler_keys,
                 application_build_id=self.application_build_id,
                 commit_sha=self.commit_sha,
@@ -292,13 +287,9 @@ class PostgresStoryDesignAssetAuthority:
             uow.commit()
         return result
 
-    def require(
-        self, *, project_id: str, asset_version_id: str
-    ) -> dict[str, Any]:
+    def require(self, *, project_id: str, asset_version_id: str) -> dict[str, Any]:
         with AuthorityUnitOfWork(self.database_url) as uow:
-            return uow.repositories.story_design.require(
-                project_id, asset_version_id
-            )
+            return uow.repositories.story_design.require(project_id, asset_version_id)
 
     def _register_contracts(self) -> None:
         with AuthorityUnitOfWork(self.database_url) as uow:
@@ -309,9 +300,7 @@ class PostgresStoryDesignAssetAuthority:
                 )
             )
             for definition in GENERATOR_DEFINITIONS:
-                uow.repositories.story_design.register_generator(
-                    asdict(definition)
-                )
+                uow.repositories.story_design.register_generator(asdict(definition))
             uow.commit()
 
 
@@ -354,11 +343,10 @@ def _transition_definition(
             "target_asset_mutation": False,
             "semantic_activation_separate": True,
             "frozen_inputs_required": True,
+            "story_design_candidate_asset_input_allowed": True,
         },
         "idempotency_scope": "project:story-design-transition",
-        "concurrency_key_template": (
-            "project:{project_id}:story-design-transition"
-        ),
+        "concurrency_key_template": ("project:{project_id}:story-design-transition"),
         "retry_policy": {"max_attempts": 2},
         "timeout_policy": {"operation_timeout_seconds": 120},
         "cancellation_policy": {"mode": "cancel_active_attempt"},
@@ -383,9 +371,7 @@ def _transition_definition(
                 }
             ],
             "required_evidence": ["trace", "audit"],
-            "required_outbox_events": [
-                "story_design.transition.materialized"
-            ],
+            "required_outbox_events": ["story_design.transition.materialized"],
         },
     }
 

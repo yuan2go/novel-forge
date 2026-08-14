@@ -22,6 +22,8 @@ from tests.integration.authority_postgres_support import (
     DATABASE_URL,
     ensure_migrated,
     identifier,
+    insert_definition,
+    insert_operation,
     seed_authority_project_book,
 )
 
@@ -67,6 +69,61 @@ class HierarchicalPlanningPostgresTests(unittest.TestCase):
             commit_sha="b" * 40,
         )
         self.counter = 0
+        self._seed_realization_authority_inputs()
+
+    def _seed_realization_authority_inputs(self) -> None:
+        operation_id = f"realization-generation:{self.project_id}"
+        definition_name = f"realization.fixture:{self.project_id}"
+        inputs: list[dict[str, str]] = []
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            insert_definition(uow.cursor, definition_name)
+            insert_operation(
+                uow.cursor,
+                operation_id=operation_id,
+                definition_name=definition_name,
+                project_id=self.project_id,
+                status="SUCCEEDED",
+            )
+            for role, asset_type in (
+                ("world_bible", "world_bible"),
+                ("story_state", "narrative_state"),
+                ("character_cast", "character_cast"),
+            ):
+                asset_id = f"realization:{self.project_id}:{role}"
+                version_id = f"{asset_id}:v1"
+                content = {"book_id": self.book_id, "role": role}
+                content_hash = (
+                    "sha256:"
+                    + hashlib.sha256(
+                        json.dumps(
+                            content, sort_keys=True, separators=(",", ":")
+                        ).encode()
+                    ).hexdigest()
+                )
+                uow.cursor.execute(
+                    "INSERT INTO authority_asset(asset_id,project_id,asset_type) VALUES (%s,%s,%s)",
+                    [asset_id, self.project_id, asset_type],
+                )
+                uow.cursor.execute(
+                    """
+                    INSERT INTO authority_asset_version(
+                        asset_version_id,asset_id,version_number,lifecycle,
+                        eligibility,governance,content,content_hash,schema_version
+                    ) VALUES (%s,%s,1,'ACTIVE','ELIGIBLE','CLEAR',%s,%s,'realization-fixture.v1')
+                    """,
+                    [version_id, asset_id, json.dumps(content), content_hash],
+                )
+                inputs.append(
+                    {
+                        "role": role,
+                        "asset_version_id": version_id,
+                        "asset_type": asset_type,
+                        "content_hash": content_hash,
+                    }
+                )
+            uow.commit()
+        self.realization_generation_operation_id = operation_id
+        self.realization_inputs = inputs
 
     def test_book_volume_group_hierarchy_and_parent_versions(self) -> None:
         book = self._activate_and_bind(
@@ -153,7 +210,30 @@ class HierarchicalPlanningPostgresTests(unittest.TestCase):
         arc2 = self._activate_and_bind(
             PlanContractType.ARC,
             "arc:relationship",
-            extra={"cross_volume_scope": [volume1["asset_version_id"]]},
+            extra={
+                "cross_volume_scope": [volume1["asset_version_id"]],
+                "arc_relations": [
+                    {
+                        "source_arc_ref": "arc:main",
+                        "target_arc_ref": "arc:relationship",
+                        "relation_type": "CAUSES",
+                    }
+                ],
+            },
+        )
+        arc3 = self._activate_and_bind(
+            PlanContractType.ARC,
+            "arc:future",
+            extra={
+                "cross_volume_scope": [volume2["asset_version_id"]],
+                "arc_relations": [
+                    {
+                        "source_arc_ref": "arc:relationship",
+                        "target_arc_ref": "arc:future",
+                        "relation_type": "ENABLES",
+                    }
+                ],
+            },
         )
         group = self._activate_and_bind(
             PlanContractType.CHAPTER_GROUP,
@@ -183,6 +263,46 @@ class HierarchicalPlanningPostgresTests(unittest.TestCase):
             edges = {(str(row[0]), str(row[1])) for row in uow.cursor.fetchall()}
             uow.cursor.execute(
                 """
+                SELECT source_asset_version_id, dependent_asset_version_id
+                FROM asset_dependency_edge
+                WHERE project_id=%s AND dependency_type='ARC_RELATION'
+                ORDER BY source_asset_version_id, dependent_asset_version_id
+                """,
+                [self.project_id],
+            )
+            relation_edges = tuple(
+                (str(row[0]), str(row[1])) for row in uow.cursor.fetchall()
+            )
+            uow.cursor.execute(
+                """
+                WITH RECURSIVE affected(asset_version_id, path) AS (
+                    SELECT dependent_asset_version_id,
+                           ARRAY[source_asset_version_id, dependent_asset_version_id]
+                    FROM asset_dependency_edge
+                    WHERE project_id=%s AND dependency_type='ARC_RELATION'
+                      AND source_asset_version_id=%s
+                    UNION ALL
+                    SELECT edge.dependent_asset_version_id,
+                           affected.path || edge.dependent_asset_version_id
+                    FROM affected
+                    JOIN asset_dependency_edge AS edge
+                      ON edge.project_id=%s
+                     AND edge.source_asset_version_id=affected.asset_version_id
+                     AND edge.dependency_type='ARC_RELATION'
+                    WHERE NOT edge.dependent_asset_version_id=ANY(affected.path)
+                )
+                SELECT DISTINCT asset_version_id FROM affected
+                ORDER BY asset_version_id
+                """,
+                [
+                    self.project_id,
+                    arc1["asset_version_id"],
+                    self.project_id,
+                ],
+            )
+            relation_closure = tuple(str(row[0]) for row in uow.cursor.fetchall())
+            uow.cursor.execute(
+                """
                 SELECT COUNT(*)
                 FROM story_plan_hierarchy AS hierarchy
                 JOIN story_plan_binding AS child
@@ -209,7 +329,59 @@ class HierarchicalPlanningPostgresTests(unittest.TestCase):
             (arc2["asset_version_id"], chapter["asset_version_id"]),
             edges,
         )
+        self.assertEqual(
+            relation_edges,
+            (
+                (arc1["asset_version_id"], arc2["asset_version_id"]),
+                (arc2["asset_version_id"], arc3["asset_version_id"]),
+            ),
+        )
+        self.assertEqual(
+            relation_closure,
+            tuple(sorted((arc2["asset_version_id"], arc3["asset_version_id"]))),
+        )
         self.assertEqual(arc_containment_count, 0)
+
+    def test_arc_relation_preserves_source_declared_direction(self) -> None:
+        book = self._activate_and_bind(PlanContractType.BOOK, "book:direction")
+        volume = self._activate_and_bind(
+            PlanContractType.VOLUME,
+            "volume:direction",
+            parent=book,
+        )
+        target = self._activate_and_bind(
+            PlanContractType.ARC,
+            "arc:target",
+            extra={"cross_volume_scope": [volume["asset_version_id"]]},
+        )
+        source = self._activate_and_bind(
+            PlanContractType.ARC,
+            "arc:source",
+            extra={
+                "cross_volume_scope": [volume["asset_version_id"]],
+                "arc_relations": [
+                    {
+                        "source_arc_ref": "arc:source",
+                        "target_arc_ref": "arc:target",
+                        "relation_type": "ENABLES",
+                    }
+                ],
+            },
+        )
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                """
+                SELECT source_asset_version_id, dependent_asset_version_id
+                FROM asset_dependency_edge
+                WHERE project_id=%s AND book_id=%s
+                  AND dependency_type='ARC_RELATION'
+                """,
+                [self.project_id, self.book_id],
+            )
+            self.assertEqual(
+                uow.cursor.fetchall(),
+                [(source["asset_version_id"], target["asset_version_id"])],
+            )
 
     def test_canonical_segment_arc_and_chapter_execution_views_compose(self) -> None:
         book = self._activate_and_bind(PlanContractType.BOOK, "book:canonical")
@@ -824,22 +996,72 @@ class HierarchicalPlanningPostgresTests(unittest.TestCase):
             def authority_ref(
                 role: str, asset_type: str, domain_type: str
             ) -> dict[str, str]:
+                frozen = next(
+                    item
+                    for item in self.realization_inputs
+                    if item["role"] == role and item["asset_type"] == asset_type
+                )
                 return {
                     "project_id": self.project_id,
                     "book_id": self.book_id,
                     "authority_role": role,
-                    "asset_version_id": f"fixture:{role}:v1",
+                    "asset_version_id": frozen["asset_version_id"],
                     "asset_type": asset_type,
-                    "content_hash": "sha256:" + "a" * 64,
+                    "content_hash": frozen["content_hash"],
                     "domain_type": domain_type,
                     "freshness": "CURRENT",
-                    "frozen_by_operation_id": "operation:fixture-generation",
+                    "frozen_by_operation_id": (
+                        self.realization_generation_operation_id
+                    ),
                 }
+
+            policy_body = {
+                "limits": {
+                    "max_active_arcs": 3,
+                    "max_dormant_arc_age": 30,
+                    "max_open_obligations": 12,
+                    "max_overdue_obligations": 0,
+                    "max_payoff_congestion": 3,
+                    "max_character_appearance_gap": 10,
+                    "max_new_concepts": 4,
+                    "max_major_state_transitions": 8,
+                },
+                "governed_overrides": [],
+            }
+            policy_hash = (
+                "sha256:"
+                + hashlib.sha256(
+                    json.dumps(
+                        policy_body, sort_keys=True, separators=(",", ":")
+                    ).encode()
+                ).hexdigest()
+            )
 
             values.update(
                 {
                     "planning_horizon": plan_horizon,
                     "realization_level": realization_level,
+                    "frozen_inputs": list(self.realization_inputs),
+                    "constraint_envelope": {
+                        "generation_operation_id": (
+                            self.realization_generation_operation_id
+                        ),
+                        "parent_versions": list(self.realization_inputs),
+                        "narrative_load_policy": {
+                            **policy_body,
+                            "policy_hash": policy_hash,
+                        },
+                        "narrative_load_policy_lineage": {
+                            "policy_hash": policy_hash,
+                            "frozen_by_generation_operation_id": (
+                                self.realization_generation_operation_id
+                            ),
+                            "inherited_from": [
+                                item["asset_version_id"]
+                                for item in self.realization_inputs
+                            ],
+                        },
+                    },
                     "commitment_contract": [
                         {
                             "commitment_id": f"commitment:{logical_key}",

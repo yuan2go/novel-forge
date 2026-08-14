@@ -81,8 +81,7 @@ def _activate_reader_outcome_pack(harness: CapabilityPackPostgresHarness) -> Non
         ),
         operation_definition_hash=definition_hash,
         handler_key=(
-            "novel_forge.book_followup_authority."
-            f"{READER_OUTCOME_DEFINITION}"
+            f"novel_forge.book_followup_authority.{READER_OUTCOME_DEFINITION}"
         ),
         stage="reader_outcome",
         capability_id=capability_id,
@@ -172,12 +171,8 @@ def _activate_reader_outcome_pack(harness: CapabilityPackPostgresHarness) -> Non
         }
     )
     scope = harness.approval_scope()
-    scope["allowed_workflow_definition_refs"] = [
-        "book_followup_reader_outcome@1.1.0"
-    ]
-    pack = harness.register_compile_approve(
-        "1.0.0", generation=1, approval_scope=scope
-    )
+    scope["allowed_workflow_definition_refs"] = ["book_followup_reader_outcome@1.1.0"]
+    pack = harness.register_compile_approve("1.0.0", generation=1, approval_scope=scope)
     harness.activate(harness.deploy(pack))
 
 
@@ -236,9 +231,12 @@ class BookFollowupAuthorityPostgresTests(unittest.TestCase):
 
     def seed(self, asset_type: str, content: dict, label: str) -> dict[str, str]:
         version_id = f"{self.project_id}:{label}:v1"
-        content_hash = "sha256:" + hashlib.sha256(
-            json.dumps(content, sort_keys=True, separators=(",", ":")).encode()
-        ).hexdigest()
+        content_hash = (
+            "sha256:"
+            + hashlib.sha256(
+                json.dumps(content, sort_keys=True, separators=(",", ":")).encode()
+            ).hexdigest()
+        )
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
             uow.cursor.execute(
                 """
@@ -307,7 +305,9 @@ class BookFollowupAuthorityPostgresTests(unittest.TestCase):
 
         self.assertFalse(admission.replayed)
         self.assertTrue(replay.replayed)
-        self.assertEqual(result.output.asset_version_id, replay_result.output.asset_version_id)
+        self.assertEqual(
+            result.output.asset_version_id, replay_result.output.asset_version_id
+        )
         self.assertEqual(
             {item.asset_type for item in result.output.materialized_outputs},
             {"reader_outcome_report", "reader_state_transition", "reader_issue_set"},
@@ -339,7 +339,9 @@ class BookFollowupAuthorityPostgresTests(unittest.TestCase):
             (1, "model.reader_outcome", "SUCCEEDED", "reader_outcome"),
         )
         self.assertEqual(attempts, 1)
-        self.assertTrue(projection)  # query type is production-wired; link view is Book-owned
+        self.assertTrue(
+            projection
+        )  # query type is production-wired; link view is Book-owned
 
     def test_reader_outcome_freezes_its_own_governed_pack_snapshot(self) -> None:
         harness = CapabilityPackPostgresHarness("reader_outcome")
@@ -438,14 +440,18 @@ class BookFollowupAuthorityPostgresTests(unittest.TestCase):
             )
             report = dict(uow.cursor.fetchone()[0])
         self.assertEqual(evidence[0], harness.pack_id)
-        self.assertEqual(evidence[1:3], ("book_followup_reader_outcome@1.1.0", "reader_outcome"))
+        self.assertEqual(
+            evidence[1:3], ("book_followup_reader_outcome@1.1.0", "reader_outcome")
+        )
         self.assertTrue(str(evidence[3]).startswith("sha256:"))
         self.assertEqual(evidence[4], "SUCCEEDED")
         self.assertEqual(report["mode"], "SHADOW")
         self.assertFalse(report["publish_blocking"])
         self.assertTrue(result.output.asset_version_id)
 
-    def test_longform_recap_materializes_deviation_and_authority_proposals(self) -> None:
+    def test_longform_recap_materializes_deviation_and_authority_proposals(
+        self,
+    ) -> None:
         reader = self.seed(
             "reader_state",
             {"contract_version": "reader-state-v1", "confusion": 0.8},
@@ -480,7 +486,7 @@ class BookFollowupAuthorityPostgresTests(unittest.TestCase):
             "book_design_version": "book-design:v1",
             "book_plan_version": "book-plan:v1",
             "volume_plan_version": "volume-plan:v1",
-            "arc_plan_version": "arc-plan:v1",
+            "arc_plan_versions": ["arc-plan:v1"],
             "canon_snapshot_version": canon["asset_version_id"],
             "story_state_version": story_state["asset_version_id"],
             "reader_state_version": reader["asset_version_id"],
@@ -546,7 +552,7 @@ class BookFollowupAuthorityPostgresTests(unittest.TestCase):
             "book_plan_version": "book-plan:v1",
             "parent_plan_versions": {
                 "volume_plan_version": "volume-plan:v1",
-                "arc_plan_version": "arc-plan:v1",
+                "arc_plan_versions": ["arc-plan:v1"],
             },
             "reader_segment_version": "reader-segment:v1",
             "reader_contract_version": "reader-contract:v1",

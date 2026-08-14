@@ -9,6 +9,9 @@ from uuid import uuid4
 from psycopg.types.json import Jsonb
 
 from novel_forge.modules.authority_security import Principal
+from novel_forge.modules.book_authority.input_resolver import (
+    project_current_plan_cursor,
+)
 from novel_forge.modules.book_production.domain import (
     ArcStatus,
     EndingReachabilityInput,
@@ -120,6 +123,21 @@ class PostgresBookNarrativeCheckpointAuthority:
         row = self._acceptance_context(uow.cursor, book_run_id, chapter_request_id)
         chapter_plan = dict(row[12])
         outcome = dict(row[14])
+        volumes = self._portfolio_assets(
+            uow.cursor,
+            project_id=str(row[0]),
+            asset_version_ids=tuple(str(item) for item in row[15]),
+        )
+        arcs = self._portfolio_assets(
+            uow.cursor,
+            project_id=str(row[0]),
+            asset_version_ids=tuple(str(item) for item in row[16]),
+        )
+        current_volume, current_arcs = project_current_plan_cursor(
+            volumes=volumes,
+            arcs=arcs,
+            chapter_cursor=int(row[4]),
+        )
         declared = required_arc_contributions(chapter_plan)
         actual_raw = outcome.get("actual_arc_contributions") or declared.values()
         actual = {
@@ -129,7 +147,7 @@ class PostgresBookNarrativeCheckpointAuthority:
             for item in actual_raw
             if isinstance(item, dict)
         }
-        active_arcs = tuple(str(item) for item in row[8])
+        active_arcs = current_arcs
         if any(arc_id not in active_arcs for arc_id in declared):
             raise KernelError(
                 "ARC_CONTRIBUTION_PLAN_SCOPE_INVALID",
@@ -180,7 +198,7 @@ class PostgresBookNarrativeCheckpointAuthority:
             project_id=str(row[0]),
             book_id=str(row[2]),
             book_run_id=book_run_id,
-            volume_plan_version=str(row[7]),
+            volume_plan_version=str(current_volume["asset_version_id"]),
             active_chapter_group=str(row[9] or ""),
             chapter_number=int(row[4]),
             target_chapter_count=int(row[5]),
@@ -267,6 +285,8 @@ class PostgresBookNarrativeCheckpointAuthority:
                    acceptance.acceptance_operation_id,
                    request.chapter_plan_version, plan.content,
                    acceptance.chapter_outcome_asset_version_id, outcome.content
+                   , snapshot.volume_portfolio_plan_versions
+                   , snapshot.arc_portfolio_plan_versions
             FROM authority_book_production AS book
             JOIN authority_book_production_input_snapshot AS snapshot
               ON snapshot.snapshot_id=book.input_snapshot_id
@@ -289,6 +309,34 @@ class PostgresBookNarrativeCheckpointAuthority:
                 "resolved Book input and Chapter acceptance are required",
             )
         return tuple(row)
+
+    @staticmethod
+    def _portfolio_assets(
+        cursor: Any, *, project_id: str, asset_version_ids: tuple[str, ...]
+    ) -> list[dict[str, Any]]:
+        cursor.execute(
+            """
+            SELECT version.asset_version_id, version.content
+            FROM authority_asset_version AS version
+            JOIN authority_asset AS asset ON asset.asset_id=version.asset_id
+            WHERE asset.project_id=%s
+              AND version.asset_version_id=ANY(%s::text[])
+            """,
+            [project_id, list(asset_version_ids)],
+        )
+        by_id = {
+            str(row[0]): {
+                "asset_version_id": str(row[0]),
+                "content": dict(row[1]),
+            }
+            for row in cursor.fetchall()
+        }
+        if set(by_id) != set(asset_version_ids):
+            raise KernelError(
+                "BOOK_CHECKPOINT_PORTFOLIO_STALE",
+                "frozen Book plan portfolio is incomplete at checkpoint acceptance",
+            )
+        return [by_id[item] for item in asset_version_ids]
 
     @staticmethod
     def _insert_contribution(cursor: Any, **value: Any) -> None:

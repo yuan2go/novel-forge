@@ -3,6 +3,7 @@
 The historical module path remains for compatibility.  No chapter business rule lives
 here; Chapter Authority and Content Authority share this repository.
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -29,7 +30,9 @@ class AuthorityHandlerRepository:
         )
         row = self.cursor.fetchone()
         if row is None:
-            raise KernelError("OPERATION_NOT_FOUND", "authority operation does not exist")
+            raise KernelError(
+                "OPERATION_NOT_FOUND", "authority operation does not exist"
+            )
         fields = (
             "operation_id",
             "project_id",
@@ -53,6 +56,9 @@ class AuthorityHandlerRepository:
         *,
         allow_approved_archival_migration: bool = False,
         evaluation_candidate_asset_version_id: str = "",
+        story_design_candidate_asset_version_id: str = "",
+        repair_candidate_asset_version_id: str = "",
+        plan_change_candidate_asset_version_id: str = "",
     ) -> list[dict[str, Any]]:
         resolved: list[dict[str, Any]] = []
         for snapshot in snapshots:
@@ -86,9 +92,7 @@ class AuthorityHandlerRepository:
                     f"frozen authority input is missing or changed: {asset_version_id}",
                 )
             production_eligible = (
-                row[4] == "ACTIVE"
-                and row[5] == "ELIGIBLE"
-                and row[6] == "CLEAR"
+                row[4] == "ACTIVE" and row[5] == "ELIGIBLE" and row[6] == "CLEAR"
             )
             approved_archival = (
                 allow_approved_archival_migration
@@ -98,15 +102,39 @@ class AuthorityHandlerRepository:
             )
             evaluation_candidate = (
                 asset_version_id == evaluation_candidate_asset_version_id
-                and row[1] == "book_design"
+                and row[1] in {"book_design", "planning_generation_candidate"}
                 and row[4] == "CANDIDATE"
                 and row[5] == "INELIGIBLE"
+                and row[6] == "CLEAR"
+            )
+            story_design_candidate = (
+                asset_version_id == story_design_candidate_asset_version_id
+                and row[1] == "planning_generation_candidate"
+                and row[4] == "CANDIDATE"
+                and row[5] in {"INELIGIBLE", "ELIGIBLE"}
+                and row[6] == "CLEAR"
+            )
+            repair_candidate = (
+                asset_version_id == repair_candidate_asset_version_id
+                and row[1] == "planning_generation_candidate"
+                and row[4] == "CANDIDATE"
+                and row[5] == "INELIGIBLE"
+                and row[6] == "CLEAR"
+            )
+            plan_change_candidate = (
+                asset_version_id == plan_change_candidate_asset_version_id
+                and row[1] == "planning_generation_candidate"
+                and row[4] == "CANDIDATE"
+                and row[5] == "ELIGIBLE"
                 and row[6] == "CLEAR"
             )
             if (
                 not production_eligible
                 and not approved_archival
                 and not evaluation_candidate
+                and not story_design_candidate
+                and not repair_candidate
+                and not plan_change_candidate
             ):
                 raise KernelError(
                     "AUTHORITY_INPUT_NOT_ELIGIBLE",
@@ -115,8 +143,13 @@ class AuthorityHandlerRepository:
             allowed_qualification = (
                 {None, "ELIGIBLE", "PENDING_EVALUATION"}
                 if approved_archival
-                else {"INELIGIBLE"}
-                if evaluation_candidate
+                else {None, "INELIGIBLE", "ELIGIBLE"}
+                if (
+                    evaluation_candidate
+                    or story_design_candidate
+                    or repair_candidate
+                    or plan_change_candidate
+                )
                 else {None, "ELIGIBLE"}
             )
             if row[7] not in allowed_qualification:
@@ -164,13 +197,30 @@ class AuthorityHandlerRepository:
                     key: value
                     for key, value in zip(
                         (
-                            "blob_id", "role", "ordinal", "media_type", "content_hash",
-                            "provider", "object_key", "expected_hash", "expected_size",
-                            "actual_object_key", "actual_hash", "actual_size",
-                            "receipt_provider", "status", "external_effect_id", "capability",
-                            "effect_status", "dispatch_id", "dispatch_generation",
-                            "dispatch_status", "dispatch_evidence", "receipt_id",
-                            "receipt_status", "receipt_payload",
+                            "blob_id",
+                            "role",
+                            "ordinal",
+                            "media_type",
+                            "content_hash",
+                            "provider",
+                            "object_key",
+                            "expected_hash",
+                            "expected_size",
+                            "actual_object_key",
+                            "actual_hash",
+                            "actual_size",
+                            "receipt_provider",
+                            "status",
+                            "external_effect_id",
+                            "capability",
+                            "effect_status",
+                            "dispatch_id",
+                            "dispatch_generation",
+                            "dispatch_status",
+                            "dispatch_evidence",
+                            "receipt_id",
+                            "receipt_status",
+                            "receipt_payload",
                         ),
                         blob_row,
                         strict=True,

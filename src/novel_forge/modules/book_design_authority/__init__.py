@@ -1,4 +1,8 @@
-from .application import BookDesignAuthorityApplication, BookDesignAuthorityCommand
+from .application import (
+    ApprovedBookDesignMigrationEvidence,
+    BookDesignAuthorityApplication,
+    BookDesignAuthorityCommand,
+)
 from .definitions import (
     BOOK_DESIGN_DEFINITION_VERSION,
     BOOK_DESIGN_HANDLER_KEY,
@@ -27,6 +31,7 @@ __all__ = [
     "COUPLED_BOOK_DESIGN_SCHEMA_VERSION",
     "LEGACY_BOOK_DESIGN_SCHEMA_VERSION",
     "BOOK_SCHEMA_VERSION",
+    "ApprovedBookDesignMigrationEvidence",
     "BookDesignAuthorityApplication",
     "BookDesignAuthorityCommand",
     "BookDesignAuthorityQuery",

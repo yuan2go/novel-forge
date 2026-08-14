@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from novel_forge.api.authority_dependencies import (
     build_narrative_semantic_evaluation_execution_port,
@@ -17,7 +19,10 @@ from novel_forge.modules.book_design_authority import (
     BookDesignAuthorityQuery,
     BookDesignSemanticEvaluationCommand,
 )
-from novel_forge.modules.story_design_authority import scripted_qualification
+from novel_forge.modules.story_design_authority import (
+    required_qualification_profiles,
+    scripted_qualification,
+)
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.command_kernel.maintenance import scan_expired_attempt_leases
 from novel_forge.modules.provider_control import (
@@ -183,7 +188,9 @@ class BookDesignAuthorityPostgresTests(unittest.TestCase):
                 "repair_directive": "Repair the premise before reevaluation.",
             }
         )
-        with self.assertRaisesRegex(KernelError, "AUTHORITY_INPUT_NOT_ELIGIBLE"):
+        with self.assertRaisesRegex(
+            KernelError, "NARRATIVE_EVALUATION_CANDIDATE_NOT_PENDING"
+        ):
             self._evaluate(
                 first,
                 evaluation=contradictory,
@@ -571,8 +578,22 @@ class BookDesignAuthorityPostgresTests(unittest.TestCase):
             self.assertTrue(
                 any(item["attempt_id"] == crashed_attempt_id for item in expired)
             )
+            competing_claim = BookDesignSemanticEvaluationCommand(
+                project_id=command.project_id,
+                workspace_id=command.workspace_id,
+                book_id=command.book_id,
+                actor_id=command.actor_id,
+                candidate_asset_version_id=command.candidate_asset_version_id,
+                generation_operation_id=command.generation_operation_id,
+                generator_operation_name=command.generator_operation_name,
+                candidate_content_hash=command.candidate_content_hash,
+                evaluator_execution_class="MODEL_PROVIDER",
+                idempotency_key=command.idempotency_key + ":competing-claim",
+                trace_id=command.trace_id,
+                correlation_id=command.correlation_id,
+            )
             first = provider_application.evaluate_semantics(
-                command, principal=self.evaluator_principal
+                competing_claim, principal=self.evaluator_principal
             )
             replay = provider_application.evaluate_semantics(
                 command, principal=self.evaluator_principal
@@ -591,7 +612,9 @@ class BookDesignAuthorityPostgresTests(unittest.TestCase):
                 trace_id=command.trace_id,
                 correlation_id=command.correlation_id,
             )
-            with self.assertRaisesRegex(KernelError, "AUTHORITY_INPUT_NOT_ELIGIBLE"):
+            with self.assertRaisesRegex(
+                KernelError, "NARRATIVE_EVALUATION_CANDIDATE_NOT_PENDING"
+            ):
                 provider_application.evaluate_semantics(
                     stale, principal=self.evaluator_principal
                 )
@@ -605,6 +628,20 @@ class BookDesignAuthorityPostgresTests(unittest.TestCase):
             uow.cursor.execute(
                 "SELECT COUNT(*) FROM authority_attempt WHERE operation_id=%s",
                 [crashed_operation_id],
+            )
+            self.assertEqual(int(uow.cursor.fetchone()[0]), 1)
+            uow.cursor.execute(
+                """
+                SELECT COUNT(*)
+                FROM authority_operation
+                WHERE project_id=%s
+                  AND definition_name='story_design.semantic_evaluate'
+                  AND concurrency_key=%s
+                """,
+                [
+                    self.project_id,
+                    f"book:{self.book_id}:evaluation:{candidate['asset_version_id']}",
+                ],
             )
             self.assertEqual(int(uow.cursor.fetchone()[0]), 1)
             uow.cursor.execute(
@@ -655,6 +692,29 @@ class BookDesignAuthorityPostgresTests(unittest.TestCase):
         self.assertTrue(
             all(str(row[8]) == first["evaluation_attempt_id"] for row in rows)
         )
+        provider_application._require_model_provider_qualification(
+            project_id=self.project_id,
+            book_id=self.book_id,
+            asset_version_id=candidate["asset_version_id"],
+        )
+        profiles = required_qualification_profiles("book_design.propose")
+        with (
+            patch(
+                "novel_forge.modules.book_design_authority.application.required_qualification_profiles",
+                return_value=(
+                    replace(profiles[0], profile_version="stale-profile-version"),
+                    *profiles[1:],
+                ),
+            ),
+            self.assertRaisesRegex(
+                KernelError, "NARRATIVE_EVALUATION_QUALIFICATION_STALE"
+            ),
+        ):
+            provider_application._require_model_provider_qualification(
+                project_id=self.project_id,
+                book_id=self.book_id,
+                asset_version_id=candidate["asset_version_id"],
+            )
         with self.assertRaisesRegex(
             Exception,
             "Provider lineage does not match exact ModelCallLog",
@@ -689,6 +749,59 @@ class BookDesignAuthorityPostgresTests(unittest.TestCase):
                            evaluation_evidence_hash, trust_boundary,
                            provider_model_call_asset_version_id,
                            'sha256:' || repeat('d', 64),
+                           provider_evidence_hash, provider_result_hash,
+                           provider_route_snapshot_id
+                    FROM authority_narrative_design_qualification
+                    WHERE qualification_id=%s
+                    """,
+                    [qualification_id],
+                )
+        with self.assertRaisesRegex(
+            Exception,
+            "Provider lineage does not match exact ModelCallLog",
+        ):
+            with AuthorityUnitOfWork(DATABASE_URL) as forged_uow:
+                forged_uow.cursor.execute(
+                    """
+                    INSERT INTO authority_narrative_design_qualification(
+                        qualification_id, project_id, book_id,
+                        asset_version_id, source_operation_id,
+                        candidate_content_hash, design_layer, profile_id,
+                        profile_version, profile_hash, capability_id, skill_ref,
+                        evaluator_execution_class, qualification_status,
+                        evaluation, evaluation_hash, qualification_hash,
+                        generation_operation_id, evaluation_operation_id,
+                        evaluation_attempt_id, evaluation_asset_version_id,
+                        evaluation_evidence_hash, trust_boundary,
+                        provider_model_call_asset_version_id,
+                        provider_model_call_content_hash,
+                        provider_evidence_hash, provider_result_hash,
+                        provider_route_snapshot_id
+                    )
+                    SELECT qualification_id || ':forged-verdict',
+                           project_id, book_id, asset_version_id,
+                           source_operation_id, candidate_content_hash,
+                           design_layer, profile_id, profile_version,
+                           profile_hash, capability_id, skill_ref,
+                           evaluator_execution_class, 'PASS',
+                           jsonb_set(
+                               evaluation,
+                               '{criteria,0,verdict}',
+                               '"FAIL"'::jsonb
+                           ),
+                           authority_sha256_jsonb(
+                               jsonb_set(
+                                   evaluation,
+                                   '{criteria,0,verdict}',
+                                   '"FAIL"'::jsonb
+                               )
+                           ),
+                           qualification_hash, generation_operation_id,
+                           evaluation_operation_id, evaluation_attempt_id,
+                           evaluation_asset_version_id,
+                           evaluation_evidence_hash, trust_boundary,
+                           provider_model_call_asset_version_id,
+                           provider_model_call_content_hash,
                            provider_evidence_hash, provider_result_hash,
                            provider_route_snapshot_id
                     FROM authority_narrative_design_qualification

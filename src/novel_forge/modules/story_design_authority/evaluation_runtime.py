@@ -553,60 +553,50 @@ class NarrativeSemanticEvaluationApplication:
             )
         self._register_definition()
         inputs = [candidate, *evidence_assets]
-        admitted = admit_command(
-            self.database_url,
-            {
-                "definition_name": NARRATIVE_EVALUATION_DEFINITION,
-                "definition_version": NARRATIVE_EVALUATION_VERSION,
+        admission_command = {
+            "definition_name": NARRATIVE_EVALUATION_DEFINITION,
+            "definition_version": NARRATIVE_EVALUATION_VERSION,
+            "project_id": command.project_id,
+            "workspace_id": command.workspace_id,
+            "book_id": command.book_id,
+            "logical_key": command.candidate_asset_version_id,
+            "actor_id": command.actor_id,
+            "idempotency_scope": "book:narrative-semantic-evaluation",
+            "idempotency_key": command.idempotency_key,
+            "trace_id": command.trace_id,
+            "span_id": str(uuid4()),
+            "correlation_id": command.correlation_id,
+            "causation_id": command.generation_operation_id,
+            "causation_operation_id": command.generation_operation_id,
+            "input": {
                 "project_id": command.project_id,
-                "workspace_id": command.workspace_id,
-                "book_id": command.book_id,
-                "logical_key": command.candidate_asset_version_id,
-                "actor_id": command.actor_id,
-                "idempotency_scope": "book:narrative-semantic-evaluation",
-                "idempotency_key": command.idempotency_key,
-                "trace_id": command.trace_id,
-                "span_id": str(uuid4()),
-                "correlation_id": command.correlation_id,
-                "causation_id": command.generation_operation_id,
-                "causation_operation_id": command.generation_operation_id,
-                "input": {
-                    "project_id": command.project_id,
-                    "input_asset_version_ids": [
-                        item["asset_version_id"] for item in inputs
-                    ],
-                    "payload": {
-                        "candidate_asset_version_id": command.candidate_asset_version_id,
-                        "candidate_content_hash": command.candidate_content_hash,
-                        "generation_operation_id": command.generation_operation_id,
-                        "generation_actor_id": candidate["generation_actor_id"],
-                        "generator_operation_name": command.generator_operation_name,
-                        "book_id": command.book_id,
-                        "evaluator_execution_class": command.evaluator_execution_class,
-                        "evaluation": (
-                            None
-                            if command.evaluation is None
-                            else dict(command.evaluation)
-                        ),
-                    },
-                },
-                "input_assets": [
-                    {
-                        "asset_version_id": item["asset_version_id"],
-                        "content_hash": item["content_hash"],
-                    }
-                    for item in inputs
+                "input_asset_version_ids": [
+                    item["asset_version_id"] for item in inputs
                 ],
+                "payload": {
+                    "candidate_asset_version_id": command.candidate_asset_version_id,
+                    "candidate_content_hash": command.candidate_content_hash,
+                    "generation_operation_id": command.generation_operation_id,
+                    "generation_actor_id": candidate["generation_actor_id"],
+                    "generator_operation_name": command.generator_operation_name,
+                    "book_id": command.book_id,
+                    "evaluator_execution_class": command.evaluator_execution_class,
+                    "evaluation": (
+                        None if command.evaluation is None else dict(command.evaluation)
+                    ),
+                },
             },
-            context=AdmissionContext(
-                actor_id=command.actor_id,
-                permissions=frozenset({"narrative_design.evaluate"}),
-                available_handlers=self.registry.available_handler_keys,
-                application_build_id=self.application_build_id,
-                commit_sha=self.commit_sha,
-            ),
-        )
+            "input_assets": [
+                {
+                    "asset_version_id": item["asset_version_id"],
+                    "content_hash": item["content_hash"],
+                }
+                for item in inputs
+            ],
+        }
+        admitted = self._admit_candidate_once(command, admission_command)
         operation_id = str(admitted["operation_id"])
+        operation_actor_id = str(admitted.get("operation_actor_id") or command.actor_id)
         with AuthorityUnitOfWork(self.database_url) as uow:
             operation = uow.repositories.attempt_runtime.operation_state(
                 operation_id, command.project_id
@@ -620,7 +610,7 @@ class NarrativeSemanticEvaluationApplication:
                     expected_version=int(operation["version"]),
                     expected_status="ADMITTED",
                     target_status="READY",
-                    actor_id=command.actor_id,
+                    actor_id=operation_actor_id,
                     reason="independent Narrative Evaluation inputs are frozen",
                     trace_id=command.trace_id,
                     correlation_id=command.correlation_id,
@@ -631,7 +621,7 @@ class NarrativeSemanticEvaluationApplication:
                 self.database_url,
                 GraphCommandContext(
                     command.project_id,
-                    command.actor_id,
+                    operation_actor_id,
                     command.trace_id,
                     command.correlation_id,
                 ),
@@ -690,6 +680,79 @@ class NarrativeSemanticEvaluationApplication:
             replayed=bool(admitted["replayed"]),
         )
 
+    def _admit_candidate_once(
+        self,
+        command: NarrativeSemanticEvaluationCommand,
+        admission_command: dict[str, Any],
+    ) -> dict[str, Any]:
+        concurrency_key = (
+            f"book:{command.book_id}:evaluation:"
+            f"{command.candidate_asset_version_id}"
+        )
+        with AuthorityUnitOfWork(self.database_url) as claim_uow:
+            claim_uow.cursor.execute(
+                "SELECT pg_advisory_lock(hashtextextended(%s, 0))",
+                [f"narrative-evaluation:{command.project_id}:{concurrency_key}"],
+            )
+            try:
+                claim_uow.cursor.execute(
+                    """
+                    SELECT operation_id, command_payload, actor_id
+                    FROM authority_operation
+                    WHERE project_id=%s
+                      AND definition_name=%s
+                      AND concurrency_key=%s
+                    ORDER BY created_at, operation_id
+                    """,
+                    [
+                        command.project_id,
+                        NARRATIVE_EVALUATION_DEFINITION,
+                        concurrency_key,
+                    ],
+                )
+                rows = claim_uow.cursor.fetchall()
+                if len(rows) > 1:
+                    raise KernelError(
+                        "NARRATIVE_EVALUATION_DUPLICATE_CLAIM",
+                        "candidate has more than one Evaluation Operation",
+                    )
+                if rows:
+                    existing_payload = dict(rows[0][1])
+                    if existing_payload != admission_command["input"]:
+                        raise KernelError(
+                            "NARRATIVE_EVALUATION_CLAIM_CONFLICT",
+                            "candidate Evaluation is already claimed by different immutable inputs",
+                        )
+                    return {
+                        "operation_id": str(rows[0][0]),
+                        "operation_actor_id": str(rows[0][2]),
+                        "replayed": True,
+                    }
+                # The stale-domain preflight is repeated while holding the
+                # cross-process candidate claim lock. This closes the gap
+                # between the initial read and immutable Operation admission.
+                self._require_candidate(command)
+                admitted = admit_command(
+                    self.database_url,
+                    admission_command,
+                    context=AdmissionContext(
+                        actor_id=command.actor_id,
+                        permissions=frozenset({"narrative_design.evaluate"}),
+                        available_handlers=self.registry.available_handler_keys,
+                        application_build_id=self.application_build_id,
+                        commit_sha=self.commit_sha,
+                    ),
+                )
+                return {
+                    **admitted,
+                    "operation_actor_id": command.actor_id,
+                }
+            finally:
+                claim_uow.cursor.execute(
+                    "SELECT pg_advisory_unlock(hashtextextended(%s, 0))",
+                    [f"narrative-evaluation:{command.project_id}:{concurrency_key}"],
+                )
+
     def _register_definition(self) -> None:
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.repositories.definitions.register(
@@ -707,7 +770,14 @@ class NarrativeSemanticEvaluationApplication:
             uow.cursor.execute(
                 """
                 SELECT version.asset_version_id, version.content_hash,
-                       version.content, asset.asset_type, operation.actor_id
+                       version.content, asset.asset_type, operation.actor_id,
+                       book_candidate.status,
+                       book_candidate.created_by_operation_id,
+                       planning_generation.status,
+                       planning_generation.operation_id,
+                       planning_generation.generator_operation_name,
+                       planning_generation.candidate_asset_version_id,
+                       replay.operation_id
                 FROM authority_operation_output_asset AS output
                 JOIN authority_operation AS operation
                   ON operation.operation_id=output.operation_id
@@ -718,12 +788,23 @@ class NarrativeSemanticEvaluationApplication:
                 JOIN authority_asset AS asset
                   ON asset.asset_id=version.asset_id
                  AND asset.project_id=operation.project_id
+                LEFT JOIN authority_book_design_candidate AS book_candidate
+                  ON book_candidate.asset_version_id=version.asset_version_id
+                LEFT JOIN authority_story_planning_generation AS planning_generation
+                  ON planning_generation.operation_id=operation.operation_id
+                 AND planning_generation.candidate_asset_version_id=
+                     version.asset_version_id
+                LEFT JOIN authority_operation AS replay
+                  ON replay.project_id=operation.project_id
+                 AND replay.idempotency_scope='book:narrative-semantic-evaluation'
+                 AND replay.idempotency_key=%s
                 WHERE output.operation_id=%s
                   AND output.asset_version_id=%s
                   AND output.content_hash=%s
                 """,
                 [
                     command.project_id,
+                    command.idempotency_key,
                     command.generation_operation_id,
                     command.candidate_asset_version_id,
                     command.candidate_content_hash,
@@ -734,6 +815,26 @@ class NarrativeSemanticEvaluationApplication:
             raise KernelError(
                 "NARRATIVE_EVALUATION_GENERATION_LINEAGE_INVALID",
                 "candidate is not an exact gated or successful output of the generation Operation",
+            )
+        replay_exists = bool(row[11])
+        if command.generator_operation_name == "book_design.propose":
+            pending = (
+                str(row[3]) == "book_design"
+                and str(row[5] or "") == "EVALUATION_PENDING"
+                and str(row[6] or "") == command.generation_operation_id
+            )
+        else:
+            pending = (
+                str(row[3]) == "planning_generation_candidate"
+                and str(row[7] or "") == "EVALUATION_PENDING"
+                and str(row[8] or "") == command.generation_operation_id
+                and str(row[9] or "") == command.generator_operation_name
+                and str(row[10] or "") == command.candidate_asset_version_id
+            )
+        if not pending and not replay_exists:
+            raise KernelError(
+                "NARRATIVE_EVALUATION_CANDIDATE_NOT_PENDING",
+                "Narrative Evaluation requires the exact domain candidate to be EVALUATION_PENDING before Provider dispatch",
             )
         return {
             "asset_version_id": str(row[0]),

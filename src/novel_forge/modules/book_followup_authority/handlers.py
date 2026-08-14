@@ -265,7 +265,7 @@ class LongformRecapHandler:
             "book_design_version",
             "book_plan_version",
             "volume_plan_version",
-            "arc_plan_version",
+            "arc_plan_versions",
             "canon_snapshot_version",
             "story_state_version",
             "reader_state_version",
@@ -276,6 +276,17 @@ class LongformRecapHandler:
             raise KernelError(
                 "LONGFORM_RECAP_INPUT_INVALID",
                 "missing Long-form Recap fields: " + ", ".join(missing),
+            )
+        arc_plan_versions = payload.get("arc_plan_versions")
+        if (
+            not isinstance(arc_plan_versions, list)
+            or not arc_plan_versions
+            or any(not isinstance(item, str) or not item for item in arc_plan_versions)
+            or len(set(arc_plan_versions)) != len(arc_plan_versions)
+        ):
+            raise KernelError(
+                "LONGFORM_RECAP_INPUT_INVALID",
+                "Long-form Recap requires one ordered, unique current Arc set",
             )
         try:
             checkpoint_type = LongformCheckpointType(str(payload["checkpoint_type"]))

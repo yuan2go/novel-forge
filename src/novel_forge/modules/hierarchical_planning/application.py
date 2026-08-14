@@ -204,6 +204,26 @@ class PostgresHierarchicalPlanningAuthority:
             or str(row[5]) not in {"CANDIDATE", "ACTIVE"}
             or str(row[6]) != "ELIGIBLE"
         ):
+            if (
+                row is not None
+                and str(row[1]) == "ACTIVE"
+                and str(row[5]) == "IMPORTED"
+                and str(row[6]) == "PENDING_EVALUATION"
+            ):
+                self._qualify_approved_migration_candidate(
+                    uow.cursor,
+                    project_id=project_id,
+                    asset_version_id=asset_version_id,
+                    operation_id=operation_id,
+                    decision_evidence=decision_evidence,
+                )
+                row = (*row[:5], "CANDIDATE", "ELIGIBLE")
+        if (
+            row is None
+            or str(row[1]) != "ACTIVE"
+            or str(row[5]) not in {"CANDIDATE", "ACTIVE"}
+            or str(row[6]) != "ELIGIBLE"
+        ):
             raise KernelError(
                 "PLANNING_ACTIVE_DESIGN_REQUIRED",
                 "planning binding requires an active, qualified Story Design candidate",
@@ -218,16 +238,25 @@ class PostgresHierarchicalPlanningAuthority:
             execution_scope=execution_scope,
             content=content,
         )
+        self._require_realization_authority_lineage(
+            uow.cursor,
+            project_id=project_id,
+            book_id=book_id,
+            content=content,
+        )
         checkpoint("after_domain_validation")
         parent_binding = None
         expected_parent = _PARENT_TYPES.get(contract_type)
         if expected_parent is not None:
             uow.cursor.execute(
                 """
-                SELECT binding_id, contract_type
-                FROM story_plan_binding
-                WHERE project_id=%s AND book_id=%s
-                  AND asset_version_id=%s
+                SELECT binding.binding_id, binding.contract_type
+                FROM story_plan_binding AS binding
+                JOIN active_story_plan_version AS active
+                  ON active.binding_id=binding.binding_id
+                WHERE binding.project_id=%s AND binding.book_id=%s
+                  AND binding.asset_version_id=%s
+                  AND binding.freshness='CURRENT'
                 """,
                 [project_id, book_id, parent_version_id],
             )
@@ -266,21 +295,22 @@ class PostgresHierarchicalPlanningAuthority:
                         "PLANNING_SUPERSESSION_CONFLICT",
                         "previous Planning AssetVersion lifecycle changed",
                     )
-            uow.cursor.execute(
-                """
-                UPDATE authority_asset_version
-                SET lifecycle='ACTIVE'
-                WHERE asset_version_id=%s
-                  AND lifecycle='CANDIDATE'
-                  AND eligibility='ELIGIBLE'
-                """,
-                [asset_version_id],
-            )
-            if uow.cursor.rowcount != 1:
-                raise KernelError(
-                    "PLANNING_ACTIVATION_CONFLICT",
-                    "Planning AssetVersion is no longer an eligible candidate",
+            if str(row[5]) == "CANDIDATE":
+                uow.cursor.execute(
+                    """
+                    UPDATE authority_asset_version
+                    SET lifecycle='ACTIVE'
+                    WHERE asset_version_id=%s
+                      AND lifecycle='CANDIDATE'
+                      AND eligibility='ELIGIBLE'
+                    """,
+                    [asset_version_id],
                 )
+                if uow.cursor.rowcount != 1:
+                    raise KernelError(
+                        "PLANNING_ACTIVATION_CONFLICT",
+                        "Planning AssetVersion is no longer an eligible candidate",
+                    )
         uow.cursor.execute(
             """
             SELECT binding_id
@@ -578,6 +608,195 @@ class PostgresHierarchicalPlanningAuthority:
         )
         return previous_asset_version_id
 
+    @staticmethod
+    def _qualify_approved_migration_candidate(
+        cursor: Any,
+        *,
+        project_id: str,
+        asset_version_id: str,
+        operation_id: str,
+        decision_evidence: dict[str, Any],
+    ) -> None:
+        decision_id = str(decision_evidence.get("migration_decision_id") or "")
+        item_id = str(decision_evidence.get("migration_item_id") or "")
+        validation_id = str(decision_evidence.get("migration_validation_id") or "")
+        result_hash = str(decision_evidence.get("validator_result_hash") or "")
+        validator_version = str(decision_evidence.get("validator_version") or "")
+        cursor.execute(
+            """
+            SELECT decision.operation_id, validation.validated_by_operation_id
+            FROM authority_legacy_migration_decision AS decision
+            JOIN authority_legacy_migration_validation AS validation
+              ON validation.migration_validation_id=decision.migration_validation_id
+            JOIN authority_legacy_migration_item AS item
+              ON item.migration_item_id=decision.migration_item_id
+            WHERE decision.migration_decision_id=%s
+              AND decision.migration_item_id=%s
+              AND decision.migration_validation_id=%s
+              AND decision.decision='APPROVE'
+              AND decision.target_asset_version_id=%s
+              AND validation.target_asset_version_id=%s
+              AND validation.result_hash=%s
+              AND validation.validator_version=%s
+              AND validation.status='PASS'
+              AND item.project_id=%s
+              AND item.target_asset_version_id=%s
+              AND item.status='QUALIFIED'
+            FOR SHARE OF decision, validation, item
+            """,
+            [
+                decision_id,
+                item_id,
+                validation_id,
+                asset_version_id,
+                asset_version_id,
+                result_hash,
+                validator_version,
+                project_id,
+                asset_version_id,
+            ],
+        )
+        lineage = cursor.fetchone()
+        if lineage is None or not all(str(item or "") for item in lineage):
+            raise KernelError(
+                "PLANNING_MIGRATION_QUALIFICATION_INVALID",
+                "legacy Planning promotion requires an exact approved validation lineage",
+            )
+        cursor.execute(
+            """
+            INSERT INTO authority_asset_qualification(
+                qualification_id, asset_version_id,
+                policy_version, decision, evidence
+            ) VALUES (%s,%s,'approved-legacy-planning-migration-v1','ELIGIBLE',%s)
+            ON CONFLICT (qualification_id) DO NOTHING
+            """,
+            [
+                f"migration-planning-qualification:{decision_id}",
+                asset_version_id,
+                Jsonb(
+                    {
+                        "migration_decision_id": decision_id,
+                        "migration_item_id": item_id,
+                        "migration_validation_id": validation_id,
+                        "validator_result_hash": result_hash,
+                        "validator_version": validator_version,
+                        "decision_operation_id": str(lineage[0]),
+                        "validation_operation_id": str(lineage[1]),
+                        "planning_binding_operation_id": operation_id,
+                    }
+                ),
+            ],
+        )
+        cursor.execute(
+            """
+            UPDATE authority_asset_version
+            SET lifecycle='CANDIDATE', eligibility='ELIGIBLE'
+            WHERE asset_version_id=%s
+              AND lifecycle='IMPORTED'
+              AND eligibility='PENDING_EVALUATION'
+              AND governance='CLEAR'
+            """,
+            [asset_version_id],
+        )
+        if cursor.rowcount != 1:
+            raise KernelError(
+                "PLANNING_MIGRATION_QUALIFICATION_CONFLICT",
+                "legacy Planning candidate changed before governed promotion",
+            )
+
+    @staticmethod
+    def _require_realization_authority_lineage(
+        cursor: Any,
+        *,
+        project_id: str,
+        book_id: str,
+        content: dict[str, Any],
+    ) -> None:
+        envelope = content.get("constraint_envelope")
+        if not isinstance(envelope, dict):
+            return
+        generation_operation_id = str(envelope.get("generation_operation_id") or "")
+        references: dict[tuple[str, str], dict[str, Any]] = {}
+        for frozen in content.get("frozen_inputs") or ():
+            if not isinstance(frozen, dict):
+                continue
+            references[
+                (
+                    str(frozen.get("asset_version_id") or ""),
+                    str(frozen.get("role") or ""),
+                )
+            ] = frozen
+        for manifest_name in ("world_realization", "character_realization"):
+            for entity in content.get(manifest_name) or ():
+                if not isinstance(entity, dict):
+                    continue
+                for field in (
+                    "invariant_refs",
+                    "structure_refs",
+                    "state_ref",
+                    "identity_ref",
+                    "trajectory_ref",
+                ):
+                    raw = entity.get(field)
+                    values = raw if isinstance(raw, list) else [raw]
+                    for reference in values:
+                        if isinstance(reference, dict):
+                            references[
+                                (
+                                    str(reference.get("asset_version_id") or ""),
+                                    str(reference.get("authority_role") or ""),
+                                )
+                            ] = reference
+        if not references:
+            return
+        cursor.execute(
+            """
+            SELECT operation_id
+            FROM authority_operation
+            WHERE operation_id=%s AND project_id=%s
+              AND status IN ('WAITING_GATE', 'SUCCEEDED')
+            """,
+            [generation_operation_id, project_id],
+        )
+        if cursor.fetchone() is None:
+            raise KernelError(
+                "PLANNING_REALIZATION_GENERATION_LINEAGE_STALE",
+                "realization frozen Operation is missing or no longer admissible",
+            )
+        for (asset_version_id, _role), reference in references.items():
+            cursor.execute(
+                """
+                SELECT asset.asset_type, version.content_hash, version.content,
+                       version.lifecycle, version.eligibility, version.governance,
+                       binding.freshness, active.binding_id
+                FROM authority_asset_version AS version
+                JOIN authority_asset AS asset ON asset.asset_id=version.asset_id
+                LEFT JOIN story_plan_binding AS binding
+                  ON binding.project_id=asset.project_id
+                 AND binding.book_id=%s
+                 AND binding.asset_version_id=version.asset_version_id
+                LEFT JOIN active_story_plan_version AS active
+                  ON active.binding_id=binding.binding_id
+                WHERE version.asset_version_id=%s AND asset.project_id=%s
+                """,
+                [book_id, asset_version_id, project_id],
+            )
+            row = cursor.fetchone()
+            if (
+                row is None
+                or str(row[0]) != str(reference.get("asset_type") or "")
+                or str(row[1]) != str(reference.get("content_hash") or "")
+                or str(row[3]) != "ACTIVE"
+                or str(row[4]) != "ELIGIBLE"
+                or str(row[5]) != "CLEAR"
+                or (row[6] is not None and (str(row[6]) != "CURRENT" or row[7] is None))
+                or dict(row[2]).get("book_id") not in {None, "", book_id}
+            ):
+                raise KernelError(
+                    "PLANNING_REALIZATION_AUTHORITY_REFERENCE_STALE",
+                    "realization Authority identity, hash, scope, or freshness changed before binding",
+                )
+
     def _semantic_edges(
         self,
         cursor: Any,
@@ -613,32 +832,47 @@ class PostgresHierarchicalPlanningAuthority:
                     operation_id,
                 )
             logical_key = str(content.get("logical_key") or "")
-            related_versions: set[str] = set()
             for relation in content.get("arc_relations") or []:
                 if not isinstance(relation, dict):
                     continue
-                for raw_ref in (
-                    relation.get("source_arc_ref"),
-                    relation.get("target_arc_ref"),
-                ):
-                    arc_ref = str(raw_ref or "")
-                    if not arc_ref or arc_ref == logical_key:
-                        continue
-                    related_versions.add(
-                        self._resolve_arc_version(
-                            cursor,
-                            project_id=project_id,
-                            book_id=book_id,
-                            arc_ref=arc_ref,
-                        )
+                source_ref = str(relation.get("source_arc_ref") or "")
+                target_ref = str(relation.get("target_arc_ref") or "")
+                if not source_ref or not target_ref:
+                    raise KernelError(
+                        "PLANNING_ARC_RELATION_ENDPOINT_INVALID",
+                        "Arc relation requires exact source and target endpoints",
                     )
-            for related_version in sorted(related_versions):
+                source_version = (
+                    asset_version_id
+                    if source_ref == logical_key
+                    else self._resolve_arc_version(
+                        cursor,
+                        project_id=project_id,
+                        book_id=book_id,
+                        arc_ref=source_ref,
+                    )
+                )
+                target_version = (
+                    asset_version_id
+                    if target_ref == logical_key
+                    else self._resolve_arc_version(
+                        cursor,
+                        project_id=project_id,
+                        book_id=book_id,
+                        arc_ref=target_ref,
+                    )
+                )
+                if source_version == target_version:
+                    raise KernelError(
+                        "PLANNING_ARC_RELATION_SELF_REFERENCE",
+                        "Arc relation source and target must differ",
+                    )
                 self._dependency(
                     cursor,
                     project_id,
                     book_id,
-                    related_version,
-                    asset_version_id,
+                    source_version,
+                    target_version,
                     "ARC_RELATION",
                     "MARK_IMPACTED",
                     operation_id,

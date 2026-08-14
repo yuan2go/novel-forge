@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from typing import Any
 from uuid import uuid4
 
@@ -40,6 +40,44 @@ from novel_forge.storage.book_design_authority_repositories import (
 
 
 @dataclass(frozen=True, slots=True)
+class ApprovedBookDesignMigrationEvidence:
+    migration_run_id: str
+    migration_item_id: str
+    migration_decision_id: str
+    migration_validation_id: str
+    archival_asset_version_id: str
+    archival_content_hash: str
+    source_hash: str
+    validator_result_hash: str
+    validator_version: str
+    item_version: int
+
+    def __post_init__(self) -> None:
+        identities = (
+            self.migration_run_id,
+            self.migration_item_id,
+            self.migration_decision_id,
+            self.migration_validation_id,
+            self.archival_asset_version_id,
+            self.validator_version,
+        )
+        hashes = (
+            self.archival_content_hash,
+            self.source_hash,
+            self.validator_result_hash,
+        )
+        if (
+            any(not value.strip() for value in identities)
+            or any(
+                len(value) != 71 or not value.startswith("sha256:")
+                for value in hashes
+            )
+            or self.item_version <= 0
+        ):
+            raise ValueError("approved BookDesign migration evidence is incomplete")
+
+
+@dataclass(frozen=True, slots=True)
 class BookDesignAuthorityCommand:
     definition_name: str
     project_id: str
@@ -54,6 +92,7 @@ class BookDesignAuthorityCommand:
     expected_book_version: int = 0
     expected_current_design_asset_version_id: str = ""
     target_asset_version_id: str = ""
+    migration_evidence: ApprovedBookDesignMigrationEvidence | None = None
 
     def __post_init__(self) -> None:
         if self.definition_name not in BOOK_DESIGN_OPERATIONS:
@@ -74,6 +113,13 @@ class BookDesignAuthorityCommand:
                 raise ValueError(f"{field} is required")
         if self.expected_book_version < 0:
             raise ValueError("expected_book_version cannot be negative")
+        if self.migration_evidence is not None and (
+            self.definition_name != "book_design.activate"
+            or self.service_identity != "legacy-migration-authority"
+        ):
+            raise ValueError(
+                "approved migration evidence is valid only for Legacy BookDesign activation"
+            )
 
 
 class BookDesignAuthorityApplication:
@@ -88,6 +134,7 @@ class BookDesignAuthorityApplication:
         | None = None,
         allow_scripted_evaluation_fixture: bool = False,
         narrative_evaluator_principal: Principal | None = None,
+        allow_approved_archival_migration: bool = False,
     ) -> None:
         if not database_url:
             raise ValueError("PostgreSQL database_url is required")
@@ -97,6 +144,7 @@ class BookDesignAuthorityApplication:
         self.fault_injector = fault_injector
         self.allow_scripted_evaluation_fixture = allow_scripted_evaluation_fixture
         self.narrative_evaluator_principal = narrative_evaluator_principal
+        self.allow_approved_archival_migration = allow_approved_archival_migration
         self.semantic_evaluation = NarrativeSemanticEvaluationApplication(
             database_url,
             application_build_id=application_build_id,
@@ -114,9 +162,15 @@ class BookDesignAuthorityApplication:
             principal.require("book_design.authority.execute", command.project_id)
             actor_id = principal.principal_id
         self._register_definitions()
+        migration_lineage = (
+            self._require_approved_migration_evidence(command)
+            if command.migration_evidence is not None
+            else None
+        )
         if (
             command.definition_name == "book_design.activate"
             and not self.allow_scripted_evaluation_fixture
+            and migration_lineage is None
         ):
             self._require_model_provider_qualification(
                 project_id=command.project_id,
@@ -132,6 +186,11 @@ class BookDesignAuthorityApplication:
             "expected_current_design_asset_version_id": command.expected_current_design_asset_version_id,
             "target_asset_version_id": command.target_asset_version_id,
             "payload": dict(command.payload),
+            "migration_evidence": (
+                asdict(command.migration_evidence)
+                if command.migration_evidence is not None
+                else {}
+            ),
         }
         input_assets: list[dict[str, str]] = []
         if command.target_asset_version_id:
@@ -157,6 +216,15 @@ class BookDesignAuthorityApplication:
                         "content_hash": row[0],
                     }
                 )
+        if migration_lineage is not None:
+            input_assets.append(
+                {
+                    "asset_version_id": migration_lineage[
+                        "archival_asset_version_id"
+                    ],
+                    "content_hash": migration_lineage["archival_content_hash"],
+                }
+            )
         context = AdmissionContext(
             actor_id=actor_id,
             permissions=frozenset({"book_design.authority.execute"}),
@@ -177,7 +245,16 @@ class BookDesignAuthorityApplication:
                 "trace_id": command.trace_id,
                 "span_id": str(uuid4()),
                 "correlation_id": command.correlation_id,
-                "causation_id": "",
+                "causation_id": (
+                    migration_lineage["migration_decision_id"]
+                    if migration_lineage is not None
+                    else ""
+                ),
+                "causation_operation_id": (
+                    migration_lineage["decision_operation_id"]
+                    if migration_lineage is not None
+                    else None
+                ),
                 "input": command_input,
                 "input_assets": input_assets,
             },
@@ -242,6 +319,98 @@ class BookDesignAuthorityApplication:
             return {**result, "semantic_evaluation": evaluation}
         return result
 
+    def _require_approved_migration_evidence(
+        self, command: BookDesignAuthorityCommand
+    ) -> dict[str, str]:
+        if (
+            not self.allow_approved_archival_migration
+            or command.service_identity != "legacy-migration-authority"
+            or command.migration_evidence is None
+        ):
+            raise KernelError(
+                "BOOK_DESIGN_MIGRATION_EVIDENCE_FORBIDDEN",
+                "Legacy BookDesign activation is not enabled with typed evidence",
+            )
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            return self._require_migration_evidence_in_uow(
+                uow,
+                project_id=command.project_id,
+                workspace_id=command.workspace_id,
+                evidence=command.migration_evidence,
+            )
+
+    @staticmethod
+    def _require_migration_evidence_in_uow(
+        uow: AuthorityUnitOfWork,
+        *,
+        project_id: str,
+        workspace_id: str,
+        evidence: ApprovedBookDesignMigrationEvidence,
+    ) -> dict[str, str]:
+        uow.cursor.execute(
+            """
+            SELECT decision.operation_id, decision.decision,
+                   decision.source_hash, decision.target_asset_version_id,
+                   decision.expected_item_version,
+                   decision.validation_result_hash,
+                   validation.status, validation.source_hash,
+                   validation.target_asset_version_id,
+                   validation.item_version, validation.result_hash,
+                   validation.validator_version,
+                   item.migration_run_id, item.project_id,
+                   COALESCE(item.workspace_id,''), item.source_hash,
+                   item.target_asset_version_id, item.target_content_hash,
+                   item.item_version
+            FROM authority_legacy_migration_decision AS decision
+            JOIN authority_legacy_migration_validation AS validation
+              ON validation.migration_validation_id=
+                 decision.migration_validation_id
+            JOIN authority_legacy_migration_item AS item
+              ON item.migration_item_id=decision.migration_item_id
+            WHERE decision.migration_decision_id=%s
+              AND decision.migration_item_id=%s
+              AND decision.migration_validation_id=%s
+            FOR SHARE OF decision, validation, item
+            """,
+            [
+                evidence.migration_decision_id,
+                evidence.migration_item_id,
+                evidence.migration_validation_id,
+            ],
+        )
+        row = uow.cursor.fetchone()
+        expected = (
+            "APPROVE",
+            evidence.source_hash,
+            evidence.archival_asset_version_id,
+            evidence.item_version - 1,
+            evidence.validator_result_hash,
+            "PASS",
+            evidence.source_hash,
+            evidence.archival_asset_version_id,
+            evidence.item_version - 1,
+            evidence.validator_result_hash,
+            evidence.validator_version,
+            evidence.migration_run_id,
+            project_id,
+            workspace_id,
+            evidence.source_hash,
+            evidence.archival_asset_version_id,
+            evidence.archival_content_hash,
+            evidence.item_version,
+        )
+        if row is None or tuple(row[1:]) != expected or not str(row[0] or ""):
+            raise KernelError(
+                "BOOK_DESIGN_MIGRATION_EVIDENCE_STALE",
+                "Legacy BookDesign activation evidence is missing, stale, or outside scope",
+            )
+        return {
+            "decision_operation_id": str(row[0]),
+            "migration_decision_id": evidence.migration_decision_id,
+            "archival_asset_version_id": evidence.archival_asset_version_id,
+            "archival_content_hash": evidence.archival_content_hash,
+        }
+
     def _require_model_provider_qualification(
         self,
         *,
@@ -249,14 +418,16 @@ class BookDesignAuthorityApplication:
         book_id: str,
         asset_version_id: str,
     ) -> None:
-        expected_layers = {
-            profile.layer.value
+        expected = {
+            profile.layer.value: profile
             for profile in required_qualification_profiles("book_design.propose")
         }
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
-                SELECT design_layer
+                SELECT design_layer, profile_id, profile_version, profile_hash,
+                       capability_id, skill_ref, evaluation_operation_id,
+                       qualification_hash
                 FROM authority_narrative_design_qualification
                 WHERE project_id=%s AND book_id=%s AND asset_version_id=%s
                   AND qualification_status='PASS'
@@ -270,11 +441,30 @@ class BookDesignAuthorityApplication:
                 """,
                 [project_id, book_id, asset_version_id],
             )
-            layers = {str(row[0]) for row in uow.cursor.fetchall()}
-        if layers != expected_layers:
+            rows = uow.cursor.fetchall()
+        by_layer = {str(row[0]): row for row in rows}
+        operation_ids = {str(row[6]) for row in rows}
+        qualification_hashes = {str(row[7]) for row in rows}
+        if not rows:
             raise KernelError(
                 "NARRATIVE_EVALUATION_REAL_PROVIDER_REQUIRED",
                 "BookDesign activation requires current real-Provider qualification",
+            )
+        stale = set(by_layer) != set(expected) or len(rows) != len(expected)
+        for layer, profile in expected.items():
+            row = by_layer.get(layer)
+            if row is None or tuple(str(item) for item in row[1:6]) != (
+                profile.profile_id,
+                profile.profile_version,
+                profile.profile_hash,
+                profile.capability_id,
+                profile.skill_ref,
+            ):
+                stale = True
+        if stale or len(operation_ids) != 1 or len(qualification_hashes) != 1:
+            raise KernelError(
+                "NARRATIVE_EVALUATION_QUALIFICATION_STALE",
+                "BookDesign activation requires one current real-Provider qualification with exact profile lineage",
             )
 
     def evaluate_semantics(
@@ -430,6 +620,16 @@ class BookDesignAuthorityApplication:
                 checkpoint("after_business_projection_update")
             elif action == "book_design.activate":
                 target = str(payload.get("target_asset_version_id") or "")
+                migration_payload = dict(payload.get("migration_evidence") or {})
+                if migration_payload:
+                    self._require_migration_evidence_in_uow(
+                        uow,
+                        project_id=project_id,
+                        workspace_id=workspace_id,
+                        evidence=ApprovedBookDesignMigrationEvidence(
+                            **migration_payload
+                        ),
+                    )
                 checkpoint("after_domain_validation")
                 result["asset_version_id"] = target
                 result.update(
@@ -482,4 +682,8 @@ class BookDesignAuthorityApplication:
         return str(row[0])
 
 
-__all__ = ["BookDesignAuthorityApplication", "BookDesignAuthorityCommand"]
+__all__ = [
+    "ApprovedBookDesignMigrationEvidence",
+    "BookDesignAuthorityApplication",
+    "BookDesignAuthorityCommand",
+]

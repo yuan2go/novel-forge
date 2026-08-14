@@ -67,8 +67,17 @@ from novel_forge.modules.story_planning_runtime.execution import (
 )
 from novel_forge.modules.story_design_authority import (
     GENERATOR_CATALOG,
+    NARRATIVE_EVALUATION_APPLICATION_BUILD_ID,
+    narrative_semantic_evaluation_definition,
     scripted_qualification,
     validate_narrative_qualification,
+)
+from novel_forge.modules.capability_packs.longform_profiles import (
+    build_narrative_evaluation_pack_profile,
+)
+from novel_forge.modules.provider_control import (
+    OpenAIProviderAdapterV2,
+    ProviderAdapterRegistry,
 )
 from novel_forge.modules.production_execution.capability_registry import (
     PLANNING_TIMEOUT_POLICY_VERSION,
@@ -92,6 +101,46 @@ from tests.integration.capability_pack_postgres_support import (
 
 
 RELEASE_SHA = "e" * 40
+
+
+class _MeasuredPlanningAndEvaluationTransport:
+    def __init__(self) -> None:
+        self.stages: list[str] = []
+        self.idempotency_keys: set[str] = set()
+
+    def execute(self, request):  # type: ignore[no-untyped-def]
+        self.stages.append(request.stage)
+        self.idempotency_keys.add(request.stable_idempotency_key)
+        result = (
+            scripted_qualification("book_plan.generate")
+            if request.stage == "narrative_semantic_evaluation"
+            else planning_fixture_response(
+                request.stage, request.request_payload["input"]
+            )
+        )
+        return {
+            "outcome": "success",
+            "request_sent": True,
+            "provider_request_id": (
+                f"provider-request:{request.stable_idempotency_key}"
+            ),
+            "completion_mode": "synchronous",
+            "evidence": {
+                "result": result,
+                "usage": {"input_tokens": 200, "output_tokens": 80},
+                "cost": {"amount": "0.01", "currency": "USD"},
+                "request_hash": request.request_hash,
+            },
+        }
+
+    def query(self, request):  # type: ignore[no-untyped-def]
+        raise AssertionError("synchronous proof must not query")
+
+    def cancel(self, request):  # type: ignore[no-untyped-def]
+        raise AssertionError("completed proof must not cancel")
+
+    def verify_callback(self, body, headers, *, secret):  # type: ignore[no-untyped-def]
+        raise AssertionError("synchronous proof has no callback")
 
 
 def _activate_planning_pack(harness: CapabilityPackPostgresHarness) -> str:
@@ -244,12 +293,76 @@ def _activate_planning_pack(harness: CapabilityPackPostgresHarness) -> str:
                 },
             }
         )
-    scope = harness.approval_scope()
+    scope = harness.approval_scope(environments=("test",), runtime_profiles=("test",))
     scope["allowed_workflow_definition_refs"] = [STORY_PLANNING_WORKFLOW_DEFINITION_REF]
-    pack = harness.register_compile_approve("1.1.0", generation=1, approval_scope=scope)
-    deployment = harness.deploy(pack)
-    harness.activate(deployment)
+    pack = harness.register_compile_approve(
+        "1.1.0",
+        generation=1,
+        approval_scope=scope,
+        target_runtime_profile="test",
+    )
+    deployment = harness.deploy(pack, environment="test", runtime_profile="test")
+    harness.activate(deployment, environment="test")
     return deployment.deployment_id
+
+
+def _activate_narrative_evaluation_pack(
+    *, project_id: str, workspace_id: str, book_id: str
+) -> str:
+    harness = CapabilityPackPostgresHarness(
+        "planning-semantic-provider-proof",
+        application_build_id=NARRATIVE_EVALUATION_APPLICATION_BUILD_ID,
+        release_sha=RELEASE_SHA,
+    )
+    harness.project_id = project_id
+    harness.workspace_id = workspace_id
+    harness.book_ids = (book_id,)
+    harness.compiler = harness.principal("compiler", *harness.compiler.permissions)
+    harness.approver = harness.principal("approver", *harness.approver.permissions)
+    harness.agent_admin = harness.principal(
+        "agent-admin", *harness.agent_admin.permissions
+    )
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        registered = uow.repositories.definitions.register(
+            narrative_semantic_evaluation_definition(
+                application_build_id=NARRATIVE_EVALUATION_APPLICATION_BUILD_ID,
+                commit_sha=RELEASE_SHA,
+            )
+        )
+        uow.commit()
+    profile = build_narrative_evaluation_pack_profile(
+        Path(__file__).resolve().parents[2],
+        operation_definition_hash=str(registered["definition_hash"]),
+        pack_id=harness.pack_id,
+    )
+    harness._base_manifest = profile.manifest
+    harness._base_catalog = profile.artifact_catalog
+    harness.workflow_definition_ref = profile.workflow_ref
+    approval_scope = harness.approval_scope(
+        environments=("test",),
+        runtime_profiles=("test",),
+        project_ids=(project_id,),
+        workspace_ids=(workspace_id,),
+        book_ids=(book_id,),
+    )
+    pack = harness.register_compile_approve(
+        "1.0.0",
+        generation=1,
+        approval_scope=approval_scope,
+        proof_skill_ref=profile.agent_skill_ref,
+        release_sha=RELEASE_SHA,
+        target_runtime_profile="test",
+    )
+    deployment = harness.deploy(
+        pack,
+        project_id=project_id,
+        workspace_id=workspace_id,
+        book_id=book_id,
+        environment="test",
+        runtime_profile="test",
+    )
+    harness.activate(deployment, environment="test")
+    return harness.pack_id
 
 
 class _ExternalEffectPepFixturePlanningBinder:
@@ -449,6 +562,8 @@ def _planning_contract(
         },
     }
     payload.update(type_defaults[contract_type])
+    if contract_type is PlanContractType.VOLUME and command.logical_key == "volume:2":
+        payload["chapter_range"] = [4, 6]
     if contract_type is PlanContractType.CHAPTER:
         for contribution in payload["required_arc_contributions"]:
             contribution["arc_plan_version_id"] = command.input_versions["arc_plans"]
@@ -525,7 +640,11 @@ def _chapter_function_row(chapter: int, function: str, hook: str) -> dict[str, A
 
 
 def _seed_inputs(
-    project_id: str, book_id: str, *, target_chapter_count: int = 3
+    project_id: str,
+    book_id: str,
+    *,
+    target_chapter_count: int = 3,
+    governance_action: tuple[str, str] | None = None,
 ) -> dict[str, str]:
     roles = sorted(
         {role for values in GENERATOR_INPUT_ROLES.values() for role in values}
@@ -550,6 +669,27 @@ def _seed_inputs(
             if role == "production_profile":
                 content["profile_id"] = "controlled-planning-fixture"
                 content["target_chapter_count"] = target_chapter_count
+                if governance_action is not None:
+                    content["narrative_load_policy"] = {
+                        "policy_id": "governed-load-policy",
+                        "policy_version": 1,
+                        "governed_overrides": [
+                            {
+                                "override_id": "override:active-arcs",
+                                "project_id": project_id,
+                                "book_id": book_id,
+                                "scope_type": "BOOK",
+                                "scope_key": book_id,
+                                "limits": {"max_active_arcs": 5},
+                                "governance_action_asset_version_id": (
+                                    governance_action[0]
+                                ),
+                                "governance_action_content_hash": (
+                                    governance_action[1]
+                                ),
+                            }
+                        ],
+                    }
             elif role == "book_design":
                 content["ending_contract"] = {"outcome": "costly agency"}
             elif role == "platform_profile":
@@ -776,7 +916,7 @@ def _run_controlled_recap_through_authority(
             str(book["book_design_version"]),
             str(book["book_plan_version"]),
             str(frozen["volume_plan_version"]),
-            str(frozen["arc_plan_version"]),
+            *(str(item) for item in frozen["arc_plan_versions"]),
             str(frozen["quality_trend_version"]),
             str(book["last_chapter_outcome_version_id"]),
             str(book["active_story_state_version_id"]),
@@ -794,7 +934,7 @@ def _run_controlled_recap_through_authority(
             "book_design_version": book["book_design_version"],
             "book_plan_version": book["book_plan_version"],
             "volume_plan_version": frozen["volume_plan_version"],
-            "arc_plan_version": frozen["arc_plan_version"],
+            "arc_plan_versions": list(frozen["arc_plan_versions"]),
             "canon_snapshot_version": book["active_canon_snapshot_version_id"],
             "reader_state_version": reader["asset_version_id"],
             "quality_trend_version": frozen["quality_trend_version"],
@@ -984,6 +1124,46 @@ def _activate_plan_chain(
             activated["volume_plan.generate:secondary"] = (
                 secondary.candidate_asset_version_id
             )
+        if generator == "arc_plan.generate" and multi_volume_arc:
+            future_command = StoryPlanningGenerationCommand(
+                project_id=project_id,
+                workspace_id=workspace_id,
+                book_id=book_id,
+                actor_id=principal.principal_id,
+                generator_operation_name=generator,
+                logical_key="arc:future",
+                input_versions={
+                    role: (
+                        activated["book_plan.generate"]
+                        if role == "book_plan"
+                        else activated["volume_plan.generate:secondary"]
+                        if role == "volume_plan"
+                        else generic[role]
+                    )
+                    for role in GENERATOR_INPUT_ROLES[generator]
+                },
+                related_arc_plan_version_ids=(activated["arc_plan.generate"],),
+                idempotency_key=f"{project_id}:{generator}:future",
+                trace_id=f"trace:{generator}:future",
+                correlation_id=f"correlation:{project_id}",
+            )
+            future = application.generate(future_command, principal=principal)
+            assert future.status is PlanningGenerationStatus.APPROVAL_PENDING
+            application.approve_candidate(
+                future.candidate_asset_version_id,
+                principal=principal,
+                idempotency_key=f"{future_command.idempotency_key}:approve",
+                trace_id=future_command.trace_id,
+                correlation_id=future_command.correlation_id,
+            )
+            application.activate_candidate(
+                future.candidate_asset_version_id,
+                principal=principal,
+                idempotency_key=f"{future_command.idempotency_key}:activate",
+                trace_id=future_command.trace_id,
+                correlation_id=future_command.correlation_id,
+            )
+            activated["arc_plan.generate:future"] = future.candidate_asset_version_id
         if generator in {
             "book_plan.generate",
             "volume_plan.generate",
@@ -1063,6 +1243,8 @@ def test_five_planning_generators_repair_activate_and_replay_in_postgres() -> No
             [project_id],
         )
         assert uow.cursor.fetchone() == (2, 1)
+
+
         uow.cursor.execute(
             """
             SELECT member_scope, membership_kind, COUNT(*)
@@ -1154,6 +1336,106 @@ def test_five_planning_generators_repair_activate_and_replay_in_postgres() -> No
             )
 
 
+def test_planning_generation_freezes_typed_governance_action_in_canonical_input() -> None:
+    ensure_migrated()
+    suffix = uuid4().hex
+    project_id = f"planning-governance-{suffix}"
+    workspace_id = f"planning-governance-workspace-{suffix}"
+    book_id = f"planning-governance-book-{suffix}"
+    seed_authority_project_book(
+        project_id=project_id, workspace_id=workspace_id, book_id=book_id
+    )
+    action_id = f"governance-action:{suffix}:v1"
+    action_content = {
+        "project_id": project_id,
+        "book_id": book_id,
+        "action": "APPROVE_NARRATIVE_LOAD_OVERRIDE",
+        "status": "APPROVED",
+    }
+    action_hash = canonical_hash(action_content)
+    with transaction() as connection, connection.cursor() as cursor:
+        cursor.execute(
+            "INSERT INTO authority_asset(asset_id,project_id,asset_type) VALUES (%s,%s,'narrative_governance_action')",
+            [f"governance-action:{suffix}", project_id],
+        )
+        cursor.execute(
+            """
+            INSERT INTO authority_asset_version(
+                asset_version_id,asset_id,version_number,lifecycle,
+                eligibility,governance,content,content_hash,schema_version
+            ) VALUES (%s,%s,1,'ACTIVE','ELIGIBLE','CLEAR',%s,%s,
+                      'narrative-governance-action.v1')
+            """,
+            [
+                action_id,
+                f"governance-action:{suffix}",
+                Jsonb(action_content),
+                action_hash,
+            ],
+        )
+    generic = _seed_inputs(
+        project_id,
+        book_id,
+        governance_action=(action_id, action_hash),
+    )
+    principal = _principal(project_id)
+    application = StoryPlanningGenerationApplication(
+        DATABASE_URL,
+        execution_binder=_ExternalEffectPepFixturePlanningBinder(),
+        application_build_id="governed-planning-input-proof",
+        commit_sha=RELEASE_SHA,
+        allow_scripted_evaluation_fixture=True,
+    )
+    inputs = {
+        role: generic[role]
+        for role in GENERATOR_INPUT_ROLES["book_plan.generate"]
+    }
+    with pytest.raises(KernelError, match="GOVERNANCE_ACTION_UNBOUND"):
+        application.generate(
+            StoryPlanningGenerationCommand(
+                project_id=project_id,
+                workspace_id=workspace_id,
+                book_id=book_id,
+                actor_id=principal.principal_id,
+                generator_operation_name="book_plan.generate",
+                logical_key="book:governance-missing",
+                input_versions=inputs,
+                idempotency_key=f"{project_id}:governance-missing",
+                trace_id="trace:governance-missing",
+                correlation_id=f"correlation:{project_id}",
+            ),
+            principal=principal,
+        )
+    generated = application.generate(
+        StoryPlanningGenerationCommand(
+            project_id=project_id,
+            workspace_id=workspace_id,
+            book_id=book_id,
+            actor_id=principal.principal_id,
+            generator_operation_name="book_plan.generate",
+            logical_key="book:governance-bound",
+            input_versions=inputs,
+            governance_action_version_ids=(action_id,),
+            idempotency_key=f"{project_id}:governance-bound",
+            trace_id="trace:governance-bound",
+            correlation_id=f"correlation:{project_id}",
+        ),
+        principal=principal,
+    )
+    assert generated.status is PlanningGenerationStatus.APPROVAL_PENDING
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute(
+            "SELECT content FROM authority_asset_version WHERE asset_version_id=%s",
+            [generated.candidate_asset_version_id],
+        )
+        frozen = dict(uow.cursor.fetchone()[0])["frozen_inputs"]
+    assert any(
+        item["role"] == "narrative_governance_action:1"
+        and item["asset_version_id"] == action_id
+        and item["content_hash"] == action_hash
+        for item in frozen
+    )
+
 def test_production_composition_executes_five_planning_generators_via_pep() -> None:
     harness = CapabilityPackPostgresHarness("planning-production-composition")
     _activate_planning_pack(harness)
@@ -1229,6 +1511,144 @@ def test_production_composition_executes_five_planning_generators_via_pep() -> N
         assert uow.cursor.fetchall() == [("scripted-planning-fixture", "xhigh")]
 
 
+def test_real_provider_planning_candidate_is_independently_evaluated_and_activated() -> (
+    None
+):
+    harness = CapabilityPackPostgresHarness("planning-real-provider-evaluation")
+    _activate_planning_pack(harness)
+    project_id = harness.project_id
+    workspace_id = harness.workspace_id
+    book_id = harness.book_ids[0]
+    evaluator_pack_id = _activate_narrative_evaluation_pack(
+        project_id=project_id,
+        workspace_id=workspace_id,
+        book_id=book_id,
+    )
+    generic = _seed_inputs(project_id, book_id)
+    principal = _principal(project_id)
+    transport = _MeasuredPlanningAndEvaluationTransport()
+    registry = ProviderAdapterRegistry()
+    registry.register(
+        OpenAIProviderAdapterV2(
+            transport,
+            supports_query=False,
+            supports_cancel=False,
+            supports_callback=False,
+            supports_cost_receipt=True,
+            provider_idempotency_supported=True,
+        )
+    )
+    with tempfile.TemporaryDirectory(prefix="planning-real-provider-") as root:
+        settings = IndustrialSettings(
+            root=root,
+            environment="test",
+            storage_authority="postgresql",
+            database_url=DATABASE_URL,
+        )
+        env = {
+            "NOVEL_FORGE_ENVIRONMENT": "test",
+            "NOVEL_FORGE_APPLICATION_BUILD_ID": "planning-real-provider-evaluation",
+            "NOVEL_FORGE_COMMIT_SHA": RELEASE_SHA,
+            "NOVEL_FORGE_MODEL_PROVIDER": "openai",
+            "NOVEL_FORGE_PLANNING_PROVIDER": "openai",
+            "NOVEL_FORGE_PLANNING_MODEL": "gpt-planning-proof",
+            "NOVEL_FORGE_NARRATIVE_EVALUATOR_PROVIDER": "openai",
+            "NOVEL_FORGE_NARRATIVE_EVALUATOR_MODEL": "gpt-evaluator-proof",
+            "NOVEL_FORGE_NARRATIVE_SEMANTIC_EVALUATION_REASONING_EFFORT": "xhigh",
+            "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": root,
+            "NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID": harness.pack_id,
+            "NOVEL_FORGE_NARRATIVE_EVALUATION_CAPABILITY_PACK_ID": (evaluator_pack_id),
+            "NOVEL_FORGE_AUTHORITY_PROJECT_SCOPE": project_id,
+            "NOVEL_FORGE_NARRATIVE_EVALUATOR_PRINCIPAL_ID": (
+                "independent-planning-semantic-evaluator"
+            ),
+            "NOVEL_FORGE_PROVIDER_MAX_COST_PER_CALL": "1.00",
+        }
+        execution = build_production_execution_composition(
+            settings, env=env, provider_registry=registry
+        )
+        application = build_story_planning_generation_application(
+            settings, execution=execution, env=env
+        )
+        command = StoryPlanningGenerationCommand(
+            project_id=project_id,
+            workspace_id=workspace_id,
+            book_id=book_id,
+            actor_id=principal.principal_id,
+            generator_operation_name="book_plan.generate",
+            logical_key="book:real-provider-proof",
+            input_versions={
+                role: generic[role]
+                for role in GENERATOR_INPUT_ROLES["book_plan.generate"]
+            },
+            idempotency_key=f"{project_id}:book-plan:real-provider-proof",
+            trace_id=f"trace:{project_id}:real-provider-proof",
+            correlation_id=f"correlation:{project_id}",
+        )
+        generated = application.generate(command, principal=principal)
+        assert generated.status is PlanningGenerationStatus.APPROVAL_PENDING
+        assert transport.stages == [
+            "book_plan.generate",
+            "narrative_semantic_evaluation",
+        ]
+        application.approve_candidate(
+            generated.candidate_asset_version_id,
+            principal=principal,
+            idempotency_key=f"{command.idempotency_key}:approve",
+            trace_id=command.trace_id,
+            correlation_id=command.correlation_id,
+        )
+        activated = application.activate_candidate(
+            generated.candidate_asset_version_id,
+            principal=principal,
+            idempotency_key=f"{command.idempotency_key}:activate",
+            trace_id=command.trace_id,
+            correlation_id=command.correlation_id,
+        )
+        replay = application.generate(command, principal=principal)
+
+    assert activated["planning_binding"]["asset_version_id"] == (
+        generated.candidate_asset_version_id
+    )
+    assert replay.status is PlanningGenerationStatus.ACTIVE
+    assert len(transport.stages) == 2
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute(
+            """
+            SELECT COUNT(DISTINCT evaluation_operation_id),
+                   COUNT(DISTINCT evaluation_attempt_id),
+                   COUNT(DISTINCT provider_model_call_asset_version_id),
+                   BOOL_AND(evaluator_execution_class='MODEL_PROVIDER'),
+                   BOOL_AND(trust_boundary='INDEPENDENT')
+            FROM authority_narrative_design_qualification
+            WHERE project_id=%s AND asset_version_id=%s
+            """,
+            [project_id, generated.candidate_asset_version_id],
+        )
+        proof = uow.cursor.fetchone()
+        uow.cursor.execute(
+            """
+            SELECT generation.actor_id, evaluation.actor_id,
+                   version.lifecycle, version.eligibility
+            FROM authority_narrative_design_qualification AS qualification
+            JOIN authority_operation AS generation
+              ON generation.operation_id=qualification.generation_operation_id
+            JOIN authority_operation AS evaluation
+              ON evaluation.operation_id=qualification.evaluation_operation_id
+            JOIN authority_asset_version AS version
+              ON version.asset_version_id=qualification.asset_version_id
+            WHERE qualification.project_id=%s
+              AND qualification.asset_version_id=%s
+            LIMIT 1
+            """,
+            [project_id, generated.candidate_asset_version_id],
+        )
+        identities = uow.cursor.fetchone()
+    assert proof == (1, 1, 1, True, True)
+    assert identities[0] != identities[1]
+    assert identities[2:] == ("ACTIVE", "ELIGIBLE")
+
+
 def test_planning_retry_reuses_frozen_pack_after_measured_provider_result() -> None:
     harness = CapabilityPackPostgresHarness("planning-attempt-retry")
     baseline_deployment_id = _activate_planning_pack(harness)
@@ -1288,15 +1708,26 @@ def test_planning_retry_reuses_frozen_pack_after_measured_provider_result() -> N
         with pytest.raises(KernelError, match="MODEL_EFFECT_RETRYABLE_PLANNING_PROOF"):
             planning.generate(command, principal=principal)
 
-        replacement_scope = harness.approval_scope()
+        replacement_scope = harness.approval_scope(
+            environments=("test",), runtime_profiles=("test",)
+        )
         replacement_scope["allowed_workflow_definition_refs"] = [
             STORY_PLANNING_WORKFLOW_DEFINITION_REF
         ]
         replacement_pack = harness.register_compile_approve(
-            "1.2.0", generation=2, approval_scope=replacement_scope
+            "1.2.0",
+            generation=2,
+            approval_scope=replacement_scope,
+            target_runtime_profile="test",
         )
-        replacement_deployment = harness.deploy(replacement_pack)
-        harness.activate(replacement_deployment, expected_activation_version=1)
+        replacement_deployment = harness.deploy(
+            replacement_pack, environment="test", runtime_profile="test"
+        )
+        harness.activate(
+            replacement_deployment,
+            expected_activation_version=1,
+            environment="test",
+        )
 
         result = planning.generate(command, principal=principal)
         execution.close()
@@ -1862,7 +2293,7 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
             """,
             [project_id],
         )
-        assert uow.cursor.fetchone() == (6, 6, 6, 6)
+        assert uow.cursor.fetchone() == (7, 7, 7, 7)
     book_record_id = f"fixture:{project_id}:book-record"
     book_record_version = f"{book_record_id}:v1"
     with transaction() as connection, connection.cursor() as cursor:
@@ -1950,7 +2381,37 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
         activated["volume_plan.generate"],
         activated["volume_plan.generate:secondary"],
     )
+    assert snapshot.arc_portfolio_plan_versions == (
+        activated["arc_plan.generate"],
+        activated["arc_plan.generate:future"],
+    )
     assert snapshot.active_arc_plan_versions == (activated["arc_plan.generate"],)
+    next_volume_projection = composition.query.require_cursor_plan_projection(
+        snapshot_id=snapshot.snapshot_id,
+        chapter_cursor=4,
+    )
+    assert next_volume_projection == {
+        "chapter_cursor": 4,
+        "volume_plan_version": activated["volume_plan.generate:secondary"],
+        "arc_plan_versions": (
+            activated["arc_plan.generate"],
+            activated["arc_plan.generate:future"],
+        ),
+    }
+    assert composition.replan._arc_regeneration_order(
+        project_id=project_id,
+        book_id=book_id,
+        portfolio_arc_plan_version_ids=snapshot.arc_portfolio_plan_versions,
+        initially_impacted_arc_plan_version_ids={activated["arc_plan.generate"]},
+    ) == (
+        activated["arc_plan.generate"],
+        activated["arc_plan.generate:future"],
+    )
+    assert composition.replan._related_arc_versions(
+        project_id=project_id,
+        book_id=book_id,
+        dependent_arc_plan_version_id=activated["arc_plan.generate:future"],
+    ) == (activated["arc_plan.generate"],)
     assert (
         snapshot.current_chapter_group_plan_version
         == activated["chapter_group_plan.generate"]
@@ -2139,7 +2600,7 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
 
     if runtime_path == "NO_REPLAN":
         no_replan_actions: list[str] = []
-        for _ in range(32):
+        for _ in range(96):
             tick = worker_tick(worker_composition)
             action = str(tick["action"])
             no_replan_actions.append(action)
@@ -2149,12 +2610,12 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
                 int(
                     book_authority.require(book.book_run_id)["accepted_through_chapter"]
                 )
-                >= 2
+                >= 4
             ):
                 break
         else:
             raise AssertionError(
-                "Canonical Worker did not produce the no-Replan Chapter 2"
+                "Canonical Worker did not cross into Volume 2 without Replan"
             )
         assert SupervisorAction.START_REPLAN.value not in no_replan_actions
         assert SupervisorAction.DISPATCH_CHAPTER.value in no_replan_actions
@@ -2163,6 +2624,48 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
             book_authority.require(book.book_run_id)["input_snapshot_id"]
             == snapshot.snapshot_id
         )
+        for _ in range(12):
+            checkpoint_tick = worker_tick(worker_composition)
+            if (
+                checkpoint_tick["action"]
+                == SupervisorAction.UPDATE_CHECKPOINTS.value
+                and int(
+                    book_authority.require(book.book_run_id)[
+                        "accepted_through_chapter"
+                    ]
+                )
+                == 4
+            ):
+                break
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                """
+                SELECT volume_plan_version
+                FROM authority_book_volume_checkpoint
+                WHERE book_run_id=%s AND accepted_through_chapter=4
+                """,
+                [book.book_run_id],
+            )
+            assert uow.cursor.fetchone() == (
+                activated["volume_plan.generate:secondary"],
+            )
+            uow.cursor.execute(
+                """
+                SELECT DISTINCT arc_plan_version
+                FROM authority_book_arc_checkpoint
+                WHERE project_id=%s AND book_id=%s AND last_updated_chapter=4
+                ORDER BY arc_plan_version
+                """,
+                [project_id, book_id],
+            )
+            assert tuple(str(row[0]) for row in uow.cursor.fetchall()) == tuple(
+                sorted(
+                    (
+                        activated["arc_plan.generate"],
+                        activated["arc_plan.generate:future"],
+                    )
+                )
+            )
         production_execution.close()
         for worker_execution in worker_production_executions:
             worker_execution.close()
@@ -2380,7 +2883,7 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
             str(current_book["book_design_version"]),
             str(current_book["book_plan_version"]),
             str(frozen["volume_plan_version"]),
-            str(frozen["arc_plan_version"]),
+            *(str(item) for item in frozen["arc_plan_versions"]),
             str(frozen["quality_trend_version"]),
             str(current_book["last_chapter_outcome_version_id"]),
             str(current_book["active_story_state_version_id"]),
@@ -2397,7 +2900,7 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
             "book_design_version": current_book["book_design_version"],
             "book_plan_version": current_book["book_plan_version"],
             "volume_plan_version": frozen["volume_plan_version"],
-            "arc_plan_version": frozen["arc_plan_version"],
+            "arc_plan_versions": list(frozen["arc_plan_versions"]),
             "canon_snapshot_version": current_book["active_canon_snapshot_version_id"],
             "reader_state_version": reader["asset_version_id"],
             "quality_trend_version": frozen["quality_trend_version"],

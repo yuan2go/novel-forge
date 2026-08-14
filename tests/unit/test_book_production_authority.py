@@ -3,7 +3,9 @@ from __future__ import annotations
 import unittest
 from unittest.mock import patch
 
-from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.book_authority.input_resolver import (
+    BookProductionInputSnapshot,
+)
 from novel_forge.modules.book_authority.production import (
     LONGFORM_CONTEXT_VERSION_KEYS,
     BookProductionState,
@@ -11,6 +13,7 @@ from novel_forge.modules.book_authority.production import (
     SubmitBookChapterCommand,
     stable_chapter_submission_key,
 )
+from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.book_followup_authority.definitions import (
     book_followup_operation_definitions,
 )
@@ -21,6 +24,9 @@ from novel_forge.storage.migrations.runner import MIGRATIONS
 
 
 class BookProductionAuthorityTests(unittest.TestCase):
+    def test_resolved_input_snapshot_exposes_api_serialization(self) -> None:
+        self.assertTrue(callable(BookProductionInputSnapshot.to_dict))
+
     def test_resolved_chapter_rejects_a_substituted_execution_projection(self) -> None:
         class Query:
             def __init__(self, _database_url: str) -> None:
@@ -173,7 +179,7 @@ class BookProductionAuthorityTests(unittest.TestCase):
             LONGFORM_CONTEXT_VERSION_KEYS,
             {
                 "volume_plan_version",
-                "arc_plan_version",
+                "arc_plan_versions",
                 "character_state_version",
                 "foreshadowing_state_version",
                 "quality_trend_version",

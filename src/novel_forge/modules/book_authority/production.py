@@ -82,7 +82,7 @@ BOOK_MUTATION_HANDLER = "novel_forge.book_authority.mutate"
 LONGFORM_CONTEXT_VERSION_KEYS = frozenset(
     {
         "volume_plan_version",
-        "arc_plan_version",
+        "arc_plan_versions",
         "character_state_version",
         "foreshadowing_state_version",
         "quality_trend_version",
@@ -135,7 +135,7 @@ class StartBookProductionCommand:
     book_design_version: str
     book_plan_version: str
     production_profile_version: str
-    longform_context_versions: dict[str, str]
+    longform_context_versions: dict[str, Any]
     target_chapter_count: int
     input_mode: str
     light_recap_cadence: int = 5
@@ -339,10 +339,7 @@ class PostgresBookAuthority:
         root_input_version_ids = resolved_input_versions or (
             command.book_design_version,
             command.book_plan_version,
-            *(
-                command.longform_context_versions[key]
-                for key in sorted(LONGFORM_CONTEXT_VERSION_KEYS)
-            ),
+            *_longform_context_asset_version_ids(command.longform_context_versions),
         )
         root_input_assets = self.resolve_asset_refs(
             project_id=command.project_id,
@@ -1880,8 +1877,8 @@ class PostgresBookAuthority:
                 for key, value in expected.items()
                 if key in LONGFORM_CONTEXT_VERSION_KEYS
             )
-            or command.longform_context_versions["arc_plan_version"]
-            not in {str(item) for item in row[7]}
+            or tuple(command.longform_context_versions["arc_plan_versions"])
+            != tuple(str(item) for item in row[7])
             or command.target_chapter_count
             != int(dict(row[19]).get("target_chapter_count") or 0)
         ):
@@ -2763,7 +2760,19 @@ def _validate_start(command: StartBookProductionCommand) -> None:
         or command.light_recap_cadence <= 0
         or command.formal_recap_cadence <= 0
         or set(versions) != LONGFORM_CONTEXT_VERSION_KEYS
-        or any(not value or value.endswith(":current") for value in versions.values())
+        or any(
+            not value or value.endswith(":current")
+            for key, value in versions.items()
+            if key != "arc_plan_versions"
+        )
+        or not isinstance(versions.get("arc_plan_versions"), (list, tuple))
+        or not versions.get("arc_plan_versions")
+        or any(
+            not isinstance(value, str) or not value or value.endswith(":current")
+            for value in versions.get("arc_plan_versions", ())
+        )
+        or len(set(versions.get("arc_plan_versions", ())))
+        != len(versions.get("arc_plan_versions", ()))
         or command.input_mode
         not in {"LEGACY_FIXTURE_INPUT_MODE", "RESOLVED_AUTHORITY_INPUT"}
         or (
@@ -2778,6 +2787,18 @@ def _validate_start(command: StartBookProductionCommand) -> None:
         raise ValueError(
             "Book Authority start command requires complete immutable context versions"
         )
+
+
+def _longform_context_asset_version_ids(versions: dict[str, Any]) -> tuple[str, ...]:
+    scalar_ids = (
+        str(versions[key])
+        for key in sorted(LONGFORM_CONTEXT_VERSION_KEYS - {"arc_plan_versions"})
+    )
+    return tuple(
+        dict.fromkeys(
+            (*scalar_ids, *(str(item) for item in versions["arc_plan_versions"]))
+        )
+    )
 
 
 __all__ = [

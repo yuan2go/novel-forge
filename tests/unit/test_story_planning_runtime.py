@@ -31,7 +31,7 @@ from novel_forge.modules.story_planning_runtime import (
 )
 from novel_forge.modules.story_planning_runtime.execution import (
     PLANNING_EXTERNAL_EFFECT_MAX_ATTEMPTS,
-    planning_fixture_response,
+    planning_fixture_response as _planning_fixture_response,
     planning_provider_output_schema,
 )
 from novel_forge.modules.story_planning_runtime.application import (
@@ -41,6 +41,62 @@ from novel_forge.modules.story_planning_runtime.application import (
 
 
 HASH = "sha256:" + "a" * 64
+
+
+def planning_fixture_response(
+    stage: str, inputs: dict[str, object]
+) -> dict[str, object]:
+    """Build an explicitly test-only fixture with exact frozen reference lineage."""
+
+    content = _planning_fixture_response(stage, inputs)
+    command = dict(inputs.get("planning_command") or {})
+    operation_id = str(
+        command.get("generation_operation_id") or "operation:fixture-generation"
+    )
+    references: dict[tuple[str, str], dict[str, str]] = {}
+    for manifest_name in ("world_realization", "character_realization"):
+        for entity in content.get(manifest_name) or ():
+            for field in (
+                "invariant_refs",
+                "structure_refs",
+                "state_ref",
+                "identity_ref",
+                "trajectory_ref",
+            ):
+                value = entity.get(field)
+                values = value if isinstance(value, list) else [value]
+                for reference in values:
+                    if not isinstance(reference, dict):
+                        continue
+                    frozen = {
+                        "role": str(reference["authority_role"]),
+                        "asset_version_id": str(reference["asset_version_id"]),
+                        "content_hash": str(reference["content_hash"]),
+                        "asset_type": str(reference["asset_type"]),
+                    }
+                    references[(frozen["asset_version_id"], frozen["role"])] = frozen
+    frozen_inputs = list(references.values())
+    content["frozen_inputs"] = frozen_inputs
+    policy = _inherited_load_policy()
+    content["constraint_envelope"] = {
+        "generation_operation_id": operation_id,
+        "parent_versions": [dict(item) for item in frozen_inputs],
+        "narrative_load_policy": policy,
+        "narrative_load_policy_lineage": {
+            "type": "NarrativeLoadPolicyLineage",
+            "contract_version": "narrative-load-policy-lineage-v1",
+            "frozen_by_generation_operation_id": operation_id,
+            "inherited_from": [
+                {
+                    "role": "production_profile",
+                    "asset_version_id": policy["source_asset_version_id"],
+                    "content_hash": policy["source_content_hash"],
+                }
+            ],
+            "policy_hash": policy["policy_hash"],
+        },
+    }
+    return content
 
 
 def _inherited_load_policy() -> dict[str, object]:
@@ -130,6 +186,22 @@ def test_production_planning_composition_is_available_at_the_authority_boundary(
 
     assert callable(build_story_planning_generation_application)
     assert PostgresPlanningExecutionPreparer.production_execution_gateway_backed is True
+
+
+def test_scripted_semantic_evaluation_requires_explicit_test_runtime() -> None:
+    from novel_forge.api.authority_dependencies import (
+        _scripted_narrative_evaluation_fixture_enabled,
+    )
+    from novel_forge.infrastructure.environment import RuntimeEnvironment
+
+    flag = {"NOVEL_FORGE_TEST_ALLOW_SCRIPTED_NARRATIVE_EVALUATION_FIXTURE": "true"}
+    assert not _scripted_narrative_evaluation_fixture_enabled(
+        RuntimeEnvironment.DEVELOPMENT, flag
+    )
+    assert not _scripted_narrative_evaluation_fixture_enabled(
+        RuntimeEnvironment.TEST, {}
+    )
+    assert _scripted_narrative_evaluation_fixture_enabled(RuntimeEnvironment.TEST, flag)
 
 
 @pytest.mark.parametrize("contract_type", list(PlanContractType))
@@ -356,13 +428,11 @@ def test_operational_plan_consumes_accepted_narrative_debt_projection() -> None:
             }
         },
     )
-    content["constraint_envelope"] = {
-        "narrative_load_projection": {
-            "status": "MEASURED",
-            "accepted_through_chapter": 1,
-            "metrics": {"overdue_obligation_count": 1},
-            "overdue_obligation_ids": ["obligation:overdue-x"],
-        }
+    content["constraint_envelope"]["narrative_load_projection"] = {
+        "status": "MEASURED",
+        "accepted_through_chapter": 1,
+        "metrics": {"overdue_obligation_count": 1},
+        "overdue_obligation_ids": ["obligation:overdue-x"],
     }
 
     with pytest.raises(KernelError, match="NARRATIVE_DEBT_PAYDOWN_REQUIRED"):
@@ -438,6 +508,82 @@ def test_operational_plan_consumes_accepted_narrative_debt_projection() -> None:
             execution_scope=PlanExecutionScope.PLANNED,
             content=content,
         )
+
+
+def test_overdue_identity_requires_action_even_within_numeric_allowance() -> None:
+    content = planning_fixture_response(
+        "chapter_plan.generate",
+        {
+            "planning_command": {
+                "logical_key": "chapter:2",
+                "parent_version_id": "chapter-group:v1",
+                "input_versions": {"arc_plans": "arc:v1"},
+            }
+        },
+    )
+    policy = _inherited_load_policy()
+    policy["limits"]["max_overdue_obligations"] = 1  # type: ignore[index]
+    policy_body = {key: value for key, value in policy.items() if key != "policy_hash"}
+    policy["policy_hash"] = canonical_hash(policy_body)
+    content["constraint_envelope"].update(
+        {
+            "narrative_load_policy": policy,
+            "narrative_load_policy_lineage": {
+                "policy_hash": policy["policy_hash"],
+                "frozen_by_generation_operation_id": "operation:fixture-generation",
+                "inherited_from": [policy["source_asset_version_id"]],
+            },
+            "narrative_load_projection": {
+                "status": "MEASURED",
+                "accepted_through_chapter": 1,
+                "metrics": {
+                    "open_obligation_count": 1,
+                    "overdue_obligation_count": 1,
+                },
+                "open_obligation_ids": ["obligation:overdue-x"],
+                "overdue_obligation_ids": ["obligation:overdue-x"],
+            },
+        }
+    )
+
+    with pytest.raises(KernelError, match="NARRATIVE_DEBT_PAYDOWN_REQUIRED"):
+        validate_planning_contract(
+            project_id="project-1",
+            book_id="book-1",
+            contract_type=PlanContractType.CHAPTER,
+            asset_version_id="chapter:within-overdue-allowance",
+            parent_version_id="chapter-group:v1",
+            execution_scope=PlanExecutionScope.PLANNED,
+            content=content,
+        )
+
+    content["payoffs"].append(
+        {
+            "obligation_id": "obligation:overdue-x",
+            "action": "EXPLICIT_GOVERNANCE_ACTION",
+            "opened_chapter": 1,
+            "due_chapter": 2,
+            "governance_action_asset_version_id": "governance:overdue-x:v1",
+            "governance_action_content_hash": "sha256:" + "f" * 64,
+        }
+    )
+    governance_input = {
+        "role": "narrative_governance_action",
+        "asset_version_id": "governance:overdue-x:v1",
+        "content_hash": "sha256:" + "f" * 64,
+        "asset_type": "narrative_governance_action",
+    }
+    content["frozen_inputs"].append(governance_input)
+    content["constraint_envelope"]["parent_versions"].append(governance_input)
+    validate_planning_contract(
+        project_id="project-1",
+        book_id="book-1",
+        contract_type=PlanContractType.CHAPTER,
+        asset_version_id="chapter:governed-overdue",
+        parent_version_id="chapter-group:v1",
+        execution_scope=PlanExecutionScope.PLANNED,
+        content=content,
+    )
 
 
 def test_chapter_provider_contract_accepts_only_the_frozen_arc_portfolio() -> None:
@@ -919,6 +1065,36 @@ def test_realization_reference_must_match_frozen_authority_version_and_hash() ->
         )
 
 
+def test_realization_domain_cannot_be_self_asserted_by_wrong_authority_role() -> None:
+    content = planning_fixture_response(
+        "volume_plan.generate",
+        {
+            "planning_command": {
+                "logical_key": "volume:1",
+                "parent_version_id": "book-plan:v1",
+                "input_versions": {},
+            }
+        },
+    )
+    reference = content["world_realization"][0]["invariant_refs"][0]
+    reference.update(
+        authority_role="character_cast",
+        asset_type="character_cast",
+        domain_type="WORLD_INVARIANT",
+    )
+
+    with pytest.raises(KernelError, match="WORLD_REALIZATION_REFERENCE_INVALID"):
+        validate_planning_contract(
+            project_id="project-1",
+            book_id="book-1",
+            contract_type=PlanContractType.VOLUME,
+            asset_version_id="volume:wrong-domain-authority",
+            parent_version_id="book-plan:v1",
+            execution_scope=PlanExecutionScope.PLANNED,
+            content=content,
+        )
+
+
 def test_book_contract_rejects_impossible_obligation_window() -> None:
     content = planning_fixture_response(
         "book_plan.generate",
@@ -1156,6 +1332,7 @@ def test_arc_generation_freezes_multi_volume_and_related_arc_scope() -> None:
         input_versions=base.input_versions,
         arc_scope_volume_plan_version_ids=("volume:v2", "volume:v3"),
         related_arc_plan_version_ids=("arc:v2",),
+        dependent_arc_plan_version_ids=("arc:v3",),
         idempotency_key=base.idempotency_key,
         trace_id=base.trace_id,
         correlation_id=base.correlation_id,
@@ -1165,6 +1342,7 @@ def test_arc_generation_freezes_multi_volume_and_related_arc_scope() -> None:
         FrozenPlanningInput("arc_scope_volume:1", "volume:v2", HASH, "volume_plan"),
         FrozenPlanningInput("arc_scope_volume:2", "volume:v3", HASH, "volume_plan"),
         FrozenPlanningInput("related_arc:1", "arc:v2", HASH, "arc_plan"),
+        FrozenPlanningInput("dependent_arc:1", "arc:v3", HASH, "arc_plan"),
     )
     contents = {item.role: {} for item in scope_inputs}
     contents["book_plan"] = _with_inherited_load_policy({})
@@ -1180,6 +1358,9 @@ def test_arc_generation_freezes_multi_volume_and_related_arc_scope() -> None:
                 ),
                 "related_arc_plan_version_ids": list(
                     command.related_arc_plan_version_ids
+                ),
+                "dependent_arc_plan_version_ids": list(
+                    command.dependent_arc_plan_version_ids
                 ),
             }
         },
@@ -1204,12 +1385,19 @@ def test_arc_generation_freezes_multi_volume_and_related_arc_scope() -> None:
     )
     assert fixture["arc_relations"] == [
         {
-            "relation_id": f"relation:{command.logical_key}:1",
+            "relation_id": f"relation:incoming:{command.logical_key}:1",
+            "relation_type": "ENABLES",
+            "source_arc_ref": "arc:v2",
+            "target_arc_ref": command.logical_key,
+            "trigger_or_condition": "the related Arc enables the candidate Arc",
+        },
+        {
+            "relation_id": f"relation:outgoing:{command.logical_key}:1",
             "relation_type": "ENABLES",
             "source_arc_ref": command.logical_key,
-            "target_arc_ref": "arc:v2",
-            "trigger_or_condition": "the primary choice changes the related Arc",
-        }
+            "target_arc_ref": "arc:v3",
+            "trigger_or_condition": "the candidate Arc enables the dependent Arc",
+        },
     ]
     assert len(envelope["parent_versions"]) == len(scope_inputs)
 

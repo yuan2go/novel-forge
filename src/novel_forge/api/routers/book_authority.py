@@ -90,8 +90,8 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 production_profile_version = snapshot.production_profile_version
                 longform_context_versions = {
                     "volume_plan_version": snapshot.current_volume_plan_version,
-                    "arc_plan_version": (
-                        snapshot.current_relevant_arc_plan_versions[0]
+                    "arc_plan_versions": list(
+                        snapshot.current_relevant_arc_plan_versions
                     ),
                     "character_state_version": snapshot.character_state_version,
                     "foreshadowing_state_version": snapshot.foreshadowing_state_version,

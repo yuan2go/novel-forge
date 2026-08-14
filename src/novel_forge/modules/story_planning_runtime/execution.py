@@ -219,7 +219,23 @@ def _logical_chapter_number(logical_key: str) -> int:
             chapter = 0
         if chapter > 0:
             return chapter
+    if len(parts) >= 2 and parts[0] == "chapter-group":
+        candidate = parts[-1] if parts[1] == "containing" else parts[1].split("-", 1)[0]
+        try:
+            chapter = int(candidate)
+        except ValueError:
+            chapter = 0
+        if chapter > 0:
+            return chapter
     return 1
+
+
+def _fixture_chapter_shape(chapter_number: int) -> tuple[str, str]:
+    return {
+        1: ("setup", "door closes"),
+        2: ("reversal", "ally defects"),
+        3: ("payoff", "cost arrives"),
+    }[((chapter_number - 1) % 3) + 1]
 
 
 def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str, Any]:
@@ -286,11 +302,7 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
     arc_exit_state = _fixture_character_arc_stage(max(1, chapter_number))
     disclosure_mode = "HINT" if chapter_number <= 1 else "CONFIRM"
     reader_knowledge_status = "HINTED" if chapter_number <= 1 else "KNOWN"
-    chapter_function, chapter_hook = {
-        1: ("setup", "door closes"),
-        2: ("reversal", "ally defects"),
-        3: ("payoff", "cost arrives"),
-    }.get(chapter_number, ("escalation", "the cost compounds"))
+    chapter_function, chapter_hook = _fixture_chapter_shape(chapter_number)
     parent_version_id = str(command.get("parent_version_id") or "")
     input_versions = command.get("input_versions")
     versions = dict(input_versions) if isinstance(input_versions, Mapping) else {}
@@ -545,16 +557,30 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
             ],
             "arc_relations": [
                 {
-                    "relation_id": f"relation:{logical_key}:{index}",
+                    "relation_id": f"relation:incoming:{logical_key}:{index}",
                     "relation_type": "ENABLES",
-                    "source_arc_ref": logical_key,
-                    "target_arc_ref": related_arc_id,
+                    "source_arc_ref": related_arc_id,
+                    "target_arc_ref": logical_key,
                     "trigger_or_condition": (
-                        "the primary choice changes the related Arc"
+                        "the related Arc enables the candidate Arc"
                     ),
                 }
                 for index, related_arc_id in enumerate(
                     command.get("related_arc_plan_version_ids") or (), start=1
+                )
+            ]
+            + [
+                {
+                    "relation_id": f"relation:outgoing:{logical_key}:{index}",
+                    "relation_type": "ENABLES",
+                    "source_arc_ref": logical_key,
+                    "target_arc_ref": dependent_arc_id,
+                    "trigger_or_condition": (
+                        "the candidate Arc enables the dependent Arc"
+                    ),
+                }
+                for index, dependent_arc_id in enumerate(
+                    command.get("dependent_arc_plan_version_ids") or (), start=1
                 )
             ],
         },
@@ -568,11 +594,14 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
             "emotion_curve": ["doubt", "pressure", "resolve"],
             "antagonist_actions": ["isolate", "expose"],
             "chapter_function_matrix": [
-                _chapter_function_row(1, "setup", "door closes", arc_plan_ids),
-                _chapter_function_row(2, "reversal", "ally defects", arc_plan_ids),
-                _chapter_function_row(3, "payoff", "cost arrives", arc_plan_ids),
+                _chapter_function_row(
+                    group_chapter,
+                    *_fixture_chapter_shape(group_chapter),
+                    arc_plan_ids,
+                )
+                for group_chapter in range(chapter_number, chapter_number + 3)
             ],
-            "chapter_range": [1, 3],
+            "chapter_range": [chapter_number, chapter_number + 2],
             "cost_range": ["social", "material"],
             "primary_arc_ids": [(arc_plan_ids or ("arc:primary",))[0]],
             "secondary_arc_ids": list((arc_plan_ids or ())[1:]),
@@ -1222,6 +1251,7 @@ def planning_provider_output_schema(
     parent_version_id: str = "",
     arc_plan_version_id: str = "",
     related_arc_plan_version_ids: tuple[str, ...] = (),
+    dependent_arc_plan_version_ids: tuple[str, ...] = (),
     dependency_version_ids: tuple[str, ...] = (),
 ) -> dict[str, Any]:
     """OpenAI-strict provider schema; Planning validation stays authoritative."""
@@ -1455,7 +1485,11 @@ def planning_provider_output_schema(
                 tuple(
                     dict.fromkeys(
                         item
-                        for item in (logical_key, *related_arc_plan_version_ids)
+                        for item in (
+                            logical_key,
+                            *related_arc_plan_version_ids,
+                            *dependent_arc_plan_version_ids,
+                        )
                         if item
                     )
                 )
@@ -1958,9 +1992,11 @@ class PostgresPlanningExecutionPreparer:
             parent_version_id=command.parent_version_id,
             arc_plan_version_id=str(command.input_versions.get("arc_plans") or ""),
             related_arc_plan_version_ids=command.related_arc_plan_version_ids,
+            dependent_arc_plan_version_ids=command.dependent_arc_plan_version_ids,
             dependency_version_ids=(
                 *tuple(command.input_versions.values()),
                 *command.related_arc_plan_version_ids,
+                *command.dependent_arc_plan_version_ids,
             ),
         )
         output_schema_ref = (
@@ -2072,8 +2108,14 @@ class PostgresPlanningExecutionPreparer:
                     "related_arc_plan_version_ids": list(
                         command.related_arc_plan_version_ids
                     ),
+                    "dependent_arc_plan_version_ids": list(
+                        command.dependent_arc_plan_version_ids
+                    ),
                     "change_evidence_version_ids": list(
                         command.change_evidence_version_ids
+                    ),
+                    "governance_action_version_ids": list(
+                        command.governance_action_version_ids
                     ),
                     "repair_number": command.repair_number,
                     "repair_reason": command.repair_reason,

@@ -277,9 +277,7 @@ class StoryPlanningGenerationApplication:
         self.application_build_id = application_build_id
         self.commit_sha = commit_sha
         self.worker_id = worker_id
-        self.allow_scripted_evaluation_fixture = (
-            allow_scripted_evaluation_fixture
-        )
+        self.allow_scripted_evaluation_fixture = allow_scripted_evaluation_fixture
         self.narrative_evaluator_principal = narrative_evaluator_principal
         self.registry = StoryPlanningGenerationHandlerRegistry(execution_binder)
         self.semantic_evaluation = NarrativeSemanticEvaluationApplication(
@@ -657,6 +655,15 @@ class StoryPlanningGenerationApplication:
     ) -> dict[str, Any]:
         generation = self.require_candidate(candidate_asset_version_id)
         principal.require("story_planning.authority.activate", generation["project_id"])
+        generation_record = self.require_generation(
+            generation["generation_operation_id"]
+        )
+        if str(generation_record["status"]) != "ACTIVE":
+            self._require_generation_inputs_current(
+                operation_id=generation["generation_operation_id"],
+                project_id=generation["project_id"],
+                book_id=generation["book_id"],
+            )
         self._require_narrative_qualification_summary(
             operation_id=generation["generation_operation_id"],
             candidate_asset_version_id=candidate_asset_version_id,
@@ -729,6 +736,63 @@ class StoryPlanningGenerationApplication:
             "planning_binding": binding,
             "chapter_plan_projection": chapter_plan_projection,
         }
+
+    def _require_generation_inputs_current(
+        self, *, operation_id: str, project_id: str, book_id: str
+    ) -> None:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT input_snapshot
+                FROM authority_story_planning_generation
+                WHERE operation_id=%s AND project_id=%s AND book_id=%s
+                """,
+                [operation_id, project_id, book_id],
+            )
+            row = uow.cursor.fetchone()
+            if row is None:
+                raise KernelError(
+                    "PLANNING_GENERATION_INPUT_SNAPSHOT_MISSING",
+                    "Planning activation requires its immutable generation inputs",
+                )
+            for item in row[0]:
+                frozen = dict(item)
+                asset_version_id = str(frozen.get("asset_version_id") or "")
+                uow.cursor.execute(
+                    """
+                    SELECT asset.asset_type, version.content_hash,
+                           version.lifecycle, version.eligibility,
+                           version.governance, binding.freshness,
+                           active.binding_id
+                    FROM authority_asset_version AS version
+                    JOIN authority_asset AS asset ON asset.asset_id=version.asset_id
+                    LEFT JOIN story_plan_binding AS binding
+                      ON binding.project_id=asset.project_id
+                     AND binding.book_id=%s
+                     AND binding.asset_version_id=version.asset_version_id
+                    LEFT JOIN active_story_plan_version AS active
+                      ON active.binding_id=binding.binding_id
+                    WHERE version.asset_version_id=%s AND asset.project_id=%s
+                    """,
+                    [book_id, asset_version_id, project_id],
+                )
+                current = uow.cursor.fetchone()
+                if (
+                    current is None
+                    or str(current[0]) != str(frozen.get("asset_type") or "")
+                    or str(current[1]) != str(frozen.get("content_hash") or "")
+                    or str(current[2]) != "ACTIVE"
+                    or str(current[3]) != "ELIGIBLE"
+                    or str(current[4]) != "CLEAR"
+                    or (
+                        current[5] is not None
+                        and (str(current[5]) != "CURRENT" or current[6] is None)
+                    )
+                ):
+                    raise KernelError(
+                        "PLANNING_GENERATION_INPUT_STALE",
+                        "Planning candidate input identity or currentness changed before activation",
+                    )
 
     def _materialize_chapter_plan_projection(
         self,
@@ -1367,7 +1431,9 @@ class StoryPlanningGenerationApplication:
                 command.arc_scope_volume_plan_version_ids
             ),
             related_arc_plan_version_ids=command.related_arc_plan_version_ids,
+            dependent_arc_plan_version_ids=command.dependent_arc_plan_version_ids,
             change_evidence_version_ids=command.change_evidence_version_ids,
+            governance_action_version_ids=command.governance_action_version_ids,
             repair_of_candidate_id=candidate_asset_version_id,
             repair_reason=f"{error.code}:{report_hash}",
             repair_number=command.repair_number + 1,
@@ -1429,6 +1495,7 @@ class StoryPlanningGenerationApplication:
             if role in _PLAN_INPUT_CONTRACTS
             or role.startswith("arc_scope_volume:")
             or role.startswith("related_arc:")
+            or role.startswith("dependent_arc:")
             or role == "chapter_function_matrix_row"
         ]
         with AuthorityUnitOfWork(self.database_url) as uow:
@@ -1449,7 +1516,13 @@ class StoryPlanningGenerationApplication:
             uow.cursor.execute(
                 """
                 SELECT version.asset_version_id, asset.asset_type,
-                       version.content_hash, version.content
+                       version.content_hash, version.content,
+                       NOT EXISTS (
+                           SELECT 1
+                           FROM authority_asset_supersession AS supersession
+                           WHERE supersession.previous_asset_version_id=
+                                 version.asset_version_id
+                       ) AS is_current_version
                 FROM authority_asset_version AS version
                 JOIN authority_asset AS asset ON asset.asset_id=version.asset_id
                 WHERE asset.project_id=%s
@@ -1483,6 +1556,7 @@ class StoryPlanningGenerationApplication:
                 "asset_type": str(row[1]),
                 "content_hash": str(row[2]),
                 "content": dict(row[3]),
+                "is_current_version": bool(row[4]),
             }
             for row in rows
         }
@@ -1507,7 +1581,7 @@ class StoryPlanningGenerationApplication:
                 PlanContractType.VOLUME
                 if role.startswith("arc_scope_volume:")
                 else PlanContractType.ARC
-                if role.startswith("related_arc:")
+                if role.startswith(("related_arc:", "dependent_arc:"))
                 else _PLAN_INPUT_CONTRACTS.get(role)
             )
             if expected_contract is not None:
@@ -1534,6 +1608,16 @@ class StoryPlanningGenerationApplication:
                     "chapter_function_matrix_row must be a typed Authority asset "
                     "or the current Active ChapterGroupPlan containing the matrix",
                 )
+            elif role.startswith("narrative_governance_action:"):
+                if (
+                    item["asset_type"]
+                    not in {"governance_decision", "narrative_governance_action"}
+                    or not item["is_current_version"]
+                ):
+                    raise KernelError(
+                        "PLANNING_GENERATION_GOVERNANCE_ACTION_INVALID",
+                        "Narrative governance action must be current typed Authority evidence",
+                    )
             elif role != "chapter_function_matrix_row":
                 allowed_asset_types = _AUTHORITY_INPUT_ASSET_TYPES.get(
                     role, frozenset({role})
@@ -1590,6 +1674,36 @@ class StoryPlanningGenerationApplication:
                     f"Authority input {child_role} is not a child of the frozen "
                     f"{parent_role} version",
                 )
+        governed_by_id = {
+            item.asset_version_id: item
+            for item in result
+            if item.role.startswith("narrative_governance_action:")
+        }
+        for item in by_id.values():
+            content = item["content"]
+            envelope = content.get("constraint_envelope")
+            policy = (
+                envelope.get("narrative_load_policy")
+                if isinstance(envelope, dict)
+                else content.get("narrative_load_policy")
+            )
+            if not isinstance(policy, dict):
+                continue
+            for override in policy.get("governed_overrides") or ():
+                if not isinstance(override, dict):
+                    continue
+                action_id = str(
+                    override.get("governance_action_asset_version_id") or ""
+                )
+                action_hash = str(
+                    override.get("governance_action_content_hash") or ""
+                )
+                frozen = governed_by_id.get(action_id)
+                if frozen is None or frozen.content_hash != action_hash:
+                    raise KernelError(
+                        "PLANNING_GENERATION_GOVERNANCE_ACTION_UNBOUND",
+                        "Narrative Load override is not bound to exact governance Authority evidence",
+                    )
         return tuple(result)
 
     def _resolve_change_evidence(
@@ -1908,6 +2022,55 @@ class StoryPlanningGenerationApplication:
                     "PLANNING_CANDIDATE_ELIGIBILITY_CONFLICT",
                     "Planning candidate eligibility changed outside qualification",
                 )
+            uow.cursor.execute(
+                """
+                SELECT evaluation_operation_id, qualification_hash
+                FROM authority_narrative_design_qualification
+                WHERE project_id=%s AND asset_version_id=%s
+                  AND qualification_status='PASS'
+                  AND trust_boundary='INDEPENDENT'
+                ORDER BY created_at DESC
+                LIMIT 1
+                """,
+                [project_id, candidate_asset_version_id],
+            )
+            receipt = uow.cursor.fetchone()
+            if receipt is None:
+                raise KernelError(
+                    "PLANNING_CANDIDATE_QUALIFICATION_MISSING",
+                    "Planning eligibility requires independent Narrative Qualification",
+                )
+            qualification_id = canonical_hash(
+                {
+                    "asset_version_id": candidate_asset_version_id,
+                    "evaluation_operation_id": str(receipt[0]),
+                    "decision": eligibility,
+                }
+            )
+            uow.cursor.execute(
+                """
+                INSERT INTO authority_asset_qualification(
+                    qualification_id, asset_version_id,
+                    policy_version, decision, evidence
+                ) VALUES (
+                    %s, %s, 'independent-narrative-evaluation-v1', %s, %s
+                )
+                ON CONFLICT (qualification_id) DO NOTHING
+                """,
+                [
+                    qualification_id,
+                    candidate_asset_version_id,
+                    eligibility,
+                    Jsonb(
+                        {
+                            "schema_version": "planning-semantic-evaluation.v1",
+                            "evaluation_operation_id": str(receipt[0]),
+                            "qualification_hash": str(receipt[1]),
+                            "trust_boundary": "INDEPENDENT",
+                        }
+                    ),
+                ],
+            )
             uow.commit()
 
     def _require_asset(
@@ -2153,6 +2316,7 @@ def story_planning_generation_definition(
             "candidate_only": True,
             "story_design_activation_separate": True,
             "semantic_evaluation_operation_separate": True,
+            "repair_candidate_asset_input_allowed": True,
             "capability_pack_attempt_snapshot_required": True,
             "agent_runtime_binding_required": True,
             "production_execution_gateway_required": True,
@@ -2214,7 +2378,13 @@ def _command_payload(command: StoryPlanningGenerationCommand) -> dict[str, Any]:
             command.arc_scope_volume_plan_version_ids
         ),
         "related_arc_plan_version_ids": list(command.related_arc_plan_version_ids),
+        "dependent_arc_plan_version_ids": list(
+            command.dependent_arc_plan_version_ids
+        ),
         "change_evidence_version_ids": list(command.change_evidence_version_ids),
+        "governance_action_version_ids": list(
+            command.governance_action_version_ids
+        ),
         "repair_of_candidate_id": command.repair_of_candidate_id,
         "repair_reason": command.repair_reason,
         "repair_number": command.repair_number,
@@ -2241,8 +2411,14 @@ def _command_from_payload(payload: dict[str, Any]) -> StoryPlanningGenerationCom
         related_arc_plan_version_ids=tuple(
             str(item) for item in payload.get("related_arc_plan_version_ids") or ()
         ),
+        dependent_arc_plan_version_ids=tuple(
+            str(item) for item in payload.get("dependent_arc_plan_version_ids") or ()
+        ),
         change_evidence_version_ids=tuple(
             str(item) for item in payload.get("change_evidence_version_ids") or ()
+        ),
+        governance_action_version_ids=tuple(
+            str(item) for item in payload.get("governance_action_version_ids") or ()
         ),
         repair_of_candidate_id=str(payload.get("repair_of_candidate_id") or ""),
         repair_reason=str(payload.get("repair_reason") or ""),
@@ -2268,6 +2444,18 @@ def _authority_role_versions(
                 command.related_arc_plan_version_ids, start=1
             )
         },
+        **{
+            f"dependent_arc:{index}": asset_version_id
+            for index, asset_version_id in enumerate(
+                command.dependent_arc_plan_version_ids, start=1
+            )
+        },
+        **{
+            f"narrative_governance_action:{index}": asset_version_id
+            for index, asset_version_id in enumerate(
+                command.governance_action_version_ids, start=1
+            )
+        },
     }
 
 
@@ -2275,7 +2463,11 @@ def _validate_frozen_arc_references(
     command: StoryPlanningGenerationCommand, content: dict[str, Any]
 ) -> None:
     if command.generator_operation_name == "arc_plan.generate":
-        frozen = {command.logical_key, *command.related_arc_plan_version_ids}
+        frozen = {
+            command.logical_key,
+            *command.related_arc_plan_version_ids,
+            *command.dependent_arc_plan_version_ids,
+        }
         for relation in content.get("arc_relations") or ():
             if not isinstance(relation, dict):
                 continue
