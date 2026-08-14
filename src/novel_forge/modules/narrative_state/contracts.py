@@ -56,6 +56,9 @@ class NarrativeStateKind(StrEnum):
 _CHARACTER_KNOWLEDGE_STATUSES = frozenset(
     {"UNKNOWN", "SUSPECTED", "KNOWN", "FORGOTTEN"}
 )
+_CHARACTER_BELIEF_STANCES = frozenset(
+    {"BELIEVES", "DOUBTS", "DISBELIEVES", "UNCERTAIN"}
+)
 
 
 def atomize_character_knowledge_changes(
@@ -122,6 +125,82 @@ def atomize_character_knowledge_changes(
             atom["fact_id"] = acquired_fact_id
             atoms.append(atom)
     return atoms
+
+
+def normalize_character_belief_changes(
+    changes: Iterable[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Normalize Character Belief to its typed epistemic vocabulary.
+
+    Canon extraction schemas predating v7 exposed only the generic ``status`` or
+    ``state`` field even though the durable Narrative State contract names the
+    value ``stance``.  Upgrade those immutable historical payloads at read
+    boundaries, reject conflicting aliases, and persist only the canonical shape
+    for new assets.
+    """
+
+    normalized: list[dict[str, Any]] = []
+    for raw in changes:
+        change = dict(raw)
+        stance_values = {
+            str(change[key]).strip().upper()
+            for key in ("stance", "status", "state")
+            if change.get(key) not in {None, ""}
+        }
+        if len(stance_values) > 1:
+            raise KernelError(
+                "NARRATIVE_CHARACTER_BELIEF_STANCE_CONFLICT",
+                "character belief stance, status, and state aliases disagree",
+            )
+        stance = next(iter(stance_values), "")
+        if stance not in _CHARACTER_BELIEF_STANCES:
+            raise KernelError(
+                "NARRATIVE_CHARACTER_BELIEF_STANCE_INVALID",
+                "character belief requires BELIEVES, DOUBTS, DISBELIEVES, or UNCERTAIN",
+            )
+        from_values = {
+            str(change[key]).strip().upper()
+            for key in ("from_stance", "from_status", "from_state")
+            if change.get(key) not in {None, ""}
+        }
+        if len(from_values) > 1:
+            raise KernelError(
+                "NARRATIVE_CHARACTER_BELIEF_PRECONDITION_CONFLICT",
+                "character belief from_stance, from_status, and from_state aliases disagree",
+            )
+        from_stance = next(iter(from_values), "")
+        if from_stance and from_stance not in _CHARACTER_BELIEF_STANCES:
+            raise KernelError(
+                "NARRATIVE_CHARACTER_BELIEF_PRECONDITION_INVALID",
+                "character belief from_stance uses an unsupported value",
+            )
+        confidence = change.get("belief_confidence")
+        if (
+            isinstance(confidence, bool)
+            or not isinstance(confidence, (int, float))
+            or not 0 <= float(confidence) <= 1
+        ):
+            raise KernelError(
+                "NARRATIVE_CHARACTER_BELIEF_CONFIDENCE_INVALID",
+                "character belief confidence must be between zero and one",
+            )
+        character_id = str(change.get("character_id") or "").strip()
+        fact_id = str(change.get("fact_id") or "").strip()
+        proposition_id = str(change.get("proposition_id") or "").strip()
+        if not character_id or not (fact_id or proposition_id):
+            raise KernelError(
+                "NARRATIVE_CHARACTER_BELIEF_IDENTITY_INVALID",
+                "character belief requires character_id and fact_id or proposition_id",
+            )
+        change["stance"] = stance
+        for alias in ("status", "state", "from_status", "from_state"):
+            change.pop(alias, None)
+        if from_stance:
+            change["from_stance"] = from_stance
+        else:
+            change.pop("from_stance", None)
+        normalized.append(change)
+    return normalized
 
 
 class NarrativeObligationType(StrEnum):
@@ -670,6 +749,11 @@ def events_from_canon_patch(
             changes[NarrativeStateKind.CHARACTER_KNOWLEDGE]
         )
     )
+    changes[NarrativeStateKind.CHARACTER_BELIEF] = (
+        normalize_character_belief_changes(
+            changes[NarrativeStateKind.CHARACTER_BELIEF]
+        )
+    )
 
     events: list[NarrativeStateEvent] = []
     for kind in NarrativeStateKind:
@@ -1093,7 +1177,10 @@ def _semantics_for(
         return ReducerSemantics.CLOSE
     if state_kind is NarrativeStateKind.WORLD_RULE and status in {"ACTIVE", "ACTIVATED"}:
         return ReducerSemantics.ACTIVATE
-    if any(key in payload for key in ("from_state", "from_status", "from_tier")):
+    if any(
+        key in payload
+        for key in ("from_state", "from_status", "from_stance", "from_tier")
+    ):
         return ReducerSemantics.TRANSITION
     return ReducerSemantics.UPSERT
 

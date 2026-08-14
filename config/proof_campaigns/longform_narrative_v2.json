@@ -2,7 +2,7 @@
   "schema_version": "novel-forge.longform-proof-contract.v1",
   "campaign_id": "longform-narrative-v2",
   "campaign_version": 2,
-  "contract_identity": "sha256:cbf5d97c1ab35de081f42bc29741ccd018ef897dd7c25e15854487bbaace8d51",
+  "contract_identity": "sha256:0b3f7a00c470e1c07be54b4d295c31e40547f2e6b7cf8f31ca5abb6d6d7119e0",
   "baseline_git_sha": "733c4425cb869de9dfbab270a6bbe2be96ff9ce7",
   "migration_head": "20260814_0088_canonical_narrative_architecture",
   "book": {
@@ -266,9 +266,9 @@
   },
   "runtime_bindings": {
     "capability_pack_id": "chapter_generation_pack",
-    "capability_pack_version": "1.9.0",
-    "capability_pack_manifest_hash": "sha256:4f27c34195c9fbd74a651ab9e1b7821785f5178ee60c5e524d9a04de6ca45151",
-    "capability_pack_source_hash": "sha256:bfeb1502bcab74d075af6bd5adbaa5ffdd092ec619528686d9f8e3cd90e1264e",
+    "capability_pack_version": "1.10.0",
+    "capability_pack_manifest_hash": "sha256:f0df0a7472be2177d65a8bb72088c2024d45e33240a1921c18e7eb8d0a702e44",
+    "capability_pack_source_hash": "sha256:a1544833ce1888ac1a9eb48f767f129215ffe811859f8f6dd7a483a38c0063b5",
     "prompt_system_hash": "sha256:56ca60948dbfee8de94e233307604f3a178e0b61c3f3082803a38cce0830ba20",
     "prompt_template_hash": "sha256:5a8ccec99d1c1bf0a28870f1cb608169974f78529b0552119dbfbe5c790b22c0",
     "skill_bindings": [

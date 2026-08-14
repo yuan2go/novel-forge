@@ -130,7 +130,7 @@ def test_quality_prompt_and_schema_version_require_dimension_evidence() -> None:
     )
     assert (
         chapter_provider_output_schema_ref("canon_extraction")
-        == "schema:chapter-provider-output:canon_extraction:v6"
+        == "schema:chapter-provider-output:canon_extraction:v7"
     )
 
 
@@ -172,7 +172,9 @@ def test_canon_prompt_binds_transition_preconditions_to_accepted_state() -> None
 
     assert "accepted Story State" in contract
     assert "first occurrence" in contract
-    assert "omit from_status, from_state, and from_tier" in contract
+    assert (
+        "leave from_status, from_state, from_stance, and from_tier null" in contract
+    )
 
 
 def test_canon_prompt_binds_fact_supersession_to_accepted_canon_event() -> None:
@@ -199,6 +201,8 @@ def test_canon_prompt_requires_character_knowledge_precondition_closure() -> Non
     assert "never add unsupported knowledge merely to satisfy validation" in contract
     assert "Story Truth, Character Knowledge, Character Belief" in contract
     assert "a belief may be false" in contract
+    assert "use only stance with BELIEVES, DOUBTS" in contract
+    assert "from_stance only for an exact accepted baseline" in contract
     assert "including character-facing events" in contract
     assert "reader-facing Disclosure alone" in contract
     assert "deterministically projected into Reader Knowledge" in contract
@@ -231,6 +235,8 @@ def test_canon_semantics_normalizes_initial_resource_balance() -> None:
             "resource_id": "credits",
             "status": None,
             "from_status": None,
+            "stance": None,
+            "from_stance": None,
             "from_state": None,
             "from_stage": None,
             "life_status": None,
@@ -353,6 +359,85 @@ def test_canon_schema_rejects_character_knowledge_state_alias() -> None:
     assert error.value.code == "CHAPTER_PROVIDER_OUTPUT_SCHEMA_INVALID"
 
 
+def test_canon_schema_requires_typed_character_belief_stance() -> None:
+    value = _valid("canon_extraction")
+    change_schema = chapter_provider_output_schema("canon_extraction")["properties"][
+        "character_belief_changes"
+    ]["items"]
+    change = {
+        key: (
+            "The witness is no longer certain silence is safe."
+            if key == "summary"
+            else "character:lin"
+            if key == "character_id"
+            else "proposition:silence-is-safe"
+            if key == "proposition_id"
+            else "UNCERTAIN"
+            if key == "stance"
+            else 0.68
+            if key == "belief_confidence"
+            else 0
+            if key == "evidence_start"
+            else 42
+            if key == "evidence_end"
+            else 0.95
+            if key == "confidence"
+            else "CHARACTER_BELIEF_CHANGED"
+            if key == "impact_type"
+            else None
+        )
+        for key in change_schema["properties"]
+    }
+    value["character_belief_changes"] = [change]
+
+    structural = validate_chapter_provider_output_schema("canon_extraction", value)
+    normalized = validate_chapter_provider_output_semantics(
+        "canon_extraction", structural
+    )
+
+    assert normalized["character_belief_changes"][0]["stance"] == "UNCERTAIN"
+    assert normalized["character_belief_changes"][0]["belief_confidence"] == 0.68
+    assert "state" not in normalized["character_belief_changes"][0]
+    assert "status" not in normalized["character_belief_changes"][0]
+
+
+def test_canon_schema_rejects_character_belief_status_alias() -> None:
+    value = _valid("canon_extraction")
+    change_schema = chapter_provider_output_schema("canon_extraction")["properties"][
+        "character_belief_changes"
+    ]["items"]
+    change = {
+        key: (
+            "The witness is uncertain."
+            if key == "summary"
+            else "character:lin"
+            if key == "character_id"
+            else "proposition:silence-is-safe"
+            if key == "proposition_id"
+            else "UNCERTAIN"
+            if key == "status"
+            else 0.68
+            if key == "belief_confidence"
+            else 0
+            if key == "evidence_start"
+            else 42
+            if key == "evidence_end"
+            else 0.95
+            if key == "confidence"
+            else "CHARACTER_BELIEF_CHANGED"
+            if key == "impact_type"
+            else None
+        )
+        for key in change_schema["properties"]
+    }
+    value["character_belief_changes"] = [change]
+
+    with pytest.raises(KernelError) as error:
+        validate_chapter_provider_output_schema("canon_extraction", value)
+
+    assert error.value.code == "CHAPTER_PROVIDER_OUTPUT_SCHEMA_INVALID"
+
+
 def test_canon_schema_exposes_epistemic_and_presentation_changes() -> None:
     schema = chapter_provider_output_schema("canon_extraction")
 
@@ -360,6 +445,13 @@ def test_canon_schema_exposes_epistemic_and_presentation_changes() -> None:
     assert "disclosure_events" in schema["properties"]
     change = schema["properties"]["disclosure_events"]["items"]["properties"]
     assert {"fact_id", "disclosure_id", "audience", "disclosure_mode"}.issubset(change)
+    assert change["disclosure_mode"]["enum"] == [
+        "HINT",
+        "PARTIAL",
+        "MISDIRECT",
+        "CONFIRM",
+        "WITHHOLD",
+    ]
 
 
 def _valid(stage: str) -> dict[str, object]:

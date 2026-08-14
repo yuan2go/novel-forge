@@ -216,6 +216,43 @@ class DeterministicContinuityValidatorTests(unittest.TestCase):
         )
         self.assertEqual(matched["gate"], "PASSED")
 
+    def test_character_belief_uses_stance_for_cas_and_plan_reconciliation(self) -> None:
+        report = validate_deterministic_continuity(
+            chapter=2,
+            historical_state={
+                "character_belief": [
+                    {
+                        "character_id": "hero",
+                        "proposition_id": "proposition:silence-is-safe",
+                        "stance": "BELIEVES",
+                    }
+                ]
+            },
+            extraction={
+                "character_belief_changes": [
+                    {
+                        "character_id": "hero",
+                        "proposition_id": "proposition:silence-is-safe",
+                        "from_stance": "BELIEVES",
+                        "stance": "DOUBTS",
+                        "belief_confidence": 0.7,
+                    }
+                ]
+            },
+            planned_execution={
+                "required_state_transitions": [
+                    {
+                        "state_kind": "character_belief",
+                        "entity_key": "hero:proposition:silence-is-safe",
+                        "from_state": "BELIEVES",
+                        "to_state": "DOUBTS",
+                    }
+                ]
+            },
+        )
+
+        self.assertEqual(report["gate"], "PASSED")
+
     def test_planned_execution_accepts_exact_generic_entity_identity(self) -> None:
         planned = {
             "required_state_transitions": [

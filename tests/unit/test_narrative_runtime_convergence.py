@@ -140,6 +140,48 @@ def test_temporal_state_contract_covers_knowledge_world_and_obligations() -> Non
     assert obligation["state"]["target_window"]["to_chapter"] == 24
 
 
+def test_legacy_character_belief_status_alias_upgrades_at_read_boundary() -> None:
+    events = _events(
+        1,
+        {
+            "character_belief": [
+                {
+                    "character_id": "hero",
+                    "proposition_id": "proposition:silence-is-safe",
+                    "status": "UNCERTAIN",
+                    "belief_confidence": 0.68,
+                    "entity_version": 1,
+                }
+            ]
+        },
+    )
+
+    assert len(events) == 1
+    assert events[0].payload["stance"] == "UNCERTAIN"
+    assert "status" not in events[0].payload
+    assert events[0].payload["belief_confidence"] == 0.68
+
+
+def test_conflicting_character_belief_aliases_fail_closed() -> None:
+    with pytest.raises(KernelError) as error:
+        _events(
+            1,
+            {
+                "character_belief": [
+                    {
+                        "character_id": "hero",
+                        "proposition_id": "proposition:silence-is-safe",
+                        "stance": "DOUBTS",
+                        "status": "BELIEVES",
+                        "belief_confidence": 0.68,
+                    }
+                ]
+            },
+        )
+
+    assert error.value.code == "NARRATIVE_CHARACTER_BELIEF_STANCE_CONFLICT"
+
+
 def test_obligation_terminal_state_requires_payoff_and_cannot_reopen() -> None:
     with pytest.raises(KernelError) as missing_payoff:
         _events(

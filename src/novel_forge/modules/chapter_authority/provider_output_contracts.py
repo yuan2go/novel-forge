@@ -6,6 +6,7 @@ from typing import Any, Mapping
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.narrative_state.contracts import (
     atomize_character_knowledge_changes,
+    normalize_character_belief_changes,
 )
 
 
@@ -223,6 +224,8 @@ def _canon_schema() -> dict[str, Any]:
         "resource_id": {"type": "string"},
         "status": {"type": "string"},
         "from_status": {"type": "string"},
+        "stance": {"type": "string"},
+        "from_stance": {"type": "string"},
         "from_state": {"type": "string"},
         "from_stage": {"type": "string"},
         "life_status": {"type": "string"},
@@ -303,6 +306,55 @@ def _canon_schema() -> dict[str, Any]:
     knowledge_change["properties"]["state"] = {
         "type": ["string", "null"],
         "enum": [None],
+    }
+    belief_changes = schema["properties"]["character_belief_changes"]
+    belief_changes["description"] = (
+        "Typed Character Belief events. Emit one item per character and fact or "
+        "proposition identity; set stance to BELIEVES, DOUBTS, DISBELIEVES, or "
+        "UNCERTAIN and belief_confidence from zero to one. Use from_stance only "
+        "for an accepted compare-and-set baseline; leave generic state/status null."
+    )
+    belief_change = belief_changes["items"]
+    belief_change["properties"]["stance"] = {
+        "type": "string",
+        "enum": ["BELIEVES", "DOUBTS", "DISBELIEVES", "UNCERTAIN"],
+    }
+    belief_change["properties"]["from_stance"] = {
+        "type": ["string", "null"],
+        "enum": ["BELIEVES", "DOUBTS", "DISBELIEVES", "UNCERTAIN", None],
+    }
+    belief_change["properties"]["belief_confidence"] = {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 1,
+    }
+    for alias in ("state", "status", "from_state", "from_status"):
+        belief_change["properties"][alias] = {
+            "type": ["string", "null"],
+            "enum": [None],
+        }
+    disclosure_changes = schema["properties"]["disclosure_events"]
+    disclosure_changes["description"] = (
+        "Typed presentation events. Copy a stable disclosure_id, one fact or "
+        "proposition identity, the exact audience, disclosure mode, and presentation "
+        "channel. Disclosure is presentation evidence, not Reader Knowledge input."
+    )
+    disclosure_change = disclosure_changes["items"]
+    disclosure_change["properties"]["disclosure_id"] = {
+        "type": "string",
+        "minLength": 1,
+    }
+    disclosure_change["properties"]["audience"] = {
+        "type": "string",
+        "minLength": 1,
+    }
+    disclosure_change["properties"]["disclosure_mode"] = {
+        "type": "string",
+        "enum": ["HINT", "PARTIAL", "MISDIRECT", "CONFIRM", "WITHHOLD"],
+    }
+    disclosure_change["properties"]["presentation_channel"] = {
+        "type": "string",
+        "minLength": 1,
     }
     return schema
 
@@ -415,7 +467,7 @@ def chapter_provider_output_schema(stage: str) -> dict[str, Any]:
 def chapter_provider_output_schema_ref(stage: str) -> str:
     chapter_provider_output_schema(stage)
     version = (
-        "v6"
+        "v7"
         if stage == "canon_extraction"
         else "v2"
         if stage in _QUALITY_STAGES
@@ -470,11 +522,24 @@ def validate_chapter_provider_output_semantics(
                     normalized.get("character_knowledge_changes", [])
                 )
             )
+            normalized["character_belief_changes"] = (
+                normalize_character_belief_changes(
+                    normalized.get("character_belief_changes", [])
+                )
+            )
         except KernelError as exc:
             raise KernelError(
                 "CHAPTER_PROVIDER_OUTPUT_SEMANTIC_INVALID",
                 str(exc),
             ) from exc
+        for disclosure in normalized.get("disclosure_events", []):
+            if not str(
+                disclosure.get("fact_id") or disclosure.get("proposition_id") or ""
+            ).strip():
+                raise KernelError(
+                    "CHAPTER_PROVIDER_OUTPUT_SEMANTIC_INVALID",
+                    "Disclosure requires one fact_id or proposition_id",
+                )
         for change in normalized.get("resource_state_changes", []):
             before = change.get("balance_before")
             delta = change.get("delta")

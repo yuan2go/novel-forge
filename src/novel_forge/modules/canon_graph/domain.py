@@ -8,6 +8,7 @@ from typing import Any, Iterable, Protocol
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.narrative_state.contracts import (
     atomize_character_knowledge_changes,
+    normalize_character_belief_changes,
 )
 
 
@@ -161,6 +162,9 @@ def extract_canon_candidates(
     _normalize_resource_changes(changes["resource_state_changes"])
     changes["character_knowledge_changes"] = atomize_character_knowledge_changes(
         changes["character_knowledge_changes"]
+    )
+    changes["character_belief_changes"] = normalize_character_belief_changes(
+        changes["character_belief_changes"]
     )
     changes["reader_knowledge_changes"] = _derive_reader_knowledge_changes(
         changes["disclosure_events"]
@@ -964,6 +968,7 @@ def _validate_transition_preconditions(
                 (from_key, current_key)
                 for from_key, current_key in (
                     ("from_status", "status"),
+                    ("from_stance", "stance"),
                     ("from_state", "state"),
                     ("from_stage", "stage"),
                     ("from_tier", "tier"),
@@ -1196,9 +1201,9 @@ def _candidate_entity_keys(state_kind: str, item: dict[str, Any]) -> set[str]:
 
 def _transition_value(item: dict[str, Any], *, prefix: str) -> str:
     keys = (
-        ("from_state", "from_status", "from_stage", "from_tier")
+        ("from_state", "from_status", "from_stance", "from_stage", "from_tier")
         if prefix == "from"
-        else ("state", "status", "stage", "tier")
+        else ("state", "status", "stance", "stage", "tier")
     )
     return next(
         (str(item[key]) for key in keys if item.get(key) not in {None, ""}),
@@ -1210,7 +1215,7 @@ def _current_state_value(item: dict[str, Any]) -> str:
     return next(
         (
             str(item[key])
-            for key in ("state", "status", "stage", "tier")
+            for key in ("state", "status", "stance", "stage", "tier")
             if item.get(key) not in {None, ""}
         ),
         "",
