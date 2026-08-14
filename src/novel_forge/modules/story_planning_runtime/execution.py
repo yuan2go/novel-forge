@@ -422,8 +422,14 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
                     domain_type="CHARACTER_TRAJECTORY",
                     fallback="character-arc:accountability",
                 ),
-                "scope": PLAN_HORIZON[contract_type].value,
-                "reach": logical_key,
+                "scope": contract_type.value,
+                "reach": {
+                    PlanContractType.BOOK: "DISTANT",
+                    PlanContractType.VOLUME: "CURRENT_VOLUME",
+                    PlanContractType.ARC: "CURRENT_VOLUME",
+                    PlanContractType.CHAPTER_GROUP: "CURRENT_SEGMENT",
+                    PlanContractType.CHAPTER: "CURRENT_CHAPTER",
+                }[contract_type],
                 "realization_level": PLAN_REALIZATION[contract_type].value,
                 "narrative_relevance": "CURRENT",
             }
@@ -828,8 +834,14 @@ def _canonical_narrative_provider_properties(
                         "type": "string",
                         "enum": ["CURRENT", "NEAR_FUTURE", "FUTURE"],
                     },
-                    "visibility": string,
-                    "accessibility": string,
+                    "visibility": {
+                        "type": "string",
+                        "enum": ["HIDDEN", "PARTIAL", "VISIBLE", "SCENE_VISIBLE"],
+                    },
+                    "accessibility": {
+                        "type": "string",
+                        "enum": ["CLOSED", "RESTRICTED", "ACCESSIBLE"],
+                    },
                 }
             ),
         },
@@ -842,8 +854,21 @@ def _canonical_narrative_provider_properties(
                     "identity_ref": authority_ref,
                     "state_ref": authority_ref,
                     "trajectory_ref": authority_ref,
-                    "scope": string,
-                    "reach": string,
+                    "scope": {
+                        "type": "string",
+                        "enum": [item.value for item in PlanContractType],
+                    },
+                    "reach": {
+                        "type": "string",
+                        "enum": [
+                            "DISTANT",
+                            "FUTURE_VOLUME",
+                            "CURRENT_VOLUME",
+                            "CURRENT_SEGMENT",
+                            "CURRENT_CHAPTER",
+                            "CURRENT_SCENE",
+                        ],
+                    },
                     "realization_level": {
                         "type": "string",
                         "enum": entity_realization_levels,
