@@ -142,6 +142,10 @@ READER_DISCLOSURE_STATUS = {
     "WITHHOLD": "WITHHELD",
 }
 
+ARC_RELATION_TYPES = frozenset(
+    {"CAUSES", "ENABLES", "BLOCKS", "REVEALS", "PAYS_OFF"}
+)
+
 
 @dataclass(frozen=True, slots=True)
 class PlanningContract:
@@ -254,6 +258,9 @@ def validate_planning_contract(
 def _validate_canonical_narrative_contract(
     contract_type: PlanContractType, content: dict[str, Any]
 ) -> None:
+    if contract_type is PlanContractType.BOOK:
+        _validate_book_design_layers(content)
+        return
     if contract_type is PlanContractType.VOLUME:
         segments = content.get("narrative_segments")
         if not isinstance(segments, list) or not segments:
@@ -262,6 +269,7 @@ def _validate_canonical_narrative_contract(
                 "canonical VolumePlan requires at least one Narrative Segment",
             )
         seen: set[str] = set()
+        covered_ranges: list[tuple[int, int]] = []
         volume_start, volume_end = map(int, content["chapter_range"])
         for segment in segments:
             segment_id = str((segment or {}).get("segment_id") or "")
@@ -283,6 +291,22 @@ def _validate_canonical_narrative_contract(
                     "Narrative Segment range must be contained by its Volume",
                 )
             seen.add(segment_id)
+            covered_ranges.append((start, end))
+        covered_ranges.sort()
+        if (
+            covered_ranges[0][0] != volume_start
+            or covered_ranges[-1][1] != volume_end
+            or any(
+                current[1] + 1 != following[0]
+                for current, following in zip(
+                    covered_ranges, covered_ranges[1:], strict=False
+                )
+            )
+        ):
+            raise KernelError(
+                "NARRATIVE_SEGMENT_COVERAGE_INVALID",
+                "Narrative Segments must cover the Volume exactly without gaps or overlaps",
+            )
         return
     if contract_type is PlanContractType.ARC:
         thread_id = str(content.get("thread_id") or "")
@@ -293,6 +317,11 @@ def _validate_canonical_narrative_contract(
                 "canonical ArcPlan requires a Thread identity and Arc Segments",
             )
         volume_scope = {str(item) for item in content.get("cross_volume_scope") or ()}
+        segment_ids = [
+            str(item.get("segment_id") or "")
+            for item in segments
+            if isinstance(item, dict)
+        ]
         declared = {
             str(item.get("volume_plan_version_id") or "")
             for item in segments
@@ -303,6 +332,16 @@ def _validate_canonical_narrative_contract(
                 "NARRATIVE_ARC_SEGMENT_SCOPE_INVALID",
                 "every Arc Segment must bind a Volume in cross_volume_scope",
             )
+        if (
+            len(segment_ids) != len(segments)
+            or "" in segment_ids
+            or len(set(segment_ids)) != len(segment_ids)
+        ):
+            raise KernelError(
+                "NARRATIVE_ARC_SEGMENT_IDENTITY_INVALID",
+                "Arc Segments require unique stable identities",
+            )
+        _validate_arc_relations(content.get("arc_relations"))
         return
     if contract_type in {PlanContractType.CHAPTER_GROUP, PlanContractType.CHAPTER}:
         segment_ref = content.get("narrative_segment_ref")
@@ -343,6 +382,29 @@ def _validate_canonical_narrative_contract(
             "CHAPTER_STATE_TRANSITION_KIND_INVALID",
             "Chapter execution transitions must use the canonical Narrative State vocabulary",
         )
+    transition_keys: set[tuple[str, str]] = set()
+    for transition in transitions:
+        identity = (
+            str(transition.get("state_kind") or ""),
+            str(transition.get("entity_key") or ""),
+        )
+        if (
+            not identity[1]
+            or identity in transition_keys
+            or str(transition.get("from_state") or "")
+            == str(transition.get("to_state") or "")
+        ):
+            code = (
+                "CHAPTER_STATE_TRANSITION_NOOP"
+                if str(transition.get("from_state") or "")
+                == str(transition.get("to_state") or "")
+                else "CHAPTER_STATE_TRANSITION_IDENTITY_INVALID"
+            )
+            raise KernelError(
+                code,
+                "Chapter state transitions must be unique, causal state changes",
+            )
+        transition_keys.add(identity)
     allowed_roles = {"PRIMARY", "SECONDARY", "TOUCH", "SETUP", "PAYOFF", "HOLD"}
     schedule = [item for item in content["arc_schedule"] if isinstance(item, dict)]
     if len(schedule) != len(content["arc_schedule"]) or any(
@@ -380,6 +442,8 @@ def _validate_canonical_narrative_contract(
                 "CHAPTER_READER_KNOWLEDGE_DERIVATION_INVALID",
                 "Reader Knowledge must match the status derived from one reader-facing Disclosure",
             )
+    _validate_chapter_temporal_boundaries(content)
+    _validate_scene_architecture(content, transition_keys)
     scheduled_arcs = [str(item.get("arc_plan_version_id") or "") for item in schedule]
     contribution_arcs = {
         str(item.get("arc_plan_version_id") or "")
@@ -394,6 +458,212 @@ def _validate_canonical_narrative_contract(
         raise KernelError(
             "CHAPTER_ARC_REFERENCE_INVALID",
             "Chapter Arc schedule must uniquely reference frozen required Arc contributions",
+        )
+
+
+def _validate_book_design_layers(content: dict[str, Any]) -> None:
+    trajectories = content.get("character_development")
+    obligations = content.get("knowledge_disclosure_obligations")
+    if not isinstance(trajectories, list) or not trajectories:
+        raise KernelError(
+            "CHARACTER_DEVELOPMENT_REQUIRED",
+            "canonical BookPlan requires long-form Character Development",
+        )
+    character_ids = [
+        str(item.get("character_id") or "")
+        for item in trajectories
+        if isinstance(item, dict)
+    ]
+    if (
+        len(character_ids) != len(trajectories)
+        or "" in character_ids
+        or len(character_ids) != len(set(character_ids))
+        or any(not item.get("causal_triggers") for item in trajectories)
+    ):
+        raise KernelError(
+            "CHARACTER_DEVELOPMENT_IDENTITY_INVALID",
+            "Character trajectories require unique identities and causal triggers",
+        )
+    if not isinstance(obligations, dict):
+        raise KernelError(
+            "DISCLOSURE_OBLIGATION_DESIGN_REQUIRED",
+            "canonical BookPlan requires Disclosure and Obligation design",
+        )
+    declared_ids = {
+        str(item)
+        for field in (
+            "mystery_ids",
+            "promise_ids",
+            "foreshadow_ids",
+        )
+        for item in obligations.get(field) or ()
+        if str(item)
+    }
+    windows = obligations.get("obligation_windows")
+    if not isinstance(windows, list):
+        raise KernelError(
+            "NARRATIVE_OBLIGATION_WINDOW_INVALID",
+            "Narrative Obligation windows must be an array",
+        )
+    seen: set[str] = set()
+    for window in windows:
+        if not isinstance(window, dict):
+            raise KernelError(
+                "NARRATIVE_OBLIGATION_WINDOW_INVALID",
+                "Narrative Obligation windows must be typed objects",
+            )
+        obligation_id = str(window.get("obligation_id") or "")
+        try:
+            setup = int(window.get("setup_chapter"))
+            not_before = int(window.get("payoff_not_before"))
+            due = int(window.get("payoff_due_by"))
+        except (TypeError, ValueError) as exc:
+            raise KernelError(
+                "NARRATIVE_OBLIGATION_WINDOW_INVALID",
+                "Narrative Obligation windows require integer boundaries",
+            ) from exc
+        if (
+            not obligation_id
+            or obligation_id in seen
+            or obligation_id not in declared_ids
+            or setup <= 0
+            or not setup <= not_before <= due
+        ):
+            raise KernelError(
+                "NARRATIVE_OBLIGATION_WINDOW_INVALID",
+                "Narrative Obligation windows require declared identities and ordered boundaries",
+            )
+        seen.add(obligation_id)
+
+
+def _validate_arc_relations(value: Any) -> None:
+    if not isinstance(value, list):
+        raise KernelError(
+            "NARRATIVE_ARC_RELATION_INVALID",
+            "Arc relations must be a typed array",
+        )
+    seen: set[str] = set()
+    for relation in value:
+        if not isinstance(relation, dict):
+            raise KernelError(
+                "NARRATIVE_ARC_RELATION_INVALID",
+                "Arc relations must be typed objects",
+            )
+        relation_id = str(relation.get("relation_id") or "")
+        source = str(relation.get("source_arc_ref") or "")
+        target = str(relation.get("target_arc_ref") or "")
+        if (
+            not relation_id
+            or relation_id in seen
+            or str(relation.get("relation_type") or "") not in ARC_RELATION_TYPES
+            or not source
+            or not target
+            or source == target
+            or not str(relation.get("trigger_or_condition") or "")
+        ):
+            raise KernelError(
+                "NARRATIVE_ARC_RELATION_INVALID",
+                "Arc relations require unique identities, supported causal types, and distinct endpoints",
+            )
+        seen.add(relation_id)
+
+
+def _validate_chapter_temporal_boundaries(content: dict[str, Any]) -> None:
+    chapter = int(content["chapter_number"])
+    seen_boundaries: set[tuple[str, str, str]] = set()
+    for boundary in content["knowledge_boundaries"]:
+        identity = (
+            str(boundary.get("layer") or ""),
+            str(boundary.get("subject_id") or ""),
+            str(boundary.get("fact_id") or ""),
+        )
+        if not all(identity) or identity in seen_boundaries:
+            raise KernelError(
+                "CHAPTER_KNOWLEDGE_IDENTITY_INVALID",
+                "Knowledge boundaries require unique layer, subject, and fact identities",
+            )
+        seen_boundaries.add(identity)
+        if (
+            str(boundary.get("status") or "") != "WITHHELD"
+            and int(boundary.get("available_from_chapter") or 0) > chapter
+        ):
+            raise KernelError(
+                "CHAPTER_KNOWLEDGE_FUTURE_LEAK",
+                "ChapterPlan cannot expose knowledge before its available chapter",
+            )
+    seen_disclosures: set[str] = set()
+    for disclosure in content["disclosures"]:
+        disclosure_id = str(disclosure.get("disclosure_id") or "")
+        if not disclosure_id or disclosure_id in seen_disclosures:
+            raise KernelError(
+                "CHAPTER_DISCLOSURE_IDENTITY_INVALID",
+                "Disclosures require unique identities",
+            )
+        seen_disclosures.add(disclosure_id)
+        if (
+            str(disclosure.get("mode") or "") != "WITHHOLD"
+            and int(disclosure.get("earliest_chapter") or 0) > chapter
+        ):
+            raise KernelError(
+                "CHAPTER_DISCLOSURE_FUTURE_LEAK",
+                "ChapterPlan cannot disclose a fact before its earliest chapter",
+            )
+    seen_payoffs: set[str] = set()
+    for payoff in content.get("payoffs") or ():
+        obligation_id = str(payoff.get("obligation_id") or "")
+        opened = int(payoff.get("opened_chapter") or 0)
+        due = int(payoff.get("due_chapter") or 0)
+        if (
+            not obligation_id
+            or obligation_id in seen_payoffs
+            or opened <= 0
+            or due < opened
+            or opened > chapter
+            or (chapter > due and str(payoff.get("action") or "") != "PAYOFF")
+        ):
+            raise KernelError(
+                "CHAPTER_PAYOFF_WINDOW_INVALID",
+                "Chapter payoff actions require one open, ordered, non-expired window",
+            )
+        seen_payoffs.add(obligation_id)
+
+
+def _validate_scene_architecture(
+    content: dict[str, Any], transition_keys: set[tuple[str, str]]
+) -> None:
+    scenes = content["scene_plan"]
+    scene_ids = [
+        str(scene.get("scene_id") or "")
+        for scene in scenes
+        if isinstance(scene, dict)
+    ]
+    if (
+        len(scene_ids) != len(scenes)
+        or "" in scene_ids
+        or len(scene_ids) != len(set(scene_ids))
+    ):
+        raise KernelError(
+            "SCENE_ARCHITECTURE_IDENTITY_DUPLICATE",
+            "Scene Architecture requires unique Scene identities",
+        )
+    for current, following in zip(scenes, scenes[1:], strict=False):
+        if str(current.get("exit_state") or "") != str(
+            following.get("entry_state") or ""
+        ):
+            raise KernelError(
+                "SCENE_ARCHITECTURE_STATE_CHAIN_INVALID",
+                "adjacent Scenes must form one explicit state chain",
+            )
+    transition_entities = {identity[1] for identity in transition_keys}
+    if any(
+        not set(str(item) for item in scene.get("state_transitions") or ()).issubset(
+            transition_entities
+        )
+        for scene in scenes
+    ):
+        raise KernelError(
+            "SCENE_ARCHITECTURE_TRANSITION_REFERENCE_INVALID",
+            "Scene state-transition references must resolve to Chapter transitions",
         )
 
 
@@ -487,6 +757,48 @@ def validate_chapter_function_matrix(
                     "chapters": [item.get("chapter_number") for item in window],
                 }
             )
+    if any("narrative_density" in row for row in rows):
+        progressive_fields = (
+            "narrative_density",
+            "reader_experience",
+            "arc_cadence",
+            "obligation_actions",
+        )
+        for row in rows:
+            missing = [field for field in progressive_fields if field not in row]
+            if missing:
+                issues.append(
+                    {
+                        "code": "PROGRESSIVE_SCHEDULING_FIELDS_MISSING",
+                        "chapter": row.get("chapter_number"),
+                        "fields": missing,
+                    }
+                )
+            if row.get("narrative_density") not in {"LOW", "MEDIUM", "HIGH"}:
+                issues.append(
+                    {
+                        "code": "NARRATIVE_DENSITY_INVALID",
+                        "chapter": row.get("chapter_number"),
+                    }
+                )
+            cadence = row.get("arc_cadence")
+            if not isinstance(cadence, list) or not cadence or len(cadence) > 3:
+                issues.append(
+                    {
+                        "code": "ARC_DENSITY_INVALID",
+                        "chapter": row.get("chapter_number"),
+                    }
+                )
+        emotions = [
+            str((row.get("reader_experience") or {}).get("target_emotion") or "")
+            for row in rows
+        ]
+        reward_modes = [
+            str((row.get("reader_experience") or {}).get("reward_mode") or "")
+            for row in rows
+        ]
+        if len(set(emotions)) == 1 or len(set(reward_modes)) == 1:
+            issues.append({"code": "READER_EXPERIENCE_HOMOGENEITY"})
     blocking = bool(issues)
     if blocking:
         raise KernelError(
@@ -502,6 +814,7 @@ def validate_chapter_function_matrix(
 
 
 __all__ = [
+    "ARC_RELATION_TYPES",
     "CHAPTER_EXECUTION_STATE_KINDS",
     "READER_DISCLOSURE_STATUS",
     "COMMON_FIELDS",

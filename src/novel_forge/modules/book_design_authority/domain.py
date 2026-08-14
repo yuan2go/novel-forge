@@ -7,10 +7,15 @@ import json
 from typing import Any, Mapping
 
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.story_design_authority.qualification import (
+    NarrativeQualificationResult,
+    validate_narrative_qualification,
+)
 
 
 BOOK_SCHEMA_VERSION = "book-authority.v1"
-BOOK_DESIGN_SCHEMA_VERSION = "book-design.v1"
+LEGACY_BOOK_DESIGN_SCHEMA_VERSION = "book-design.v1"
+BOOK_DESIGN_SCHEMA_VERSION = "book-design.v2"
 
 
 def _required_string(value: Any, field: str) -> str:
@@ -121,22 +126,40 @@ class BookDesignPayload:
     protagonist: ProtagonistDesign
     world_rules: tuple[str, ...]
     target_chapters: int
+    core_characters: tuple[dict[str, str], ...]
+    opposition_forces: tuple[dict[str, str], ...]
+    narrative_dna: dict[str, str]
+    narrative_qualification: dict[str, Any]
     schema_version: str = BOOK_DESIGN_SCHEMA_VERSION
 
     @classmethod
     def from_mapping(cls, payload: Mapping[str, Any]) -> "BookDesignPayload":
         if not isinstance(payload, Mapping):
             raise KernelError("BOOK_DESIGN_INVALID", "BookDesign payload must be an object")
-        allowed = {
+        base_fields = {
             "schema_version", "title", "genre", "premise", "theme", "core_conflict",
             "reader_promise", "ending", "protagonist", "world_rules", "target_chapters",
         }
-        _strict_keys(payload, allowed, "BookDesign")
+        progressive_fields = {
+            "core_characters",
+            "opposition_forces",
+            "narrative_dna",
+            "narrative_qualification",
+        }
         schema_version = str(payload.get("schema_version") or "")
-        if schema_version != BOOK_DESIGN_SCHEMA_VERSION:
+        allowed = (
+            base_fields | progressive_fields
+            if schema_version == BOOK_DESIGN_SCHEMA_VERSION
+            else base_fields
+        )
+        _strict_keys(payload, allowed, "BookDesign")
+        if schema_version not in {
+            BOOK_DESIGN_SCHEMA_VERSION,
+            LEGACY_BOOK_DESIGN_SCHEMA_VERSION,
+        }:
             raise KernelError(
                 "BOOK_DESIGN_SCHEMA_UNSUPPORTED",
-                f"BookDesign requires schema_version={BOOK_DESIGN_SCHEMA_VERSION}",
+                "BookDesign schema is not supported",
             )
         rules = payload.get("world_rules")
         if not isinstance(rules, list) or not rules:
@@ -147,6 +170,56 @@ class BookDesignPayload:
         target_chapters = payload.get("target_chapters")
         if not isinstance(target_chapters, int) or isinstance(target_chapters, bool) or target_chapters < 3:
             raise KernelError("BOOK_DESIGN_INVALID", "target_chapters must be an integer >= 3")
+        core_characters: tuple[dict[str, str], ...] = ()
+        opposition_forces: tuple[dict[str, str], ...] = ()
+        narrative_dna: dict[str, str] = {}
+        narrative_qualification: dict[str, Any] = {}
+        if schema_version == BOOK_DESIGN_SCHEMA_VERSION:
+            core_characters = _typed_records(
+                payload.get("core_characters"),
+                "core_characters",
+                (
+                    "character_id",
+                    "role",
+                    "long_term_goal",
+                    "causal_arc",
+                    "conflict_function",
+                ),
+            )
+            opposition_forces = _typed_records(
+                payload.get("opposition_forces"),
+                "opposition_forces",
+                (
+                    "force_id",
+                    "goal",
+                    "leverage",
+                    "escalation_pattern",
+                    "limit",
+                ),
+            )
+            dna_value = payload.get("narrative_dna")
+            dna_fields = {
+                "core_question",
+                "recurring_choice",
+                "cost_logic",
+                "distinctive_mechanism",
+                "emotional_contract",
+            }
+            if not isinstance(dna_value, Mapping):
+                raise KernelError(
+                    "BOOK_DESIGN_INVALID", "narrative_dna must be an object"
+                )
+            _strict_keys(dna_value, dna_fields, "narrative_dna")
+            narrative_dna = {
+                field: _required_string(dna_value.get(field), f"narrative_dna.{field}")
+                for field in sorted(dna_fields)
+            }
+            validate_narrative_qualification(
+                generator_operation_name="book_design.propose",
+                value=payload.get("narrative_qualification"),
+                require_pass=False,
+            )
+            narrative_qualification = dict(payload["narrative_qualification"])
         return cls(
             title=_required_string(payload.get("title"), "title"),
             genre=_required_string(payload.get("genre"), "genre"),
@@ -158,13 +231,37 @@ class BookDesignPayload:
             protagonist=ProtagonistDesign.from_mapping(payload.get("protagonist")),
             world_rules=normalized_rules,
             target_chapters=target_chapters,
+            core_characters=core_characters,
+            opposition_forces=opposition_forces,
+            narrative_dna=narrative_dna,
+            narrative_qualification=narrative_qualification,
             schema_version=schema_version,
         )
 
     def to_dict(self) -> dict[str, Any]:
         payload = asdict(self)
         payload["world_rules"] = list(self.world_rules)
+        payload["core_characters"] = [dict(item) for item in self.core_characters]
+        payload["opposition_forces"] = [dict(item) for item in self.opposition_forces]
+        if self.schema_version == LEGACY_BOOK_DESIGN_SCHEMA_VERSION:
+            for field in (
+                "core_characters",
+                "opposition_forces",
+                "narrative_dna",
+                "narrative_qualification",
+            ):
+                payload.pop(field, None)
         return payload
+
+    @property
+    def qualification_result(self) -> NarrativeQualificationResult | None:
+        if self.schema_version != BOOK_DESIGN_SCHEMA_VERSION:
+            return None
+        return validate_narrative_qualification(
+            generator_operation_name="book_design.propose",
+            value=self.narrative_qualification,
+            require_pass=False,
+        )
 
     @property
     def content_hash(self) -> str:
@@ -179,8 +276,34 @@ def evidence_hash(payload: Mapping[str, Any]) -> str:
     return "sha256:" + hashlib.sha256(encoded).hexdigest()
 
 
+def _typed_records(
+    value: Any,
+    field: str,
+    required_fields: tuple[str, ...],
+) -> tuple[dict[str, str], ...]:
+    if not isinstance(value, list) or not value:
+        raise KernelError("BOOK_DESIGN_INVALID", f"{field} must be a non-empty list")
+    records: list[dict[str, str]] = []
+    identities: set[str] = set()
+    for item in value:
+        if not isinstance(item, Mapping):
+            raise KernelError("BOOK_DESIGN_INVALID", f"{field} entries must be objects")
+        _strict_keys(item, set(required_fields), field)
+        record = {
+            name: _required_string(item.get(name), f"{field}[].{name}")
+            for name in required_fields
+        }
+        identity = record[required_fields[0]]
+        if identity in identities:
+            raise KernelError("BOOK_DESIGN_INVALID", f"{field} identities must be unique")
+        identities.add(identity)
+        records.append(record)
+    return tuple(records)
+
+
 __all__ = [
     "BOOK_DESIGN_SCHEMA_VERSION",
+    "LEGACY_BOOK_DESIGN_SCHEMA_VERSION",
     "BOOK_SCHEMA_VERSION",
     "BookDesignPayload",
     "BookScope",

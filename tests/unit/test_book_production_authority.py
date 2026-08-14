@@ -1,10 +1,14 @@
 from __future__ import annotations
 
 import unittest
+from unittest.mock import patch
 
+from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.book_authority.production import (
     LONGFORM_CONTEXT_VERSION_KEYS,
     BookProductionState,
+    PostgresBookAuthority,
+    SubmitBookChapterCommand,
     stable_chapter_submission_key,
 )
 from novel_forge.modules.book_followup_authority.definitions import (
@@ -17,6 +21,57 @@ from novel_forge.storage.migrations.runner import MIGRATIONS
 
 
 class BookProductionAuthorityTests(unittest.TestCase):
+    def test_resolved_chapter_rejects_a_substituted_execution_projection(self) -> None:
+        class Query:
+            def __init__(self, _database_url: str) -> None:
+                pass
+
+            def require_chapter_production_admission(self, **_values):
+                return {
+                    "longform_design_qualification_hash": "sha256:qualified",
+                    "admission_hash": "sha256:admitted",
+                }
+
+            def require_chapter_execution_plan(self, _candidate_id: str):
+                return {
+                    "asset_version_id": "execution-plan:governed",
+                    "content_hash": "sha256:execution",
+                    "source_content_hash": "sha256:source",
+                }
+
+        authority = object.__new__(PostgresBookAuthority)
+        authority.database_url = "postgresql://unit-test"
+        command = SubmitBookChapterCommand(
+            book_run_id="book-run:1",
+            chapter_number=1,
+            title="Chapter 1",
+            premise="The governed plan advances.",
+            chapter_plan_asset_version_id="chapter-plan:1",
+            chapter_plan_content_hash="sha256:source",
+            execution_chapter_plan_asset_version_id="execution-plan:substituted",
+            execution_chapter_plan_content_hash="sha256:execution",
+            parent_group_version_id="chapter-group:1",
+            context_candidates=(),
+        )
+
+        with patch(
+            "novel_forge.modules.book_authority.queries.PostgresBookProductionQuery",
+            Query,
+        ):
+            with self.assertRaisesRegex(
+                KernelError, "CHAPTER_PRODUCTION_EXECUTION_PLAN_MISMATCH"
+            ):
+                authority._require_chapter_production_admission(
+                    {
+                        "input_mode": "RESOLVED_AUTHORITY_INPUT",
+                        "input_snapshot_id": "snapshot:1",
+                        "accepted_through_chapter": 0,
+                        "active_story_state_version_id": "",
+                        "active_canon_snapshot_version_id": "",
+                    },
+                    command,
+                )
+
     def test_chapter_submission_key_is_stable_and_version_sensitive(self) -> None:
         values = {
             "book_id": "book:1",

@@ -13,7 +13,7 @@ from typing import Any, Protocol
 
 from novel_forge.modules.authority_security import Principal, PrincipalType
 from novel_forge.modules.book_design_authority import (
-    BOOK_DESIGN_SCHEMA_VERSION,
+    LEGACY_BOOK_DESIGN_SCHEMA_VERSION,
     BOOK_SCHEMA_VERSION,
     BookDesignAuthorityApplication,
     BookDesignAuthorityCommand,
@@ -244,7 +244,7 @@ class BookDesignMigrationAdapter:
         else:
             BookDesignPayload.from_mapping(_book_design_payload(context))
             validator = "BookDesignPayload.from_mapping"
-            schema_version = BOOK_DESIGN_SCHEMA_VERSION
+            schema_version = LEGACY_BOOK_DESIGN_SCHEMA_VERSION
         return {
             "status": "PASS",
             "validator": validator,
@@ -1083,7 +1083,7 @@ def _book_design_payload(context: DomainMigrationContext) -> dict[str, Any]:
         "target_chapters",
     }
     return {
-        "schema_version": BOOK_DESIGN_SCHEMA_VERSION,
+        "schema_version": LEGACY_BOOK_DESIGN_SCHEMA_VERSION,
         **{field: content.get(field) for field in fields},
     }
 

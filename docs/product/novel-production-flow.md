@@ -34,6 +34,12 @@ active design layer is current and qualified. Chapter dispatch separately
 records or verifies `CHAPTER_PRODUCTION_ADMITTED` and fails closed on a stale
 dependency or Narrative State cursor.
 
+The aggregate is not caller-supplied state. Book input resolution derives it
+from immutable current qualification receipts for BookDesign, BookPlan,
+VolumePlan, and every active ArcPlan. Dispatch then adds exact current
+Scheduling, Chapter, Scene, accepted-state, and schedule-to-plan checks before
+submitting the Chapter provider work.
+
 ## 3. Chapter production
 
 ChapterGroup coordinates admitted chapter requests. `chapter.slice.run`
@@ -63,7 +69,7 @@ The governed Book scheduler submits Reader Outcome work after accepted chapters.
 
 ## 6. Replan
 
-When an accepted recap emits a replan request, the Book supervisor resolves that evidence and starts a governed Book replan. Approval may be required according to risk. PlanChange Authority activates accepted semantic changes, impacted future inputs are rebound, and superseded ChapterGroup work is closed or replaced explicitly.
+When an accepted recap emits a replan request, the Book supervisor resolves that evidence and starts a governed Book replan. Approval may be required according to risk. PlanChange Authority activates accepted semantic changes; the coordinator regenerates, requalifies, and CAS-activates the affected future dependency closure, while superseded ChapterGroup work is closed or replaced explicitly. Narrative Segment and Arc Segment scopes target their owning Volume or Arc without creating segment Authorities.
 
 ```text
 BookDesign active

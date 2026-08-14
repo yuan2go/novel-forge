@@ -39,9 +39,21 @@ from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 SCOPE_GENERATOR = {
     "BOOK": "book_plan.generate",
     "VOLUME": "volume_plan.generate",
+    "NARRATIVE_SEGMENT": "volume_plan.generate",
     "ARC": "arc_plan.generate",
+    "ARC_SEGMENT": "arc_plan.generate",
     "CHAPTER_GROUP": "chapter_group_plan.generate",
     "CHAPTER": "chapter_plan.generate",
+}
+
+SCOPE_CONTRACT = {
+    "BOOK": "BOOK",
+    "VOLUME": "VOLUME",
+    "NARRATIVE_SEGMENT": "VOLUME",
+    "ARC": "ARC",
+    "ARC_SEGMENT": "ARC",
+    "CHAPTER_GROUP": "CHAPTER_GROUP",
+    "CHAPTER": "CHAPTER",
 }
 
 _SNAPSHOT_ROLE_FIELDS = (
@@ -160,6 +172,11 @@ class BookReplanCoordinator:
                 "Replan command cannot exceed or change the evidence-approved scope",
             )
         target = self._target_plan(command, int(book["accepted_through_chapter"]) + 1)
+        self._require_segment_target(
+            affected_scope=command.affected_scope,
+            target_content=target["content"],
+            impact_scope=dict(replan_request.get("impact_scope") or {}),
+        )
         if target["execution_scope"] == "EXECUTED":
             raise KernelError(
                 "BOOK_REPLAN_EXECUTED_PLAN_FORBIDDEN",
@@ -984,7 +1001,7 @@ class BookReplanCoordinator:
         parameters: list[Any] = [
             command.project_id,
             command.book_id,
-            command.affected_scope,
+            SCOPE_CONTRACT[command.affected_scope],
         ]
         explicit = ""
         if command.target_asset_version_id:
@@ -1073,41 +1090,400 @@ class BookReplanCoordinator:
     def _regenerate_future_plan(
         self, replan: dict[str, Any], proposal: dict[str, Any]
     ) -> str:
-        if replan["affected_scope"] != "CHAPTER_GROUP":
+        if replan["affected_scope"] == "CHAPTER":
             return ""
         book = self.book.require(replan["book_run_id"])
         chapter = int(book["accepted_through_chapter"]) + 1
+        snapshot = self._snapshot(book["input_snapshot_id"])
+        approved_scope = replan["affected_scope"]
+        replacement_id = str(proposal["proposed_asset_version_id"])
+        book_plan_id = str(snapshot["book_plan_version"])
+        volume_plan_id = str(snapshot["current_volume_plan_version"])
+        arc_plan_ids = [str(item) for item in snapshot["active_arc_plan_versions"]]
+        group_plan_id = str(snapshot["current_chapter_group_plan_version"])
+        if approved_scope == "BOOK":
+            book_plan_id = replacement_id
+            volume_target = self._plan_by_asset(
+                replan["project_id"], replan["book_id"], volume_plan_id
+            )
+            volume_plan_id = self._generate_approved_replacement(
+                replan=replan,
+                proposal=proposal,
+                book=book,
+                generator="volume_plan.generate",
+                logical_key=volume_target["logical_key"],
+                parent_version_id=book_plan_id,
+                overrides={"book_plan": book_plan_id},
+                expected_active_asset_version_id=volume_target["asset_version_id"],
+            )
+        elif approved_scope in {"VOLUME", "NARRATIVE_SEGMENT"}:
+            volume_plan_id = replacement_id
+
+        if approved_scope in {"BOOK", "VOLUME", "NARRATIVE_SEGMENT"}:
+            regenerated_arcs: list[str] = []
+            for arc_plan_id in arc_plan_ids:
+                arc_target = self._plan_by_asset(
+                    replan["project_id"], replan["book_id"], arc_plan_id
+                )
+                old_scope = [
+                    str(item)
+                    for item in arc_target["content"].get("cross_volume_scope") or ()
+                ]
+                scoped_volumes = [
+                    volume_plan_id
+                    if item == str(snapshot["current_volume_plan_version"])
+                    else item
+                    for item in old_scope
+                ]
+                if volume_plan_id not in scoped_volumes:
+                    scoped_volumes.insert(0, volume_plan_id)
+                regenerated_arcs.append(
+                    self._generate_approved_replacement(
+                        replan=replan,
+                        proposal=proposal,
+                        book=book,
+                        generator="arc_plan.generate",
+                        logical_key=arc_target["logical_key"],
+                        parent_version_id="",
+                        overrides={
+                            "book_plan": book_plan_id,
+                            "volume_plan": volume_plan_id,
+                        },
+                        expected_active_asset_version_id=arc_target[
+                            "asset_version_id"
+                        ],
+                        arc_scope_volume_plan_version_ids=tuple(
+                            item for item in scoped_volumes if item != volume_plan_id
+                        ),
+                    )
+                )
+            arc_plan_ids = regenerated_arcs
+        elif approved_scope in {"ARC", "ARC_SEGMENT"}:
+            arc_plan_ids = self._replace_portfolio_version(
+                arc_plan_ids,
+                target_version_id=str(replan["target_asset_version_id"]),
+                replacement_version_id=replacement_id,
+            )
+
+        if not arc_plan_ids:
+            raise KernelError(
+                "BOOK_REPLAN_ARC_CLOSURE_MISSING",
+                "future Replan regeneration requires at least one active ArcPlan",
+            )
+
+        if approved_scope in {
+            "BOOK",
+            "VOLUME",
+            "NARRATIVE_SEGMENT",
+            "ARC",
+            "ARC_SEGMENT",
+        }:
+            group_target = self._plan_by_asset(
+                replan["project_id"], replan["book_id"], group_plan_id
+            )
+            group_plan_id = self._generate_approved_replacement(
+                replan=replan,
+                proposal=proposal,
+                book=book,
+                generator="chapter_group_plan.generate",
+                logical_key=group_target["logical_key"],
+                parent_version_id=volume_plan_id,
+                overrides={
+                    "book_plan": book_plan_id,
+                    "volume_plan": volume_plan_id,
+                    "arc_plans": arc_plan_ids[0],
+                },
+                expected_active_asset_version_id=group_target["asset_version_id"],
+                related_arc_plan_version_ids=tuple(arc_plan_ids[1:]),
+            )
+        elif approved_scope == "CHAPTER_GROUP":
+            group_plan_id = replacement_id
+
+        chapter_arc_ids = self._scheduled_arc_versions(
+            group_content=self._plan_by_asset(
+                replan["project_id"], replan["book_id"], group_plan_id
+            )["content"],
+            chapter=chapter,
+            active_arc_plan_ids=arc_plan_ids,
+        )
+        chapter_target = self._active_plan_for_position(
+            project_id=replan["project_id"],
+            book_id=replan["book_id"],
+            contract_type="CHAPTER",
+            chapter=chapter,
+        )
+        return self._generate_approved_replacement(
+            replan=replan,
+            proposal=proposal,
+            book=book,
+            generator="chapter_plan.generate",
+            logical_key=(
+                chapter_target["logical_key"]
+                if chapter_target is not None
+                else f"chapter:{chapter}:after:{replan['replan_id']}"
+            ),
+            parent_version_id=group_plan_id,
+            overrides={
+                "book_plan": book_plan_id,
+                "volume_plan": volume_plan_id,
+                "arc_plans": chapter_arc_ids[0],
+                "chapter_group_plan": group_plan_id,
+                "chapter_function_matrix_row": group_plan_id,
+            },
+            expected_active_asset_version_id=(
+                chapter_target["asset_version_id"]
+                if chapter_target is not None
+                else ""
+            ),
+            related_arc_plan_version_ids=tuple(chapter_arc_ids[1:]),
+        )
+
+    def _generate_approved_replacement(
+        self,
+        *,
+        replan: dict[str, Any],
+        proposal: dict[str, Any],
+        book: dict[str, Any],
+        generator: str,
+        logical_key: str,
+        parent_version_id: str,
+        overrides: dict[str, str],
+        expected_active_asset_version_id: str,
+        arc_scope_volume_plan_version_ids: tuple[str, ...] = (),
+        related_arc_plan_version_ids: tuple[str, ...] = (),
+    ) -> str:
         inputs = self._latest_generator_inputs(
             book,
-            generator="chapter_plan.generate",
-            overrides={
-                "chapter_group_plan": proposal["proposed_asset_version_id"],
-                "chapter_function_matrix_row": proposal["proposed_asset_version_id"],
-            },
+            generator=generator,
+            overrides=overrides,
         )
+        suffix = generator.removesuffix(".generate").replace("_", "-")
         result = self.planning.generate(
             StoryPlanningGenerationCommand(
                 project_id=replan["project_id"],
                 workspace_id=str(book["workspace_id"]),
                 book_id=replan["book_id"],
                 actor_id=self.principal.principal_id,
-                generator_operation_name="chapter_plan.generate",
-                logical_key=f"chapter:{chapter}:after:{replan['replan_id']}",
+                generator_operation_name=generator,
+                logical_key=logical_key,
                 input_versions=inputs,
-                parent_version_id=proposal["proposed_asset_version_id"],
-                idempotency_key=f"{replan['stable_idempotency_key']}:regenerate:chapter:{chapter}",
-                trace_id=f"{replan['replan_id']}:regenerate",
+                parent_version_id=parent_version_id,
+                arc_scope_volume_plan_version_ids=(
+                    arc_scope_volume_plan_version_ids
+                ),
+                related_arc_plan_version_ids=related_arc_plan_version_ids,
+                change_evidence_version_ids=(
+                    replan["source_recap_asset_version_id"],
+                    replan["replan_request_asset_version_id"],
+                ),
+                idempotency_key=(
+                    f"{replan['stable_idempotency_key']}:regenerate:{suffix}:"
+                    f"{logical_key}"
+                ),
+                trace_id=f"{replan['replan_id']}:regenerate:{suffix}",
                 correlation_id=proposal["activation_operation_id"],
-                auto_approve_low_risk=True,
+                auto_approve_low_risk=False,
             ),
             principal=self.principal,
         )
-        if result.status is not PlanningGenerationStatus.ACTIVE:
+        if result.status is PlanningGenerationStatus.ACTIVE:
+            return result.candidate_asset_version_id
+        if result.status is not PlanningGenerationStatus.APPROVAL_PENDING:
             raise KernelError(
                 "BOOK_REPLAN_FUTURE_REGENERATION_BLOCKED",
-                "future ChapterPlan did not reach Active state",
+                f"future {generator} did not reach its approval gate",
             )
+        self.planning.approve_candidate(
+            result.candidate_asset_version_id,
+            principal=self.principal,
+            idempotency_key=(
+                f"{replan['stable_idempotency_key']}:regenerate:{suffix}:approve:"
+                f"{result.candidate_asset_version_id}"
+            ),
+            trace_id=f"{replan['replan_id']}:regenerate:{suffix}:approve",
+            correlation_id=proposal["activation_operation_id"],
+        )
+        self.planning.activate_candidate(
+            result.candidate_asset_version_id,
+            principal=self.principal,
+            idempotency_key=(
+                f"{replan['stable_idempotency_key']}:regenerate:{suffix}:activate:"
+                f"{result.candidate_asset_version_id}"
+            ),
+            trace_id=f"{replan['replan_id']}:regenerate:{suffix}:activate",
+            correlation_id=proposal["activation_operation_id"],
+            expected_active_asset_version_id=expected_active_asset_version_id,
+            replacement_approved=bool(expected_active_asset_version_id),
+            decision_evidence=(
+                {
+                    "replan_id": replan["replan_id"],
+                    "plan_change_proposal_id": proposal["proposal_id"],
+                    "activation_operation_id": proposal["activation_operation_id"],
+                    "approved_scope": replan["affected_scope"],
+                    "downstream_requalification": True,
+                }
+                if expected_active_asset_version_id
+                else {}
+            ),
+        )
         return result.candidate_asset_version_id
+
+    def _plan_by_asset(
+        self, project_id: str, book_id: str, asset_version_id: str
+    ) -> dict[str, Any]:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT binding.asset_version_id, binding.logical_key,
+                       COALESCE(binding.parent_version_id,''),
+                       binding.contract_type, binding.execution_scope,
+                       binding.freshness, version.content
+                FROM story_plan_binding AS binding
+                JOIN authority_asset_version AS version
+                  ON version.asset_version_id=binding.asset_version_id
+                WHERE binding.project_id=%s AND binding.book_id=%s
+                  AND binding.asset_version_id=%s
+                """,
+                [project_id, book_id, asset_version_id],
+            )
+            row = uow.cursor.fetchone()
+        if row is None:
+            raise KernelError(
+                "BOOK_REPLAN_DEPENDENT_PLAN_MISSING",
+                "Replan dependency closure references an unknown Planning binding",
+            )
+        return {
+            "asset_version_id": str(row[0]),
+            "logical_key": str(row[1]),
+            "parent_version_id": str(row[2]),
+            "contract_type": str(row[3]),
+            "execution_scope": str(row[4]),
+            "freshness": str(row[5]),
+            "content": dict(row[6]),
+        }
+
+    @staticmethod
+    def _replace_portfolio_version(
+        version_ids: list[str],
+        *,
+        target_version_id: str,
+        replacement_version_id: str,
+    ) -> list[str]:
+        if version_ids.count(target_version_id) != 1:
+            raise KernelError(
+                "BOOK_REPLAN_ARC_PORTFOLIO_TARGET_INVALID",
+                "Arc Replan target must identify one active Arc in the frozen portfolio",
+            )
+        return [
+            replacement_version_id if item == target_version_id else item
+            for item in version_ids
+        ]
+
+    @staticmethod
+    def _scheduled_arc_versions(
+        *,
+        group_content: dict[str, Any],
+        chapter: int,
+        active_arc_plan_ids: list[str],
+    ) -> list[str]:
+        rows = [
+            item
+            for item in group_content.get("chapter_function_matrix") or ()
+            if isinstance(item, dict)
+            and int(item.get("chapter_number") or 0) == chapter
+        ]
+        if len(rows) != 1:
+            raise KernelError(
+                "BOOK_REPLAN_SCHEDULE_ROW_INVALID",
+                "Replan Scheduling must contain one row for the next Chapter",
+            )
+        scheduled = [
+            str(item.get("arc_plan_version_id") or "")
+            for item in rows[0].get("arc_cadence") or ()
+            if isinstance(item, dict) and str(item.get("action") or "") != "DORMANT"
+        ]
+        if (
+            not scheduled
+            or len(scheduled) > 3
+            or len(set(scheduled)) != len(scheduled)
+            or not set(scheduled).issubset(active_arc_plan_ids)
+        ):
+            raise KernelError(
+                "BOOK_REPLAN_SCHEDULE_ARC_INVALID",
+                "Replanned Chapter Arc context must be a bounded active subset",
+            )
+        return scheduled
+
+    def _active_plan_for_position(
+        self,
+        *,
+        project_id: str,
+        book_id: str,
+        contract_type: str,
+        chapter: int,
+    ) -> dict[str, Any] | None:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT binding.asset_version_id, binding.logical_key,
+                       COALESCE(binding.parent_version_id,''), version.content
+                FROM active_story_plan_version AS active
+                JOIN story_plan_binding AS binding
+                  ON binding.binding_id=active.binding_id
+                JOIN authority_asset_version AS version
+                  ON version.asset_version_id=binding.asset_version_id
+                WHERE active.project_id=%s AND active.book_id=%s
+                  AND binding.contract_type=%s AND binding.freshness='CURRENT'
+                ORDER BY active.activated_at DESC
+                """,
+                [project_id, book_id, contract_type],
+            )
+            rows = uow.cursor.fetchall()
+        matches = [
+            row
+            for row in rows
+            if int(dict(row[3]).get("chapter_number") or 0) == chapter
+        ]
+        if len(matches) > 1:
+            raise KernelError(
+                "BOOK_REPLAN_DEPENDENT_PLAN_AMBIGUOUS",
+                "more than one current ChapterPlan covers the Replan position",
+            )
+        if not matches:
+            return None
+        row = matches[0]
+        return {
+            "asset_version_id": str(row[0]),
+            "logical_key": str(row[1]),
+            "parent_version_id": str(row[2]),
+            "content": dict(row[3]),
+        }
+
+    @staticmethod
+    def _require_segment_target(
+        *,
+        affected_scope: str,
+        target_content: dict[str, Any],
+        impact_scope: dict[str, Any],
+    ) -> None:
+        field_and_collection = {
+            "NARRATIVE_SEGMENT": ("narrative_segment_id", "narrative_segments"),
+            "ARC_SEGMENT": ("arc_segment_id", "arc_segments"),
+        }
+        if affected_scope not in field_and_collection:
+            return
+        field, collection = field_and_collection[affected_scope]
+        target_id = str(impact_scope.get(field) or "")
+        identities = {
+            str(item.get("segment_id") or "")
+            for item in target_content.get(collection) or ()
+            if isinstance(item, dict)
+        }
+        if not target_id or target_id not in identities:
+            raise KernelError(
+                "BOOK_REPLAN_SEGMENT_SCOPE_INVALID",
+                f"{affected_scope} requires one segment identity inside the target plan",
+            )
 
     def _latest_generator_inputs(
         self,

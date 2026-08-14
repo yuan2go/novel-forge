@@ -114,6 +114,17 @@ failures create a new candidate/version through bounded repair; exhaustion or a
 non-recoverable violation rejects the candidate. Approval and activation use
 compare-and-swap and never mutate an old result silently.
 
+The canonical implementation is `NarrativeQualificationProfile v1` and
+`NarrativeQualificationResult v1`. BookDesign v2 carries the Story Intent and
+Story Foundation evaluations; Story Planning generator contracts v2 carry the
+remaining layer evaluations. Passing results are persisted as immutable
+`authority_narrative_design_qualification` receipts. BookDesign records its
+receipts in the proposal transaction; Story Planning records a restart-safe
+receipt before the corresponding semantic transition. Failed evaluations are
+also retained as rejected/repair lineage and never satisfy admission. A receipt
+is useful for admission only while its asset, profile hash, evaluation hash,
+source Operation, and active binding remain current.
+
 ## Production admission
 
 `LONGFORM_DESIGN_QUALIFIED` is a computed Authority result, not a new Authority.
@@ -126,19 +137,34 @@ planning bindings, dependency identities, and freshness at a Book cursor.
 - an active, current Narrative Scheduling contract for the Chapter range;
 - an active, current Chapter Execution Plan and governed Scene Plan;
 - the current accepted Narrative State/Canon cursor used by those plans;
-- no unresolved blocking obligation, stale dependency, or future-leak failure.
+- exact agreement between the scheduled Chapter function, Arc cadence,
+  obligation actions, Reader Experience target, and the Chapter plan;
+- no stale dependency or deterministic future-leak failure.
 
 Book input resolution records the aggregate qualification. Chapter dispatch
 rechecks it against the current active bindings and accepted cursor. A stale or
 missing result fails closed before provider execution.
+
+Arc generation may freeze cross-Volume scope and a related-Arc portfolio.
+Scheduling classifies every frozen active Arc exactly once, while Chapter
+planning receives only the non-dormant Arcs scheduled for that Chapter (bounded
+to three). Provider schemas and Authority checks reject references outside the
+frozen task-specific portfolio.
+
+Migration 0089 stores the receipts, aggregate Book-input result, and current
+qualification/admission projections. Migration 0090 adds the required scope
+indexes and future `NARRATIVE_SEGMENT` / `ARC_SEGMENT` Replan scopes. These are
+forward migrations; historical migrations remain immutable.
 
 ## Replan and invalidation
 
 Accepted reality is immutable. Drift, reader evidence, review findings, or
 quality evidence may propose a future-scoped PlanChange for a Volume, Narrative
 Segment, Arc Segment, ChapterGroup, or Chapter range. Activation creates new
-versions, retains lineage, marks only dependent future design as impacted or
-stale, requalifies that closure, and activates it with CAS. Accepted chapters,
+versions, retains lineage, regenerates and requalifies only the affected future
+closure (`Book → Volume/Arc/Scheduling/Chapter`, `Volume or Narrative Segment →
+Arc/Scheduling/Chapter`, `Arc or Arc Segment → Scheduling/Chapter`, or the
+smaller corresponding closure), and activates it with CAS. Accepted chapters,
 Canon, StoryState events, and past plan bindings are not rewritten.
 
 ## Context and knowledge boundary

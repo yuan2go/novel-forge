@@ -25,10 +25,13 @@ from novel_forge.modules.story_planning_runtime.domain import (
     STORY_PLANNING_OPERATION_TIMEOUT_SECONDS,
     STORY_PLANNING_WORKFLOW_DEFINITION_REF,
 )
+from novel_forge.modules.story_design_authority import (
+    required_qualification_profiles,
+)
 
 
 _BASE_PACK = "config/capability_packs/chapter_generation_pack.json"
-STORY_PLANNING_PROMPT_VERSION = "v2"
+STORY_PLANNING_PROMPT_VERSION = "v3"
 
 
 @dataclass(frozen=True, slots=True)
@@ -84,6 +87,17 @@ def build_story_planning_pack_profile(
             timeout_policy_ref=(
                 f"timeout:{capability.replace('.', '-')}:{PLANNING_TIMEOUT_POLICY_VERSION}"
             ),
+            narrative_qualification_profiles=[
+                {
+                    "layer": profile.layer.value,
+                    "profile_id": profile.profile_id,
+                    "profile_version": profile.profile_version,
+                    "profile_hash": profile.profile_hash,
+                    "capability_id": profile.capability_id,
+                    "skill_ref": profile.skill_ref,
+                }
+                for profile in required_qualification_profiles(stage)
+            ],
         )
         nodes.append(node)
     manifest["identity"].update(
@@ -144,6 +158,7 @@ def build_story_planning_pack_profile(
         output_schema_ref="schema:story-planning-pack-output:v1",
         system_version=STORY_PLANNING_PROMPT_VERSION,
     )
+    artifacts = _bind_planning_qualification_skills(root, manifest, artifacts)
     _update_policy_artifacts(manifest, artifacts)
     for _stage, capability in capabilities:
         _append_capability_schemas(artifacts, capability)
@@ -385,6 +400,66 @@ def _bind_domain_artifacts(
         input_schema_ref=input_schema_ref,
         output_schema_ref=output_schema_ref,
     )
+    return artifacts
+
+
+def _bind_planning_qualification_skills(
+    root: Path,
+    manifest: dict[str, Any],
+    artifacts: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    skill_paths = {
+        "long-outline": "skills/long-outline/SKILL.md",
+        "character-design": "skills/character-design/SKILL.md",
+        "canon-continuity-graph": "skills/canon-continuity-graph/SKILL.md",
+        "narrative-beat-design": "skills/narrative-beat-design/SKILL.md",
+        "chapter-outline": "skills/chapter-outline/SKILL.md",
+    }
+    bindings = {
+        str(item["skill_ref"]): item
+        for item in manifest["skill_binding"]["skills"]
+    }
+    required = {
+        profile.skill_ref
+        for stage in (
+            "book_plan.generate",
+            "volume_plan.generate",
+            "arc_plan.generate",
+            "chapter_group_plan.generate",
+            "chapter_plan.generate",
+        )
+        for profile in required_qualification_profiles(stage)
+    }
+    for skill_ref in sorted(required):
+        if skill_ref in bindings:
+            continue
+        path = skill_paths[skill_ref]
+        version = f"{skill_ref}-qualification-v1"
+        content = {"text": _text(root, path)}
+        _append_artifact(
+            artifacts,
+            ArtifactKind.SKILL,
+            skill_ref,
+            version,
+            content,
+            path,
+        )
+        bindings[skill_ref] = {
+            "skill_ref": skill_ref,
+            "version": version,
+            "content_hash": artifact_content_hash(content),
+            "required": True,
+            "input_contract_ref": "schema:story-planning-pack-input:v1",
+            "output_contract_ref": "schema:story-planning-pack-output:v1",
+            "preconditions": ["frozen_authority_inputs"],
+            "postconditions": ["typed_narrative_semantic_evaluation"],
+            "depends_on": [],
+            "max_invocations_per_run": 1,
+            "drift_policy": "FAIL_CLOSED",
+        }
+    manifest["skill_binding"]["skills"] = [
+        bindings[key] for key in sorted(bindings)
+    ]
     return artifacts
 
 

@@ -46,6 +46,29 @@ class PlanChangeAuthorityDomainTests(unittest.TestCase):
         ):
             require_approvable_scope("EXECUTED")
 
+    def test_semantic_diff_covers_progressive_design_scopes(self) -> None:
+        changes = semantic_plan_diff(
+            {
+                "narrative_segments": [{"segment_id": "segment:1"}],
+                "arc_segments": [{"segment_id": "arc-segment:1"}],
+                "scene_plan": [{"scene_id": "scene:1"}],
+            },
+            {
+                "narrative_segments": [{"segment_id": "segment:2"}],
+                "arc_segments": [{"segment_id": "arc-segment:2"}],
+                "scene_plan": [{"scene_id": "scene:2"}],
+            },
+        )
+
+        self.assertEqual(
+            {change.change_type for change in changes},
+            {
+                "NARRATIVE_SEGMENT_CHANGED",
+                "ARC_SEGMENT_CHANGED",
+                "SCENE_ARCHITECTURE_CHANGED",
+            },
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -12,6 +12,7 @@ from novel_forge.modules.book_design_authority.domain import (
     BookScope,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.story_design_authority import scripted_qualification
 
 
 def valid_design(**overrides: object) -> dict[str, object]:
@@ -36,6 +37,32 @@ def valid_design(**overrides: object) -> dict[str, object]:
             "A witnessed place cannot be erased for seven days.",
         ],
         "target_chapters": 90,
+        "core_characters": [
+            {
+                "character_id": "mara",
+                "role": "protagonist",
+                "long_term_goal": "Restore the missing district.",
+                "causal_arc": "Isolation becomes accountable collaboration.",
+                "conflict_function": "Her need for certainty delays collective action.",
+            }
+        ],
+        "opposition_forces": [
+            {
+                "force_id": "civic-archive",
+                "goal": "Preserve control of public memory.",
+                "leverage": "It can rewrite official maps and records.",
+                "escalation_pattern": "Denial becomes targeted erasure.",
+                "limit": "A witnessed place cannot be erased immediately.",
+            }
+        ],
+        "narrative_dna": {
+            "core_question": "Who owns a truth that needs collective witness?",
+            "recurring_choice": "Private certainty or accountable disclosure.",
+            "cost_logic": "Every recovered fact exposes a witness.",
+            "distinctive_mechanism": "Official maps change physical access.",
+            "emotional_contract": "Discovery earns hope and a sharper public cost.",
+        },
+        "narrative_qualification": scripted_qualification("book_design.propose"),
     }
     payload.update(overrides)
     return payload
@@ -64,6 +91,20 @@ class BookDesignAuthorityDomainTests(unittest.TestCase):
         for payload in cases:
             with self.subTest(payload=payload), self.assertRaises(KernelError):
                 BookDesignPayload.from_mapping(payload)
+
+    def test_progressive_payload_requires_story_intent_and_foundation_evaluation(
+        self,
+    ) -> None:
+        payload = valid_design()
+        payload.pop("narrative_qualification")
+
+        with self.assertRaises(KernelError) as raised:
+            BookDesignPayload.from_mapping(payload)
+
+        self.assertEqual(
+            raised.exception.code,
+            "NARRATIVE_SEMANTIC_EVALUATION_REQUIRED",
+        )
 
     def test_book_scope_requires_release_and_runtime_authority(self) -> None:
         scope = BookScope.from_mapping(

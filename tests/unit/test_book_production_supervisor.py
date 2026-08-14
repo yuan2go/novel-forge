@@ -9,6 +9,11 @@ from novel_forge.modules.book_authority.supervisor import (
     PostgresBookProductionSupervisor,
 )
 from novel_forge.modules.book_replan import CoordinateBookReplanCommand
+from novel_forge.modules.book_replan.coordinator import (
+    BookReplanCoordinator,
+    SCOPE_CONTRACT,
+    SCOPE_GENERATOR,
+)
 from novel_forge.modules.book_production import SupervisorAction
 from novel_forge.modules.hierarchical_planning import PlanExecutionScope
 from novel_forge.modules.story_planning_runtime import PlanningGenerationStatus
@@ -77,6 +82,62 @@ def test_supervisor_reports_planning_generation_operation_identity(
             else BookProductionState.READY
         )
     ]
+
+
+@pytest.mark.parametrize(
+    ("scope", "contract", "generator"),
+    (
+        ("NARRATIVE_SEGMENT", "VOLUME", "volume_plan.generate"),
+        ("ARC_SEGMENT", "ARC", "arc_plan.generate"),
+    ),
+)
+def test_segment_replan_scopes_reuse_parent_plan_authorities(
+    scope: str, contract: str, generator: str
+) -> None:
+    assert SCOPE_CONTRACT[scope] == contract
+    assert SCOPE_GENERATOR[scope] == generator
+    command = CoordinateBookReplanCommand(
+        project_id="project:1",
+        workspace_id="workspace:1",
+        book_id="book:1",
+        book_run_id="book-run:1",
+        source_recap_asset_version_id="recap:v1",
+        replan_request_asset_version_id="replan-request:v1",
+        affected_scope=scope,
+        idempotency_key=f"replan:{scope}",
+        trace_id="trace:1",
+        correlation_id="correlation:1",
+        target_asset_version_id=f"{contract.lower()}:v1",
+    )
+
+    assert command.affected_scope == scope
+
+
+def test_arc_replan_preserves_unaffected_portfolio_versions() -> None:
+    assert BookReplanCoordinator._replace_portfolio_version(
+        ["arc:v1", "arc:v2", "arc:v3"],
+        target_version_id="arc:v2",
+        replacement_version_id="arc:v2:replacement",
+    ) == ["arc:v1", "arc:v2:replacement", "arc:v3"]
+
+
+def test_replan_chapter_context_uses_only_scheduled_nondormant_arcs() -> None:
+    assert BookReplanCoordinator._scheduled_arc_versions(
+        group_content={
+            "chapter_function_matrix": [
+                {
+                    "chapter_number": 4,
+                    "arc_cadence": [
+                        {"arc_plan_version_id": "arc:v1", "action": "ADVANCE"},
+                        {"arc_plan_version_id": "arc:v2", "action": "DORMANT"},
+                        {"arc_plan_version_id": "arc:v3", "action": "PAYOFF"},
+                    ],
+                }
+            ]
+        },
+        chapter=4,
+        active_arc_plan_ids=["arc:v1", "arc:v2", "arc:v3"],
+    ) == ["arc:v1", "arc:v3"]
 
 
 def test_supervisor_keeps_draft_budget_separate_from_quality_evidence_budget() -> None:

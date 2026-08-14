@@ -349,6 +349,19 @@ class PostgresBookProductionSupervisor:
         execution_plan = self.query.require_chapter_execution_plan(
             str(chapter_plan["asset_version_id"])
         )
+        chapter_admission = self.query.require_chapter_production_admission(
+            snapshot_id=str(book["input_snapshot_id"]),
+            chapter_group_plan_version_id=str(group["asset_version_id"]),
+            chapter_plan_version_id=str(chapter_plan["asset_version_id"]),
+            chapter_number=next_chapter,
+            accepted_through_chapter=int(book["accepted_through_chapter"]),
+            active_story_state_version_id=str(
+                book.get("active_story_state_version_id") or ""
+            ),
+            active_canon_snapshot_version_id=str(
+                book.get("active_canon_snapshot_version_id") or ""
+            ),
+        )
         explicit_overrides: dict[str, str | list[str]] = {
             "chapter_plan": str(execution_plan["asset_version_id"])
         }
@@ -408,8 +421,15 @@ class PostgresBookProductionSupervisor:
         context_version_refs = {
             **self._context_version_refs(book, group),
             **dict(prepared.context_version_refs),
+            "longform_design_qualification_hash": chapter_admission[
+                "longform_design_qualification_hash"
+            ],
+            "chapter_production_admission_hash": chapter_admission[
+                "admission_hash"
+            ],
         }
         preparation_report = self._stage_budgeted_preparation_report(prepared)
+        preparation_report["chapter_production_admission"] = chapter_admission
         dispatched_group = self.chapter_groups.dispatch(
             str(group_run["group_run_id"]),
             SubmitBookChapterCommand(
@@ -474,11 +494,20 @@ class PostgresBookProductionSupervisor:
     def _generate_plan(
         self, book: dict[str, Any], generator: str, chapter_number: int
     ) -> Any:
-        inputs = self._resolve_generation_inputs(book, generator)
+        snapshot = self.query.require_input_snapshot(str(book["input_snapshot_id"]))
+        arc_versions = self._generation_arc_versions(
+            book=book,
+            generator=generator,
+            chapter_number=chapter_number,
+            snapshot=snapshot,
+        )
+        inputs = self._resolve_generation_inputs(
+            book,
+            generator,
+            primary_arc_version=arc_versions[0],
+        )
         parent = (
-            self.query.require_input_snapshot(str(book["input_snapshot_id"]))[
-                "current_volume_plan_version"
-            ]
+            snapshot["current_volume_plan_version"]
             if generator == "chapter_group_plan.generate"
             else str(
                 self._active_plan(book, "CHAPTER_GROUP", chapter_number)[
@@ -500,6 +529,12 @@ class PostgresBookProductionSupervisor:
                 ),
                 input_versions=inputs,
                 parent_version_id=parent,
+                related_arc_plan_version_ids=(
+                    tuple(arc_versions[1:])
+                    if generator
+                    in {"chapter_group_plan.generate", "chapter_plan.generate"}
+                    else ()
+                ),
                 idempotency_key=(
                     f"{book['stable_idempotency_key']}:{generator}:{chapter_number}:"
                     f"snapshot:{book['input_snapshot_id']}"
@@ -512,13 +547,17 @@ class PostgresBookProductionSupervisor:
         )
 
     def _resolve_generation_inputs(
-        self, book: dict[str, Any], generator: str
+        self,
+        book: dict[str, Any],
+        generator: str,
+        *,
+        primary_arc_version: str,
     ) -> dict[str, str]:
         snapshot = self.query.require_input_snapshot(str(book["input_snapshot_id"]))
         fixed = {
             "book_plan": snapshot["book_plan_version"],
             "volume_plan": snapshot["current_volume_plan_version"],
-            "arc_plans": self._primary_arc_version(snapshot),
+            "arc_plans": primary_arc_version,
             "character_state": snapshot["character_state_version"],
             "foreshadowing_state": snapshot["foreshadowing_state_version"],
             "quality_trend": snapshot["quality_trend_version"],
@@ -617,15 +656,55 @@ class PostgresBookProductionSupervisor:
         )
         return self.chapter_groups.require(group_run_id) if group_run_id else None
 
-    @staticmethod
-    def _primary_arc_version(snapshot: dict[str, Any]) -> str:
-        versions = tuple(str(item) for item in snapshot["active_arc_plan_versions"])
-        if not versions:
+    def _generation_arc_versions(
+        self,
+        *,
+        book: dict[str, Any],
+        generator: str,
+        chapter_number: int,
+        snapshot: dict[str, Any],
+    ) -> tuple[str, ...]:
+        active = tuple(str(item) for item in snapshot["active_arc_plan_versions"])
+        if not active:
             raise KernelError(
                 "BOOK_SUPERVISOR_ACTIVE_ARC_MISSING",
                 "resolved Book input has no Active Arc plan",
             )
-        return versions[0]
+        if generator != "chapter_plan.generate":
+            return active
+        group = self._active_plan(book, "CHAPTER_GROUP", chapter_number)
+        if group is None:
+            raise KernelError(
+                "BOOK_SUPERVISOR_CHAPTER_GROUP_MISSING",
+                "Chapter generation requires current Narrative Scheduling",
+            )
+        rows = [
+            item
+            for item in group["content"].get("chapter_function_matrix") or ()
+            if isinstance(item, dict)
+            and int(item.get("chapter_number") or 0) == chapter_number
+        ]
+        if len(rows) != 1:
+            raise KernelError(
+                "BOOK_SUPERVISOR_SCHEDULE_ROW_INVALID",
+                "Narrative Scheduling must contain one Chapter function row",
+            )
+        scheduled = tuple(
+            str(item.get("arc_plan_version_id") or "")
+            for item in rows[0].get("arc_cadence") or ()
+            if isinstance(item, dict) and str(item.get("action") or "") != "DORMANT"
+        )
+        if (
+            not scheduled
+            or len(scheduled) > 3
+            or len(set(scheduled)) != len(scheduled)
+            or not set(scheduled).issubset(active)
+        ):
+            raise KernelError(
+                "BOOK_SUPERVISOR_SCHEDULE_ARC_INVALID",
+                "Chapter Arc context must be a bounded subset of active Scheduling",
+            )
+        return scheduled
 
     @staticmethod
     def _scheduler_action(action: str) -> SupervisorAction:

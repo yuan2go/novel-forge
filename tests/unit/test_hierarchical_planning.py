@@ -72,6 +72,43 @@ class HierarchicalPlanningDomainTests(unittest.TestCase):
         self.assertEqual(result["status"], "PASSED")
         self.assertEqual(result["chapter_count"], 3)
 
+    def test_progressive_matrix_rejects_one_note_reader_experience(self) -> None:
+        rows = [
+            {
+                **_matrix_row(
+                    chapter,
+                    primary_function=function,
+                    ending_hook=hook,
+                ),
+                "narrative_density": density,
+                "reader_experience": {
+                    "target_emotion": "unchanged tension",
+                    "reward_mode": "DISCOVERY",
+                },
+                "arc_cadence": [
+                    {
+                        "arc_plan_version_id": "arc:main:v1",
+                        "action": "ADVANCE",
+                    }
+                ],
+                "obligation_actions": [],
+            }
+            for chapter, function, hook, density in (
+                (1, "DISCOVERY", "new threat", "LOW"),
+                (2, "ESCALATION", "cost revealed", "MEDIUM"),
+                (3, "REVERSAL", "choice demanded", "HIGH"),
+            )
+        ]
+
+        with self.assertRaisesRegex(
+            KernelError,
+            "CHAPTER_FUNCTION_MATRIX_BLOCKED.*READER_EXPERIENCE_HOMOGENEITY",
+        ):
+            validate_chapter_function_matrix(
+                rows,
+                group_objective="force an irreversible local choice",
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

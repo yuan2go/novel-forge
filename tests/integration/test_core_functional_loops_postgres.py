@@ -65,7 +65,11 @@ from novel_forge.modules.story_planning_runtime import (
 from novel_forge.modules.story_planning_runtime.execution import (
     planning_fixture_response,
 )
-from novel_forge.modules.story_design_authority import GENERATOR_CATALOG
+from novel_forge.modules.story_design_authority import (
+    GENERATOR_CATALOG,
+    scripted_qualification,
+    validate_narrative_qualification,
+)
 from novel_forge.modules.production_execution.capability_registry import (
     PLANNING_TIMEOUT_POLICY_VERSION,
     default_capability_registry,
@@ -456,7 +460,7 @@ def _chapter_function_row(chapter: int, function: str, hook: str) -> dict[str, A
         "chapter_number": chapter,
         "primary_function": function,
         "secondary_functions": ["character pressure"],
-        "required_state_delta": {"commitment": 1},
+        "required_state_delta": {"summary": "commitment advances"},
         "required_arc_contributions": [
             {"arc_plan_version_id": "arc:primary", "kind": "advance"}
         ],
@@ -465,6 +469,28 @@ def _chapter_function_row(chapter: int, function: str, hook: str) -> dict[str, A
         "reward_action": "partial payoff",
         "ending_hook": hook,
         "prohibited_outcomes": ["silent reset"],
+        "narrative_density": (
+            "HIGH" if function in {"reversal", "payoff"} else "MEDIUM"
+        ),
+        "reader_experience": {
+            "target_emotion": (
+                "costly relief" if function == "payoff" else "rising pressure"
+            ),
+            "reward_mode": "PAYOFF" if function == "payoff" else "DISCOVERY",
+        },
+        "arc_cadence": [
+            {
+                "arc_plan_version_id": "arc:primary",
+                "action": "PAYOFF" if function == "payoff" else "ADVANCE",
+            }
+        ],
+        "obligation_actions": [
+            {
+                "obligation_id": "promise:choice",
+                "action": "PAYOFF" if function == "payoff" else "ADVANCE",
+                "due_chapter": chapter if function == "payoff" else chapter + 2,
+            }
+        ],
     }
 
 
@@ -484,6 +510,7 @@ def _seed_inputs(project_id: str, book_id: str) -> dict[str, str]:
         }
     )
     result: dict[str, str] = {}
+    book_design_content_hash = ""
     with transaction() as connection, connection.cursor() as cursor:
         for role in roles:
             asset_id = f"fixture:{project_id}:{role}"
@@ -528,6 +555,64 @@ def _seed_inputs(project_id: str, book_id: str) -> dict[str, str]:
                 [version_id, asset_id, Jsonb(content), digest, f"{role}.v1"],
             )
             result[role] = version_id
+            if role == "book_design":
+                book_design_content_hash = digest
+        cursor.execute(
+            """
+            SELECT operation_id
+            FROM authority_operation
+            WHERE project_id=%s AND status='SUCCEEDED'
+            ORDER BY updated_at DESC
+            LIMIT 1
+            """,
+            [project_id],
+        )
+        source_operation_id = str(cursor.fetchone()[0])
+        qualification = validate_narrative_qualification(
+            generator_operation_name="book_design.propose",
+            value=scripted_qualification("book_design.propose"),
+        )
+        for receipt in qualification.receipts:
+            qualification_id = canonical_hash(
+                {
+                    "asset_version_id": result["book_design"],
+                    "design_layer": receipt.layer.value,
+                    "profile_hash": receipt.profile_hash,
+                    "evaluation_hash": receipt.evaluation_hash,
+                }
+            )
+            cursor.execute(
+                """
+                INSERT INTO authority_narrative_design_qualification(
+                    qualification_id, project_id, book_id,
+                    asset_version_id, source_operation_id,
+                    candidate_content_hash, design_layer, profile_id,
+                    profile_version, profile_hash, capability_id, skill_ref,
+                    evaluator_execution_class, qualification_status,
+                    evaluation, evaluation_hash, qualification_hash
+                ) VALUES (
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                    %s, %s, 'SCRIPTED_FIXTURE', 'PASS', %s, %s, %s
+                )
+                """,
+                [
+                    qualification_id,
+                    project_id,
+                    book_id,
+                    result["book_design"],
+                    source_operation_id,
+                    book_design_content_hash,
+                    receipt.layer.value,
+                    receipt.profile_id,
+                    receipt.profile_version,
+                    receipt.profile_hash,
+                    receipt.capability_id,
+                    receipt.skill_ref,
+                    Jsonb(receipt.evidence),
+                    receipt.evaluation_hash,
+                    qualification.qualification_hash,
+                ],
+            )
     return result
 
 
@@ -1774,6 +1859,13 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
         snapshot.current_chapter_group_plan_version
         == activated["chapter_group_plan.generate"]
     )
+    assert snapshot.design_admission_status == "LONGFORM_DESIGN_QUALIFIED"
+    assert snapshot.design_qualification["admission"] == (
+        "LONGFORM_DESIGN_QUALIFIED"
+    )
+    assert snapshot.design_qualification_hash == canonical_hash(
+        snapshot.design_qualification
+    )
     assert deployment_id in snapshot.capability_pack_deployment_refs
     with pytest.raises(psycopg.errors.CheckViolation):
         with transaction() as connection, connection.cursor() as cursor:
@@ -1919,7 +2011,7 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
         uow.cursor.execute(
             """
-            SELECT request.chapter_request_id
+            SELECT request.chapter_request_id, request.command_payload
             FROM authority_book_chapter_acceptance AS acceptance
             JOIN authority_book_chapter_request AS request
               ON request.chapter_request_id=acceptance.chapter_request_id
@@ -1927,7 +2019,9 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
             """,
             [book.book_run_id],
         )
-        checkpoint_request_id = str(uow.cursor.fetchone()[0])
+        checkpoint_request = uow.cursor.fetchone()
+        checkpoint_request_id = str(checkpoint_request[0])
+        checkpoint_payload = dict(checkpoint_request[1])
         uow.cursor.execute(
             """
             SELECT COUNT(*)
@@ -1937,6 +2031,16 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
             [book.book_run_id],
         )
         assert int(uow.cursor.fetchone()[0]) == 1
+    chapter_admission = dict(
+        checkpoint_payload["preparation_report"]["chapter_production_admission"]
+    )
+    assert chapter_admission["admission"] == "CHAPTER_PRODUCTION_ADMITTED"
+    assert chapter_admission["longform_design_qualification_hash"] == (
+        snapshot.design_qualification_hash
+    )
+    assert checkpoint_payload["context_version_refs"][
+        "chapter_production_admission_hash"
+    ] == chapter_admission["admission_hash"]
 
     if runtime_path == "NO_REPLAN":
         no_replan_actions: list[str] = []
@@ -2078,6 +2182,9 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
     assert resumed["status"] == "RESUMED"
     assert resumed["input_snapshot_id"] != snapshot.snapshot_id
     resumed_snapshot = resolver.require(resumed["input_snapshot_id"])
+    assert resumed_snapshot.design_admission_status == (
+        "LONGFORM_DESIGN_QUALIFIED"
+    )
     # A replan binds a new immutable future-intent snapshot, but accepted
     # Narrative State remains owned by Book acceptance pointers.  It must not
     # be copied into the legacy Story Design input roles.

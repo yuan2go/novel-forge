@@ -7,6 +7,8 @@ from datetime import datetime
 from typing import Any, Iterable
 
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.story_design_authority import required_qualification_profiles
+from novel_forge.modules.story_planning_runtime.domain import canonical_hash
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 
@@ -348,7 +350,9 @@ class PostgresBookProductionQuery:
                        foreshadowing_state_version, quality_trend_version,
                        reward_ledger_version, promise_ledger_version,
                        COALESCE(initial_story_state_version, ''),
-                       COALESCE(initial_canon_snapshot_version, '')
+                       COALESCE(initial_canon_snapshot_version, ''),
+                       design_admission_status, design_qualification,
+                       design_qualification_hash
                 FROM authority_book_production_input_snapshot
                 WHERE snapshot_id=%s
                 """,
@@ -370,8 +374,331 @@ class PostgresBookProductionQuery:
             "promise_ledger_version",
             "initial_story_state_version",
             "initial_canon_snapshot_version",
+            "design_admission_status",
+            "design_qualification",
+            "design_qualification_hash",
         )
         return dict(zip(keys, row, strict=True))
+
+    def require_chapter_production_admission(
+        self,
+        *,
+        snapshot_id: str,
+        chapter_group_plan_version_id: str,
+        chapter_plan_version_id: str,
+        chapter_number: int,
+        accepted_through_chapter: int,
+        active_story_state_version_id: str = "",
+        active_canon_snapshot_version_id: str = "",
+    ) -> dict[str, Any]:
+        if chapter_number != accepted_through_chapter + 1:
+            raise KernelError(
+                "CHAPTER_PRODUCTION_SEQUENCE_INVALID",
+                "Chapter production admission must target the next unaccepted chapter",
+            )
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT snapshot.project_id, snapshot.book_id,
+                       snapshot.expected_book_version,
+                       snapshot.design_admission_status,
+                       snapshot.design_qualification,
+                       snapshot.design_qualification_hash,
+                       snapshot.book_design_version,
+                       snapshot.book_plan_version,
+                       snapshot.current_volume_plan_version,
+                       snapshot.active_arc_plan_versions
+                FROM authority_book_production_input_snapshot AS snapshot
+                WHERE snapshot.snapshot_id=%s
+                """,
+                [snapshot_id],
+            )
+            snapshot = uow.cursor.fetchone()
+            if snapshot is None or str(snapshot[3]) != "LONGFORM_DESIGN_QUALIFIED":
+                raise KernelError(
+                    "LONGFORM_DESIGN_QUALIFICATION_REQUIRED",
+                    "Chapter production requires a qualified Book input snapshot",
+                )
+            global_qualification = dict(snapshot[4])
+            if (
+                global_qualification.get("admission")
+                != "LONGFORM_DESIGN_QUALIFIED"
+                or canonical_hash(global_qualification) != str(snapshot[5])
+            ):
+                raise KernelError(
+                    "LONGFORM_DESIGN_QUALIFICATION_CORRUPT",
+                    "Book input design qualification failed its content hash",
+                )
+            global_receipts = global_qualification.get("receipts")
+            if not isinstance(global_receipts, list) or not global_receipts:
+                raise KernelError(
+                    "LONGFORM_DESIGN_QUALIFICATION_CORRUPT",
+                    "Book input design qualification has no layer receipts",
+                )
+            global_version_ids = sorted(
+                {
+                    str(item.get("asset_version_id") or "")
+                    for item in global_receipts
+                    if isinstance(item, dict)
+                }
+            )
+            if "" in global_version_ids:
+                raise KernelError(
+                    "LONGFORM_DESIGN_QUALIFICATION_CORRUPT",
+                    "Book input design qualification has an empty asset identity",
+                )
+            uow.cursor.execute(
+                """
+                SELECT asset_version_id, design_layer, profile_hash,
+                       evaluation_hash, qualification_hash
+                FROM authority_current_narrative_design_qualification AS qualification
+                JOIN authority_operation AS operation
+                  ON operation.operation_id=qualification.source_operation_id
+                WHERE qualification.project_id=%s AND qualification.book_id=%s
+                  AND qualification.asset_version_id=ANY(%s)
+                  AND qualification.freshness='CURRENT'
+                  AND operation.status IN ('WAITING_GATE', 'SUCCEEDED')
+                """,
+                [str(snapshot[0]), str(snapshot[1]), global_version_ids],
+            )
+            current_global = {
+                (str(row[0]), str(row[1]), str(row[2]), str(row[3]), str(row[4]))
+                for row in uow.cursor.fetchall()
+            }
+            expected_global = {
+                (
+                    str(item.get("asset_version_id") or ""),
+                    str(item.get("design_layer") or ""),
+                    str(item.get("profile_hash") or ""),
+                    str(item.get("evaluation_hash") or ""),
+                    str(item.get("qualification_hash") or ""),
+                )
+                for item in global_receipts
+                if isinstance(item, dict)
+            }
+            if current_global != expected_global:
+                raise KernelError(
+                    "LONGFORM_DESIGN_QUALIFICATION_STALE",
+                    "Book input design qualification no longer names current active design",
+                )
+            uow.cursor.execute(
+                """
+                SELECT binding.contract_type, binding.asset_version_id,
+                       COALESCE(binding.parent_version_id, ''),
+                       binding.execution_scope, binding.freshness,
+                       version.content
+                FROM active_story_plan_version AS active
+                JOIN story_plan_binding AS binding
+                  ON binding.binding_id=active.binding_id
+                JOIN authority_asset_version AS version
+                  ON version.asset_version_id=binding.asset_version_id
+                WHERE binding.project_id=%s AND binding.book_id=%s
+                  AND binding.asset_version_id=ANY(%s)
+                  AND version.lifecycle='ACTIVE'
+                  AND version.eligibility='ELIGIBLE'
+                  AND version.governance='CLEAR'
+                """,
+                [
+                    str(snapshot[0]),
+                    str(snapshot[1]),
+                    [chapter_group_plan_version_id, chapter_plan_version_id],
+                ],
+            )
+            plan_rows = uow.cursor.fetchall()
+            plans = {str(row[0]): row for row in plan_rows}
+            if set(plans) != {"CHAPTER_GROUP", "CHAPTER"}:
+                raise KernelError(
+                    "CHAPTER_PRODUCTION_DESIGN_INCOMPLETE",
+                    "active Scheduling and Chapter design are required",
+                )
+            group = plans["CHAPTER_GROUP"]
+            chapter = plans["CHAPTER"]
+            if (
+                str(group[1]) != chapter_group_plan_version_id
+                or str(chapter[1]) != chapter_plan_version_id
+                or str(chapter[2]) != chapter_group_plan_version_id
+                or str(group[3]) != "FROZEN"
+                or str(chapter[3]) != "FROZEN"
+                or str(group[4]) != "CURRENT"
+                or str(chapter[4]) != "CURRENT"
+            ):
+                raise KernelError(
+                    "CHAPTER_PRODUCTION_DESIGN_STALE",
+                    "Scheduling or Chapter design is not the current frozen plan",
+                )
+            chapter_content = dict(chapter[5])
+            group_content = dict(group[5])
+            group_range = group_content.get("chapter_range")
+            if (
+                int(chapter_content.get("chapter_number") or 0) != chapter_number
+                or not isinstance(group_range, list)
+                or len(group_range) != 2
+                or not int(group_range[0]) <= chapter_number <= int(group_range[1])
+            ):
+                raise KernelError(
+                    "CHAPTER_PRODUCTION_DESIGN_SCOPE_INVALID",
+                    "Scheduling and Chapter design do not cover the target chapter",
+                )
+            matrix_rows = [
+                item
+                for item in group_content.get("chapter_function_matrix") or ()
+                if isinstance(item, dict)
+                and int(item.get("chapter_number") or 0) == chapter_number
+            ]
+            if len(matrix_rows) != 1:
+                raise KernelError(
+                    "CHAPTER_PRODUCTION_SCHEDULE_ROW_INVALID",
+                    "Narrative Scheduling must contain one row for the target Chapter",
+                )
+            schedule_row = matrix_rows[0]
+            scheduled_fields = (
+                "primary_function",
+                "secondary_functions",
+                "required_state_delta",
+                "promise_action",
+                "foreshadow_action",
+                "reward_action",
+                "ending_hook",
+                "prohibited_outcomes",
+                "narrative_density",
+                "arc_cadence",
+                "obligation_actions",
+            )
+            if any(
+                canonical_hash(schedule_row.get(field))
+                != canonical_hash(chapter_content.get(field))
+                for field in scheduled_fields
+            ):
+                raise KernelError(
+                    "CHAPTER_PRODUCTION_SCHEDULE_DRIFT",
+                    "Chapter Execution Plan differs from its active Scheduling row",
+                )
+            scheduled_experience = schedule_row.get("reader_experience")
+            chapter_experience = chapter_content.get("reader_experience")
+            if not isinstance(scheduled_experience, dict) or not isinstance(
+                chapter_experience, dict
+            ):
+                raise KernelError(
+                    "CHAPTER_PRODUCTION_SCHEDULE_DRIFT",
+                    "Scheduling and Chapter design require typed Reader Experience",
+                )
+            if any(
+                canonical_hash(scheduled_experience.get(field))
+                != canonical_hash(chapter_experience.get(field))
+                for field in ("target_emotion", "reward_mode")
+            ):
+                raise KernelError(
+                    "CHAPTER_PRODUCTION_SCHEDULE_DRIFT",
+                    "Chapter Reader Experience changed its scheduled target",
+                )
+            boundary = dict(
+                (chapter_content.get("constraint_envelope") or {}).get(
+                    "accepted_state_boundary"
+                )
+                or {}
+            )
+            if int(boundary.get("accepted_through_chapter") or 0) != (
+                accepted_through_chapter
+            ):
+                raise KernelError(
+                    "CHAPTER_PRODUCTION_NARRATIVE_STATE_STALE",
+                    "Chapter design was derived from another accepted-state cursor",
+                )
+            frozen_inputs = {
+                str(item.get("role") or ""): str(
+                    item.get("asset_version_id") or ""
+                )
+                for item in chapter_content.get("frozen_inputs") or ()
+                if isinstance(item, dict)
+            }
+            if accepted_through_chapter > 0 and (
+                frozen_inputs.get("story_state") != active_story_state_version_id
+                or frozen_inputs.get("canon_snapshot")
+                != active_canon_snapshot_version_id
+            ):
+                raise KernelError(
+                    "CHAPTER_PRODUCTION_NARRATIVE_STATE_STALE",
+                    "Chapter design is not bound to current accepted Story State and Canon",
+                )
+            expected_receipts = []
+            for stage, asset_version_id in (
+                ("chapter_group_plan.generate", chapter_group_plan_version_id),
+                ("chapter_plan.generate", chapter_plan_version_id),
+            ):
+                expected_receipts.extend(
+                    (asset_version_id, profile)
+                    for profile in required_qualification_profiles(stage)
+                )
+            uow.cursor.execute(
+                """
+                SELECT asset_version_id, design_layer, profile_id,
+                       profile_version, profile_hash, qualification_hash,
+                       evaluation_hash, evaluator_execution_class,
+                       source_operation_id
+                FROM authority_current_narrative_design_qualification AS qualification
+                JOIN authority_operation AS operation
+                  ON operation.operation_id=qualification.source_operation_id
+                WHERE qualification.project_id=%s AND qualification.book_id=%s
+                  AND qualification.asset_version_id=ANY(%s)
+                  AND qualification.freshness='CURRENT'
+                  AND operation.status IN ('WAITING_GATE', 'SUCCEEDED')
+                ORDER BY asset_version_id, design_layer
+                """,
+                [
+                    str(snapshot[0]),
+                    str(snapshot[1]),
+                    [chapter_group_plan_version_id, chapter_plan_version_id],
+                ],
+            )
+            rows = uow.cursor.fetchall()
+        by_identity: dict[tuple[str, str], list[Any]] = {}
+        for row in rows:
+            by_identity.setdefault((str(row[0]), str(row[1])), []).append(row)
+        receipts: list[dict[str, Any]] = []
+        for asset_version_id, profile in expected_receipts:
+            matches = by_identity.get((asset_version_id, profile.layer.value), [])
+            if len(matches) != 1:
+                raise KernelError(
+                    "CHAPTER_PRODUCTION_QUALIFICATION_INCOMPLETE",
+                    f"{profile.layer.value} requires one current qualification",
+                )
+            row = matches[0]
+            if tuple(str(item) for item in row[2:5]) != (
+                profile.profile_id,
+                profile.profile_version,
+                profile.profile_hash,
+            ):
+                raise KernelError(
+                    "CHAPTER_PRODUCTION_QUALIFICATION_STALE",
+                    f"{profile.layer.value} differs from current policy",
+                )
+            receipts.append(
+                {
+                    "asset_version_id": asset_version_id,
+                    "design_layer": profile.layer.value,
+                    "profile_hash": str(row[4]),
+                    "qualification_hash": str(row[5]),
+                    "evaluation_hash": str(row[6]),
+                    "evaluator_execution_class": str(row[7]),
+                    "source_operation_id": str(row[8]),
+                }
+            )
+        admission = {
+            "schema_version": "chapter-production-admission.v1",
+            "admission": "CHAPTER_PRODUCTION_ADMITTED",
+            "snapshot_id": snapshot_id,
+            "longform_design_qualification_hash": str(snapshot[5]),
+            "book_version": int(snapshot[2]),
+            "chapter_number": chapter_number,
+            "accepted_through_chapter": accepted_through_chapter,
+            "chapter_group_plan_version_id": chapter_group_plan_version_id,
+            "chapter_plan_version_id": chapter_plan_version_id,
+            "receipts": sorted(
+                receipts,
+                key=lambda item: item["design_layer"],
+            ),
+        }
+        return {**admission, "admission_hash": canonical_hash(admission)}
 
     def require_chapter_execution_plan(
         self, planning_candidate_asset_version_id: str
@@ -380,7 +707,7 @@ class PostgresBookProductionQuery:
             uow.cursor.execute(
                 """
                 SELECT projection.asset_version_id, projection.content_hash,
-                       projection.content
+                       projection.content, candidate.content_hash
                 FROM authority_asset_version AS candidate
                 JOIN authority_asset AS candidate_asset
                   ON candidate_asset.asset_id=candidate.asset_id
@@ -397,6 +724,12 @@ class PostgresBookProductionQuery:
                 WHERE candidate.asset_version_id=%s
                   AND projection.content->>
                       'source_planning_candidate_asset_version_id'=%s
+                  AND candidate.lifecycle='ACTIVE'
+                  AND candidate.eligibility='ELIGIBLE'
+                  AND candidate.governance='CLEAR'
+                  AND projection.lifecycle='ACTIVE'
+                  AND projection.eligibility='ELIGIBLE'
+                  AND projection.governance='CLEAR'
                 ORDER BY projection.created_at DESC
                 LIMIT 2
                 """,
@@ -415,6 +748,7 @@ class PostgresBookProductionQuery:
             "asset_version_id": str(rows[0][0]),
             "content_hash": str(rows[0][1]),
             "content": dict(rows[0][2]),
+            "source_content_hash": str(rows[0][3]),
         }
 
     def require_chapter_group_range(self, asset_version_id: str) -> tuple[int, int]:
