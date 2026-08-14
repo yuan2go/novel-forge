@@ -3179,7 +3179,7 @@ def _runtime_planning_inputs(
     return {
         "previous_chapter_outcome": str(book["last_chapter_outcome_version_id"]),
         "story_state": str(book["active_story_state_version_id"]),
-        "canon_snapshot": str(outputs["canon_snapshot"]["asset_version_id"]),
+        "canon_snapshot": str(book["active_canon_snapshot_version_id"]),
         "character_state": str(outputs["character_state_snapshot"]["asset_version_id"]),
         "foreshadowing_state": str(outputs["foreshadow_snapshot"]["asset_version_id"]),
         "reward_ledger": str(outputs["reward_ledger_snapshot"]["asset_version_id"]),

@@ -323,6 +323,66 @@ def test_drive_fails_closed_when_replan_approval_is_unavailable() -> None:
         )
 
 
+def test_runtime_planning_inputs_use_book_acceptance_canon_checkpoint(
+    monkeypatch,
+) -> None:
+    proof = _load_script()
+    child_outputs = [
+        {
+            "asset_type": asset_type,
+            "asset_version_id": f"asset-version:{asset_type}",
+        }
+        for asset_type in (
+            "character_state_snapshot",
+            "foreshadow_snapshot",
+            "reward_ledger_snapshot",
+            "promise_ledger_snapshot",
+        )
+    ]
+    authority = SimpleNamespace(
+        database_url="postgresql://unused",
+        chapter_port=SimpleNamespace(
+            require_acceptance_evidence=lambda **_kwargs: {
+                "outputs": child_outputs
+            }
+        ),
+        require_chapter_request=lambda _request_id: {
+            "chapter_root_operation_id": "chapter-root:1",
+            "book_run_id": "book-run:1",
+        },
+        require=lambda _book_run_id: {
+            "last_chapter_outcome_version_id": "asset-version:chapter-outcome:1",
+            "active_story_state_version_id": "asset-version:story-state:1",
+            "active_canon_snapshot_version_id": "asset-version:canon:1",
+        },
+    )
+    monkeypatch.setattr(
+        proof,
+        "_followup_output",
+        lambda *_args, **_kwargs: {
+            "asset_version_id": "asset-version:reader-state:1"
+        },
+    )
+
+    inputs = proof._runtime_planning_inputs(
+        authority,
+        project_id="project:1",
+        chapter_request_id="chapter-request:1",
+        reader_report={},
+    )
+
+    assert inputs == {
+        "previous_chapter_outcome": "asset-version:chapter-outcome:1",
+        "story_state": "asset-version:story-state:1",
+        "canon_snapshot": "asset-version:canon:1",
+        "character_state": "asset-version:character_state_snapshot",
+        "foreshadowing_state": "asset-version:foreshadow_snapshot",
+        "reward_ledger": "asset-version:reward_ledger_snapshot",
+        "promise_ledger": "asset-version:promise_ledger_snapshot",
+        "reader_state": "asset-version:reader-state:1",
+    }
+
+
 def test_release_checkout_accepts_current_clean_campaign_branch(monkeypatch) -> None:
     proof = _load_script()
     values = {
