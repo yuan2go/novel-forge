@@ -17,6 +17,7 @@ from novel_forge.storage.migrations.versions import (
     v20260814_0088_canonical_narrative_architecture as head_migration,
     v20260814_0089_progressive_narrative_design as progressive_migration,
     v20260814_0090_progressive_replan_scopes as current_head_migration,
+    v20260814_0091_canonical_longform_runtime_completion as completion_migration,
 )
 
 
@@ -38,7 +39,8 @@ def test_source_import_runtime_is_registered_forward_only_head() -> None:
     assert head_migration.DOWN_REVISION == initial_state_migration.MIGRATION_ID
     assert progressive_migration.DOWN_REVISION == head_migration.MIGRATION_ID
     assert current_head_migration.DOWN_REVISION == progressive_migration.MIGRATION_ID
-    assert LATEST_MIGRATION_ID == current_head_migration.MIGRATION_ID
+    assert completion_migration.DOWN_REVISION == current_head_migration.MIGRATION_ID
+    assert LATEST_MIGRATION_ID == completion_migration.MIGRATION_ID
     assert migration.DOWN_REVISION == "20260811_0075_source_deconstruction_intelligence"
     assert migration.FORWARD_ONLY is True
     sql = "\n".join(migration.UPGRADE_STATEMENTS).lower()

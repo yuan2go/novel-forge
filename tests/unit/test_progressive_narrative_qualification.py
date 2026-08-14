@@ -9,9 +9,15 @@ from novel_forge.modules.production_execution.capability_registry import (
 from novel_forge.modules.story_design_authority.qualification import (
     GENERATOR_QUALIFICATION_PROFILES,
     NarrativeDesignLayer,
+    NarrativeEvaluationLineage,
     qualification_provider_schema,
     scripted_qualification,
     validate_narrative_qualification,
+)
+from novel_forge.modules.story_design_authority.evaluation_runtime import (
+    NarrativeSemanticEvaluationApplication,
+    NarrativeSemanticEvaluationCommand,
+    narrative_semantic_evaluation_definition,
 )
 
 
@@ -126,3 +132,87 @@ def test_provider_schema_is_strict_and_exposes_no_universal_judge() -> None:
         "CHAPTER_EXECUTION_PLAN",
         "SCENE_ARCHITECTURE",
     }
+
+
+def test_evaluation_lineage_rejects_generator_self_qualification() -> None:
+    with pytest.raises(KernelError, match="candidate generation cannot mint"):
+        NarrativeEvaluationLineage(
+            generation_operation_id="operation:generator",
+            evaluation_operation_id="operation:generator",
+            evaluation_attempt_id="attempt:evaluator",
+            evaluation_asset_version_id="asset:evaluation",
+            candidate_asset_version_id="asset:candidate",
+            candidate_content_hash="sha256:candidate",
+            evaluator_execution_class="MODEL_PROVIDER",
+            evaluation_evidence_hash="sha256:evaluation",
+        )
+
+
+def test_evaluation_lineage_binds_distinct_operation_attempt_and_asset() -> None:
+    lineage = NarrativeEvaluationLineage(
+        generation_operation_id="operation:generator",
+        evaluation_operation_id="operation:evaluator",
+        evaluation_attempt_id="attempt:evaluator",
+        evaluation_asset_version_id="asset:evaluation",
+        candidate_asset_version_id="asset:candidate",
+        candidate_content_hash="sha256:candidate",
+        evaluator_execution_class="MODEL_PROVIDER",
+        evaluation_evidence_hash="sha256:evaluation",
+    )
+
+    assert lineage.to_evidence()["evaluation_operation_id"] == "operation:evaluator"
+
+
+def test_evaluation_definition_declares_independent_actor_and_exact_provider_receipt() -> None:
+    definition = narrative_semantic_evaluation_definition(
+        application_build_id="test-build",
+        commit_sha="a" * 40,
+    )
+
+    assert definition["policy"]["non_fixture_evaluator_actor_must_differ"] is True
+    assert definition["policy"]["model_provider_evidence_exact_result_required"] is True
+
+
+def test_model_provider_evidence_rejects_a_successful_but_unrelated_call_log() -> None:
+    command = NarrativeSemanticEvaluationCommand(
+        project_id="project:test",
+        workspace_id="workspace:test",
+        book_id="book:test",
+        actor_id="principal:evaluator",
+        candidate_asset_version_id="asset:candidate",
+        generation_operation_id="operation:generation",
+        generator_operation_name="book_plan.generate",
+        candidate_content_hash="sha256:candidate",
+        evaluator_execution_class="MODEL_PROVIDER",
+        evaluation=scripted_qualification("book_plan.generate"),
+        idempotency_key="evaluation:test",
+        trace_id="trace:test",
+        correlation_id="correlation:test",
+    )
+    evidence = {
+        "asset_version_id": "asset:model-call-log",
+        "asset_type": "model_call_log",
+        "producer_status": "SUCCEEDED",
+        "producer_operation_id": "operation:evaluation-provider",
+        "content": {
+            "operation_id": "operation:evaluation-provider",
+            "stage": "narrative_semantic_evaluation",
+            "real_model_call": True,
+            "fixture_protocol_only": False,
+            "candidate_accepted": True,
+            "result": {
+                "candidate_asset_version_id": "asset:different-candidate",
+                "candidate_content_hash": command.candidate_content_hash,
+                "generation_operation_id": command.generation_operation_id,
+                "evaluation": command.evaluation,
+            },
+        },
+    }
+
+    with pytest.raises(KernelError) as raised:
+        NarrativeSemanticEvaluationApplication._validate_model_provider_evidence(
+            command=command,
+            evidence_assets=[evidence],
+        )
+
+    assert raised.value.code == "NARRATIVE_EVALUATION_PROVIDER_EVIDENCE_INVALID"

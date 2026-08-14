@@ -18,6 +18,58 @@ from novel_forge.modules.command_kernel.errors import KernelError
 
 
 class ChapterAuthorityDomainHandlerTests(unittest.TestCase):
+    def test_context_does_not_union_knowledge_across_scene_povs(self) -> None:
+        plan = {
+            "chapter": 2,
+            "title": "Split witness",
+            "premise": "Two witnesses know different parts of the event.",
+            "objective": "Preserve the split knowledge boundary.",
+            "scene_sequence": ["first witness", "second witness"],
+            "character_participation": [
+                {"character_id": "a", "known_fact_ids": ["fact:secret"]},
+                {"character_id": "b", "known_fact_ids": []},
+            ],
+            "scene_plan": [
+                {
+                    "pov_character_id": "a",
+                    "focalization": "INTERNAL",
+                    "accessible_knowledge": ["fact:secret"],
+                },
+                {
+                    "pov_character_id": "b",
+                    "focalization": "INTERNAL",
+                    "accessible_knowledge": [],
+                },
+            ],
+        }
+        with self.assertRaisesRegex(ValueError, "NO_HIDDEN_KNOWLEDGE_LEAK"):
+            build_context_bundle(
+                plan=plan,
+                plan_asset_version_id="plan-v2",
+                plan_content_hash="sha256:plan-v2",
+                project_id="project-a",
+                created_by_operation_id="operation-context-v2",
+                governed_candidates=[
+                    {
+                        "asset_version_id": "state-v1",
+                        "asset_type": "story_state_snapshot",
+                        "project_id": "project-a",
+                        "estimated_tokens": 20,
+                        "structured_facts": [
+                            {
+                                "state_kind": "character_knowledge",
+                                "entity_key": "character_id=a|fact_id=fact:secret",
+                                "state": {
+                                    "fact_id": "fact:secret",
+                                    "status": "KNOWN",
+                                },
+                            }
+                        ],
+                    }
+                ],
+                book_id="book-a",
+            )
+
     def test_storage_free_domain_chain_preserves_gates_and_lineage(self) -> None:
         plan = build_chapter_plan(
             chapter=1,

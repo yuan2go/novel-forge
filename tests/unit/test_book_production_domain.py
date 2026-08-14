@@ -8,6 +8,10 @@ from novel_forge.modules.book_production import (
     evaluate_ending_reachability,
     required_arc_contributions,
 )
+from novel_forge.modules.book_authority.input_resolver import (
+    BookProductionInputResolver,
+)
+from novel_forge.modules.command_kernel.errors import KernelError
 
 
 def test_ending_reachability_is_deterministic_and_reachable() -> None:
@@ -35,4 +39,40 @@ def test_arc_contribution_declarations_require_unique_identity() -> None:
     with pytest.raises(ValueError):
         required_arc_contributions(
             {"required_arc_contributions": [{"arc_id": "arc-1"}, {"arc_id": "arc-1"}]}
+        )
+
+
+def test_volume_portfolio_resolves_one_runtime_current_volume() -> None:
+    volumes = [
+        {"asset_version_id": "volume-1", "content": {"chapter_range": [1, 30]}},
+        {"asset_version_id": "volume-2", "content": {"chapter_range": [31, 60]}},
+        {"asset_version_id": "volume-3", "content": {"chapter_range": [61, 90]}},
+    ]
+
+    current = BookProductionInputResolver._select_current_volume(
+        volumes, chapter_cursor=31
+    )
+
+    assert current["asset_version_id"] == "volume-2"
+
+
+def test_volume_portfolio_rejects_overlapping_ranges() -> None:
+    with pytest.raises(KernelError, match="BOOK_PRODUCTION_VOLUME_PORTFOLIO_OVERLAP"):
+        BookProductionInputResolver._select_current_volume(
+            [
+                {"asset_version_id": "volume-1", "content": {"chapter_range": [1, 30]}},
+                {"asset_version_id": "volume-2", "content": {"chapter_range": [30, 60]}},
+            ],
+            chapter_cursor=30,
+        )
+
+
+def test_volume_portfolio_rejects_a_strategic_gap() -> None:
+    with pytest.raises(KernelError, match="BOOK_PRODUCTION_VOLUME_PORTFOLIO_OVERLAP"):
+        BookProductionInputResolver._select_current_volume(
+            [
+                {"asset_version_id": "volume-1", "content": {"chapter_range": [1, 30]}},
+                {"asset_version_id": "volume-2", "content": {"chapter_range": [32, 60]}},
+            ],
+            chapter_cursor=1,
         )

@@ -24,6 +24,10 @@ from novel_forge.modules.command_kernel.service import (
     TransactionCheckpoint,
     execute_transaction_command,
 )
+from novel_forge.modules.story_design_authority.evaluation_runtime import (
+    NarrativeSemanticEvaluationApplication,
+    NarrativeSemanticEvaluationCommand,
+)
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from novel_forge.storage.book_design_authority_repositories import (
     BookDesignAuthorityRepository,
@@ -82,6 +86,12 @@ class BookDesignAuthorityApplication:
         self.application_build_id = application_build_id
         self.commit_sha = commit_sha
         self.fault_injector = fault_injector
+        self.semantic_evaluation = NarrativeSemanticEvaluationApplication(
+            database_url,
+            application_build_id=application_build_id,
+            commit_sha=commit_sha,
+            worker_id="book-design-semantic-evaluation-worker",
+        )
 
     def execute(
         self, command: BookDesignAuthorityCommand, *, principal: Principal | None = None
@@ -153,6 +163,55 @@ class BookDesignAuthorityApplication:
             handler=self._execute_transaction,
             fault_injector=self.fault_injector,
         )
+
+    def evaluate_semantics(
+        self,
+        command: NarrativeSemanticEvaluationCommand,
+        *,
+        principal: Principal,
+    ) -> dict[str, Any]:
+        """Evaluate one immutable BookDesign candidate in a separate Attempt."""
+
+        if command.generator_operation_name != "book_design.propose":
+            raise KernelError(
+                "BOOK_DESIGN_EVALUATION_STAGE_INVALID",
+                "BookDesign Authority can evaluate only BookDesign candidates",
+            )
+        result = self.semantic_evaluation.execute(
+            command,
+            principal=principal,
+            caller_permission="book_design.authority.execute",
+        )
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            repository = BookDesignAuthorityRepository(uow.cursor)
+            book = repository.book_for_update(
+                project_id=command.project_id,
+                workspace_id=command.workspace_id,
+                book_id=command.book_id,
+            )
+            projection = repository.complete_semantic_evaluation(
+                book=book,
+                asset_version_id=command.candidate_asset_version_id,
+                generation_operation_id=command.generation_operation_id,
+                evaluation_operation_id=result.lineage.evaluation_operation_id,
+                passed=result.qualification.status == "PASS",
+            )
+            uow.commit()
+        return {
+            **projection,
+            "generation_operation_id": result.lineage.generation_operation_id,
+            "evaluation_operation_id": result.lineage.evaluation_operation_id,
+            "evaluation_attempt_id": result.lineage.evaluation_attempt_id,
+            "evaluation_asset_version_id": (
+                result.lineage.evaluation_asset_version_id
+            ),
+            "evaluation_evidence_hash": (
+                result.lineage.evaluation_evidence_hash
+            ),
+            "qualification_status": result.qualification.status,
+            "trust_boundary": "INDEPENDENT",
+            "replayed": result.replayed,
+        }
 
     def _register_definitions(self) -> None:
         with AuthorityUnitOfWork(self.database_url) as uow:

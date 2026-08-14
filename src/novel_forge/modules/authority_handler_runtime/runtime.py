@@ -245,10 +245,18 @@ def _load_request(
             uow,
             operation=operation,
         )
+        evaluation_candidate_id = ""
+        policy = dict(snapshot.get("policy") or {})
+        payload = dict(operation["command_payload"].get("payload") or {})
+        if policy.get("candidate_evaluation_input_allowed") is True:
+            evaluation_candidate_id = str(
+                payload.get("candidate_asset_version_id") or ""
+            )
         frozen = uow.repositories.chapter_authority.frozen_inputs(
             command.project_id,
             list(operation["input_asset_snapshot"] or []),
             allow_approved_archival_migration=allow_archival,
+            evaluation_candidate_asset_version_id=evaluation_candidate_id,
         )
     return AuthorityHandlerRequest(
         operation_id=operation["operation_id"],

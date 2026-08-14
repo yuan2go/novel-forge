@@ -26,6 +26,8 @@ class ContextCandidate:
     allowed_use: str = "generation"
     compression_method: str = "safe_summary"
     physical_asset_type: str = ""
+    authority_freshness: str = "CURRENT"
+    semantic_projection: bool = True
 
 
 __all__ = ["ContextCandidate"]

@@ -1,6 +1,7 @@
 """Shared Narrative State v2 contracts, reducers, and read projections."""
 
 from .contracts import (
+    NarrativeCausality,
     NarrativeCoordinate,
     NarrativeIdentity,
     NarrativeLayer,
@@ -12,6 +13,7 @@ from .contracts import (
     NarrativeStateEvent,
     NarrativeStateKind,
     ReducerSemantics,
+    StoryTime,
     event_dicts,
     events_from_canon_patch,
     events_from_chapter_outcome,
@@ -30,11 +32,12 @@ from .reducers import (
     rebuild_story_state,
     reduce_story_state_v2,
 )
-from .measurements import measure_narrative_runtime
+from .measurements import measure_narrative_runtime, project_narrative_load
 from .rebuild import NarrativeProjectionRebuildResult, NarrativeStateRebuildService
 
 __all__ = [
     "NarrativeCoordinate",
+    "NarrativeCausality",
     "NarrativeIdentity",
     "NarrativeLayer",
     "NarrativeObligationPriority",
@@ -47,6 +50,7 @@ __all__ = [
     "NarrativeProjectionRebuildResult",
     "NarrativeStateRebuildService",
     "ReducerSemantics",
+    "StoryTime",
     "APPEND_ONLY_KINDS",
     "LIFECYCLE_KINDS",
     "STATE_KIND_REDUCER_SEMANTICS",
@@ -55,6 +59,7 @@ __all__ = [
     "expire_effective_ranges",
     "materialize_canon_snapshot_v2",
     "measure_narrative_runtime",
+    "project_narrative_load",
     "event_dicts",
     "events_from_canon_patch",
     "events_from_chapter_outcome",

@@ -50,7 +50,14 @@ from novel_forge.modules.story_design_authority.validators import (
 )
 from novel_forge.modules.story_design_authority.qualification import (
     required_qualification_profiles,
-    validate_narrative_qualification,
+    scripted_qualification,
+)
+from novel_forge.modules.story_design_authority.evaluation_runtime import (
+    NARRATIVE_EVALUATION_DEFINITION as STORY_PLANNING_EVALUATION_DEFINITION,
+    NARRATIVE_EVALUATION_HANDLER as STORY_PLANNING_EVALUATION_HANDLER,
+    NARRATIVE_EVALUATION_VERSION as STORY_PLANNING_EVALUATION_VERSION,
+    NarrativeSemanticEvaluationApplication,
+    NarrativeSemanticEvaluationCommand,
 )
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
@@ -63,6 +70,7 @@ from .domain import (
     STORY_PLANNING_OPERATION_DEFINITION_REF,
     STORY_PLANNING_OPERATION_TIMEOUT_SECONDS,
     StoryPlanningGenerationCommand,
+    StoryPlanningEvaluationCommand,
     build_planning_constraint_envelope,
     canonical_hash,
 )
@@ -209,7 +217,7 @@ class _PlanningGenerationHandler:
 
 class StoryPlanningGenerationHandlerRegistry:
     def __init__(self, binder: PlanningExecutionBinder) -> None:
-        self.item = AuthorityHandlerRegistration(
+        generation = AuthorityHandlerRegistration(
             definition_name=STORY_PLANNING_GENERATION_DEFINITION,
             definition_version=STORY_PLANNING_GENERATION_VERSION,
             handler_key=STORY_PLANNING_GENERATION_HANDLER,
@@ -220,24 +228,25 @@ class StoryPlanningGenerationHandlerRegistry:
             completion_topic="story_planning.candidate.materialized",
             handler=_PlanningGenerationHandler(binder),
         )
+        self.items = {
+            STORY_PLANNING_GENERATION_DEFINITION: generation,
+        }
 
     @property
     def available_handler_keys(self) -> frozenset[str]:
-        return frozenset({STORY_PLANNING_GENERATION_HANDLER})
+        return frozenset(item.handler_key for item in self.items.values())
 
     @property
     def definition_names(self) -> frozenset[str]:
-        return frozenset({STORY_PLANNING_GENERATION_DEFINITION})
+        return frozenset(self.items)
 
     def registration(
         self, definition_name: str, definition_version: str
     ) -> AuthorityHandlerRegistration:
-        if (
-            definition_name != STORY_PLANNING_GENERATION_DEFINITION
-            or definition_version != STORY_PLANNING_GENERATION_VERSION
-        ):
+        item = self.items.get(definition_name)
+        if item is None or item.definition_version != definition_version:
             raise KeyError((definition_name, definition_version))
-        return self.item
+        return item
 
 
 class StoryPlanningGenerationApplication:
@@ -259,6 +268,12 @@ class StoryPlanningGenerationApplication:
         self.commit_sha = commit_sha
         self.worker_id = worker_id
         self.registry = StoryPlanningGenerationHandlerRegistry(execution_binder)
+        self.semantic_evaluation = NarrativeSemanticEvaluationApplication(
+            database_url,
+            application_build_id=application_build_id,
+            commit_sha=commit_sha,
+            worker_id=f"{worker_id}:semantic-evaluation",
+        )
         self.story_design = PostgresStoryDesignAssetAuthority(
             database_url,
             application_build_id=application_build_id,
@@ -385,7 +400,7 @@ class StoryPlanningGenerationApplication:
         existing_candidate_id = str(generation.get("candidate_asset_version_id") or "")
         if existing_candidate_id:
             existing_candidate = self.require_candidate(existing_candidate_id)
-            return self._advance_candidate(
+            advanced = self._advance_candidate(
                 operation_id=operation_id,
                 candidate_asset_version_id=existing_candidate_id,
                 candidate_content_hash=str(existing_candidate["content_hash"]),
@@ -393,6 +408,11 @@ class StoryPlanningGenerationApplication:
                 principal=principal,
                 replayed=True,
                 definition=definition,
+            )
+            return self._evaluate_fixture_if_required(
+                advanced=advanced,
+                generation_command=command,
+                principal=principal,
             )
         scheduled = ContentAuthorityScheduler(
             self.database_url,
@@ -407,7 +427,7 @@ class StoryPlanningGenerationApplication:
             command=command,
             attempt_id=scheduled.attempt_id,
         )
-        return self._advance_candidate(
+        advanced = self._advance_candidate(
             operation_id=operation_id,
             candidate_asset_version_id=candidate_id,
             candidate_content_hash=scheduled.output.content_hash,
@@ -415,6 +435,129 @@ class StoryPlanningGenerationApplication:
             principal=principal,
             replayed=bool(admitted["replayed"]),
             definition=definition,
+        )
+        return self._evaluate_fixture_if_required(
+            advanced=advanced,
+            generation_command=command,
+            principal=principal,
+        )
+
+    def evaluate_candidate(
+        self,
+        command: StoryPlanningEvaluationCommand,
+        *,
+        principal: Principal,
+    ) -> PlanningGenerationResult:
+        principal.require("story_planning.authority.execute", command.project_id)
+        if principal.principal_id != command.actor_id:
+            raise PermissionError("Planning Evaluation actor must be the trusted Principal")
+        generation = self.require_candidate(command.candidate_asset_version_id)
+        if (
+            generation["project_id"] != command.project_id
+            or generation["workspace_id"] != command.workspace_id
+            or generation["book_id"] != command.book_id
+            or generation["generation_operation_id"]
+            != command.generation_operation_id
+            or generation["generator_operation_name"]
+            != command.generator_operation_name
+            or generation["content_hash"] != command.candidate_content_hash
+        ):
+            raise KernelError(
+                "NARRATIVE_EVALUATION_LINEAGE_INVALID",
+                "Planning Evaluation differs from the frozen candidate lineage",
+            )
+        state = self.story_design.require(
+            project_id=command.project_id,
+            asset_version_id=command.candidate_asset_version_id,
+        )
+        if state["qualification"] != "STRUCTURALLY_VALID":
+            raise KernelError(
+                "NARRATIVE_EVALUATION_CANDIDATE_NOT_READY",
+                "Narrative Evaluation requires a structurally valid immutable candidate",
+            )
+        evaluated = self.semantic_evaluation.execute(
+            NarrativeSemanticEvaluationCommand(
+                project_id=command.project_id,
+                workspace_id=command.workspace_id,
+                book_id=command.book_id,
+                actor_id=command.actor_id,
+                candidate_asset_version_id=command.candidate_asset_version_id,
+                generation_operation_id=command.generation_operation_id,
+                generator_operation_name=command.generator_operation_name,
+                candidate_content_hash=command.candidate_content_hash,
+                evaluator_execution_class=command.evaluator_execution_class,
+                evaluation=dict(command.evaluation),
+                evidence_asset_version_ids=command.evidence_asset_version_ids,
+                idempotency_key=command.idempotency_key,
+                trace_id=command.trace_id,
+                correlation_id=command.correlation_id,
+            ),
+            principal=principal,
+            caller_permission="story_planning.authority.execute",
+        )
+        generation_command = self._generation_command(
+            command.generation_operation_id
+        )
+        if evaluated.qualification.status != "PASS":
+            return self._repair_or_reject(
+                operation_id=command.generation_operation_id,
+                candidate_asset_version_id=command.candidate_asset_version_id,
+                candidate_content_hash=command.candidate_content_hash,
+                command=generation_command,
+                principal=principal,
+                definition=GENERATOR_CATALOG[command.generator_operation_name],
+                error=KernelError(
+                    "NARRATIVE_SEMANTIC_QUALIFICATION_FAILED",
+                    "independent Narrative Evaluation did not pass",
+                ),
+            )
+        return self._advance_candidate(
+            operation_id=command.generation_operation_id,
+            candidate_asset_version_id=command.candidate_asset_version_id,
+            candidate_content_hash=command.candidate_content_hash,
+            command=generation_command,
+            principal=principal,
+            replayed=evaluated.replayed,
+            definition=GENERATOR_CATALOG[command.generator_operation_name],
+        )
+
+    def _evaluate_fixture_if_required(
+        self,
+        *,
+        advanced: PlanningGenerationResult,
+        generation_command: StoryPlanningGenerationCommand,
+        principal: Principal,
+    ) -> PlanningGenerationResult:
+        if advanced.status is not PlanningGenerationStatus.EVALUATION_PENDING:
+            return advanced
+        candidate = self._require_asset(
+            project_id=generation_command.project_id,
+            asset_version_id=advanced.candidate_asset_version_id,
+        )
+        execution = dict(candidate["content"].get("execution_evidence") or {})
+        if not bool(execution.get("fixture_protocol_only")):
+            return advanced
+        return self.evaluate_candidate(
+            StoryPlanningEvaluationCommand(
+                project_id=generation_command.project_id,
+                workspace_id=generation_command.workspace_id,
+                book_id=generation_command.book_id,
+                actor_id=generation_command.actor_id,
+                candidate_asset_version_id=advanced.candidate_asset_version_id,
+                generation_operation_id=advanced.generation_operation_id,
+                generator_operation_name=generation_command.generator_operation_name,
+                candidate_content_hash=str(candidate["content_hash"]),
+                evaluator_execution_class="SCRIPTED_FIXTURE",
+                evaluation=scripted_qualification(
+                    generation_command.generator_operation_name
+                ),
+                idempotency_key=(
+                    f"{generation_command.idempotency_key}:semantic-evaluation"
+                ),
+                trace_id=generation_command.trace_id,
+                correlation_id=generation_command.correlation_id,
+            ),
+            principal=principal,
         )
 
     def approve_candidate(
@@ -766,6 +909,27 @@ class StoryPlanningGenerationApplication:
         )
         return dict(zip(fields, row, strict=True))
 
+    def _generation_command(
+        self, operation_id: str
+    ) -> StoryPlanningGenerationCommand:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT command_payload->'payload'
+                FROM authority_operation
+                WHERE operation_id=%s
+                  AND definition_name=%s
+                """,
+                [operation_id, STORY_PLANNING_GENERATION_DEFINITION],
+            )
+            row = uow.cursor.fetchone()
+        if row is None or not isinstance(row[0], dict):
+            raise KernelError(
+                "PLANNING_GENERATION_COMMAND_MISSING",
+                "frozen Planning Generation command is unavailable",
+            )
+        return _command_from_payload(dict(row[0]))
+
     def require_candidate(self, candidate_asset_version_id: str) -> dict[str, Any]:
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
@@ -935,27 +1099,7 @@ class StoryPlanningGenerationApplication:
                         "PLANNING_LOGICAL_KEY_MISMATCH",
                         "Planning Candidate content differs from the admitted logical key",
                     )
-                narrative_qualification = validate_narrative_qualification(
-                    generator_operation_name=command.generator_operation_name,
-                    value=content.get("narrative_qualification"),
-                )
             except KernelError as exc:
-                if exc.code == "NARRATIVE_SEMANTIC_QUALIFICATION_FAILED":
-                    rejected_qualification = validate_narrative_qualification(
-                        generator_operation_name=command.generator_operation_name,
-                        value=content.get("narrative_qualification"),
-                        require_pass=False,
-                    )
-                    self._record_narrative_qualifications(
-                        operation_id=operation_id,
-                        candidate_asset_version_id=candidate_asset_version_id,
-                        candidate_content_hash=candidate_content_hash,
-                        command=command,
-                        execution_evidence=dict(
-                            content.get("execution_evidence") or {}
-                        ),
-                        result=rejected_qualification,
-                    )
                 return self._repair_or_reject(
                     operation_id=operation_id,
                     candidate_asset_version_id=candidate_asset_version_id,
@@ -981,14 +1125,6 @@ class StoryPlanningGenerationApplication:
                 status="PASS",
                 report=evidence,
             )
-            self._record_narrative_qualifications(
-                operation_id=operation_id,
-                candidate_asset_version_id=candidate_asset_version_id,
-                candidate_content_hash=candidate_content_hash,
-                command=command,
-                execution_evidence=dict(content.get("execution_evidence") or {}),
-                result=narrative_qualification,
-            )
             state = self._transition(
                 command,
                 principal,
@@ -999,13 +1135,25 @@ class StoryPlanningGenerationApplication:
                 evidence={"passed": True, "validation_report": evidence},
             )
         if state["qualification"] == "STRUCTURALLY_VALID":
-            qualification = self._require_narrative_qualification_summary(
-                operation_id=operation_id,
-                candidate_asset_version_id=candidate_asset_version_id,
-                project_id=command.project_id,
-                book_id=command.book_id,
-                generator_operation_name=command.generator_operation_name,
-            )
+            try:
+                qualification = self._require_narrative_qualification_summary(
+                    operation_id=operation_id,
+                    candidate_asset_version_id=candidate_asset_version_id,
+                    project_id=command.project_id,
+                    book_id=command.book_id,
+                    generator_operation_name=command.generator_operation_name,
+                )
+            except KernelError as exc:
+                if exc.code != "NARRATIVE_QUALIFICATION_RECEIPT_INCOMPLETE":
+                    raise
+                self._update_generation_status(operation_id, "EVALUATION_PENDING")
+                return PlanningGenerationResult(
+                    operation_id,
+                    candidate_asset_version_id,
+                    PlanningGenerationStatus.EVALUATION_PENDING,
+                    state,
+                    replayed=replayed,
+                )
             state = self._transition(
                 command,
                 principal,
@@ -1571,71 +1719,6 @@ class StoryPlanningGenerationApplication:
             uow.commit()
         return report_hash
 
-    def _record_narrative_qualifications(
-        self,
-        *,
-        operation_id: str,
-        candidate_asset_version_id: str,
-        candidate_content_hash: str,
-        command: StoryPlanningGenerationCommand,
-        execution_evidence: dict[str, Any],
-        result: Any,
-    ) -> None:
-        execution_class = (
-            "SCRIPTED_FIXTURE"
-            if bool(execution_evidence.get("fixture_protocol_only"))
-            else "MODEL_PROVIDER"
-        )
-        with AuthorityUnitOfWork(self.database_url) as uow:
-            for receipt in result.receipts:
-                qualification_id = canonical_hash(
-                    {
-                        "asset_version_id": candidate_asset_version_id,
-                        "design_layer": receipt.layer.value,
-                        "profile_hash": receipt.profile_hash,
-                        "evaluation_hash": receipt.evaluation_hash,
-                    }
-                )
-                uow.cursor.execute(
-                    """
-                    INSERT INTO authority_narrative_design_qualification(
-                        qualification_id, project_id, book_id,
-                        asset_version_id, source_operation_id,
-                        candidate_content_hash, design_layer, profile_id,
-                        profile_version, profile_hash, capability_id, skill_ref,
-                        evaluator_execution_class, qualification_status,
-                        evaluation, evaluation_hash, qualification_hash
-                    ) VALUES (
-                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                        %s, %s, %s, %s, %s, %s, %s
-                    )
-                    ON CONFLICT (
-                        asset_version_id, design_layer,
-                        profile_version, evaluation_hash
-                    ) DO NOTHING
-                    """,
-                    [
-                        qualification_id,
-                        command.project_id,
-                        command.book_id,
-                        candidate_asset_version_id,
-                        operation_id,
-                        candidate_content_hash,
-                        receipt.layer.value,
-                        receipt.profile_id,
-                        receipt.profile_version,
-                        receipt.profile_hash,
-                        receipt.capability_id,
-                        receipt.skill_ref,
-                        execution_class,
-                        receipt.status,
-                        Jsonb(receipt.evidence),
-                        receipt.evaluation_hash,
-                        result.qualification_hash,
-                    ],
-                )
-            uow.commit()
-
     def _require_narrative_qualification_summary(
         self,
         *,
@@ -1652,11 +1735,14 @@ class StoryPlanningGenerationApplication:
                 """
                 SELECT design_layer, profile_id, profile_version, profile_hash,
                        evaluation_hash, qualification_hash,
-                       evaluator_execution_class
+                       evaluator_execution_class, evaluation_operation_id,
+                       evaluation_attempt_id, evaluation_asset_version_id,
+                       evaluation_evidence_hash
                 FROM authority_narrative_design_qualification
                 WHERE project_id=%s AND book_id=%s
-                  AND asset_version_id=%s AND source_operation_id=%s
+                  AND asset_version_id=%s AND generation_operation_id=%s
                   AND qualification_status='PASS'
+                  AND trust_boundary='INDEPENDENT'
                 ORDER BY design_layer
                 """,
                 [
@@ -1694,6 +1780,10 @@ class StoryPlanningGenerationApplication:
                     "profile_hash": str(row[3]),
                     "evaluation_hash": str(row[4]),
                     "evaluator_execution_class": str(row[6]),
+                    "evaluation_operation_id": str(row[7]),
+                    "evaluation_attempt_id": str(row[8]),
+                    "evaluation_asset_version_id": str(row[9]),
+                    "evaluation_evidence_hash": str(row[10]),
                 }
             )
         if len(hashes) != 1:
@@ -1960,6 +2050,7 @@ def story_planning_generation_definition(
         "policy": {
             "candidate_only": True,
             "story_design_activation_separate": True,
+            "semantic_evaluation_operation_separate": True,
             "capability_pack_attempt_snapshot_required": True,
             "agent_runtime_binding_required": True,
             "production_execution_gateway_required": True,
@@ -1980,9 +2071,6 @@ def story_planning_generation_definition(
             "reason": "append-only candidates and validation evidence",
         },
         "irreversible_effect_policy": {"allowed": False},
-        # The concrete governed execution capability is frozen by the Pack
-        # node.  OperationDefinition external capabilities describe only the
-        # tool/effect class shared by this generic runtime.
         "external_capabilities": ["model.planning"],
         "projection_consumers": [
             "story_design_authority",
@@ -2170,6 +2258,9 @@ def _validate_frozen_arc_references(
 
 __all__ = [
     "CHAPTER_PLAN_PROJECTION_DEFINITION",
+    "STORY_PLANNING_EVALUATION_DEFINITION",
+    "STORY_PLANNING_EVALUATION_HANDLER",
+    "STORY_PLANNING_EVALUATION_VERSION",
     "STORY_PLANNING_GENERATION_DEFINITION",
     "STORY_PLANNING_GENERATION_HANDLER",
     "STORY_PLANNING_GENERATION_VERSION",

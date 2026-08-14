@@ -1029,6 +1029,7 @@ class BookProductionInputResolveRequest(BaseModel):
     workspace_id: str = Field(min_length=1)
     production_profile: str = Field(min_length=1)
     expected_book_version: int = Field(ge=1)
+    narrative_chapter_cursor: int = Field(default=1, ge=1)
     idempotency_key: str = Field(min_length=1)
     actor_id: str = ""
     trace_id: str = ""

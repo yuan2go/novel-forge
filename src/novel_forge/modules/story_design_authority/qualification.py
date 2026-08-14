@@ -79,6 +79,58 @@ class NarrativeQualificationResult:
         }
 
 
+@dataclass(frozen=True, slots=True)
+class NarrativeEvaluationLineage:
+    generation_operation_id: str
+    evaluation_operation_id: str
+    evaluation_attempt_id: str
+    evaluation_asset_version_id: str
+    candidate_asset_version_id: str
+    candidate_content_hash: str
+    evaluator_execution_class: str
+    evaluation_evidence_hash: str
+
+    def __post_init__(self) -> None:
+        required = (
+            self.generation_operation_id,
+            self.evaluation_operation_id,
+            self.evaluation_attempt_id,
+            self.evaluation_asset_version_id,
+            self.candidate_asset_version_id,
+        )
+        if any(not item.strip() for item in required):
+            raise KernelError(
+                "NARRATIVE_EVALUATION_LINEAGE_INCOMPLETE",
+                "Narrative evaluation requires immutable Operation, Attempt, AssetVersion, and candidate lineage",
+            )
+        if self.generation_operation_id == self.evaluation_operation_id:
+            raise KernelError(
+                "NARRATIVE_EVALUATION_NOT_INDEPENDENT",
+                "candidate generation cannot mint its own Narrative Qualification",
+            )
+        if self.evaluator_execution_class not in {
+            "MODEL_PROVIDER",
+            "SCRIPTED_FIXTURE",
+            "OPERATOR_REVIEW",
+        }:
+            raise KernelError(
+                "NARRATIVE_EVALUATOR_EXECUTION_CLASS_INVALID",
+                "Narrative evaluation execution class is unsupported",
+            )
+        for label, value in (
+            ("candidate content", self.candidate_content_hash),
+            ("evaluation evidence", self.evaluation_evidence_hash),
+        ):
+            if not value.startswith("sha256:"):
+                raise KernelError(
+                    "NARRATIVE_EVALUATION_LINEAGE_INVALID",
+                    f"{label} must be SHA-256 bound",
+                )
+
+    def to_evidence(self) -> dict[str, str]:
+        return asdict(self)
+
+
 def _profile(
     layer: NarrativeDesignLayer,
     profile_id: str,
@@ -542,6 +594,7 @@ __all__ = [
     "GENERATOR_QUALIFICATION_PROFILES",
     "NARRATIVE_QUALIFICATION_SCHEMA_VERSION",
     "NarrativeDesignLayer",
+    "NarrativeEvaluationLineage",
     "NarrativeQualificationProfile",
     "NarrativeQualificationReceipt",
     "NarrativeQualificationResult",

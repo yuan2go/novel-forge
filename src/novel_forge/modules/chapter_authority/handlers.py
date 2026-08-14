@@ -43,6 +43,7 @@ from novel_forge.modules.chapter_authority.model_effects import (
 )
 from novel_forge.modules.chapter_quality_authority import (
     QUALITY_GROUPS,
+    build_multiscale_quality_report,
     build_quality_group_evidence,
     build_quality_context_view,
 )
@@ -1177,6 +1178,51 @@ class _QualityHandler:
                 "production_verified": False,
             },
         )
+        accepted_through_chapter = int(
+            authority_boundary.get(
+                "accepted_through_chapter",
+                max(0, int(content["chapter"]) - 1),
+            )
+        )
+        multiscale_quality = build_multiscale_quality_report(
+            project_id=request.project_id,
+            book_id=str(
+                request.command.get("book_id")
+                or plan.content.get("book_id")
+                or context.content.get("book_id")
+                or ""
+            ),
+            context_bundle=context.content,
+            accepted_through_chapter=accepted_through_chapter,
+            source_asset_version_ids=(
+                context.asset_version_id,
+                plan.asset_version_id,
+                *(item.asset_version_id for item in groups),
+            ),
+        )
+        multiscale_output = ChapterAuxiliaryOutput(
+            asset_type="multiscale_narrative_quality_report",
+            output_key="chapter.quality.multiscale_narrative_quality",
+            role="longitudinal_quality_projection",
+            content={
+                **multiscale_quality,
+                "source_quality_operation_id": request.operation_id,
+            },
+            reference_asset_version_ids=tuple(
+                sorted(
+                    {
+                        context.asset_version_id,
+                        plan.asset_version_id,
+                        *(item.asset_version_id for item in groups),
+                    }
+                )
+            ),
+            evidence={
+                "accepted_history_only": True,
+                "observation_status": multiscale_quality["observation_status"],
+                "production_verified": False,
+            },
+        )
         return ChapterHandlerOutput(
             asset_type=primary.asset_type,
             output_key=primary.output_key,
@@ -1187,6 +1233,7 @@ class _QualityHandler:
                 *evidence_outputs,
                 *action_outputs,
                 measurement_output,
+                multiscale_output,
             ),
         )
 

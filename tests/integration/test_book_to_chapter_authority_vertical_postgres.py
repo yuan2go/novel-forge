@@ -837,6 +837,20 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                     [project_id],
                 )
                 canon_gate_count, all_canon_gates_passed = uow.cursor.fetchone()
+                uow.cursor.execute(
+                    """
+                    SELECT version.content
+                    FROM authority_asset AS asset
+                    JOIN authority_asset_version AS version
+                      ON version.asset_id=asset.asset_id
+                    WHERE asset.project_id=%s
+                      AND asset.asset_type='multiscale_narrative_quality_report'
+                    ORDER BY version.created_at DESC
+                    LIMIT 1
+                    """,
+                    [project_id],
+                )
+                multiscale_quality = dict(uow.cursor.fetchone()[0])
             self.assertEqual(delegation_statuses, {"ACCEPTED": 2})
             self.assertEqual(acceptance_count, 2)
             self.assertGreater(int(event_projection_count), 0)
@@ -866,6 +880,10 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
             )
             self.assertGreaterEqual(int(canon_gate_count), 2)
             self.assertTrue(all_canon_gates_passed)
+            self.assertEqual(multiscale_quality["observation_status"], "MEASURED")
+            self.assertEqual(multiscale_quality["accepted_observation_count"], 1)
+            self.assertEqual(multiscale_quality["accepted_through_chapter"], 1)
+            self.assertEqual(len(multiscale_quality["source_acceptance_ids"]), 1)
 
             rebuilt = NarrativeStateRebuildService(DATABASE_URL).rebuild(
                 project_id=project_id,

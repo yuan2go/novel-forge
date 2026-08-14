@@ -261,10 +261,12 @@ class ContextAuthorityDomainTests(unittest.TestCase):
         first = build_authority_context_bundle(
             **arguments,
             candidates=(knowledge, plan, state),
+            accessible_knowledge_fact_ids=("fact:seal",),
         )
         replayed = build_authority_context_bundle(
             **arguments,
             candidates=(state, plan, knowledge),
+            accessible_knowledge_fact_ids=("fact:seal",),
         )
 
         self.assertEqual(
@@ -316,6 +318,123 @@ class ContextAuthorityDomainTests(unittest.TestCase):
             provider_view["context_replay_input_digest"],
             manifest["replay"]["input_digest"],
         )
+
+    def test_six_context_correctness_checks_fail_closed_before_provider(self) -> None:
+        plan = self.candidate("plan-v1", "chapter_plan")
+        fact = {
+            "state_kind": "character_knowledge",
+            "entity_key": "character_id=hero|fact_id=fact:seal",
+            "effective_from_chapter": 8,
+            "source_chapter": 1,
+            "state": {"status": "KNOWN", "fact_id": "fact:seal"},
+        }
+        state = self.candidate(
+            "state-v1",
+            "story_state_snapshot",
+            structured_facts=(fact,),
+        )
+        base = {
+            "project_id": "project-a",
+            "book_id": "book-a",
+            "stage": "draft",
+            "created_by_operation_id": "operation-context",
+            "context_profile_version": "draft-v3",
+            "token_budget": 1000,
+            "narrative_position": {"chapter": 30},
+            "accessible_knowledge_fact_ids": ("fact:seal",),
+        }
+
+        passed = build_authority_context_bundle(
+            **base,
+            candidates=(plan, state),
+            required_long_distance_fact_ids=("fact:seal",),
+        )
+        self.assertEqual(passed["context_correctness"]["overall_status"], "PASS")
+        self.assertEqual(
+            set(passed["context_correctness"]["checks"]),
+            {
+                "NO_FUTURE_FACT",
+                "NO_HIDDEN_KNOWLEDGE_LEAK",
+                "NO_STALE_VERSION",
+                "NO_DUPLICATE_SEMANTIC_REPRESENTATION",
+                "NO_IRRELEVANT_FULL_ASSET",
+                "REQUIRED_LONG_DISTANCE_FACT_PRESENT",
+            },
+        )
+
+        cases = {
+            "NO_FUTURE_FACT": (
+                plan,
+                self.candidate(
+                    "future-v1",
+                    "story_state_snapshot",
+                    structured_facts=({**fact, "effective_from_chapter": 31},),
+                ),
+            ),
+            "NO_HIDDEN_KNOWLEDGE_LEAK": (plan, state),
+            "NO_STALE_VERSION": (
+                plan,
+                self.candidate(
+                    "stale-v1",
+                    "story_state_snapshot",
+                    authority_freshness="HISTORICAL",
+                ),
+            ),
+            "NO_DUPLICATE_SEMANTIC_REPRESENTATION": (
+                plan,
+                state,
+                self.candidate(
+                    "canon-v1", "canon_snapshot", structured_facts=(fact,)
+                ),
+            ),
+            "NO_IRRELEVANT_FULL_ASSET": (
+                plan,
+                self.candidate(
+                    "world-v1",
+                    "world_bible",
+                    compression_method="full_asset",
+                ),
+            ),
+        }
+        for expected, candidates in cases.items():
+            with self.subTest(expected=expected):
+                arguments = dict(base)
+                if expected == "NO_HIDDEN_KNOWLEDGE_LEAK":
+                    arguments["accessible_knowledge_fact_ids"] = ()
+                with self.assertRaisesRegex(ValueError, expected):
+                    build_authority_context_bundle(
+                        **arguments,
+                        candidates=candidates,
+                    )
+        with self.assertRaisesRegex(
+            ValueError, "REQUIRED_LONG_DISTANCE_FACT_PRESENT"
+        ):
+            build_authority_context_bundle(
+                **base,
+                candidates=(plan, state),
+                required_long_distance_fact_ids=("fact:missing",),
+            )
+
+        hidden_canon = self.candidate(
+            "hidden-canon-v1",
+            "canon_snapshot",
+            structured_facts=(
+                {
+                    "state_kind": "canon_fact",
+                    "entity_key": "fact_id=fact:hidden-truth",
+                    "effective_from_chapter": 1,
+                    "state": {
+                        "fact_id": "fact:hidden-truth",
+                        "visibility": "HIDDEN",
+                    },
+                },
+            ),
+        )
+        with self.assertRaisesRegex(ValueError, "NO_HIDDEN_KNOWLEDGE_LEAK"):
+            build_authority_context_bundle(
+                **base,
+                candidates=(plan, hidden_canon),
+            )
 
 
 if __name__ == "__main__":

@@ -257,6 +257,9 @@ class _ExternalEffectPepFixturePlanningBinder:
 
     production_execution_gateway_backed = True
 
+    def __init__(self, *, target_chapter_count: int = 3) -> None:
+        self.target_chapter_count = target_chapter_count
+
     def execute(
         self,
         *,
@@ -268,7 +271,9 @@ class _ExternalEffectPepFixturePlanningBinder:
         inputs: tuple[FrozenPlanningInput, ...],
         definition: Any,
     ) -> PlanningGenerationCandidate:
-        payload = _planning_contract(command)
+        payload = _planning_contract(
+            command, target_chapter_count=self.target_chapter_count
+        )
         if ":replacement-candidate" in command.idempotency_key:
             payload["objective"] = f"{payload['objective']} after recap deviation"
         if command.logical_key.endswith(":repair-probe") and command.repair_number == 0:
@@ -320,6 +325,7 @@ def _principal(project_id: str) -> Principal:
                 "story_planning.authority.approve",
                 "story_planning.authority.activate",
                 "story_design.authority.execute",
+                "narrative_design.evaluate",
                 "book.authority.execute",
                 "book.authority.approve_replan",
                 "book.followup:*",
@@ -332,7 +338,9 @@ def _principal(project_id: str) -> Principal:
     )
 
 
-def _planning_contract(command: StoryPlanningGenerationCommand) -> dict[str, Any]:
+def _planning_contract(
+    command: StoryPlanningGenerationCommand, *, target_chapter_count: int = 3
+) -> dict[str, Any]:
     contract_type = PlanContractType(command.planning_scope.value)
     payload: dict[str, Any] = {
         "contract_id": f"contract:{command.logical_key}",
@@ -366,11 +374,14 @@ def _planning_contract(command: StoryPlanningGenerationCommand) -> dict[str, Any
             "relationship_evolution": ["distrust", "alliance"],
             "theme_evolution": ["freedom", "responsibility"],
             "ending_contract": {"outcome": "costly agency"},
-            "volume_skeleton": [{"volume": 1, "function": "commitment"}],
+            "volume_skeleton": [
+                {"volume": ordinal, "function": "commitment"}
+                for ordinal in range(1, (target_chapter_count + 2) // 3 + 1)
+            ],
             "major_turns": ["irreversible choice"],
             "climax_distribution": [1],
             "long_promise_payoff": ["central promise settled"],
-            "length_strategy": {"target_chapters": 3},
+            "length_strategy": {"target_chapters": target_chapter_count},
             "risk_register": [],
         },
         PlanContractType.VOLUME: {
@@ -494,7 +505,9 @@ def _chapter_function_row(chapter: int, function: str, hook: str) -> dict[str, A
     }
 
 
-def _seed_inputs(project_id: str, book_id: str) -> dict[str, str]:
+def _seed_inputs(
+    project_id: str, book_id: str, *, target_chapter_count: int = 3
+) -> dict[str, str]:
     roles = sorted(
         {role for values in GENERATOR_INPUT_ROLES.values() for role in values}
         | {
@@ -510,7 +523,6 @@ def _seed_inputs(project_id: str, book_id: str) -> dict[str, str]:
         }
     )
     result: dict[str, str] = {}
-    book_design_content_hash = ""
     with transaction() as connection, connection.cursor() as cursor:
         for role in roles:
             asset_id = f"fixture:{project_id}:{role}"
@@ -518,7 +530,7 @@ def _seed_inputs(project_id: str, book_id: str) -> dict[str, str]:
             content = {"book_id": book_id, "role": role, "facts": [role]}
             if role == "production_profile":
                 content["profile_id"] = "controlled-planning-fixture"
-                content["target_chapter_count"] = 3
+                content["target_chapter_count"] = target_chapter_count
             elif role == "book_design":
                 content["ending_contract"] = {"outcome": "costly agency"}
             elif role == "platform_profile":
@@ -555,19 +567,52 @@ def _seed_inputs(project_id: str, book_id: str) -> dict[str, str]:
                 [version_id, asset_id, Jsonb(content), digest, f"{role}.v1"],
             )
             result[role] = version_id
-            if role == "book_design":
-                book_design_content_hash = digest
+    return result
+
+
+def _seed_fixture_book_design_qualification(
+    project_id: str, book_id: str, book_design_version_id: str
+) -> None:
+    with transaction() as connection, connection.cursor() as cursor:
+        cursor.execute(
+            """
+            SELECT operation.operation_id, attempt.attempt_id,
+                   output.asset_version_id
+            FROM authority_operation AS operation
+            JOIN authority_attempt AS attempt
+              ON attempt.operation_id=operation.operation_id
+             AND attempt.status='SUCCEEDED'
+            JOIN authority_operation_output_asset AS output
+              ON output.operation_id=operation.operation_id
+            WHERE operation.project_id=%s AND operation.status='SUCCEEDED'
+            ORDER BY operation.updated_at DESC
+            LIMIT 1
+            """,
+            [project_id],
+        )
+        evaluation_operation_id, evaluation_attempt_id, evaluation_asset_id = (
+            str(item) for item in cursor.fetchone()
+        )
         cursor.execute(
             """
             SELECT operation_id
             FROM authority_operation
             WHERE project_id=%s AND status='SUCCEEDED'
+              AND operation_id<>%s
             ORDER BY updated_at DESC
             LIMIT 1
             """,
-            [project_id],
+            [project_id, evaluation_operation_id],
         )
-        source_operation_id = str(cursor.fetchone()[0])
+        generation_operation_id = str(cursor.fetchone()[0])
+        cursor.execute(
+            """
+            SELECT content_hash FROM authority_asset_version
+            WHERE asset_version_id=%s
+            """,
+            [book_design_version_id],
+        )
+        book_design_content_hash = str(cursor.fetchone()[0])
         qualification = validate_narrative_qualification(
             generator_operation_name="book_design.propose",
             value=scripted_qualification("book_design.propose"),
@@ -575,7 +620,7 @@ def _seed_inputs(project_id: str, book_id: str) -> dict[str, str]:
         for receipt in qualification.receipts:
             qualification_id = canonical_hash(
                 {
-                    "asset_version_id": result["book_design"],
+                    "asset_version_id": book_design_version_id,
                     "design_layer": receipt.layer.value,
                     "profile_hash": receipt.profile_hash,
                     "evaluation_hash": receipt.evaluation_hash,
@@ -589,18 +634,22 @@ def _seed_inputs(project_id: str, book_id: str) -> dict[str, str]:
                     candidate_content_hash, design_layer, profile_id,
                     profile_version, profile_hash, capability_id, skill_ref,
                     evaluator_execution_class, qualification_status,
-                    evaluation, evaluation_hash, qualification_hash
+                    evaluation, evaluation_hash, qualification_hash,
+                    generation_operation_id, evaluation_operation_id,
+                    evaluation_attempt_id, evaluation_asset_version_id,
+                    evaluation_evidence_hash, trust_boundary
                 ) VALUES (
                     %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                    %s, %s, 'SCRIPTED_FIXTURE', 'PASS', %s, %s, %s
+                    %s, %s, 'SCRIPTED_FIXTURE', 'PASS', %s, %s, %s,
+                    %s, %s, %s, %s, %s, 'INDEPENDENT'
                 )
                 """,
                 [
                     qualification_id,
                     project_id,
                     book_id,
-                    result["book_design"],
-                    source_operation_id,
+                    book_design_version_id,
+                    evaluation_operation_id,
                     book_design_content_hash,
                     receipt.layer.value,
                     receipt.profile_id,
@@ -611,9 +660,19 @@ def _seed_inputs(project_id: str, book_id: str) -> dict[str, str]:
                     Jsonb(receipt.evidence),
                     receipt.evaluation_hash,
                     qualification.qualification_hash,
+                    generation_operation_id,
+                    evaluation_operation_id,
+                    evaluation_attempt_id,
+                    evaluation_asset_id,
+                    canonical_hash(
+                        {
+                            "fixture_protocol_only": True,
+                            "evaluation_operation_id": evaluation_operation_id,
+                            "candidate_asset_version_id": book_design_version_id,
+                        }
+                    ),
                 ],
             )
-    return result
 
 
 def _followup_output(
@@ -815,7 +874,9 @@ def _activate_plan_chain(
             for role in GENERATOR_INPUT_ROLES[generator]
         }
         logical = {
-            "book_plan.generate": "book:main",
+            "book_plan.generate": (
+                "book:main:portfolio-2" if multi_volume_arc else "book:main"
+            ),
             "volume_plan.generate": "volume:1",
             "arc_plan.generate": "arc:primary",
             "chapter_group_plan.generate": "chapter-group:1-3",
@@ -932,11 +993,13 @@ def test_five_planning_generators_repair_activate_and_replay_in_postgres() -> No
     seed_authority_project_book(
         project_id=project_id, workspace_id=workspace_id, book_id=book_id
     )
-    generic = _seed_inputs(project_id, book_id)
+    generic = _seed_inputs(project_id, book_id, target_chapter_count=6)
     principal = _principal(project_id)
     application = StoryPlanningGenerationApplication(
         DATABASE_URL,
-        execution_binder=_ExternalEffectPepFixturePlanningBinder(),
+        execution_binder=_ExternalEffectPepFixturePlanningBinder(
+            target_chapter_count=6
+        ),
         application_build_id="core-functional-loop-fixture",
         commit_sha=RELEASE_SHA,
     )
@@ -1638,7 +1701,7 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
     project_id = harness.project_id
     workspace_id = harness.workspace_id
     book_id = harness.book_ids[0]
-    generic = _seed_inputs(project_id, book_id)
+    generic = _seed_inputs(project_id, book_id, target_chapter_count=6)
     from tests.integration.test_postgresql_only_chapter_slice import (
         PostgreSQLOnlyChapterSliceTests,
     )
@@ -1748,6 +1811,10 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
         generic=generic,
         principal=principal,
         application=planning,
+        multi_volume_arc=True,
+    )
+    _seed_fixture_book_design_qualification(
+        project_id, book_id, generic["book_design"]
     )
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
         uow.cursor.execute(
@@ -1771,7 +1838,7 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
             """,
             [project_id],
         )
-        assert uow.cursor.fetchone() == (5, 5, 5, 5)
+        assert uow.cursor.fetchone() == (6, 6, 6, 6)
     book_record_id = f"fixture:{project_id}:book-record"
     book_record_version = f"{book_record_id}:v1"
     with transaction() as connection, connection.cursor() as cursor:
@@ -1853,7 +1920,12 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
     replay = resolver.resolve(command, principal=principal)
     assert snapshot.snapshot_id == replay.snapshot_id
     assert snapshot.book_plan_version == activated["book_plan.generate"]
+    assert snapshot.narrative_chapter_cursor == 1
     assert snapshot.current_volume_plan_version == activated["volume_plan.generate"]
+    assert snapshot.volume_portfolio_plan_versions == (
+        activated["volume_plan.generate"],
+        activated["volume_plan.generate:secondary"],
+    )
     assert snapshot.active_arc_plan_versions == (activated["arc_plan.generate"],)
     assert (
         snapshot.current_chapter_group_plan_version
@@ -1933,7 +2005,7 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
             "idempotency_key": f"{project_id}:book-start",
             "input_snapshot_id": snapshot.snapshot_id,
             "input_mode": "RESOLVED_AUTHORITY_INPUT",
-            "target_chapter_count": 3,
+            "target_chapter_count": 6,
             "light_recap_cadence": 5,
             "formal_recap_cadence": 10,
             "actor_id": "untrusted-caller",

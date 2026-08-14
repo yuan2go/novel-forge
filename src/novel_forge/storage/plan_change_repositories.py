@@ -129,20 +129,24 @@ class PlanChangeRepository:
         self.cursor.execute(
             """
             WITH RECURSIVE impact(
-                impacted_asset_version_id, dependency_path
+                impacted_asset_version_id, dependency_path,
+                invalidation_path
             ) AS (
                 SELECT edge.dependent_asset_version_id,
                        ARRAY[
                            edge.source_asset_version_id,
                            edge.dependent_asset_version_id
-                       ]::TEXT[]
+                       ]::TEXT[],
+                       ARRAY[edge.invalidation_policy]::TEXT[]
                 FROM asset_dependency_edge AS edge
                 WHERE edge.project_id=%s
                   AND edge.source_asset_version_id=%s
+                  AND edge.invalidation_policy<>'NONE'
                 UNION ALL
                 SELECT edge.dependent_asset_version_id,
                        impact.dependency_path
-                           || edge.dependent_asset_version_id
+                           || edge.dependent_asset_version_id,
+                       impact.invalidation_path || edge.invalidation_policy
                 FROM impact
                 JOIN asset_dependency_edge AS edge
                   ON edge.project_id=%s
@@ -150,19 +154,33 @@ class PlanChangeRepository:
                      impact.impacted_asset_version_id
                 WHERE NOT edge.dependent_asset_version_id=
                           ANY(impact.dependency_path)
+                  AND edge.invalidation_policy<>'NONE'
             )
-            SELECT DISTINCT ON (impact.impacted_asset_version_id)
-                   impact.impacted_asset_version_id,
-                   impact.dependency_path,
-                   binding.execution_scope,
-                   binding.freshness
-            FROM impact
-            JOIN story_plan_binding AS binding
-              ON binding.project_id=%s
-             AND binding.asset_version_id=
-                 impact.impacted_asset_version_id
-            ORDER BY impact.impacted_asset_version_id,
-                     cardinality(impact.dependency_path)
+            SELECT DISTINCT ON (ranked.impacted_asset_version_id)
+                   ranked.impacted_asset_version_id,
+                   ranked.dependency_path,
+                   ranked.execution_scope,
+                   ranked.freshness,
+                   ranked.must_mark_stale
+            FROM (
+                SELECT impact.impacted_asset_version_id,
+                       impact.dependency_path,
+                       binding.execution_scope,
+                       binding.freshness,
+                       BOOL_OR(
+                           'MARK_STALE'=ANY(impact.invalidation_path)
+                       ) OVER (
+                           PARTITION BY impact.impacted_asset_version_id
+                       ) AS must_mark_stale
+                FROM impact
+                JOIN story_plan_binding AS binding
+                  ON binding.project_id=%s
+                 AND binding.asset_version_id=
+                     impact.impacted_asset_version_id
+            ) AS ranked
+            ORDER BY ranked.impacted_asset_version_id,
+                     cardinality(ranked.dependency_path),
+                     ranked.dependency_path
             """,
             [
                 project_id,
@@ -172,15 +190,23 @@ class PlanChangeRepository:
             ],
         )
         impacts = self.cursor.fetchall()
-        for impacted_version, path, execution_scope, freshness in impacts:
+        for (
+            impacted_version,
+            path,
+            execution_scope,
+            freshness,
+            must_mark_stale,
+        ) in impacts:
             scope = str(execution_scope)
             previous = str(freshness)
-            target = {
-                "EXECUTED": previous,
-                "FROZEN": "IMPACTED",
-                "PLANNED": "STALE",
-                "SPECULATIVE": "STALE",
-            }[scope]
+            target = (
+                previous
+                if scope == "EXECUTED"
+                else "STALE"
+                if bool(must_mark_stale)
+                and scope in {"PLANNED", "SPECULATIVE"}
+                else "IMPACTED"
+            )
             automatic = scope == "SPECULATIVE"
             self.cursor.execute(
                 """

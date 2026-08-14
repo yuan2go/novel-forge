@@ -12,9 +12,6 @@ from typing import Any, Mapping
 from novel_forge.modules.command_kernel.errors import KernelError
 
 from .domain import GENERATOR_CATALOG, PlanningScope
-from .qualification import validate_narrative_qualification
-
-
 STORY_DESIGN_VALIDATOR_VERSION = "2.0.0"
 _GENERATOR_DEFINITION_VERSION = re.compile(r"^[1-9][0-9]*\.[0-9]+\.[0-9]+$")
 _PLANNING_METADATA_MARKERS = (
@@ -246,10 +243,6 @@ def validate_story_design_candidate(
         )
     if generator_operation_name == "chapter_plan.generate":
         _validate_chapter_publish_metadata(candidate_payload)
-    narrative_qualification = validate_narrative_qualification(
-        generator_operation_name=generator_operation_name,
-        value=candidate_payload.get("narrative_qualification"),
-    )
     semantic = _receipt(
         validation_kind="SEMANTIC",
         validator_name="story-design-semantic-validator",
@@ -258,7 +251,11 @@ def validate_story_design_candidate(
             "objective_hash": _canonical_hash(objective.strip()),
             "objective_present": True,
             "planning_scope": scope.value,
-            "narrative_qualification": narrative_qualification.to_evidence(),
+            "narrative_semantic_evaluation": {
+                "status": "PENDING_INDEPENDENT_OPERATION",
+                "candidate_payload_hash": _canonical_hash(candidate_payload),
+                "generator_operation_name": generator_operation_name,
+            },
             "constraint_boundary": (
                 {
                     "status": "MIGRATION_ONLY_UNAVAILABLE",

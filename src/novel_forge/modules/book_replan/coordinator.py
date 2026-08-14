@@ -1543,6 +1543,9 @@ class BookReplanCoordinator:
                 book_id=book["book_id"],
                 production_profile=str(book["production_profile_version"]),
                 expected_book_version=int(row[0]),
+                narrative_chapter_cursor=max(
+                    1, int(book.get("accepted_through_chapter") or 0) + 1
+                ),
                 actor_id=self.principal.principal_id,
                 idempotency_key=f"{book['stable_idempotency_key']}:replan-input:{causation}",
                 trace_id=f"{causation}:book-input",

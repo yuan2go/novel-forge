@@ -6,6 +6,7 @@ closed with an explicit non-passing status.
 """
 from __future__ import annotations
 
+from collections import Counter
 from datetime import datetime, timezone
 import re
 from typing import Any, Iterable
@@ -50,6 +51,17 @@ BLOCKING_DIMENSIONS = frozenset({
     "power_state_conflict", "chapter_length", "format", "sensitive_content",
     "ai_content_policy", "publish_metadata",
 })
+LONGITUDINAL_QUALITY_DIMENSIONS = (
+    "arc_dormancy",
+    "hook_repetition",
+    "character_disappearance",
+    "payoff_density",
+    "narrative_debt",
+    "world_expansion_rate",
+    "style_prose_drift",
+    "reader_reward_rhythm",
+)
+QUALITY_SCALES = ("BOOK", "VOLUME", "ARC", "SEGMENT", "CHAPTER", "SCENE")
 
 
 def build_quality_group_evidence(
@@ -103,6 +115,319 @@ def build_chapter_quality_evidence(**kwargs: Any) -> list[dict[str, Any]]:
         for group in QUALITY_GROUPS
         for item in build_quality_group_evidence(group=group, **kwargs)["dimensions"]
     ]
+
+
+def build_multiscale_quality_report(
+    *,
+    project_id: str,
+    book_id: str,
+    context_bundle: dict[str, Any],
+    accepted_through_chapter: int,
+    source_asset_version_ids: Iterable[str],
+) -> dict[str, Any]:
+    """Project bounded longitudinal quality from accepted-only observations.
+
+    The Chapter runtime consumes compact observation projections, never full
+    historical prose.  Every usable row must name its Acceptance and accepted
+    outcome AssetVersion; unbound or future rows fail closed.
+    """
+
+    observations = _accepted_quality_observations(
+        context_bundle,
+        project_id=project_id,
+        book_id=book_id,
+        accepted_through_chapter=accepted_through_chapter,
+    )
+    windows = {
+        "LAST_10_CHAPTERS": observations[-10:],
+        "LAST_30_CHAPTERS": observations[-30:],
+    }
+    current_volume = str(observations[-1].get("volume_id") or "") if observations else ""
+    windows["CURRENT_VOLUME"] = [
+        item for item in observations if current_volume and item.get("volume_id") == current_volume
+    ]
+    scope_reports: list[dict[str, Any]] = [
+        _quality_scope("BOOK", book_id, observations)
+    ]
+    for scale, field in (
+        ("VOLUME", "volume_id"),
+        ("ARC", "active_arc_ids"),
+        ("SEGMENT", "segment_ids"),
+        ("CHAPTER", "chapter_number"),
+        ("SCENE", "scene_ids"),
+    ):
+        scope_reports.extend(_grouped_quality_scopes(scale, field, observations))
+    window_reports = [
+        {
+            "window": window,
+            "chapter_count": len(rows),
+            "chapter_range": (
+                [int(rows[0]["chapter_number"]), int(rows[-1]["chapter_number"])]
+                if rows
+                else []
+            ),
+            "dimensions": _longitudinal_dimensions(rows),
+        }
+        for window, rows in windows.items()
+    ]
+    observed = bool(observations)
+    return {
+        "type": "MultiScaleNarrativeQualityReport",
+        "contract_version": "multiscale-narrative-quality-v1",
+        "project_id": project_id,
+        "book_id": book_id,
+        "accepted_through_chapter": accepted_through_chapter,
+        "accepted_observation_count": len(observations),
+        "observation_status": "MEASURED" if observed else "NOT_OBSERVED",
+        "scales": list(QUALITY_SCALES),
+        "dimensions": list(LONGITUDINAL_QUALITY_DIMENSIONS),
+        "scope_reports": scope_reports,
+        "window_reports": window_reports,
+        "source_acceptance_ids": sorted(
+            {str(item["acceptance_id"]) for item in observations}
+        ),
+        "source_accepted_asset_version_ids": sorted(
+            {str(item["accepted_asset_version_id"]) for item in observations}
+        ),
+        "source_asset_version_ids": sorted(
+            {str(item) for item in source_asset_version_ids if str(item)}
+        ),
+        "accepted_history_only": True,
+        "provider_verified": False,
+        "production_verified": False,
+    }
+
+
+def _accepted_quality_observations(
+    context_bundle: dict[str, Any],
+    *,
+    project_id: str,
+    book_id: str,
+    accepted_through_chapter: int,
+) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for segment in context_bundle.get("context_segments") or []:
+        for fact in segment.get("structured_facts") or []:
+            if str(fact.get("key") or "") != "accepted_quality_observations":
+                continue
+            value = fact.get("value")
+            if not isinstance(value, list):
+                raise KernelError(
+                    "LONGITUDINAL_QUALITY_INPUT_INVALID",
+                    "accepted quality observations must be an array",
+                )
+            for item in value:
+                if not isinstance(item, dict):
+                    raise KernelError(
+                        "LONGITUDINAL_QUALITY_INPUT_INVALID",
+                        "accepted quality observations must be objects",
+                    )
+                chapter = item.get("chapter_number")
+                valid = (
+                    item.get("project_id") == project_id
+                    and item.get("book_id") == book_id
+                    and isinstance(chapter, int)
+                    and not isinstance(chapter, bool)
+                    and 0 < chapter <= accepted_through_chapter
+                    and bool(str(item.get("acceptance_id") or ""))
+                    and bool(str(item.get("accepted_asset_version_id") or ""))
+                    and item.get("acceptance_status") == "COMMITTED"
+                )
+                if not valid:
+                    raise KernelError(
+                        "LONGITUDINAL_QUALITY_ACCEPTED_LINEAGE_REQUIRED",
+                        "longitudinal quality can consume only exact accepted lineage",
+                    )
+                rows.append(dict(item))
+    by_chapter: dict[int, dict[str, Any]] = {}
+    for row in sorted(rows, key=lambda item: int(item["chapter_number"])):
+        chapter = int(row["chapter_number"])
+        previous = by_chapter.get(chapter)
+        if previous is not None and previous != row:
+            raise KernelError(
+                "LONGITUDINAL_QUALITY_DUPLICATE_CHAPTER",
+                "accepted quality history contains conflicting chapter projections",
+            )
+        by_chapter[chapter] = row
+    return list(by_chapter.values())
+
+
+def _grouped_quality_scopes(
+    scale: str, field: str, observations: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    grouped: dict[str, list[dict[str, Any]]] = {}
+    for row in observations:
+        raw = row.get(field)
+        values = raw if isinstance(raw, list) else [raw]
+        for value in values:
+            identity = str(value or "")
+            if identity:
+                grouped.setdefault(identity, []).append(row)
+    return [
+        _quality_scope(scale, identity, rows)
+        for identity, rows in sorted(grouped.items())
+    ]
+
+
+def _quality_scope(
+    scale: str, identity: str, observations: list[dict[str, Any]]
+) -> dict[str, Any]:
+    return {
+        "scale": scale,
+        "scope_id": identity,
+        "chapter_count": len(observations),
+        "dimensions": _longitudinal_dimensions(observations),
+    }
+
+
+def _longitudinal_dimensions(
+    observations: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    if not observations:
+        return [
+            _longitudinal_result(dimension, "NOT_OBSERVED", None, 0, {})
+            for dimension in LONGITUDINAL_QUALITY_DIMENSIONS
+        ]
+    chapters = [int(item["chapter_number"]) for item in observations]
+    arc_gaps = _arc_max_gaps(observations)
+    character_gaps = _identity_max_gap(observations, "character_ids")
+    hooks = [str(item.get("hook_signature") or "") for item in observations]
+    hooks = [item for item in hooks if item]
+    hook_ratio = (
+        max(Counter(hooks).values()) / len(hooks) if hooks else None
+    )
+    payoff_count = sum(int(item.get("payoff_count") or 0) for item in observations)
+    payoff_density = payoff_count / len(observations)
+    debt_values = [
+        float(item["narrative_debt_score"])
+        for item in observations
+        if isinstance(item.get("narrative_debt_score"), (int, float))
+        and not isinstance(item.get("narrative_debt_score"), bool)
+    ]
+    world_load = [
+        len(item.get("new_world_concept_ids") or []) for item in observations
+    ]
+    style_values = [
+        float(item["average_sentence_length"])
+        for item in observations
+        if isinstance(item.get("average_sentence_length"), (int, float))
+        and not isinstance(item.get("average_sentence_length"), bool)
+    ]
+    drift = _relative_half_drift(style_values)
+    reward_chapters = [
+        int(item["chapter_number"])
+        for item in observations
+        if int(item.get("reader_reward_count") or 0) > 0
+    ]
+    reward_gap = _max_gap(reward_chapters, boundary=chapters)
+    values = {
+        "arc_dormancy": (max(arc_gaps.values(), default=0), 10, arc_gaps),
+        "hook_repetition": (hook_ratio, 0.4, {"hook_count": len(hooks)}),
+        "character_disappearance": (
+            max(character_gaps.values(), default=0), 10, character_gaps
+        ),
+        "payoff_density": (
+            payoff_density, 0.1, {"payoff_count": payoff_count}
+        ),
+        "narrative_debt": (
+            debt_values[-1] if debt_values else None,
+            10.0,
+            {"peak": max(debt_values) if debt_values else None},
+        ),
+        "world_expansion_rate": (
+            sum(world_load) / len(world_load), 3.0, {"new_concepts": sum(world_load)}
+        ),
+        "style_prose_drift": (drift, 0.3, {"sample_size": len(style_values)}),
+        "reader_reward_rhythm": (
+            reward_gap, 5, {"reward_chapters": reward_chapters}
+        ),
+    }
+    reports: list[dict[str, Any]] = []
+    for dimension in LONGITUDINAL_QUALITY_DIMENSIONS:
+        value, threshold, evidence = values[dimension]
+        if value is None:
+            status = "NOT_OBSERVED"
+        elif dimension == "payoff_density":
+            status = "PASSED" if float(value) >= float(threshold) else "WARNING"
+        else:
+            status = "PASSED" if float(value) <= float(threshold) else "WARNING"
+        reports.append(
+            _longitudinal_result(
+                dimension, status, value, len(observations),
+                {**evidence, "threshold": threshold},
+            )
+        )
+    return reports
+
+
+def _identity_max_gap(
+    observations: list[dict[str, Any]], field: str
+) -> dict[str, int]:
+    appearances: dict[str, list[int]] = {}
+    for row in observations:
+        for identity in row.get(field) or []:
+            appearances.setdefault(str(identity), []).append(int(row["chapter_number"]))
+    bounds = [int(item["chapter_number"]) for item in observations]
+    return {
+        identity: _max_gap(chapters, boundary=bounds)
+        for identity, chapters in appearances.items()
+    }
+
+
+def _arc_max_gaps(observations: list[dict[str, Any]]) -> dict[str, int]:
+    identities = {
+        str(identity)
+        for row in observations
+        for field in ("open_arc_ids", "active_arc_ids")
+        for identity in row.get(field) or []
+        if str(identity)
+    }
+    appearances = {
+        identity: [
+            int(row["chapter_number"])
+            for row in observations
+            if identity in {str(item) for item in row.get("active_arc_ids") or []}
+        ]
+        for identity in identities
+    }
+    bounds = [int(item["chapter_number"]) for item in observations]
+    return {
+        identity: _max_gap(chapters, boundary=bounds)
+        for identity, chapters in appearances.items()
+    }
+
+
+def _max_gap(chapters: list[int], *, boundary: list[int]) -> int:
+    if not boundary:
+        return 0
+    points = [boundary[0] - 1, *sorted(set(chapters)), boundary[-1] + 1]
+    return max((right - left - 1 for left, right in zip(points, points[1:])), default=0)
+
+
+def _relative_half_drift(values: list[float]) -> float | None:
+    if len(values) < 4:
+        return None
+    midpoint = len(values) // 2
+    baseline = sum(values[:midpoint]) / midpoint
+    recent = sum(values[midpoint:]) / (len(values) - midpoint)
+    return abs(recent - baseline) / max(abs(baseline), 1.0)
+
+
+def _longitudinal_result(
+    dimension: str,
+    status: str,
+    value: Any,
+    sample_size: int,
+    evidence: dict[str, Any],
+) -> dict[str, Any]:
+    return {
+        "dimension": dimension,
+        "status": status,
+        "value": value,
+        "sample_size": sample_size,
+        "evidence": evidence,
+        "deterministic": True,
+    }
 
 
 def _evaluate(
@@ -331,4 +656,4 @@ def _structural_metrics(text: str) -> dict[str, Any]:
     }
 
 
-__all__ = ["BLOCKING_DIMENSIONS", "QUALITY_DIMENSIONS", "QUALITY_EVIDENCE_STATUSES", "QUALITY_GROUPS", "build_chapter_quality_evidence", "build_quality_group_evidence"]
+__all__ = ["BLOCKING_DIMENSIONS", "LONGITUDINAL_QUALITY_DIMENSIONS", "QUALITY_DIMENSIONS", "QUALITY_EVIDENCE_STATUSES", "QUALITY_GROUPS", "QUALITY_SCALES", "build_chapter_quality_evidence", "build_multiscale_quality_report", "build_quality_group_evidence"]

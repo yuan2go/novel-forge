@@ -392,6 +392,17 @@ class ProductionPreparationService:
                 projection=task_narrative_projection,
                 chapter=chapter,
             )
+            quality_observations = item.content.get(
+                "_accepted_quality_observations"
+            )
+            if quality_observations:
+                structured_facts.append(
+                    {
+                        "key": "accepted_quality_observations",
+                        "value": list(quality_observations),
+                        "provider_visibility": "INTERNAL_QUALITY_ONLY",
+                    }
+                )
             safe_summary = (
                 "Compact authoritative current Narrative State through Chapter "
                 f"{item.content.get('accepted_through_chapter')}."
@@ -426,7 +437,21 @@ class ProductionPreparationService:
                 item.content.get("narrative_function") or item.asset_type
             ),
             "estimated_tokens": int(
-                max(1, len(safe_summary + repr(structured_facts)) // 4)
+                max(
+                    1,
+                    len(
+                        safe_summary
+                        + repr(
+                            [
+                                fact
+                                for fact in structured_facts
+                                if fact.get("provider_visibility")
+                                != "INTERNAL_QUALITY_ONLY"
+                            ]
+                        )
+                    )
+                    // 4,
+                )
                 if item.asset_type in _STATE_ASSET_TYPES
                 else item.content.get("estimated_tokens")
                 or max(1, len(safe_summary + repr(structured_facts)) // 4)

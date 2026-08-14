@@ -17,6 +17,7 @@ from types import MappingProxyType
 from typing import Any, Mapping
 
 from novel_forge.modules.story_design_authority import PlanningScope
+from novel_forge.modules.narrative_state.measurements import project_narrative_load
 
 
 _CONTENT_HASH = re.compile(r"^sha256:[0-9a-f]{64}$")
@@ -33,6 +34,7 @@ class PlanningGenerationStatus(StrEnum):
     EXECUTING = "EXECUTING"
     CANDIDATE_MATERIALIZED = "CANDIDATE_MATERIALIZED"
     STRUCTURALLY_VALID = "STRUCTURALLY_VALID"
+    EVALUATION_PENDING = "EVALUATION_PENDING"
     SEMANTICALLY_VALID = "SEMANTICALLY_VALID"
     QUALIFIED = "QUALIFIED"
     APPROVAL_PENDING = "APPROVAL_PENDING"
@@ -235,6 +237,59 @@ class StoryPlanningGenerationCommand:
 
 
 @dataclass(frozen=True, slots=True)
+class StoryPlanningEvaluationCommand:
+    project_id: str
+    workspace_id: str
+    book_id: str
+    actor_id: str
+    candidate_asset_version_id: str
+    generation_operation_id: str
+    generator_operation_name: str
+    candidate_content_hash: str
+    evaluator_execution_class: str
+    evaluation: Mapping[str, Any]
+    idempotency_key: str
+    trace_id: str
+    correlation_id: str
+    evidence_asset_version_ids: tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        required = (
+            self.project_id,
+            self.workspace_id,
+            self.book_id,
+            self.actor_id,
+            self.candidate_asset_version_id,
+            self.generation_operation_id,
+            self.generator_operation_name,
+            self.idempotency_key,
+            self.trace_id,
+            self.correlation_id,
+        )
+        if any(not value.strip() for value in required):
+            raise ValueError("Planning Evaluation command is incomplete")
+        if self.generator_operation_name not in GENERATOR_SCOPE:
+            raise ValueError("Planning Evaluation generator is not supported")
+        if not _CONTENT_HASH.fullmatch(self.candidate_content_hash):
+            raise ValueError("Planning Evaluation requires the exact candidate hash")
+        if self.evaluator_execution_class not in {
+            "MODEL_PROVIDER",
+            "SCRIPTED_FIXTURE",
+            "OPERATOR_REVIEW",
+        }:
+            raise ValueError("Planning evaluator execution class is unsupported")
+        if not isinstance(self.evaluation, Mapping) or not self.evaluation:
+            raise ValueError("Planning Evaluation payload is required")
+        evidence_ids = tuple(str(item).strip() for item in self.evidence_asset_version_ids)
+        if any(not item for item in evidence_ids) or len(set(evidence_ids)) != len(evidence_ids):
+            raise ValueError("Planning Evaluation evidence identity is invalid")
+        if self.evaluator_execution_class == "MODEL_PROVIDER" and not evidence_ids:
+            raise ValueError("Model-provider evaluation requires immutable provider evidence")
+        object.__setattr__(self, "evaluation", MappingProxyType(dict(self.evaluation)))
+        object.__setattr__(self, "evidence_asset_version_ids", evidence_ids)
+
+
+@dataclass(frozen=True, slots=True)
 class PlanningExecutionEvidence:
     operation_id: str
     attempt_id: str
@@ -387,6 +442,7 @@ def build_planning_constraint_envelope(
     prohibited: list[dict[str, Any]] = []
     obligations: list[dict[str, Any]] = []
     accepted_through = 0
+    narrative_load_projection: dict[str, Any] | None = None
     for role in sorted(actual_roles):
         content = dict(input_contents[role])
         source_version = by_role[role].asset_version_id
@@ -419,6 +475,8 @@ def build_planning_constraint_envelope(
             if isinstance(boundary, dict)
             else 0,
         )
+        if role == "story_state":
+            narrative_load_projection = project_narrative_load(story_state=content)
 
     local_prohibited = _constraint_records(
         candidate_payload.get("prohibited_outcomes"),
@@ -447,6 +505,17 @@ def build_planning_constraint_envelope(
         "inherited_invariants": inherited,
         "prohibited_outcomes": [*prohibited, *local_prohibited],
         "required_obligations": obligations,
+        "narrative_load_projection": narrative_load_projection
+        or {
+            "type": "NarrativeLoadProjection",
+            "contract_version": "narrative-load-projection-v1",
+            "accepted_through_chapter": accepted_through,
+            "status": "NOT_OBSERVED",
+            "metrics": {},
+        },
+        "narrative_load_budget": dict(
+            candidate_payload.get("narrative_load_budget") or {}
+        ),
         "change_governance": {
             "requires_evidence": True,
             "wider_scope_requires_new_plan_change": True,
@@ -561,6 +630,7 @@ __all__ = [
     "PlanningGenerationStatus",
     "PlanningRepairRequest",
     "PlanningValidationReport",
+    "StoryPlanningEvaluationCommand",
     "StoryPlanningGenerationCommand",
     "build_planning_constraint_envelope",
     "canonical_hash",

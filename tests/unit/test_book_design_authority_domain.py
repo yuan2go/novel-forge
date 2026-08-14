@@ -8,6 +8,7 @@ from novel_forge.modules.book_design_authority.definitions import (
 )
 from novel_forge.modules.book_design_authority.domain import (
     BOOK_DESIGN_SCHEMA_VERSION,
+    COUPLED_BOOK_DESIGN_SCHEMA_VERSION,
     BookDesignPayload,
     BookScope,
 )
@@ -62,7 +63,6 @@ def valid_design(**overrides: object) -> dict[str, object]:
             "distinctive_mechanism": "Official maps change physical access.",
             "emotional_contract": "Discovery earns hope and a sharper public cost.",
         },
-        "narrative_qualification": scripted_qualification("book_design.propose"),
     }
     payload.update(overrides)
     return payload
@@ -92,18 +92,27 @@ class BookDesignAuthorityDomainTests(unittest.TestCase):
             with self.subTest(payload=payload), self.assertRaises(KernelError):
                 BookDesignPayload.from_mapping(payload)
 
-    def test_progressive_payload_requires_story_intent_and_foundation_evaluation(
+    def test_progressive_payload_is_candidate_only_and_retires_coupled_evaluation(
         self,
     ) -> None:
         payload = valid_design()
-        payload.pop("narrative_qualification")
+        design = BookDesignPayload.from_mapping(payload)
+
+        self.assertNotIn("narrative_qualification", design.to_dict())
+        coupled = {
+            **payload,
+            "schema_version": COUPLED_BOOK_DESIGN_SCHEMA_VERSION,
+            "narrative_qualification": scripted_qualification(
+                "book_design.propose"
+            ),
+        }
 
         with self.assertRaises(KernelError) as raised:
-            BookDesignPayload.from_mapping(payload)
+            BookDesignPayload.from_mapping(coupled)
 
         self.assertEqual(
             raised.exception.code,
-            "NARRATIVE_SEMANTIC_EVALUATION_REQUIRED",
+            "BOOK_DESIGN_COUPLED_QUALIFICATION_RETIRED",
         )
 
     def test_book_scope_requires_release_and_runtime_authority(self) -> None:

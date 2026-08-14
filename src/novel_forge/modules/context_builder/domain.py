@@ -212,6 +212,8 @@ def build_authority_context_bundle(
     target_capability_id: str = "",
     capability_pack_snapshot_ref: str = "",
     authority_state_boundary: dict[str, Any] | None = None,
+    accessible_knowledge_fact_ids: Iterable[str] = (),
+    required_long_distance_fact_ids: Iterable[str] = (),
 ) -> dict[str, Any]:
     """Build the canonical immutable ContextBundle content payload."""
     profile = resolve_context_profile(stage)
@@ -236,6 +238,14 @@ def build_authority_context_bundle(
     refs = dict(version_refs or {})
     selected = [item.asset_version_id for item in selection.selected]
     segments = [_context_segment(item, profile) for item in selection.selected]
+    correctness = _context_correctness_receipt(
+        profile=profile,
+        selection=selection,
+        segments=segments,
+        narrative_position=_normalize_narrative_position(narrative_position),
+        accessible_knowledge_fact_ids=accessible_knowledge_fact_ids,
+        required_long_distance_fact_ids=required_long_distance_fact_ids,
+    )
     stage_view = {
         "stage": profile.name,
         "segments": [
@@ -268,6 +278,7 @@ def build_authority_context_bundle(
             for item in selection.selected
         ],
         "stage_context_view": stage_view,
+        "context_correctness": correctness,
     }
     actual_context_digest = "sha256:" + hashlib.sha256(
         json.dumps(digest_payload, sort_keys=True, separators=(",", ":")).encode()
@@ -356,6 +367,7 @@ def build_authority_context_bundle(
             "output_context_digest": actual_context_digest,
         },
         "policy_versions": policy_versions,
+        "context_correctness": correctness,
     }
     return {
         "project_id": project_id,
@@ -387,6 +399,7 @@ def build_authority_context_bundle(
         "actual_context_digest": actual_context_digest,
         "context_digest": actual_context_digest,
         "source_isolation_result": {"passed": True, "raw_source_ratio": 0.0},
+        "context_correctness": correctness,
         "copyright_boundary": profile.copyright_mode,
         "invalidation_keys": invalidation_keys,
         "created_by_operation_id": created_by_operation_id,
@@ -406,6 +419,194 @@ def build_authority_context_bundle(
         },
         "context_contract_version": "authority-context-bundle-v5",
     }
+
+
+_CONTEXT_CORRECTNESS_CHECKS = (
+    "NO_FUTURE_FACT",
+    "NO_HIDDEN_KNOWLEDGE_LEAK",
+    "NO_STALE_VERSION",
+    "NO_DUPLICATE_SEMANTIC_REPRESENTATION",
+    "NO_IRRELEVANT_FULL_ASSET",
+    "REQUIRED_LONG_DISTANCE_FACT_PRESENT",
+)
+
+
+def _context_correctness_receipt(
+    *,
+    profile: ContextProfile,
+    selection: ContextSelection,
+    segments: list[ContextSegment],
+    narrative_position: dict[str, Any],
+    accessible_knowledge_fact_ids: Iterable[str],
+    required_long_distance_fact_ids: Iterable[str],
+) -> dict[str, Any]:
+    chapter = int(narrative_position.get("chapter") or 0)
+    accessible = {
+        str(item) for item in accessible_knowledge_fact_ids if str(item).strip()
+    }
+    required_long_distance = {
+        str(item)
+        for item in required_long_distance_fact_ids
+        if str(item).strip()
+    }
+    facts = [
+        (segment, dict(fact))
+        for segment in segments
+        for fact in segment.structured_facts
+        if isinstance(fact, dict)
+    ]
+    future = [
+        _fact_identity(fact)
+        for _, fact in facts
+        if chapter > 0 and int(fact.get("effective_from_chapter") or 0) > chapter
+    ]
+    hidden: list[str] = []
+    for _, fact in facts:
+        state = dict(fact.get("state") or {})
+        state_kind = str(fact.get("state_kind") or "")
+        visibility = str(
+            fact.get("visibility")
+            or fact.get("knowledge_access")
+            or state.get("visibility")
+            or state.get("knowledge_access")
+            or ""
+        ).upper()
+        epistemic = state_kind in {
+            "character_knowledge",
+            "character_belief",
+        }
+        hidden_truth = (
+            state_kind in {"canon_fact", "story_truth", ""}
+            and visibility in {"HIDDEN", "RESTRICTED", "NOT_ACCESSIBLE"}
+        )
+        identity = _epistemic_fact_identity(fact)
+        if (epistemic or hidden_truth) and identity and identity not in accessible:
+            hidden.append(_fact_identity(fact))
+    stale = [
+        item.asset_version_id
+        for item in selection.selected
+        if item.authority_freshness != "CURRENT"
+        or item.qualification != "ELIGIBLE"
+        or item.governance_status != "CLEAR"
+    ]
+    semantic_sources: dict[str, set[str]] = {}
+    for segment, fact in facts:
+        semantic_identity = str(
+            fact.get("semantic_identity")
+            or fact.get("entity_key")
+            or _epistemic_fact_identity(fact)
+            or ""
+        )
+        if not semantic_identity:
+            # Profile and policy metadata are structured facts too, but do not
+            # represent Authority state and therefore cannot be semantic
+            # duplicates of one another.
+            continue
+        key = json.dumps(
+            {
+                "semantic_identity": semantic_identity,
+                "state_kind": fact.get("state_kind"),
+                "effective_from_chapter": fact.get("effective_from_chapter"),
+                "effective_to_chapter": fact.get("effective_to_chapter"),
+                "state": fact.get("state"),
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        semantic_sources.setdefault(key, set()).add(segment.asset_version_id)
+    duplicates = [
+        sorted(sources)
+        for sources in semantic_sources.values()
+        if len(sources) > 1
+    ]
+    irrelevant_full = [
+        item.asset_version_id
+        for item in selection.selected
+        if (
+            not item.semantic_projection
+            or item.compression_method in {"full", "full_asset", "raw"}
+        )
+        and item.asset_type not in profile.required_asset_types
+    ]
+    observed_long_distance = {
+        _epistemic_fact_identity(fact) or _fact_identity(fact)
+        for _, fact in facts
+        if chapter > 0
+        and int(fact.get("source_chapter") or chapter) > 0
+        and chapter - int(fact.get("source_chapter") or chapter) >= 20
+    }
+    missing_long_distance = sorted(required_long_distance - observed_long_distance)
+    evidence = {
+        "NO_FUTURE_FACT": sorted(set(future)),
+        "NO_HIDDEN_KNOWLEDGE_LEAK": sorted(set(hidden)),
+        "NO_STALE_VERSION": sorted(set(stale)),
+        "NO_DUPLICATE_SEMANTIC_REPRESENTATION": duplicates,
+        "NO_IRRELEVANT_FULL_ASSET": sorted(set(irrelevant_full)),
+        "REQUIRED_LONG_DISTANCE_FACT_PRESENT": missing_long_distance,
+    }
+    checks = {
+        name: {
+            "status": (
+                "NOT_APPLICABLE"
+                if name == "REQUIRED_LONG_DISTANCE_FACT_PRESENT"
+                and not required_long_distance
+                else "PASS"
+                if not evidence[name]
+                else "FAIL"
+            ),
+            "violations": evidence[name],
+        }
+        for name in _CONTEXT_CORRECTNESS_CHECKS
+    }
+    failed = [name for name, result in checks.items() if result["status"] == "FAIL"]
+    if failed:
+        raise ValueError("CONTEXT_CORRECTNESS_BLOCKED: " + ", ".join(failed))
+    body = {
+        "type": "ContextCorrectnessReceipt",
+        "contract_version": "context-correctness-receipt-v1",
+        "overall_status": "PASS",
+        "checks": checks,
+        "selected_asset_version_ids": [
+            item.asset_version_id for item in selection.selected
+        ],
+        "narrative_position": narrative_position,
+    }
+    return {
+        **body,
+        "receipt_hash": "sha256:"
+        + hashlib.sha256(
+            json.dumps(body, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest(),
+    }
+
+
+def _epistemic_fact_identity(fact: dict[str, Any]) -> str:
+    state = dict(fact.get("state") or {})
+    direct = str(
+        fact.get("fact_id")
+        or fact.get("proposition_id")
+        or state.get("fact_id")
+        or state.get("proposition_id")
+        or ""
+    )
+    if direct:
+        return direct
+    components = {
+        key: value
+        for component in str(fact.get("entity_key") or "").split("|")
+        if "=" in component
+        for key, value in (component.split("=", 1),)
+    }
+    return str(components.get("fact_id") or components.get("proposition_id") or "")
+
+
+def _fact_identity(fact: dict[str, Any]) -> str:
+    return str(
+        fact.get("entity_key")
+        or _epistemic_fact_identity(fact)
+        or fact.get("fact_id")
+        or "UNIDENTIFIED_FACT"
+    )
 
 
 def _normalize_narrative_position(value: dict[str, Any] | None) -> dict[str, Any]:

@@ -12,6 +12,114 @@ _NOT_AVAILABLE = "NOT_AVAILABLE"
 _NOT_APPLICABLE = "NOT_APPLICABLE"
 
 
+def project_narrative_load(*, story_state: Mapping[str, Any]) -> dict[str, Any]:
+    """Project queryable load/debt from accepted Narrative State only."""
+
+    chapter = int(story_state.get("accepted_through_chapter") or 0)
+    current = dict(story_state.get("current_state") or {})
+    state_observed = "current_state" in story_state
+    arcs = [
+        entry
+        for kind in ("arc_state", "character_arc", "plot_thread")
+        for entry in current.get(kind) or ()
+        if isinstance(entry, Mapping)
+    ]
+    active_arcs = [
+        entry
+        for entry in arcs
+        if str((entry.get("state") or {}).get("status") or "ACTIVE").upper()
+        not in {"CLOSED", "RESOLVED", "FULFILLED", "CANCELLED"}
+    ]
+    dormant_ages = [
+        max(
+            0,
+            chapter
+            - int(
+                (entry.get("state") or {}).get("last_advanced_chapter")
+                or entry.get("effective_from_chapter")
+                or chapter
+            ),
+        )
+        for entry in active_arcs
+    ]
+    obligations = [
+        entry
+        for entry in current.get("narrative_obligation") or ()
+        if isinstance(entry, Mapping)
+    ]
+    open_obligations = [
+        entry
+        for entry in obligations
+        if str((entry.get("state") or {}).get("status") or "").upper()
+        not in _TERMINAL_OBLIGATION_STATUSES
+    ]
+    overdue = [
+        entry
+        for entry in open_obligations
+        if str((entry.get("state") or {}).get("target_window", {}).get("status"))
+        == "SCHEDULED"
+        and int(
+            (entry.get("state") or {}).get("target_window", {}).get("to_chapter")
+            or 0
+        )
+        < chapter
+    ]
+    payoff_congestion = [
+        entry
+        for entry in open_obligations
+        if 0
+        < int(
+            (entry.get("state") or {}).get("target_window", {}).get("to_chapter")
+            or 0
+        )
+        <= chapter + 3
+    ]
+    characters = [
+        entry
+        for entry in current.get("character_state") or ()
+        if isinstance(entry, Mapping)
+    ]
+    appearance_gaps = [
+        max(
+            0,
+            chapter
+            - int(
+                (entry.get("state") or {}).get("last_appearance_chapter")
+                or entry.get("effective_from_chapter")
+                or chapter
+            ),
+        )
+        for entry in characters
+    ]
+    debt_entries = [
+        entry
+        for entry in current.get("narrative_debt") or ()
+        if isinstance(entry, Mapping)
+    ]
+    debt_score = sum(
+        int((entry.get("state") or {}).get("weight") or 1)
+        for entry in debt_entries
+        if str((entry.get("state") or {}).get("status") or "OPEN").upper()
+        not in {"CLOSED", "RESOLVED", "CANCELLED"}
+    )
+    metrics = {
+        "active_arc_count": len(active_arcs),
+        "dormant_arc_max_age": max(dormant_ages, default=0),
+        "open_obligation_count": len(open_obligations),
+        "overdue_obligation_count": len(overdue),
+        "payoff_congestion_count": len(payoff_congestion),
+        "character_appearance_max_gap": max(appearance_gaps, default=0),
+        "narrative_debt_score": debt_score + len(overdue) * 5,
+    }
+    return {
+        "type": "NarrativeLoadProjection",
+        "contract_version": "narrative-load-projection-v1",
+        "accepted_through_chapter": chapter,
+        "status": _MEASURED if state_observed else _NOT_OBSERVED,
+        "metrics": metrics if state_observed else {key: None for key in metrics},
+    }
+
+
 def measure_narrative_runtime(
     *,
     story_state: Mapping[str, Any],
@@ -228,6 +336,7 @@ def measure_narrative_runtime(
     ]
     world_issues = [item for item in issues if "WORLD" in str(item.get("code") or "")]
 
+    load = project_narrative_load(story_state=story_state)
     metrics: dict[str, Any] = {
         "future_knowledge_leakage_count": (
             len(future_knowledge) if context_segments_observed else None
@@ -288,6 +397,11 @@ def measure_narrative_runtime(
             len(trace_missing) if trace_missing is not None else None
         ),
         "provider_retry_count": retry_count,
+        **{
+            key: value
+            for key, value in load["metrics"].items()
+            if key not in {"open_obligation_count", "overdue_obligation_count"}
+        },
     }
     observations = {
         "context": _observation_status(
@@ -311,6 +425,10 @@ def measure_narrative_runtime(
             if story_state or context_observed
             else _NOT_OBSERVED,
             len(entries) if temporal_state_observed else 0,
+        ),
+        "narrative_load": _observation_status(
+            str(load["status"]),
+            sum(value is not None for value in load["metrics"].values()),
         ),
         "expected_context": _observation_status(
             expected_context_status,
@@ -421,4 +539,4 @@ def _availability_status(
     )
 
 
-__all__ = ["measure_narrative_runtime"]
+__all__ = ["measure_narrative_runtime", "project_narrative_load"]

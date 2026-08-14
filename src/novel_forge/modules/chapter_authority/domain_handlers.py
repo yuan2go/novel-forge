@@ -106,6 +106,8 @@ def build_context_bundle(
             physical_asset_type=str(
                 item.get("physical_asset_type") or item.get("asset_type") or ""
             ),
+            authority_freshness=str(item.get("authority_freshness") or "CURRENT"),
+            semantic_projection=bool(item.get("semantic_projection", True)),
         )
         for item in (governed_candidates or [])
     ]
@@ -170,6 +172,12 @@ def build_context_bundle(
             ),
             "canon_snapshot_version": refs.get("canon_snapshot_version", ""),
         },
+        accessible_knowledge_fact_ids=_provider_accessible_fact_ids(plan),
+        required_long_distance_fact_ids=tuple(
+            str(item)
+            for item in plan.get("required_long_distance_fact_ids") or ()
+            if str(item)
+        ),
     )
     task_narrative_projection = build_task_narrative_projection(plan)
     return {
@@ -197,6 +205,33 @@ def build_context_bundle(
         },
         "provider_projection_contract_version": "minimum-sufficient-context-v2",
     }
+
+
+def _provider_accessible_fact_ids(plan: dict[str, Any]) -> set[str]:
+    """Derive one chapter-wide boundary without cross-POV knowledge union."""
+
+    scene_boundaries = [
+        {
+            str(fact)
+            for fact in scene.get("accessible_knowledge") or ()
+            if str(fact)
+        }
+        for scene in plan.get("scene_plan") or ()
+        if isinstance(scene, dict)
+        and str(scene.get("focalization") or "") != "OMNISCIENT"
+    ]
+    accessible = (
+        set.intersection(*scene_boundaries) if scene_boundaries else set()
+    )
+    accessible.update(
+        str(item.get("fact_id") or "")
+        for item in plan.get("disclosures") or ()
+        if isinstance(item, dict)
+        and str(item.get("audience") or "").upper() in {"READER", "ALL"}
+        and str(item.get("mode") or "").upper() != "WITHHOLD"
+        and str(item.get("fact_id") or "")
+    )
+    return accessible
 
 
 def normalize_draft_result(
