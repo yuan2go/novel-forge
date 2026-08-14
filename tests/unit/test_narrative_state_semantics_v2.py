@@ -519,6 +519,81 @@ def test_current_state_is_entity_aware_and_not_a_history_of_character_changes() 
     )["state"]["status"] == "FULFILLED"
 
 
+def test_character_trajectory_and_reader_disclosure_share_one_state_plane() -> None:
+    version, outcome = _outcome(
+        1,
+        {
+            "character_knowledge": [
+                {
+                    "character_id": "character:lin",
+                    "fact_id": "fact:ledger",
+                    "status": "KNOWN",
+                }
+            ],
+            "character_belief": [
+                {
+                    "character_id": "character:lin",
+                    "proposition_id": "proposition:silence-is-safe",
+                    "stance": "DOUBTS",
+                    "belief_confidence": 0.7,
+                }
+            ],
+            "character_arc": [
+                {
+                    "character_id": "character:lin",
+                    "arc_id": "arc:accountability",
+                    "status": "OPEN",
+                    "stage": "DENIAL",
+                    "causal_trigger": "the ledger names a witness",
+                }
+            ],
+            "reader_knowledge": [
+                {
+                    "fact_id": "fact:traitor",
+                    "status": "HINTED",
+                }
+            ],
+            "disclosure_event": [
+                {
+                    "disclosure_id": "disclosure:traitor-shadow",
+                    "fact_id": "fact:traitor",
+                    "audience": "READER",
+                    "disclosure_mode": "HINT",
+                    "presentation_channel": "OBJECT_DETAIL",
+                }
+            ],
+        },
+    )
+
+    state = rebuild_story_state([(version, outcome)])
+
+    assert project_entity_state(
+        state,
+        "character_knowledge",
+        "character_id=character:lin|fact_id=fact:ledger",
+    )["state"]["status"] == "KNOWN"
+    assert project_entity_state(
+        state,
+        "character_belief",
+        "character_id=character:lin|proposition_id=proposition:silence-is-safe",
+    )["state"]["stance"] == "DOUBTS"
+    assert project_entity_state(
+        state,
+        "character_arc",
+        "character_id=character:lin|arc_id=arc:accountability",
+    )["state"]["stage"] == "DENIAL"
+    assert project_entity_state(
+        state,
+        "reader_knowledge",
+        "fact_id=fact:traitor",
+    )["state"]["status"] == "HINTED"
+    assert project_entity_state(
+        state,
+        "disclosure_event",
+        "disclosure_id=disclosure:traitor-shadow",
+    )["state"]["presentation_channel"] == "OBJECT_DETAIL"
+
+
 def test_as_of_rebuild_exposes_no_future_state() -> None:
     assert project_entity_state(
         _at(1), "character_state", "character_id=character:lin"

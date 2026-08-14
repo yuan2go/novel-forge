@@ -5,6 +5,8 @@ from .definitions import (
     plan_binding_definitions,
 )
 from .domain import (
+    CHAPTER_EXECUTION_STATE_KINDS,
+    READER_DISCLOSURE_STATUS,
     PlanContractType,
     PlanExecutionScope,
     PlanningContract,
@@ -13,6 +15,8 @@ from .domain import (
 )
 
 __all__ = [
+    "CHAPTER_EXECUTION_STATE_KINDS",
+    "READER_DISCLOSURE_STATUS",
     "PlanContractType",
     "PlanExecutionScope",
     "PLAN_BINDING_DEFINITION_VERSION",

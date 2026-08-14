@@ -76,6 +76,11 @@ from novel_forge.modules.chapter_authority.provider_output_contracts import (
     chapter_provider_output_schema,
     chapter_provider_output_schema_ref,
 )
+from novel_forge.modules.chapter_authority.provider_views import (
+    build_provider_context_view,
+    build_provider_knowledge_view,
+    build_provider_task_view,
+)
 from novel_forge.modules.chapter_authority.definitions import (
     CHAPTER_MODEL_WORKFLOW_DEFINITION_REF,
 )
@@ -94,6 +99,16 @@ _STAGES = frozenset(
         "quality_longform",
         "quality_platform",
         "reader_outcome",
+    }
+)
+
+_PLANNING_STAGES = frozenset(
+    {
+        "book_plan.generate",
+        "volume_plan.generate",
+        "arc_plan.generate",
+        "chapter_group_plan.generate",
+        "chapter_plan.generate",
     }
 )
 
@@ -1408,6 +1423,53 @@ def default_chapter_fixture_response(
             revision.get("text") or "The protagonist gives up the safe route home."
         )
         evidence_end = max(1, min(len(text), 40))
+        expectations = (
+            inputs.get("execution_expectations")
+            if isinstance(inputs.get("execution_expectations"), Mapping)
+            else {}
+        )
+        character_arc_changes = []
+        for transition in expectations.get("required_state_transitions") or ():
+            if (
+                not isinstance(transition, Mapping)
+                or str(transition.get("state_kind") or "") != "character_arc"
+            ):
+                continue
+            character_id, _, arc_suffix = str(
+                transition.get("entity_key") or ""
+            ).partition(":")
+            change = {
+                "summary": "The planned character trajectory advances.",
+                "effective_from_chapter": int(revision.get("chapter") or 1),
+                "character_id": character_id,
+                "arc_id": f"character-arc:{arc_suffix}",
+                "state": str(transition.get("to_state") or ""),
+                "evidence_start": 0,
+                "evidence_end": evidence_end,
+                "confidence": 0.99,
+                "impact_type": "character_arc_progression",
+            }
+            if int(revision.get("chapter") or 1) > 1:
+                change["from_state"] = str(transition.get("from_state") or "")
+            character_arc_changes.append(change)
+        disclosure_events = [
+            {
+                "summary": "The planned reader-facing disclosure is presented.",
+                "effective_from_chapter": int(revision.get("chapter") or 1),
+                "disclosure_id": str(item.get("disclosure_id") or ""),
+                "fact_id": str(item.get("fact_id") or ""),
+                "audience": str(item.get("audience") or ""),
+                "disclosure_mode": str(item.get("mode") or ""),
+                "presentation_channel": str(item.get("presentation_channel") or ""),
+                "evidence_start": 0,
+                "evidence_end": evidence_end,
+                "confidence": 0.99,
+                "impact_type": "reader_disclosure",
+            }
+            for item in expectations.get("disclosures") or ()
+            if isinstance(item, Mapping)
+            and str(item.get("mode") or "").upper() != "WITHHOLD"
+        ]
         empty_fields = {
             "character_state_changes": [],
             "relationship_changes": [],
@@ -1422,6 +1484,11 @@ def default_chapter_fixture_response(
             "narrative_pattern_fingerprints": [],
             "theme_movements": [],
             "antagonist_pressure_changes": [],
+            "character_knowledge_changes": [],
+            "character_belief_changes": [],
+            "character_arc_changes": character_arc_changes,
+            "arc_state_changes": [],
+            "disclosure_events": disclosure_events,
         }
         return {
             "canon_facts": [
@@ -1947,6 +2014,56 @@ def _language_semantic_contract(required_language: str | None) -> str:
 def _stage_semantic_contract(
     stage: str, *, required_language: str | None = None
 ) -> str:
+    if stage in _PLANNING_STAGES:
+        contract = (
+            "Return only the planning candidate defined by the frozen output schema. "
+            "Every field ending in _version_id, _version_ids, _ref, or _refs is an "
+            "immutable Authority reference: copy the exact supplied identifier "
+            "verbatim and never replace it with a logical label, ordinal, title, or "
+            "newly invented identifier. Keep Timeline containers and cross-cutting "
+            "Narrative Arcs orthogonal. "
+        )
+        if stage == "arc_plan.generate":
+            contract += (
+                "Set cross_volume_scope to exactly the ordered VolumePlan Authority "
+                "version identifiers supplied by planning_command.input_versions."
+                "volume_plan followed by planning_command."
+                "arc_scope_volume_plan_version_ids. Each arc_segments[]."
+                "volume_plan_version_id must copy one identifier from that exact "
+                "scope, and each narrative_segment_id must copy a Narrative Segment "
+                "identifier from the corresponding supplied VolumePlan. Never use a "
+                "logical label such as volume:1 in cross_volume_scope or a "
+                "volume_plan_version_id. Thread -> Arc -> Arc Segment is the "
+                "cross-volume graph; Volume -> Narrative Segment remains the "
+                "Timeline plan."
+            )
+        elif stage == "chapter_plan.generate":
+            contract += (
+                "Produce an executable Chapter plan: bind its exact Timeline and Arc "
+                "references, declare Primary/Secondary/Touch/Hold Arc work, knowledge "
+                "boundaries, disclosures, causal character and state transitions, "
+                "scene or scene-group execution units, reader experience, and the "
+                "expected exit state. Every required_state_transitions[].state_kind "
+                "must use the schema's canonical Narrative State vocabulary. Use exact "
+                "stable identities in entity_key: character_id for character_state; "
+                "source_id:target_id for relationship_state; character_id:arc_id for "
+                "character_arc; character_id:fact_id for character_knowledge; and "
+                "the state kind's stable Authority identifier. Do not put Reader "
+                "Knowledge or Disclosure in required_state_transitions: Reader "
+                "Knowledge is fulfilled only by a planned Disclosure whose mode "
+                "deterministically yields the knowledge boundary status: HINT -> "
+                "HINTED, PARTIAL -> SUSPECTED, MISDIRECT -> MISDIRECTED, CONFIRM -> "
+                "KNOWN, WITHHOLD -> WITHHELD. WITHHOLD does not advance accepted "
+                "Reader Knowledge. Use audience "
+                "READER or ALL for reader-facing disclosure; represent a mixed audience "
+                "as separate Disclosure events with stable identities. Commit only "
+                "state transitions that this chapter can visibly execute and Canon "
+                "extraction can type. Use resource_state only for a quantifiable "
+                "balance with a stable entity/resource identity; object custody, "
+                "location, ownership, or protection belongs in Canon facts or another "
+                "typed state."
+            )
+        return _bind_language_contract(contract, required_language)
     if stage == "revision":
         revision_language = (
             "Revise the reader-facing prose into the governed language even when the "
@@ -1980,10 +2097,10 @@ def _stage_semantic_contract(
     if stage == "canon_extraction":
         return _bind_language_contract(
             "Extract only facts and state changes supported by the revised chapter. "
-            "Treat from_status, from_state, and from_tier only as compare-and-set "
+            "Treat from_status, from_state, from_stance, and from_tier only as compare-and-set "
             "preconditions against the exact accepted Story State supplied in the "
             "governed context. For a first occurrence with no accepted entity baseline, "
-            "omit from_status, from_state, and from_tier; never infer them from prose, "
+            "leave from_status, from_state, from_stance, and from_tier null; never infer them from prose, "
             "Story Design assets, plans, or ordinary background conditions. "
             "For canon_facts, compare each (subject, predicate) slot with the accepted "
             "Canon facts supplied in the governed context. If the chapter does not "
@@ -1994,19 +2111,65 @@ def _stage_semantic_contract(
             "never invent a supersession identity. "
             "Treat requires_fact_ids as character-specific epistemic preconditions. "
             "Every required fact must already appear in that character's accepted "
-            "known facts in the governed context, or the same supported change must "
-            "include it in acquired_fact_ids with chapter evidence. World-rule "
+            "known facts in the governed context, or the chapter must first establish "
+            "it through an atomic character_knowledge_changes item with fact_id and "
+            "chapter evidence. World-rule "
             "availability is not automatically character knowledge. If the prose and "
             "governed context do not establish the knowledge, omit the unsupported "
             "action or requirement; never add unsupported knowledge merely to satisfy "
-            "validation. "
+            "validation. Keep Story Truth, Character Knowledge, Character Belief, "
+            "Reader Knowledge, and presentation separate: a Canon fact does not by "
+            "itself make any character or the reader aware of it; a belief may be "
+            "false. In character_knowledge_changes, emit one item per "
+            "character_id plus fact_id or proposition_id; never bundle multiple newly "
+            "learned facts into one Character Knowledge event. Use only the status "
+            "field with UNKNOWN, SUSPECTED, KNOWN, or FORGOTTEN; leave the generic "
+            "state field null. "
+            "In character_belief_changes, use only stance with BELIEVES, DOUBTS, "
+            "DISBELIEVES, or UNCERTAIN plus belief_confidence from zero to one; use "
+            "from_stance only for an exact accepted baseline and leave generic state, "
+            "status, from_state, and from_status null. "
+            "In relationship_changes, always copy both directed graph endpoints into "
+            "source_id and target_id; entity_id cannot replace an endpoint, and the "
+            "generic character_id field must remain null. "
+            "Every typed change must copy its exact stable Authority identity: "
+            "character_id for character and power state, event_id for timeline, "
+            "thread_id for foreshadow and plot thread, promise_id, reward_id, rule_id, "
+            "entity_id plus resource_id for resource balances, fingerprint_id, "
+            "antagonist_id, character_id plus arc_id for character trajectory, arc_id "
+            "for narrative Arc state, and disclosure_id for presentation. A generic "
+            "entity_id never substitutes for another domain's identity. If no stable "
+            "identity is available in governed context, omit the unsupported change. "
+            "Emit every supported "
+            "planned non-WITHHOLD presentation as a "
+            "disclosure_event, including character-facing events; accepted "
+            "reader-facing Disclosure alone is deterministically projected into "
+            "Reader Knowledge. Record how the "
+            "information was presented "
+            "through disclosure_mode, audience, and presentation_channel rather than "
+            "copying Truth into every epistemic layer. "
+            "Reconcile the frozen execution_expectations exactly. For every required "
+            "state transition supported by the chapter, emit one change in the "
+            "corresponding typed array with the exact planned identity and to_state; "
+            "do not paraphrase either. Omit from_* only when the governed context has "
+            "no accepted baseline. For every planned disclosure, copy disclosure_id, "
+            "fact_id, audience, and mode exactly; do not expand the audience. Reader "
+            "Knowledge will be derived after the Disclosure is accepted. "
             "Within canon_facts, each (subject, predicate, impact_type) tuple may occur "
             "at most once. When one subject has multiple objects for a broad relation, "
             "either combine them into one object when they are one bundled fact, or use "
             "precise relation-specific predicates. For example, encode separate consent "
             "facts as authorizes_testimony and authorizes_public_identification instead "
             "of repeating authorizes with two objects. Never emit two different objects "
-            "for the same semantic tuple.",
+            "for the same semantic tuple. "
+            "Use resource_state_changes only for quantifiable resource balances. An "
+            "initial resource baseline must set balance_after; a later transition must "
+            "set balance_before, delta, and balance_after with exact arithmetic. Do not "
+            "encode custody, location, protection, ownership, or other qualitative "
+            "object status as a Resource State merely because the object is a story "
+            "resource; represent supported qualitative changes as precise canon_facts "
+            "or timeline_events instead. If the prose supplies no numeric balance, "
+            "leave resource_state_changes empty.",
             required_language,
         )
     if stage.startswith("quality_"):
@@ -2017,6 +2180,19 @@ def _stage_semantic_contract(
             "governed context directly supports the claim; otherwise use "
             "INSUFFICIENT_EVIDENCE, REQUIRES_HUMAN_REVIEW, or FAILED as appropriate."
         )
+        if stage == "quality_source_originality":
+            contract += (
+                " Judge originality as differentiated execution within the supplied "
+                "project-owned task and the governed source boundary. Universal "
+                "comparison against every published work is not required and its "
+                "absence alone is not a reason for REQUIRES_HUMAN_REVIEW. When source "
+                "isolation is clear, no reference expression or suspicious overlap is "
+                "present, and the prose contains concrete project-specific causal "
+                "choices, originality may PASS with provider-uncalibrated evidence. "
+                "Use REQUIRES_HUMAN_REVIEW only for an identified similarity, lineage, "
+                "or attribution ambiguity that cannot be resolved from the governed "
+                "inputs; name that specific risk in the evidence."
+            )
         if stage == "quality_longform":
             contract += (
                 " For world_rule_conflict and power_state_conflict, distinguish a "
@@ -2026,6 +2202,24 @@ def _stage_semantic_contract(
                 "do not require the chapter to exercise the rule or power. When the "
                 "chapter claims a state or transition but the governed comparison "
                 "baseline is unavailable, return INSUFFICIENT_EVIDENCE."
+            )
+            contract += (
+                " Treat canon_conflicts as the authoritative deterministic continuity "
+                "result: when it is empty, do not invent a Canon conflict. Compare "
+                "world-rule usages against governed_world_rules in the Quality Context; "
+                "when the exact rule and its limits are present and the chapter stays "
+                "within them, return PASSED with concrete rule-and-prose evidence."
+            )
+        if stage == "quality_platform":
+            contract += (
+                " Evaluate ai_content_policy only against the exact "
+                "compiled_platform_policy and its release_scope. When governed assisted "
+                "content is allowed for internal Provider validation and the chapter "
+                "meets the listed content requirements, return PASSED with concrete "
+                "policy and prose evidence. Do not duplicate source-lineage, copyright, "
+                "or originality review in ai_content_policy; those are independently "
+                "governed dimensions. A separate human approval required for external "
+                "publication is not a defect in an internal validation release."
             )
         if required_language:
             contract += (
@@ -2091,11 +2285,27 @@ def _materialize_production_codex_prompt(
             "CHAPTER_CAPABILITY_MATERIALIZATION_INVALID",
             "Capability Context, Knowledge, Tool, or Schema selection is incomplete",
         )
+    context_content = context[0].get("content")
+    if not isinstance(context_content, Mapping):
+        raise KernelError(
+            "CHAPTER_CAPABILITY_MATERIALIZATION_INVALID",
+            "Capability Context selection has no ContextBundle content",
+        )
+    task_view = build_provider_task_view(stage, inputs)
+    context_view = build_provider_context_view(stage, context_content, task_view)
+    knowledge_view = build_provider_knowledge_view(
+        item for item in knowledge if isinstance(item, Mapping)
+    )
+    if not knowledge_view:
+        raise KernelError(
+            "CHAPTER_CAPABILITY_MATERIALIZATION_INVALID",
+            "Provider Knowledge projection is empty",
+        )
     replacements = {
         "{{stage}}": stage,
         "{{target_scope}}": _canonical(request.target_scope.to_dict()),
-        "{{input_manifest}}": _canonical(inputs),
-        "{{context_bundle}}": _canonical(context[0].get("content")),
+        "{{input_manifest}}": _canonical(task_view),
+        "{{context_bundle}}": _canonical(context_view),
         "{{output_schema_ref}}": str(schema.get("ref") or ""),
     }
     rendered_template = template_text
@@ -2112,7 +2322,7 @@ def _materialize_production_codex_prompt(
             "CHAPTER_CAPABILITY_TOOL_UNAUTHORIZED",
             "Codex execution permits only the governed provider invocation",
         )
-    required_language = _required_language_from_context(context[0].get("content"))
+    required_language = _required_language_from_context(context_content)
     stage_semantic_contract = _stage_semantic_contract(
         stage, required_language=required_language
     )
@@ -2121,7 +2331,7 @@ def _materialize_production_codex_prompt(
             "<system_instruction>\n" + system_text + "\n</system_instruction>",
             "<governed_skill>\n" + skill_text + "\n</governed_skill>",
             "<required_knowledge>\n"
-            + _canonical(knowledge)
+            + _canonical(knowledge_view)
             + "\n</required_knowledge>",
             "<tool_policy>\n"
             + _canonical(tools)
@@ -2134,6 +2344,28 @@ def _materialize_production_codex_prompt(
         )
     )
     prompt_hash = "sha256:" + hashlib.sha256(prompt.encode("utf-8")).hexdigest()
+    component_characters = {
+        "system_instruction": len(system_text),
+        "governed_skill": len(skill_text),
+        "provider_knowledge": len(_canonical(knowledge_view)),
+        "provider_task_view": len(_canonical(task_view)),
+        "provider_context_view": len(_canonical(context_view)),
+        "tool_policy": len(_canonical(tools)),
+        "stage_semantic_contract": len(stage_semantic_contract),
+        "output_schema": len(_canonical(schema["content"])),
+        "fully_rendered_prompt": len(prompt),
+    }
+    component_tokens = {
+        key: max(1, count // 4) for key, count in component_characters.items()
+    }
+    authority_context_tokens = int(context_content.get("estimated_tokens") or 0)
+    provider_context_tokens = component_tokens["provider_context_view"]
+    semantic_input_tokens = max(
+        1,
+        provider_context_tokens
+        + component_tokens["provider_task_view"]
+        + component_tokens["provider_knowledge"],
+    )
     evidence = {
         "materialization_hash": str(materialization.get("materialization_hash") or ""),
         "fully_rendered_prompt_hash": prompt_hash,
@@ -2156,6 +2388,23 @@ def _materialize_production_codex_prompt(
         "allowed_tools": list(allowed),
         "output_schema_ref": str(schema.get("ref") or ""),
         "output_schema_hash": str(schema.get("content_hash") or ""),
+        "provider_view": {
+            "task_contract_version": task_view["contract_version"],
+            "context_contract_version": context_view["contract_version"],
+            "selection_explanation": context_view["selection_explanation"],
+            "component_characters": component_characters,
+            "component_estimated_tokens": component_tokens,
+            "authority_context_estimated_tokens": authority_context_tokens,
+            "provider_context_estimated_tokens": provider_context_tokens,
+            "context_projection_ratio": round(
+                provider_context_tokens / max(1, authority_context_tokens), 6
+            ),
+            "rendered_prompt_to_semantic_input_ratio": round(
+                component_tokens["fully_rendered_prompt"] / semantic_input_tokens,
+                6,
+            ),
+            "representation_policy": "authority-projection-task-provider-v1",
+        },
     }
     return prompt, evidence
 
@@ -2493,10 +2742,7 @@ class ProductionExecutionGatewayExternalEffectAdapter:
         """Register a domain-owned binder without importing its semantics here."""
 
         normalized = domain.strip().lower()
-        if (
-            not normalized
-            or normalized in self.execution_binders
-        ):
+        if not normalized or normalized in self.execution_binders:
             raise ValueError("execution binder domain is missing or already registered")
         if not callable(getattr(binder, "bind", None)):
             raise ValueError("execution binder must materialize a frozen request")

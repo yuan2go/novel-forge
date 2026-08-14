@@ -197,9 +197,9 @@ GENERATOR_DEFINITIONS = (
         "planning.story_chapter.generate",
         "chapter_plan_candidate",
         risk="MEDIUM",
-        definition_version="1.3.0",
-        output_schema_version="chapter-plan-generate-output-v3",
-        prompt_contract_version="chapter-plan-generate-prompt-v2",
+        definition_version="1.6.0",
+        output_schema_version="chapter-plan-generate-output-v6",
+        prompt_contract_version="chapter-plan-generate-prompt-v5",
     ),
 )
 

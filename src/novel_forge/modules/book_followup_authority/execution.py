@@ -8,8 +8,14 @@ from typing import Any
 from novel_forge.modules.capability_pack_authority.runtime import (
     CapabilityPackResolutionRequest,
 )
+from novel_forge.modules.book_followup_authority.contracts import (
+    BOOK_FOLLOWUP_DEFINITION_VERSION,
+)
 from novel_forge.modules.chapter_authority.execution_gateway import (
     PostgresChapterExecutionContractBinder,
+)
+from novel_forge.modules.chapter_authority.provider_views import (
+    project_reader_outcome_context_input,
 )
 from novel_forge.modules.command_kernel.asset_commands import AuthorityAssetWriteCommand
 from novel_forge.modules.command_kernel.errors import KernelError
@@ -29,7 +35,9 @@ class PostgresReaderOutcomeExecutionContractBinder(
     selection, input context and admissible stage remain Reader-owned here.
     """
 
-    workflow_definition_ref = "book_followup_reader_outcome@1.0.0"
+    workflow_definition_ref = (
+        f"book_followup_reader_outcome@{BOOK_FOLLOWUP_DEFINITION_VERSION}"
+    )
     execution_binding_domain = "reader_outcome"
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -82,7 +90,10 @@ class PostgresReaderOutcomeExecutionContractBinder(
                     asset_version_id=context.asset_version_id,
                     artifact_type="context_bundle",
                     content_hash=context.content_hash,
-                    schema_version="novelos.reader_outcome_context_bundle.v1",
+                    schema_version=str(
+                        context.content.get("schema_version")
+                        or "novelos.reader_outcome_context_bundle.v2"
+                    ),
                     source_eligibility="PRODUCTION_ELIGIBLE",
                 ).to_dict()
             )
@@ -191,13 +202,15 @@ class PostgresReaderOutcomeExecutionContractBinder(
                     "asset_version_id": document.asset_version_id,
                     "asset_type": document.asset_type,
                     "content_hash": document.content_hash,
-                    "content": document.content,
+                    "projection": project_reader_outcome_context_input(
+                        document.asset_type, document.content
+                    ),
                 }
             )
             asset_ids.append(document.asset_id)
         logical_ref = f"reader_outcome/context_bundles/{operation_id}-{attempt_id}.json"
         content = {
-            "schema_version": "novelos.reader_outcome_context_bundle.v1",
+            "schema_version": "novelos.reader_outcome_context_bundle.v2",
             "project_id": project_id,
             "operation_id": operation_id,
             "attempt_id": attempt_id,
@@ -208,7 +221,25 @@ class PostgresReaderOutcomeExecutionContractBinder(
             existing = self.reader_query.require(
                 project_id=project_id, logical_ref=logical_ref
             )
-            if existing.content != content:
+            existing_inputs = existing.content.get("selected_inputs")
+            existing_refs = [
+                (
+                    str(item.get("asset_version_id") or ""),
+                    str(item.get("asset_type") or ""),
+                    str(item.get("content_hash") or ""),
+                )
+                for item in existing_inputs or ()
+                if isinstance(item, Mapping)
+            ]
+            new_refs = [
+                (
+                    str(item.get("asset_version_id") or ""),
+                    str(item.get("asset_type") or ""),
+                    str(item.get("content_hash") or ""),
+                )
+                for item in selected
+            ]
+            if existing_refs != new_refs:
                 raise KernelError(
                     "READER_OUTCOME_CONTEXT_CONFLICT",
                     "Reader context changed inside one Attempt",
@@ -223,7 +254,7 @@ class PostgresReaderOutcomeExecutionContractBinder(
                 project_id=project_id,
                 asset_id=f"reader-outcome-context:{attempt_id}",
                 asset_type="context_bundle",
-                schema_version="novelos.reader_outcome_context_bundle.v1",
+                schema_version="novelos.reader_outcome_context_bundle.v2",
                 logical_ref=logical_ref,
                 category="reader_outcome_context",
                 output_key="reader_outcome.context_bundle",

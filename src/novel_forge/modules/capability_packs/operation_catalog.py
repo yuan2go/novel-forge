@@ -22,6 +22,9 @@ from novel_forge.modules.book_followup_authority.contracts import (
     BOOK_FOLLOWUP_DEFINITION_VERSION,
     READER_OUTCOME_DEFINITION,
 )
+from novel_forge.modules.story_planning_runtime.domain import (
+    STORY_PLANNING_WORKFLOW_DEFINITION_REF,
+)
 from novel_forge.storage.authority_repositories import definition_hash
 
 
@@ -309,7 +312,7 @@ def story_planning_workflow_binding_catalog() -> WorkflowBindingCatalog:
     )
     return WorkflowBindingCatalog(
         "story_planning_generators",
-        "1.1.0",
+        STORY_PLANNING_WORKFLOW_DEFINITION_REF.rpartition("@")[2],
         (
             WorkflowBinding(
                 node_id=node_id,

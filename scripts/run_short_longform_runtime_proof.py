@@ -115,8 +115,9 @@ from run_real_capability_codex_proof import (
 ROOT = Path(__file__).resolve().parents[1]
 PLANNING_PACK_ID = "story_planning_pack"
 READER_PACK_ID = "reader_outcome_pack"
-PLANNING_PACK_INITIAL_VERSION = "1.3.0"
-PLANNING_PACK_RECOVERY_VERSION = "1.4.0"
+PLANNING_PACK_INITIAL_VERSION = "1.5.0"
+READER_PACK_INITIAL_VERSION = "1.1.0"
+PLANNING_PACK_RECOVERY_VERSION = "1.6.0"
 BOOTSTRAP_DEFINITION = "short_longform.proof.bootstrap"
 BOOTSTRAP_HANDLER = "novel_forge.proof.short_longform.bootstrap"
 PROOF_QUALITY_CONTEXT_TOKEN_BUDGET = 28_000
@@ -240,9 +241,18 @@ def _bootstrap_definition(build_id: str, commit_sha: str) -> dict[str, Any]:
 
 def _proof_world_bible_content() -> dict[str, Any]:
     world_rules = [
-        "Official archive entries preserve physical revision traces after alteration.",
-        "A lawful recall transfers physical custody only; it does not authorize amendment, disclosure, or compelled testimony.",
-        "Exceptional custody preserves disputed evidence and creates a named, auditable obligation for the custodian.",
+        {
+            "rule_id": "rule:archive-revision-traces",
+            "statement": "Official archive entries preserve physical revision traces after alteration.",
+        },
+        {
+            "rule_id": "rule:lawful-recall-scope",
+            "statement": "A lawful recall transfers physical custody only; it does not authorize amendment, disclosure, or compelled testimony.",
+        },
+        {
+            "rule_id": "rule:exceptional-custody-obligation",
+            "statement": "Exceptional custody preserves disputed evidence and creates a named, auditable obligation for the custodian.",
+        },
     ]
     institutional_power_state = {
         "archive_director": {
@@ -387,19 +397,22 @@ def _campaign_initial_narrative_snapshots(
             "mode": "FROZEN_PROOF_CONTRACT_INITIAL_STATE",
             "campaign_contract_identity": contract_identity,
         }
-        source_event_id = "narrative-initial-state:sha256:" + hashlib.sha256(
-            json.dumps(
-                {
-                    "kind": kind.value,
-                    "entity_key": entity_key,
-                    "state": dict(state),
-                    "campaign_contract_identity": contract_identity,
-                },
-                ensure_ascii=False,
-                separators=(",", ":"),
-                sort_keys=True,
-            ).encode()
-        ).hexdigest()
+        source_event_id = (
+            "narrative-initial-state:sha256:"
+            + hashlib.sha256(
+                json.dumps(
+                    {
+                        "kind": kind.value,
+                        "entity_key": entity_key,
+                        "state": dict(state),
+                        "campaign_contract_identity": contract_identity,
+                    },
+                    ensure_ascii=False,
+                    separators=(",", ":"),
+                    sort_keys=True,
+                ).encode()
+            ).hexdigest()
+        )
         current[kind.value].append(
             {
                 "identity": {
@@ -426,7 +439,9 @@ def _campaign_initial_narrative_snapshots(
 
     for character in ground_truth.get("characters") or ():
         raw = dict(character)
-        character_id = f"character:{str(raw['character_id']).removeprefix('character:')}"
+        character_id = (
+            f"character:{str(raw['character_id']).removeprefix('character:')}"
+        )
         add(
             NarrativeStateKind.CHARACTER_STATE,
             components=(("character_id", character_id),),
@@ -438,8 +453,7 @@ def _campaign_initial_narrative_snapshots(
         if len(participants) != 2:
             raise ValueError("initial relationship requires exactly two participants")
         source_id, target_id = (
-            f"character:{str(item).removeprefix('character:')}"
-            for item in participants
+            f"character:{str(item).removeprefix('character:')}" for item in participants
         )
         add(
             NarrativeStateKind.RELATIONSHIP_STATE,
@@ -522,14 +536,17 @@ def _campaign_initial_narrative_snapshots(
         "evidence_level": "CONTROLLED_PROOF_BOOTSTRAP",
         "runtime_result": False,
     }
-    story_state["state_hash"] = "sha256:" + hashlib.sha256(
-        json.dumps(
-            story_state,
-            ensure_ascii=False,
-            separators=(",", ":"),
-            sort_keys=True,
-        ).encode()
-    ).hexdigest()
+    story_state["state_hash"] = (
+        "sha256:"
+        + hashlib.sha256(
+            json.dumps(
+                story_state,
+                ensure_ascii=False,
+                separators=(",", ":"),
+                sort_keys=True,
+            ).encode()
+        ).hexdigest()
+    )
     canon: dict[str, Any] = {
         "type": "CanonSnapshot",
         "contract_version": "canon-snapshot-v2",
@@ -557,14 +574,17 @@ def _campaign_initial_narrative_snapshots(
         "evidence_level": "CONTROLLED_PROOF_BOOTSTRAP",
         "runtime_result": False,
     }
-    canon["canon_hash"] = "sha256:" + hashlib.sha256(
-        json.dumps(
-            canon,
-            ensure_ascii=False,
-            separators=(",", ":"),
-            sort_keys=True,
-        ).encode()
-    ).hexdigest()
+    canon["canon_hash"] = (
+        "sha256:"
+        + hashlib.sha256(
+            json.dumps(
+                canon,
+                ensure_ascii=False,
+                separators=(",", ":"),
+                sort_keys=True,
+            ).encode()
+        ).hexdigest()
+    )
     return story_state, canon
 
 
@@ -1652,9 +1672,7 @@ def _run_planning(
     )
     for generator, logical_key, explicit_parent in sequence:
         parent = explicit_parent
-        if generator == "arc_plan.generate":
-            parent = activated["volume_plan.generate"]
-        elif generator == "chapter_group_plan.generate":
+        if generator == "chapter_group_plan.generate":
             parent = activated["volume_plan.generate"]
         elif generator == "chapter_plan.generate":
             parent = activated["chapter_group_plan.generate"]
@@ -3133,9 +3151,7 @@ def _generate_chapter_plan(
             book_design_version=book_design_version,
             activated=activated,
             chapter_number=chapter_number,
-            previous_outcome=str(
-                runtime_inputs.get("previous_chapter_outcome") or ""
-            ),
+            previous_outcome=str(runtime_inputs.get("previous_chapter_outcome") or ""),
             story_state=str(runtime_inputs.get("story_state") or ""),
             runtime_inputs=runtime_inputs,
         ),
@@ -3164,12 +3180,8 @@ def _runtime_planning_inputs(
     reader_report: Mapping[str, Any],
 ) -> dict[str, str]:
     request = authority.require_chapter_request(chapter_request_id)
-    evidence = authority.chapter_port.require_acceptance_evidence(
-        project_id=project_id,
-        root_operation_id=request["chapter_root_operation_id"],
-    )
-    outputs = _chapter_outputs(evidence)
     book = authority.require(request["book_run_id"])
+    rolling = _rolling_narrative_versions(book)
     reader_state = _followup_output(
         authority.database_url,
         project_id=project_id,
@@ -3179,13 +3191,28 @@ def _runtime_planning_inputs(
     )
     return {
         "previous_chapter_outcome": str(book["last_chapter_outcome_version_id"]),
-        "story_state": str(book["active_story_state_version_id"]),
-        "canon_snapshot": str(outputs["canon_snapshot"]["asset_version_id"]),
-        "character_state": str(outputs["character_state_snapshot"]["asset_version_id"]),
-        "foreshadowing_state": str(outputs["foreshadow_snapshot"]["asset_version_id"]),
-        "reward_ledger": str(outputs["reward_ledger_snapshot"]["asset_version_id"]),
-        "promise_ledger": str(outputs["promise_ledger_snapshot"]["asset_version_id"]),
+        "story_state": rolling["story_state"],
+        "canon_snapshot": rolling["canon_snapshot"],
         "reader_state": str(reader_state["asset_version_id"]),
+    }
+
+
+def _rolling_narrative_versions(book: Mapping[str, Any]) -> dict[str, str]:
+    """Resolve accepted rolling authority without recreating legacy state planes."""
+
+    story_state = str(book.get("active_story_state_version_id") or "")
+    canon_snapshot = str(book.get("active_canon_snapshot_version_id") or "")
+    if not story_state or not canon_snapshot:
+        raise RuntimeError(
+            "accepted Chapter has no complete Story State and Canon checkpoint"
+        )
+    return {
+        "story_state": story_state,
+        "canon_snapshot": canon_snapshot,
+        "character_state": story_state,
+        "foreshadowing_state": story_state,
+        "reward_ledger": story_state,
+        "promise_ledger": story_state,
     }
 
 
@@ -3198,11 +3225,6 @@ def _controlled_recap(
 ) -> dict[str, Any]:
     request = authority.require_chapter_request(chapter_request_id)
     book = authority.require(request["book_run_id"])
-    evidence = authority.chapter_port.require_acceptance_evidence(
-        project_id=project_id,
-        root_operation_id=request["chapter_root_operation_id"],
-    )
-    outputs = _chapter_outputs(evidence)
     reader = _followup_output(
         authority.database_url,
         project_id=project_id,
@@ -3211,6 +3233,7 @@ def _controlled_recap(
         output_key="reader_outcome.report",
     )
     frozen = dict(book["longform_context_versions"])
+    rolling = _rolling_narrative_versions(book)
     authority_inputs = authority.resolve_asset_refs(
         project_id=project_id,
         asset_version_ids=(
@@ -3220,16 +3243,10 @@ def _controlled_recap(
             str(frozen["arc_plan_version"]),
             str(frozen["quality_trend_version"]),
             str(book["last_chapter_outcome_version_id"]),
-            str(book["active_story_state_version_id"]),
+            rolling["story_state"],
+            rolling["canon_snapshot"],
         ),
     )
-
-    def asset_ref(name: str) -> dict[str, str]:
-        item = outputs[name]
-        return {
-            "asset_version_id": str(item["asset_version_id"]),
-            "content_hash": str(item["content_hash"]),
-        }
 
     admission = authority.schedule_longform_recap(
         chapter_request_id,
@@ -3242,21 +3259,13 @@ def _controlled_recap(
             "book_plan_version": book["book_plan_version"],
             "volume_plan_version": frozen["volume_plan_version"],
             "arc_plan_version": frozen["arc_plan_version"],
-            "canon_snapshot_version": outputs["canon_snapshot"]["asset_version_id"],
-            "character_state_version": outputs["character_state_snapshot"][
-                "asset_version_id"
-            ],
-            "foreshadowing_state_version": outputs["foreshadow_snapshot"][
-                "asset_version_id"
-            ],
+            "canon_snapshot_version": rolling["canon_snapshot"],
+            "character_state_version": rolling["character_state"],
+            "foreshadowing_state_version": rolling["foreshadowing_state"],
             "reader_state_version": reader["asset_version_id"],
             "quality_trend_version": frozen["quality_trend_version"],
-            "reward_ledger_version": outputs["reward_ledger_snapshot"][
-                "asset_version_id"
-            ],
-            "promise_ledger_version": outputs["promise_ledger_snapshot"][
-                "asset_version_id"
-            ],
+            "reward_ledger_version": rolling["reward_ledger"],
+            "promise_ledger_version": rolling["promise_ledger"],
             "chapter_outcome_versions": [book["last_chapter_outcome_version_id"]],
             "story_state_version": book["active_story_state_version_id"],
             "observations": {
@@ -3292,11 +3301,6 @@ def _controlled_recap(
                 "asset_version_id": str(reader["asset_version_id"]),
                 "content_hash": str(reader["content_hash"]),
             },
-            asset_ref("canon_snapshot"),
-            asset_ref("character_state_snapshot"),
-            asset_ref("foreshadow_snapshot"),
-            asset_ref("reward_ledger_snapshot"),
-            asset_ref("promise_ledger_snapshot"),
             *authority_inputs,
         ),
     )
@@ -4081,7 +4085,7 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
     reader_pack = _install_profile(
         args.database_url,
         profile=reader_profile,
-        version="1.0.0",
+        version=READER_PACK_INITIAL_VERSION,
         generation=1,
         expected_activation_version=0,
         project_id=project_id,
@@ -4303,9 +4307,7 @@ def main() -> int:
     )
     args = parser.parse_args()
     if not (
-        1
-        <= args.quality_context_token_budget
-        <= MAX_PROOF_QUALITY_CONTEXT_TOKEN_BUDGET
+        1 <= args.quality_context_token_budget <= MAX_PROOF_QUALITY_CONTEXT_TOKEN_BUDGET
     ):
         parser.error(
             "--quality-context-token-budget must be between 1 and "

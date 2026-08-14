@@ -13,6 +13,9 @@ from novel_forge.modules.capability_packs.artifacts import (
     artifact_content_hash,
     default_chapter_artifact_resolver,
 )
+from novel_forge.modules.book_followup_authority.contracts import (
+    BOOK_FOLLOWUP_DEFINITION_VERSION,
+)
 from novel_forge.modules.production_execution.capability_registry import (
     PLANNING_TIMEOUT_POLICY_VERSION,
     default_capability_registry,
@@ -176,6 +179,7 @@ def build_reader_outcome_pack_profile(
 ) -> LongformCapabilityPackProfile:
     root, manifest, artifacts = _base(repository_root, pack_id)
     _require_hash(operation_definition_hash)
+    manifest["identity"]["version"] = "1.1.0"
     template = next(
         item
         for item in manifest["workflow_template"]["nodes"]
@@ -185,7 +189,9 @@ def build_reader_outcome_pack_profile(
     node.update(
         node_id="reader_outcome",
         operation_name="reader_outcome.evaluate",
-        operation_definition_ref="reader_outcome.evaluate@1.0.0",
+        operation_definition_ref=(
+            f"reader_outcome.evaluate@{BOOK_FOLLOWUP_DEFINITION_VERSION}"
+        ),
         operation_definition_hash=operation_definition_hash,
         handler_key=("novel_forge.book_followup_authority.reader_outcome.evaluate"),
         stage="reader_outcome",
@@ -208,7 +214,7 @@ def build_reader_outcome_pack_profile(
     ]
     manifest["workflow_template"].update(
         workflow_id="book_followup_reader_outcome",
-        workflow_version="1.0.0",
+        workflow_version=BOOK_FOLLOWUP_DEFINITION_VERSION,
         nodes=[node],
         completion={
             "required_terminal_nodes": ["reader_outcome"],
@@ -252,6 +258,7 @@ def build_reader_outcome_pack_profile(
         template_path=("config/capability_packs/artifacts/reader_outcome_template.md"),
         input_schema_ref="schema:reader-outcome-pack-input:v1",
         output_schema_ref="schema:reader-outcome-pack-output:v1",
+        template_version="v2",
     )
     _update_policy_artifacts(manifest, artifacts)
     _append_capability_schemas(artifacts, "quality.reader_outcome.judge")
@@ -264,13 +271,15 @@ def build_reader_outcome_pack_profile(
             "policy_id": "timeout:quality-reader_outcome-judge:v1",
             "operation_timeout_seconds": 180,
             "timeout_action": "FAIL_ATTEMPT",
-            "authority_binding": "reader_outcome.evaluate@1.0.0",
+            "authority_binding": (
+                f"reader_outcome.evaluate@{BOOK_FOLLOWUP_DEFINITION_VERSION}"
+            ),
         },
         "generated:reader-outcome-pack-profile",
     )
     return LongformCapabilityPackProfile(
         pack_id,
-        "book_followup_reader_outcome@1.0.0",
+        f"book_followup_reader_outcome@{BOOK_FOLLOWUP_DEFINITION_VERSION}",
         manifest,
         _catalog(artifacts),
         "reader-feedback",

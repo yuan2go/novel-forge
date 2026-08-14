@@ -114,6 +114,76 @@ def test_v2_event_rejects_future_effective_state_and_missing_identity() -> None:
     }
 
 
+def test_canon_read_boundary_upgrades_bundled_character_knowledge() -> None:
+    events = events_from_canon_patch(
+        project_id="project-hundred-chapters",
+        book_id="book-river-city",
+        source_chapter=30,
+        chapter_outcome_id="outcome-30",
+        canon_patch_asset_version_id="canon-30",
+        accepted_draft_asset_version_id="draft-30",
+        source_operation_id="operation-30",
+        trace_id="trace-30",
+        canon_patch={
+            "state_changes": {
+                "character_knowledge": [
+                    {
+                        "character_id": "character:lin",
+                        "acquired_fact_ids": ["fact:first", "fact:second"],
+                        # Immutable v5 Canon patches used the generic Provider alias.
+                        "state": "KNOWN",
+                    }
+                ]
+            }
+        },
+    )
+
+    assert [event.identity.entity_key for event in events] == [
+        "character_id=character:lin|fact_id=fact:first",
+        "character_id=character:lin|fact_id=fact:second",
+    ]
+    assert all(event.payload["status"] == "KNOWN" for event in events)
+    assert all("state" not in event.payload for event in events)
+
+
+def test_canon_read_boundary_upgrades_v7_relationship_source_alias() -> None:
+    events = events_from_canon_patch(
+        project_id="project-hundred-chapters",
+        book_id="book-river-city",
+        source_chapter=30,
+        chapter_outcome_id="outcome-30",
+        canon_patch_asset_version_id="canon-30",
+        accepted_draft_asset_version_id="draft-30",
+        source_operation_id="operation-30",
+        trace_id="trace-30",
+        canon_patch={
+            "state_changes": {
+                "relationship_state": [
+                    {
+                        "entity_id": "character:lin:character:mei",
+                        "character_id": "character:lin",
+                        "target_id": "character:mei",
+                        "state": "WARY_ALLIES",
+                        "effective_from_chapter": 30,
+                        "confidence": 0.96,
+                        "coverage": "EXPLICIT",
+                        "extraction_evidence": {
+                            "excerpt_digest": "sha256:relationship"
+                        },
+                    }
+                ]
+            }
+        },
+    )
+
+    assert len(events) == 1
+    assert events[0].identity.entity_key == (
+        "source_id=character:lin|target_id=character:mei"
+    )
+    assert events[0].payload["source_id"] == "character:lin"
+    assert "character_id" not in events[0].payload
+
+
 def test_v1_outcome_is_adapted_only_at_the_read_boundary() -> None:
     events = events_from_chapter_outcome(
         "legacy-outcome-v1",

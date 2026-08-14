@@ -1,4 +1,5 @@
 """Storage-free domain transformations for the authoritative chapter chain."""
+
 from __future__ import annotations
 
 import json
@@ -9,15 +10,24 @@ from novel_forge.modules.context_builder.domain import (
     ContextCandidate,
     build_authority_context_bundle,
 )
-from novel_forge.modules.review.domain import evaluate_rereview_result, evaluate_review_result
+from novel_forge.modules.review.domain import (
+    evaluate_rereview_result,
+    evaluate_review_result,
+)
 from novel_forge.modules.revision.domain import apply_revision_result
-from novel_forge.modules.canon_graph.domain import build_canon_update, extract_canon_candidates
+from novel_forge.modules.canon_graph.domain import (
+    build_canon_update,
+    extract_canon_candidates,
+)
 from novel_forge.modules.content_quality_loop.domain import evaluate_quality_evidence
 from novel_forge.modules.chapter_quality_authority import build_chapter_quality_evidence
 from novel_forge.modules.publishing.domain import (
     build_export_blob_manifest,
     finalize_blob_verified_release,
     prepare_internal_release,
+)
+from novel_forge.modules.chapter_authority.provider_views import (
+    build_task_narrative_projection,
 )
 
 
@@ -29,7 +39,9 @@ def build_chapter_plan(
     trace_id: str,
 ) -> dict[str, Any]:
     if chapter <= 0 or not premise.strip():
-        raise KernelError("CHAPTER_PLAN_INPUT_INVALID", "chapter and premise are required")
+        raise KernelError(
+            "CHAPTER_PLAN_INPUT_INVALID", "chapter and premise are required"
+        )
     return {
         "chapter": chapter,
         "title": title.strip() or f"Chapter {chapter}",
@@ -58,7 +70,9 @@ def build_context_bundle(
     capability_pack_snapshot_ref: str = "",
 ) -> dict[str, Any]:
     _require_keys(plan, "chapter", "premise")
-    objective = str(plan.get("chapter_objective") or plan.get("objective") or "").strip()
+    objective = str(
+        plan.get("chapter_objective") or plan.get("objective") or ""
+    ).strip()
     scene_sequence = list(plan.get("scene_sequence") or plan.get("beats") or [])
     if not objective or not scene_sequence:
         raise KernelError(
@@ -74,11 +88,15 @@ def build_context_bundle(
             relevance_score=float(item.get("relevance_score", item.get("score", 0))),
             qualification=str(item.get("qualification", "ELIGIBLE")),
             governance_status=str(item.get("governance_status", "CLEAR")),
-            source_use_mode=str(item.get("source_use_mode", item.get("allowed_use", "generation"))),
+            source_use_mode=str(
+                item.get("source_use_mode", item.get("allowed_use", "generation"))
+            ),
             source_risk=int(item.get("source_risk", 0)),
             raw_source=bool(item.get("raw_source", False)),
             content_digest=str(item.get("content_digest", "")),
-            policy_version=str(item.get("policy_version", item.get("source_policy_version", ""))),
+            policy_version=str(
+                item.get("policy_version", item.get("source_policy_version", ""))
+            ),
             invalidation_keys=tuple(item.get("invalidation_keys", [])),
             narrative_function=str(item.get("narrative_function", "")),
             safe_summary=str(item.get("safe_summary", "")),
@@ -153,6 +171,7 @@ def build_context_bundle(
             "canon_snapshot_version": refs.get("canon_snapshot_version", ""),
         },
     )
+    task_narrative_projection = build_task_narrative_projection(plan)
     return {
         **governed,
         "chapter": plan["chapter"],
@@ -165,6 +184,18 @@ def build_context_bundle(
             "copyright_boundary": "project-owned and abstract eligible context only",
         },
         "forbidden_source_count": 0,
+        "task_narrative_projection": task_narrative_projection,
+        "chapter_execution_expectations": {
+            "contract_version": "chapter-execution-expectations-v2",
+            "chapter_plan_asset_version_id": plan_asset_version_id,
+            "required_state_transitions": list(
+                plan.get("required_state_transitions") or []
+            ),
+            "disclosures": list(plan.get("disclosures") or []),
+            "knowledge_boundaries": list(plan.get("knowledge_boundaries") or []),
+            "expected_exit_state": dict(plan.get("expected_exit_state") or {}),
+        },
+        "provider_projection_contract_version": "minimum-sufficient-context-v2",
     }
 
 
@@ -304,10 +335,13 @@ def build_canon_patch(
                 state = fact.get("state")
                 if not state_kind or not isinstance(state, dict):
                     continue
+                identity = _entity_key_components(str(fact.get("entity_key") or ""))
                 historical_state.setdefault(state_kind, []).append(
                     {
                         "asset_version_id": segment.get("asset_version_id", ""),
                         "source_event_id": fact.get("source_event_id", ""),
+                        "entity_version": int(fact.get("entity_version") or 0),
+                        **identity,
                         **state,
                     }
                 )
@@ -317,6 +351,7 @@ def build_canon_patch(
                 {
                     "asset_version_id": segment.get("asset_version_id", ""),
                     "source_event_id": fact.get("source_event_id", ""),
+                    "entity_version": int(fact.get("entity_version") or 0),
                     **dict(fact.get("state") or {}),
                 }
                 for fact in facts
@@ -333,7 +368,9 @@ def build_canon_patch(
                 **(facts[0] if len(facts) == 1 and isinstance(facts[0], dict) else {}),
             }
         )
-    if int(revision.get("chapter", 0)) > 1 and not historical_state.get("canon_snapshot"):
+    if int(revision.get("chapter", 0)) > 1 and not historical_state.get(
+        "canon_snapshot"
+    ):
         raise KernelError(
             "CANON_HISTORY_BASELINE_REQUIRED",
             "chapters after the first require an explicit CanonSnapshot baseline",
@@ -345,7 +382,21 @@ def build_canon_patch(
         context_bundle_version_id=context_bundle_version_id,
         extraction=extraction,
         historical_state=historical_state,
+        planned_execution=dict(
+            (context_bundle or {}).get("chapter_execution_expectations") or {}
+        ),
     )
+
+
+def _entity_key_components(entity_key: str) -> dict[str, str]:
+    """Rehydrate typed identity removed from compact state payload metadata."""
+
+    components: dict[str, str] = {}
+    for raw in entity_key.split("|"):
+        key, separator, value = raw.partition("=")
+        if separator and key and value:
+            components[key] = value
+    return components
 
 
 def build_canon_extraction(
@@ -380,7 +431,12 @@ def build_quality_report(
 ) -> dict[str, Any]:
     effective_review = review or {
         "issues": [
-            {"code": code, "severity": "blocking", "status": "OPEN", "qualification": "ELIGIBLE"}
+            {
+                "code": code,
+                "severity": "blocking",
+                "status": "OPEN",
+                "qualification": "ELIGIBLE",
+            }
             for code in revision.get("resolved_issue_codes", [])
         ]
     }
@@ -493,7 +549,10 @@ def build_final_release_gate(
 def _require_keys(payload: dict[str, Any], *keys: str) -> None:
     missing = [key for key in keys if key not in payload]
     if missing:
-        raise KernelError("CHAPTER_HANDLER_INPUT_INVALID", f"missing chapter fields: {', '.join(missing)}")
+        raise KernelError(
+            "CHAPTER_HANDLER_INPUT_INVALID",
+            f"missing chapter fields: {', '.join(missing)}",
+        )
 
 
 __all__ = [

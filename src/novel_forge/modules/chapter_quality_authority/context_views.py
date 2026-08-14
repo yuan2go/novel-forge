@@ -13,6 +13,56 @@ STATE_ASSET_TYPES = (
     "story_state_snapshot",
 )
 
+# Provider quality judges need narrative meaning and stable identity, not the
+# extraction transport/evidence envelope retained by PostgreSQL Authority.  The
+# full candidate remains addressable through its Canon Patch AssetVersion and
+# the digests emitted by this view.
+_AUTHORITY_EVIDENCE_KEYS = frozenset(
+    {
+        "approval_requirement",
+        "approval_resolution",
+        "confidence",
+        "evidence_end",
+        "evidence_start",
+        "extraction_evidence",
+        "extractor_type",
+        "model_id",
+        "prompt_version",
+        "provider_id",
+        "source_id",
+        "source_revision_asset_version_id",
+    }
+)
+
+_CONFLICT_CANDIDATE_SUMMARY_KEYS = (
+    "entity_key",
+    "subject",
+    "predicate",
+    "object",
+    "character_id",
+    "source_id",
+    "source_character_id",
+    "target_id",
+    "target_character_id",
+    "arc_id",
+    "thread_id",
+    "rule_id",
+    "fact_id",
+    "proposition_id",
+    "disclosure_id",
+    "audience",
+    "disclosure_mode",
+    "impact_type",
+    "from_state",
+    "from_status",
+    "from_stage",
+    "from_tier",
+    "state",
+    "status",
+    "stage",
+    "tier",
+)
+
 
 class TokenEstimator(Protocol):
     def estimate(self, value: str) -> int: ...
@@ -102,13 +152,9 @@ def compile_platform_policy(
             rules.get("rhythm") or facts.get("rhythm_expectations") or ()
         ),
         publish_metadata_rules=dict(
-            rules.get("publish_metadata")
-            or facts.get("publish_metadata_rules")
-            or {}
+            rules.get("publish_metadata") or facts.get("publish_metadata_rules") or {}
         ),
-        policy_digest=_digest(
-            {"source": profile_asset_version_id, "facts": facts}
-        ),
+        policy_digest=_digest({"source": profile_asset_version_id, "facts": facts}),
     )
 
 
@@ -127,10 +173,16 @@ def build_quality_context_view(
     token_estimator: TokenEstimator | None = None,
 ) -> dict[str, Any]:
     if token_budget <= 0:
-        raise KernelError("QUALITY_CONTEXT_BUDGET_INVALID", "quality token budget must be positive")
+        raise KernelError(
+            "QUALITY_CONTEXT_BUDGET_INVALID", "quality token budget must be positive"
+        )
     estimator = token_estimator or ConservativeTokenEstimator()
     if group not in {
-        "structural", "commercial", "source_originality", "longform", "platform"
+        "structural",
+        "commercial",
+        "source_originality",
+        "longform",
+        "platform",
     }:
         raise KernelError("QUALITY_GROUP_INVALID", "quality context group is invalid")
     manifest = dict(context_bundle.get("production_input_manifest") or {})
@@ -165,6 +217,8 @@ def build_quality_context_view(
             "readability_policy": quality_policy.thresholds,
             "mobile_reading_policy": quality_policy.thresholds,
             "format_policy": platform_policy.format_rules,
+            "chapter_intent": chapter_plan.get("chapter_intent"),
+            "scene_plan": chapter_plan.get("scene_plan", []),
         }
     elif group == "commercial":
         body = {
@@ -176,7 +230,9 @@ def build_quality_context_view(
             "reader_promise_actions": chapter_plan.get("reader_promise_actions", []),
             "reward_setup": chapter_plan.get("reward_setup", []),
             "reward_payoff": chapter_plan.get("reward_payoff", []),
-            "protagonist_charm_mechanism": chapter_plan.get("protagonist_charm_mechanism"),
+            "protagonist_charm_mechanism": chapter_plan.get(
+                "protagonist_charm_mechanism"
+            ),
             "antagonist_pressure": chapter_plan.get("antagonist_pressure"),
             "suspense_curve": chapter_plan.get("suspense_curve", []),
             "emotional_curve": chapter_plan.get("emotional_curve", []),
@@ -184,6 +240,11 @@ def build_quality_context_view(
             "serialization_function": chapter_plan.get("serialization_function"),
             "opening_state": chapter_plan.get("opening_state"),
             "next_chapter_bridge": chapter_plan.get("next_chapter_bridge"),
+            "chapter_intent": chapter_plan.get("chapter_intent"),
+            "arc_schedule": chapter_plan.get("arc_schedule", []),
+            "setups": chapter_plan.get("setups", []),
+            "payoffs": chapter_plan.get("payoffs", []),
+            "reader_experience": chapter_plan.get("reader_experience", {}),
         }
     elif group == "source_originality":
         governed_segments = [
@@ -208,7 +269,9 @@ def build_quality_context_view(
             "revision_text": str(revision.get("text") or ""),
             "source_governance": manifest.get("source_governance", {}),
             "context_manifest": context_bundle.get("context_manifest", {}),
-            "source_isolation_result": context_bundle.get("source_isolation_result", {}),
+            "source_isolation_result": context_bundle.get(
+                "source_isolation_result", {}
+            ),
             "copyright_boundary": context_bundle.get("copyright_boundary"),
             "governed_segment_identities": governed_segments,
             "source_expression_excluded": True,
@@ -223,9 +286,12 @@ def build_quality_context_view(
             **common,
             "revision_text": str(revision.get("text") or ""),
             "canon_patch_asset_version_id": canon_asset_version_id,
-            "canon_conflicts": canon.get("conflicts", []),
+            "canon_conflicts": _project_canon_conflicts(
+                list(canon.get("conflicts") or [])
+            ),
             "previous_state_snapshots": previous_states,
             "current_state_candidates": current_states,
+            "governed_world_rules": _segments_of_type(segments, "world_bible"),
             "volume_arc": _segments_of_type(segments, "volume_arc"),
             "arc_progress": _segments_of_type(segments, "arc_progress_report"),
             "previous_recap": _segments_of_type(segments, "longform_recap_report"),
@@ -253,9 +319,7 @@ def build_quality_context_view(
             "compiled_platform_policy": asdict(platform_policy),
             "publish_metadata_candidate": {
                 "chapter": revision.get("chapter"),
-                "title": str(
-                    revision.get("title") or chapter_plan.get("title") or ""
-                ),
+                "title": str(revision.get("title") or chapter_plan.get("title") or ""),
                 "summary": str(summary),
             },
         }
@@ -266,7 +330,7 @@ def build_quality_context_view(
         token_budget=token_budget,
     )
     body["coverage_report"] = coverage
-    body["contract_version"] = "stage-quality-context-v2"
+    body["contract_version"] = "stage-quality-context-v4"
     body["context_digest"] = _digest(body)
     final_tokens = _estimate_payload(body, estimator)
     if final_tokens > token_budget:
@@ -278,7 +342,9 @@ def build_quality_context_view(
     return body
 
 
-def _require_profile_segment(version_id: str, segment: dict[str, Any], label: str) -> None:
+def _require_profile_segment(
+    version_id: str, segment: dict[str, Any], label: str
+) -> None:
     if not version_id or segment.get("asset_version_id") != version_id:
         raise KernelError(
             "QUALITY_PROFILE_VERSION_MISSING",
@@ -311,7 +377,8 @@ def _segments_of_type(
             "content_digest": item.get("content_digest"),
             "structured_facts": item.get("structured_facts", []),
         }
-        for item in segments if item.get("asset_type") == asset_type
+        for item in segments
+        if item.get("asset_type") == asset_type
     ]
 
 
@@ -330,30 +397,36 @@ def _group_state_segments(
             for fact in facts:
                 if not isinstance(fact, dict):
                     continue
-                identity = str(fact.get("entity_key") or _state_identity(fact, state_type))
+                identity = str(
+                    fact.get("entity_key") or _state_identity(fact, state_type)
+                )
                 rows = grouped[state_type].setdefault(identity, [])
                 if rows and rows[-1].get("asset_version_id") == item.get(
                     "asset_version_id"
                 ):
                     rows[-1]["structured_facts"].append(fact)
                 else:
-                    rows.append({
-                        "asset_version_id": item.get("asset_version_id"),
-                        "entity_id": identity,
-                        "relationship_pair": None,
-                        "content_digest": item.get("content_digest"),
-                        "chapter": item.get("chapter"),
-                        "qualification": item.get("qualification", "ELIGIBLE"),
-                        "structured_facts": [fact],
-                        "declared_empty": False,
-                        "compressed": False,
-                        "omitted_fact_count": 0,
-                    })
+                    rows.append(
+                        {
+                            "asset_version_id": item.get("asset_version_id"),
+                            "entity_id": identity,
+                            "relationship_pair": None,
+                            "content_digest": item.get("content_digest"),
+                            "chapter": item.get("chapter"),
+                            "qualification": item.get("qualification", "ELIGIBLE"),
+                            "structured_facts": [fact],
+                            "declared_empty": False,
+                            "compressed": False,
+                            "omitted_fact_count": 0,
+                        }
+                    )
             continue
         identity = _state_identity(item, state_type)
         declared_empty = bool(
             item.get("declared_empty")
-            or any(isinstance(fact, dict) and fact.get("declared_empty") for fact in facts)
+            or any(
+                isinstance(fact, dict) and fact.get("declared_empty") for fact in facts
+            )
         )
         # The row-level flag is the canonical empty-state fact. Keeping the
         # ContextSegment's duplicate structured marker wastes scarce judge
@@ -376,7 +449,12 @@ def _group_state_segments(
         )
     for state in grouped.values():
         for rows in state.values():
-            rows.sort(key=lambda row: (int(row.get("chapter") or 0), str(row["asset_version_id"])))
+            rows.sort(
+                key=lambda row: (
+                    int(row.get("chapter") or 0),
+                    str(row["asset_version_id"]),
+                )
+            )
     return grouped
 
 
@@ -411,7 +489,9 @@ def _group_current_state_candidates(
                     ),
                     "qualification": "CANDIDATE",
                     "previous_asset_version_ids": [],
-                    "structured_facts": identity_changes,
+                    "structured_facts": [
+                        _project_narrative_value(item) for item in identity_changes
+                    ],
                     "declared_empty": False,
                     "compressed": False,
                     "omitted_fact_count": 0,
@@ -458,29 +538,131 @@ def _state_identity(item: dict[str, Any], state_type: str) -> str:
 def _longform_chapter_plan_view(chapter_plan: dict[str, Any]) -> dict[str, Any]:
     """Freeze only long-form obligations, never the full provider/source envelope."""
 
-    fields = (
+    canonical_fields = (
         "chapter",
         "title",
-        "premise",
-        "objective",
-        "chapter_objective",
-        "primary_function",
-        "secondary_functions",
-        "required_state_delta",
-        "required_arc_contributions",
-        "actual_arc_contributions",
-        "reader_promise_actions",
-        "promise_action",
-        "foreshadow_action",
-        "reward_setup",
-        "reward_payoff",
-        "reward_action",
-        "chapter_hook",
-        "ending_hook",
         "prohibited_outcomes",
         "next_chapter_bridge",
+        "narrative_architecture_version",
+        "narrative_segment_ref",
+        "chapter_intent",
+        "arc_schedule",
+        "setups",
+        "payoffs",
+        "character_participation",
+        "knowledge_boundaries",
+        "disclosures",
+        "required_state_transitions",
+        "reader_experience",
+        "expected_exit_state",
     )
-    return {field: chapter_plan[field] for field in fields if field in chapter_plan}
+    view = {
+        field: chapter_plan[field]
+        for field in canonical_fields
+        if field in chapter_plan
+    }
+    view["scene_plan"] = [
+        {
+            field: scene[field]
+            for field in (
+                "scene_id",
+                "scene_group_id",
+                "goal",
+                "participants",
+            )
+            if field in scene
+        }
+        for scene in chapter_plan.get("scene_plan") or []
+        if isinstance(scene, dict)
+    ]
+    # Older accepted plans remain readable without duplicating their legacy
+    # aliases into plans that already carry the canonical execution contract.
+    if not chapter_plan.get("narrative_architecture_version"):
+        for field in (
+            "premise",
+            "objective",
+            "chapter_objective",
+            "primary_function",
+            "secondary_functions",
+            "required_state_delta",
+            "required_arc_contributions",
+            "actual_arc_contributions",
+            "reader_promise_actions",
+            "promise_action",
+            "foreshadow_action",
+            "reward_setup",
+            "reward_payoff",
+            "reward_action",
+            "chapter_hook",
+            "ending_hook",
+        ):
+            if field in chapter_plan:
+                view[field] = chapter_plan[field]
+    return view
+
+
+def _project_canon_conflicts(conflicts: list[Any]) -> list[dict[str, Any]]:
+    """Deduplicate conflict evidence while preserving corrective semantics."""
+
+    projected: list[dict[str, Any]] = []
+    for raw in conflicts:
+        if not isinstance(raw, dict):
+            continue
+        candidate = raw.get("candidate_version")
+        item = {
+            key: raw[key]
+            for key in (
+                "severity",
+                "conflict_code",
+                "approval_requirement",
+                "recommended_resolution",
+            )
+            if raw.get(key) not in (None, "", [], {})
+        }
+        existing = _project_narrative_value(raw.get("existing_version"))
+        if existing not in (None, "", [], {}):
+            item["expected_version"] = existing
+        if candidate not in (None, "", [], {}):
+            item["candidate_digest"] = _digest({"candidate": candidate})
+            if isinstance(candidate, list):
+                item["candidate_count"] = len(candidate)
+            else:
+                item["candidate_summary"] = _conflict_candidate_summary(candidate)
+        item["conflict_digest"] = _digest({"conflict": raw})
+        projected.append(item)
+    return projected
+
+
+def _conflict_candidate_summary(value: Any) -> Any:
+    if not isinstance(value, dict):
+        return _project_narrative_value(value)
+    summary = {
+        key: _project_narrative_value(value[key])
+        for key in _CONFLICT_CANDIDATE_SUMMARY_KEYS
+        if value.get(key) not in (None, "", [], {})
+    }
+    return summary or {"semantic_digest": _digest({"candidate": value})}
+
+
+def _project_narrative_value(value: Any) -> Any:
+    """Remove null transport metadata from a task-specific narrative view."""
+
+    if isinstance(value, dict):
+        return {
+            str(key): projected
+            for key, raw in value.items()
+            if key not in _AUTHORITY_EVIDENCE_KEYS
+            and (projected := _project_narrative_value(raw))
+            not in (None, "", [], {})
+        }
+    if isinstance(value, list):
+        return [
+            projected
+            for raw in value
+            if (projected := _project_narrative_value(raw))
+            not in (None, "", [], {})
+        ]
+    return value
 
 
 def _fit_quality_context(
@@ -524,10 +706,10 @@ def _compress_one_noncritical_fact(
 ) -> bool:
     candidate = next(
         (
-            row for row in reversed(rows)
+            row
+            for row in reversed(rows)
             if any(
-                not _critical_fact(fact)
-                for fact in row.get("structured_facts") or []
+                not _critical_fact(fact) for fact in row.get("structured_facts") or []
             )
         ),
         None,
@@ -541,9 +723,7 @@ def _compress_one_noncritical_fact(
     facts.pop(remove_index)
     candidate["structured_facts"] = facts
     candidate["compressed"] = True
-    candidate["omitted_fact_count"] = int(
-        candidate.get("omitted_fact_count") or 0
-    ) + 1
+    candidate["omitted_fact_count"] = int(candidate.get("omitted_fact_count") or 0) + 1
     if not facts:
         _drop_redundant_empty_row_fields(candidate)
     return True
@@ -598,7 +778,7 @@ def _estimate_final_quality_context(
     envelope = {
         **body,
         "coverage_report": coverage,
-        "contract_version": "stage-quality-context-v2",
+        "contract_version": "stage-quality-context-v4",
         # The digest value is fixed-width. Its value does not affect the token
         # estimate, so a placeholder avoids a circular digest dependency.
         "context_digest": "sha256:" + ("0" * 64),
@@ -704,13 +884,23 @@ def _estimate_payload(payload: dict[str, Any], estimator: TokenEstimator) -> int
 
 
 def _digest(payload: dict[str, Any]) -> str:
-    return "sha256:" + hashlib.sha256(
-        json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str).encode()
-    ).hexdigest()
+    return (
+        "sha256:"
+        + hashlib.sha256(
+            json.dumps(
+                payload, sort_keys=True, separators=(",", ":"), default=str
+            ).encode()
+        ).hexdigest()
+    )
 
 
 __all__ = [
-    "CompiledPlatformPolicy", "CompiledQualityPolicy", "ConservativeTokenEstimator",
-    "STATE_ASSET_TYPES", "TokenEstimator",
-    "build_quality_context_view", "compile_platform_policy", "compile_quality_policy",
+    "CompiledPlatformPolicy",
+    "CompiledQualityPolicy",
+    "ConservativeTokenEstimator",
+    "STATE_ASSET_TYPES",
+    "TokenEstimator",
+    "build_quality_context_view",
+    "compile_platform_policy",
+    "compile_quality_policy",
 ]

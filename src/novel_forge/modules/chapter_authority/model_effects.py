@@ -394,7 +394,7 @@ class ExternalEffectChapterModelPort:
             model_id=str(
                 getattr(self.adapter, "model_id_for_stage", lambda _stage: "")(stage)
             ),
-            request_timeout_seconds=self.lease_seconds * 5,
+            request_timeout_seconds=self._request_timeout_seconds(request),
             reconciliation_mode=str(self.adapter.reconciliation_mode),
             provider_capability_profile=(
                 self.adapter.capability_profile.to_dict()
@@ -650,6 +650,42 @@ class ExternalEffectChapterModelPort:
                 execution_binding=execution_binding,
             )
         return result
+
+    def _request_timeout_seconds(self, request: ChapterHandlerRequest) -> int:
+        """Bind Provider time to the frozen Operation policy, not its lease."""
+
+        runtime = get_database_runtime(self.database_url)
+        with runtime.connection() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT definition_snapshot->'timeout_policy'
+                           ->>'operation_timeout_seconds'
+                    FROM authority_operation
+                    WHERE operation_id=%s AND project_id=%s
+                    """,
+                    [request.operation_id, request.project_id],
+                )
+                row = cursor.fetchone()
+        if row is None:
+            raise KernelError("OPERATION_NOT_FOUND", "operation does not exist")
+        try:
+            timeout_seconds = int(row[0] or 0)
+        except (TypeError, ValueError) as exc:
+            raise KernelError(
+                "CHAPTER_PROVIDER_TIMEOUT_POLICY_INVALID",
+                "frozen Chapter Operation timeout is invalid",
+            ) from exc
+        if timeout_seconds > 0:
+            return timeout_seconds
+        if self.agent_binding_required:
+            raise KernelError(
+                "CHAPTER_PROVIDER_TIMEOUT_POLICY_INVALID",
+                "controlled Chapter execution requires a frozen Operation timeout",
+            )
+        # Explicit compatibility path for development fixtures admitted before
+        # controlled Chapter definitions were required.
+        return self.lease_seconds * 5
 
     def _execution_identity(
         self,
@@ -1139,6 +1175,11 @@ def _normalize_model_output(stage: str, raw: dict[str, Any]) -> dict[str, Any]:
             "narrative_pattern_fingerprints",
             "theme_movements",
             "antagonist_pressure_changes",
+            "character_knowledge_changes",
+            "character_belief_changes",
+            "character_arc_changes",
+            "arc_state_changes",
+            "disclosure_events",
         )
         normalized_extraction: dict[str, list[dict[str, Any]]] = {}
         for field in fields:

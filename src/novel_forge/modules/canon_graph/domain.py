@@ -1,10 +1,15 @@
 """Storage-free canon extraction, conflict detection, and state reduction."""
+
 from __future__ import annotations
 
 import hashlib
 from typing import Any, Iterable, Protocol
 
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.narrative_state.contracts import (
+    atomize_character_knowledge_changes,
+    normalize_character_belief_changes,
+)
 
 
 SEMANTIC_CHANGE_FIELDS = {
@@ -22,6 +27,11 @@ SEMANTIC_CHANGE_FIELDS = {
     "narrative_pattern_fingerprints": "narrative_pattern_fingerprints",
     "theme_movements": "theme_movements",
     "antagonist_pressure_changes": "antagonist_pressure_changes",
+    "character_knowledge_changes": "character_knowledge",
+    "character_belief_changes": "character_belief",
+    "character_arc_changes": "character_arc",
+    "arc_state_changes": "arc_state",
+    "disclosure_events": "disclosure_event",
 }
 
 # Provider response keys are an extraction API, not Narrative State identity.
@@ -42,6 +52,11 @@ PROVIDER_SEMANTIC_CHANGE_FIELDS = {
     "narrative_pattern_fingerprints": "narrative_pattern_fingerprints",
     "theme_movements": "theme_movements",
     "antagonist_pressure_changes": "antagonist_pressure_changes",
+    "character_knowledge_changes": "character_knowledge_changes",
+    "character_belief_changes": "character_belief_changes",
+    "character_arc_changes": "character_arc_changes",
+    "arc_state_changes": "arc_state_changes",
+    "disclosure_events": "disclosure_events",
 }
 
 HIGH_IMPACT_CHANGE_TYPES = {
@@ -81,10 +96,14 @@ def extract_canon_candidates(
 ) -> dict[str, Any]:
     """Produce deterministic candidates independently of revision-provider metadata."""
     if not all((project_id, revision_asset_version_id, context_bundle_version_id)):
-        raise KernelError("CANON_EXTRACTION_INPUT_INVALID", "versioned extraction lineage is required")
+        raise KernelError(
+            "CANON_EXTRACTION_INPUT_INVALID", "versioned extraction lineage is required"
+        )
     text = str(revision.get("text") or "").strip()
     if not text:
-        raise KernelError("CANON_EXTRACTION_INPUT_INVALID", "accepted revision text is required")
+        raise KernelError(
+            "CANON_EXTRACTION_INPUT_INVALID", "accepted revision text is required"
+        )
     annotations = tuple(operator_annotations)
     assertions = list(revision.get("canon_assertions", []))
     # Every accepted chapter has a deterministic event assertion, so a real-provider
@@ -100,8 +119,14 @@ def extract_canon_candidates(
         }
     )
     for item in assertions:
-        if not all(str(item.get(key) or "").strip() for key in ("subject", "predicate", "object")):
-            raise KernelError("CANON_ASSERTION_INVALID", "canon assertion requires subject/predicate/object")
+        if not all(
+            str(item.get(key) or "").strip()
+            for key in ("subject", "predicate", "object")
+        ):
+            raise KernelError(
+                "CANON_ASSERTION_INVALID",
+                "canon assertion requires subject/predicate/object",
+            )
     changes: dict[str, list[dict[str, Any]]] = {
         "canon_assertion_candidates": assertions,
         "character_state_changes": list(revision.get("character_state_changes", [])),
@@ -121,9 +146,29 @@ def extract_canon_candidates(
         "antagonist_pressure_changes": list(
             revision.get("antagonist_pressure_changes", [])
         ),
+        "character_knowledge_changes": list(
+            revision.get("character_knowledge_changes", [])
+        ),
+        "character_belief_changes": list(revision.get("character_belief_changes", [])),
+        "character_arc_changes": list(revision.get("character_arc_changes", [])),
+        "arc_state_changes": list(revision.get("arc_state_changes", [])),
+        "reader_knowledge_changes": [],
+        "disclosure_events": list(revision.get("disclosure_events", [])),
     }
-    _merge_semantic_changes(changes, provider_extraction or {}, source="provider_semantic_extractor")
+    _merge_semantic_changes(
+        changes, provider_extraction or {}, source="provider_semantic_extractor"
+    )
     _merge_operator_annotations(changes, annotations)
+    _normalize_resource_changes(changes["resource_state_changes"])
+    changes["character_knowledge_changes"] = atomize_character_knowledge_changes(
+        changes["character_knowledge_changes"]
+    )
+    changes["character_belief_changes"] = normalize_character_belief_changes(
+        changes["character_belief_changes"]
+    )
+    changes["reader_knowledge_changes"] = _derive_reader_knowledge_changes(
+        changes["disclosure_events"]
+    )
     evidence_changes = {
         key: [
             _with_extraction_evidence(
@@ -162,7 +207,9 @@ def extract_canon_candidates(
         "context_bundle_version_id": context_bundle_version_id,
         **evidence_changes,
         "extraction_source": (
-            "hybrid" if provider_extraction or annotations else "deterministic_extractor"
+            "hybrid"
+            if provider_extraction or annotations
+            else "deterministic_extractor"
         ),
         "extractor_evidence": {
             "deterministic": True,
@@ -174,7 +221,7 @@ def extract_canon_candidates(
         "digest_identity_only": semantic_count == 0,
         "semantic_coverage": "INSUFFICIENT" if semantic_count == 0 else "EXTRACTED",
         "provider_assertions_optional": True,
-        "canon_extraction_contract_version": "canon-semantic-extraction-v2",
+        "canon_extraction_contract_version": "canon-semantic-extraction-v4",
     }
 
 
@@ -187,12 +234,15 @@ def build_canon_update(
     existing_facts: Iterable[dict[str, Any]] = (),
     extraction: dict[str, Any] | None = None,
     historical_state: dict[str, list[dict[str, Any]]] | None = None,
+    planned_execution: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     if not all((project_id, revision_asset_version_id, context_bundle_version_id)):
         raise KernelError("CANON_INPUT_INVALID", "versioned canon lineage is required")
     if extraction is None:
         if revision is None:
-            raise KernelError("CANON_EXTRACTION_REQUIRED", "Canon reduction requires extraction")
+            raise KernelError(
+                "CANON_EXTRACTION_REQUIRED", "Canon reduction requires extraction"
+            )
         extraction = extract_canon_candidates(
             project_id=project_id,
             revision=revision,
@@ -200,21 +250,28 @@ def build_canon_update(
             context_bundle_version_id=context_bundle_version_id,
         )
     if extraction.get("project_id") != project_id:
-        raise KernelError("CROSS_PROJECT_REFERENCE", "Canon extraction belongs to another project")
+        raise KernelError(
+            "CROSS_PROJECT_REFERENCE", "Canon extraction belongs to another project"
+        )
     chapter = int(extraction["chapter"])
     state = {key: list(values) for key, values in (historical_state or {}).items()}
     previous = [*existing_facts, *state.get("canon_snapshot", [])]
-    facts = [_normalize_fact(item, chapter, revision_asset_version_id) for item in extraction.get("canon_assertion_candidates", [])]
+    facts = [
+        _normalize_fact(item, chapter, revision_asset_version_id)
+        for item in extraction.get("canon_assertion_candidates", [])
+    ]
     deterministic_validation = validate_deterministic_continuity(
         chapter=chapter,
         historical_state=state,
         extraction=extraction,
+        planned_execution=planned_execution,
     )
     conflicts = _fact_conflicts(previous, facts)
     conflicts.extend(deterministic_validation["violations"])
-    if extraction.get("approval_required_changes") and not extraction.get(
-        "high_impact_approval", {}
-    ).get("status") == "APPROVED":
+    if (
+        extraction.get("approval_required_changes")
+        and not extraction.get("high_impact_approval", {}).get("status") == "APPROVED"
+    ):
         conflicts.append(
             _conflict(
                 "HIGH_IMPACT_SEMANTIC_CHANGE_REQUIRES_APPROVAL",
@@ -223,6 +280,8 @@ def build_canon_update(
                 "approve or reject each high-impact semantic change before reduction",
             )
         )
+    state_changes = _narrative_state_changes(extraction, facts)
+    _bind_narrative_entity_versions(state_changes, state)
     return {
         "project_id": project_id,
         "chapter": chapter,
@@ -231,18 +290,21 @@ def build_canon_update(
         "facts": facts,
         "conflicts": conflicts,
         "deterministic_validation": deterministic_validation,
-        "gate": "BLOCKED" if any(item["severity"] == "blocking" for item in conflicts) else "PASSED",
+        "gate": "BLOCKED"
+        if any(item["severity"] == "blocking" for item in conflicts)
+        else "PASSED",
         "historical_input_version_ids": sorted(
             {
                 str(item.get("asset_version_id"))
-                for values in state.values() for item in values
+                for values in state.values()
+                for item in values
                 if item.get("asset_version_id")
             }
         ),
-        "state_changes": _narrative_state_changes(extraction, facts),
+        "state_changes": state_changes,
         "rebuildable": True,
         "rollback_aware": True,
-        "canon_contract_version": "canon-update-domain-v4",
+        "canon_contract_version": "canon-update-domain-v6",
     }
 
 
@@ -251,9 +313,14 @@ def _normalize_fact(item: dict[str, Any], chapter: int, source: str) -> dict[str
     predicate = str(item.get("predicate") or "").strip()
     object_value = str(item.get("object") or "").strip()
     if not all((subject, predicate, object_value)):
-        raise KernelError("CANON_ASSERTION_INVALID", "canon assertion requires subject/predicate/object")
+        raise KernelError(
+            "CANON_ASSERTION_INVALID",
+            "canon assertion requires subject/predicate/object",
+        )
     return {
-        "subject": subject, "predicate": predicate, "object": object_value,
+        "subject": subject,
+        "predicate": predicate,
+        "object": object_value,
         "effective_from_chapter": int(item.get("effective_from_chapter") or chapter),
         "source_asset_version_id": source,
         "supersedes_event_id": str(item.get("supersedes_event_id") or ""),
@@ -291,8 +358,84 @@ def _merge_operator_annotations(
         field = str(annotation.get("change_field") or "")
         change = annotation.get("change")
         if field not in target or not isinstance(change, dict):
-            raise KernelError("CANON_ANNOTATION_INVALID", "operator annotation is not typed")
+            raise KernelError(
+                "CANON_ANNOTATION_INVALID", "operator annotation is not typed"
+            )
         target[field].append({**change, "extractor_type": "operator_annotation"})
+
+
+def _normalize_resource_changes(changes: list[dict[str, Any]]) -> None:
+    """Close the extraction/reducer boundary without weakening balance semantics."""
+
+    for change in changes:
+        if change.get("delta") is None:
+            balance = change.get("balance", change.get("balance_after"))
+            if balance is None:
+                raise KernelError(
+                    "CANON_RESOURCE_BASELINE_INVALID",
+                    "initial Resource State requires balance or balance_after",
+                )
+            change["balance"] = balance
+            continue
+        before = change.get("balance_before")
+        after = change.get("balance_after")
+        if (
+            before is None
+            or after is None
+            or float(before) + float(change["delta"]) != float(after)
+        ):
+            raise KernelError(
+                "CANON_RESOURCE_TRANSITION_INVALID",
+                "Resource transition requires balance_before + delta = balance_after",
+            )
+
+
+_DISCLOSURE_READER_STATUS = {
+    "HINT": "HINTED",
+    "PARTIAL": "SUSPECTED",
+    "MISDIRECT": "MISDIRECTED",
+    "CONFIRM": "KNOWN",
+}
+
+
+def _derive_reader_knowledge_changes(
+    disclosures: Iterable[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Materialize Reader Knowledge only from reader-facing presentation events."""
+
+    by_fact: dict[str, dict[str, Any]] = {}
+    for disclosure in disclosures:
+        audience = str(disclosure.get("audience") or "").upper()
+        mode = str(disclosure.get("disclosure_mode") or "").upper()
+        fact_id = str(
+            disclosure.get("fact_id") or disclosure.get("proposition_id") or ""
+        ).strip()
+        if audience not in {"READER", "ALL"} or mode not in _DISCLOSURE_READER_STATUS:
+            continue
+        if not fact_id:
+            raise KernelError(
+                "CANON_DISCLOSURE_IDENTITY_INVALID",
+                "reader-facing Disclosure requires fact_id or proposition_id",
+            )
+        by_fact[fact_id] = {
+            "fact_id": fact_id,
+            "proposition_id": str(disclosure.get("proposition_id") or ""),
+            "status": _DISCLOSURE_READER_STATUS[mode],
+            "summary": (
+                "Reader Knowledge derived from accepted Disclosure "
+                f"{disclosure.get('disclosure_id') or fact_id}: {mode}."
+            ),
+            "effective_from_chapter": disclosure.get("effective_from_chapter"),
+            "supersedes_event_id": str(disclosure.get("supersedes_event_id") or ""),
+            "disclosure_id": str(disclosure.get("disclosure_id") or ""),
+            "disclosure_mode": mode,
+            "extractor_type": "derived_disclosure_projection",
+            "evidence_start": disclosure.get("evidence_start"),
+            "evidence_end": disclosure.get("evidence_end"),
+            "confidence": disclosure.get("confidence", 1.0),
+            "impact_type": "reader_knowledge_projection",
+        }
+    return list(by_fact.values())
 
 
 def _with_extraction_evidence(
@@ -322,21 +465,28 @@ def _with_extraction_evidence(
         "extraction_evidence": {
             "span": {"start": start, "end": end},
             "excerpt_digest": (
-                "sha256:" + hashlib.sha256(excerpt.encode()).hexdigest() if excerpt else ""
+                "sha256:" + hashlib.sha256(excerpt.encode()).hexdigest()
+                if excerpt
+                else ""
             ),
             "source_revision_asset_version_id": revision_asset_version_id,
             "provider_id": str(item.get("provider_id") or ""),
             "model_id": str(item.get("model_id") or ""),
             "prompt_version": str(item.get("prompt_version") or ""),
-            "previous_state_reference": str(
-                item.get("previous_state_reference") or ""
-            ),
+            "previous_state_reference": str(item.get("previous_state_reference") or ""),
         },
         "approval_requirement": "REQUIRED" if approval_required else "NONE",
     }
 
 
-def _conflict(code: str, existing: Any, candidate: Any, recommendation: str, *, approval: bool = True) -> dict[str, Any]:
+def _conflict(
+    code: str,
+    existing: Any,
+    candidate: Any,
+    recommendation: str,
+    *,
+    approval: bool = True,
+) -> dict[str, Any]:
     return {
         "conflict_code": code,
         "severity": "blocking",
@@ -348,12 +498,26 @@ def _conflict(code: str, existing: Any, candidate: Any, recommendation: str, *, 
     }
 
 
-def _fact_conflicts(previous: list[dict[str, Any]], facts: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def _fact_conflicts(
+    previous: list[dict[str, Any]], facts: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
     conflicts = []
     for fact in facts:
         for old in previous:
-            if old.get("subject") == fact["subject"] and old.get("predicate") == fact["predicate"] and old.get("object") != fact["object"] and not fact["supersedes_event_id"]:
-                conflicts.append(_conflict("FACT_CONTRADICTION", old, fact, "supersede explicitly or revise the chapter"))
+            if (
+                old.get("subject") == fact["subject"]
+                and old.get("predicate") == fact["predicate"]
+                and old.get("object") != fact["object"]
+                and not fact["supersedes_event_id"]
+            ):
+                conflicts.append(
+                    _conflict(
+                        "FACT_CONTRADICTION",
+                        old,
+                        fact,
+                        "supersede explicitly or revise the chapter",
+                    )
+                )
     return conflicts
 
 
@@ -362,20 +526,24 @@ def validate_deterministic_continuity(
     chapter: int,
     historical_state: dict[str, list[dict[str, Any]]],
     extraction: dict[str, Any],
+    planned_execution: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Validate only invariants supported by explicit structured Authority data."""
 
     if chapter <= 0:
         raise ValueError("chapter must be positive")
-    state = {
-        kind: _state_items(values)
-        for kind, values in historical_state.items()
-    }
+    state = {kind: _state_items(values) for kind, values in historical_state.items()}
     conflicts: list[dict[str, Any]] = []
     _validate_transition_preconditions(
         conflicts,
         state=state,
         extraction=extraction,
+    )
+    _validate_planned_execution(
+        conflicts,
+        state=state,
+        extraction=extraction,
+        planned_execution=planned_execution or {},
     )
     for event in extraction.get("timeline_event_candidates", []):
         event_chapter = int(event.get("effective_from_chapter", chapter))
@@ -395,11 +563,37 @@ def validate_deterministic_continuity(
             ]
             or [0]
         ):
-            conflicts.append(_conflict("TEMPORAL_CONTRADICTION", state.get("timeline_snapshot", []), event, "place the event after the latest frozen timeline boundary"))
+            conflicts.append(
+                _conflict(
+                    "TEMPORAL_CONTRADICTION",
+                    state.get("timeline_snapshot", []),
+                    event,
+                    "place the event after the latest frozen timeline boundary",
+                )
+            )
     for change in extraction.get("character_state_changes", []):
-        existing = next((item for item in state.get("character_state", []) if item.get("character_id") == change.get("character_id")), None)
-        if existing and existing.get("canonical_name") and change.get("canonical_name") and existing["canonical_name"] != change["canonical_name"]:
-            conflicts.append(_conflict("CHARACTER_IDENTITY_CONTRADICTION", existing, change, "create an alias/merge proposal instead of changing identity"))
+        existing = next(
+            (
+                item
+                for item in state.get("character_state", [])
+                if item.get("character_id") == change.get("character_id")
+            ),
+            None,
+        )
+        if (
+            existing
+            and existing.get("canonical_name")
+            and change.get("canonical_name")
+            and existing["canonical_name"] != change["canonical_name"]
+        ):
+            conflicts.append(
+                _conflict(
+                    "CHARACTER_IDENTITY_CONTRADICTION",
+                    existing,
+                    change,
+                    "create an alias/merge proposal instead of changing identity",
+                )
+            )
         if (
             existing
             and str(existing.get("life_status") or "").upper() == "DEAD"
@@ -419,16 +613,10 @@ def validate_deterministic_continuity(
                 )
             )
         if existing:
-            known = {
-                str(item)
-                for item in existing.get("known_fact_ids", [])
-            } | {
-                str(item)
-                for item in change.get("acquired_fact_ids", [])
+            known = {str(item) for item in existing.get("known_fact_ids", [])} | {
+                str(item) for item in change.get("acquired_fact_ids", [])
             }
-            required = {
-                str(item) for item in change.get("requires_fact_ids", [])
-            }
+            required = {str(item) for item in change.get("requires_fact_ids", [])}
             missing = sorted(required - known)
             if missing:
                 conflicts.append(
@@ -440,9 +628,17 @@ def validate_deterministic_continuity(
                     )
                 )
     for change in extraction.get("relationship_changes", []):
-        source_id = str(change.get("source_id") or change.get("source_character_id") or "")
-        target_id = str(change.get("target_id") or change.get("target_character_id") or "")
-        if source_id and source_id == target_id and not change.get("allow_self_relation"):
+        source_id = str(
+            change.get("source_id") or change.get("source_character_id") or ""
+        )
+        target_id = str(
+            change.get("target_id") or change.get("target_character_id") or ""
+        )
+        if (
+            source_id
+            and source_id == target_id
+            and not change.get("allow_self_relation")
+        ):
             conflicts.append(
                 _conflict(
                     "GRAPH_INTEGRITY_VIOLATION",
@@ -464,9 +660,7 @@ def validate_deterministic_continuity(
         )
         declared_from = str(change.get("from_state") or "").upper()
         existing_status = str(
-            (existing or {}).get("status")
-            or (existing or {}).get("trust_state")
-            or ""
+            (existing or {}).get("status") or (existing or {}).get("trust_state") or ""
         ).upper()
         if declared_from and existing_status and declared_from != existing_status:
             conflicts.append(
@@ -478,7 +672,14 @@ def validate_deterministic_continuity(
                 )
             )
         if change.get("trust_state") == "trusted" and change.get("betrayal_unresolved"):
-            conflicts.append(_conflict("RELATIONSHIP_CONTRADICTION", state.get("relationship_state", []), change, "add reconciliation evidence or preserve distrust"))
+            conflicts.append(
+                _conflict(
+                    "RELATIONSHIP_CONTRADICTION",
+                    state.get("relationship_state", []),
+                    change,
+                    "add reconciliation evidence or preserve distrust",
+                )
+            )
     for usage in extraction.get("world_rule_usages", []):
         rule = next(
             (
@@ -498,7 +699,14 @@ def validate_deterministic_continuity(
                 )
             )
         if usage.get("exception") and not usage.get("cost"):
-            conflicts.append(_conflict("WORLD_RULE_CONTRADICTION", state.get("world_rule", []), usage, "pay the rule exception cost"))
+            conflicts.append(
+                _conflict(
+                    "WORLD_RULE_CONTRADICTION",
+                    state.get("world_rule", []),
+                    usage,
+                    "pay the rule exception cost",
+                )
+            )
     for change in extraction.get("power_state_changes", []):
         existing = next(
             (
@@ -536,7 +744,14 @@ def validate_deterministic_continuity(
                 )
             )
         if change.get("tier_increase") and not change.get("change_reasons"):
-            conflicts.append(_conflict("POWER_PROGRESSION_CONTRADICTION", state.get("power_state", []), change, "supply training, equipment, condition, or cost evidence"))
+            conflicts.append(
+                _conflict(
+                    "POWER_PROGRESSION_CONTRADICTION",
+                    state.get("power_state", []),
+                    change,
+                    "supply training, equipment, condition, or cost evidence",
+                )
+            )
     for change in extraction.get("foreshadow_changes", []):
         _validate_lifecycle_transition(
             conflicts,
@@ -546,7 +761,14 @@ def validate_deterministic_continuity(
             code="FORESHADOW_LIFECYCLE_CONTRADICTION",
         )
         if change.get("status") == "PAID" and not change.get("payoff_evidence"):
-            conflicts.append(_conflict("FORESHADOW_LIFECYCLE_CONTRADICTION", state.get("foreshadow_state", []), change, "add causal payoff evidence"))
+            conflicts.append(
+                _conflict(
+                    "FORESHADOW_LIFECYCLE_CONTRADICTION",
+                    state.get("foreshadow_state", []),
+                    change,
+                    "add causal payoff evidence",
+                )
+            )
     for change in extraction.get("promise_changes", []):
         _validate_lifecycle_transition(
             conflicts,
@@ -556,7 +778,14 @@ def validate_deterministic_continuity(
             code="PROMISE_LIFECYCLE_CONTRADICTION",
         )
         if change.get("status") == "PAID" and not change.get("payoff_evidence"):
-            conflicts.append(_conflict("PROMISE_LIFECYCLE_CONTRADICTION", state.get("reader_promise", []), change, "add reader-visible fulfillment evidence"))
+            conflicts.append(
+                _conflict(
+                    "PROMISE_LIFECYCLE_CONTRADICTION",
+                    state.get("reader_promise", []),
+                    change,
+                    "add reader-visible fulfillment evidence",
+                )
+            )
     for change in extraction.get("resource_state_changes", []):
         existing = next(
             (
@@ -571,18 +800,22 @@ def validate_deterministic_continuity(
         delta = change.get("delta")
         after = change.get("balance_after")
         invalid = (
-            existing is not None
-            and before is not None
-            and float(before) != float(existing.get("balance", before))
-        ) or (
-            before is not None
-            and delta is not None
-            and after is not None
-            and float(before) + float(delta) != float(after)
-        ) or (
-            after is not None
-            and float(after) < 0
-            and not change.get("allow_negative_balance")
+            (
+                existing is not None
+                and before is not None
+                and float(before) != float(existing.get("balance", before))
+            )
+            or (
+                before is not None
+                and delta is not None
+                and after is not None
+                and float(before) + float(delta) != float(after)
+            )
+            or (
+                after is not None
+                and float(after) < 0
+                and not change.get("allow_negative_balance")
+            )
         )
         if invalid:
             conflicts.append(
@@ -593,17 +826,46 @@ def validate_deterministic_continuity(
                     "reconcile balance_before + delta with the accepted resource state",
                 )
             )
+    disclosures = {
+        str(item.get("fact_id") or item.get("proposition_id") or ""): (
+            _DISCLOSURE_READER_STATUS.get(
+                str(item.get("disclosure_mode") or "").upper()
+            )
+        )
+        for item in extraction.get("disclosure_events", [])
+        if str(item.get("audience") or "").upper() in {"READER", "ALL"}
+        and _DISCLOSURE_READER_STATUS.get(
+            str(item.get("disclosure_mode") or "").upper()
+        )
+    }
+    for change in extraction.get("reader_knowledge_changes", []):
+        fact_id = str(change.get("fact_id") or change.get("proposition_id") or "")
+        expected_status = disclosures.get(fact_id)
+        actual_status = str(change.get("status") or "").upper()
+        if expected_status != actual_status:
+            conflicts.append(
+                _conflict(
+                    "READER_KNOWLEDGE_DISCLOSURE_MISMATCH",
+                    {
+                        "reader_knowledge": "derived from accepted Disclosure only",
+                        "expected_status": expected_status,
+                    },
+                    change,
+                    "derive Reader Knowledge status from the accepted Disclosure mode",
+                )
+            )
     return {
         "gate": "BLOCKED" if conflicts else "PASSED",
         "violations": conflicts,
-        "deterministic_rule_count": 11,
+        "deterministic_rule_count": 15,
         "used_text_heuristics": False,
         "semantic_judgment_required": [
             "CHARACTER_MOTIVATION",
             "EMOTIONAL_PLAUSIBILITY",
             "OOC",
+            "EXPECTED_EXIT_STATE",
         ],
-        "contract_version": "deterministic-continuity-v1",
+        "contract_version": "deterministic-continuity-v2",
     }
 
 
@@ -656,6 +918,21 @@ _TRANSITION_PRECONDITION_SPECS = (
         (("entity_id",), ("resource_id",)),
     ),
     (
+        "character_knowledge_changes",
+        ("character_knowledge",),
+        (("character_id",), ("fact_id", "proposition_id")),
+    ),
+    (
+        "character_belief_changes",
+        ("character_belief",),
+        (("character_id",), ("proposition_id", "fact_id")),
+    ),
+    (
+        "character_arc_changes",
+        ("character_arc",),
+        (("character_id",), ("arc_id",)),
+    ),
+    (
         "antagonist_pressure_changes",
         ("antagonist_state",),
         (("antagonist_id", "entity_id"),),
@@ -691,7 +968,9 @@ def _validate_transition_preconditions(
                 (from_key, current_key)
                 for from_key, current_key in (
                     ("from_status", "status"),
+                    ("from_stance", "stance"),
                     ("from_state", "state"),
+                    ("from_stage", "stage"),
                     ("from_tier", "tier"),
                 )
                 if from_key in change
@@ -740,6 +1019,234 @@ def _validate_transition_preconditions(
                 )
 
 
+def _validate_planned_execution(
+    conflicts: list[dict[str, Any]],
+    *,
+    state: dict[str, list[dict[str, Any]]],
+    extraction: dict[str, Any],
+    planned_execution: dict[str, Any],
+) -> None:
+    """Reconcile deterministic Chapter execution commitments before acceptance."""
+
+    if not planned_execution:
+        return
+    actual_by_kind = _narrative_state_changes(extraction, [])
+    for planned in planned_execution.get("required_state_transitions") or ():
+        if not isinstance(planned, dict):
+            continue
+        state_kind = str(planned.get("state_kind") or "")
+        entity_key = str(planned.get("entity_key") or "")
+        candidates = [
+            item
+            for item in actual_by_kind.get(state_kind, [])
+            if entity_key in _candidate_entity_keys(state_kind, item)
+        ]
+        if not candidates:
+            conflicts.append(
+                _conflict(
+                    "PLANNED_STATE_TRANSITION_MISSING",
+                    planned,
+                    None,
+                    "extract the planned transition from the accepted chapter or revise the future plan",
+                )
+            )
+            continue
+        expected_from = str(planned.get("from_state") or "")
+        expected_to = str(planned.get("to_state") or "")
+        accepted_candidates = [
+            item
+            for item in state.get(state_kind, [])
+            if entity_key in _candidate_entity_keys(state_kind, item)
+        ]
+
+        def matches(item: dict[str, Any]) -> bool:
+            if _transition_value(item, prefix="to") != expected_to:
+                return False
+            actual_from = _transition_value(item, prefix="from")
+            if not accepted_candidates:
+                return not actual_from
+            baseline_matches = any(
+                _current_state_value(accepted) == expected_from
+                for accepted in accepted_candidates
+            )
+            # The frozen execution plan owns the compare-and-set precondition.
+            # Provider extraction may repeat that precondition, but does not need
+            # to duplicate it when the exact accepted baseline is already bound.
+            # A repeated value must still agree, so extraction cannot override
+            # either the plan or accepted Story State.
+            return baseline_matches and actual_from in {"", expected_from}
+
+        if not any(matches(item) for item in candidates):
+            conflicts.append(
+                _conflict(
+                    "PLANNED_STATE_TRANSITION_MISMATCH",
+                    planned,
+                    candidates,
+                    "align the extracted from/to state with the frozen Chapter execution plan",
+                )
+            )
+
+    actual_disclosures = [
+        item
+        for item in extraction.get("disclosure_events", [])
+        if isinstance(item, dict)
+    ]
+    for planned in planned_execution.get("disclosures") or ():
+        if not isinstance(planned, dict):
+            continue
+        mode = str(planned.get("mode") or "").upper()
+        if mode == "WITHHOLD":
+            continue
+        disclosure_id = str(planned.get("disclosure_id") or "")
+        fact_id = str(planned.get("fact_id") or "")
+        matched = next(
+            (
+                item
+                for item in actual_disclosures
+                if str(item.get("disclosure_id") or "") == disclosure_id
+                and str(item.get("fact_id") or item.get("proposition_id") or "")
+                == fact_id
+                and str(item.get("audience") or "").upper()
+                == str(planned.get("audience") or "").upper()
+                and str(item.get("disclosure_mode") or "").upper() == mode
+            ),
+            None,
+        )
+        if matched is None:
+            conflicts.append(
+                _conflict(
+                    "PLANNED_DISCLOSURE_MISSING",
+                    planned,
+                    actual_disclosures,
+                    "extract the planned presentation event or revise the future plan",
+                )
+            )
+    actual_reader_knowledge = {
+        str(item.get("fact_id") or item.get("proposition_id") or ""): str(
+            item.get("status") or ""
+        ).upper()
+        for item in extraction.get("reader_knowledge_changes", [])
+        if isinstance(item, dict)
+    }
+    for boundary in planned_execution.get("knowledge_boundaries") or ():
+        if (
+            not isinstance(boundary, dict)
+            or str(boundary.get("layer") or "").upper() != "READER_KNOWLEDGE"
+        ):
+            continue
+        fact_id = str(boundary.get("fact_id") or "")
+        expected_status = str(boundary.get("status") or "").upper()
+        if expected_status in {"WITHHELD", "UNKNOWN"}:
+            continue
+        if actual_reader_knowledge.get(fact_id) != expected_status:
+            conflicts.append(
+                _conflict(
+                    "PLANNED_READER_KNOWLEDGE_MISMATCH",
+                    boundary,
+                    {"derived_status": actual_reader_knowledge.get(fact_id)},
+                    "derive the planned Reader Knowledge status from the accepted Disclosure mode",
+                )
+            )
+
+
+_PLANNED_IDENTITY_FIELDS: dict[str, tuple[tuple[str, ...], ...]] = {
+    "canon_fact": (("subject",), ("predicate",)),
+    "character_state": (("character_id",),),
+    "relationship_state": (
+        ("source_id", "source_character_id"),
+        ("target_id", "target_character_id"),
+    ),
+    "timeline_event": (("event_id",),),
+    "foreshadow_state": (("thread_id",),),
+    "reader_promise": (("promise_id",),),
+    "reward_event": (("reward_id",),),
+    "world_rule": (("rule_id",),),
+    "power_state": (("character_id",),),
+    "plot_thread": (("thread_id",),),
+    "resource_state": (("entity_id",), ("resource_id",)),
+    "character_knowledge": (("character_id",), ("fact_id", "proposition_id")),
+    "character_belief": (("character_id",), ("proposition_id", "fact_id")),
+    "character_arc": (("character_id",), ("arc_id",)),
+    "arc_state": (("arc_id",),),
+    "antagonist_state": (("antagonist_id", "entity_id"),),
+    "reader_knowledge": (("fact_id", "proposition_id"),),
+    "disclosure_event": (("disclosure_id",),),
+}
+
+_HISTORICAL_STATE_KIND = {
+    "canon_fact": "canon_snapshot",
+    "timeline_event": "timeline_snapshot",
+    "reward_event": "reward_ledger",
+}
+
+
+def _candidate_entity_keys(state_kind: str, item: dict[str, Any]) -> set[str]:
+    # Provider extraction schemas expose ``entity_id`` as the stable generic
+    # identity for state kinds whose domain-specific aliases vary.  Treat it as
+    # an exact Authority identity before constructing composite aliases; this
+    # keeps Chapter execution reconciliation aligned with the planner's frozen
+    # entity_key without weakening compare-and-set value checks.
+    direct = str(item.get("entity_key") or item.get("entity_id") or "")
+    components = [
+        _identity_component(item, aliases)
+        for aliases in _PLANNED_IDENTITY_FIELDS.get(state_kind, ())
+    ]
+    components = [value for value in components if value]
+    keys = {direct} if direct else set()
+    if components:
+        keys.add(":".join(components))
+        keys.add(":".join(value.rsplit(":", 1)[-1] for value in components))
+    return keys
+
+
+def _transition_value(item: dict[str, Any], *, prefix: str) -> str:
+    keys = (
+        ("from_state", "from_status", "from_stance", "from_stage", "from_tier")
+        if prefix == "from"
+        else ("state", "status", "stance", "stage", "tier")
+    )
+    return next(
+        (str(item[key]) for key in keys if item.get(key) not in {None, ""}),
+        "",
+    )
+
+
+def _current_state_value(item: dict[str, Any]) -> str:
+    return next(
+        (
+            str(item[key])
+            for key in ("state", "status", "stance", "stage", "tier")
+            if item.get(key) not in {None, ""}
+        ),
+        "",
+    )
+
+
+def _bind_narrative_entity_versions(
+    changes: dict[str, list[dict[str, Any]]],
+    historical_state: dict[str, list[dict[str, Any]]],
+) -> None:
+    """Fence each Canon-approved delta against the accepted entity version."""
+
+    for state_kind, items in changes.items():
+        accepted = historical_state.get(
+            _HISTORICAL_STATE_KIND.get(state_kind, state_kind), []
+        )
+        for item in items:
+            candidate_keys = _candidate_entity_keys(state_kind, item)
+            existing = next(
+                (
+                    prior
+                    for prior in accepted
+                    if candidate_keys & _candidate_entity_keys(state_kind, prior)
+                ),
+                None,
+            )
+            item["entity_version"] = (
+                int((existing or {}).get("entity_version") or 0) + 1
+            )
+
+
 def _validate_lifecycle_transition(
     conflicts: list[dict[str, Any]],
     *,
@@ -757,9 +1264,7 @@ def _validate_lifecycle_transition(
     existing_status = str(existing.get("status") or "OPEN").upper()
     declared_from = str(change.get("from_status") or "").upper()
     next_status = str(change.get("status") or existing_status).upper()
-    invalid = (
-        bool(declared_from) and declared_from != existing_status
-    ) or (
+    invalid = (bool(declared_from) and declared_from != existing_status) or (
         existing_status in {"PAID", "ABANDONED", "CANCELLED"}
         and next_status != existing_status
     )
@@ -793,8 +1298,18 @@ def _narrative_state_changes(
         "resource_state": extraction.get("resource_state_changes", []),
         "theme_movement": extraction.get("theme_movements", []),
         "antagonist_state": extraction.get("antagonist_pressure_changes", []),
+        "character_knowledge": extraction.get("character_knowledge_changes", []),
+        "character_belief": extraction.get("character_belief_changes", []),
+        "character_arc": extraction.get("character_arc_changes", []),
+        "arc_state": extraction.get("arc_state_changes", []),
+        "reader_knowledge": extraction.get("reader_knowledge_changes", []),
+        "disclosure_event": extraction.get("disclosure_events", []),
     }
-    return {key: list(values) for key, values in changes.items() if values}
+    return {
+        key: [dict(item) for item in values]
+        for key, values in changes.items()
+        if values
+    }
 
 
 __all__ = [

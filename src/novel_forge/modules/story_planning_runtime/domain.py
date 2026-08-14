@@ -22,9 +22,9 @@ from novel_forge.modules.story_design_authority import PlanningScope
 _CONTENT_HASH = re.compile(r"^sha256:[0-9a-f]{64}$")
 
 
-STORY_PLANNING_OPERATION_DEFINITION_REF = "story_planning.generate@1.1.0"
-STORY_PLANNING_WORKFLOW_DEFINITION_REF = "story_planning_generators@1.1.0"
-STORY_PLANNING_OPERATION_TIMEOUT_SECONDS = 600
+STORY_PLANNING_OPERATION_DEFINITION_REF = "story_planning.generate@1.6.0"
+STORY_PLANNING_WORKFLOW_DEFINITION_REF = "story_planning_generators@1.6.0"
+STORY_PLANNING_OPERATION_TIMEOUT_SECONDS = 1_800
 STORY_PLANNING_MAX_ATTEMPTS = 3
 
 
@@ -137,6 +137,7 @@ class StoryPlanningGenerationCommand:
     trace_id: str
     correlation_id: str
     parent_version_id: str = ""
+    arc_scope_volume_plan_version_ids: tuple[str, ...] = ()
     change_evidence_version_ids: tuple[str, ...] = ()
     repair_of_candidate_id: str = ""
     repair_reason: str = ""
@@ -187,7 +188,22 @@ class StoryPlanningGenerationCommand:
             or set(change_evidence) & set(normalized.values())
         ):
             raise ValueError("Planning change evidence identity is invalid")
+        arc_scope = tuple(
+            str(asset_version_id).strip()
+            for asset_version_id in self.arc_scope_volume_plan_version_ids
+        )
+        if self.generator_operation_name != "arc_plan.generate" and arc_scope:
+            raise ValueError("only Arc generation may freeze a cross-Volume scope")
+        primary_volume = normalized.get("volume_plan", "")
+        if (
+            any(not asset_version_id for asset_version_id in arc_scope)
+            or len(set(arc_scope)) != len(arc_scope)
+            or primary_volume in arc_scope
+            or set(arc_scope) & set(normalized.values())
+        ):
+            raise ValueError("Arc cross-Volume scope identity is invalid")
         object.__setattr__(self, "input_versions", MappingProxyType(normalized))
+        object.__setattr__(self, "arc_scope_volume_plan_version_ids", arc_scope)
         object.__setattr__(self, "change_evidence_version_ids", change_evidence)
 
     @property
@@ -282,7 +298,13 @@ class PlanningGenerationCandidate:
             raise ValueError("Planning candidate requires an objective")
         expected = set(GENERATOR_INPUT_ROLES[self.generator_operation_name])
         roles = {item.role for item in self.frozen_inputs}
-        if roles != expected or len(roles) != len(self.frozen_inputs):
+        extra = roles - expected
+        if (
+            not expected.issubset(roles)
+            or len(roles) != len(self.frozen_inputs)
+            or (self.generator_operation_name != "arc_plan.generate" and extra)
+            or any(not role.startswith("arc_scope_volume:") for role in extra)
+        ):
             raise ValueError("Planning candidate input snapshot is incomplete")
         object.__setattr__(
             self,
@@ -328,17 +350,23 @@ def build_planning_constraint_envelope(
     if generator_operation_name not in GENERATOR_SCOPE:
         raise ValueError("Planning Generator is not supported")
     expected_roles = set(GENERATOR_INPUT_ROLES[generator_operation_name])
-    if set(input_contents) != expected_roles:
+    actual_roles = set(input_contents)
+    extra_roles = actual_roles - expected_roles
+    if (
+        not expected_roles.issubset(actual_roles)
+        or (generator_operation_name != "arc_plan.generate" and extra_roles)
+        or any(not role.startswith("arc_scope_volume:") for role in extra_roles)
+    ):
         raise ValueError("Planning constraint inputs must match frozen Authority roles")
     by_role = {item.role: item for item in frozen_inputs}
-    if set(by_role) != expected_roles:
+    if set(by_role) != actual_roles:
         raise ValueError("Planning constraint input versions are incomplete")
 
     inherited: list[dict[str, Any]] = []
     prohibited: list[dict[str, Any]] = []
     obligations: list[dict[str, Any]] = []
     accepted_through = 0
-    for role in sorted(expected_roles):
+    for role in sorted(actual_roles):
         content = dict(input_contents[role])
         source_version = by_role[role].asset_version_id
         for field in ("invariants", "story_constraints", "constraints"):

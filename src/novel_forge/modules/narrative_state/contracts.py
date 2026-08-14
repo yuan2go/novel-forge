@@ -42,6 +42,8 @@ class NarrativeStateKind(StrEnum):
     CHARACTER_KNOWLEDGE = "character_knowledge"
     CHARACTER_BELIEF = "character_belief"
     CHARACTER_ARC = "character_arc"
+    READER_KNOWLEDGE = "reader_knowledge"
+    DISCLOSURE_EVENT = "disclosure_event"
     WORLD_STATE = "world_state"
     FACTION_STATE = "faction_state"
     LOCATION_STATE = "location_state"
@@ -49,6 +51,210 @@ class NarrativeStateKind(StrEnum):
     CONFLICT_STATE = "conflict_state"
     NARRATIVE_OBLIGATION = "narrative_obligation"
     PAYOFF_EVENT = "payoff_event"
+
+
+_CHARACTER_KNOWLEDGE_STATUSES = frozenset(
+    {"UNKNOWN", "SUSPECTED", "KNOWN", "FORGOTTEN"}
+)
+_CHARACTER_BELIEF_STANCES = frozenset(
+    {"BELIEVES", "DOUBTS", "DISBELIEVES", "UNCERTAIN"}
+)
+
+
+def atomize_character_knowledge_changes(
+    changes: Iterable[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Normalize Character Knowledge to one character/proposition identity per event.
+
+    Older extraction prompts used ``acquired_fact_ids`` as a convenient bundle.  A
+    bundled record cannot participate in Narrative State compare-and-set semantics:
+    its durable identity is the pair ``(character_id, fact_id|proposition_id)``.
+    Expand that compatibility shape at the authority boundary while keeping direct,
+    already-atomic identities unchanged.
+    """
+
+    atoms: list[dict[str, Any]] = []
+    for raw in changes:
+        change = dict(raw)
+        status = str(change.get("status") or "").strip().upper()
+        state_alias = str(change.get("state") or "").strip().upper()
+        if status and state_alias and status != state_alias:
+            raise KernelError(
+                "NARRATIVE_CHARACTER_KNOWLEDGE_STATUS_CONFLICT",
+                "character knowledge state and status aliases disagree",
+            )
+        status = status or state_alias
+        if status not in _CHARACTER_KNOWLEDGE_STATUSES:
+            raise KernelError(
+                "NARRATIVE_CHARACTER_KNOWLEDGE_STATUS_INVALID",
+                "character knowledge requires UNKNOWN, SUSPECTED, KNOWN, or FORGOTTEN",
+            )
+        # ``state`` was emitted by the v5 Provider schema even though the durable
+        # Narrative State vocabulary has always named this field ``status``.  Make
+        # the read-boundary upgrade deterministic, then persist only one canonical
+        # representation for new extraction and Canon assets.
+        change["status"] = status
+        change.pop("state", None)
+        character_id = str(change.get("character_id") or "").strip()
+        fact_id = str(change.get("fact_id") or "").strip()
+        proposition_id = str(change.get("proposition_id") or "").strip()
+        acquired_fact_ids = tuple(
+            dict.fromkeys(
+                str(item).strip()
+                for item in change.get("acquired_fact_ids") or ()
+                if str(item).strip()
+            )
+        )
+        if not character_id or not (fact_id or proposition_id or acquired_fact_ids):
+            raise KernelError(
+                "NARRATIVE_CHARACTER_KNOWLEDGE_IDENTITY_INVALID",
+                "character knowledge requires character_id and one fact_id or proposition_id",
+            )
+
+        if fact_id or proposition_id:
+            atom = dict(change)
+            atom.pop("acquired_fact_ids", None)
+            atoms.append(atom)
+
+        for acquired_fact_id in acquired_fact_ids:
+            if fact_id and acquired_fact_id == fact_id:
+                continue
+            atom = dict(change)
+            atom.pop("acquired_fact_ids", None)
+            atom.pop("proposition_id", None)
+            atom["fact_id"] = acquired_fact_id
+            atoms.append(atom)
+    return atoms
+
+
+def normalize_character_belief_changes(
+    changes: Iterable[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Normalize Character Belief to its typed epistemic vocabulary.
+
+    Canon extraction schemas predating v7 exposed only the generic ``status`` or
+    ``state`` field even though the durable Narrative State contract names the
+    value ``stance``.  Upgrade those immutable historical payloads at read
+    boundaries, reject conflicting aliases, and persist only the canonical shape
+    for new assets.
+    """
+
+    normalized: list[dict[str, Any]] = []
+    for raw in changes:
+        change = dict(raw)
+        stance_values = {
+            str(change[key]).strip().upper()
+            for key in ("stance", "status", "state")
+            if change.get(key) not in {None, ""}
+        }
+        if len(stance_values) > 1:
+            raise KernelError(
+                "NARRATIVE_CHARACTER_BELIEF_STANCE_CONFLICT",
+                "character belief stance, status, and state aliases disagree",
+            )
+        stance = next(iter(stance_values), "")
+        if stance not in _CHARACTER_BELIEF_STANCES:
+            raise KernelError(
+                "NARRATIVE_CHARACTER_BELIEF_STANCE_INVALID",
+                "character belief requires BELIEVES, DOUBTS, DISBELIEVES, or UNCERTAIN",
+            )
+        from_values = {
+            str(change[key]).strip().upper()
+            for key in ("from_stance", "from_status", "from_state")
+            if change.get(key) not in {None, ""}
+        }
+        if len(from_values) > 1:
+            raise KernelError(
+                "NARRATIVE_CHARACTER_BELIEF_PRECONDITION_CONFLICT",
+                "character belief from_stance, from_status, and from_state aliases disagree",
+            )
+        from_stance = next(iter(from_values), "")
+        if from_stance and from_stance not in _CHARACTER_BELIEF_STANCES:
+            raise KernelError(
+                "NARRATIVE_CHARACTER_BELIEF_PRECONDITION_INVALID",
+                "character belief from_stance uses an unsupported value",
+            )
+        confidence = change.get("belief_confidence")
+        if (
+            isinstance(confidence, bool)
+            or not isinstance(confidence, (int, float))
+            or not 0 <= float(confidence) <= 1
+        ):
+            raise KernelError(
+                "NARRATIVE_CHARACTER_BELIEF_CONFIDENCE_INVALID",
+                "character belief confidence must be between zero and one",
+            )
+        character_id = str(change.get("character_id") or "").strip()
+        fact_id = str(change.get("fact_id") or "").strip()
+        proposition_id = str(change.get("proposition_id") or "").strip()
+        if not character_id or not (fact_id or proposition_id):
+            raise KernelError(
+                "NARRATIVE_CHARACTER_BELIEF_IDENTITY_INVALID",
+                "character belief requires character_id and fact_id or proposition_id",
+            )
+        change["stance"] = stance
+        for alias in ("status", "state", "from_status", "from_state"):
+            change.pop(alias, None)
+        if from_stance:
+            change["from_stance"] = from_stance
+        else:
+            change.pop("from_stance", None)
+        normalized.append(change)
+    return normalized
+
+
+def normalize_relationship_state_changes(
+    changes: Iterable[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Canonicalize relationship endpoints without inventing graph identity.
+
+    Canon Provider schemas through v7 exposed the generic ``character_id`` field,
+    so an otherwise typed relationship could use it for the source endpoint while
+    also supplying ``target_id``.  Upgrade that immutable shape at read boundaries,
+    reject conflicting aliases, and retain only ``source_id``/``target_id`` for new
+    Narrative State events.
+    """
+
+    normalized: list[dict[str, Any]] = []
+    for raw in changes:
+        change = dict(raw)
+        source_values = {
+            str(change[key]).strip()
+            for key in ("source_id", "source_character_id", "character_id")
+            if change.get(key) not in {None, ""}
+        }
+        target_values = {
+            str(change[key]).strip()
+            for key in ("target_id", "target_character_id")
+            if change.get(key) not in {None, ""}
+        }
+        if len(source_values) > 1 or len(target_values) > 1:
+            raise KernelError(
+                "NARRATIVE_RELATIONSHIP_IDENTITY_CONFLICT",
+                "relationship endpoint aliases disagree",
+            )
+        source_id = next(iter(source_values), "")
+        target_id = next(iter(target_values), "")
+        if not source_id or not target_id:
+            raise KernelError(
+                "NARRATIVE_RELATIONSHIP_IDENTITY_INVALID",
+                "relationship state requires source_id and target_id",
+            )
+        if source_id == target_id and not change.get("allow_self_relation"):
+            raise KernelError(
+                "NARRATIVE_RELATIONSHIP_SELF_REFERENCE_INVALID",
+                "relationship endpoints must be distinct",
+            )
+        change["source_id"] = source_id
+        change["target_id"] = target_id
+        for alias in (
+            "source_character_id",
+            "target_character_id",
+            "character_id",
+        ):
+            change.pop(alias, None)
+        normalized.append(change)
+    return normalized
 
 
 class NarrativeObligationType(StrEnum):
@@ -402,6 +608,8 @@ _PATCH_FIELDS: dict[NarrativeStateKind, tuple[str, ...]] = {
     NarrativeStateKind.CHARACTER_KNOWLEDGE: ("character_knowledge_changes",),
     NarrativeStateKind.CHARACTER_BELIEF: ("character_belief_changes",),
     NarrativeStateKind.CHARACTER_ARC: ("character_arc_changes",),
+    NarrativeStateKind.READER_KNOWLEDGE: ("reader_knowledge_changes",),
+    NarrativeStateKind.DISCLOSURE_EVENT: ("disclosure_events",),
     NarrativeStateKind.WORLD_STATE: ("world_state_changes",),
     NarrativeStateKind.FACTION_STATE: ("faction_state_changes",),
     NarrativeStateKind.LOCATION_STATE: ("location_state_changes",),
@@ -586,6 +794,25 @@ def events_from_canon_patch(
                 )
             else:
                 changes[kind].extend(items)
+
+    # Recover Canon patches created before Character Knowledge became an atomic
+    # character/proposition event.  This is a deterministic read-boundary upgrade;
+    # the immutable source patch remains untouched and event identities stay stable.
+    changes[NarrativeStateKind.CHARACTER_KNOWLEDGE] = (
+        atomize_character_knowledge_changes(
+            changes[NarrativeStateKind.CHARACTER_KNOWLEDGE]
+        )
+    )
+    changes[NarrativeStateKind.CHARACTER_BELIEF] = (
+        normalize_character_belief_changes(
+            changes[NarrativeStateKind.CHARACTER_BELIEF]
+        )
+    )
+    changes[NarrativeStateKind.RELATIONSHIP_STATE] = (
+        normalize_relationship_state_changes(
+            changes[NarrativeStateKind.RELATIONSHIP_STATE]
+        )
+    )
 
     events: list[NarrativeStateEvent] = []
     for kind in NarrativeStateKind:
@@ -901,6 +1128,10 @@ def _identity_for(
         )
     elif state_kind is NarrativeStateKind.CHARACTER_ARC:
         fields = ("character_id", "arc_id")
+    elif state_kind is NarrativeStateKind.READER_KNOWLEDGE:
+        fields = ("proposition_id" if raw.get("proposition_id") else "fact_id",)
+    elif state_kind is NarrativeStateKind.DISCLOSURE_EVENT:
+        fields = ("disclosure_id",)
     elif state_kind is NarrativeStateKind.RELATIONSHIP_STATE:
         fields = (
             "source_id" if raw.get("source_id") else "source_character_id",
@@ -982,6 +1213,7 @@ def _semantics_for(
         NarrativeStateKind.REWARD_EVENT,
         NarrativeStateKind.THEME_MOVEMENT,
         NarrativeStateKind.PAYOFF_EVENT,
+        NarrativeStateKind.DISCLOSURE_EVENT,
     }:
         return ReducerSemantics.APPEND
     if state_kind is NarrativeStateKind.RESOURCE_STATE and payload.get("delta") is not None:
@@ -1004,7 +1236,10 @@ def _semantics_for(
         return ReducerSemantics.CLOSE
     if state_kind is NarrativeStateKind.WORLD_RULE and status in {"ACTIVE", "ACTIVATED"}:
         return ReducerSemantics.ACTIVATE
-    if any(key in payload for key in ("from_state", "from_status", "from_tier")):
+    if any(
+        key in payload
+        for key in ("from_state", "from_status", "from_stance", "from_tier")
+    ):
         return ReducerSemantics.TRANSITION
     return ReducerSemantics.UPSERT
 
@@ -1143,12 +1378,10 @@ def _validate_event_payload(
     state_kind: NarrativeStateKind, payload: dict[str, Any]
 ) -> None:
     if state_kind is NarrativeStateKind.CHARACTER_KNOWLEDGE:
-        if str(payload.get("status") or "").upper() not in {
-            "UNKNOWN",
-            "SUSPECTED",
-            "KNOWN",
-            "FORGOTTEN",
-        }:
+        if (
+            str(payload.get("status") or "").upper()
+            not in _CHARACTER_KNOWLEDGE_STATUSES
+        ):
             raise KernelError(
                 "CHARACTER_KNOWLEDGE_STATUS_INVALID",
                 "Character Knowledge requires UNKNOWN, SUSPECTED, KNOWN, or FORGOTTEN",
@@ -1169,6 +1402,30 @@ def _validate_event_payload(
             raise KernelError(
                 "CHARACTER_BELIEF_CONFIDENCE_INVALID",
                 "Character Belief confidence must be between zero and one",
+            )
+    if state_kind is NarrativeStateKind.READER_KNOWLEDGE:
+        if str(payload.get("status") or "").upper() not in {
+            "UNKNOWN",
+            "HINTED",
+            "SUSPECTED",
+            "KNOWN",
+            "MISDIRECTED",
+            "CORRECTED",
+        }:
+            raise KernelError(
+                "READER_KNOWLEDGE_STATUS_INVALID",
+                "Reader Knowledge requires a typed epistemic status",
+            )
+    if state_kind is NarrativeStateKind.DISCLOSURE_EVENT:
+        if (
+            str(payload.get("disclosure_mode") or "").upper()
+            not in {"HINT", "PARTIAL", "MISDIRECT", "CONFIRM", "WITHHOLD"}
+            or not str(payload.get("audience") or "")
+            or not str(payload.get("presentation_channel") or "")
+        ):
+            raise KernelError(
+                "DISCLOSURE_EVENT_CONTRACT_INVALID",
+                "Disclosure requires mode, audience, and presentation channel",
             )
     if state_kind is NarrativeStateKind.NARRATIVE_OBLIGATION:
         required = ("obligation_id", "obligation_type", "status", "priority")

@@ -15,6 +15,8 @@ from .contracts import (
     event_dicts,
     events_from_canon_patch,
     events_from_chapter_outcome,
+    normalize_character_belief_changes,
+    normalize_relationship_state_changes,
 )
 from .reducers import (
     APPEND_ONLY_KINDS,
@@ -56,6 +58,8 @@ __all__ = [
     "event_dicts",
     "events_from_canon_patch",
     "events_from_chapter_outcome",
+    "normalize_character_belief_changes",
+    "normalize_relationship_state_changes",
     "project_entity_state",
     "rebuild_story_state",
     "reduce_story_state_v2",

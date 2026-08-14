@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import ast
 import importlib.util
+import json
 from pathlib import Path
 import sys
 from types import SimpleNamespace
@@ -29,6 +30,20 @@ def _load_script():
         sys.path.remove(str(scripts))
 
 
+def test_real_proof_pack_identity_is_loaded_from_the_governed_manifest() -> None:
+    proof = _load_script()
+    manifest = json.loads(
+        (
+            Path(__file__).resolve().parents[2]
+            / "config/capability_packs/chapter_generation_pack.json"
+        ).read_text(encoding="utf-8")
+    )
+
+    globals_ = proof._install_pack.__globals__
+    assert globals_["PACK_ID"] == manifest["identity"]["pack_id"]
+    assert globals_["PACK_VERSION"] == manifest["identity"]["version"]
+
+
 def test_proof_object_store_buckets_are_stable_and_run_isolated(tmp_path: Path) -> None:
     proof = _load_script()
 
@@ -46,8 +61,8 @@ def test_proof_object_store_buckets_are_stable_and_run_isolated(tmp_path: Path) 
 def test_retry_installs_a_new_immutable_planning_pack_version() -> None:
     proof = _load_script()
 
-    assert proof.PLANNING_PACK_INITIAL_VERSION == "1.3.0"
-    assert proof.PLANNING_PACK_RECOVERY_VERSION == "1.4.0"
+    assert proof.PLANNING_PACK_INITIAL_VERSION == "1.5.0"
+    assert proof.PLANNING_PACK_RECOVERY_VERSION == "1.6.0"
     assert proof.PLANNING_PACK_INITIAL_VERSION != proof.PLANNING_PACK_RECOVERY_VERSION
 
 
@@ -305,6 +320,78 @@ def test_drive_fails_closed_when_replan_approval_is_unavailable() -> None:
     with pytest.raises(RuntimeError, match="governed Replan approval"):
         proof._drive_to_chapter_dispatch(
             supervisor, book_run_id="book-run:1", chapter_number=2
+        )
+
+
+def test_runtime_planning_inputs_use_unified_book_acceptance_checkpoint(
+    monkeypatch,
+) -> None:
+    proof = _load_script()
+    authority = SimpleNamespace(
+        database_url="postgresql://unused",
+        chapter_port=SimpleNamespace(
+            require_acceptance_evidence=lambda **_kwargs: {"outputs": []}
+        ),
+        require_chapter_request=lambda _request_id: {
+            "chapter_root_operation_id": "chapter-root:1",
+            "book_run_id": "book-run:1",
+        },
+        require=lambda _book_run_id: {
+            "last_chapter_outcome_version_id": "asset-version:chapter-outcome:1",
+            "active_story_state_version_id": "asset-version:story-state:1",
+            "active_canon_snapshot_version_id": "asset-version:canon:1",
+        },
+    )
+    monkeypatch.setattr(
+        proof,
+        "_followup_output",
+        lambda *_args, **_kwargs: {"asset_version_id": "asset-version:reader-state:1"},
+    )
+
+    inputs = proof._runtime_planning_inputs(
+        authority,
+        project_id="project:1",
+        chapter_request_id="chapter-request:1",
+        reader_report={},
+    )
+
+    assert inputs == {
+        "previous_chapter_outcome": "asset-version:chapter-outcome:1",
+        "story_state": "asset-version:story-state:1",
+        "canon_snapshot": "asset-version:canon:1",
+        "reader_state": "asset-version:reader-state:1",
+    }
+
+
+def test_rolling_narrative_versions_project_one_accepted_story_state() -> None:
+    proof = _load_script()
+
+    versions = proof._rolling_narrative_versions(
+        {
+            "active_story_state_version_id": "story-state:v2",
+            "active_canon_snapshot_version_id": "canon:v2",
+        }
+    )
+
+    assert versions == {
+        "story_state": "story-state:v2",
+        "canon_snapshot": "canon:v2",
+        "character_state": "story-state:v2",
+        "foreshadowing_state": "story-state:v2",
+        "reward_ledger": "story-state:v2",
+        "promise_ledger": "story-state:v2",
+    }
+
+
+def test_rolling_narrative_versions_fail_on_partial_acceptance_checkpoint() -> None:
+    proof = _load_script()
+
+    with pytest.raises(RuntimeError, match="complete Story State and Canon"):
+        proof._rolling_narrative_versions(
+            {
+                "active_story_state_version_id": "story-state:v2",
+                "active_canon_snapshot_version_id": "",
+            }
         )
 
 

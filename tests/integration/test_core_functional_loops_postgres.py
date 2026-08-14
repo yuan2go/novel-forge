@@ -62,6 +62,9 @@ from novel_forge.modules.story_planning_runtime import (
     canonical_hash,
     story_planning_generation_definition,
 )
+from novel_forge.modules.story_planning_runtime.execution import (
+    planning_fixture_response,
+)
 from novel_forge.modules.story_design_authority import GENERATOR_CATALOG
 from novel_forge.modules.production_execution.capability_registry import (
     PLANNING_TIMEOUT_POLICY_VERSION,
@@ -98,8 +101,9 @@ def _activate_planning_pack(harness: CapabilityPackPostgresHarness) -> str:
             """
             SELECT definition_hash
             FROM authority_operation_definition
-            WHERE name='story_planning.generate' AND definition_version='1.1.0'
-            """
+            WHERE name=%s AND definition_version=%s
+            """,
+            (definition["name"], definition["definition_version"]),
         )
         definition_hash = str(uow.cursor.fetchone()[0])
         uow.commit()
@@ -428,6 +432,21 @@ def _planning_contract(command: StoryPlanningGenerationCommand) -> dict[str, Any
             contribution["arc_plan_version_id"] = command.input_versions["arc_plans"]
     if command.parent_version_id:
         payload["parent_version_id"] = command.parent_version_id
+    payload.update(
+        planning_fixture_response(
+            command.generator_operation_name,
+            {
+                "planning_command": {
+                    "logical_key": command.logical_key,
+                    "parent_version_id": command.parent_version_id,
+                    "input_versions": dict(command.input_versions),
+                    "arc_scope_volume_plan_version_ids": list(
+                        command.arc_scope_volume_plan_version_ids
+                    ),
+                }
+            },
+        )
+    )
     assert set(TYPE_FIELDS[contract_type]).issubset(payload)
     return payload
 
@@ -684,6 +703,7 @@ def _activate_plan_chain(
     principal: Principal,
     application: StoryPlanningGenerationApplication,
     assert_replay: bool = False,
+    multi_volume_arc: bool = False,
 ) -> dict[str, str]:
     activated: dict[str, str] = {}
     parent = ""
@@ -724,7 +744,12 @@ def _activate_plan_chain(
             generator_operation_name=generator,
             logical_key=logical,
             input_versions=inputs,
-            parent_version_id=parent,
+            parent_version_id="" if generator == "arc_plan.generate" else parent,
+            arc_scope_volume_plan_version_ids=(
+                (activated["volume_plan.generate:secondary"],)
+                if generator == "arc_plan.generate" and multi_volume_arc
+                else ()
+            ),
             idempotency_key=f"{project_id}:{generator}",
             trace_id=f"trace:{generator}",
             correlation_id=f"correlation:{project_id}",
@@ -754,6 +779,46 @@ def _activate_plan_chain(
             == generated.candidate_asset_version_id
         )
         activated[generator] = generated.candidate_asset_version_id
+        if generator == "volume_plan.generate" and multi_volume_arc:
+            secondary_command = StoryPlanningGenerationCommand(
+                project_id=project_id,
+                workspace_id=workspace_id,
+                book_id=book_id,
+                actor_id=principal.principal_id,
+                generator_operation_name=generator,
+                logical_key="volume:2",
+                input_versions={
+                    role: (
+                        activated["book_plan.generate"]
+                        if role == "book_plan"
+                        else generic[role]
+                    )
+                    for role in GENERATOR_INPUT_ROLES[generator]
+                },
+                parent_version_id=activated["book_plan.generate"],
+                idempotency_key=f"{project_id}:{generator}:secondary",
+                trace_id=f"trace:{generator}:secondary",
+                correlation_id=f"correlation:{project_id}",
+            )
+            secondary = application.generate(secondary_command, principal=principal)
+            assert secondary.status is PlanningGenerationStatus.APPROVAL_PENDING
+            application.approve_candidate(
+                secondary.candidate_asset_version_id,
+                principal=principal,
+                idempotency_key=f"{secondary_command.idempotency_key}:approve",
+                trace_id=secondary_command.trace_id,
+                correlation_id=secondary_command.correlation_id,
+            )
+            application.activate_candidate(
+                secondary.candidate_asset_version_id,
+                principal=principal,
+                idempotency_key=f"{secondary_command.idempotency_key}:activate",
+                trace_id=secondary_command.trace_id,
+                correlation_id=secondary_command.correlation_id,
+            )
+            activated["volume_plan.generate:secondary"] = (
+                secondary.candidate_asset_version_id
+            )
         if generator in {
             "book_plan.generate",
             "volume_plan.generate",
@@ -798,6 +863,7 @@ def test_five_planning_generators_repair_activate_and_replay_in_postgres() -> No
         principal=principal,
         application=application,
         assert_replay=True,
+        multi_volume_arc=True,
     )
 
     repair_inputs = {
@@ -839,7 +905,7 @@ def test_five_planning_generators_repair_activate_and_replay_in_postgres() -> No
             [project_id, activated["arc_plan.generate"]],
         )
         assert set(uow.cursor.fetchall()) == {
-            ("VOLUME", "VOLUME_SPAN", 1),
+            ("VOLUME", "VOLUME_SPAN", 2),
             ("CHAPTER_GROUP", "PRIMARY", 1),
             ("CHAPTER_GROUP", "REQUIRED_CONTRIBUTION", 1),
             ("CHAPTER_GROUP", "CHECKPOINT_EXPECTATION", 1),
@@ -868,10 +934,35 @@ def test_five_planning_generators_repair_activate_and_replay_in_postgres() -> No
                 activated["chapter_plan.generate"],
                 "story_planning.chapter_plan.materialize",
                 "SUCCEEDED",
-                "The Door Closes",
-                "The protagonist makes a witnessed choice.",
+                "Chapter 1: The Door Closes",
+                "Chapter 1 forces the protagonist into a witnessed choice.",
             )
         ]
+        uow.cursor.execute(
+            """
+            SELECT segment.narrative_segment_id,
+                   arc.thread_id,
+                   chapter.chapter_intent,
+                   jsonb_array_length(chapter.arc_schedule),
+                   jsonb_array_length(chapter.scene_plan)
+            FROM authority_narrative_segment_projection AS segment
+            JOIN authority_narrative_arc_graph_projection AS arc
+              ON arc.project_id=segment.project_id
+             AND arc.book_id=segment.book_id
+            JOIN authority_chapter_execution_plan_projection AS chapter
+              ON chapter.project_id=segment.project_id
+             AND chapter.book_id=segment.book_id
+            WHERE segment.project_id=%s
+            """,
+            [project_id],
+        )
+        assert uow.cursor.fetchone() == (
+            "narrative-segment:1",
+            "thread:central-conflict",
+            "Force a witnessed choice that advances the central conflict.",
+            1,
+            1,
+        )
         uow.cursor.execute(
             """
             SELECT generation_id
@@ -1238,9 +1329,7 @@ def test_planning_provider_timeout_retries_same_effect_then_succeeds(
         2,
         [1, 2],
     )
-    capability_runtime = effect_request["_production_execution"][
-        "capability_runtime"
-    ]
+    capability_runtime = effect_request["_production_execution"]["capability_runtime"]
     assert capability_runtime["snapshot_hash"]
     assert capability_runtime["materialization_asset_version_id"]
     assert capability_runtime["materialization_content_hash"]
@@ -1792,7 +1881,9 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
 
     def run_chapter(chapter_runtime, root_operation_id: str) -> None:
         scheduler = chapter_runtime.scheduler(principal=worker_principal)
-        for _ in range(len(ChapterNode) + 4):
+        # One Chapter execution may include the single bounded Quality correction
+        # generation in addition to the primary node graph.
+        for _ in range(len(ChapterNode) * 2 + 4):
             tick = scheduler.tick(
                 project_id=project_id,
                 root_operation_id=root_operation_id,

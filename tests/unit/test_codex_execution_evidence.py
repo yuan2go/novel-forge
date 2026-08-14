@@ -223,7 +223,7 @@ def test_provider_process_timeout_preserves_external_effect_settlement_headroom(
     assert _provider_process_timeout_seconds(300) == 270
     assert _provider_process_timeout_seconds(30) == 27
     assert _provider_process_timeout_seconds(2) == 1
-    assert _provider_process_timeout_seconds(600, max_attempts=3) == 180
+    assert _provider_process_timeout_seconds(1_800, max_attempts=3) == 570
 
 
 def test_codex_backend_validates_schema_and_semantics_before_success() -> None:

@@ -101,7 +101,7 @@ def _activate_reader_outcome_pack(harness: CapabilityPackPostgresHarness) -> Non
     ]
     manifest["workflow_template"].update(
         workflow_id="book_followup_reader_outcome",
-        workflow_version="1.0.0",
+        workflow_version="1.1.0",
         nodes=[node],
         completion={
             "required_terminal_nodes": ["reader_outcome"],
@@ -168,7 +168,7 @@ def _activate_reader_outcome_pack(harness: CapabilityPackPostgresHarness) -> Non
     )
     scope = harness.approval_scope()
     scope["allowed_workflow_definition_refs"] = [
-        "book_followup_reader_outcome@1.0.0"
+        "book_followup_reader_outcome@1.1.0"
     ]
     pack = harness.register_compile_approve(
         "1.0.0", generation=1, approval_scope=scope
@@ -433,7 +433,7 @@ class BookFollowupAuthorityPostgresTests(unittest.TestCase):
             )
             report = dict(uow.cursor.fetchone()[0])
         self.assertEqual(evidence[0], harness.pack_id)
-        self.assertEqual(evidence[1:3], ("book_followup_reader_outcome@1.0.0", "reader_outcome"))
+        self.assertEqual(evidence[1:3], ("book_followup_reader_outcome@1.1.0", "reader_outcome"))
         self.assertTrue(str(evidence[3]).startswith("sha256:"))
         self.assertEqual(evidence[4], "SUCCEEDED")
         self.assertEqual(report["mode"], "SHADOW")

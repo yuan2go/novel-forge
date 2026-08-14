@@ -128,7 +128,16 @@ class _PlanningGenerationHandler:
             )
         by_id = {item.asset_version_id: item for item in request.inputs}
         inputs: list[FrozenPlanningInput] = []
-        for role, asset_version_id in command.input_versions.items():
+        authority_roles = {
+            **dict(command.input_versions),
+            **{
+                f"arc_scope_volume:{index}": asset_version_id
+                for index, asset_version_id in enumerate(
+                    command.arc_scope_volume_plan_version_ids, start=1
+                )
+            },
+        }
+        for role, asset_version_id in authority_roles.items():
             item = by_id.get(asset_version_id)
             if item is None:
                 raise KernelError(
@@ -185,7 +194,7 @@ class _PlanningGenerationHandler:
                     frozen_inputs=tuple(inputs),
                     input_contents={
                         role: by_id[asset_version_id].content
-                        for role, asset_version_id in command.input_versions.items()
+                        for role, asset_version_id in authority_roles.items()
                     },
                     candidate_payload=candidate.candidate_payload,
                 ),
@@ -904,6 +913,19 @@ class StoryPlanningGenerationApplication:
                     execution_scope=PlanExecutionScope.PLANNED,
                     content=content,
                 )
+                if command.generator_operation_name == "arc_plan.generate":
+                    expected_volume_scope = {
+                        command.input_versions["volume_plan"],
+                        *command.arc_scope_volume_plan_version_ids,
+                    }
+                    declared_volume_scope = {
+                        str(item) for item in content.get("cross_volume_scope") or ()
+                    }
+                    if declared_volume_scope != expected_volume_scope:
+                        raise KernelError(
+                            "NARRATIVE_ARC_AUTHORITY_SCOPE_MISMATCH",
+                            "Arc cross_volume_scope must exactly match frozen Active VolumePlan versions",
+                        )
                 if contract.logical_key != command.logical_key:
                     raise KernelError(
                         "PLANNING_LOGICAL_KEY_MISMATCH",
@@ -1090,6 +1112,10 @@ class StoryPlanningGenerationApplication:
             trace_id=command.trace_id,
             correlation_id=command.correlation_id,
             parent_version_id=command.parent_version_id,
+            arc_scope_volume_plan_version_ids=(
+                command.arc_scope_volume_plan_version_ids
+            ),
+            change_evidence_version_ids=command.change_evidence_version_ids,
             repair_of_candidate_id=candidate_asset_version_id,
             repair_reason=f"{error.code}:{report_hash}",
             repair_number=command.repair_number + 1,
@@ -1144,10 +1170,21 @@ class StoryPlanningGenerationApplication:
     def _resolve_inputs(
         self, command: StoryPlanningGenerationCommand
     ) -> tuple[FrozenPlanningInput, ...]:
+        authority_roles = {
+            **dict(command.input_versions),
+            **{
+                f"arc_scope_volume:{index}": asset_version_id
+                for index, asset_version_id in enumerate(
+                    command.arc_scope_volume_plan_version_ids, start=1
+                )
+            },
+        }
         plan_input_ids = [
             asset_version_id
-            for role, asset_version_id in command.input_versions.items()
-            if role in _PLAN_INPUT_CONTRACTS or role == "chapter_function_matrix_row"
+            for role, asset_version_id in authority_roles.items()
+            if role in _PLAN_INPUT_CONTRACTS
+            or role.startswith("arc_scope_volume:")
+            or role == "chapter_function_matrix_row"
         ]
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
@@ -1176,7 +1213,7 @@ class StoryPlanningGenerationApplication:
                   AND version.eligibility='ELIGIBLE'
                   AND version.governance='CLEAR'
                 """,
-                [command.project_id, list(command.input_versions.values())],
+                [command.project_id, list(authority_roles.values())],
             )
             rows = uow.cursor.fetchall()
             uow.cursor.execute(
@@ -1211,7 +1248,7 @@ class StoryPlanningGenerationApplication:
             }
             for row in plan_rows
         }
-        missing = sorted(set(command.input_versions.values()) - set(by_id))
+        missing = sorted(set(authority_roles.values()) - set(by_id))
         if missing:
             raise KernelError(
                 "PLANNING_GENERATION_INPUT_AUTHORITY_INVALID",
@@ -1219,9 +1256,13 @@ class StoryPlanningGenerationApplication:
                 + ", ".join(missing),
             )
         result: list[FrozenPlanningInput] = []
-        for role, asset_version_id in command.input_versions.items():
+        for role, asset_version_id in authority_roles.items():
             item = by_id[asset_version_id]
-            expected_contract = _PLAN_INPUT_CONTRACTS.get(role)
+            expected_contract = (
+                PlanContractType.VOLUME
+                if role.startswith("arc_scope_volume:")
+                else _PLAN_INPUT_CONTRACTS.get(role)
+            )
             if expected_contract is not None:
                 plan = plan_by_id.get(asset_version_id)
                 if plan is None or plan["contract_type"] is not expected_contract:
@@ -1271,7 +1312,6 @@ class StoryPlanningGenerationApplication:
             )
         expected_parent_role = {
             "volume_plan.generate": "book_plan",
-            "arc_plan.generate": "volume_plan",
             "chapter_group_plan.generate": "volume_plan",
             "chapter_plan.generate": "chapter_group_plan",
         }.get(command.generator_operation_name)
@@ -1279,7 +1319,8 @@ class StoryPlanningGenerationApplication:
             if command.parent_version_id:
                 raise KernelError(
                     "PLANNING_GENERATION_PARENT_INVALID",
-                    "BookPlan generation cannot declare a parent Plan",
+                    f"{command.planning_scope.value} generation cannot declare a "
+                    "containment parent Plan",
                 )
         elif command.parent_version_id != command.input_versions[expected_parent_role]:
             raise KernelError(
@@ -1289,7 +1330,6 @@ class StoryPlanningGenerationApplication:
             )
         plan_relationships = (
             ("volume_plan", "book_plan"),
-            ("arc_plans", "volume_plan"),
             ("chapter_group_plan", "volume_plan"),
         )
         for child_role, parent_role in plan_relationships:
@@ -1644,7 +1684,7 @@ def chapter_plan_projection_definition(
 
 
 def _chapter_runtime_projection(candidate: dict[str, Any]) -> dict[str, Any]:
-    """Adapt the typed Planning contract to ChapterPlan v3 without model I/O."""
+    """Project one generated execution contract without inventing narrative state."""
 
     primary = str(candidate.get("primary_function") or "progression")
     objective = str(candidate.get("objective") or candidate.get("premise") or "")
@@ -1664,16 +1704,7 @@ def _chapter_runtime_projection(candidate: dict[str, Any]) -> dict[str, Any]:
         "premise": str(candidate.get("premise") or objective),
         "chapter_function": primary,
         "chapter_objective": objective,
-        "scene_sequence": required_events
-        or [
-            {
-                "goal": objective,
-                "conflict": hard_constraints[0]
-                if hard_constraints
-                else "the objective demands a visible cost",
-                "turn": hook,
-            }
-        ],
+        "scene_sequence": list(candidate.get("scene_plan") or required_events),
         "chapter_hook": hook,
         "conflict_chain": hard_constraints
         or ["the objective meets escalating resistance"],
@@ -1691,6 +1722,23 @@ def _chapter_runtime_projection(candidate: dict[str, Any]) -> dict[str, Any]:
         "reward_setup": required_payoffs or ["the promised consequence is prepared"],
         "reward_payoff": required_payoffs or ["the chapter pays a local consequence"],
         "conflict_escalation": ["resistance", "choice", "irreversible cost"],
+        "chapter_intent": candidate.get("chapter_intent"),
+        "arc_schedule": list(candidate.get("arc_schedule") or ()),
+        "setups": list(candidate.get("setups") or ()),
+        "payoffs": list(candidate.get("payoffs") or ()),
+        "character_participation": list(candidate.get("character_participation") or ()),
+        "knowledge_boundaries": list(candidate.get("knowledge_boundaries") or ()),
+        "disclosures": list(candidate.get("disclosures") or ()),
+        "required_state_transitions": list(
+            candidate.get("required_state_transitions") or ()
+        ),
+        "reader_experience": dict(candidate.get("reader_experience") or {}),
+        "scene_plan": list(candidate.get("scene_plan") or ()),
+        "expected_exit_state": dict(candidate.get("expected_exit_state") or {}),
+        "narrative_segment_ref": dict(candidate.get("narrative_segment_ref") or {}),
+        "narrative_architecture_version": str(
+            candidate.get("narrative_architecture_version") or ""
+        ),
     }
 
 
@@ -1792,6 +1840,9 @@ def _command_payload(command: StoryPlanningGenerationCommand) -> dict[str, Any]:
         "trace_id": command.trace_id,
         "correlation_id": command.correlation_id,
         "parent_version_id": command.parent_version_id,
+        "arc_scope_volume_plan_version_ids": list(
+            command.arc_scope_volume_plan_version_ids
+        ),
         "change_evidence_version_ids": list(command.change_evidence_version_ids),
         "repair_of_candidate_id": command.repair_of_candidate_id,
         "repair_reason": command.repair_reason,
@@ -1813,6 +1864,9 @@ def _command_from_payload(payload: dict[str, Any]) -> StoryPlanningGenerationCom
         trace_id=str(payload.get("trace_id") or ""),
         correlation_id=str(payload.get("correlation_id") or ""),
         parent_version_id=str(payload.get("parent_version_id") or ""),
+        arc_scope_volume_plan_version_ids=tuple(
+            str(item) for item in payload.get("arc_scope_volume_plan_version_ids") or ()
+        ),
         change_evidence_version_ids=tuple(
             str(item) for item in payload.get("change_evidence_version_ids") or ()
         ),

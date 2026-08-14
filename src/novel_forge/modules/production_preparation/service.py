@@ -15,6 +15,10 @@ from novel_forge.modules.chapter_authority.chapter_plan_views import (
     normalize_authoritative_chapter_plan,
     qualification_profile_for_plan,
 )
+from novel_forge.modules.chapter_authority.provider_views import (
+    build_task_narrative_projection,
+    project_narrative_state_facts,
+)
 
 from .contracts import (
     ChapterAuthorityCommand,
@@ -35,25 +39,35 @@ from .policies import (
     STAGE_PROFILES,
     requirements_for,
 )
+
+_STATE_ASSET_TYPES = {"story_state_snapshot", "canon_snapshot"}
+
+
 class AssetResolver(Protocol):
-    def resolve_latest(self, *, project_id: str, asset_type: str) -> ResolvedProductionAsset | None: ...
-    def resolve_all(self, *, project_id: str, asset_type: str, limit: int = 200) -> tuple[ResolvedProductionAsset, ...]: ...
-    def resolve_override(self, *, project_id: str, asset_version_id: str) -> ResolvedProductionAsset: ...
+    def resolve_latest(
+        self, *, project_id: str, asset_type: str
+    ) -> ResolvedProductionAsset | None: ...
+    def resolve_all(
+        self, *, project_id: str, asset_type: str, limit: int = 200
+    ) -> tuple[ResolvedProductionAsset, ...]: ...
+    def resolve_override(
+        self, *, project_id: str, asset_version_id: str
+    ) -> ResolvedProductionAsset: ...
 
 
 class ProductionPreparationService:
     def __init__(self, resolver: AssetResolver) -> None:
         self.resolver = resolver
 
-    def prepare(self, request: ProductionPreparationRequest) -> ProductionPreparationResult:
+    def prepare(
+        self, request: ProductionPreparationRequest
+    ) -> ProductionPreparationResult:
         self._validate(request)
         profile = STAGE_PROFILES[request.stage]
         requirements = requirements_for(
             request.stage,
             request.chapter,
-            capability_required_asset_types=(
-                request.capability_required_asset_types
-            ),
+            capability_required_asset_types=(request.capability_required_asset_types),
         )
         selected_by_type: dict[str, list[ResolvedProductionAsset]] = {}
         selections: list[ProductionInputSelection] = []
@@ -99,7 +113,9 @@ class ProductionPreparationService:
                         )
                     )
                     continue
-                if not self._matches_requested_profile(request, requirement.asset_type, candidate):
+                if not self._matches_requested_profile(
+                    request, requirement.asset_type, candidate
+                ):
                     rejections.append(
                         ProductionInputRejection(
                             candidate.asset_version_id,
@@ -140,9 +156,13 @@ class ProductionPreparationService:
         selected = [item for values in selected_by_type.values() for item in values]
         risks = self._risks(request, selected)
         approvals = selected_by_type.get("approval_decision", [])
-        unmet_risks = tuple(risk for risk in risks if not self._risk_approved(risk, approvals, request))
+        unmet_risks = tuple(
+            risk for risk in risks if not self._risk_approved(risk, approvals, request)
+        )
         repair_actions = [self._repair_action(kind) for kind in missing]
-        repair_actions.extend(f"obtain {risk.approval_type} for {risk.code}" for risk in unmet_risks)
+        repair_actions.extend(
+            f"obtain {risk.approval_type} for {risk.code}" for risk in unmet_risks
+        )
         manifest = self._manifest(
             request=request,
             selected=selected,
@@ -162,8 +182,12 @@ class ProductionPreparationService:
             project_id=request.project_id,
             chapter=request.chapter,
             decision=decision.value,
-            selected_asset_version_ids=tuple(item.asset_version_id for item in selected),
-            selection_reasons={item.asset_version_id: item.selected_reason for item in selected},
+            selected_asset_version_ids=tuple(
+                item.asset_version_id for item in selected
+            ),
+            selection_reasons={
+                item.asset_version_id: item.selected_reason for item in selected
+            },
             missing_required_asset_types=tuple(missing),
             blocked_assets=tuple(blocked),
             approval_requirements=tuple(risk.approval_type for risk in unmet_risks),
@@ -183,7 +207,7 @@ class ProductionPreparationService:
         chapter_plan = chapter_plan_asset.content
         plan_profile = qualification_profile_for_plan(chapter_plan)
         try:
-            normalize_authoritative_chapter_plan(
+            chapter_plan, _ = normalize_authoritative_chapter_plan(
                 project_id=request.project_id,
                 expected_chapter=request.chapter,
                 content=chapter_plan,
@@ -209,16 +233,25 @@ class ProductionPreparationService:
                 "chapter_plan_qualification_profile": asdict(plan_profile),
             }
         )
-        title = request.title_override.strip() or str(chapter_plan.get("title") or "").strip()
-        premise = request.premise_override.strip() or str(
-            chapter_plan.get("premise") or chapter_plan.get("objective") or ""
-        ).strip()
+        title = (
+            request.title_override.strip()
+            or str(chapter_plan.get("title") or "").strip()
+        )
+        premise = (
+            request.premise_override.strip()
+            or str(
+                chapter_plan.get("premise") or chapter_plan.get("objective") or ""
+            ).strip()
+        )
         if not title or not premise:
             report = ProductionPreparationReport(
                 **{
                     **asdict(report),
                     "decision": ProductionPreparationDecision.BLOCKED.value,
-                    "repair_actions": (*report.repair_actions, "complete chapter plan title and premise"),
+                    "repair_actions": (
+                        *report.repair_actions,
+                        "complete chapter plan title and premise",
+                    ),
                 }
             )
             return ProductionPreparationResult(report=report, command=None)
@@ -227,7 +260,12 @@ class ProductionPreparationService:
         # Context segments.  This keeps Manifest == frozen inputs == Context lineage
         # without exposing their content to the model-facing rendered view.
         candidates = tuple(
-            self._context_candidate(item, evidence_only_types=profile.evidence_only_types)
+            self._context_candidate(
+                item,
+                evidence_only_types=profile.evidence_only_types,
+                task_narrative_projection=build_task_narrative_projection(chapter_plan),
+                chapter=request.chapter,
+            )
             for item in selected
         )
         version_refs: dict[str, object] = {}
@@ -245,8 +283,12 @@ class ProductionPreparationService:
                 book_id=request.book_id,
                 workspace_id=request.workspace_id,
                 chapter=request.chapter,
-                chapter_plan_asset_version_id=selected_by_type["chapter_plan"][0].asset_version_id,
-                chapter_plan_content_hash=selected_by_type["chapter_plan"][0].content_hash,
+                chapter_plan_asset_version_id=selected_by_type["chapter_plan"][
+                    0
+                ].asset_version_id,
+                chapter_plan_content_hash=selected_by_type["chapter_plan"][
+                    0
+                ].content_hash,
                 title=title,
                 premise=premise,
                 context_candidates=candidates,
@@ -257,12 +299,16 @@ class ProductionPreparationService:
             ),
         )
 
-    def _candidates(self, request: ProductionPreparationRequest, asset_type: str) -> tuple[ResolvedProductionAsset, ...]:
+    def _candidates(
+        self, request: ProductionPreparationRequest, asset_type: str
+    ) -> tuple[ResolvedProductionAsset, ...]:
         override = request.explicit_asset_version_overrides.get(asset_type)
         if override:
             ids = [override] if isinstance(override, str) else list(override)
             assets = tuple(
-                self.resolver.resolve_override(project_id=request.project_id, asset_version_id=item)
+                self.resolver.resolve_override(
+                    project_id=request.project_id, asset_version_id=item
+                )
                 for item in ids
             )
         elif (
@@ -279,22 +325,40 @@ class ProductionPreparationService:
                 )
             )
         elif hasattr(self.resolver, "resolve_all"):
-            assets = tuple(self.resolver.resolve_all(project_id=request.project_id, asset_type=asset_type))
+            assets = tuple(
+                self.resolver.resolve_all(
+                    project_id=request.project_id, asset_type=asset_type
+                )
+            )
         else:
-            latest = self.resolver.resolve_latest(project_id=request.project_id, asset_type=asset_type)
+            latest = self.resolver.resolve_latest(
+                project_id=request.project_id, asset_type=asset_type
+            )
             assets = () if latest is None else (latest,)
         for asset in assets:
             if asset.project_id != request.project_id:
-                raise KernelError("PREPARATION_CROSS_PROJECT_INPUT", "production candidate belongs to another project")
+                raise KernelError(
+                    "PREPARATION_CROSS_PROJECT_INPUT",
+                    "production candidate belongs to another project",
+                )
             if asset.asset_type != asset_type:
-                raise KernelError("PREPARATION_OVERRIDE_TYPE_MISMATCH", "production override has the wrong asset type")
+                raise KernelError(
+                    "PREPARATION_OVERRIDE_TYPE_MISMATCH",
+                    "production override has the wrong asset type",
+                )
         return assets
 
     @staticmethod
-    def _matches_requested_profile(request: ProductionPreparationRequest, asset_type: str, asset: ResolvedProductionAsset) -> bool:
+    def _matches_requested_profile(
+        request: ProductionPreparationRequest,
+        asset_type: str,
+        asset: ResolvedProductionAsset,
+    ) -> bool:
         requested = (
-            request.requested_quality_profile if asset_type in {"quality_profile", "quality_rubric"}
-            else request.requested_platform_profile if asset_type == "platform_profile"
+            request.requested_quality_profile
+            if asset_type in {"quality_profile", "quality_rubric"}
+            else request.requested_platform_profile
+            if asset_type == "platform_profile"
             else "default"
         )
         if requested == "default":
@@ -312,14 +376,22 @@ class ProductionPreparationService:
         item: ResolvedProductionAsset,
         *,
         evidence_only_types: tuple[str, ...],
+        task_narrative_projection: dict[str, object],
+        chapter: int,
     ) -> dict[str, object]:
         evidence_only = item.asset_type in {
-            "operator_checklist", "approval_decision", *evidence_only_types,
+            "operator_checklist",
+            "approval_decision",
+            *evidence_only_types,
         }
         safe_summary = str(item.content.get("safe_summary") or "")
         structured_facts = list(item.content.get("structured_facts") or [])
         if item.asset_type == "story_state_snapshot":
-            structured_facts = compact_current_state_facts(item.content)
+            structured_facts = project_narrative_state_facts(
+                compact_current_state_facts(item.content),
+                projection=task_narrative_projection,
+                chapter=chapter,
+            )
             safe_summary = (
                 "Compact authoritative current Narrative State through Chapter "
                 f"{item.content.get('accepted_through_chapter')}."
@@ -330,7 +402,11 @@ class ProductionPreparationService:
                     "CANON_SNAPSHOT_CONTRACT_UNSUPPORTED",
                     "execution context accepts only Canon snapshot v2",
                 )
-            structured_facts = compact_canon_facts(item.content)
+            structured_facts = project_narrative_state_facts(
+                compact_canon_facts(item.content),
+                projection=task_narrative_projection,
+                chapter=chapter,
+            )
             safe_summary = (
                 "Compact authoritative Canon truth through Chapter "
                 f"{item.content.get('accepted_through_chapter')}."
@@ -346,9 +422,13 @@ class ProductionPreparationService:
             "selection_reason": item.selected_reason,
             "safe_summary": safe_summary,
             "structured_facts": structured_facts,
-            "narrative_function": str(item.content.get("narrative_function") or item.asset_type),
+            "narrative_function": str(
+                item.content.get("narrative_function") or item.asset_type
+            ),
             "estimated_tokens": int(
-                item.content.get("estimated_tokens")
+                max(1, len(safe_summary + repr(structured_facts)) // 4)
+                if item.asset_type in _STATE_ASSET_TYPES
+                else item.content.get("estimated_tokens")
                 or max(1, len(safe_summary + repr(structured_facts)) // 4)
             ),
             "allowed_use": (
@@ -365,18 +445,38 @@ class ProductionPreparationService:
         }
 
     @staticmethod
-    def _risks(request: ProductionPreparationRequest, selected: list[ResolvedProductionAsset]) -> tuple[ProductionPreparationRisk, ...]:
+    def _risks(
+        request: ProductionPreparationRequest, selected: list[ResolvedProductionAsset]
+    ) -> tuple[ProductionPreparationRisk, ...]:
         risks: list[ProductionPreparationRisk] = []
-        high_source = tuple(item.asset_version_id for item in selected if int(item.content.get("source_risk", 0)) >= 70)
+        high_source = tuple(
+            item.asset_version_id
+            for item in selected
+            if int(item.content.get("source_risk", 0)) >= 70
+        )
         if high_source:
-            risks.append(ProductionPreparationRisk("HIGH_SOURCE_RISK", "high", "source_risk", high_source))
-        estimated_cost = float(request.operator_decision.get("estimated_provider_cost", 0) or 0)
+            risks.append(
+                ProductionPreparationRisk(
+                    "HIGH_SOURCE_RISK", "high", "source_risk", high_source
+                )
+            )
+        estimated_cost = float(
+            request.operator_decision.get("estimated_provider_cost", 0) or 0
+        )
         if estimated_cost > 5:
-            risks.append(ProductionPreparationRisk("HIGH_PROVIDER_BUDGET", "high", "provider_budget"))
+            risks.append(
+                ProductionPreparationRisk(
+                    "HIGH_PROVIDER_BUDGET", "high", "provider_budget"
+                )
+            )
         return tuple(risks)
 
     @staticmethod
-    def _risk_approved(risk: ProductionPreparationRisk, approvals: list[ResolvedProductionAsset], request: ProductionPreparationRequest) -> bool:
+    def _risk_approved(
+        risk: ProductionPreparationRisk,
+        approvals: list[ResolvedProductionAsset],
+        request: ProductionPreparationRequest,
+    ) -> bool:
         now = datetime.now(timezone.utc)
         for approval in approvals:
             content = approval.content
@@ -387,17 +487,30 @@ class ProductionPreparationService:
                     parsed = parsed.replace(tzinfo=timezone.utc)
                 if parsed <= now:
                     continue
-            if content.get("decision") != "APPROVED" or int(content.get("chapter", 0)) != request.chapter:
+            if (
+                content.get("decision") != "APPROVED"
+                or int(content.get("chapter", 0)) != request.chapter
+            ):
                 continue
             if risk.code not in set(content.get("risk_codes") or []):
                 continue
-            if not set(risk.target_asset_version_ids).issubset(set(content.get("target_asset_version_ids") or [])):
+            if not set(risk.target_asset_version_ids).issubset(
+                set(content.get("target_asset_version_ids") or [])
+            ):
                 continue
             return True
         return False
 
     @staticmethod
-    def _manifest(*, request: ProductionPreparationRequest, selected: list[ResolvedProductionAsset], selections: list[ProductionInputSelection], rejections: list[ProductionInputRejection], risks: tuple[ProductionPreparationRisk, ...], unmet_risks: tuple[ProductionPreparationRisk, ...]) -> ProductionInputManifest:
+    def _manifest(
+        *,
+        request: ProductionPreparationRequest,
+        selected: list[ResolvedProductionAsset],
+        selections: list[ProductionInputSelection],
+        rejections: list[ProductionInputRejection],
+        risks: tuple[ProductionPreparationRisk, ...],
+        unmet_risks: tuple[ProductionPreparationRisk, ...],
+    ) -> ProductionInputManifest:
         selected_payload = tuple(
             {
                 "asset_version_id": item.asset_version_id,
@@ -407,25 +520,49 @@ class ProductionPreparationService:
                 ),
                 "content_hash": item.content_hash,
                 "entity_id": str(item.content.get("entity_id") or ""),
-                "role": next((entry.role for entry in selections if entry.asset_version_id == item.asset_version_id), "context"),
+                "role": next(
+                    (
+                        entry.role
+                        for entry in selections
+                        if entry.asset_version_id == item.asset_version_id
+                    ),
+                    "context",
+                ),
             }
             for item in selected
         )
         source_rows = [
             {
                 "asset_version_id": item.asset_version_id,
-                "governance_status": str(item.content.get("governance_status") or "CLEAR"),
-                "source_policy_version": str(item.content.get("source_policy_version") or ""),
+                "governance_status": str(
+                    item.content.get("governance_status") or "CLEAR"
+                ),
+                "source_policy_version": str(
+                    item.content.get("source_policy_version") or ""
+                ),
                 "allowed_use": str(item.content.get("allowed_use") or "generation"),
                 "raw_source": item.content.get("raw_source") is True,
                 "source_risk": int(item.content.get("source_risk") or 0),
             }
             for item in selected
-            if any(key in item.content for key in ("source_policy_version", "source_risk", "raw_source", "allowed_use"))
+            if any(
+                key in item.content
+                for key in (
+                    "source_policy_version",
+                    "source_risk",
+                    "raw_source",
+                    "allowed_use",
+                )
+            )
         ]
         raw_count = sum(1 for item in source_rows if item["raw_source"])
         source_governance = {
-            "status": "CLEAR" if all(item["governance_status"] == "CLEAR" and not item["raw_source"] for item in source_rows) else "BLOCKED",
+            "status": "CLEAR"
+            if all(
+                item["governance_status"] == "CLEAR" and not item["raw_source"]
+                for item in source_rows
+            )
+            else "BLOCKED",
             "raw_source_ratio": (raw_count / len(source_rows)) if source_rows else 0.0,
             "copyright_mode": STAGE_PROFILES[request.stage].copyright_mode,
             "assets": source_rows,
@@ -441,19 +578,33 @@ class ProductionPreparationService:
             "quality_profile": request.requested_quality_profile,
             "platform_profile": request.requested_platform_profile,
             "source_governance": source_governance,
-            "qualification_evidence": {item.asset_version_id: item.qualification for item in selected},
+            "qualification_evidence": {
+                item.asset_version_id: item.qualification for item in selected
+            },
             "approval_requirements": [asdict(item) for item in unmet_risks],
             "risk_summary": [asdict(item) for item in risks],
         }
-        digest = "sha256:" + hashlib.sha256(json.dumps(digest_payload, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+        digest = (
+            "sha256:"
+            + hashlib.sha256(
+                json.dumps(
+                    digest_payload, sort_keys=True, separators=(",", ":")
+                ).encode()
+            ).hexdigest()
+        )
         by_type = {item.asset_type: item for item in selected}
         entity_scopes: dict[str, list[str]] = {}
         for item in selected:
             entity_id = str(item.content.get("entity_id") or "")
             if entity_id:
                 entity_scopes.setdefault(item.asset_type, []).append(entity_id)
+
         def version(*types: str) -> str:
-            return next((by_type[item].asset_version_id for item in types if item in by_type), "")
+            return next(
+                (by_type[item].asset_version_id for item in types if item in by_type),
+                "",
+            )
+
         return ProductionInputManifest(
             project_id=request.project_id,
             book_id=request.book_id,
@@ -472,12 +623,20 @@ class ProductionPreparationService:
             selected_asset_versions=selected_payload,
             rejected_asset_versions=tuple(asdict(item) for item in rejections),
             entity_scopes=entity_scopes,
-            selection_reasons={item.asset_version_id: item.selection_reason for item in selections},
+            selection_reasons={
+                item.asset_version_id: item.selection_reason for item in selections
+            },
             rejection_reasons={item.asset_version_id: item.code for item in rejections},
             source_governance=source_governance,
-            qualification_evidence={item.asset_version_id: item.qualification for item in selected},
+            qualification_evidence={
+                item.asset_version_id: item.qualification for item in selected
+            },
             token_budget=request.context_token_budget,
-            provider_budget={"currency": "USD", "status": "ESTIMATE_UNCALIBRATED", "maximum_tokens": request.context_token_budget},
+            provider_budget={
+                "currency": "USD",
+                "status": "ESTIMATE_UNCALIBRATED",
+                "maximum_tokens": request.context_token_budget,
+            },
             approval_requirements=tuple(asdict(item) for item in unmet_risks),
             risk_summary=tuple(asdict(item) for item in risks),
             manifest_digest=digest,
@@ -485,14 +644,29 @@ class ProductionPreparationService:
         )
 
     @staticmethod
-    def _asset_fit_issue(*, asset_type: str, asset: ResolvedProductionAsset, requested_chapter: int, requested_book_id: str, stage: str, forbidden_types: tuple[str, ...]) -> str:
+    def _asset_fit_issue(
+        *,
+        asset_type: str,
+        asset: ResolvedProductionAsset,
+        requested_chapter: int,
+        requested_book_id: str,
+        stage: str,
+        forbidden_types: tuple[str, ...],
+    ) -> str:
         content = asset.content
         if asset_type in forbidden_types or content.get("quarantined") is True:
             return "STAGE_ASSET_FORBIDDEN"
-        if content.get("raw_source") is True or content.get("source_expression_included") is True:
+        if (
+            content.get("raw_source") is True
+            or content.get("source_expression_included") is True
+        ):
             return "RAW_SOURCE_FORBIDDEN"
         allowed_use = str(content.get("allowed_use") or "generation")
-        if stage == "draft" and allowed_use in {"review_only", "eval_only", "structure_only"}:
+        if stage == "draft" and allowed_use in {
+            "review_only",
+            "eval_only",
+            "structure_only",
+        }:
             return "STAGE_USE_FORBIDDEN"
         if asset_type == "chapter_plan":
             try:
@@ -513,7 +687,10 @@ class ProductionPreparationService:
             if not requested_book_id or content.get("book_id") != requested_book_id:
                 return "NARRATIVE_STATE_BOOK_SCOPE_MISMATCH"
             try:
-                if int(content.get("accepted_through_chapter")) != requested_chapter - 1:
+                if (
+                    int(content.get("accepted_through_chapter"))
+                    != requested_chapter - 1
+                ):
                     return "HISTORICAL_SNAPSHOT_CHAPTER_MISMATCH"
             except (TypeError, ValueError):
                 return "HISTORICAL_SNAPSHOT_CHAPTER_MISSING"
@@ -548,12 +725,24 @@ class ProductionPreparationService:
             return ""
         plan = plan_assets[0].content
         wanted_entities = {
-            str(item.get("entity_id") or item.get("character_id") or item.get("id") or item)
+            str(
+                item.get("entity_id")
+                or item.get("character_id")
+                or item.get("id")
+                or item
+            )
             for item in (*plan.get("cast", []), *plan.get("character_ids", []))
             if item
         }
-        entity_id = str(asset.content.get("entity_id") or asset.content.get("character_id") or "")
-        if asset.asset_type == "character_card" and entity_id and wanted_entities and entity_id not in wanted_entities:
+        entity_id = str(
+            asset.content.get("entity_id") or asset.content.get("character_id") or ""
+        )
+        if (
+            asset.asset_type == "character_card"
+            and entity_id
+            and wanted_entities
+            and entity_id not in wanted_entities
+        ):
             return "ENTITY_SCOPE_MISMATCH"
         return ""
 
@@ -574,5 +763,17 @@ class ProductionPreparationService:
     def _validate(request: ProductionPreparationRequest) -> None:
         if request.stage not in STAGE_PROFILES:
             raise ValueError("unknown production preparation stage")
-        if any(not item for item in (request.project_id, request.workspace_id, request.idempotency_key)) or request.chapter <= 0 or request.context_token_budget <= 0 or (request.chapter > 1 and not request.book_id):
+        if (
+            any(
+                not item
+                for item in (
+                    request.project_id,
+                    request.workspace_id,
+                    request.idempotency_key,
+                )
+            )
+            or request.chapter <= 0
+            or request.context_token_budget <= 0
+            or (request.chapter > 1 and not request.book_id)
+        ):
             raise ValueError("production preparation request is incomplete")

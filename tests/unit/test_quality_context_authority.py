@@ -24,15 +24,20 @@ def _bundle() -> dict:
             "asset_version_id": platform_id,
             "asset_type": "platform_profile",
             "content_digest": "sha256:platform",
-            "structured_facts": [{"key": "platform_rules", "value": {
-                "chapter_length": {"minimum": 1500, "maximum": 3000},
-                "format": {"paragraph_max": 260},
-                "sensitive_content": ["blocked-category"],
-                "ai_content": {"disclosure": "internal-only"},
-                "opening": ["conflict in first scene"],
-                "rhythm": ["one payoff per chapter"],
-                "publish_metadata": {"title_required": True},
-            }}],
+            "structured_facts": [
+                {
+                    "key": "platform_rules",
+                    "value": {
+                        "chapter_length": {"minimum": 1500, "maximum": 3000},
+                        "format": {"paragraph_max": 260},
+                        "sensitive_content": ["blocked-category"],
+                        "ai_content": {"disclosure": "internal-only"},
+                        "opening": ["conflict in first scene"],
+                        "rhythm": ["one payoff per chapter"],
+                        "publish_metadata": {"title_required": True},
+                    },
+                }
+            ],
             "source_expression_included": False,
         },
         {
@@ -40,6 +45,18 @@ def _bundle() -> dict:
             "asset_type": "reader_promise",
             "content_digest": "sha256:promise",
             "structured_facts": [{"promise": "the cost becomes visible"}],
+            "source_expression_included": False,
+        },
+        {
+            "asset_version_id": "world-bible-v1",
+            "asset_type": "world_bible",
+            "content_digest": "sha256:world-bible",
+            "structured_facts": [
+                {
+                    "rule_id": "rule:public-record",
+                    "rule": "Public records require a witnessed filing.",
+                }
+            ],
             "source_expression_included": False,
         },
     ]
@@ -56,7 +73,11 @@ def _bundle() -> dict:
     return {
         "project_id": "project-1",
         "context_segments": segments,
-        "context_manifest": {"selected_asset_version_ids": [item["asset_version_id"] for item in segments]},
+        "context_manifest": {
+            "selected_asset_version_ids": [
+                item["asset_version_id"] for item in segments
+            ]
+        },
         "source_isolation_result": {"passed": True, "raw_source_ratio": 0},
         "copyright_boundary": "abstract_or_project_owned_only",
         "production_input_manifest": {
@@ -86,6 +107,7 @@ def _view(
         chapter_plan={
             "chapter": 2,
             "title": "The Cost of Memory",
+            "narrative_architecture_version": "canonical-narrative-architecture-v1",
             "safe_summary": "A clerk preserves evidence at a personal cost.",
             "chapter_function": "promise payoff",
             "chapter_objective": "make the cost visible",
@@ -95,6 +117,19 @@ def _view(
             "antagonist_pressure": {"target": "safe route"},
             "chapter_hook": "a new obligation",
             "next_chapter_bridge": "debt collection",
+            "chapter_intent": "make the choice and its cost executable",
+            "arc_schedule": [
+                {
+                    "arc_plan_version_id": "arc-v1",
+                    "role": "PRIMARY",
+                    "segment_id": "arc-segment:1",
+                }
+            ],
+            "scene_plan": [{"scene_id": "scene:2:1", "goal": "force the choice"}],
+            "reader_experience": {"target_emotion": "costly relief"},
+            "required_state_transitions": [
+                {"state_kind": "character_arc", "entity_key": "lin:accountability"}
+            ],
         },
         chapter_plan_asset_version_id="plan-v2",
         context_bundle=bundle or _bundle(),
@@ -107,9 +142,16 @@ def _view(
 
 class QualityContextAuthorityTests(unittest.TestCase):
     def test_group_views_are_minimal_and_distinct(self) -> None:
-        views = {group: _view(group) for group in (
-            "structural", "commercial", "source_originality", "longform", "platform"
-        )}
+        views = {
+            group: _view(group)
+            for group in (
+                "structural",
+                "commercial",
+                "source_originality",
+                "longform",
+                "platform",
+            )
+        }
         self.assertEqual(views["structural"]["type"], "StructuralQualityContextView")
         self.assertIn("reader_promise_actions", views["commercial"])
         self.assertIn("reward_payoff", views["commercial"])
@@ -120,7 +162,21 @@ class QualityContextAuthorityTests(unittest.TestCase):
             set(views["longform"]["previous_state_snapshots"]), set(STATE_ASSET_TYPES)
         )
         self.assertEqual(
-            views["platform"]["compiled_platform_policy"]["chapter_length_rules"]["minimum"],
+            views["longform"]["chapter_plan"]["required_state_transitions"][0][
+                "state_kind"
+            ],
+            "character_arc",
+        )
+        self.assertEqual(
+            views["longform"]["governed_world_rules"][0]["asset_version_id"],
+            "world-bible-v1",
+        )
+        self.assertEqual(views["structural"]["scene_plan"][0]["scene_id"], "scene:2:1")
+        self.assertEqual(views["commercial"]["arc_schedule"][0]["role"], "PRIMARY")
+        self.assertEqual(
+            views["platform"]["compiled_platform_policy"]["chapter_length_rules"][
+                "minimum"
+            ],
             1500,
         )
         self.assertEqual(
@@ -136,7 +192,12 @@ class QualityContextAuthorityTests(unittest.TestCase):
         view = _view("source_originality")
         self.assertTrue(view["source_expression_excluded"])
         self.assertNotIn("safe_summary", view["governed_segment_identities"][0])
-        self.assertTrue(all(not item["source_expression_included"] for item in view["governed_segment_identities"]))
+        self.assertTrue(
+            all(
+                not item["source_expression_included"]
+                for item in view["governed_segment_identities"]
+            )
+        )
 
     def test_stale_or_missing_profile_version_fails_closed(self) -> None:
         bundle = _bundle()
@@ -146,10 +207,16 @@ class QualityContextAuthorityTests(unittest.TestCase):
 
     def test_longform_compression_preserves_snapshot_identity(self) -> None:
         bundle = _bundle()
-        state = next(item for item in bundle["context_segments"] if item["asset_type"] == "canon_snapshot")
+        state = next(
+            item
+            for item in bundle["context_segments"]
+            if item["asset_type"] == "canon_snapshot"
+        )
         state["structured_facts"] = [{"index": item} for item in range(3000)]
         view = _view("longform", bundle, token_budget=6000)
-        row = view["previous_state_snapshots"]["canon_snapshot"]["canon_snapshot:project"][0]
+        row = view["previous_state_snapshots"]["canon_snapshot"][
+            "canon_snapshot:project"
+        ][0]
         self.assertEqual(row["asset_version_id"], "canon_snapshot-v1")
         self.assertTrue(row["compressed"])
         self.assertGreater(row["omitted_fact_count"], 0)
@@ -177,6 +244,70 @@ class QualityContextAuthorityTests(unittest.TestCase):
 
         self.assertNotIn("source_extensions", view["chapter_plan"])
         self.assertEqual(view["chapter_plan"]["chapter"], 2)
+
+    def test_longform_projects_authority_evidence_before_budgeting(self) -> None:
+        extraction_candidate = {
+            "disclosure_id": "disclosure:reader:fact-1",
+            "fact_id": "fact-1",
+            "audience": "READER",
+            "disclosure_mode": "CONFIRM",
+            "presentation_channel": "The contradiction is shown directly.",
+            "model_id": "provider-model",
+            "provider_id": "provider",
+            "prompt_version": "prompt-v1",
+            "source_revision_asset_version_id": "revision-v2",
+            "approval_resolution": {"decision": "APPROVE"},
+            "extraction_evidence": {"raw": "x" * 12_000},
+        }
+        conflict = {
+            "severity": "blocking",
+            "conflict_code": "PLANNED_DISCLOSURE_MISSING",
+            "existing_version": {
+                "disclosure_id": "disclosure:character:fact-1",
+                "fact_id": "fact-1",
+                "audience": "ALICE",
+                "mode": "CONFIRM",
+            },
+            "candidate_version": [extraction_candidate] * 6,
+            "evidence": {
+                "existing": {"duplicated": "x" * 12_000},
+                "candidate": [extraction_candidate] * 6,
+            },
+            "approval_requirement": "REQUIRED",
+            "recommended_resolution": "extract the planned presentation event",
+        }
+        view = _view(
+            "longform",
+            token_budget=6_000,
+            canon={
+                "conflicts": [conflict] * 3,
+                "state_changes": {"disclosure_event": [extraction_candidate]},
+            },
+        )
+
+        serialized = str(view)
+        self.assertNotIn("extraction_evidence", serialized)
+        self.assertNotIn("provider-model", serialized)
+        self.assertNotIn("evidence", view["canon_conflicts"][0])
+        self.assertEqual(view["canon_conflicts"][0]["candidate_count"], 6)
+        self.assertEqual(
+            view["current_state_candidates"]["disclosure_event"]
+            ["disclosure_event:project"][0]["structured_facts"][0]
+            ["presentation_channel"],
+            "The contradiction is shown directly.",
+        )
+        self.assertLessEqual(
+            view["coverage_report"]["token_estimate"],
+            view["coverage_report"]["token_budget"],
+        )
+
+    def test_canonical_longform_plan_does_not_repeat_legacy_aliases(self) -> None:
+        view = _view("longform")
+
+        self.assertIn("chapter_intent", view["chapter_plan"])
+        self.assertIn("scene_plan", view["chapter_plan"])
+        self.assertNotIn("chapter_objective", view["chapter_plan"])
+        self.assertNotIn("reader_promise_actions", view["chapter_plan"])
 
     def test_longform_preserves_multiple_entities_and_emits_coverage(self) -> None:
         bundle = _bundle()
@@ -206,7 +337,9 @@ class QualityContextAuthorityTests(unittest.TestCase):
             view["coverage_report"]["token_budget"],
         )
 
-    def test_longform_coverage_deduplicates_shared_snapshot_versions_within_budget(self) -> None:
+    def test_longform_coverage_deduplicates_shared_snapshot_versions_within_budget(
+        self,
+    ) -> None:
         bundle = _bundle()
         story = next(
             item
@@ -291,26 +424,28 @@ class QualityContextAuthorityTests(unittest.TestCase):
         with self.assertRaisesRegex(KernelError, "CRITICAL_OVERFLOW"):
             _view("longform", token_budget=50)
 
-    def test_longform_compacts_noncritical_candidate_rows_but_keeps_identities(self) -> None:
+    def test_longform_compacts_noncritical_candidate_rows_but_keeps_identities(
+        self,
+    ) -> None:
         identities = [f"character-{index}" for index in range(60)]
         canon = {
             "conflicts": [],
             "state_changes": {
                 "character_state": [
-                        {
-                            "character_id": identity,
-                            "description": "noncritical detail " * 20,
-                        }
-                        for identity in identities
+                    {
+                        "character_id": identity,
+                        "description": "noncritical detail " * 20,
+                    }
+                    for identity in identities
                 ]
             },
         }
 
         view = _view("longform", token_budget=2500, canon=canon)
 
-        compacted = view["current_state_candidates"][
-            "character_state"
-        ]["compressed:noncritical"][0]
+        compacted = view["current_state_candidates"]["character_state"][
+            "compressed:noncritical"
+        ][0]
         self.assertEqual(
             compacted["included_identities"],
             [f"character_id:{identity}" for identity in identities],

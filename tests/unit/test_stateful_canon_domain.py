@@ -2,7 +2,10 @@ from __future__ import annotations
 
 import unittest
 
-from novel_forge.modules.canon_graph.domain import build_canon_update, extract_canon_candidates
+from novel_forge.modules.canon_graph.domain import (
+    build_canon_update,
+    extract_canon_candidates,
+)
 
 
 class StatefulCanonDomainTests(unittest.TestCase):
@@ -47,11 +50,99 @@ class StatefulCanonDomainTests(unittest.TestCase):
             "accepted_revision_digest",
         )
 
+    def test_reader_knowledge_is_derived_from_disclosure_mode(self) -> None:
+        base = {
+            "summary": "A ledger mark hints that the witness was present.",
+            "effective_from_chapter": 2,
+            "disclosure_id": "disclosure:witness-mark",
+            "fact_id": "fact:witness-present",
+            "audience": "READER",
+            "presentation_channel": "OBJECT_DETAIL",
+            "evidence_start": 0,
+            "evidence_end": 12,
+            "confidence": 0.9,
+            "impact_type": "reader_disclosure",
+        }
+        hinted = extract_canon_candidates(
+            project_id="project-a",
+            revision={"chapter": 2, "text": "A ledger mark appears in the margin."},
+            revision_asset_version_id="revision-v2",
+            context_bundle_version_id="context-v2",
+            provider_extraction={
+                "disclosure_events": [{**base, "disclosure_mode": "HINT"}]
+            },
+        )
+        confirmed = extract_canon_candidates(
+            project_id="project-a",
+            revision={"chapter": 2, "text": "The ledger confirms the witness."},
+            revision_asset_version_id="revision-v2b",
+            context_bundle_version_id="context-v2",
+            provider_extraction={
+                "disclosure_events": [{**base, "disclosure_mode": "CONFIRM"}]
+            },
+        )
+
+        self.assertEqual(hinted["reader_knowledge_changes"][0]["status"], "HINTED")
+        self.assertEqual(confirmed["reader_knowledge_changes"][0]["status"], "KNOWN")
+        self.assertEqual(
+            hinted["reader_knowledge_changes"][0]["extractor_type"],
+            "derived_disclosure_projection",
+        )
+
+    def test_character_knowledge_bundle_becomes_atomic_canon_state(self) -> None:
+        extraction = extract_canon_candidates(
+            project_id="project-a",
+            revision={"chapter": 2, "text": "The witness reads both entries."},
+            revision_asset_version_id="revision-v2",
+            context_bundle_version_id="context-v2",
+            provider_extraction={
+                "character_knowledge_changes": [
+                    {
+                        "character_id": "character:lin",
+                        "acquired_fact_ids": ["fact:first", "fact:second"],
+                        "status": "KNOWN",
+                        "effective_from_chapter": 2,
+                    }
+                ]
+            },
+        )
+        update = build_canon_update(
+            project_id="project-a",
+            revision_asset_version_id="revision-v2",
+            context_bundle_version_id="context-v2",
+            extraction=extraction,
+            historical_state={},
+        )
+
+        self.assertEqual(
+            [
+                (item["character_id"], item["fact_id"], item["entity_version"])
+                for item in update["state_changes"]["character_knowledge"]
+            ],
+            [
+                ("character:lin", "fact:first", 1),
+                ("character:lin", "fact:second", 1),
+            ],
+        )
+
     def test_historical_state_detects_typed_cross_chapter_conflicts(self) -> None:
         state = {
-            "canon_snapshot": [{"asset_version_id": "canon-v1", "subject": "alliance", "predicate": "status", "object": "active"}],
+            "canon_snapshot": [
+                {
+                    "asset_version_id": "canon-v1",
+                    "subject": "alliance",
+                    "predicate": "status",
+                    "object": "active",
+                }
+            ],
             "timeline_snapshot": [{"asset_version_id": "timeline-v1", "chapter": 2}],
-            "character_state": [{"asset_version_id": "character-v1", "character_id": "hero", "canonical_name": "Hero"}],
+            "character_state": [
+                {
+                    "asset_version_id": "character-v1",
+                    "character_id": "hero",
+                    "canonical_name": "Hero",
+                }
+            ],
             "world_rule": [{"asset_version_id": "world-v1"}],
             "power_state": [{"asset_version_id": "power-v1"}],
             "foreshadow_state": [{"asset_version_id": "foreshadow-v1"}],
@@ -65,12 +156,17 @@ class StatefulCanonDomainTests(unittest.TestCase):
             historical_state=state,
         )
         codes = {item["conflict_code"] for item in update["conflicts"]}
-        self.assertTrue({
-            "FACT_CONTRADICTION", "TEMPORAL_CONTRADICTION",
-            "CHARACTER_IDENTITY_CONTRADICTION", "WORLD_RULE_CONTRADICTION",
-            "POWER_PROGRESSION_CONTRADICTION", "FORESHADOW_LIFECYCLE_CONTRADICTION",
-            "PROMISE_LIFECYCLE_CONTRADICTION",
-        }.issubset(codes))
+        self.assertTrue(
+            {
+                "FACT_CONTRADICTION",
+                "TEMPORAL_CONTRADICTION",
+                "CHARACTER_IDENTITY_CONTRADICTION",
+                "WORLD_RULE_CONTRADICTION",
+                "POWER_PROGRESSION_CONTRADICTION",
+                "FORESHADOW_LIFECYCLE_CONTRADICTION",
+                "PROMISE_LIFECYCLE_CONTRADICTION",
+            }.issubset(codes)
+        )
         self.assertEqual(update["gate"], "BLOCKED")
         self.assertIn("canon_fact", update["state_changes"])
         self.assertIn("character_state", update["state_changes"])

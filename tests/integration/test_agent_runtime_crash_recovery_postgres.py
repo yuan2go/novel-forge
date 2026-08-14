@@ -112,13 +112,13 @@ def crash_authority_scope() -> dict[str, str]:
             FROM authority_chapter_node_agent_binding AS binding
             JOIN authority_operation AS operation
               ON operation.operation_id=binding.created_by_operation_id
-            WHERE binding.workflow_definition_ref=
-                  'chapter_authority_slice@2.3.1'
+            WHERE binding.workflow_definition_ref=%s
               AND binding.workflow_node_id='draft'
               AND binding.binding_status='ACTIVE'
             ORDER BY binding.created_at DESC
             LIMIT 1
-            """
+            """,
+            [unified_fixtures.CHAPTER_MODEL_WORKFLOW_DEFINITION_REF],
         ).fetchone()
     actor = "crash-matrix-operator"
     if row is not None:

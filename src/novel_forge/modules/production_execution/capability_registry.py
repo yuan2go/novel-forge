@@ -18,7 +18,7 @@ from .contracts import ExecutionCapabilityProfile, ExecutionRuntimeClass
 CONTROLLED_ENVIRONMENTS = frozenset(
     item.value for item in RuntimeEnvironment if item.controlled
 )
-PLANNING_TIMEOUT_POLICY_VERSION = "v2"
+PLANNING_TIMEOUT_POLICY_VERSION = "v3"
 _PLANNING_CAPABILITIES = frozenset(
     {
         CapabilityId.PLANNING_BOOK_GENERATE,
