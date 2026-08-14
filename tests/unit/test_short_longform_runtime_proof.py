@@ -33,10 +33,10 @@ def _load_script():
 def test_real_proof_pack_identity_is_loaded_from_the_governed_manifest() -> None:
     proof = _load_script()
     manifest = json.loads(
-        (Path(__file__).resolve().parents[2]
-         / "config/capability_packs/chapter_generation_pack.json").read_text(
-            encoding="utf-8"
-        )
+        (
+            Path(__file__).resolve().parents[2]
+            / "config/capability_packs/chapter_generation_pack.json"
+        ).read_text(encoding="utf-8")
     )
 
     globals_ = proof._install_pack.__globals__
@@ -323,28 +323,14 @@ def test_drive_fails_closed_when_replan_approval_is_unavailable() -> None:
         )
 
 
-def test_runtime_planning_inputs_use_book_acceptance_canon_checkpoint(
+def test_runtime_planning_inputs_use_unified_book_acceptance_checkpoint(
     monkeypatch,
 ) -> None:
     proof = _load_script()
-    child_outputs = [
-        {
-            "asset_type": asset_type,
-            "asset_version_id": f"asset-version:{asset_type}",
-        }
-        for asset_type in (
-            "character_state_snapshot",
-            "foreshadow_snapshot",
-            "reward_ledger_snapshot",
-            "promise_ledger_snapshot",
-        )
-    ]
     authority = SimpleNamespace(
         database_url="postgresql://unused",
         chapter_port=SimpleNamespace(
-            require_acceptance_evidence=lambda **_kwargs: {
-                "outputs": child_outputs
-            }
+            require_acceptance_evidence=lambda **_kwargs: {"outputs": []}
         ),
         require_chapter_request=lambda _request_id: {
             "chapter_root_operation_id": "chapter-root:1",
@@ -359,9 +345,7 @@ def test_runtime_planning_inputs_use_book_acceptance_canon_checkpoint(
     monkeypatch.setattr(
         proof,
         "_followup_output",
-        lambda *_args, **_kwargs: {
-            "asset_version_id": "asset-version:reader-state:1"
-        },
+        lambda *_args, **_kwargs: {"asset_version_id": "asset-version:reader-state:1"},
     )
 
     inputs = proof._runtime_planning_inputs(
@@ -375,12 +359,40 @@ def test_runtime_planning_inputs_use_book_acceptance_canon_checkpoint(
         "previous_chapter_outcome": "asset-version:chapter-outcome:1",
         "story_state": "asset-version:story-state:1",
         "canon_snapshot": "asset-version:canon:1",
-        "character_state": "asset-version:character_state_snapshot",
-        "foreshadowing_state": "asset-version:foreshadow_snapshot",
-        "reward_ledger": "asset-version:reward_ledger_snapshot",
-        "promise_ledger": "asset-version:promise_ledger_snapshot",
         "reader_state": "asset-version:reader-state:1",
     }
+
+
+def test_rolling_narrative_versions_project_one_accepted_story_state() -> None:
+    proof = _load_script()
+
+    versions = proof._rolling_narrative_versions(
+        {
+            "active_story_state_version_id": "story-state:v2",
+            "active_canon_snapshot_version_id": "canon:v2",
+        }
+    )
+
+    assert versions == {
+        "story_state": "story-state:v2",
+        "canon_snapshot": "canon:v2",
+        "character_state": "story-state:v2",
+        "foreshadowing_state": "story-state:v2",
+        "reward_ledger": "story-state:v2",
+        "promise_ledger": "story-state:v2",
+    }
+
+
+def test_rolling_narrative_versions_fail_on_partial_acceptance_checkpoint() -> None:
+    proof = _load_script()
+
+    with pytest.raises(RuntimeError, match="complete Story State and Canon"):
+        proof._rolling_narrative_versions(
+            {
+                "active_story_state_version_id": "story-state:v2",
+                "active_canon_snapshot_version_id": "",
+            }
+        )
 
 
 def test_release_checkout_accepts_current_clean_campaign_branch(monkeypatch) -> None:

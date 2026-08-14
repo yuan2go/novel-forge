@@ -3180,12 +3180,8 @@ def _runtime_planning_inputs(
     reader_report: Mapping[str, Any],
 ) -> dict[str, str]:
     request = authority.require_chapter_request(chapter_request_id)
-    evidence = authority.chapter_port.require_acceptance_evidence(
-        project_id=project_id,
-        root_operation_id=request["chapter_root_operation_id"],
-    )
-    outputs = _chapter_outputs(evidence)
     book = authority.require(request["book_run_id"])
+    rolling = _rolling_narrative_versions(book)
     reader_state = _followup_output(
         authority.database_url,
         project_id=project_id,
@@ -3195,13 +3191,28 @@ def _runtime_planning_inputs(
     )
     return {
         "previous_chapter_outcome": str(book["last_chapter_outcome_version_id"]),
-        "story_state": str(book["active_story_state_version_id"]),
-        "canon_snapshot": str(book["active_canon_snapshot_version_id"]),
-        "character_state": str(outputs["character_state_snapshot"]["asset_version_id"]),
-        "foreshadowing_state": str(outputs["foreshadow_snapshot"]["asset_version_id"]),
-        "reward_ledger": str(outputs["reward_ledger_snapshot"]["asset_version_id"]),
-        "promise_ledger": str(outputs["promise_ledger_snapshot"]["asset_version_id"]),
+        "story_state": rolling["story_state"],
+        "canon_snapshot": rolling["canon_snapshot"],
         "reader_state": str(reader_state["asset_version_id"]),
+    }
+
+
+def _rolling_narrative_versions(book: Mapping[str, Any]) -> dict[str, str]:
+    """Resolve accepted rolling authority without recreating legacy state planes."""
+
+    story_state = str(book.get("active_story_state_version_id") or "")
+    canon_snapshot = str(book.get("active_canon_snapshot_version_id") or "")
+    if not story_state or not canon_snapshot:
+        raise RuntimeError(
+            "accepted Chapter has no complete Story State and Canon checkpoint"
+        )
+    return {
+        "story_state": story_state,
+        "canon_snapshot": canon_snapshot,
+        "character_state": story_state,
+        "foreshadowing_state": story_state,
+        "reward_ledger": story_state,
+        "promise_ledger": story_state,
     }
 
 
@@ -3214,11 +3225,6 @@ def _controlled_recap(
 ) -> dict[str, Any]:
     request = authority.require_chapter_request(chapter_request_id)
     book = authority.require(request["book_run_id"])
-    evidence = authority.chapter_port.require_acceptance_evidence(
-        project_id=project_id,
-        root_operation_id=request["chapter_root_operation_id"],
-    )
-    outputs = _chapter_outputs(evidence)
     reader = _followup_output(
         authority.database_url,
         project_id=project_id,
@@ -3227,6 +3233,7 @@ def _controlled_recap(
         output_key="reader_outcome.report",
     )
     frozen = dict(book["longform_context_versions"])
+    rolling = _rolling_narrative_versions(book)
     authority_inputs = authority.resolve_asset_refs(
         project_id=project_id,
         asset_version_ids=(
@@ -3236,16 +3243,10 @@ def _controlled_recap(
             str(frozen["arc_plan_version"]),
             str(frozen["quality_trend_version"]),
             str(book["last_chapter_outcome_version_id"]),
-            str(book["active_story_state_version_id"]),
+            rolling["story_state"],
+            rolling["canon_snapshot"],
         ),
     )
-
-    def asset_ref(name: str) -> dict[str, str]:
-        item = outputs[name]
-        return {
-            "asset_version_id": str(item["asset_version_id"]),
-            "content_hash": str(item["content_hash"]),
-        }
 
     admission = authority.schedule_longform_recap(
         chapter_request_id,
@@ -3258,21 +3259,13 @@ def _controlled_recap(
             "book_plan_version": book["book_plan_version"],
             "volume_plan_version": frozen["volume_plan_version"],
             "arc_plan_version": frozen["arc_plan_version"],
-            "canon_snapshot_version": outputs["canon_snapshot"]["asset_version_id"],
-            "character_state_version": outputs["character_state_snapshot"][
-                "asset_version_id"
-            ],
-            "foreshadowing_state_version": outputs["foreshadow_snapshot"][
-                "asset_version_id"
-            ],
+            "canon_snapshot_version": rolling["canon_snapshot"],
+            "character_state_version": rolling["character_state"],
+            "foreshadowing_state_version": rolling["foreshadowing_state"],
             "reader_state_version": reader["asset_version_id"],
             "quality_trend_version": frozen["quality_trend_version"],
-            "reward_ledger_version": outputs["reward_ledger_snapshot"][
-                "asset_version_id"
-            ],
-            "promise_ledger_version": outputs["promise_ledger_snapshot"][
-                "asset_version_id"
-            ],
+            "reward_ledger_version": rolling["reward_ledger"],
+            "promise_ledger_version": rolling["promise_ledger"],
             "chapter_outcome_versions": [book["last_chapter_outcome_version_id"]],
             "story_state_version": book["active_story_state_version_id"],
             "observations": {
@@ -3308,11 +3301,6 @@ def _controlled_recap(
                 "asset_version_id": str(reader["asset_version_id"]),
                 "content_hash": str(reader["content_hash"]),
             },
-            asset_ref("canon_snapshot"),
-            asset_ref("character_state_snapshot"),
-            asset_ref("foreshadow_snapshot"),
-            asset_ref("reward_ledger_snapshot"),
-            asset_ref("promise_ledger_snapshot"),
             *authority_inputs,
         ),
     )
