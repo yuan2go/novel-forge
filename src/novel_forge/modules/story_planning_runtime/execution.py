@@ -63,7 +63,12 @@ from novel_forge.modules.production_execution.domain_execution import (
 from novel_forge.modules.provider_control.contracts import (
     ProviderCapabilityProfile,
 )
-from novel_forge.modules.story_design_authority import GeneratorDefinition
+from novel_forge.modules.story_design_authority import (
+    GeneratorDefinition,
+    qualification_provider_schema,
+    required_qualification_profiles,
+    scripted_qualification,
+)
 from novel_forge.storage.authority_asset_store import (
     AuthorityAssetDocument,
     AuthorityAssetQuery,
@@ -149,20 +154,56 @@ def _token(value: str) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()[:20]
 
 
-def _chapter_function_row(chapter: int, function: str, hook: str) -> dict[str, Any]:
+def _chapter_function_row(
+    chapter: int,
+    function: str,
+    hook: str,
+    arc_plan_version_ids: tuple[str, ...] = (),
+) -> dict[str, Any]:
+    arc_ids = arc_plan_version_ids[:3] or ("arc:primary",)
     return {
         "chapter_number": chapter,
         "primary_function": function,
         "secondary_functions": ["character pressure"],
-        "required_state_delta": {"commitment": 1},
+        "required_state_delta": {"summary": "commitment advances"},
         "required_arc_contributions": [
-            {"arc_plan_version_id": "arc:primary", "kind": "advance"}
+            {"arc_plan_version_id": arc_id, "contribution": "advance"}
+            for arc_id in arc_ids
         ],
         "promise_action": "advance",
         "foreshadow_action": "plant",
         "reward_action": "partial payoff",
         "ending_hook": hook,
         "prohibited_outcomes": ["silent reset"],
+        "narrative_density": (
+            "HIGH" if function in {"reversal", "payoff"} else "MEDIUM"
+        ),
+        "reader_experience": {
+            "target_emotion": (
+                "costly relief" if function == "payoff" else "rising pressure"
+            ),
+            "reward_mode": "PAYOFF" if function == "payoff" else "DISCOVERY",
+        },
+        "arc_cadence": [
+            {
+                "arc_plan_version_id": arc_id,
+                "action": (
+                    "PAYOFF"
+                    if function == "payoff" and index == 0
+                    else "ADVANCE"
+                    if index == 0
+                    else "TOUCH"
+                ),
+            }
+            for index, arc_id in enumerate(arc_ids)
+        ],
+        "obligation_actions": [
+            {
+                "obligation_id": "promise:choice",
+                "action": "PAYOFF" if function == "payoff" else "ADVANCE",
+                "due_chapter": chapter if function == "payoff" else chapter + 2,
+            }
+        ],
     }
 
 
@@ -192,9 +233,22 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
     arc_exit_state = _fixture_character_arc_stage(max(1, chapter_number))
     disclosure_mode = "HINT" if chapter_number <= 1 else "CONFIRM"
     reader_knowledge_status = "HINTED" if chapter_number <= 1 else "KNOWN"
+    chapter_function, chapter_hook = {
+        1: ("setup", "door closes"),
+        2: ("reversal", "ally defects"),
+        3: ("payoff", "cost arrives"),
+    }.get(chapter_number, ("escalation", "the cost compounds"))
     parent_version_id = str(command.get("parent_version_id") or "")
     input_versions = command.get("input_versions")
     versions = dict(input_versions) if isinstance(input_versions, Mapping) else {}
+    arc_plan_ids = tuple(
+        item
+        for item in (
+            str(versions.get("arc_plans") or ""),
+            *(str(item) for item in command.get("related_arc_plan_version_ids") or ()),
+        )
+        if item
+    )
     arc_scope = [
         str(versions.get("volume_plan") or parent_version_id),
         *(str(item) for item in command.get("arc_scope_volume_plan_version_ids") or ()),
@@ -247,6 +301,32 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
             "long_promise_payoff": ["central promise settled"],
             "length_strategy": {"target_chapters": 3},
             "risk_register": [],
+            "narrative_architecture_version": "canonical-narrative-v1",
+            "character_development": [
+                {
+                    "character_id": "protagonist",
+                    "entry_belief": "silence preserves safety",
+                    "target_belief": "agency requires accountable witness",
+                    "causal_triggers": ["a delayed choice exposes the witness"],
+                    "power_progression": ["private knowledge", "public agency"],
+                    "relationship_progression": ["distrust", "conditional trust"],
+                    "ending_state": "accepts visible responsibility",
+                }
+            ],
+            "knowledge_disclosure_obligations": {
+                "story_truth_ids": ["fact:hidden-cost"],
+                "mystery_ids": ["mystery:archive-bargain"],
+                "promise_ids": ["promise:choice"],
+                "foreshadow_ids": ["setup:consequence"],
+                "obligation_windows": [
+                    {
+                        "obligation_id": "promise:choice",
+                        "setup_chapter": 1,
+                        "payoff_not_before": 2,
+                        "payoff_due_by": 3,
+                    }
+                ],
+            },
         },
         PlanContractType.VOLUME: {
             "volume_function": "force commitment",
@@ -300,7 +380,20 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
                 }
                 for index, volume_plan_version_id in enumerate(arc_scope, start=1)
             ],
-            "arc_relations": [],
+            "arc_relations": [
+                {
+                    "relation_id": f"relation:{logical_key}:{index}",
+                    "relation_type": "ENABLES",
+                    "source_arc_ref": logical_key,
+                    "target_arc_ref": related_arc_id,
+                    "trigger_or_condition": (
+                        "the primary choice changes the related Arc"
+                    ),
+                }
+                for index, related_arc_id in enumerate(
+                    command.get("related_arc_plan_version_ids") or (), start=1
+                )
+            ],
         },
         PlanContractType.CHAPTER_GROUP: {
             "local_objective": "Turn private doubt into public commitment",
@@ -312,20 +405,25 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
             "emotion_curve": ["doubt", "pressure", "resolve"],
             "antagonist_actions": ["isolate", "expose"],
             "chapter_function_matrix": [
-                _chapter_function_row(1, "setup", "door closes"),
-                _chapter_function_row(2, "reversal", "ally defects"),
-                _chapter_function_row(3, "payoff", "cost arrives"),
+                _chapter_function_row(1, "setup", "door closes", arc_plan_ids),
+                _chapter_function_row(2, "reversal", "ally defects", arc_plan_ids),
+                _chapter_function_row(3, "payoff", "cost arrives", arc_plan_ids),
             ],
             "chapter_range": [1, 3],
             "cost_range": ["social", "material"],
-            "primary_arc_ids": ["arc:primary"],
-            "secondary_arc_ids": [],
-            "required_arc_contributions": ["arc:primary"],
+            "primary_arc_ids": [
+                (arc_plan_ids or ("arc:primary",))[0]
+            ],
+            "secondary_arc_ids": list((arc_plan_ids or ())[1:]),
+            "required_arc_contributions": list(
+                arc_plan_ids or ("arc:primary",)
+            ),
             "arc_checkpoint_expectations": [
                 {
-                    "arc_plan_version_id": str(versions.get("arc_plans") or ""),
+                    "arc_plan_version_id": arc_id,
                     "expectation": "choice advances",
                 }
+                for arc_id in arc_plan_ids or ("arc:primary",)
             ],
             "narrative_architecture_version": "canonical-narrative-v1",
             "narrative_segment_ref": {
@@ -336,7 +434,9 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
             },
         },
         PlanContractType.CHAPTER: {
-            **_chapter_function_row(chapter_number, "setup", "door closes"),
+            **_chapter_function_row(
+                chapter_number, chapter_function, chapter_hook, arc_plan_ids
+            ),
             "actual_arc_contributions": [],
             "title": f"Chapter {chapter_number}: The Door Closes",
             "premise": (
@@ -352,18 +452,24 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
             "chapter_intent": "Force a witnessed choice that advances the central conflict.",
             "arc_schedule": [
                 {
-                    "arc_plan_version_id": str(
-                        versions.get("arc_plans") or "arc:primary"
-                    ),
-                    "role": "PRIMARY",
-                    "segment_id": "arc-segment:1",
+                    "arc_plan_version_id": arc_id,
+                    "role": "PRIMARY" if index == 0 else "SECONDARY",
+                    "segment_id": f"arc-segment:{index + 1}",
                     "expected_movement": (
                         f"{arc_entry_state} becomes {arc_exit_state}"
                     ),
                 }
+                for index, arc_id in enumerate(arc_plan_ids or ("arc:primary",))
             ],
             "setups": [{"obligation_id": "setup:consequence", "action": "PLANT"}],
-            "payoffs": [{"obligation_id": "promise:choice", "action": "ADVANCE"}],
+            "payoffs": [
+                {
+                    "obligation_id": "promise:choice",
+                    "action": "ADVANCE",
+                    "opened_chapter": 1,
+                    "due_chapter": max(1, chapter_number + 2),
+                }
+            ],
             "character_participation": [
                 {
                     "character_id": "protagonist",
@@ -386,6 +492,7 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
                     "subject_id": "reader",
                     "fact_id": "fact:hidden-cost",
                     "status": reader_knowledge_status,
+                    "available_from_chapter": chapter_number,
                 }
             ],
             "disclosures": [
@@ -395,6 +502,7 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
                     "audience": "READER",
                     "mode": disclosure_mode,
                     "presentation_channel": "CONSEQUENCE",
+                    "earliest_chapter": chapter_number,
                 }
             ],
             "required_state_transitions": [
@@ -406,8 +514,10 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
                 }
             ],
             "reader_experience": {
+                **_chapter_function_row(
+                    chapter_number, chapter_function, chapter_hook
+                )["reader_experience"],
                 "entry_question": "Will the protagonist stay silent?",
-                "target_emotion": "costly relief",
                 "exit_question": "Who will exploit the public choice?",
             },
             "scene_plan": [
@@ -432,11 +542,9 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
         },
     }
     payload.update(by_type[contract_type])
-    if contract_type is PlanContractType.CHAPTER:
-        for contribution in payload["required_arc_contributions"]:
-            contribution["arc_plan_version_id"] = str(versions.get("arc_plans") or "")
     if parent_version_id:
         payload["parent_version_id"] = parent_version_id
+    payload["narrative_qualification"] = scripted_qualification(stage)
     return payload
 
 
@@ -464,7 +572,8 @@ def _strict_object(properties: dict[str, Any]) -> dict[str, Any]:
 def _canonical_narrative_provider_properties(
     contract_type: PlanContractType,
     *,
-    arc_plan_version_id: str = "",
+    arc_plan_version_ids: tuple[str, ...] = (),
+    arc_relation_refs: tuple[str, ...] = (),
 ) -> dict[str, Any]:
     string = {"type": "string", "minLength": 1}
     string_array = {"type": "array", "items": string}
@@ -501,7 +610,60 @@ def _canonical_narrative_provider_properties(
                 ),
             },
         }
+    if contract_type is PlanContractType.BOOK:
+        character_trajectory = _strict_object(
+            {
+                "character_id": string,
+                "entry_belief": string,
+                "target_belief": string,
+                "causal_triggers": string_array,
+                "power_progression": string_array,
+                "relationship_progression": string_array,
+                "ending_state": string,
+            }
+        )
+        obligation_window = _strict_object(
+            {
+                "obligation_id": string,
+                "setup_chapter": {"type": "integer", "minimum": 1},
+                "payoff_not_before": {"type": "integer", "minimum": 1},
+                "payoff_due_by": {"type": "integer", "minimum": 1},
+            }
+        )
+        return {
+            **architecture,
+            "character_development": {
+                "type": "array",
+                "minItems": 1,
+                "items": character_trajectory,
+            },
+            "knowledge_disclosure_obligations": _strict_object(
+                {
+                    "story_truth_ids": string_array,
+                    "mystery_ids": string_array,
+                    "promise_ids": string_array,
+                    "foreshadow_ids": string_array,
+                    "obligation_windows": {
+                        "type": "array",
+                        "items": obligation_window,
+                    },
+                }
+            ),
+        }
     if contract_type is PlanContractType.ARC:
+        arc_relation_ref = _frozen_arc_ref_schema(arc_relation_refs, string)
+        arc_relation = _strict_object(
+            {
+                "relation_id": string,
+                "relation_type": {
+                    "type": "string",
+                    "enum": ["CAUSES", "ENABLES", "BLOCKS", "REVEALS", "PAYS_OFF"],
+                },
+                "source_arc_ref": arc_relation_ref,
+                "target_arc_ref": arc_relation_ref,
+                "trigger_or_condition": string,
+            }
+        )
         return {
             **architecture,
             "thread_id": string,
@@ -523,18 +685,22 @@ def _canonical_narrative_provider_properties(
                     }
                 ),
             },
-            "arc_relations": string_array,
+            "arc_relations": {"type": "array", "items": arc_relation},
         }
     if contract_type is PlanContractType.CHAPTER_GROUP:
         return {**architecture, "narrative_segment_ref": segment_ref}
     if contract_type is not PlanContractType.CHAPTER:
         return {}
-    obligation = _strict_object({"obligation_id": string, "action": string})
-    scheduled_arc_ref = (
-        {"type": "string", "const": arc_plan_version_id}
-        if arc_plan_version_id
-        else string
+    setup = _strict_object({"obligation_id": string, "action": string})
+    payoff = _strict_object(
+        {
+            "obligation_id": string,
+            "action": string,
+            "opened_chapter": {"type": "integer", "minimum": 1},
+            "due_chapter": {"type": "integer", "minimum": 1},
+        }
     )
+    scheduled_arc_ref = _frozen_arc_ref_schema(arc_plan_version_ids, string)
     return {
         **architecture,
         "narrative_segment_ref": segment_ref,
@@ -542,10 +708,7 @@ def _canonical_narrative_provider_properties(
         "arc_schedule": {
             "type": "array",
             "minItems": 1,
-            # The current Planning command freezes one ArcPlan Authority
-            # version. Its role is one classification for this chapter, not
-            # one row per Arc Segment or narrative function.
-            "maxItems": 1 if arc_plan_version_id else 8,
+            "maxItems": min(3, len(arc_plan_version_ids)) if arc_plan_version_ids else 8,
             "items": _strict_object(
                 {
                     "arc_plan_version_id": scheduled_arc_ref,
@@ -560,9 +723,8 @@ def _canonical_narrative_provider_properties(
                             "HOLD",
                         ],
                         "description": (
-                            "Choose the single dominant role of this frozen Arc "
-                            "for the chapter; never repeat one Arc for multiple "
-                            "segments or functions."
+                            "Choose one dominant role per frozen Arc for the chapter; "
+                            "never repeat one Arc for multiple segments or functions."
                         ),
                     },
                     "segment_id": string,
@@ -570,8 +732,8 @@ def _canonical_narrative_provider_properties(
                 }
             ),
         },
-        "setups": {"type": "array", "items": obligation},
-        "payoffs": {"type": "array", "items": obligation},
+        "setups": {"type": "array", "items": setup},
+        "payoffs": {"type": "array", "items": payoff},
         "character_participation": {
             "type": "array",
             "minItems": 1,
@@ -633,6 +795,10 @@ def _canonical_narrative_provider_properties(
                             "WITHHOLD."
                         ),
                     },
+                    "available_from_chapter": {
+                        "type": "integer",
+                        "minimum": 1,
+                    },
                 }
             ),
         },
@@ -656,6 +822,7 @@ def _canonical_narrative_provider_properties(
                         "enum": ["HINT", "PARTIAL", "MISDIRECT", "CONFIRM", "WITHHOLD"],
                     },
                     "presentation_channel": string,
+                    "earliest_chapter": {"type": "integer", "minimum": 1},
                 }
             ),
         },
@@ -691,6 +858,7 @@ def _canonical_narrative_provider_properties(
             {
                 "entry_question": string,
                 "target_emotion": string,
+                "reward_mode": string,
                 "exit_question": string,
             }
         ),
@@ -724,6 +892,7 @@ def planning_provider_output_schema(
     logical_key: str = "",
     parent_version_id: str = "",
     arc_plan_version_id: str = "",
+    related_arc_plan_version_ids: tuple[str, ...] = (),
     dependency_version_ids: tuple[str, ...] = (),
 ) -> dict[str, Any]:
     """OpenAI-strict provider schema; Planning validation stays authoritative."""
@@ -736,6 +905,13 @@ def planning_provider_output_schema(
         {"type": "string", "enum": list(dependency_version_ids)}
         if dependency_version_ids
         else string
+    )
+    arc_plan_version_ids = tuple(
+        dict.fromkeys(
+            item
+            for item in (arc_plan_version_id, *related_arc_plan_version_ids)
+            if item
+        )
     )
     canon_dependencies: dict[str, Any] = {
         "type": "array",
@@ -845,11 +1021,7 @@ def planning_provider_output_schema(
                 ),
             }
         elif field == "required_arc_contributions":
-            arc_ref = (
-                {"type": "string", "const": arc_plan_version_id}
-                if arc_plan_version_id
-                else string
-            )
+            arc_ref = _frozen_arc_ref_schema(arc_plan_version_ids, string)
             properties[field] = {
                 "type": "array",
                 "minItems": 1,
@@ -857,8 +1029,8 @@ def planning_provider_output_schema(
                     {"arc_plan_version_id": arc_ref, "contribution": string}
                 ),
             }
-            if arc_plan_version_id:
-                properties[field]["maxItems"] = 1
+            if arc_plan_version_ids:
+                properties[field]["maxItems"] = min(3, len(arc_plan_version_ids))
         elif field in integer_arrays:
             properties[field] = {
                 "type": "array",
@@ -894,6 +1066,53 @@ def planning_provider_output_schema(
                         "reward_action": string,
                         "ending_hook": string,
                         "prohibited_outcomes": string_array,
+                        "narrative_density": {
+                            "type": "string",
+                            "enum": ["LOW", "MEDIUM", "HIGH"],
+                        },
+                        "reader_experience": _strict_object(
+                            {
+                                "target_emotion": string,
+                                "reward_mode": string,
+                            }
+                        ),
+                        "arc_cadence": {
+                            "type": "array",
+                            "minItems": 1,
+                            "maxItems": 3,
+                            "items": _strict_object(
+                                {
+                                    "arc_plan_version_id": string,
+                                    "action": {
+                                        "type": "string",
+                                        "enum": [
+                                            "ADVANCE",
+                                            "TOUCH",
+                                            "DORMANT",
+                                            "REACTIVATE",
+                                            "SETUP",
+                                            "PAYOFF",
+                                        ],
+                                    },
+                                }
+                            ),
+                        },
+                        "obligation_actions": {
+                            "type": "array",
+                            "items": _strict_object(
+                                {
+                                    "obligation_id": string,
+                                    "action": {
+                                        "type": "string",
+                                        "enum": ["SETUP", "ADVANCE", "PAYOFF"],
+                                    },
+                                    "due_chapter": {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                    },
+                                }
+                            ),
+                        },
                     }
                 ),
             }
@@ -902,8 +1121,29 @@ def planning_provider_output_schema(
     properties.update(
         _canonical_narrative_provider_properties(
             contract_type,
-            arc_plan_version_id=arc_plan_version_id,
+            arc_plan_version_ids=arc_plan_version_ids,
+            arc_relation_refs=(
+                tuple(
+                    dict.fromkeys(
+                        item
+                        for item in (logical_key, *related_arc_plan_version_ids)
+                        if item
+                    )
+                )
+                if contract_type is PlanContractType.ARC
+                else ()
+            ),
         )
+    )
+    generator_operation_name = {
+        PlanContractType.BOOK: "book_plan.generate",
+        PlanContractType.VOLUME: "volume_plan.generate",
+        PlanContractType.ARC: "arc_plan.generate",
+        PlanContractType.CHAPTER_GROUP: "chapter_group_plan.generate",
+        PlanContractType.CHAPTER: "chapter_plan.generate",
+    }[contract_type]
+    properties["narrative_qualification"] = qualification_provider_schema(
+        generator_operation_name
     )
     if contract_type not in {PlanContractType.BOOK, PlanContractType.ARC}:
         properties["parent_version_id"] = (
@@ -936,6 +1176,16 @@ def planning_provider_output_schema(
         "required": list(properties),
         "additionalProperties": False,
     }
+
+
+def _frozen_arc_ref_schema(
+    arc_plan_version_ids: tuple[str, ...], fallback: dict[str, Any]
+) -> dict[str, Any]:
+    if len(arc_plan_version_ids) == 1:
+        return {"type": "string", "const": arc_plan_version_ids[0]}
+    if arc_plan_version_ids:
+        return {"type": "string", "enum": list(arc_plan_version_ids)}
+    return fallback
 
 
 @dataclass(frozen=True, slots=True)
@@ -1388,14 +1638,21 @@ class PostgresPlanningExecutionPreparer:
             logical_key=command.logical_key,
             parent_version_id=command.parent_version_id,
             arc_plan_version_id=str(command.input_versions.get("arc_plans") or ""),
-            dependency_version_ids=tuple(command.input_versions.values()),
+            related_arc_plan_version_ids=command.related_arc_plan_version_ids,
+            dependency_version_ids=(
+                *tuple(command.input_versions.values()),
+                *command.related_arc_plan_version_ids,
+            ),
         )
         output_schema_ref = (
             "schema:planning-provider-output:"
             + command.planning_scope.value.lower()
             + (
-                ":v3"
+                ":v4"
                 if command.planning_scope.value == PlanContractType.CHAPTER.value
+                else ":v2"
+                if command.planning_scope.value
+                == PlanContractType.CHAPTER_GROUP.value
                 else ":v1"
             )
         )
@@ -1476,6 +1733,9 @@ class PostgresPlanningExecutionPreparer:
                     "input_versions": dict(command.input_versions),
                     "arc_scope_volume_plan_version_ids": list(
                         command.arc_scope_volume_plan_version_ids
+                    ),
+                    "related_arc_plan_version_ids": list(
+                        command.related_arc_plan_version_ids
                     ),
                     "change_evidence_version_ids": list(
                         command.change_evidence_version_ids
@@ -2026,6 +2286,20 @@ class PostgresPlanningExecutionPreparer:
             "input_versions": selected,
             "token_budget": 16000,
             "source_isolation": "ABSTRACT_ASSETS_ONLY",
+            "narrative_qualification_profiles": [
+                {
+                    "layer": profile.layer.value,
+                    "profile_id": profile.profile_id,
+                    "profile_version": profile.profile_version,
+                    "profile_hash": profile.profile_hash,
+                    "capability_id": profile.capability_id,
+                    "skill_ref": profile.skill_ref,
+                    "criteria": list(profile.criteria),
+                }
+                for profile in required_qualification_profiles(
+                    command.generator_operation_name
+                )
+            ],
             "trace_id": command.trace_id,
             **(
                 {"language_contract": dict(language_contract)}

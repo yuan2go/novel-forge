@@ -9,6 +9,7 @@ from novel_forge.modules.book_design_authority import (
     BookDesignAuthorityCommand,
     BookDesignAuthorityQuery,
 )
+from novel_forge.modules.story_design_authority import scripted_qualification
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.project_authority import (
     ProjectAuthorityApplication,
@@ -229,6 +230,55 @@ class BookDesignAuthorityPostgresTests(unittest.TestCase):
             )
             self.assertEqual(int(uow.cursor.fetchone()[0]), 0)
 
+    def test_semantically_failed_design_is_persisted_as_rejected_lineage(self) -> None:
+        self._book_command(
+            "book.create",
+            payload={
+                "schema_version": "book-authority.v1",
+                "title": "Rejected Design Book",
+                "production_profile": {},
+                "runtime_policy": {"legacy_write": False, "silent_fallback": False},
+                "release_identity": "book-design-integration@" + "b" * 40,
+            },
+            idempotency_key=f"book:create:{self.book_id}",
+        )
+        design = self._design("unqualified premise")
+        criterion = design["narrative_qualification"]["evaluations"][0][
+            "criteria"
+        ][0]
+        criterion.update(
+            verdict="FAIL",
+            repair_directive="rebuild the premise around one reachable ending",
+        )
+
+        rejected = self._book_command(
+            "book_design.propose",
+            payload=design,
+            idempotency_key=f"design:rejected:{self.book_id}",
+            expected_book_version=1,
+        )
+
+        self.assertEqual(rejected["status"], "REJECTED")
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                """
+                SELECT candidate.status, version.eligibility,
+                       qualification.qualification_status
+                FROM authority_book_design_candidate AS candidate
+                JOIN authority_asset_version AS version
+                  ON version.asset_version_id=candidate.asset_version_id
+                JOIN authority_narrative_design_qualification AS qualification
+                  ON qualification.asset_version_id=candidate.asset_version_id
+                 AND qualification.design_layer='STORY_INTENT'
+                WHERE candidate.asset_version_id=%s
+                """,
+                [rejected["asset_version_id"]],
+            )
+            self.assertEqual(
+                uow.cursor.fetchone(),
+                ("REJECTED", "INELIGIBLE", "FAIL"),
+            )
+
     def test_crash_after_business_commit_cannot_leave_partial_command(self) -> None:
         def fail_before_completion(checkpoint: str) -> None:
             if checkpoint == "before_operation_completion":
@@ -346,6 +396,34 @@ class BookDesignAuthorityPostgresTests(unittest.TestCase):
                 "A witnessed place cannot be erased for seven days.",
             ],
             "target_chapters": 90,
+            "core_characters": [
+                {
+                    "character_id": "mara",
+                    "role": "protagonist",
+                    "long_term_goal": "Restore the missing district.",
+                    "causal_arc": "Isolation becomes accountable collaboration.",
+                    "conflict_function": "Certainty delays collective action.",
+                }
+            ],
+            "opposition_forces": [
+                {
+                    "force_id": "civic-archive",
+                    "goal": "Control public memory.",
+                    "leverage": "Rewrite official maps.",
+                    "escalation_pattern": "Denial becomes erasure.",
+                    "limit": "Witnessed places resist immediate erasure.",
+                }
+            ],
+            "narrative_dna": {
+                "core_question": "Who owns collectively witnessed truth?",
+                "recurring_choice": "Certainty or disclosure.",
+                "cost_logic": "Every fact exposes a witness.",
+                "distinctive_mechanism": "Maps change physical access.",
+                "emotional_contract": "Discovery brings hope and public cost.",
+            },
+            "narrative_qualification": scripted_qualification(
+                "book_design.propose"
+            ),
         }
 
 

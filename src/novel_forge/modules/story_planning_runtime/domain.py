@@ -22,8 +22,8 @@ from novel_forge.modules.story_design_authority import PlanningScope
 _CONTENT_HASH = re.compile(r"^sha256:[0-9a-f]{64}$")
 
 
-STORY_PLANNING_OPERATION_DEFINITION_REF = "story_planning.generate@1.6.0"
-STORY_PLANNING_WORKFLOW_DEFINITION_REF = "story_planning_generators@1.6.0"
+STORY_PLANNING_OPERATION_DEFINITION_REF = "story_planning.generate@1.7.0"
+STORY_PLANNING_WORKFLOW_DEFINITION_REF = "story_planning_generators@1.7.0"
 STORY_PLANNING_OPERATION_TIMEOUT_SECONDS = 1_800
 STORY_PLANNING_MAX_ATTEMPTS = 3
 
@@ -138,6 +138,7 @@ class StoryPlanningGenerationCommand:
     correlation_id: str
     parent_version_id: str = ""
     arc_scope_volume_plan_version_ids: tuple[str, ...] = ()
+    related_arc_plan_version_ids: tuple[str, ...] = ()
     change_evidence_version_ids: tuple[str, ...] = ()
     repair_of_candidate_id: str = ""
     repair_reason: str = ""
@@ -202,8 +203,30 @@ class StoryPlanningGenerationCommand:
             or set(arc_scope) & set(normalized.values())
         ):
             raise ValueError("Arc cross-Volume scope identity is invalid")
+        related_arcs = tuple(
+            str(asset_version_id).strip()
+            for asset_version_id in self.related_arc_plan_version_ids
+        )
+        if self.generator_operation_name not in {
+            "arc_plan.generate",
+            "chapter_group_plan.generate",
+            "chapter_plan.generate",
+        } and related_arcs:
+            raise ValueError(
+                "only Arc, Scheduling, or Chapter generation may freeze related Arcs"
+            )
+        primary_arc = normalized.get("arc_plans", "")
+        if (
+            any(not asset_version_id for asset_version_id in related_arcs)
+            or len(set(related_arcs)) != len(related_arcs)
+            or primary_arc in related_arcs
+            or set(related_arcs) & set(normalized.values())
+            or set(related_arcs) & set(arc_scope)
+        ):
+            raise ValueError("related Arc portfolio identity is invalid")
         object.__setattr__(self, "input_versions", MappingProxyType(normalized))
         object.__setattr__(self, "arc_scope_volume_plan_version_ids", arc_scope)
+        object.__setattr__(self, "related_arc_plan_version_ids", related_arcs)
         object.__setattr__(self, "change_evidence_version_ids", change_evidence)
 
     @property
@@ -302,8 +325,7 @@ class PlanningGenerationCandidate:
         if (
             not expected.issubset(roles)
             or len(roles) != len(self.frozen_inputs)
-            or (self.generator_operation_name != "arc_plan.generate" and extra)
-            or any(not role.startswith("arc_scope_volume:") for role in extra)
+            or not _extra_roles_are_allowed(self.generator_operation_name, extra)
         ):
             raise ValueError("Planning candidate input snapshot is incomplete")
         object.__setattr__(
@@ -354,8 +376,7 @@ def build_planning_constraint_envelope(
     extra_roles = actual_roles - expected_roles
     if (
         not expected_roles.issubset(actual_roles)
-        or (generator_operation_name != "arc_plan.generate" and extra_roles)
-        or any(not role.startswith("arc_scope_volume:") for role in extra_roles)
+        or not _extra_roles_are_allowed(generator_operation_name, extra_roles)
     ):
         raise ValueError("Planning constraint inputs must match frozen Authority roles")
     by_role = {item.role: item for item in frozen_inputs}
@@ -503,6 +524,20 @@ class PlanningGenerationResult:
 
 def canonical_hash(value: Any) -> str:
     return _hash(value)
+
+
+def _extra_roles_are_allowed(generator: str, roles: set[str]) -> bool:
+    if not roles:
+        return True
+    if generator == "arc_plan.generate":
+        return all(
+            role.startswith("arc_scope_volume:")
+            or role.startswith("related_arc:")
+            for role in roles
+        )
+    if generator in {"chapter_group_plan.generate", "chapter_plan.generate"}:
+        return all(role.startswith("related_arc:") for role in roles)
+    return False
 
 
 def _hash(value: Any) -> str:

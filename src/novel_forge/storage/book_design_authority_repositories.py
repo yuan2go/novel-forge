@@ -8,11 +8,13 @@ from uuid import uuid4
 from psycopg.types.json import Jsonb
 
 from novel_forge.modules.book_design_authority.domain import (
+    BOOK_DESIGN_SCHEMA_VERSION,
     BookDesignPayload,
     BookScope,
     evidence_hash,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.story_design_authority import required_qualification_profiles
 
 
 class BookDesignAuthorityRepository:
@@ -108,30 +110,97 @@ class BookDesignAuthorityRepository:
         version_number = int(self.cursor.fetchone()[0])
         asset_version_id = str(uuid4())
         content = design.to_dict()
+        narrative_qualification = design.qualification_result
+        semantically_qualified = (
+            narrative_qualification is None
+            or narrative_qualification.status == "PASS"
+        )
+        eligibility = "ELIGIBLE" if semantically_qualified else "INELIGIBLE"
+        candidate_status = "VALIDATED" if semantically_qualified else "REJECTED"
         self.cursor.execute(
             """
             INSERT INTO authority_asset_version (
                 asset_version_id, asset_id, version_number, lifecycle,
                 eligibility, governance, content, content_hash, schema_version
-            ) VALUES (%s, %s, %s, 'CANDIDATE', 'ELIGIBLE', 'CLEAR', %s, %s, %s)
+            ) VALUES (%s, %s, %s, 'CANDIDATE', %s, 'CLEAR', %s, %s, %s)
             """,
-            [asset_version_id, asset_id, version_number, Jsonb(content), design.content_hash, design.schema_version],
+            [
+                asset_version_id,
+                asset_id,
+                version_number,
+                eligibility,
+                Jsonb(content),
+                design.content_hash,
+                design.schema_version,
+            ],
         )
         checkpoint("after_asset_version_insert")
+        if narrative_qualification is not None:
+            for receipt in narrative_qualification.receipts:
+                qualification_id = evidence_hash(
+                    {
+                        "asset_version_id": asset_version_id,
+                        "design_layer": receipt.layer.value,
+                        "profile_hash": receipt.profile_hash,
+                        "evaluation_hash": receipt.evaluation_hash,
+                    }
+                )
+                self.cursor.execute(
+                    """
+                    INSERT INTO authority_narrative_design_qualification(
+                        qualification_id, project_id, book_id,
+                        asset_version_id, source_operation_id,
+                        candidate_content_hash, design_layer, profile_id,
+                        profile_version, profile_hash, capability_id, skill_ref,
+                        evaluator_execution_class, qualification_status,
+                        evaluation, evaluation_hash, qualification_hash
+                    ) VALUES (
+                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                        %s, %s, 'OPERATOR_REVIEW', %s, %s, %s, %s
+                    )
+                    ON CONFLICT (
+                        asset_version_id, design_layer,
+                        profile_version, evaluation_hash
+                    ) DO NOTHING
+                    """,
+                    [
+                        qualification_id,
+                        book["project_id"],
+                        book["book_id"],
+                        asset_version_id,
+                        operation_id,
+                        design.content_hash,
+                        receipt.layer.value,
+                        receipt.profile_id,
+                        receipt.profile_version,
+                        receipt.profile_hash,
+                        receipt.capability_id,
+                        receipt.skill_ref,
+                        receipt.status,
+                        Jsonb(receipt.evidence),
+                        receipt.evaluation_hash,
+                        narrative_qualification.qualification_hash,
+                    ],
+                )
         validation = {
-            "schema_version": "book-design-validation.v1",
+            "schema_version": "book-design-validation.v2",
             "validator": "BookDesignPayload.from_mapping",
-            "valid": True,
+            "valid": semantically_qualified,
             "trace_id": trace_id,
             "content_hash": design.content_hash,
+            "narrative_qualification": (
+                narrative_qualification.to_evidence()
+                if narrative_qualification is not None
+                else {"status": "LEGACY_STRUCTURAL_ONLY"}
+            ),
         }
         self.cursor.execute(
             """
             INSERT INTO authority_asset_qualification (
                 qualification_id, asset_version_id, policy_version, decision, evidence
-            ) VALUES (%s, %s, 'book-design-validator.v1', 'ELIGIBLE', %s)
+            ) VALUES (%s, %s, 'book-design-validator.v2', %s, %s)
             """,
-            [str(uuid4()), asset_version_id, Jsonb(validation)],
+            [str(uuid4()), asset_version_id, eligibility, Jsonb(validation)],
         )
         self.cursor.execute(
             """
@@ -139,12 +208,12 @@ class BookDesignAuthorityRepository:
                 candidate_id, project_id, workspace_id, book_id, asset_id,
                 asset_version_id, schema_version, content_hash, status,
                 created_by_operation_id, last_operation_id
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'VALIDATED', %s, %s)
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """,
             [
                 f"candidate:{asset_version_id}", book["project_id"], book["workspace_id"],
                 book["book_id"], asset_id, asset_version_id, design.schema_version,
-                design.content_hash, operation_id, operation_id,
+                design.content_hash, candidate_status, operation_id, operation_id,
             ],
         )
         self.cursor.execute(
@@ -165,7 +234,7 @@ class BookDesignAuthorityRepository:
                 evidence_id, project_id, book_id, asset_version_id, evidence_type,
                 schema_version, evidence, evidence_hash, created_by_operation_id
             ) VALUES (%s, %s, %s, %s, 'DOMAIN_VALIDATION',
-                      'book-design-validation.v1', %s, %s, %s)
+                      'book-design-validation.v2', %s, %s, %s)
             """,
             [
                 str(uuid4()), book["project_id"], book["book_id"], asset_version_id,
@@ -176,7 +245,12 @@ class BookDesignAuthorityRepository:
             operation_id=operation_id, asset_id=asset_id, asset_version_id=asset_version_id,
             output_key="book_design.candidate", role="candidate", content_hash=design.content_hash,
         )
-        return {"asset_id": asset_id, "asset_version_id": asset_version_id, "content_hash": design.content_hash}
+        return {
+            "asset_id": asset_id,
+            "asset_version_id": asset_version_id,
+            "content_hash": design.content_hash,
+            "status": candidate_status,
+        }
 
     def decide(
         self,
@@ -191,6 +265,8 @@ class BookDesignAuthorityRepository:
         candidate = self._candidate_for_update(book, asset_version_id)
         if candidate["status"] != "VALIDATED":
             raise KernelError("BOOK_DESIGN_DECISION_CONFLICT", "only a validated candidate can be decided")
+        if candidate["schema_version"] == BOOK_DESIGN_SCHEMA_VERSION:
+            self._require_progressive_qualification(book, asset_version_id)
         normalized = decision.strip().upper()
         if normalized not in {"APPROVE", "REJECT"}:
             raise KernelError("BOOK_DESIGN_DECISION_INVALID", "decision must be APPROVE or REJECT")
@@ -330,7 +406,7 @@ class BookDesignAuthorityRepository:
     def _candidate_for_update(self, book: dict[str, Any], asset_version_id: str) -> dict[str, str]:
         self.cursor.execute(
             """
-            SELECT asset_id, asset_version_id, content_hash, status
+            SELECT asset_id, asset_version_id, content_hash, status, schema_version
             FROM authority_book_design_candidate
             WHERE project_id = %s AND workspace_id = %s AND book_id = %s
               AND asset_version_id = %s
@@ -341,7 +417,48 @@ class BookDesignAuthorityRepository:
         row = self.cursor.fetchone()
         if row is None:
             raise KernelError("BOOK_DESIGN_CANDIDATE_NOT_FOUND", "candidate is outside Book scope")
-        return {"asset_id": row[0], "asset_version_id": row[1], "content_hash": row[2], "status": row[3]}
+        return {
+            "asset_id": row[0],
+            "asset_version_id": row[1],
+            "content_hash": row[2],
+            "status": row[3],
+            "schema_version": row[4],
+        }
+
+    def _require_progressive_qualification(
+        self, book: dict[str, Any], asset_version_id: str
+    ) -> None:
+        expected = {
+            profile.layer.value: profile
+            for profile in required_qualification_profiles("book_design.propose")
+        }
+        self.cursor.execute(
+            """
+            SELECT design_layer, profile_id, profile_version, profile_hash
+            FROM authority_narrative_design_qualification
+            WHERE project_id=%s AND book_id=%s AND asset_version_id=%s
+              AND qualification_status='PASS'
+            ORDER BY design_layer
+            """,
+            [book["project_id"], book["book_id"], asset_version_id],
+        )
+        rows = self.cursor.fetchall()
+        actual = {str(row[0]): row for row in rows}
+        if set(actual) != set(expected) or len(rows) != len(expected):
+            raise KernelError(
+                "BOOK_DESIGN_NARRATIVE_QUALIFICATION_REQUIRED",
+                "BookDesign decision requires Story Intent and Foundation qualification",
+            )
+        for layer, profile in expected.items():
+            if tuple(str(item) for item in actual[layer][1:4]) != (
+                profile.profile_id,
+                profile.profile_version,
+                profile.profile_hash,
+            ):
+                raise KernelError(
+                    "BOOK_DESIGN_NARRATIVE_QUALIFICATION_STALE",
+                    "BookDesign qualification profile differs from current policy",
+                )
 
     def _bind_output(
         self, *, operation_id: str, asset_id: str, asset_version_id: str,

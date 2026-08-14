@@ -39,6 +39,14 @@ SEMANTIC_FIELDS = {
     "ending_contract": "ENDING_CONTRACT_CHANGED",
     "canon_dependencies": "CANON_DEPENDENCY_CHANGED",
     "quality_targets": "QUALITY_TARGET_CHANGED",
+    "character_development": "CHARACTER_DEVELOPMENT_CHANGED",
+    "knowledge_disclosure_obligations": "DISCLOSURE_OBLIGATION_CHANGED",
+    "narrative_segments": "NARRATIVE_SEGMENT_CHANGED",
+    "arc_segments": "ARC_SEGMENT_CHANGED",
+    "arc_relations": "ARC_RELATION_CHANGED",
+    "chapter_function_matrix": "NARRATIVE_SCHEDULING_CHANGED",
+    "scene_plan": "SCENE_ARCHITECTURE_CHANGED",
+    "expected_exit_state": "EXPECTED_EXIT_STATE_CHANGED",
 }
 
 HIGH_RISK_FIELDS = frozenset(
@@ -101,6 +109,13 @@ def classify_plan_change_risk(
         "chapter_range",
         "character_deltas",
         "arc_contributions",
+        "character_development",
+        "knowledge_disclosure_obligations",
+        "narrative_segments",
+        "arc_segments",
+        "arc_relations",
+        "chapter_function_matrix",
+        "scene_plan",
     }:
         return PlanChangeRisk.MEDIUM
     return PlanChangeRisk.LOW

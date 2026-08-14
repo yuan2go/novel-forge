@@ -1,7 +1,7 @@
 {
   "schema_version": "architecture-manifest.v1",
   "registry": "novel_forge.storage.migrations.versions:VERSION_MODULES",
-  "head": "20260814_0088_canonical_narrative_architecture",
+  "head": "20260814_0090_progressive_replan_scopes",
   "migration_ids": [
     "20260625_0001_initial_industrial_schema",
     "20260628_0002_query_and_release_indexes",
@@ -90,6 +90,8 @@
     "20260812_0085_corrective_action_terminal_lineage",
     "20260812_0086_corrective_generation_terminal_lineage",
     "20260813_0087_book_initial_narrative_state_binding",
-    "20260814_0088_canonical_narrative_architecture"
+    "20260814_0088_canonical_narrative_architecture",
+    "20260814_0089_progressive_narrative_design",
+    "20260814_0090_progressive_replan_scopes"
   ]
 }

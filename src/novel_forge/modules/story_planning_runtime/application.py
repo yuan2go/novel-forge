@@ -48,6 +48,10 @@ from novel_forge.modules.story_design_authority import (
 from novel_forge.modules.story_design_authority.validators import (
     validate_story_design_candidate,
 )
+from novel_forge.modules.story_design_authority.qualification import (
+    required_qualification_profiles,
+    validate_narrative_qualification,
+)
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 from .binder import PlanningExecutionBinder
@@ -128,15 +132,7 @@ class _PlanningGenerationHandler:
             )
         by_id = {item.asset_version_id: item for item in request.inputs}
         inputs: list[FrozenPlanningInput] = []
-        authority_roles = {
-            **dict(command.input_versions),
-            **{
-                f"arc_scope_volume:{index}": asset_version_id
-                for index, asset_version_id in enumerate(
-                    command.arc_scope_volume_plan_version_ids, start=1
-                )
-            },
-        }
+        authority_roles = _authority_role_versions(command)
         for role, asset_version_id in authority_roles.items():
             item = by_id.get(asset_version_id)
             if item is None:
@@ -484,6 +480,13 @@ class StoryPlanningGenerationApplication:
     ) -> dict[str, Any]:
         generation = self.require_candidate(candidate_asset_version_id)
         principal.require("story_planning.authority.activate", generation["project_id"])
+        self._require_narrative_qualification_summary(
+            operation_id=generation["generation_operation_id"],
+            candidate_asset_version_id=candidate_asset_version_id,
+            project_id=generation["project_id"],
+            book_id=generation["book_id"],
+            generator_operation_name=generation["generator_operation_name"],
+        )
         state = self.story_design.require(
             project_id=generation["project_id"],
             asset_version_id=candidate_asset_version_id,
@@ -926,12 +929,33 @@ class StoryPlanningGenerationApplication:
                             "NARRATIVE_ARC_AUTHORITY_SCOPE_MISMATCH",
                             "Arc cross_volume_scope must exactly match frozen Active VolumePlan versions",
                         )
+                _validate_frozen_arc_references(command, content)
                 if contract.logical_key != command.logical_key:
                     raise KernelError(
                         "PLANNING_LOGICAL_KEY_MISMATCH",
                         "Planning Candidate content differs from the admitted logical key",
                     )
+                narrative_qualification = validate_narrative_qualification(
+                    generator_operation_name=command.generator_operation_name,
+                    value=content.get("narrative_qualification"),
+                )
             except KernelError as exc:
+                if exc.code == "NARRATIVE_SEMANTIC_QUALIFICATION_FAILED":
+                    rejected_qualification = validate_narrative_qualification(
+                        generator_operation_name=command.generator_operation_name,
+                        value=content.get("narrative_qualification"),
+                        require_pass=False,
+                    )
+                    self._record_narrative_qualifications(
+                        operation_id=operation_id,
+                        candidate_asset_version_id=candidate_asset_version_id,
+                        candidate_content_hash=candidate_content_hash,
+                        command=command,
+                        execution_evidence=dict(
+                            content.get("execution_evidence") or {}
+                        ),
+                        result=rejected_qualification,
+                    )
                 return self._repair_or_reject(
                     operation_id=operation_id,
                     candidate_asset_version_id=candidate_asset_version_id,
@@ -957,6 +981,14 @@ class StoryPlanningGenerationApplication:
                 status="PASS",
                 report=evidence,
             )
+            self._record_narrative_qualifications(
+                operation_id=operation_id,
+                candidate_asset_version_id=candidate_asset_version_id,
+                candidate_content_hash=candidate_content_hash,
+                command=command,
+                execution_evidence=dict(content.get("execution_evidence") or {}),
+                result=narrative_qualification,
+            )
             state = self._transition(
                 command,
                 principal,
@@ -967,6 +999,13 @@ class StoryPlanningGenerationApplication:
                 evidence={"passed": True, "validation_report": evidence},
             )
         if state["qualification"] == "STRUCTURALLY_VALID":
+            qualification = self._require_narrative_qualification_summary(
+                operation_id=operation_id,
+                candidate_asset_version_id=candidate_asset_version_id,
+                project_id=command.project_id,
+                book_id=command.book_id,
+                generator_operation_name=command.generator_operation_name,
+            )
             state = self._transition(
                 command,
                 principal,
@@ -974,9 +1013,16 @@ class StoryPlanningGenerationApplication:
                 candidate_content_hash,
                 DesignTransition.SEMANTIC_VALIDATE,
                 expected_version=int(state["version"]),
-                evidence={"passed": True},
+                evidence={"passed": True, **qualification},
             )
         if state["qualification"] == "SEMANTICALLY_VALID":
+            qualification = self._require_narrative_qualification_summary(
+                operation_id=operation_id,
+                candidate_asset_version_id=candidate_asset_version_id,
+                project_id=command.project_id,
+                book_id=command.book_id,
+                generator_operation_name=command.generator_operation_name,
+            )
             state = self._transition(
                 command,
                 principal,
@@ -984,7 +1030,7 @@ class StoryPlanningGenerationApplication:
                 candidate_content_hash,
                 DesignTransition.QUALIFY,
                 expected_version=int(state["version"]),
-                evidence={"passed": True},
+                evidence={"passed": True, **qualification},
             )
         if (
             state["qualification"] == "QUALIFIED"
@@ -1044,7 +1090,10 @@ class StoryPlanningGenerationApplication:
     ) -> PlanningGenerationResult:
         semantic = error.code in {
             "STORY_DESIGN_SEMANTIC_INVALID",
-            "PLANNING_ARC_CONTRIBUTION_IDENTITY_DUPLICATE",
+            "NARRATIVE_SEMANTIC_EVALUATION_REQUIRED",
+            "NARRATIVE_SEMANTIC_EVALUATION_INVALID",
+            "NARRATIVE_SEMANTIC_PROFILE_DRIFT",
+            "NARRATIVE_SEMANTIC_QUALIFICATION_FAILED",
         }
         validation_kind = "SEMANTIC" if semantic else "STRUCTURAL"
         report = {
@@ -1115,6 +1164,7 @@ class StoryPlanningGenerationApplication:
             arc_scope_volume_plan_version_ids=(
                 command.arc_scope_volume_plan_version_ids
             ),
+            related_arc_plan_version_ids=command.related_arc_plan_version_ids,
             change_evidence_version_ids=command.change_evidence_version_ids,
             repair_of_candidate_id=candidate_asset_version_id,
             repair_reason=f"{error.code}:{report_hash}",
@@ -1170,20 +1220,13 @@ class StoryPlanningGenerationApplication:
     def _resolve_inputs(
         self, command: StoryPlanningGenerationCommand
     ) -> tuple[FrozenPlanningInput, ...]:
-        authority_roles = {
-            **dict(command.input_versions),
-            **{
-                f"arc_scope_volume:{index}": asset_version_id
-                for index, asset_version_id in enumerate(
-                    command.arc_scope_volume_plan_version_ids, start=1
-                )
-            },
-        }
+        authority_roles = _authority_role_versions(command)
         plan_input_ids = [
             asset_version_id
             for role, asset_version_id in authority_roles.items()
             if role in _PLAN_INPUT_CONTRACTS
             or role.startswith("arc_scope_volume:")
+            or role.startswith("related_arc:")
             or role == "chapter_function_matrix_row"
         ]
         with AuthorityUnitOfWork(self.database_url) as uow:
@@ -1261,6 +1304,8 @@ class StoryPlanningGenerationApplication:
             expected_contract = (
                 PlanContractType.VOLUME
                 if role.startswith("arc_scope_volume:")
+                else PlanContractType.ARC
+                if role.startswith("related_arc:")
                 else _PLAN_INPUT_CONTRACTS.get(role)
             )
             if expected_contract is not None:
@@ -1525,6 +1570,141 @@ class StoryPlanningGenerationApplication:
             )
             uow.commit()
         return report_hash
+
+    def _record_narrative_qualifications(
+        self,
+        *,
+        operation_id: str,
+        candidate_asset_version_id: str,
+        candidate_content_hash: str,
+        command: StoryPlanningGenerationCommand,
+        execution_evidence: dict[str, Any],
+        result: Any,
+    ) -> None:
+        execution_class = (
+            "SCRIPTED_FIXTURE"
+            if bool(execution_evidence.get("fixture_protocol_only"))
+            else "MODEL_PROVIDER"
+        )
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            for receipt in result.receipts:
+                qualification_id = canonical_hash(
+                    {
+                        "asset_version_id": candidate_asset_version_id,
+                        "design_layer": receipt.layer.value,
+                        "profile_hash": receipt.profile_hash,
+                        "evaluation_hash": receipt.evaluation_hash,
+                    }
+                )
+                uow.cursor.execute(
+                    """
+                    INSERT INTO authority_narrative_design_qualification(
+                        qualification_id, project_id, book_id,
+                        asset_version_id, source_operation_id,
+                        candidate_content_hash, design_layer, profile_id,
+                        profile_version, profile_hash, capability_id, skill_ref,
+                        evaluator_execution_class, qualification_status,
+                        evaluation, evaluation_hash, qualification_hash
+                    ) VALUES (
+                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                        %s, %s, %s, %s, %s, %s, %s
+                    )
+                    ON CONFLICT (
+                        asset_version_id, design_layer,
+                        profile_version, evaluation_hash
+                    ) DO NOTHING
+                    """,
+                    [
+                        qualification_id,
+                        command.project_id,
+                        command.book_id,
+                        candidate_asset_version_id,
+                        operation_id,
+                        candidate_content_hash,
+                        receipt.layer.value,
+                        receipt.profile_id,
+                        receipt.profile_version,
+                        receipt.profile_hash,
+                        receipt.capability_id,
+                        receipt.skill_ref,
+                        execution_class,
+                        receipt.status,
+                        Jsonb(receipt.evidence),
+                        receipt.evaluation_hash,
+                        result.qualification_hash,
+                    ],
+                )
+            uow.commit()
+
+    def _require_narrative_qualification_summary(
+        self,
+        *,
+        operation_id: str,
+        candidate_asset_version_id: str,
+        project_id: str,
+        book_id: str,
+        generator_operation_name: str,
+    ) -> dict[str, Any]:
+        profiles = required_qualification_profiles(generator_operation_name)
+        expected = {profile.layer.value: profile for profile in profiles}
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT design_layer, profile_id, profile_version, profile_hash,
+                       evaluation_hash, qualification_hash,
+                       evaluator_execution_class
+                FROM authority_narrative_design_qualification
+                WHERE project_id=%s AND book_id=%s
+                  AND asset_version_id=%s AND source_operation_id=%s
+                  AND qualification_status='PASS'
+                ORDER BY design_layer
+                """,
+                [
+                    project_id,
+                    book_id,
+                    candidate_asset_version_id,
+                    operation_id,
+                ],
+            )
+            rows = uow.cursor.fetchall()
+        by_layer = {str(row[0]): row for row in rows}
+        if set(by_layer) != set(expected) or len(rows) != len(expected):
+            raise KernelError(
+                "NARRATIVE_QUALIFICATION_RECEIPT_INCOMPLETE",
+                "Narrative Semantic Evaluation receipts are missing or ambiguous",
+            )
+        hashes: set[str] = set()
+        receipts: list[dict[str, Any]] = []
+        for layer in sorted(expected):
+            row = by_layer[layer]
+            profile = expected[layer]
+            if tuple(str(item) for item in row[1:4]) != (
+                profile.profile_id,
+                profile.profile_version,
+                profile.profile_hash,
+            ):
+                raise KernelError(
+                    "NARRATIVE_QUALIFICATION_RECEIPT_STALE",
+                    "stored Narrative Qualification profile differs from current policy",
+                )
+            hashes.add(str(row[5]))
+            receipts.append(
+                {
+                    "design_layer": layer,
+                    "profile_hash": str(row[3]),
+                    "evaluation_hash": str(row[4]),
+                    "evaluator_execution_class": str(row[6]),
+                }
+            )
+        if len(hashes) != 1:
+            raise KernelError(
+                "NARRATIVE_QUALIFICATION_RECEIPT_INCONSISTENT",
+                "layer receipts do not share one qualification identity",
+            )
+        return {
+            "narrative_qualification_hash": hashes.pop(),
+            "narrative_qualification_receipts": receipts,
+        }
 
     def _update_generation_status(self, operation_id: str, status: str) -> None:
         with AuthorityUnitOfWork(self.database_url) as uow:
@@ -1843,6 +2023,7 @@ def _command_payload(command: StoryPlanningGenerationCommand) -> dict[str, Any]:
         "arc_scope_volume_plan_version_ids": list(
             command.arc_scope_volume_plan_version_ids
         ),
+        "related_arc_plan_version_ids": list(command.related_arc_plan_version_ids),
         "change_evidence_version_ids": list(command.change_evidence_version_ids),
         "repair_of_candidate_id": command.repair_of_candidate_id,
         "repair_reason": command.repair_reason,
@@ -1867,6 +2048,9 @@ def _command_from_payload(payload: dict[str, Any]) -> StoryPlanningGenerationCom
         arc_scope_volume_plan_version_ids=tuple(
             str(item) for item in payload.get("arc_scope_volume_plan_version_ids") or ()
         ),
+        related_arc_plan_version_ids=tuple(
+            str(item) for item in payload.get("related_arc_plan_version_ids") or ()
+        ),
         change_evidence_version_ids=tuple(
             str(item) for item in payload.get("change_evidence_version_ids") or ()
         ),
@@ -1875,6 +2059,113 @@ def _command_from_payload(payload: dict[str, Any]) -> StoryPlanningGenerationCom
         repair_number=int(payload.get("repair_number") or 0),
         auto_approve_low_risk=bool(payload.get("auto_approve_low_risk", False)),
     )
+
+
+def _authority_role_versions(
+    command: StoryPlanningGenerationCommand,
+) -> dict[str, str]:
+    return {
+        **dict(command.input_versions),
+        **{
+            f"arc_scope_volume:{index}": asset_version_id
+            for index, asset_version_id in enumerate(
+                command.arc_scope_volume_plan_version_ids, start=1
+            )
+        },
+        **{
+            f"related_arc:{index}": asset_version_id
+            for index, asset_version_id in enumerate(
+                command.related_arc_plan_version_ids, start=1
+            )
+        },
+    }
+
+
+def _validate_frozen_arc_references(
+    command: StoryPlanningGenerationCommand, content: dict[str, Any]
+) -> None:
+    if command.generator_operation_name == "arc_plan.generate":
+        frozen = {command.logical_key, *command.related_arc_plan_version_ids}
+        for relation in content.get("arc_relations") or ():
+            if not isinstance(relation, dict):
+                continue
+            source = str(relation.get("source_arc_ref") or "")
+            target = str(relation.get("target_arc_ref") or "")
+            if (
+                source not in frozen
+                or target not in frozen
+                or command.logical_key not in {source, target}
+            ):
+                raise KernelError(
+                    "PLANNING_ARC_RELATION_SCOPE_INVALID",
+                    "Arc Graph relations must connect the candidate Arc to its frozen Arc portfolio",
+                )
+        return
+    if command.generator_operation_name not in {
+        "chapter_group_plan.generate",
+        "chapter_plan.generate",
+    }:
+        return
+    frozen = {
+        str(command.input_versions["arc_plans"]),
+        *command.related_arc_plan_version_ids,
+    }
+    references: list[str] = []
+    if command.generator_operation_name == "chapter_group_plan.generate":
+        portfolio = [
+            *(str(item) for item in content.get("primary_arc_ids") or ()),
+            *(str(item) for item in content.get("secondary_arc_ids") or ()),
+        ]
+        if len(portfolio) != len(set(portfolio)) or set(portfolio) != frozen:
+            raise KernelError(
+                "PLANNING_ARC_PORTFOLIO_MISMATCH",
+                "Narrative Scheduling must classify every frozen active Arc exactly once",
+            )
+        references.extend(
+            str(item)
+            for item in content.get("required_arc_contributions") or ()
+        )
+        references.extend(
+            str(item.get("arc_plan_version_id") or "")
+            for item in content.get("arc_checkpoint_expectations") or ()
+            if isinstance(item, dict)
+        )
+        for row in content.get("chapter_function_matrix") or ():
+            if not isinstance(row, dict):
+                continue
+            references.extend(
+                str(item.get("arc_plan_version_id") or "")
+                for item in row.get("arc_cadence") or ()
+                if isinstance(item, dict)
+            )
+            references.extend(
+                str(
+                    item.get("arc_plan_version_id")
+                    or item.get("arc_id")
+                    or ""
+                )
+                for item in row.get("required_arc_contributions") or ()
+                if isinstance(item, dict)
+            )
+    else:
+        references.extend(
+            str(item.get("arc_plan_version_id") or "")
+            for item in content.get("arc_schedule") or ()
+            if isinstance(item, dict)
+        )
+        references.extend(
+            str(item.get("arc_plan_version_id") or item.get("arc_id") or "")
+            for item in content.get("required_arc_contributions") or ()
+            if isinstance(item, dict)
+        )
+        for scene in content.get("scene_plan") or ():
+            if isinstance(scene, dict):
+                references.extend(str(item) for item in scene.get("arc_progress") or ())
+    if not references or any(not item or item not in frozen for item in references):
+        raise KernelError(
+            "PLANNING_ARC_REFERENCE_INVALID",
+            "Scheduling or Chapter design references an Arc outside its frozen portfolio",
+        )
 
 
 __all__ = [

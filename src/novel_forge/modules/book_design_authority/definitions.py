@@ -4,7 +4,7 @@ from __future__ import annotations
 from typing import Any
 
 
-BOOK_DESIGN_DEFINITION_VERSION = "1.0.2"
+BOOK_DESIGN_DEFINITION_VERSION = "1.2.0"
 BOOK_DESIGN_HANDLER_KEY = "novel_forge.book_design_authority.transaction"
 BOOK_DESIGN_OPERATIONS = (
     "book.create",
@@ -30,7 +30,8 @@ def book_design_definitions(
             selector = {
                 "selector": "book_design", "output_key": "book_design.candidate",
                 "role": "candidate", "allowed_lifecycles": ["CANDIDATE"],
-                "eligibility": "ELIGIBLE", "governance": "CLEAR",
+                "allowed_eligibility": ["ELIGIBLE", "INELIGIBLE"],
+                "governance": "CLEAR",
             }
         elif name == "book_design.activate":
             selector = {
@@ -98,11 +99,18 @@ def book_design_definitions(
                     "book_scope_required": True,
                     "legacy_writer": "disabled",
                     "silent_fallback": False,
+                    "progressive_narrative_qualification": (
+                        "required_for_book-design-v2"
+                    ),
                 },
                 "completion_contract": {
                     "version": f"{name}.completion.v1",
                     "required_asset_selectors": [] if selector is None else [selector],
-                    "required_qualifications": [] if selector is None else [{"decision": "ELIGIBLE"}],
+                    "required_qualifications": (
+                        []
+                        if selector is None or name == "book_design.propose"
+                        else [{"decision": "ELIGIBLE"}]
+                    ),
                     "required_evidence": ["trace", "audit"],
                     "required_outbox_events": [event],
                 },

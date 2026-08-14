@@ -8,6 +8,9 @@ from novel_forge.modules.story_design_authority.validators import (
     STORY_DESIGN_VALIDATOR_VERSION,
     validate_story_design_candidate,
 )
+from novel_forge.modules.story_design_authority.qualification import (
+    scripted_qualification,
+)
 from novel_forge.modules.story_planning_runtime.domain import (
     GENERATOR_INPUT_ROLES,
     FrozenPlanningInput,
@@ -22,6 +25,10 @@ def _content_with_constraints(
     logical_key: str,
     payload: dict[str, object],
 ) -> dict[str, object]:
+    payload = {
+        **payload,
+        "narrative_qualification": scripted_qualification(generator),
+    }
     inputs = tuple(
         FrozenPlanningInput(
             role=role,
@@ -128,7 +135,7 @@ class StoryDesignValidatorTests(unittest.TestCase):
         )
         self.assertEqual(
             generator_receipt.evidence["generator_definition_version"],
-            "1.6.0",
+            "2.0.0",
         )
 
     def test_chapter_publish_metadata_rejects_internal_planning_instructions(
@@ -175,6 +182,31 @@ class StoryDesignValidatorTests(unittest.TestCase):
             )
 
         self.assertEqual(raised.exception.code, "STORY_DESIGN_SCHEMA_INVALID")
+
+    def test_objective_without_layer_semantic_evaluation_is_not_semantically_valid(
+        self,
+    ) -> None:
+        content = _content_with_constraints(
+            "book_plan.generate",
+            "BOOK",
+            "book-plan:main",
+            {"objective": "A structurally complete but unevaluated Book plan"},
+        )
+        content["candidate_payload"].pop("narrative_qualification")
+
+        with self.assertRaises(KernelError) as raised:
+            validate_story_design_candidate(
+                content=content,
+                project_id="project-1",
+                generator_operation_name="book_plan.generate",
+                planning_scope="BOOK",
+                logical_key="book-plan:main",
+            )
+
+        self.assertEqual(
+            raised.exception.code,
+            "NARRATIVE_SEMANTIC_EVALUATION_REQUIRED",
+        )
 
     def test_constraint_governance_shape_fails_closed(self) -> None:
         content = _content_with_constraints(

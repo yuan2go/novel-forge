@@ -4,6 +4,10 @@ Novel Forge is a local-first production backend for creating and governing long-
 
 It is not a complete autonomous Agent Center, a publishing service, or evidence of sustained long-form production.
 
+The authoritative design progression, qualification lifecycle, and production
+admission rules are defined in
+[`canonical-overall-design.md`](canonical-overall-design.md).
+
 ## Runtime shape
 
 ```text
@@ -48,7 +52,8 @@ The production roots are `novel_forge.api.authority_app`, the CLI modules in `py
 | Authority API, workers, PostgreSQL schema | `implemented`, `runtime-wired`; PostgreSQL test suites exist |
 | Command Kernel, Attempt/Lease/Fence, ExternalEffect, RuntimeJob | `implemented`, `runtime-wired`, `fixture-proven`; PostgreSQL integration gates exist |
 | Chapter 18-node production saga | `implemented`, `runtime-wired`, `fixture-proven`; integration tests exist |
-| Book coordination, planning, reader/recap, governed replan | `implemented`, `runtime-wired`, `fixture-proven`; selected PostgreSQL tests exist |
+| Progressive design lifecycle and production admission | `runtime-wired`, `PostgreSQL-fixture-validated`; immutable layer receipts, aggregate Book admission, and dispatch-time freshness checks are exercised by current tests |
+| Book coordination, reader/recap, governed replan | `implemented`, `runtime-wired`, `fixture-proven`; selected PostgreSQL tests exist |
 | Source import, source governance/intelligence, MKAOS | `implemented`, `runtime-wired`, `fixture-proven`; selected PostgreSQL tests exist |
 | Agent candidate execution and capability-pack authority | first production slice is `implemented` and `runtime-wired`; coverage is bounded |
 | Admin web console | route and component tests are `fixture-proven`; it is not a complete operator console |

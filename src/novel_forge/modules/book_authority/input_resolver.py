@@ -16,7 +16,11 @@ from novel_forge.modules.command_kernel.service import (
     TransactionCheckpoint,
     execute_transaction_command,
 )
-from novel_forge.modules.story_design_authority import GENERATOR_CATALOG
+from novel_forge.modules.story_design_authority import (
+    GENERATOR_CATALOG,
+    NarrativeDesignLayer,
+    required_qualification_profiles,
+)
 from novel_forge.modules.story_planning_runtime import (
     STORY_PLANNING_OPERATION_DEFINITION_REF,
     canonical_hash,
@@ -25,7 +29,7 @@ from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 
 BOOK_INPUT_RESOLVE_DEFINITION = "book.production_input.resolve"
-BOOK_INPUT_RESOLVE_VERSION = "1.1.0"
+BOOK_INPUT_RESOLVE_VERSION = "1.2.0"
 BOOK_INPUT_RESOLVE_HANDLER = "novel_forge.book_authority.production_input.resolve"
 
 
@@ -130,6 +134,9 @@ class BookProductionInputSnapshot:
     promise_ledger_version: str
     initial_story_state_version: str
     initial_canon_snapshot_version: str
+    design_admission_status: str
+    design_qualification: dict[str, Any]
+    design_qualification_hash: str
     capability_pack_deployment_refs: tuple[str, ...]
     release_sha: str
     snapshot_hash: str
@@ -226,6 +233,8 @@ class BookProductionInputResolver:
                        promise_ledger_version,
                        COALESCE(initial_story_state_version, ''),
                        COALESCE(initial_canon_snapshot_version, ''),
+                       design_admission_status, design_qualification,
+                       design_qualification_hash,
                        capability_pack_deployment_refs,
                        release_sha, snapshot_hash, resolved_by_operation_id
                 FROM authority_book_production_input_snapshot
@@ -241,7 +250,7 @@ class BookProductionInputResolver:
             )
         values = list(row)
         values[9] = tuple(str(item) for item in values[9])
-        values[22] = tuple(str(item) for item in values[22])
+        values[25] = tuple(str(item) for item in values[25])
         return BookProductionInputSnapshot(*values)
 
     def _execute_transaction(
@@ -300,12 +309,14 @@ class BookProductionInputResolver:
                 character_state_version, foreshadowing_state_version,
                 quality_trend_version, reward_ledger_version,
                 promise_ledger_version, initial_story_state_version,
-                initial_canon_snapshot_version, capability_pack_deployment_refs,
+                initial_canon_snapshot_version, design_admission_status,
+                design_qualification, design_qualification_hash,
+                capability_pack_deployment_refs,
                 release_sha, snapshot_hash, resolved_by_operation_id
             ) VALUES (
                 %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NULLIF(%s, ''),
                 %s, %s, %s, %s, %s, %s, %s, %s, %s, NULLIF(%s, ''),
-                NULLIF(%s, ''), %s, %s, %s, %s
+                NULLIF(%s, ''), %s, %s, %s, %s, %s, %s, %s
             ) ON CONFLICT (snapshot_hash) DO NOTHING
             """,
             [
@@ -331,6 +342,9 @@ class BookProductionInputResolver:
                 resolved["promise_ledger_version"],
                 resolved["initial_story_state_version"],
                 resolved["initial_canon_snapshot_version"],
+                resolved["design_admission_status"],
+                Jsonb(resolved["design_qualification"]),
+                resolved["design_qualification_hash"],
                 Jsonb(resolved["capability_pack_deployment_refs"]),
                 resolved["release_sha"],
                 resolved["snapshot_hash"],
@@ -355,6 +369,12 @@ class BookProductionInputResolver:
                     "snapshot_id": snapshot_id,
                     "snapshot_hash": resolved["snapshot_hash"],
                     "book_id": command.book_id,
+                    "design_admission_status": resolved[
+                        "design_admission_status"
+                    ],
+                    "design_qualification_hash": resolved[
+                        "design_qualification_hash"
+                    ],
                 },
             }
         )
@@ -430,6 +450,12 @@ class BookProductionInputResolver:
             book_plan=book_plan["content"],
             production_profile=roles["production_profile_version"]["content"],
         )
+        design_qualification = self._longform_design_qualification(
+            cursor,
+            command=command,
+            book_design_version=str(book[1]),
+            plans=plans,
+        )
         deployments = self._planning_deployments(cursor, command)
         value: dict[str, Any] = {
             "project_id": command.project_id,
@@ -458,11 +484,129 @@ class BookProductionInputResolver:
                 for role in _OPTIONAL_INITIAL_STATE_ROLE_TYPES
             },
             "capability_pack_deployment_refs": deployments,
+            "design_admission_status": "LONGFORM_DESIGN_QUALIFIED",
+            "design_qualification": design_qualification,
+            "design_qualification_hash": canonical_hash(design_qualification),
             "release_sha": self.commit_sha,
         }
         value["snapshot_hash"] = canonical_hash(value)
         value["snapshot_id"] = value["snapshot_hash"]
         return value
+
+    @staticmethod
+    def _longform_design_qualification(
+        cursor: Any,
+        *,
+        command: ResolveBookProductionInputCommand,
+        book_design_version: str,
+        plans: dict[str, list[dict[str, Any]]],
+    ) -> dict[str, Any]:
+        expected: list[tuple[str, str, Any]] = []
+        stage_assets = (
+            ("book_design.propose", (book_design_version,)),
+            ("book_plan.generate", (plans["BOOK"][0]["asset_version_id"],)),
+            ("volume_plan.generate", (plans["VOLUME"][0]["asset_version_id"],)),
+            (
+                "arc_plan.generate",
+                tuple(item["asset_version_id"] for item in plans["ARC"]),
+            ),
+        )
+        for stage, asset_version_ids in stage_assets:
+            for asset_version_id in asset_version_ids:
+                expected.extend(
+                    (asset_version_id, profile.layer.value, profile)
+                    for profile in required_qualification_profiles(stage)
+                )
+        version_ids = sorted({item[0] for item in expected})
+        cursor.execute(
+            """
+            SELECT qualification.asset_version_id,
+                   qualification.design_layer,
+                   qualification.profile_id,
+                   qualification.profile_version,
+                   qualification.profile_hash,
+                   qualification.qualification_hash,
+                   qualification.evaluation_hash,
+                   qualification.evaluator_execution_class,
+                   qualification.source_operation_id
+            FROM authority_narrative_design_qualification AS qualification
+            JOIN authority_operation AS operation
+              ON operation.operation_id=qualification.source_operation_id
+            WHERE qualification.project_id=%s
+              AND qualification.book_id=%s
+              AND qualification.asset_version_id=ANY(%s)
+              AND qualification.qualification_status='PASS'
+              AND operation.status IN ('WAITING_GATE', 'SUCCEEDED')
+            ORDER BY qualification.asset_version_id,
+                     qualification.design_layer,
+                     qualification.created_at
+            """,
+            [command.project_id, command.book_id, version_ids],
+        )
+        rows = cursor.fetchall()
+        by_identity: dict[tuple[str, str], list[Any]] = {}
+        for row in rows:
+            by_identity.setdefault((str(row[0]), str(row[1])), []).append(row)
+        receipts: list[dict[str, Any]] = []
+        for asset_version_id, layer, profile in expected:
+            matches = by_identity.get((asset_version_id, layer), [])
+            if len(matches) != 1:
+                raise KernelError(
+                    "LONGFORM_DESIGN_QUALIFICATION_INCOMPLETE",
+                    f"{layer} requires one current qualification receipt",
+                )
+            row = matches[0]
+            if tuple(str(item) for item in row[2:5]) != (
+                profile.profile_id,
+                profile.profile_version,
+                profile.profile_hash,
+            ):
+                raise KernelError(
+                    "LONGFORM_DESIGN_QUALIFICATION_STALE",
+                    f"{layer} qualification differs from current policy",
+                )
+            receipts.append(
+                {
+                    "asset_version_id": asset_version_id,
+                    "design_layer": layer,
+                    "profile_id": str(row[2]),
+                    "profile_version": str(row[3]),
+                    "profile_hash": str(row[4]),
+                    "qualification_hash": str(row[5]),
+                    "evaluation_hash": str(row[6]),
+                    "evaluator_execution_class": str(row[7]),
+                    "source_operation_id": str(row[8]),
+                }
+            )
+        required_layers = {
+            NarrativeDesignLayer.STORY_INTENT.value,
+            NarrativeDesignLayer.STORY_FOUNDATION.value,
+            NarrativeDesignLayer.BOOK_ARCHITECTURE.value,
+            NarrativeDesignLayer.VOLUME_ARCHITECTURE.value,
+            NarrativeDesignLayer.NARRATIVE_ARC_GRAPH.value,
+            NarrativeDesignLayer.CHARACTER_DEVELOPMENT.value,
+            NarrativeDesignLayer.DISCLOSURE_OBLIGATION.value,
+        }
+        if {item["design_layer"] for item in receipts} != required_layers:
+            raise KernelError(
+                "LONGFORM_DESIGN_QUALIFICATION_INCOMPLETE",
+                "global long-form design layers are incomplete",
+            )
+        return {
+            "schema_version": "longform-design-qualification.v1",
+            "admission": "LONGFORM_DESIGN_QUALIFIED",
+            "project_id": command.project_id,
+            "book_id": command.book_id,
+            "book_version": command.expected_book_version,
+            "required_layers": sorted(required_layers),
+            "receipts": sorted(
+                receipts,
+                key=lambda item: (
+                    item["design_layer"],
+                    item["asset_version_id"],
+                ),
+            ),
+        }
 
     @staticmethod
     def _validate_initial_narrative_state_pair(
@@ -863,7 +1007,7 @@ def book_production_input_definition(
         "enabled": True,
         "definition_status": "implemented_validation_pending",
         "command_schema_version": "book-production-input-resolve-command-v2",
-        "result_schema_version": "book-production-input-snapshot-v1",
+        "result_schema_version": "book-production-input-snapshot-v2",
         "command_schema": schema,
         "result_schema": {"type": "object"},
         "input_contract": schema,
@@ -881,6 +1025,7 @@ def book_production_input_definition(
             "caller_json_versions_forbidden": True,
             "stale_plan_fail_closed": True,
             "snapshot_immutable": True,
+            "longform_design_qualification_required": True,
         },
         "idempotency_scope": "book:production-input-resolve",
         "concurrency_key_template": "book:{book_id}:production-input",

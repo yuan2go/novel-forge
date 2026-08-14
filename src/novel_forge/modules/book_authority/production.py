@@ -538,6 +538,7 @@ class PostgresBookAuthority:
             raise KernelError(
                 "BOOK_CHAPTER_OUT_OF_RANGE", "chapter exceeds Book target count"
             )
+        self._require_chapter_production_admission(book, command)
         request_id = f"chapter-request:{stable_key.removeprefix('book-chapter:')}"
 
         def commit_reservation(
@@ -721,6 +722,62 @@ class PostgresBookAuthority:
         )
         self._probe("after_delegation_persist")
         return self.require_chapter_request(request_id)
+
+    def _require_chapter_production_admission(
+        self, book: dict[str, Any], command: SubmitBookChapterCommand
+    ) -> None:
+        if book["input_mode"] != "RESOLVED_AUTHORITY_INPUT":
+            return
+        if not command.parent_group_version_id:
+            raise KernelError(
+                "CHAPTER_PRODUCTION_ADMISSION_REQUIRED",
+                "resolved Book production requires a frozen ChapterGroup plan",
+            )
+        from .queries import PostgresBookProductionQuery
+
+        query = PostgresBookProductionQuery(self.database_url)
+        authoritative = query.require_chapter_production_admission(
+            snapshot_id=str(book["input_snapshot_id"]),
+            chapter_group_plan_version_id=command.parent_group_version_id,
+            chapter_plan_version_id=command.chapter_plan_asset_version_id,
+            chapter_number=command.chapter_number,
+            accepted_through_chapter=int(book["accepted_through_chapter"]),
+            active_story_state_version_id=str(
+                book.get("active_story_state_version_id") or ""
+            ),
+            active_canon_snapshot_version_id=str(
+                book.get("active_canon_snapshot_version_id") or ""
+            ),
+        )
+        execution_plan = query.require_chapter_execution_plan(
+            command.chapter_plan_asset_version_id
+        )
+        if (
+            command.chapter_plan_content_hash
+            != execution_plan["source_content_hash"]
+            or command.execution_chapter_plan_asset_version_id
+            != execution_plan["asset_version_id"]
+            or command.execution_chapter_plan_content_hash
+            != execution_plan["content_hash"]
+        ):
+            raise KernelError(
+                "CHAPTER_PRODUCTION_EXECUTION_PLAN_MISMATCH",
+                "Chapter Saga input must be the governed projection of the admitted ChapterPlan",
+            )
+        supplied = dict(command.preparation_report or {}).get(
+            "chapter_production_admission"
+        )
+        refs = dict(command.context_version_refs or {})
+        if supplied != authoritative or (
+            refs.get("longform_design_qualification_hash")
+            != authoritative["longform_design_qualification_hash"]
+            or refs.get("chapter_production_admission_hash")
+            != authoritative["admission_hash"]
+        ):
+            raise KernelError(
+                "CHAPTER_PRODUCTION_ADMISSION_MISMATCH",
+                "Chapter command differs from authoritative design admission",
+            )
 
     def accept_chapter(
         self, chapter_request_id: str, *, principal: Principal

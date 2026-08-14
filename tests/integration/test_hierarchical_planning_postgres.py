@@ -219,6 +219,7 @@ class HierarchicalPlanningPostgresTests(unittest.TestCase):
             parent=book,
             extra={
                 "narrative_architecture_version": "canonical-narrative-v1",
+                "chapter_range": [1, 3],
                 "narrative_segments": [
                     {
                         "segment_id": "segment:commitment",

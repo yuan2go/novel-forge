@@ -107,7 +107,7 @@
   ],
   "schema_contracts": [
     {"path": "src/novel_forge/modules/project_authority/domain.py", "token": "project-authority.v1"},
-    {"path": "src/novel_forge/modules/book_design_authority/domain.py", "token": "book-design.v1"},
+    {"path": "src/novel_forge/modules/book_design_authority/domain.py", "token": "book-design.v2"},
     {"path": "src/novel_forge/modules/provider_qualification/domain.py", "token": "d0-provider-probe-report.v1"}
   ],
   "quality_gates": {

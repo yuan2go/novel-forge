@@ -81,7 +81,17 @@ def test_story_planning_profile_is_domain_owned_and_five_stage() -> None:
     }
     assert {
         item["skill_ref"] for item in profile.manifest["skill_binding"]["skills"]
-    } == {"long-outline"}
+    } == {
+        "canon-continuity-graph",
+        "chapter-outline",
+        "character-design",
+        "long-outline",
+        "narrative-beat-design",
+    }
+    assert all(
+        node["narrative_qualification_profiles"]
+        for node in profile.manifest["workflow_template"]["nodes"]
+    )
     assert {
         item["ref"]
         for item in profile.artifact_catalog["artifacts"]
