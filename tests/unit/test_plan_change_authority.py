@@ -34,16 +34,12 @@ class PlanChangeAuthorityDomainTests(unittest.TestCase):
             },
         )
         self.assertEqual(
-            classify_plan_change_risk(
-                changes, target_execution_scope="PLANNED"
-            ),
+            classify_plan_change_risk(changes, target_execution_scope="PLANNED"),
             PlanChangeRisk.HIGH,
         )
 
     def test_executed_plan_is_retcon_only(self) -> None:
-        with self.assertRaisesRegex(
-            KernelError, "EXECUTED_PLAN_RETCON_ONLY"
-        ):
+        with self.assertRaisesRegex(KernelError, "EXECUTED_PLAN_RETCON_ONLY"):
             require_approvable_scope("EXECUTED")
 
     def test_semantic_diff_covers_progressive_design_scopes(self) -> None:
@@ -53,14 +49,12 @@ class PlanChangeAuthorityDomainTests(unittest.TestCase):
                 "arc_segments": [{"segment_id": "arc-segment:1"}],
                 "scene_plan": [{"scene_id": "scene:1"}],
                 "realization_level": "DEFINED",
-                "narrative_load_budget": {"max_active_arcs": 3},
             },
             {
                 "narrative_segments": [{"segment_id": "segment:2"}],
                 "arc_segments": [{"segment_id": "arc-segment:2"}],
                 "scene_plan": [{"scene_id": "scene:2"}],
                 "realization_level": "DETAILED",
-                "narrative_load_budget": {"max_active_arcs": 2},
             },
         )
 
@@ -71,7 +65,6 @@ class PlanChangeAuthorityDomainTests(unittest.TestCase):
                 "ARC_SEGMENT_CHANGED",
                 "SCENE_ARCHITECTURE_CHANGED",
                 "REALIZATION_LEVEL_CHANGED",
-                "NARRATIVE_LOAD_BUDGET_CHANGED",
             },
         )
 

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from copy import deepcopy
+
 import pytest
 
 from novel_forge.modules.command_kernel.errors import KernelError
@@ -15,7 +17,6 @@ from novel_forge.modules.story_design_authority.qualification import (
     validate_narrative_qualification,
 )
 from novel_forge.modules.story_design_authority.evaluation_runtime import (
-    NarrativeSemanticEvaluationApplication,
     NarrativeSemanticEvaluationCommand,
     narrative_semantic_evaluation_definition,
 )
@@ -76,11 +77,15 @@ def test_each_generator_uses_exact_layer_specific_profiles(
     assert result.status == "PASS"
     assert {receipt.layer for receipt in result.receipts} == layers
     assert len({receipt.profile_id for receipt in result.receipts}) == len(layers)
-    assert all(receipt.profile_hash.startswith("sha256:") for receipt in result.receipts)
+    assert all(
+        receipt.profile_hash.startswith("sha256:") for receipt in result.receipts
+    )
     assert all(receipt.criterion_count >= 4 for receipt in result.receipts)
 
 
-def test_semantic_evaluation_fails_closed_when_one_required_criterion_is_missing() -> None:
+def test_semantic_evaluation_fails_closed_when_one_required_criterion_is_missing() -> (
+    None
+):
     payload = scripted_qualification("book_plan.generate")
     payload["evaluations"][0]["criteria"].pop()
 
@@ -158,12 +163,19 @@ def test_evaluation_lineage_binds_distinct_operation_attempt_and_asset() -> None
         candidate_content_hash="sha256:candidate",
         evaluator_execution_class="MODEL_PROVIDER",
         evaluation_evidence_hash="sha256:evaluation",
+        provider_model_call_asset_version_id="asset:model-call-log",
+        provider_model_call_content_hash="sha256:model-call-log",
+        provider_evidence_hash="sha256:provider-evidence",
+        provider_result_hash="sha256:provider-result",
+        provider_route_snapshot_id="route:evaluator",
     )
 
     assert lineage.to_evidence()["evaluation_operation_id"] == "operation:evaluator"
 
 
-def test_evaluation_definition_declares_independent_actor_and_exact_provider_receipt() -> None:
+def test_evaluation_definition_declares_independent_actor_and_exact_provider_receipt() -> (
+    None
+):
     definition = narrative_semantic_evaluation_definition(
         application_build_id="test-build",
         commit_sha="a" * 40,
@@ -173,7 +185,9 @@ def test_evaluation_definition_declares_independent_actor_and_exact_provider_rec
     assert definition["policy"]["model_provider_evidence_exact_result_required"] is True
 
 
-def test_model_provider_evidence_rejects_a_successful_but_unrelated_call_log() -> None:
+def test_model_provider_evaluation_intent_does_not_accept_caller_authored_result() -> (
+    None
+):
     command = NarrativeSemanticEvaluationCommand(
         project_id="project:test",
         workspace_id="workspace:test",
@@ -182,37 +196,39 @@ def test_model_provider_evidence_rejects_a_successful_but_unrelated_call_log() -
         candidate_asset_version_id="asset:candidate",
         generation_operation_id="operation:generation",
         generator_operation_name="book_plan.generate",
-        candidate_content_hash="sha256:candidate",
+        candidate_content_hash="sha256:" + "a" * 64,
         evaluator_execution_class="MODEL_PROVIDER",
-        evaluation=scripted_qualification("book_plan.generate"),
         idempotency_key="evaluation:test",
         trace_id="trace:test",
         correlation_id="correlation:test",
     )
-    evidence = {
-        "asset_version_id": "asset:model-call-log",
-        "asset_type": "model_call_log",
-        "producer_status": "SUCCEEDED",
-        "producer_operation_id": "operation:evaluation-provider",
-        "content": {
-            "operation_id": "operation:evaluation-provider",
-            "stage": "narrative_semantic_evaluation",
-            "real_model_call": True,
-            "fixture_protocol_only": False,
-            "candidate_accepted": True,
-            "result": {
-                "candidate_asset_version_id": "asset:different-candidate",
-                "candidate_content_hash": command.candidate_content_hash,
-                "generation_operation_id": command.generation_operation_id,
-                "evaluation": command.evaluation,
-            },
-        },
-    }
 
-    with pytest.raises(KernelError) as raised:
-        NarrativeSemanticEvaluationApplication._validate_model_provider_evidence(
-            command=command,
-            evidence_assets=[evidence],
+    assert command.evaluation is None
+    assert command.evidence_asset_version_ids == ()
+
+
+def test_stale_semantic_profile_fails_closed() -> None:
+    evaluation = deepcopy(scripted_qualification("book_design.propose"))
+    evaluation["evaluations"][0]["profile_hash"] = "sha256:" + "0" * 64
+
+    with pytest.raises(KernelError, match="NARRATIVE_SEMANTIC_PROFILE_DRIFT"):
+        validate_narrative_qualification(
+            generator_operation_name="book_design.propose",
+            value=evaluation,
         )
 
-    assert raised.value.code == "NARRATIVE_EVALUATION_PROVIDER_EVIDENCE_INVALID"
+
+def test_model_provider_lineage_rejects_incomplete_receipt() -> None:
+    with pytest.raises(
+        KernelError, match="NARRATIVE_EVALUATION_PROVIDER_LINEAGE_INCOMPLETE"
+    ):
+        NarrativeEvaluationLineage(
+            generation_operation_id="operation:generator",
+            evaluation_operation_id="operation:evaluator",
+            evaluation_attempt_id="attempt:evaluator",
+            evaluation_asset_version_id="asset:evaluation",
+            candidate_asset_version_id="asset:candidate",
+            candidate_content_hash="sha256:" + "1" * 64,
+            evaluator_execution_class="MODEL_PROVIDER",
+            evaluation_evidence_hash="sha256:" + "2" * 64,
+        )

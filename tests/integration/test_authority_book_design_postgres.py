@@ -1,7 +1,14 @@
 from __future__ import annotations
 
+from pathlib import Path
+import tempfile
 import unittest
 
+from novel_forge.api.authority_dependencies import (
+    build_narrative_semantic_evaluation_execution_port,
+    build_production_execution_composition,
+)
+from novel_forge.infrastructure.settings import IndustrialSettings
 from novel_forge.modules.authority_security import Principal, PrincipalType
 from novel_forge.modules.book_design_authority import (
     BOOK_DESIGN_SCHEMA_VERSION,
@@ -12,6 +19,18 @@ from novel_forge.modules.book_design_authority import (
 )
 from novel_forge.modules.story_design_authority import scripted_qualification
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.command_kernel.maintenance import scan_expired_attempt_leases
+from novel_forge.modules.provider_control import (
+    OpenAIProviderAdapterV2,
+    ProviderAdapterRegistry,
+)
+from novel_forge.modules.capability_packs.longform_profiles import (
+    build_narrative_evaluation_pack_profile,
+)
+from novel_forge.modules.story_design_authority import (
+    NARRATIVE_EVALUATION_APPLICATION_BUILD_ID,
+    narrative_semantic_evaluation_definition,
+)
 from novel_forge.modules.project_authority import (
     ProjectAuthorityApplication,
     ProjectAuthorityCommand,
@@ -22,6 +41,46 @@ from tests.integration.authority_postgres_support import (
     ensure_migrated,
     identifier,
 )
+from tests.integration.capability_pack_postgres_support import (
+    CapabilityPackPostgresHarness,
+)
+
+
+class _MeasuredSemanticEvaluationTransport:
+    def __init__(self) -> None:
+        self.calls = 0
+        self.idempotency_keys: set[str] = set()
+
+    def execute(self, request):  # type: ignore[no-untyped-def]
+        self.calls += 1
+        self.idempotency_keys.add(request.stable_idempotency_key)
+        if request.stage != "narrative_semantic_evaluation":
+            raise AssertionError("proof transport accepts only semantic evaluation")
+        return {
+            "outcome": "success",
+            "request_sent": True,
+            "provider_request_id": f"provider-request:{request.stable_idempotency_key}",
+            "completion_mode": "synchronous",
+            "evidence": {
+                "result": scripted_qualification("book_design.propose"),
+                "usage": {"input_tokens": 200, "output_tokens": 80},
+                "cost": {"amount": "0.01", "currency": "USD"},
+                "request_hash": request.request_hash,
+            },
+        }
+
+    def query(self, request):  # type: ignore[no-untyped-def]
+        raise AssertionError("synchronous proof must not query")
+
+    def cancel(self, request):  # type: ignore[no-untyped-def]
+        raise AssertionError("completed proof must not cancel")
+
+    def verify_callback(self, body, headers, *, secret):  # type: ignore[no-untyped-def]
+        raise AssertionError("synchronous proof has no callback")
+
+
+class _SemanticEvaluatorProcessCrash(BaseException):
+    """Test-only process boundary that bypasses in-process failure handling."""
 
 
 class BookDesignAuthorityPostgresTests(unittest.TestCase):
@@ -63,6 +122,7 @@ class BookDesignAuthorityPostgresTests(unittest.TestCase):
             DATABASE_URL,
             application_build_id="book-design-integration",
             commit_sha="b" * 40,
+            allow_scripted_evaluation_fixture=True,
         )
         self.query = BookDesignAuthorityQuery(DATABASE_URL)
         self._create_project()
@@ -123,9 +183,7 @@ class BookDesignAuthorityPostgresTests(unittest.TestCase):
                 "repair_directive": "Repair the premise before reevaluation.",
             }
         )
-        with self.assertRaisesRegex(
-            KernelError, "AUTHORITY_INPUT_NOT_ELIGIBLE"
-        ):
+        with self.assertRaisesRegex(KernelError, "AUTHORITY_INPUT_NOT_ELIGIBLE"):
             self._evaluate(
                 first,
                 evaluation=contradictory,
@@ -325,6 +383,320 @@ class BookDesignAuthorityPostgresTests(unittest.TestCase):
                 ),
             )
 
+    def test_real_provider_evaluator_records_independent_receipt_and_replays_once(
+        self,
+    ) -> None:
+        self._book_command(
+            "book.create",
+            payload={
+                "schema_version": "book-authority.v1",
+                "title": "Provider Evaluation Proof",
+                "production_profile": {},
+                "runtime_policy": {"execution_fallback": "FAIL_CLOSED"},
+                "release_identity": "book-design-provider-proof@" + "b" * 40,
+            },
+            idempotency_key=f"book:create:{self.book_id}",
+        )
+        candidate = self._book_command(
+            "book_design.propose",
+            payload=self._design("independent provider evaluation"),
+            idempotency_key=f"design:provider:{self.book_id}",
+            expected_book_version=1,
+        )
+        transport = _MeasuredSemanticEvaluationTransport()
+        registry = ProviderAdapterRegistry()
+        registry.register(
+            OpenAIProviderAdapterV2(
+                transport,
+                supports_query=False,
+                supports_cancel=False,
+                supports_callback=False,
+                supports_cost_receipt=True,
+                provider_idempotency_supported=True,
+            )
+        )
+        harness = CapabilityPackPostgresHarness(
+            "semantic-provider-proof",
+            application_build_id=NARRATIVE_EVALUATION_APPLICATION_BUILD_ID,
+            release_sha="b" * 40,
+        )
+        harness.project_id = self.project_id
+        harness.workspace_id = self.workspace_id
+        harness.book_ids = (self.book_id,)
+        harness.compiler = harness.principal("compiler", *harness.compiler.permissions)
+        harness.approver = harness.principal("approver", *harness.approver.permissions)
+        harness.agent_admin = harness.principal(
+            "agent-admin", *harness.agent_admin.permissions
+        )
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            registered = uow.repositories.definitions.register(
+                narrative_semantic_evaluation_definition(
+                    application_build_id=NARRATIVE_EVALUATION_APPLICATION_BUILD_ID,
+                    commit_sha="b" * 40,
+                )
+            )
+            uow.commit()
+        profile = build_narrative_evaluation_pack_profile(
+            Path(__file__).resolve().parents[2],
+            operation_definition_hash=str(registered["definition_hash"]),
+            pack_id=harness.pack_id,
+        )
+        harness._base_manifest = profile.manifest
+        harness._base_catalog = profile.artifact_catalog
+        harness.workflow_definition_ref = profile.workflow_ref
+        pack = harness.register_compile_approve(
+            "1.0.0",
+            generation=1,
+            approval_scope=harness.approval_scope(
+                project_ids=(self.project_id,),
+                workspace_ids=(self.workspace_id,),
+                book_ids=(self.book_id,),
+            ),
+            proof_skill_ref=profile.agent_skill_ref,
+            release_sha="b" * 40,
+        )
+        deployment = harness.deploy(
+            pack,
+            project_id=self.project_id,
+            workspace_id=self.workspace_id,
+            book_id=self.book_id,
+        )
+        harness.activate(deployment)
+        injected = {"done": False}
+
+        def fail_once(checkpoint: str) -> None:
+            if checkpoint == "after_provider_success" and not injected["done"]:
+                injected["done"] = True
+                raise _SemanticEvaluatorProcessCrash(checkpoint)
+
+        with tempfile.TemporaryDirectory() as directory:
+            settings = IndustrialSettings(
+                root=Path(__file__).resolve().parents[2],
+                database_url=DATABASE_URL,
+            )
+            env = {
+                "NOVEL_FORGE_ENVIRONMENT": "development",
+                "NOVEL_FORGE_MODEL_PROVIDER": "openai",
+                "NOVEL_FORGE_NARRATIVE_EVALUATOR_PROVIDER": "openai",
+                "NOVEL_FORGE_NARRATIVE_EVALUATOR_MODEL": "gpt-proof",
+                "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": str(
+                    Path(directory) / "objects"
+                ),
+                "NOVEL_FORGE_PROVIDER_MAX_COST_PER_CALL": "1.00",
+                "NOVEL_FORGE_APPLICATION_BUILD_ID": "semantic-provider-proof",
+                "NOVEL_FORGE_COMMIT_SHA": "b" * 40,
+                "NOVEL_FORGE_NARRATIVE_EVALUATION_CAPABILITY_PACK_ID": (
+                    harness.pack_id
+                ),
+            }
+            execution = build_production_execution_composition(
+                settings, provider_registry=registry, env=env
+            )
+            semantic_port = build_narrative_semantic_evaluation_execution_port(
+                settings,
+                execution=execution,
+                env=env,
+                post_provider_fault_injector=fail_once,
+            )
+            provider_application = BookDesignAuthorityApplication(
+                DATABASE_URL,
+                application_build_id="book-design-provider-proof",
+                commit_sha="b" * 40,
+                semantic_evaluation_execution_port=semantic_port,
+                narrative_evaluator_principal=self.evaluator_principal,
+            )
+            command = BookDesignSemanticEvaluationCommand(
+                project_id=self.project_id,
+                workspace_id=self.workspace_id,
+                book_id=self.book_id,
+                actor_id=self.evaluator_principal.principal_id,
+                candidate_asset_version_id=candidate["asset_version_id"],
+                generation_operation_id=candidate["operation_id"],
+                generator_operation_name="book_design.propose",
+                candidate_content_hash=candidate["content_hash"],
+                evaluator_execution_class="MODEL_PROVIDER",
+                idempotency_key=f"semantic-provider:{candidate['asset_version_id']}",
+                trace_id=f"trace:{self.project_id}",
+                correlation_id=f"correlation:{self.project_id}",
+            )
+            wrong_actor = BookDesignSemanticEvaluationCommand(
+                project_id=command.project_id,
+                workspace_id=command.workspace_id,
+                book_id=command.book_id,
+                actor_id=self.principal.principal_id,
+                candidate_asset_version_id=command.candidate_asset_version_id,
+                generation_operation_id=command.generation_operation_id,
+                generator_operation_name=command.generator_operation_name,
+                candidate_content_hash=command.candidate_content_hash,
+                evaluator_execution_class="MODEL_PROVIDER",
+                idempotency_key=command.idempotency_key + ":wrong-actor",
+                trace_id=command.trace_id,
+                correlation_id=command.correlation_id,
+            )
+            with self.assertRaisesRegex(
+                KernelError, "NARRATIVE_EVALUATION_ACTOR_NOT_INDEPENDENT"
+            ):
+                provider_application.evaluate_semantics(
+                    wrong_actor, principal=self.principal
+                )
+            with self.assertRaises(_SemanticEvaluatorProcessCrash):
+                provider_application.evaluate_semantics(
+                    command, principal=self.evaluator_principal
+                )
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                uow.cursor.execute(
+                    """
+                    SELECT operation.operation_id, attempt.attempt_id
+                    FROM authority_operation AS operation
+                    JOIN authority_attempt AS attempt
+                      ON attempt.operation_id=operation.operation_id
+                    WHERE operation.project_id=%s
+                      AND operation.idempotency_key=%s
+                    """,
+                    [self.project_id, command.idempotency_key],
+                )
+                crashed_operation_id, crashed_attempt_id = uow.cursor.fetchone()
+                uow.cursor.execute(
+                    """
+                    UPDATE authority_lease_acquisition
+                    SET expires_at=acquired_at + INTERVAL '1 microsecond'
+                    WHERE attempt_id=%s AND status='HELD'
+                    """,
+                    [crashed_attempt_id],
+                )
+                uow.commit()
+            expired = scan_expired_attempt_leases(
+                DATABASE_URL, actor_id="semantic-evaluation-recovery-test"
+            )
+            self.assertTrue(
+                any(item["attempt_id"] == crashed_attempt_id for item in expired)
+            )
+            first = provider_application.evaluate_semantics(
+                command, principal=self.evaluator_principal
+            )
+            replay = provider_application.evaluate_semantics(
+                command, principal=self.evaluator_principal
+            )
+            stale = BookDesignSemanticEvaluationCommand(
+                project_id=command.project_id,
+                workspace_id=command.workspace_id,
+                book_id=command.book_id,
+                actor_id=command.actor_id,
+                candidate_asset_version_id=command.candidate_asset_version_id,
+                generation_operation_id=command.generation_operation_id,
+                generator_operation_name=command.generator_operation_name,
+                candidate_content_hash=command.candidate_content_hash,
+                evaluator_execution_class="MODEL_PROVIDER",
+                idempotency_key=command.idempotency_key + ":stale",
+                trace_id=command.trace_id,
+                correlation_id=command.correlation_id,
+            )
+            with self.assertRaisesRegex(KernelError, "AUTHORITY_INPUT_NOT_ELIGIBLE"):
+                provider_application.evaluate_semantics(
+                    stale, principal=self.evaluator_principal
+                )
+
+        self.assertEqual(
+            first["evaluation_operation_id"], replay["evaluation_operation_id"]
+        )
+        self.assertEqual(transport.calls, 1)
+        self.assertEqual(len(transport.idempotency_keys), 1)
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                "SELECT COUNT(*) FROM authority_attempt WHERE operation_id=%s",
+                [crashed_operation_id],
+            )
+            self.assertEqual(int(uow.cursor.fetchone()[0]), 1)
+            uow.cursor.execute(
+                """
+                SELECT qualification.provider_model_call_asset_version_id,
+                       qualification.provider_model_call_content_hash,
+                       qualification.provider_evidence_hash,
+                       qualification.provider_result_hash,
+                       qualification.provider_route_snapshot_id,
+                       generation.actor_id, evaluation.actor_id,
+                       qualification.evaluation_operation_id,
+                       qualification.evaluation_attempt_id
+                FROM authority_narrative_design_qualification AS qualification
+                JOIN authority_operation AS generation
+                  ON generation.operation_id=qualification.generation_operation_id
+                JOIN authority_operation AS evaluation
+                  ON evaluation.operation_id=qualification.evaluation_operation_id
+                WHERE qualification.project_id=%s
+                  AND qualification.asset_version_id=%s
+                  AND qualification.evaluator_execution_class='MODEL_PROVIDER'
+                """,
+                [self.project_id, candidate["asset_version_id"]],
+            )
+            rows = uow.cursor.fetchall()
+            qualification_id = str(
+                uow.cursor.execute(
+                    """
+                    SELECT qualification_id
+                    FROM authority_narrative_design_qualification
+                    WHERE project_id=%s AND asset_version_id=%s
+                      AND evaluator_execution_class='MODEL_PROVIDER'
+                    ORDER BY qualification_id
+                    LIMIT 1
+                    """,
+                    [self.project_id, candidate["asset_version_id"]],
+                ).fetchone()[0]
+            )
+        self.assertEqual(len(rows), 2)
+        self.assertTrue(all(str(row[0]) for row in rows))
+        self.assertTrue(all(str(row[1]).startswith("sha256:") for row in rows))
+        self.assertTrue(all(str(row[2]).startswith("sha256:") for row in rows))
+        self.assertTrue(all(str(row[3]).startswith("sha256:") for row in rows))
+        self.assertTrue(all(str(row[4]) for row in rows))
+        self.assertTrue(all(row[5] != row[6] for row in rows))
+        self.assertTrue(
+            all(str(row[7]) == first["evaluation_operation_id"] for row in rows)
+        )
+        self.assertTrue(
+            all(str(row[8]) == first["evaluation_attempt_id"] for row in rows)
+        )
+        with self.assertRaisesRegex(
+            Exception,
+            "Provider lineage does not match exact ModelCallLog",
+        ):
+            with AuthorityUnitOfWork(DATABASE_URL) as forged_uow:
+                forged_uow.cursor.execute(
+                    """
+                    INSERT INTO authority_narrative_design_qualification(
+                        qualification_id, project_id, book_id,
+                        asset_version_id, source_operation_id,
+                        candidate_content_hash, design_layer, profile_id,
+                        profile_version, profile_hash, capability_id, skill_ref,
+                        evaluator_execution_class, qualification_status,
+                        evaluation, evaluation_hash, qualification_hash,
+                        generation_operation_id, evaluation_operation_id,
+                        evaluation_attempt_id, evaluation_asset_version_id,
+                        evaluation_evidence_hash, trust_boundary,
+                        provider_model_call_asset_version_id,
+                        provider_model_call_content_hash,
+                        provider_evidence_hash, provider_result_hash,
+                        provider_route_snapshot_id
+                    )
+                    SELECT qualification_id || ':forged', project_id, book_id,
+                           asset_version_id, source_operation_id,
+                           candidate_content_hash, design_layer, profile_id,
+                           profile_version, profile_hash, capability_id, skill_ref,
+                           evaluator_execution_class, qualification_status,
+                           evaluation, 'sha256:' || repeat('f', 64),
+                           'sha256:' || repeat('e', 64),
+                           generation_operation_id, evaluation_operation_id,
+                           evaluation_attempt_id, evaluation_asset_version_id,
+                           evaluation_evidence_hash, trust_boundary,
+                           provider_model_call_asset_version_id,
+                           'sha256:' || repeat('d', 64),
+                           provider_evidence_hash, provider_result_hash,
+                           provider_route_snapshot_id
+                    FROM authority_narrative_design_qualification
+                    WHERE qualification_id=%s
+                    """,
+                    [qualification_id],
+                )
+
     def test_crash_after_business_commit_cannot_leave_partial_command(self) -> None:
         def fail_before_completion(checkpoint: str) -> None:
             if checkpoint == "before_operation_completion":
@@ -335,6 +707,7 @@ class BookDesignAuthorityPostgresTests(unittest.TestCase):
             application_build_id="book-design-integration",
             commit_sha="b" * 40,
             fault_injector=fail_before_completion,
+            allow_scripted_evaluation_fixture=True,
         )
         command = BookDesignAuthorityCommand(
             definition_name="book.create",
@@ -436,9 +809,8 @@ class BookDesignAuthorityPostgresTests(unittest.TestCase):
                 generation_operation_id=candidate["operation_id"],
                 generator_operation_name="book_design.propose",
                 candidate_content_hash=candidate["content_hash"],
-                evaluator_execution_class="OPERATOR_REVIEW",
-                evaluation=evaluation
-                or scripted_qualification("book_design.propose"),
+                evaluator_execution_class="SCRIPTED_FIXTURE",
+                evaluation=evaluation or scripted_qualification("book_design.propose"),
                 idempotency_key=(
                     f"design:evaluate:{candidate['asset_version_id']}:{idempotency_suffix}"
                 ),

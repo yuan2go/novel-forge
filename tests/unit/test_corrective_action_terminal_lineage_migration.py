@@ -9,6 +9,7 @@ from novel_forge.storage.migrations.versions import (
     v20260814_0089_progressive_narrative_design as progressive,
     v20260814_0090_progressive_replan_scopes as current_head,
     v20260814_0091_canonical_longform_runtime_completion as completion,
+    v20260814_0092_longform_correctness_closure as correctness,
 )
 
 
@@ -21,7 +22,8 @@ def test_terminal_lineage_is_a_forward_only_projection_fix() -> None:
     assert progressive.DOWN_REVISION == head.MIGRATION_ID
     assert current_head.DOWN_REVISION == progressive.MIGRATION_ID
     assert completion.DOWN_REVISION == current_head.MIGRATION_ID
-    assert LATEST_MIGRATION_ID == completion.MIGRATION_ID
+    assert correctness.DOWN_REVISION == completion.MIGRATION_ID
+    assert LATEST_MIGRATION_ID == correctness.MIGRATION_ID
     assert migration.DOWN_REVISION == previous.MIGRATION_ID
     assert migration.FORWARD_ONLY is True
     assert "MIGRATION_ONLY base projection" in sql

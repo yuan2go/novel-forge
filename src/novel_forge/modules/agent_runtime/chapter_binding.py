@@ -67,7 +67,11 @@ from novel_forge.storage.authority_asset_store import AuthorityAssetWriter
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 
-AGENT_BOUND_CHAPTER_STAGES = AGENT_MODEL_STAGES
+AGENT_BOUND_CHAPTER_STAGES = AGENT_MODEL_STAGES - {
+    # Semantic evaluation is a Story Design operation with its own Principal,
+    # binder, and Attempt; it is not a Chapter Agent node.
+    "narrative_semantic_evaluation"
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -161,9 +165,7 @@ class PostgresChapterAgentBindingRecorder:
                 )
 
             operation = _operation_snapshot(uow.cursor, request)
-            attempt_pack_snapshot = (
-                execution_binding.capability_pack_attempt_snapshot
-            )
+            attempt_pack_snapshot = execution_binding.capability_pack_attempt_snapshot
             pack_snapshot = (
                 attempt_pack_snapshot.execution_snapshot
                 if attempt_pack_snapshot is not None
@@ -173,11 +175,9 @@ class PostgresChapterAgentBindingRecorder:
                 node_binding = chapter_node_binding_from_snapshot(pack_snapshot)
             else:
                 try:
-                    node_binding = (
-                        uow.repositories.agent_runtime.resolve_active_chapter_node_binding(
-                            workflow_definition_ref=self.workflow_definition_ref,
-                            workflow_node_id=stage,
-                        )
+                    node_binding = uow.repositories.agent_runtime.resolve_active_chapter_node_binding(
+                        workflow_definition_ref=self.workflow_definition_ref,
+                        workflow_node_id=stage,
                     )
                 except KernelError as exc:
                     if (
@@ -271,12 +271,8 @@ class PostgresChapterAgentBindingRecorder:
                         "prompt_system_instruction_hash": contracts[
                             "prompt_system_instruction_hash"
                         ],
-                        "prompt_template_hash": contracts[
-                            "prompt_template_hash"
-                        ],
-                        "prompt_compiler_version": contracts[
-                            "prompt_compiler_version"
-                        ],
+                        "prompt_template_hash": contracts["prompt_template_hash"],
+                        "prompt_compiler_version": contracts["prompt_compiler_version"],
                         "skill_ref": contracts["skill_ref"],
                         "skill_content_hash": contracts["skill_content_hash"],
                         "governing_tool_policy_ref": contracts[
@@ -524,14 +520,10 @@ class PostgresChapterAgentBindingRecorder:
                     pack_snapshot.assignment_ref if pack_snapshot else ""
                 ),
                 capability_pack_attempt_snapshot_id=(
-                    attempt_pack_snapshot.snapshot_id
-                    if attempt_pack_snapshot
-                    else ""
+                    attempt_pack_snapshot.snapshot_id if attempt_pack_snapshot else ""
                 ),
                 capability_pack_attempt_snapshot_hash=(
-                    attempt_pack_snapshot.snapshot_hash
-                    if attempt_pack_snapshot
-                    else ""
+                    attempt_pack_snapshot.snapshot_hash if attempt_pack_snapshot else ""
                 ),
             )
             self.turn_coordinator.freeze_turn_in_uow(uow, work_order, runtime_binding)
@@ -908,9 +900,7 @@ def _execution_contracts(
         "prompt_bundle_ref": binding.route_snapshot.prompt_bundle_ref,
         "skill_bundle_ref": binding.route_snapshot.skill_bundle_ref,
         "tool_permission_snapshot_ref": f"production_execution/tool_permissions/{suffix}",
-        "evaluation_policy_ref": (
-            f"production_execution/validation_policies/{suffix}"
-        ),
+        "evaluation_policy_ref": (f"production_execution/validation_policies/{suffix}"),
     }
     frozen: dict[str, str] = {}
     documents: dict[str, Any] = {}

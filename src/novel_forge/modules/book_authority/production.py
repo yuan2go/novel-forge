@@ -756,8 +756,7 @@ class PostgresBookAuthority:
             command.chapter_plan_asset_version_id
         )
         if (
-            command.chapter_plan_content_hash
-            != execution_plan["source_content_hash"]
+            command.chapter_plan_content_hash != execution_plan["source_content_hash"]
             or command.execution_chapter_plan_asset_version_id
             != execution_plan["asset_version_id"]
             or command.execution_chapter_plan_content_hash
@@ -1830,7 +1829,8 @@ class PostgresBookAuthority:
                 SELECT project_id, workspace_id, book_id,
                        book_design_version, book_plan_version,
                        production_profile_version,
-                       current_volume_plan_version, active_arc_plan_versions,
+                       current_volume_plan_version,
+                       current_relevant_arc_plan_versions,
                        COALESCE(current_chapter_group_plan_version, ''),
                        reader_segment_version, reader_contract_version,
                        platform_profile_version, character_state_version,
@@ -2266,8 +2266,7 @@ class PostgresBookAuthority:
                     "structured_facts": [
                         fact
                         for fact in structured_facts
-                        if fact.get("provider_visibility")
-                        != "INTERNAL_QUALITY_ONLY"
+                        if fact.get("provider_visibility") != "INTERNAL_QUALITY_ONLY"
                     ],
                 },
                 ensure_ascii=False,
@@ -2624,8 +2623,7 @@ def _select_chapter_acceptance_outputs(
     if invalid_lineage:
         raise KernelError(
             "BOOK_CHAPTER_ACCEPTANCE_EVIDENCE_MISSING",
-            "final release asset lineage is incomplete: "
-            + ", ".join(invalid_lineage),
+            "final release asset lineage is incomplete: " + ", ".join(invalid_lineage),
         )
     selected.update(
         {

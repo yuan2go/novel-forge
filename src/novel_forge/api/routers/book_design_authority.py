@@ -1,4 +1,5 @@
 """Command/query API for the Book + BookDesign Track B vertical slice."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -59,9 +60,6 @@ class EvaluateBookDesignRequest(BaseModel):
     workspace_id: str = Field(min_length=1)
     generation_operation_id: str = Field(min_length=1)
     candidate_content_hash: str = Field(pattern=r"^sha256:")
-    evaluator_execution_class: str = Field(min_length=1)
-    evaluation: dict[str, Any]
-    evidence_asset_version_ids: list[str] = Field(default_factory=list)
     idempotency_key: str = Field(min_length=1)
     trace_id: str = Field(min_length=1)
     correlation_id: str = Field(min_length=1)
@@ -182,11 +180,7 @@ def create_router(context: ProductRouterContext) -> APIRouter:
                     generation_operation_id=request.generation_operation_id,
                     generator_operation_name="book_design.propose",
                     candidate_content_hash=request.candidate_content_hash,
-                    evaluator_execution_class=request.evaluator_execution_class,
-                    evaluation=request.evaluation,
-                    evidence_asset_version_ids=tuple(
-                        request.evidence_asset_version_ids
-                    ),
+                    evaluator_execution_class="MODEL_PROVIDER",
                     idempotency_key=request.idempotency_key,
                     trace_id=request.trace_id,
                     correlation_id=request.correlation_id,
@@ -249,8 +243,7 @@ def _principal(permission: str, project_id: str):
 
 def _narrative_evaluator_principal(project_id: str):
     principal = (
-        build_trusted_principal_resolver()
-        .resolve_narrative_evaluator_principal()
+        build_trusted_principal_resolver().resolve_narrative_evaluator_principal()
     )
     try:
         principal.require("narrative_design.evaluate", project_id)
@@ -259,12 +252,16 @@ def _narrative_evaluator_principal(project_id: str):
     return principal
 
 
-def _execute(application: Any, command: BookDesignAuthorityCommand, principal: Any) -> dict[str, Any]:
+def _execute(
+    application: Any, command: BookDesignAuthorityCommand, principal: Any
+) -> dict[str, Any]:
     try:
         return application.execute(command, principal=principal)
     except KernelError as exc:
         status = 409 if exc.code.endswith("CONFLICT") else 422
-        raise HTTPException(status_code=status, detail={"code": exc.code, "message": str(exc)}) from exc
+        raise HTTPException(
+            status_code=status, detail={"code": exc.code, "message": str(exc)}
+        ) from exc
 
 
 __all__ = ["create_router"]

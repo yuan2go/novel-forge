@@ -48,6 +48,7 @@ from .operation_catalog import (
     chapter_operation_definition_catalog,
     chapter_workflow_binding_catalog,
     governed_workflow_binding_catalog,
+    narrative_evaluation_workflow_binding_catalog,
     story_planning_workflow_binding_catalog,
 )
 from .semantic import SemanticResolution, validate_capability_pack_semantics
@@ -113,6 +114,7 @@ __all__ = [
     "chapter_operation_definition_catalog",
     "chapter_workflow_binding_catalog",
     "governed_workflow_binding_catalog",
+    "narrative_evaluation_workflow_binding_catalog",
     "story_planning_workflow_binding_catalog",
     "default_capability_type_catalog",
     "conservative_capability_type_policy",

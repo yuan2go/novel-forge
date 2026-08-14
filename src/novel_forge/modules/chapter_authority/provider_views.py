@@ -148,7 +148,47 @@ def build_provider_task_view(stage: str, inputs: Mapping[str, Any]) -> dict[str,
                 "PLANNING_PROVIDER_TASK_VIEW_INVALID",
                 "Planning Provider Task View requires the frozen planning command",
             )
-        return _task(stage, planning_command=_compact(command))
+        frozen_inputs = inputs.get("frozen_inputs")
+        authoritative_load = inputs.get("authoritative_narrative_load")
+        if not isinstance(frozen_inputs, list) or not frozen_inputs:
+            raise KernelError(
+                "PLANNING_PROVIDER_TASK_VIEW_INVALID",
+                "Planning Provider Task View requires frozen input lineage",
+            )
+        if (
+            not isinstance(authoritative_load, Mapping)
+            or not isinstance(authoritative_load.get("narrative_load_policy"), Mapping)
+            or not isinstance(
+                authoritative_load.get("narrative_load_projection"), Mapping
+            )
+        ):
+            raise KernelError(
+                "PLANNING_PROVIDER_TASK_VIEW_INVALID",
+                "Planning Provider Task View requires authoritative Narrative Load constraints",
+            )
+        return _task(
+            stage,
+            planning_command=_compact(command),
+            frozen_inputs=_compact(frozen_inputs),
+            authoritative_narrative_load=_compact(authoritative_load),
+        )
+    if stage == "narrative_semantic_evaluation":
+        profiles = inputs.get("qualification_profiles")
+        target = inputs.get("evaluation_target")
+        if (
+            not isinstance(profiles, list)
+            or not profiles
+            or not isinstance(target, Mapping)
+        ):
+            raise KernelError(
+                "NARRATIVE_EVALUATION_PROVIDER_TASK_INVALID",
+                "Semantic Evaluation requires frozen profiles and target lineage",
+            )
+        return _task(
+            stage,
+            evaluation_target=_compact(target),
+            qualification_profiles=_compact(profiles),
+        )
     if stage == "draft":
         return _task(
             stage,
@@ -198,9 +238,7 @@ def build_provider_task_view(stage: str, inputs: Mapping[str, Any]) -> dict[str,
             stage,
             chapter=int(inputs.get("chapter") or 0),
             book_id=str(inputs.get("book_id") or ""),
-            reader_contract_version=str(
-                inputs.get("reader_contract_version") or ""
-            ),
+            reader_contract_version=str(inputs.get("reader_contract_version") or ""),
             evaluation_profile_version=str(
                 inputs.get("evaluation_profile_version") or ""
             ),
@@ -346,6 +384,25 @@ def build_provider_context_view(
 
     if stage in _PLANNING_STAGES:
         return _build_planning_context_view(stage, context_bundle)
+    if stage == "narrative_semantic_evaluation":
+        selected = context_bundle.get("selected_inputs")
+        if not isinstance(selected, list) or len(selected) != 1:
+            raise KernelError(
+                "NARRATIVE_EVALUATION_PROVIDER_CONTEXT_INVALID",
+                "Semantic Evaluation requires exactly one frozen candidate projection",
+            )
+        return {
+            "contract_version": "provider-context-view-v2",
+            "schema_version": "novelos.narrative_evaluation_context_view.v1",
+            "stage": stage,
+            "source_isolation": "EXACT_CANDIDATE_ONLY",
+            "selected_inputs": _compact(selected),
+            "selection_explanation": {
+                "policy": "exact-immutable-candidate-only",
+                "selected_count": 1,
+                "omitted_count": 0,
+            },
+        }
     if stage == "reader_outcome":
         return _build_reader_outcome_context_view(context_bundle)
     correctness = context_bundle.get("context_correctness")
@@ -365,8 +422,7 @@ def build_provider_context_view(
             "REQUIRED_LONG_DISTANCE_FACT_PRESENT",
         }
         if (
-            correctness.get("contract_version")
-            != "context-correctness-receipt-v1"
+            correctness.get("contract_version") != "context-correctness-receipt-v1"
             or correctness.get("overall_status") != "PASS"
             or not isinstance(checks, Mapping)
             or set(checks) != required_checks
@@ -457,8 +513,7 @@ def build_provider_context_view(
             selected_facts = [
                 item
                 for item in facts
-                if item.get("provider_visibility")
-                != "INTERNAL_QUALITY_ONLY"
+                if item.get("provider_visibility") != "INTERNAL_QUALITY_ONLY"
                 if _state_fact_relevant(
                     item,
                     selectors,

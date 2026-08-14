@@ -99,6 +99,7 @@ _STAGES = frozenset(
         "quality_longform",
         "quality_platform",
         "reader_outcome",
+        "narrative_semantic_evaluation",
     }
 )
 
@@ -124,6 +125,7 @@ _STAGE_CAPABILITIES = {
     "quality_longform": CapabilityId.QUALITY_INTRINSIC_JUDGE,
     "quality_platform": CapabilityId.QUALITY_PLATFORM_JUDGE,
     "reader_outcome": CapabilityId.QUALITY_READER_OUTCOME_JUDGE,
+    "narrative_semantic_evaluation": CapabilityId.QUALITY_INTRINSIC_JUDGE,
 }
 
 
@@ -402,8 +404,10 @@ class PostgresChapterExecutionContractBinder:
                 "CHAPTER_CAPABILITY_TOOL_UNAUTHORIZED",
                 "Capability Pack does not authorize model.provider.invoke for this stage",
             )
-        provider_schema = chapter_provider_output_schema(stage)
-        provider_schema_ref = chapter_provider_output_schema_ref(stage)
+        provider_schema, provider_schema_ref = self._provider_output_contract(
+            stage=stage,
+            request_payload=request_payload,
+        )
         schema_hash = canonical_hash(provider_schema)
         contract_without_hash: dict[str, Any] = {
             "schema_version": "novelos.chapter_capability_materialization.v1",
@@ -527,6 +531,17 @@ class PostgresChapterExecutionContractBinder:
             effect_binding=effect_binding,
         )
 
+    def _provider_output_contract(
+        self,
+        *,
+        stage: str,
+        request_payload: Mapping[str, Any],
+    ) -> tuple[dict[str, Any], str]:
+        del request_payload
+        return chapter_provider_output_schema(
+            stage
+        ), chapter_provider_output_schema_ref(stage)
+
     def bind(
         self,
         *,
@@ -571,13 +586,12 @@ class PostgresChapterExecutionContractBinder:
         definition = default_capability_registry().resolve(
             chapter_stage_capability(stage)
         )
-        target_scope = {
-            "scope_kind": "chapter",
-            "scope_id": f"{book_id}:chapter:{chapter}",
-            "project_id": project_id,
-            "book_id": book_id,
-            "chapter_number": chapter,
-        }
+        target_scope = self._target_scope(
+            metadata=metadata,
+            project_id=project_id,
+            book_id=book_id,
+            chapter=chapter,
+        )
         artifacts = self._artifacts(metadata)
         capability_runtime = metadata.get("capability_runtime")
         attempt_pack_snapshot: CapabilityPackAttemptSnapshot | None = None
@@ -698,6 +712,8 @@ class PostgresChapterExecutionContractBinder:
                 "draft_chapter",
                 "review_report",
                 "revision_patch",
+                "book_design",
+                "planning_generation_candidate",
             )
         else:
             context_policy_ref = pack_snapshot.context_policy_ref
@@ -775,6 +791,8 @@ class PostgresChapterExecutionContractBinder:
                 if stage.startswith("quality_")
                 else "reader_outcome_candidate"
                 if stage == "reader_outcome"
+                else "narrative_semantic_evaluation_candidate"
+                if stage == "narrative_semantic_evaluation"
                 else "review_candidate"
             ),
             requires_validation_manifest=True,
@@ -1090,14 +1108,18 @@ class PostgresChapterExecutionContractBinder:
             route_snapshot_id=route_ref,
             workspace_snapshot_ref=workspace_id,
             input_manifest_ref=input_ref,
-            resource_claims=(f"chapter:{chapter}", f"stage:{stage}"),
+            resource_claims=self._resource_claims(
+                metadata=metadata,
+                chapter=chapter,
+                stage=stage,
+            ),
             timeout_policy_ref=definition.timeout_policy_ref,
             budget_policy_ref=definition.budget_policy_ref,
             permission_policy_ref=definition.permission_policy_ref,
             validation_policy_ref=definition.validation_policy_ref,
             commit_policy_ref=definition.commit_policy_ref,
             stable_idempotency_key=stable_idempotency_key,
-            origin_chain=("chapter.slice.run", graph["definition_name"]),
+            origin_chain=self._origin_chain(graph=graph, stage=stage),
             trace_id=str(request_payload.get("trace_id") or ""),
             correlation_id=str(request_payload.get("correlation_id") or ""),
             external_effect_id=external_effect_id,
@@ -1109,6 +1131,38 @@ class PostgresChapterExecutionContractBinder:
             manifest,
             attempt_pack_snapshot,
         )
+
+    def _target_scope(
+        self,
+        *,
+        metadata: Mapping[str, Any],
+        project_id: str,
+        book_id: str,
+        chapter: int,
+    ) -> dict[str, Any]:
+        del metadata
+        return {
+            "scope_kind": "chapter",
+            "scope_id": f"{book_id}:chapter:{chapter}",
+            "project_id": project_id,
+            "book_id": book_id,
+            "chapter_number": chapter,
+        }
+
+    def _resource_claims(
+        self,
+        *,
+        metadata: Mapping[str, Any],
+        chapter: int,
+        stage: str,
+    ) -> tuple[str, ...]:
+        del metadata
+        return (f"chapter:{chapter}", f"stage:{stage}")
+
+    @staticmethod
+    def _origin_chain(*, graph: Mapping[str, str], stage: str) -> tuple[str, ...]:
+        del stage
+        return ("chapter.slice.run", graph["definition_name"])
 
     @staticmethod
     def _artifacts(metadata: Mapping[str, Any]) -> tuple[ArtifactPointer, ...]:
@@ -2014,6 +2068,16 @@ def _language_semantic_contract(required_language: str | None) -> str:
 def _stage_semantic_contract(
     stage: str, *, required_language: str | None = None
 ) -> str:
+    if stage == "narrative_semantic_evaluation":
+        return (
+            "Independently evaluate only the immutable candidate against every frozen "
+            "qualification profile and criterion. Copy layer, profile_id, "
+            "profile_version, profile_hash, capability_id, skill_ref, criterion, and "
+            "candidate evidence identities exactly. Return one verdict per criterion. "
+            "A non-PASS verdict must include a concrete repair_directive; PASS must "
+            "leave repair_directive empty. Do not activate, revise, or replace the "
+            "candidate, and do not infer evidence outside the frozen candidate."
+        )
     if stage in _PLANNING_STAGES:
         contract = (
             "Return only the planning candidate defined by the frozen output schema. "

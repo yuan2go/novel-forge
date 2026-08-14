@@ -28,6 +28,11 @@ from novel_forge.modules.story_planning_runtime.domain import (
 from novel_forge.modules.story_design_authority import (
     required_qualification_profiles,
 )
+from novel_forge.modules.story_design_authority.evaluation_runtime import (
+    NARRATIVE_EVALUATION_DEFINITION,
+    NARRATIVE_EVALUATION_HANDLER,
+    NARRATIVE_EVALUATION_VERSION,
+)
 
 
 _BASE_PACK = "config/capability_packs/chapter_generation_pack.json"
@@ -301,6 +306,120 @@ def build_reader_outcome_pack_profile(
     )
 
 
+def build_narrative_evaluation_pack_profile(
+    repository_root: str | Path,
+    *,
+    operation_definition_hash: str,
+    pack_id: str = "narrative_semantic_evaluation_pack",
+) -> LongformCapabilityPackProfile:
+    """Build the evaluator-owned Pack used by every design candidate stage."""
+
+    root, manifest, artifacts = _base(repository_root, pack_id)
+    _require_hash(operation_definition_hash)
+    template = next(
+        item
+        for item in manifest["workflow_template"]["nodes"]
+        if item.get("agent_definition_ref")
+    )
+    node = deepcopy(template)
+    node.update(
+        node_id="narrative_semantic_evaluation",
+        operation_name=NARRATIVE_EVALUATION_DEFINITION,
+        operation_definition_ref=(
+            f"{NARRATIVE_EVALUATION_DEFINITION}@{NARRATIVE_EVALUATION_VERSION}"
+        ),
+        operation_definition_hash=operation_definition_hash,
+        handler_key=NARRATIVE_EVALUATION_HANDLER,
+        stage="narrative_semantic_evaluation",
+        capability_id="quality.intrinsic.judge",
+        agent_definition_ref="narrative-semantic-evaluator@1",
+        input_asset_types=[
+            "book_design",
+            "planning_generation_candidate",
+            "context_bundle",
+        ],
+        output_asset_types=["narrative_design_evaluation"],
+        depends_on=[],
+        commit_authority="STORY_DESIGN_AUTHORITY",
+        retry_policy={
+            "max_attempts": 3,
+            "retryable_errors": [],
+            "dead_letter_on_exhausted": True,
+        },
+        timeout_policy_ref="timeout:quality-intrinsic-judge:v1",
+    )
+    manifest["identity"].update(
+        name="Narrative Semantic Evaluation Pack",
+        domain="story_design",
+        description=(
+            "Independent governed semantic evaluation for immutable design candidates."
+        ),
+    )
+    manifest["compatibility"]["required_capabilities"] = [
+        "quality.intrinsic.judge",
+        "quality.originality.judge",
+    ]
+    manifest["workflow_template"].update(
+        workflow_id="story_design_semantic_evaluation",
+        workflow_version=NARRATIVE_EVALUATION_VERSION,
+        nodes=[node],
+        completion={
+            "required_terminal_nodes": ["narrative_semantic_evaluation"],
+            "required_evidence": ["trace", "audit", "model_call_log"],
+            "required_output_asset_types": ["narrative_design_evaluation"],
+        },
+    )
+    manifest["context_sources"]["allowed_asset_types"] = [
+        "book_design",
+        "planning_generation_candidate",
+        "context_bundle",
+    ]
+    manifest["tool_permissions"]["tools"] = [
+        {
+            **manifest["tool_permissions"]["tools"][0],
+            "allowed_operations": ["narrative_semantic_evaluation"],
+        }
+    ]
+    manifest["evaluation"]["required_gates"] = [
+        {
+            "gate_id": "narrative_evaluation_source_isolation",
+            "judge_capability_id": "quality.originality.judge",
+            "blocking": True,
+            "threshold": 1,
+            "required_evidence": ["narrative_design_evaluation"],
+        }
+    ]
+    manifest["evaluation"]["metrics"] = []
+    artifacts = _bind_domain_artifacts(
+        root,
+        manifest,
+        artifacts,
+        skill_ref="quality-review",
+        skill_version="quality-review-narrative-evaluator-v1",
+        skill_path="skills/quality-review/SKILL.md",
+        system_ref="prompt-system:narrative-semantic-evaluation-pack",
+        system_path=(
+            "config/capability_packs/artifacts/"
+            "narrative_evaluation_system_instruction.md"
+        ),
+        template_ref="prompt-template:narrative-semantic-evaluation-pack",
+        template_path=(
+            "config/capability_packs/artifacts/narrative_evaluation_template.md"
+        ),
+        input_schema_ref="schema:narrative-semantic-evaluation-pack-input:v1",
+        output_schema_ref="schema:narrative-semantic-evaluation-pack-output:v1",
+    )
+    _update_policy_artifacts(manifest, artifacts)
+    _append_capability_schemas(artifacts, "quality.intrinsic.judge")
+    return LongformCapabilityPackProfile(
+        pack_id,
+        f"story_design_semantic_evaluation@{NARRATIVE_EVALUATION_VERSION}",
+        manifest,
+        _catalog(artifacts),
+        "quality-review",
+    )
+
+
 def _base(
     repository_root: str | Path, pack_id: str
 ) -> tuple[Path, dict[str, Any], list[dict[str, Any]]]:
@@ -416,8 +535,7 @@ def _bind_planning_qualification_skills(
         "chapter-outline": "skills/chapter-outline/SKILL.md",
     }
     bindings = {
-        str(item["skill_ref"]): item
-        for item in manifest["skill_binding"]["skills"]
+        str(item["skill_ref"]): item for item in manifest["skill_binding"]["skills"]
     }
     required = {
         profile.skill_ref
@@ -457,9 +575,7 @@ def _bind_planning_qualification_skills(
             "max_invocations_per_run": 1,
             "drift_policy": "FAIL_CLOSED",
         }
-    manifest["skill_binding"]["skills"] = [
-        bindings[key] for key in sorted(bindings)
-    ]
+    manifest["skill_binding"]["skills"] = [bindings[key] for key in sorted(bindings)]
     return artifacts
 
 
@@ -542,6 +658,7 @@ def _require_hash(value: str) -> None:
 __all__ = [
     "LongformCapabilityPackProfile",
     "STORY_PLANNING_PROMPT_VERSION",
+    "build_narrative_evaluation_pack_profile",
     "build_reader_outcome_pack_profile",
     "build_story_planning_pack_profile",
 ]

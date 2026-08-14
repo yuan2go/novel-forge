@@ -93,21 +93,21 @@ class ResolveBookProductionInputCommand:
         override_roles = [
             role for role, _version_id in self.role_asset_version_overrides
         ]
-        initial_roles = set(override_roles) & set(
-            _OPTIONAL_INITIAL_STATE_ROLE_TYPES
-        )
+        initial_roles = set(override_roles) & set(_OPTIONAL_INITIAL_STATE_ROLE_TYPES)
         if (
             len(override_roles) != len(set(override_roles))
             or any(
-                role
-                not in {*_ACTIVE_ROLE_TYPES, *_OPTIONAL_INITIAL_STATE_ROLE_TYPES}
+                role not in {*_ACTIVE_ROLE_TYPES, *_OPTIONAL_INITIAL_STATE_ROLE_TYPES}
                 for role in override_roles
             )
             or any(
                 not role.strip() or not version_id.strip()
                 for role, version_id in self.role_asset_version_overrides
             )
-            or (initial_roles and initial_roles != set(_OPTIONAL_INITIAL_STATE_ROLE_TYPES))
+            or (
+                initial_roles
+                and initial_roles != set(_OPTIONAL_INITIAL_STATE_ROLE_TYPES)
+            )
         ):
             raise ValueError("Book Production role overrides are invalid")
 
@@ -125,6 +125,8 @@ class BookProductionInputSnapshot:
     book_plan_version: str
     current_volume_plan_version: str
     volume_portfolio_plan_versions: tuple[str, ...]
+    arc_portfolio_plan_versions: tuple[str, ...]
+    current_relevant_arc_plan_versions: tuple[str, ...]
     active_arc_plan_versions: tuple[str, ...]
     current_chapter_group_plan_version: str
     production_profile_version: str
@@ -157,6 +159,7 @@ class BookProductionInputResolver:
         *,
         application_build_id: str,
         commit_sha: str,
+        allow_scripted_qualification_fixture: bool = False,
     ) -> None:
         if not database_url or not application_build_id or len(commit_sha) != 40:
             raise ValueError(
@@ -165,6 +168,9 @@ class BookProductionInputResolver:
         self.database_url = database_url
         self.application_build_id = application_build_id
         self.commit_sha = commit_sha
+        self.allow_scripted_qualification_fixture = (
+            allow_scripted_qualification_fixture
+        )
 
     def resolve(
         self,
@@ -232,6 +238,8 @@ class BookProductionInputResolver:
                        book_design_version, book_plan_version,
                        current_volume_plan_version,
                        volume_portfolio_plan_versions,
+                       arc_portfolio_plan_versions,
+                       current_relevant_arc_plan_versions,
                        active_arc_plan_versions,
                        COALESCE(current_chapter_group_plan_version, ''),
                        production_profile_version, reader_segment_version,
@@ -265,6 +273,8 @@ class BookProductionInputResolver:
         values = dict(zip(names, row, strict=True))
         for name in (
             "volume_portfolio_plan_versions",
+            "arc_portfolio_plan_versions",
+            "current_relevant_arc_plan_versions",
             "active_arc_plan_versions",
             "capability_pack_deployment_refs",
         ):
@@ -323,6 +333,8 @@ class BookProductionInputResolver:
                 book_record_version,
                 book_design_version, book_plan_version,
                 current_volume_plan_version, volume_portfolio_plan_versions,
+                arc_portfolio_plan_versions,
+                current_relevant_arc_plan_versions,
                 active_arc_plan_versions,
                 current_chapter_group_plan_version,
                 production_profile_version, reader_segment_version,
@@ -335,8 +347,9 @@ class BookProductionInputResolver:
                 capability_pack_deployment_refs,
                 release_sha, snapshot_hash, resolved_by_operation_id
             ) VALUES (
-                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NULLIF(%s, ''),
-                %s, %s, %s, %s, %s, %s, %s, %s, %s, NULLIF(%s, ''),
+                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                NULLIF(%s, ''), %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                NULLIF(%s, ''),
                 NULLIF(%s, ''), %s, %s, %s, %s, %s, %s, %s
             ) ON CONFLICT (snapshot_hash) DO NOTHING
             """,
@@ -352,6 +365,8 @@ class BookProductionInputResolver:
                 resolved["book_plan_version"],
                 resolved["current_volume_plan_version"],
                 Jsonb(resolved["volume_portfolio_plan_versions"]),
+                Jsonb(resolved["arc_portfolio_plan_versions"]),
+                Jsonb(resolved["current_relevant_arc_plan_versions"]),
                 Jsonb(resolved["active_arc_plan_versions"]),
                 resolved["current_chapter_group_plan_version"],
                 resolved["production_profile_version"],
@@ -393,12 +408,8 @@ class BookProductionInputResolver:
                     "snapshot_hash": resolved["snapshot_hash"],
                     "book_id": command.book_id,
                     "narrative_chapter_cursor": command.narrative_chapter_cursor,
-                    "design_admission_status": resolved[
-                        "design_admission_status"
-                    ],
-                    "design_qualification_hash": resolved[
-                        "design_qualification_hash"
-                    ],
+                    "design_admission_status": resolved["design_admission_status"],
+                    "design_qualification_hash": resolved["design_qualification_hash"],
                 },
             }
         )
@@ -471,6 +482,9 @@ class BookProductionInputResolver:
             plans["VOLUME"], chapter_cursor=command.narrative_chapter_cursor
         )
         self._validate_plan_hierarchy(plans, current_volume=current_volume)
+        current_relevant_arcs = self._select_current_relevant_arcs(
+            plans["ARC"], current_volume=current_volume
+        )
         book_design = self._asset_content(cursor, str(book[1]), command.project_id)
         book_plan = plans["BOOK"][0]
         self._validate_design_plan_compatibility(
@@ -499,9 +513,11 @@ class BookProductionInputResolver:
             "volume_portfolio_plan_versions": [
                 item["asset_version_id"] for item in plans["VOLUME"]
             ],
-            "active_arc_plan_versions": sorted(
+            "arc_portfolio_plan_versions": [
                 item["asset_version_id"] for item in plans["ARC"]
-            ),
+            ],
+            "current_relevant_arc_plan_versions": list(current_relevant_arcs),
+            "active_arc_plan_versions": list(current_relevant_arcs),
             "current_chapter_group_plan_version": (
                 plans["CHAPTER_GROUP"][0]["asset_version_id"]
                 if plans["CHAPTER_GROUP"]
@@ -554,8 +570,8 @@ class BookProductionInputResolver:
                 "Narrative chapter cursor differs from accepted Book Authority history",
             )
 
-    @staticmethod
     def _longform_design_qualification(
+        self,
         cursor: Any,
         *,
         command: ResolveBookProductionInputCommand,
@@ -601,12 +617,34 @@ class BookProductionInputResolver:
               AND qualification.asset_version_id=ANY(%s)
               AND qualification.qualification_status='PASS'
               AND qualification.trust_boundary='INDEPENDENT'
+              AND (
+                    qualification.evaluator_execution_class='MODEL_PROVIDER'
+                    OR (
+                        %s
+                        AND qualification.evaluator_execution_class='SCRIPTED_FIXTURE'
+                    )
+                  )
+              AND (
+                    qualification.evaluator_execution_class<>'MODEL_PROVIDER'
+                    OR (
+                        qualification.provider_model_call_asset_version_id IS NOT NULL
+                        AND qualification.provider_model_call_content_hash IS NOT NULL
+                        AND qualification.provider_evidence_hash IS NOT NULL
+                        AND qualification.provider_result_hash IS NOT NULL
+                        AND qualification.provider_route_snapshot_id IS NOT NULL
+                    )
+                  )
               AND operation.status IN ('WAITING_GATE', 'SUCCEEDED')
             ORDER BY qualification.asset_version_id,
                      qualification.design_layer,
                      qualification.created_at
             """,
-            [command.project_id, command.book_id, version_ids],
+            [
+                command.project_id,
+                command.book_id,
+                version_ids,
+                self.allow_scripted_qualification_fixture,
+            ],
         )
         rows = cursor.fetchall()
         by_identity: dict[tuple[str, str], list[Any]] = {}
@@ -698,10 +736,8 @@ class BookProductionInputResolver:
             or canon.get("book_id") != book_id
             or int(story.get("accepted_through_chapter", -1)) != 0
             or int(canon.get("accepted_through_chapter", -1)) != 0
-            or story.get("initial_state_boundary")
-            != "BOOK_PRODUCTION_INPUT_SNAPSHOT"
-            or canon.get("initial_state_boundary")
-            != "BOOK_PRODUCTION_INPUT_SNAPSHOT"
+            or story.get("initial_state_boundary") != "BOOK_PRODUCTION_INPUT_SNAPSHOT"
+            or canon.get("initial_state_boundary") != "BOOK_PRODUCTION_INPUT_SNAPSHOT"
             or not str(story.get("campaign_contract_identity") or "").startswith(
                 "sha256:"
             )
@@ -839,15 +875,38 @@ class BookProductionInputResolver:
             spans = [
                 str(item) for item in arc["content"].get("cross_volume_scope") or ()
             ]
-            portfolio = {item["asset_version_id"] for item in plans["VOLUME"]}
-            if spans and (
-                current_volume["asset_version_id"] not in spans
+            portfolio_order = [item["asset_version_id"] for item in plans["VOLUME"]]
+            portfolio = set(portfolio_order)
+            if (
+                not spans
+                or len(spans) != len(set(spans))
                 or not set(spans).issubset(portfolio)
+                or spans != [item for item in portfolio_order if item in set(spans)]
             ):
                 raise KernelError(
                     "BOOK_PRODUCTION_ARC_VOLUME_INVALID",
-                    "active ArcPlan scope must bind the current Volume and only Portfolio members",
+                    "Canonical Arc scope must be a non-empty ordered subset of the Volume Portfolio",
                 )
+
+    @staticmethod
+    def _select_current_relevant_arcs(
+        arcs: list[dict[str, Any]],
+        *,
+        current_volume: dict[str, Any],
+    ) -> tuple[str, ...]:
+        current_id = str(current_volume["asset_version_id"])
+        relevant = tuple(
+            str(arc["asset_version_id"])
+            for arc in arcs
+            if current_id
+            in {str(item) for item in arc["content"].get("cross_volume_scope") or ()}
+        )
+        if not relevant:
+            raise KernelError(
+                "BOOK_PRODUCTION_CURRENT_ARC_MISSING",
+                "current Volume has no narratively relevant Canonical Arc",
+            )
+        return relevant
 
     @staticmethod
     def _validate_design_plan_compatibility(
@@ -1062,10 +1121,8 @@ class BookProductionInputResolver:
             *_OPTIONAL_INITIAL_STATE_ROLE_TYPES.keys(),
         )
         values = [str(snapshot[key]) for key in scalar if snapshot.get(key)]
-        values.extend(
-            str(item) for item in snapshot["volume_portfolio_plan_versions"]
-        )
-        values.extend(str(item) for item in snapshot["active_arc_plan_versions"])
+        values.extend(str(item) for item in snapshot["volume_portfolio_plan_versions"])
+        values.extend(str(item) for item in snapshot["arc_portfolio_plan_versions"])
         return tuple(dict.fromkeys(values))
 
     def _input_assets(

@@ -19,6 +19,7 @@ CHAPTER_PROVIDER_ENVIRONMENT_KEYS = (
     "NOVEL_FORGE_CANON_EXTRACTION_PROVIDER",
     "NOVEL_FORGE_QUALITY_PROVIDER",
     "NOVEL_FORGE_READER_OUTCOME_PROVIDER",
+    "NOVEL_FORGE_NARRATIVE_EVALUATOR_PROVIDER",
 )
 
 
@@ -62,9 +63,7 @@ def build_provider_adapter_registry(
             raise RuntimeError(
                 "OpenAI Provider composition requires the OPENAI_API_KEY secret"
             )
-        factory.register(
-            "openai", lambda: build_openai_provider_adapter(api_key)
-        )
+        factory.register("openai", lambda: build_openai_provider_adapter(api_key))
     try:
         return factory.build_registry(adapter_ids)
     except ValueError as exc:

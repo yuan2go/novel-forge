@@ -2,8 +2,12 @@ from pathlib import Path
 
 from novel_forge.modules.capability_packs.longform_profiles import (
     STORY_PLANNING_PROMPT_VERSION,
+    build_narrative_evaluation_pack_profile,
     build_reader_outcome_pack_profile,
     build_story_planning_pack_profile,
+)
+from novel_forge.modules.capability_packs.operation_catalog import (
+    narrative_evaluation_workflow_binding_catalog,
 )
 from novel_forge.modules.capability_packs.operation_catalog import (
     story_planning_workflow_binding_catalog,
@@ -19,6 +23,29 @@ from novel_forge.modules.story_planning_runtime import (
 
 
 ROOT = Path(__file__).resolve().parents[2]
+
+
+def test_narrative_evaluation_profile_is_independent_provider_pack() -> None:
+    profile = build_narrative_evaluation_pack_profile(
+        ROOT,
+        operation_definition_hash="sha256:" + "c" * 64,
+    )
+
+    assert profile.pack_id == "narrative_semantic_evaluation_pack"
+    assert profile.workflow_ref == "story_design_semantic_evaluation@1.0.0"
+    assert profile.manifest["identity"]["domain"] == "story_design"
+    assert profile.agent_skill_ref == "quality-review"
+    assert [
+        item["node_id"] for item in profile.manifest["workflow_template"]["nodes"]
+    ] == ["narrative_semantic_evaluation"]
+    assert profile.manifest["tool_permissions"]["tools"][0]["allowed_operations"] == [
+        "narrative_semantic_evaluation"
+    ]
+    binding = narrative_evaluation_workflow_binding_catalog().resolve(
+        "narrative_semantic_evaluation"
+    )
+    assert binding.operation_name == "story_design.semantic_evaluate"
+    assert binding.primary_output_asset_type == "narrative_design_evaluation"
 
 
 def test_story_planning_profile_is_domain_owned_and_five_stage() -> None:

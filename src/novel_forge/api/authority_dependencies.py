@@ -86,6 +86,10 @@ from novel_forge.modules.story_planning_runtime import (
 from novel_forge.modules.story_planning_runtime.execution import (
     planning_fixture_response,
 )
+from novel_forge.modules.story_design_authority.evaluation_execution import (
+    GatewayNarrativeSemanticEvaluationExecutionPort,
+    PostgresNarrativeEvaluationExecutionContractBinder,
+)
 from novel_forge.modules.source_import.execution_contracts import (
     CLASSIFICATION_STAGE,
     DECONSTRUCTION_STAGE,
@@ -178,6 +182,7 @@ _PACK_SKILL_FOR_STAGE = {
     "quality_longform": "quality-review",
     "quality_platform": "quality-review",
     "reader_outcome": "quality-review",
+    "narrative_semantic_evaluation": "quality-review",
 }
 
 
@@ -227,16 +232,62 @@ def authority_release_identity(
     return build_id, commit_sha
 
 
+def _scripted_narrative_evaluation_fixture_enabled(
+    runtime_environment: RuntimeEnvironment,
+    values: Mapping[str, str],
+) -> bool:
+    """Require an explicit test-only switch for scripted semantic receipts.
+
+    ``development`` may use other deterministic fixtures, but a Narrative
+    Qualification can admit canonical production input.  It therefore needs a
+    narrower boundary than the general runtime fixture flag.
+    """
+
+    explicit = str(
+        values.get("NOVEL_FORGE_TEST_ALLOW_SCRIPTED_NARRATIVE_EVALUATION_FIXTURE")
+        or ""
+    ).strip().lower()
+    return runtime_environment is RuntimeEnvironment.TEST and explicit in {
+        "1",
+        "true",
+        "yes",
+    }
+
+
 def build_book_design_authority_application(
     settings: IndustrialSettings,
+    *,
+    execution: ProductionExecutionComposition,
+    env: Mapping[str, str] | None = None,
 ) -> BookDesignAuthorityApplication:
     if settings.storage_authority != "postgresql" or not settings.database_url:
         raise RuntimeError("BookDesign Authority requires PostgreSQL authority")
-    build_id, commit_sha = authority_release_identity()
+    values = os.environ if env is None else env
+    build_id, commit_sha = authority_release_identity(env=values)
+    runtime_environment = RuntimeEnvironment.parse(
+        str(values.get("NOVEL_FORGE_ENVIRONMENT") or settings.environment)
+    )
     return BookDesignAuthorityApplication(
         settings.database_url,
         application_build_id=build_id,
         commit_sha=commit_sha,
+        semantic_evaluation_execution_port=(
+            build_narrative_semantic_evaluation_execution_port(
+                settings,
+                execution=execution,
+                env=values,
+            )
+        ),
+        allow_scripted_evaluation_fixture=(
+            _scripted_narrative_evaluation_fixture_enabled(
+                runtime_environment, values
+            )
+        ),
+        narrative_evaluator_principal=(
+            build_trusted_principal_resolver(
+                env=values
+            ).resolve_narrative_evaluator_principal()
+        ),
     )
 
 
@@ -330,10 +381,27 @@ def build_production_execution_composition(
             "NOVEL_FORGE_READER_OUTCOME_PROVIDER",
             "NOVEL_FORGE_READER_OUTCOME_MODEL",
         ),
+        (
+            "narrative_semantic_evaluation",
+            "NOVEL_FORGE_NARRATIVE_EVALUATOR_PROVIDER",
+            "NOVEL_FORGE_NARRATIVE_EVALUATOR_MODEL",
+        ),
     ):
         capability_definition = default_capability_registry().resolve(
             chapter_stage_capability(stage)
         )
+        if stage == "narrative_semantic_evaluation" and controlled:
+            if not all(
+                str(values.get(key) or "").strip()
+                for key in (
+                    provider_key,
+                    model_key,
+                    "NOVEL_FORGE_NARRATIVE_SEMANTIC_EVALUATION_REASONING_EFFORT",
+                )
+            ):
+                raise RuntimeError(
+                    "controlled Narrative Evaluator requires an explicit Provider, model, and reasoning effort"
+                )
         provider = str(
             values.get(provider_key)
             or (
@@ -342,7 +410,8 @@ def build_production_execution_composition(
                 else values.get("NOVEL_FORGE_REVISION_PROVIDER")
                 if stage == "canon_extraction"
                 else values.get("NOVEL_FORGE_REVIEW_PROVIDER")
-                if stage.startswith("quality_") or stage == "reader_outcome"
+                if stage.startswith("quality_")
+                or stage in {"reader_outcome", "narrative_semantic_evaluation"}
                 else ""
             )
             or values.get("NOVEL_FORGE_MODEL_PROVIDER")
@@ -361,7 +430,8 @@ def build_production_execution_composition(
                 else values.get("NOVEL_FORGE_REVISION_MODEL")
                 if stage == "canon_extraction"
                 else values.get("NOVEL_FORGE_REVIEW_MODEL")
-                if stage.startswith("quality_") or stage == "reader_outcome"
+                if stage.startswith("quality_")
+                or stage in {"reader_outcome", "narrative_semantic_evaluation"}
                 else ""
             )
             or ""
@@ -454,7 +524,11 @@ def build_production_execution_composition(
                 ),
                 qualification_ref=qualification_ref,
             )
-        profile_id = f"chapter.{stage}.default"
+        profile_id = (
+            "story-design.narrative-semantic-evaluator.default"
+            if stage == "narrative_semantic_evaluation"
+            else f"chapter.{stage}.default"
+        )
         profile = ModelProfile(
             profile_id=profile_id,
             profile_version=1,
@@ -471,13 +545,25 @@ def build_production_execution_composition(
             capability_probe_ref=qualification_ref,
         )
         policy = RoutePolicy(
-            policy_id=f"chapter.{stage}.route",
+            policy_id=(
+                "story-design.narrative-semantic-evaluator.route"
+                if stage == "narrative_semantic_evaluation"
+                else f"chapter.{stage}.route"
+            ),
             policy_version=1,
             default_model_profile_id=profile_id,
             allowed_model_profile_ids=(profile_id,),
-            rule_set_ref=f"route-rules:chapter:{stage}:v1",
+            rule_set_ref=(
+                "route-rules:story-design:narrative-semantic-evaluator:v1"
+                if stage == "narrative_semantic_evaluation"
+                else f"route-rules:chapter:{stage}:v1"
+            ),
             fallback_policy="FAIL_CLOSED",
-            fallback_policy_ref=f"chapter.{stage}.fail-closed",
+            fallback_policy_ref=(
+                "story-design.narrative-semantic-evaluator.fail-closed"
+                if stage == "narrative_semantic_evaluation"
+                else f"chapter.{stage}.fail-closed"
+            ),
             fallback_policy_version=1,
             reasoning_downgrade_policy="PROHIBITED",
             status="ACTIVE",
@@ -708,6 +794,7 @@ def build_production_execution_composition(
             "arc_plan.generate",
             "chapter_group_plan.generate",
             "chapter_plan.generate",
+            "narrative_semantic_evaluation",
         }:
             return validated
         semantic = validate_chapter_provider_output_semantics(stage, validated)
@@ -1275,6 +1362,17 @@ def build_book_production_composition(
         settings.database_url,
         application_build_id=authority.application_build_id,
         commit_sha=authority.commit_sha,
+        allow_scripted_qualification_fixture=(
+            _scripted_narrative_evaluation_fixture_enabled(
+                RuntimeEnvironment.parse(
+                    str(
+                        values.get("NOVEL_FORGE_ENVIRONMENT")
+                        or settings.environment
+                    )
+                ),
+                values,
+            )
+        ),
     )
     query = PostgresBookProductionQuery(settings.database_url)
     replan = BookReplanCoordinator(
@@ -1363,6 +1461,68 @@ def build_reader_outcome_model_port(
         budget_caps=execution.budget_caps(),
         capability_binder=binder,
         execution_binding_domain="reader_outcome",
+    )
+
+
+def build_narrative_semantic_evaluation_execution_port(
+    settings: IndustrialSettings,
+    *,
+    execution: ProductionExecutionComposition,
+    env: Mapping[str, str] | None = None,
+    post_provider_fault_injector: Callable[[str], None] | None = None,
+) -> GatewayNarrativeSemanticEvaluationExecutionPort:
+    """Compose Story Design evaluation with its own binder on the shared PEP."""
+
+    if not settings.database_url:
+        raise RuntimeError("PostgreSQL is required for Narrative Evaluation")
+    values = os.environ if env is None else env
+    runtime_environment = RuntimeEnvironment.parse(
+        str(values.get("NOVEL_FORGE_ENVIRONMENT") or settings.environment)
+    )
+    if runtime_environment is not execution.runtime_environment:
+        raise RuntimeError(
+            "Narrative Evaluation and Production Execution environments must match"
+        )
+    environment = runtime_environment.value
+    registered = execution.gateway.execution_binders.get("narrative_evaluation")
+    if registered is None:
+        binder = PostgresNarrativeEvaluationExecutionContractBinder(
+            settings.database_url,
+            execution.gateway.routes,
+            capability_pack_id=str(
+                values.get("NOVEL_FORGE_NARRATIVE_EVALUATION_CAPABILITY_PACK_ID")
+                or "narrative_semantic_evaluation_pack"
+            ),
+            pack_environment=environment,
+            pack_runtime_profile=environment,
+            pack_release_channel=str(
+                values.get("NOVEL_FORGE_RELEASE_CHANNEL") or "VALIDATION"
+            ).upper(),
+            pack_required=runtime_environment.controlled,
+        )
+        execution.gateway.register_execution_binder("narrative_evaluation", binder)
+    elif isinstance(registered, PostgresNarrativeEvaluationExecutionContractBinder):
+        binder = registered
+    else:
+        raise RuntimeError(
+            "Narrative Evaluation execution binder domain is already owned"
+        )
+    model_port = ExternalEffectChapterModelPort(
+        settings.database_url,
+        adapter=execution.gateway,
+        worker_id=str(
+            values.get("NOVEL_FORGE_NARRATIVE_EVALUATION_WORKER_ID")
+            or "narrative-semantic-evaluation-worker"
+        ),
+        max_cost_per_call=execution.max_cost_per_call,
+        budget_caps=execution.budget_caps(),
+        capability_binder=binder,
+        execution_binding_domain="narrative_evaluation",
+        fault_injector=post_provider_fault_injector,
+    )
+    return GatewayNarrativeSemanticEvaluationExecutionPort(
+        settings.database_url,
+        model_port=model_port,
     )
 
 
@@ -1485,6 +1645,23 @@ def build_story_planning_generation_application(
         application_build_id=build_id,
         commit_sha=commit_sha,
         worker_id=worker_id,
+        semantic_evaluation_execution_port=(
+            build_narrative_semantic_evaluation_execution_port(
+                settings,
+                execution=execution,
+                env=values,
+            )
+        ),
+        allow_scripted_evaluation_fixture=(
+            _scripted_narrative_evaluation_fixture_enabled(
+                runtime_environment, values
+            )
+        ),
+        narrative_evaluator_principal=(
+            build_trusted_principal_resolver(
+                env=values
+            ).resolve_narrative_evaluator_principal()
+        ),
     )
 
 
@@ -1501,6 +1678,7 @@ __all__ = [
     "build_book_authority_application",
     "build_book_production_composition",
     "build_reader_outcome_model_port",
+    "build_narrative_semantic_evaluation_execution_port",
     "build_story_planning_generation_application",
     "build_capability_pack_authority_application",
     "build_capability_pack_authority_query",

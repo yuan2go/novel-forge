@@ -1,4 +1,5 @@
 """Pure semantic diff and approval policy for plan changes."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -52,7 +53,6 @@ SEMANTIC_FIELDS = {
     "commitment_contract": "COMMITMENT_CONTRACT_CHANGED",
     "world_realization": "WORLD_REALIZATION_CHANGED",
     "character_realization": "CHARACTER_REALIZATION_CHANGED",
-    "narrative_load_budget": "NARRATIVE_LOAD_BUDGET_CHANGED",
 }
 
 HIGH_RISK_FIELDS = frozenset(
@@ -89,9 +89,7 @@ def semantic_plan_diff(
             changes.append(
                 SemanticFieldChange(
                     field=field,
-                    change_type=SEMANTIC_FIELDS.get(
-                        field, f"{field.upper()}_CHANGED"
-                    ),
+                    change_type=SEMANTIC_FIELDS.get(field, f"{field.upper()}_CHANGED"),
                     before=old,
                     after=new,
                 )
@@ -125,7 +123,6 @@ def classify_plan_change_risk(
         "commitment_contract",
         "world_realization",
         "character_realization",
-        "narrative_load_budget",
     }:
         return PlanChangeRisk.MEDIUM
     return PlanChangeRisk.LOW
@@ -142,9 +139,7 @@ def require_approvable_scope(target_execution_scope: str) -> None:
 def _canonical(value: Any) -> str:
     import json
 
-    return json.dumps(
-        value, ensure_ascii=False, sort_keys=True, separators=(",", ":")
-    )
+    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
 
 
 __all__ = [

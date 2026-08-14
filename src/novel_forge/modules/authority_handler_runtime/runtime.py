@@ -1,4 +1,5 @@
 """Generic fenced execution envelope for storage-free authority handlers."""
+
 from __future__ import annotations
 
 import hashlib
@@ -248,7 +249,7 @@ def _load_request(
         evaluation_candidate_id = ""
         policy = dict(snapshot.get("policy") or {})
         payload = dict(operation["command_payload"].get("payload") or {})
-        if policy.get("candidate_evaluation_input_allowed") is True:
+        if policy.get("evaluation_candidate_asset_input_allowed") is True:
             evaluation_candidate_id = str(
                 payload.get("candidate_asset_version_id") or ""
             )
@@ -289,7 +290,9 @@ def _require_approved_archival_story_design(
     )
     if str(payload.get("source_kind") or "") != "LEGACY_IMPORT":
         return False
-    evidence = payload.get("evidence") if isinstance(payload.get("evidence"), dict) else {}
+    evidence = (
+        payload.get("evidence") if isinstance(payload.get("evidence"), dict) else {}
+    )
     decision_id = str(evidence.get("migration_decision_id") or "")
     target_version_id = str(payload.get("asset_version_id") or "")
     if not decision_id or not target_version_id:
@@ -311,7 +314,9 @@ def _require_approved_archival_story_design(
     return uow.cursor.fetchone() is not None
 
 
-def require_current_fence(uow: AuthorityUnitOfWork, command: WorkerLeaseCommand) -> dict[str, Any]:
+def require_current_fence(
+    uow: AuthorityUnitOfWork, command: WorkerLeaseCommand
+) -> dict[str, Any]:
     attempt = uow.repositories.attempt_runtime.get_for_update(
         command.attempt_id, command.project_id
     )
@@ -346,7 +351,8 @@ def _validate_output(
         or output.role != registration.role
         or not isinstance(output.content, dict)
         or output.lifecycle not in {"ACTIVE", "CANDIDATE", "IMPORTED"}
-        or output.eligibility not in {"ELIGIBLE", "INELIGIBLE", "REVOKED", "PENDING_EVALUATION"}
+        or output.eligibility
+        not in {"ELIGIBLE", "INELIGIBLE", "REVOKED", "PENDING_EVALUATION"}
         or output.governance not in {"CLEAR", "QUARANTINED", "REJECTED", "LEGAL_HOLD"}
     ):
         raise KernelError(
@@ -368,7 +374,8 @@ def _validate_output(
             or not isinstance(item.content, dict)
             or identity in identities
             or item.lifecycle not in {"ACTIVE", "CANDIDATE", "IMPORTED"}
-            or item.eligibility not in {"ELIGIBLE", "INELIGIBLE", "REVOKED", "PENDING_EVALUATION"}
+            or item.eligibility
+            not in {"ELIGIBLE", "INELIGIBLE", "REVOKED", "PENDING_EVALUATION"}
             or item.governance not in {"CLEAR", "QUARANTINED", "REJECTED", "LEGAL_HOLD"}
         ):
             raise KernelError(

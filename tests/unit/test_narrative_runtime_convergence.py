@@ -10,8 +10,48 @@ from novel_forge.modules.narrative_state import (
     events_from_canon_patch,
     expire_effective_ranges,
     measure_narrative_runtime,
+    project_narrative_load,
     reduce_story_state_v2,
 )
+
+
+def test_narrative_load_projection_preserves_exact_overdue_obligation_identity() -> (
+    None
+):
+    projection = project_narrative_load(
+        story_state={
+            "accepted_through_chapter": 10,
+            "current_state": {
+                "narrative_obligation": [
+                    {
+                        "entity_key": "obligation_id=obligation:x",
+                        "state": {
+                            "status": "OPEN",
+                            "target_window": {
+                                "status": "SCHEDULED",
+                                "to_chapter": 8,
+                            },
+                        },
+                    },
+                    {
+                        "entity_key": "obligation_id=obligation:y",
+                        "state": {
+                            "status": "OPEN",
+                            "target_window": {
+                                "status": "SCHEDULED",
+                                "to_chapter": 12,
+                            },
+                        },
+                    },
+                ]
+            },
+        }
+    )
+
+    assert projection["contract_version"] == "narrative-load-projection-v2"
+    assert projection["open_obligation_ids"] == ["obligation:x", "obligation:y"]
+    assert projection["overdue_obligation_ids"] == ["obligation:x"]
+    assert projection["metrics"]["overdue_obligation_count"] == 1
 
 
 def _events(chapter: int, changes: dict[str, list[dict]]) -> tuple:
@@ -331,6 +371,7 @@ def test_proof_hooks_measure_without_promoting_longform_capability() -> None:
             "current_state": {
                 "narrative_obligation": [
                     {
+                        "entity_key": "obligation_id=obligation:proof",
                         "effective_from_chapter": 10,
                         "effective_to_chapter": 0,
                         "state": {
@@ -476,12 +517,8 @@ def test_measurement_never_turns_missing_evidence_into_false_zero() -> None:
     assert measurement["observations"]["provider_usage"]["status"] == "NOT_OBSERVED"
     assert measurement["observations"]["mkaos_consumption"]["status"] == "NOT_OBSERVED"
     assert measurement["observations"]["planning"]["status"] == "NOT_OBSERVED"
-    assert measurement["observations"]["context_segments"]["status"] == (
-        "NOT_OBSERVED"
-    )
-    assert measurement["observations"]["temporal_state"]["status"] == (
-        "NOT_AVAILABLE"
-    )
+    assert measurement["observations"]["context_segments"]["status"] == ("NOT_OBSERVED")
+    assert measurement["observations"]["temporal_state"]["status"] == ("NOT_AVAILABLE")
     assert measurement["proof_status"] == "NOT_OBSERVED_NOT_QUALIFIED"
 
 
@@ -555,10 +592,7 @@ def test_measurement_marks_present_but_unverifiable_receipts_as_not_available() 
         measurement["observations"]["provider_cost_receipt"]["status"]
         == "NOT_AVAILABLE"
     )
-    assert (
-        measurement["observations"]["mkaos_consumption"]["status"]
-        == "NOT_AVAILABLE"
-    )
+    assert measurement["observations"]["mkaos_consumption"]["status"] == "NOT_AVAILABLE"
 
 
 def test_measurement_does_not_coerce_missing_provider_usage_or_cost_to_zero() -> None:
@@ -578,12 +612,8 @@ def test_measurement_does_not_coerce_missing_provider_usage_or_cost_to_zero() ->
     assert measurement["metrics"]["provider_call_count"] == 1
     assert measurement["metrics"]["provider_token_count"] is None
     assert measurement["metrics"]["provider_cost"] is None
-    assert measurement["observations"]["provider_tokens"]["status"] == (
-        "NOT_AVAILABLE"
-    )
-    assert measurement["observations"]["provider_cost"]["status"] == (
-        "NOT_AVAILABLE"
-    )
+    assert measurement["observations"]["provider_tokens"]["status"] == ("NOT_AVAILABLE")
+    assert measurement["observations"]["provider_cost"]["status"] == ("NOT_AVAILABLE")
 
 
 def test_provider_usage_plumbing_preserves_missing_token_and_cost_evidence() -> None:

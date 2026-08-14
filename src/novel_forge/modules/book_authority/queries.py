@@ -346,6 +346,8 @@ class PostgresBookProductionQuery:
             uow.cursor.execute(
                 """
                 SELECT book_plan_version, current_volume_plan_version,
+                       arc_portfolio_plan_versions,
+                       current_relevant_arc_plan_versions,
                        active_arc_plan_versions, character_state_version,
                        foreshadowing_state_version, quality_trend_version,
                        reward_ledger_version, promise_ledger_version,
@@ -366,6 +368,8 @@ class PostgresBookProductionQuery:
         keys = (
             "book_plan_version",
             "current_volume_plan_version",
+            "arc_portfolio_plan_versions",
+            "current_relevant_arc_plan_versions",
             "active_arc_plan_versions",
             "character_state_version",
             "foreshadowing_state_version",
@@ -407,7 +411,7 @@ class PostgresBookProductionQuery:
                        snapshot.book_design_version,
                        snapshot.book_plan_version,
                        snapshot.current_volume_plan_version,
-                       snapshot.active_arc_plan_versions
+                       snapshot.current_relevant_arc_plan_versions
                 FROM authority_book_production_input_snapshot AS snapshot
                 WHERE snapshot.snapshot_id=%s
                 """,
@@ -420,11 +424,11 @@ class PostgresBookProductionQuery:
                     "Chapter production requires a qualified Book input snapshot",
                 )
             global_qualification = dict(snapshot[4])
-            if (
-                global_qualification.get("admission")
-                != "LONGFORM_DESIGN_QUALIFIED"
-                or canonical_hash(global_qualification) != str(snapshot[5])
-            ):
+            if global_qualification.get(
+                "admission"
+            ) != "LONGFORM_DESIGN_QUALIFIED" or canonical_hash(
+                global_qualification
+            ) != str(snapshot[5]):
                 raise KernelError(
                     "LONGFORM_DESIGN_QUALIFICATION_CORRUPT",
                     "Book input design qualification failed its content hash",
@@ -605,9 +609,7 @@ class PostgresBookProductionQuery:
                     "Chapter design was derived from another accepted-state cursor",
                 )
             frozen_inputs = {
-                str(item.get("role") or ""): str(
-                    item.get("asset_version_id") or ""
-                )
+                str(item.get("role") or ""): str(item.get("asset_version_id") or "")
                 for item in chapter_content.get("frozen_inputs") or ()
                 if isinstance(item, dict)
             }
