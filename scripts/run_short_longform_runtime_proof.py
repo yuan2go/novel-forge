@@ -116,6 +116,7 @@ ROOT = Path(__file__).resolve().parents[1]
 PLANNING_PACK_ID = "story_planning_pack"
 READER_PACK_ID = "reader_outcome_pack"
 PLANNING_PACK_INITIAL_VERSION = "1.5.0"
+READER_PACK_INITIAL_VERSION = "1.1.0"
 PLANNING_PACK_RECOVERY_VERSION = "1.6.0"
 BOOTSTRAP_DEFINITION = "short_longform.proof.bootstrap"
 BOOTSTRAP_HANDLER = "novel_forge.proof.short_longform.bootstrap"
@@ -4079,7 +4080,7 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
     reader_pack = _install_profile(
         args.database_url,
         profile=reader_profile,
-        version="1.0.0",
+        version=READER_PACK_INITIAL_VERSION,
         generation=1,
         expected_activation_version=0,
         project_id=project_id,

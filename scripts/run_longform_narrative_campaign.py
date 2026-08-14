@@ -383,7 +383,7 @@ def _initialise_campaign(
     reader_pack = _install_profile(
         args.database_url,
         profile=reader_profile,
-        version="1.0.0",
+        version="1.1.0",
         generation=1,
         expected_activation_version=0,
         project_id=project_id,

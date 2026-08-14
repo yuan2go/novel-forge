@@ -82,7 +82,7 @@ def book_followup_operation_definitions(
                     ),
                 },
                 "handler_key": f"novel_forge.book_followup_authority.{name}",
-                "handler_contract_version": "book-followup-handler-v1",
+                "handler_contract_version": "book-followup-handler-v2",
                 "application_build_id": application_build_id,
                 "commit_sha": commit_sha,
                 "execution_mode": "worker",

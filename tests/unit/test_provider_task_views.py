@@ -8,6 +8,7 @@ from novel_forge.modules.chapter_authority.provider_views import (
     build_provider_context_view,
     build_provider_knowledge_view,
     build_provider_task_view,
+    project_reader_outcome_context_input,
 )
 from novel_forge.modules.chapter_authority.execution_gateway import (
     _materialize_chapter_codex_prompt,
@@ -145,6 +146,146 @@ def test_provider_context_is_one_bounded_representation_not_authority_bundle() -
         < 128
     )
     assert heavy["selection_explanation"]["omitted_fact_count"] == 1000
+
+
+def test_reader_outcome_uses_its_own_bounded_task_and_context_views() -> None:
+    task = build_provider_task_view(
+        "reader_outcome",
+        {
+            "chapter": 31,
+            "book_id": "book:1",
+            "reader_contract_version": "reader-contract:v1",
+            "evaluation_profile_version": "evaluation:v1",
+            "reader_judge_execution_snapshot": {
+                "snapshot_id": "reader-snapshot:1",
+                "mode": "SHADOW",
+                "provider_evidence": {"authority_only": "x" * 100_000},
+            },
+            "assets": {"story_state_snapshot": {"history": "x" * 100_000}},
+        },
+    )
+    context = {
+        "schema_version": "novelos.reader_outcome_context_bundle.v2",
+        "selected_inputs": [
+            {
+                "asset_version_id": "draft:v31",
+                "asset_type": "draft_version",
+                "content_hash": "sha256:draft",
+                "projection": {
+                    "chapter": 31,
+                    "title": "The ledger opens",
+                    "text": "Lin shows the altered entry to the witness.",
+                },
+            },
+            {
+                "asset_version_id": "reader-contract:v1",
+                "asset_type": "reader_contract",
+                "content_hash": "sha256:reader",
+                "projection": {"safe_summary": "Clarity before surprise."},
+            },
+            {
+                "asset_version_id": "outcome:v31",
+                "asset_type": "chapter_outcome",
+                "content_hash": "sha256:outcome",
+                "projection": {},
+            },
+        ],
+    }
+
+    view = build_provider_context_view("reader_outcome", context, task)
+    serialized = json.dumps({"task": task, "context": view}, ensure_ascii=False)
+
+    assert task["chapter"] == 31
+    assert "assets" not in task
+    assert "provider_evidence" not in serialized
+    assert "authority_only" not in serialized
+    assert [item["asset_type"] for item in view["segments"]] == [
+        "draft_version",
+        "reader_contract",
+    ]
+    assert view["selection_explanation"]["omitted_segment_count"] == 1
+    assert len(serialized) < 65_536
+
+
+def test_reader_outcome_state_projection_does_not_grow_with_unrelated_history() -> None:
+    def state(extra: int) -> dict:
+        return {
+            "contract_version": "story-state-snapshot-v2",
+            "accepted_through_chapter": 31,
+            "current_state": {
+                "character_state": [
+                    {
+                        "entity_key": f"character_id=extra:{index}",
+                        "entity_version": 1,
+                        "state": {"character_id": f"extra:{index}"},
+                        "source_event_id": f"event:extra:{index}",
+                        "source_chapter": index,
+                        "effective_from_chapter": index,
+                        "confidence": 1.0,
+                        "coverage": "EXPLICIT",
+                        "evidence": {},
+                    }
+                    for index in range(extra)
+                ],
+                "reader_knowledge": [
+                    {
+                        "entity_key": "fact_id=fact:ledger",
+                        "entity_version": 1,
+                        "state": {"fact_id": "fact:ledger", "status": "KNOWN"},
+                        "source_event_id": "event:reader:ledger",
+                        "source_chapter": 31,
+                        "effective_from_chapter": 31,
+                        "confidence": 1.0,
+                        "coverage": "EXPLICIT",
+                        "evidence": {},
+                    }
+                ],
+            },
+        }
+
+    light = project_reader_outcome_context_input("story_state_snapshot", state(1))
+    heavy = project_reader_outcome_context_input(
+        "story_state_snapshot", state(3_000)
+    )
+
+    assert heavy == light
+    assert heavy["reader_facing_state"][0]["state"]["status"] == "KNOWN"
+
+
+def test_reader_outcome_v1_context_replays_through_deterministic_read_upgrade() -> None:
+    legacy = {
+        "schema_version": "novelos.reader_outcome_context_bundle.v1",
+        "selected_inputs": [
+            {
+                "asset_version_id": "draft:v1",
+                "asset_type": "draft_version",
+                "content_hash": "sha256:draft",
+                "content": {
+                    "chapter": 1,
+                    "text": "The accepted reader-facing chapter.",
+                    "provider_evidence": {"authority_only": "x" * 10_000},
+                },
+            },
+            {
+                "asset_version_id": "outcome:v1",
+                "asset_type": "chapter_outcome",
+                "content_hash": "sha256:outcome",
+                "content": {"state_events": [{"payload": "x" * 10_000}]},
+            },
+        ],
+    }
+
+    view = build_provider_context_view(
+        "reader_outcome",
+        legacy,
+        build_provider_task_view("reader_outcome", {"chapter": 1}),
+    )
+    serialized = json.dumps(view, ensure_ascii=False)
+
+    assert "The accepted reader-facing chapter." in serialized
+    assert "provider_evidence" not in serialized
+    assert "state_events" not in serialized
+    assert view["selection_explanation"]["omitted_segment_count"] == 1
 
 
 def test_planning_provider_view_uses_command_and_projected_inputs_only() -> None:

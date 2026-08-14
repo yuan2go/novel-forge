@@ -71,7 +71,7 @@ class CapabilityPackP1ATests(unittest.TestCase):
 
     def test_reader_outcome_has_a_governed_workflow_binding(self) -> None:
         catalog = governed_workflow_binding_catalog(
-            "book_followup_reader_outcome", "1.0.0"
+            "book_followup_reader_outcome", "1.1.0"
         )
 
         binding = catalog.resolve("reader_outcome")

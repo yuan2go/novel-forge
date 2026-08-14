@@ -99,7 +99,6 @@ class ReaderOutcomeHandler:
                     payload["evaluation_profile_version"]
                 ),
                 "reader_judge_execution_snapshot": judge.to_dict(),
-                "assets": {item.asset_type: item.content for item in request.inputs},
             },
         )
         raw_state = result.output.get("reader_state")

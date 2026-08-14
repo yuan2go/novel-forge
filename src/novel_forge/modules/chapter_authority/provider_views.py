@@ -195,10 +195,17 @@ def build_provider_task_view(stage: str, inputs: Mapping[str, Any]) -> dict[str,
     if stage == "reader_outcome":
         return _task(
             stage,
-            chapter=_prose(
-                inputs.get("revision") or inputs.get("draft") or inputs.get("chapter")
+            chapter=int(inputs.get("chapter") or 0),
+            book_id=str(inputs.get("book_id") or ""),
+            reader_contract_version=str(
+                inputs.get("reader_contract_version") or ""
             ),
-            reader_contract=_compact(inputs.get("reader_contract")),
+            evaluation_profile_version=str(
+                inputs.get("evaluation_profile_version") or ""
+            ),
+            reader_judge_execution_snapshot=_compact(
+                inputs.get("reader_judge_execution_snapshot")
+            ),
         )
     raise KernelError(
         "CHAPTER_PROVIDER_TASK_VIEW_UNSUPPORTED",
@@ -338,6 +345,8 @@ def build_provider_context_view(
 
     if stage in _PLANNING_STAGES:
         return _build_planning_context_view(stage, context_bundle)
+    if stage == "reader_outcome":
+        return _build_reader_outcome_context_view(context_bundle)
     segments = context_bundle.get("context_segments")
     if not isinstance(segments, list):
         raise KernelError(
@@ -479,6 +488,175 @@ def build_provider_context_view(
             "CHAPTER_PROVIDER_CONTEXT_BUDGET_EXCEEDED",
             "projected Provider Context exceeds its deterministic size boundary; "
             "rebuild the task projection with fewer accepted facts",
+        )
+    return view
+
+
+def project_reader_outcome_context_input(
+    asset_type: str,
+    content: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Project one accepted Reader Outcome input without Authority envelopes.
+
+    The Book follow-up command binds a broad recovery lineage, but a Reader judge
+    needs only the accepted prose, audience contract, intended experience, and a
+    bounded view of current reader-facing state.  Empty projections preserve the
+    immutable input reference without sending that asset to the Provider.
+    """
+
+    if asset_type == "draft_version":
+        return _prose(content)
+    if asset_type == "reader_contract":
+        return _pick(content, "contract_id", "safe_summary")
+    if asset_type == "reader_segment_profile":
+        return _pick(content, "segment_id", "safe_summary")
+    if asset_type == "platform_profile":
+        return _pick(
+            content,
+            "profile_id",
+            "reader_expectation",
+            "genre_fit",
+            "chapter_length_range",
+            "review_risks",
+            "safe_summary",
+        )
+    if asset_type == "book_design":
+        return _pick(content, "genre", "premise", "reader_promise")
+    if asset_type == "planning_generation_candidate":
+        if content.get("chapter_intent") or content.get("chapter_number"):
+            return _pick(
+                content,
+                "chapter_number",
+                "chapter_intent",
+                "reader_experience",
+                "ending_hook",
+                "setups",
+                "payoffs",
+            )
+        if content.get("reader_promise"):
+            return _pick(content, "reader_promise", "ending_contract")
+        return {}
+    if asset_type == "quality_score_report":
+        return _pick(
+            content,
+            "gate",
+            "aggregate_score",
+            "blocking_dimensions",
+            "uncalibrated_dimensions",
+            "required_actions",
+        )
+    if asset_type == "story_state_snapshot":
+        chapter = int(content.get("accepted_through_chapter") or 0)
+        current = [
+            item
+            for item in compact_current_state_facts(content)
+            if str(item.get("state_kind") or "")
+            in {"reader_knowledge", "disclosure_event", "reader_promise"}
+            and int(item.get("effective_from_chapter") or 0) >= chapter
+        ]
+        current.sort(
+            key=lambda item: (
+                -int(item.get("effective_from_chapter") or 0),
+                str(item.get("entity_key") or ""),
+            )
+        )
+        return {
+            "accepted_through_chapter": chapter,
+            "reader_facing_state": [
+                _compact(item) for item in current[:_MAX_FACTS_PER_SEGMENT]
+            ],
+        }
+    if asset_type == "reader_state_transition":
+        return _pick(content, "reader_state", "gate", "candidate_status")
+    return {}
+
+
+def _build_reader_outcome_context_view(
+    context_bundle: Mapping[str, Any],
+) -> dict[str, Any]:
+    schema_version = str(context_bundle.get("schema_version") or "")
+    if schema_version not in {
+        "novelos.reader_outcome_context_bundle.v1",
+        "novelos.reader_outcome_context_bundle.v2",
+    }:
+        raise KernelError(
+            "READER_OUTCOME_PROVIDER_CONTEXT_VIEW_INVALID",
+            "Reader Outcome requires its governed ContextBundle",
+        )
+    selected = context_bundle.get("selected_inputs")
+    if not isinstance(selected, list) or not selected:
+        raise KernelError(
+            "READER_OUTCOME_PROVIDER_CONTEXT_VIEW_INVALID",
+            "Reader Outcome ContextBundle requires frozen inputs",
+        )
+    if len(selected) > _MAX_SEGMENTS:
+        raise KernelError(
+            "READER_OUTCOME_PROVIDER_CONTEXT_PROJECTION_TOO_BROAD",
+            "Reader Outcome frozen inputs exceed the bounded segment limit",
+        )
+    segments: list[dict[str, Any]] = []
+    omitted = 0
+    for raw in selected:
+        if not isinstance(raw, Mapping):
+            raise KernelError(
+                "READER_OUTCOME_PROVIDER_CONTEXT_VIEW_INVALID",
+                "Reader Outcome frozen input must be an object",
+            )
+        asset_type = str(raw.get("asset_type") or "")
+        projection = raw.get("projection")
+        if not isinstance(projection, Mapping):
+            legacy_content = raw.get("content")
+            if not isinstance(legacy_content, Mapping):
+                raise KernelError(
+                    "READER_OUTCOME_PROVIDER_CONTEXT_VIEW_INVALID",
+                    "Reader Outcome frozen input has no typed projection",
+                )
+            projection = project_reader_outcome_context_input(
+                asset_type, legacy_content
+            )
+        projected = _compact(projection)
+        if not projected:
+            omitted += 1
+            continue
+        segments.append(
+            {
+                "asset_version_id": str(raw.get("asset_version_id") or ""),
+                "asset_type": asset_type,
+                "content": projected,
+            }
+        )
+    if not any(item["asset_type"] == "draft_version" for item in segments):
+        raise KernelError(
+            "READER_OUTCOME_PROVIDER_CONTEXT_VIEW_INVALID",
+            "Reader Outcome Provider View requires accepted chapter prose",
+        )
+    view = {
+        "contract_version": "provider-context-view-v2",
+        "stage": "reader_outcome",
+        "accepted_state_boundary": {
+            "accepted_through_chapter": max(
+                (
+                    int(item["content"].get("accepted_through_chapter") or 0)
+                    for item in segments
+                    if isinstance(item.get("content"), Mapping)
+                ),
+                default=0,
+            )
+        },
+        "segments": segments,
+        "selection_explanation": {
+            "policy": "minimum-sufficient-reader-outcome-context-v1",
+            "included_segment_count": len(segments),
+            "omitted_segment_count": omitted,
+            "maximum_segments": _MAX_SEGMENTS,
+            "maximum_facts_per_segment": _MAX_FACTS_PER_SEGMENT,
+            "maximum_serialized_characters": _MAX_PROVIDER_CONTEXT_CHARACTERS,
+        },
+    }
+    if _serialized_character_count(view) > _MAX_PROVIDER_CONTEXT_CHARACTERS:
+        raise KernelError(
+            "READER_OUTCOME_PROVIDER_CONTEXT_BUDGET_EXCEEDED",
+            "Reader Outcome Provider Context exceeds its deterministic size boundary",
         )
     return view
 
@@ -788,6 +966,14 @@ def _task(stage: str, **values: Any) -> dict[str, Any]:
         "contract_version": "provider-task-view-v1",
         "stage": stage,
         **{key: value for key, value in values.items() if value not in (None, {}, [])},
+    }
+
+
+def _pick(value: Mapping[str, Any], *keys: str) -> dict[str, Any]:
+    return {
+        key: _compact(value[key])
+        for key in keys
+        if value.get(key) not in (None, "", {}, [])
     }
 
 
