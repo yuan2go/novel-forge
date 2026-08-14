@@ -47,10 +47,14 @@ class TrustedPrincipalResolver:
         *,
         environment: str,
         configured_local_operator_id: str = "",
+        configured_narrative_evaluator_id: str = "",
         configured_project_scope: frozenset[str] | None = None,
     ) -> None:
         self.environment = environment.strip().lower() or "development"
         self.configured_local_operator_id = configured_local_operator_id.strip()
+        self.configured_narrative_evaluator_id = (
+            configured_narrative_evaluator_id.strip()
+        )
         self.configured_project_scope = configured_project_scope or frozenset({"*"})
 
     @classmethod
@@ -64,6 +68,9 @@ class TrustedPrincipalResolver:
             environment=str(values.get("NOVEL_FORGE_ENVIRONMENT") or "development"),
             configured_local_operator_id=str(
                 values.get("NOVEL_FORGE_LOCAL_OPERATOR_PRINCIPAL_ID") or ""
+            ),
+            configured_narrative_evaluator_id=str(
+                values.get("NOVEL_FORGE_NARRATIVE_EVALUATOR_PRINCIPAL_ID") or ""
             ),
             configured_project_scope=scope,
         )
@@ -94,6 +101,7 @@ class TrustedPrincipalResolver:
                     "book.authority.approve_replan",
                     "book.authority.query",
                     "story_planning.authority.execute",
+                    "narrative_design.evaluate",
                     "book_design.authority.execute",
                     "book_design.authority.query",
                     "project.authority.execute",
@@ -127,6 +135,20 @@ class TrustedPrincipalResolver:
             authentication_source="server_configuration",
         )
 
+    def resolve_narrative_evaluator_principal(self) -> Principal:
+        principal_id = self.configured_narrative_evaluator_id
+        if not principal_id and self.environment == "production":
+            raise RuntimeError(
+                "a trusted Narrative Semantic Evaluator principal is required in production"
+            )
+        return Principal(
+            principal_id=principal_id or "narrative-semantic-evaluator",
+            principal_type=PrincipalType.LOCAL_OPERATOR,
+            permissions=frozenset({"narrative_design.evaluate"}),
+            project_scope=self.configured_project_scope,
+            authentication_source="narrative_evaluator_configuration",
+        )
+
     def resolve_worker_principal(
         self,
         worker_id: str,
@@ -144,6 +166,7 @@ class TrustedPrincipalResolver:
                 "agent.authority.recover",
                 "book.authority.execute",
                 "story_planning.authority.execute",
+                "narrative_design.evaluate",
                 "project.authority.execute",
                 "book_design.authority.execute",
                 "content.authority.execute",

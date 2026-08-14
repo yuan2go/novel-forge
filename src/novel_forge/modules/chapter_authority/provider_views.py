@@ -8,6 +8,7 @@ working context, so audit and duplicate representations cannot leak by accident.
 from __future__ import annotations
 
 from copy import deepcopy
+import hashlib
 import json
 from typing import Any, Iterable, Mapping
 
@@ -347,6 +348,51 @@ def build_provider_context_view(
         return _build_planning_context_view(stage, context_bundle)
     if stage == "reader_outcome":
         return _build_reader_outcome_context_view(context_bundle)
+    correctness = context_bundle.get("context_correctness")
+    if context_bundle.get("context_contract_version") == "authority-context-bundle-v5":
+        if not isinstance(correctness, Mapping):
+            raise KernelError(
+                "CHAPTER_PROVIDER_CONTEXT_CORRECTNESS_REQUIRED",
+                "Authority ContextBundle requires a Context Correctness receipt",
+            )
+        checks = correctness.get("checks")
+        required_checks = {
+            "NO_FUTURE_FACT",
+            "NO_HIDDEN_KNOWLEDGE_LEAK",
+            "NO_STALE_VERSION",
+            "NO_DUPLICATE_SEMANTIC_REPRESENTATION",
+            "NO_IRRELEVANT_FULL_ASSET",
+            "REQUIRED_LONG_DISTANCE_FACT_PRESENT",
+        }
+        if (
+            correctness.get("contract_version")
+            != "context-correctness-receipt-v1"
+            or correctness.get("overall_status") != "PASS"
+            or not isinstance(checks, Mapping)
+            or set(checks) != required_checks
+            or any(
+                not isinstance(item, Mapping)
+                or item.get("status") not in {"PASS", "NOT_APPLICABLE"}
+                for item in checks.values()
+            )
+            or str(correctness.get("receipt_hash") or "")
+            != "sha256:"
+            + hashlib.sha256(
+                json.dumps(
+                    {
+                        key: value
+                        for key, value in correctness.items()
+                        if key != "receipt_hash"
+                    },
+                    sort_keys=True,
+                    separators=(",", ":"),
+                ).encode()
+            ).hexdigest()
+        ):
+            raise KernelError(
+                "CHAPTER_PROVIDER_CONTEXT_CORRECTNESS_BLOCKED",
+                "Provider admission requires all six Context Correctness checks",
+            )
     segments = context_bundle.get("context_segments")
     if not isinstance(segments, list):
         raise KernelError(
@@ -411,6 +457,8 @@ def build_provider_context_view(
             selected_facts = [
                 item
                 for item in facts
+                if item.get("provider_visibility")
+                != "INTERNAL_QUALITY_ONLY"
                 if _state_fact_relevant(
                     item,
                     selectors,
@@ -482,6 +530,9 @@ def build_provider_context_view(
             "maximum_facts_per_segment": _MAX_FACTS_PER_SEGMENT,
             "maximum_serialized_characters": _MAX_PROVIDER_CONTEXT_CHARACTERS,
         },
+        "context_correctness_receipt_hash": str(
+            (correctness or {}).get("receipt_hash") or ""
+        ),
     }
     if _serialized_character_count(view) > _MAX_PROVIDER_CONTEXT_CHARACTERS:
         raise KernelError(

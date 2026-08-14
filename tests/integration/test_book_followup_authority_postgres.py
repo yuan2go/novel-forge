@@ -18,6 +18,7 @@ from novel_forge.modules.book_followup_authority.application import (
     BookFollowupCommand,
 )
 from novel_forge.modules.book_followup_authority.contracts import (
+    BOOK_FOLLOWUP_DEFINITION_VERSION,
     LONGFORM_RECAP_DEFINITION,
     READER_OUTCOME_DEFINITION,
 )
@@ -58,9 +59,9 @@ def _activate_reader_outcome_pack(harness: CapabilityPackPostgresHarness) -> Non
             """
             SELECT definition_hash
             FROM authority_operation_definition
-            WHERE name=%s AND definition_version='1.0.0'
+            WHERE name=%s AND definition_version=%s
             """,
-            [READER_OUTCOME_DEFINITION],
+            [READER_OUTCOME_DEFINITION, BOOK_FOLLOWUP_DEFINITION_VERSION],
         )
         definition_hash = str(uow.cursor.fetchone()[0])
         uow.commit()
@@ -75,7 +76,9 @@ def _activate_reader_outcome_pack(harness: CapabilityPackPostgresHarness) -> Non
     node.update(
         node_id="reader_outcome",
         operation_name=READER_OUTCOME_DEFINITION,
-        operation_definition_ref=f"{READER_OUTCOME_DEFINITION}@1.0.0",
+        operation_definition_ref=(
+            f"{READER_OUTCOME_DEFINITION}@{BOOK_FOLLOWUP_DEFINITION_VERSION}"
+        ),
         operation_definition_hash=definition_hash,
         handler_key=(
             "novel_forge.book_followup_authority."
@@ -162,7 +165,9 @@ def _activate_reader_outcome_pack(harness: CapabilityPackPostgresHarness) -> Non
                 "policy_id": "timeout:quality-reader_outcome-judge:v1",
                 "operation_timeout_seconds": 180,
                 "timeout_action": "FAIL_ATTEMPT",
-                "authority_binding": f"{READER_OUTCOME_DEFINITION}@1.0.0",
+                "authority_binding": (
+                    f"{READER_OUTCOME_DEFINITION}@{BOOK_FOLLOWUP_DEFINITION_VERSION}"
+                ),
             },
         }
     )

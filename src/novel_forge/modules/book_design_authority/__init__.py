@@ -7,6 +7,7 @@ from .definitions import (
 )
 from .domain import (
     BOOK_DESIGN_SCHEMA_VERSION,
+    COUPLED_BOOK_DESIGN_SCHEMA_VERSION,
     LEGACY_BOOK_DESIGN_SCHEMA_VERSION,
     BOOK_SCHEMA_VERSION,
     BookDesignPayload,
@@ -14,17 +15,22 @@ from .domain import (
     ProtagonistDesign,
 )
 from .query import BookDesignAuthorityQuery
+from novel_forge.modules.story_design_authority.evaluation_runtime import (
+    NarrativeSemanticEvaluationCommand as BookDesignSemanticEvaluationCommand,
+)
 
 __all__ = [
     "BOOK_DESIGN_DEFINITION_VERSION",
     "BOOK_DESIGN_HANDLER_KEY",
     "BOOK_DESIGN_OPERATIONS",
     "BOOK_DESIGN_SCHEMA_VERSION",
+    "COUPLED_BOOK_DESIGN_SCHEMA_VERSION",
     "LEGACY_BOOK_DESIGN_SCHEMA_VERSION",
     "BOOK_SCHEMA_VERSION",
     "BookDesignAuthorityApplication",
     "BookDesignAuthorityCommand",
     "BookDesignAuthorityQuery",
+    "BookDesignSemanticEvaluationCommand",
     "BookDesignPayload",
     "BookScope",
     "ProtagonistDesign",

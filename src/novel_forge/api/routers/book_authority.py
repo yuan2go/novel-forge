@@ -48,6 +48,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                     book_id=book_id,
                     production_profile=request.production_profile,
                     expected_book_version=request.expected_book_version,
+                    narrative_chapter_cursor=request.narrative_chapter_cursor,
                     actor_id=principal.principal_id,
                     idempotency_key=request.idempotency_key,
                     trace_id=request.trace_id or f"trace:{uuid4()}",

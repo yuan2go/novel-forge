@@ -3,6 +3,9 @@ from __future__ import annotations
 from dataclasses import replace
 
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.chapter_quality_authority import (
+    load_accepted_quality_observations,
+)
 from novel_forge.modules.production_preparation.contracts import ResolvedProductionAsset
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
@@ -394,7 +397,7 @@ class PostgresProductionAssetResolver:
                 ],
             )
             rows = uow.cursor.fetchall()
-        return tuple(
+        resolved = tuple(
             self._bind_acceptance_scope(
                 self._asset(row[:10], "committed Book acceptance state"),
                 str(row[10]),
@@ -403,6 +406,23 @@ class PostgresProductionAssetResolver:
             )
             for row in rows
         )
+        if asset_type != "story_state_snapshot":
+            return resolved
+        enriched: list[ResolvedProductionAsset] = []
+        for asset in resolved:
+            content = dict(asset.content)
+            content["_accepted_quality_observations"] = (
+                load_accepted_quality_observations(
+                    self.database_url,
+                    project_id=project_id,
+                    book_id=str(content["book_id"]),
+                    accepted_through_chapter=int(
+                        content["accepted_through_chapter"]
+                    ),
+                )
+            )
+            enriched.append(replace(asset, content=content))
+        return tuple(enriched)
 
     @staticmethod
     def _asset(row: tuple[object, ...], reason: str) -> ResolvedProductionAsset:

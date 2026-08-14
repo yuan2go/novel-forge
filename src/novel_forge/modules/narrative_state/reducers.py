@@ -204,7 +204,11 @@ def reduce_story_state_v2(
                 "transition_hash": _transition_hash(old, event, new),
                 "chapter_outcome_asset_version_id": chapter_outcome_asset_version_id,
                 "reducer_key": f"{event.state_kind.value}:{event.identity.entity_key}",
-                "input_contract_version": "narrative-state-event-v2",
+                "input_contract_version": (
+                    "narrative-state-event-v3"
+                    if event.event_version >= 3
+                    else "narrative-state-event-v2"
+                ),
                 "output_state_type": event.state_kind.value,
                 "idempotency_key": event.event_id,
                 "validation_policy": "narrative-state-reducer-v2",

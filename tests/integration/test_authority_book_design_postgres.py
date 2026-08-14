@@ -8,6 +8,7 @@ from novel_forge.modules.book_design_authority import (
     BookDesignAuthorityApplication,
     BookDesignAuthorityCommand,
     BookDesignAuthorityQuery,
+    BookDesignSemanticEvaluationCommand,
 )
 from novel_forge.modules.story_design_authority import scripted_qualification
 from novel_forge.modules.command_kernel.errors import KernelError
@@ -40,10 +41,18 @@ class BookDesignAuthorityPostgresTests(unittest.TestCase):
                     "project.authority.execute",
                     "book_design.authority.execute",
                     "book_design.authority.query",
+                    "narrative_design.evaluate",
                 }
             ),
             project_scope=frozenset({self.project_id}),
             authentication_source="integration-test",
+        )
+        self.evaluator_principal = Principal(
+            principal_id="book-design-independent-evaluator",
+            principal_type=PrincipalType.LOCAL_OPERATOR,
+            permissions=frozenset({"narrative_design.evaluate"}),
+            project_scope=frozenset({self.project_id}),
+            authentication_source="integration-test-evaluator-configuration",
         )
         self.project_application = ProjectAuthorityApplication(
             DATABASE_URL,
@@ -98,6 +107,30 @@ class BookDesignAuthorityPostgresTests(unittest.TestCase):
             expected_book_version=book["version"],
             expected_design=book["active_book_design_version_id"],
         )
+        self.assertEqual(first["status"], "EVALUATION_PENDING")
+        first_evaluation = self._evaluate(first)
+        self.assertEqual(first_evaluation["status"], "VALIDATED")
+        self.assertNotEqual(
+            first_evaluation["generation_operation_id"],
+            first_evaluation["evaluation_operation_id"],
+        )
+        self.assertTrue(first_evaluation["evaluation_attempt_id"])
+        contradictory = scripted_qualification("book_design.propose")
+        contradictory["evaluations"][0]["criteria"][0].update(
+            {
+                "verdict": "FAIL",
+                "rationale": "Independent review found a contradictory premise.",
+                "repair_directive": "Repair the premise before reevaluation.",
+            }
+        )
+        with self.assertRaisesRegex(
+            KernelError, "AUTHORITY_INPUT_NOT_ELIGIBLE"
+        ):
+            self._evaluate(
+                first,
+                evaluation=contradictory,
+                idempotency_suffix="contradictory",
+            )
         decided = self._book_command(
             "book_design.decide",
             payload={
@@ -132,6 +165,7 @@ class BookDesignAuthorityPostgresTests(unittest.TestCase):
             expected_book_version=book["version"],
             expected_design=first["asset_version_id"],
         )
+        self._evaluate(second)
         self._book_command(
             "book_design.decide",
             payload={
@@ -243,27 +277,31 @@ class BookDesignAuthorityPostgresTests(unittest.TestCase):
             idempotency_key=f"book:create:{self.book_id}",
         )
         design = self._design("unqualified premise")
-        criterion = design["narrative_qualification"]["evaluations"][0][
-            "criteria"
-        ][0]
+        evaluation = scripted_qualification("book_design.propose")
+        criterion = evaluation["evaluations"][0]["criteria"][0]
         criterion.update(
             verdict="FAIL",
             repair_directive="rebuild the premise around one reachable ending",
         )
 
-        rejected = self._book_command(
+        candidate = self._book_command(
             "book_design.propose",
             payload=design,
             idempotency_key=f"design:rejected:{self.book_id}",
             expected_book_version=1,
         )
+        rejected = self._evaluate(candidate, evaluation=evaluation)
 
         self.assertEqual(rejected["status"], "REJECTED")
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
             uow.cursor.execute(
                 """
                 SELECT candidate.status, version.eligibility,
-                       qualification.qualification_status
+                       qualification.qualification_status,
+                       qualification.trust_boundary,
+                       qualification.generation_operation_id,
+                       qualification.evaluation_operation_id,
+                       qualification.evaluation_attempt_id
                 FROM authority_book_design_candidate AS candidate
                 JOIN authority_asset_version AS version
                   ON version.asset_version_id=candidate.asset_version_id
@@ -276,7 +314,15 @@ class BookDesignAuthorityPostgresTests(unittest.TestCase):
             )
             self.assertEqual(
                 uow.cursor.fetchone(),
-                ("REJECTED", "INELIGIBLE", "FAIL"),
+                (
+                    "REJECTED",
+                    "INELIGIBLE",
+                    "FAIL",
+                    "INDEPENDENT",
+                    candidate["operation_id"],
+                    rejected["evaluation_operation_id"],
+                    rejected["evaluation_attempt_id"],
+                ),
             )
 
     def test_crash_after_business_commit_cannot_leave_partial_command(self) -> None:
@@ -373,6 +419,35 @@ class BookDesignAuthorityPostgresTests(unittest.TestCase):
             principal=self.principal,
         )
 
+    def _evaluate(
+        self,
+        candidate: dict,
+        *,
+        evaluation: dict | None = None,
+        idempotency_suffix: str = "primary",
+    ) -> dict:
+        return self.application.evaluate_semantics(
+            BookDesignSemanticEvaluationCommand(
+                project_id=self.project_id,
+                workspace_id=self.workspace_id,
+                book_id=self.book_id,
+                actor_id=self.evaluator_principal.principal_id,
+                candidate_asset_version_id=candidate["asset_version_id"],
+                generation_operation_id=candidate["operation_id"],
+                generator_operation_name="book_design.propose",
+                candidate_content_hash=candidate["content_hash"],
+                evaluator_execution_class="OPERATOR_REVIEW",
+                evaluation=evaluation
+                or scripted_qualification("book_design.propose"),
+                idempotency_key=(
+                    f"design:evaluate:{candidate['asset_version_id']}:{idempotency_suffix}"
+                ),
+                trace_id=f"trace:{self.project_id}",
+                correlation_id=f"correlation:{self.project_id}",
+            ),
+            principal=self.evaluator_principal,
+        )
+
     @staticmethod
     def _design(theme: str) -> dict:
         return {
@@ -421,9 +496,6 @@ class BookDesignAuthorityPostgresTests(unittest.TestCase):
                 "distinctive_mechanism": "Maps change physical access.",
                 "emotional_contract": "Discovery brings hope and public cost.",
             },
-            "narrative_qualification": scripted_qualification(
-                "book_design.propose"
-            ),
         }
 
 

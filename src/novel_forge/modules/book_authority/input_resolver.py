@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, fields
 from types import MappingProxyType
 from typing import Any, Mapping
 from uuid import uuid4
@@ -29,7 +29,7 @@ from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 
 BOOK_INPUT_RESOLVE_DEFINITION = "book.production_input.resolve"
-BOOK_INPUT_RESOLVE_VERSION = "1.2.0"
+BOOK_INPUT_RESOLVE_VERSION = "1.3.0"
 BOOK_INPUT_RESOLVE_HANDLER = "novel_forge.book_authority.production_input.resolve"
 
 
@@ -70,6 +70,7 @@ class ResolveBookProductionInputCommand:
     idempotency_key: str
     trace_id: str
     correlation_id: str
+    narrative_chapter_cursor: int = 1
     role_asset_version_overrides: tuple[tuple[str, str], ...] = ()
 
     def __post_init__(self) -> None:
@@ -86,6 +87,7 @@ class ResolveBookProductionInputCommand:
         if (
             any(not value.strip() for value in values)
             or self.expected_book_version <= 0
+            or self.narrative_chapter_cursor <= 0
         ):
             raise ValueError("Book Production input resolution command is incomplete")
         override_roles = [
@@ -117,10 +119,12 @@ class BookProductionInputSnapshot:
     workspace_id: str
     book_id: str
     expected_book_version: int
+    narrative_chapter_cursor: int
     book_record_version: str
     book_design_version: str
     book_plan_version: str
     current_volume_plan_version: str
+    volume_portfolio_plan_versions: tuple[str, ...]
     active_arc_plan_versions: tuple[str, ...]
     current_chapter_group_plan_version: str
     production_profile_version: str
@@ -199,6 +203,7 @@ class BookProductionInputResolver:
                     "book_id": command.book_id,
                     "production_profile": command.production_profile,
                     "expected_book_version": command.expected_book_version,
+                    "narrative_chapter_cursor": command.narrative_chapter_cursor,
                     "expected_snapshot_hash": preview["snapshot_hash"],
                     "role_asset_version_overrides": [
                         list(item) for item in command.role_asset_version_overrides
@@ -222,9 +227,12 @@ class BookProductionInputResolver:
             uow.cursor.execute(
                 """
                 SELECT snapshot_id, project_id, workspace_id, book_id,
-                       expected_book_version, book_record_version,
+                       expected_book_version, narrative_chapter_cursor,
+                       book_record_version,
                        book_design_version, book_plan_version,
-                       current_volume_plan_version, active_arc_plan_versions,
+                       current_volume_plan_version,
+                       volume_portfolio_plan_versions,
+                       active_arc_plan_versions,
                        COALESCE(current_chapter_group_plan_version, ''),
                        production_profile_version, reader_segment_version,
                        reader_contract_version, platform_profile_version,
@@ -248,10 +256,20 @@ class BookProductionInputResolver:
                 "BOOK_PRODUCTION_INPUT_SNAPSHOT_NOT_FOUND",
                 "Book Production input snapshot does not exist",
             )
-        values = list(row)
-        values[9] = tuple(str(item) for item in values[9])
-        values[25] = tuple(str(item) for item in values[25])
-        return BookProductionInputSnapshot(*values)
+        names = [item.name for item in fields(BookProductionInputSnapshot)]
+        if len(row) != len(names):
+            raise KernelError(
+                "BOOK_PRODUCTION_INPUT_SNAPSHOT_SHAPE_INVALID",
+                "persisted Book Production input shape differs from its typed contract",
+            )
+        values = dict(zip(names, row, strict=True))
+        for name in (
+            "volume_portfolio_plan_versions",
+            "active_arc_plan_versions",
+            "capability_pack_deployment_refs",
+        ):
+            values[name] = tuple(str(item) for item in values[name])
+        return BookProductionInputSnapshot(**values)
 
     def _execute_transaction(
         self,
@@ -282,6 +300,7 @@ class BookProductionInputResolver:
             correlation_id=str(row[5]),
             production_profile=str(payload["production_profile"]),
             expected_book_version=int(payload["expected_book_version"]),
+            narrative_chapter_cursor=int(payload["narrative_chapter_cursor"]),
             idempotency_key=str(payload.get("idempotency_key") or operation_id),
             role_asset_version_overrides=tuple(
                 (str(item[0]), str(item[1]))
@@ -300,9 +319,11 @@ class BookProductionInputResolver:
             """
             INSERT INTO authority_book_production_input_snapshot(
                 snapshot_id, project_id, workspace_id, book_id,
-                expected_book_version, book_record_version,
+                expected_book_version, narrative_chapter_cursor,
+                book_record_version,
                 book_design_version, book_plan_version,
-                current_volume_plan_version, active_arc_plan_versions,
+                current_volume_plan_version, volume_portfolio_plan_versions,
+                active_arc_plan_versions,
                 current_chapter_group_plan_version,
                 production_profile_version, reader_segment_version,
                 reader_contract_version, platform_profile_version,
@@ -314,7 +335,7 @@ class BookProductionInputResolver:
                 capability_pack_deployment_refs,
                 release_sha, snapshot_hash, resolved_by_operation_id
             ) VALUES (
-                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NULLIF(%s, ''),
+                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NULLIF(%s, ''),
                 %s, %s, %s, %s, %s, %s, %s, %s, %s, NULLIF(%s, ''),
                 NULLIF(%s, ''), %s, %s, %s, %s, %s, %s, %s
             ) ON CONFLICT (snapshot_hash) DO NOTHING
@@ -325,10 +346,12 @@ class BookProductionInputResolver:
                 resolved["workspace_id"],
                 resolved["book_id"],
                 resolved["expected_book_version"],
+                resolved["narrative_chapter_cursor"],
                 resolved["book_record_version"],
                 resolved["book_design_version"],
                 resolved["book_plan_version"],
                 resolved["current_volume_plan_version"],
+                Jsonb(resolved["volume_portfolio_plan_versions"]),
                 Jsonb(resolved["active_arc_plan_versions"]),
                 resolved["current_chapter_group_plan_version"],
                 resolved["production_profile_version"],
@@ -369,6 +392,7 @@ class BookProductionInputResolver:
                     "snapshot_id": snapshot_id,
                     "snapshot_hash": resolved["snapshot_hash"],
                     "book_id": command.book_id,
+                    "narrative_chapter_cursor": command.narrative_chapter_cursor,
                     "design_admission_status": resolved[
                         "design_admission_status"
                     ],
@@ -410,6 +434,7 @@ class BookProductionInputResolver:
                 "BOOK_DESIGN_ACTIVE_REQUIRED",
                 "Book Production requires an Active Book Design",
             )
+        self._require_authoritative_chapter_cursor(cursor, command)
         plans = self._active_plans(cursor, command)
         roles = {
             role: self._active_role_asset(
@@ -442,12 +467,16 @@ class BookProductionInputResolver:
             book_id=command.book_id,
             initial_roles=initial_roles,
         )
-        self._validate_plan_hierarchy(plans)
+        current_volume = self._select_current_volume(
+            plans["VOLUME"], chapter_cursor=command.narrative_chapter_cursor
+        )
+        self._validate_plan_hierarchy(plans, current_volume=current_volume)
         book_design = self._asset_content(cursor, str(book[1]), command.project_id)
         book_plan = plans["BOOK"][0]
         self._validate_design_plan_compatibility(
             book_design=book_design,
             book_plan=book_plan["content"],
+            volume_portfolio=plans["VOLUME"],
             production_profile=roles["production_profile_version"]["content"],
         )
         design_qualification = self._longform_design_qualification(
@@ -462,10 +491,14 @@ class BookProductionInputResolver:
             "workspace_id": command.workspace_id,
             "book_id": command.book_id,
             "expected_book_version": command.expected_book_version,
+            "narrative_chapter_cursor": command.narrative_chapter_cursor,
             "book_record_version": str(book[0]),
             "book_design_version": str(book[1]),
             "book_plan_version": book_plan["asset_version_id"],
-            "current_volume_plan_version": plans["VOLUME"][0]["asset_version_id"],
+            "current_volume_plan_version": current_volume["asset_version_id"],
+            "volume_portfolio_plan_versions": [
+                item["asset_version_id"] for item in plans["VOLUME"]
+            ],
             "active_arc_plan_versions": sorted(
                 item["asset_version_id"] for item in plans["ARC"]
             ),
@@ -494,6 +527,34 @@ class BookProductionInputResolver:
         return value
 
     @staticmethod
+    def _require_authoritative_chapter_cursor(
+        cursor: Any, command: ResolveBookProductionInputCommand
+    ) -> None:
+        cursor.execute(
+            """
+            SELECT book_run_id, accepted_through_chapter
+            FROM authority_book_production
+            WHERE project_id=%s AND workspace_id=%s AND book_id=%s
+              AND state NOT IN ('COMPLETED', 'ABORTED')
+            ORDER BY created_at DESC
+            FOR SHARE
+            """,
+            [command.project_id, command.workspace_id, command.book_id],
+        )
+        rows = cursor.fetchall()
+        if len(rows) > 1:
+            raise KernelError(
+                "BOOK_PRODUCTION_CHAPTER_CURSOR_AMBIGUOUS",
+                "multiple non-terminal Book runs cannot own one Narrative cursor",
+            )
+        expected = 1 if not rows else max(1, int(rows[0][1]) + 1)
+        if command.narrative_chapter_cursor != expected:
+            raise KernelError(
+                "BOOK_PRODUCTION_CHAPTER_CURSOR_CONFLICT",
+                "Narrative chapter cursor differs from accepted Book Authority history",
+            )
+
+    @staticmethod
     def _longform_design_qualification(
         cursor: Any,
         *,
@@ -505,7 +566,10 @@ class BookProductionInputResolver:
         stage_assets = (
             ("book_design.propose", (book_design_version,)),
             ("book_plan.generate", (plans["BOOK"][0]["asset_version_id"],)),
-            ("volume_plan.generate", (plans["VOLUME"][0]["asset_version_id"],)),
+            (
+                "volume_plan.generate",
+                tuple(item["asset_version_id"] for item in plans["VOLUME"]),
+            ),
             (
                 "arc_plan.generate",
                 tuple(item["asset_version_id"] for item in plans["ARC"]),
@@ -536,6 +600,7 @@ class BookProductionInputResolver:
               AND qualification.book_id=%s
               AND qualification.asset_version_id=ANY(%s)
               AND qualification.qualification_status='PASS'
+              AND qualification.trust_boundary='INDEPENDENT'
               AND operation.status IN ('WAITING_GATE', 'SUCCEEDED')
             ORDER BY qualification.asset_version_id,
                      qualification.design_layer,
@@ -672,7 +737,14 @@ class BookProductionInputResolver:
             JOIN authority_asset_version AS version
               ON version.asset_version_id=binding.asset_version_id
             WHERE active.project_id=%s AND active.book_id=%s
-            ORDER BY active.activated_at DESC, binding.logical_key
+            ORDER BY binding.contract_type,
+                     CASE
+                       WHEN binding.contract_type='VOLUME'
+                       THEN (version.content->'chapter_range'->>0)::INTEGER
+                       ELSE 0
+                     END,
+                     active.activated_at DESC,
+                     binding.logical_key
             """,
             [command.project_id, command.book_id],
         )
@@ -695,10 +767,10 @@ class BookProductionInputResolver:
                     "execution_scope": str(row[7]),
                 }
             )
-        if len(result["BOOK"]) != 1 or len(result["VOLUME"]) != 1 or not result["ARC"]:
+        if len(result["BOOK"]) != 1 or not result["VOLUME"] or not result["ARC"]:
             raise KernelError(
                 "BOOK_PRODUCTION_PLAN_SET_INCOMPLETE",
-                "Book Production requires one BookPlan, one current VolumePlan, and active ArcPlans",
+                "Book Production requires one BookPlan, a Volume Portfolio, and active ArcPlans",
             )
         if len(result["CHAPTER_GROUP"]) > 1:
             raise KernelError(
@@ -708,16 +780,56 @@ class BookProductionInputResolver:
         return result
 
     @staticmethod
-    def _validate_plan_hierarchy(plans: dict[str, list[dict[str, Any]]]) -> None:
+    def _select_current_volume(
+        volumes: list[dict[str, Any]], *, chapter_cursor: int
+    ) -> dict[str, Any]:
+        matches: list[dict[str, Any]] = []
+        previous_end = 0
+        for volume in volumes:
+            chapter_range = volume["content"].get("chapter_range")
+            if (
+                not isinstance(chapter_range, list)
+                or len(chapter_range) != 2
+                or any(
+                    not isinstance(item, int) or isinstance(item, bool)
+                    for item in chapter_range
+                )
+            ):
+                raise KernelError(
+                    "BOOK_PRODUCTION_VOLUME_RANGE_INVALID",
+                    "every Volume Portfolio member requires an integer chapter range",
+                )
+            start, end = chapter_range
+            if start != previous_end + 1 or end < start:
+                raise KernelError(
+                    "BOOK_PRODUCTION_VOLUME_PORTFOLIO_OVERLAP",
+                    "Volume Portfolio ranges must be ordered, contiguous, and start at chapter 1",
+                )
+            previous_end = end
+            if start <= chapter_cursor <= end:
+                matches.append(volume)
+        if len(matches) != 1:
+            raise KernelError(
+                "BOOK_PRODUCTION_CURRENT_VOLUME_AMBIGUOUS",
+                "accepted chapter cursor must resolve exactly one current VolumePlan",
+            )
+        return matches[0]
+
+    @staticmethod
+    def _validate_plan_hierarchy(
+        plans: dict[str, list[dict[str, Any]]],
+        *,
+        current_volume: dict[str, Any],
+    ) -> None:
         book = plans["BOOK"][0]["asset_version_id"]
-        volume = plans["VOLUME"][0]
-        if volume["parent_version_id"] != book:
+        if any(volume["parent_version_id"] != book for volume in plans["VOLUME"]):
             raise KernelError(
                 "BOOK_PRODUCTION_PLAN_PARENT_INVALID",
-                "current VolumePlan is not a child of the active BookPlan",
+                "every Volume Portfolio member must be a child of the active BookPlan",
             )
         if plans["CHAPTER_GROUP"] and (
-            plans["CHAPTER_GROUP"][0]["parent_version_id"] != volume["asset_version_id"]
+            plans["CHAPTER_GROUP"][0]["parent_version_id"]
+            != current_volume["asset_version_id"]
         ):
             raise KernelError(
                 "BOOK_PRODUCTION_PLAN_PARENT_INVALID",
@@ -727,10 +839,14 @@ class BookProductionInputResolver:
             spans = [
                 str(item) for item in arc["content"].get("cross_volume_scope") or ()
             ]
-            if spans and volume["asset_version_id"] not in spans:
+            portfolio = {item["asset_version_id"] for item in plans["VOLUME"]}
+            if spans and (
+                current_volume["asset_version_id"] not in spans
+                or not set(spans).issubset(portfolio)
+            ):
                 raise KernelError(
                     "BOOK_PRODUCTION_ARC_VOLUME_INVALID",
-                    "active ArcPlan does not span the current VolumePlan",
+                    "active ArcPlan scope must bind the current Volume and only Portfolio members",
                 )
 
     @staticmethod
@@ -738,6 +854,7 @@ class BookProductionInputResolver:
         *,
         book_design: dict[str, Any],
         book_plan: dict[str, Any],
+        volume_portfolio: list[dict[str, Any]],
         production_profile: dict[str, Any],
     ) -> None:
         design_ending = book_design.get("ending_contract") or book_design.get(
@@ -761,6 +878,15 @@ class BookProductionInputResolver:
             raise KernelError(
                 "BOOK_PRODUCTION_CHAPTER_RANGE_CONFLICT",
                 "Production Profile target chapters differ from the active BookPlan",
+            )
+        portfolio_end = int(volume_portfolio[-1]["content"]["chapter_range"][1])
+        volume_skeleton = list(book_plan.get("volume_skeleton") or ())
+        if portfolio_end != planned or (
+            volume_skeleton and len(volume_skeleton) != len(volume_portfolio)
+        ):
+            raise KernelError(
+                "BOOK_PRODUCTION_VOLUME_PORTFOLIO_INCOMPLETE",
+                "qualified Volume Portfolio must cover the BookPlan target and volume skeleton exactly",
             )
 
     @staticmethod
@@ -936,6 +1062,9 @@ class BookProductionInputResolver:
             *_OPTIONAL_INITIAL_STATE_ROLE_TYPES.keys(),
         )
         values = [str(snapshot[key]) for key in scalar if snapshot.get(key)]
+        values.extend(
+            str(item) for item in snapshot["volume_portfolio_plan_versions"]
+        )
         values.extend(str(item) for item in snapshot["active_arc_plan_versions"])
         return tuple(dict.fromkeys(values))
 
@@ -986,6 +1115,7 @@ def book_production_input_definition(
             "book_id",
             "production_profile",
             "expected_book_version",
+            "narrative_chapter_cursor",
             "expected_snapshot_hash",
             "role_asset_version_overrides",
         ],
@@ -995,6 +1125,7 @@ def book_production_input_definition(
             "book_id": {"type": "string"},
             "production_profile": {"type": "string"},
             "expected_book_version": {"type": "integer"},
+            "narrative_chapter_cursor": {"type": "integer"},
             "expected_snapshot_hash": {"type": "string"},
             "role_asset_version_overrides": {"type": "array"},
         },
@@ -1006,14 +1137,14 @@ def book_production_input_definition(
         "family": "book_authority",
         "enabled": True,
         "definition_status": "implemented_validation_pending",
-        "command_schema_version": "book-production-input-resolve-command-v2",
-        "result_schema_version": "book-production-input-snapshot-v2",
+        "command_schema_version": "book-production-input-resolve-command-v3",
+        "result_schema_version": "book-production-input-snapshot-v3",
         "command_schema": schema,
         "result_schema": {"type": "object"},
         "input_contract": schema,
         "output_contract": {"type": "BookProductionInputSnapshot"},
         "handler_key": BOOK_INPUT_RESOLVE_HANDLER,
-        "handler_contract_version": "book-production-input-resolver-v2",
+        "handler_contract_version": "book-production-input-resolver-v3",
         "application_build_id": application_build_id,
         "commit_sha": commit_sha,
         "execution_mode": "transactional",

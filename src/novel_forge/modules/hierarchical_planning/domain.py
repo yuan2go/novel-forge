@@ -24,6 +24,52 @@ class PlanExecutionScope(StrEnum):
     SPECULATIVE = "SPECULATIVE"
 
 
+class PlanningHorizon(StrEnum):
+    STRATEGIC = "STRATEGIC"
+    TACTICAL = "TACTICAL"
+    OPERATIONAL = "OPERATIONAL"
+
+
+class RealizationLevel(StrEnum):
+    ANCHOR = "ANCHOR"
+    DEFINED = "DEFINED"
+    DETAILED = "DETAILED"
+    ACTIVE = "ACTIVE"
+
+
+class CommitmentLevel(StrEnum):
+    HARD_CONSTRAINT = "HARD_CONSTRAINT"
+    SOFT_INTENT = "SOFT_INTENT"
+    OPEN_DESIGN_SPACE = "OPEN_DESIGN_SPACE"
+
+
+PLAN_HORIZON = {
+    PlanContractType.BOOK: PlanningHorizon.STRATEGIC,
+    PlanContractType.VOLUME: PlanningHorizon.STRATEGIC,
+    PlanContractType.ARC: PlanningHorizon.STRATEGIC,
+    PlanContractType.CHAPTER_GROUP: PlanningHorizon.TACTICAL,
+    PlanContractType.CHAPTER: PlanningHorizon.OPERATIONAL,
+}
+
+PLAN_REALIZATION = {
+    PlanContractType.BOOK: RealizationLevel.ANCHOR,
+    PlanContractType.VOLUME: RealizationLevel.DEFINED,
+    PlanContractType.ARC: RealizationLevel.DEFINED,
+    PlanContractType.CHAPTER_GROUP: RealizationLevel.DETAILED,
+    PlanContractType.CHAPTER: RealizationLevel.ACTIVE,
+}
+
+HORIZON_REALIZATION_LEVELS = {
+    PlanningHorizon.STRATEGIC: frozenset(RealizationLevel),
+    PlanningHorizon.TACTICAL: frozenset(
+        {RealizationLevel.DEFINED, RealizationLevel.DETAILED, RealizationLevel.ACTIVE}
+    ),
+    PlanningHorizon.OPERATIONAL: frozenset(
+        {RealizationLevel.DETAILED, RealizationLevel.ACTIVE}
+    ),
+}
+
+
 COMMON_FIELDS = (
     "contract_id",
     "logical_key",
@@ -258,6 +304,7 @@ def validate_planning_contract(
 def _validate_canonical_narrative_contract(
     contract_type: PlanContractType, content: dict[str, Any]
 ) -> None:
+    _validate_progressive_planning_contract(contract_type, content)
     if contract_type is PlanContractType.BOOK:
         _validate_book_design_layers(content)
         return
@@ -461,6 +508,191 @@ def _validate_canonical_narrative_contract(
         )
 
 
+def _validate_progressive_planning_contract(
+    contract_type: PlanContractType, content: dict[str, Any]
+) -> None:
+    expected_horizon = PLAN_HORIZON[contract_type]
+    try:
+        selected_realization = RealizationLevel(
+            str(content.get("realization_level") or "")
+        )
+    except ValueError as exc:
+        raise KernelError(
+            "PLANNING_REALIZATION_LEVEL_INVALID",
+            "Planning realization level is unsupported",
+        ) from exc
+    if str(content.get("planning_horizon") or "") != expected_horizon.value:
+        raise KernelError(
+            "PLANNING_HORIZON_INVALID",
+            f"{contract_type.value} requires {expected_horizon.value} horizon",
+        )
+    if selected_realization not in HORIZON_REALIZATION_LEVELS[expected_horizon]:
+        raise KernelError(
+            "PLANNING_REALIZATION_LEVEL_INVALID",
+            f"{contract_type.value} realization is too abstract for its horizon",
+        )
+    commitments = content.get("commitment_contract")
+    if not isinstance(commitments, list) or not commitments:
+        raise KernelError(
+            "PLANNING_COMMITMENT_CONTRACT_REQUIRED",
+            "canonical Planning requires explicit frozen and open design commitments",
+        )
+    commitment_ids: set[str] = set()
+    for item in commitments:
+        commitment_id = str((item or {}).get("commitment_id") or "")
+        try:
+            level = CommitmentLevel(str((item or {}).get("level") or ""))
+        except ValueError as exc:
+            raise KernelError(
+                "PLANNING_COMMITMENT_LEVEL_INVALID",
+                "Planning commitment uses an unsupported level",
+            ) from exc
+        if (
+            not commitment_id
+            or commitment_id in commitment_ids
+            or not str((item or {}).get("statement") or "")
+        ):
+            raise KernelError(
+                "PLANNING_COMMITMENT_IDENTITY_INVALID",
+                "Planning commitments require unique identities and statements",
+            )
+        if (
+            expected_horizon is PlanningHorizon.OPERATIONAL
+            and level is CommitmentLevel.OPEN_DESIGN_SPACE
+        ):
+            raise KernelError(
+                "PLANNING_OPERATIONAL_COMMITMENT_OPEN",
+                "Operational planning cannot leave execution-critical design space open",
+            )
+        commitment_ids.add(commitment_id)
+    _validate_realization_manifest(
+        content.get("world_realization"),
+        identity_key="world_id",
+        required_keys=(
+            "invariant_refs",
+            "structure_refs",
+            "state_ref",
+            "visibility",
+            "accessibility",
+        ),
+        expected_level=selected_realization,
+        error_prefix="WORLD",
+    )
+    _validate_realization_manifest(
+        content.get("character_realization"),
+        identity_key="character_id",
+        required_keys=("identity_ref", "state_ref", "trajectory_ref", "scope", "reach"),
+        expected_level=selected_realization,
+        error_prefix="CHARACTER",
+    )
+    budget = content.get("narrative_load_budget")
+    required_limits = (
+        "max_active_arcs",
+        "max_dormant_arc_age",
+        "max_open_obligations",
+        "max_payoff_congestion",
+        "max_character_appearance_gap",
+        "max_new_concepts",
+        "max_state_transitions",
+    )
+    if not isinstance(budget, dict) or any(
+        not isinstance(budget.get(key), int) or int(budget[key]) < 0
+        for key in required_limits
+    ):
+        raise KernelError(
+            "NARRATIVE_LOAD_BUDGET_INVALID",
+            "Planning requires non-negative canonical Narrative Load limits",
+        )
+    if contract_type is PlanContractType.CHAPTER:
+        observed = {
+            "max_active_arcs": len(content.get("arc_schedule") or ()),
+            "max_payoff_congestion": len(content.get("payoffs") or ()),
+            "max_new_concepts": len(
+                {
+                    str(fact)
+                    for scene in content.get("scene_plan") or ()
+                    for fact in (scene or {}).get("information_gain") or ()
+                }
+            ),
+            "max_state_transitions": len(
+                content.get("required_state_transitions") or ()
+            ),
+        }
+        exceeded = [
+            key for key, count in observed.items() if count > int(budget[key])
+        ]
+        if exceeded:
+            raise KernelError(
+                "NARRATIVE_LOAD_BUDGET_EXCEEDED",
+                "Chapter execution exceeds: " + ", ".join(sorted(exceeded)),
+            )
+        projection = dict(
+            (content.get("constraint_envelope") or {}).get(
+                "narrative_load_projection"
+            )
+            or {}
+        )
+        metrics = dict(projection.get("metrics") or {})
+        if projection.get("status") == "MEASURED":
+            inherited_limits = {
+                "active_arc_count": "max_active_arcs",
+                "dormant_arc_max_age": "max_dormant_arc_age",
+                "open_obligation_count": "max_open_obligations",
+                "payoff_congestion_count": "max_payoff_congestion",
+                "character_appearance_max_gap": "max_character_appearance_gap",
+            }
+            inherited_exceeded = [
+                metric
+                for metric, limit in inherited_limits.items()
+                if int(metrics.get(metric) or 0) > int(budget[limit])
+            ]
+            if inherited_exceeded:
+                raise KernelError(
+                    "NARRATIVE_DEBT_GUARDRAIL_BLOCKED",
+                    "accepted-state load exceeds: "
+                    + ", ".join(sorted(inherited_exceeded)),
+                )
+            if int(metrics.get("overdue_obligation_count") or 0) > 0 and not any(
+                str(item.get("action") or "").upper() == "PAYOFF"
+                for item in content.get("payoffs") or ()
+                if isinstance(item, dict)
+            ):
+                raise KernelError(
+                    "NARRATIVE_DEBT_PAYDOWN_REQUIRED",
+                    "overdue accepted obligations require an explicit payoff action",
+                )
+
+
+def _validate_realization_manifest(
+    value: Any,
+    *,
+    identity_key: str,
+    required_keys: tuple[str, ...],
+    expected_level: RealizationLevel,
+    error_prefix: str,
+) -> None:
+    if not isinstance(value, list) or not value:
+        raise KernelError(
+            f"{error_prefix}_REALIZATION_REQUIRED",
+            f"canonical Planning requires progressive {error_prefix.title()} realization",
+        )
+    seen: set[str] = set()
+    for item in value:
+        identity = str((item or {}).get(identity_key) or "")
+        if (
+            not isinstance(item, dict)
+            or not identity
+            or identity in seen
+            or any(item.get(key) in (None, "") for key in required_keys)
+            or str(item.get("realization_level") or "") != expected_level.value
+        ):
+            raise KernelError(
+                f"{error_prefix}_REALIZATION_INVALID",
+                f"{error_prefix.title()} realization requires unique identity, typed dimensions, and horizon level",
+            )
+        seen.add(identity)
+
+
 def _validate_book_design_layers(content: dict[str, Any]) -> None:
     trajectories = content.get("character_development")
     obligations = content.get("knowledge_disclosure_obligations")
@@ -646,6 +878,97 @@ def _validate_scene_architecture(
             "SCENE_ARCHITECTURE_IDENTITY_DUPLICATE",
             "Scene Architecture requires unique Scene identities",
         )
+    known_by_character = {
+        str(item.get("character_id") or ""): {
+            str(fact) for fact in item.get("known_fact_ids") or () if str(fact)
+        }
+        for item in content.get("character_participation") or ()
+        if isinstance(item, dict) and str(item.get("character_id") or "")
+    }
+    previous_story_time: dict[str, tuple[int, int]] = {}
+    for scene in scenes:
+        participants = {str(item) for item in scene.get("participants") or ()}
+        pov = str(scene.get("pov_character_id") or "")
+        focalization = str(scene.get("focalization") or "")
+        story_time = scene.get("story_time")
+        relation = str(scene.get("narrative_time_relation") or "")
+        if (
+            not pov
+            or focalization not in {"INTERNAL", "EXTERNAL", "OMNISCIENT"}
+            or (focalization != "OMNISCIENT" and pov not in participants)
+            or not str(scene.get("location_id") or "")
+            or not isinstance(story_time, dict)
+            or relation not in {
+                "ESTABLISHES", "ADVANCES", "FLASHBACK", "FLASHFORWARD",
+                "PARALLEL", "ELLIPSIS",
+            }
+        ):
+            raise KernelError(
+                "SCENE_POV_SPACE_CONTRACT_INVALID",
+                "Scene requires POV, focalization, participants, and location",
+            )
+        timeline_id = str(story_time.get("timeline_id") or "")
+        start = int(story_time.get("start_ordinal") or 0)
+        end = int(story_time.get("end_ordinal") or 0)
+        if (
+            not timeline_id
+            or str(story_time.get("precision") or "")
+            not in {"EXACT", "ORDERED", "RANGE"}
+            or start <= 0
+            or end < start
+        ):
+            raise KernelError(
+                "SCENE_STORY_TIME_INVALID",
+                "Scene Story Time must be explicit and valid independently from narrative position",
+            )
+        previous = previous_story_time.get(timeline_id)
+        if previous is None and relation != "ESTABLISHES":
+            raise KernelError(
+                "SCENE_STORY_TIME_INVALID",
+                "the first Scene on a timeline must establish Story Time",
+            )
+        if previous is not None:
+            previous_start, previous_end = previous
+            relation_valid = (
+                (relation == "FLASHBACK" and end < previous_start)
+                or (relation == "PARALLEL" and start <= previous_end and end >= previous_start)
+                or (
+                    relation in {"ADVANCES", "FLASHFORWARD", "ELLIPSIS"}
+                    and start > previous_end
+                )
+            )
+            if not relation_valid:
+                raise KernelError(
+                    "SCENE_STORY_TIME_INVALID",
+                    "Scene Story Time conflicts with its explicit narrative-time relation",
+                )
+        previous_story_time[timeline_id] = (start, end)
+        reachable_by_character = {
+            str(item.get("character_id") or ""): {
+                str(location)
+                for location in item.get("reachable_location_ids") or ()
+                if str(location)
+            }
+            for item in content.get("character_participation") or ()
+            if isinstance(item, dict) and str(item.get("character_id") or "")
+        }
+        location_id = str(scene.get("location_id") or "")
+        if any(
+            location_id not in reachable_by_character.get(participant, set())
+            for participant in participants
+        ):
+            raise KernelError(
+                "SCENE_SPATIAL_ACCESS_INVALID",
+                "Scene participants must be reachable at the frozen Scene location",
+            )
+        accessible = {
+            str(fact) for fact in scene.get("accessible_knowledge") or () if str(fact)
+        }
+        if not accessible.issubset(known_by_character.get(pov, set())):
+            raise KernelError(
+                "SCENE_HIDDEN_KNOWLEDGE_LEAK",
+                "Scene accessible knowledge exceeds the POV character's accepted boundary",
+            )
     for current, following in zip(scenes, scenes[1:], strict=False):
         if str(current.get("exit_state") or "") != str(
             following.get("entry_state") or ""
@@ -818,9 +1141,14 @@ __all__ = [
     "CHAPTER_EXECUTION_STATE_KINDS",
     "READER_DISCLOSURE_STATUS",
     "COMMON_FIELDS",
+    "CommitmentLevel",
+    "PLAN_HORIZON",
+    "PLAN_REALIZATION",
     "PlanContractType",
     "PlanExecutionScope",
+    "PlanningHorizon",
     "PlanningContract",
+    "RealizationLevel",
     "TYPE_FIELDS",
     "validate_chapter_function_matrix",
     "validate_planning_contract",

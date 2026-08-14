@@ -8,9 +8,6 @@ from novel_forge.modules.story_design_authority.validators import (
     STORY_DESIGN_VALIDATOR_VERSION,
     validate_story_design_candidate,
 )
-from novel_forge.modules.story_design_authority.qualification import (
-    scripted_qualification,
-)
 from novel_forge.modules.story_planning_runtime.domain import (
     GENERATOR_INPUT_ROLES,
     FrozenPlanningInput,
@@ -25,10 +22,6 @@ def _content_with_constraints(
     logical_key: str,
     payload: dict[str, object],
 ) -> dict[str, object]:
-    payload = {
-        **payload,
-        "narrative_qualification": scripted_qualification(generator),
-    }
     inputs = tuple(
         FrozenPlanningInput(
             role=role,
@@ -183,7 +176,7 @@ class StoryDesignValidatorTests(unittest.TestCase):
 
         self.assertEqual(raised.exception.code, "STORY_DESIGN_SCHEMA_INVALID")
 
-    def test_objective_without_layer_semantic_evaluation_is_not_semantically_valid(
+    def test_candidate_validation_does_not_accept_or_require_generator_self_evaluation(
         self,
     ) -> None:
         content = _content_with_constraints(
@@ -192,20 +185,21 @@ class StoryDesignValidatorTests(unittest.TestCase):
             "book-plan:main",
             {"objective": "A structurally complete but unevaluated Book plan"},
         )
-        content["candidate_payload"].pop("narrative_qualification")
-
-        with self.assertRaises(KernelError) as raised:
-            validate_story_design_candidate(
-                content=content,
-                project_id="project-1",
-                generator_operation_name="book_plan.generate",
-                planning_scope="BOOK",
-                logical_key="book-plan:main",
-            )
+        result = validate_story_design_candidate(
+            content=content,
+            project_id="project-1",
+            generator_operation_name="book_plan.generate",
+            planning_scope="BOOK",
+            logical_key="book-plan:main",
+        )
+        semantic = next(
+            receipt for receipt in result.receipts
+            if receipt.validation_kind == "SEMANTIC"
+        )
 
         self.assertEqual(
-            raised.exception.code,
-            "NARRATIVE_SEMANTIC_EVALUATION_REQUIRED",
+            semantic.evidence["narrative_semantic_evaluation"]["status"],
+            "PENDING_INDEPENDENT_OPERATION",
         )
 
     def test_constraint_governance_shape_fails_closed(self) -> None:

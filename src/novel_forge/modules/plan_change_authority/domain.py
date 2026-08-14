@@ -47,6 +47,12 @@ SEMANTIC_FIELDS = {
     "chapter_function_matrix": "NARRATIVE_SCHEDULING_CHANGED",
     "scene_plan": "SCENE_ARCHITECTURE_CHANGED",
     "expected_exit_state": "EXPECTED_EXIT_STATE_CHANGED",
+    "planning_horizon": "PLANNING_HORIZON_CHANGED",
+    "realization_level": "REALIZATION_LEVEL_CHANGED",
+    "commitment_contract": "COMMITMENT_CONTRACT_CHANGED",
+    "world_realization": "WORLD_REALIZATION_CHANGED",
+    "character_realization": "CHARACTER_REALIZATION_CHANGED",
+    "narrative_load_budget": "NARRATIVE_LOAD_BUDGET_CHANGED",
 }
 
 HIGH_RISK_FIELDS = frozenset(
@@ -116,6 +122,10 @@ def classify_plan_change_risk(
         "arc_relations",
         "chapter_function_matrix",
         "scene_plan",
+        "commitment_contract",
+        "world_realization",
+        "character_realization",
+        "narrative_load_budget",
     }:
         return PlanChangeRisk.MEDIUM
     return PlanChangeRisk.LOW

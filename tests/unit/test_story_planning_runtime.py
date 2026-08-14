@@ -209,9 +209,147 @@ def test_volume_and_chapter_provider_contracts_bind_timeline_segments() -> None:
         "reader_experience",
         "scene_plan",
         "expected_exit_state",
-        "narrative_qualification",
     ):
         assert field in chapter["required"]
+
+    assert "narrative_qualification" not in chapter["properties"]
+
+
+@pytest.mark.parametrize(
+    ("contract_type", "expected_horizon", "expected_realization"),
+    (
+        (PlanContractType.BOOK, "STRATEGIC", "ANCHOR"),
+        (PlanContractType.VOLUME, "STRATEGIC", "DEFINED"),
+        (PlanContractType.ARC, "STRATEGIC", "DEFINED"),
+        (PlanContractType.CHAPTER_GROUP, "TACTICAL", "DETAILED"),
+        (PlanContractType.CHAPTER, "OPERATIONAL", "ACTIVE"),
+    ),
+)
+def test_canonical_contracts_freeze_progressive_horizon_and_realization(
+    contract_type: PlanContractType,
+    expected_horizon: str,
+    expected_realization: str,
+) -> None:
+    stage = {
+        PlanContractType.BOOK: "book_plan.generate",
+        PlanContractType.VOLUME: "volume_plan.generate",
+        PlanContractType.ARC: "arc_plan.generate",
+        PlanContractType.CHAPTER_GROUP: "chapter_group_plan.generate",
+        PlanContractType.CHAPTER: "chapter_plan.generate",
+    }[contract_type]
+    parent = (
+        ""
+        if contract_type in {PlanContractType.BOOK, PlanContractType.ARC}
+        else "parent:v1"
+    )
+    content = planning_fixture_response(
+        stage,
+        {
+            "planning_command": {
+                "logical_key": f"{contract_type.value.lower()}:proof",
+                "parent_version_id": parent,
+                "input_versions": {
+                    "arc_plans": "arc:v1",
+                    "volume_plan": "volume:v1",
+                },
+            }
+        },
+    )
+
+    contract = validate_planning_contract(
+        project_id="project-1",
+        book_id="book-1",
+        contract_type=contract_type,
+        asset_version_id=f"{contract_type.value.lower()}:v1",
+        parent_version_id=parent,
+        execution_scope=PlanExecutionScope.PLANNED,
+        content=content,
+    )
+
+    assert contract.content["planning_horizon"] == expected_horizon
+    assert contract.content["realization_level"] == expected_realization
+    assert contract.content["world_realization"][0]["realization_level"] == expected_realization
+    assert contract.content["character_realization"][0]["realization_level"] == expected_realization
+
+
+def test_operational_plan_fails_closed_on_open_design_space_and_load_overrun() -> None:
+    content = planning_fixture_response(
+        "chapter_plan.generate",
+        {
+            "planning_command": {
+                "logical_key": "chapter:2",
+                "parent_version_id": "chapter-group:v1",
+                "input_versions": {"arc_plans": "arc:v1"},
+            }
+        },
+    )
+    content["commitment_contract"][1]["level"] = "OPEN_DESIGN_SPACE"
+
+    with pytest.raises(KernelError, match="PLANNING_OPERATIONAL_COMMITMENT_OPEN"):
+        validate_planning_contract(
+            project_id="project-1",
+            book_id="book-1",
+            contract_type=PlanContractType.CHAPTER,
+            asset_version_id="chapter:v2",
+            parent_version_id="chapter-group:v1",
+            execution_scope=PlanExecutionScope.PLANNED,
+            content=content,
+        )
+
+
+def test_operational_plan_consumes_accepted_narrative_debt_projection() -> None:
+    content = planning_fixture_response(
+        "chapter_plan.generate",
+        {
+            "planning_command": {
+                "logical_key": "chapter:2",
+                "parent_version_id": "chapter-group:v1",
+                "input_versions": {"arc_plans": "arc:v1"},
+            }
+        },
+    )
+    content["constraint_envelope"] = {
+        "narrative_load_projection": {
+            "status": "MEASURED",
+            "metrics": {"overdue_obligation_count": 1},
+        }
+    }
+
+    with pytest.raises(KernelError, match="NARRATIVE_DEBT_PAYDOWN_REQUIRED"):
+        validate_planning_contract(
+            project_id="project-1",
+            book_id="book-1",
+            contract_type=PlanContractType.CHAPTER,
+            asset_version_id="chapter:v2",
+            parent_version_id="chapter-group:v1",
+            execution_scope=PlanExecutionScope.PLANNED,
+            content=content,
+        )
+
+    content["payoffs"][0]["action"] = "PAYOFF"
+    contract = validate_planning_contract(
+        project_id="project-1",
+        book_id="book-1",
+        contract_type=PlanContractType.CHAPTER,
+        asset_version_id="chapter:v2",
+        parent_version_id="chapter-group:v1",
+        execution_scope=PlanExecutionScope.PLANNED,
+        content=content,
+    )
+    assert contract.logical_key == "chapter:2"
+
+    content["commitment_contract"][1]["level"] = "SOFT_INTENT"
+    content["narrative_load_budget"]["max_state_transitions"] = 0
+    with pytest.raises(KernelError, match="NARRATIVE_LOAD_BUDGET_EXCEEDED"):
+        validate_planning_contract(
+            project_id="project-1",
+            book_id="book-1",
+            contract_type=PlanContractType.CHAPTER,
+            asset_version_id="chapter:v2",
+            parent_version_id="chapter-group:v1",
+            execution_scope=PlanExecutionScope.PLANNED,
+            content=content,
+        )
 
 
 def test_chapter_provider_contract_accepts_only_the_frozen_arc_portfolio() -> None:
@@ -413,6 +551,132 @@ def test_chapter_contract_rejects_temporal_and_scene_structural_failures(
             parent_version_id="chapter-group:v1",
             execution_scope=PlanExecutionScope.PLANNED,
             content=content,
+        )
+
+
+def test_scene_contract_enforces_pov_time_relation_and_spatial_access() -> None:
+    content = planning_fixture_response(
+        "chapter_plan.generate",
+        {
+            "planning_command": {
+                "logical_key": "chapter:2",
+                "parent_version_id": "chapter-group:v1",
+                "input_versions": {"arc_plans": "arc:v1"},
+            }
+        },
+    )
+    content["scene_plan"][0]["accessible_knowledge"] = ["fact:hidden-cost"]
+    with pytest.raises(KernelError, match="SCENE_HIDDEN_KNOWLEDGE_LEAK"):
+        validate_planning_contract(
+            project_id="project-1",
+            book_id="book-1",
+            contract_type=PlanContractType.CHAPTER,
+            asset_version_id="chapter:v2",
+            parent_version_id="chapter-group:v1",
+            execution_scope=PlanExecutionScope.PLANNED,
+            content=content,
+        )
+
+    content["character_participation"][0]["known_fact_ids"] = ["fact:hidden-cost"]
+    content["scene_plan"].append(
+        {
+            **content["scene_plan"][0],
+            "scene_id": "chapter:2:scene:2",
+            "entry_state": content["scene_plan"][0]["exit_state"],
+            "narrative_time_relation": "FLASHBACK",
+            "story_time": {
+                **content["scene_plan"][0]["story_time"],
+                "start_ordinal": 1,
+                "end_ordinal": 2,
+            },
+        }
+    )
+    validate_planning_contract(
+        project_id="project-1",
+        book_id="book-1",
+        contract_type=PlanContractType.CHAPTER,
+        asset_version_id="chapter:v2",
+        parent_version_id="chapter-group:v1",
+        execution_scope=PlanExecutionScope.PLANNED,
+        content=content,
+    )
+
+    content["scene_plan"][1]["narrative_time_relation"] = "ADVANCES"
+    with pytest.raises(KernelError, match="SCENE_STORY_TIME_INVALID"):
+        validate_planning_contract(
+            project_id="project-1",
+            book_id="book-1",
+            contract_type=PlanContractType.CHAPTER,
+            asset_version_id="chapter:v2",
+            parent_version_id="chapter-group:v1",
+            execution_scope=PlanExecutionScope.PLANNED,
+            content=content,
+        )
+
+    content["scene_plan"][1]["narrative_time_relation"] = "FLASHBACK"
+    content["scene_plan"][1]["location_id"] = "location:unreachable"
+    with pytest.raises(KernelError, match="SCENE_SPATIAL_ACCESS_INVALID"):
+        validate_planning_contract(
+            project_id="project-1",
+            book_id="book-1",
+            contract_type=PlanContractType.CHAPTER,
+            asset_version_id="chapter:v2",
+            parent_version_id="chapter-group:v1",
+            execution_scope=PlanExecutionScope.PLANNED,
+            content=content,
+        )
+
+
+def test_progressive_realization_can_refine_strategic_versions() -> None:
+    content = planning_fixture_response(
+        "volume_plan.generate",
+        {
+            "planning_command": {
+                "logical_key": "volume:1",
+                "parent_version_id": "book-plan:v1",
+                "input_versions": {},
+            }
+        },
+    )
+    for level in ("ANCHOR", "ACTIVE"):
+        content["realization_level"] = level
+        for item in (
+            *content["world_realization"],
+            *content["character_realization"],
+        ):
+            item["realization_level"] = level
+        validate_planning_contract(
+            project_id="project-1",
+            book_id="book-1",
+            contract_type=PlanContractType.VOLUME,
+            asset_version_id=f"volume:{level.lower()}",
+            parent_version_id="book-plan:v1",
+            execution_scope=PlanExecutionScope.PLANNED,
+            content=content,
+        )
+
+    chapter = planning_fixture_response(
+        "chapter_plan.generate",
+        {
+            "planning_command": {
+                "logical_key": "chapter:2",
+                "parent_version_id": "chapter-group:v1",
+                "input_versions": {"arc_plans": "arc:v1"},
+            }
+        },
+    )
+    chapter["realization_level"] = "ANCHOR"
+    for item in (*chapter["world_realization"], *chapter["character_realization"]):
+        item["realization_level"] = "ANCHOR"
+    with pytest.raises(KernelError, match="PLANNING_REALIZATION_LEVEL_INVALID"):
+        validate_planning_contract(
+            project_id="project-1",
+            book_id="book-1",
+            contract_type=PlanContractType.CHAPTER,
+            asset_version_id="chapter:anchor",
+            parent_version_id="chapter-group:v1",
+            execution_scope=PlanExecutionScope.PLANNED,
+            content=chapter,
         )
 
 

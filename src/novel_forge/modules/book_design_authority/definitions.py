@@ -100,7 +100,7 @@ def book_design_definitions(
                     "legacy_writer": "disabled",
                     "silent_fallback": False,
                     "progressive_narrative_qualification": (
-                        "required_for_book-design-v2"
+                        "independent_worker_required_for_book-design-v3"
                     ),
                 },
                 "completion_contract": {

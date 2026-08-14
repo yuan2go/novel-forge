@@ -89,6 +89,12 @@ class PlanChangeAuthorityPostgresTests(unittest.TestCase):
             logical_key="chapter:executed",
             execution_scope="EXECUTED",
         )
+        requalification_only = self._dependent_binding(
+            old["asset_version_id"],
+            logical_key="chapter:requalification-only",
+            execution_scope="PLANNED",
+            invalidation_policy="REVALIDATE",
+        )
         fail_once = {"pending": True}
 
         def inject(point: str) -> None:
@@ -185,7 +191,7 @@ class PlanChangeAuthorityPostgresTests(unittest.TestCase):
                 WHERE asset_version_id=ANY(%s)
                 ORDER BY asset_version_id
                 """,
-                [[planned, executed]],
+                [[planned, executed, requalification_only]],
             )
             impacted = {
                 str(row[0]): (str(row[1]), str(row[2]))
@@ -203,7 +209,10 @@ class PlanChangeAuthorityPostgresTests(unittest.TestCase):
         self.assertEqual(active, proposed_version)
         self.assertEqual(impacted[planned], ("PLANNED", "STALE"))
         self.assertEqual(impacted[executed], ("EXECUTED", "CURRENT"))
-        self.assertEqual(impact_count, 2)
+        self.assertEqual(
+            impacted[requalification_only], ("PLANNED", "IMPACTED")
+        )
+        self.assertEqual(impact_count, 3)
 
         revalidated = authority.revalidate(
             project_id=self.project_id,
@@ -279,6 +288,7 @@ class PlanChangeAuthorityPostgresTests(unittest.TestCase):
         *,
         logical_key: str,
         execution_scope: str,
+        invalidation_policy: str = "MARK_STALE",
     ) -> str:
         version_id = self._seed_asset(
             logical_key.replace(":", "-"),
@@ -329,7 +339,7 @@ class PlanChangeAuthorityPostgresTests(unittest.TestCase):
                     dependency_type, invalidation_policy,
                     created_by_operation_id
                 ) VALUES (%s, %s, %s, %s, %s, 'PLAN_IMPACT',
-                          'MARK_STALE', %s)
+                          %s, %s)
                 """,
                 [
                     f"dependency:{self.project_id}:{logical_key}",
@@ -337,6 +347,7 @@ class PlanChangeAuthorityPostgresTests(unittest.TestCase):
                     self.book_id,
                     source_version,
                     version_id,
+                    invalidation_policy,
                     operation_id,
                 ],
             )

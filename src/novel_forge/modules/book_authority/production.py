@@ -35,6 +35,9 @@ from novel_forge.modules.chapter_outcome import (
     ChapterOutcomeAuthorityApplication,
     ChapterOutcomeCommand,
 )
+from novel_forge.modules.chapter_quality_authority import (
+    load_accepted_quality_observations,
+)
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.command_kernel.cancellation import (
     CancelCommand,
@@ -2217,6 +2220,12 @@ class PostgresBookAuthority:
                 "next Chapter requires one accepted predecessor Story State and Canon snapshot",
             )
         governed_items: list[dict[str, Any]] = []
+        accepted_quality_observations = load_accepted_quality_observations(
+            self.database_url,
+            project_id=project_id,
+            book_id=book_id,
+            accepted_through_chapter=chapter_number - 1,
+        )
         for row in rows:
             content = dict(row[3] or {})
             expected_contract = (
@@ -2243,10 +2252,23 @@ class PostgresBookAuthority:
                 if row[0] == "story_state_snapshot"
                 else compact_canon_facts(content)
             )
+            if row[0] == "story_state_snapshot" and accepted_quality_observations:
+                structured_facts.append(
+                    {
+                        "key": "accepted_quality_observations",
+                        "value": accepted_quality_observations,
+                        "provider_visibility": "INTERNAL_QUALITY_ONLY",
+                    }
+                )
             rendered = json.dumps(
                 {
                     "safe_summary": safe_summary,
-                    "structured_facts": structured_facts,
+                    "structured_facts": [
+                        fact
+                        for fact in structured_facts
+                        if fact.get("provider_visibility")
+                        != "INTERNAL_QUALITY_ONLY"
+                    ],
                 },
                 ensure_ascii=False,
                 sort_keys=True,

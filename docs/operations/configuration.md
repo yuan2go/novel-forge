@@ -13,6 +13,7 @@ Configuration is read from process environment and `.env`; process environment w
 | `NOVEL_FORGE_COMMIT_SHA` | Source identity recorded on operations | zero fixture SHA in Compose |
 | `NOVEL_FORGE_MODEL_PROVIDER` | Provider route family | `mock` in Compose |
 | `NOVEL_FORGE_LOCAL_OPERATOR_PRINCIPAL_ID` | Local operator principal | `compose-operator` |
+| `NOVEL_FORGE_NARRATIVE_EVALUATOR_PRINCIPAL_ID` | Independent Narrative Semantic Evaluator principal | required in production |
 | `NOVEL_FORGE_AUTHORITY_PROJECT_SCOPE` | Principal project scope | `*` locally |
 
 ## Object storage

@@ -73,6 +73,54 @@ def test_v2_event_contract_has_one_identity_time_and_lineage_vocabulary() -> Non
     assert "supersedes_asset_version_id" not in encoded
 
 
+def test_v3_event_separates_story_time_and_causal_effect_lineage() -> None:
+    patch = {
+        "state_changes": {
+            "character_state": [
+                {
+                    "character_id": "character:lin",
+                    "location": "Beijing",
+                    "entity_version": 1,
+                    "effective_from_chapter": 30,
+                    "confidence": 0.96,
+                    "coverage": "EXPLICIT",
+                    "extraction_evidence": {"excerpt_digest": "sha256:location"},
+                    "story_time": {
+                        "timeline_id": "story-time:primary",
+                        "start_ordinal": 420,
+                        "end_ordinal": 420,
+                        "precision": "EXACT",
+                        "label": "third night",
+                    },
+                    "causality": {
+                        "cause_refs": ["scene:30:2"],
+                        "precondition_refs": ["location=station"],
+                        "participant_ids": ["character:lin"],
+                        "effect_kinds": ["STATE"],
+                    },
+                }
+            ]
+        }
+    }
+    event = events_from_canon_patch(
+        project_id="project-hundred-chapters",
+        book_id="book-river-city",
+        source_chapter=30,
+        chapter_outcome_id="outcome-30",
+        canon_patch_asset_version_id="canon-30",
+        accepted_draft_asset_version_id="draft-30",
+        source_operation_id="operation-30",
+        trace_id="trace-30",
+        canon_patch=patch,
+    )[0].to_dict()
+
+    assert event["contract_version"] == "narrative-state-event-v3"
+    assert event["coordinate"]["source_chapter"] == 30
+    assert event["story_time"]["start_ordinal"] == 420
+    assert event["causality"]["cause_refs"] == ["scene:30:2"]
+    assert event["causality"]["effect_kinds"] == ["STATE"]
+
+
 def test_event_id_covers_evidence_and_rejects_tampering() -> None:
     encoded = _events()[0].to_dict()
     encoded["confidence"] = 0.25

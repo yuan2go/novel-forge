@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import unittest
 
+from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.canon_graph.domain import (
     build_canon_update,
     extract_canon_candidates,
@@ -9,11 +10,95 @@ from novel_forge.modules.canon_graph.domain import (
 from novel_forge.modules.chapter_authority.domain_handlers import build_quality_report
 from novel_forge.modules.chapter_quality_authority import (
     QUALITY_DIMENSIONS,
+    build_multiscale_quality_report,
     build_quality_group_evidence,
 )
 
 
 class CanonSemanticQualityAuthorityTests(unittest.TestCase):
+    def test_multiscale_quality_uses_only_accepted_lineage_and_bounded_windows(
+        self,
+    ) -> None:
+        observations = [
+            {
+                "project_id": "project-1",
+                "book_id": "book-1",
+                "chapter_number": chapter,
+                "acceptance_id": f"acceptance-{chapter}",
+                "accepted_asset_version_id": f"outcome-{chapter}",
+                "acceptance_status": "COMMITTED",
+                "volume_id": "volume-1" if chapter <= 15 else "volume-2",
+                "segment_ids": [f"segment-{(chapter - 1) // 5 + 1}"],
+                "active_arc_ids": ["arc-main"] if chapter not in {8, 9} else [],
+                "character_ids": ["mara"] if chapter != 11 else [],
+                "scene_ids": [f"scene-{chapter}-1"],
+                "hook_signature": "threat" if chapter <= 12 else "choice",
+                "payoff_count": 1 if chapter in {5, 10, 15, 20} else 0,
+                "narrative_debt_score": float(chapter % 6),
+                "new_world_concept_ids": [f"concept-{chapter}"],
+                "average_sentence_length": 20.0 + (chapter % 3),
+                "reader_reward_count": 1 if chapter % 4 == 0 else 0,
+            }
+            for chapter in range(1, 21)
+        ]
+        report = build_multiscale_quality_report(
+            project_id="project-1",
+            book_id="book-1",
+            context_bundle={
+                "context_segments": [
+                    {
+                        "structured_facts": [
+                            {
+                                "key": "accepted_quality_observations",
+                                "value": observations,
+                            }
+                        ]
+                    }
+                ]
+            },
+            accepted_through_chapter=20,
+            source_asset_version_ids=("context-v1",),
+        )
+
+        self.assertEqual(report["observation_status"], "MEASURED")
+        self.assertEqual(set(report["scales"]), {
+            "BOOK", "VOLUME", "ARC", "SEGMENT", "CHAPTER", "SCENE"
+        })
+        windows = {item["window"]: item for item in report["window_reports"]}
+        self.assertEqual(windows["LAST_10_CHAPTERS"]["chapter_range"], [11, 20])
+        self.assertEqual(windows["LAST_30_CHAPTERS"]["chapter_count"], 20)
+        self.assertEqual(windows["CURRENT_VOLUME"]["chapter_range"], [16, 20])
+        self.assertTrue(report["accepted_history_only"])
+
+    def test_multiscale_quality_rejects_unaccepted_or_future_history(self) -> None:
+        with self.assertRaises(KernelError) as raised:
+            build_multiscale_quality_report(
+                project_id="project-1",
+                book_id="book-1",
+                context_bundle={
+                    "context_segments": [{
+                        "structured_facts": [{
+                            "key": "accepted_quality_observations",
+                            "value": [{
+                                "project_id": "project-1",
+                                "book_id": "book-1",
+                                "chapter_number": 4,
+                                "acceptance_id": "acceptance-4",
+                                "accepted_asset_version_id": "outcome-4",
+                                "acceptance_status": "PENDING",
+                            }],
+                        }],
+                    }],
+                },
+                accepted_through_chapter=3,
+                source_asset_version_ids=(),
+            )
+
+        self.assertEqual(
+            raised.exception.code,
+            "LONGITUDINAL_QUALITY_ACCEPTED_LINEAGE_REQUIRED",
+        )
+
     def test_digest_is_identity_only_not_semantic_change(self) -> None:
         extraction = extract_canon_candidates(
             project_id="project-1",

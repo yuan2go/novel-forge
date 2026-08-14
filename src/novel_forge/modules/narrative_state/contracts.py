@@ -429,6 +429,113 @@ class NarrativeCoordinate:
 
 
 @dataclass(frozen=True, slots=True)
+class StoryTime:
+    """In-world time, deliberately independent from narrative position."""
+
+    timeline_id: str
+    start_ordinal: int
+    end_ordinal: int
+    precision: str
+    label: str = ""
+
+    def __post_init__(self) -> None:
+        if not self.timeline_id or self.precision not in {
+            "EXACT",
+            "ORDERED",
+            "RANGE",
+            "UNSPECIFIED",
+        }:
+            raise KernelError(
+                "STORY_TIME_INVALID",
+                "Story Time requires a timeline and supported precision",
+            )
+        if self.precision == "UNSPECIFIED":
+            if self.start_ordinal != 0 or self.end_ordinal != 0:
+                raise KernelError(
+                    "STORY_TIME_INVALID",
+                    "unspecified Story Time cannot invent an ordering",
+                )
+        elif self.start_ordinal <= 0 or self.end_ordinal < self.start_ordinal:
+            raise KernelError(
+                "STORY_TIME_INVALID",
+                "ordered Story Time requires positive ordered boundaries",
+            )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "timeline_id": self.timeline_id,
+            "start_ordinal": self.start_ordinal,
+            "end_ordinal": self.end_ordinal,
+            "precision": self.precision,
+            "label": self.label,
+        }
+
+    @classmethod
+    def from_dict(cls, value: dict[str, Any]) -> StoryTime:
+        return cls(
+            timeline_id=str(value.get("timeline_id") or ""),
+            start_ordinal=int(value.get("start_ordinal") or 0),
+            end_ordinal=int(value.get("end_ordinal") or 0),
+            precision=str(value.get("precision") or ""),
+            label=str(value.get("label") or ""),
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class NarrativeCausality:
+    cause_refs: tuple[str, ...]
+    precondition_refs: tuple[str, ...]
+    participant_ids: tuple[str, ...]
+    effect_kinds: tuple[str, ...]
+
+    def __post_init__(self) -> None:
+        if (
+            not self.cause_refs
+            or not self.participant_ids
+            or not self.effect_kinds
+            or any(
+                not str(item).strip()
+                for item in (
+                    *self.cause_refs,
+                    *self.precondition_refs,
+                    *self.participant_ids,
+                    *self.effect_kinds,
+                )
+            )
+            or not set(self.effect_kinds).issubset(
+                {"FACT", "STATE", "KNOWLEDGE", "OBLIGATION", "ARC", "DISCLOSURE", "PAYOFF"}
+            )
+        ):
+            raise KernelError(
+                "NARRATIVE_CAUSALITY_INVALID",
+                "Accepted Narrative Event requires cause, participants, and typed effects",
+            )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "cause_refs": list(self.cause_refs),
+            "precondition_refs": list(self.precondition_refs),
+            "participant_ids": list(self.participant_ids),
+            "effect_kinds": list(self.effect_kinds),
+        }
+
+    @classmethod
+    def from_dict(cls, value: dict[str, Any]) -> NarrativeCausality:
+        return cls(
+            cause_refs=tuple(str(item) for item in value.get("cause_refs") or ()),
+            precondition_refs=tuple(
+                str(item) for item in value.get("precondition_refs") or ()
+            ),
+            participant_ids=tuple(
+                str(item) for item in value.get("participant_ids") or ()
+            ),
+            effect_kinds=tuple(
+                str(item).upper() for item in value.get("effect_kinds") or ()
+            ),
+        )
+
+
+@dataclass(frozen=True, slots=True)
 class NarrativeStateEvent:
     event_id: str
     state_kind: NarrativeStateKind
@@ -445,6 +552,8 @@ class NarrativeStateEvent:
     event_version: int = 1
     entity_version: int = 1
     canon_status: str = "APPROVED_CANON_PATCH"
+    story_time: StoryTime | None = None
+    causality: NarrativeCausality | None = None
 
     def __post_init__(self) -> None:
         if not self.event_id.startswith("narrative-event:sha256:"):
@@ -464,6 +573,20 @@ class NarrativeStateEvent:
             )
         _reject_v2_aliases(self.payload)
         _validate_event_payload(self.state_kind, self.payload)
+        if self.event_version >= 3 and (
+            self.story_time is None or self.causality is None
+        ):
+            raise KernelError(
+                "NARRATIVE_EVENT_CAUSALITY_REQUIRED",
+                "Narrative State event v3 requires Story Time and causal lineage",
+            )
+        if self.event_version < 3 and (
+            self.story_time is not None or self.causality is not None
+        ):
+            raise KernelError(
+                "NARRATIVE_EVENT_VERSION_INVALID",
+                "Story Time and causality require Narrative State event v3",
+            )
         expected = _event_id(
             state_kind=self.state_kind,
             scope=self.scope,
@@ -479,6 +602,8 @@ class NarrativeStateEvent:
             event_version=self.event_version,
             entity_version=self.entity_version,
             canon_status=self.canon_status,
+            story_time=self.story_time,
+            causality=self.causality,
         )
         if self.event_id != expected:
             raise KernelError(
@@ -495,9 +620,13 @@ class NarrativeStateEvent:
         if self.event_version >= 2:
             authority["canon_status"] = self.canon_status
             version["entity"] = self.entity_version
-        return {
+        result = {
             "event_id": self.event_id,
-            "contract_version": "narrative-state-event-v2",
+            "contract_version": (
+                "narrative-state-event-v3"
+                if self.event_version >= 3
+                else "narrative-state-event-v2"
+            ),
             "layer": NarrativeLayer.STATE_EVENT.value,
             "state_kind": self.state_kind.value,
             "scope": self.scope.to_dict(),
@@ -515,13 +644,20 @@ class NarrativeStateEvent:
             "coverage": self.coverage,
             "evidence": _deep_copy(self.evidence),
         }
+        if self.event_version >= 3:
+            result["story_time"] = self.story_time.to_dict()  # type: ignore[union-attr]
+            result["causality"] = self.causality.to_dict()  # type: ignore[union-attr]
+        return result
 
     @classmethod
     def from_dict(cls, value: dict[str, Any]) -> NarrativeStateEvent:
-        if value.get("contract_version") != "narrative-state-event-v2":
+        if value.get("contract_version") not in {
+            "narrative-state-event-v2",
+            "narrative-state-event-v3",
+        }:
             raise KernelError(
                 "NARRATIVE_EVENT_CONTRACT_UNSUPPORTED",
-                "only Narrative State event v2 is accepted by the production reducer",
+                "only Narrative State event v2/v3 is accepted by the production reducer",
             )
         mutation = value.get("mutation")
         if not isinstance(mutation, dict) or not isinstance(mutation.get("payload"), dict):
@@ -585,6 +721,16 @@ class NarrativeStateEvent:
             canon_status=str(
                 (value.get("authority") or {}).get("canon_status")
                 or "APPROVED_CANON_PATCH"
+            ),
+            story_time=(
+                StoryTime.from_dict(dict(value["story_time"]))
+                if isinstance(value.get("story_time"), dict)
+                else None
+            ),
+            causality=(
+                NarrativeCausality.from_dict(dict(value["causality"]))
+                if isinstance(value.get("causality"), dict)
+                else None
             ),
         )
 
@@ -993,6 +1139,8 @@ def _build_event(
             "coverage",
             "extraction_evidence",
             "evidence",
+            "story_time",
+            "causality",
         }
     }
     if (
@@ -1021,8 +1169,52 @@ def _build_event(
     coverage = str(
         raw.get("coverage") or ("LEGACY_ADAPTED" if legacy else "UNSPECIFIED")
     )
+    story_time_value = raw.get("story_time")
+    causality_value = raw.get("causality")
+    if not legacy and bool(isinstance(story_time_value, dict)) != bool(
+        isinstance(causality_value, dict)
+    ):
+        raise KernelError(
+            "NARRATIVE_EVENT_CAUSALITY_REQUIRED",
+            "Story Time and causal lineage must be supplied together",
+        )
+    requires_v3 = not legacy and (
+        "entity_version" in raw
+        or (
+            isinstance(story_time_value, dict)
+            and isinstance(causality_value, dict)
+        )
+    )
+    story_time = (
+        StoryTime.from_dict(dict(story_time_value))
+        if isinstance(story_time_value, dict)
+        else StoryTime(
+            timeline_id="story-time:unspecified",
+            start_ordinal=0,
+            end_ordinal=0,
+            precision="UNSPECIFIED",
+        )
+        if requires_v3
+        else None
+    )
+    causality = (
+        NarrativeCausality.from_dict(dict(causality_value))
+        if isinstance(causality_value, dict)
+        else _derived_causality(
+            state_kind=state_kind,
+            identity=identity,
+            raw=raw,
+            accepted_draft_asset_version_id=accepted_draft_asset_version_id,
+            source_asset_version_id=source_asset_version_id,
+            supersedes_event_id=supersedes,
+        )
+        if requires_v3
+        else None
+    )
     event_version = (
-        2
+        3
+        if requires_v3 and story_time is not None and causality is not None
+        else 2
         if not legacy
         and (
             "entity_version" in raw
@@ -1049,6 +1241,8 @@ def _build_event(
             event_version=event_version,
             entity_version=entity_version,
             canon_status=canon_status,
+            story_time=story_time,
+            causality=causality,
         ),
         state_kind=state_kind,
         scope=scope,
@@ -1064,6 +1258,88 @@ def _build_event(
         event_version=event_version,
         entity_version=entity_version,
         canon_status=canon_status,
+        story_time=story_time,
+        causality=causality,
+    )
+
+
+def _derived_causality(
+    *,
+    state_kind: NarrativeStateKind,
+    identity: NarrativeIdentity,
+    raw: dict[str, Any],
+    accepted_draft_asset_version_id: str,
+    source_asset_version_id: str,
+    supersedes_event_id: str,
+) -> NarrativeCausality:
+    preconditions = [
+        f"{key}={value}"
+        for key, value in sorted(raw.items())
+        if key.startswith("from_") and value is not None and value != ""
+    ]
+    preconditions.extend(
+        f"requires_fact_id={item}"
+        for item in raw.get("requires_fact_ids") or ()
+        if str(item)
+    )
+    if supersedes_event_id:
+        preconditions.append(f"supersedes_event_id={supersedes_event_id}")
+    effect_kind = (
+        "FACT"
+        if state_kind is NarrativeStateKind.CANON_FACT
+        else "KNOWLEDGE"
+        if state_kind
+        in {
+            NarrativeStateKind.CHARACTER_KNOWLEDGE,
+            NarrativeStateKind.CHARACTER_BELIEF,
+            NarrativeStateKind.READER_KNOWLEDGE,
+        }
+        else "OBLIGATION"
+        if state_kind
+        in {
+            NarrativeStateKind.NARRATIVE_OBLIGATION,
+            NarrativeStateKind.NARRATIVE_DEBT,
+            NarrativeStateKind.FORESHADOW_STATE,
+            NarrativeStateKind.READER_PROMISE,
+        }
+        else "ARC"
+        if state_kind
+        in {
+            NarrativeStateKind.ARC_STATE,
+            NarrativeStateKind.CHARACTER_ARC,
+            NarrativeStateKind.PLOT_THREAD,
+        }
+        else "DISCLOSURE"
+        if state_kind is NarrativeStateKind.DISCLOSURE_EVENT
+        else "PAYOFF"
+        if state_kind in {NarrativeStateKind.PAYOFF_EVENT, NarrativeStateKind.REWARD_EVENT}
+        else "STATE"
+    )
+    participant_keys = {
+        "character_id",
+        "source_id",
+        "target_id",
+        "entity_id",
+        "subject",
+        "antagonist_id",
+        "faction_id",
+        "location_id",
+    }
+    participants = tuple(
+        dict.fromkeys(
+            value
+            for key, value in identity.components
+            if key in participant_keys and value
+        )
+    ) or (identity.entity_key,)
+    return NarrativeCausality(
+        cause_refs=(
+            accepted_draft_asset_version_id,
+            source_asset_version_id,
+        ),
+        precondition_refs=tuple(preconditions),
+        participant_ids=participants,
+        effect_kinds=(effect_kind,),
     )
 
 
@@ -1083,6 +1359,8 @@ def _event_id(
     event_version: int,
     entity_version: int = 1,
     canon_status: str = "APPROVED_CANON_PATCH",
+    story_time: StoryTime | None = None,
+    causality: NarrativeCausality | None = None,
 ) -> str:
     seed = {
         "state_kind": state_kind.value,
@@ -1101,6 +1379,14 @@ def _event_id(
     if event_version >= 2:
         seed["entity_version"] = entity_version
         seed["canon_status"] = canon_status
+    if event_version >= 3:
+        if story_time is None or causality is None:
+            raise KernelError(
+                "NARRATIVE_EVENT_CAUSALITY_REQUIRED",
+                "Narrative State event v3 requires Story Time and causal lineage",
+            )
+        seed["story_time"] = story_time.to_dict()
+        seed["causality"] = causality.to_dict()
     digest = hashlib.sha256(_canonical_json(seed).encode()).hexdigest()
     return f"narrative-event:sha256:{digest}"
 
@@ -1518,6 +1804,7 @@ def event_dicts(events: Iterable[NarrativeStateEvent]) -> list[dict[str, Any]]:
 __all__ = [
     "NarrativeCoordinate",
     "NarrativeIdentity",
+    "NarrativeCausality",
     "NarrativeLayer",
     "NarrativeObligationPriority",
     "NarrativeObligationStatus",
@@ -1526,6 +1813,7 @@ __all__ = [
     "NarrativeScope",
     "NarrativeStateEvent",
     "NarrativeStateKind",
+    "StoryTime",
     "ReducerSemantics",
     "event_dicts",
     "events_from_canon_patch",

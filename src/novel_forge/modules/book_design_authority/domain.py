@@ -7,15 +7,10 @@ import json
 from typing import Any, Mapping
 
 from novel_forge.modules.command_kernel.errors import KernelError
-from novel_forge.modules.story_design_authority.qualification import (
-    NarrativeQualificationResult,
-    validate_narrative_qualification,
-)
-
-
 BOOK_SCHEMA_VERSION = "book-authority.v1"
 LEGACY_BOOK_DESIGN_SCHEMA_VERSION = "book-design.v1"
-BOOK_DESIGN_SCHEMA_VERSION = "book-design.v2"
+COUPLED_BOOK_DESIGN_SCHEMA_VERSION = "book-design.v2"
+BOOK_DESIGN_SCHEMA_VERSION = "book-design.v3"
 
 
 def _required_string(value: Any, field: str) -> str:
@@ -129,7 +124,6 @@ class BookDesignPayload:
     core_characters: tuple[dict[str, str], ...]
     opposition_forces: tuple[dict[str, str], ...]
     narrative_dna: dict[str, str]
-    narrative_qualification: dict[str, Any]
     schema_version: str = BOOK_DESIGN_SCHEMA_VERSION
 
     @classmethod
@@ -144,9 +138,13 @@ class BookDesignPayload:
             "core_characters",
             "opposition_forces",
             "narrative_dna",
-            "narrative_qualification",
         }
         schema_version = str(payload.get("schema_version") or "")
+        if schema_version == COUPLED_BOOK_DESIGN_SCHEMA_VERSION:
+            raise KernelError(
+                "BOOK_DESIGN_COUPLED_QUALIFICATION_RETIRED",
+                "new BookDesign candidates cannot carry generator-owned qualification",
+            )
         allowed = (
             base_fields | progressive_fields
             if schema_version == BOOK_DESIGN_SCHEMA_VERSION
@@ -173,7 +171,6 @@ class BookDesignPayload:
         core_characters: tuple[dict[str, str], ...] = ()
         opposition_forces: tuple[dict[str, str], ...] = ()
         narrative_dna: dict[str, str] = {}
-        narrative_qualification: dict[str, Any] = {}
         if schema_version == BOOK_DESIGN_SCHEMA_VERSION:
             core_characters = _typed_records(
                 payload.get("core_characters"),
@@ -214,12 +211,6 @@ class BookDesignPayload:
                 field: _required_string(dna_value.get(field), f"narrative_dna.{field}")
                 for field in sorted(dna_fields)
             }
-            validate_narrative_qualification(
-                generator_operation_name="book_design.propose",
-                value=payload.get("narrative_qualification"),
-                require_pass=False,
-            )
-            narrative_qualification = dict(payload["narrative_qualification"])
         return cls(
             title=_required_string(payload.get("title"), "title"),
             genre=_required_string(payload.get("genre"), "genre"),
@@ -234,7 +225,6 @@ class BookDesignPayload:
             core_characters=core_characters,
             opposition_forces=opposition_forces,
             narrative_dna=narrative_dna,
-            narrative_qualification=narrative_qualification,
             schema_version=schema_version,
         )
 
@@ -248,20 +238,9 @@ class BookDesignPayload:
                 "core_characters",
                 "opposition_forces",
                 "narrative_dna",
-                "narrative_qualification",
             ):
                 payload.pop(field, None)
         return payload
-
-    @property
-    def qualification_result(self) -> NarrativeQualificationResult | None:
-        if self.schema_version != BOOK_DESIGN_SCHEMA_VERSION:
-            return None
-        return validate_narrative_qualification(
-            generator_operation_name="book_design.propose",
-            value=self.narrative_qualification,
-            require_pass=False,
-        )
 
     @property
     def content_hash(self) -> str:
@@ -303,6 +282,7 @@ def _typed_records(
 
 __all__ = [
     "BOOK_DESIGN_SCHEMA_VERSION",
+    "COUPLED_BOOK_DESIGN_SCHEMA_VERSION",
     "LEGACY_BOOK_DESIGN_SCHEMA_VERSION",
     "BOOK_SCHEMA_VERSION",
     "BookDesignPayload",

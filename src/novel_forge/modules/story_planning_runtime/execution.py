@@ -38,6 +38,9 @@ from novel_forge.modules.command_kernel.external_effect_runtime import (
 )
 from novel_forge.modules.hierarchical_planning.domain import (
     CHAPTER_EXECUTION_STATE_KINDS,
+    HORIZON_REALIZATION_LEVELS,
+    PLAN_HORIZON,
+    PLAN_REALIZATION,
     TYPE_FIELDS,
     PlanContractType,
 )
@@ -65,9 +68,7 @@ from novel_forge.modules.provider_control.contracts import (
 )
 from novel_forge.modules.story_design_authority import (
     GeneratorDefinition,
-    qualification_provider_schema,
     required_qualification_profiles,
-    scripted_qualification,
 )
 from novel_forge.storage.authority_asset_store import (
     AuthorityAssetDocument,
@@ -228,6 +229,14 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
     if not isinstance(command, Mapping):
         raise ValueError("Planning fixture requires its frozen command")
     logical_key = str(command.get("logical_key") or "")
+    fixture_book_volume_count = 2 if logical_key.endswith(":portfolio-2") else 1
+    fixture_book_target_chapters = fixture_book_volume_count * 3
+    logical_ordinal = 1
+    if stage == "volume_plan.generate":
+        try:
+            logical_ordinal = max(1, int(logical_key.rsplit(":", 1)[-1]))
+        except ValueError:
+            logical_ordinal = 1
     chapter_number = _logical_chapter_number(logical_key)
     arc_entry_state = _fixture_character_arc_stage(max(0, chapter_number - 1))
     arc_exit_state = _fixture_character_arc_stage(max(1, chapter_number))
@@ -280,6 +289,67 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
         "quality_targets": {"minimum": 80},
         "budget_policy_ref": "planning-budget:v1",
         "context_profile_ref": "planning-context:v1",
+        "planning_horizon": PLAN_HORIZON[contract_type].value,
+        "realization_level": PLAN_REALIZATION[contract_type].value,
+        "commitment_contract": [
+            {
+                "commitment_id": f"commitment:{logical_key}:causal-anchor",
+                "level": "HARD_CONSTRAINT",
+                "statement": "preserve the accepted causal spine",
+            },
+            {
+                "commitment_id": f"commitment:{logical_key}:elaboration",
+                "level": (
+                    "SOFT_INTENT"
+                    if contract_type is PlanContractType.CHAPTER
+                    else "OPEN_DESIGN_SPACE"
+                ),
+                "statement": "elaborate only at the current narrative horizon",
+            },
+        ],
+        "world_realization": [
+            {
+                "world_id": "world:primary",
+                "invariant_refs": ["world-invariant:causality"],
+                "structure_refs": ["world-structure:institution"],
+                "state_ref": "world-state:current",
+                "realization_level": PLAN_REALIZATION[contract_type].value,
+                "visibility": (
+                    "HIDDEN"
+                    if contract_type is PlanContractType.BOOK
+                    else "PARTIAL"
+                    if contract_type is not PlanContractType.CHAPTER
+                    else "SCENE_VISIBLE"
+                ),
+                "accessibility": (
+                    "CLOSED"
+                    if contract_type is PlanContractType.BOOK
+                    else "RESTRICTED"
+                    if contract_type is not PlanContractType.CHAPTER
+                    else "ACCESSIBLE"
+                ),
+            }
+        ],
+        "character_realization": [
+            {
+                "character_id": "protagonist",
+                "identity_ref": "character-identity:protagonist",
+                "state_ref": "character-state:protagonist:current",
+                "trajectory_ref": "character-arc:accountability",
+                "scope": PLAN_HORIZON[contract_type].value,
+                "reach": logical_key,
+                "realization_level": PLAN_REALIZATION[contract_type].value,
+            }
+        ],
+        "narrative_load_budget": {
+            "max_active_arcs": 3,
+            "max_dormant_arc_age": 30,
+            "max_open_obligations": 12,
+            "max_payoff_congestion": 3,
+            "max_character_appearance_gap": 10,
+            "max_new_concepts": 4,
+            "max_state_transitions": 8,
+        },
     }
     if command.get("change_evidence_version_ids"):
         payload["objective"] = (
@@ -295,11 +365,16 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
             "relationship_evolution": ["distrust", "alliance"],
             "theme_evolution": ["freedom", "responsibility"],
             "ending_contract": {"outcome": "costly agency"},
-            "volume_skeleton": [{"volume": 1, "function": "commitment"}],
+            "volume_skeleton": [
+                {"volume": ordinal, "function": "commitment"}
+                for ordinal in range(1, fixture_book_volume_count + 1)
+            ],
             "major_turns": ["irreversible choice"],
             "climax_distribution": [1],
             "long_promise_payoff": ["central promise settled"],
-            "length_strategy": {"target_chapters": 3},
+            "length_strategy": {
+                "target_chapters": fixture_book_target_chapters
+            },
             "risk_register": [],
             "narrative_architecture_version": "canonical-narrative-v1",
             "character_development": [
@@ -337,13 +412,19 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
             "climax": "costly revelation",
             "settlement": "new obligation",
             "next_volume_bridge": "wider threat",
-            "chapter_range": [1, 3],
+            "chapter_range": [
+                (logical_ordinal - 1) * 3 + 1,
+                logical_ordinal * 3,
+            ],
             "narrative_architecture_version": "canonical-narrative-v1",
             "narrative_segments": [
                 {
                     "segment_id": "narrative-segment:1",
                     "objective": "Turn private doubt into public commitment",
-                    "chapter_range": [1, 3],
+                    "chapter_range": [
+                        (logical_ordinal - 1) * 3 + 1,
+                        logical_ordinal * 3,
+                    ],
                     "entry_state_ref": str(
                         versions.get("story_state") or "story:entry"
                     ),
@@ -484,6 +565,7 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
                     "exit_emotion": "costly resolve",
                     "resource_changes": ["safety decreases; agency increases"],
                     "relationship_changes": ["the witness gains conditional trust"],
+                    "reachable_location_ids": ["location:witness-room"],
                 }
             ],
             "knowledge_boundaries": [
@@ -527,6 +609,17 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
                     "goal": "make the choice unavoidable",
                     "conflict": "resistance turns private risk into public cost",
                     "participants": ["protagonist"],
+                    "pov_character_id": "protagonist",
+                    "focalization": "INTERNAL",
+                    "story_time": {
+                        "timeline_id": "story-time:primary",
+                        "start_ordinal": chapter_number * 100,
+                        "end_ordinal": chapter_number * 100 + 1,
+                        "precision": "ORDERED",
+                    },
+                    "location_id": "location:witness-room",
+                    "narrative_time_relation": "ESTABLISHES",
+                    "accessible_knowledge": [],
                     "arc_progress": [str(versions.get("arc_plans") or "arc:primary")],
                     "information_gain": ["fact:hidden-cost"],
                     "state_transitions": ["protagonist:accountability"],
@@ -544,7 +637,6 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
     payload.update(by_type[contract_type])
     if parent_version_id:
         payload["parent_version_id"] = parent_version_id
-    payload["narrative_qualification"] = scripted_qualification(stage)
     return payload
 
 
@@ -578,11 +670,92 @@ def _canonical_narrative_provider_properties(
     string = {"type": "string", "minLength": 1}
     string_array = {"type": "array", "items": string}
     state_spec = _strict_object({"summary": string})
+    allowed_realization_levels = {
+        level.value
+        for level in HORIZON_REALIZATION_LEVELS[PLAN_HORIZON[contract_type]]
+    }
+    string_list = {"type": "array", "minItems": 1, "items": string}
     architecture = {
         "narrative_architecture_version": {
             "type": "string",
             "const": "canonical-narrative-v1",
-        }
+        },
+        "planning_horizon": {
+            "type": "string",
+            "const": PLAN_HORIZON[contract_type].value,
+        },
+        "realization_level": {
+            "type": "string",
+            "enum": sorted(allowed_realization_levels),
+        },
+        "commitment_contract": {
+            "type": "array",
+            "minItems": 1,
+            "items": _strict_object(
+                {
+                    "commitment_id": string,
+                    "level": {
+                        "type": "string",
+                        "enum": [
+                            "HARD_CONSTRAINT",
+                            "SOFT_INTENT",
+                            "OPEN_DESIGN_SPACE",
+                        ],
+                    },
+                    "statement": string,
+                }
+            ),
+        },
+        "world_realization": {
+            "type": "array",
+            "minItems": 1,
+            "items": _strict_object(
+                {
+                    "world_id": string,
+                    "invariant_refs": string_list,
+                    "structure_refs": string_list,
+                    "state_ref": string,
+                    "realization_level": {
+                        "type": "string",
+                        "enum": sorted(allowed_realization_levels),
+                    },
+                    "visibility": string,
+                    "accessibility": string,
+                }
+            ),
+        },
+        "character_realization": {
+            "type": "array",
+            "minItems": 1,
+            "items": _strict_object(
+                {
+                    "character_id": string,
+                    "identity_ref": string,
+                    "state_ref": string,
+                    "trajectory_ref": string,
+                    "scope": string,
+                    "reach": string,
+                    "realization_level": {
+                        "type": "string",
+                        "enum": sorted(allowed_realization_levels),
+                    },
+                }
+            ),
+        },
+        "narrative_load_budget": _strict_object(
+            {
+                key: {"type": "integer", "minimum": 0}
+                for key in (
+                    "max_active_arcs",
+                    "max_dormant_arc_age",
+                    "max_open_obligations",
+                    "max_payoff_congestion",
+                    "max_character_appearance_gap",
+                    "max_new_concepts",
+                    "max_state_transitions",
+                )
+            }
+        ),
     }
     segment_ref = _strict_object(
         {"volume_plan_version_id": string, "segment_id": string}
@@ -752,6 +925,7 @@ def _canonical_narrative_provider_properties(
                     "exit_emotion": string,
                     "resource_changes": string_array,
                     "relationship_changes": string_array,
+                    "reachable_location_ids": string_array,
                 }
             ),
         },
@@ -872,6 +1046,31 @@ def _canonical_narrative_provider_properties(
                     "goal": string,
                     "conflict": string,
                     "participants": string_array,
+                    "pov_character_id": string,
+                    "focalization": {
+                        "type": "string",
+                        "enum": ["INTERNAL", "EXTERNAL", "OMNISCIENT"],
+                    },
+                    "story_time": _strict_object(
+                        {
+                            "timeline_id": string,
+                            "start_ordinal": {"type": "integer", "minimum": 1},
+                            "end_ordinal": {"type": "integer", "minimum": 1},
+                            "precision": {
+                                "type": "string",
+                                "enum": ["EXACT", "ORDERED", "RANGE"],
+                            },
+                        }
+                    ),
+                    "location_id": string,
+                    "narrative_time_relation": {
+                        "type": "string",
+                        "enum": [
+                            "ESTABLISHES", "ADVANCES", "FLASHBACK",
+                            "FLASHFORWARD", "PARALLEL", "ELLIPSIS",
+                        ],
+                    },
+                    "accessible_knowledge": string_array,
                     "arc_progress": string_array,
                     "information_gain": string_array,
                     "state_transitions": string_array,
@@ -1134,16 +1333,6 @@ def planning_provider_output_schema(
                 else ()
             ),
         )
-    )
-    generator_operation_name = {
-        PlanContractType.BOOK: "book_plan.generate",
-        PlanContractType.VOLUME: "volume_plan.generate",
-        PlanContractType.ARC: "arc_plan.generate",
-        PlanContractType.CHAPTER_GROUP: "chapter_group_plan.generate",
-        PlanContractType.CHAPTER: "chapter_plan.generate",
-    }[contract_type]
-    properties["narrative_qualification"] = qualification_provider_schema(
-        generator_operation_name
     )
     if contract_type not in {PlanContractType.BOOK, PlanContractType.ARC}:
         properties["parent_version_id"] = (

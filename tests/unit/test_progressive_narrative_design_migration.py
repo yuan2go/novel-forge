@@ -8,6 +8,9 @@ from novel_forge.storage.migrations.versions import (
 from novel_forge.storage.migrations.versions import (
     v20260814_0090_progressive_replan_scopes as current_head,
 )
+from novel_forge.storage.migrations.versions import (
+    v20260814_0091_canonical_longform_runtime_completion as completion,
+)
 
 
 def test_progressive_narrative_design_is_forward_only_head() -> None:
@@ -16,7 +19,8 @@ def test_progressive_narrative_design_is_forward_only_head() -> None:
     assert migration.DOWN_REVISION == previous.MIGRATION_ID
     assert migration.FORWARD_ONLY is True
     assert current_head.DOWN_REVISION == migration.MIGRATION_ID
-    assert LATEST_MIGRATION_ID == current_head.MIGRATION_ID
+    assert completion.DOWN_REVISION == current_head.MIGRATION_ID
+    assert LATEST_MIGRATION_ID == completion.MIGRATION_ID
     sql = "\n".join(migration.UPGRADE_STATEMENTS)
     assert "CREATE TABLE authority_narrative_design_qualification" in sql
     assert "LONGFORM_DESIGN_QUALIFIED" in sql

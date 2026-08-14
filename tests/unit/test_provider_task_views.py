@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 
 import pytest
@@ -13,6 +14,7 @@ from novel_forge.modules.chapter_authority.provider_views import (
 from novel_forge.modules.chapter_authority.execution_gateway import (
     _materialize_chapter_codex_prompt,
 )
+from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.production_execution import ExecutionRuntimeClass
 from tests.unit.test_production_execution_gateway import contracts
 
@@ -106,8 +108,37 @@ def _context(unrelated_count: int) -> dict:
         },
     ]
     duplicate = {"segments": segments, "rendered_safe_context": "duplicated" * 500}
+    correctness = {
+        "type": "ContextCorrectnessReceipt",
+        "contract_version": "context-correctness-receipt-v1",
+        "overall_status": "PASS",
+        "checks": {
+            name: {
+                "status": (
+                    "NOT_APPLICABLE"
+                    if name == "REQUIRED_LONG_DISTANCE_FACT_PRESENT"
+                    else "PASS"
+                ),
+                "violations": [],
+            }
+            for name in (
+                "NO_FUTURE_FACT",
+                "NO_HIDDEN_KNOWLEDGE_LEAK",
+                "NO_STALE_VERSION",
+                "NO_DUPLICATE_SEMANTIC_REPRESENTATION",
+                "NO_IRRELEVANT_FULL_ASSET",
+                "REQUIRED_LONG_DISTANCE_FACT_PRESENT",
+            )
+        },
+        "selected_asset_version_ids": ["story-state:v30", "style:v1"],
+        "narrative_position": {"book_id": "book:1", "chapter": 31},
+    }
+    correctness["receipt_hash"] = "sha256:" + hashlib.sha256(
+        json.dumps(correctness, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
     return {
         "context_contract_version": "authority-context-bundle-v5",
+        "context_correctness": correctness,
         "context_manifest": {
             "narrative_position": {"book_id": "book:1", "chapter": 31},
             "authority_state_boundary": {"accepted_through_chapter": 30},
@@ -146,6 +177,15 @@ def test_provider_context_is_one_bounded_representation_not_authority_bundle() -
         < 128
     )
     assert heavy["selection_explanation"]["omitted_fact_count"] == 1000
+
+
+def test_provider_admission_rejects_tampered_context_correctness_receipt() -> None:
+    context = _context(1)
+    context["context_correctness"]["checks"]["NO_FUTURE_FACT"]["status"] = "FAIL"
+    task = build_provider_task_view("draft", {"plan": _plan(), "context": context})
+
+    with pytest.raises(KernelError, match="CONTEXT_CORRECTNESS_BLOCKED"):
+        build_provider_context_view("draft", context, task)
 
 
 def test_reader_outcome_uses_its_own_bounded_task_and_context_views() -> None:
