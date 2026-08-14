@@ -41,45 +41,47 @@ _CANON_FIELDS = (
     "disclosure_events",
 )
 _CANON_SEMANTIC_IDENTITIES: dict[str, tuple[tuple[str, ...], ...]] = {
-    "character_state_changes": (("entity_id",), ("character_id",)),
-    "relationship_changes": (
-        ("source_id", "target_id"),
-    ),
-    "timeline_events": (("entity_id",),),
-    "foreshadow_changes": (("entity_id",), ("promise_id",), ("thread_id",)),
-    "promise_changes": (("entity_id",), ("promise_id",)),
-    "reward_changes": (("entity_id",),),
-    "world_rule_usages": (("entity_id",), ("rule_id",)),
-    "power_state_changes": (("entity_id",), ("character_id",)),
-    "plot_thread_changes": (("entity_id",), ("thread_id",)),
+    "character_state_changes": (("character_id",),),
+    "relationship_changes": (("source_id", "target_id"),),
+    "timeline_events": (("event_id",),),
+    "foreshadow_changes": (("thread_id",),),
+    "promise_changes": (("promise_id",),),
+    "reward_changes": (("reward_id",),),
+    "world_rule_usages": (("rule_id",),),
+    "power_state_changes": (("character_id",),),
+    "plot_thread_changes": (("thread_id",),),
     "resource_state_changes": (("entity_id", "resource_id"),),
-    "narrative_pattern_fingerprints": (("entity_id",),),
-    "theme_movements": (("entity_id",), ("thread_id",)),
-    "antagonist_pressure_changes": (
-        ("entity_id",),
-        ("source_id", "target_id"),
-        ("character_id",),
-    ),
+    "narrative_pattern_fingerprints": (("fingerprint_id",),),
+    "theme_movements": (("entity_id",),),
+    "antagonist_pressure_changes": (("antagonist_id",),),
     "character_knowledge_changes": (
-        ("entity_id",),
         ("character_id", "fact_id"),
         ("character_id", "proposition_id"),
     ),
     "character_belief_changes": (
-        ("entity_id",),
         ("character_id", "proposition_id"),
         ("character_id", "fact_id"),
     ),
-    "character_arc_changes": (
-        ("entity_id",),
-        ("character_id", "arc_id"),
-    ),
-    "arc_state_changes": (("entity_id",), ("arc_id",)),
-    "disclosure_events": (
-        ("disclosure_id",),
-        ("audience", "fact_id"),
-        ("audience", "proposition_id"),
-    ),
+    "character_arc_changes": (("character_id", "arc_id"),),
+    "arc_state_changes": (("arc_id",),),
+    "disclosure_events": (("disclosure_id",),),
+}
+_CANON_SCHEMA_REQUIRED_IDENTITIES: dict[str, tuple[str, ...]] = {
+    "character_state_changes": ("character_id",),
+    "relationship_changes": ("source_id", "target_id"),
+    "timeline_events": ("event_id",),
+    "foreshadow_changes": ("thread_id",),
+    "promise_changes": ("promise_id",),
+    "reward_changes": ("reward_id",),
+    "world_rule_usages": ("rule_id",),
+    "power_state_changes": ("character_id",),
+    "plot_thread_changes": ("thread_id",),
+    "resource_state_changes": ("entity_id", "resource_id"),
+    "narrative_pattern_fingerprints": ("fingerprint_id",),
+    "theme_movements": ("entity_id",),
+    "antagonist_pressure_changes": ("antagonist_id",),
+    "character_arc_changes": ("character_id", "arc_id"),
+    "arc_state_changes": ("arc_id",),
 }
 _READER_STATE_FIELDS = (
     "continue_intent",
@@ -214,6 +216,10 @@ def _canon_schema() -> dict[str, Any]:
         "summary": {"type": "string", "minLength": 1},
         "effective_from_chapter": {"type": "number", "minimum": 1},
         "supersedes_event_id": {"type": "string"},
+        "event_id": {"type": "string"},
+        "reward_id": {"type": "string"},
+        "fingerprint_id": {"type": "string"},
+        "antagonist_id": {"type": "string"},
         "character_id": {"type": "string"},
         "source_id": {"type": "string"},
         "target_id": {"type": "string"},
@@ -282,9 +288,7 @@ def _canon_schema() -> dict[str, Any]:
                 # lets a field-specific refinement silently mutate every other
                 # Canon change contract.
                 "items": (
-                    fact
-                    if field == "canon_facts"
-                    else json.loads(json.dumps(change))
+                    fact if field == "canon_facts" else json.loads(json.dumps(change))
                 ),
                 **({"minItems": 1} if field == "canon_facts" else {}),
             }
@@ -292,6 +296,13 @@ def _canon_schema() -> dict[str, Any]:
         },
         required=_CANON_FIELDS,
     )
+    for field, identities in _CANON_SCHEMA_REQUIRED_IDENTITIES.items():
+        change_schema = schema["properties"][field]["items"]
+        for identity in identities:
+            change_schema["properties"][identity] = {
+                "type": "string",
+                "minLength": 1,
+            }
     knowledge_changes = schema["properties"]["character_knowledge_changes"]
     knowledge_changes["description"] = (
         "Atomic Character Knowledge events. Emit one item per character and fact or "
@@ -299,6 +310,10 @@ def _canon_schema() -> dict[str, Any]:
         "leave the generic state field null; do not bundle multiple acquired_fact_ids."
     )
     knowledge_change = knowledge_changes["items"]
+    knowledge_change["properties"]["character_id"] = {
+        "type": "string",
+        "minLength": 1,
+    }
     knowledge_change["properties"]["status"] = {
         "type": "string",
         "enum": ["UNKNOWN", "SUSPECTED", "KNOWN", "FORGOTTEN"],
@@ -315,6 +330,10 @@ def _canon_schema() -> dict[str, Any]:
         "for an accepted compare-and-set baseline; leave generic state/status null."
     )
     belief_change = belief_changes["items"]
+    belief_change["properties"]["character_id"] = {
+        "type": "string",
+        "minLength": 1,
+    }
     belief_change["properties"]["stance"] = {
         "type": "string",
         "enum": ["BELIEVES", "DOUBTS", "DISBELIEVES", "UNCERTAIN"],
@@ -483,7 +502,7 @@ def chapter_provider_output_schema(stage: str) -> dict[str, Any]:
 def chapter_provider_output_schema_ref(stage: str) -> str:
     chapter_provider_output_schema(stage)
     version = (
-        "v8"
+        "v9"
         if stage == "canon_extraction"
         else "v2"
         if stage in _QUALITY_STAGES
@@ -538,15 +557,11 @@ def validate_chapter_provider_output_semantics(
                     normalized.get("character_knowledge_changes", [])
                 )
             )
-            normalized["character_belief_changes"] = (
-                normalize_character_belief_changes(
-                    normalized.get("character_belief_changes", [])
-                )
+            normalized["character_belief_changes"] = normalize_character_belief_changes(
+                normalized.get("character_belief_changes", [])
             )
-            normalized["relationship_changes"] = (
-                normalize_relationship_state_changes(
-                    normalized.get("relationship_changes", [])
-                )
+            normalized["relationship_changes"] = normalize_relationship_state_changes(
+                normalized.get("relationship_changes", [])
             )
         except KernelError as exc:
             raise KernelError(
@@ -561,6 +576,19 @@ def validate_chapter_provider_output_semantics(
                     "CHAPTER_PROVIDER_OUTPUT_SEMANTIC_INVALID",
                     "Disclosure requires one fact_id or proposition_id",
                 )
+        for field in _CANON_FIELDS:
+            if field == "canon_facts":
+                continue
+            for item in normalized.get(field, []):
+                if not _has_canon_change_identity(field, item):
+                    expected = " or ".join(
+                        "+".join(group)
+                        for group in _CANON_SEMANTIC_IDENTITIES.get(field, ())
+                    )
+                    raise KernelError(
+                        "CHAPTER_PROVIDER_OUTPUT_SEMANTIC_INVALID",
+                        f"{field} requires canonical domain identity {expected}",
+                    )
         for change in normalized.get("resource_state_changes", []):
             before = change.get("balance_before")
             delta = change.get("delta")
@@ -657,19 +685,24 @@ def _canon_change_semantic_slot(
     """Return a domain identity, never an evidence-location heuristic.
 
     One passage may legitimately produce multiple audience-specific Disclosure
-    events or multiple typed state changes.  Where the Provider omitted every
-    stable identity, deterministic validation cannot prove a collision, so the
-    full normalized value is used as a conservative exact-dedup key.
+    events or multiple typed state changes. Provider semantics are validated
+    before this function, so reaching the fallback is a programming error.
     """
 
     for fields in _CANON_SEMANTIC_IDENTITIES.get(field, ()):
         values = tuple(str(item.get(key) or "") for key in fields)
         if all(values):
             return (field, *fields, *values)
-    return (
-        field,
-        "unresolved_identity",
-        json.dumps(item, ensure_ascii=False, sort_keys=True, separators=(",", ":")),
+    raise KernelError(
+        "CHAPTER_PROVIDER_OUTPUT_SEMANTIC_INVALID",
+        f"{field} has no canonical domain identity",
+    )
+
+
+def _has_canon_change_identity(field: str, item: Mapping[str, Any]) -> bool:
+    return any(
+        all(str(item.get(key) or "").strip() for key in fields)
+        for fields in _CANON_SEMANTIC_IDENTITIES.get(field, ())
     )
 
 

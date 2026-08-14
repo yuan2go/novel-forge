@@ -1,4 +1,5 @@
 """Storage-free Canon proposal, risk, and decision reduction rules."""
+
 from __future__ import annotations
 
 import hashlib
@@ -8,68 +9,56 @@ from typing import Any, Iterable
 from novel_forge.modules.command_kernel.errors import KernelError
 from .domain import HIGH_IMPACT_CHANGE_TYPES, SEMANTIC_CHANGE_FIELDS
 
-CANON_DECISIONS = frozenset({
-    "APPROVE", "REJECT", "EDIT_AND_APPROVE", "DEFER", "REQUEST_REEXTRACTION",
-})
+CANON_DECISIONS = frozenset(
+    {
+        "APPROVE",
+        "REJECT",
+        "EDIT_AND_APPROVE",
+        "DEFER",
+        "REQUEST_REEXTRACTION",
+    }
+)
 
 
 _SEMANTIC_IDENTITY_FIELDS: dict[str, tuple[tuple[str, ...], ...]] = {
     "canon_assertion_candidates": (("subject", "predicate"),),
-    "character_state_changes": (("entity_id",), ("character_id",)),
+    "character_state_changes": (("character_id",),),
     "relationship_changes": (
         ("source_id", "target_id"),
         ("source_character_id", "target_character_id"),
     ),
-    "timeline_event_candidates": (("entity_id",), ("event_id",)),
-    "foreshadow_changes": (
-        ("entity_id",),
-        ("foreshadow_id",),
-        ("promise_id",),
-        ("thread_id",),
-    ),
-    "promise_changes": (("entity_id",), ("promise_id",)),
-    "reward_changes": (("entity_id",), ("reward_id",)),
-    "world_rule_usages": (("entity_id",), ("rule_id",)),
-    "power_state_changes": (("entity_id",), ("character_id",)),
-    "plot_thread_changes": (("entity_id",), ("thread_id",)),
+    "timeline_event_candidates": (("event_id",),),
+    "foreshadow_changes": (("thread_id",),),
+    "promise_changes": (("promise_id",),),
+    "reward_changes": (("reward_id",),),
+    "world_rule_usages": (("rule_id",),),
+    "power_state_changes": (("character_id",),),
+    "plot_thread_changes": (("thread_id",),),
     "resource_state_changes": (("entity_id", "resource_id"),),
-    "narrative_pattern_fingerprints": (
-        ("entity_id",),
-        ("fingerprint_id",),
-    ),
-    "theme_movements": (("entity_id",), ("thread_id",)),
-    "antagonist_pressure_changes": (
-        ("entity_id",),
-        ("antagonist_id",),
-        ("source_id", "target_id"),
-        ("character_id",),
-    ),
+    "narrative_pattern_fingerprints": (("fingerprint_id",),),
+    "theme_movements": (("entity_id",),),
+    "antagonist_pressure_changes": (("antagonist_id",),),
     "character_knowledge_changes": (
-        ("entity_id",),
         ("character_id", "fact_id"),
         ("character_id", "proposition_id"),
     ),
     "character_belief_changes": (
-        ("entity_id",),
         ("character_id", "proposition_id"),
         ("character_id", "fact_id"),
     ),
-    "character_arc_changes": (
-        ("entity_id",),
-        ("character_id", "arc_id"),
-    ),
-    "arc_state_changes": (("entity_id",), ("arc_id",)),
-    "disclosure_events": (
-        ("disclosure_id",),
-        ("audience", "fact_id"),
-        ("audience", "proposition_id"),
-    ),
+    "character_arc_changes": (("character_id", "arc_id"),),
+    "arc_state_changes": (("arc_id",),),
+    "disclosure_events": (("disclosure_id",),),
 }
 
 
-def build_canon_change_proposal(*, project_id: str, extraction: dict[str, Any], extraction_asset_version_id: str) -> dict[str, Any]:
+def build_canon_change_proposal(
+    *, project_id: str, extraction: dict[str, Any], extraction_asset_version_id: str
+) -> dict[str, Any]:
     if extraction.get("project_id") != project_id or not extraction_asset_version_id:
-        raise KernelError("CANON_PROPOSAL_INPUT_INVALID", "project-scoped extraction is required")
+        raise KernelError(
+            "CANON_PROPOSAL_INPUT_INVALID", "project-scoped extraction is required"
+        )
     changes: list[dict[str, Any]] = []
     fingerprints: dict[str, str] = {}
     for field in SEMANTIC_CHANGE_FIELDS:
@@ -80,14 +69,26 @@ def build_canon_change_proposal(*, project_id: str, extraction: dict[str, Any], 
             evidence = dict(item.get("extraction_evidence") or {})
             confidence = float(item.get("confidence", 0.0))
             if not 0 <= confidence <= 1:
-                raise KernelError("CANON_CHANGE_CONFIDENCE_INVALID", "confidence must be between zero and one")
+                raise KernelError(
+                    "CANON_CHANGE_CONFIDENCE_INVALID",
+                    "confidence must be between zero and one",
+                )
             impact = str(item.get("impact_type") or item.get("change_type") or field)
-            approval_required = item.get("approval_requirement") == "REQUIRED" or impact in HIGH_IMPACT_CHANGE_TYPES
+            approval_required = (
+                item.get("approval_requirement") == "REQUIRED"
+                or impact in HIGH_IMPACT_CHANGE_TYPES
+            )
             if approval_required and not str(evidence.get("excerpt_digest") or ""):
-                raise KernelError("CANON_HIGH_IMPACT_EVIDENCE_REQUIRED", "high-impact Canon changes require an evidence digest")
+                raise KernelError(
+                    "CANON_HIGH_IMPACT_EVIDENCE_REQUIRED",
+                    "high-impact Canon changes require an evidence digest",
+                )
             span = dict(evidence.get("span") or {})
             if approval_required and not _valid_span(span):
-                raise KernelError("CANON_HIGH_IMPACT_EVIDENCE_SPAN_INVALID", "high-impact Canon changes require a valid evidence span")
+                raise KernelError(
+                    "CANON_HIGH_IMPACT_EVIDENCE_SPAN_INVALID",
+                    "high-impact Canon changes require a valid evidence span",
+                )
             entity_id = str(
                 item.get("entity_id")
                 or item.get("character_id")
@@ -99,10 +100,18 @@ def build_canon_change_proposal(*, project_id: str, extraction: dict[str, Any], 
                 or ""
             )
             if approval_required and not entity_id:
-                raise KernelError("CANON_HIGH_IMPACT_ENTITY_REQUIRED", "high-impact Canon changes require a resolved entity")
-            previous_project = str(evidence.get("previous_state_project_id") or project_id)
+                raise KernelError(
+                    "CANON_HIGH_IMPACT_ENTITY_REQUIRED",
+                    "high-impact Canon changes require a resolved entity",
+                )
+            previous_project = str(
+                evidence.get("previous_state_project_id") or project_id
+            )
             if previous_project != project_id:
-                raise KernelError("CROSS_PROJECT_REFERENCE", "previous Canon state belongs to another project")
+                raise KernelError(
+                    "CROSS_PROJECT_REFERENCE",
+                    "previous Canon state belongs to another project",
+                )
             identity_components = _semantic_identity_components(field, item)
             semantic_identity = json.dumps(
                 {
@@ -118,35 +127,60 @@ def build_canon_change_proposal(*, project_id: str, extraction: dict[str, Any], 
             ).hexdigest()
             if semantic_identity in fingerprints:
                 if fingerprints[semantic_identity] != proposed_digest:
-                    raise KernelError("CANON_EXTRACTION_CONTRADICTION", "extractor proposed contradictory changes for one entity")
+                    raise KernelError(
+                        "CANON_EXTRACTION_CONTRADICTION",
+                        "extractor proposed contradictory changes for one entity",
+                    )
                 continue
             fingerprints[semantic_identity] = proposed_digest
-            identity = json.dumps({"field": field, "entity": entity_id, "item": item}, sort_keys=True, separators=(",", ":"))
+            identity = json.dumps(
+                {"field": field, "entity": entity_id, "item": item},
+                sort_keys=True,
+                separators=(",", ":"),
+            )
             change_id = "canon-change:" + hashlib.sha256(identity.encode()).hexdigest()
-            changes.append({
-                "change_id": change_id,
-                "change_field": field,
-                "change_type": impact,
-                "state_kind": SEMANTIC_CHANGE_FIELDS[field],
-                "entity_id": entity_id,
-                "current_state_ref": str(evidence.get("previous_state_reference") or ""),
-                "proposed_state": item,
-                "source_revision_asset_version_id": extraction["revision_asset_version_id"],
-                "evidence_span": span,
-                "evidence_digest": str(evidence.get("excerpt_digest") or ""),
-                "confidence": confidence,
-                "impact_level": "high" if approval_required else "normal",
-                "conflict_codes": list(item.get("conflict_codes") or []),
-                "approval_requirement": "REQUIRED" if approval_required else "NONE",
-            })
+            changes.append(
+                {
+                    "change_id": change_id,
+                    "change_field": field,
+                    "change_type": impact,
+                    "state_kind": SEMANTIC_CHANGE_FIELDS[field],
+                    "entity_id": entity_id,
+                    "current_state_ref": str(
+                        evidence.get("previous_state_reference") or ""
+                    ),
+                    "proposed_state": item,
+                    "source_revision_asset_version_id": extraction[
+                        "revision_asset_version_id"
+                    ],
+                    "evidence_span": span,
+                    "evidence_digest": str(evidence.get("excerpt_digest") or ""),
+                    "confidence": confidence,
+                    "impact_level": "high" if approval_required else "normal",
+                    "conflict_codes": list(item.get("conflict_codes") or []),
+                    "approval_requirement": "REQUIRED" if approval_required else "NONE",
+                }
+            )
     return {
-        "type": "CanonChangeProposal", "project_id": project_id,
+        "type": "CanonChangeProposal",
+        "project_id": project_id,
         "chapter": int(extraction["chapter"]),
         "extraction_asset_version_id": extraction_asset_version_id,
         "revision_asset_version_id": extraction["revision_asset_version_id"],
         "changes": changes,
-        "approval_required_change_ids": [item["change_id"] for item in changes if item["approval_requirement"] == "REQUIRED"],
-        "risk_summary": [{"change_id": item["change_id"], "impact_level": item["impact_level"], "change_type": item["change_type"]} for item in changes],
+        "approval_required_change_ids": [
+            item["change_id"]
+            for item in changes
+            if item["approval_requirement"] == "REQUIRED"
+        ],
+        "risk_summary": [
+            {
+                "change_id": item["change_id"],
+                "impact_level": item["impact_level"],
+                "change_type": item["change_type"],
+            }
+            for item in changes
+        ],
         "contract_version": "canon-change-proposal-v2",
     }
 
@@ -157,15 +191,16 @@ def _semantic_identity_components(
     """Resolve domain identity without treating an evidence location as identity."""
 
     for fields in _SEMANTIC_IDENTITY_FIELDS.get(field, ()):
-        components = tuple(
-            (name, str(item.get(name) or "").strip()) for name in fields
-        )
+        components = tuple((name, str(item.get(name) or "").strip()) for name in fields)
         if all(value for _, value in components):
             return components
-    # Unresolved identities cannot be proven equivalent.  Preserve exact duplicate
-    # suppression without collapsing unrelated events that share a prose span.
-    payload = json.dumps(item, sort_keys=True, separators=(",", ":"))
-    return (("unresolved_payload_sha256", hashlib.sha256(payload.encode()).hexdigest()),)
+    expected = " or ".join(
+        "+".join(group) for group in _SEMANTIC_IDENTITY_FIELDS.get(field, ())
+    )
+    raise KernelError(
+        "CANON_CHANGE_IDENTITY_REQUIRED",
+        f"{field} requires canonical domain identity {expected}",
+    )
 
 
 def _valid_span(span: dict[str, Any]) -> bool:
@@ -181,21 +216,34 @@ def validate_edited_canon_payload(
     *, project_id: str, change: dict[str, Any], edited_payload: dict[str, Any]
 ) -> dict[str, Any]:
     if not isinstance(edited_payload, dict) or not edited_payload:
-        raise KernelError("CANON_EDITED_PAYLOAD_REQUIRED", "edited approval requires a payload")
+        raise KernelError(
+            "CANON_EDITED_PAYLOAD_REQUIRED", "edited approval requires a payload"
+        )
     original = dict(change.get("proposed_state") or {})
     payload = {**original, **edited_payload}
     entity_keys = (
-        "entity_id", "character_id", "relationship_id", "world_rule_id",
-        "foreshadow_id", "promise_id", "subject",
+        "entity_id",
+        "character_id",
+        "relationship_id",
+        "world_rule_id",
+        "foreshadow_id",
+        "promise_id",
+        "subject",
     )
     original_entity = str(change.get("entity_id") or "")
-    edited_entity = next((str(payload[key]) for key in entity_keys if payload.get(key)), "")
+    edited_entity = next(
+        (str(payload[key]) for key in entity_keys if payload.get(key)), ""
+    )
     errors: list[str] = []
     if original_entity and edited_entity != original_entity:
         errors.append("ENTITY_IDENTITY_CHANGED")
     if payload.get("project_id", project_id) != project_id:
         errors.append("CROSS_PROJECT_REFERENCE")
-    if str(payload.get("impact_type") or payload.get("change_type") or change.get("change_type")) != str(change.get("change_type")):
+    if str(
+        payload.get("impact_type")
+        or payload.get("change_type")
+        or change.get("change_type")
+    ) != str(change.get("change_type")):
         errors.append("CHANGE_TYPE_CHANGED")
     try:
         confidence = float(payload.get("confidence", change.get("confidence", 0)))
@@ -203,23 +251,40 @@ def validate_edited_canon_payload(
         confidence = -1
     if not 0 <= confidence <= 1:
         errors.append("CONFIDENCE_INVALID")
-    evidence = dict(payload.get("extraction_evidence") or original.get("extraction_evidence") or {})
+    evidence = dict(
+        payload.get("extraction_evidence") or original.get("extraction_evidence") or {}
+    )
     if change.get("approval_requirement") == "REQUIRED":
-        if not _valid_span(dict(evidence.get("span") or change.get("evidence_span") or {})):
+        if not _valid_span(
+            dict(evidence.get("span") or change.get("evidence_span") or {})
+        ):
             errors.append("EVIDENCE_SPAN_INVALID")
-        if not str(evidence.get("excerpt_digest") or change.get("evidence_digest") or ""):
+        if not str(
+            evidence.get("excerpt_digest") or change.get("evidence_digest") or ""
+        ):
             errors.append("EVIDENCE_DIGEST_MISSING")
     previous_project = str(evidence.get("previous_state_project_id") or project_id)
     if previous_project != project_id:
         errors.append("PREVIOUS_STATE_CROSS_PROJECT")
     conflict_codes = {
-        str(item) for item in (
+        str(item)
+        for item in (
             payload.get("conflict_codes") or change.get("conflict_codes") or []
         )
     }
     blocking_conflicts = sorted(
-        code for code in conflict_codes
-        if any(token in code for token in ("WORLD_RULE", "TIMELINE", "POWER", "RELATIONSHIP", "CONTRADICTION"))
+        code
+        for code in conflict_codes
+        if any(
+            token in code
+            for token in (
+                "WORLD_RULE",
+                "TIMELINE",
+                "POWER",
+                "RELATIONSHIP",
+                "CONTRADICTION",
+            )
+        )
     )
     if blocking_conflicts:
         errors.extend(blocking_conflicts)
@@ -255,51 +320,80 @@ def validate_edited_canon_payload(
     }
 
 
-def resolve_canon_extraction(*, extraction: dict[str, Any], proposal: dict[str, Any], decisions: Iterable[dict[str, Any]]) -> dict[str, Any]:
+def resolve_canon_extraction(
+    *,
+    extraction: dict[str, Any],
+    proposal: dict[str, Any],
+    decisions: Iterable[dict[str, Any]],
+) -> dict[str, Any]:
     by_id = {str(item["change_id"]): dict(item) for item in decisions}
     resolved = {key: list(extraction.get(key, [])) for key in SEMANTIC_CHANGE_FIELDS}
-    proposed_by_field: dict[str, list[dict[str, Any]]] = {key: [] for key in SEMANTIC_CHANGE_FIELDS}
+    proposed_by_field: dict[str, list[dict[str, Any]]] = {
+        key: [] for key in SEMANTIC_CHANGE_FIELDS
+    }
     for change in proposal.get("changes", []):
         field = str(change["change_field"])
         decision = by_id.get(str(change["change_id"]))
         if change.get("approval_requirement") == "REQUIRED" and decision is None:
-            raise KernelError("CANON_APPROVAL_INCOMPLETE", "all high-impact changes require a decision")
+            raise KernelError(
+                "CANON_APPROVAL_INCOMPLETE",
+                "all high-impact changes require a decision",
+            )
         action = "APPROVE" if decision is None else str(decision.get("decision"))
         if action not in CANON_DECISIONS:
-            raise KernelError("CANON_APPROVAL_DECISION_INVALID", "unsupported Canon decision")
+            raise KernelError(
+                "CANON_APPROVAL_DECISION_INVALID", "unsupported Canon decision"
+            )
         if action == "REQUEST_REEXTRACTION":
-            raise KernelError("CANON_REEXTRACTION_REQUIRED", "Canon extraction must be rerun")
+            raise KernelError(
+                "CANON_REEXTRACTION_REQUIRED", "Canon extraction must be rerun"
+            )
         if action in {"REJECT", "DEFER"}:
             continue
         payload = dict(change["proposed_state"])
         if action == "EDIT_AND_APPROVE":
             resolution = decision.get("change_resolution")
-            if not isinstance(resolution, dict) or not resolution.get("validated_payload"):
+            if not isinstance(resolution, dict) or not resolution.get(
+                "validated_payload"
+            ):
                 raise KernelError(
                     "CANON_EDITED_RESOLUTION_REQUIRED",
                     "edited approval requires a validated CanonChangeResolution",
                 )
             payload = dict(resolution["validated_payload"])
         payload["approval_resolution"] = {
-            "change_id": change["change_id"], "decision": action,
-            "approval_decision_asset_version_id": str((decision or {}).get("asset_version_id") or ""),
+            "change_id": change["change_id"],
+            "decision": action,
+            "approval_decision_asset_version_id": str(
+                (decision or {}).get("asset_version_id") or ""
+            ),
         }
         proposed_by_field[field].append(payload)
     # Preserve the digest assertion, then replace proposal-governed semantic items.
     for field, values in proposed_by_field.items():
-        if values or any(item.get("change_field") == field for item in proposal.get("changes", [])):
-            resolved[field] = [item for item in resolved[field] if item.get("predicate") == "accepted_revision_digest"] + values
+        if values or any(
+            item.get("change_field") == field for item in proposal.get("changes", [])
+        ):
+            resolved[field] = [
+                item
+                for item in resolved[field]
+                if item.get("predicate") == "accepted_revision_digest"
+            ] + values
     return {
         **extraction,
         **resolved,
         "approval_required_changes": [],
         "canon_change_proposal_asset_version_id": proposal.get("asset_version_id", ""),
-        "canon_approval_decision_asset_version_ids": sorted(str(item.get("asset_version_id") or "") for item in decisions),
+        "canon_approval_decision_asset_version_ids": sorted(
+            str(item.get("asset_version_id") or "") for item in decisions
+        ),
         "canon_resolution_contract_version": "canon-change-resolution-v1",
     }
 
 
 __all__ = [
-    "CANON_DECISIONS", "build_canon_change_proposal", "resolve_canon_extraction",
+    "CANON_DECISIONS",
+    "build_canon_change_proposal",
+    "resolve_canon_extraction",
     "validate_edited_canon_payload",
 ]

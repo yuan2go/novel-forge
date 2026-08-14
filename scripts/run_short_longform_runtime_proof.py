@@ -241,9 +241,18 @@ def _bootstrap_definition(build_id: str, commit_sha: str) -> dict[str, Any]:
 
 def _proof_world_bible_content() -> dict[str, Any]:
     world_rules = [
-        "Official archive entries preserve physical revision traces after alteration.",
-        "A lawful recall transfers physical custody only; it does not authorize amendment, disclosure, or compelled testimony.",
-        "Exceptional custody preserves disputed evidence and creates a named, auditable obligation for the custodian.",
+        {
+            "rule_id": "rule:archive-revision-traces",
+            "statement": "Official archive entries preserve physical revision traces after alteration.",
+        },
+        {
+            "rule_id": "rule:lawful-recall-scope",
+            "statement": "A lawful recall transfers physical custody only; it does not authorize amendment, disclosure, or compelled testimony.",
+        },
+        {
+            "rule_id": "rule:exceptional-custody-obligation",
+            "statement": "Exceptional custody preserves disputed evidence and creates a named, auditable obligation for the custodian.",
+        },
     ]
     institutional_power_state = {
         "archive_director": {
@@ -388,19 +397,22 @@ def _campaign_initial_narrative_snapshots(
             "mode": "FROZEN_PROOF_CONTRACT_INITIAL_STATE",
             "campaign_contract_identity": contract_identity,
         }
-        source_event_id = "narrative-initial-state:sha256:" + hashlib.sha256(
-            json.dumps(
-                {
-                    "kind": kind.value,
-                    "entity_key": entity_key,
-                    "state": dict(state),
-                    "campaign_contract_identity": contract_identity,
-                },
-                ensure_ascii=False,
-                separators=(",", ":"),
-                sort_keys=True,
-            ).encode()
-        ).hexdigest()
+        source_event_id = (
+            "narrative-initial-state:sha256:"
+            + hashlib.sha256(
+                json.dumps(
+                    {
+                        "kind": kind.value,
+                        "entity_key": entity_key,
+                        "state": dict(state),
+                        "campaign_contract_identity": contract_identity,
+                    },
+                    ensure_ascii=False,
+                    separators=(",", ":"),
+                    sort_keys=True,
+                ).encode()
+            ).hexdigest()
+        )
         current[kind.value].append(
             {
                 "identity": {
@@ -427,7 +439,9 @@ def _campaign_initial_narrative_snapshots(
 
     for character in ground_truth.get("characters") or ():
         raw = dict(character)
-        character_id = f"character:{str(raw['character_id']).removeprefix('character:')}"
+        character_id = (
+            f"character:{str(raw['character_id']).removeprefix('character:')}"
+        )
         add(
             NarrativeStateKind.CHARACTER_STATE,
             components=(("character_id", character_id),),
@@ -439,8 +453,7 @@ def _campaign_initial_narrative_snapshots(
         if len(participants) != 2:
             raise ValueError("initial relationship requires exactly two participants")
         source_id, target_id = (
-            f"character:{str(item).removeprefix('character:')}"
-            for item in participants
+            f"character:{str(item).removeprefix('character:')}" for item in participants
         )
         add(
             NarrativeStateKind.RELATIONSHIP_STATE,
@@ -523,14 +536,17 @@ def _campaign_initial_narrative_snapshots(
         "evidence_level": "CONTROLLED_PROOF_BOOTSTRAP",
         "runtime_result": False,
     }
-    story_state["state_hash"] = "sha256:" + hashlib.sha256(
-        json.dumps(
-            story_state,
-            ensure_ascii=False,
-            separators=(",", ":"),
-            sort_keys=True,
-        ).encode()
-    ).hexdigest()
+    story_state["state_hash"] = (
+        "sha256:"
+        + hashlib.sha256(
+            json.dumps(
+                story_state,
+                ensure_ascii=False,
+                separators=(",", ":"),
+                sort_keys=True,
+            ).encode()
+        ).hexdigest()
+    )
     canon: dict[str, Any] = {
         "type": "CanonSnapshot",
         "contract_version": "canon-snapshot-v2",
@@ -558,14 +574,17 @@ def _campaign_initial_narrative_snapshots(
         "evidence_level": "CONTROLLED_PROOF_BOOTSTRAP",
         "runtime_result": False,
     }
-    canon["canon_hash"] = "sha256:" + hashlib.sha256(
-        json.dumps(
-            canon,
-            ensure_ascii=False,
-            separators=(",", ":"),
-            sort_keys=True,
-        ).encode()
-    ).hexdigest()
+    canon["canon_hash"] = (
+        "sha256:"
+        + hashlib.sha256(
+            json.dumps(
+                canon,
+                ensure_ascii=False,
+                separators=(",", ":"),
+                sort_keys=True,
+            ).encode()
+        ).hexdigest()
+    )
     return story_state, canon
 
 
@@ -3132,9 +3151,7 @@ def _generate_chapter_plan(
             book_design_version=book_design_version,
             activated=activated,
             chapter_number=chapter_number,
-            previous_outcome=str(
-                runtime_inputs.get("previous_chapter_outcome") or ""
-            ),
+            previous_outcome=str(runtime_inputs.get("previous_chapter_outcome") or ""),
             story_state=str(runtime_inputs.get("story_state") or ""),
             runtime_inputs=runtime_inputs,
         ),
@@ -4302,9 +4319,7 @@ def main() -> int:
     )
     args = parser.parse_args()
     if not (
-        1
-        <= args.quality_context_token_budget
-        <= MAX_PROOF_QUALITY_CONTEXT_TOKEN_BUDGET
+        1 <= args.quality_context_token_budget <= MAX_PROOF_QUALITY_CONTEXT_TOKEN_BUDGET
     ):
         parser.error(
             "--quality-context-token-budget must be between 1 and "

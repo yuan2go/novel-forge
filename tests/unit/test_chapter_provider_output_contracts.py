@@ -130,7 +130,7 @@ def test_quality_prompt_and_schema_version_require_dimension_evidence() -> None:
     )
     assert (
         chapter_provider_output_schema_ref("canon_extraction")
-        == "schema:chapter-provider-output:canon_extraction:v8"
+        == "schema:chapter-provider-output:canon_extraction:v9"
     )
 
 
@@ -172,9 +172,7 @@ def test_canon_prompt_binds_transition_preconditions_to_accepted_state() -> None
 
     assert "accepted Story State" in contract
     assert "first occurrence" in contract
-    assert (
-        "leave from_status, from_state, from_stance, and from_tier null" in contract
-    )
+    assert "leave from_status, from_state, from_stance, and from_tier null" in contract
 
 
 def test_canon_prompt_binds_fact_supersession_to_accepted_canon_event() -> None:
@@ -205,6 +203,8 @@ def test_canon_prompt_requires_character_knowledge_precondition_closure() -> Non
     assert "from_stance only for an exact accepted baseline" in contract
     assert "source_id and target_id" in contract
     assert "entity_id cannot replace an endpoint" in contract
+    assert "generic entity_id never substitutes" in contract
+    assert "rule_id" in contract
     assert "including character-facing events" in contract
     assert "reader-facing Disclosure alone" in contract
     assert "deterministically projected into Reader Knowledge" in contract
@@ -227,6 +227,10 @@ def test_canon_semantics_normalizes_initial_resource_balance() -> None:
             "summary": "The protagonist starts with three credits.",
             "effective_from_chapter": 1,
             "supersedes_event_id": None,
+            "event_id": None,
+            "reward_id": None,
+            "fingerprint_id": None,
+            "antagonist_id": None,
             "character_id": None,
             "source_id": None,
             "target_id": None,
@@ -495,6 +499,39 @@ def test_canon_schema_requires_typed_relationship_endpoints() -> None:
     assert "character_id" not in relationship
 
 
+@pytest.mark.parametrize(
+    ("field", "identity_fields"),
+    (
+        ("character_state_changes", ("character_id",)),
+        ("relationship_changes", ("source_id", "target_id")),
+        ("timeline_events", ("event_id",)),
+        ("foreshadow_changes", ("thread_id",)),
+        ("promise_changes", ("promise_id",)),
+        ("reward_changes", ("reward_id",)),
+        ("world_rule_usages", ("rule_id",)),
+        ("power_state_changes", ("character_id",)),
+        ("plot_thread_changes", ("thread_id",)),
+        ("resource_state_changes", ("entity_id", "resource_id")),
+        ("narrative_pattern_fingerprints", ("fingerprint_id",)),
+        ("theme_movements", ("entity_id",)),
+        ("antagonist_pressure_changes", ("antagonist_id",)),
+        ("character_arc_changes", ("character_id", "arc_id")),
+        ("arc_state_changes", ("arc_id",)),
+    ),
+)
+def test_canon_schema_requires_each_domain_identity(
+    field: str,
+    identity_fields: tuple[str, ...],
+) -> None:
+    properties = chapter_provider_output_schema("canon_extraction")["properties"][
+        field
+    ]["items"]["properties"]
+
+    assert set(identity_fields) <= set(properties)
+    for identity_field in identity_fields:
+        assert properties[identity_field] == {"type": "string", "minLength": 1}
+
+
 def test_canon_schema_exposes_epistemic_and_presentation_changes() -> None:
     schema = chapter_provider_output_schema("canon_extraction")
 
@@ -509,6 +546,27 @@ def test_canon_schema_exposes_epistemic_and_presentation_changes() -> None:
         "CONFIRM",
         "WITHHOLD",
     ]
+
+
+def test_canon_semantics_rejects_generic_entity_as_world_rule_identity() -> None:
+    value = _valid("canon_extraction")
+    value["world_rule_usages"] = [
+        {
+            "summary": "A rule is exercised against the archive.",
+            "entity_id": "archive:ledger",
+            "state": "EXERCISED",
+            "evidence_start": 0,
+            "evidence_end": 12,
+            "confidence": 0.9,
+            "impact_type": "WORLD_RULE_USE",
+        }
+    ]
+
+    with pytest.raises(KernelError) as raised:
+        validate_chapter_provider_output_semantics("canon_extraction", value)
+
+    assert raised.value.code == "CHAPTER_PROVIDER_OUTPUT_SEMANTIC_INVALID"
+    assert "world_rule_usages" in str(raised.value)
 
 
 def _valid(stage: str) -> dict[str, object]:
@@ -703,6 +761,8 @@ def test_schema_validation_supports_nullable_boolean_canon_fields() -> None:
                 if "null" in schema.get("type", [])
                 else "character remains alive"
                 if key == "summary"
+                else "character:lin"
+                if key == "character_id"
                 else "CHARACTER_STATE_CONFIRMED"
                 if key == "impact_type"
                 else 0
@@ -848,9 +908,7 @@ def test_canon_semantics_allows_distinct_disclosures_from_one_prose_span() -> No
         },
     ]
 
-    normalized = validate_chapter_provider_output_semantics(
-        "canon_extraction", value
-    )
+    normalized = validate_chapter_provider_output_semantics("canon_extraction", value)
 
     assert len(normalized["disclosure_events"]) == 2
 
