@@ -61,7 +61,9 @@ class TrustedPrincipalResolver:
     def from_environment(cls, values: Mapping[str, str]) -> "TrustedPrincipalResolver":
         scope = frozenset(
             item.strip()
-            for item in str(values.get("NOVEL_FORGE_AUTHORITY_PROJECT_SCOPE") or "*").split(",")
+            for item in str(
+                values.get("NOVEL_FORGE_AUTHORITY_PROJECT_SCOPE") or "*"
+            ).split(",")
             if item.strip()
         )
         return cls(
@@ -76,10 +78,14 @@ class TrustedPrincipalResolver:
         )
 
     def resolve_api_principal(self, *, claimed_actor_id: str = "") -> Principal:
-        del claimed_actor_id  # compatibility input is deliberately not an identity source
+        del (
+            claimed_actor_id
+        )  # compatibility input is deliberately not an identity source
         principal_id = self.configured_local_operator_id
         if not principal_id and self.environment == "production":
-            raise RuntimeError("a trusted local operator principal is required in production")
+            raise RuntimeError(
+                "a trusted local operator principal is required in production"
+            )
         return Principal(
             principal_id=principal_id or "local-operator",
             principal_type=PrincipalType.LOCAL_OPERATOR,
@@ -101,6 +107,7 @@ class TrustedPrincipalResolver:
                     "book.authority.approve_replan",
                     "book.authority.query",
                     "story_planning.authority.execute",
+                    "story_design.authority.execute",
                     "narrative_design.evaluate",
                     "book_design.authority.execute",
                     "book_design.authority.query",
@@ -178,8 +185,13 @@ class TrustedPrincipalResolver:
                 "book.followup:*",
             }
         )
-        if permission_subset is not None and not permission_subset <= worker_permissions:
-            raise RuntimeError("worker permission subset exceeds the trusted worker policy")
+        if (
+            permission_subset is not None
+            and not permission_subset <= worker_permissions
+        ):
+            raise RuntimeError(
+                "worker permission subset exceeds the trusted worker policy"
+            )
         return Principal(
             principal_id=worker_id,
             principal_type=PrincipalType.WORKER,

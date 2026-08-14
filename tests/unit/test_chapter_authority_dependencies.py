@@ -82,7 +82,9 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "explicit chapter model provider"):
             build_production_execution_composition(settings, env={})
 
-    def test_nonproduction_fixture_routes_are_explicit_and_filesystem_independent(self) -> None:
+    def test_nonproduction_fixture_routes_are_explicit_and_filesystem_independent(
+        self,
+    ) -> None:
         with tempfile.TemporaryDirectory() as directory:
             settings = IndustrialSettings(
                 root=Path(directory),
@@ -119,7 +121,9 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
         self.assertFalse(hasattr(application, "object_store_adapter"))
 
     def test_production_rejects_mock_model_routes(self) -> None:
-        settings = IndustrialSettings(root=Path("."), database_url="postgresql://authority")
+        settings = IndustrialSettings(
+            root=Path("."), database_url="postgresql://authority"
+        )
         with self.assertRaisesRegex(RuntimeError, "not configured"):
             build_production_execution_composition(
                 settings,
@@ -132,29 +136,48 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
                 },
             )
 
-    def test_validation_environment_accepts_injected_controlled_v2_registry(self) -> None:
+    def test_validation_environment_accepts_injected_controlled_v2_registry(
+        self,
+    ) -> None:
         class Transport:
             def execute(self, request):
-                raise AssertionError("dependency construction must not invoke the provider")
+                raise AssertionError(
+                    "dependency construction must not invoke the provider"
+                )
+
             def query(self, request):
-                raise AssertionError("dependency construction must not query the provider")
+                raise AssertionError(
+                    "dependency construction must not query the provider"
+                )
+
             def cancel(self, request):
-                raise AssertionError("dependency construction must not cancel the provider")
+                raise AssertionError(
+                    "dependency construction must not cancel the provider"
+                )
+
             def verify_callback(self, body, headers, *, secret):
                 return ProviderReceipt("r", "receipt", "message", "success", "hash", {})
 
         registry = ProviderAdapterRegistry()
-        registry.register(OpenAIProviderAdapterV2(
-            Transport(), supports_query=True, supports_cancel=True,
-            supports_callback=True, supports_cost_receipt=True,
-            provider_idempotency_supported=True,
-        ))
+        registry.register(
+            OpenAIProviderAdapterV2(
+                Transport(),
+                supports_query=True,
+                supports_cancel=True,
+                supports_callback=True,
+                supports_cost_receipt=True,
+                provider_idempotency_supported=True,
+            )
+        )
         controlled_environment = {
             "NOVEL_FORGE_ENVIRONMENT": "validation",
             "NOVEL_FORGE_MODEL_PROVIDER": "openai",
             "NOVEL_FORGE_DRAFT_MODEL": "gpt-test",
             "NOVEL_FORGE_REVIEW_MODEL": "gpt-test",
             "NOVEL_FORGE_REVISION_MODEL": "gpt-test",
+            "NOVEL_FORGE_NARRATIVE_EVALUATOR_PROVIDER": "openai",
+            "NOVEL_FORGE_NARRATIVE_EVALUATOR_MODEL": "gpt-test",
+            "NOVEL_FORGE_NARRATIVE_SEMANTIC_EVALUATION_REASONING_EFFORT": "high",
             "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": "object-store",
             "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_BACKEND": "minio",
             "NOVEL_FORGE_PROVIDER_MAX_COST_PER_CALL": "1.00",
@@ -174,9 +197,7 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
             )
         controlled_environment.update(
             {
-                "NOVEL_FORGE_PROMPT_SYSTEM_INSTRUCTION_HASH": (
-                    "sha256:" + "1" * 64
-                ),
+                "NOVEL_FORGE_PROMPT_SYSTEM_INSTRUCTION_HASH": ("sha256:" + "1" * 64),
                 "NOVEL_FORGE_PROMPT_TEMPLATE_HASH": "sha256:" + "2" * 64,
                 "NOVEL_FORGE_SKILL_BUNDLE_HASH": "sha256:" + "3" * 64,
             }
@@ -205,7 +226,10 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
         self.assertTrue(
             execution.gateway.capability_profile.real_provider_validation_eligible
         )
-    def test_provider_validation_composes_codex_directly_without_provider_v2(self) -> None:
+
+    def test_provider_validation_composes_codex_directly_without_provider_v2(
+        self,
+    ) -> None:
         repository_root = Path(__file__).resolve().parents[2]
         executable = Path("/Applications/ChatGPT.app/Contents/Resources/codex")
         if not executable.is_file():
@@ -220,6 +244,9 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
                 "NOVEL_FORGE_DRAFT_MODEL": "gpt-5.4",
                 "NOVEL_FORGE_REVIEW_MODEL": "gpt-5.4",
                 "NOVEL_FORGE_REVISION_MODEL": "gpt-5.4",
+                "NOVEL_FORGE_NARRATIVE_EVALUATOR_PROVIDER": "codex-cli",
+                "NOVEL_FORGE_NARRATIVE_EVALUATOR_MODEL": "gpt-5.4",
+                "NOVEL_FORGE_NARRATIVE_SEMANTIC_EVALUATION_REASONING_EFFORT": "high",
                 "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": str(root / "objects"),
                 "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_BACKEND": "minio",
                 "NOVEL_FORGE_PROVIDER_MAX_COST_PER_CALL": "1.00",

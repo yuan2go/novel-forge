@@ -59,18 +59,24 @@ def project_narrative_load(*, story_state: Mapping[str, Any]) -> dict[str, Any]:
         if str((entry.get("state") or {}).get("target_window", {}).get("status"))
         == "SCHEDULED"
         and int(
-            (entry.get("state") or {}).get("target_window", {}).get("to_chapter")
-            or 0
+            (entry.get("state") or {}).get("target_window", {}).get("to_chapter") or 0
         )
         < chapter
     ]
+    open_obligation_ids = sorted(
+        {_obligation_identity(entry) for entry in open_obligations}
+    )
+    overdue_obligation_ids = sorted({_obligation_identity(entry) for entry in overdue})
+    if "" in open_obligation_ids or "" in overdue_obligation_ids:
+        raise ValueError(
+            "accepted Narrative Obligation state requires a stable obligation identity"
+        )
     payoff_congestion = [
         entry
         for entry in open_obligations
         if 0
         < int(
-            (entry.get("state") or {}).get("target_window", {}).get("to_chapter")
-            or 0
+            (entry.get("state") or {}).get("target_window", {}).get("to_chapter") or 0
         )
         <= chapter + 3
     ]
@@ -113,11 +119,25 @@ def project_narrative_load(*, story_state: Mapping[str, Any]) -> dict[str, Any]:
     }
     return {
         "type": "NarrativeLoadProjection",
-        "contract_version": "narrative-load-projection-v1",
+        "contract_version": "narrative-load-projection-v2",
         "accepted_through_chapter": chapter,
         "status": _MEASURED if state_observed else _NOT_OBSERVED,
         "metrics": metrics if state_observed else {key: None for key in metrics},
+        "open_obligation_ids": open_obligation_ids if state_observed else [],
+        "overdue_obligation_ids": overdue_obligation_ids if state_observed else [],
     }
+
+
+def _obligation_identity(entry: Mapping[str, Any]) -> str:
+    state = entry.get("state")
+    state_mapping = state if isinstance(state, Mapping) else {}
+    identity = str(state_mapping.get("obligation_id") or "")
+    if identity:
+        return identity
+    entity_key = str(entry.get("entity_key") or "")
+    if entity_key.startswith("obligation_id="):
+        return entity_key.removeprefix("obligation_id=")
+    return entity_key
 
 
 def measure_narrative_runtime(
@@ -293,10 +313,7 @@ def measure_narrative_runtime(
     cost = (
         None
         if provider_usage is None or cost_missing
-        else sum(
-            float(item.get("cost", item.get("amount")))
-            for item in provider_usage
-        )
+        else sum(float(item.get("cost", item.get("amount"))) for item in provider_usage)
     )
     trace_missing = (
         None
@@ -356,9 +373,7 @@ def measure_narrative_runtime(
         "obligation_unresolved_count": (
             len(unresolved) if temporal_state_observed else None
         ),
-        "obligation_overdue_count": (
-            len(overdue) if temporal_state_observed else None
-        ),
+        "obligation_overdue_count": (len(overdue) if temporal_state_observed else None),
         "obligation_terminal_without_payoff_count": (
             len(terminal_without_payoff) if temporal_state_observed else None
         ),
@@ -385,9 +400,7 @@ def measure_narrative_runtime(
         "revision_or_replan_open_action_count": (
             len(open_actions) if quality_decision is not None else None
         ),
-        "mkaos_consumption_count": (
-            len(mkaos_usage) if mkaos_available else None
-        ),
+        "mkaos_consumption_count": (len(mkaos_usage) if mkaos_available else None),
         "provider_call_count": (
             len(provider_usage) if provider_usage is not None else None
         ),

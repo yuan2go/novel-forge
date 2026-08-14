@@ -41,6 +41,7 @@ from novel_forge.storage.migrations.versions import (
     v20260814_0089_progressive_narrative_design as progressive_migration,
     v20260814_0090_progressive_replan_scopes as current_head_migration,
     v20260814_0091_canonical_longform_runtime_completion as completion_migration,
+    v20260814_0092_longform_correctness_closure as correctness_migration,
 )
 
 
@@ -80,7 +81,8 @@ def test_capability_pack_authority_remains_in_linear_migration_chain() -> None:
     assert progressive_migration.DOWN_REVISION == head_migration.MIGRATION_ID
     assert current_head_migration.DOWN_REVISION == progressive_migration.MIGRATION_ID
     assert completion_migration.DOWN_REVISION == current_head_migration.MIGRATION_ID
-    assert LATEST_MIGRATION_ID == completion_migration.MIGRATION_ID
+    assert correctness_migration.DOWN_REVISION == completion_migration.MIGRATION_ID
+    assert LATEST_MIGRATION_ID == correctness_migration.MIGRATION_ID
     assert migration.FORWARD_ONLY is True
 
 

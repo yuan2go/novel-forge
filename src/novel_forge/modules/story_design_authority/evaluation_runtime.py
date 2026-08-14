@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import hashlib
 import json
-from typing import Any
+from typing import Any, Protocol
 from uuid import uuid4
 
 from psycopg.types.json import Jsonb
@@ -31,7 +31,9 @@ from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 from .qualification import (
     NarrativeEvaluationLineage,
+    NarrativeQualificationProfile,
     NarrativeQualificationResult,
+    required_qualification_profiles,
     validate_narrative_qualification,
 )
 
@@ -66,10 +68,10 @@ class NarrativeSemanticEvaluationCommand:
     generator_operation_name: str
     candidate_content_hash: str
     evaluator_execution_class: str
-    evaluation: dict[str, Any]
     idempotency_key: str
     trace_id: str
     correlation_id: str
+    evaluation: dict[str, Any] | None = None
     evidence_asset_version_ids: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
@@ -87,14 +89,92 @@ class NarrativeSemanticEvaluationCommand:
         )
         if any(not item.strip() for item in required):
             raise ValueError("Narrative Semantic Evaluation command is incomplete")
-        if not self.candidate_content_hash.startswith("sha256:"):
-            raise ValueError("Narrative Semantic Evaluation requires a SHA-256 candidate")
+        digest = self.candidate_content_hash.removeprefix("sha256:")
+        if (
+            not self.candidate_content_hash.startswith("sha256:")
+            or len(digest) != 64
+            or any(character not in "0123456789abcdef" for character in digest)
+        ):
+            raise ValueError(
+                "Narrative Semantic Evaluation requires a SHA-256 candidate"
+            )
         if self.evaluator_execution_class not in {
             "MODEL_PROVIDER",
             "SCRIPTED_FIXTURE",
             "OPERATOR_REVIEW",
         }:
             raise ValueError("Narrative Semantic Evaluation class is unsupported")
+        if self.evaluator_execution_class == "MODEL_PROVIDER" and (
+            self.evaluation is not None or self.evidence_asset_version_ids
+        ):
+            raise ValueError(
+                "model-provider Narrative Evaluation is produced by the governed runtime"
+            )
+        if self.evaluator_execution_class != "MODEL_PROVIDER" and not isinstance(
+            self.evaluation, dict
+        ):
+            raise ValueError(
+                "fixture or operator Narrative Evaluation requires an explicit result"
+            )
+
+
+@dataclass(frozen=True, slots=True)
+class NarrativeProviderEvaluation:
+    evaluation: dict[str, Any]
+    model_call_log_asset_version_id: str
+    model_call_log_content_hash: str
+    provider_evidence_hash: str
+    provider_result_hash: str
+    provider_id: str
+    model_id: str
+    route_snapshot_id: str
+    prompt_version: str
+    skill_version: str
+    real_model_call: bool
+
+    def __post_init__(self) -> None:
+        required = (
+            self.model_call_log_asset_version_id,
+            self.provider_id,
+            self.model_id,
+            self.route_snapshot_id,
+            self.prompt_version,
+            self.skill_version,
+        )
+        if not self.evaluation or any(not value.strip() for value in required):
+            raise ValueError("Narrative Provider Evaluation evidence is incomplete")
+        for value in (
+            self.model_call_log_content_hash,
+            self.provider_evidence_hash,
+            self.provider_result_hash,
+        ):
+            digest = value.removeprefix("sha256:")
+            if (
+                not value.startswith("sha256:")
+                or len(digest) != 64
+                or any(character not in "0123456789abcdef" for character in digest)
+            ):
+                raise ValueError(
+                    "Narrative Provider Evaluation evidence must be SHA-256 bound"
+                )
+        if not self.real_model_call:
+            raise ValueError(
+                "production Narrative Provider Evaluation requires a real model call"
+            )
+
+
+class NarrativeSemanticEvaluationExecutionPort(Protocol):
+    production_execution_gateway_backed: bool
+    external_effect_backed: bool
+
+    def evaluate(
+        self,
+        request: AuthorityHandlerRequest,
+        *,
+        candidate: Any,
+        generator_operation_name: str,
+        profiles: tuple[NarrativeQualificationProfile, ...],
+    ) -> NarrativeProviderEvaluation: ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -106,6 +186,22 @@ class NarrativeSemanticEvaluationResult:
 
 
 class NarrativeSemanticEvaluationHandler:
+    def __init__(
+        self,
+        *,
+        execution_port: NarrativeSemanticEvaluationExecutionPort | None = None,
+        allow_scripted_fixture: bool = False,
+    ) -> None:
+        if execution_port is not None and (
+            not getattr(execution_port, "production_execution_gateway_backed", False)
+            or not getattr(execution_port, "external_effect_backed", False)
+        ):
+            raise ValueError(
+                "Narrative Evaluation must use the ExternalEffect-backed Production Execution Gateway"
+            )
+        self.execution_port = execution_port
+        self.allow_scripted_fixture = allow_scripted_fixture
+
     def execute(self, request: AuthorityHandlerRequest) -> AuthorityHandlerOutput:
         payload = request.command.get("payload")
         if not isinstance(payload, dict):
@@ -115,17 +211,11 @@ class NarrativeSemanticEvaluationHandler:
             )
         candidate_id = str(payload.get("candidate_asset_version_id") or "")
         candidate = next(
-            (
-                item
-                for item in request.inputs
-                if item.asset_version_id == candidate_id
-            ),
+            (item for item in request.inputs if item.asset_version_id == candidate_id),
             None,
         )
         candidate_hash = str(payload.get("candidate_content_hash") or "")
-        generation_operation_id = str(
-            payload.get("generation_operation_id") or ""
-        )
+        generation_operation_id = str(payload.get("generation_operation_id") or "")
         generation_actor_id = str(payload.get("generation_actor_id") or "")
         execution_class = str(payload.get("evaluator_execution_class") or "")
         if (
@@ -146,34 +236,85 @@ class NarrativeSemanticEvaluationHandler:
         evidence_inputs = tuple(
             item for item in request.inputs if item is not candidate
         )
-        if execution_class == "MODEL_PROVIDER" and not evidence_inputs:
+        provider_result: NarrativeProviderEvaluation | None = None
+        evaluation = payload.get("evaluation")
+        if execution_class == "MODEL_PROVIDER":
+            if evidence_inputs or evaluation is not None:
+                raise KernelError(
+                    "NARRATIVE_EVALUATION_PROVIDER_INPUT_INVALID",
+                    "provider evaluation result and evidence must be produced inside the Evaluation Attempt",
+                )
+            if self.execution_port is None:
+                raise KernelError(
+                    "NARRATIVE_EVALUATION_PROVIDER_RUNTIME_REQUIRED",
+                    "model-provider evaluation has no governed Production Execution port",
+                )
+            provider_result = self.execution_port.evaluate(
+                request,
+                candidate=candidate,
+                generator_operation_name=str(
+                    payload.get("generator_operation_name") or ""
+                ),
+                profiles=required_qualification_profiles(
+                    str(payload.get("generator_operation_name") or "")
+                ),
+            )
+            evaluation = provider_result.evaluation
+        elif execution_class == "SCRIPTED_FIXTURE":
+            if not self.allow_scripted_fixture:
+                raise KernelError(
+                    "NARRATIVE_EVALUATION_FIXTURE_FORBIDDEN",
+                    "SCRIPTED_FIXTURE Narrative Evaluation is disabled outside an explicit test runtime",
+                )
+        elif not evidence_inputs:
             raise KernelError(
-                "NARRATIVE_EVALUATION_PROVIDER_EVIDENCE_REQUIRED",
-                "model-provider evaluation requires immutable provider evidence",
+                "NARRATIVE_EVALUATION_OPERATOR_EVIDENCE_REQUIRED",
+                "operator evaluation requires immutable review evidence",
             )
         qualification = validate_narrative_qualification(
-            generator_operation_name=str(
-                payload.get("generator_operation_name") or ""
-            ),
-            value=payload.get("evaluation"),
+            generator_operation_name=str(payload.get("generator_operation_name") or ""),
+            value=evaluation,
             require_pass=False,
+        )
+        provider_evidence = (
+            [
+                {
+                    "asset_version_id": provider_result.model_call_log_asset_version_id,
+                    "content_hash": provider_result.model_call_log_content_hash,
+                }
+            ]
+            if provider_result is not None
+            else [
+                {
+                    "asset_version_id": item.asset_version_id,
+                    "content_hash": item.content_hash,
+                }
+                for item in evidence_inputs
+            ]
         )
         evidence_hash = _canonical_hash(
             {
-                "evaluation": payload["evaluation"],
+                "evaluation": evaluation,
                 "candidate_asset_version_id": candidate_id,
                 "candidate_content_hash": candidate_hash,
                 "generation_operation_id": generation_operation_id,
                 "evaluation_operation_id": request.operation_id,
                 "evaluation_attempt_id": request.attempt_id,
-                "provider_evidence": [
-                    {
-                        "asset_version_id": item.asset_version_id,
-                        "content_hash": item.content_hash,
-                    }
-                    for item in evidence_inputs
-                ],
+                "provider_evidence": provider_evidence,
+                "provider_evidence_hash": (
+                    provider_result.provider_evidence_hash
+                    if provider_result is not None
+                    else ""
+                ),
             }
+        )
+        reference_asset_version_ids = (
+            candidate.asset_version_id,
+            *(
+                (provider_result.model_call_log_asset_version_id,)
+                if provider_result is not None
+                else tuple(item.asset_version_id for item in evidence_inputs)
+            ),
         )
         return AuthorityHandlerOutput(
             asset_type="narrative_design_evaluation",
@@ -188,17 +329,31 @@ class NarrativeSemanticEvaluationHandler:
                 "evaluation_operation_id": request.operation_id,
                 "evaluation_attempt_id": request.attempt_id,
                 "evaluator_execution_class": execution_class,
-                "evaluation": dict(payload["evaluation"]),
+                "evaluation": dict(evaluation),
                 "qualification": qualification.to_evidence(),
                 "evaluation_evidence_hash": evidence_hash,
                 "provider_evidence_asset_version_ids": [
-                    item.asset_version_id for item in evidence_inputs
+                    item["asset_version_id"] for item in provider_evidence
                 ],
+                "provider_evidence": provider_evidence,
+                "provider_execution": (
+                    {
+                        "provider_id": provider_result.provider_id,
+                        "model_id": provider_result.model_id,
+                        "route_snapshot_id": provider_result.route_snapshot_id,
+                        "prompt_version": provider_result.prompt_version,
+                        "skill_version": provider_result.skill_version,
+                        "provider_evidence_hash": (
+                            provider_result.provider_evidence_hash
+                        ),
+                        "provider_result_hash": provider_result.provider_result_hash,
+                    }
+                    if provider_result is not None
+                    else {}
+                ),
             },
             qualification_policy="independent-narrative-evaluation-v1",
-            reference_asset_version_ids=tuple(
-                item.asset_version_id for item in request.inputs
-            ),
+            reference_asset_version_ids=reference_asset_version_ids,
             evidence={
                 "independent_from_generation": True,
                 "evaluation_attempt_id": request.attempt_id,
@@ -208,7 +363,12 @@ class NarrativeSemanticEvaluationHandler:
 
 
 class NarrativeSemanticEvaluationRegistry:
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        *,
+        execution_port: NarrativeSemanticEvaluationExecutionPort | None = None,
+        allow_scripted_fixture: bool = False,
+    ) -> None:
         item = AuthorityHandlerRegistration(
             definition_name=NARRATIVE_EVALUATION_DEFINITION,
             definition_version=NARRATIVE_EVALUATION_VERSION,
@@ -218,7 +378,10 @@ class NarrativeSemanticEvaluationRegistry:
             output_key="story_design.semantic_evaluation",
             role="qualification_evidence",
             completion_topic="story_design.semantic_evaluation.materialized",
-            handler=NarrativeSemanticEvaluationHandler(),
+            handler=NarrativeSemanticEvaluationHandler(
+                execution_port=execution_port,
+                allow_scripted_fixture=allow_scripted_fixture,
+            ),
         )
         self.item = item
 
@@ -280,22 +443,23 @@ def narrative_semantic_evaluation_definition(
             "candidate_generation_operation_must_differ": True,
             "non_fixture_evaluator_actor_must_differ": True,
             "candidate_content_hash_required": True,
-            "candidate_evaluation_input_allowed": True,
-            "model_provider_evidence_required": True,
+            "candidate_evaluation_input_allowed": False,
+            "evaluation_candidate_asset_input_allowed": True,
+            "model_provider_evidence_produced_inside_attempt": True,
             "model_provider_evidence_exact_result_required": True,
             "qualification_authority": "story_design_authority",
         },
         "idempotency_scope": "book:narrative-semantic-evaluation",
         "concurrency_key_template": "book:{book_id}:evaluation:{logical_key}",
         "retry_policy": {"max_attempts": 3, "dead_letter_on_exhausted": True},
-        "timeout_policy": {"operation_timeout_seconds": 300},
+        "timeout_policy": {"operation_timeout_seconds": 3000},
         "cancellation_policy": {"mode": "cancel_active_attempt"},
         "compensation_policy": {
             "supported": False,
             "reason": "append-only evaluation evidence",
         },
         "irreversible_effect_policy": {"allowed": False},
-        "external_capabilities": [],
+        "external_capabilities": ["model.narrative_semantic_evaluation"],
         "projection_consumers": ["story_design_authority"],
         "migration_owner": "story-design-authority",
         "completion_contract": {
@@ -311,9 +475,7 @@ def narrative_semantic_evaluation_definition(
                 }
             ],
             "required_evidence": ["trace", "audit"],
-            "required_outbox_events": [
-                "story_design.semantic_evaluation.materialized"
-            ],
+            "required_outbox_events": ["story_design.semantic_evaluation.materialized"],
         },
     }
 
@@ -326,9 +488,13 @@ class NarrativeSemanticEvaluationApplication:
         application_build_id: str,
         commit_sha: str,
         worker_id: str = "narrative-semantic-evaluation-worker",
+        execution_port: NarrativeSemanticEvaluationExecutionPort | None = None,
+        allow_scripted_fixture: bool = False,
     ) -> None:
         if not database_url or not application_build_id or len(commit_sha) != 40:
-            raise ValueError("Narrative Evaluation requires PostgreSQL and build identity")
+            raise ValueError(
+                "Narrative Evaluation requires PostgreSQL and build identity"
+            )
         self.database_url = database_url
         # This is one shared production worker, even when Book Design and Story
         # Planning call it through different application compositions. Its
@@ -336,7 +502,12 @@ class NarrativeSemanticEvaluationApplication:
         self.application_build_id = NARRATIVE_EVALUATION_APPLICATION_BUILD_ID
         self.commit_sha = commit_sha
         self.worker_id = worker_id
-        self.registry = NarrativeSemanticEvaluationRegistry()
+        self.execution_port = execution_port
+        self.allow_scripted_fixture = allow_scripted_fixture
+        self.registry = NarrativeSemanticEvaluationRegistry(
+            execution_port=execution_port,
+            allow_scripted_fixture=allow_scripted_fixture,
+        )
 
     def execute(
         self,
@@ -348,9 +519,14 @@ class NarrativeSemanticEvaluationApplication:
         del caller_permission  # evaluator identity is governed by its own permission
         principal.require("narrative_design.evaluate", command.project_id)
         if principal.principal_id != command.actor_id:
-            raise PermissionError("Narrative Evaluation actor must be the trusted Principal")
+            raise PermissionError(
+                "Narrative Evaluation actor must be the trusted Principal"
+            )
         candidate = self._require_candidate(command)
-        evidence_assets = [self._require_asset(command.project_id, item) for item in command.evidence_asset_version_ids]
+        evidence_assets = [
+            self._require_asset(command.project_id, item)
+            for item in command.evidence_asset_version_ids
+        ]
         if (
             command.evaluator_execution_class != "SCRIPTED_FIXTURE"
             and candidate["generation_actor_id"] == command.actor_id
@@ -359,15 +535,21 @@ class NarrativeSemanticEvaluationApplication:
                 "NARRATIVE_EVALUATION_ACTOR_NOT_INDEPENDENT",
                 "non-fixture Narrative Evaluation requires a trusted actor distinct from generation",
             )
-        if command.evaluator_execution_class == "MODEL_PROVIDER" and not evidence_assets:
+        if (
+            command.evaluator_execution_class == "MODEL_PROVIDER"
+            and self.execution_port is None
+        ):
             raise KernelError(
-                "NARRATIVE_EVALUATION_PROVIDER_EVIDENCE_REQUIRED",
-                "model-provider evaluation requires immutable evidence",
+                "NARRATIVE_EVALUATION_PROVIDER_RUNTIME_REQUIRED",
+                "model-provider evaluation requires the governed Production Execution runtime",
             )
-        if command.evaluator_execution_class == "MODEL_PROVIDER":
-            self._validate_model_provider_evidence(
-                command=command,
-                evidence_assets=evidence_assets,
+        if (
+            command.evaluator_execution_class == "SCRIPTED_FIXTURE"
+            and not self.allow_scripted_fixture
+        ):
+            raise KernelError(
+                "NARRATIVE_EVALUATION_FIXTURE_FORBIDDEN",
+                "SCRIPTED_FIXTURE Narrative Evaluation is not enabled for this runtime",
             )
         self._register_definition()
         inputs = [candidate, *evidence_assets]
@@ -399,8 +581,13 @@ class NarrativeSemanticEvaluationApplication:
                         "generation_operation_id": command.generation_operation_id,
                         "generation_actor_id": candidate["generation_actor_id"],
                         "generator_operation_name": command.generator_operation_name,
+                        "book_id": command.book_id,
                         "evaluator_execution_class": command.evaluator_execution_class,
-                        "evaluation": dict(command.evaluation),
+                        "evaluation": (
+                            None
+                            if command.evaluation is None
+                            else dict(command.evaluation)
+                        ),
                     },
                 },
                 "input_assets": [
@@ -472,8 +659,27 @@ class NarrativeSemanticEvaluationApplication:
             candidate_asset_version_id=command.candidate_asset_version_id,
             candidate_content_hash=command.candidate_content_hash,
             evaluator_execution_class=command.evaluator_execution_class,
-            evaluation_evidence_hash=str(
-                content.get("evaluation_evidence_hash") or ""
+            evaluation_evidence_hash=str(content.get("evaluation_evidence_hash") or ""),
+            provider_model_call_asset_version_id=str(
+                (content.get("provider_evidence_asset_version_ids") or [""])[0]
+                if command.evaluator_execution_class == "MODEL_PROVIDER"
+                else ""
+            ),
+            provider_model_call_content_hash=str(
+                ((content.get("provider_evidence") or [{}])[0]).get("content_hash")
+                if command.evaluator_execution_class == "MODEL_PROVIDER"
+                else ""
+            ),
+            provider_evidence_hash=str(
+                (content.get("provider_execution") or {}).get("provider_evidence_hash")
+                or ""
+            ),
+            provider_result_hash=str(
+                (content.get("provider_execution") or {}).get("provider_result_hash")
+                or ""
+            ),
+            provider_route_snapshot_id=str(
+                (content.get("provider_execution") or {}).get("route_snapshot_id") or ""
             ),
         )
         self._record_qualifications(command, lineage, qualification)
@@ -576,46 +782,6 @@ class NarrativeSemanticEvaluationApplication:
             "producer_status": str(row[5]),
         }
 
-    @staticmethod
-    def _validate_model_provider_evidence(
-        *,
-        command: NarrativeSemanticEvaluationCommand,
-        evidence_assets: list[dict[str, Any]],
-    ) -> None:
-        if len(evidence_assets) != 1:
-            raise KernelError(
-                "NARRATIVE_EVALUATION_PROVIDER_EVIDENCE_INVALID",
-                "model-provider evaluation requires exactly one immutable ModelCallLog",
-            )
-        asset = evidence_assets[0]
-        content = dict(asset["content"])
-        result = content.get("result")
-        valid = (
-            asset["asset_type"] == "model_call_log"
-            and asset["producer_status"] == "SUCCEEDED"
-            and asset["producer_operation_id"]
-            == str(content.get("operation_id") or "")
-            and asset["producer_operation_id"]
-            != command.generation_operation_id
-            and content.get("stage") == "narrative_semantic_evaluation"
-            and content.get("real_model_call") is True
-            and content.get("fixture_protocol_only") is False
-            and content.get("candidate_accepted") is True
-            and isinstance(result, dict)
-            and result.get("candidate_asset_version_id")
-            == command.candidate_asset_version_id
-            and result.get("candidate_content_hash")
-            == command.candidate_content_hash
-            and result.get("generation_operation_id")
-            == command.generation_operation_id
-            and result.get("evaluation") == command.evaluation
-        )
-        if not valid:
-            raise KernelError(
-                "NARRATIVE_EVALUATION_PROVIDER_EVIDENCE_INVALID",
-                "ModelCallLog is not an exact real-provider semantic-evaluation receipt",
-            )
-
     def _record_qualifications(
         self,
         command: NarrativeSemanticEvaluationCommand,
@@ -645,10 +811,14 @@ class NarrativeSemanticEvaluationApplication:
                         generation_operation_id, evaluation_operation_id,
                         evaluation_attempt_id, evaluation_asset_version_id,
                         evaluation_evidence_hash, trust_boundary
+                        , provider_model_call_asset_version_id
+                        , provider_model_call_content_hash
+                        , provider_evidence_hash, provider_result_hash
+                        , provider_route_snapshot_id
                     ) VALUES (
                         %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
                         %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                        %s, %s, 'INDEPENDENT'
+                        %s, %s, 'INDEPENDENT', %s, %s, %s, %s, %s
                     )
                     ON CONFLICT (
                         asset_version_id, design_layer,
@@ -678,6 +848,11 @@ class NarrativeSemanticEvaluationApplication:
                         lineage.evaluation_attempt_id,
                         lineage.evaluation_asset_version_id,
                         lineage.evaluation_evidence_hash,
+                        lineage.provider_model_call_asset_version_id or None,
+                        lineage.provider_model_call_content_hash or None,
+                        lineage.provider_evidence_hash or None,
+                        lineage.provider_result_hash or None,
+                        lineage.provider_route_snapshot_id or None,
                     ],
                 )
             uow.commit()
@@ -688,9 +863,11 @@ __all__ = [
     "NARRATIVE_EVALUATION_HANDLER",
     "NARRATIVE_EVALUATION_APPLICATION_BUILD_ID",
     "NARRATIVE_EVALUATION_VERSION",
+    "NarrativeProviderEvaluation",
     "NarrativeSemanticEvaluationApplication",
     "NarrativeSemanticEvaluationCommand",
     "NarrativeSemanticEvaluationHandler",
+    "NarrativeSemanticEvaluationExecutionPort",
     "NarrativeSemanticEvaluationRegistry",
     "NarrativeSemanticEvaluationResult",
     "narrative_semantic_evaluation_definition",

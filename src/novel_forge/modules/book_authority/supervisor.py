@@ -381,12 +381,8 @@ class PostgresBookProductionSupervisor:
             )
         else:
             snapshot = self.query.require_input_snapshot(str(book["input_snapshot_id"]))
-            initial_story_state = str(
-                snapshot.get("initial_story_state_version") or ""
-            )
-            initial_canon = str(
-                snapshot.get("initial_canon_snapshot_version") or ""
-            )
+            initial_story_state = str(snapshot.get("initial_story_state_version") or "")
+            initial_canon = str(snapshot.get("initial_canon_snapshot_version") or "")
             if bool(initial_story_state) != bool(initial_canon):
                 raise KernelError(
                     "BOOK_INITIAL_NARRATIVE_STATE_INCOMPLETE",
@@ -424,9 +420,7 @@ class PostgresBookProductionSupervisor:
             "longform_design_qualification_hash": chapter_admission[
                 "longform_design_qualification_hash"
             ],
-            "chapter_production_admission_hash": chapter_admission[
-                "admission_hash"
-            ],
+            "chapter_production_admission_hash": chapter_admission["admission_hash"],
         }
         preparation_report = self._stage_budgeted_preparation_report(prepared)
         preparation_report["chapter_production_admission"] = chapter_admission
@@ -664,7 +658,9 @@ class PostgresBookProductionSupervisor:
         chapter_number: int,
         snapshot: dict[str, Any],
     ) -> tuple[str, ...]:
-        active = tuple(str(item) for item in snapshot["active_arc_plan_versions"])
+        active = tuple(
+            str(item) for item in snapshot["current_relevant_arc_plan_versions"]
+        )
         if not active:
             raise KernelError(
                 "BOOK_SUPERVISOR_ACTIVE_ARC_MISSING",

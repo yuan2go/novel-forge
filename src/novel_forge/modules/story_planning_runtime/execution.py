@@ -43,6 +43,7 @@ from novel_forge.modules.hierarchical_planning.domain import (
     PLAN_REALIZATION,
     TYPE_FIELDS,
     PlanContractType,
+    RealizationLevel,
 )
 from novel_forge.modules.production_execution import (
     ArtifactPointer,
@@ -83,6 +84,7 @@ from .domain import (
     STORY_PLANNING_MAX_ATTEMPTS,
     STORY_PLANNING_OPERATION_TIMEOUT_SECONDS,
     StoryPlanningGenerationCommand,
+    build_planning_constraint_envelope,
     canonical_hash,
 )
 
@@ -228,6 +230,48 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
     command = inputs.get("planning_command")
     if not isinstance(command, Mapping):
         raise ValueError("Planning fixture requires its frozen command")
+    frozen_values = inputs.get("frozen_inputs")
+    frozen_inputs = [
+        dict(item) for item in frozen_values or () if isinstance(item, Mapping)
+    ]
+    frozen_by_role = {str(item.get("role") or ""): item for item in frozen_inputs}
+    project_id = str(command.get("project_id") or "project-1")
+    book_id = str(command.get("book_id") or "book-1")
+    generation_operation_id = str(
+        command.get("generation_operation_id") or "operation:fixture-generation"
+    )
+
+    def authority_ref(
+        *, roles: tuple[str, ...], domain_type: str, fallback: str
+    ) -> dict[str, str]:
+        source = next(
+            (frozen_by_role[role] for role in roles if role in frozen_by_role),
+            None,
+        )
+        if source is None:
+            version_id = fallback
+            asset_type = roles[0]
+            content_hash = (
+                "sha256:" + hashlib.sha256(fallback.encode("utf-8")).hexdigest()
+            )
+            role = roles[0]
+        else:
+            version_id = str(source.get("asset_version_id") or "")
+            asset_type = str(source.get("asset_type") or "")
+            content_hash = str(source.get("content_hash") or "")
+            role = str(source.get("role") or "")
+        return {
+            "project_id": project_id,
+            "book_id": book_id,
+            "authority_role": role,
+            "asset_version_id": version_id,
+            "asset_type": asset_type,
+            "content_hash": content_hash,
+            "domain_type": domain_type,
+            "freshness": "CURRENT",
+            "frozen_by_operation_id": generation_operation_id,
+        }
+
     logical_key = str(command.get("logical_key") or "")
     fixture_book_volume_count = 2 if logical_key.endswith(":portfolio-2") else 1
     fixture_book_target_chapters = fixture_book_volume_count * 3
@@ -310,10 +354,32 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
         "world_realization": [
             {
                 "world_id": "world:primary",
-                "invariant_refs": ["world-invariant:causality"],
-                "structure_refs": ["world-structure:institution"],
-                "state_ref": "world-state:current",
+                "invariant_refs": [
+                    authority_ref(
+                        roles=("world_bible", "book_plan", "story_state"),
+                        domain_type="WORLD_INVARIANT",
+                        fallback="world-invariant:causality",
+                    )
+                ],
+                "structure_refs": [
+                    authority_ref(
+                        roles=("world_bible", "book_plan", "canon_snapshot"),
+                        domain_type="WORLD_STRUCTURE",
+                        fallback="world-structure:institution",
+                    )
+                ],
+                "state_ref": authority_ref(
+                    roles=(
+                        "story_state",
+                        "canon_snapshot",
+                        "world_bible",
+                        "book_plan",
+                    ),
+                    domain_type="WORLD_STATE",
+                    fallback="world-state:current",
+                ),
                 "realization_level": PLAN_REALIZATION[contract_type].value,
+                "narrative_relevance": "CURRENT",
                 "visibility": (
                     "HIDDEN"
                     if contract_type is PlanContractType.BOOK
@@ -333,23 +399,35 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
         "character_realization": [
             {
                 "character_id": "protagonist",
-                "identity_ref": "character-identity:protagonist",
-                "state_ref": "character-state:protagonist:current",
-                "trajectory_ref": "character-arc:accountability",
+                "identity_ref": authority_ref(
+                    roles=(
+                        "character_cast",
+                        "character_arc_portfolio",
+                        "book_plan",
+                    ),
+                    domain_type="CHARACTER_IDENTITY",
+                    fallback="character-identity:protagonist",
+                ),
+                "state_ref": authority_ref(
+                    roles=("story_state", "character_cast", "book_plan"),
+                    domain_type="CHARACTER_STATE",
+                    fallback="character-state:protagonist:current",
+                ),
+                "trajectory_ref": authority_ref(
+                    roles=(
+                        "character_arc_portfolio",
+                        "character_cast",
+                        "book_plan",
+                    ),
+                    domain_type="CHARACTER_TRAJECTORY",
+                    fallback="character-arc:accountability",
+                ),
                 "scope": PLAN_HORIZON[contract_type].value,
                 "reach": logical_key,
                 "realization_level": PLAN_REALIZATION[contract_type].value,
+                "narrative_relevance": "CURRENT",
             }
         ],
-        "narrative_load_budget": {
-            "max_active_arcs": 3,
-            "max_dormant_arc_age": 30,
-            "max_open_obligations": 12,
-            "max_payoff_congestion": 3,
-            "max_character_appearance_gap": 10,
-            "max_new_concepts": 4,
-            "max_state_transitions": 8,
-        },
     }
     if command.get("change_evidence_version_ids"):
         payload["objective"] = (
@@ -372,9 +450,7 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
             "major_turns": ["irreversible choice"],
             "climax_distribution": [1],
             "long_promise_payoff": ["central promise settled"],
-            "length_strategy": {
-                "target_chapters": fixture_book_target_chapters
-            },
+            "length_strategy": {"target_chapters": fixture_book_target_chapters},
             "risk_register": [],
             "narrative_architecture_version": "canonical-narrative-v1",
             "character_development": [
@@ -492,13 +568,9 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
             ],
             "chapter_range": [1, 3],
             "cost_range": ["social", "material"],
-            "primary_arc_ids": [
-                (arc_plan_ids or ("arc:primary",))[0]
-            ],
+            "primary_arc_ids": [(arc_plan_ids or ("arc:primary",))[0]],
             "secondary_arc_ids": list((arc_plan_ids or ())[1:]),
-            "required_arc_contributions": list(
-                arc_plan_ids or ("arc:primary",)
-            ),
+            "required_arc_contributions": list(arc_plan_ids or ("arc:primary",)),
             "arc_checkpoint_expectations": [
                 {
                     "arc_plan_version_id": arc_id,
@@ -596,9 +668,9 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
                 }
             ],
             "reader_experience": {
-                **_chapter_function_row(
-                    chapter_number, chapter_function, chapter_hook
-                )["reader_experience"],
+                **_chapter_function_row(chapter_number, chapter_function, chapter_hook)[
+                    "reader_experience"
+                ],
                 "entry_question": "Will the protagonist stay silent?",
                 "exit_question": "Who will exploit the public choice?",
             },
@@ -671,10 +743,35 @@ def _canonical_narrative_provider_properties(
     string_array = {"type": "array", "items": string}
     state_spec = _strict_object({"summary": string})
     allowed_realization_levels = {
-        level.value
-        for level in HORIZON_REALIZATION_LEVELS[PLAN_HORIZON[contract_type]]
+        level.value for level in HORIZON_REALIZATION_LEVELS[PLAN_HORIZON[contract_type]]
     }
-    string_list = {"type": "array", "minItems": 1, "items": string}
+    entity_realization_levels = [level.value for level in RealizationLevel]
+    authority_ref = _strict_object(
+        {
+            "project_id": string,
+            "book_id": string,
+            "authority_role": string,
+            "asset_version_id": string,
+            "asset_type": string,
+            "content_hash": {
+                "type": "string",
+                "pattern": "^sha256:[0-9a-f]{64}$",
+            },
+            "domain_type": {
+                "type": "string",
+                "enum": [
+                    "WORLD_INVARIANT",
+                    "WORLD_STRUCTURE",
+                    "WORLD_STATE",
+                    "CHARACTER_IDENTITY",
+                    "CHARACTER_STATE",
+                    "CHARACTER_TRAJECTORY",
+                ],
+            },
+            "freshness": {"type": "string", "const": "CURRENT"},
+            "frozen_by_operation_id": string,
+        }
+    )
     architecture = {
         "narrative_architecture_version": {
             "type": "string",
@@ -712,12 +809,24 @@ def _canonical_narrative_provider_properties(
             "items": _strict_object(
                 {
                     "world_id": string,
-                    "invariant_refs": string_list,
-                    "structure_refs": string_list,
-                    "state_ref": string,
+                    "invariant_refs": {
+                        "type": "array",
+                        "minItems": 1,
+                        "items": authority_ref,
+                    },
+                    "structure_refs": {
+                        "type": "array",
+                        "minItems": 1,
+                        "items": authority_ref,
+                    },
+                    "state_ref": authority_ref,
                     "realization_level": {
                         "type": "string",
-                        "enum": sorted(allowed_realization_levels),
+                        "enum": entity_realization_levels,
+                    },
+                    "narrative_relevance": {
+                        "type": "string",
+                        "enum": ["CURRENT", "NEAR_FUTURE", "FUTURE"],
                     },
                     "visibility": string,
                     "accessibility": string,
@@ -730,32 +839,22 @@ def _canonical_narrative_provider_properties(
             "items": _strict_object(
                 {
                     "character_id": string,
-                    "identity_ref": string,
-                    "state_ref": string,
-                    "trajectory_ref": string,
+                    "identity_ref": authority_ref,
+                    "state_ref": authority_ref,
+                    "trajectory_ref": authority_ref,
                     "scope": string,
                     "reach": string,
                     "realization_level": {
                         "type": "string",
-                        "enum": sorted(allowed_realization_levels),
+                        "enum": entity_realization_levels,
+                    },
+                    "narrative_relevance": {
+                        "type": "string",
+                        "enum": ["CURRENT", "NEAR_FUTURE", "FUTURE"],
                     },
                 }
             ),
         },
-        "narrative_load_budget": _strict_object(
-            {
-                key: {"type": "integer", "minimum": 0}
-                for key in (
-                    "max_active_arcs",
-                    "max_dormant_arc_age",
-                    "max_open_obligations",
-                    "max_payoff_congestion",
-                    "max_character_appearance_gap",
-                    "max_new_concepts",
-                    "max_state_transitions",
-                )
-            }
-        ),
     }
     segment_ref = _strict_object(
         {"volume_plan_version_id": string, "segment_id": string}
@@ -881,7 +980,9 @@ def _canonical_narrative_provider_properties(
         "arc_schedule": {
             "type": "array",
             "minItems": 1,
-            "maxItems": min(3, len(arc_plan_version_ids)) if arc_plan_version_ids else 8,
+            "maxItems": min(3, len(arc_plan_version_ids))
+            if arc_plan_version_ids
+            else 8,
             "items": _strict_object(
                 {
                     "arc_plan_version_id": scheduled_arc_ref,
@@ -1066,8 +1167,12 @@ def _canonical_narrative_provider_properties(
                     "narrative_time_relation": {
                         "type": "string",
                         "enum": [
-                            "ESTABLISHES", "ADVANCES", "FLASHBACK",
-                            "FLASHFORWARD", "PARALLEL", "ELLIPSIS",
+                            "ESTABLISHES",
+                            "ADVANCES",
+                            "FLASHBACK",
+                            "FLASHFORWARD",
+                            "PARALLEL",
+                            "ELLIPSIS",
                         ],
                     },
                     "accessible_knowledge": string_array,
@@ -1840,8 +1945,7 @@ class PostgresPlanningExecutionPreparer:
                 ":v4"
                 if command.planning_scope.value == PlanContractType.CHAPTER.value
                 else ":v2"
-                if command.planning_scope.value
-                == PlanContractType.CHAPTER_GROUP.value
+                if command.planning_scope.value == PlanContractType.CHAPTER_GROUP.value
                 else ":v1"
             )
         )
@@ -1912,10 +2016,27 @@ class PostgresPlanningExecutionPreparer:
         )
         stable_key = f"{operation_id}:{definition.capability}:planning-pep-v2"
         planning_route = self.planning_route
+        authoritative_envelope = build_planning_constraint_envelope(
+            project_id=command.project_id,
+            book_id=command.book_id,
+            generation_operation_id=operation_id,
+            generator_operation_name=command.generator_operation_name,
+            frozen_inputs=inputs,
+            input_contents={
+                item.role: dict(document.content)
+                for item, document in zip(
+                    inputs, input_documents[: len(inputs)], strict=True
+                )
+            },
+            candidate_payload={},
+        )
         stable_request_payload = {
             "stage": command.generator_operation_name,
             "input": {
                 "planning_command": {
+                    "project_id": command.project_id,
+                    "book_id": command.book_id,
+                    "generation_operation_id": operation_id,
                     "logical_key": command.logical_key,
                     "planning_scope": command.planning_scope.value,
                     "parent_version_id": command.parent_version_id,
@@ -1941,6 +2062,17 @@ class PostgresPlanningExecutionPreparer:
                     }
                     for item in inputs
                 ],
+                "authoritative_narrative_load": {
+                    "narrative_load_policy": authoritative_envelope[
+                        "narrative_load_policy"
+                    ],
+                    "narrative_load_policy_lineage": authoritative_envelope[
+                        "narrative_load_policy_lineage"
+                    ],
+                    "narrative_load_projection": authoritative_envelope[
+                        "narrative_load_projection"
+                    ],
+                },
             },
             "trace_id": command.trace_id,
             "correlation_id": command.correlation_id,

@@ -272,7 +272,10 @@ class _ExternalEffectPepFixturePlanningBinder:
         definition: Any,
     ) -> PlanningGenerationCandidate:
         payload = _planning_contract(
-            command, target_chapter_count=self.target_chapter_count
+            command,
+            operation_id=operation_id,
+            inputs=inputs,
+            target_chapter_count=self.target_chapter_count,
         )
         if ":replacement-candidate" in command.idempotency_key:
             payload["objective"] = f"{payload['objective']} after recap deviation"
@@ -339,7 +342,11 @@ def _principal(project_id: str) -> Principal:
 
 
 def _planning_contract(
-    command: StoryPlanningGenerationCommand, *, target_chapter_count: int = 3
+    command: StoryPlanningGenerationCommand,
+    *,
+    operation_id: str,
+    inputs: tuple[FrozenPlanningInput, ...],
+    target_chapter_count: int = 3,
 ) -> dict[str, Any]:
     contract_type = PlanContractType(command.planning_scope.value)
     payload: dict[str, Any] = {
@@ -452,13 +459,25 @@ def _planning_contract(
             command.generator_operation_name,
             {
                 "planning_command": {
+                    "project_id": command.project_id,
+                    "book_id": command.book_id,
+                    "generation_operation_id": operation_id,
                     "logical_key": command.logical_key,
                     "parent_version_id": command.parent_version_id,
                     "input_versions": dict(command.input_versions),
                     "arc_scope_volume_plan_version_ids": list(
                         command.arc_scope_volume_plan_version_ids
                     ),
-                }
+                },
+                "frozen_inputs": [
+                    {
+                        "role": item.role,
+                        "asset_version_id": item.asset_version_id,
+                        "content_hash": item.content_hash,
+                        "asset_type": item.asset_type,
+                    }
+                    for item in inputs
+                ],
             },
         )
     )
@@ -1002,6 +1021,7 @@ def test_five_planning_generators_repair_activate_and_replay_in_postgres() -> No
         ),
         application_build_id="core-functional-loop-fixture",
         commit_sha=RELEASE_SHA,
+        allow_scripted_evaluation_fixture=True,
     )
     activated = _activate_plan_chain(
         project_id=project_id,
@@ -1147,7 +1167,8 @@ def test_production_composition_executes_five_planning_generators_via_pep() -> N
             database_url=DATABASE_URL,
         )
         env = {
-            "NOVEL_FORGE_ENVIRONMENT": "development",
+            "NOVEL_FORGE_ENVIRONMENT": "test",
+            "NOVEL_FORGE_TEST_ALLOW_SCRIPTED_NARRATIVE_EVALUATION_FIXTURE": "true",
             "NOVEL_FORGE_APPLICATION_BUILD_ID": "planning-production-composition",
             "NOVEL_FORGE_COMMIT_SHA": RELEASE_SHA,
             "NOVEL_FORGE_MODEL_PROVIDER": "scripted_provider_v2",
@@ -1234,7 +1255,8 @@ def test_planning_retry_reuses_frozen_pack_after_measured_provider_result() -> N
             database_url=DATABASE_URL,
         )
         env = {
-            "NOVEL_FORGE_ENVIRONMENT": "development",
+            "NOVEL_FORGE_ENVIRONMENT": "test",
+            "NOVEL_FORGE_TEST_ALLOW_SCRIPTED_NARRATIVE_EVALUATION_FIXTURE": "true",
             "NOVEL_FORGE_APPLICATION_BUILD_ID": "planning-attempt-retry",
             "NOVEL_FORGE_COMMIT_SHA": RELEASE_SHA,
             "NOVEL_FORGE_MODEL_PROVIDER": "scripted_provider_v2",
@@ -1394,7 +1416,8 @@ def test_planning_provider_timeout_retries_same_effect_then_succeeds(
             database_url=DATABASE_URL,
         )
         env = {
-            "NOVEL_FORGE_ENVIRONMENT": "development",
+            "NOVEL_FORGE_ENVIRONMENT": "test",
+            "NOVEL_FORGE_TEST_ALLOW_SCRIPTED_NARRATIVE_EVALUATION_FIXTURE": "true",
             "NOVEL_FORGE_APPLICATION_BUILD_ID": "planning-provider-timeout-retry",
             "NOVEL_FORGE_COMMIT_SHA": RELEASE_SHA,
             "NOVEL_FORGE_MODEL_PROVIDER": "scripted_provider_v2",
@@ -1519,7 +1542,8 @@ def test_non_book_planning_context_binds_book_authority_language_contract() -> N
             database_url=DATABASE_URL,
         )
         env = {
-            "NOVEL_FORGE_ENVIRONMENT": "development",
+            "NOVEL_FORGE_ENVIRONMENT": "test",
+            "NOVEL_FORGE_TEST_ALLOW_SCRIPTED_NARRATIVE_EVALUATION_FIXTURE": "true",
             "NOVEL_FORGE_APPLICATION_BUILD_ID": "planning-volume-language-contract",
             "NOVEL_FORGE_COMMIT_SHA": RELEASE_SHA,
             "NOVEL_FORGE_MODEL_PROVIDER": "scripted_provider_v2",
@@ -1624,7 +1648,8 @@ def test_planning_repeated_provider_timeout_exhausts_one_bounded_effect(
             database_url=DATABASE_URL,
         )
         env = {
-            "NOVEL_FORGE_ENVIRONMENT": "development",
+            "NOVEL_FORGE_ENVIRONMENT": "test",
+            "NOVEL_FORGE_TEST_ALLOW_SCRIPTED_NARRATIVE_EVALUATION_FIXTURE": "true",
             "NOVEL_FORGE_APPLICATION_BUILD_ID": "planning-provider-timeout-exhausted",
             "NOVEL_FORGE_COMMIT_SHA": RELEASE_SHA,
             "NOVEL_FORGE_MODEL_PROVIDER": "scripted_provider_v2",
@@ -1760,7 +1785,8 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
         database_url=DATABASE_URL,
     )
     runtime_env = {
-        "NOVEL_FORGE_ENVIRONMENT": "development",
+        "NOVEL_FORGE_ENVIRONMENT": "test",
+        "NOVEL_FORGE_TEST_ALLOW_SCRIPTED_NARRATIVE_EVALUATION_FIXTURE": "true",
         "NOVEL_FORGE_APPLICATION_BUILD_ID": "core-functional-loop-fixture",
         "NOVEL_FORGE_COMMIT_SHA": RELEASE_SHA,
         "NOVEL_FORGE_MODEL_PROVIDER": "scripted_provider_v2",
@@ -1813,9 +1839,7 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
         application=planning,
         multi_volume_arc=True,
     )
-    _seed_fixture_book_design_qualification(
-        project_id, book_id, generic["book_design"]
-    )
+    _seed_fixture_book_design_qualification(project_id, book_id, generic["book_design"])
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
         uow.cursor.execute(
             """
@@ -1932,9 +1956,7 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
         == activated["chapter_group_plan.generate"]
     )
     assert snapshot.design_admission_status == "LONGFORM_DESIGN_QUALIFIED"
-    assert snapshot.design_qualification["admission"] == (
-        "LONGFORM_DESIGN_QUALIFIED"
-    )
+    assert snapshot.design_qualification["admission"] == ("LONGFORM_DESIGN_QUALIFIED")
     assert snapshot.design_qualification_hash == canonical_hash(
         snapshot.design_qualification
     )
@@ -2110,9 +2132,10 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
     assert chapter_admission["longform_design_qualification_hash"] == (
         snapshot.design_qualification_hash
     )
-    assert checkpoint_payload["context_version_refs"][
-        "chapter_production_admission_hash"
-    ] == chapter_admission["admission_hash"]
+    assert (
+        checkpoint_payload["context_version_refs"]["chapter_production_admission_hash"]
+        == chapter_admission["admission_hash"]
+    )
 
     if runtime_path == "NO_REPLAN":
         no_replan_actions: list[str] = []
@@ -2254,9 +2277,7 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
     assert resumed["status"] == "RESUMED"
     assert resumed["input_snapshot_id"] != snapshot.snapshot_id
     resumed_snapshot = resolver.require(resumed["input_snapshot_id"])
-    assert resumed_snapshot.design_admission_status == (
-        "LONGFORM_DESIGN_QUALIFIED"
-    )
+    assert resumed_snapshot.design_admission_status == ("LONGFORM_DESIGN_QUALIFIED")
     # A replan binds a new immutable future-intent snapshot, but accepted
     # Narrative State remains owned by Book acceptance pointers.  It must not
     # be copied into the legacy Story Design input roles.

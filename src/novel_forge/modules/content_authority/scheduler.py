@@ -1,4 +1,5 @@
 """Recovery-aware Content Authority worker over Command Kernel Attempt primitives."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -18,8 +19,12 @@ from novel_forge.modules.command_kernel.attempt_runtime import (
 )
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.command_kernel.lease_heartbeat import LeaseHeartbeatGuard
-from novel_forge.modules.command_kernel.deadline_runtime import probe_operation_execution
-from novel_forge.modules.command_kernel.cancellation import acknowledge_worker_cancellation
+from novel_forge.modules.command_kernel.deadline_runtime import (
+    probe_operation_execution,
+)
+from novel_forge.modules.command_kernel.cancellation import (
+    acknowledge_worker_cancellation,
+)
 from novel_forge.modules.command_kernel.worker_execution import (
     WorkerFailureClass,
     WorkerFailureClassifier,
@@ -148,7 +153,9 @@ class ContentAuthorityScheduler:
             attempt_status = str(state["attempt_status"])
             recovery_mode = (
                 "output_replay_takeover"
-                if self._existing_result(operation_id, project_id, require_succeeded=False)
+                if self._existing_result(
+                    operation_id, project_id, require_succeeded=False
+                )
                 else "lease_takeover"
             )
         else:
@@ -192,7 +199,9 @@ class ContentAuthorityScheduler:
             )
         try:
             with LeaseHeartbeatGuard(
-                lambda: heartbeat_attempt(self.database_url, worker, self.lease_seconds),
+                lambda: heartbeat_attempt(
+                    self.database_url, worker, self.lease_seconds
+                ),
                 lease_seconds=self.lease_seconds,
                 label=f"attempt:{attempt_id}",
                 probe=lambda: probe_operation_execution(
@@ -249,7 +258,9 @@ class ContentAuthorityScheduler:
                     worker,
                     {
                         "reason": "external_state_unknown",
-                        "error_code": exc.code if isinstance(exc, KernelError) else "UNKNOWN",
+                        "error_code": exc.code
+                        if isinstance(exc, KernelError)
+                        else "UNKNOWN",
                         "error_message": str(exc),
                     },
                 )
@@ -261,7 +272,9 @@ class ContentAuthorityScheduler:
                     self.database_url,
                     worker,
                     retryable=classification is WorkerFailureClass.RETRYABLE,
-                    error_code=exc.code if isinstance(exc, KernelError) else "PROGRAMMING_BUG",
+                    error_code=exc.code
+                    if isinstance(exc, KernelError)
+                    else "PROGRAMMING_BUG",
                     error_message=str(exc),
                     failure_class=classification.value,
                 )
@@ -287,10 +300,6 @@ class ContentAuthorityScheduler:
                     SELECT attempt_id, attempt_number, status
                     FROM authority_attempt
                     WHERE operation_id = operation.operation_id
-                      AND status IN (
-                          'CREATED', 'QUEUED', 'LEASED', 'RUNNING',
-                          'CHECKPOINTED', 'RESULT_SUBMITTED'
-                      )
                     ORDER BY attempt_number DESC
                     LIMIT 1
                 ) AS attempt ON TRUE
@@ -304,9 +313,15 @@ class ContentAuthorityScheduler:
         return dict(
             zip(
                 (
-                    "operation_status", "definition_name", "definition_version",
-                    "trace_id", "correlation_id",
-                    "max_attempts", "attempt_id", "attempt_number", "attempt_status",
+                    "operation_status",
+                    "definition_name",
+                    "definition_version",
+                    "trace_id",
+                    "correlation_id",
+                    "max_attempts",
+                    "attempt_id",
+                    "attempt_number",
+                    "attempt_status",
                 ),
                 row,
                 strict=True,
@@ -324,16 +339,28 @@ class ContentAuthorityScheduler:
             uow.cursor.execute(
                 """
                 SELECT binding.asset_id, binding.asset_version_id, binding.content_hash,
-                       binding.output_key, operation.status
+                       binding.output_key, operation.status,
+                       operation.definition_name, operation.definition_version,
+                       binding.role
                 FROM authority_operation_output_asset AS binding
                 JOIN authority_operation AS operation
                   ON operation.operation_id = binding.operation_id
                 WHERE binding.operation_id = %s AND operation.project_id = %s
-                  AND binding.role = 'primary'
                 """,
                 [operation_id, project_id],
             )
-            row = uow.cursor.fetchone()
+            rows = uow.cursor.fetchall()
+        matching = []
+        for row in rows:
+            registration = self.registry.registration(str(row[5]), str(row[6]))
+            if row[3] == registration.output_key and row[7] == registration.role:
+                matching.append(row)
+        if len(matching) > 1:
+            raise KernelError(
+                "CONTENT_RECOVERY_OUTPUT_AMBIGUOUS",
+                "Content Operation has multiple outputs matching its handler contract",
+            )
+        row = matching[0] if matching else None
         if row is None or (require_succeeded and row[4] != "SUCCEEDED"):
             return None
         return AuthorityExecutionResult(

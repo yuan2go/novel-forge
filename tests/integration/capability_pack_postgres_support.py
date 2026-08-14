@@ -95,8 +95,17 @@ class DeploymentProof:
 
 
 class CapabilityPackPostgresHarness:
-    def __init__(self, label: str, *, book_count: int = 1) -> None:
+    def __init__(
+        self,
+        label: str,
+        *,
+        book_count: int = 1,
+        application_build_id: str = APP_BUILD_ID,
+        release_sha: str = RELEASE_SHA,
+    ) -> None:
         ensure_migrated()
+        self.application_build_id = application_build_id
+        self.release_sha = release_sha
         suffix = uuid4().hex
         self.pack_id = f"{label.replace('_', '-').lower()}-{suffix}"
         self.project_id = f"project-{suffix}"
@@ -114,16 +123,16 @@ class CapabilityPackPostgresHarness:
             self._seed_additional_books(self.book_ids[1:])
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
             for definition in chapter_operation_definitions(
-                application_build_id=APP_BUILD_ID,
-                commit_sha=RELEASE_SHA,
+                application_build_id=self.application_build_id,
+                commit_sha=self.release_sha,
                 model_effects_required=True,
             ):
                 uow.repositories.definitions.register(definition)
             uow.commit()
         self.application = CapabilityPackAuthorityApplication(
             DATABASE_URL,
-            application_build_id=APP_BUILD_ID,
-            commit_sha=RELEASE_SHA,
+            application_build_id=self.application_build_id,
+            commit_sha=self.release_sha,
         )
         self.compiler = self.principal("compiler", *PACK_PERMISSIONS)
         self.approver = self.principal("approver", *PACK_PERMISSIONS)
@@ -230,6 +239,8 @@ class CapabilityPackPostgresHarness:
         limitations: Sequence[Mapping[str, Any] | str] = (),
         dependencies: Sequence[Mapping[str, str]] = (),
         owner_scope_type: str = "PROJECT",
+        proof_skill_ref: str = "prose-generation",
+        release_sha: str = RELEASE_SHA,
     ) -> PackVersionProof:
         manifest, catalog = self.build_version_payload(
             version, generation=generation, dependencies=dependencies
@@ -258,7 +269,7 @@ class CapabilityPackPostgresHarness:
             payload={
                 "target_runtime_profile": "development",
                 "novel_forge_version": "6.0.0",
-                "release_sha": RELEASE_SHA,
+                "release_sha": release_sha,
                 "release_channel": "VALIDATION",
             },
         )
@@ -288,7 +299,7 @@ class CapabilityPackPostgresHarness:
         skill = next(
             item
             for item in compiled["resolved_artifacts"]
-            if item["kind"] == "SKILL" and item["ref"] == "prose-generation"
+            if item["kind"] == "SKILL" and item["ref"] == proof_skill_ref
         )
         agent_version = max(
             int(str(node["agent_definition_ref"]).rpartition("@")[2])
@@ -432,8 +443,8 @@ class CapabilityPackPostgresHarness:
         context = dict(compiled["context_source_snapshot"])
         runtime = AgentRuntimeAuthorityApplication(
             DATABASE_URL,
-            application_build_id=APP_BUILD_ID,
-            commit_sha=RELEASE_SHA,
+            application_build_id=self.application_build_id,
+            commit_sha=self.release_sha,
         )
         registered: set[str] = set()
         for node in compiled["workflow_nodes"]:
@@ -598,7 +609,7 @@ class CapabilityPackPostgresHarness:
             env = {
                 "NOVEL_FORGE_ENVIRONMENT": "development",
                 "NOVEL_FORGE_MODEL_PROVIDER": "scripted_provider_v2",
-                "NOVEL_FORGE_COMMIT_SHA": RELEASE_SHA,
+                "NOVEL_FORGE_COMMIT_SHA": self.release_sha,
                 "NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID": self.pack_id,
                 "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": root,
             }
@@ -619,8 +630,8 @@ class CapabilityPackPostgresHarness:
                     premise="A frozen choice must survive runtime recovery.",
                     trace_id=identifier("pack-snapshot-trace"),
                     correlation_id=identifier("pack-snapshot-correlation"),
-                    application_build_id=APP_BUILD_ID,
-                    commit_sha=RELEASE_SHA,
+                    application_build_id=self.application_build_id,
+                    commit_sha=self.release_sha,
                     idempotency_key=(
                         f"{self.project_id}:capability-pack-snapshot:"
                         f"chapter-{chapter_number}"

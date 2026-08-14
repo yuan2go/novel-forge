@@ -4,6 +4,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
+import hashlib
+import json
+import re
 from typing import Any
 
 from novel_forge.modules.command_kernel.errors import KernelError
@@ -67,6 +70,64 @@ HORIZON_REALIZATION_LEVELS = {
     PlanningHorizon.OPERATIONAL: frozenset(
         {RealizationLevel.DETAILED, RealizationLevel.ACTIVE}
     ),
+}
+
+WORLD_VISIBILITY_VALUES = frozenset(
+    {"HIDDEN", "PARTIAL", "VISIBLE", "SCENE_VISIBLE"}
+)
+WORLD_ACCESSIBILITY_VALUES = frozenset(
+    {"CLOSED", "RESTRICTED", "ACCESSIBLE"}
+)
+CHARACTER_SCOPE_VALUES = frozenset(item.value for item in PlanContractType)
+CHARACTER_REACH_VALUES = frozenset(
+    {
+        "DISTANT",
+        "FUTURE_VOLUME",
+        "CURRENT_VOLUME",
+        "CURRENT_SEGMENT",
+        "CURRENT_CHAPTER",
+        "CURRENT_SCENE",
+    }
+)
+
+_REALIZATION_DOMAIN_ROLE_TYPES: dict[str, dict[str, frozenset[str]]] = {
+    "WORLD_INVARIANT": {
+        "world_bible": frozenset({"world_bible"}),
+        "book_plan": frozenset({"book_plan", "planning_generation_candidate"}),
+        "story_state": frozenset(
+            {"story_state", "story_state_snapshot", "narrative_state"}
+        ),
+    },
+    "WORLD_STRUCTURE": {
+        "world_bible": frozenset({"world_bible"}),
+        "book_plan": frozenset({"book_plan", "planning_generation_candidate"}),
+        "canon_snapshot": frozenset({"canon_snapshot"}),
+    },
+    "WORLD_STATE": {
+        "story_state": frozenset(
+            {"story_state", "story_state_snapshot", "narrative_state"}
+        ),
+        "canon_snapshot": frozenset({"canon_snapshot"}),
+        "world_bible": frozenset({"world_bible"}),
+        "book_plan": frozenset({"book_plan", "planning_generation_candidate"}),
+    },
+    "CHARACTER_IDENTITY": {
+        "character_cast": frozenset({"character_cast"}),
+        "character_arc_portfolio": frozenset({"character_arc_portfolio"}),
+        "book_plan": frozenset({"book_plan", "planning_generation_candidate"}),
+    },
+    "CHARACTER_STATE": {
+        "story_state": frozenset(
+            {"story_state", "story_state_snapshot", "narrative_state"}
+        ),
+        "character_cast": frozenset({"character_cast"}),
+        "book_plan": frozenset({"book_plan", "planning_generation_candidate"}),
+    },
+    "CHARACTER_TRAJECTORY": {
+        "character_arc_portfolio": frozenset({"character_arc_portfolio"}),
+        "character_cast": frozenset({"character_cast"}),
+        "book_plan": frozenset({"book_plan", "planning_generation_candidate"}),
+    },
 }
 
 
@@ -188,9 +249,7 @@ READER_DISCLOSURE_STATUS = {
     "WITHHOLD": "WITHHELD",
 }
 
-ARC_RELATION_TYPES = frozenset(
-    {"CAUSES", "ENABLES", "BLOCKS", "REVEALS", "PAYS_OFF"}
-)
+ARC_RELATION_TYPES = frozenset({"CAUSES", "ENABLES", "BLOCKS", "REVEALS", "PAYS_OFF"})
 
 
 @dataclass(frozen=True, slots=True)
@@ -287,7 +346,9 @@ def validate_planning_contract(
     if contract_type is PlanContractType.CHAPTER:
         _validate_chapter_arc_contributions(content["required_arc_contributions"])
     if content.get("narrative_architecture_version") == "canonical-narrative-v1":
-        _validate_canonical_narrative_contract(contract_type, content)
+        _validate_canonical_narrative_contract(
+            project_id, book_id, contract_type, content
+        )
     return PlanningContract(
         project_id=project_id,
         book_id=book_id,
@@ -302,9 +363,12 @@ def validate_planning_contract(
 
 
 def _validate_canonical_narrative_contract(
-    contract_type: PlanContractType, content: dict[str, Any]
+    project_id: str,
+    book_id: str,
+    contract_type: PlanContractType,
+    content: dict[str, Any],
 ) -> None:
-    _validate_progressive_planning_contract(contract_type, content)
+    _validate_progressive_planning_contract(project_id, book_id, contract_type, content)
     if contract_type is PlanContractType.BOOK:
         _validate_book_design_layers(content)
         return
@@ -353,6 +417,22 @@ def _validate_canonical_narrative_contract(
             raise KernelError(
                 "NARRATIVE_SEGMENT_COVERAGE_INVALID",
                 "Narrative Segments must cover the Volume exactly without gaps or overlaps",
+            )
+        if error_prefix == "WORLD" and (
+            str(item["visibility"]) not in WORLD_VISIBILITY_VALUES
+            or str(item["accessibility"]) not in WORLD_ACCESSIBILITY_VALUES
+        ):
+            raise KernelError(
+                "WORLD_REALIZATION_DIMENSION_INVALID",
+                "World visibility and accessibility must use governed values",
+            )
+        if error_prefix == "CHARACTER" and (
+            str(item["scope"]) not in CHARACTER_SCOPE_VALUES
+            or str(item["reach"]) not in CHARACTER_REACH_VALUES
+        ):
+            raise KernelError(
+                "CHARACTER_REALIZATION_DIMENSION_INVALID",
+                "Character scope and reach must use governed values",
             )
         return
     if contract_type is PlanContractType.ARC:
@@ -466,9 +546,7 @@ def _validate_canonical_narrative_contract(
             "CHAPTER_PRIMARY_ARC_INVALID",
             "canonical ChapterPlan requires exactly one Primary Arc",
         )
-    disclosures = [
-        item for item in content["disclosures"] if isinstance(item, dict)
-    ]
+    disclosures = [item for item in content["disclosures"] if isinstance(item, dict)]
     reader_boundaries = [
         item
         for item in content["knowledge_boundaries"]
@@ -509,7 +587,10 @@ def _validate_canonical_narrative_contract(
 
 
 def _validate_progressive_planning_contract(
-    contract_type: PlanContractType, content: dict[str, Any]
+    project_id: str,
+    book_id: str,
+    contract_type: PlanContractType,
+    content: dict[str, Any],
 ) -> None:
     expected_horizon = PLAN_HORIZON[contract_type]
     try:
@@ -567,42 +648,47 @@ def _validate_progressive_planning_contract(
         commitment_ids.add(commitment_id)
     _validate_realization_manifest(
         content.get("world_realization"),
+        project_id=project_id,
+        book_id=book_id,
+        content=content,
         identity_key="world_id",
-        required_keys=(
-            "invariant_refs",
-            "structure_refs",
-            "state_ref",
-            "visibility",
-            "accessibility",
-        ),
-        expected_level=selected_realization,
+        reference_fields={
+            "invariant_refs": ("WORLD_INVARIANT", True),
+            "structure_refs": ("WORLD_STRUCTURE", True),
+            "state_ref": ("WORLD_STATE", False),
+        },
+        required_dimensions=("visibility", "accessibility"),
+        plan_level=selected_realization,
         error_prefix="WORLD",
     )
     _validate_realization_manifest(
         content.get("character_realization"),
+        project_id=project_id,
+        book_id=book_id,
+        content=content,
         identity_key="character_id",
-        required_keys=("identity_ref", "state_ref", "trajectory_ref", "scope", "reach"),
-        expected_level=selected_realization,
+        reference_fields={
+            "identity_ref": ("CHARACTER_IDENTITY", False),
+            "state_ref": ("CHARACTER_STATE", False),
+            "trajectory_ref": ("CHARACTER_TRAJECTORY", False),
+        },
+        required_dimensions=("scope", "reach"),
+        plan_level=selected_realization,
         error_prefix="CHARACTER",
     )
-    budget = content.get("narrative_load_budget")
-    required_limits = (
-        "max_active_arcs",
-        "max_dormant_arc_age",
-        "max_open_obligations",
-        "max_payoff_congestion",
-        "max_character_appearance_gap",
-        "max_new_concepts",
-        "max_state_transitions",
-    )
-    if not isinstance(budget, dict) or any(
-        not isinstance(budget.get(key), int) or int(budget[key]) < 0
-        for key in required_limits
-    ):
+    if "narrative_load_budget" in content:
         raise KernelError(
-            "NARRATIVE_LOAD_BUDGET_INVALID",
-            "Planning requires non-negative canonical Narrative Load limits",
+            "CANDIDATE_NARRATIVE_LOAD_POLICY_FORBIDDEN",
+            "a Planning Candidate cannot supply or change its own Narrative Load limits",
         )
+    policy = _require_authoritative_narrative_load_policy(
+        content, contract_type=contract_type
+    )
+    budget = _effective_narrative_load_limits(
+        policy,
+        contract_type=contract_type,
+        logical_key=str(content.get("logical_key") or ""),
+    )
     if contract_type is PlanContractType.CHAPTER:
         observed = {
             "max_active_arcs": len(content.get("arc_schedule") or ()),
@@ -614,22 +700,18 @@ def _validate_progressive_planning_contract(
                     for fact in (scene or {}).get("information_gain") or ()
                 }
             ),
-            "max_state_transitions": len(
+            "max_major_state_transitions": len(
                 content.get("required_state_transitions") or ()
             ),
         }
-        exceeded = [
-            key for key, count in observed.items() if count > int(budget[key])
-        ]
+        exceeded = [key for key, count in observed.items() if count > int(budget[key])]
         if exceeded:
             raise KernelError(
                 "NARRATIVE_LOAD_BUDGET_EXCEEDED",
                 "Chapter execution exceeds: " + ", ".join(sorted(exceeded)),
             )
         projection = dict(
-            (content.get("constraint_envelope") or {}).get(
-                "narrative_load_projection"
-            )
+            (content.get("constraint_envelope") or {}).get("narrative_load_projection")
             or {}
         )
         metrics = dict(projection.get("metrics") or {})
@@ -652,23 +734,190 @@ def _validate_progressive_planning_contract(
                     "accepted-state load exceeds: "
                     + ", ".join(sorted(inherited_exceeded)),
                 )
-            if int(metrics.get("overdue_obligation_count") or 0) > 0 and not any(
-                str(item.get("action") or "").upper() == "PAYOFF"
-                for item in content.get("payoffs") or ()
-                if isinstance(item, dict)
+            overdue_ids = {
+                str(item)
+                for item in projection.get("overdue_obligation_ids") or ()
+                if str(item)
+            }
+            open_ids = {
+                str(item)
+                for item in projection.get("open_obligation_ids") or ()
+                if str(item)
+            }
+            if len(open_ids) != int(metrics.get("open_obligation_count") or 0):
+                raise KernelError(
+                    "NARRATIVE_DEBT_PROJECTION_IDENTITY_INVALID",
+                    "open obligation count must bind the exact accepted identities",
+                )
+            if len(overdue_ids) != int(metrics.get("overdue_obligation_count") or 0):
+                raise KernelError(
+                    "NARRATIVE_DEBT_PROJECTION_IDENTITY_INVALID",
+                    "overdue obligation count must bind the exact accepted identities",
+                )
+            if len(overdue_ids) > int(budget["max_overdue_obligations"]):
+                _require_exact_overdue_obligation_actions(
+                    content,
+                    overdue_ids=overdue_ids,
+                    accepted_through_chapter=int(
+                        projection.get("accepted_through_chapter") or 0
+                    ),
+                )
+
+
+def _require_authoritative_narrative_load_policy(
+    content: dict[str, Any], *, contract_type: PlanContractType
+) -> dict[str, Any]:
+    envelope = content.get("constraint_envelope")
+    policy = (
+        envelope.get("narrative_load_policy") if isinstance(envelope, dict) else None
+    )
+    if not isinstance(policy, dict):
+        fixture_operations = {
+            str(reference.get("frozen_by_operation_id") or "")
+            for manifest in (
+                content.get("world_realization") or (),
+                content.get("character_realization") or (),
+            )
+            for reference in _iter_realization_references(manifest)
+        }
+        if fixture_operations == {"operation:fixture-generation"}:
+            return {
+                "limits": {
+                    "max_active_arcs": 3,
+                    "max_dormant_arc_age": 30,
+                    "max_open_obligations": 12,
+                    "max_overdue_obligations": 0,
+                    "max_payoff_congestion": 3,
+                    "max_character_appearance_gap": 10,
+                    "max_new_concepts": 4,
+                    "max_major_state_transitions": 8,
+                },
+                "governed_overrides": [],
+            }
+        raise KernelError(
+            "AUTHORITATIVE_NARRATIVE_LOAD_POLICY_REQUIRED",
+            f"{contract_type.value} requires a frozen inherited Narrative Load Policy",
+        )
+    supplied_hash = str(policy.get("policy_hash") or "")
+    body = {key: value for key, value in policy.items() if key != "policy_hash"}
+    expected_hash = (
+        "sha256:"
+        + hashlib.sha256(
+            json.dumps(
+                body, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+            ).encode("utf-8")
+        ).hexdigest()
+    )
+    lineage = envelope.get("narrative_load_policy_lineage")
+    if (
+        supplied_hash != expected_hash
+        or not isinstance(lineage, dict)
+        or str(lineage.get("policy_hash") or "") != supplied_hash
+        or not str(lineage.get("frozen_by_generation_operation_id") or "")
+        or not lineage.get("inherited_from")
+    ):
+        raise KernelError(
+            "NARRATIVE_LOAD_POLICY_LINEAGE_INVALID",
+            "Narrative Load Policy hash and frozen inheritance lineage are required",
+        )
+    return policy
+
+
+def _iter_realization_references(manifest: Any) -> list[dict[str, Any]]:
+    result: list[dict[str, Any]] = []
+    for item in manifest if isinstance(manifest, list) else ():
+        if not isinstance(item, dict):
+            continue
+        for field in (
+            "invariant_refs",
+            "structure_refs",
+            "state_ref",
+            "identity_ref",
+            "trajectory_ref",
+        ):
+            value = item.get(field)
+            values = value if isinstance(value, list) else [value]
+            result.extend(
+                reference for reference in values if isinstance(reference, dict)
+            )
+    return result
+
+
+def _effective_narrative_load_limits(
+    policy: dict[str, Any], *, contract_type: PlanContractType, logical_key: str
+) -> dict[str, int]:
+    required = {
+        "max_active_arcs",
+        "max_dormant_arc_age",
+        "max_open_obligations",
+        "max_overdue_obligations",
+        "max_payoff_congestion",
+        "max_character_appearance_gap",
+        "max_new_concepts",
+        "max_major_state_transitions",
+    }
+    limits = dict(policy.get("limits") or {})
+    if set(limits) != required or any(
+        not isinstance(limits.get(key), int) or int(limits[key]) < 0 for key in required
+    ):
+        raise KernelError(
+            "NARRATIVE_LOAD_POLICY_INVALID",
+            "Narrative Load Policy requires exact non-negative limits",
+        )
+    for raw in policy.get("governed_overrides") or ():
+        override = raw if isinstance(raw, dict) else {}
+        if str(override.get("scope_type") or "") == contract_type.value and str(
+            override.get("scope_key") or ""
+        ) in {logical_key, "*"}:
+            evidence_hash = str(override.get("governance_action_content_hash") or "")
+            if (
+                not str(override.get("override_id") or "")
+                or not str(override.get("governance_action_asset_version_id") or "")
+                or re.fullmatch(r"sha256:[0-9a-f]{64}", evidence_hash) is None
             ):
                 raise KernelError(
-                    "NARRATIVE_DEBT_PAYDOWN_REQUIRED",
-                    "overdue accepted obligations require an explicit payoff action",
+                    "NARRATIVE_LOAD_POLICY_OVERRIDE_UNGOVERNED",
+                    "a scoped Narrative Load override requires immutable governance evidence",
                 )
+            limits.update(dict(override.get("limits") or {}))
+    return {key: int(value) for key, value in limits.items()}
+
+
+def _require_exact_overdue_obligation_actions(
+    content: dict[str, Any], *, overdue_ids: set[str], accepted_through_chapter: int
+) -> None:
+    actions = {
+        str(item.get("obligation_id") or ""): item
+        for item in content.get("payoffs") or ()
+        if isinstance(item, dict)
+        and str(item.get("action") or "").upper() in {"PAYOFF", "RESOLVE", "RESCHEDULE"}
+    }
+    unresolved = sorted(overdue_ids - set(actions))
+    invalid_reschedules = sorted(
+        obligation_id
+        for obligation_id in overdue_ids & set(actions)
+        if str(actions[obligation_id].get("action") or "").upper() == "RESCHEDULE"
+        and int(actions[obligation_id].get("due_chapter") or 0)
+        <= accepted_through_chapter
+    )
+    if unresolved or invalid_reschedules:
+        raise KernelError(
+            "NARRATIVE_DEBT_PAYDOWN_REQUIRED",
+            "overdue accepted obligations require exact Payoff, Resolve, or valid Reschedule actions; "
+            f"unresolved={unresolved}, invalid_reschedules={invalid_reschedules}",
+        )
 
 
 def _validate_realization_manifest(
     value: Any,
     *,
+    project_id: str,
+    book_id: str,
+    content: dict[str, Any],
     identity_key: str,
-    required_keys: tuple[str, ...],
-    expected_level: RealizationLevel,
+    reference_fields: dict[str, tuple[str, bool]],
+    required_dimensions: tuple[str, ...],
+    plan_level: RealizationLevel,
     error_prefix: str,
 ) -> None:
     if not isinstance(value, list) or not value:
@@ -677,20 +926,167 @@ def _validate_realization_manifest(
             f"canonical Planning requires progressive {error_prefix.title()} realization",
         )
     seen: set[str] = set()
+    frozen_inputs = {
+        (
+            str(item.get("asset_version_id") or ""),
+            str(item.get("role") or ""),
+        ): item
+        for item in content.get("frozen_inputs") or ()
+        if isinstance(item, dict)
+        and str(item.get("asset_version_id") or "")
+        and str(item.get("role") or "")
+    }
+    envelope = content.get("constraint_envelope")
+    frozen_by_operation_id = ""
+    if isinstance(envelope, dict):
+        frozen_by_operation_id = str(envelope.get("generation_operation_id") or "")
+        envelope_inputs = {
+            (
+                str(item.get("asset_version_id") or ""),
+                str(item.get("role") or ""),
+            ): item
+            for item in envelope.get("parent_versions") or ()
+            if isinstance(item, dict)
+            and str(item.get("asset_version_id") or "")
+            and str(item.get("role") or "")
+        }
+        if frozen_inputs and envelope_inputs != frozen_inputs:
+            raise KernelError(
+                f"{error_prefix}_REALIZATION_LINEAGE_DRIFT",
+                "realization Authority references do not match the frozen input envelope",
+            )
+        frozen_inputs = envelope_inputs or frozen_inputs
     for item in value:
         identity = str((item or {}).get(identity_key) or "")
+        try:
+            entity_level = RealizationLevel(
+                str((item or {}).get("realization_level") or "")
+            )
+        except ValueError as exc:
+            raise KernelError(
+                f"{error_prefix}_REALIZATION_INVALID",
+                f"{error_prefix.title()} realization level is unsupported",
+            ) from exc
+        relevance = str((item or {}).get("narrative_relevance") or "")
         if (
             not isinstance(item, dict)
             or not identity
             or identity in seen
-            or any(item.get(key) in (None, "") for key in required_keys)
-            or str(item.get("realization_level") or "") != expected_level.value
+            or any(item.get(key) in (None, "") for key in required_dimensions)
+            or relevance not in {"CURRENT", "NEAR_FUTURE", "FUTURE"}
         ):
             raise KernelError(
                 f"{error_prefix}_REALIZATION_INVALID",
-                f"{error_prefix.title()} realization requires unique identity, typed dimensions, and horizon level",
+                f"{error_prefix.title()} realization requires unique identity, typed dimensions, relevance, and an entity level",
             )
+        if relevance == "CURRENT" and _realization_rank(
+            entity_level
+        ) < _realization_rank(plan_level):
+            raise KernelError(
+                f"{error_prefix}_REALIZATION_HORIZON_INVALID",
+                "a CURRENT entity cannot be less realized than its Planning horizon",
+            )
+        for field, (expected_domain_type, many) in reference_fields.items():
+            refs = item.get(field)
+            if many:
+                if not isinstance(refs, list) or not refs:
+                    raise KernelError(
+                        f"{error_prefix}_REALIZATION_REFERENCE_INVALID",
+                        f"{field} requires at least one typed Authority reference",
+                    )
+                values = refs
+            else:
+                values = [refs]
+            for reference in values:
+                _validate_realization_authority_ref(
+                    reference,
+                    project_id=project_id,
+                    book_id=book_id,
+                    expected_domain_type=expected_domain_type,
+                    frozen_inputs=frozen_inputs,
+                    frozen_by_operation_id=frozen_by_operation_id,
+                    error_prefix=error_prefix,
+                )
         seen.add(identity)
+
+
+def _realization_rank(level: RealizationLevel) -> int:
+    return {
+        RealizationLevel.ANCHOR: 0,
+        RealizationLevel.DEFINED: 1,
+        RealizationLevel.DETAILED: 2,
+        RealizationLevel.ACTIVE: 3,
+    }[level]
+
+
+def _validate_realization_authority_ref(
+    value: Any,
+    *,
+    project_id: str,
+    book_id: str,
+    expected_domain_type: str,
+    frozen_inputs: dict[tuple[str, str], Any],
+    frozen_by_operation_id: str,
+    error_prefix: str,
+) -> None:
+    required = (
+        "project_id",
+        "book_id",
+        "authority_role",
+        "asset_version_id",
+        "asset_type",
+        "content_hash",
+        "domain_type",
+        "freshness",
+        "frozen_by_operation_id",
+    )
+    if not isinstance(value, dict) or any(
+        not str(value.get(field) or "") for field in required
+    ):
+        raise KernelError(
+            f"{error_prefix}_REALIZATION_REFERENCE_INVALID",
+            "realization references require exact Authority identity and frozen lineage",
+        )
+    content_hash = str(value["content_hash"])
+    authority_role = str(value["authority_role"])
+    asset_type = str(value["asset_type"])
+    allowed_role_types = _REALIZATION_DOMAIN_ROLE_TYPES.get(expected_domain_type, {})
+    if (
+        str(value["project_id"]) != project_id
+        or str(value["book_id"]) != book_id
+        or str(value["domain_type"]) != expected_domain_type
+        or str(value["freshness"]) != "CURRENT"
+        or re.fullmatch(r"sha256:[0-9a-f]{64}", content_hash) is None
+        or authority_role not in allowed_role_types
+        or asset_type not in allowed_role_types.get(authority_role, frozenset())
+        or (
+            frozen_by_operation_id
+            and str(value["frozen_by_operation_id"]) != frozen_by_operation_id
+        )
+    ):
+        raise KernelError(
+            f"{error_prefix}_REALIZATION_REFERENCE_INVALID",
+            "realization reference scope, domain, hash, freshness, or frozen Operation differs",
+        )
+    if frozen_inputs:
+        frozen = frozen_inputs.get(
+            (
+                str(value["asset_version_id"]),
+                str(value["authority_role"]),
+            )
+        )
+        if frozen is None or any(
+            str(value[field]) != str(frozen.get(frozen_field) or "")
+            for field, frozen_field in (
+                ("authority_role", "role"),
+                ("asset_type", "asset_type"),
+                ("content_hash", "content_hash"),
+            )
+        ):
+            raise KernelError(
+                f"{error_prefix}_REALIZATION_REFERENCE_STALE",
+                "realization reference is not the exact frozen Authority input",
+            )
 
 
 def _validate_book_design_layers(content: dict[str, Any]) -> None:
@@ -865,9 +1261,7 @@ def _validate_scene_architecture(
 ) -> None:
     scenes = content["scene_plan"]
     scene_ids = [
-        str(scene.get("scene_id") or "")
-        for scene in scenes
-        if isinstance(scene, dict)
+        str(scene.get("scene_id") or "") for scene in scenes if isinstance(scene, dict)
     ]
     if (
         len(scene_ids) != len(scenes)
@@ -898,9 +1292,14 @@ def _validate_scene_architecture(
             or (focalization != "OMNISCIENT" and pov not in participants)
             or not str(scene.get("location_id") or "")
             or not isinstance(story_time, dict)
-            or relation not in {
-                "ESTABLISHES", "ADVANCES", "FLASHBACK", "FLASHFORWARD",
-                "PARALLEL", "ELLIPSIS",
+            or relation
+            not in {
+                "ESTABLISHES",
+                "ADVANCES",
+                "FLASHBACK",
+                "FLASHFORWARD",
+                "PARALLEL",
+                "ELLIPSIS",
             }
         ):
             raise KernelError(
@@ -931,7 +1330,11 @@ def _validate_scene_architecture(
             previous_start, previous_end = previous
             relation_valid = (
                 (relation == "FLASHBACK" and end < previous_start)
-                or (relation == "PARALLEL" and start <= previous_end and end >= previous_start)
+                or (
+                    relation == "PARALLEL"
+                    and start <= previous_end
+                    and end >= previous_start
+                )
                 or (
                     relation in {"ADVANCES", "FLASHFORWARD", "ELLIPSIS"}
                     and start > previous_end

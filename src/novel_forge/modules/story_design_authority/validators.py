@@ -12,7 +12,8 @@ from typing import Any, Mapping
 from novel_forge.modules.command_kernel.errors import KernelError
 
 from .domain import GENERATOR_CATALOG, PlanningScope
-STORY_DESIGN_VALIDATOR_VERSION = "2.0.0"
+
+STORY_DESIGN_VALIDATOR_VERSION = "2.1.0"
 _GENERATOR_DEFINITION_VERSION = re.compile(r"^[1-9][0-9]*\.[0-9]+\.[0-9]+$")
 _PLANNING_METADATA_MARKERS = (
     "plan chapter",
@@ -293,20 +294,29 @@ def validate_story_design_candidate(
                     "Planning candidate and Authority envelope differ",
                 )
             envelope_body = {
-                key: value for key, value in envelope.items() if key != "envelope_digest"
+                key: value
+                for key, value in envelope.items()
+                if key != "envelope_digest"
             }
             governance = envelope.get("change_governance")
+            narrative_load_policy = envelope.get("narrative_load_policy")
+            narrative_load_lineage = envelope.get("narrative_load_policy_lineage")
             if (
-                envelope.get("contract_version") != "planning-constraint-envelope-v1"
+                envelope.get("contract_version") != "planning-constraint-envelope-v2"
                 or envelope.get("generator_operation_name") != generator_operation_name
                 or envelope.get("planning_scope") != scope.value
                 or envelope.get("permitted_change_scope") != scope.value
                 or envelope.get("envelope_digest") != _canonical_hash(envelope_body)
                 or not isinstance(envelope.get("parent_versions"), list)
                 or not isinstance(governance, dict)
-                or not governance.get(
-                    "preserve_executed_history"
+                or not governance.get("preserve_executed_history")
+                or not isinstance(narrative_load_policy, dict)
+                or not str(narrative_load_policy.get("policy_hash") or "").startswith(
+                    "sha256:"
                 )
+                or not isinstance(narrative_load_lineage, dict)
+                or narrative_load_lineage.get("policy_hash")
+                != narrative_load_policy.get("policy_hash")
             ):
                 raise KernelError(
                     "PLANNING_CONSTRAINT_ENVELOPE_INVALID",

@@ -28,6 +28,29 @@ STORY_PLANNING_WORKFLOW_DEFINITION_REF = "story_planning_generators@1.7.0"
 STORY_PLANNING_OPERATION_TIMEOUT_SECONDS = 1_800
 STORY_PLANNING_MAX_ATTEMPTS = 3
 
+NARRATIVE_LOAD_LIMIT_FIELDS = (
+    "max_active_arcs",
+    "max_dormant_arc_age",
+    "max_open_obligations",
+    "max_overdue_obligations",
+    "max_payoff_congestion",
+    "max_character_appearance_gap",
+    "max_new_concepts",
+    "max_major_state_transitions",
+)
+DEFAULT_NARRATIVE_LOAD_LIMITS: Mapping[str, int] = MappingProxyType(
+    {
+        "max_active_arcs": 3,
+        "max_dormant_arc_age": 30,
+        "max_open_obligations": 12,
+        "max_overdue_obligations": 0,
+        "max_payoff_congestion": 3,
+        "max_character_appearance_gap": 10,
+        "max_new_concepts": 4,
+        "max_major_state_transitions": 8,
+    }
+)
+
 
 class PlanningGenerationStatus(StrEnum):
     ADMITTED = "ADMITTED"
@@ -209,11 +232,15 @@ class StoryPlanningGenerationCommand:
             str(asset_version_id).strip()
             for asset_version_id in self.related_arc_plan_version_ids
         )
-        if self.generator_operation_name not in {
-            "arc_plan.generate",
-            "chapter_group_plan.generate",
-            "chapter_plan.generate",
-        } and related_arcs:
+        if (
+            self.generator_operation_name
+            not in {
+                "arc_plan.generate",
+                "chapter_group_plan.generate",
+                "chapter_plan.generate",
+            }
+            and related_arcs
+        ):
             raise ValueError(
                 "only Arc, Scheduling, or Chapter generation may freeze related Arcs"
             )
@@ -247,10 +274,10 @@ class StoryPlanningEvaluationCommand:
     generator_operation_name: str
     candidate_content_hash: str
     evaluator_execution_class: str
-    evaluation: Mapping[str, Any]
     idempotency_key: str
     trace_id: str
     correlation_id: str
+    evaluation: Mapping[str, Any] | None = None
     evidence_asset_version_ids: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
@@ -278,14 +305,29 @@ class StoryPlanningEvaluationCommand:
             "OPERATOR_REVIEW",
         }:
             raise ValueError("Planning evaluator execution class is unsupported")
-        if not isinstance(self.evaluation, Mapping) or not self.evaluation:
-            raise ValueError("Planning Evaluation payload is required")
-        evidence_ids = tuple(str(item).strip() for item in self.evidence_asset_version_ids)
-        if any(not item for item in evidence_ids) or len(set(evidence_ids)) != len(evidence_ids):
+        evidence_ids = tuple(
+            str(item).strip() for item in self.evidence_asset_version_ids
+        )
+        if any(not item for item in evidence_ids) or len(set(evidence_ids)) != len(
+            evidence_ids
+        ):
             raise ValueError("Planning Evaluation evidence identity is invalid")
-        if self.evaluator_execution_class == "MODEL_PROVIDER" and not evidence_ids:
-            raise ValueError("Model-provider evaluation requires immutable provider evidence")
-        object.__setattr__(self, "evaluation", MappingProxyType(dict(self.evaluation)))
+        if self.evaluator_execution_class == "MODEL_PROVIDER":
+            if self.evaluation is not None or evidence_ids:
+                raise ValueError(
+                    "Model-provider evaluation result is owned by the governed runtime"
+                )
+        elif not isinstance(self.evaluation, Mapping) or not self.evaluation:
+            raise ValueError(
+                "Fixture or operator Planning Evaluation payload is required"
+            )
+        object.__setattr__(
+            self,
+            "evaluation",
+            None
+            if self.evaluation is None
+            else MappingProxyType(dict(self.evaluation)),
+        )
         object.__setattr__(self, "evidence_asset_version_ids", evidence_ids)
 
 
@@ -418,6 +460,9 @@ class PlanningGenerationCandidate:
 
 def build_planning_constraint_envelope(
     *,
+    project_id: str,
+    book_id: str,
+    generation_operation_id: str,
     generator_operation_name: str,
     frozen_inputs: tuple[FrozenPlanningInput, ...],
     input_contents: Mapping[str, Mapping[str, Any]],
@@ -429,9 +474,8 @@ def build_planning_constraint_envelope(
     expected_roles = set(GENERATOR_INPUT_ROLES[generator_operation_name])
     actual_roles = set(input_contents)
     extra_roles = actual_roles - expected_roles
-    if (
-        not expected_roles.issubset(actual_roles)
-        or not _extra_roles_are_allowed(generator_operation_name, extra_roles)
+    if not expected_roles.issubset(actual_roles) or not _extra_roles_are_allowed(
+        generator_operation_name, extra_roles
     ):
         raise ValueError("Planning constraint inputs must match frozen Authority roles")
     by_role = {item.role: item for item in frozen_inputs}
@@ -443,6 +487,7 @@ def build_planning_constraint_envelope(
     obligations: list[dict[str, Any]] = []
     accepted_through = 0
     narrative_load_projection: dict[str, Any] | None = None
+    inherited_load_policies: list[tuple[str, str, dict[str, Any]]] = []
     for role in sorted(actual_roles):
         content = dict(input_contents[role])
         source_version = by_role[role].asset_version_id
@@ -477,6 +522,18 @@ def build_planning_constraint_envelope(
         )
         if role == "story_state":
             narrative_load_projection = project_narrative_load(story_state=content)
+        inherited_policy = _read_inherited_narrative_load_policy(content)
+        if inherited_policy is not None:
+            inherited_load_policies.append((role, source_version, inherited_policy))
+
+    policy, policy_lineage = _resolve_narrative_load_policy(
+        project_id=project_id,
+        book_id=book_id,
+        generation_operation_id=generation_operation_id,
+        frozen_inputs=by_role,
+        input_contents=input_contents,
+        inherited_policies=inherited_load_policies,
+    )
 
     local_prohibited = _constraint_records(
         candidate_payload.get("prohibited_outcomes"),
@@ -486,7 +543,10 @@ def build_planning_constraint_envelope(
     )
     body = {
         "type": "PlanningConstraintEnvelope",
-        "contract_version": "planning-constraint-envelope-v1",
+        "contract_version": "planning-constraint-envelope-v2",
+        "project_id": project_id,
+        "book_id": book_id,
+        "generation_operation_id": generation_operation_id,
         "generator_operation_name": generator_operation_name,
         "planning_scope": GENERATOR_SCOPE[generator_operation_name].value,
         "permitted_change_scope": GENERATOR_SCOPE[generator_operation_name].value,
@@ -499,6 +559,7 @@ def build_planning_constraint_envelope(
                 "role": role,
                 "asset_version_id": by_role[role].asset_version_id,
                 "content_hash": by_role[role].content_hash,
+                "asset_type": by_role[role].asset_type,
             }
             for role in sorted(by_role)
         ],
@@ -508,14 +569,15 @@ def build_planning_constraint_envelope(
         "narrative_load_projection": narrative_load_projection
         or {
             "type": "NarrativeLoadProjection",
-            "contract_version": "narrative-load-projection-v1",
+            "contract_version": "narrative-load-projection-v2",
             "accepted_through_chapter": accepted_through,
             "status": "NOT_OBSERVED",
             "metrics": {},
+            "open_obligation_ids": [],
+            "overdue_obligation_ids": [],
         },
-        "narrative_load_budget": dict(
-            candidate_payload.get("narrative_load_budget") or {}
-        ),
+        "narrative_load_policy": policy,
+        "narrative_load_policy_lineage": policy_lineage,
         "change_governance": {
             "requires_evidence": True,
             "wider_scope_requires_new_plan_change": True,
@@ -523,6 +585,162 @@ def build_planning_constraint_envelope(
         },
     }
     return {**body, "envelope_digest": canonical_hash(body)}
+
+
+def _read_inherited_narrative_load_policy(
+    content: Mapping[str, Any],
+) -> dict[str, Any] | None:
+    envelope = content.get("constraint_envelope")
+    if not isinstance(envelope, Mapping):
+        candidate = content.get("candidate_payload")
+        if isinstance(candidate, Mapping):
+            envelope = candidate.get("constraint_envelope")
+    if not isinstance(envelope, Mapping):
+        return None
+    policy = envelope.get("narrative_load_policy")
+    if not isinstance(policy, Mapping):
+        return None
+    result = dict(policy)
+    supplied_hash = str(result.pop("policy_hash", ""))
+    if (
+        not _CONTENT_HASH.fullmatch(supplied_hash)
+        or canonical_hash(result) != supplied_hash
+    ):
+        raise ValueError("inherited Narrative Load Policy hash is invalid")
+    result["policy_hash"] = supplied_hash
+    return result
+
+
+def _resolve_narrative_load_policy(
+    *,
+    project_id: str,
+    book_id: str,
+    generation_operation_id: str,
+    frozen_inputs: Mapping[str, FrozenPlanningInput],
+    input_contents: Mapping[str, Mapping[str, Any]],
+    inherited_policies: list[tuple[str, str, dict[str, Any]]],
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    if inherited_policies:
+        hashes = {str(item[2]["policy_hash"]) for item in inherited_policies}
+        if len(hashes) != 1:
+            raise ValueError(
+                "frozen Planning parents disagree on Narrative Load Policy"
+            )
+        policy = dict(inherited_policies[0][2])
+        if (
+            str(policy.get("project_id") or "") != project_id
+            or str(policy.get("book_id") or "") != book_id
+        ):
+            raise ValueError("inherited Narrative Load Policy scope differs")
+        inherited_from = [
+            {
+                "role": role,
+                "asset_version_id": version_id,
+                "content_hash": frozen_inputs[role].content_hash,
+            }
+            for role, version_id, _policy in inherited_policies
+        ]
+    else:
+        profile_input = frozen_inputs.get("production_profile")
+        profile_content = input_contents.get("production_profile")
+        if profile_input is None or not isinstance(profile_content, Mapping):
+            raise ValueError(
+                "Planning requires an inherited or Production Profile Narrative Load Policy"
+            )
+        configured = profile_content.get("narrative_load_policy")
+        configured_policy = dict(configured) if isinstance(configured, Mapping) else {}
+        configured_limits = configured_policy.get("limits")
+        limits = {
+            **DEFAULT_NARRATIVE_LOAD_LIMITS,
+            **(
+                dict(configured_limits)
+                if isinstance(configured_limits, Mapping)
+                else {}
+            ),
+        }
+        _validate_narrative_load_limits(limits)
+        overrides = _validate_governed_load_overrides(
+            configured_policy.get("governed_overrides") or (),
+            project_id=project_id,
+            book_id=book_id,
+        )
+        body = {
+            "type": "NarrativeLoadPolicy",
+            "contract_version": "narrative-load-policy-v1",
+            "project_id": project_id,
+            "book_id": book_id,
+            "policy_id": str(
+                configured_policy.get("policy_id")
+                or "canonical-production-narrative-load"
+            ),
+            "policy_version": int(configured_policy.get("policy_version") or 1),
+            "source_role": "production_profile",
+            "source_asset_version_id": profile_input.asset_version_id,
+            "source_content_hash": profile_input.content_hash,
+            "limits": limits,
+            "governed_overrides": overrides,
+        }
+        policy = {**body, "policy_hash": canonical_hash(body)}
+        inherited_from = [
+            {
+                "role": "production_profile",
+                "asset_version_id": profile_input.asset_version_id,
+                "content_hash": profile_input.content_hash,
+            }
+        ]
+    return policy, {
+        "type": "NarrativeLoadPolicyLineage",
+        "contract_version": "narrative-load-policy-lineage-v1",
+        "frozen_by_generation_operation_id": generation_operation_id,
+        "inherited_from": inherited_from,
+        "policy_hash": policy["policy_hash"],
+    }
+
+
+def _validate_narrative_load_limits(limits: Mapping[str, Any]) -> None:
+    if set(limits) != set(NARRATIVE_LOAD_LIMIT_FIELDS) or any(
+        not isinstance(limits.get(key), int) or int(limits[key]) < 0
+        for key in NARRATIVE_LOAD_LIMIT_FIELDS
+    ):
+        raise ValueError("Narrative Load Policy requires exact non-negative limits")
+
+
+def _validate_governed_load_overrides(
+    value: Any, *, project_id: str, book_id: str
+) -> list[dict[str, Any]]:
+    if not isinstance(value, (list, tuple)):
+        raise ValueError("Narrative Load governed overrides must be an array")
+    result: list[dict[str, Any]] = []
+    identities: set[str] = set()
+    for raw in value:
+        item = dict(raw) if isinstance(raw, Mapping) else {}
+        override_id = str(item.get("override_id") or "")
+        limits = item.get("limits")
+        if (
+            not override_id
+            or override_id in identities
+            or str(item.get("project_id") or "") != project_id
+            or str(item.get("book_id") or "") != book_id
+            or str(item.get("scope_type") or "")
+            not in {"BOOK", "VOLUME", "ARC", "CHAPTER_GROUP", "CHAPTER"}
+            or not str(item.get("scope_key") or "")
+            or not str(item.get("governance_action_asset_version_id") or "")
+            or not _CONTENT_HASH.fullmatch(
+                str(item.get("governance_action_content_hash") or "")
+            )
+            or not isinstance(limits, Mapping)
+            or not limits
+            or any(key not in NARRATIVE_LOAD_LIMIT_FIELDS for key in limits)
+            or any(
+                not isinstance(number, int) or number < 0 for number in limits.values()
+            )
+        ):
+            raise ValueError(
+                "Narrative Load override requires exact scope and governance evidence"
+            )
+        identities.add(override_id)
+        result.append(item)
+    return result
 
 
 def _constraint_records(
@@ -600,8 +818,7 @@ def _extra_roles_are_allowed(generator: str, roles: set[str]) -> bool:
         return True
     if generator == "arc_plan.generate":
         return all(
-            role.startswith("arc_scope_volume:")
-            or role.startswith("related_arc:")
+            role.startswith("arc_scope_volume:") or role.startswith("related_arc:")
             for role in roles
         )
     if generator in {"chapter_group_plan.generate", "chapter_plan.generate"}:

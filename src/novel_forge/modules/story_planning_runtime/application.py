@@ -58,6 +58,7 @@ from novel_forge.modules.story_design_authority.evaluation_runtime import (
     NARRATIVE_EVALUATION_VERSION as STORY_PLANNING_EVALUATION_VERSION,
     NarrativeSemanticEvaluationApplication,
     NarrativeSemanticEvaluationCommand,
+    NarrativeSemanticEvaluationExecutionPort,
 )
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
@@ -194,6 +195,9 @@ class _PlanningGenerationHandler:
                 project_id=command.project_id,
                 book_id=command.book_id,
                 constraint_envelope=build_planning_constraint_envelope(
+                    project_id=command.project_id,
+                    book_id=command.book_id,
+                    generation_operation_id=request.operation_id,
                     generator_operation_name=command.generator_operation_name,
                     frozen_inputs=tuple(inputs),
                     input_contents={
@@ -209,8 +213,10 @@ class _PlanningGenerationHandler:
                 *command.change_evidence_version_ids,
             ),
             evidence=evidence,
-            lifecycle="ACTIVE",
-            eligibility="ELIGIBLE",
+            # Generation only creates an immutable candidate.  Semantic
+            # Evaluation and activation own the two later transitions.
+            lifecycle="CANDIDATE",
+            eligibility="INELIGIBLE",
             governance="CLEAR",
         )
 
@@ -258,6 +264,10 @@ class StoryPlanningGenerationApplication:
         application_build_id: str,
         commit_sha: str,
         worker_id: str = "story-planning-generation-worker",
+        semantic_evaluation_execution_port: NarrativeSemanticEvaluationExecutionPort
+        | None = None,
+        allow_scripted_evaluation_fixture: bool = False,
+        narrative_evaluator_principal: Principal | None = None,
     ) -> None:
         if not database_url or not application_build_id or len(commit_sha) != 40:
             raise ValueError(
@@ -267,12 +277,18 @@ class StoryPlanningGenerationApplication:
         self.application_build_id = application_build_id
         self.commit_sha = commit_sha
         self.worker_id = worker_id
+        self.allow_scripted_evaluation_fixture = (
+            allow_scripted_evaluation_fixture
+        )
+        self.narrative_evaluator_principal = narrative_evaluator_principal
         self.registry = StoryPlanningGenerationHandlerRegistry(execution_binder)
         self.semantic_evaluation = NarrativeSemanticEvaluationApplication(
             database_url,
             application_build_id=application_build_id,
             commit_sha=commit_sha,
             worker_id=f"{worker_id}:semantic-evaluation",
+            execution_port=semantic_evaluation_execution_port,
+            allow_scripted_fixture=allow_scripted_evaluation_fixture,
         )
         self.story_design = PostgresStoryDesignAssetAuthority(
             database_url,
@@ -409,7 +425,7 @@ class StoryPlanningGenerationApplication:
                 replayed=True,
                 definition=definition,
             )
-            return self._evaluate_fixture_if_required(
+            return self._evaluate_pending_if_required(
                 advanced=advanced,
                 generation_command=command,
                 principal=principal,
@@ -436,7 +452,7 @@ class StoryPlanningGenerationApplication:
             replayed=bool(admitted["replayed"]),
             definition=definition,
         )
-        return self._evaluate_fixture_if_required(
+        return self._evaluate_pending_if_required(
             advanced=advanced,
             generation_command=command,
             principal=principal,
@@ -447,17 +463,23 @@ class StoryPlanningGenerationApplication:
         command: StoryPlanningEvaluationCommand,
         *,
         principal: Principal,
+        transition_principal: Principal | None = None,
     ) -> PlanningGenerationResult:
-        principal.require("story_planning.authority.execute", command.project_id)
+        principal.require("narrative_design.evaluate", command.project_id)
         if principal.principal_id != command.actor_id:
-            raise PermissionError("Planning Evaluation actor must be the trusted Principal")
+            raise PermissionError(
+                "Planning Evaluation actor must be the trusted Principal"
+            )
+        transition_principal = transition_principal or principal
+        transition_principal.require(
+            "story_planning.authority.execute", command.project_id
+        )
         generation = self.require_candidate(command.candidate_asset_version_id)
         if (
             generation["project_id"] != command.project_id
             or generation["workspace_id"] != command.workspace_id
             or generation["book_id"] != command.book_id
-            or generation["generation_operation_id"]
-            != command.generation_operation_id
+            or generation["generation_operation_id"] != command.generation_operation_id
             or generation["generator_operation_name"]
             != command.generator_operation_name
             or generation["content_hash"] != command.candidate_content_hash
@@ -486,7 +508,9 @@ class StoryPlanningGenerationApplication:
                 generator_operation_name=command.generator_operation_name,
                 candidate_content_hash=command.candidate_content_hash,
                 evaluator_execution_class=command.evaluator_execution_class,
-                evaluation=dict(command.evaluation),
+                evaluation=(
+                    None if command.evaluation is None else dict(command.evaluation)
+                ),
                 evidence_asset_version_ids=command.evidence_asset_version_ids,
                 idempotency_key=command.idempotency_key,
                 trace_id=command.trace_id,
@@ -495,16 +519,14 @@ class StoryPlanningGenerationApplication:
             principal=principal,
             caller_permission="story_planning.authority.execute",
         )
-        generation_command = self._generation_command(
-            command.generation_operation_id
-        )
+        generation_command = self._generation_command(command.generation_operation_id)
         if evaluated.qualification.status != "PASS":
             return self._repair_or_reject(
                 operation_id=command.generation_operation_id,
                 candidate_asset_version_id=command.candidate_asset_version_id,
                 candidate_content_hash=command.candidate_content_hash,
                 command=generation_command,
-                principal=principal,
+                principal=transition_principal,
                 definition=GENERATOR_CATALOG[command.generator_operation_name],
                 error=KernelError(
                     "NARRATIVE_SEMANTIC_QUALIFICATION_FAILED",
@@ -516,12 +538,12 @@ class StoryPlanningGenerationApplication:
             candidate_asset_version_id=command.candidate_asset_version_id,
             candidate_content_hash=command.candidate_content_hash,
             command=generation_command,
-            principal=principal,
+            principal=transition_principal,
             replayed=evaluated.replayed,
             definition=GENERATOR_CATALOG[command.generator_operation_name],
         )
 
-    def _evaluate_fixture_if_required(
+    def _evaluate_pending_if_required(
         self,
         *,
         advanced: PlanningGenerationResult,
@@ -535,21 +557,32 @@ class StoryPlanningGenerationApplication:
             asset_version_id=advanced.candidate_asset_version_id,
         )
         execution = dict(candidate["content"].get("execution_evidence") or {})
-        if not bool(execution.get("fixture_protocol_only")):
-            return advanced
+        fixture = bool(execution.get("fixture_protocol_only"))
+        evaluator_principal = (
+            principal if fixture else self.narrative_evaluator_principal
+        )
+        if evaluator_principal is None:
+            raise KernelError(
+                "NARRATIVE_EVALUATION_PRINCIPAL_REQUIRED",
+                "production Planning evaluation has no independent trusted Principal",
+            )
         return self.evaluate_candidate(
             StoryPlanningEvaluationCommand(
                 project_id=generation_command.project_id,
                 workspace_id=generation_command.workspace_id,
                 book_id=generation_command.book_id,
-                actor_id=generation_command.actor_id,
+                actor_id=evaluator_principal.principal_id,
                 candidate_asset_version_id=advanced.candidate_asset_version_id,
                 generation_operation_id=advanced.generation_operation_id,
                 generator_operation_name=generation_command.generator_operation_name,
                 candidate_content_hash=str(candidate["content_hash"]),
-                evaluator_execution_class="SCRIPTED_FIXTURE",
-                evaluation=scripted_qualification(
-                    generation_command.generator_operation_name
+                evaluator_execution_class=(
+                    "SCRIPTED_FIXTURE" if fixture else "MODEL_PROVIDER"
+                ),
+                evaluation=(
+                    scripted_qualification(generation_command.generator_operation_name)
+                    if fixture
+                    else None
                 ),
                 idempotency_key=(
                     f"{generation_command.idempotency_key}:semantic-evaluation"
@@ -557,7 +590,8 @@ class StoryPlanningGenerationApplication:
                 trace_id=generation_command.trace_id,
                 correlation_id=generation_command.correlation_id,
             ),
-            principal=principal,
+            principal=evaluator_principal,
+            transition_principal=principal,
         )
 
     def approve_candidate(
@@ -909,9 +943,7 @@ class StoryPlanningGenerationApplication:
         )
         return dict(zip(fields, row, strict=True))
 
-    def _generation_command(
-        self, operation_id: str
-    ) -> StoryPlanningGenerationCommand:
+    def _generation_command(self, operation_id: str) -> StoryPlanningGenerationCommand:
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
@@ -1017,10 +1049,26 @@ class StoryPlanningGenerationApplication:
                 evidence=self._candidate_evidence(candidate_asset_version_id),
             )
         if state["lifecycle"] == "ACTIVE":
-            binding = self.planning.require_binding(
-                project_id=command.project_id,
-                asset_version_id=candidate_asset_version_id,
-            )
+            try:
+                binding = self.planning.require_binding(
+                    project_id=command.project_id,
+                    asset_version_id=candidate_asset_version_id,
+                )
+            except KernelError as exc:
+                if (
+                    exc.code != "PLANNING_BINDING_NOT_FOUND"
+                    or definition.risk_class == "HIGH"
+                    or not command.auto_approve_low_risk
+                ):
+                    raise
+                recovered = self.activate_candidate(
+                    candidate_asset_version_id,
+                    principal=principal,
+                    idempotency_key=f"{command.idempotency_key}:auto-activate",
+                    trace_id=command.trace_id,
+                    correlation_id=command.correlation_id,
+                )
+                binding = recovered["planning_binding"]
             self._update_generation_status(operation_id, "ACTIVE")
             return PlanningGenerationResult(
                 operation_id,
@@ -1179,6 +1227,12 @@ class StoryPlanningGenerationApplication:
                 DesignTransition.QUALIFY,
                 expected_version=int(state["version"]),
                 evidence={"passed": True, **qualification},
+            )
+        if state["qualification"] == "QUALIFIED":
+            self._set_candidate_eligibility(
+                project_id=command.project_id,
+                candidate_asset_version_id=candidate_asset_version_id,
+                eligibility="ELIGIBLE",
             )
         if (
             state["qualification"] == "QUALIFIED"
@@ -1743,6 +1797,20 @@ class StoryPlanningGenerationApplication:
                   AND asset_version_id=%s AND generation_operation_id=%s
                   AND qualification_status='PASS'
                   AND trust_boundary='INDEPENDENT'
+                  AND (
+                        evaluator_execution_class='MODEL_PROVIDER'
+                        OR (%s AND evaluator_execution_class='SCRIPTED_FIXTURE')
+                      )
+                  AND (
+                        evaluator_execution_class<>'MODEL_PROVIDER'
+                        OR (
+                            provider_model_call_asset_version_id IS NOT NULL
+                            AND provider_model_call_content_hash IS NOT NULL
+                            AND provider_evidence_hash IS NOT NULL
+                            AND provider_result_hash IS NOT NULL
+                            AND provider_route_snapshot_id IS NOT NULL
+                        )
+                      )
                 ORDER BY design_layer
                 """,
                 [
@@ -1750,6 +1818,7 @@ class StoryPlanningGenerationApplication:
                     book_id,
                     candidate_asset_version_id,
                     operation_id,
+                    self.allow_scripted_evaluation_fixture,
                 ],
             )
             rows = uow.cursor.fetchall()
@@ -1806,6 +1875,39 @@ class StoryPlanningGenerationApplication:
                 """,
                 [status, operation_id, status],
             )
+            uow.commit()
+
+    def _set_candidate_eligibility(
+        self,
+        *,
+        project_id: str,
+        candidate_asset_version_id: str,
+        eligibility: str,
+    ) -> None:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                UPDATE authority_asset_version AS version
+                SET eligibility=%s
+                FROM authority_asset AS asset
+                WHERE version.asset_version_id=%s
+                  AND version.asset_id=asset.asset_id
+                  AND asset.project_id=%s
+                  AND version.lifecycle='CANDIDATE'
+                  AND version.eligibility IN ('INELIGIBLE', %s)
+                """,
+                [
+                    eligibility,
+                    candidate_asset_version_id,
+                    project_id,
+                    eligibility,
+                ],
+            )
+            if uow.cursor.rowcount != 1:
+                raise KernelError(
+                    "PLANNING_CANDIDATE_ELIGIBILITY_CONFLICT",
+                    "Planning candidate eligibility changed outside qualification",
+                )
             uow.commit()
 
     def _require_asset(
@@ -2084,8 +2186,8 @@ def story_planning_generation_definition(
                     "selector": "planning_generation_candidate",
                     "output_key": "story_planning.candidate",
                     "role": "primary",
-                    "lifecycle": "ACTIVE",
-                    "eligibility": "ELIGIBLE",
+                    "lifecycle": "CANDIDATE",
+                    "eligibility": "INELIGIBLE",
                     "governance": "CLEAR",
                 }
             ],
@@ -2210,8 +2312,7 @@ def _validate_frozen_arc_references(
                 "Narrative Scheduling must classify every frozen active Arc exactly once",
             )
         references.extend(
-            str(item)
-            for item in content.get("required_arc_contributions") or ()
+            str(item) for item in content.get("required_arc_contributions") or ()
         )
         references.extend(
             str(item.get("arc_plan_version_id") or "")
@@ -2227,11 +2328,7 @@ def _validate_frozen_arc_references(
                 if isinstance(item, dict)
             )
             references.extend(
-                str(
-                    item.get("arc_plan_version_id")
-                    or item.get("arc_id")
-                    or ""
-                )
+                str(item.get("arc_plan_version_id") or item.get("arc_id") or "")
                 for item in row.get("required_arc_contributions") or ()
                 if isinstance(item, dict)
             )

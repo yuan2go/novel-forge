@@ -25,6 +25,11 @@ from novel_forge.modules.book_followup_authority.contracts import (
 from novel_forge.modules.story_planning_runtime.domain import (
     STORY_PLANNING_WORKFLOW_DEFINITION_REF,
 )
+from novel_forge.modules.story_design_authority.evaluation_runtime import (
+    NARRATIVE_EVALUATION_DEFINITION,
+    NARRATIVE_EVALUATION_HANDLER,
+    NARRATIVE_EVALUATION_VERSION,
+)
 from novel_forge.storage.authority_repositories import definition_hash
 
 
@@ -348,6 +353,24 @@ def reader_outcome_workflow_binding_catalog() -> WorkflowBindingCatalog:
     )
 
 
+def narrative_evaluation_workflow_binding_catalog() -> WorkflowBindingCatalog:
+    return WorkflowBindingCatalog(
+        "story_design_semantic_evaluation",
+        NARRATIVE_EVALUATION_VERSION,
+        (
+            WorkflowBinding(
+                node_id="narrative_semantic_evaluation",
+                operation_name=NARRATIVE_EVALUATION_DEFINITION,
+                stage="narrative_semantic_evaluation",
+                handler_key=NARRATIVE_EVALUATION_HANDLER,
+                capability_id="quality.intrinsic.judge",
+                depends_on=(),
+                primary_output_asset_type="narrative_design_evaluation",
+            ),
+        ),
+    )
+
+
 def governed_workflow_binding_catalog(
     workflow_id: str, workflow_version: str
 ) -> WorkflowBindingCatalog:
@@ -355,6 +378,7 @@ def governed_workflow_binding_catalog(
         chapter_workflow_binding_catalog(),
         story_planning_workflow_binding_catalog(),
         reader_outcome_workflow_binding_catalog(),
+        narrative_evaluation_workflow_binding_catalog(),
     )
     for catalog in catalogs:
         if (catalog.workflow_id, catalog.workflow_version) == (
@@ -390,6 +414,7 @@ __all__ = [
     "chapter_operation_definition_catalog",
     "chapter_workflow_binding_catalog",
     "governed_workflow_binding_catalog",
+    "narrative_evaluation_workflow_binding_catalog",
     "reader_outcome_workflow_binding_catalog",
     "story_planning_workflow_binding_catalog",
 ]

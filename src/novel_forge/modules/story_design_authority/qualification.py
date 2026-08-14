@@ -89,6 +89,11 @@ class NarrativeEvaluationLineage:
     candidate_content_hash: str
     evaluator_execution_class: str
     evaluation_evidence_hash: str
+    provider_model_call_asset_version_id: str = ""
+    provider_model_call_content_hash: str = ""
+    provider_evidence_hash: str = ""
+    provider_result_hash: str = ""
+    provider_route_snapshot_id: str = ""
 
     def __post_init__(self) -> None:
         required = (
@@ -126,6 +131,34 @@ class NarrativeEvaluationLineage:
                     "NARRATIVE_EVALUATION_LINEAGE_INVALID",
                     f"{label} must be SHA-256 bound",
                 )
+        provider_values = (
+            self.provider_model_call_asset_version_id,
+            self.provider_model_call_content_hash,
+            self.provider_evidence_hash,
+            self.provider_result_hash,
+            self.provider_route_snapshot_id,
+        )
+        if self.evaluator_execution_class == "MODEL_PROVIDER":
+            if any(not value for value in provider_values):
+                raise KernelError(
+                    "NARRATIVE_EVALUATION_PROVIDER_LINEAGE_INCOMPLETE",
+                    "model-provider evaluation requires exact ModelCallLog, result, route, and evidence lineage",
+                )
+            for label, value in (
+                ("ModelCallLog content", self.provider_model_call_content_hash),
+                ("Provider evidence", self.provider_evidence_hash),
+                ("Provider result", self.provider_result_hash),
+            ):
+                if not value.startswith("sha256:"):
+                    raise KernelError(
+                        "NARRATIVE_EVALUATION_PROVIDER_LINEAGE_INVALID",
+                        f"{label} must be SHA-256 bound",
+                    )
+        elif any(provider_values):
+            raise KernelError(
+                "NARRATIVE_EVALUATION_PROVIDER_LINEAGE_INVALID",
+                "non-provider evaluation cannot claim Provider lineage",
+            )
 
     def to_evidence(self) -> dict[str, str]:
         return asdict(self)

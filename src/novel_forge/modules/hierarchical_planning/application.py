@@ -184,7 +184,8 @@ class PostgresHierarchicalPlanningAuthority:
             """
                 SELECT state.logical_key, state.lifecycle,
                        state.updated_by_operation_id,
-                       version.content, version.content_hash
+                       version.content, version.content_hash,
+                       version.lifecycle, version.eligibility
                 FROM authority_story_design_version_state AS state
                 JOIN authority_asset_version AS version
                   ON version.asset_version_id=state.asset_version_id
@@ -197,10 +198,15 @@ class PostgresHierarchicalPlanningAuthority:
             [project_id, asset_version_id],
         )
         row = uow.cursor.fetchone()
-        if row is None or str(row[1]) != "ACTIVE":
+        if (
+            row is None
+            or str(row[1]) != "ACTIVE"
+            or str(row[5]) not in {"CANDIDATE", "ACTIVE"}
+            or str(row[6]) != "ELIGIBLE"
+        ):
             raise KernelError(
                 "PLANNING_ACTIVE_DESIGN_REQUIRED",
-                "planning binding requires an active Story Design version",
+                "planning binding requires an active, qualified Story Design candidate",
             )
         content = dict(row[3])
         contract = validate_planning_contract(
@@ -245,6 +251,36 @@ class PostgresHierarchicalPlanningAuthority:
             expected_active_asset_version_id=expected_active,
             replacement_approved=replacement_approved,
         )
+        if previous_asset_version_id != asset_version_id:
+            if previous_asset_version_id:
+                uow.cursor.execute(
+                    """
+                    UPDATE authority_asset_version
+                    SET lifecycle='SUPERSEDED'
+                    WHERE asset_version_id=%s AND lifecycle='ACTIVE'
+                    """,
+                    [previous_asset_version_id],
+                )
+                if uow.cursor.rowcount != 1:
+                    raise KernelError(
+                        "PLANNING_SUPERSESSION_CONFLICT",
+                        "previous Planning AssetVersion lifecycle changed",
+                    )
+            uow.cursor.execute(
+                """
+                UPDATE authority_asset_version
+                SET lifecycle='ACTIVE'
+                WHERE asset_version_id=%s
+                  AND lifecycle='CANDIDATE'
+                  AND eligibility='ELIGIBLE'
+                """,
+                [asset_version_id],
+            )
+            if uow.cursor.rowcount != 1:
+                raise KernelError(
+                    "PLANNING_ACTIVATION_CONFLICT",
+                    "Planning AssetVersion is no longer an eligible candidate",
+                )
         uow.cursor.execute(
             """
             SELECT binding_id
@@ -573,6 +609,37 @@ class PostgresHierarchicalPlanningAuthority:
                     str(volume_version),
                     asset_version_id,
                     "ARC_CONTRIBUTION",
+                    "MARK_IMPACTED",
+                    operation_id,
+                )
+            logical_key = str(content.get("logical_key") or "")
+            related_versions: set[str] = set()
+            for relation in content.get("arc_relations") or []:
+                if not isinstance(relation, dict):
+                    continue
+                for raw_ref in (
+                    relation.get("source_arc_ref"),
+                    relation.get("target_arc_ref"),
+                ):
+                    arc_ref = str(raw_ref or "")
+                    if not arc_ref or arc_ref == logical_key:
+                        continue
+                    related_versions.add(
+                        self._resolve_arc_version(
+                            cursor,
+                            project_id=project_id,
+                            book_id=book_id,
+                            arc_ref=arc_ref,
+                        )
+                    )
+            for related_version in sorted(related_versions):
+                self._dependency(
+                    cursor,
+                    project_id,
+                    book_id,
+                    related_version,
+                    asset_version_id,
+                    "ARC_RELATION",
                     "MARK_IMPACTED",
                     operation_id,
                 )

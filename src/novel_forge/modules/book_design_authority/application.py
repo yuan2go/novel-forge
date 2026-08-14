@@ -27,6 +27,11 @@ from novel_forge.modules.command_kernel.service import (
 from novel_forge.modules.story_design_authority.evaluation_runtime import (
     NarrativeSemanticEvaluationApplication,
     NarrativeSemanticEvaluationCommand,
+    NarrativeSemanticEvaluationExecutionPort,
+)
+from novel_forge.modules.story_design_authority.qualification import (
+    required_qualification_profiles,
+    scripted_qualification,
 )
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from novel_forge.storage.book_design_authority_repositories import (
@@ -79,6 +84,10 @@ class BookDesignAuthorityApplication:
         application_build_id: str,
         commit_sha: str,
         fault_injector: TransactionCheckpoint | None = None,
+        semantic_evaluation_execution_port: NarrativeSemanticEvaluationExecutionPort
+        | None = None,
+        allow_scripted_evaluation_fixture: bool = False,
+        narrative_evaluator_principal: Principal | None = None,
     ) -> None:
         if not database_url:
             raise ValueError("PostgreSQL database_url is required")
@@ -86,11 +95,15 @@ class BookDesignAuthorityApplication:
         self.application_build_id = application_build_id
         self.commit_sha = commit_sha
         self.fault_injector = fault_injector
+        self.allow_scripted_evaluation_fixture = allow_scripted_evaluation_fixture
+        self.narrative_evaluator_principal = narrative_evaluator_principal
         self.semantic_evaluation = NarrativeSemanticEvaluationApplication(
             database_url,
             application_build_id=application_build_id,
             commit_sha=commit_sha,
             worker_id="book-design-semantic-evaluation-worker",
+            execution_port=semantic_evaluation_execution_port,
+            allow_scripted_fixture=allow_scripted_evaluation_fixture,
         )
 
     def execute(
@@ -101,6 +114,15 @@ class BookDesignAuthorityApplication:
             principal.require("book_design.authority.execute", command.project_id)
             actor_id = principal.principal_id
         self._register_definitions()
+        if (
+            command.definition_name == "book_design.activate"
+            and not self.allow_scripted_evaluation_fixture
+        ):
+            self._require_model_provider_qualification(
+                project_id=command.project_id,
+                book_id=command.book_id,
+                asset_version_id=command.target_asset_version_id,
+            )
         command_input = {
             "project_id": command.project_id,
             "workspace_id": command.workspace_id,
@@ -142,7 +164,7 @@ class BookDesignAuthorityApplication:
             application_build_id=self.application_build_id,
             commit_sha=self.commit_sha,
         )
-        return execute_transaction_command(
+        result = execute_transaction_command(
             self.database_url,
             {
                 "definition_name": command.definition_name,
@@ -163,6 +185,97 @@ class BookDesignAuthorityApplication:
             handler=self._execute_transaction,
             fault_injector=self.fault_injector,
         )
+        if (
+            command.definition_name == "book_design.propose"
+            and self.narrative_evaluator_principal is not None
+            and (semantic_port := self.semantic_evaluation.execution_port) is not None
+        ):
+            candidate_id = str(result.get("asset_version_id") or "")
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                uow.cursor.execute(
+                    """
+                    SELECT content_hash
+                    FROM authority_asset_version AS version
+                    JOIN authority_asset AS asset ON asset.asset_id=version.asset_id
+                    WHERE version.asset_version_id=%s AND asset.project_id=%s
+                    """,
+                    [candidate_id, command.project_id],
+                )
+                row = uow.cursor.fetchone()
+            if row is None:
+                raise KernelError(
+                    "BOOK_DESIGN_CANDIDATE_NOT_FOUND",
+                    "new BookDesign candidate is not readable for evaluation",
+                )
+            real_provider = bool(
+                getattr(semantic_port, "real_provider_execution", False)
+            )
+            if not real_provider and not self.allow_scripted_evaluation_fixture:
+                raise KernelError(
+                    "NARRATIVE_EVALUATION_REAL_PROVIDER_REQUIRED",
+                    "BookDesign production evaluation has no real Provider route",
+                )
+            evaluation = self.evaluate_semantics(
+                NarrativeSemanticEvaluationCommand(
+                    project_id=command.project_id,
+                    workspace_id=command.workspace_id,
+                    book_id=command.book_id,
+                    actor_id=self.narrative_evaluator_principal.principal_id,
+                    candidate_asset_version_id=candidate_id,
+                    generation_operation_id=str(result.get("operation_id") or ""),
+                    generator_operation_name="book_design.propose",
+                    candidate_content_hash=str(row[0]),
+                    evaluator_execution_class=(
+                        "MODEL_PROVIDER" if real_provider else "SCRIPTED_FIXTURE"
+                    ),
+                    evaluation=(
+                        None
+                        if real_provider
+                        else scripted_qualification("book_design.propose")
+                    ),
+                    idempotency_key=f"{command.idempotency_key}:semantic-evaluation",
+                    trace_id=command.trace_id,
+                    correlation_id=command.correlation_id,
+                ),
+                principal=self.narrative_evaluator_principal,
+            )
+            return {**result, "semantic_evaluation": evaluation}
+        return result
+
+    def _require_model_provider_qualification(
+        self,
+        *,
+        project_id: str,
+        book_id: str,
+        asset_version_id: str,
+    ) -> None:
+        expected_layers = {
+            profile.layer.value
+            for profile in required_qualification_profiles("book_design.propose")
+        }
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT design_layer
+                FROM authority_narrative_design_qualification
+                WHERE project_id=%s AND book_id=%s AND asset_version_id=%s
+                  AND qualification_status='PASS'
+                  AND trust_boundary='INDEPENDENT'
+                  AND evaluator_execution_class='MODEL_PROVIDER'
+                  AND provider_model_call_asset_version_id IS NOT NULL
+                  AND provider_model_call_content_hash IS NOT NULL
+                  AND provider_evidence_hash IS NOT NULL
+                  AND provider_result_hash IS NOT NULL
+                  AND provider_route_snapshot_id IS NOT NULL
+                """,
+                [project_id, book_id, asset_version_id],
+            )
+            layers = {str(row[0]) for row in uow.cursor.fetchall()}
+        if layers != expected_layers:
+            raise KernelError(
+                "NARRATIVE_EVALUATION_REAL_PROVIDER_REQUIRED",
+                "BookDesign activation requires current real-Provider qualification",
+            )
 
     def evaluate_semantics(
         self,
@@ -202,12 +315,8 @@ class BookDesignAuthorityApplication:
             "generation_operation_id": result.lineage.generation_operation_id,
             "evaluation_operation_id": result.lineage.evaluation_operation_id,
             "evaluation_attempt_id": result.lineage.evaluation_attempt_id,
-            "evaluation_asset_version_id": (
-                result.lineage.evaluation_asset_version_id
-            ),
-            "evaluation_evidence_hash": (
-                result.lineage.evaluation_evidence_hash
-            ),
+            "evaluation_asset_version_id": (result.lineage.evaluation_asset_version_id),
+            "evaluation_evidence_hash": (result.lineage.evaluation_evidence_hash),
             "qualification_status": result.qualification.status,
             "trust_boundary": "INDEPENDENT",
             "replayed": result.replayed,
@@ -255,9 +364,9 @@ class BookDesignAuthorityApplication:
                 AuthorityAssetWriteCommand(
                     operation_id=operation_id,
                     project_id=project_id,
-                        asset_id=f"book:{book_id}",
-                        asset_type="book_record",
-                        schema_version="book-authority.v1",
+                    asset_id=f"book:{book_id}",
+                    asset_type="book_record",
+                    schema_version="book-authority.v1",
                     logical_ref=f"books/{book_id}",
                     category="books",
                     output_key="book.record",

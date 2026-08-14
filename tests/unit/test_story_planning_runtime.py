@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from copy import deepcopy
 from types import SimpleNamespace
 
 import pytest
@@ -25,6 +26,7 @@ from novel_forge.modules.story_planning_runtime import (
     STORY_PLANNING_GENERATION_VERSION,
     StoryPlanningGenerationCommand,
     build_planning_constraint_envelope,
+    canonical_hash,
     story_planning_generation_definition,
 )
 from novel_forge.modules.story_planning_runtime.execution import (
@@ -39,6 +41,41 @@ from novel_forge.modules.story_planning_runtime.application import (
 
 
 HASH = "sha256:" + "a" * 64
+
+
+def _inherited_load_policy() -> dict[str, object]:
+    body: dict[str, object] = {
+        "type": "NarrativeLoadPolicy",
+        "contract_version": "narrative-load-policy-v1",
+        "project_id": "project-1",
+        "book_id": "book-1",
+        "policy_id": "test-production-policy",
+        "policy_version": 1,
+        "source_role": "production_profile",
+        "source_asset_version_id": "asset:production_profile:v1",
+        "source_content_hash": HASH,
+        "limits": {
+            "max_active_arcs": 3,
+            "max_dormant_arc_age": 30,
+            "max_open_obligations": 12,
+            "max_overdue_obligations": 0,
+            "max_payoff_congestion": 3,
+            "max_character_appearance_gap": 10,
+            "max_new_concepts": 4,
+            "max_major_state_transitions": 8,
+        },
+        "governed_overrides": [],
+    }
+    return {**body, "policy_hash": canonical_hash(body)}
+
+
+def _with_inherited_load_policy(content: dict[str, object]) -> dict[str, object]:
+    return {
+        **content,
+        "constraint_envelope": {
+            "narrative_load_policy": _inherited_load_policy(),
+        },
+    }
 
 
 def test_real_planning_definition_versions_the_bounded_xhigh_timeout() -> None:
@@ -139,13 +176,18 @@ def test_planning_provider_schema_is_codex_strict(
         assert schema["properties"]["required_arc_contributions"]["maxItems"] == 1
         assert schema["properties"]["arc_schedule"]["maxItems"] == 1
         assert (
-            schema["properties"]["arc_schedule"]["items"]["properties"]
-            ["arc_plan_version_id"]["const"]
+            schema["properties"]["arc_schedule"]["items"]["properties"][
+                "arc_plan_version_id"
+            ]["const"]
             == "arc:v1"
         )
-        assert "never repeat one Arc" in (
-            schema["properties"]["arc_schedule"]["items"]["properties"]
-            ["role"]["description"]
+        assert (
+            "never repeat one Arc"
+            in (
+                schema["properties"]["arc_schedule"]["items"]["properties"]["role"][
+                    "description"
+                ]
+            )
         )
         assert schema["properties"]["title"]["maxLength"] == 120
         assert schema["properties"]["premise"]["maxLength"] == 320
@@ -268,8 +310,14 @@ def test_canonical_contracts_freeze_progressive_horizon_and_realization(
 
     assert contract.content["planning_horizon"] == expected_horizon
     assert contract.content["realization_level"] == expected_realization
-    assert contract.content["world_realization"][0]["realization_level"] == expected_realization
-    assert contract.content["character_realization"][0]["realization_level"] == expected_realization
+    assert (
+        contract.content["world_realization"][0]["realization_level"]
+        == expected_realization
+    )
+    assert (
+        contract.content["character_realization"][0]["realization_level"]
+        == expected_realization
+    )
 
 
 def test_operational_plan_fails_closed_on_open_design_space_and_load_overrun() -> None:
@@ -311,7 +359,9 @@ def test_operational_plan_consumes_accepted_narrative_debt_projection() -> None:
     content["constraint_envelope"] = {
         "narrative_load_projection": {
             "status": "MEASURED",
+            "accepted_through_chapter": 1,
             "metrics": {"overdue_obligation_count": 1},
+            "overdue_obligation_ids": ["obligation:overdue-x"],
         }
     }
 
@@ -327,6 +377,25 @@ def test_operational_plan_consumes_accepted_narrative_debt_projection() -> None:
         )
 
     content["payoffs"][0]["action"] = "PAYOFF"
+    with pytest.raises(KernelError, match="NARRATIVE_DEBT_PAYDOWN_REQUIRED"):
+        validate_planning_contract(
+            project_id="project-1",
+            book_id="book-1",
+            contract_type=PlanContractType.CHAPTER,
+            asset_version_id="chapter:unrelated-payoff",
+            parent_version_id="chapter-group:v1",
+            execution_scope=PlanExecutionScope.PLANNED,
+            content=content,
+        )
+
+    content["payoffs"].append(
+        {
+            "obligation_id": "obligation:overdue-x",
+            "action": "RESCHEDULE",
+            "opened_chapter": 1,
+            "due_chapter": 4,
+        }
+    )
     contract = validate_planning_contract(
         project_id="project-1",
         book_id="book-1",
@@ -338,8 +407,27 @@ def test_operational_plan_consumes_accepted_narrative_debt_projection() -> None:
     )
     assert contract.logical_key == "chapter:2"
 
-    content["commitment_contract"][1]["level"] = "SOFT_INTENT"
-    content["narrative_load_budget"]["max_state_transitions"] = 0
+    content["narrative_load_budget"] = {"max_major_state_transitions": 99}
+    with pytest.raises(KernelError, match="CANDIDATE_NARRATIVE_LOAD_POLICY_FORBIDDEN"):
+        validate_planning_contract(
+            project_id="project-1",
+            book_id="book-1",
+            contract_type=PlanContractType.CHAPTER,
+            asset_version_id="chapter:self-raised-guardrail",
+            parent_version_id="chapter-group:v1",
+            execution_scope=PlanExecutionScope.PLANNED,
+            content=content,
+        )
+    content.pop("narrative_load_budget")
+    content["payoffs"].extend(
+        {
+            "obligation_id": f"obligation:congestion:{index}",
+            "action": "ADVANCE",
+            "opened_chapter": 1,
+            "due_chapter": 4,
+        }
+        for index in range(2)
+    )
     with pytest.raises(KernelError, match="NARRATIVE_LOAD_BUDGET_EXCEEDED"):
         validate_planning_contract(
             project_id="project-1",
@@ -433,9 +521,7 @@ def test_chapter_contract_rejects_noncanonical_state_kind() -> None:
             }
         },
     )
-    content["required_state_transitions"][0]["state_kind"] = (
-        "official_record_status"
-    )
+    content["required_state_transitions"][0]["state_kind"] = "official_record_status"
 
     with pytest.raises(KernelError, match="CHAPTER_STATE_TRANSITION_KIND_INVALID"):
         validate_planning_contract(
@@ -477,7 +563,9 @@ def test_chapter_contract_derives_reader_knowledge_from_disclosure_mode() -> Non
         )
 
 
-def test_chapter_contract_accepts_withheld_reader_boundary_without_state_advance() -> None:
+def test_chapter_contract_accepts_withheld_reader_boundary_without_state_advance() -> (
+    None
+):
     content = planning_fixture_response(
         "chapter_plan.generate",
         {
@@ -677,6 +765,157 @@ def test_progressive_realization_can_refine_strategic_versions() -> None:
             parent_version_id="chapter-group:v1",
             execution_scope=PlanExecutionScope.PLANNED,
             content=chapter,
+        )
+
+
+def test_one_plan_supports_entity_specific_progressive_realization() -> None:
+    content = planning_fixture_response(
+        "volume_plan.generate",
+        {
+            "planning_command": {
+                "logical_key": "volume:1",
+                "parent_version_id": "book-plan:v1",
+                "input_versions": {},
+            }
+        },
+    )
+    city = content["world_realization"][0]
+    city["world_id"] = "world:current-city"
+    city["realization_level"] = "ACTIVE"
+    nearby_faction = deepcopy(city)
+    nearby_faction.update(
+        {
+            "world_id": "world:nearby-faction",
+            "realization_level": "DETAILED",
+            "narrative_relevance": "NEAR_FUTURE",
+        }
+    )
+    distant_empire = deepcopy(city)
+    distant_empire.update(
+        {
+            "world_id": "world:distant-empire",
+            "realization_level": "ANCHOR",
+            "narrative_relevance": "FUTURE",
+        }
+    )
+    content["world_realization"].extend([nearby_faction, distant_empire])
+    protagonist = content["character_realization"][0]
+    protagonist["realization_level"] = "ACTIVE"
+    next_volume_actor = deepcopy(protagonist)
+    next_volume_actor.update(
+        {
+            "character_id": "character:next-volume-actor",
+            "realization_level": "DEFINED",
+            "narrative_relevance": "FUTURE",
+        }
+    )
+    content["character_realization"].append(next_volume_actor)
+
+    contract = validate_planning_contract(
+        project_id="project-1",
+        book_id="book-1",
+        contract_type=PlanContractType.VOLUME,
+        asset_version_id="volume:mixed-realization",
+        parent_version_id="book-plan:v1",
+        execution_scope=PlanExecutionScope.PLANNED,
+        content=content,
+    )
+
+    assert {
+        item["realization_level"] for item in contract.content["world_realization"]
+    } == {"ACTIVE", "DETAILED", "ANCHOR"}
+    assert {
+        item["realization_level"] for item in contract.content["character_realization"]
+    } == {"ACTIVE", "DEFINED"}
+
+
+def test_current_entity_cannot_be_less_realized_than_plan_horizon() -> None:
+    content = planning_fixture_response(
+        "chapter_plan.generate",
+        {
+            "planning_command": {
+                "logical_key": "chapter:2",
+                "parent_version_id": "chapter-group:v1",
+                "input_versions": {"arc_plans": "arc:v1"},
+            }
+        },
+    )
+    content["character_realization"][0]["realization_level"] = "ANCHOR"
+
+    with pytest.raises(KernelError, match="CHARACTER_REALIZATION_HORIZON_INVALID"):
+        validate_planning_contract(
+            project_id="project-1",
+            book_id="book-1",
+            contract_type=PlanContractType.CHAPTER,
+            asset_version_id="chapter:under-realized",
+            parent_version_id="chapter-group:v1",
+            execution_scope=PlanExecutionScope.PLANNED,
+            content=content,
+        )
+
+
+def test_realization_reference_must_match_frozen_authority_version_and_hash() -> None:
+    command = _command("volume_plan.generate")
+    inputs = _inputs(command)
+    generation_operation_id = "operation:realization-lineage"
+    frozen = [
+        {
+            "role": item.role,
+            "asset_version_id": item.asset_version_id,
+            "content_hash": item.content_hash,
+            "asset_type": item.asset_type,
+        }
+        for item in inputs
+    ]
+    content = planning_fixture_response(
+        command.generator_operation_name,
+        {
+            "planning_command": {
+                "project_id": command.project_id,
+                "book_id": command.book_id,
+                "generation_operation_id": generation_operation_id,
+                "logical_key": command.logical_key,
+                "parent_version_id": "book-plan:v1",
+                "input_versions": dict(command.input_versions),
+            },
+            "frozen_inputs": frozen,
+        },
+    )
+    content["frozen_inputs"] = frozen
+    content["constraint_envelope"] = build_planning_constraint_envelope(
+        project_id=command.project_id,
+        book_id=command.book_id,
+        generation_operation_id=generation_operation_id,
+        generator_operation_name=command.generator_operation_name,
+        frozen_inputs=inputs,
+        input_contents={
+            item.role: (
+                _with_inherited_load_policy({}) if item.role == "book_plan" else {}
+            )
+            for item in inputs
+        },
+        candidate_payload=content,
+    )
+
+    validate_planning_contract(
+        project_id=command.project_id,
+        book_id=command.book_id,
+        contract_type=PlanContractType.VOLUME,
+        asset_version_id="volume:lineage-valid",
+        parent_version_id="book-plan:v1",
+        execution_scope=PlanExecutionScope.PLANNED,
+        content=content,
+    )
+    content["world_realization"][0]["state_ref"]["content_hash"] = "sha256:" + "b" * 64
+    with pytest.raises(KernelError, match="WORLD_REALIZATION_REFERENCE_STALE"):
+        validate_planning_contract(
+            project_id=command.project_id,
+            book_id=command.book_id,
+            contract_type=PlanContractType.VOLUME,
+            asset_version_id="volume:lineage-stale",
+            parent_version_id="book-plan:v1",
+            execution_scope=PlanExecutionScope.PLANNED,
+            content=content,
         )
 
 
@@ -928,6 +1167,7 @@ def test_arc_generation_freezes_multi_volume_and_related_arc_scope() -> None:
         FrozenPlanningInput("related_arc:1", "arc:v2", HASH, "arc_plan"),
     )
     contents = {item.role: {} for item in scope_inputs}
+    contents["book_plan"] = _with_inherited_load_policy({})
 
     fixture = planning_fixture_response(
         "arc_plan.generate",
@@ -945,6 +1185,9 @@ def test_arc_generation_freezes_multi_volume_and_related_arc_scope() -> None:
         },
     )
     envelope = build_planning_constraint_envelope(
+        project_id="project-1",
+        book_id="book-1",
+        generation_operation_id="operation:arc-proof",
         generator_operation_name=command.generator_operation_name,
         frozen_inputs=scope_inputs,
         input_contents=contents,
@@ -1022,6 +1265,7 @@ def test_scheduling_generation_freezes_related_arc_portfolio() -> None:
         FrozenPlanningInput("related_arc:2", "arc:v3", HASH, "arc_plan"),
     )
     contents = {item.role: {} for item in frozen}
+    contents["book_plan"] = _with_inherited_load_policy({})
     fixture = planning_fixture_response(
         command.generator_operation_name,
         {
@@ -1035,6 +1279,9 @@ def test_scheduling_generation_freezes_related_arc_portfolio() -> None:
         },
     )
     envelope = build_planning_constraint_envelope(
+        project_id="project-1",
+        book_id="book-1",
+        generation_operation_id="operation:scheduling-proof",
         generator_operation_name=command.generator_operation_name,
         frozen_inputs=frozen,
         input_contents=contents,
@@ -1165,12 +1412,16 @@ def test_planning_constraint_envelope_propagates_parent_invariants_and_scope() -
         "invariants": ["the succession law cannot be waived"],
         "prohibited_outcomes": ["the dead regent returns alive"],
     }
+    contents["book_plan"] = _with_inherited_load_policy(contents["book_plan"])
     contents["story_state"] = {
         "accepted_through_chapter": 11,
         "unresolved_obligation_ids": ["obligation:sealed-door"],
     }
 
     envelope = build_planning_constraint_envelope(
+        project_id="project-1",
+        book_id="book-1",
+        generation_operation_id="operation:constraint-proof",
         generator_operation_name=command.generator_operation_name,
         frozen_inputs=inputs,
         input_contents=contents,

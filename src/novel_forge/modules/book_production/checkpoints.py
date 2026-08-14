@@ -262,7 +262,7 @@ class PostgresBookNarrativeCheckpointAuthority:
                    book.input_snapshot_id, request.chapter_number,
                    book.target_chapter_count, snapshot.book_plan_version,
                    snapshot.current_volume_plan_version,
-                   snapshot.active_arc_plan_versions,
+                   snapshot.current_relevant_arc_plan_versions,
                    snapshot.current_chapter_group_plan_version,
                    acceptance.acceptance_operation_id,
                    request.chapter_plan_version, plan.content,

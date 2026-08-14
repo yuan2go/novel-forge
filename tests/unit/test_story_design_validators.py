@@ -31,10 +31,46 @@ def _content_with_constraints(
         )
         for role in GENERATOR_INPUT_ROLES[generator]
     )
+    input_contents = {role: {} for role in GENERATOR_INPUT_ROLES[generator]}
+    if "production_profile" not in input_contents:
+        policy_body = {
+            "type": "NarrativeLoadPolicy",
+            "contract_version": "narrative-load-policy-v1",
+            "project_id": "project-1",
+            "book_id": "book-1",
+            "policy_id": "validator-test-policy",
+            "policy_version": 1,
+            "source_role": "production_profile",
+            "source_asset_version_id": "version:production_profile",
+            "source_content_hash": "sha256:" + "0" * 64,
+            "limits": {
+                "max_active_arcs": 3,
+                "max_dormant_arc_age": 30,
+                "max_open_obligations": 12,
+                "max_overdue_obligations": 0,
+                "max_payoff_congestion": 3,
+                "max_character_appearance_gap": 10,
+                "max_new_concepts": 4,
+                "max_major_state_transitions": 8,
+            },
+            "governed_overrides": [],
+        }
+        inherited_policy = {
+            **policy_body,
+            "policy_hash": canonical_hash(policy_body),
+        }
+        input_contents[next(iter(input_contents))] = {
+            "constraint_envelope": {
+                "narrative_load_policy": inherited_policy,
+            }
+        }
     envelope = build_planning_constraint_envelope(
+        project_id="project-1",
+        book_id="book-1",
+        generation_operation_id="operation:generator",
         generator_operation_name=generator,
         frozen_inputs=inputs,
-        input_contents={role: {} for role in GENERATOR_INPUT_ROLES[generator]},
+        input_contents=input_contents,
         candidate_payload=payload,
     )
     return {
@@ -58,7 +94,9 @@ class StoryDesignValidatorTests(unittest.TestCase):
                 "book_plan.generate",
                 "BOOK",
                 "book-plan:main",
-                {"objective": "Escalate the central conflict through irreversible choices"},
+                {
+                    "objective": "Escalate the central conflict through irreversible choices"
+                },
             ),
             project_id="project-1",
             generator_operation_name="book_plan.generate",
@@ -193,7 +231,8 @@ class StoryDesignValidatorTests(unittest.TestCase):
             logical_key="book-plan:main",
         )
         semantic = next(
-            receipt for receipt in result.receipts
+            receipt
+            for receipt in result.receipts
             if receipt.validation_kind == "SEMANTIC"
         )
 

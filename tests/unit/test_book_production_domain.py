@@ -61,7 +61,10 @@ def test_volume_portfolio_rejects_overlapping_ranges() -> None:
         BookProductionInputResolver._select_current_volume(
             [
                 {"asset_version_id": "volume-1", "content": {"chapter_range": [1, 30]}},
-                {"asset_version_id": "volume-2", "content": {"chapter_range": [30, 60]}},
+                {
+                    "asset_version_id": "volume-2",
+                    "content": {"chapter_range": [30, 60]},
+                },
             ],
             chapter_cursor=30,
         )
@@ -72,7 +75,58 @@ def test_volume_portfolio_rejects_a_strategic_gap() -> None:
         BookProductionInputResolver._select_current_volume(
             [
                 {"asset_version_id": "volume-1", "content": {"chapter_range": [1, 30]}},
-                {"asset_version_id": "volume-2", "content": {"chapter_range": [32, 60]}},
+                {
+                    "asset_version_id": "volume-2",
+                    "content": {"chapter_range": [32, 60]},
+                },
             ],
             chapter_cursor=1,
         )
+
+
+def test_global_arc_portfolio_projects_only_arcs_relevant_to_current_volume() -> None:
+    volumes = [
+        {"asset_version_id": f"volume-{number}", "parent_version_id": "book-1"}
+        for number in range(1, 6)
+    ]
+    arcs = [
+        {
+            "asset_version_id": "arc-a",
+            "content": {"cross_volume_scope": ["volume-1", "volume-2", "volume-3"]},
+        },
+        {
+            "asset_version_id": "arc-b",
+            "content": {"cross_volume_scope": ["volume-2", "volume-3", "volume-4"]},
+        },
+        {
+            "asset_version_id": "arc-c",
+            "content": {"cross_volume_scope": ["volume-4", "volume-5"]},
+        },
+    ]
+    plans = {
+        "BOOK": [{"asset_version_id": "book-1"}],
+        "VOLUME": volumes,
+        "ARC": arcs,
+        "CHAPTER_GROUP": [],
+        "CHAPTER": [],
+    }
+
+    BookProductionInputResolver._validate_plan_hierarchy(
+        plans,
+        current_volume=volumes[0],
+    )
+    assert {
+        volume["asset_version_id"]: (
+            BookProductionInputResolver._select_current_relevant_arcs(
+                arcs,
+                current_volume=volume,
+            )
+        )
+        for volume in volumes
+    } == {
+        "volume-1": ("arc-a",),
+        "volume-2": ("arc-a", "arc-b"),
+        "volume-3": ("arc-a", "arc-b"),
+        "volume-4": ("arc-b", "arc-c"),
+        "volume-5": ("arc-c",),
+    }

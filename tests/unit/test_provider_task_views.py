@@ -19,6 +19,16 @@ from novel_forge.modules.production_execution import ExecutionRuntimeClass
 from tests.unit.test_production_execution_gateway import contracts
 
 
+def _authoritative_load() -> dict[str, object]:
+    return {
+        "narrative_load_policy": {"policy_hash": "sha256:" + "c" * 64},
+        "narrative_load_policy_lineage": {
+            "frozen_by_generation_operation_id": "operation:planning"
+        },
+        "narrative_load_projection": {"status": "MEASURED", "metrics": {}},
+    }
+
+
 def _plan() -> dict:
     return {
         "chapter": 31,
@@ -133,9 +143,12 @@ def _context(unrelated_count: int) -> dict:
         "selected_asset_version_ids": ["story-state:v30", "style:v1"],
         "narrative_position": {"book_id": "book:1", "chapter": 31},
     }
-    correctness["receipt_hash"] = "sha256:" + hashlib.sha256(
-        json.dumps(correctness, sort_keys=True, separators=(",", ":")).encode()
-    ).hexdigest()
+    correctness["receipt_hash"] = (
+        "sha256:"
+        + hashlib.sha256(
+            json.dumps(correctness, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+    )
     return {
         "context_contract_version": "authority-context-bundle-v5",
         "context_correctness": correctness,
@@ -284,9 +297,7 @@ def test_reader_outcome_state_projection_does_not_grow_with_unrelated_history() 
         }
 
     light = project_reader_outcome_context_input("story_state_snapshot", state(1))
-    heavy = project_reader_outcome_context_input(
-        "story_state_snapshot", state(3_000)
-    )
+    heavy = project_reader_outcome_context_input("story_state_snapshot", state(3_000))
 
     assert heavy == light
     assert heavy["reader_facing_state"][0]["state"]["status"] == "KNOWN"
@@ -339,6 +350,7 @@ def test_planning_provider_view_uses_command_and_projected_inputs_only() -> None
                 "trace_id": "trace:authority-only",
             },
             "frozen_inputs": [{"content_hash": "sha256:authority-evidence"}],
+            "authoritative_narrative_load": _authoritative_load(),
         },
     )
     view = build_provider_context_view(
@@ -374,8 +386,7 @@ def test_planning_provider_view_uses_command_and_projected_inputs_only() -> None
 
     serialized = json.dumps({"task": task, "context": view}, sort_keys=True)
     assert task["planning_command"]["logical_key"] == "book:main"
-    assert "frozen_inputs" not in serialized
-    assert "authority-evidence" not in serialized
+    assert task["frozen_inputs"] == [{"content_hash": "sha256:authority-evidence"}]
     assert "authority-only" not in serialized
     assert "CONTROLLED_PROOF_BOOTSTRAP" not in serialized
     assert view["segments"][0]["content"] == {
@@ -402,7 +413,18 @@ def test_planning_provider_context_is_deterministically_bounded() -> None:
         },
         build_provider_task_view(
             "book_plan.generate",
-            {"planning_command": {"logical_key": "book:main"}},
+            {
+                "planning_command": {"logical_key": "book:main"},
+                "frozen_inputs": [
+                    {
+                        "role": "book_design",
+                        "asset_version_id": "book-design:v1",
+                        "asset_type": "book_design",
+                        "content_hash": "sha256:" + "a" * 64,
+                    }
+                ],
+                "authoritative_narrative_load": _authoritative_load(),
+            },
         ),
     )
 
@@ -432,7 +454,18 @@ def test_chapter_planning_projects_local_plan_and_long_state_before_provider() -
     }
     task = build_provider_task_view(
         "chapter_plan.generate",
-        {"planning_command": {"logical_key": "chapter:31"}},
+        {
+            "planning_command": {"logical_key": "chapter:31"},
+            "frozen_inputs": [
+                {
+                    "role": "story_state",
+                    "asset_version_id": "story-state:v30",
+                    "asset_type": "story_state_snapshot",
+                    "content_hash": "sha256:" + "b" * 64,
+                }
+            ],
+            "authoritative_narrative_load": _authoritative_load(),
+        },
     )
     view = build_provider_context_view(
         "chapter_plan.generate",
@@ -481,11 +514,12 @@ def test_chapter_planning_projects_local_plan_and_long_state_before_provider() -
     )
 
     serialized = json.dumps(view, ensure_ascii=False)
-    group = next(item for item in view["segments"] if item["role"] == "chapter_group_plan")
+    group = next(
+        item for item in view["segments"] if item["role"] == "chapter_group_plan"
+    )
     state = next(item for item in view["segments"] if item["role"] == "story_state")
     assert [
-        item["chapter_number"]
-        for item in group["content"]["chapter_function_matrix"]
+        item["chapter_number"] for item in group["content"]["chapter_function_matrix"]
     ] == [31]
     assert len(state["content"]["facts"]) == 1
     assert state["content"]["facts"][0]["state"]["character_id"] == "hero"

@@ -302,6 +302,8 @@ class HierarchicalPlanningPostgresTests(unittest.TestCase):
                         "exit_emotion": "costly resolve",
                         "resource_changes": ["personal-liability:+1"],
                         "relationship_changes": ["witness:conditional-trust"],
+                        "known_fact_ids": ["fact:ledger"],
+                        "reachable_location_ids": ["location:registry"],
                     }
                 ],
                 "knowledge_boundaries": [
@@ -335,6 +337,18 @@ class HierarchicalPlanningPostgresTests(unittest.TestCase):
                         "scene_id": "scene:1",
                         "goal": "make the custody choice public",
                         "participants": ["character:lin"],
+                        "pov_character_id": "character:lin",
+                        "focalization": "INTERNAL",
+                        "location_id": "location:registry",
+                        "story_time": {
+                            "timeline_id": "timeline:main",
+                            "start_ordinal": 1,
+                            "end_ordinal": 1,
+                            "precision": "EXACT",
+                        },
+                        "narrative_time_relation": "ESTABLISHES",
+                        "accessible_knowledge": ["fact:ledger"],
+                        "state_transitions": ["character:lin"],
                         "entry_state": "custody is deniable",
                         "exit_state": "custody is signed and witnessed",
                     }
@@ -789,6 +803,102 @@ class HierarchicalPlanningPostgresTests(unittest.TestCase):
         else:
             values.update(self._chapter_matrix_row(1, "DISCOVERY", "new threat"))
             values["required_arc_contributions"] = []
+        if (extra or {}).get("narrative_architecture_version") == (
+            "canonical-narrative-v1"
+        ):
+            plan_horizon = {
+                PlanContractType.BOOK: "STRATEGIC",
+                PlanContractType.VOLUME: "STRATEGIC",
+                PlanContractType.ARC: "STRATEGIC",
+                PlanContractType.CHAPTER_GROUP: "TACTICAL",
+                PlanContractType.CHAPTER: "OPERATIONAL",
+            }[contract_type]
+            realization_level = {
+                PlanContractType.BOOK: "ANCHOR",
+                PlanContractType.VOLUME: "DEFINED",
+                PlanContractType.ARC: "DEFINED",
+                PlanContractType.CHAPTER_GROUP: "DETAILED",
+                PlanContractType.CHAPTER: "ACTIVE",
+            }[contract_type]
+
+            def authority_ref(
+                role: str, asset_type: str, domain_type: str
+            ) -> dict[str, str]:
+                return {
+                    "project_id": self.project_id,
+                    "book_id": self.book_id,
+                    "authority_role": role,
+                    "asset_version_id": f"fixture:{role}:v1",
+                    "asset_type": asset_type,
+                    "content_hash": "sha256:" + "a" * 64,
+                    "domain_type": domain_type,
+                    "freshness": "CURRENT",
+                    "frozen_by_operation_id": "operation:fixture-generation",
+                }
+
+            values.update(
+                {
+                    "planning_horizon": plan_horizon,
+                    "realization_level": realization_level,
+                    "commitment_contract": [
+                        {
+                            "commitment_id": f"commitment:{logical_key}",
+                            "level": "HARD_CONSTRAINT",
+                            "statement": "preserve the accepted canonical trajectory",
+                        }
+                    ],
+                    "world_realization": [
+                        {
+                            "world_id": "world:fixture-city",
+                            "realization_level": realization_level,
+                            "narrative_relevance": "CURRENT",
+                            "visibility": "VISIBLE",
+                            "accessibility": "ACCESSIBLE",
+                            "invariant_refs": [
+                                authority_ref(
+                                    "world_bible",
+                                    "world_bible",
+                                    "WORLD_INVARIANT",
+                                )
+                            ],
+                            "structure_refs": [
+                                authority_ref(
+                                    "world_bible",
+                                    "world_bible",
+                                    "WORLD_STRUCTURE",
+                                )
+                            ],
+                            "state_ref": authority_ref(
+                                "story_state", "narrative_state", "WORLD_STATE"
+                            ),
+                        }
+                    ],
+                    "character_realization": [
+                        {
+                            "character_id": "character:fixture-protagonist",
+                            "realization_level": realization_level,
+                            "narrative_relevance": "CURRENT",
+                            "scope": "BOOK",
+                            "reach": "CURRENT_SEGMENT",
+                            "identity_ref": authority_ref(
+                                "character_cast",
+                                "character_cast",
+                                "CHARACTER_IDENTITY",
+                            ),
+                            "state_ref": authority_ref(
+                                "story_state",
+                                "narrative_state",
+                                "CHARACTER_STATE",
+                            ),
+                            "trajectory_ref": authority_ref(
+                                "character_cast",
+                                "character_cast",
+                                "CHARACTER_TRAJECTORY",
+                            ),
+                        }
+                    ],
+                }
+            )
         values.update(extra or {})
         return values
 

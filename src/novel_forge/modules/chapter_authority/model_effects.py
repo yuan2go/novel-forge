@@ -50,6 +50,7 @@ AGENT_MODEL_STAGES = frozenset(
         "quality_source_originality",
         "quality_longform",
         "quality_platform",
+        "narrative_semantic_evaluation",
     }
 )
 
@@ -320,6 +321,18 @@ class ExternalEffectChapterModelPort:
                 ),
                 "book_id": str(
                     business_payload.get("book_id") or f"book:{request.project_id}"
+                ),
+                "target_asset_version_id": str(
+                    business_payload.get("target_asset_version_id") or ""
+                ),
+                "target_content_hash": str(
+                    business_payload.get("target_content_hash") or ""
+                ),
+                "generation_operation_id": str(
+                    business_payload.get("generation_operation_id") or ""
+                ),
+                "generator_operation_name": str(
+                    business_payload.get("generator_operation_name") or ""
                 ),
                 "route_provider": str(
                     getattr(
@@ -839,6 +852,7 @@ class ExternalEffectChapterModelPort:
                     "stage": stage,
                     "trace_id": request.trace_id,
                     "external_effect_id": external_effect_id,
+                    "target_lineage": self._target_lineage(request),
                     "provider_evidence": result.to_evidence(),
                 },
                 qualification_policy="model-call-evidence-v1",
@@ -846,6 +860,26 @@ class ExternalEffectChapterModelPort:
                 correlation_id=request.correlation_id,
             )
         )
+
+    @staticmethod
+    def _target_lineage(request: ChapterHandlerRequest) -> dict[str, str]:
+        payload = (
+            request.command.get("payload")
+            if isinstance(request.command.get("payload"), dict)
+            else request.command
+        )
+        return {
+            "target_asset_version_id": str(
+                payload.get("target_asset_version_id") or ""
+            ),
+            "target_content_hash": str(payload.get("target_content_hash") or ""),
+            "generation_operation_id": str(
+                payload.get("generation_operation_id") or ""
+            ),
+            "generator_operation_name": str(
+                payload.get("generator_operation_name") or ""
+            ),
+        }
 
     def _record_failed_model_call(
         self,
@@ -1131,6 +1165,8 @@ def _normalize_model_output(stage: str, raw: dict[str, Any]) -> dict[str, Any]:
         if not text:
             raise KernelError("MODEL_RESPONSE_INVALID", "draft response has no text")
         return {"text": text}
+    if stage == "narrative_semantic_evaluation":
+        return dict(raw)
     if stage in {"review", "rereview"}:
         score_value = raw.get("score")
         if not isinstance(score_value, (int, float)) or isinstance(score_value, bool):

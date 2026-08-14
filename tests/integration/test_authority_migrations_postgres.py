@@ -7,7 +7,12 @@ import psycopg
 from psycopg import sql
 from psycopg.conninfo import conninfo_to_dict, make_conninfo
 
-from novel_forge.storage.migrations import LATEST_MIGRATION_ID, MIGRATIONS, run_migrations
+from novel_forge.storage.migrations import (
+    LATEST_MIGRATION_ID,
+    MIGRATIONS,
+    get_migration_status,
+    run_migrations,
+)
 from novel_forge.modules.runtime_job import RuntimeJobAuthority, RuntimeJobSpec
 from novel_forge.modules.runtime_job.application import canonical_payload_hash
 from tests.integration.authority_postgres_support import DATABASE_URL, identifier
@@ -91,9 +96,14 @@ class AuthorityMigrationsPostgresTests(unittest.TestCase):
         )
         self.assertEqual(missing_foreign_key_indexes, [])
 
-    def test_existing_0007_database_upgrades_without_losing_authority_rows(self) -> None:
+    def test_existing_0007_database_upgrades_without_losing_authority_rows(
+        self,
+    ) -> None:
         operation_id = identifier("existing-operation")
-        with psycopg.connect(self.test_url) as connection, connection.cursor() as cursor:
+        with (
+            psycopg.connect(self.test_url) as connection,
+            connection.cursor() as cursor,
+        ):
             cursor.execute(
                 """
                 CREATE TABLE nf_schema_migrations (
@@ -174,17 +184,19 @@ class AuthorityMigrationsPostgresTests(unittest.TestCase):
         self.assertEqual(operation, (operation_id, "ADMITTED"))
         self.assertEqual(blob_project_column, ("NO",))
 
-    def test_existing_0085_upgrades_without_losing_runtime_job_identity(self) -> None:
+    def test_existing_previous_head_upgrades_with_runtime_identity_and_0092_schema(
+        self,
+    ) -> None:
         dedupe_key = "book:shared:version:3"
         input_snapshot = {"observed_version": 3, "state": "CHAPTER_COMPLETED"}
-        old_identity = "\x1f".join(
-            ("book", "BOOK_COORDINATION_TICK", dedupe_key)
-        )
+        old_identity = "\x1f".join(("book", "BOOK_COORDINATION_TICK", dedupe_key))
         old_runtime_job_id = (
-            "runtime-job:"
-            + hashlib.sha256(old_identity.encode("utf-8")).hexdigest()
+            "runtime-job:" + hashlib.sha256(old_identity.encode("utf-8")).hexdigest()
         )
-        with psycopg.connect(self.test_url) as connection, connection.cursor() as cursor:
+        with (
+            psycopg.connect(self.test_url) as connection,
+            connection.cursor() as cursor,
+        ):
             for migration in MIGRATIONS[:-1]:
                 for statement in migration.upgrade_statements:
                     cursor.execute(statement)
@@ -211,6 +223,21 @@ class AuthorityMigrationsPostgresTests(unittest.TestCase):
                     canonical_payload_hash(input_snapshot),
                 ],
             )
+            applied_before = {
+                row[0]
+                for row in cursor.execute(
+                    "SELECT migration_id FROM nf_schema_migrations"
+                ).fetchall()
+            }
+
+        self.assertEqual(
+            applied_before,
+            {migration.migration_id for migration in MIGRATIONS[:-1]},
+        )
+        self.assertEqual(
+            MIGRATIONS[-2].migration_id,
+            "20260814_0091_canonical_longform_runtime_completion",
+        )
 
         status = run_migrations(self.test_url)
         self.assertTrue(status["ok"])
@@ -247,7 +274,53 @@ class AuthorityMigrationsPostgresTests(unittest.TestCase):
                     """
                 ).fetchall()
             )
+            correctness_columns = {
+                row[0]
+                for row in connection.execute(
+                    """
+                    SELECT column_name
+                    FROM information_schema.columns
+                    WHERE table_schema='public'
+                      AND table_name='authority_narrative_design_qualification'
+                      AND column_name LIKE 'provider_%'
+                    """
+                ).fetchall()
+            }
+            correctness_objects = connection.execute(
+                """
+                SELECT
+                  to_regclass('authority_book_production_arc_portfolio_gin_idx'),
+                  to_regclass('authority_book_production_current_relevant_arc_gin_idx'),
+                  to_regclass('authority_narrative_design_provider_receipt_idx'),
+                  to_regclass('authority_current_narrative_design_qualification'),
+                  to_regclass('authority_canonical_planning_projection'),
+                  to_regprocedure('authority_validate_narrative_provider_lineage()')
+                """
+            ).fetchone()
+            provider_guard = connection.execute(
+                """
+                SELECT COUNT(*)
+                FROM pg_trigger
+                WHERE tgname='authority_narrative_design_provider_lineage_guard'
+                  AND NOT tgisinternal
+                """
+            ).fetchone()[0]
         self.assertIn("project_id", definitions["authority_runtime_job_dedupe_idx"])
+        self.assertEqual(
+            correctness_columns,
+            {
+                "provider_model_call_asset_version_id",
+                "provider_model_call_content_hash",
+                "provider_evidence_hash",
+                "provider_result_hash",
+                "provider_route_snapshot_id",
+            },
+        )
+        self.assertTrue(all(correctness_objects))
+        self.assertEqual(provider_guard, 1)
+        restarted_status = get_migration_status(self.test_url)
+        self.assertTrue(restarted_status["ok"])
+        self.assertEqual(restarted_status["current"], LATEST_MIGRATION_ID)
         self.assertIn(
             "project_id", definitions["authority_runtime_job_active_subject_idx"]
         )

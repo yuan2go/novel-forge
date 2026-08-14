@@ -3,6 +3,7 @@
 This module deliberately has no dependency on the legacy product service,
 projection synchronization, or filesystem routing policy.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -31,9 +32,14 @@ from novel_forge.infrastructure.environment import RuntimeEnvironment
 from novel_forge.infrastructure.production_execution_composition import (
     ProductionExecutionComposition,
 )
-from novel_forge.modules.chapter_authority.application import ChapterAuthorityApplication
+from novel_forge.modules.chapter_authority.application import (
+    ChapterAuthorityApplication,
+)
 from novel_forge.modules.chapter_authority.queries import ChapterAuthorityQuery
-from novel_forge.modules.content_authority import ContentAuthorityApplication, ContentAuthorityQuery
+from novel_forge.modules.content_authority import (
+    ContentAuthorityApplication,
+    ContentAuthorityQuery,
+)
 from novel_forge.modules.book_authority.production import PostgresBookAuthority
 from novel_forge.modules.book_authority.composition import BookProductionComposition
 from novel_forge.modules.book_design_authority import (
@@ -70,7 +76,9 @@ from novel_forge.modules.mkaos_authority import (
     MkaosAuthorityApplication,
     MkaosAuthorityQuery,
 )
-from novel_forge.modules.provider_callback_authority import ProviderCallbackAuthorityService
+from novel_forge.modules.provider_callback_authority import (
+    ProviderCallbackAuthorityService,
+)
 from novel_forge.modules.provider_control import (
     build_provider_adapter_registry,
     configured_chapter_provider_ids,
@@ -241,7 +249,10 @@ def create_authority_app(settings: IndustrialSettings):
             commit_sha=commit_sha,
         ),
         mkaos_authority_query=MkaosAuthorityQuery(settings.database_url),
-        book_design_authority_application=build_book_design_authority_application(settings),
+        book_design_authority_application=build_book_design_authority_application(
+            settings,
+            execution=production_execution,
+        ),
         book_design_authority_query=build_book_design_authority_query(settings),
         agent_runtime_authority_application=(
             build_agent_runtime_authority_application(settings)
@@ -250,9 +261,7 @@ def create_authority_app(settings: IndustrialSettings):
         capability_pack_authority_application=(
             build_capability_pack_authority_application(settings)
         ),
-        capability_pack_authority_query=build_capability_pack_authority_query(
-            settings
-        ),
+        capability_pack_authority_query=build_capability_pack_authority_query(settings),
         temporal_query_service=TemporalQueryService(settings.database_url),
         pacing_analysis_service=PacingAnalysisService(settings.database_url),
     )
@@ -270,13 +279,21 @@ def create_authority_app(settings: IndustrialSettings):
     )
 
     from novel_forge.api.models import product_model_map
-    from novel_forge.api.routers.chapter_authority import create_router as create_chapter_router
-    from novel_forge.api.routers.content_authority import create_router as create_content_router
-    from novel_forge.api.routers.canon_authority import create_router as create_canon_router
+    from novel_forge.api.routers.chapter_authority import (
+        create_router as create_chapter_router,
+    )
+    from novel_forge.api.routers.content_authority import (
+        create_router as create_content_router,
+    )
+    from novel_forge.api.routers.canon_authority import (
+        create_router as create_canon_router,
+    )
     from novel_forge.api.routers.provider_callback_authority import (
         create_router as create_provider_callback_router,
     )
-    from novel_forge.api.routers.book_authority import create_router as create_book_router
+    from novel_forge.api.routers.book_authority import (
+        create_router as create_book_router,
+    )
     from novel_forge.api.routers.context import ProductRouterContext
     from novel_forge.api.routers.authority_projects import (
         create_router as create_project_router,
@@ -478,9 +495,7 @@ def create_authority_app(settings: IndustrialSettings):
         connection_budget: dict[str, Any] = configured_connection_budget
         migration: dict[str, Any] = {"ok": False, "current": ""}
         try:
-            database_runtime = get_database_runtime(
-                settings.database_url, role="api"
-            )
+            database_runtime = get_database_runtime(settings.database_url, role="api")
             database_health = database_runtime.health()
             with database_runtime.connection() as connection:
                 postgres_max_connections = int(
