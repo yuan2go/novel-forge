@@ -1,18 +1,46 @@
 # Novel production flow
 
-The main governed flow is Book → Planning → Chapter → Reader/Recap → Replan. Each arrow crosses a versioned contract; coordinators do not copy child execution state.
+The governed flow designs and qualifies the novel before prose production:
+
+```text
+Story Intent → Story Foundation → Book Architecture → Volume Architecture
+→ Narrative Arc Graph → Character / Disclosure / Obligation Design
+→ Narrative Scheduling → Chapter Execution Plan → Scene Architecture
+→ Prose Production → Acceptance → Reader/Recap → scoped Replan
+```
+
+Each arrow crosses an active, current, versioned contract. Coordinators do not
+copy child execution state.
 
 ## 1. Book and design authority
 
-An operator creates a Book and proposes/decides/activates BookDesign assets. Starting Book production resolves active authority inputs into one frozen input snapshot. Production does not accept an implicit local fixture mode; tests that use synthetic resolved data must opt into the fixture boundary explicitly.
+An operator creates a Book and proposes/decides/activates BookDesign assets.
+BookDesign is the qualified Story Intent and Story Foundation root. Starting
+Book production resolves active Authority inputs and layer qualification into a
+frozen input snapshot. Production does not accept an implicit local fixture
+mode; tests that use synthetic resolved data must opt into that boundary.
 
 ## 2. Hierarchical planning
 
-The Book supervisor asks Planning to generate a missing ChapterGroup or Chapter plan. Generated content is a candidate. Planning and PlanChange Authority own activation and execution scope. A plan must be frozen before ChapterGroup or Chapter execution begins.
+Story Design generation produces Book, Volume, cross-volume Arc, ChapterGroup,
+and Chapter candidates. Each candidate receives deterministic validation and a
+layer-specific Narrative Semantic Evaluation before qualification. Planning and
+PlanChange Authority own active bindings and execution scope. ChapterGroup is
+the Narrative Scheduling layer; Chapter contains the canonical Chapter
+Execution Plan and formal Scene Plan.
+
+Book production records `LONGFORM_DESIGN_QUALIFIED` only when every required
+active design layer is current and qualified. Chapter dispatch separately
+records or verifies `CHAPTER_PRODUCTION_ADMITTED` and fails closed on a stale
+dependency or Narrative State cursor.
 
 ## 3. Chapter production
 
-ChapterGroup coordinates chapter requests. `chapter.slice.run` executes the Chapter Authority's 18-node saga through governed Attempts and ExternalEffects. The sequence includes context, planning/draft/review/revision, Canon, quality, release, and acceptance evidence. A successful provider response alone cannot complete a chapter.
+ChapterGroup coordinates admitted chapter requests. `chapter.slice.run`
+executes the Chapter Authority's 18-node saga through governed Attempts and
+ExternalEffects. The sequence includes task-specific context,
+draft/review/revision, Canon, quality, release, and acceptance evidence. A
+successful provider response alone cannot complete a chapter.
 
 ## 4. Acceptance and narrative state
 
@@ -52,12 +80,15 @@ committed ChapterOutcome events + Canon v2 + StoryState v2
       ↓
 Reader Outcome → Recap / ending evidence
       ↓ if governed request exists
-PlanChange decision → future-plan activation → resume
+PlanChange decision → affected future requalification/activation → resume
 ```
 
 ## Stop and recovery behavior
 
-Book and Chapter work can pause, fail, retry, reconcile, or wait for approval without erasing the previous Attempt. Stable idempotency, leases, fences, checkpoints, and outbox records allow another process to resume from PostgreSQL authority.
+Book and Chapter work can pause, fail, retry, reconcile, or wait for approval
+without erasing the previous Attempt. Stable idempotency, leases, fences,
+checkpoints, activation CAS, immutable qualification receipts, and outbox
+records allow another process to resume from PostgreSQL authority.
 
 ## What this flow does not prove
 

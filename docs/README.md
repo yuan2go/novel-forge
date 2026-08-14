@@ -4,6 +4,7 @@ This documentation describes the runtime reachable from the current code. Archit
 
 ## Architecture
 
+- [Canonical overall design](architecture/canonical-overall-design.md) — authoritative product progression and runtime boundaries
 - [Overview](architecture/overview.md) — system shape, boundaries, and proof status
 - [Runtime](architecture/runtime.md) — API, worker, operation, and recovery paths
 - [Authority model](architecture/authority-model.md) — PostgreSQL ownership and mutation rules
@@ -35,7 +36,10 @@ This documentation describes the runtime reachable from the current code. Archit
 
 ## Decisions
 
-`adr/` contains only decisions that still constrain the current system. It is not a session log or a record of every implementation phase.
+`adr/` contains only decisions that still constrain the current system. It is
+not a session log or a record of every implementation phase. Stale build plans,
+exact-SHA qualification snapshots, and AI session summaries are intentionally
+not retained as current documentation.
 
 ## Evidence vocabulary
 

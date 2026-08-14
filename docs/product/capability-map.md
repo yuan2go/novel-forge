@@ -16,7 +16,9 @@ Agent output remains a proposal until the relevant Domain Authority accepts it. 
 | Capability family | Runtime status | Evidence boundary |
 |---|---|---|
 | Project/workspace/task and asset authority | `runtime-wired` | Atomic command and query tests; PostgreSQL suites exist. |
-| Book design and typed planning | `runtime-wired` | Candidate/decision/activation and Book-flow tests. |
+| Book design and progressive typed planning | `runtime-wired` | Candidate/decision/qualification/activation and Book-flow tests. |
+| Layer-specific Narrative Qualification | `runtime-wired` when reached through Story/Book Design Authority | Typed profile/criterion receipts, bounded repair and PostgreSQL lifecycle tests. |
+| Long-form design and Chapter admission | `runtime-wired` when reached through Book input resolution and dispatch | Fresh active-layer aggregation and fail-closed production-boundary tests. |
 | Chapter production saga | `runtime-wired`, `fixture-proven` | 18-node bounded acceptance paths; selected PostgreSQL integration. |
 | Book supervision and follow-up | `runtime-wired`, `fixture-proven` | Deterministic tick, Reader/recap/replan tests. |
 | Narrative State Contract v2: Canon, ChapterOutcome, StoryState, temporal query | `runtime-wired`, `PostgreSQL-fixture-validated` | Entity-aware current state, accepted-only as-of reads, Book acceptance and deterministic rebuild tests. |
@@ -49,12 +51,12 @@ capability beyond `FIXTURE_PROVEN`.
 | Source analysis methodology invalidation and selective reuse | `FIXTURE_PROVEN` |
 | Narrative Measurement evidence and false-zero semantics | `FIXTURE_PROVEN` |
 | Quality issue to corrected REREVIEW, Canon/Quality re-evaluation, and resolution | `FIXTURE_PROVEN` |
-| Longform Replan/PlanChange activation and later re-evaluation | `FIXTURE_PROVEN` |
+| Future-scoped Replan/PlanChange activation, invalidation, and requalification | `FIXTURE_PROVEN` |
 | MKAOS selection versus actual Provider consumption lineage | `FIXTURE_PROVEN` |
 | Real-provider narrative correctness | `MISSING` |
-| 30-chapter/longform narrative correctness | `MISSING` |
+| 30/100/300-chapter narrative correctness | `MISSING` |
 | Multi-book narrative correctness | `MISSING` |
 | Production authorization and operational proof | `MISSING` |
 
-Exact scope and qualification commands are recorded in
-[`Development Gap Final Convergence Qualification`](../qualification/development-gap-final-convergence.md).
+Current architecture and admission scope are defined in
+[`Canonical overall design`](../architecture/canonical-overall-design.md).

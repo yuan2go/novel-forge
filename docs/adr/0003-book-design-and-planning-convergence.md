@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-08-04
-- Implementation baseline: `d58710de6d4efa51e935df39176167d127b29ea9`
+- Updated: 2026-08-14
 
 ## Context
 
@@ -22,7 +22,8 @@ version, decision, audit, or outbox boundary.
 
 ### BookDesign is the unique whole-book design root
 
-The active BookDesign AssetVersion is the only formal root for the book's:
+The active, qualified BookDesign AssetVersion is the only formal root for the
+book's Story Intent and Story Foundation, including:
 
 - Theme and thematic question;
 - Reader Promise;
@@ -51,10 +52,10 @@ Story Design Authority retains:
 
 Its `book_plan.generate`, `volume_plan.generate`, `arc_plan.generate`,
 `chapter_group_plan.generate`, and `chapter_plan.generate` definitions produce
-planning candidates. Its theme, ending, world, and character definitions may
+  planning candidates. Its theme, ending, world, and character definitions may
 produce component proposals, but those proposals do not replace the active
-BookDesign root. A C1 BookPlan candidate must explicitly depend on the active
-BookDesign AssetVersion.
+  BookDesign root. A BookPlan candidate must explicitly depend on the active,
+  qualified BookDesign AssetVersion.
 
 ### Content Authority is a deterministic handler runtime
 
@@ -117,10 +118,10 @@ cursors. Neither may import another domain's concrete repository to assemble
 private state. Quality can emit evidence or decisions but cannot mutate Chapter
 or Planning rows directly.
 
-## C1 dependency contract
+## Progressive design dependency contract
 
-If the C1 gate later passes, the existing `book_plan.generate` path will create
-a typed BookPlan candidate with explicit dependencies on:
+The existing `book_plan.generate` path creates a typed BookPlan candidate with
+explicit dependencies on:
 
 - `active_book_design_asset_version_id`;
 - `generator_definition_version`;
@@ -129,18 +130,19 @@ a typed BookPlan candidate with explicit dependencies on:
 - `provider_receipt`.
 
 Qualification and StoryDesign approval precede the independent
-`planning.binding.activate` command. The existing Planning projection and
-PlanChange path are reused.
+`planning.binding.activate` command. Book, Volume, Arc, ChapterGroup, and
+Chapter contracts carry layer-specific Narrative Qualification rather than one
+universal judge result. The existing Planning projection and PlanChange path
+are reused.
 
 ## Current constraints and consequences
 
-- This ADR is accepted as the convergence decision; it is not evidence that C1
-  or real-provider generation has run.
-- Older StoryDesign and PlanChange lifecycle applications still use synchronous
-  facades over worker-classified Content operations. They are not new C1
-  production entries and must not be exposed as inline HTTP worker execution.
-  C1 must admit and let a worker claim them, or explicitly reclassify a purely
-  deterministic transition as a Transaction Command.
+- This ADR is the convergence decision; it is not evidence that real-provider
+  generation or sustained long-form production has run.
+- StoryDesign generation and semantic evaluation must remain governed Content
+  operations. Deterministic lifecycle transitions may be Transaction Commands,
+  but cannot perform inline provider execution.
 - PostgreSQL scope constraints from Migration 0052 reject cross-Project,
   cross-Book, and mismatched Workspace/Book planning links.
-- C1 remains blocked while the real D0 Provider gates are false.
+- Fixture execution never promotes a capability to real-provider or production
+  proof.
