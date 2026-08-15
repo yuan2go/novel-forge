@@ -5,6 +5,7 @@ import hashlib
 import json
 from pathlib import Path
 import tempfile
+from typing import Any
 import unittest
 
 from novel_forge.api.authority_dependencies import (
@@ -1561,12 +1562,12 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
         return {1: first, 2: second}
 
     @staticmethod
-    def _seed_book_inputs(project_id: str) -> dict[str, str]:
+    def _seed_book_inputs(project_id: str) -> dict[str, Any]:
         types = {
             "book_design_version": "book_design",
             "book_plan_version": "book_plan",
             "volume_plan_version": "volume_plan",
-            "arc_plan_version": "arc_plan",
+            "arc_plan_versions": "arc_plan",
             "character_state_version": "character_state",
             "foreshadowing_state_version": "foreshadowing_state",
             "quality_trend_version": "quality_trend",
@@ -1576,7 +1577,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
             "reader_contract_version": "reader_contract",
             "platform_profile_version": "platform_profile",
         }
-        versions: dict[str, str] = {}
+        versions: dict[str, Any] = {}
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
             for key, asset_type in types.items():
                 version_id = f"{project_id}:{asset_type}:v1"
@@ -1621,7 +1622,9 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                     """,
                     [f"{version_id}:qualification", version_id],
                 )
-                versions[key] = version_id
+                versions[key] = (
+                    [version_id] if key == "arc_plan_versions" else version_id
+                )
             uow.commit()
         return versions
 

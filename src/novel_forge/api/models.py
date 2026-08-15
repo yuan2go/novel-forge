@@ -1015,7 +1015,7 @@ class BookAuthorityStartRequest(BaseModel):
     book_design_version: str = ""
     book_plan_version: str = ""
     production_profile_version: str = ""
-    longform_context_versions: dict[str, str] = Field(default_factory=dict)
+    longform_context_versions: dict[str, Any] = Field(default_factory=dict)
     target_chapter_count: int = Field(ge=1)
     light_recap_cadence: int = Field(default=5, ge=1)
     formal_recap_cadence: int = Field(default=10, ge=1)

@@ -23,8 +23,8 @@ from novel_forge.modules.narrative_state.measurements import project_narrative_l
 _CONTENT_HASH = re.compile(r"^sha256:[0-9a-f]{64}$")
 
 
-STORY_PLANNING_OPERATION_DEFINITION_REF = "story_planning.generate@1.7.0"
-STORY_PLANNING_WORKFLOW_DEFINITION_REF = "story_planning_generators@1.7.0"
+STORY_PLANNING_OPERATION_DEFINITION_REF = "story_planning.generate@1.8.0"
+STORY_PLANNING_WORKFLOW_DEFINITION_REF = "story_planning_generators@1.8.0"
 STORY_PLANNING_OPERATION_TIMEOUT_SECONDS = 1_800
 STORY_PLANNING_MAX_ATTEMPTS = 3
 
@@ -164,7 +164,9 @@ class StoryPlanningGenerationCommand:
     parent_version_id: str = ""
     arc_scope_volume_plan_version_ids: tuple[str, ...] = ()
     related_arc_plan_version_ids: tuple[str, ...] = ()
+    dependent_arc_plan_version_ids: tuple[str, ...] = ()
     change_evidence_version_ids: tuple[str, ...] = ()
+    governance_action_version_ids: tuple[str, ...] = ()
     repair_of_candidate_id: str = ""
     repair_reason: str = ""
     repair_number: int = 0
@@ -214,6 +216,17 @@ class StoryPlanningGenerationCommand:
             or set(change_evidence) & set(normalized.values())
         ):
             raise ValueError("Planning change evidence identity is invalid")
+        governance_actions = tuple(
+            str(asset_version_id).strip()
+            for asset_version_id in self.governance_action_version_ids
+        )
+        if (
+            any(not asset_version_id for asset_version_id in governance_actions)
+            or len(set(governance_actions)) != len(governance_actions)
+            or set(governance_actions) & set(normalized.values())
+            or set(governance_actions) & set(change_evidence)
+        ):
+            raise ValueError("Narrative governance action identity is invalid")
         arc_scope = tuple(
             str(asset_version_id).strip()
             for asset_version_id in self.arc_scope_volume_plan_version_ids
@@ -253,10 +266,26 @@ class StoryPlanningGenerationCommand:
             or set(related_arcs) & set(arc_scope)
         ):
             raise ValueError("related Arc portfolio identity is invalid")
+        dependent_arcs = tuple(
+            str(asset_version_id).strip()
+            for asset_version_id in self.dependent_arc_plan_version_ids
+        )
+        if self.generator_operation_name != "arc_plan.generate" and dependent_arcs:
+            raise ValueError("only Arc generation may freeze dependent Arcs")
+        if (
+            any(not asset_version_id for asset_version_id in dependent_arcs)
+            or len(set(dependent_arcs)) != len(dependent_arcs)
+            or set(dependent_arcs) & set(normalized.values())
+            or set(dependent_arcs) & set(arc_scope)
+            or set(dependent_arcs) & set(related_arcs)
+        ):
+            raise ValueError("dependent Arc portfolio identity is invalid")
         object.__setattr__(self, "input_versions", MappingProxyType(normalized))
         object.__setattr__(self, "arc_scope_volume_plan_version_ids", arc_scope)
         object.__setattr__(self, "related_arc_plan_version_ids", related_arcs)
+        object.__setattr__(self, "dependent_arc_plan_version_ids", dependent_arcs)
         object.__setattr__(self, "change_evidence_version_ids", change_evidence)
+        object.__setattr__(self, "governance_action_version_ids", governance_actions)
 
     @property
     def planning_scope(self) -> PlanningScope:
@@ -814,15 +843,22 @@ def canonical_hash(value: Any) -> str:
 
 
 def _extra_roles_are_allowed(generator: str, roles: set[str]) -> bool:
-    if not roles:
+    planning_roles = {
+        role
+        for role in roles
+        if not role.startswith("narrative_governance_action:")
+    }
+    if not planning_roles:
         return True
     if generator == "arc_plan.generate":
         return all(
-            role.startswith("arc_scope_volume:") or role.startswith("related_arc:")
-            for role in roles
+            role.startswith("arc_scope_volume:")
+            or role.startswith("related_arc:")
+            or role.startswith("dependent_arc:")
+            for role in planning_roles
         )
     if generator in {"chapter_group_plan.generate", "chapter_plan.generate"}:
-        return all(role.startswith("related_arc:") for role in roles)
+        return all(role.startswith("related_arc:") for role in planning_roles)
     return False
 
 

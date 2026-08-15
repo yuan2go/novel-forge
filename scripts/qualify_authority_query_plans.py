@@ -150,7 +150,8 @@ def qualify(database_url: str) -> dict[str, Any]:
                    %(token)s || ':workspace',%(token)s || ':book:' || value,
                    'design-v1','plan-v1','profile-v1',
                    jsonb_build_object(
-                       'volume_plan_version','v1','arc_plan_version','v1',
+                       'volume_plan_version','v1',
+                       'arc_plan_versions',jsonb_build_array('v1'),
                        'character_state_version','v1','foreshadowing_state_version','v1',
                        'quality_trend_version','v1','reward_ledger_version','v1',
                        'promise_ledger_version','v1'

@@ -18,11 +18,66 @@ UPGRADE_STATEMENTS = [
     ADD COLUMN current_relevant_arc_plan_versions JSONB NOT NULL DEFAULT '[]'::jsonb
     """,
     """
+    ALTER TABLE authority_book_production_input_snapshot
+    DISABLE TRIGGER authority_book_production_input_snapshot_immutable;
+    ALTER TABLE authority_book_production_input_snapshot
+    DISABLE TRIGGER authority_book_production_input_snapshot_scope_guard
+    """,
+    """
+    UPDATE authority_book_production_input_snapshot AS snapshot
+    SET volume_portfolio_plan_versions=COALESCE(
+        (
+            SELECT jsonb_agg(frozen.asset_version_id ORDER BY
+                (version.content->'chapter_range'->>0)::INTEGER,
+                frozen.asset_version_id)
+            FROM (
+                SELECT snapshot.current_volume_plan_version AS asset_version_id
+                UNION
+                SELECT jsonb_array_elements_text(
+                    arc_version.content->'cross_volume_scope'
+                ) AS asset_version_id
+                FROM jsonb_array_elements_text(
+                    snapshot.active_arc_plan_versions
+                ) AS arc(asset_version_id)
+                JOIN authority_asset_version AS arc_version
+                  ON arc_version.asset_version_id=arc.asset_version_id
+            ) AS frozen
+            JOIN authority_asset_version AS version
+              ON version.asset_version_id=frozen.asset_version_id
+            JOIN authority_asset AS asset ON asset.asset_id=version.asset_id
+            JOIN story_plan_binding AS binding
+              ON binding.asset_version_id=frozen.asset_version_id
+             AND binding.project_id=snapshot.project_id
+             AND binding.book_id=snapshot.book_id
+             AND binding.contract_type='VOLUME'
+            WHERE asset.project_id=snapshot.project_id
+        ),
+        jsonb_build_array(snapshot.current_volume_plan_version)
+    )
+    WHERE snapshot.volume_portfolio_plan_versions='[]'::jsonb
+    """,
+    """
     UPDATE authority_book_production_input_snapshot
     SET arc_portfolio_plan_versions=active_arc_plan_versions,
         current_relevant_arc_plan_versions=active_arc_plan_versions
     WHERE arc_portfolio_plan_versions='[]'::jsonb
       AND current_relevant_arc_plan_versions='[]'::jsonb
+    """,
+    """
+    ALTER TABLE authority_book_production_input_snapshot
+    ENABLE TRIGGER authority_book_production_input_snapshot_scope_guard;
+    ALTER TABLE authority_book_production_input_snapshot
+    ENABLE TRIGGER authority_book_production_input_snapshot_immutable
+    """,
+    """
+    ALTER TABLE authority_book_production_input_snapshot
+    DROP CONSTRAINT authority_book_production_volume_portfolio_check,
+    ADD CONSTRAINT authority_book_production_volume_portfolio_check
+        CHECK (
+            jsonb_typeof(volume_portfolio_plan_versions)='array'
+            AND jsonb_array_length(volume_portfolio_plan_versions)>0
+            AND volume_portfolio_plan_versions ? current_volume_plan_version
+        )
     """,
     """
     ALTER TABLE authority_book_production_input_snapshot
@@ -50,6 +105,44 @@ UPGRADE_STATEMENTS = [
     CREATE INDEX authority_book_production_current_relevant_arc_gin_idx
     ON authority_book_production_input_snapshot
     USING GIN (current_relevant_arc_plan_versions jsonb_path_ops)
+    """,
+    """
+    UPDATE authority_book_production
+    SET longform_context_versions=
+        (longform_context_versions - 'arc_plan_version')
+        || jsonb_build_object(
+            'arc_plan_versions',
+            jsonb_build_array(longform_context_versions->'arc_plan_version')
+        )
+    WHERE NOT longform_context_versions ? 'arc_plan_versions'
+    """,
+    """
+    ALTER TABLE authority_book_production
+    DROP CONSTRAINT authority_book_production_longform_context_versions_check,
+    ADD CONSTRAINT authority_book_production_longform_context_versions_check
+        CHECK (
+            jsonb_typeof(longform_context_versions)='object'
+            AND longform_context_versions ?& ARRAY[
+                'volume_plan_version', 'arc_plan_versions',
+                'character_state_version', 'foreshadowing_state_version',
+                'quality_trend_version', 'reward_ledger_version',
+                'promise_ledger_version'
+            ]
+            AND NOT longform_context_versions ? 'arc_plan_version'
+            AND jsonb_typeof(longform_context_versions->'arc_plan_versions')='array'
+            AND jsonb_array_length(
+                longform_context_versions->'arc_plan_versions'
+            )>0
+        )
+    """,
+    """
+    ALTER TABLE asset_dependency_edge
+    DROP CONSTRAINT asset_dependency_edge_dependency_type_check,
+    ADD CONSTRAINT asset_dependency_edge_dependency_type_check
+        CHECK (dependency_type IN (
+            'PARENT_VERSION', 'ARC_CONTRIBUTION', 'ARC_RELATION',
+            'CANON_DEPENDENCY', 'CONTEXT_INPUT', 'PLAN_IMPACT'
+        ))
     """,
     """
     ALTER TABLE authority_narrative_design_qualification
@@ -102,6 +195,11 @@ UPGRADE_STATEMENTS = [
     )
     WHERE evaluator_execution_class='MODEL_PROVIDER'
       AND trust_boundary='INDEPENDENT'
+    """,
+    """
+    CREATE UNIQUE INDEX authority_narrative_evaluation_candidate_once_idx
+    ON authority_operation(project_id, concurrency_key)
+    WHERE definition_name='story_design.semantic_evaluate'
     """,
     """
     CREATE OR REPLACE FUNCTION authority_validate_narrative_provider_lineage()
@@ -287,6 +385,38 @@ UPGRADE_STATEMENTS = [
               ON version.asset_version_id=item.asset_version_id
             WHERE NOT (version.content->'cross_volume_scope') @>
                 to_jsonb(ARRAY[NEW.current_volume_plan_version])
+        ) OR EXISTS (
+            (
+                SELECT item.asset_version_id
+                FROM jsonb_array_elements_text(
+                    NEW.arc_portfolio_plan_versions
+                ) AS item(asset_version_id)
+                JOIN authority_asset_version AS version
+                  ON version.asset_version_id=item.asset_version_id
+                WHERE (version.content->'cross_volume_scope') @>
+                    to_jsonb(ARRAY[NEW.current_volume_plan_version])
+                EXCEPT
+                SELECT item.asset_version_id
+                FROM jsonb_array_elements_text(
+                    NEW.current_relevant_arc_plan_versions
+                ) AS item(asset_version_id)
+            )
+            UNION ALL
+            (
+                SELECT item.asset_version_id
+                FROM jsonb_array_elements_text(
+                    NEW.current_relevant_arc_plan_versions
+                ) AS item(asset_version_id)
+                EXCEPT
+                SELECT item.asset_version_id
+                FROM jsonb_array_elements_text(
+                    NEW.arc_portfolio_plan_versions
+                ) AS item(asset_version_id)
+                JOIN authority_asset_version AS version
+                  ON version.asset_version_id=item.asset_version_id
+                WHERE (version.content->'cross_volume_scope') @>
+                    to_jsonb(ARRAY[NEW.current_volume_plan_version])
+            )
         ) THEN
             RAISE EXCEPTION 'BOOK_INPUT_ARC_PROJECTION_INVALID'
                 USING ERRCODE='check_violation';
@@ -297,8 +427,26 @@ UPGRADE_STATEMENTS = [
     """,
     """
     CREATE TRIGGER authority_book_arc_projection_guard
-    BEFORE INSERT ON authority_book_production_input_snapshot
+    BEFORE INSERT OR UPDATE ON authority_book_production_input_snapshot
     FOR EACH ROW EXECUTE FUNCTION authority_validate_book_arc_projection()
+    """,
+    """
+    ALTER TABLE authority_book_production_input_snapshot
+    DISABLE TRIGGER authority_book_production_input_snapshot_immutable
+    """,
+    """
+    UPDATE authority_book_production_input_snapshot AS snapshot
+    SET snapshot_id=snapshot.snapshot_id
+    WHERE EXISTS (
+        SELECT 1
+        FROM authority_book_production AS run
+        WHERE run.input_snapshot_id=snapshot.snapshot_id
+          AND run.state NOT IN ('COMPLETED', 'ABORTED')
+    )
+    """,
+    """
+    ALTER TABLE authority_book_production_input_snapshot
+    ENABLE TRIGGER authority_book_production_input_snapshot_immutable
     """,
     """
     CREATE OR REPLACE VIEW authority_current_narrative_design_qualification AS

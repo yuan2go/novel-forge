@@ -3,6 +3,7 @@
 Adapters never infer approval from Legacy payloads.  They are invoked only
 after ``migration.item.approve`` has committed an independent decision.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -15,6 +16,7 @@ from novel_forge.modules.authority_security import Principal, PrincipalType
 from novel_forge.modules.book_design_authority import (
     LEGACY_BOOK_DESIGN_SCHEMA_VERSION,
     BOOK_SCHEMA_VERSION,
+    ApprovedBookDesignMigrationEvidence,
     BookDesignAuthorityApplication,
     BookDesignAuthorityCommand,
     BookDesignAuthorityQuery,
@@ -147,8 +149,7 @@ class ProjectWorkspaceMigrationAdapter:
         project = self.query.require_project(context.project_id)
         if (
             str(project["workspace_id"]) != context.workspace_id
-            or str(project["asset_version_id"])
-            != context.target_asset_version_id
+            or str(project["asset_version_id"]) != context.target_asset_version_id
             or str(project["status"]) not in {"PAUSED", "ACTIVE"}
         ):
             raise KernelError(
@@ -222,6 +223,7 @@ class BookDesignMigrationAdapter:
             database_url,
             application_build_id=application_build_id,
             commit_sha=commit_sha,
+            allow_approved_archival_migration=True,
         )
         self.query = BookDesignAuthorityQuery(database_url)
         self.application_build_id = application_build_id
@@ -339,6 +341,18 @@ class BookDesignMigrationAdapter:
                     book["active_book_design_version_id"]
                 ),
                 target_asset_version_id=candidate_version,
+                migration_evidence=ApprovedBookDesignMigrationEvidence(
+                    migration_run_id=context.migration_run_id,
+                    migration_item_id=context.migration_item_id,
+                    migration_decision_id=context.decision_id,
+                    migration_validation_id=context.migration_validation_id,
+                    archival_asset_version_id=context.target_asset_version_id,
+                    archival_content_hash=context.target_content_hash,
+                    source_hash=context.source_hash,
+                    validator_result_hash=context.validator_result_hash,
+                    validator_version=context.validator_version,
+                    item_version=context.item_version,
+                ),
                 **common,
             )
         )
@@ -350,7 +364,9 @@ class BookDesignMigrationAdapter:
         )
         return DomainMigrationResult(
             domain_projection_id=candidate_version,
-            target_asset_id=_asset_id_from_version(self.database_url, candidate_version),
+            target_asset_id=_asset_id_from_version(
+                self.database_url, candidate_version
+            ),
             target_asset_version_id=candidate_version,
             target_content_hash=str(active["content_hash"]),
             activation_operation_id=str(activated["operation_id"]),
@@ -520,6 +536,10 @@ class HierarchicalPlanningMigrationAdapter:
             principal=principal,
             decision_evidence={
                 "migration_decision_id": context.decision_id,
+                "migration_item_id": context.migration_item_id,
+                "migration_validation_id": context.migration_validation_id,
+                "validator_result_hash": context.validator_result_hash,
+                "validator_version": context.validator_version,
                 "reason": context.decision_reason,
             },
         )
@@ -1023,9 +1043,7 @@ def _activate_story_design(
     return state, operation_ids
 
 
-def _principal(
-    actor_id: str, project_id: str, permissions: set[str]
-) -> Principal:
+def _principal(actor_id: str, project_id: str, permissions: set[str]) -> Principal:
     return Principal(
         principal_id=actor_id,
         principal_type=PrincipalType.LOCAL_OPERATOR,
@@ -1095,7 +1113,9 @@ def _story_design_identity(
     generator = _required_text(
         content.get("generator_operation_name"), "generator_operation_name"
     )
-    scope = PlanningScope(_required_text(content.get("planning_scope"), "planning_scope"))
+    scope = PlanningScope(
+        _required_text(content.get("planning_scope"), "planning_scope")
+    )
     logical_key = _required_text(content.get("logical_key"), "logical_key")
     return generator, scope, logical_key
 
@@ -1200,9 +1220,7 @@ def _mkaos_evidence_spans(
     content = _domain_content(context.content)
     values = content.get("evidence_spans")
     if not isinstance(values, list) or not values:
-        raise KernelError(
-            "MKAOS_EVIDENCE_INVALID", "migration requires evidence_spans"
-        )
+        raise KernelError("MKAOS_EVIDENCE_INVALID", "migration requires evidence_spans")
     return tuple(KnowledgeEvidenceSpan(**dict(value)) for value in values)
 
 
@@ -1233,9 +1251,7 @@ def _mkaos_pack_selections(
             )
         selections.append(
             KnowledgePackSelection(
-                knowledge_card_asset_version_id=(
-                    reference.target_asset_version_id
-                ),
+                knowledge_card_asset_version_id=(reference.target_asset_version_id),
                 usage_role=_required_text(value.get("usage_role"), "usage_role"),
                 frozen_weight=Decimal(str(value.get("frozen_weight"))),
             )

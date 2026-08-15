@@ -247,17 +247,31 @@ def _load_request(
             operation=operation,
         )
         evaluation_candidate_id = ""
+        story_design_candidate_id = ""
+        repair_candidate_id = ""
+        plan_change_candidate_id = ""
         policy = dict(snapshot.get("policy") or {})
         payload = dict(operation["command_payload"].get("payload") or {})
         if policy.get("evaluation_candidate_asset_input_allowed") is True:
             evaluation_candidate_id = str(
                 payload.get("candidate_asset_version_id") or ""
             )
+        if policy.get("story_design_candidate_asset_input_allowed") is True:
+            story_design_candidate_id = str(payload.get("asset_version_id") or "")
+        if policy.get("repair_candidate_asset_input_allowed") is True:
+            repair_candidate_id = str(payload.get("repair_of_candidate_id") or "")
+        if policy.get("plan_change_candidate_asset_input_allowed") is True:
+            plan_change_candidate_id = str(
+                payload.get("proposed_asset_version_id") or ""
+            )
         frozen = uow.repositories.chapter_authority.frozen_inputs(
             command.project_id,
             list(operation["input_asset_snapshot"] or []),
             allow_approved_archival_migration=allow_archival,
             evaluation_candidate_asset_version_id=evaluation_candidate_id,
+            story_design_candidate_asset_version_id=story_design_candidate_id,
+            repair_candidate_asset_version_id=repair_candidate_id,
+            plan_change_candidate_asset_version_id=plan_change_candidate_id,
         )
     return AuthorityHandlerRequest(
         operation_id=operation["operation_id"],

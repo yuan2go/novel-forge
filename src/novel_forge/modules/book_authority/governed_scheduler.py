@@ -200,14 +200,18 @@ class PostgresBookAuthorityScheduler:
             asset_version_ids=(str(book["active_canon_snapshot_version_id"]),),
         )[0]
         frozen_versions = dict(book["longform_context_versions"])
+        projection = self._cursor_plan_projection(
+            book, chapter_cursor=int(request["chapter_number"])
+        )
+        arc_plan_versions = tuple(str(item) for item in projection["arc_plan_versions"])
         authority_inputs = self.authority.resolve_asset_refs(
             project_id=book["project_id"],
             asset_version_ids=(
                 str(request["chapter_plan_version"]),
                 str(book["book_design_version"]),
                 str(book["book_plan_version"]),
-                str(frozen_versions["volume_plan_version"]),
-                str(frozen_versions["arc_plan_version"]),
+                str(projection["volume_plan_version"]),
+                *arc_plan_versions,
                 str(frozen_versions["reader_segment_version"]),
                 str(frozen_versions["reader_contract_version"]),
                 str(frozen_versions["platform_profile_version"]),
@@ -227,8 +231,8 @@ class PostgresBookAuthorityScheduler:
                 "book_design_version": book["book_design_version"],
                 "book_plan_version": book["book_plan_version"],
                 "parent_plan_versions": {
-                    "volume_plan_version": frozen_versions["volume_plan_version"],
-                    "arc_plan_version": frozen_versions["arc_plan_version"],
+                    "volume_plan_version": projection["volume_plan_version"],
+                    "arc_plan_versions": list(arc_plan_versions),
                 },
                 "reader_segment_version": frozen_versions["reader_segment_version"],
                 "reader_contract_version": frozen_versions["reader_contract_version"],
@@ -263,13 +267,17 @@ class PostgresBookAuthorityScheduler:
     ) -> BookFollowupAdmission:
         chapter = int(request["chapter_number"])
         frozen_versions = dict(book["longform_context_versions"])
+        projection = self._cursor_plan_projection(
+            book, chapter_cursor=int(request["chapter_number"])
+        )
+        arc_plan_versions = tuple(str(item) for item in projection["arc_plan_versions"])
         authority_inputs = self.authority.resolve_asset_refs(
             project_id=book["project_id"],
             asset_version_ids=(
                 str(book["book_design_version"]),
                 str(book["book_plan_version"]),
-                str(frozen_versions["volume_plan_version"]),
-                str(frozen_versions["arc_plan_version"]),
+                str(projection["volume_plan_version"]),
+                *arc_plan_versions,
                 str(frozen_versions["quality_trend_version"]),
                 str(book["last_chapter_outcome_version_id"]),
                 str(book["active_story_state_version_id"]),
@@ -288,11 +296,9 @@ class PostgresBookAuthorityScheduler:
                 ],
                 "book_design_version": book["book_design_version"],
                 "book_plan_version": book["book_plan_version"],
-                "volume_plan_version": frozen_versions["volume_plan_version"],
-                "arc_plan_version": frozen_versions["arc_plan_version"],
-                "canon_snapshot_version": book[
-                    "active_canon_snapshot_version_id"
-                ],
+                "volume_plan_version": projection["volume_plan_version"],
+                "arc_plan_versions": list(arc_plan_versions),
+                "canon_snapshot_version": book["active_canon_snapshot_version_id"],
                 "story_state_version": book["active_story_state_version_id"],
                 "reader_state_version": reader["asset_version_id"],
                 "quality_trend_version": frozen_versions["quality_trend_version"],
@@ -326,6 +332,40 @@ class PostgresBookAuthorityScheduler:
                 *authority_inputs,
             ),
         )
+
+    def _cursor_plan_projection(
+        self, book: dict[str, Any], *, chapter_cursor: int
+    ) -> dict[str, Any]:
+        snapshot_id = str(book.get("input_snapshot_id") or "")
+        if snapshot_id:
+            return self.query.require_cursor_plan_projection(
+                snapshot_id=snapshot_id,
+                chapter_cursor=chapter_cursor,
+            )
+        if str(book.get("input_mode") or "") != "LEGACY_FIXTURE_INPUT_MODE":
+            raise KernelError(
+                "BOOK_INPUT_SNAPSHOT_MISSING",
+                "governed Book follow-up requires its immutable input snapshot",
+            )
+        frozen = dict(book.get("longform_context_versions") or {})
+        arc_versions = tuple(
+            str(item) for item in frozen.get("arc_plan_versions") or ()
+        )
+        volume_version = str(frozen.get("volume_plan_version") or "")
+        if (
+            not volume_version
+            or not arc_versions
+            or len(arc_versions) != len(set(arc_versions))
+        ):
+            raise KernelError(
+                "BOOK_FIXTURE_PLAN_PROJECTION_INVALID",
+                "legacy fixture input requires an explicit ordered Volume and Arc projection",
+            )
+        return {
+            "chapter_cursor": chapter_cursor,
+            "volume_plan_version": volume_version,
+            "arc_plan_versions": arc_versions,
+        }
 
     def _previous_reader_state(self, book: dict[str, Any], chapter_number: int) -> str:
         return self.query.previous_reader_state(

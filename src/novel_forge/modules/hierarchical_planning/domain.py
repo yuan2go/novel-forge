@@ -72,12 +72,8 @@ HORIZON_REALIZATION_LEVELS = {
     ),
 }
 
-WORLD_VISIBILITY_VALUES = frozenset(
-    {"HIDDEN", "PARTIAL", "VISIBLE", "SCENE_VISIBLE"}
-)
-WORLD_ACCESSIBILITY_VALUES = frozenset(
-    {"CLOSED", "RESTRICTED", "ACCESSIBLE"}
-)
+WORLD_VISIBILITY_VALUES = frozenset({"HIDDEN", "PARTIAL", "VISIBLE", "SCENE_VISIBLE"})
+WORLD_ACCESSIBILITY_VALUES = frozenset({"CLOSED", "RESTRICTED", "ACCESSIBLE"})
 CHARACTER_SCOPE_VALUES = frozenset(item.value for item in PlanContractType)
 CHARACTER_REACH_VALUES = frozenset(
     {
@@ -670,6 +666,7 @@ def _validate_progressive_planning_contract(
     )
     budget = _effective_narrative_load_limits(
         policy,
+        content=content,
         contract_type=contract_type,
         logical_key=str(content.get("logical_key") or ""),
     )
@@ -756,28 +753,6 @@ def _require_authoritative_narrative_load_policy(
         envelope.get("narrative_load_policy") if isinstance(envelope, dict) else None
     )
     if not isinstance(policy, dict):
-        fixture_operations = {
-            str(reference.get("frozen_by_operation_id") or "")
-            for manifest in (
-                content.get("world_realization") or (),
-                content.get("character_realization") or (),
-            )
-            for reference in _iter_realization_references(manifest)
-        }
-        if fixture_operations == {"operation:fixture-generation"}:
-            return {
-                "limits": {
-                    "max_active_arcs": 3,
-                    "max_dormant_arc_age": 30,
-                    "max_open_obligations": 12,
-                    "max_overdue_obligations": 0,
-                    "max_payoff_congestion": 3,
-                    "max_character_appearance_gap": 10,
-                    "max_new_concepts": 4,
-                    "max_major_state_transitions": 8,
-                },
-                "governed_overrides": [],
-            }
         raise KernelError(
             "AUTHORITATIVE_NARRATIVE_LOAD_POLICY_REQUIRED",
             f"{contract_type.value} requires a frozen inherited Narrative Load Policy",
@@ -828,7 +803,11 @@ def _iter_realization_references(manifest: Any) -> list[dict[str, Any]]:
 
 
 def _effective_narrative_load_limits(
-    policy: dict[str, Any], *, contract_type: PlanContractType, logical_key: str
+    policy: dict[str, Any],
+    *,
+    content: dict[str, Any],
+    contract_type: PlanContractType,
+    logical_key: str,
 ) -> dict[str, int]:
     required = {
         "max_active_arcs",
@@ -863,6 +842,11 @@ def _effective_narrative_load_limits(
                     "NARRATIVE_LOAD_POLICY_OVERRIDE_UNGOVERNED",
                     "a scoped Narrative Load override requires immutable governance evidence",
                 )
+            _require_frozen_governance_action(
+                content,
+                asset_version_id=str(override["governance_action_asset_version_id"]),
+                content_hash=evidence_hash,
+            )
             limits.update(dict(override.get("limits") or {}))
     return {key: int(value) for key, value in limits.items()}
 
@@ -889,8 +873,7 @@ def _require_exact_overdue_obligation_actions(
         if str(actions[obligation_id].get("action") or "").upper() == "RESCHEDULE"
         and (
             not isinstance(actions[obligation_id].get("due_chapter"), int)
-            or int(actions[obligation_id]["due_chapter"])
-            <= accepted_through_chapter
+            or int(actions[obligation_id]["due_chapter"]) <= accepted_through_chapter
         )
     )
     invalid_governance = sorted(
@@ -900,19 +883,25 @@ def _require_exact_overdue_obligation_actions(
         == "EXPLICIT_GOVERNANCE_ACTION"
         and (
             not str(
-                actions[obligation_id].get("governance_action_asset_version_id")
-                or ""
+                actions[obligation_id].get("governance_action_asset_version_id") or ""
             )
             or re.fullmatch(
                 r"sha256:[0-9a-f]{64}",
-                str(
-                    actions[obligation_id].get("governance_action_content_hash")
-                    or ""
-                ),
+                str(actions[obligation_id].get("governance_action_content_hash") or ""),
             )
             is None
         )
     )
+    for obligation_id in overdue_ids & set(actions):
+        action = actions[obligation_id]
+        if str(action.get("action") or "").upper() == "EXPLICIT_GOVERNANCE_ACTION":
+            _require_frozen_governance_action(
+                content,
+                asset_version_id=str(
+                    action.get("governance_action_asset_version_id") or ""
+                ),
+                content_hash=str(action.get("governance_action_content_hash") or ""),
+            )
     if unresolved or invalid_reschedules or invalid_governance:
         raise KernelError(
             "NARRATIVE_DEBT_PAYDOWN_REQUIRED",
@@ -964,12 +953,17 @@ def _validate_realization_manifest(
             and str(item.get("asset_version_id") or "")
             and str(item.get("role") or "")
         }
-        if frozen_inputs and envelope_inputs != frozen_inputs:
+        if envelope_inputs != frozen_inputs:
             raise KernelError(
                 f"{error_prefix}_REALIZATION_LINEAGE_DRIFT",
                 "realization Authority references do not match the frozen input envelope",
             )
-        frozen_inputs = envelope_inputs or frozen_inputs
+        frozen_inputs = envelope_inputs
+    if not frozen_inputs or not frozen_by_operation_id:
+        raise KernelError(
+            f"{error_prefix}_REALIZATION_LINEAGE_REQUIRED",
+            "realization requires a complete server-frozen input envelope and generation Operation",
+        )
     for item in value:
         identity = str((item or {}).get(identity_key) or "")
         try:
@@ -1098,25 +1092,59 @@ def _validate_realization_authority_ref(
             f"{error_prefix}_REALIZATION_REFERENCE_INVALID",
             "realization reference scope, domain, hash, freshness, or frozen Operation differs",
         )
-    if frozen_inputs:
-        frozen = frozen_inputs.get(
-            (
-                str(value["asset_version_id"]),
-                str(value["authority_role"]),
-            )
+    frozen = frozen_inputs.get(
+        (
+            str(value["asset_version_id"]),
+            str(value["authority_role"]),
         )
-        if frozen is None or any(
-            str(value[field]) != str(frozen.get(frozen_field) or "")
-            for field, frozen_field in (
-                ("authority_role", "role"),
-                ("asset_type", "asset_type"),
-                ("content_hash", "content_hash"),
-            )
-        ):
-            raise KernelError(
-                f"{error_prefix}_REALIZATION_REFERENCE_STALE",
-                "realization reference is not the exact frozen Authority input",
-            )
+    )
+    if frozen is None or any(
+        str(value[field]) != str(frozen.get(frozen_field) or "")
+        for field, frozen_field in (
+            ("authority_role", "role"),
+            ("asset_type", "asset_type"),
+            ("content_hash", "content_hash"),
+        )
+    ):
+        raise KernelError(
+            f"{error_prefix}_REALIZATION_REFERENCE_STALE",
+            "realization reference is not the exact frozen Authority input",
+        )
+
+
+def _require_frozen_governance_action(
+    content: dict[str, Any], *, asset_version_id: str, content_hash: str
+) -> None:
+    allowed_types = {
+        "governance_decision",
+        "narrative_governance_action",
+        "narrative_load_policy_override",
+        "approval_decision",
+    }
+    frozen = [
+        item
+        for item in content.get("frozen_inputs") or ()
+        if isinstance(item, dict)
+        and str(item.get("asset_version_id") or "") == asset_version_id
+        and str(item.get("content_hash") or "") == content_hash
+        and str(item.get("asset_type") or "") in allowed_types
+    ]
+    envelope = content.get("constraint_envelope")
+    envelope_inputs = (
+        envelope.get("parent_versions") if isinstance(envelope, dict) else None
+    )
+    if len(frozen) != 1 or frozen != [
+        item
+        for item in envelope_inputs or ()
+        if isinstance(item, dict)
+        and str(item.get("asset_version_id") or "") == asset_version_id
+        and str(item.get("content_hash") or "") == content_hash
+        and str(item.get("asset_type") or "") in allowed_types
+    ]:
+        raise KernelError(
+            "NARRATIVE_GOVERNANCE_ACTION_UNBOUND",
+            "Narrative governance action must be an exact frozen Authority input",
+        )
 
 
 def _validate_book_design_layers(content: dict[str, Any]) -> None:

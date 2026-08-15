@@ -4,7 +4,7 @@ from __future__ import annotations
 from typing import Any
 
 
-BOOK_DESIGN_DEFINITION_VERSION = "1.2.0"
+BOOK_DESIGN_DEFINITION_VERSION = "1.3.0"
 BOOK_DESIGN_HANDLER_KEY = "novel_forge.book_design_authority.transaction"
 BOOK_DESIGN_OPERATIONS = (
     "book.create",
@@ -60,6 +60,7 @@ def book_design_definitions(
                         "expected_book_version": {"type": "integer"},
                         "expected_current_design_asset_version_id": {"type": "string"},
                         "target_asset_version_id": {"type": "string"},
+                        "migration_evidence": {"type": "object"},
                         "payload": {"type": "object"},
                     },
                     "additionalProperties": False,

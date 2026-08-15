@@ -1181,18 +1181,19 @@ class LegacyMigrationService:
             uow.cursor.execute(
                 """
                 SELECT
-                    COUNT(*) FILTER (WHERE target_asset_version_id IS NOT NULL),
+                    COUNT(DISTINCT item.migration_item_id)
+                        FILTER (WHERE target_asset_version_id IS NOT NULL),
                     COUNT(DISTINCT target_asset_version_id)
                         FILTER (WHERE target_asset_version_id IS NOT NULL),
-                    COUNT(*) FILTER (
+                    COUNT(DISTINCT item.migration_item_id) FILTER (
                         WHERE target_asset_version_id IS NOT NULL
                           AND target_content_hash = version.content_hash
                     ),
-                    COUNT(*) FILTER (
+                    COUNT(DISTINCT item.migration_item_id) FILTER (
                         WHERE target_asset_version_id IS NOT NULL
                           AND qualification.asset_version_id IS NOT NULL
                     ),
-                    COUNT(*) FILTER (
+                    COUNT(DISTINCT item.migration_item_id) FILTER (
                         WHERE item.status = 'ACTIVATED'
                           AND version.lifecycle = 'ACTIVE'
                           AND version.eligibility = 'ELIGIBLE'

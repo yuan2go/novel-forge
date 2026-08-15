@@ -49,7 +49,7 @@ from .domain import (
 )
 
 
-VERSION = "1.0.1"
+VERSION = "1.0.3"
 DEFINITIONS = {
     "plan_change.propose": (
         "plan_change_proposal",
@@ -880,6 +880,9 @@ def _definition(
         "policy": {
             "direct_active_plan_mutation": False,
             "impact_analysis_required": True,
+            "plan_change_candidate_asset_input_allowed": (
+                name in {"plan_change.propose", "plan_change.activate"}
+            ),
         },
         "completion_contract": {
             "version": "plan-change-completion-v1",

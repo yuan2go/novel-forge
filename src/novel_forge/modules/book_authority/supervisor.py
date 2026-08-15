@@ -488,20 +488,24 @@ class PostgresBookProductionSupervisor:
     def _generate_plan(
         self, book: dict[str, Any], generator: str, chapter_number: int
     ) -> Any:
-        snapshot = self.query.require_input_snapshot(str(book["input_snapshot_id"]))
+        cursor_projection = self.query.require_cursor_plan_projection(
+            snapshot_id=str(book["input_snapshot_id"]),
+            chapter_cursor=chapter_number,
+        )
         arc_versions = self._generation_arc_versions(
             book=book,
             generator=generator,
             chapter_number=chapter_number,
-            snapshot=snapshot,
+            active=tuple(cursor_projection["arc_plan_versions"]),
         )
         inputs = self._resolve_generation_inputs(
             book,
             generator,
             primary_arc_version=arc_versions[0],
+            volume_plan_version=str(cursor_projection["volume_plan_version"]),
         )
         parent = (
-            snapshot["current_volume_plan_version"]
+            str(cursor_projection["volume_plan_version"])
             if generator == "chapter_group_plan.generate"
             else str(
                 self._active_plan(book, "CHAPTER_GROUP", chapter_number)[
@@ -529,6 +533,10 @@ class PostgresBookProductionSupervisor:
                     in {"chapter_group_plan.generate", "chapter_plan.generate"}
                     else ()
                 ),
+                governance_action_version_ids=self._governance_action_versions(
+                    project_id=str(book["project_id"]),
+                    input_version_ids=tuple(inputs.values()),
+                ),
                 idempotency_key=(
                     f"{book['stable_idempotency_key']}:{generator}:{chapter_number}:"
                     f"snapshot:{book['input_snapshot_id']}"
@@ -540,17 +548,26 @@ class PostgresBookProductionSupervisor:
             principal=self.principal,
         )
 
+    def _governance_action_versions(
+        self, *, project_id: str, input_version_ids: tuple[str, ...]
+    ) -> tuple[str, ...]:
+        return self.query.governance_action_versions(
+            project_id=project_id,
+            input_version_ids=input_version_ids,
+        )
+
     def _resolve_generation_inputs(
         self,
         book: dict[str, Any],
         generator: str,
         *,
         primary_arc_version: str,
+        volume_plan_version: str,
     ) -> dict[str, str]:
         snapshot = self.query.require_input_snapshot(str(book["input_snapshot_id"]))
         fixed = {
             "book_plan": snapshot["book_plan_version"],
-            "volume_plan": snapshot["current_volume_plan_version"],
+            "volume_plan": volume_plan_version,
             "arc_plans": primary_arc_version,
             "character_state": snapshot["character_state_version"],
             "foreshadowing_state": snapshot["foreshadowing_state_version"],
@@ -656,11 +673,8 @@ class PostgresBookProductionSupervisor:
         book: dict[str, Any],
         generator: str,
         chapter_number: int,
-        snapshot: dict[str, Any],
+        active: tuple[str, ...],
     ) -> tuple[str, ...]:
-        active = tuple(
-            str(item) for item in snapshot["current_relevant_arc_plan_versions"]
-        )
         if not active:
             raise KernelError(
                 "BOOK_SUPERVISOR_ACTIVE_ARC_MISSING",
@@ -770,12 +784,17 @@ class PostgresBookProductionSupervisor:
             )
         return dict(result)
 
-    @staticmethod
     def _context_version_refs(
-        book: dict[str, Any], group: dict[str, Any]
+        self, book: dict[str, Any], group: dict[str, Any]
     ) -> dict[str, Any]:
+        projection = self.query.require_cursor_plan_projection(
+            snapshot_id=str(book["input_snapshot_id"]),
+            chapter_cursor=int(book["accepted_through_chapter"]) + 1,
+        )
         return {
             **dict(book["longform_context_versions"]),
+            "volume_plan_version": projection["volume_plan_version"],
+            "arc_plan_versions": list(projection["arc_plan_versions"]),
             "book_design_version": book["book_design_version"],
             "book_plan_version": book["book_plan_version"],
             "chapter_group_plan_version": group["asset_version_id"],

@@ -241,6 +241,7 @@ class CapabilityPackPostgresHarness:
         owner_scope_type: str = "PROJECT",
         proof_skill_ref: str = "prose-generation",
         release_sha: str = RELEASE_SHA,
+        target_runtime_profile: str = "development",
     ) -> PackVersionProof:
         manifest, catalog = self.build_version_payload(
             version, generation=generation, dependencies=dependencies
@@ -267,7 +268,7 @@ class CapabilityPackPostgresHarness:
             pack_version=version,
             compilation_id=compilation_id,
             payload={
-                "target_runtime_profile": "development",
+                "target_runtime_profile": target_runtime_profile,
                 "novel_forge_version": "6.0.0",
                 "release_sha": release_sha,
                 "release_channel": "VALIDATION",
@@ -329,6 +330,7 @@ class CapabilityPackPostgresHarness:
         workspace_id: str | None = None,
         book_id: str | None = None,
         environment: str = "development",
+        runtime_profile: str = "development",
     ) -> DeploymentProof:
         deployment_id = identifier(f"deployment-{pack.pack_version.replace('.', '-')}")
         payload = {
@@ -339,6 +341,7 @@ class CapabilityPackPostgresHarness:
             ),
             "book_id": book_id if book_id is not None else self.book_ids[0],
             "environment": environment,
+            "runtime_profile": runtime_profile,
             "rollout_policy_ref": "rollout:stable-sha256:v1",
         }
         if scope_type == "SYSTEM":
@@ -368,6 +371,7 @@ class CapabilityPackPostgresHarness:
         *,
         expected_activation_version: int = 0,
         principal: Principal | None = None,
+        environment: str = "development",
     ) -> dict[str, Any]:
         return self.execute(
             "capability_pack.deployment.activate",
@@ -375,7 +379,7 @@ class CapabilityPackPostgresHarness:
             pack_version=deployment.pack.pack_version,
             deployment_id=deployment.deployment_id,
             expected_activation_version=expected_activation_version,
-            payload={"environment": "development", "reason": "fixture activation"},
+            payload={"environment": environment, "reason": "fixture activation"},
         )
 
     def resolution_request(
