@@ -1,585 +1,473 @@
 # Novel Forge / Autonomous Novel OS — Canonical Overall Design
 
-> Status: Canonical architecture baseline
->
-> Purpose: the single design baseline for architecture, implementation, code review, qualification, long-form proof, and production admission. Detailed runtime or Authority documents may refine this design, but must not define a competing system shape.
+> **Status:** Canonical target architecture baseline  
+> **Scope:** product, domain, runtime, governance, qualification, and production-admission design  
+> **Normative role:** this document defines what Novel Forge is intended to become. `overview.md`, `runtime.md`, `authority-model.md`, `production-execution.md`, `narrative-state.md`, and `source-and-knowledge.md` describe the currently reachable implementation and must not silently upgrade implementation evidence to target-state claims.
+
+## 0. Reading and authority rules
+
+Novel Forge has two different kinds of truth that must never be conflated:
+
+1. **Product/architecture target truth** — this document is the design source of truth.
+2. **Current implementation truth** — source code, migrations, architecture manifests, executable entry points, tests, and pinned-SHA runtime evidence outrank prose descriptions.
+
+A later design change that contradicts this document must update this document in the same change set. ADRs record durable implementation decisions; they may refine this design but must not create a competing system shape.
+
+Evidence and maturity are separate from design completeness. A capability may be well designed and still be `MISSING`, or implemented without being runtime-proven.
+
+---
 
 ## 1. Executive summary
 
-Novel Forge is not a prompt chain that expands `outline → chapter → prose`. It is a PostgreSQL-authoritative, governed Narrative Production Operating System for designing, producing, validating, recovering, and continuously evolving long-form web fiction.
+Novel Forge is a **Human-AI Collaborative Long-form Narrative Operating System with a Governed Autonomous Production Runtime**.
 
-The core problem is not merely whether a model can remember hundreds of chapters. The system must keep the following coherent over hundreds or thousands of chapters while keeping per-call provider context bounded:
-
-- story direction and ending reachability;
-- world rules, world state, and progressive world discovery;
-- character identity, state, development, and expanding scope/reach;
-- narrative threads and cross-cutting arcs;
-- story time, causality, and accepted narrative events;
-- Story Truth, Character Knowledge, Belief, Reader Knowledge, and Presentation;
-- promises, foreshadowing, mysteries, obligations, and payoff debt;
-- reader experience, serialization rhythm, and long-term quality;
-- planning, qualification, activation, replan, recovery, and audit lineage.
-
-The canonical model is therefore:
+It is not merely a prompt chain, chapter generator, writing chatbot, or network of autonomous Agents. It combines two product surfaces over one governed domain/runtime foundation:
 
 ```text
-                         NOVEL DNA
-                            │
-                            ▼
-                      BOOK DESIGN
-                            │
-                            ▼
-                    VOLUME PORTFOLIO
-                            │
-             ┌──────────────┼────────────────┐
-             │              │                │
-             ▼              ▼                ▼
-      NARRATIVE SEGMENTS  ARC GRAPH   WORLD / CHARACTER
-             │              │         REALIZATION
-             │              │                │
-             └──────────────┼────────────────┘
-                            │
-                   NARRATIVE STATE
-                            │
-                  KNOWLEDGE / DISCLOSURE
-                            │
-                 NARRATIVE OBLIGATIONS
-                            │
-                   READER EXPERIENCE
-                            │
-                            ▼
-                  NARRATIVE SCHEDULING
-                            │
-                            ▼
-                 CHAPTER EXECUTION PLAN
-                            │
-                            ▼
-                    SCENE ARCHITECTURE
-                            │
-                POV / STORY TIME / LOCATION
-                            │
-                            ▼
-                     CONTEXT COMPILER
-                            │
-                            ▼
-                         PROVIDER
-                            │
-                            ▼
-                          PROSE
-                            │
-                            ▼
-                 NARRATIVE EVENT EXTRACTION
-                            │
-                            ▼
-                     CORRECTNESS GATE
-                            │
-                            ▼
-                CANON / STATE PROJECTION
-                            │
-                            ▼
-                       QUALITY GATE
-                            │
-                            ▼
-                    ACCEPTED CHAPTER
-                            │
-            ┌───────────────┴────────────────┐
-            ▼                                ▼
-       NEXT CHAPTER                        PUBLISH
-                                             │
-                                           OBSERVE
-                                             │
-                                      RECAP / DRIFT
-                                             │
-                                           REPLAN
+              HUMAN AUTHOR
+                   │
+                   ▼
+      CONVERSATIONAL CREATIVE STUDIO
+      discussion / design / diagnosis / edit
+                   │
+                   ▼
+      proposal / decision / semantic diff
+                   │
+                   ▼
+        NARRATIVE DESIGN AUTHORITY
+        + FUTURE INTENT / PLAN STATE
+                   │
+                   ▼
+       CANONICAL PRODUCTION RUNTIME
+ planning → context → provider → prose
+ review → revision → correctness → quality
+                   │
+                   ▼
+          ACCEPTED NARRATIVE LINEAGE
+                   │
+                   ▼
+          PUBLISH → OBSERVE → LEARN
+                   │
+                   ▼
+              GOVERNED REPLAN
 ```
 
-The architecture is built around six Narrative Axes, five industrial control systems, and three foundation protocols.
+The author remains the source of creative intent, taste, and high-impact creative decisions. Agents provide specialized reasoning, exploration, simulation, planning, generation, diagnosis, and editing. Domain Authorities own accepted business state. PostgreSQL is the production business Source of Truth.
 
-### Six Narrative Axes
+The core architectural rule is:
 
-1. Temporal Hierarchy
-2. Narrative Arc Graph
-3. Narrative State
-4. Knowledge / Disclosure
-5. Reader Experience
-6. Realization / Visibility
+> **Agents propose; Authorities commit. Conversation is an interaction surface, not story truth.**
 
-### Five Industrial Control Systems
-
-A. Progressive Planning
-B. Narrative Scheduling
-C. Context Compiler
-D. Qualification / Governance
-E. Runtime / Feedback / Recovery
-
-### Three Foundation Protocols
-
-I. Event → State Commit Protocol
-II. Planning Dependency / Replan Protocol
-III. Context Contract
+Long-form correctness comes from an expanding but governed Narrative Authority combined with bounded task-specific provider context. It does not come from giving a model the entire manuscript or treating an Agent's chat history as memory.
 
 ---
 
 ## 2. Goals
 
-Novel Forge must support:
+Novel Forge must eventually support all of the following without creating parallel runtime or authority planes.
 
-- long-form narrative correctness from Chapter 1 through 30, 100, 300, and eventually much longer serials;
-- coherent character development with causal state changes rather than static character cards;
-- progressive expansion of world scope without repeatedly replacing the story with unrelated new maps and casts;
-- cross-volume plot, character, relationship, mystery, faction, world, resource, power, and theme arcs;
-- correct temporal, spatial, knowledge, resource, and obligation continuity;
-- progressive design qualification before prose production;
-- bounded provider working context even while Narrative Authority grows indefinitely;
-- deterministic correctness where possible, semantic judgement where necessary;
-- idempotent, restart-safe, retry-safe, replayable production;
-- auditable versioning, approval, activation, supersession, and future-scoped replan;
-- reader feedback and long-term quality signals without allowing external outcomes to rewrite accepted history;
-- eventual multi-book and portfolio production only after single-book correctness is proven.
+### 2.1 Human-AI creative collaboration
+
+The author can converse with a Chief Editor or a specialist creative role to explore or adjust:
+
+- topic, genre, premise, target readers, reader promise, and commercial positioning;
+- theme, philosophical questions, tone, style, and creative constraints;
+- world rules, institutions, factions, power systems, history, economics, and consequences;
+- protagonists, supporting characters, relationships, motivation, knowledge, belief, and development;
+- Book architecture, Volume design, Arc trajectories, Narrative Segments, Chapter plans, and Scene plans;
+- imported material, research, creative seeds, and ways to integrate them into the story;
+- chapter prose, wording, dialogue, scene behavior, reveals, hooks, and local or structural plot changes;
+- longitudinal drift, narrative debt, reader outcome, and future replan.
+
+The author may enter through the Chief Editor or directly through a specialist. The Chief Editor is the default coordinator, not the only conversational Agent.
+
+### 2.2 Long-form narrative correctness
+
+The system must keep coherent over hundreds or thousands of chapters:
+
+- story direction and ending reachability;
+- Canon and accepted event lineage;
+- character identity, temporal state, knowledge, belief, relationships, and development;
+- world invariants, structure, temporal state, realization, and visibility;
+- story time, narrative position, POV, space, causality, and resource constraints;
+- cross-time Arcs and their cadence;
+- promises, mysteries, foreshadowing, open loops, obligations, and payoff debt;
+- reader knowledge, disclosure, presentation, reader experience intent, and outcome;
+- active plans, future intent, supersession, replan, and qualification lineage.
+
+### 2.3 Governed autonomous production
+
+When authorized, the system can continue producing chapters without continuous human input while preserving the same Authority, Context, Quality, recovery, trace, and cost rules used during supervised production.
+
+Autonomous mode means the system can proceed within policy when the author is absent. It never means that the author loses the ability to inspect, pause, revise future intent, or make governed corrections.
+
+### 2.4 Recoverability and auditability
+
+For every important result the system must be able to answer:
+
+- which Book and narrative scope was involved;
+- which Authority versions and accepted-state cursor were read;
+- which Agent definition, capabilities, Skill/Capability Pack, provider route, and context snapshot were used;
+- which Operation, Attempt, ExternalEffect, and receipt produced the evidence;
+- what proposal or revision was accepted, rejected, superseded, or deferred;
+- what changed in Canon, Narrative State, planning, or future intent;
+- how retry, recovery, replay, and concurrency ownership behaved.
+
+### 2.5 Continuous learning without automatic story corruption
+
+The system may learn from real reader outcomes, simulation, quality evidence, production metrics, and retrospectives. Those signals may change future planning, policies, MKAOS assets, or adaptation proposals. They may never directly rewrite accepted Canon.
+
+### 2.6 Scale only after correctness
+
+The architecture should remain compatible with multiple concurrent Books and future portfolio scheduling, but single-book correctness and recovery must be proven before multi-book scale becomes a production objective.
 
 ---
 
 ## 3. Non-goals
 
-The target architecture does not require one service, Authority, Agent, or workflow for every literary concept.
+The target architecture does **not** require:
 
-Do not create by default:
+- one Agent, Authority, service, or workflow for every literary concept;
+- a `BookAgent`, `VolumeAgent`, `ArcAgent`, `ChapterAgent`, and `SceneAgent` family multiplied by every domain;
+- free-form Agent-to-Agent chat as a source of business state;
+- chat history, vector retrieval, or model memory as Narrative Authority;
+- a second workflow engine, second execution kernel, or second state plane for conversational features;
+- a generic new `NarrativeChangeAuthority` when existing Collaboration, PlanChange, Revision, Corrective Action, and owning Domain Authorities can express the lifecycle;
+- a new `WorkOrder` execution primitive parallel to the current Command/Operation/Attempt/RuntimeJob model;
+- a pure Event Sourcing rewrite of the entire platform;
+- a separate Authority for Theme, Philosophy, POV, Beat, Narrative Debt, World Realization, or each Arc type;
+- a separate Scene execution plane before independent leasing, context, recovery, or revision requirements justify it;
+- premature microservices or a distributed Agent mesh;
+- full-world or full-book detailed planning before Chapter 1;
+- multi-model optimization before one governed provider path is proven;
+- automatic Canon mutation from reader feedback;
+- fully autonomous external publishing before production admission.
 
-- ThemeAuthority;
-- PhilosophyAuthority;
-- ComedyAuthority;
-- ReaderEmotionAuthority;
-- BeatAuthority;
-- WorldRealizationService;
-- CharacterTrajectoryService;
-- NarrativeDebtService;
-- POVAuthority;
-- Arc-type-specific engines;
-- a second workflow engine;
-- a second state plane;
-- a separate Scene saga before runtime evidence justifies it.
-
-A concept should remain a value object, policy, projection, contract, or validator unless it develops an independent lifecycle, concurrency model, authority boundary, recovery semantics, or operational scale that justifies a separate runtime component.
+Production-grade means robust semantics and evidence, not maximum abstraction count.
 
 ---
 
-## 4. Core invariants
+## 4. Core architecture principles and invariants
 
-1. PostgreSQL Authority is the production Source of Truth.
-2. Agent output is a proposal; Agents never own Domain Authority.
-3. Planning is future intent, never accepted truth.
-4. Planned transitions are not Accepted Narrative Events.
-5. Context is a derived execution view, never Authority.
-6. Only accepted chapter lineage can advance Canon or Narrative State.
-7. Volume, Narrative Segment, Chapter, and Scene are temporal containers.
-8. Arc is a cross-time state-changing trajectory, not a Volume child.
-9. Narrative Thread is optional persistent concern, not a mandatory Arc parent.
-10. Character is stable identity + temporal state + development trajectory.
-11. World Invariants, World Structure, World State, World Realization, and World Visibility are distinct.
-12. Story Truth, Character Knowledge, Character Belief, Reader Knowledge, and Presentation are distinct.
-13. Important state changes must be traceable to Accepted Narrative Events.
-14. Current Narrative State is a projection, not a second history source.
-15. Future design is progressively elaborated instead of fully detailing hundreds of chapters up front.
-16. World and character assets are progressively realized according to narrative horizon.
-17. Authority growth must not cause unbounded prompt growth.
-18. Provider inputs are task-specific Minimum Sufficient Context.
-19. Narrative load must be governed before Context construction.
-20. Narrative obligations and debt must be observable.
-21. Replan may alter future design only; accepted history is immutable.
-22. Replan should invalidate and requalify the smallest dependency closure that is actually affected.
-23. Deterministic correctness must be deterministic whenever possible.
-24. Narrative Semantic Evaluation requires trustworthy, immutable evidence lineage.
-25. Fixture proof must never be upgraded to Real Provider or Production proof.
-26. One-book proof must never be upgraded to Multi-book proof.
-27. New abstractions must solve observed problems rather than speculative future ones.
+1. **PostgreSQL Authority is the production business Source of Truth.**
+2. **Agent output is a proposal.** Agents never own Domain Authority.
+3. **Conversation is not Authority.** A transcript may be durable evidence, but it becomes actionable only through a captured decision/proposal lifecycle.
+4. **Author intent is future-facing design evidence, not accepted story truth.**
+5. **Planning is future intent, never accepted reality.**
+6. **Planned transitions are not Accepted Narrative Events.**
+7. **Only accepted narrative lineage can advance Canon and current Narrative State.**
+8. **Accepted Narrative Events provide causal evidence for important persistent state transitions.**
+9. **Current Narrative State is a projection over accepted evidence, not an independent history source.**
+10. **Temporal hierarchy and Arc graph are orthogonal.** Arc is not a mandatory child of Volume.
+11. **The canonical temporal hierarchy is `Book → Volume → Narrative Segment → Chapter → Scene → Beat`.**
+12. **Series is optional portfolio/shared-universe metadata, not a required single-book production level.**
+13. **Character = stable identity + temporal state + development trajectory.**
+14. **World Invariants, Structural World Model, Temporal World State, Realization, Visibility, and Accessibility are distinct.**
+15. **Story Truth, Character Knowledge, Character Belief, Reader Knowledge, and Presentation are distinct.**
+16. **Important disclosure and POV constraints are correctness boundaries, not prose preferences.**
+17. **Promises, mysteries, foreshadowing, open loops, and Arc commitments create observable obligations/debt.**
+18. **Future design is progressively elaborated.** Distant design preserves anchors while keeping legitimate open design space.
+19. **Authority growth must not imply unbounded prompt growth.**
+20. **Context is a derived, versioned execution view, never Authority.**
+21. **Provider input is task-specific Minimum Sufficient Context.**
+22. **MKAOS owns reusable knowledge/method assets, not story facts and not execution ownership.**
+23. **Conversational Agent roles are stable product personas backed by versioned AgentDefinition + capabilities, not new Authorities.**
+24. **User-facing Agent routing is a UX decision; Authority routing remains domain-driven.**
+25. **A local edit may not silently become a Book-level change.** Change scope and impact must be classified.
+26. **Accepted history is never mutated in place.** Corrections create new governed lineage or future-scoped changes.
+27. **Replan changes future design and invalidates the smallest affected dependency closure.**
+28. **Deterministic correctness should remain deterministic.** LLM Judges are reserved for genuinely semantic evaluation.
+29. **Quality Judge and conversational Quality Editor are separate concerns.**
+30. **The system has one production execution plane:** `Command → Operation → Attempt → Lease/Fence → ExternalEffect → Provider/Tool → Receipt → Domain Commit`.
+31. **Technical retry and semantic revision are different business meanings.**
+32. **Restart/recovery uses persisted Authority state, not reconstructed in-memory workflows.**
+33. **Fixture proof must never be promoted to Real Provider, Long-form, Multi-book, or Production proof.**
+34. **New abstractions require observed lifecycle, concurrency, recovery, or scale evidence.**
 
 ---
 
 ## 5. Business architecture
 
-### 5.1 Knowledge loop
+Novel Forge has five connected business loops.
+
+### 5.1 Creative discovery and design loop
+
+```text
+Human Intent / Question / Idea
+→ Conversational Creative Studio
+→ Specialist reasoning + knowledge
+→ Candidate design / alternatives
+→ semantic proposal + rationale
+→ impact / risk assessment
+→ human or policy decision
+→ owning Design/Planning Authority
+→ active future design version
+```
+
+Typical use cases include starting a new Book, comparing premises, debating a philosophical theme, designing a world rule, deepening a protagonist, or changing a major future reveal.
+
+### 5.2 Source and knowledge loop
 
 ```text
 Source
 → Import
 → Normalize / Chunk
-→ Deconstruction
-→ Observation
+→ Classification / methodology selection
+→ Deconstruction / observation / evidence
 → MKAOS Candidate
 → Governance
 → Knowledge Asset
-→ Usage
+→ Capability usage
 → Feedback
 ```
 
-MKAOS owns reusable creative methods and professional knowledge. It does not own story facts.
+Sources and popular fiction may be analyzed for structure, pacing, conflict, character mechanisms, emotional curves, hooks, and commercial patterns. Raw copyrighted expression is not promoted into prose-generation context by default.
 
-### 5.2 Narrative design loop
+### 5.3 Progressive long-form design loop
 
 ```text
 Story Intent
-→ Story Foundation
+→ Story Foundation / Novel DNA
 → Book Architecture
 → Volume Portfolio
-→ Narrative Arc Graph
-→ Character Development
-→ World / Character Realization
-→ Disclosure / Obligation Design
+→ cross-time Arc Graph
+→ Character / World Realization
+→ Disclosure / Obligations
 → Narrative Scheduling
-→ Progressive Qualification
-→ LONGFORM_DESIGN_QUALIFIED
-```
-
-An upstream design layer that has not reached a current, qualified, approved/active state may not silently become a production dependency.
-
-### 5.3 Narrative execution loop
-
-```text
-Current Accepted Narrative State
-→ Tactical / Operational Plan
 → Chapter Execution Plan
 → Scene Architecture
-→ Context Compiler
-→ Provider
-→ Prose
-→ Correctness
-→ Review / Revision
-→ Narrative Event Extraction
-→ Canon / State Projection
-→ Quality
-→ Accepted Chapter
+→ progressive qualification
+→ CHAPTER_PRODUCTION_ADMITTED
 ```
 
-### 5.4 Publish / learn loop
+### 5.4 Chapter production and author editing loop
+
+```text
+Accepted current state + qualified future design
+→ Context Compiler
+→ Provider / prose generation
+→ Draft
+→ review / author Chapter Editor interaction
+→ revision
+→ correctness
+→ Narrative Event extraction
+→ Canon / State projection candidate
+→ quality
+→ acceptance
+→ accepted chapter lineage
+```
+
+The primary conversational surface after a draft exists is **Chapter Editor**. It may invoke or consult Chapter Director, Character Director, Plot Doctor, Canon/Continuity, Style, or other capabilities behind the scenes. The author should not have to manually route every edit.
+
+### 5.5 Publish / observe / learn / adapt loop
 
 ```text
 Accepted Chapter
 → Publish
 → Observe
 → Reader Outcome
-→ Attribution
-→ Recap / Drift
-→ Governed Replan
-→ Future Design
+→ Attribution / Calibration
+→ Long-form Retrospective
+→ Adaptation / Replan proposal
+→ impact / governance
+→ future design
 ```
 
-External reader outcomes may influence future planning, Reader Model, Quality policy, MKAOS, or replan. They never mutate accepted Canon directly.
+Reader outcome is evidence, not truth. It can influence future design and policies but never mutate accepted Canon directly.
 
 ---
 
 ## 6. Capability architecture
 
+The capability map is organized by responsibility rather than by Agent count.
+
 ```text
 Novel Forge
 │
+├ Creative Interaction
+│  ├ Conversational sessions and scope
+│  ├ decision capture
+│  ├ proposal / semantic diff
+│  ├ impact / risk
+│  ├ human approval / rejection / deferral
+│  └ chapter editing
+│
 ├ Story Intelligence
-│  ├ Topic / Premise
-│  ├ Reader Positioning
-│  ├ Genre Intelligence
-│  └ Commercial Pattern Analysis
+│  ├ topic / genre / premise
+│  ├ reader positioning
+│  ├ commercial pattern analysis
+│  └ story potential / differentiation
 │
 ├ Narrative Design
-│  ├ Novel DNA
+│  ├ Novel DNA / Story Foundation
 │  ├ Book Architecture
-│  ├ Volume Architecture
+│  ├ Volume Portfolio
 │  ├ Narrative Segments
 │  ├ Arc Graph
 │  ├ Character Development
 │  ├ World Design / Realization
-│  ├ Disclosure / Obligation
+│  ├ Theme / philosophy
+│  ├ Disclosure / Obligations
 │  └ Narrative Scheduling
 │
 ├ Narrative Execution
 │  ├ Chapter Design
 │  ├ Scene Design
 │  ├ Context Compiler
-│  ├ Prose
+│  ├ Prose / Dialogue / Description / Action
 │  └ Revision
 │
 ├ Narrative Correctness
 │  ├ Canon
 │  ├ Narrative State
-│  ├ Narrative Event Extraction
-│  ├ Knowledge
-│  ├ Temporal / Spatial
-│  └ Obligation Consistency
+│  ├ Narrative Event extraction
+│  ├ knowledge / belief / disclosure
+│  ├ temporal / spatial / causal checks
+│  └ obligation consistency
 │
 ├ Knowledge
 │  ├ Source Intelligence
+│  ├ research / evidence
 │  ├ MKAOS
-│  └ Retrieval
+│  └ retrieval
 │
 ├ Quality
-│  ├ Narrative Quality
-│  ├ Longitudinal Quality
-│  ├ Corrective Action
-│  └ Reader Evaluation
+│  ├ deterministic correctness
+│  ├ Narrative Semantic Evaluation
+│  ├ prose / style / character / world quality
+│  ├ reader / commercial quality
+│  ├ longitudinal quality
+│  └ corrective action
 │
 ├ Governance
-│  ├ Qualification
-│  ├ Approval
-│  ├ Activation
-│  ├ Replan
+│  ├ qualification
+│  ├ approval / activation / supersession
+│  ├ replan / retcon policy
 │  └ Production Admission
 │
 └ Platform
    ├ Command Kernel
+   ├ Agent Runtime / Collaboration
    ├ Provider Runtime
-   ├ Agent Runtime
    ├ PostgreSQL Authority
-   ├ Trace / Cost
-   ├ Recovery
-   └ Operations
+   ├ object artifacts
+   ├ RuntimeJob / worker execution
+   ├ trace / metrics / cost
+   └ retry / recovery / replay
 ```
+
+Capabilities are versioned units of work with typed contracts and qualification/risk policy. Skills are reusable procedures. Capability Packs freeze compatible roles, capabilities, Skills, prompts, tools, policies, and gates. None of these owns story truth.
 
 ---
 
-## 7. Axis 1 — Temporal Hierarchy
+## 7. System architecture — six planes
 
-The canonical hierarchy is:
-
-```text
-Book
-→ Volume
-→ Narrative Segment
-→ Chapter
-→ Scene
-→ Beat
-```
-
-No additional primary hierarchy level should be introduced without strong evidence.
-
-### 7.1 Book
-
-Owns the whole-book macro trajectory: initial state, ending state, major conflict development, major character transformation, world expansion, major mystery, major relationships, major obligations, reader promise, and length strategy.
-
-### 7.2 Volume
-
-A Volume is a timeline container with a distinct narrative function, not a file-size partition.
-
-A Volume should define at least:
-
-- Narrative Function;
-- Entry State;
-- Exit State;
-- Central Pressure;
-- Major Conflict;
-- Major Arc Movements;
-- Character Transformation;
-- World Realization/Expansion target;
-- Reader Experience Curve;
-- Midpoint;
-- Climax;
-- Irreversible Change;
-- Cost;
-- Major Payoffs;
-- Next-volume Bridge.
-
-### 7.3 Narrative Segment
-
-A Narrative Segment is the canonical medium-scale story unit between Volume and Chapter. It answers: why do these chapters exist together?
-
-Typical examples include entering a new city, establishing a faction relationship, investigating one sub-problem, preparing a major reveal, or completing one local transformation stage.
-
-### 7.4 Chapter
-
-A Chapter is a publishable, accept/reject business unit. It is not merely a free-form piece of prose.
-
-### 7.5 Scene
-
-Scene is the principal local dramatic unit and should carry goal, opposition, information gain, state movement, reader effect, time, location, and POV.
-
-Scene may become a prose generation granularity later, but a separate Scene execution plane is not required until evidence justifies it.
-
-### 7.6 Beat
-
-Beat remains an embedded Scene planning value. It is not a separate Authority.
-
-### 7.7 Narrative Segment vs Chapter Group
-
-These must remain conceptually separate:
+The target system is best understood as six logical planes over one production runtime.
 
 ```text
-Narrative Segment = story-design unit
-Chapter Group      = production/runtime batching and checkpointing unit
+┌──────────────────────────────────────────────────────────┐
+│ 1. CREATIVE INTERACTION PLANE                            │
+│ Human author / Novel IDE / Chief Editor / specialist     │
+│ conversations / selected-text editing / approvals        │
+└──────────────────────────┬───────────────────────────────┘
+                           │ proposals / decisions
+┌──────────────────────────▼───────────────────────────────┐
+│ 2. NARRATIVE INTELLIGENCE & DESIGN PLANE                 │
+│ story / world / character / theme / reader / planning    │
+│ progressive realization / scheduling                     │
+└──────────────────────────┬───────────────────────────────┘
+                           │ versioned future design
+┌──────────────────────────▼───────────────────────────────┐
+│ 3. NARRATIVE AUTHORITY PLANE                             │
+│ Canon / accepted events / Narrative State / active plans │
+│ decisions / lineage / plan change                        │
+└──────────────────────────┬───────────────────────────────┘
+                           │
+        ┌──────────────────┴───────────────────┐
+        │                                      │
+┌───────▼────────────────┐            ┌────────▼────────────┐
+│ 4. KNOWLEDGE PLANE     │            │ 5. EXECUTION PLANE │
+│ Source / MKAOS /       │            │ Command Kernel /   │
+│ evidence / retrieval   │            │ RuntimeJob / PEP / │
+│                        │            │ Provider / Quality  │
+└───────┬────────────────┘            └────────┬────────────┘
+        │                                      │
+        └──────────────────┬───────────────────┘
+                           ▼
+┌──────────────────────────────────────────────────────────┐
+│ 6. OBSERVATION, GOVERNANCE & LEARNING PLANE              │
+│ trace / cost / quality / reader outcome / retrospective  │
+│ qualification / recovery evidence / adaptation           │
+└──────────────────────────────────────────────────────────┘
 ```
 
-They may map 1:1 in a specific implementation, but must not share one semantic responsibility.
+These are logical responsibility planes, not a mandate for six deployable services.
 
 ---
 
-## 8. Axis 2 — Narrative Arc Graph
+## 8. Long-form narrative architecture
 
-Arc is orthogonal to temporal containment.
+### 8.1 Temporal hierarchy
 
-```text
-Narrative Thread   optional persistent concern/question
-Narrative Arc      state-changing trajectory
-Arc Segment        local phase of a long Arc
-Arc Relation       causal/dependency relation between Arcs
-```
-
-### 8.1 Arc definition
+The canonical temporal containment hierarchy is:
 
 ```text
-Arc = Narrative Concern
-      from Initial State
-      through meaningful transitions
-      to a Terminal / Payoff State
+Book → Volume → Narrative Segment → Chapter → Scene → Beat
 ```
 
-A single joke, face-slap, clue, scene, or reward is not automatically an Arc.
+- **Book** owns macro direction, ending, major transformations, major reader promise, and whole-book constraints.
+- **Volume** is a timeline container with a distinct narrative function, entry/exit state, central pressure, climax, irreversible change, major payoffs, and bridge.
+- **Narrative Segment** is the medium-scale story-design unit answering why a contiguous group of chapters exists together.
+- **Chapter** is the publishable accept/reject business unit.
+- **Scene** is the principal local dramatic unit.
+- **Beat** remains an embedded planning value unless future evidence justifies more.
 
-### 8.2 Arc types
+`ChapterGroup` is a production/scheduling/checkpoint construct and is not semantically interchangeable with Narrative Segment.
 
-A shared Arc protocol may use types such as:
+### 8.2 Arc graph is orthogonal
 
-- PLOT
-- CHARACTER
-- RELATIONSHIP
-- MYSTERY
-- CONFLICT
-- WORLD
-- FACTION
-- RESOURCE
-- POWER
-- THEME
-- ROMANCE
-
-These types must not become independent engines by default.
-
-### 8.3 Arc relations
-
-Support typed relations such as:
-
-- CAUSES
-- ENABLES
-- BLOCKS
-- DELAYS
-- ACCELERATES
-- REQUIRES
-- REVEALS
-- PAYS_OFF
-- TRANSFORMS
-- MIRRORS
-- CONTRASTS_WITH
-
-### 8.4 Span and cadence
-
-Every long-running Arc requires both span and cadence. A start/end chapter alone is insufficient.
-
-Example:
+An Arc is a cross-time state-changing trajectory, not a Volume child:
 
 ```text
-Ch5    SETUP
-Ch22   ECHO
-Ch52   REINFORCE
-Ch73   ACTIVATE
-Ch90   REVERSE
-Ch118  PAYOFF
-Ch120  AFTERMATH
+Narrative Thread  optional persistent concern/question
+Narrative Arc     state-changing trajectory
+Arc Segment       local phase of a long Arc
+Arc Relation      causal/dependency relation
 ```
 
-Dormancy is valid; accidental disappearance is not.
+An Arc may span multiple Volumes and may have setup, echo, activation, reversal, payoff, and aftermath points. Plot, character, relationship, mystery, conflict, world, faction, resource, power, theme, and romance may share one Arc protocol rather than separate engines.
 
-### 8.5 Narrative convergence
+### 8.3 Progressive planning horizons
 
-Scheduling should support explicit convergence points where multiple independent Arcs collide to create a major turn or climax. Convergence is a planning property, not a new Authority.
+Planning uses three horizons:
 
----
+- **Strategic:** Novel DNA, Book Architecture, Volume Portfolio, major Arcs, ending, major transformations.
+- **Tactical:** upcoming Narrative Segments and next several-to-several-dozen chapters, including Arc cadence, disclosure, obligations, realization, reader experience, and density.
+- **Operational:** current Chapter and Scene, derived just in time from accepted state plus active strategic/tactical design.
 
-## 9. Character architecture
-
-A character is:
+Future design distinguishes:
 
 ```text
-Stable Identity
-+
-Current Temporal State
-+
-Development Trajectory
+HARD_CONSTRAINT
+SOFT_INTENT
+OPEN_DESIGN_SPACE
 ```
 
-### 9.1 Stable identity
+Open design space is intentional flexibility, not missing data.
 
-Includes relatively stable facts such as background, deep fear, need, value origin, enduring tendencies, history, long-term desire, talent, and moral boundaries.
+### 8.4 Character architecture
 
-### 9.2 Current state
+```text
+Character = Stable Identity
+          + Current Temporal State
+          + Development Trajectory
+```
 
-May include:
+Temporal state may include location, physical/emotional condition, goals, knowledge, belief, relationships, reputation, resources, power, status, and access. Development may include belief, goal, identity, competence, responsibility, moral boundary, emotional state, relationship, power, status, resource, and reach.
 
-- physical state;
-- emotion;
-- location;
-- current goal;
-- knowledge;
-- belief;
-- resource;
-- power;
-- status;
-- reputation;
-- relationships.
+Character growth should create causal consequences in access, responsibility, risk, worldview, and social/political reach rather than being modeled as a numeric power counter only.
 
-### 9.3 Development trajectory
-
-Character development may track:
-
-- BELIEF
-- GOAL
-- IDENTITY
-- PERSONALITY_EXPRESSION
-- KNOWLEDGE
-- COMPETENCE
-- POWER
-- STATUS
-- RESOURCE
-- RELATIONSHIP
-- MORAL_BOUNDARY
-- EMOTIONAL
-- RESPONSIBILITY
-- REPUTATION
-
-Do not build separate Authorities for each dimension. Development should be represented through planned Arcs plus accepted Narrative State projections.
-
-### 9.4 Scope / reach
-
-Web-novel growth is not only numeric power progression. Character reach may expand through:
-
-- Geographic Reach;
-- Social Reach;
-- Political Reach;
-- Economic Reach;
-- Information Reach;
-- Network Reach;
-- Responsibility Reach.
-
-Power progression should produce consequences in access, resources, risk, status, faction attention, responsibility, and worldview.
-
-### 9.5 Opposition model
-
-`Villain` is not a required domain primitive. Opposition may come from:
-
-- Character;
-- Faction;
-- Institution;
-- Law;
-- Class;
-- Scarcity;
-- Technology;
-- Nature;
-- History;
-- Time;
-- Protagonist Self.
-
-Conflict emerges from incompatible goals, interests, beliefs, resources, and constraints.
-
----
-
-## 10. World architecture and progressive realization
-
-World must not be modeled as one mutable encyclopedia.
-
-The canonical structure is:
+### 8.5 World architecture
 
 ```text
 World
@@ -588,155 +476,16 @@ World
 ├ Temporal World State
 ├ World Knowledge
 ├ World Visibility
+├ Accessibility
 ├ Discovery Frontier
-├ Realization Level
-└ World Arc
+└ Progressive Realization
 ```
 
-### 10.1 World Invariants
+Realization may use a small stable vocabulary such as `ANCHOR → DEFINED → DETAILED → ACTIVE`. The system should avoid both overdesigning the entire world before Chapter 1 and inventing everything only when prose needs it.
 
-Stable rules such as power systems, physical limits, technology boundaries, death rules, resource rules, or core institutional constraints.
+### 8.6 Knowledge, disclosure, and presentation
 
-### 10.2 Structural World Model
-
-Regions, factions, institutions, locations, political structures, economies, and other persistent world topology.
-
-### 10.3 Temporal World State
-
-What the world is currently like: war, occupation, regime change, resource depletion, technological breakthrough, destroyed/rebuilt locations, faction shifts, etc.
-
-### 10.4 Realization vs visibility
-
-These are distinct:
-
-```text
-Design Realization = how precisely the system has designed an entity
-Visibility         = what a character/reader can currently perceive or know
-Accessibility      = what a character can actually reach/use/influence
-```
-
-### 10.5 Progressive realization levels
-
-Use a small, stable vocabulary, for example:
-
-```text
-ANCHOR
-DEFINED
-DETAILED
-ACTIVE
-```
-
-Meaning:
-
-- ANCHOR: existence, future function, and hard boundary only;
-- DEFINED: key rules and relationships fixed;
-- DETAILED: sufficient to support upcoming tactical planning;
-- ACTIVE: current prose directly uses the entity.
-
-Do not fully detail the entire world before Chapter 1.
-
-### 10.6 Progressive world discovery
-
-The world should expand through narrative causality rather than abrupt authorial replacement.
-
-```text
-local anomaly
-→ evidence of a wider institution
-→ access to a larger region
-→ discovery of wider political/economic structure
-→ new conflict and knowledge
-```
-
-Old regions, characters, debts, reputations, and consequences should remain causally relevant after expansion.
-
-### 10.7 Recontextualization
-
-A stable Canon Fact may acquire new interpretations without rewriting history. The fact remains true; Character Belief or Reader Knowledge changes.
-
----
-
-## 11. Axis 3 — Narrative State
-
-Narrative State answers: what is true now at the current accepted cursor?
-
-It may project:
-
-- Character State;
-- Relationship State;
-- World State;
-- Location State;
-- Faction State;
-- Resource State;
-- Power State;
-- Conflict State;
-- Mystery State;
-- Character Knowledge;
-- Character Belief;
-- Reader Knowledge;
-- Promise / Foreshadow / Obligation State;
-- Arc State;
-- Theme Movement.
-
-Current State is a projection, not independent historical truth.
-
----
-
-## 12. Event → State Commit Protocol
-
-All important accepted state transitions must be traceable to an Accepted Narrative Event.
-
-```text
-Accepted Prose
-→ Narrative Event Extraction
-→ Deterministic / governed validation
-→ Accepted Narrative Event
-→ Canon / Narrative State projections
-```
-
-A Narrative Event should be able to carry:
-
-- event identity;
-- story time;
-- narrative position;
-- participants;
-- cause refs;
-- preconditions;
-- fact changes;
-- state effects;
-- knowledge effects;
-- obligation effects;
-- Arc effects.
-
-This does not require converting the whole application to a pure Event Sourcing framework. The invariant is simply that significant state changes are causally explainable and replayable from accepted evidence.
-
----
-
-## 13. Story time and spatial correctness
-
-Narrative position and story time are distinct.
-
-```text
-Narrative Position = Chapter 82 / Scene 3
-Story Time         = Year 18 / Day 73 / 21:30
-```
-
-The domain must be able to represent flashback, flashforward, parallel timeline, memory, and non-linear presentation without corrupting causal chronology.
-
-Spatial correctness may use a lightweight model of:
-
-- Location;
-- Parent Location;
-- travel/access constraints;
-- current occupancy;
-- capability-dependent travel rules.
-
-Impossible deterministic travel or co-location errors should be rejected without using an LLM Judge.
-
----
-
-## 14. Axis 4 — Knowledge / Disclosure / Presentation
-
-Strictly separate:
+Keep separate:
 
 ```text
 Story Truth
@@ -746,747 +495,598 @@ Reader Knowledge
 Narrative Presentation
 ```
 
-The same fact may be true from Chapter 1 while different characters and the reader learn or believe different things at different times.
+Every Scene can constrain POV/focalization, accessible knowledge, disclosure intent, and presentation mode. Future-fact leakage or hidden-knowledge leakage is a correctness error, not merely a style issue.
 
-### 14.1 Disclosure
+### 8.7 Narrative obligations and debt
 
-Disclosure plans control:
+Promises, mysteries, foreshadowing, unresolved conflicts, relationship commitments, world consequences, and Arc commitments create future obligations. Narrative Debt is a derived operational view, not a new Authority.
 
-- target audience;
-- fact/proposition;
-- timing;
-- mode;
-- amount;
-- presentation channel.
+Useful signals include open/overdue obligations, due windows, dormant Arc age, character appearance gap, unresolved mystery age, relationship inactivity, and payoff congestion.
 
-Typical modes include:
+### 8.8 Reader experience
 
-- HINT
-- PARTIAL
-- MISDIRECT
-- CONFIRM
-- WITHHOLD
+Story function and reader effect are separate dimensions. Scheduling can target curiosity, tension, awe, humor, warmth, romance, anger, shock, relief, satisfaction, catharsis, or reward while controlling density and fatigue.
 
-### 14.2 Presentation
-
-Presentation is how information is experienced, e.g. direct experience, observation, dialogue, rumor, hearsay, document, diary, news, memory, flashback, object clue, environmental trace, subtext, unreliable narration, negative space, or off-screen consequence.
-
-### 14.3 POV / focalization
-
-Every Scene should be able to state:
-
-- POV character or narrator;
-- focalization;
-- narrative distance;
-- accessible knowledge.
-
-POV, Character Knowledge, and Disclosure must agree. Knowledge correctness is not complete if a forbidden fact leaks through narrative voice.
+Predicted reader experience and observed human outcome are always distinct.
 
 ---
 
-## 15. Narrative obligations and debt
+## 9. Conversational Creative Studio
 
-Promises, foreshadowing, mysteries, unresolved relationship commitments, world consequences, and Arc commitments create future obligations.
+The Creative Studio is the canonical human interaction layer. It is **not** a second Agent runtime.
 
-The system should expose Narrative Debt metrics such as:
+### 9.1 User-facing conversational roles
 
-- open obligations;
-- overdue obligations;
-- obligations due in the next N chapters;
-- dormant Arc age;
-- unresolved mystery age;
-- relationship inactivity;
-- character appearance gap;
-- unconsumed setup/payoff windows.
+These are stable product roles backed by versioned `AgentDefinition` plus capabilities. They should not become one service/class/Authority per persona.
 
-Narrative Debt is a derived operational view, not a new Authority.
+| Role | Primary responsibility | Typical scope |
+|---|---|---|
+| **Chief Editor** | default creative coordinator, trade-offs, cross-domain synthesis | Book → Chapter |
+| **Story Architect** | mainline, Book/Volume/Segment/Arc architecture, ending reachability | Book → Segment |
+| **Character Director** | identity, motivation, relationships, development, behavior | Book → Scene |
+| **World Architect** | world rules, institutions, factions, consequences, realization | Book → Segment |
+| **Theme & Philosophy Advisor** | theme, value conflict, philosophical questions, non-preachy embodiment | Book → Arc/Segment |
+| **Reader & Commercial Strategist** | reader promise, hooks, reward cadence, serialization, positioning | Book → Chapter |
+| **Plot Doctor** | diagnose existing plot problems, alternatives, re-routing, structural repair | Volume → Chapter |
+| **Research & Material Curator** | research, creative seeds, evidence, compatibility and placement | Book → Scene |
+| **Chapter Director** | pre-writing chapter/scene structure, conflict, reveal, pacing, hook | Chapter → Scene |
+| **Chapter Editor** | post-draft wording, dialogue, scene and chapter revision; primary edit surface | Chapter → selected text |
+| **Long-form Retrospective** | rolling-window/Volume/Book drift and debt diagnosis | Window → Book |
+| **Reader Outcome Analyst** | interpret real reader outcomes and attribution | Chapter → Book |
 
-Planning and Scheduling should actively consume these metrics.
+Optional consultative roles include Canon/Continuity Consultant, Quality Editor, and Style/Voice Editor.
 
----
+Background components such as Context Builder, retrieval, Writer Runtime, Canon extraction, Quality Judge, scheduler, Provider Router, Retry/Recovery, Trace/Cost, and Authority committers are not conversational personas.
 
-## 16. Axis 5 — Reader Experience
+### 9.2 Direct specialist entry
 
-Story Function and Reader Effect are separate.
+The Chief Editor is a default route, not a mandatory proxy. The author may directly open the World Architect, Character Director, Plot Doctor, Chapter Editor, or another specialist. The role changes the reasoning/context/capability profile; it does not change which Domain Authority owns accepted state.
 
-A chapter may perform `Relationship Development` while targeting `Humor + Warmth`, or perform `Mystery Progress` while targeting `Curiosity + Shock`.
+### 9.3 Conversation Context Contract
 
-Reader effects may include:
+A conversational execution should bind an immutable or reproducible context identity containing at least:
 
-- Curiosity;
-- Tension;
-- Fear;
-- Awe;
-- Humor;
-- Warmth;
-- Romance;
-- Anger;
-- Shock;
-- Relief;
-- Satisfaction;
-- Catharsis;
-- reward / 爽感.
+- workspace/project/book identity;
+- narrative scope and selected entity;
+- selected text/draft/revision when applicable;
+- current accepted Narrative State/Canon cursor;
+- active relevant design/plan versions;
+- AgentDefinition / role / capability snapshot;
+- allowed knowledge visibility and tools;
+- relevant Author Intent / future design constraints;
+- pending proposals/decisions relevant to the session;
+- relevant MKAOS/research evidence;
+- token/cost/context budget.
 
-### 16.1 Narrative density
+The author should be able to say “this line is wrong” after selecting text without re-uploading the Book state, while the provider still receives only task-relevant context.
 
-Do not force every Chapter to advance every subsystem. Scheduling may deliberately create high-, medium-, low-density, breathing, transition, slice-of-life, humor, atmosphere, or intimacy chapters.
+### 9.4 Conversation → Decision Capture
 
-### 16.2 Reader intent vs outcome
+Conversation may contain brainstorming, alternatives, rejected ideas, questions, provisional intent, or concrete decisions. It therefore cannot be copied wholesale into Narrative Authority.
+
+The canonical lifecycle is:
 
 ```text
-Reader Experience Intent
-→ Publish
-→ Reader Outcome Observation
-→ Calibration
+Conversation / Collaboration Session
+→ candidate decision extraction
+→ Accepted / Rejected / Open / Deferred classification
+→ proposal + rationale + scope
+→ semantic diff when changing existing design
+→ impact / risk assessment
+→ human or policy decision
+→ owning Authority command
+→ versioned commit / activation / supersession
 ```
 
-Predicted experience and observed human outcome must remain distinct. Reader simulators never substitute for real reader data.
+A captured decision should preserve author rationale where it is important to downstream quality or planning.
+
+### 9.5 Agent collaboration reuse
+
+Conversational collaboration must extend the existing Agent Collaboration model: scope snapshots, read/proposal/authority boundaries, knowledge visibility, impact assessment, escalation, and human-decision-required semantics. Do not introduce a parallel “chat authority” unless an independent lifecycle, concurrency model, or recovery requirement appears that the existing collaboration domain cannot express.
 
 ---
 
-## 17. Axis 6 — Realization / Visibility
+## 10. Narrative Change Protocol
 
-Realization controls how much of the future world/character design is actually specified. Visibility controls what current characters and readers know or can access.
+The system needs one coherent **protocol for change**, not one new universal change Authority.
 
-The system should support progressive character and world realization according to narrative horizon, while preserving hard future constraints and open design space.
+Existing owning mechanisms should be reused:
 
-This axis prevents two opposite failures:
+- Agent Collaboration for scoped proposals, challenges, impact assessments, and human decisions;
+- PlanChange Authority for semantic changes to future plans;
+- Revision / Corrective Action for prose and quality-driven repair;
+- Story/Book Design Authorities for foundational design versions;
+- Canon/Narrative State acceptance boundaries for accepted reality;
+- Replan for future dependency invalidation/regeneration.
 
-- designing the whole million-word world at full precision before production;
-- inventing every new region, character, or faction only at the moment it appears.
+### 10.1 Change levels
 
----
+| Level | Meaning | Examples | Default handling |
+|---|---|---|---|
+| **L0 Text** | wording-only, no semantic story change | sentence compression, diction, style | Chapter Editor → revision |
+| **L1 Scene** | local behavior/presentation with bounded story semantics | dialogue tone, action, information release | Chapter Editor + relevant specialist capability |
+| **L2 Chapter Structural** | chapter function/scene order/reveal/hook changes | remove fight, delay reveal, replace climax | Chapter Director/Editor + chapter-plan/revision checks |
+| **L3 Arc/Volume Future** | material change to future trajectory | change an Arc outcome, relationship stage, major reveal timing | Plot Doctor/Story Architect → semantic PlanChange + impact/requalification |
+| **L4 Book/Canon Critical** | foundational or accepted-history-sensitive change | world rule, core reader promise, ending, major identity/fate | explicit high-risk governance; future replan or retcon/corrective workflow |
 
-## 18. Progressive Planning
+A provider or UI must not infer that a locally selected paragraph grants authority to make an L3/L4 change.
 
-Long-form planning uses three horizons.
+### 10.2 Draft, accepted, and published boundaries
 
-### 18.1 Strategic Horizon
+- **Draft/revision:** freely revisionable within scope, with versioned evidence where required.
+- **Accepted but not yet published:** never mutated in place. Any correction creates governed superseding/corrective lineage and must re-evaluate affected Canon/State/Quality before becoming current.
+- **Published:** treated as locked history for ordinary editing. Corrections require explicit retcon/correction semantics and may only affect future design unless the product/platform explicitly supports a governed publication correction.
 
-Low-frequency, long-range assets:
+The normal author-editing UX should therefore keep Chapter Editor interaction before final acceptance whenever possible.
 
-- Novel DNA;
-- Book Architecture;
-- Volume Portfolio;
-- major Arcs;
-- major character transformations;
-- major world expansion;
-- ending.
+### 10.3 Author Intent
 
-### 18.2 Tactical Horizon
+Author Intent records why a deliberate choice exists and what scope it should influence. Examples include intentional temporary weakness, delayed payoff, tonal restraint, or a future thematic contrast.
 
-Upcoming Narrative Segments / approximately the next several to several-dozen chapters:
+Canonical guidance:
 
-- Segment goals;
-- Arc cadence;
-- Character development;
-- Disclosure;
-- Payoff windows;
-- World Realization;
-- Reader Experience;
-- narrative density.
+- represent Author Intent as versioned future design evidence using the existing `FUTURE_INTENT` narrative layer and/or existing Story/Book/Planning assets when semantically sufficient;
+- project task-relevant intent into Context;
+- preserve rationale for Quality/replan where necessary;
+- do **not** create an `AuthorIntentAuthority` by default.
 
-### 18.3 Operational Horizon
+### 10.4 What-if scenario branches
 
-Current Chapter and Scene design, generated just in time from accepted current state plus active strategic/tactical design.
-
-### 18.4 Progressive elaboration
-
-Planning detail increases as the narrative approaches execution. Distant future design should preserve anchors and constraints while leaving open design space.
-
-### 18.5 Commitment levels
-
-Future design may distinguish:
+A useful P1 capability is governed scenario exploration:
 
 ```text
-HARD_CONSTRAINT
-SOFT_INTENT
-OPEN_DESIGN_SPACE
+Canonical State + Active Future Design
+→ isolated Scenario Branch
+→ simulated alternative(s)
+→ impact / quality comparison
+→ merge proposal or discard
 ```
 
-Hard constraints should be rare and meaningful; soft intent may move through replan; open design space should not be mistaken for missing data.
+Scenario output is never Canon and cannot mutate active planning without the normal decision/change protocol.
 
 ---
 
-## 19. Volume Portfolio
+## 11. Domain and Authority model
 
-The canonical global design is a portfolio of qualified Volume plans, not one unique Volume design existing at a time.
+### 11.1 Authority classes
+
+Long-lived canonical ownership remains with existing domain boundaries, including:
+
+- Project / Book identity and production state;
+- Story / Book Design;
+- hierarchical/narrative Planning and active bindings;
+- PlanChange / Replan;
+- Canon and accepted chapter lineage;
+- Narrative Events and current Narrative State projection;
+- Source Authority and MKAOS knowledge assets;
+- Chapter / Book production;
+- Quality / Reader evidence where owned by current modules.
+
+Do not create one Authority per literary noun.
+
+### 11.2 Narrative truth classes
+
+| Artifact/state | Authority meaning |
+|---|---|
+| Conversation transcript | evidence / interaction history, non-authoritative |
+| Creative seed / material | candidate input, non-authoritative |
+| Agent proposal | candidate, non-authoritative |
+| Provider output | execution evidence, non-authoritative |
+| Future intent / plan | authoritative future design version when activated, but not story truth |
+| Draft / revision | content candidate, non-authoritative until acceptance |
+| Quality result | evaluation evidence, not Canon |
+| Accepted Narrative Event | authoritative evidence of accepted story transition |
+| Canon | accepted story truth |
+| Current Narrative State | rebuildable authoritative projection over accepted lineage |
+| Reader outcome | observed evidence, not story truth |
+| MKAOS asset | authoritative reusable knowledge/method asset, not story truth |
+
+### 11.3 Versioning and lineage
+
+Important design and narrative changes use immutable/versioned assets plus active bindings or accepted pointers. Avoid in-place mutation where it would destroy auditability.
+
+Current materialized state should coexist with append-only accepted evidence sufficient for deterministic rebuild; this does not mandate a whole-platform Event Sourcing framework.
+
+---
+
+## 12. Data architecture
+
+### 12.1 Authoritative relational data
+
+PostgreSQL owns business state such as:
+
+- Projects/Books and production state;
+- design candidates, versions, qualification receipts, approvals, and active bindings;
+- plans, dependencies, PlanChange/Replan decisions;
+- Chapter production state and accepted lineage;
+- Canon, accepted Narrative Events, current Narrative State, temporal cursors;
+- Command Kernel Operation/Attempt/ExternalEffect/RuntimeJob state;
+- Agent definitions/collaboration state where production-owned;
+- quality, reader evidence, trace identity, and durable receipts.
+
+### 12.2 Large artifacts
+
+Raw sources, large provider payloads, snapshots, exports, reports, or other large immutable artifacts may live in object storage. PostgreSQL retains authoritative locator, hash, version, ownership, and provenance.
+
+### 12.3 Derived read models
+
+Embeddings, vector indices, search indices, caches, semantic projections, and materialized reports are rebuildable read models. They may accelerate retrieval but never become the only copy of accepted business truth.
+
+### 12.4 Ephemeral data
+
+Streaming tokens, temporary tool results, transient rendering state, and scratch reasoning may be ephemeral. Anything required for acceptance, retry/recovery, audit, or exact input provenance must cross a durable boundary.
+
+---
+
+## 13. Context, Memory, and Knowledge architecture
+
+“Memory” is not one database or one Agent feature. Novel Forge distinguishes four memory classes.
+
+### 13.1 Authority memory
+
+Accepted Canon, Narrative State, active future design, decisions, and lineage in PostgreSQL. This is durable business memory and the only class that may define what the system currently believes is authoritative.
+
+### 13.2 Working memory
+
+The frozen/reproducible task-specific Context view for one execution. It contains Minimum Sufficient Context and is bounded by the capability contract.
+
+### 13.3 Episodic interaction evidence
+
+Conversation/collaboration history, rejected alternatives, human rationale, and decision provenance. It may support later retrieval or audit but is **not** automatically injected into prompts and is not Narrative Authority.
+
+### 13.4 Retrieval memory
+
+Embeddings/search projections over approved sources, past artifacts, or narrative evidence. It is derived, permissioned, freshness-aware, and rebuildable.
+
+### 13.5 MKAOS knowledge
+
+MKAOS is reusable methodology/professional knowledge, not per-Book episodic memory and not a prompt warehouse. Capabilities retrieve only relevant governed knowledge assets.
+
+### 13.6 Minimum Sufficient Context
+
+Each capability defines `MUST_INCLUDE`, `OPTIONAL`, and `MUST_EXCLUDE` classes. Context correctness should detect or measure at least:
+
+- `NO_FUTURE_FACT`;
+- `NO_HIDDEN_KNOWLEDGE_LEAK`;
+- `NO_STALE_VERSION`;
+- `NO_DUPLICATE_SEMANTIC_REPRESENTATION`;
+- `NO_IRRELEVANT_FULL_ASSET`;
+- `REQUIRED_LONG_DISTANCE_FACT_PRESENT`;
+- task-relevant Author Intent present when required;
+- pending proposal not mistaken for accepted state.
+
+Persisted evidence is not automatically provider input.
+
+---
+
+## 14. Canonical runtimes
+
+Novel Forge has several business flows but **one execution plane**.
+
+### 14.1 Creative collaboration runtime
 
 ```text
-Book
-→ Volume Portfolio
-   ├ V1
-   ├ V2
-   ├ V3
-   └ ...
-→ Cross-volume Arc Graph
+Human request / selected text / creative seed
+→ scoped collaboration session
+→ frozen Agent/Context/knowledge permissions
+→ governed capability/provider execution
+→ proposal / alternative / diagnosis
+→ decision capture
+→ semantic diff + impact/risk when applicable
+→ human/policy decision
+→ owning Domain Authority command
+→ versioned design/revision/plan state
 ```
 
-`current_volume` is a runtime projection selected by accepted chapter cursor/range, not the only valid active Volume asset.
+Human turns may be synchronous from the product perspective, but any provider/tool work requiring durable recovery uses the same governed Operation/Attempt/ExternalEffect semantics as other production work.
 
-A cross-volume Arc may reference multiple qualified Volume plans.
-
-No separate `VolumePortfolioAuthority` is required; reuse Planning Authority and versioned plan bindings.
-
----
-
-## 20. Narrative Scheduling
-
-Scheduling maps cross-cutting systems onto temporal containers.
-
-A Chapter schedule may state:
-
-```text
-PRIMARY    Mystery A
-SECONDARY  Relationship B
-TOUCH      Theme C
-HOLD       Faction D
-PAYOFF     Setup from Ch31
-SETUP      Mystery for Ch83
-READER     Tension → Relief → Suspicion
-DENSITY    MEDIUM
-```
-
-Scheduling is where Arc cadence, obligations, reader experience, progressive realization, and chapter functions converge.
-
----
-
-## 21. Narrative Complexity / Load Budget
-
-AI production needs explicit guardrails against overloading one Chapter or Scene.
-
-Reasonable policies may limit or warn on:
-
-- simultaneous primary Arcs;
-- secondary/touch Arcs;
-- new important characters;
-- new major concepts;
-- major reveals;
-- large state transitions;
-- major payoffs;
-- obligation congestion.
-
-These are configurable guardrails, not universal literary laws.
-
-Load should be governed before Context construction; otherwise Context optimization merely treats the symptom.
-
----
-
-## 22. Chapter Execution Plan
-
-The canonical detailed chapter design should include:
-
-- Chapter Intent;
-- Primary Function;
-- Secondary Functions;
-- Arc Schedule;
-- Character Participation;
-- Knowledge Boundaries;
-- Disclosure;
-- Required State Transitions;
-- Reader Experience;
-- Setup / Payoff;
-- Prohibited Outcomes;
-- Narrative Density;
-- Scene Architecture;
-- Expected Exit State.
-
-A Chapter plan must derive from active strategic/tactical assets plus the current accepted Narrative State. It must not independently redesign long-range story direction.
-
----
-
-## 23. Scene Architecture
-
-A governed Scene plan may include:
-
-- Scene Purpose;
-- Location;
-- Story Time;
-- POV / Focalization;
-- Participants;
-- Entry State;
-- Character Goal;
-- Opposition;
-- Conflict;
-- Information Gain;
-- Arc Progress;
-- State Transition;
-- Disclosure;
-- Reader Effect;
-- Beats;
-- Exit State.
-
-A separate Scene execution plane is introduced only when independent leasing, context construction, partial revision, or recovery becomes an observed requirement.
-
----
-
-## 24. MKAOS role
-
-MKAOS is a task-specific methodology and knowledge retrieval system, not a global prompt warehouse.
-
-```text
-Task
-→ Knowledge Requirement
-→ MKAOS Retrieval
-→ Selected Relevant Knowledge
-→ Provider
-```
-
-Examples:
-
-- Book Architecture: narratology, genre, philosophy, reader psychology, commercial structure;
-- World Design: history, politics, economics, sociology, technology;
-- Character: psychology, behavior, social relations, character development;
-- Mystery: evidence, logic, fair play, misdirection;
-- Prose: only the relevant style/POV/dialogue/suspense guidance.
-
-Knowledge assets remain governed and versioned; raw source material should not be copied into prose prompts by default.
-
----
-
-## 25. Context Compiler
-
-Context is an execution compilation problem.
-
-```text
-Authority
-→ Versioned Projection
-→ Task-specific Projection
-→ Provider View
-```
-
-For a Scene or Chapter task the compiler may use:
-
-```text
-Narrative Position
-+ Story Time / POV
-+ Active Arc Schedule
-+ Relevant Characters
-+ Relevant Current State
-+ Knowledge Boundary
-+ Relevant World Horizon
-+ Due Obligations
-+ Reader Experience Target
-+ Relevant MKAOS
-→ Minimum Sufficient Working Context
-```
-
-### 25.1 Minimum Sufficient Context
-
-Each Capability defines:
-
-- MUST_INCLUDE;
-- OPTIONAL;
-- MUST_EXCLUDE.
-
-The target is not the smallest prompt; it is the smallest prompt that remains sufficient for correct task execution.
-
-### 25.2 Context Correctness Contract
-
-Context qualification should be able to enforce or measure:
-
-- NO_FUTURE_FACT;
-- NO_HIDDEN_KNOWLEDGE_LEAK;
-- NO_STALE_VERSION;
-- NO_DUPLICATE_SEMANTIC_REPRESENTATION;
-- NO_IRRELEVANT_FULL_ASSET;
-- REQUIRED_LONG_DISTANCE_FACT_PRESENT.
-
-### 25.3 Persisted Evidence ≠ Prompt Content
-
-Audit manifests, lineage, hashes, provider receipts, and complete Authority representations remain persisted for replay/audit. They do not automatically enter provider input.
-
----
-
-## 26. Progressive Narrative Qualification
-
-The desired design admission path is:
+### 14.2 Progressive design runtime
 
 ```text
 Story Intent
-↓ QUALIFY
-Story Foundation
-↓ QUALIFY
-Book Architecture
-↓ QUALIFY
-Volume Portfolio
-↓ QUALIFY
-Narrative Arc Graph
-↓ QUALIFY
-Character Development
-↓ QUALIFY
-World / Character Realization
-↓ QUALIFY
-Disclosure / Obligation
-↓ QUALIFY
-Narrative Scheduling
-↓ QUALIFY
-Chapter Execution Plan
-↓ QUALIFY
-Scene Architecture
-↓ QUALIFY
-Prose Admission
+→ Story Foundation
+→ Book Architecture
+→ Volume Portfolio
+→ Arc Graph
+→ Character/World Realization
+→ Disclosure/Obligations
+→ Scheduling
+→ Chapter Execution Plan
+→ Scene Architecture
+→ deterministic + semantic qualification
+→ production admission
 ```
 
-Qualification is a policy and evidence layer over existing Authorities, not a separate execution plane.
+An upstream layer that is stale, superseded, unqualified, or not current cannot silently become a production dependency.
 
-### 26.1 Deterministic validation
+### 14.3 Chapter production runtime
 
-Use deterministic checks for identity, lineage, ranges, dependencies, Arc refs, time, spatial impossibility, setup/payoff ordering, knowledge future leaks, resource/state impossibility, duplicate identities, stale versions, and activation freshness.
+```text
+Current accepted state + qualified active future design
+→ Chapter admission
+→ Context Compiler
+→ Provider
+→ Draft
+→ Review / author edit / Revision / Re-review
+→ Narrative Event extraction
+→ deterministic correctness
+→ Canon / State candidate
+→ Quality
+→ Book/Chapter acceptance transaction
+→ Accepted Chapter + Canon/State cursor
+```
 
-### 26.2 Narrative Semantic Evaluation
+A successful model call is never equivalent to an accepted Chapter.
 
-Use layer-specific semantic profiles for narrative capacity, ending reachability, conflict sustainability, Volume differentiation, Arc causality/convergence/closure, character-change causality, disclosure coherence, scheduling balance, chapter purpose, and scene reachability.
+### 14.4 Feedback runtime
 
-Do not use one universal literary Judge.
+```text
+Accepted Chapter
+→ Publication effect
+→ Reader Outcome / observations
+→ attribution / calibration
+→ recap / drift / ending reachability / debt
+→ governed replan proposal
+→ impact + approval
+→ minimal future invalidation / regeneration / requalification
+```
 
-### 26.3 Independent evaluation trust boundary
+---
 
-A Candidate Generator must not be the sole authority minting its own PASS.
+## 15. Core workflows
 
-Target flow:
+### 15.1 New Book discovery
+
+1. Create/select Project and Book scope.
+2. Author discusses premise/reader/genre/theme with Chief Editor or specialists.
+3. System produces explicit alternatives and assumptions, not hidden commitment.
+4. Accepted decisions become Story/Book Design candidates.
+5. Independent validation/evaluation qualifies design before activation.
+6. Active Book baseline becomes input to progressive planning.
+
+### 15.2 World or character redesign
+
+1. Load current scope/version.
+2. Discuss alternatives with World Architect or Character Director.
+3. Produce proposed semantic changes and rationale.
+4. Analyze affected future plans, hard constraints, and any conflict with accepted history.
+5. Low-risk future design may follow configured approval; high-risk change requires explicit human decision.
+6. Commit through owning design/planning Authority and requalify affected downstream assets.
+
+### 15.3 Material / idea integration
+
+```text
+Raw Material / Idea
+→ Creative Seed
+→ research / provenance / transformation
+→ compatibility analysis
+→ placement recommendation
+→ Narrative proposal
+→ human decision
+→ active plan/design version
+→ eventual prose
+→ acceptance / Canon
+```
+
+Material, idea, proposal, plan, draft, accepted story, and Canon are distinct lifecycle states.
+
+### 15.4 Chapter generation and edit
+
+1. Generate/admit Chapter plan and Scene architecture.
+2. Build bounded Context.
+3. Generate Draft.
+4. Author may enter Chapter Editor at whole-Chapter, Scene, paragraph, or selected-text scope.
+5. Change is classified L0–L4.
+6. L0/L1 remain local if semantic checks confirm bounded impact.
+7. L2 invokes chapter structural planning/revision checks.
+8. L3/L4 escalates to PlanChange/Design governance rather than silently rewriting the Draft.
+9. Revised content is re-reviewed/re-evaluated as required.
+10. Only final accepted lineage updates Canon/State.
+
+### 15.5 Long-form retrospective
+
+Run at rolling chapter windows and meaningful Segment/Volume/Book boundaries. Inspect at least:
+
+- Arc dormancy/cadence/convergence;
+- character trajectory and disappearance;
+- world expansion and realization;
+- obligation/payoff debt;
+- repeated scene/chapter structure;
+- reader promise/reward cadence;
+- theme drift and Author Intent drift;
+- context growth and retrieval quality;
+- correction/replan frequency.
+
+Retrospective produces evidence and proposals, not direct mutation.
+
+---
+
+## 16. Quality, Judge, and evaluation architecture
+
+### 16.1 Three quality classes
+
+1. **Narrative Correctness** — Canon, state, chronology, knowledge, resources, identity, hard world rules, obligations, causal transitions, spatial feasibility where deterministic.
+2. **Narrative Quality** — story structure, character depth, conflict, pacing, worldbuilding, mystery, theme, prose, style, scene effectiveness.
+3. **Reader / Commercial Quality** — reader promise, hooks, reward cadence, serialization, platform fit, fatigue, readability.
+
+Do not collapse these into one opaque number.
+
+### 16.2 Independent semantic evaluation
+
+A Generator must not be the sole evaluator that mints its own PASS.
+
+Target trust boundary:
 
 ```text
 Candidate Generation Operation
-→ Immutable Candidate AssetVersion
-→ Independent Semantic Evaluation Operation
-→ Qualification Receipt
-→ Repair / Approval / Activation
+→ immutable candidate/content hash
+→ independent Semantic Evaluation Operation
+→ qualification evidence
+→ repair / approval / activation
 ```
 
-Reuse the existing Command Kernel, Provider Gateway, Capability Pack, and Story Design Authority.
+### 16.3 Judge vs Editor
 
-### 26.4 Authority-bound evidence
+- **Quality Judge:** reproducible evaluation role, evidence-oriented, protected from conversational persuasion.
+- **Quality Editor:** conversational role that explains findings, discusses intent, and proposes repairs.
 
-Qualification evidence must resolve to immutable current-project/current-book evidence and bind to the exact candidate/content hash and source operation lineage.
+If the author supplies missing rationale, that rationale becomes evidence/intent and a new evaluation may be run. The Judge score is not manually edited because the author disagrees.
+
+### 16.4 Multi-scale quality
+
+Quality operates at Scene, Chapter, Segment, Arc, Volume, Book, and rolling longitudinal windows. A Chapter-only Judge cannot detect long-range drift.
+
+### 16.5 Human override
+
+Where policy allows, the author/operator can accept despite warnings. Override must record actor, rationale, exact state/version, findings, and downstream implications.
 
 ---
 
-## 27. Production admission
+## 17. Reliability, retry, recovery, and replay
 
-`LONGFORM_DESIGN_QUALIFIED` is a computed authoritative admission result over current qualified design roots. It is not a new Authority.
+### 17.1 One execution kernel
 
-`CHAPTER_PRODUCTION_ADMITTED` additionally requires the current Narrative Scheduling, Chapter Execution Plan, Scene design, current accepted Narrative State/Canon cursor, and required Context correctness constraints to agree.
-
-Admission fails closed if any required design becomes stale, superseded, incomplete, or no longer qualified.
-
----
-
-## 28. Planning dependency and replan protocol
-
-Every downstream plan binds exact upstream AssetVersions.
-
-```text
-Upstream Version
-→ Downstream Version
-→ Dependency / Reference Graph
-```
-
-When future design changes:
-
-```text
-Accepted Reality
-→ Drift / Reader / Quality / Operator Evidence
-→ Replan Candidate
-→ Impact Analysis
-→ Affected Future Assets STALE
-→ Regenerate
-→ Requalify
-→ Activate New Versions
-```
-
-Accepted chapters, Canon, accepted Narrative Events, and past Narrative State projections are not rewritten.
-
-### 28.1 Minimal invalidation
-
-Use asset dependency lineage to compute the smallest affected future closure rather than making the entire Book stale.
-
-A change to an Arc Segment may affect future Scheduling, Chapter Plans, Disclosure timing, Character trajectories, or payoff windows while leaving unrelated Volume designs and accepted history intact.
-
-### 28.2 Replan scopes
-
-Useful scopes include:
-
-- BOOK;
-- VOLUME;
-- NARRATIVE_SEGMENT;
-- ARC;
-- ARC_SEGMENT;
-- CHAPTER_GROUP;
-- CHAPTER.
-
----
-
-## 29. Canonical execution plane
-
-Novel Forge has one production execution plane:
+All durable provider/tool work reuses the current production execution semantics:
 
 ```text
 Command
 → Operation
 → Attempt
-→ Lease
-→ Fence
+→ Lease / Fence
 → ExternalEffect
 → Provider / Tool
 → Receipt
 → Domain Commit
 ```
 
-No Narrative feature may introduce a competing workflow or provider path merely for convenience.
+`RuntimeJob` remains the durable worker scheduling/execution primitive where used. Do not introduce a second `WorkOrder` model merely for creative chat.
+
+### 17.2 Technical retry vs semantic revision
+
+- **Technical retry:** same frozen logical task after timeout, temporary provider failure, network failure, or other retryable infrastructure issue; recorded as another governed Attempt/effect according to policy.
+- **Semantic revision:** previous output was validly produced but failed quality/design intent; this is a business workflow and produces a revision, not a retry disguise.
+
+### 17.3 Idempotency
+
+Protect against duplicate:
+
+- provider/tool side effects;
+- AssetVersions;
+- collaboration decisions;
+- qualification receipts;
+- Narrative Events;
+- Chapter acceptance;
+- Canon/State transitions;
+- plan activation;
+- publishing effects.
+
+### 17.4 Recovery
+
+Restart/resume is driven by durable Operation/Attempt/RuntimeJob/effect/Authority state. Leases and fence tokens prevent stale workers from committing after ownership transfer.
+
+### 17.5 Replay
+
+Distinguish:
+
+- **Exact evidence replay:** reuse immutable recorded provider/tool result where policy permits.
+- **Logical replay:** freeze the same Authority versions, context/capability/prompt/provider policy and invoke again; token-identical output is not guaranteed.
+
+All replay needs provenance.
+
+### 17.6 Concurrency
+
+Use existing optimistic version/CAS and lease/fence patterns where relevant. Narrative or plan commits must reject stale expected versions instead of last-writer-wins mutation.
 
 ---
 
-## 30. Reliability and recovery
+## 18. Governance, observability, cost, and operations
 
-### 30.1 Retry
+### 18.1 Governance
 
-Retryable failures use bounded retry and must not produce retry amplification between Operation and ExternalEffect layers.
+Governance covers:
 
-### 30.2 Idempotency
+- candidate/decision/activation/supersession;
+- independent semantic qualification;
+- Agent scope and tool permissions;
+- human decision and high-risk escalation;
+- PlanChange/replan/retcon policy;
+- quality gates and override evidence;
+- production admission.
 
-Recovery/replay must prevent:
+Agent → direct SQL → Canon is forbidden.
 
-- duplicate provider side effects;
-- duplicate AssetVersions;
-- duplicate Qualification receipts;
-- duplicate Narrative Events;
-- duplicate Chapters;
-- duplicate Canon/State transitions;
-- duplicate activations;
-- duplicate publishing effects.
+### 18.2 Trace and inspection
 
-### 30.3 Recovery semantics
-
-Restart/resume uses persisted Authority state, not reconstructed in-memory workflow state. Lease/fence semantics prevent stale workers from committing after ownership transfer.
-
----
-
-## 31. Quality architecture
-
-Quality is separated into three categories.
-
-### 31.1 Narrative Correctness
-
-Prefer deterministic validation for:
-
-- Canon;
-- chronology;
-- spatial feasibility;
-- knowledge;
-- resources;
-- identity;
-- hard world rules;
-- obligations;
-- state transitions.
-
-### 31.2 Narrative Quality
-
-Semantic Judges evaluate structure, character depth, prose, theme, conflict, mystery, worldbuilding, pacing, and long-form craft.
-
-### 31.3 Reader / Commercial Quality
-
-Separate evaluation for hooks, reader promise, serialization rhythm, reward cadence, platform fit, and commercial readability.
-
-Do not collapse all three into one opaque overall score.
-
----
-
-## 32. Multi-scale and longitudinal quality
-
-Quality must operate at multiple scales:
+A production result should be traceable across:
 
 ```text
-Book
-Volume
-Arc
-Narrative Segment
-Chapter
-Scene
+Project / Book
+→ Narrative Scope
+→ design/state versions
+→ Command / Operation / RuntimeJob / Attempt
+→ Agent / Capability / Skill / Capability Pack
+→ Context snapshot / knowledge selection
+→ Provider / Tool effect
+→ review / quality / decision
+→ Domain commit / accepted lineage
 ```
 
-Longitudinal windows should inspect approximately 10-chapter, 30-chapter/Volume, and longer trends such as:
+A Runtime Inspector should eventually answer: what is running, waiting, failed, paused, stale, unqualified, or pending human decision, and why.
 
-- hook convergence;
-- Arc dormancy;
-- character disappearance;
-- payoff density;
-- obligation debt;
-- world expansion rate;
-- repeated scene structure;
-- dialogue/prose drift;
-- reader reward interval;
-- Context growth;
-- correction/replan frequency.
+### 18.3 Metrics
 
-A Chapter Judge cannot detect these problems alone.
+Traditional metrics include latency, success/failure, retries, lease/fence health, DB health, provider latency, token usage, and cost.
 
----
+Narrative operations additionally benefit from:
 
-## 33. Serialization strategy
-
-Web-novel production strategy is not Canon. It may define:
-
-- target chapter length;
-- publishing cadence;
-- hook diversity;
-- short-term reward cadence;
-- major payoff cadence;
-- Volume climax distance;
-- reader fatigue controls;
-- recap strategy;
-- platform/commercial constraints.
-
-Scheduling may consume these constraints without storing them as story truth.
-
----
-
-## 34. Observability and Narrative Operations
-
-Traditional telemetry remains required: logs, traces, DB health, provider latency, token/cost, operation/attempt/effect status, worker/lease/fence health.
-
-Narrative operations should additionally expose metrics such as:
-
-- Active Arcs per Chapter;
-- dormant Arc age;
+- active/dormant Arcs;
 - open/overdue obligations;
-- character appearance gap;
+- character appearance gaps;
+- world expansion and realization rate;
 - Narrative Load;
-- world expansion rate;
-- new concepts per Chapter;
-- reader reward interval;
+- reveal/payoff density;
 - hook similarity;
-- state transition density;
 - Canon correction rate;
 - replan frequency;
-- selected context tokens;
-- provider input tokens;
+- selected-context vs provider-input tokens;
 - Prompt Amplification Ratio;
 - Context Growth Slope;
 - provider calls / accepted Chapter;
-- wall time / accepted Chapter.
+- wall time / accepted Chapter;
+- author intervention/revision frequency by change level.
 
-The core scalability invariant is:
+### 18.4 Cost governance
 
-```text
-Chapter Number ↑
-Narrative Authority ↑
-Provider Working Context must remain bounded and task-relevant
-```
+Cost evidence should be attributable by Book, Chapter, capability, provider, and workflow. Budget policies may later control per-Book/per-Chapter/per-capability spend without becoming a second scheduler.
 
 ---
 
-## 35. Security and boundaries
+## 19. Security and external boundaries
 
-- Provider access must use the governed Provider Gateway.
-- Tools are default-deny and Capability-controlled.
-- Agents cannot directly mutate Domain Authority.
-- No direct database mutation may bypass owning Authority semantics.
-- Source eligibility and lineage remain governed.
-- Audit evidence is persisted and immutable where required.
-- External publishing, human-reader data, and third-party services are explicit boundary integrations rather than implicit side effects.
-
----
-
-## 36. Domain and Authority model
-
-Do not create one Authority per literary term.
-
-### Long-lived Authorities / canonical owners
-
-- Story / Book Design;
-- World Rules / foundational design through existing design authority;
-- Character Identity through existing design authority;
-- Hierarchical / Narrative Planning;
-- Canon;
-- Narrative Event lineage;
-- Narrative State;
-- MKAOS;
-- Book / Chapter production;
-- Plan Change / Replan;
-- Quality / Reader evidence where already owned by existing modules.
-
-### Versioned planning assets
-
-- BookPlan;
-- VolumePlan;
-- NarrativeSegmentPlan or equivalent Volume-local segment representation;
-- ArcPlan;
-- ChapterGroupPlan;
-- ChapterPlan / ChapterExecutionPlan.
-
-### Derived projections
-
-- Current Character State;
-- Current Relationship State;
-- Current Volume;
-- Arc Progress;
-- Reader Knowledge;
-- Narrative Debt;
-- World Horizon;
-- Realization/visibility projections.
-
-### Ephemeral execution assets
-
-- Provider Task View;
-- Provider Context View;
-- prompt materialization;
-- review/revision views.
-
-Ephemeral execution views never become truth sources.
+- Provider access goes through the governed Provider Gateway.
+- Tools are default-deny and Capability/Agent-scope controlled.
+- Secrets never enter Narrative State or ordinary provider Context.
+- External sources are untrusted input; prompt injection must not alter system policy, tool permissions, or Authority semantics.
+- Source provenance, snapshot/content hash, classification/methodology, license/eligibility where relevant, and derived lineage are preserved.
+- MKAOS/source retrieval must prevent raw source leakage into prose contexts when disallowed.
+- Workspace/project/book boundaries must be explicit enough for future multi-user/multi-book isolation.
+- External publishing and human-reader data are explicit integrations with durable effect/evidence semantics.
 
 ---
 
-## 37. Data lifecycle
+## 20. Testing, qualification, and Production Admission
 
-Design asset lifecycle:
+### 20.1 Engineering completion dimensions
 
-```text
-Candidate
-→ Immutable AssetVersion
-→ Deterministic Validation
-→ Semantic Evaluation
-→ Qualification
-→ Approval
-→ Active Binding
-→ Downstream Version Reference
-```
+Every implementation report must distinguish:
 
-Narrative history lifecycle:
+- `CODE_IMPLEMENTED` — code/schema/contracts exist;
+- `CANONICAL_WIRED` — reachable through current production composition/entry path and owning Authority;
+- `TEST_EXECUTED` — named tests actually ran against the pinned SHA;
+- `RUNTIME_PROVEN` — the relevant real runtime composition/effects were exercised with recorded evidence;
+- `PRODUCTION_QUALIFIED` — required admission campaign, operating environment, and production evidence passed.
 
-```text
-Accepted Prose
-→ Accepted Narrative Events
-→ Canon / State / Knowledge / Arc / Obligation Projections
-```
-
-Plan versions and accepted reality remain separately addressable and auditable.
-
----
-
-## 38. Testing and qualification model
-
-Strict proof ladder:
-
-```text
-Unit
-→ Integration
-→ PostgreSQL Integration
-→ Runtime Composition
-→ Recovery / Replay
-→ Design-only E2E
-→ Real Provider Composition
-→ Chapter 1–5 Stateful Proof
-→ 30 Chapter Proof
-→ 100 Chapter Proof
-→ 300 Chapter Proof
-→ Effectiveness A/B
-→ Real Reader Calibration
-→ Multi-book Proof
-→ Production Admission
-```
-
-Proof vocabulary:
+These are dimensions, not replacements for the repository's more specific proof ladder:
 
 ```text
 MISSING
@@ -1500,217 +1100,281 @@ MULTIBOOK_PROVEN
 PRODUCTION_PROVEN
 ```
 
-A lower proof class never implies a higher one.
+For example, `TEST_EXECUTED` does not imply `REAL_PROVIDER_PROVEN`, and `WIRED` does not imply `LONGFORM_PROVEN`.
 
----
+### 20.2 Test layers
 
-## 39. Design-only proof
+Required according to capability risk:
 
-Before prose proof, the system should prove the design production chain itself:
+- Unit/domain tests;
+- contract tests;
+- architecture/boundary tests;
+- PostgreSQL integration tests;
+- runtime composition tests;
+- migration fresh-install and upgrade proof;
+- retry/recovery/replay tests;
+- real-provider proof;
+- design-only E2E;
+- stateful Chapter 1–5 proof;
+- 30/100/300 Chapter long-form proofs;
+- reader/effectiveness evaluation;
+- multi-book isolation/scale proof;
+- backup/restore and operational drills.
+
+### 20.3 Long-form proof
+
+Long-form qualification must exercise more than prose generation. It should prove:
+
+- accepted-only state propagation;
+- character/world/knowledge temporal correctness;
+- Arc cadence and obligations;
+- Context correctness and bounded growth;
+- author change / PlanChange / replan behavior;
+- pause/resume/recovery;
+- Canon and accepted-lineage rebuild;
+- real-provider failure accounting;
+- longitudinal quality signals.
+
+### 20.4 Production Admission
+
+A representative admission sequence is:
 
 ```text
-Story Intent
-→ Story Foundation
-→ Book Architecture
-→ Volume Portfolio
-→ Cross-volume Arc Graph
-→ Character Development
-→ World / Character Realization
-→ Disclosure / Obligation
-→ Narrative Scheduling
-→ Chapter Execution Plan
-→ Scene Architecture
-→ CHAPTER_PRODUCTION_ADMITTED
+Clean pinned main / release SHA
+→ Full Engineering Qualification
+→ Fresh migration proof
+→ Upgrade migration proof
+→ PostgreSQL integration
+→ provider/runtime proof
+→ retry/recovery/replay proof
+→ long-form correctness proof
+→ backup/restore + security/ops review
+→ multi-book proof when multi-book is in scope
+→ Production Admission
 ```
 
-Stop before prose. This isolates design correctness from prose/runtime quality.
+No lower evidence class is automatically promoted.
 
 ---
 
-## 40. Current-to-target gaps
+## 21. Current implementation reality and gap policy
 
-### P0 — must close
+At the 2026-08-15 design convergence baseline, the repository already contains a substantial governed spine: Command Kernel, PostgreSQL Authorities, Provider/production execution composition, Chapter production, Story/Book Design, hierarchical planning, Narrative State, PlanChange/Replan, Agent Collaboration/Runtime, Source/MKAOS, quality/reader modules, publishing surfaces, and recovery/qualification infrastructure.
 
-1. Independent Narrative Semantic Evaluation: the generator must not be the only judge minting its own PASS.
-2. Authority-bound qualification evidence: evidence refs must resolve to exact immutable lineage.
-3. Multi-Volume Portfolio semantics: multiple qualified Volume plans must coexist while runtime selects the current Volume as a projection.
-4. Exact-SHA Engineering Qualification for current Progressive Narrative Design changes.
-5. Strategic / Tactical / Operational Planning Horizons in canonical contracts and orchestration.
-6. Progressive World and Character Realization in planning/contracts without creating a new execution plane.
-7. Event → State causality for important accepted state transitions.
-8. Story Time / POV / Knowledge boundary correctness.
-9. Narrative Complexity / Load Budget.
-10. Narrative Debt metrics and planning consumption.
-11. Asset dependency graph / minimal stale propagation and requalification.
-12. Context Correctness Contract.
-13. Multi-scale / Longitudinal Quality.
+The target design therefore **extends and converges existing systems** rather than rebuilding them.
 
-### P1 — should close
+The following are design-priority gaps to verify against the latest code before implementation. A code review may find some partially or fully implemented; no item is considered missing merely because this document lists it.
 
-- spatial/travel consistency;
-- HARD_CONSTRAINT / SOFT_INTENT / OPEN_DESIGN_SPACE planning semantics;
-- Serialization Strategy;
-- Character Scope / Reach;
-- explicit Narrative Convergence planning;
-- Style Bible / voice projection;
-- Reader Experience Intent vs Outcome calibration;
-- Narrative operational metrics and reports;
-- world expansion-rate governance.
+### P0 — must close for the target product
+
+1. **Human conversational collaboration lifecycle:** explicit author interaction over existing Agent Collaboration, including durable/recoverable decision capture where needed.
+2. **Conversational role profiles:** Chief Editor and the core specialist roles expressed through existing AgentDefinition/capability contracts, not parallel runtime classes.
+3. **Conversation Context Contract:** selected-text/entity scope, state/design cursor, intent, pending proposals, and knowledge visibility bound to provider work.
+4. **Narrative Change integration:** L0–L4 classification and routing across Revision, PlanChange, owning Design Authorities, and corrective/retcon boundaries without a second change engine.
+5. **Chapter Editor canonical path:** author post-draft edits remain inside revision/review/correctness/quality/acceptance lineage.
+6. **Author Intent semantics:** future-intent/rationale projection sufficient for Context and Quality without creating another Authority by default.
+7. **Independent semantic qualification trust:** generation and qualification evidence remain independently attributable and immutable.
+8. **Context correctness and minimum-sufficient retrieval:** especially stale/future/hidden/pending-proposal separation.
+9. **Exact-SHA Engineering Qualification of the current long-form runtime**, including fresh/upgrade migration and PostgreSQL integration.
+10. **Real-provider production composition and failure semantics proof.**
+11. **Stateful long-form correctness proof** rather than fixture-only claims.
+
+### P1 — should close after the P0 collaboration/runtime seam
+
+- governed What-if / Scenario Branch exploration;
+- Runtime Inspector for human/Agent pending decisions and failed/stale work;
+- stronger longitudinal quality and Narrative Operations reports;
+- spatial/travel consistency where stories require it;
+- reader outcome/attribution/calibration closure through governed replan;
+- explicit serialization/style projections where current contracts are insufficient;
+- real Author Intent drift and intervention analytics.
 
 ### P2 — later enhancement
 
-- automatic pacing optimization;
-- Arc portfolio optimization;
-- Scene-level prose runtime if evidence justifies it;
-- bounded Quality Judge concurrency;
-- adaptive chapter length;
 - advanced Reader Simulator;
-- multi-model routing;
-- multi-book production portfolio optimization.
+- automatic pacing/Arc portfolio optimization;
+- Scene-level execution plane if operational evidence requires it;
+- adaptive chapter length;
+- multi-model routing/optimization;
+- cross-book shared-universe governance;
+- multi-book portfolio scheduling and cost optimization.
 
-### Not required now
+### Explicitly deferred / not required now
 
-Do not create separate World Realization, Character Development, Narrative Debt, POV, Beat, Causality, Arc Graph, or Scene workflow microservices unless observed runtime requirements justify them.
-
----
-
-## 41. Roadmap
-
-### Phase A — Architecture Correctness Closure
-
-Close the semantic trust boundary, Volume Portfolio semantics, Progressive Planning/Realization contracts, Event→State contract, and Time/POV correctness.
-
-### Phase B — Planning and Governance Closure
-
-Implement Narrative Load, Narrative Debt, dependency-driven invalidation, Context Correctness, and longitudinal quality foundations.
-
-### Phase C — Design Production Closure
-
-Run the full canonical design chain through qualification and `CHAPTER_PRODUCTION_ADMITTED`, without prose.
-
-### Phase D — Full Engineering Qualification
-
-Fresh migration, upgrade migration, PostgreSQL integration, unit/integration tests, runtime composition, recovery/replay, lint/type/build, Capability Pack/skill validation.
-
-### Phase E — Chapter 1–5 Stateful Runtime Proof
-
-Measure continuation correctness, Event→State, knowledge boundaries, provider input growth, prompt amplification, retry/recovery, and actual chapter acceptance.
-
-### Phase F — 30 Chapter Proof
-
-Prove short long-form continuity, context correctness, obligations, state progression, and bounded runtime behavior.
-
-### Phase G — 100 Chapter Proof
-
-Prove Arc persistence, character trajectories, world expansion, long-distance retrieval, Narrative Debt, Progressive Realization, and longitudinal quality.
-
-### Phase H — 300 Chapter Proof
-
-Prove genuine single-book long-form correctness and operational feasibility.
-
-### Phase I — Effectiveness
-
-Paired/frozen A/B evaluation of MKAOS, Quality/Correction, and Replan effectiveness.
-
-### Phase J — Real Reader Calibration
-
-Use real human outcome data with temporal integrity and holdout evaluation.
-
-### Phase K — Multi-book / Production Admission
-
-Only after single-book long-form proof succeeds: multi-book proof, scale, portfolio scheduling, publishing automation, operational admission, and production authorization.
+- new microservice per literary concept;
+- free-form Agent mesh;
+- full event-sourcing rewrite;
+- independent vector-memory Authority;
+- second execution/change/workflow engine;
+- fully autonomous external publishing.
 
 ---
 
-## 42. Final target runtime
+## 22. Target architecture
+
+The completed system should behave as follows:
 
 ```text
-SOURCE / MKAOS
-        ↓
-STORY INTELLIGENCE
-        ↓
-NOVEL DNA
-        ↓
-BOOK ARCHITECTURE
-        ↓
-VOLUME PORTFOLIO
-        ↓
-ARC GRAPH
-        ↓
-WORLD / CHARACTER REALIZATION
-        ↓
-DISCLOSURE / OBLIGATION
-        ↓
-NARRATIVE SCHEDULING
-        ↓
-LONGFORM_DESIGN_QUALIFIED
-        ↓
-CURRENT ACCEPTED STATE
-        ↓
-CHAPTER EXECUTION PLAN
-        ↓
-SCENE ARCHITECTURE
-        ↓
-CHAPTER_PRODUCTION_ADMITTED
-        ↓
-CONTEXT COMPILER
-        ↓
-PROVIDER
-        ↓
-PROSE
-        ↓
-CORRECTNESS
-        ↓
-REVIEW / REVISION
-        ↓
-NARRATIVE EVENT EXTRACTION
-        ↓
-CANON / STATE PROJECTION
-        ↓
-QUALITY
-        ↓
-ACCEPTED CHAPTER
-        ↓
-PUBLISH / OBSERVE
-        ↓
-RECAP / DRIFT
-        ↓
-GOVERNED REPLAN
+SOURCE / RESEARCH / MKAOS
+            │
+            ├──────────────────────────────┐
+            │                              │
+            ▼                              ▼
+   HUMAN CREATIVE INTENT          NARRATIVE INTELLIGENCE
+            │                              │
+            └─────────────┬────────────────┘
+                          ▼
+             CONVERSATIONAL CREATIVE STUDIO
+          Chief Editor / specialist direct entry
+                          │
+                          ▼
+             PROPOSAL / DIFF / IMPACT / DECISION
+                          │
+                          ▼
+              ACTIVE FUTURE DESIGN AUTHORITY
+                          │
+                          ▼
+   BOOK → VOLUME → SEGMENT → CHAPTER → SCENE
+          + ORTHOGONAL ARC GRAPH / OBLIGATIONS
+                          │
+                          ▼
+               LONGFORM_DESIGN_QUALIFIED
+                          │
+                          ▼
+                 CURRENT ACCEPTED STATE
+                          │
+                          ▼
+              CHAPTER_PRODUCTION_ADMITTED
+                          │
+                          ▼
+                   CONTEXT COMPILER
+                          │
+                          ▼
+                       PROVIDER
+                          │
+                          ▼
+                        DRAFT
+                          │
+              ┌───────────┴───────────┐
+              ▼                       ▼
+       CHAPTER EDITOR              REVIEW/JUDGE
+              │                       │
+              └───────────┬───────────┘
+                          ▼
+                       REVISION
+                          │
+                          ▼
+           CORRECTNESS / EVENT EXTRACTION
+                          │
+                          ▼
+              CANON / STATE PROJECTION
+                          │
+                          ▼
+                        QUALITY
+                          │
+                          ▼
+                  ACCEPTED LINEAGE
+                          │
+                          ▼
+               PUBLISH → OBSERVE
+                          │
+                          ▼
+             READER OUTCOME / RETROSPECTIVE
+                          │
+                          ▼
+                 GOVERNED ADAPTATION
+                          └──────────────→ future design
 ```
+
+The system is autonomous only inside these governed boundaries. Human intervention and autonomous production use the same state, execution, quality, and recovery semantics.
 
 ---
 
-## 43. Final architectural position
+## 23. Implementation roadmap
 
-The canonical hierarchy is now stable:
+The roadmap follows actual dependency order and assumes the existing long-form runtime is retained.
+
+### Phase 0 — Current-code truth and contract freeze
+
+- pin latest `main` SHA;
+- run code/doc/manifests/migration inventory;
+- prove which canonical long-form P0 items are already implemented/wired;
+- remove only real dead/legacy/AI residue;
+- freeze/clarify the cross-domain contracts needed for human collaboration; do not redesign the production kernel.
+
+### Phase 1 — Conversational collaboration closure
+
+- extend existing Agent Collaboration for explicit human creative interaction where gaps exist;
+- define canonical role profiles through AgentDefinition/capabilities;
+- bind Conversation Context Contract;
+- implement decision capture and Author Intent semantics;
+- prove Agent output cannot bypass owning Authority.
+
+### Phase 2 — Chapter Editor + Narrative Change integration
+
+- make selected-text/Scene/Chapter editing a first-class governed revision path;
+- implement L0–L4 classification/escalation;
+- reuse PlanChange and owning Design Authorities for structural changes;
+- prove accepted/published boundaries and corrective lineage.
+
+### Phase 3 — Context / knowledge / long-form semantic closure
+
+- make intent, pending proposals, temporal knowledge, MKAOS selection, and accepted state correctly separable in Context;
+- close remaining independent semantic evaluation, dependency/replan, load/debt, progressive realization, and longitudinal-quality gaps demonstrated by current code review.
+
+### Phase 4 — Full Engineering Qualification
+
+- fresh + upgrade migrations;
+- full PostgreSQL integration;
+- architecture/contract/unit/integration suites;
+- recovery/retry/replay;
+- provider/tool/Capability Pack validation;
+- clean worktree and exact-SHA evidence.
+
+### Phase 5 — Real-provider Chapter 1–5 proof
+
+Prove provider invocation, failure accounting, Context correctness, Agent/change semantics, Event→State, acceptance, pause/resume, and bounded provider input.
+
+### Phase 6 — 30 / 100 / 300 Chapter proofs
+
+Progressively prove long-distance continuity, Arc persistence, world/character development, obligations, replan, Narrative Debt, bounded Context, recovery, and operational feasibility.
+
+### Phase 7 — Publish / reader feedback closure
+
+Connect real publication outcomes to attribution, retrospective, calibration, and governed adaptation without allowing outcome data to rewrite Canon.
+
+### Phase 8 — Multi-book and production scale
+
+Only after single-book proof: isolation, scheduler/portfolio, budgets, scale, backup/restore, operational SLOs, external publishing automation, and Production Admission.
+
+### Phase 9 — Optimization
+
+Only after correctness and real usage evidence: multi-model strategy, advanced reader simulation, automatic pacing/portfolio optimization, and other data-driven improvements.
+
+---
+
+## 24. Final architectural position
+
+Novel Forge is not “many Agents writing a novel.” It is a governed creative operating system in which:
 
 ```text
-Book → Volume → Narrative Segment → Chapter → Scene → Beat
+Human Creative Intent
+        ↕
+Conversational Creative Studio
+        ↕
+Specialized Agent Roles + Capabilities
+        ↓
+Proposal / Decision / Narrative Change Protocol
+        ↓
+Versioned Future Design + Canonical Narrative Authority
+        ↓
+Progressive Planning + Minimum Sufficient Context
+        ↓
+Governed Provider / Chapter Production
+        ↓
+Correctness + Quality + Accepted Lineage
+        ↓
+Publish / Observe / Learn / Governed Adaptation
 ```
 
-Industrial-grade long-form capability does not come from adding more hierarchy levels. It comes from the six Narrative Axes and five industrial control systems around that hierarchy:
-
-```text
-Temporal Hierarchy
-Arc Graph
-Narrative State
-Knowledge / Disclosure
-Reader Experience
-Realization / Visibility
-
-+
-
-Progressive Planning
-Narrative Scheduling
-Context Compiler
-Qualification / Governance
-Runtime / Feedback / Recovery
-```
-
-The three most important long-term architectural upgrades are:
-
-1. Progressive Planning: Strategic → Tactical → Operational rather than one-time full-book detailing.
-2. Progressive Realization: world and characters move from Anchor → Defined → Detailed → Active as the narrative horizon approaches.
-3. Event → State: accepted narrative events provide causal evidence for every important persistent state transition.
-
-The resulting system is not merely an AI capable of generating a 300-chapter novel. It is a governed Narrative Operating System capable of treating a continuously expanding long-form web novel as an evolving, versioned, recoverable, auditable system while preserving causality, character growth, world expansion, knowledge boundaries, obligations, reader experience, and bounded provider context at million-word scale.
+The defining engineering property is not that a model can generate a chapter. It is that the same architecture can preserve creative intent, causal story truth, character/world development, knowledge boundaries, long-range obligations, author intervention, quality, recovery, and auditability while a Book grows to million-word scale — and can prove that behavior at a pinned runtime version before production admission.

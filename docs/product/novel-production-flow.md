@@ -1,101 +1,207 @@
 # Novel production flow
 
-The governed flow designs and qualifies the novel before prose production:
+This document is a product/workflow view derived from the [Canonical overall design](../architecture/canonical-overall-design.md). It describes the target end-to-end business flow while explicitly separating target interaction features from current proof.
+
+## 1. End-to-end target flow
 
 ```text
-Story Intent → Story Foundation → Book Architecture → Volume Architecture
-→ Narrative Arc Graph → Character / Disclosure / Obligation Design
-→ Narrative Scheduling → Chapter Execution Plan → Scene Architecture
-→ Prose Production → Acceptance → Reader/Recap → scoped Replan
+Human Intent / Material / Question
+        ↓
+Conversational Creative Studio
+Chief Editor or specialist direct entry
+        ↓
+Proposal / Decision / Semantic Diff
+        ↓
+Impact / Risk / Human Approval
+        ↓
+Story / Book Design + Future Intent
+        ↓
+Book Architecture
+        ↓
+Volume Portfolio + orthogonal Arc Graph
+        ↓
+Character / World Realization
+        ↓
+Disclosure / Obligations / Scheduling
+        ↓
+Chapter Execution Plan + Scene Architecture
+        ↓
+Progressive Qualification
+        ↓
+CHAPTER_PRODUCTION_ADMITTED
+        ↓
+Context Compiler
+        ↓
+Provider → Draft
+        ↓
+Review ↔ Chapter Editor ↔ Revision
+        ↓
+Correctness / Narrative Event Extraction
+        ↓
+Canon / Narrative State projection candidate
+        ↓
+Quality
+        ↓
+Accepted Chapter Lineage
+        ↓
+Publish → Observe → Reader Outcome
+        ↓
+Retrospective / Attribution / Drift
+        ↓
+Governed Replan / Adaptation
 ```
 
-Each arrow crosses an active, current, versioned contract. Coordinators do not
-copy child execution state.
+The current production backend already implements substantial portions of the Design → Chapter → Acceptance → Reader/Recap/Replan spine. The **Conversational Creative Studio and Chapter Editor interaction lifecycle are target product capabilities and must not be treated as proven merely because Agent Collaboration, Revision, and PlanChange modules exist.**
 
-## 1. Book and design authority
+## 2. Human creative collaboration
 
-An operator creates a Book and proposes/decides/activates BookDesign assets.
-BookDesign is the qualified Story Intent and Story Foundation root. Starting
-Book production resolves active Authority inputs and layer qualification into a
-frozen input snapshot. Production does not accept an implicit local fixture
-mode; tests that use synthetic resolved data must opt into that boundary.
+The author may begin with the Chief Editor or directly select a specialist such as Story Architect, Character Director, World Architect, Theme & Philosophy Advisor, Plot Doctor, Research & Material Curator, Chapter Director, or Chapter Editor.
 
-## 2. Hierarchical planning
-
-Story Design generation produces Book, Volume, cross-volume Arc, ChapterGroup,
-and Chapter candidates. Each candidate receives deterministic validation and a
-layer-specific Narrative Semantic Evaluation before qualification. Planning and
-PlanChange Authority own active bindings and execution scope. ChapterGroup is
-the Narrative Scheduling layer; Chapter contains the canonical Chapter
-Execution Plan and formal Scene Plan.
-
-Book production records `LONGFORM_DESIGN_QUALIFIED` only when every required
-active design layer is current and qualified. Chapter dispatch separately
-records or verifies `CHAPTER_PRODUCTION_ADMITTED` and fails closed on a stale
-dependency or Narrative State cursor.
-
-The aggregate is not caller-supplied state. Book input resolution derives it
-from immutable current qualification receipts for BookDesign, BookPlan,
-VolumePlan, and every active ArcPlan. Dispatch then adds exact current
-Scheduling, Chapter, Scene, accepted-state, and schedule-to-plan checks before
-submitting the Chapter provider work.
-
-## 3. Chapter production
-
-ChapterGroup coordinates admitted chapter requests. `chapter.slice.run`
-executes the Chapter Authority's 18-node saga through governed Attempts and
-ExternalEffects. The sequence includes task-specific context,
-draft/review/revision, Canon, quality, release, and acceptance evidence. A
-successful provider response alone cannot complete a chapter.
-
-## 4. Acceptance and narrative state
-
-Chapter execution produces a governed Canon patch and a `ChapterOutcome` v2
-candidate containing immutable Narrative State events. A child success is not
-acceptance. Book Authority atomically commits the ChapterOutcome, materialized
-StoryState v2, Canon v2 snapshot and cursor through a CAS-guarded acceptance
-record. Only that committed pointer set is visible to Temporal Query or the next
-chapter.
-
-StoryState materializes one current value per entity-aware key. Timeline/reward
-events remain ledgers, while character, relationship, world-rule, power,
-resource, Promise, foreshadow and plot-thread state use their own reducer
-semantics. The current projection is rebuildable from accepted ChapterOutcome
-evidence and never replaces Canon Authority.
-
-## 5. Reader and recap follow-up
-
-The governed Book scheduler submits Reader Outcome work after accepted chapters. At configured boundaries it also submits recap and ending-reachability work. These operations produce evidence and proposals; they do not mutate Canon or plans.
-
-## 6. Replan
-
-When an accepted recap emits a replan request, the Book supervisor resolves that evidence and starts a governed Book replan. Approval may be required according to risk. PlanChange Authority activates accepted semantic changes; the coordinator regenerates, requalifies, and CAS-activates the affected future dependency closure, while superseded ChapterGroup work is closed or replaced explicitly. Narrative Segment and Arc Segment scopes target their owning Volume or Arc without creating segment Authorities.
+The role changes reasoning/capability/context selection, not Domain ownership. Agent output remains a proposal until an owning Authority commits an accepted design/revision/plan change.
 
 ```text
-BookDesign active
-      ↓
-Book production input snapshot
-      ↓
-ChapterGroupPlan → freeze
-      ↓
-ChapterPlan → freeze
-      ↓
-Chapter 18-node saga
-      ↓
-committed ChapterOutcome events + Canon v2 + StoryState v2
-      ↓
-Reader Outcome → Recap / ending evidence
-      ↓ if governed request exists
-PlanChange decision → affected future requalification/activation → resume
+Conversation
+→ candidate decisions
+→ Accepted / Rejected / Open / Deferred
+→ proposal + rationale
+→ semantic diff if an existing design changes
+→ impact / risk
+→ human/policy decision
+→ owning Authority
 ```
 
-## Stop and recovery behavior
+A conversation transcript is never copied wholesale into Canon or active planning.
 
-Book and Chapter work can pause, fail, retry, reconcile, or wait for approval
-without erasing the previous Attempt. Stable idempotency, leases, fences,
-checkpoints, activation CAS, immutable qualification receipts, and outbox
-records allow another process to resume from PostgreSQL authority.
+## 3. Book and design authority
 
-## What this flow does not prove
+Book creation/design produces versioned Story/Book Design assets. Accepted design decisions may include premise, target reader, reader promise, theme, tone, foundational world/character constraints, central conflict, ending intent, and commercial/serialization constraints.
 
-Fixture and PostgreSQL integration tests demonstrate bounded vertical slices. They do not prove a complete long novel, unattended multi-book operation, real-provider quality, or external publishing.
+Production resolves exact current Authority inputs and qualification evidence into a frozen input snapshot. An upstream design layer that is stale, superseded, unqualified, or not current cannot silently become a production dependency.
+
+## 4. Progressive long-form planning
+
+The temporal hierarchy is:
+
+```text
+Book → Volume → Narrative Segment → Chapter → Scene → Beat
+```
+
+Arc is a cross-time graph dimension and may span multiple Volumes. It is not inserted as a tree parent between Volume and Chapter.
+
+Planning progressively elaborates Strategic → Tactical → Operational horizons. Active future plans bind exact upstream versions. `LONGFORM_DESIGN_QUALIFIED` and `CHAPTER_PRODUCTION_ADMITTED` are computed admission results over current qualified dependencies, not caller assertions.
+
+`ChapterGroup` remains a production/scheduling/checkpoint concept; Narrative Segment is a story-design concept.
+
+## 5. Material / creative seed integration
+
+```text
+Source or Human Idea
+→ Material / Creative Seed
+→ research / provenance / deconstruction when needed
+→ compatibility and placement analysis
+→ Narrative proposal
+→ decision
+→ future design / planning
+→ Draft
+→ acceptance
+→ Canon
+```
+
+Material, idea, proposal, plan, draft, accepted story, and Canon are distinct lifecycle states.
+
+## 6. Chapter production
+
+Current governed chapter production follows the existing Chapter/Book production runtime and production execution plane. The semantic target is:
+
+```text
+Current Accepted State
++ active qualified design
+→ Chapter admission
+→ Context
+→ Draft
+→ Review / Revision / Re-review
+→ Narrative Event extraction
+→ correctness
+→ Canon / StoryState candidate
+→ Quality
+→ acceptance transaction
+```
+
+A successful provider response alone cannot complete a Chapter.
+
+Book acceptance commits governed accepted outcome/event evidence, Canon/StoryState projections and the accepted cursor using current Authority/CAS semantics. Only accepted lineage is visible as current story truth to later chapters.
+
+## 7. Author chapter editing
+
+After a Draft exists, the default conversational surface is **Chapter Editor**. The author may work at whole-Chapter, Scene, paragraph, or selected-text scope.
+
+Changes are classified before being allowed to escape local scope:
+
+| Level | Scope | Example | Route |
+|---|---|---|---|
+| L0 | Text | wording/style/line compression | Revision |
+| L1 | Scene | dialogue/action/local disclosure | Chapter Editor + specialist capability as needed |
+| L2 | Chapter structural | scene order, reveal, hook, climax | Chapter Director/Plan + Revision |
+| L3 | Future Arc/Volume | major future trajectory change | PlanChange/Replan + impact/requalification |
+| L4 | Book/Canon critical | core world rule, ending, major identity/fate | explicit high-risk governance / future replan / correction policy |
+
+The user should not need to manually route every edit to the correct internal Agent. The Chapter Editor/Creative Studio can consult specialists, but Authority routing remains deterministic by domain and change type.
+
+Drafts may be revised. Accepted content is never mutated in place. A correction to accepted content creates explicit governed superseding/corrective lineage; published content requires explicit correction/retcon semantics rather than ordinary editing.
+
+## 8. Context and knowledge
+
+Context is compiled from exact accepted/design versions and task requirements. It may include current Narrative State, relevant Canon, active Arc schedule, relevant characters/world horizon, knowledge boundaries, due obligations, reader-experience target, relevant Author Intent, pending proposal status, and selected MKAOS/research evidence.
+
+Provider input must remain Minimum Sufficient Context and must distinguish accepted truth from future intent, proposals, and derived retrieval results.
+
+## 9. Reader and recap follow-up
+
+After accepted chapters the governed Book scheduler/runtime may submit Reader Outcome, recap, ending-reachability, longitudinal quality, or other follow-up work.
+
+```text
+Accepted Chapter
+→ Reader Outcome / Observation
+→ Attribution / Calibration
+→ Recap / Drift / Narrative Debt
+→ Replan proposal
+```
+
+These are evidence/proposal flows. Reader results never directly mutate Canon or active plans.
+
+## 10. Replan
+
+When governed evidence requests a future change:
+
+```text
+Accepted Reality
+→ evidence / human request
+→ semantic PlanChange
+→ impact analysis
+→ approval according to risk
+→ minimal affected future dependency closure STALE
+→ regenerate
+→ requalify
+→ activate new versions
+→ resume
+```
+
+Accepted past events remain evidence. Future design is changed through versioning and activation, not by mutating existing rows or bypassing owning Authorities.
+
+## 11. Stop and recovery behavior
+
+Book, Chapter, Agent/collaboration, and follow-up work may pause, fail, retry, reconcile, or wait for approval without erasing prior Attempts. Stable idempotency, leases, fences, checkpoints, CAS/versioning, immutable receipts, and outbox/effect records allow another process to recover from PostgreSQL Authority.
+
+Technical retry is not semantic revision. A poor but successfully generated Draft enters Review/Revision; it is not retried as if the provider timed out.
+
+## 12. Evidence boundary
+
+The following must remain distinct:
+
+- `CODE_IMPLEMENTED`
+- `CANONICAL_WIRED`
+- `TEST_EXECUTED`
+- `RUNTIME_PROVEN`
+- `PRODUCTION_QUALIFIED`
+
+The repository's proof ladder further distinguishes fixture, real-provider, long-form, multi-book, and production evidence. Ordinary code existence or bounded tests do not prove the complete flow above.
