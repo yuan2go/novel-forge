@@ -680,9 +680,9 @@ def _validate_progressive_planning_contract(
             "max_payoff_congestion": len(content.get("payoffs") or ()),
             "max_new_concepts": len(
                 {
-                    str(fact)
-                    for scene in content.get("scene_plan") or ()
-                    for fact in (scene or {}).get("information_gain") or ()
+                    str((delta or {}).get("subject") or "")
+                    for delta in content.get("world_deltas") or ()
+                    if str((delta or {}).get("subject") or "")
                 }
             ),
             "max_major_state_transitions": len(

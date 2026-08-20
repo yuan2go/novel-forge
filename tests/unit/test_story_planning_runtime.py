@@ -625,6 +625,51 @@ def test_operational_plan_consumes_accepted_narrative_debt_projection() -> None:
         )
 
 
+def test_narrative_load_counts_world_concepts_not_revealed_facts() -> None:
+    content = planning_fixture_response(
+        "chapter_plan.generate",
+        {
+            "planning_command": {
+                "logical_key": "chapter:2",
+                "parent_version_id": "chapter-group:v1",
+                "input_versions": {"arc_plans": "arc:v1"},
+            }
+        },
+    )
+    content["scene_plan"] = [
+        {
+            **content["scene_plan"][0],
+            "information_gain": [f"fact:reveal:{index}" for index in range(12)],
+        }
+    ]
+
+    contract = validate_planning_contract(
+        project_id="project-1",
+        book_id="book-1",
+        contract_type=PlanContractType.CHAPTER,
+        asset_version_id="chapter:fact-rich",
+        parent_version_id="chapter-group:v1",
+        execution_scope=PlanExecutionScope.PLANNED,
+        content=content,
+    )
+    assert contract.logical_key == "chapter:2"
+
+    content["world_deltas"] = [
+        {"subject": f"world-concept:{index}", "change": "introduced"}
+        for index in range(5)
+    ]
+    with pytest.raises(KernelError, match="NARRATIVE_LOAD_BUDGET_EXCEEDED"):
+        validate_planning_contract(
+            project_id="project-1",
+            book_id="book-1",
+            contract_type=PlanContractType.CHAPTER,
+            asset_version_id="chapter:world-load-exceeded",
+            parent_version_id="chapter-group:v1",
+            execution_scope=PlanExecutionScope.PLANNED,
+            content=content,
+        )
+
+
 def test_overdue_identity_requires_action_even_within_numeric_allowance() -> None:
     content = planning_fixture_response(
         "chapter_plan.generate",
