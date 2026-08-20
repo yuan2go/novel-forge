@@ -1,0 +1,38 @@
+from __future__ import annotations
+
+from novel_forge.storage.migrations import LATEST_MIGRATION_ID, validate_migration_chain
+from novel_forge.storage.migrations.versions import (
+    v20260814_0092_longform_correctness_closure as previous,
+    v20260820_0093_book_liveness_critical_path_closure as migration,
+)
+
+
+def test_book_liveness_closure_is_the_forward_only_backup_required_head() -> None:
+    validate_migration_chain()
+
+    assert migration.DOWN_REVISION == previous.MIGRATION_ID
+    assert LATEST_MIGRATION_ID == migration.MIGRATION_ID
+    assert migration.FORWARD_ONLY is True
+    assert migration.BACKUP_REQUIRED is True
+    assert "pre-0093 backup" in migration.FORWARD_FIX
+    assert "durable follow-up operation link" in migration.FORWARD_FIX
+
+
+def test_book_liveness_migration_is_evidence_guarded_and_adds_query_indexes() -> None:
+    sql = "\n".join(migration.UPGRADE_STATEMENTS)
+
+    assert "book.state='COMPLETED'" in sql
+    assert "group_run.state='CLOSURE_PENDING'" in sql
+    assert "accepted_through_chapter > 0" in sql
+    assert "acceptance.status='COMMITTED'" in sql
+    assert "active_chapter_request_id IS NULL" in sql
+    assert "DROP COLUMN last_reader_outcome_operation_id" in sql
+    assert "DROP COLUMN last_recap_operation_id" in sql
+    for index_name in (
+        "authority_book_acceptance_followup_admission_idx",
+        "authority_book_followup_backlog_idx",
+        "authority_book_followup_runtime_job_progress_idx",
+    ):
+        assert f"CREATE INDEX {index_name}" in sql
+    assert "runtime_group='book_followup'" in sql
+    assert "job_kind='BOOK_FOLLOWUP_ADMISSION'" in sql

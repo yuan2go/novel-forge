@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import unittest
 
 import psycopg
@@ -184,7 +185,7 @@ class AuthorityMigrationsPostgresTests(unittest.TestCase):
         self.assertEqual(operation, (operation_id, "ADMITTED"))
         self.assertEqual(blob_project_column, ("NO",))
 
-    def test_existing_previous_head_upgrades_with_runtime_identity_and_0092_schema(
+    def test_existing_0091_head_upgrades_through_0092_and_0093(
         self,
     ) -> None:
         dedupe_key = "book:shared:version:3"
@@ -209,7 +210,7 @@ class AuthorityMigrationsPostgresTests(unittest.TestCase):
             psycopg.connect(self.test_url) as connection,
             connection.cursor() as cursor,
         ):
-            for migration in MIGRATIONS[:-1]:
+            for migration in MIGRATIONS[:-2]:
                 for statement in migration.upgrade_statements:
                     cursor.execute(statement)
                 cursor.execute(
@@ -640,10 +641,10 @@ class AuthorityMigrationsPostgresTests(unittest.TestCase):
 
         self.assertEqual(
             applied_before,
-            {migration.migration_id for migration in MIGRATIONS[:-1]},
+            {migration.migration_id for migration in MIGRATIONS[:-2]},
         )
         self.assertEqual(
-            MIGRATIONS[-2].migration_id,
+            MIGRATIONS[-3].migration_id,
             "20260814_0091_canonical_longform_runtime_completion",
         )
 
@@ -762,6 +763,417 @@ class AuthorityMigrationsPostgresTests(unittest.TestCase):
         self.assertEqual(restarted_status["current"], LATEST_MIGRATION_ID)
         self.assertIn(
             "project_id", definitions["authority_runtime_job_active_subject_idx"]
+        )
+
+    def test_0092_upgrade_repairs_only_proven_liveness_heads_and_adds_indexes(
+        self,
+    ) -> None:
+        project_id = "project:migration-liveness"
+        committed_book = "book-run:migration-committed"
+        ambiguous_book = "book-run:migration-ambiguous"
+        closure_book = "book-run:migration-closure"
+        chapter_request_id = "chapter-request:migration-committed"
+        delegation_id = "delegation:migration-committed"
+        acceptance_operation_id = "operation:migration-acceptance"
+        followup_operation_id = "operation:migration-followup"
+        chapter_operation_id = "operation:migration-chapter"
+        group_operation_id = "operation:migration-group"
+        asset_versions = {
+            "chapter_plan": "asset-version:migration-chapter-plan",
+            "chapter_outcome": "asset-version:migration-outcome",
+            "story_state": "asset-version:migration-story-state",
+            "canon": "asset-version:migration-canon",
+            "group_plan": "asset-version:migration-group-plan",
+            "volume_plan": "asset-version:migration-volume-plan",
+        }
+        book_roots = {
+            committed_book: "operation:migration-book-committed",
+            ambiguous_book: "operation:migration-book-ambiguous",
+            closure_book: "operation:migration-book-closure",
+        }
+
+        with psycopg.connect(self.test_url) as connection, connection.cursor() as cursor:
+            for migration in MIGRATIONS[:-1]:
+                for statement in migration.upgrade_statements:
+                    cursor.execute(statement)
+                cursor.execute(
+                    "INSERT INTO nf_schema_migrations (migration_id) VALUES (%s)",
+                    [migration.migration_id],
+                )
+            self.assertEqual(
+                MIGRATIONS[-2].migration_id,
+                "20260814_0092_longform_correctness_closure",
+            )
+            cursor.execute(
+                """
+                INSERT INTO authority_operation_definition(
+                    name, definition_version, family, enabled,
+                    command_schema, result_schema, policy, completion_contract
+                ) VALUES (
+                    'migration.liveness', '1.0.0', 'migration-test', TRUE,
+                    '{}'::jsonb, '{}'::jsonb, '{}'::jsonb, '{}'::jsonb
+                )
+                """
+            )
+            operation_ids = (
+                *book_roots.values(),
+                chapter_operation_id,
+                acceptance_operation_id,
+                followup_operation_id,
+                group_operation_id,
+            )
+            for operation_id in operation_ids:
+                cursor.execute(
+                    """
+                    INSERT INTO authority_operation(
+                        operation_id, definition_name, definition_version,
+                        project_id, actor_id, status, root_operation_id,
+                        idempotency_scope, idempotency_key, request_digest,
+                        definition_snapshot, completion_contract_snapshot,
+                        policy_snapshot
+                    ) VALUES (
+                        %s, 'migration.liveness', '1.0.0', %s,
+                        'migration-worker', 'SUCCEEDED', %s,
+                        %s, %s, %s, '{}'::jsonb, '{}'::jsonb, '{}'::jsonb
+                    )
+                    """,
+                    [
+                        operation_id,
+                        project_id,
+                        operation_id,
+                        f"project:{project_id}",
+                        operation_id,
+                        f"digest:{operation_id}",
+                    ],
+                )
+            saga_operations = (*book_roots.values(), chapter_operation_id, group_operation_id)
+            for operation_id in saga_operations:
+                cursor.execute(
+                    """
+                    INSERT INTO authority_saga(
+                        saga_id, root_operation_id, project_id, status,
+                        trace_id, correlation_id
+                    ) VALUES (%s,%s,%s,'SUCCEEDED',%s,%s)
+                    """,
+                    [
+                        f"saga:{operation_id}",
+                        operation_id,
+                        project_id,
+                        f"trace:{operation_id}",
+                        f"correlation:{operation_id}",
+                    ],
+                )
+            for asset_type, asset_version_id in asset_versions.items():
+                asset_id = asset_version_id.replace("asset-version:", "asset:")
+                cursor.execute(
+                    "INSERT INTO authority_asset(asset_id, project_id, asset_type) VALUES (%s,%s,%s)",
+                    [asset_id, project_id, asset_type],
+                )
+                cursor.execute(
+                    """
+                    INSERT INTO authority_asset_version(
+                        asset_version_id, asset_id, version_number, lifecycle,
+                        eligibility, governance, content, content_hash,
+                        schema_version
+                    ) VALUES (
+                        %s,%s,1,'ACTIVE','ELIGIBLE','CLEAR',
+                        '{}'::jsonb,%s,'migration-liveness.v1'
+                    )
+                    """,
+                    [asset_version_id, asset_id, "sha256:" + "a" * 64],
+                )
+            longform_context = psycopg.types.json.Jsonb(
+                {
+                    "volume_plan_version": asset_versions["volume_plan"],
+                    "arc_plan_versions": ["asset-version:migration-arc"],
+                    "character_state_version": "asset-version:migration-character",
+                    "foreshadowing_state_version": "asset-version:migration-foreshadowing",
+                    "quality_trend_version": "asset-version:migration-quality",
+                    "reward_ledger_version": "asset-version:migration-reward",
+                    "promise_ledger_version": "asset-version:migration-promise",
+                }
+            )
+            book_rows = (
+                (committed_book, "READER_OUTCOME_PENDING", 1, 1, 10),
+                (ambiguous_book, "FOLLOWUP_PENDING", 0, 0, 10),
+                (closure_book, "COMPLETED", 3, 3, 10),
+            )
+            for book_run_id, state, current, accepted, target in book_rows:
+                root_operation_id = book_roots[book_run_id]
+                cursor.execute(
+                    """
+                    INSERT INTO authority_book_production(
+                        book_run_id, project_id, workspace_id, book_id,
+                        book_design_version, book_plan_version,
+                        production_profile_version, longform_context_versions,
+                        root_operation_id, saga_id, stable_idempotency_key,
+                        state, current_chapter, target_chapter_count,
+                        light_recap_cadence, formal_recap_cadence,
+                        last_reader_outcome_operation_id,
+                        last_recap_operation_id, accepted_through_chapter,
+                        active_story_state_version_id,
+                        last_chapter_outcome_version_id,
+                        active_canon_snapshot_version_id
+                    ) VALUES (
+                        %s,%s,%s,%s,'book-design:v1','book-plan:v1',
+                        'production-profile:v1',%s,%s,%s,%s,%s,%s,%s,5,10,
+                        %s,%s,%s,%s,%s,%s
+                    )
+                    """,
+                    [
+                        book_run_id,
+                        project_id,
+                        f"workspace:{book_run_id}",
+                        f"book:{book_run_id}",
+                        longform_context,
+                        root_operation_id,
+                        f"saga:{root_operation_id}",
+                        f"stable:{book_run_id}",
+                        state,
+                        current,
+                        target,
+                        followup_operation_id if book_run_id == committed_book else None,
+                        followup_operation_id if book_run_id == committed_book else None,
+                        accepted,
+                        asset_versions["story_state"] if accepted else None,
+                        asset_versions["chapter_outcome"] if accepted else None,
+                        asset_versions["canon"] if accepted else None,
+                    ],
+                )
+            cursor.execute(
+                """
+                INSERT INTO authority_book_chapter_request(
+                    chapter_request_id, book_run_id, project_id, chapter_number,
+                    chapter_plan_version, chapter_plan_content_hash,
+                    production_profile_version, stable_idempotency_key,
+                    command_payload, chapter_root_operation_id, chapter_saga_id,
+                    status_reference
+                ) VALUES (
+                    %s,%s,%s,1,%s,%s,'production-profile:v1',%s,
+                    '{}'::jsonb,%s,%s,'SUCCEEDED'
+                )
+                """,
+                [
+                    chapter_request_id,
+                    committed_book,
+                    project_id,
+                    asset_versions["chapter_plan"],
+                    "sha256:" + "b" * 64,
+                    "stable:migration-chapter",
+                    chapter_operation_id,
+                    f"saga:{chapter_operation_id}",
+                ],
+            )
+            cursor.execute(
+                """
+                INSERT INTO authority_child_delegation(
+                    delegation_id, project_id, owner_authority, owner_id,
+                    child_authority, chapter_request_id, chapter_number,
+                    plan_version_id, child_root_operation_id, child_saga_id,
+                    stable_idempotency_key, status, accepted_at
+                ) VALUES (
+                    %s,%s,'BOOK',%s,'CHAPTER',%s,1,%s,%s,%s,%s,'ACCEPTED',NOW()
+                )
+                """,
+                [
+                    delegation_id,
+                    project_id,
+                    committed_book,
+                    chapter_request_id,
+                    asset_versions["chapter_plan"],
+                    chapter_operation_id,
+                    f"saga:{chapter_operation_id}",
+                    "stable:migration-delegation",
+                ],
+            )
+            cursor.execute(
+                """
+                INSERT INTO authority_book_chapter_acceptance(
+                    acceptance_id, project_id, book_run_id, chapter_request_id,
+                    delegation_id, acceptance_operation_id, chapter_number,
+                    chapter_outcome_asset_version_id,
+                    story_state_asset_version_id, evidence, status,
+                    canon_snapshot_asset_version_id
+                ) VALUES (
+                    'acceptance:migration',%s,%s,%s,%s,%s,1,%s,%s,
+                    '{}'::jsonb,'COMMITTED',%s
+                )
+                """,
+                [
+                    project_id,
+                    committed_book,
+                    chapter_request_id,
+                    delegation_id,
+                    acceptance_operation_id,
+                    asset_versions["chapter_outcome"],
+                    asset_versions["story_state"],
+                    asset_versions["canon"],
+                ],
+            )
+            cursor.execute(
+                """
+                INSERT INTO authority_book_followup_operation(
+                    followup_id, book_run_id, chapter_request_id, project_id,
+                    followup_type, operation_id, stable_idempotency_key
+                ) VALUES (
+                    'followup:migration',%s,%s,%s,'READER_OUTCOME',%s,
+                    'stable:migration-followup'
+                )
+                """,
+                [
+                    committed_book,
+                    chapter_request_id,
+                    project_id,
+                    followup_operation_id,
+                ],
+            )
+            cursor.execute(
+                """
+                INSERT INTO authority_chapter_group_production(
+                    group_run_id, project_id, book_id, book_run_id,
+                    group_plan_version_id, volume_plan_version_id,
+                    root_operation_id, saga_id, stable_idempotency_key,
+                    chapter_start, chapter_end, accepted_through_chapter, state
+                ) VALUES (
+                    'chapter-group-run:migration',%s,%s,%s,%s,%s,%s,%s,
+                    'stable:migration-group',1,3,3,'CLOSURE_PENDING'
+                )
+                """,
+                [
+                    project_id,
+                    f"book:{closure_book}",
+                    closure_book,
+                    asset_versions["group_plan"],
+                    asset_versions["volume_plan"],
+                    group_operation_id,
+                    f"saga:{group_operation_id}",
+                ],
+            )
+            runtime_snapshot = {"book_run_id": committed_book}
+            cursor.execute(
+                """
+                INSERT INTO authority_runtime_job(
+                    runtime_job_id, job_kind, runtime_group, subject_kind,
+                    subject_id, project_id, dedupe_key, input_snapshot,
+                    input_hash, status
+                ) VALUES (
+                    'runtime-job:migration-followup','BOOK_FOLLOWUP_ADMISSION',
+                    'book_followup','CHAPTER_ACCEPTANCE',%s,%s,
+                    'migration-followup',%s,%s,'READY'
+                )
+                """,
+                [
+                    chapter_request_id,
+                    project_id,
+                    psycopg.types.json.Jsonb(runtime_snapshot),
+                    canonical_payload_hash(runtime_snapshot),
+                ],
+            )
+
+        status = run_migrations(self.test_url)
+        self.assertTrue(status["ok"])
+        self.assertEqual(status["current"], LATEST_MIGRATION_ID)
+        with psycopg.connect(self.test_url) as connection:
+            states = dict(
+                connection.execute(
+                    """
+                    SELECT book_run_id, state
+                    FROM authority_book_production
+                    WHERE book_run_id = ANY(%s)
+                    """,
+                    [[committed_book, ambiguous_book, closure_book]],
+                ).fetchall()
+            )
+            committed_row = connection.execute(
+                """
+                SELECT state, accepted_through_chapter,
+                       active_chapter_request_id, active_child_delegation_id,
+                       active_chapter_number, active_plan_version_id
+                FROM authority_book_production WHERE book_run_id=%s
+                """,
+                [committed_book],
+            ).fetchone()
+            removed_pointer_columns = connection.execute(
+                """
+                SELECT COUNT(*)
+                FROM information_schema.columns
+                WHERE table_schema='public'
+                  AND table_name='authority_book_production'
+                  AND column_name IN (
+                      'last_reader_outcome_operation_id',
+                      'last_recap_operation_id'
+                  )
+                """
+            ).fetchone()[0]
+            indexes = {
+                row[0]
+                for row in connection.execute(
+                    """
+                    SELECT indexname FROM pg_indexes
+                    WHERE schemaname='public'
+                      AND indexname IN (
+                        'authority_book_acceptance_followup_admission_idx',
+                        'authority_book_followup_backlog_idx',
+                        'authority_book_followup_runtime_job_progress_idx'
+                      )
+                    """
+                ).fetchall()
+            }
+            connection.execute("SET enable_seqscan=off")
+            acceptance_plan = connection.execute(
+                """
+                EXPLAIN (FORMAT JSON)
+                SELECT chapter_number, created_at, book_run_id, chapter_request_id
+                FROM authority_book_chapter_acceptance
+                WHERE status='COMMITTED'
+                ORDER BY chapter_number, created_at, book_run_id, chapter_request_id
+                LIMIT 10
+                """
+            ).fetchone()[0]
+            backlog_plan = connection.execute(
+                """
+                EXPLAIN (FORMAT JSON)
+                SELECT operation_id FROM authority_book_followup_operation
+                WHERE book_run_id=%s AND chapter_request_id=%s
+                  AND followup_type='READER_OUTCOME'
+                """,
+                [committed_book, chapter_request_id],
+            ).fetchone()[0]
+            runtime_plan = connection.execute(
+                """
+                EXPLAIN (FORMAT JSON)
+                SELECT runtime_job_id FROM authority_runtime_job
+                WHERE runtime_group='book_followup'
+                  AND job_kind='BOOK_FOLLOWUP_ADMISSION'
+                  AND project_id=%s
+                  AND input_snapshot->>'book_run_id'=%s
+                  AND status='READY'
+                ORDER BY available_at
+                LIMIT 10
+                """,
+                [project_id, committed_book],
+            ).fetchone()[0]
+        self.assertEqual(states[committed_book], "READY")
+        self.assertEqual(states[ambiguous_book], "FOLLOWUP_PENDING")
+        self.assertEqual(states[closure_book], "READY")
+        self.assertEqual(committed_row, ("READY", 1, None, None, None, None))
+        self.assertEqual(removed_pointer_columns, 0)
+        self.assertEqual(
+            indexes,
+            {
+                "authority_book_acceptance_followup_admission_idx",
+                "authority_book_followup_backlog_idx",
+                "authority_book_followup_runtime_job_progress_idx",
+            },
+        )
+        self.assertIn(
+            "authority_book_acceptance_followup_admission_idx",
+            json.dumps(acceptance_plan),
+        )
+        self.assertIn("authority_book_followup_backlog_idx", json.dumps(backlog_plan))
+        self.assertIn(
+            "authority_book_followup_runtime_job_progress_idx",
+            json.dumps(runtime_plan),
         )
 
 

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import atexit
 from copy import deepcopy
 from dataclasses import asdict
 from datetime import datetime
@@ -12,6 +13,8 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import sys
+import time
 from types import SimpleNamespace
 from typing import Any, Callable, Mapping
 from uuid import uuid4
@@ -28,10 +31,8 @@ from novel_forge.modules.book_authority import (
     ResolveBookProductionInputCommand,
     StartBookProductionCommand,
 )
+from novel_forge.modules.book_authority.queries import PostgresBookProductionQuery
 from novel_forge.modules.book_followup_authority import LongformCheckpointType
-from novel_forge.modules.book_followup_authority.application import (
-    BookFollowupAdmission,
-)
 from novel_forge.modules.book_production import SupervisorAction
 from novel_forge.modules.book_replan import (
     CoordinateBookReplanCommand,
@@ -3085,18 +3086,123 @@ def _followup_output(
     return rows[0]
 
 
+def _start_followup_worker(
+    *,
+    database_url: str,
+    settings: IndustrialSettings,
+    env: Mapping[str, str],
+    runtime_root: Path,
+    project_id: str,
+) -> tuple[subprocess.Popen[str], Any]:
+    """Launch the canonical Book Followup deployment executor.
+
+    The proof driver may observe PostgreSQL results, but it must not invoke a
+    follow-up handler or scheduler in the Book coordination process.
+    """
+
+    runtime_root.mkdir(parents=True, exist_ok=True)
+    log_handle = (runtime_root / "book-followup-worker.log").open(
+        "a", encoding="utf-8"
+    )
+    worker_env = {
+        **os.environ,
+        **dict(env),
+        "NOVEL_FORGE_ROOT": str(ROOT),
+        "NOVEL_FORGE_STORAGE_AUTHORITY": "postgresql",
+        "NOVEL_FORGE_DATABASE_URL": database_url,
+        "NOVEL_FORGE_MINIO_ENDPOINT": settings.minio_endpoint,
+        "NOVEL_FORGE_MINIO_ACCESS_KEY": settings.minio_access_key,
+        "NOVEL_FORGE_MINIO_SECRET_KEY": settings.minio_secret_key,
+        "NOVEL_FORGE_MINIO_SECURE": "true" if settings.minio_secure else "false",
+        "NOVEL_FORGE_MINIO_RAW_BUCKET": settings.minio_raw_bucket,
+        "NOVEL_FORGE_MINIO_ARTIFACT_BUCKET": settings.minio_artifact_bucket,
+        "NOVEL_FORGE_MINIO_EXPORT_BUCKET": settings.minio_export_bucket,
+        "NOVEL_FORGE_AUTHORITY_POLL_SECONDS": "0.1",
+        "NOVEL_FORGE_AUTHORITY_BATCH_SIZE": "4",
+        "NOVEL_FORGE_AUTHORITY_PROJECT_SCOPE": project_id,
+        "PYTHONPATH": str(ROOT / "src"),
+    }
+    process = subprocess.Popen(
+        (sys.executable, "-m", "novel_forge.workers.book_followup_authority"),
+        cwd=ROOT,
+        env=worker_env,
+        stdout=log_handle,
+        stderr=subprocess.STDOUT,
+        text=True,
+    )
+    return process, log_handle
+
+
+def _start_book_worker(
+    *,
+    database_url: str,
+    settings: IndustrialSettings,
+    env: Mapping[str, str],
+    runtime_root: Path,
+    project_id: str,
+) -> tuple[subprocess.Popen[str], Any]:
+    """Launch the canonical Book deployment executor for runtime proof."""
+
+    runtime_root.mkdir(parents=True, exist_ok=True)
+    log_handle = (runtime_root / "book-worker.log").open("a", encoding="utf-8")
+    worker_env = {
+        **os.environ,
+        **dict(env),
+        "NOVEL_FORGE_ROOT": str(ROOT),
+        "NOVEL_FORGE_STORAGE_AUTHORITY": "postgresql",
+        "NOVEL_FORGE_DATABASE_URL": database_url,
+        "NOVEL_FORGE_MINIO_ENDPOINT": settings.minio_endpoint,
+        "NOVEL_FORGE_MINIO_ACCESS_KEY": settings.minio_access_key,
+        "NOVEL_FORGE_MINIO_SECRET_KEY": settings.minio_secret_key,
+        "NOVEL_FORGE_MINIO_SECURE": "true" if settings.minio_secure else "false",
+        "NOVEL_FORGE_MINIO_RAW_BUCKET": settings.minio_raw_bucket,
+        "NOVEL_FORGE_MINIO_ARTIFACT_BUCKET": settings.minio_artifact_bucket,
+        "NOVEL_FORGE_MINIO_EXPORT_BUCKET": settings.minio_export_bucket,
+        "NOVEL_FORGE_BOOK_AUTHORITY_WORKER_ID": (
+            f"book-worker:runtime-proof:{project_id}"
+        ),
+        "NOVEL_FORGE_AUTHORITY_PROJECT_SCOPE": project_id,
+        "NOVEL_FORGE_AUTHORITY_POLL_SECONDS": "0.1",
+        "NOVEL_FORGE_AUTHORITY_BATCH_SIZE": "4",
+        "PYTHONPATH": str(ROOT / "src"),
+    }
+    process = subprocess.Popen(
+        (sys.executable, "-m", "novel_forge.workers.book_authority"),
+        cwd=ROOT,
+        env=worker_env,
+        stdout=log_handle,
+        stderr=subprocess.STDOUT,
+        text=True,
+    )
+    return process, log_handle
+
+
+def _stop_followup_worker(process: subprocess.Popen[str], log_handle: Any) -> None:
+    if process.poll() is None:
+        process.terminate()
+        try:
+            process.wait(timeout=15)
+        except subprocess.TimeoutExpired:
+            process.kill()
+            process.wait(timeout=5)
+    log_handle.close()
+
+
 def _complete_reader_sidecar(
-    supervisor: PostgresBookProductionSupervisor,
     *,
     database_url: str,
     project_id: str,
-    book_run_id: str,
     chapter_request_id: str,
-) -> tuple[dict[str, Any], list[dict[str, Any]]]:
-    ticks: list[dict[str, Any]] = []
-    for _ in range(5):
-        tick = supervisor.tick(book_run_id)
-        ticks.append(_jsonable(asdict(tick)))
+    followup_process: subprocess.Popen[str],
+    timeout_seconds: float = 180.0,
+) -> dict[str, Any]:
+    deadline = time.monotonic() + timeout_seconds
+    while time.monotonic() < deadline:
+        return_code = followup_process.poll()
+        if return_code is not None:
+            raise RuntimeError(
+                f"Book Followup worker exited before Reader completion: {return_code}"
+            )
         rows = _query_rows(
             database_url,
             """
@@ -3117,9 +3223,10 @@ def _complete_reader_sidecar(
                 followup_type="READER_OUTCOME",
                 output_key="reader_outcome.report",
             )
-            return report, ticks
+            return report
+        time.sleep(0.1)
     raise RuntimeError(
-        "Reader Outcome sidecar did not succeed in five Supervisor ticks"
+        "Reader Outcome sidecar did not succeed before the bounded timeout"
     )
 
 
@@ -3222,9 +3329,12 @@ def _controlled_recap(
     project_id: str,
     chapter_request_id: str,
     principal: Principal,
+    followup_process: subprocess.Popen[str],
 ) -> dict[str, Any]:
     request = authority.require_chapter_request(chapter_request_id)
-    book = authority.require(request["book_run_id"])
+    snapshot = PostgresBookProductionQuery(
+        authority.database_url
+    ).require_accepted_followup_snapshot(chapter_request_id=chapter_request_id)
     reader = _followup_output(
         authority.database_url,
         project_id=project_id,
@@ -3232,19 +3342,17 @@ def _controlled_recap(
         followup_type="READER_OUTCOME",
         output_key="reader_outcome.report",
     )
-    frozen = dict(book["longform_context_versions"])
-    rolling = _rolling_narrative_versions(book)
     authority_inputs = authority.resolve_asset_refs(
         project_id=project_id,
         asset_version_ids=(
-            str(book["book_design_version"]),
-            str(book["book_plan_version"]),
-            str(frozen["volume_plan_version"]),
-            str(frozen["arc_plan_version"]),
-            str(frozen["quality_trend_version"]),
-            str(book["last_chapter_outcome_version_id"]),
-            rolling["story_state"],
-            rolling["canon_snapshot"],
+            str(snapshot["book_design_version"]),
+            str(snapshot["book_plan_version"]),
+            str(snapshot["volume_plan_version"]),
+            *(str(item) for item in snapshot["arc_plan_versions"]),
+            str(snapshot["quality_trend_version"]),
+            str(snapshot["accepted_chapter_outcome_version"]),
+            str(snapshot["accepted_story_state_version"]),
+            str(snapshot["accepted_canon_snapshot_version"]),
         ),
     )
 
@@ -3252,22 +3360,27 @@ def _controlled_recap(
         chapter_request_id,
         principal=principal,
         payload={
-            "book_id": book["book_id"],
+            "book_id": snapshot["book_id"],
             "checkpoint_type": LongformCheckpointType.CHAPTER_CADENCE.value,
             "chapter_range": [1, int(request["chapter_number"])],
-            "book_design_version": book["book_design_version"],
-            "book_plan_version": book["book_plan_version"],
-            "volume_plan_version": frozen["volume_plan_version"],
-            "arc_plan_version": frozen["arc_plan_version"],
-            "canon_snapshot_version": rolling["canon_snapshot"],
-            "character_state_version": rolling["character_state"],
-            "foreshadowing_state_version": rolling["foreshadowing_state"],
+            "observed_through_chapter": int(snapshot["observed_through_chapter"]),
+            "acceptance_operation_id": snapshot["acceptance_operation_id"],
+            "book_production_input_snapshot_id": snapshot[
+                "book_production_input_snapshot_id"
+            ],
+            "book_design_version": snapshot["book_design_version"],
+            "book_plan_version": snapshot["book_plan_version"],
+            "volume_plan_version": snapshot["volume_plan_version"],
+            "arc_plan_versions": list(snapshot["arc_plan_versions"]),
+            "canon_snapshot_version": snapshot[
+                "accepted_canon_snapshot_version"
+            ],
             "reader_state_version": reader["asset_version_id"],
-            "quality_trend_version": frozen["quality_trend_version"],
-            "reward_ledger_version": rolling["reward_ledger"],
-            "promise_ledger_version": rolling["promise_ledger"],
-            "chapter_outcome_versions": [book["last_chapter_outcome_version_id"]],
-            "story_state_version": book["active_story_state_version_id"],
+            "quality_trend_version": snapshot["quality_trend_version"],
+            "chapter_outcome_versions": [
+                snapshot["accepted_chapter_outcome_version"]
+            ],
+            "story_state_version": snapshot["accepted_story_state_version"],
             "observations": {
                 "evidence_level": "CONTROLLED_PROOF",
                 "controlled_proof_runtime_claim": "CONTROL_FLOW_ONLY",
@@ -3304,9 +3417,23 @@ def _controlled_recap(
             *authority_inputs,
         ),
     )
-    authority.followup.run_or_recover(
-        BookFollowupAdmission(admission.operation_id, project_id, True)
-    )
+    deadline = time.monotonic() + 180.0
+    while time.monotonic() < deadline:
+        return_code = followup_process.poll()
+        if return_code is not None:
+            raise RuntimeError(
+                f"Book Followup worker exited before Recap completion: {return_code}"
+            )
+        rows = _query_rows(
+            authority.database_url,
+            "SELECT status FROM authority_operation WHERE operation_id=%s",
+            (admission.operation_id,),
+        )
+        if len(rows) == 1 and rows[0]["status"] == "SUCCEEDED":
+            break
+        time.sleep(0.1)
+    else:
+        raise RuntimeError("controlled Longform Recap did not finish in time")
     return {
         "operation_id": admission.operation_id,
         "recap": _followup_output(
@@ -3374,8 +3501,6 @@ def _drive_to_chapter_dispatch(
             SupervisorAction.CLOSE_CHAPTER_GROUP,
             SupervisorAction.GENERATE_CHAPTER_PLAN,
             SupervisorAction.FREEZE_CHAPTER_PLAN,
-            SupervisorAction.SCHEDULE_READER_OUTCOME,
-            SupervisorAction.SCHEDULE_LONGFORM_RECAP,
             SupervisorAction.UPDATE_CHECKPOINTS,
             SupervisorAction.START_REPLAN,
             SupervisorAction.ACTIVATE_REPLAN,
@@ -3459,6 +3584,17 @@ def _run_book_phase(
     planning = composition.planning
     input_resolver = composition.input_resolver
     supervisor = composition.supervisor
+    followup_process, followup_log = _start_followup_worker(
+        database_url=database_url,
+        settings=settings,
+        env=env,
+        runtime_root=(
+            Path(env["NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT"]).parent
+            / "book-followup-worker"
+        ),
+        project_id=project_id,
+    )
+    atexit.register(_stop_followup_worker, followup_process, followup_log)
     existing_books = _query_rows(
         database_url,
         """
@@ -3507,7 +3643,9 @@ def _run_book_phase(
                     "volume_plan_version": (
                         initial_snapshot.current_volume_plan_version
                     ),
-                    "arc_plan_version": initial_snapshot.active_arc_plan_versions[0],
+                    "arc_plan_versions": list(
+                        initial_snapshot.active_arc_plan_versions
+                    ),
                     "character_state_version": initial_snapshot.character_state_version,
                     "foreshadowing_state_version": (
                         initial_snapshot.foreshadowing_state_version
@@ -3565,12 +3703,11 @@ def _run_book_phase(
             )
             chapter_requests[chapter_number] = request
             chapter_ticks[chapter_number] = []
-            reader = _followup_output(
-                database_url,
+            reader = _complete_reader_sidecar(
+                database_url=database_url,
                 project_id=project_id,
                 chapter_request_id=str(request["chapter_request_id"]),
-                followup_type="READER_OUTCOME",
-                output_key="reader_outcome.report",
+                followup_process=followup_process,
             )
             reader_reports[chapter_number] = reader
             runtime_inputs = _runtime_planning_inputs(
@@ -3603,15 +3740,13 @@ def _run_book_phase(
                 chapter_number=chapter_number,
             )
         )
-        reader, reader_ticks = _complete_reader_sidecar(
-            supervisor,
+        reader = _complete_reader_sidecar(
             database_url=database_url,
             project_id=project_id,
-            book_run_id=admission.book_run_id,
             chapter_request_id=str(request["chapter_request_id"]),
+            followup_process=followup_process,
         )
         reader_reports[chapter_number] = reader
-        supervisor_ticks.extend(reader_ticks)
         runtime_inputs = _runtime_planning_inputs(
             authority,
             project_id=project_id,
@@ -3619,6 +3754,8 @@ def _run_book_phase(
             reader_report=reader,
         )
         if stop_after_chapter == chapter_number:
+            _stop_followup_worker(followup_process, followup_log)
+            atexit.unregister(_stop_followup_worker)
             return {
                 "stopped_after_chapter": chapter_number,
                 "book_run": authority.require(admission.book_run_id),
@@ -3648,6 +3785,7 @@ def _run_book_phase(
         project_id=project_id,
         chapter_request_id=str(chapter_requests[2]["chapter_request_id"]),
         principal=operator,
+        followup_process=followup_process,
     )
     replan = composition.replan
     command = CoordinateBookReplanCommand(
@@ -3713,18 +3851,21 @@ def _run_book_phase(
             chapter_number=3,
         )
     )
-    reader, reader_ticks = _complete_reader_sidecar(
-        supervisor,
+    reader = _complete_reader_sidecar(
         database_url=database_url,
         project_id=project_id,
-        book_run_id=admission.book_run_id,
         chapter_request_id=str(request["chapter_request_id"]),
+        followup_process=followup_process,
     )
     reader_reports[3] = reader
-    supervisor_ticks.extend(reader_ticks)
 
     final_recap: dict[str, Any] | None = None
-    for _ in range(8):
+    deadline = time.monotonic() + 180.0
+    while time.monotonic() < deadline:
+        if followup_process.poll() is not None:
+            raise RuntimeError(
+                "Book Followup worker exited before final Recap completion"
+            )
         tick = supervisor.tick(admission.book_run_id)
         supervisor_ticks.append(_jsonable(asdict(tick)))
         try:
@@ -3751,11 +3892,14 @@ def _run_book_phase(
             and group_rows[0]["state"] == "COMPLETED"
         ):
             break
+        time.sleep(0.1)
     if final_recap is None:
         raise RuntimeError("final deterministic Longform Recap did not succeed")
     final_book = authority.require(admission.book_run_id)
     if final_book["state"] != "COMPLETED":
         raise RuntimeError("three-Chapter Book did not complete")
+    _stop_followup_worker(followup_process, followup_log)
+    atexit.unregister(_stop_followup_worker)
     return {
         "book_run": final_book,
         "initial_snapshot": initial_snapshot.to_dict(),

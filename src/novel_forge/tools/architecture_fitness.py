@@ -330,7 +330,13 @@ def build_report(repo_root: str | Path = ".") -> dict[str, Any]:
 
     domain_root = root / str(policy["domain_package_root"])
     domain_packages = tuple(
-        sorted(path for path in domain_root.iterdir() if path.is_dir())
+        sorted(
+            path
+            for path in domain_root.iterdir()
+            if path.is_dir()
+            and path.name != "__pycache__"
+            and any(path.rglob("*.py"))
+        )
     )
     domain_filenames = set(str(value) for value in policy["domain_layer_filenames"])
     domain_paths = {

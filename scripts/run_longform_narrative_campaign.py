@@ -4,11 +4,13 @@
 from __future__ import annotations
 
 import argparse
+import atexit
 from datetime import datetime
 import json
 import os
 from pathlib import Path
 import subprocess
+import time
 from typing import Any, Mapping
 from uuid import uuid4
 
@@ -48,14 +50,12 @@ from run_short_longform_runtime_proof import (
     PLANNING_PACK_INITIAL_VERSION,
     PROOF_QUALITY_CONTEXT_TOKEN_BUDGET,
     READER_PACK_ID,
-    _accept_chapter,
     _bootstrap_assets,
     _bootstrap_chapter_profiles,
     _campaign_initial_narrative_snapshots as _build_campaign_initial_snapshots,
     _chapter_outputs,
     _codex_version,
     _complete_reader_sidecar,
-    _drive_to_chapter_dispatch,
     _install_profile,
     _proof_bucket_names,
     _register_longform_definitions,
@@ -63,11 +63,14 @@ from run_short_longform_runtime_proof import (
     _run_chapter_scheduler,
     _run_planning,
     _seed_project_and_active_design,
+    _start_book_worker,
+    _start_followup_worker,
+    _stop_followup_worker,
 )
 
 
 ROOT = Path(__file__).resolve().parents[1]
-ALLOWED_TARGETS = frozenset({1, 2, 5, 30, 100, 300})
+ALLOWED_TARGETS = frozenset({1, 2, 5, 10, 30, 100, 300})
 SCHEMA_VERSION = "novel-forge.longform-proof-campaign-checkpoint.v1"
 
 
@@ -83,7 +86,9 @@ def _campaign_initial_narrative_snapshots(
 
 def _validate_target(value: int) -> int:
     if value not in ALLOWED_TARGETS:
-        raise ValueError("target chapter must be one of 1, 2, 5, 30, 100, or 300")
+        raise ValueError(
+            "target chapter must be one of 1, 2, 5, 10, 30, 100, or 300"
+        )
     return value
 
 
@@ -525,7 +530,7 @@ def _start_or_require_book(
             production_profile_version=snapshot.production_profile_version,
             longform_context_versions={
                 "volume_plan_version": snapshot.current_volume_plan_version,
-                "arc_plan_version": snapshot.active_arc_plan_versions[0],
+                "arc_plan_versions": list(snapshot.active_arc_plan_versions),
                 "character_state_version": snapshot.character_state_version,
                 "foreshadowing_state_version": snapshot.foreshadowing_state_version,
                 "quality_trend_version": snapshot.quality_trend_version,
@@ -590,7 +595,11 @@ def _export_chapter(
 
 
 def _collect_measurements(
-    database_url: str, *, project_id: str, book_run_id: str
+    database_url: str,
+    *,
+    project_id: str,
+    book_run_id: str,
+    worker_ids: tuple[str, ...] = (),
 ) -> dict[str, Any]:
     queries = {
         "operations": "SELECT COUNT(*) AS count FROM authority_operation WHERE project_id=%s",
@@ -650,6 +659,20 @@ def _collect_measurements(
     result["duplicate_logical_chapters"] = sum(
         1 for row in chapter_rows if int(row["accepted"]) != 1
     )
+    if worker_ids:
+        result["worker_health"] = _query_rows(
+            database_url,
+            """
+            SELECT worker_id, worker_kind, runtime_group, status,
+                   last_poll_at, last_successful_poll_at, last_heartbeat_at,
+                   completed_runtime_job_count, failed_runtime_job_count,
+                   database_status, updated_at
+            FROM authority_worker_health_projection
+            WHERE worker_id=ANY(%s)
+            ORDER BY worker_kind, worker_id
+            """,
+            (list(worker_ids),),
+        )
     return result
 
 
@@ -663,6 +686,174 @@ def _write_combined_novel(output_root: Path, *, through: int, title: str) -> Pat
     target = output_root / "novel" / f"complete-through-{through:04d}.md"
     target.write_text("\n\n".join(parts) + "\n", encoding="utf-8")
     return target
+
+
+def _require_worker_alive(
+    process: subprocess.Popen[str], *, worker_kind: str
+) -> None:
+    return_code = process.poll()
+    if return_code is not None:
+        raise RuntimeError(
+            f"{worker_kind} worker exited before campaign progress: {return_code}"
+        )
+
+
+def _progress_observation(composition: Any, *, book_run_id: str) -> dict[str, Any]:
+    return _jsonable(composition.query.progress(book_run_id=book_run_id).to_dict())
+
+
+def _approve_observed_replan(
+    composition: Any,
+    *,
+    book_run_id: str,
+    contract_identity_value: str,
+) -> bool:
+    book = composition.authority.require(book_run_id)
+    if str(book["state"]) != "REPLAN_APPROVAL_PENDING":
+        return False
+    pending = composition.replan.latest_for_book(book_run_id)
+    if pending is None or str(pending["status"]) != "AUTHORITY_PENDING":
+        raise RuntimeError("Book waits for Replan approval without pending proposal")
+    composition.replan.approve(
+        str(pending["replan_id"]),
+        authority_type="PLAN_CHANGE_AUTHORITY",
+        authority_version="longform-proof-operator-approval-v1",
+        evidence={
+            "campaign_contract_identity": contract_identity_value,
+            "future_only": True,
+            "human_behavior_claimed": False,
+            "quality_calibration_claimed": False,
+        },
+    )
+    return True
+
+
+def _wait_for_chapter_dispatch(
+    composition: Any,
+    *,
+    database_url: str,
+    book_run_id: str,
+    chapter_number: int,
+    book_process: subprocess.Popen[str],
+    followup_process: subprocess.Popen[str],
+    contract_identity_value: str,
+    timeout_seconds: float = 1800.0,
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    deadline = time.monotonic() + timeout_seconds
+    observations: list[dict[str, Any]] = []
+    while time.monotonic() < deadline:
+        _require_worker_alive(book_process, worker_kind="Book")
+        _require_worker_alive(followup_process, worker_kind="Book Followup")
+        rows = _query_rows(
+            database_url,
+            """
+            SELECT chapter_request_id
+            FROM authority_book_chapter_request
+            WHERE book_run_id=%s AND chapter_number=%s
+              AND chapter_root_operation_id IS NOT NULL
+            ORDER BY created_at DESC LIMIT 1
+            """,
+            (book_run_id, chapter_number),
+        )
+        if rows:
+            request = composition.authority.require_chapter_request(
+                str(rows[0]["chapter_request_id"])
+            )
+            if int(request["chapter_number"]) != chapter_number:
+                raise RuntimeError("Book worker dispatched the wrong Chapter")
+            observations.append(
+                {
+                    "phase": "BOOK_WORKER_DISPATCH_OBSERVED",
+                    "chapter": chapter_number,
+                    **_progress_observation(composition, book_run_id=book_run_id),
+                }
+            )
+            return request, observations
+        progress = _progress_observation(composition, book_run_id=book_run_id)
+        state = str(progress["state"])
+        if state in {"CHAPTER_FAILED_TERMINAL", "ABORTED"}:
+            raise RuntimeError(
+                f"Book reached terminal state before Chapter {chapter_number}: "
+                f"{json.dumps(progress, ensure_ascii=False)}"
+            )
+        if state == "PLAN_APPROVAL_PENDING":
+            raise RuntimeError(
+                "Book requires Story Planning approval; campaign cannot silently "
+                "activate an unapproved plan"
+            )
+        if _approve_observed_replan(
+            composition,
+            book_run_id=book_run_id,
+            contract_identity_value=contract_identity_value,
+        ):
+            observations.append(
+                {
+                    "phase": "REPLAN_AUTHORITY_APPROVED",
+                    "chapter": chapter_number,
+                    **progress,
+                }
+            )
+        time.sleep(0.1)
+    raise RuntimeError(
+        "Book worker did not dispatch the bounded Chapter before timeout: "
+        + json.dumps(
+            _progress_observation(composition, book_run_id=book_run_id),
+            ensure_ascii=False,
+        )
+    )
+
+
+def _wait_for_chapter_acceptance(
+    composition: Any,
+    *,
+    database_url: str,
+    book_run_id: str,
+    chapter_number: int,
+    book_process: subprocess.Popen[str],
+    followup_process: subprocess.Popen[str],
+    timeout_seconds: float = 600.0,
+) -> list[dict[str, Any]]:
+    deadline = time.monotonic() + timeout_seconds
+    while time.monotonic() < deadline:
+        _require_worker_alive(book_process, worker_kind="Book")
+        _require_worker_alive(followup_process, worker_kind="Book Followup")
+        book = composition.authority.require(book_run_id)
+        if int(book["accepted_through_chapter"]) >= chapter_number:
+            rows = _query_rows(
+                database_url,
+                """
+                SELECT acceptance_id, created_at
+                FROM authority_book_chapter_acceptance
+                WHERE book_run_id=%s AND chapter_number=%s AND status='COMMITTED'
+                """,
+                (book_run_id, chapter_number),
+            )
+            if len(rows) != 1:
+                raise RuntimeError(
+                    "accepted Book cursor has no unique committed Chapter acceptance"
+                )
+            return [
+                {
+                    "phase": "BOOK_WORKER_ACCEPTANCE_OBSERVED",
+                    "chapter": chapter_number,
+                    "acceptance_id": rows[0]["acceptance_id"],
+                    "acceptance_created_at": rows[0]["created_at"],
+                    **_progress_observation(composition, book_run_id=book_run_id),
+                }
+            ]
+        if str(book["state"]) in {"CHAPTER_FAILED_TERMINAL", "ABORTED"}:
+            raise RuntimeError(
+                f"Book reached {book['state']} before accepting Chapter "
+                f"{chapter_number}"
+            )
+        time.sleep(0.1)
+    raise RuntimeError(
+        "Book worker did not accept the bounded Chapter before timeout: "
+        + json.dumps(
+            _progress_observation(composition, book_run_id=book_run_id),
+            ensure_ascii=False,
+        )
+    )
 
 
 def _run(args: argparse.Namespace) -> dict[str, Any]:
@@ -743,26 +934,35 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
     chapter_exports = list((previous or {}).get("chapter_exports") or [])
     failures = list((previous or {}).get("failures") or [])
     supervisor_ticks: list[dict[str, Any]] = []
+    book_process, book_log = _start_book_worker(
+        database_url=args.database_url,
+        settings=settings,
+        env=composition_env,
+        runtime_root=process_root / "book-worker",
+        project_id=state["project_id"],
+    )
+    followup_process, followup_log = _start_followup_worker(
+        database_url=args.database_url,
+        settings=settings,
+        env=composition_env,
+        runtime_root=process_root / "book-followup-worker",
+        project_id=state["project_id"],
+    )
+    atexit.register(_stop_followup_worker, book_process, book_log)
+    atexit.register(_stop_followup_worker, followup_process, followup_log)
     try:
         accepted = int(
             composition.authority.require(book_run_id)["accepted_through_chapter"]
         )
         for chapter_number in range(accepted + 1, target + 1):
-            request, ticks = _drive_to_chapter_dispatch(
-                composition.supervisor,
+            request, ticks = _wait_for_chapter_dispatch(
+                composition,
+                database_url=args.database_url,
                 book_run_id=book_run_id,
                 chapter_number=chapter_number,
-                approve_replan=lambda replan_id: composition.replan.approve(
-                    replan_id,
-                    authority_type="PLAN_CHANGE_AUTHORITY",
-                    authority_version="longform-proof-operator-approval-v1",
-                    evidence={
-                        "campaign_contract_identity": identity,
-                        "future_only": True,
-                        "human_behavior_claimed": False,
-                        "quality_calibration_claimed": False,
-                    },
-                ),
+                book_process=book_process,
+                followup_process=followup_process,
+                contract_identity_value=identity,
             )
             supervisor_ticks.extend(ticks)
             _run_chapter_scheduler(
@@ -774,21 +974,23 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
                 worker=worker,
                 commit_sha=commit_sha,
             )
-            supervisor_ticks.append(
-                _accept_chapter(
-                    composition.supervisor,
+            supervisor_ticks.extend(
+                _wait_for_chapter_acceptance(
+                    composition,
+                    database_url=args.database_url,
                     book_run_id=book_run_id,
                     chapter_number=chapter_number,
+                    book_process=book_process,
+                    followup_process=followup_process,
                 )
             )
-            _reader, reader_ticks = _complete_reader_sidecar(
-                composition.supervisor,
+            _reader = _complete_reader_sidecar(
                 database_url=args.database_url,
                 project_id=state["project_id"],
-                book_run_id=book_run_id,
                 chapter_request_id=str(request["chapter_request_id"]),
+                followup_process=followup_process,
+                timeout_seconds=1800.0,
             )
-            supervisor_ticks.extend(reader_ticks)
             chapter_export = _export_chapter(
                 authority=composition.authority,
                 project_id=state["project_id"],
@@ -821,6 +1023,16 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
                     "minio_buckets": buckets,
                     "process_root": str(process_root),
                     "migration": migration,
+                    "book_worker_process_id": book_process.pid,
+                    "book_followup_worker_process_id": followup_process.pid,
+                    "book_worker_log": str(
+                        process_root / "book-worker" / "book-worker.log"
+                    ),
+                    "book_followup_worker_log": str(
+                        process_root
+                        / "book-followup-worker"
+                        / "book-followup-worker.log"
+                    ),
                 },
                 "authority": {**state, "book_run_id": book_run_id},
                 "accepted_through_chapter": chapter_number,
@@ -829,7 +1041,7 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
                 "proof_language_status": "PASSED",
                 "proof_acceptance_status": (
                     "CHAPTER_CHECKPOINT_PASSED"
-                    if target in {1, 2, 5}
+                    if target in {1, 2, 5, 10}
                     else "PENDING_DEDICATED_VALIDATION"
                 ),
                 "failures": failures,
@@ -850,6 +1062,10 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
             args.database_url,
             project_id=state["project_id"],
             book_run_id=book_run_id,
+            worker_ids=(
+                f"book-worker:runtime-proof:{state['project_id']}",
+                str(composition_env["NOVEL_FORGE_BOOK_FOLLOWUP_WORKER_ID"]),
+            ),
         )
         result = json.loads(checkpoint_path.read_text(encoding="utf-8"))
         result.update(
@@ -860,7 +1076,7 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
                 "measurements": measurements,
                 "proof_verdict": (
                     "CHAPTER_CHECKPOINT_PASSED"
-                    if target in {1, 2, 5}
+                    if target in {1, 2, 5, 10}
                     else "PENDING_DEDICATED_VALIDATION"
                 ),
             }
@@ -918,6 +1134,10 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
         _write_json(checkpoint_path, failed)
         raise
     finally:
+        _stop_followup_worker(book_process, book_log)
+        _stop_followup_worker(followup_process, followup_log)
+        atexit.unregister(_stop_followup_worker)
+        atexit.unregister(_stop_followup_worker)
         execution.close()
 
 

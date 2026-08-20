@@ -479,10 +479,22 @@ class BookFollowupAuthorityPostgresTests(unittest.TestCase):
             },
             "story-state-recap",
         )
+        chapter_outcome = self.seed(
+            "chapter_outcome",
+            {
+                "contract_version": "chapter-outcome-v1",
+                "book_id": "book:1",
+                "chapter_number": 10,
+            },
+            "chapter-outcome-recap",
+        )
         payload = {
             "book_id": "book:1",
             "checkpoint_type": "ARC_CHECKPOINT",
             "chapter_range": [1, 10],
+            "observed_through_chapter": 10,
+            "acceptance_operation_id": "operation:chapter-10-acceptance",
+            "book_production_input_snapshot_id": "snapshot:chapter-10-acceptance",
             "book_design_version": "book-design:v1",
             "book_plan_version": "book-plan:v1",
             "volume_plan_version": "volume-plan:v1",
@@ -491,6 +503,7 @@ class BookFollowupAuthorityPostgresTests(unittest.TestCase):
             "story_state_version": story_state["asset_version_id"],
             "reader_state_version": reader["asset_version_id"],
             "quality_trend_version": "quality-trend:v1",
+            "chapter_outcome_versions": [chapter_outcome["asset_version_id"]],
             "observations": {
                 "reader_state": {"confusion": 0.8},
                 "canon": {"conflicts": [{"id": "c1"}]},
@@ -507,7 +520,7 @@ class BookFollowupAuthorityPostgresTests(unittest.TestCase):
                 correlation_id=identifier("correlation"),
                 idempotency_key=f"{self.project_id}:longform:arc:1",
                 payload=payload,
-                input_assets=(reader, canon, story_state),
+                input_assets=(reader, canon, story_state, chapter_outcome),
             ),
             principal=self.principal,
         )

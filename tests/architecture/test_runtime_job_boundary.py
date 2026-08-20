@@ -15,6 +15,7 @@ class RuntimeJobBoundaryTests(unittest.TestCase):
             set(OPERATIONAL_RUNTIME_JOB_CONTRACTS),
             {
                 "BOOK_COORDINATION_TICK",
+                "BOOK_FOLLOWUP_ADMISSION",
                 "OPERATION_DEADLINE_SCAN",
                 "ATTEMPT_LEASE_EXPIRY_SCAN",
                 "OUTBOX_RECOVERY_SCAN",

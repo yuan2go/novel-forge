@@ -36,7 +36,7 @@ def _load_script():
         sys.path.remove(str(scripts))
 
 
-@pytest.mark.parametrize("target", (1, 2, 5, 30, 100, 300))
+@pytest.mark.parametrize("target", (1, 2, 5, 10, 30, 100, 300))
 def test_campaign_accepts_bounded_cumulative_targets(target: int) -> None:
     campaign = _load_script()
 

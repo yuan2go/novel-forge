@@ -54,7 +54,15 @@ class PostgresBookFollowupCoordinator:
     def admission_candidates(
         self, *, limit: int
     ) -> tuple[BookFollowupAdmissionCandidate, ...]:
-        return self.query.followup_admission_candidates(limit=limit)
+        project_ids = (
+            ()
+            if "*" in self.principal.project_scope
+            else tuple(sorted(self.principal.project_scope))
+        )
+        return self.query.followup_admission_candidates(
+            limit=limit,
+            project_ids=project_ids,
+        )
 
     def admit(
         self, candidate: BookFollowupAdmissionCandidate

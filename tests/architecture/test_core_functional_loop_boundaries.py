@@ -2,6 +2,13 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from novel_forge.modules.book_authority.production import (
+    BOOK_PRODUCTION_STATE_SEMANTICS,
+    BookProductionState,
+    BookProductionStateClass,
+    actionable_book_production_states,
+)
+
 
 ROOT = Path(__file__).resolve().parents[2]
 MODULES = ROOT / "src" / "novel_forge" / "modules"
@@ -88,6 +95,7 @@ def test_api_and_worker_share_the_canonical_book_production_composition() -> Non
     query = _read("src/novel_forge/modules/book_authority/queries.py")
     composition = _read("src/novel_forge/modules/book_authority/composition.py")
     real_provider_proof = _read("scripts/run_short_longform_runtime_proof.py")
+    longform_campaign = _read("scripts/run_longform_narrative_campaign.py")
 
     assert "def build_book_production_composition(" in dependencies
     assert "BookProductionComposition(" in dependencies
@@ -100,20 +108,32 @@ def test_api_and_worker_share_the_canonical_book_production_composition() -> Non
     assert "RESOLVED_AUTHORITY_INPUT" in query
     assert "build_book_production_composition(" in real_provider_proof
     assert "PostgresBookProductionSupervisor(" not in real_provider_proof
+    assert "_start_book_worker(" in longform_campaign
+    assert "_start_followup_worker(" in longform_campaign
+    assert "_wait_for_chapter_dispatch(" in longform_campaign
+    assert "_drive_to_chapter_dispatch(" not in longform_campaign
+    assert "_accept_chapter(" not in longform_campaign
 
 
 def test_replan_has_no_implicit_approval_path_and_worker_stops_pending() -> None:
     coordinator = _read("src/novel_forge/modules/book_replan/coordinator.py")
     supervisor = _read("src/novel_forge/modules/book_authority/supervisor.py")
     worker = _read("src/novel_forge/workers/book_authority.py")
+    query = _read("src/novel_forge/modules/book_authority/queries.py")
 
     command_block = coordinator.split("class CoordinateBookReplanCommand:", 1)[1]
     command_block = command_block.split("class BookReplanCoordinator:", 1)[0]
     assert "auto_approve_low_risk" not in command_block
     assert "WAIT_REPLAN_APPROVAL" in supervisor
+    assert "ACTIVE_STATES" not in worker
+    assert "actionable_book_production_states()" in query
+    assert set(BOOK_PRODUCTION_STATE_SEMANTICS) == set(BookProductionState)
+    assert BOOK_PRODUCTION_STATE_SEMANTICS[
+        BookProductionState.REPLAN_APPROVAL_PENDING
+    ].state_class is BookProductionStateClass.DURABLE_WAIT
     assert (
-        '"REPLAN_APPROVAL_PENDING"'
-        not in worker.split("ACTIVE_STATES", 1)[1].split(")", 1)[0]
+        BookProductionState.REPLAN_APPROVAL_PENDING.value
+        not in actionable_book_production_states()
     )
 
 
@@ -149,7 +169,6 @@ def test_book_durable_mutations_use_transaction_commands_not_attempt_runtime() -
         "book.production.aborted",
         "book.supervisor.checkpoint.advanced",
         "book.followup.linked",
-        "book.followup.completed",
         "book.checkpoint.advanced",
     ):
         assert event_type in production

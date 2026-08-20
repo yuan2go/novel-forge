@@ -16,7 +16,15 @@ class ArchitectureFitnessTests(unittest.TestCase):
     def test_current_production_boundary_passes_fitness_rules(self) -> None:
         report = build_report(ROOT)
         self.assertEqual(report["status"], "PASS", report)
-        self.assertGreaterEqual(report["checked_domain_packages"], 100)
+        expected_domain_packages = sum(
+            path.is_dir()
+            and path.name != "__pycache__"
+            and any(path.rglob("*.py"))
+            for path in (ROOT / "src/novel_forge/modules").iterdir()
+        )
+        self.assertEqual(
+            report["checked_domain_packages"], expected_domain_packages
+        )
         self.assertGreaterEqual(report["checked_domain_files"], 30)
         self.assertEqual(
             report["checked_provider_files"],

@@ -245,6 +245,7 @@ class RuntimeJobAuthority:
         lease_seconds: int,
         job_kinds: Iterable[str] = (),
         project_id: str = "",
+        project_ids: Iterable[str] = (),
         subject_kind: str = "",
         subject_id: str = "",
     ) -> RuntimeJobClaim | None:
@@ -253,6 +254,11 @@ class RuntimeJobAuthority:
         if bool(subject_kind) != bool(subject_id):
             raise ValueError("runtime job subject filter requires kind and id")
         kinds = tuple(dict.fromkeys(str(item) for item in job_kinds if str(item)))
+        projects = tuple(
+            dict.fromkeys(str(item) for item in project_ids if str(item))
+        )
+        if project_id and projects:
+            raise ValueError("runtime job claim accepts one project filter form")
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
@@ -264,6 +270,7 @@ class RuntimeJobAuthority:
                 WHERE job.runtime_group=%s
                   AND (%s::text[]='{}'::text[] OR job.job_kind=ANY(%s))
                   AND (%s='' OR job.project_id=%s)
+                  AND (%s::text[]='{}'::text[] OR job.project_id=ANY(%s))
                   AND (%s='' OR (job.subject_kind=%s AND job.subject_id=%s))
                   AND (
                       (
@@ -292,6 +299,8 @@ class RuntimeJobAuthority:
                     list(kinds),
                     project_id,
                     project_id,
+                    list(projects),
+                    list(projects),
                     subject_kind,
                     subject_kind,
                     subject_id,

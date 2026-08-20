@@ -452,12 +452,15 @@ class PostgresBookProductionQuery:
         return tuple(actions)
 
     def followup_admission_candidates(
-        self, *, limit: int
+        self, *, limit: int, project_ids: Iterable[str] = ()
     ) -> tuple[BookFollowupAdmissionCandidate, ...]:
         """Return durable acceptance heads needing advisory follow-up admission."""
 
         if limit <= 0:
             raise ValueError("follow-up admission candidate limit must be positive")
+        projects = tuple(
+            dict.fromkeys(str(item) for item in project_ids if str(item))
+        )
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
@@ -478,6 +481,10 @@ class PostgresBookProductionQuery:
                   ON recap.chapter_request_id=acceptance.chapter_request_id
                  AND recap.followup_type='LONGFORM_RECAP'
                 WHERE acceptance.status='COMMITTED'
+                  AND (
+                      %s::text[]='{}'::text[]
+                      OR acceptance.project_id=ANY(%s)
+                  )
                   AND (
                       reader.operation_id IS NULL
                       OR (
@@ -531,7 +538,7 @@ class PostgresBookProductionQuery:
                          acceptance.chapter_request_id
                 LIMIT %s
                 """,
-                [limit],
+                [list(projects), list(projects), limit],
             )
             rows = uow.cursor.fetchall()
         return tuple(

@@ -21,18 +21,26 @@ from novel_forge.modules.book_authority.production import (
     StartBookProductionCommand,
     SubmitBookChapterCommand,
     _validate_chapter_acceptance_evidence,
+    select_chapter_acceptance_outputs,
 )
-from novel_forge.modules.book_authority.queries import PostgresBookProductionQuery
+from novel_forge.modules.book_authority.queries import (
+    BookFollowupAdmissionCandidate,
+    PostgresBookProductionQuery,
+)
 from novel_forge.modules.book_authority.governed_scheduler import (
     PostgresBookAuthorityScheduler,
 )
 from novel_forge.modules.book_followup_authority.application import (
     BookFollowupAuthorityApplication,
 )
+from novel_forge.modules.book_followup_authority.coordinator import (
+    PostgresBookFollowupCoordinator,
+)
 from novel_forge.modules.book_followup_authority.query import (
     BookFollowupProjectionQuery,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.content_authority.scheduler import ContentAuthorityScheduler
 from novel_forge.modules.content_intelligence import PacingAnalysisService
 from novel_forge.modules.narrative_state import NarrativeStateRebuildService
 from novel_forge.modules.runtime_job import RuntimeJobAuthority
@@ -46,6 +54,10 @@ from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from novel_forge.workers.book_authority import (
     execute_book_coordination_claim,
     schedule_book_coordination_jobs,
+)
+from novel_forge.workers.book_followup_authority import (
+    execute_book_followup_admission_claim,
+    schedule_book_followup_admission_jobs,
 )
 from tests.integration.authority_postgres_support import (
     DATABASE_URL,
@@ -226,15 +238,15 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
             "budgets": [],
         }
         self.assertEqual(
-            PostgresBookAuthorityScheduler._evidence_output(
-                corrected_evidence, "draft_version"
-            )["asset_version_id"],
+            select_chapter_acceptance_outputs(corrected_evidence)["draft_version"][
+                "asset_version_id"
+            ],
             "draft_version:v1",
         )
         self.assertEqual(
-            PostgresBookAuthorityScheduler._evidence_output(
-                corrected_evidence, "quality_score_report"
-            )["asset_version_id"],
+            select_chapter_acceptance_outputs(corrected_evidence)[
+                "quality_score_report"
+            ]["asset_version_id"],
             "quality_score_report:v1",
         )
 
@@ -301,7 +313,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                 },
             )
 
-    def test_book_chapter_reader_outcome_recap_and_checkpoint_are_one_governed_chain(
+    def test_acceptance_completion_and_async_followups_are_separate_governed_chains(
         self,
     ) -> None:
         project_id = identifier("book-chapter-vertical")
@@ -400,6 +412,11 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                 chapter_plan_asset_version_id=str(plan["asset_version_id"]),
                 chapter_plan_content_hash=str(plan["content_hash"]),
                 context_candidates=tuple(candidates),
+                context_version_refs={
+                    "book_production_input_snapshot_id": (
+                        "snapshot:legacy-followup-fixture"
+                    )
+                },
             )
 
             request = authority.submit_chapter(chapter_command, principal=principal)
@@ -443,36 +460,173 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                     claim,
                 )
 
-            reader_tick = runtime_tick()
-            reader_complete_tick = runtime_tick()
-            recap_tick = runtime_tick()
-            recap_complete_tick = runtime_tick()
-            final = authority.require(book.book_run_id)
+            acceptance_tick = runtime_tick()
+            accepted = authority.require(book.book_run_id)
+            self.assertEqual(acceptance_tick["action"], "ACCEPT_CHAPTER")
+            self.assertEqual(accepted["state"], "READY")
+            self.assertEqual(accepted["accepted_through_chapter"], 1)
 
+            # Production completion is legal before any advisory admission.
+            # This fixture has no ChapterGroup; the resolved-input Supervisor
+            # exercises ChapterGroup closure in the canonical functional-loop test.
+            final = authority.complete_book_checkpoint(
+                book.book_run_id,
+                chapter_number=1,
+            )
             self.assertEqual(final["state"], "COMPLETED")
             self.assertEqual(final["current_chapter"], 1)
-            self.assertEqual(reader_tick["state"], "COMPLETED")
-            self.assertEqual(reader_complete_tick["state"], "COMPLETED")
-            self.assertEqual(recap_tick["state"], "COMPLETED")
-            self.assertEqual(recap_complete_tick["state"], "COMPLETED")
-            self.assertEqual(
-                reader_tick["action"],
-                "ACCEPT_CHAPTER_AND_SUBMIT_READER_SHADOW",
+
+            followup_runtime_jobs = RuntimeJobAuthority(DATABASE_URL)
+            followup_coordinator = PostgresBookFollowupCoordinator(
+                authority,
+                query=PostgresBookProductionQuery(DATABASE_URL),
+                principal=principal,
             )
-            self.assertEqual(reader_complete_tick["action"], "COMPLETE_READER_SHADOW")
-            self.assertEqual(recap_tick["action"], "SUBMIT_LONGFORM_RECAP_SIDECAR")
-            self.assertEqual(
-                recap_complete_tick["action"],
-                "COMPLETE_LONGFORM_RECAP_SIDECAR",
+            followup_scheduler = ContentAuthorityScheduler(
+                DATABASE_URL,
+                registry=authority.followup.registry,
+                worker_id="book-followup-runtime-integration-worker",
             )
+
+            def followup_admission_tick() -> dict[str, object]:
+                schedule_book_followup_admission_jobs(
+                    followup_coordinator,
+                    followup_runtime_jobs,
+                    limit=10,
+                )
+                claim = followup_runtime_jobs.claim(
+                    runtime_group="book_followup",
+                    worker_id="book-followup-runtime-integration-worker",
+                    lease_seconds=30,
+                    job_kinds=("BOOK_FOLLOWUP_ADMISSION",),
+                    project_id=project_id,
+                )
+                self.assertIsNotNone(claim)
+                assert claim is not None
+                return execute_book_followup_admission_claim(
+                    followup_coordinator,
+                    followup_runtime_jobs,
+                    claim,
+                    lease_seconds=30,
+                )
+
+            def fail_reader_link_once(checkpoint: str) -> None:
+                if checkpoint == "after_followup_link":
+                    raise RuntimeError("injected crash after Reader Operation admission")
+
+            authority.failure_injector = fail_reader_link_once
+            with self.assertRaisesRegex(
+                RuntimeError,
+                "injected crash after Reader Operation admission",
+            ):
+                followup_admission_tick()
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                uow.cursor.execute(
+                    """
+                    SELECT COUNT(*)
+                    FROM authority_operation
+                    WHERE project_id=%s
+                      AND definition_name='reader_outcome.evaluate'
+                    """,
+                    [project_id],
+                )
+                admitted_reader_operations = int(uow.cursor.fetchone()[0])
+                uow.cursor.execute(
+                    """
+                    SELECT COUNT(*) FROM authority_book_followup_operation
+                    WHERE chapter_request_id=%s
+                      AND followup_type='READER_OUTCOME'
+                    """,
+                    [request["chapter_request_id"]],
+                )
+                reader_links = int(uow.cursor.fetchone()[0])
+                uow.cursor.execute(
+                    """
+                    UPDATE authority_runtime_job
+                    SET available_at=NOW()
+                    WHERE runtime_group='book_followup'
+                      AND project_id=%s AND status='RETRY_WAIT'
+                    """,
+                    [project_id],
+                )
+                uow.commit()
+            self.assertEqual((admitted_reader_operations, reader_links), (1, 0))
+            authority.failure_injector = None
+
+            reader_admission = followup_admission_tick()
+            self.assertEqual(reader_admission["action"], "ADMIT_READER_OUTCOME")
+            followup_scheduler.run_or_recover(
+                operation_id=str(reader_admission["operation_id"]),
+                project_id=project_id,
+            )
+            schedule_book_followup_admission_jobs(
+                followup_coordinator,
+                followup_runtime_jobs,
+                limit=10,
+            )
+            recap_stale_claim = followup_runtime_jobs.claim(
+                runtime_group="book_followup",
+                worker_id="book-followup-stale-worker",
+                lease_seconds=30,
+                job_kinds=("BOOK_FOLLOWUP_ADMISSION",),
+                project_id=project_id,
+            )
+            self.assertIsNotNone(recap_stale_claim)
+            assert recap_stale_claim is not None
+            followup_runtime_jobs.start(recap_stale_claim)
+            recap_committed = followup_coordinator.admit(
+                BookFollowupAdmissionCandidate(**recap_stale_claim.input_snapshot)
+            )
+            self.assertEqual(recap_committed.action, "ADMIT_LONGFORM_RECAP")
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                uow.cursor.execute(
+                    """
+                    UPDATE authority_runtime_job_lease
+                    SET lease_expires_at=NOW() - INTERVAL '1 second'
+                    WHERE lease_id=%s
+                    """,
+                    [recap_stale_claim.lease_id],
+                )
+                uow.commit()
+            recap_replacement_claim = followup_runtime_jobs.claim(
+                runtime_group="book_followup",
+                worker_id="book-followup-replacement-worker",
+                lease_seconds=30,
+                job_kinds=("BOOK_FOLLOWUP_ADMISSION",),
+                project_id=project_id,
+            )
+            self.assertIsNotNone(recap_replacement_claim)
+            assert recap_replacement_claim is not None
+            recap_admission = execute_book_followup_admission_claim(
+                followup_coordinator,
+                followup_runtime_jobs,
+                recap_replacement_claim,
+                lease_seconds=30,
+            )
+            self.assertEqual(recap_admission["action"], "ADMIT_LONGFORM_RECAP")
+            self.assertEqual(
+                recap_admission["operation_id"],
+                recap_committed.operation_id,
+            )
+            with self.assertRaisesRegex(KernelError, "stale"):
+                followup_runtime_jobs.complete(
+                    recap_stale_claim,
+                    {"invalid": "stale completion"},
+                )
+            followup_scheduler.run_or_recover(
+                operation_id=str(recap_admission["operation_id"]),
+                project_id=project_id,
+            )
+            self.assertEqual(authority.require(book.book_run_id), final)
+
             query = BookFollowupProjectionQuery(DATABASE_URL)
             reader_projection = query.reader_outcome(
                 project_id=project_id,
-                operation_id=str(reader_tick["operation_id"]),
+                operation_id=str(reader_admission["operation_id"]),
             )
             recap_projection = query.longform_recap(
                 project_id=project_id,
-                operation_id=str(recap_tick["operation_id"]),
+                operation_id=str(recap_admission["operation_id"]),
             )
             self.assertEqual(reader_projection["content"]["gate"], "PASS")
             self.assertEqual(reader_projection["content"]["mode"], "SHADOW")
@@ -503,7 +657,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                     SELECT COUNT(*) FROM authority_external_effect
                     WHERE operation_id=%s AND capability='model.reader_outcome'
                     """,
-                    [reader_tick["operation_id"]],
+                    [reader_admission["operation_id"]],
                 )
                 reader_effects = int(uow.cursor.fetchone()[0])
                 uow.cursor.execute(
@@ -517,8 +671,8 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                     [
                         [
                             book.root_operation_id,
-                            reader_tick["operation_id"],
-                            recap_tick["operation_id"],
+                            reader_admission["operation_id"],
+                            recap_admission["operation_id"],
                         ]
                     ],
                 )
@@ -535,42 +689,58 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                       AND input->>'asset_version_id'=%s
                     """,
                     [
-                        recap_tick["operation_id"],
+                        recap_admission["operation_id"],
                         final["last_chapter_outcome_version_id"],
                     ],
                 )
                 recap_outcome_inputs = int(uow.cursor.fetchone()[0])
                 uow.cursor.execute(
                     """
-                    SELECT COUNT(*),
-                           COUNT(*) FILTER (WHERE job.status='SUCCEEDED'),
-                           COUNT(*) FILTER (
-                               WHERE lease.status='RELEASED'
-                                 AND attempt.fencing_token > 0
-                           ),
-                           COUNT(*) FILTER (
-                               WHERE (
-                                   SELECT COUNT(*)
-                                   FROM authority_runtime_job_checkpoint AS checkpoint
-                                   WHERE checkpoint.attempt_id=attempt.attempt_id
-                               ) >= 2
-                           )
-                    FROM authority_runtime_job AS job
-                    JOIN authority_runtime_job_attempt AS attempt
-                      ON attempt.attempt_id=job.current_attempt_id
-                    JOIN authority_runtime_job_lease AS lease
-                      ON lease.attempt_id=attempt.attempt_id
-                    WHERE job.runtime_group='book'
-                      AND job.job_kind='BOOK_COORDINATION_TICK'
-                      AND job.subject_id=%s
+                    WITH relevant_jobs AS (
+                        SELECT * FROM authority_runtime_job AS job
+                        WHERE (
+                            job.runtime_group='book'
+                            AND job.job_kind='BOOK_COORDINATION_TICK'
+                            AND job.subject_id=%s
+                        ) OR (
+                            job.runtime_group='book_followup'
+                            AND job.job_kind='BOOK_FOLLOWUP_ADMISSION'
+                            AND job.project_id=%s
+                        )
+                    )
+                    SELECT
+                        (SELECT COUNT(*) FROM relevant_jobs),
+                        (SELECT COUNT(*) FROM relevant_jobs
+                         WHERE status='SUCCEEDED'),
+                        (SELECT COUNT(*)
+                         FROM authority_runtime_job_attempt AS attempt
+                         JOIN relevant_jobs AS job
+                           ON job.runtime_job_id=attempt.runtime_job_id),
+                        (SELECT COUNT(*)
+                         FROM authority_runtime_job_lease AS lease
+                         JOIN authority_runtime_job_attempt AS attempt
+                           ON attempt.attempt_id=lease.attempt_id
+                         JOIN relevant_jobs AS job
+                           ON job.runtime_job_id=attempt.runtime_job_id
+                         WHERE lease.status='RELEASED'
+                           AND attempt.fencing_token > 0),
+                        (SELECT COUNT(*)
+                         FROM authority_runtime_job_attempt AS attempt
+                         JOIN relevant_jobs AS job
+                           ON job.runtime_job_id=attempt.runtime_job_id
+                         WHERE (
+                             SELECT COUNT(*)
+                             FROM authority_runtime_job_checkpoint AS checkpoint
+                             WHERE checkpoint.attempt_id=attempt.attempt_id
+                         ) >= 2)
                     """,
-                    [book.book_run_id],
+                    [book.book_run_id, project_id],
                 )
                 runtime_job_evidence = tuple(
                     int(value) for value in uow.cursor.fetchone()
                 )
             self.assertEqual(terminal, ("SUCCEEDED", "SUCCEEDED"))
-            self.assertEqual(runtime_job_evidence, (4, 4, 4, 4))
+            self.assertEqual(runtime_job_evidence, (3, 3, 5, 4, 3))
             self.assertEqual(reader_effects, 1)
             self.assertEqual(recap_outcome_inputs, 1)
             self.assertEqual(
@@ -758,7 +928,12 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                     )
                 )
 
-            final = authority.require(book.book_run_id)
+            accepted_head = authority.require(book.book_run_id)
+            self.assertEqual(accepted_head["state"], "READY")
+            final = authority.complete_book_checkpoint(
+                book.book_run_id,
+                chapter_number=2,
+            )
             self.assertEqual(final["state"], "COMPLETED")
             self.assertEqual(final["current_chapter"], 2)
             self.assertEqual(final["accepted_through_chapter"], 2)

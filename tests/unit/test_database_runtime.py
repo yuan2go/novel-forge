@@ -123,7 +123,7 @@ class DatabaseRuntimeUnitTests(unittest.TestCase):
             instances,
             postgres_max_connections=100,
         )
-        self.assertEqual(result["application_max_connections"], 33)
+        self.assertEqual(result["application_max_connections"], 36)
         self.assertEqual(result["application_capacity"], 83)
         self.assertTrue(result["within_budget"])
         with self.assertRaisesRegex(ValueError, "nonnegative"):
