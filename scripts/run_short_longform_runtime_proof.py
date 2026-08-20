@@ -1694,6 +1694,21 @@ def _run_planning(
     _approve_activate(planning, generated, principal=principal, key=retry_key)
     activated["book_plan.generate"] = generated.candidate_asset_version_id
 
+    retry_operations = _query_rows(
+        database_url,
+        """
+        SELECT operation_id
+        FROM authority_story_planning_generation
+        WHERE project_id=%s AND book_id=%s
+          AND generator_operation_name='book_plan.generate'
+          AND logical_key=%s AND repair_number=0
+        ORDER BY created_at
+        """,
+        (project_id, book_id, book_command.logical_key),
+    )
+    if len(retry_operations) != 1:
+        raise RuntimeError("controlled retry root Operation is ambiguous")
+    retry_operation_id = str(retry_operations[0]["operation_id"])
     retry_attempts = _query_rows(
         database_url,
         """
@@ -1710,7 +1725,7 @@ def _run_planning(
         WHERE attempt.operation_id=%s
         ORDER BY attempt.attempt_number
         """,
-        (generated.generation_operation_id,),
+        (retry_operation_id,),
     )
     if len(retry_attempts) != 2:
         raise RuntimeError("controlled retry did not persist exactly two Attempts")
@@ -1725,7 +1740,7 @@ def _run_planning(
                 fencing_token=int(stale["fencing_token"]),
                 trace_id=f"trace:{retry_key}:stale-result",
                 correlation_id=f"correlation:{project_id}",
-                causation_id=str(generated.generation_operation_id),
+                causation_id=retry_operation_id,
             ),
             outcome="success",
             result={
@@ -1800,7 +1815,7 @@ def _run_planning(
             projections[1] = dict(activation["chapter_plan_projection"])
     evidence = {
         "fault_injection_triggered": failure.triggered,
-        "retry_operation_id": generated.generation_operation_id,
+        "retry_operation_id": retry_operation_id,
         "replacement_pack": replacement_pack,
         "stale_fence_rejection": stale_rows[0],
     }
