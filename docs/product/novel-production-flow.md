@@ -11,20 +11,22 @@ Idea / Material / Reader Promise
 → Progressive Structural Plan + Narrative Arc Network
 → Arc Working Set / ChapterArcContributions
 → Narrative Composer
-→ Chapter Mission
-→ Current Accepted Narrative State
-→ Evidence Enrichment / Minimum Sufficient Context
+→ active ChapterPlan
+→ ChapterExecutionIntent
+→ ChapterMemo
+→ Context v2 @ complete Accepted Boundary
+→ Protected Context + hybrid retrieved evidence
 → Chapter Production Packet
 → Scene Plan
-→ Draft
-→ Editorial Diagnosis
-→ Revision
-→ Prose Polish
+→ immutable Draft Candidate
+→ Review / Revision / Re-review
+→ CandidateComparison / BestCandidateSnapshot
+→ Provisional Canon / Arc / Obligation extraction
 → Narrative Verification
 → Quality Gate
 → ACCEPT
 → AcceptedChapterOutcome
-→ Canon + Narrative State + Arc Progress Evidence
+→ Canon + Narrative State + Arc Progress + Obligation State
 → Next Chapter
 
 Accepted Chapter
@@ -36,13 +38,16 @@ The critical path and observation sidecars are intentionally separate.
 
 ## 2. Design and planning
 
-The structural hierarchy is:
+The four structures are:
 
 ```text
-Book → Volume → Narrative Segment → Chapter → Scene → Beat
+Organization/IP:       Studio → Portfolio → Universe → Series → Book
+Narrative containment: Book → Volume → [Narrative Segment] → Chapter → Scene → Beat
+Long-form change:      Arc Graph
+Production control:    ChapterGroup
 ```
 
-Arc is an orthogonal cross-time state-transformation graph. Planning uses lazy expansion: distant future stays strategic; the current Volume/Segment is more explicit; the next several chapters are tactical; only the next Chapter becomes a detailed Mission/Scene plan.
+Arc is an orthogonal cross-time state-transformation graph. Narrative Segment is conditional: it is persisted only if a distinct contiguous dramatic interval has a real consumer independent of Volume, Arc and ChapterGroup. Planning uses lazy expansion: distant future stays strategic; current scopes are more explicit; the next several chapters are tactical; only the next Chapter becomes detailed execution intent/scene work.
 
 `ChapterGroup` is a production/checkpoint construct, not the semantic replacement for Narrative Segment.
 
@@ -52,9 +57,9 @@ A long-lived Narrative Thread is decomposed into bounded Macro/Meso/Micro Arc tr
 
 Arc Scheduler decides **what needs progression now**. Narrative Composer decides **how several required changes can become a small number of natural multi-function events**. Arc Progress only becomes authoritative after Accepted Chapter evidence.
 
-## 4. Chapter Mission
+## 4. ChapterExecutionIntent and ChapterMemo
 
-Before prose, establish a compact Mission describing at least:
+The active ChapterPlan remains authoritative. Before prose, establish immutable working artifacts describing at least:
 
 - narrative purpose and entry state;
 - required beats/outcome;
@@ -64,29 +69,29 @@ Before prose, establish a compact Mission describing at least:
 - reader-effect/hook intent;
 - expected exit state.
 
-The Writer does not decide the chapter's entire semantic purpose from scratch.
+ChapterExecutionIntent freezes the exact Plan interpretation and accepted boundary. ChapterMemo supplies execution-time creative strategy and retrieval needs. Neither may modify/activate the Plan, and an unqualified degraded fallback cannot reach Draft.
 
 ## 5. Evidence and Context
 
-Build context in three stages:
+Build Context v2 in three stages:
 
-1. mandatory correctness context;
+1. protected correctness context that fails closed on budget overflow;
 2. task-specific state/evidence retrieval;
 3. optional creative/professional enrichment.
 
 Examples: combat retrieves only currently legal skills/weapons/resources/injuries/environment; investigation retrieves relevant clues, known/unknown facts and beliefs. MKAOS enrichment may improve creative realization but cannot create Story Truth.
 
-Provider context must remain bounded as the Book grows.
+Retrieval combines lexical/BM25-style full text, embedding, entity/relationship, character timeline, temporal, Arc and Narrative Obligation relevance, rerank and compressible-evidence compression. Provider context must remain bounded as the Book grows; protected entries cannot be silently dropped.
 
 ## 6. Chapter production
 
 ```text
-Mission + Production Packet
+ChapterPlan + ExecutionIntent + Memo + Production Packet
 → Scene Plan
-→ Draft Writer
-→ Editorial Diagnosis
-→ bounded Revision
-→ Prose Polish
+→ Draft Candidate
+→ Review / bounded Revision / Re-review
+→ Best Candidate
+→ Provisional extraction
 → Narrative Verification
 → required Quality
 → Acceptance
@@ -105,9 +110,11 @@ Final candidate
 → AcceptedChapterOutcome
 → Canon/Narrative Events
 → Narrative State transition
-→ Arc Progress Evidence
+→ Arc Progress / Obligation State
 → retrieval/summary/index projections
 ```
+
+All model/retrieval/evaluation work completes before acceptance. The short PostgreSQL transaction runs deterministic reducers and commits the complete Chapter/Outcome/Canon/State/Arc/Obligation boundary. Chapter N+1 cannot start formal drafting until that set is complete.
 
 Summaries, recaps, embeddings and indices are derived and rebuildable; they never replace accepted evidence.
 

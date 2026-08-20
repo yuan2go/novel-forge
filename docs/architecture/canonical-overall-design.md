@@ -319,31 +319,31 @@ No category silently promotes itself into another.
 
 ---
 
-## 9. Agent / Skill / Tool / Workflow architecture
+## 9. Agent / Capability / Skill / Tool / Workflow / Authority architecture
 
 ### 9.1 Definitions
 
-- **Agent:** governed reasoning actor producing typed candidates/proposals.
+- **Autonomous Agent:** a bounded, governed reasoning actor that decomposes goals, observes tool results, and may adapt its next step across multiple turns. It produces typed candidates/proposals and never owns story truth.
 - **Conversational Role:** stable user-facing persona backed by AgentDefinition, capabilities, context/tool policy, and budget.
-- **Capability:** semantic callable task contract — what can be done.
+- **Typed Capability:** one semantic callable task contract that produces an immutable candidate/evidence artifact. A model-backed task is not an Agent merely because it reasons internally.
 - **Skill:** versioned method/procedure — how a capability is performed.
+- **Tool:** a typed read query, Capability invocation, or Authority Command submission endpoint exposed under a frozen permission policy.
 - **Capability Pack:** immutable deployment binding of compatible capability, Skill, prompt, provider/model route, tools, context policy, evaluation policy, budget, and approval constraints.
+- **Domain Service:** deterministic validation, reduction, comparison, diff, scheduling or projection logic.
+- **Workflow:** explicit durable transitions deciding when bounded work executes and how it recovers.
+- **Authority:** the sole boundary allowed to validate and commit its business state.
 - **Rule:** deterministic constraint.
 - **Template:** structured scaffold.
 - **Knowledge Asset:** governed reusable external/generalized knowledge.
-- **Workflow/Runtime:** deterministic orchestration and durable lifecycle, not Agent chat.
 
 ### 9.2 Agent responsibilities
 
-Agents are best used for:
+Autonomous Agents are justified only when a task needs goal decomposition, multi-step reasoning, dynamic Tool choice, observation and adaptive replanning. The preferred initial set is small:
 
-- premise/alternative exploration;
-- Arc construction and narrative composition;
-- character/world diagnosis;
-- scene/chapter design;
-- prose generation and editorial diagnosis;
-- replan proposals;
-- reader simulation and research synthesis.
+- **Studio/Director Agent:** explores goals, queries accepted/design state, invokes typed creative capabilities, and submits Authority Commands.
+- **Research/Knowledge Agent:** plans bounded research/retrieval, invokes source/knowledge capabilities, and submits governed knowledge candidates.
+
+Worldbuilding, Character Design, Outline, Chapter Planning, Draft, Review, Revision, Provisional Canon Extraction and Quality Judge are normally Typed Capabilities. They do not become Agents simply because an LLM executes them.
 
 Authorities retain:
 
@@ -356,24 +356,45 @@ Authorities retain:
 
 Do not create `BookAgent / VolumeAgent / ArcAgent / ChapterAgent / SceneAgent` families merely to mirror hierarchy.
 
----
+### 9.3 Unified Agent Harness
 
-## 10. Structural narrative architecture
-
-The canonical structural/time hierarchy is:
+The Harness executes inside the existing durable plane:
 
 ```text
-Book → Volume → Narrative Segment → Chapter → Scene → Beat
+RuntimeJob / Operation / Attempt / Lease / Fence
+└── Agent Session
+    ├── frozen role, Tool policy, Skill bindings and budgets
+    ├── append-only transcript events
+    ├── model-turn ExternalEffect / Receipt
+    ├── Tool observation
+    └── next turn / checkpoint / stop / escalation
 ```
+
+It must support multi-turn resume, dynamic allowlisted Tool selection, Skill id/version/hash provenance, cancellation/deadline checks, token/cost/turn/effect hard stops, committed-request restoration and runtime trace. Skill activation never grants permission. An Agent may query, invoke Capabilities and submit typed Authority Commands; it cannot directly mutate Canon, accepted Narrative State, Arc actuals, Narrative Obligations, active plans or Chapter acceptance.
+
+---
+
+## 10. Novel OS hierarchy and structural narrative architecture
+
+The system has four orthogonal structures rather than one artificial containment tree:
+
+```text
+Organization / IP     Studio → Portfolio → Universe → Series → Book
+Narrative containment Book → Volume → [Narrative Segment] → Chapter → Scene → Beat
+Long-form change      Arc Graph across structural scopes
+Production control    ChapterGroup over a Chapter range
+```
+
+Organization/IP concepts are formal domain responsibilities, not mandatory Aggregate roots. Studio and Portfolio may remain lightweight workspace/production scopes. Universe or Series receives an independent lifecycle, version, shared Canon boundary or Authority only when real cross-Book consumers require it. Book remains the accepted narrative root.
 
 - **Book:** macro promise, ending reachability, major transformations and constraints.
 - **Volume:** major timeline container with entry/exit state, pressure, climax and irreversible change.
-- **Narrative Segment:** medium-scale contiguous dramatic purpose.
+- **Narrative Segment:** an optional stable contiguous dramatic interval independent of Arc and ChapterGroup. It enters persistence only after a distinct invariant and production consumer are proven; it must not be introduced merely to complete the tree.
 - **Chapter:** publishable and accept/reject business unit.
-- **Scene:** principal local dramatic unit.
-- **Beat:** embedded local action/turn unit unless operational evidence justifies independent execution.
+- **Scene:** addressable/versioned typed child of ChapterPlan and ChapterOutcome. Scene facts become accepted only with their Chapter; Scene has no second Acceptance Authority.
+- **Beat:** embedded typed Scene child unless an independent lifecycle/concurrency need is proven.
 
-`ChapterGroup` is a production/scheduling/checkpoint construct. It is not the semantic replacement for Narrative Segment.
+`ChapterGroup` owns production range, planning coordination, budget, checkpoint and correction window. It is not a Narrative Truth parent and owns no Canon Authority.
 
 ---
 
@@ -384,6 +405,17 @@ Book → Volume → Narrative Segment → Chapter → Scene → Beat
 A Narrative Arc is a **bounded desired state transformation under dramatic pressure**. It has an initial state, target state, dramatic question, pressure/conflict, milestones/beats, expected consequences/payoffs, completion criteria, and accepted progress evidence.
 
 Arc is not a structural parent of Chapter. Chapters participate in several Arcs.
+
+The canonical contract family is explicit:
+
+- **ArcPlan:** desired transformation, dependencies, target window, expected contributions and completion criteria.
+- **ArcActualState:** current accepted materialized state at an exact Book boundary.
+- **ArcProgress:** immutable per-Chapter accepted observation and deterministic deviation accounting.
+- **ArcOutcome:** immutable accepted completion/abandonment evidence.
+- **ArcCheckpoint:** long-range continue/correct/replan/completion decision evidence.
+- **ArcRevision:** future-only PlanChange candidate; it never rewrites accepted progress.
+
+An expected ChapterPlan contribution is never actual evidence. If qualified ChapterOutcome evidence is absent, the observation is explicitly `NOT_OBSERVED`, `NOT_MATERIALIZED` or `UNKNOWN` according to policy. No plan field may be used as an `ACTUAL` fallback.
 
 ### 11.2 Scale model
 
@@ -435,9 +467,11 @@ Do not materialize every possible relation. Persist relations only when they car
 
 ### 11.5 Narrative Obligation
 
-Promises, mysteries, foreshadowing, unresolved conflicts, reveal commitments, relationship commitments, and planned payoffs should create a first-class **Narrative Obligation** when they need durable scheduling/accountability.
+Promises, mysteries, foreshadowing, open loops, unresolved conflicts, hooks, character commitments, reader expectations, narrative debt and planned payoffs should create a first-class **Narrative Obligation** when they need durable scheduling/accountability.
 
 An Obligation can be created, deepened, partially paid, recontextualized, transferred, rescheduled, resolved, or explicitly abandoned under governance. This is more expressive than encoding every setup/payoff as pairwise Arc edges.
+
+The contract preserves identity/type, introduced accepted boundary/source artifact, status/current development, append-only development history, dependencies, target window, urgency, reader visibility, expected/actual payoff, overdue/stale state, related character/Arc/Volume and resolution evidence. Only accepted ChapterOutcome obligation events advance the authoritative projection. Drafts, Memos, Reviews, Agent messages and provisional extraction remain candidates/evidence.
 
 ### 11.6 Arc Bundle and Arc Junction
 
@@ -460,6 +494,8 @@ Realized Arc Evidence = what accepted chapters actually achieved
 ```
 
 If accepted prose creates an unexpected but valuable consequence, the system may propose `SPAWN / SPLIT / MERGE / REPLAN` for future design. It never rewrites accepted history to match the old graph.
+
+Before Book acceptance, model-backed extraction may create provisional Arc evidence bound to the selected immutable candidate. Narrative Correctness qualifies the evidence. The short acceptance transaction runs only deterministic reducers, records ArcProgress/ArcActualState at the accepted boundary, and emits checkpoints/outbox. Retrieval, embedding and semantic evaluation never execute inside that transaction.
 
 ### 11.9 Dramatic phase vs runtime status
 
@@ -551,19 +587,42 @@ Professional/history/economics/politics/military knowledge from MKAOS may supply
 
 ## 14. Context, Memory, and Knowledge
 
-### 14.1 Memory classes
+### 14.1 Narrative Memory layers
 
-- **Authority memory:** accepted/design truth in PostgreSQL.
-- **Working memory:** frozen task-specific context for one execution.
-- **Interaction evidence:** conversations, rejected alternatives, rationale.
-- **Retrieval memory:** rebuildable search/vector/materialized projections.
-- **MKAOS knowledge:** reusable methods, patterns and professional knowledge.
+```text
+L0 Recent Accepted Verbatim Window
+L1 Accepted Current Narrative State
+L2 Canon Fact Graph
+L3 Character / Relationship Timeline
+L4 Narrative Obligation Graph
+L5 Arc / Long-range Narrative Debt State
+L6 Chapter / Scene Episodic Summaries
+L7 Lexical / Vector / Graph Retrieval Index
+L8 Full Accepted Historical Text Archive
+L9 External Knowledge / Reference
+```
 
-No private Agent memory may silently override Authority.
+L1/L2/L4/L5 and accepted lineage are authoritative story projections. L3/L6/L7 are rebuildable consumers. L9 is Source/MKAOS-governed external evidence, never Canon. Working Context and interaction transcripts are frozen execution evidence, not another memory Authority. No private Agent memory may silently override these boundaries.
 
-### 14.2 Chapter Production Packet
+### 14.2 Context Contract v2 and Chapter Production Packet
 
-The Writer should not receive Book Bible + all characters + all history. Before prose, compile a bounded **Chapter Production Packet** containing only what the chapter needs, conceptually including:
+The Writer should not receive Book Bible + all characters + all history. Context is compiled only at the latest complete Accepted Boundary:
+
+```text
+Accepted Boundary
+→ protected correctness resolution
+→ hybrid retrieval
+→ rerank
+→ compressible evidence compression
+→ Context Manifest v2
+→ Chapter Production Packet
+```
+
+**Protected Context** includes the exact active ChapterPlan, qualified ChapterExecutionIntent/ChapterMemo constraints, accepted Canon/current state, hard world rules, critical character/relationship state, due obligations, relevant Arc actual/checkpoint state and forbidden/knowledge boundaries. Protected entries are typed, never filename-classified. If they exceed budget, compilation fails; none is silently dropped or semantically weakened.
+
+**Retrievable Context** includes accepted historical chapter/scene text, episodic summaries, entity/relationship history, character timelines, Arc/obligation history, world consequences, prior setup/payoff and external governed knowledge. PostgreSQL hybrid retrieval combines lexical/full-text, embedding, entity/relationship, timeline/temporal, Arc and obligation relevance, accepted-boundary eligibility, rerank and optional compression. Vector similarity is one signal, never the memory system.
+
+The bounded packet contains only what the chapter needs, conceptually including:
 
 - Chapter Mission;
 - entry Narrative State / previous accepted outcome;
@@ -577,17 +636,17 @@ The Writer should not receive Book Bible + all characters + all history. Before 
 - style/voice requirements;
 - Scene Plan.
 
-The exact storage/class shape is an implementation decision unless existing contracts already define it.
+Context Manifest v2 records accepted boundary, selected/rejected artifact versions, protected/retrievable class, retrieval reasons/scores/provenance, token partitions, compression lineage, policy/Skill/capability versions and a replayable fingerprint.
 
 ### 14.3 Three-stage context compilation
 
-1. **Mandatory correctness context:** Mission, current state, accepted predecessor, knowledge boundaries, due obligations, hard plan constraints.
+1. **Protected correctness context:** Mission/Intent/Memo constraints, current state, accepted predecessor, knowledge boundaries, due obligations, relevant Arc state and hard plan constraints.
 2. **Task-specific evidence:** e.g. combat skills/weapons/injuries/environment; romance relationship/history/secrets; investigation clues/known/unknown/beliefs.
 3. **Creative enrichment:** sensory, culture, architecture, professional knowledge, narrative mechanisms.
 
 Creative enrichment may enrich expression but cannot change Story Truth.
 
-Every context block should be attributable to source, reason, authority class, temporal validity, priority and token cost where practical. If the system cannot explain why a large block is present, it should not be default provider input.
+Every context block is attributable to source/version, retrieval reason, authority class, temporal validity, priority, token cost and compression lineage. If the system cannot explain why a large block is present, it is not default provider input.
 
 ---
 
@@ -642,9 +701,16 @@ Usage/effectiveness may be learned from downstream results, but knowledge feedba
 
 ---
 
-## 16. Chapter Mission and Scene composition
+## 16. ChapterPlan, ChapterExecutionIntent, ChapterMemo and Scene composition
 
-The next chapter begins with a **Chapter Mission Contract** or equivalent governed planning contract that answers:
+The active ChapterPlan is authoritative future intent. Production derives two immutable, versioned working artifacts before Context:
+
+- **ChapterExecutionIntent:** exact execution interpretation of one active ChapterPlan at one accepted boundary: objective, required/forbidden effects, Arc/obligation focus, entry/expected exit and reader tension.
+- **ChapterMemo:** execution-time creative strategy: scene approach, pacing, transitions, retrieval needs, risk controls and alternatives.
+
+Neither artifact may mutate or activate ChapterPlan. A degraded/unqualified fallback cannot enter Context or Draft.
+
+The ChapterPlan/ExecutionIntent must answer:
 
 - narrative purpose;
 - entry state;
@@ -670,23 +736,27 @@ Accepted state + qualified future design
 → Chapter admission
 → Arc Working Set / ChapterArcContributions
 → Narrative composition
-→ Chapter Mission
+→ active ChapterPlan
+→ ChapterExecutionIntent
+→ ChapterMemo
 → Evidence/Context compilation
 → Chapter Production Packet
 → Scene Plan
-→ Draft Writer
-→ Editorial Diagnosis
-→ bounded Revision
-→ Prose Polish (fact-preserving)
+→ immutable Draft Candidate
+→ Review / bounded Revision / Re-review
+→ CandidateComparison / BestCandidateSnapshot
+→ Provisional Canon / Arc / Obligation extraction
 → Narrative Verification
 → required Quality Gate
 → ACCEPT
 → Accepted Outcome Transaction
-→ Canon + Narrative State + Arc Progress Evidence
+→ complete Canon + Narrative State + Arc + Obligation projection set
 → Chapter N+1 eligibility / dispatch
 ```
 
 The Writer has freedom over expression, dialogue, action, imagery, rhythm and local creative realization; it does not have authority to change Canon, Mission, forbidden constraints, or required outcome.
+
+Revision never wins merely because it is newer. Reviews bind to exact candidate hashes. A deterministic comparison gate retains the prior best unless the new candidate has no disqualifying regression and exceeds the minimum net improvement policy. `BestCandidateSnapshot` preserves comparison evidence and rollback pointer. Quality Judge is evidence; deterministic Quality/Domain policy decides qualification.
 
 ### 17.1 Narrative Verification
 
@@ -716,9 +786,35 @@ Final candidate
 
 External publication must never be the event that decides internal story truth.
 
+### 17.3 Short deterministic acceptance transaction
+
+All LLM calls, retrieval, embedding, compression, network work and semantic evaluation complete before acceptance as immutable candidates/evidence. The PostgreSQL transaction performs only fence/CAS and lineage validation, deterministic reducers, authoritative inserts/pointer advancement, checkpoints and outbox.
+
+One acceptance establishes a logically complete boundary:
+
+```text
+AcceptedChapter N
++ ChapterOutcome N
++ Canon N
++ NarrativeState N
++ ArcProgress N
++ NarrativeObligationState N
+```
+
+Canon/accepted events are source evidence; materialized projections are deterministic consumers, not competing Authorities. Chapter N+1 cannot start formal drafting until this projection set is complete at N.
+
 ---
 
-## 18. Accepted lineage and derived memory
+## 18. Artifact lifecycle, accepted lineage and semantic invalidation
+
+Creative/model outputs use the immutable lifecycle:
+
+```text
+CANDIDATE → QUALIFIED → APPROVED → ACTIVE
+                           └──────→ SUPERSEDED / INVALIDATED
+```
+
+The lineage contract records artifact/version/type, project/Book scope, source/parent versions, accepted boundary, context fingerprint, capability/Skill/model/provider/runtime identity, Operation/Attempt/trace, qualification and timestamps.
 
 After acceptance preserve:
 
@@ -731,6 +827,10 @@ After acceptance preserve:
 - source Operation/Attempt/provider/context/quality lineage.
 
 Derived artifacts such as summary, recap, embedding, search index and prose snippets are rebuildable. Never use `Chapter → LLM summary → summary becomes truth`.
+
+New cross-artifact dependencies use one canonical typed edge/invalidation surface. Semantic diff traverses only affected descendants, marks stale future artifacts, regenerates/requalifies selectively, and requires the owning Authority for activation. Existing domain-specific dependency tables may be isolated migration inputs/read compatibility but normal runtime must not dual-write competing graphs.
+
+World/Character/Arc changes may invalidate future plans, Intent/Memo, Context and candidates. They never invalidate accepted Chapters/Outcomes or rewrite accepted Canon/State/Arc/Obligation evidence.
 
 ---
 
@@ -963,48 +1063,33 @@ Therefore the target system **converges the existing architecture**; it does not
 
 Every Work Package begins by re-reading the latest code and current runtime evidence. The ordering below changes if later evidence proves a gap is already closed.
 
-### P0 — WP-LIVE-01: Chapter-to-Chapter Liveness & Critical Path Closure
+### P0 — Industrial Autonomous Novel OS convergence
 
-Before adding creative surface area, prove and close autonomous forward progress:
+Converge the existing runtime without weakening its industrial base:
 
-- no advisory sidecar on the default Chapter N→N+1 blocking path;
-- every nonterminal Book state is claimable or has an explicit durable wait condition;
-- progress state exposes accepted-through, last-progress, next transition and blocker;
-- failure/retry/recovery cannot create silent multi-hour stalls;
-- Story Truth correctness is not bypassed to gain speed;
-- prove L1 then unattended 10-chapter progression with failure injection.
+- freeze the four orthogonal hierarchy responsibilities and avoid empty organizational/Segment roots;
+- implement explicit ArcPlan/ActualState/Progress/Outcome/Checkpoint/Revision and remove every plan-to-actual fallback;
+- complete accepted-only Narrative Obligation semantics;
+- add ChapterExecutionIntent/ChapterMemo before accepted-bound Context compilation;
+- implement Protected/Retrievable Context v2, layered memory and PostgreSQL hybrid retrieval;
+- implement persistent CandidateComparison/BestCandidateSnapshot/minimum improvement/rollback;
+- provide one semantic lineage/invalidation contract and isolate legacy parallel graphs;
+- implement a real multi-turn Tool-calling Agent Harness inside Operation/Attempt/ExternalEffect, while classifying ordinary creative work as Typed Capabilities;
+- commit the complete accepted Chapter/Canon/State/Arc/Obligation boundary through a short deterministic Book Acceptance transaction;
+- replace stale architecture string assertions with behavior/contract tests.
 
-### P1 — Hierarchical Narrative Production convergence
+This convergence is complete only through domain contract, production composition, runtime reachability, persistence, Authority governance, downstream consumption and necessary tests.
 
-Close the target production semantics through the existing planning/runtime boundaries:
+### P1 — Long-form and Provider qualification
 
-- Chapter Mission semantics;
-- bounded Chapter Production Packet / evidence compilation;
-- Scene composition;
-- AcceptedChapterOutcome as the explicit chapter semantic boundary where current contracts need convergence;
-- accepted outcome → Narrative State / Canon / downstream projections;
-- ensure recent chapter generation is plan-driven, state-constrained and evidence-enriched rather than broad-context generation from zero.
-
-### P1 — Narrative Arc OS
-
-Extend existing Arc planning only as required by real use:
-
-- Thread / bounded Arc transformation semantics;
-- typed relation/dependency/temporal/information/evolution concepts where needed;
-- Narrative Obligation and progress evidence;
-- working-set scheduling and Chapter contributions;
-- Bundle/Junction only where they reduce actual planning fragmentation;
-- MKAOS Narrative Intelligence integration through proposals, never direct story mutation.
-
-Do not implement every relation enum or object simply because it appears in this design.
-
-### P1 — Quality and long-form proof
+After convergence is implemented and bounded smoke tests pass:
 
 - current-SHA real-provider Chapter proof;
 - independent judge/calibration qualification;
-- 10 → 30 → 100 → 300 chapter campaigns;
+- 10 → 30 → 100 → 300 chapter campaigns with failure injection;
 - human editorial comparison;
-- bounded-context and long-distance obligation proof.
+- bounded-context and long-distance obligation proof;
+- million-word retrieval quality and growth-slope evidence.
 
 ### P2 — Creative collaboration and author IDE
 
@@ -1054,17 +1139,19 @@ HUMAN INTENT ─────────┼────────── STORY 
                       ▼
               NARRATIVE COMPOSER
                       ▼
-              CHAPTER MISSION
+             ACTIVE CHAPTER PLAN
                       ▼
-        CURRENT ACCEPTED NARRATIVE STATE
+       EXECUTION INTENT → CHAPTER MEMO
                       ▼
-      EVIDENCE / MINIMUM-SUFFICIENT CONTEXT
+      CONTEXT V2 @ COMPLETE ACCEPTED BOUNDARY
                       ▼
-           CHAPTER PRODUCTION PACKET
+       PROTECTED + HYBRID RETRIEVED EVIDENCE
                       ▼
              SCENE PLAN → DRAFT
                       ▼
-       DIAGNOSIS → REVISION → POLISH
+         REVIEW → REVISION → RE-REVIEW
+                      ▼
+     BEST CANDIDATE + PROVISIONAL EXTRACTION
                       ▼
         NARRATIVE VERIFICATION + QUALITY
                       ▼
@@ -1072,7 +1159,7 @@ HUMAN INTENT ─────────┼────────── STORY 
                       ▼
             ACCEPTED CHAPTER OUTCOME
                       ▼
-      CANON + NARRATIVE STATE + ARC EVIDENCE
+  CANON + STATE + ARC PROGRESS + OBLIGATIONS
                       │
              ┌────────┴─────────┐
              ▼                  ▼

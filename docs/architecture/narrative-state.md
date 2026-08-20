@@ -12,6 +12,7 @@ and future planning. It does not merge their Authorities or storage lifecycles.
 | ChapterOutcome v2 | `ACCEPTED_ACTUAL` | Immutable actuals for one chapter; authoritative only when a committed Book acceptance points to the AssetVersion. |
 | NarrativeStateEvent v2 | `STATE_EVENT` | Append-only delta stored inside ChapterOutcome; never updated or deleted. |
 | StoryStateSnapshot v2 | `CURRENT_STATE` | Deterministic, entity-aware projection of accepted events; rebuildable and not an Authority replacement. |
+| ArcProgress / NarrativeObligationState | `ACCEPTED_PROJECTION` | Deterministic ChapterOutcome projections at the exact accepted boundary; never inferred from ChapterPlan. |
 | Temporal query result | `TEMPORAL_PROJECTION` | Read-only replay at an inclusive accepted chapter boundary. |
 | ChapterPlan and hierarchical plans | `FUTURE_INTENT` | Planning/PlanChange Authority owns candidates and activation; plans never become actuals automatically. |
 | ContextBundle | `EXECUTION_CONTEXT` | Frozen, isolated and token-budgeted input with exact AssetVersion refs. It cannot mutate state. |
@@ -23,7 +24,7 @@ The accepted flow is:
 ```text
 committed Book chapter acceptance
   -> immutable ChapterOutcome v2 events
-  -> deterministic StoryState/Canon current snapshots
+  -> deterministic StoryState/Canon/Arc/Obligation current projections
   -> accepted-only temporal replay and compact Context
   -> future planning candidate
 ```
@@ -77,11 +78,8 @@ accepted after the requested boundary.
 | World rule | rule id | activate/upsert; definition change requires explicit supersession |
 | Resource | entity + resource | initial balance or reconciled increment/decrement |
 | Power | character id | checked tier/state transition |
-| Foreshadow | thread id | open/transition/pay/close lifecycle |
-| Reader promise | promise id | open/transition/pay/close lifecycle |
-| Plot thread | thread id | open/transition/resolve lifecycle |
-| Narrative debt | source kind + entity | derived open/resolved lifecycle |
-| Mystery | mystery id | open/transition/resolve lifecycle |
+| Narrative Obligation | obligation id | unified promise/foreshadow/mystery/open-loop/conflict/hook/commitment/expectation/debt lifecycle with development/payoff evidence |
+| Legacy foreshadow/promise/plot thread/debt/mystery | legacy identity | deterministic input adapter into Narrative Obligation; not a parallel target projection |
 | Antagonist | antagonist id | entity-aware upsert/transition |
 | Arc | arc id | entity-aware lifecycle |
 | Reward and theme movement | event identity | append-only |
@@ -113,6 +111,21 @@ confidence, coverage and evidence. The existing Context Builder still owns
 selection, rejection, source isolation, immutable refs and token budgets.
 Historical evidence is obtained through an explicit temporal read; the normal
 Context is not an unbounded history list.
+
+Context v2 additionally protects the exact active plan and critical accepted
+state/Canon/Arc/Obligation entries from token trimming, then retrieves
+historical evidence through lexical, embedding, entity/relationship, timeline,
+temporal, Arc and obligation signals. Until that runtime is implemented and
+consumed, the existing relevance-sort selector is not hybrid long-form memory.
+
+## Arc observation defect at the audit baseline
+
+At baseline `4fdf6adaa25ef085e4e6abab1f5b6ac71d86607a`, the post-acceptance Arc
+checkpoint code falls back from missing ChapterOutcome actual contributions to
+ChapterPlan declarations and records them as `ACTUAL`. This is not a valid
+Narrative State rule. Convergence must add explicit Arc observation evidence
+and use `NOT_OBSERVED`, `NOT_MATERIALIZED` or `UNKNOWN` when evidence is absent;
+plans can never be promoted to actuals.
 
 ## Migration and rebuild
 

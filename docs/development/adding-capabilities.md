@@ -2,6 +2,16 @@
 
 Add behavior to the existing Authority and execution planes. A new business capability does not justify a new scheduler, provider gateway, Attempt model, LocalStorage authority, or compatibility runtime.
 
+Classify the behavior before naming it:
+
+- use **Autonomous Agent** only for bounded multi-turn goal decomposition, dynamic Tool choice, observation and adaptive replanning;
+- use **Typed Capability** for one model-backed semantic task returning an immutable candidate/evidence artifact;
+- use **Domain Service** for deterministic validation/reduction/comparison/diff/projection;
+- use **Durable Workflow** for explicit transitions and recovery;
+- use **Authority** only for business-state commitment.
+
+Do not mirror every narrative level or LLM call with an Agent/Authority/module.
+
 ## Decide ownership first
 
 Identify:
@@ -14,6 +24,8 @@ Identify:
 - whether an external effect is involved.
 
 If no Authority owns the decision, define that boundary before writing a worker.
+
+Agent tools may expose read-only accepted-boundary queries, Typed Capability invocation and typed Authority Command submission. They must not expose direct Canon/State/Arc/Obligation/plan/acceptance mutation. Binding a Skill never grants Tool permission.
 
 ## Reuse the production execution plane
 
