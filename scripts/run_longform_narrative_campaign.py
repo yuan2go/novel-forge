@@ -54,6 +54,7 @@ from run_short_longform_runtime_proof import (
     READER_PACK_ID,
     _bootstrap_assets,
     _bootstrap_chapter_profiles,
+    _book_design_foundation,
     _campaign_initial_narrative_snapshots as _build_campaign_initial_snapshots,
     _chapter_outputs,
     _codex_version,
@@ -74,6 +75,12 @@ from run_short_longform_runtime_proof import (
 ROOT = Path(__file__).resolve().parents[1]
 ALLOWED_TARGETS = frozenset({1, 2, 5, 10, 30, 100, 300})
 SCHEMA_VERSION = "novel-forge.longform-proof-campaign-checkpoint.v1"
+
+
+def _campaign_book_design_foundation(
+    contract: Mapping[str, Any],
+) -> dict[str, list[Any]]:
+    return _book_design_foundation(contract)
 
 
 def _campaign_initial_narrative_snapshots(
@@ -108,7 +115,10 @@ def _classify_failure(error: BaseException) -> str:
         return "CONTEXT_DEFECT"
     if any(word in message for word in ("canon", "continuity", "knowledge")):
         return "CONTENT_CORRECTNESS_FAILURE"
-    if any(word in message for word in ("quality", "corrective", "readability")):
+    if any(
+        word in message
+        for word in ("quality", "corrective", "readability", "semantic_qualification")
+    ):
         return "CONTENT_QUALITY_FAILURE"
     if any(word in message for word in ("harness", "checkpoint output", "export")):
         return "PROOF_HARNESS_DEFECT"

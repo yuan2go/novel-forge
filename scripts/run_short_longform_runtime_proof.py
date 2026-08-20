@@ -1124,6 +1124,81 @@ def _bootstrap_chapter_profiles(
     return {key: str(value) for key, value in result.items() if key in rows}
 
 
+def _book_design_foundation(
+    campaign_contract: Mapping[str, Any] | None,
+) -> dict[str, list[Any]]:
+    if campaign_contract is None:
+        return {
+            "world_rules": [
+                "official records carry revision traces",
+                "public correction imposes a named civic debt",
+            ],
+            "core_characters": [
+                {
+                    "character_id": "lin-qiao",
+                    "role": "protagonist and archive witness",
+                    "long_term_goal": "make erased evidence publicly accountable",
+                    "causal_arc": "procedural avoidance becomes accountable agency",
+                    "conflict_function": "her protected status competes with disclosure",
+                },
+                {
+                    "character_id": "mei-an",
+                    "role": "engineering ally and independent constraint owner",
+                    "long_term_goal": "keep the city alive without secret custody",
+                    "causal_arc": "conditional cooperation becomes costly public trust",
+                    "conflict_function": "material safety challenges evidentiary urgency",
+                },
+            ],
+            "opposition_forces": [
+                {
+                    "force_id": "quiet-office",
+                    "goal": "contain crises by controlling their public record",
+                    "leverage": "institutional access and revision authority",
+                    "escalation_pattern": "procedural denial becomes physical erasure",
+                    "limit": "every revision leaves an auditable trace",
+                }
+            ],
+        }
+    ground_truth = campaign_contract.get("ground_truth")
+    if not isinstance(ground_truth, Mapping):
+        raise RuntimeError("Proof Campaign omits governed ground truth")
+    characters = ground_truth.get("characters")
+    factions = ground_truth.get("factions")
+    rules = ground_truth.get("world_rules")
+    if not all(
+        isinstance(items, list) and items for items in (characters, factions, rules)
+    ):
+        raise RuntimeError("Proof Campaign ground truth lacks longform foundation inputs")
+    return {
+        "core_characters": [
+            {
+                "character_id": str(item["character_id"]),
+                "role": str(item["role"]),
+                "long_term_goal": str(item["external_goal"]),
+                "causal_arc": f"{item['opening_belief']} -> {item['final_change']}",
+                "conflict_function": (
+                    f"Fear: {item['fear']}; flaw under pressure: {item['flaw']}"
+                ),
+            }
+            for item in characters
+        ],
+        "opposition_forces": [
+            {
+                "force_id": str(item["faction_id"]),
+                "goal": str(item["conflict"]),
+                "leverage": str(item["legitimacy"]),
+                "escalation_pattern": f"Pressure escalates through {item['conflict']}",
+                "limit": f"Depends on {item['maintenance_cost']}",
+            }
+            for item in factions
+        ],
+        "world_rules": [
+            f"{item['statement']} Narrative function: {item['function']}"
+            for item in rules
+        ],
+    }
+
+
 def _seed_project_and_active_design(
     database_url: str,
     *,
@@ -1159,6 +1234,7 @@ def _seed_project_and_active_design(
         if campaign_contract is not None
         else None
     )
+    foundation = _book_design_foundation(campaign_contract)
     ProjectAuthorityApplication(
         database_url, application_build_id=build_id, commit_sha=commit_sha
     ).execute(
@@ -1235,36 +1311,10 @@ def _seed_project_and_active_design(
                     "flaw": "mistakes procedural safety for moral neutrality",
                     "arc": "avoidance to accountable agency",
                 },
-                "world_rules": [
-                    "official records carry revision traces",
-                    "public correction imposes a named civic debt",
-                ],
+                "world_rules": foundation["world_rules"],
                 "target_chapters": int(campaign_book["target_chapters"]),
-                "core_characters": [
-                    {
-                        "character_id": "lin-qiao",
-                        "role": "protagonist and archive witness",
-                        "long_term_goal": "make erased evidence publicly accountable",
-                        "causal_arc": "procedural avoidance becomes accountable agency",
-                        "conflict_function": "her protected status competes with disclosure",
-                    },
-                    {
-                        "character_id": "mei-an",
-                        "role": "engineering ally and independent constraint owner",
-                        "long_term_goal": "keep the city alive without secret custody",
-                        "causal_arc": "conditional cooperation becomes costly public trust",
-                        "conflict_function": "material safety challenges evidentiary urgency",
-                    },
-                ],
-                "opposition_forces": [
-                    {
-                        "force_id": "quiet-office",
-                        "goal": "contain crises by controlling their public record",
-                        "leverage": "institutional access and revision authority",
-                        "escalation_pattern": "procedural denial becomes physical erasure",
-                        "limit": "every revision leaves an auditable trace",
-                    }
-                ],
+                "core_characters": foundation["core_characters"],
+                "opposition_forces": foundation["opposition_forces"],
                 "narrative_dna": {
                     "core_question": "Who must pay when hidden truth becomes public?",
                     "recurring_choice": "procedural safety or accountable disclosure",
@@ -1277,6 +1327,19 @@ def _seed_project_and_active_design(
         ),
         principal=principal,
     )
+    candidate = next(
+        item
+        for item in query.list_design_versions(
+            project_id=project_id, book_id=book_id
+        )
+        if item["asset_version_id"] == str(proposed["asset_version_id"])
+    )
+    if candidate["status"] != "VALIDATED":
+        raise RuntimeError(
+            "BOOK_DESIGN_SEMANTIC_QUALIFICATION_FAILED: "
+            f"candidate {candidate['asset_version_id']} is "
+            f"{candidate['status']} with content {candidate['content_hash']}"
+        )
     book = query.require_book(project_id=project_id, book_id=book_id)
     app.execute(
         BookDesignAuthorityCommand(
