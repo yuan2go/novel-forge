@@ -20,6 +20,7 @@ from typing import Any, Callable, Mapping
 from uuid import uuid4
 
 from novel_forge.api.authority_dependencies import (
+    build_book_design_authority_application,
     build_book_production_composition,
     build_chapter_authority_application,
     build_production_execution_composition,
@@ -57,6 +58,7 @@ from novel_forge.modules.capability_pack_authority.application import (
 )
 from novel_forge.modules.capability_packs.longform_profiles import (
     LongformCapabilityPackProfile,
+    build_narrative_evaluation_pack_profile,
     build_reader_outcome_pack_profile,
     build_story_planning_pack_profile,
 )
@@ -94,6 +96,10 @@ from novel_forge.modules.story_planning_runtime import (
 from novel_forge.modules.story_planning_runtime.application import (
     story_planning_generation_definition,
 )
+from novel_forge.modules.story_design_authority.evaluation_runtime import (
+    NARRATIVE_EVALUATION_APPLICATION_BUILD_ID,
+    narrative_semantic_evaluation_definition,
+)
 from novel_forge.modules.runtime_proof import evaluate_short_longform_evidence
 from novel_forge.storage.authority_repositories import definition_hash
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
@@ -116,6 +122,8 @@ from run_real_capability_codex_proof import (
 ROOT = Path(__file__).resolve().parents[1]
 PLANNING_PACK_ID = "story_planning_pack"
 READER_PACK_ID = "reader_outcome_pack"
+NARRATIVE_EVALUATION_PACK_ID = "narrative_semantic_evaluation_pack"
+NARRATIVE_EVALUATION_PACK_VERSION = "1.0.0"
 PLANNING_PACK_INITIAL_VERSION = "1.5.0"
 READER_PACK_INITIAL_VERSION = "1.1.0"
 PLANNING_PACK_RECOVERY_VERSION = "1.6.0"
@@ -1125,6 +1133,8 @@ def _seed_project_and_active_design(
     commit_sha: str,
     principal: Principal,
     campaign_contract: Mapping[str, Any] | None = None,
+    application: BookDesignAuthorityApplication | None = None,
+    before_design_proposal: Callable[[], None] | None = None,
 ) -> dict[str, Any]:
     campaign_book = (
         dict(campaign_contract["book"])
@@ -1163,7 +1173,7 @@ def _seed_project_and_active_design(
         ),
         principal=principal,
     )
-    app = BookDesignAuthorityApplication(
+    app = application or BookDesignAuthorityApplication(
         database_url, application_build_id=build_id, commit_sha=commit_sha
     )
     base = {
@@ -1197,6 +1207,8 @@ def _seed_project_and_active_design(
         ),
         principal=principal,
     )
+    if before_design_proposal is not None:
+        before_design_proposal()
     query = BookDesignAuthorityQuery(database_url)
     book = query.require_book(project_id=project_id, book_id=book_id)
     proposed = app.execute(
@@ -1265,7 +1277,7 @@ def _seed_project_and_active_design(
 
 def _register_longform_definitions(
     database_url: str, *, build_id: str, commit_sha: str
-) -> tuple[str, str]:
+) -> tuple[str, str, str]:
     planning = story_planning_generation_definition(
         application_build_id=build_id, commit_sha=commit_sha
     )
@@ -1276,9 +1288,14 @@ def _register_longform_definitions(
         )
         if item["name"] == "reader_outcome.evaluate"
     )
+    narrative_evaluation = narrative_semantic_evaluation_definition(
+        application_build_id=NARRATIVE_EVALUATION_APPLICATION_BUILD_ID,
+        commit_sha=commit_sha,
+    )
     with AuthorityUnitOfWork(database_url) as uow:
         uow.repositories.definitions.register(planning)
         uow.repositories.definitions.register(reader)
+        uow.repositories.definitions.register(narrative_evaluation)
         for definition in chapter_operation_definitions(
             application_build_id=build_id,
             commit_sha=commit_sha,
@@ -1286,7 +1303,11 @@ def _register_longform_definitions(
         ):
             uow.repositories.definitions.register(definition)
         uow.commit()
-    return definition_hash(planning), definition_hash(reader)
+    return (
+        definition_hash(planning),
+        definition_hash(reader),
+        definition_hash(narrative_evaluation),
+    )
 
 
 def _install_profile(
@@ -1441,6 +1462,45 @@ def _install_profile(
         "activation": activation,
         "deployment_id": deployment_id,
     }
+
+
+def _install_narrative_evaluation_profile(
+    database_url: str,
+    *,
+    operation_definition_hash: str,
+    project_id: str,
+    workspace_id: str,
+    book_id: str,
+    build_id: str,
+    commit_sha: str,
+    compiler: Principal,
+    approver: Principal,
+    agent_admin: Principal,
+) -> dict[str, Any]:
+    """Activate the independent real-Provider evaluator before design proposal."""
+
+    profile = build_narrative_evaluation_pack_profile(
+        ROOT,
+        operation_definition_hash=operation_definition_hash,
+        pack_id=NARRATIVE_EVALUATION_PACK_ID,
+    )
+    return _install_profile(
+        database_url,
+        profile=profile,
+        version=NARRATIVE_EVALUATION_PACK_VERSION,
+        generation=1,
+        expected_activation_version=0,
+        project_id=project_id,
+        workspace_id=workspace_id,
+        book_id=book_id,
+        build_id=build_id,
+        commit_sha=commit_sha,
+        compiler=compiler,
+        approver=approver,
+        agent_admin=agent_admin,
+        agent_domain="story_design",
+        agent_scope_type="BOOK",
+    )
 
 
 def _planning_inputs(
@@ -3967,6 +4027,20 @@ def _resume_book_phase(args: argparse.Namespace) -> dict[str, Any]:
             "NOVEL_FORGE_BOOK_FOLLOWUP_WORKER_ID": (
                 "reader-worker:short-longform-real-proof"
             ),
+            "NOVEL_FORGE_NARRATIVE_EVALUATION_CAPABILITY_PACK_ID": (
+                NARRATIVE_EVALUATION_PACK_ID
+            ),
+            "NOVEL_FORGE_NARRATIVE_EVALUATOR_PRINCIPAL_ID": (
+                "narrative-evaluator:short-longform-real-proof"
+            ),
+            "NOVEL_FORGE_NARRATIVE_EVALUATION_WORKER_ID": (
+                "narrative-evaluator-worker:short-longform-real-proof"
+            ),
+            "NOVEL_FORGE_NARRATIVE_EVALUATOR_PROVIDER": "codex-cli",
+            "NOVEL_FORGE_NARRATIVE_EVALUATOR_MODEL": args.model,
+            "NOVEL_FORGE_NARRATIVE_SEMANTIC_EVALUATION_REASONING_EFFORT": (
+                args.reasoning_effort
+            ),
             "NOVEL_FORGE_PROJECT_DAILY_PROVIDER_CAP": "100.00",
             "NOVEL_FORGE_PROVIDER_DAILY_CAP": "100.00",
             "NOVEL_FORGE_DAILY_PROVIDER_CAP": "100.00",
@@ -4120,6 +4194,20 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
             "NOVEL_FORGE_BOOK_FOLLOWUP_WORKER_ID": (
                 "reader-worker:short-longform-real-proof"
             ),
+            "NOVEL_FORGE_NARRATIVE_EVALUATION_CAPABILITY_PACK_ID": (
+                NARRATIVE_EVALUATION_PACK_ID
+            ),
+            "NOVEL_FORGE_NARRATIVE_EVALUATOR_PRINCIPAL_ID": (
+                "narrative-evaluator:short-longform-real-proof"
+            ),
+            "NOVEL_FORGE_NARRATIVE_EVALUATION_WORKER_ID": (
+                "narrative-evaluator-worker:short-longform-real-proof"
+            ),
+            "NOVEL_FORGE_NARRATIVE_EVALUATOR_PROVIDER": "codex-cli",
+            "NOVEL_FORGE_NARRATIVE_EVALUATOR_MODEL": args.model,
+            "NOVEL_FORGE_NARRATIVE_SEMANTIC_EVALUATION_REASONING_EFFORT": (
+                args.reasoning_effort
+            ),
             "NOVEL_FORGE_PROJECT_DAILY_PROVIDER_CAP": "100.00",
             "NOVEL_FORGE_PROVIDER_DAILY_CAP": "100.00",
             "NOVEL_FORGE_DAILY_PROVIDER_CAP": "100.00",
@@ -4169,6 +4257,30 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
     agent_admin = _principal(
         f"agent-admin:{project_id}", project_id, "agent.authority.admin"
     )
+    planning_hash, reader_hash, narrative_evaluation_hash = (
+        _register_longform_definitions(
+            args.database_url, build_id=build_id, commit_sha=commit_sha
+        )
+    )
+    production_execution = build_production_execution_composition(settings, env=env)
+    narrative_evaluation_pack: dict[str, Any] = {}
+
+    def prepare_narrative_evaluation() -> None:
+        narrative_evaluation_pack.update(
+            _install_narrative_evaluation_profile(
+                args.database_url,
+                operation_definition_hash=narrative_evaluation_hash,
+                project_id=project_id,
+                workspace_id=workspace_id,
+                book_id=book_id,
+                build_id=build_id,
+                commit_sha=commit_sha,
+                compiler=compiler,
+                approver=approver,
+                agent_admin=agent_admin,
+            )
+        )
+
     book = _seed_project_and_active_design(
         args.database_url,
         project_id=project_id,
@@ -4177,6 +4289,12 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
         build_id=build_id,
         commit_sha=commit_sha,
         principal=operator,
+        application=build_book_design_authority_application(
+            settings,
+            execution=production_execution,
+            env=env,
+        ),
+        before_design_proposal=prepare_narrative_evaluation,
     )
     bootstrap = _bootstrap_assets(
         args.database_url,
@@ -4195,9 +4313,6 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
         build_id=build_id,
         commit_sha=commit_sha,
         principal=operator,
-    )
-    planning_hash, reader_hash = _register_longform_definitions(
-        args.database_url, build_id=build_id, commit_sha=commit_sha
     )
     planning_profile = build_story_planning_pack_profile(
         ROOT,
@@ -4243,7 +4358,6 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
         agent_domain="reader_outcome",
         agent_scope_type="CHAPTER",
     )
-    production_execution = build_production_execution_composition(settings, env=env)
     chapter = build_chapter_authority_application(
         settings, execution=production_execution, env=env
     )
@@ -4323,6 +4437,7 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
             "migration": _jsonable(migration),
             "bootstrap": bootstrap,
             "chapter_profiles": chapter_profiles,
+            "narrative_evaluation_pack": _jsonable(narrative_evaluation_pack),
             "planning_pack": _jsonable(planning_pack),
             "reader_pack": _jsonable(reader_pack),
             "chapter_pack": _jsonable(chapter_pack),

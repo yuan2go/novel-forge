@@ -15,6 +15,7 @@ from typing import Any, Mapping
 from uuid import uuid4
 
 from novel_forge.api.authority_dependencies import (
+    build_book_design_authority_application,
     build_book_production_composition,
     build_chapter_authority_application,
     build_production_execution_composition,
@@ -46,6 +47,7 @@ from run_real_capability_codex_proof import (
     _runtime_env,
 )
 from run_short_longform_runtime_proof import (
+    NARRATIVE_EVALUATION_PACK_ID,
     PLANNING_PACK_ID,
     PLANNING_PACK_INITIAL_VERSION,
     PROOF_QUALITY_CONTEXT_TOKEN_BUDGET,
@@ -57,6 +59,7 @@ from run_short_longform_runtime_proof import (
     _codex_version,
     _complete_reader_sidecar,
     _install_profile,
+    _install_narrative_evaluation_profile,
     _proof_bucket_names,
     _register_longform_definitions,
     _release_checkout,
@@ -269,6 +272,20 @@ def _runtime_settings(
             "NOVEL_FORGE_BOOK_FOLLOWUP_WORKER_ID": (
                 "reader-worker:longform-narrative-proof"
             ),
+            "NOVEL_FORGE_NARRATIVE_EVALUATION_CAPABILITY_PACK_ID": (
+                NARRATIVE_EVALUATION_PACK_ID
+            ),
+            "NOVEL_FORGE_NARRATIVE_EVALUATOR_PRINCIPAL_ID": (
+                "narrative-evaluator:longform-narrative-proof"
+            ),
+            "NOVEL_FORGE_NARRATIVE_EVALUATION_WORKER_ID": (
+                "narrative-evaluator-worker:longform-narrative-proof"
+            ),
+            "NOVEL_FORGE_NARRATIVE_EVALUATOR_PROVIDER": "codex-cli",
+            "NOVEL_FORGE_NARRATIVE_EVALUATOR_MODEL": args.model,
+            "NOVEL_FORGE_NARRATIVE_SEMANTIC_EVALUATION_REASONING_EFFORT": (
+                args.reasoning_effort
+            ),
             "NOVEL_FORGE_PROJECT_DAILY_PROVIDER_CAP": str(args.provider_cost_cap),
             "NOVEL_FORGE_PROVIDER_DAILY_CAP": str(args.provider_cost_cap),
             "NOVEL_FORGE_DAILY_PROVIDER_CAP": str(args.provider_cost_cap),
@@ -330,6 +347,30 @@ def _initialise_campaign(
     agent_admin = _principal(
         f"agent-admin:{project_id}", project_id, "agent.authority.admin"
     )
+    planning_hash, reader_hash, narrative_evaluation_hash = (
+        _register_longform_definitions(
+            args.database_url, build_id=build_id, commit_sha=commit_sha
+        )
+    )
+    execution = build_production_execution_composition(settings, env=env)
+    narrative_evaluation_pack: dict[str, Any] = {}
+
+    def prepare_narrative_evaluation() -> None:
+        narrative_evaluation_pack.update(
+            _install_narrative_evaluation_profile(
+                args.database_url,
+                operation_definition_hash=narrative_evaluation_hash,
+                project_id=project_id,
+                workspace_id=workspace_id,
+                book_id=book_id,
+                build_id=build_id,
+                commit_sha=commit_sha,
+                compiler=compiler,
+                approver=approver,
+                agent_admin=agent_admin,
+            )
+        )
+
     book = _seed_project_and_active_design(
         args.database_url,
         project_id=project_id,
@@ -339,6 +380,12 @@ def _initialise_campaign(
         commit_sha=commit_sha,
         principal=operator,
         campaign_contract=contract_payload,
+        application=build_book_design_authority_application(
+            settings,
+            execution=execution,
+            env=env,
+        ),
+        before_design_proposal=prepare_narrative_evaluation,
     )
     bootstrap = _bootstrap_assets(
         args.database_url,
@@ -358,9 +405,6 @@ def _initialise_campaign(
         build_id=build_id,
         commit_sha=commit_sha,
         principal=operator,
-    )
-    planning_hash, reader_hash = _register_longform_definitions(
-        args.database_url, build_id=build_id, commit_sha=commit_sha
     )
     planning_profile = build_story_planning_pack_profile(
         ROOT, operation_definition_hash=planning_hash, pack_id=PLANNING_PACK_ID
@@ -402,7 +446,6 @@ def _initialise_campaign(
         agent_domain="reader_outcome",
         agent_scope_type="CHAPTER",
     )
-    execution = build_production_execution_composition(settings, env=env)
     chapter = build_chapter_authority_application(
         settings, execution=execution, env=env
     )
@@ -446,6 +489,7 @@ def _initialise_campaign(
         "chapter_plan_projections": projections,
         "planning_retry": retry,
         "packs": {
+            "narrative_evaluation": narrative_evaluation_pack,
             "planning": planning_pack,
             "reader": reader_pack,
             "chapter": chapter_pack,
