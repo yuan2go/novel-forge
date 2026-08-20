@@ -4,6 +4,9 @@ from copy import deepcopy
 
 import pytest
 
+from novel_forge.modules.chapter_authority.provider_output_contracts import (
+    validate_chapter_provider_output_against_schema,
+)
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.production_execution.capability_registry import (
     default_capability_registry,
@@ -127,6 +130,7 @@ def test_semantic_failure_requires_repair_and_cannot_be_declared_pass() -> None:
 def test_provider_schema_is_strict_and_exposes_no_universal_judge() -> None:
     schema = qualification_provider_schema("chapter_plan.generate")
 
+    assert schema["$schema"] == "https://json-schema.org/draft/2020-12/schema"
     assert schema["additionalProperties"] is False
     assert schema["properties"]["schema_version"]["const"] == (
         "progressive-narrative-qualification.v1"
@@ -137,6 +141,11 @@ def test_provider_schema_is_strict_and_exposes_no_universal_judge() -> None:
         "CHAPTER_EXECUTION_PLAN",
         "SCENE_ARCHITECTURE",
     }
+    assert validate_chapter_provider_output_against_schema(
+        "narrative_semantic_evaluation",
+        schema,
+        scripted_qualification("chapter_plan.generate"),
+    )["schema_version"] == "progressive-narrative-qualification.v1"
 
 
 def test_evaluation_lineage_rejects_generator_self_qualification() -> None:
