@@ -1196,6 +1196,37 @@ def test_book_contract_rejects_impossible_obligation_window() -> None:
         )
 
 
+def test_book_contract_accepts_window_for_declared_story_truth() -> None:
+    content = planning_fixture_response(
+        "book_plan.generate",
+        {"planning_command": {"logical_key": "book:main", "input_versions": {}}},
+    )
+    obligations = content["knowledge_disclosure_obligations"]
+    obligations["story_truth_ids"] = ["truth:revision-traces"]
+    obligations["obligation_windows"].append(
+        {
+            "obligation_id": "truth:revision-traces",
+            "setup_chapter": 1,
+            "payoff_not_before": 1,
+            "payoff_due_by": 2,
+        }
+    )
+
+    contract = validate_planning_contract(
+        project_id="project-1",
+        book_id="book-1",
+        contract_type=PlanContractType.BOOK,
+        asset_version_id="book-plan:truth-window",
+        parent_version_id="",
+        execution_scope=PlanExecutionScope.PLANNED,
+        content=content,
+    )
+
+    assert contract.content["knowledge_disclosure_obligations"][
+        "story_truth_ids"
+    ] == ["truth:revision-traces"]
+
+
 def test_volume_contract_rejects_gapped_narrative_segments() -> None:
     content = planning_fixture_response(
         "volume_plan.generate",

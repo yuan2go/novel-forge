@@ -1180,6 +1180,7 @@ def _validate_book_design_layers(content: dict[str, Any]) -> None:
     declared_ids = {
         str(item)
         for field in (
+            "story_truth_ids",
             "mystery_ids",
             "promise_ids",
             "foreshadow_ids",
