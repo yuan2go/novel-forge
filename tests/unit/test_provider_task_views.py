@@ -519,6 +519,11 @@ def test_planning_repair_view_projects_source_and_failed_criteria() -> None:
     )
 
     repair = view["repair_context"]
+    assert view["segments"] == []
+    assert view["selection_explanation"]["omitted_segment_count"] == 1
+    assert view["selection_explanation"]["policy"] == (
+        "minimum-sufficient-planning-repair-context-v1"
+    )
     assert repair["source_candidate"]["content"]["objective"] == (
         "Expose the concealed audit."
     )

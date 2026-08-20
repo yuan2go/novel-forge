@@ -790,10 +790,17 @@ def _build_planning_context_view(
         )
     chapter = _planning_chapter(context_bundle)
     selectors = _planning_selectors(raw_inputs, chapter=chapter)
+    repair_context = context_bundle.get("repair_context")
+    if repair_context is not None and not isinstance(repair_context, Mapping):
+        raise KernelError(
+            "PLANNING_PROVIDER_CONTEXT_VIEW_INVALID",
+            "Planning repair context must be an object",
+        )
     projected: list[dict[str, Any]] = []
     omitted_items = 0
     truncated_characters = 0
-    for raw in raw_inputs:
+    projected_inputs = () if repair_context is not None else raw_inputs
+    for raw in projected_inputs:
         if not isinstance(raw, Mapping) or not isinstance(raw.get("content"), Mapping):
             raise KernelError(
                 "PLANNING_PROVIDER_CONTEXT_VIEW_INVALID",
@@ -827,10 +834,16 @@ def _build_planning_context_view(
         "accepted_state_boundary": {"accepted_through_chapter": 0},
         "segments": projected,
         "selection_explanation": {
-            "policy": "minimum-sufficient-planning-context-v2",
+            "policy": (
+                "minimum-sufficient-planning-repair-context-v1"
+                if repair_context is not None
+                else "minimum-sufficient-planning-context-v2"
+            ),
             "included_segment_count": len(projected),
             "included_fact_count": 0,
-            "omitted_segment_count": 0,
+            "omitted_segment_count": (
+                len(raw_inputs) if repair_context is not None else 0
+            ),
             "omitted_fact_count": 0,
             "omitted_item_count": omitted_items,
             "truncated_character_count": truncated_characters,
@@ -847,13 +860,7 @@ def _build_planning_context_view(
                 "Planning realization reference contract must be an object",
             )
         view["realization_reference_contract"] = _compact(reference_contract)
-    repair_context = context_bundle.get("repair_context")
     if repair_context is not None:
-        if not isinstance(repair_context, Mapping):
-            raise KernelError(
-                "PLANNING_PROVIDER_CONTEXT_VIEW_INVALID",
-                "Planning repair context must be an object",
-            )
         source = repair_context.get("source_candidate")
         if not isinstance(source, Mapping) or not isinstance(
             source.get("content"), Mapping
