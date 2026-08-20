@@ -360,6 +360,18 @@ def test_planning_provider_view_uses_command_and_projected_inputs_only() -> None
             "book_id": "book-1",
             "logical_key": "book:main",
             "planning_scope": "BOOK",
+            "realization_reference_contract": {
+                "contract_version": "planning-realization-reference-contract-v1",
+                "references_by_domain": {
+                    "WORLD_STATE": [
+                        {
+                            "authority_role": "world_bible",
+                            "asset_version_id": "world:v1",
+                            "content_hash": "sha256:" + "d" * 64,
+                        }
+                    ]
+                },
+            },
             "input_versions": [
                 {
                     "role": "book_design",
@@ -392,6 +404,9 @@ def test_planning_provider_view_uses_command_and_projected_inputs_only() -> None
     assert view["segments"][0]["content"] == {
         "premise": "Truth requires a visible cost."
     }
+    assert view["realization_reference_contract"]["references_by_domain"][
+        "WORLD_STATE"
+    ][0]["authority_role"] == "world_bible"
     assert view["selection_explanation"]["policy"] == (
         "minimum-sufficient-planning-context-v2"
     )

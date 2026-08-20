@@ -41,6 +41,7 @@ from novel_forge.modules.hierarchical_planning.domain import (
     HORIZON_REALIZATION_LEVELS,
     PLAN_HORIZON,
     PLAN_REALIZATION,
+    REALIZATION_AUTHORITY_ROLE_TYPES,
     TYPE_FIELDS,
     PlanContractType,
     RealizationLevel,
@@ -104,6 +105,54 @@ _PLANNING_STAGES = frozenset(
 # the Effect from terminalizing while the Operation still has retry budget and
 # prevents nested retry amplification.
 PLANNING_EXTERNAL_EFFECT_MAX_ATTEMPTS = STORY_PLANNING_MAX_ATTEMPTS
+
+
+def _realization_reference_contract(
+    *,
+    project_id: str,
+    book_id: str,
+    frozen_by_operation_id: str,
+    inputs: tuple[FrozenPlanningInput, ...],
+) -> dict[str, Any]:
+    """Publish exact frozen identities the Provider may cite as realization truth."""
+
+    references: dict[str, list[dict[str, str]]] = {}
+    for domain_type, role_types in REALIZATION_AUTHORITY_ROLE_TYPES.items():
+        eligible = []
+        for item in inputs:
+            if (
+                item.role not in role_types
+                or item.asset_type not in role_types[item.role]
+            ):
+                continue
+            eligible.append(
+                {
+                    "project_id": project_id,
+                    "book_id": book_id,
+                    "authority_role": item.role,
+                    "asset_version_id": item.asset_version_id,
+                    "asset_type": item.asset_type,
+                    "content_hash": item.content_hash,
+                    "domain_type": domain_type,
+                    "freshness": "CURRENT",
+                    "frozen_by_operation_id": frozen_by_operation_id,
+                }
+            )
+        if not eligible:
+            raise KernelError(
+                "PLANNING_REALIZATION_REFERENCE_SOURCE_MISSING",
+                f"Planning frozen inputs cannot support {domain_type}",
+            )
+        references[domain_type] = eligible
+    return {
+        "contract_version": "planning-realization-reference-contract-v1",
+        "instruction": (
+            "Copy one complete reference object from the matching domain list; "
+            "never invent or reinterpret authority_role, asset_type, identity, "
+            "or lineage."
+        ),
+        "references_by_domain": references,
+    }
 
 
 @dataclass(frozen=True, slots=True)
@@ -768,6 +817,41 @@ def _strict_object(properties: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _realization_authority_ref_schema(domain_type: str) -> dict[str, Any]:
+    """Constrain Provider references to roles that can own the target domain."""
+
+    role_types = REALIZATION_AUTHORITY_ROLE_TYPES[domain_type]
+    string = {"type": "string", "minLength": 1}
+    return _strict_object(
+        {
+            "project_id": string,
+            "book_id": string,
+            "authority_role": {
+                "type": "string",
+                "enum": sorted(role_types),
+            },
+            "asset_version_id": string,
+            "asset_type": {
+                "type": "string",
+                "enum": sorted(
+                    {
+                        asset_type
+                        for asset_types in role_types.values()
+                        for asset_type in asset_types
+                    }
+                ),
+            },
+            "content_hash": {
+                "type": "string",
+                "pattern": "^sha256:[0-9a-f]{64}$",
+            },
+            "domain_type": {"type": "string", "const": domain_type},
+            "freshness": {"type": "string", "const": "CURRENT"},
+            "frozen_by_operation_id": string,
+        }
+    )
+
+
 def _canonical_narrative_provider_properties(
     contract_type: PlanContractType,
     *,
@@ -781,31 +865,15 @@ def _canonical_narrative_provider_properties(
         level.value for level in HORIZON_REALIZATION_LEVELS[PLAN_HORIZON[contract_type]]
     }
     entity_realization_levels = [level.value for level in RealizationLevel]
-    authority_ref = _strict_object(
-        {
-            "project_id": string,
-            "book_id": string,
-            "authority_role": string,
-            "asset_version_id": string,
-            "asset_type": string,
-            "content_hash": {
-                "type": "string",
-                "pattern": "^sha256:[0-9a-f]{64}$",
-            },
-            "domain_type": {
-                "type": "string",
-                "enum": [
-                    "WORLD_INVARIANT",
-                    "WORLD_STRUCTURE",
-                    "WORLD_STATE",
-                    "CHARACTER_IDENTITY",
-                    "CHARACTER_STATE",
-                    "CHARACTER_TRAJECTORY",
-                ],
-            },
-            "freshness": {"type": "string", "const": "CURRENT"},
-            "frozen_by_operation_id": string,
-        }
+    world_invariant_ref = _realization_authority_ref_schema("WORLD_INVARIANT")
+    world_structure_ref = _realization_authority_ref_schema("WORLD_STRUCTURE")
+    world_state_ref = _realization_authority_ref_schema("WORLD_STATE")
+    character_identity_ref = _realization_authority_ref_schema(
+        "CHARACTER_IDENTITY"
+    )
+    character_state_ref = _realization_authority_ref_schema("CHARACTER_STATE")
+    character_trajectory_ref = _realization_authority_ref_schema(
+        "CHARACTER_TRAJECTORY"
     )
     architecture = {
         "narrative_architecture_version": {
@@ -847,14 +915,14 @@ def _canonical_narrative_provider_properties(
                     "invariant_refs": {
                         "type": "array",
                         "minItems": 1,
-                        "items": authority_ref,
+                        "items": world_invariant_ref,
                     },
                     "structure_refs": {
                         "type": "array",
                         "minItems": 1,
-                        "items": authority_ref,
+                        "items": world_structure_ref,
                     },
-                    "state_ref": authority_ref,
+                    "state_ref": world_state_ref,
                     "realization_level": {
                         "type": "string",
                         "enum": entity_realization_levels,
@@ -880,9 +948,9 @@ def _canonical_narrative_provider_properties(
             "items": _strict_object(
                 {
                     "character_id": string,
-                    "identity_ref": authority_ref,
-                    "state_ref": authority_ref,
-                    "trajectory_ref": authority_ref,
+                    "identity_ref": character_identity_ref,
+                    "state_ref": character_state_ref,
+                    "trajectory_ref": character_trajectory_ref,
                     "scope": {
                         "type": "string",
                         "enum": [item.value for item in PlanContractType],
@@ -2672,6 +2740,12 @@ class PostgresPlanningExecutionPreparer:
             "planning_scope": command.planning_scope.value,
             "logical_key": command.logical_key,
             "input_versions": selected,
+            "realization_reference_contract": _realization_reference_contract(
+                project_id=command.project_id,
+                book_id=command.book_id,
+                frozen_by_operation_id=operation_id,
+                inputs=inputs,
+            ),
             "token_budget": 16000,
             "source_isolation": "ABSTRACT_ASSETS_ONLY",
             "narrative_qualification_profiles": [

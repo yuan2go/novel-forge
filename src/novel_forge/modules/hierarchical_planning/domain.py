@@ -86,7 +86,7 @@ CHARACTER_REACH_VALUES = frozenset(
     }
 )
 
-_REALIZATION_DOMAIN_ROLE_TYPES: dict[str, dict[str, frozenset[str]]] = {
+REALIZATION_AUTHORITY_ROLE_TYPES: dict[str, dict[str, frozenset[str]]] = {
     "WORLD_INVARIANT": {
         "world_bible": frozenset({"world_bible"}),
         "book_plan": frozenset({"book_plan", "planning_generation_candidate"}),
@@ -1074,7 +1074,9 @@ def _validate_realization_authority_ref(
     content_hash = str(value["content_hash"])
     authority_role = str(value["authority_role"])
     asset_type = str(value["asset_type"])
-    allowed_role_types = _REALIZATION_DOMAIN_ROLE_TYPES.get(expected_domain_type, {})
+    allowed_role_types = REALIZATION_AUTHORITY_ROLE_TYPES.get(
+        expected_domain_type, {}
+    )
     if (
         str(value["project_id"]) != project_id
         or str(value["book_id"]) != book_id
@@ -1605,6 +1607,7 @@ __all__ = [
     "CommitmentLevel",
     "PLAN_HORIZON",
     "PLAN_REALIZATION",
+    "REALIZATION_AUTHORITY_ROLE_TYPES",
     "PlanContractType",
     "PlanExecutionScope",
     "PlanningHorizon",

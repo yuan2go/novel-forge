@@ -31,6 +31,7 @@ from novel_forge.modules.story_planning_runtime import (
 )
 from novel_forge.modules.story_planning_runtime.execution import (
     PLANNING_EXTERNAL_EFFECT_MAX_ATTEMPTS,
+    _realization_reference_contract,
     planning_fixture_response as _planning_fixture_response,
     planning_provider_output_schema,
 )
@@ -235,6 +236,20 @@ def test_planning_provider_schema_is_codex_strict(
         "input:a",
         "input:b",
     ]
+    world = schema["properties"]["world_realization"]["items"]["properties"]
+    character = schema["properties"]["character_realization"]["items"][
+        "properties"
+    ]
+    assert world["invariant_refs"]["items"]["properties"]["domain_type"] == {
+        "type": "string",
+        "const": "WORLD_INVARIANT",
+    }
+    assert "world_invariant" not in world["invariant_refs"]["items"][
+        "properties"
+    ]["authority_role"]["enum"]
+    assert "book_design" not in character["state_ref"]["properties"][
+        "authority_role"
+    ]["enum"]
     if contract_type not in {PlanContractType.BOOK, PlanContractType.ARC}:
         assert schema["properties"]["parent_version_id"]["const"] == "parent:v1"
     if contract_type is PlanContractType.ARC:
@@ -288,6 +303,38 @@ def test_planning_provider_schema_is_codex_strict(
             "UNCERTAIN",
         ]
         assert schema["properties"]["required_state_transitions"]["maxItems"] == 8
+
+
+def test_realization_reference_contract_exposes_exact_frozen_authority_choices() -> None:
+    contract = _realization_reference_contract(
+        project_id="project-1",
+        book_id="book-1",
+        frozen_by_operation_id="operation:planning",
+        inputs=(
+            FrozenPlanningInput("world_bible", "world:v1", HASH, "world_bible"),
+            FrozenPlanningInput(
+                "character_cast", "cast:v1", HASH, "character_cast"
+            ),
+        ),
+    )
+
+    world = contract["references_by_domain"]["WORLD_STATE"]
+    character = contract["references_by_domain"]["CHARACTER_STATE"]
+    assert world == [
+        {
+            "project_id": "project-1",
+            "book_id": "book-1",
+            "authority_role": "world_bible",
+            "asset_version_id": "world:v1",
+            "asset_type": "world_bible",
+            "content_hash": HASH,
+            "domain_type": "WORLD_STATE",
+            "freshness": "CURRENT",
+            "frozen_by_operation_id": "operation:planning",
+        }
+    ]
+    assert character[0]["authority_role"] == "character_cast"
+    assert character[0]["asset_version_id"] == "cast:v1"
 
 
 def test_volume_and_chapter_provider_contracts_bind_timeline_segments() -> None:

@@ -839,6 +839,14 @@ def _build_planning_context_view(
             "maximum_serialized_characters": _MAX_PROVIDER_CONTEXT_CHARACTERS,
         },
     }
+    reference_contract = context_bundle.get("realization_reference_contract")
+    if reference_contract is not None:
+        if not isinstance(reference_contract, Mapping):
+            raise KernelError(
+                "PLANNING_PROVIDER_CONTEXT_VIEW_INVALID",
+                "Planning realization reference contract must be an object",
+            )
+        view["realization_reference_contract"] = _compact(reference_contract)
     if _serialized_character_count(view) > _MAX_PROVIDER_CONTEXT_CHARACTERS:
         raise KernelError(
             "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED",

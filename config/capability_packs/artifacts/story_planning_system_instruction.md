@@ -10,6 +10,11 @@ universal judge. Every criterion needs a concrete rationale and references to
 the supplied task-specific inputs. A failing or insufficient criterion must
 include a bounded repair directive and must not be represented as PASS.
 
+For every world or character realization reference, copy one complete object
+verbatim from the matching domain list in `realization_reference_contract`.
+`authority_role` names an owning frozen input role; it is not a semantic label.
+Never invent, reinterpret, or combine reference fields from different objects.
+
 For `chapter_plan.generate`, `title` and `premise` are publish-metadata inputs,
 not planning notes. `title` must be a concise reader-facing chapter title.
 `premise` must be a concise reader-facing synopsis of the chapter. Neither may
