@@ -745,7 +745,6 @@ def test_overdue_identity_requires_action_even_within_numeric_allowance() -> Non
         content=content,
     )
 
-
 def test_chapter_provider_contract_accepts_only_the_frozen_arc_portfolio() -> None:
     schema = planning_provider_output_schema(
         PlanContractType.CHAPTER,
@@ -1019,6 +1018,57 @@ def test_scene_contract_enforces_pov_time_relation_and_spatial_access() -> None:
             execution_scope=PlanExecutionScope.PLANNED,
             content=content,
         )
+
+
+def test_scene_contract_advances_declared_character_knowledge_between_scenes() -> None:
+    content = planning_fixture_response(
+        "chapter_plan.generate",
+        {
+            "planning_command": {
+                "logical_key": "chapter:2",
+                "parent_version_id": "chapter-group:v1",
+                "input_versions": {"arc_plans": "arc:v1"},
+            }
+        },
+    )
+    gained_fact = "fact:hidden-cost"
+    content["knowledge_boundaries"].append(
+        {
+            "layer": "CHARACTER_KNOWLEDGE",
+            "subject_id": "protagonist",
+            "fact_id": gained_fact,
+            "status": "KNOWN",
+            "available_from_chapter": content["chapter_number"],
+        }
+    )
+    first_scene = content["scene_plan"][0]
+    second_scene = deepcopy(first_scene)
+    second_scene.update(
+        {
+            "scene_id": "chapter:2:scene:2",
+            "entry_state": first_scene["exit_state"],
+            "exit_state": "the witnessed cost is now actionable",
+            "narrative_time_relation": "ADVANCES",
+            "story_time": {
+                **first_scene["story_time"],
+                "start_ordinal": first_scene["story_time"]["end_ordinal"] + 1,
+                "end_ordinal": first_scene["story_time"]["end_ordinal"] + 2,
+            },
+            "accessible_knowledge": [gained_fact],
+            "information_gain": [],
+        }
+    )
+    content["scene_plan"].append(second_scene)
+
+    validate_planning_contract(
+        project_id="project-1",
+        book_id="book-1",
+        contract_type=PlanContractType.CHAPTER,
+        asset_version_id="chapter:v2",
+        parent_version_id="chapter-group:v1",
+        execution_scope=PlanExecutionScope.PLANNED,
+        content=content,
+    )
 
 
 def test_progressive_realization_can_refine_strategic_versions() -> None:

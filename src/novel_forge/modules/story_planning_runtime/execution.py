@@ -1143,8 +1143,20 @@ def _canonical_narrative_provider_properties(
                     "character_id": string,
                     "goal": string,
                     "trajectory_refs": string_array,
-                    "known_fact_ids": string_array,
-                    "unknown_fact_ids": string_array,
+                    "known_fact_ids": {
+                        **string_array,
+                        "description": (
+                            "Facts known at chapter entry. Do not include facts first "
+                            "learned by this character during the planned chapter."
+                        ),
+                    },
+                    "unknown_fact_ids": {
+                        **string_array,
+                        "description": (
+                            "Facts unknown at chapter entry, including facts the "
+                            "character may learn in a later Scene."
+                        ),
+                    },
                     "belief_refs": string_array,
                     "expected_change": string,
                     "causal_trigger": string,
@@ -1272,7 +1284,14 @@ def _canonical_narrative_provider_properties(
                     "scene_group_id": string,
                     "goal": string,
                     "conflict": string,
-                    "participants": string_array,
+                    "participants": {
+                        **string_array,
+                        "description": (
+                            "Character identities present in the Scene. Every listed "
+                            "character must declare this Scene's location_id in its "
+                            "reachable_location_ids."
+                        ),
+                    },
                     "pov_character_id": string,
                     "focalization": {
                         "type": "string",
@@ -1301,12 +1320,45 @@ def _canonical_narrative_provider_properties(
                             "ELLIPSIS",
                         ],
                     },
-                    "accessible_knowledge": string_array,
+                    "accessible_knowledge": {
+                        **string_array,
+                        "description": (
+                            "Facts known by the POV character at Scene entry. A fact "
+                            "learned earlier in this chapter is eligible only after an "
+                            "earlier Scene lists it as information_gain while the "
+                            "character participates and CHARACTER_KNOWLEDGE declares "
+                            "the fact KNOWN."
+                        ),
+                    },
                     "arc_progress": string_array,
-                    "information_gain": string_array,
-                    "state_transitions": string_array,
-                    "entry_state": string,
-                    "exit_state": string,
+                    "information_gain": {
+                        **string_array,
+                        "description": (
+                            "Facts established during this Scene, never facts merely "
+                            "assumed at Scene entry."
+                        ),
+                    },
+                    "state_transitions": {
+                        **string_array,
+                        "description": (
+                            "Only exact entity_key values declared in "
+                            "required_state_transitions; never prose descriptions."
+                        ),
+                    },
+                    "entry_state": {
+                        **string,
+                        "description": (
+                            "Explicit Scene-entry state. After the first Scene this "
+                            "must copy the preceding Scene's exit_state verbatim."
+                        ),
+                    },
+                    "exit_state": {
+                        **string,
+                        "description": (
+                            "Explicit Scene-exit state which the next Scene must copy "
+                            "verbatim as its entry_state."
+                        ),
+                    },
                     "reader_effect": string,
                     "beats": string_array,
                 }

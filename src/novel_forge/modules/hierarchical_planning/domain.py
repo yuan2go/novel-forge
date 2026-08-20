@@ -1344,6 +1344,19 @@ def _validate_scene_architecture(
         for item in content.get("character_participation") or ()
         if isinstance(item, dict) and str(item.get("character_id") or "")
     }
+    declared_gains_by_character: dict[str, set[str]] = {}
+    for boundary in content.get("knowledge_boundaries") or ():
+        if (
+            not isinstance(boundary, dict)
+            or str(boundary.get("layer") or "").upper()
+            != "CHARACTER_KNOWLEDGE"
+            or str(boundary.get("status") or "").upper() != "KNOWN"
+        ):
+            continue
+        character_id = str(boundary.get("subject_id") or "")
+        fact_id = str(boundary.get("fact_id") or "")
+        if character_id and fact_id:
+            declared_gains_by_character.setdefault(character_id, set()).add(fact_id)
     previous_story_time: dict[str, tuple[int, int]] = {}
     for scene in scenes:
         participants = {str(item) for item in scene.get("participants") or ()}
@@ -1437,6 +1450,15 @@ def _validate_scene_architecture(
                 "SCENE_HIDDEN_KNOWLEDGE_LEAK",
                 "Scene accessible knowledge exceeds the POV character's accepted boundary",
             )
+        information_gain = {
+            str(fact) for fact in scene.get("information_gain") or () if str(fact)
+        }
+        for participant in participants:
+            declared_gains = declared_gains_by_character.get(participant, set())
+            if declared_gains:
+                known_by_character.setdefault(participant, set()).update(
+                    information_gain.intersection(declared_gains)
+                )
     for current, following in zip(scenes, scenes[1:], strict=False):
         if str(current.get("exit_state") or "") != str(
             following.get("entry_state") or ""
