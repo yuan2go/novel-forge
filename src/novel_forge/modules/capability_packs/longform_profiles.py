@@ -92,17 +92,6 @@ def build_story_planning_pack_profile(
             timeout_policy_ref=(
                 f"timeout:{capability.replace('.', '-')}:{PLANNING_TIMEOUT_POLICY_VERSION}"
             ),
-            narrative_qualification_profiles=[
-                {
-                    "layer": profile.layer.value,
-                    "profile_id": profile.profile_id,
-                    "profile_version": profile.profile_version,
-                    "profile_hash": profile.profile_hash,
-                    "capability_id": profile.capability_id,
-                    "skill_ref": profile.skill_ref,
-                }
-                for profile in required_qualification_profiles(stage)
-            ],
         )
         nodes.append(node)
     manifest["identity"].update(
