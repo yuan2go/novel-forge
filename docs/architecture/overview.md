@@ -61,7 +61,12 @@ WP-LIVE-01 removes the code-proven structural coupling identified at the 2026-08
 
 The historical structure is consistent with the observed failure mode “Chapter 1 completes, Chapter 2 does not advance for hours.” The exact incident database was not available at implementation time, so this remains a code-confirmed failure chain rather than a claim that every historical incident fact was reconstructed.
 
-This phase intentionally ran no tests or runtime qualification. Bounded Chapter 1→2 progress, sidecar failure isolation, restart/fencing/replay, migrations, real Provider, and unattended campaigns remain WP-LIVE-02. `RUNTIME_PROVEN`, `LONGFORM_PROVEN`, and `PRODUCTION_QUALIFIED` therefore remain false.
+WP-LIVE-02 owns engineering, PostgreSQL, migration, failure, real-Provider and
+campaign qualification for this closure. Its proof runners observe Book and
+Followup workers as separate deployment executors, bind every receipt to the
+exact release SHA, and reject fixture or intermediate state as runtime proof.
+Qualification results remain external evidence attached to the candidate PR;
+this current-runtime document does not promote an evidence level by itself.
 
 ## Evidence boundary
 
