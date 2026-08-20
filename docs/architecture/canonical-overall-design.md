@@ -1063,22 +1063,22 @@ Therefore the target system **converges the existing architecture**; it does not
 
 Every Work Package begins by re-reading the latest code and current runtime evidence. The ordering below changes if later evidence proves a gap is already closed.
 
-### P0 — Industrial Autonomous Novel OS convergence
+### P0 — Industrial Autonomous Novel OS convergence — IMPLEMENTED / UNIT+SMOKE TESTED
 
-Converge the existing runtime without weakening its industrial base:
+The convergence implementation now preserves the industrial base and has:
 
-- freeze the four orthogonal hierarchy responsibilities and avoid empty organizational/Segment roots;
-- implement explicit ArcPlan/ActualState/Progress/Outcome/Checkpoint/Revision and remove every plan-to-actual fallback;
-- complete accepted-only Narrative Obligation semantics;
-- add ChapterExecutionIntent/ChapterMemo before accepted-bound Context compilation;
-- implement Protected/Retrievable Context v2, layered memory and PostgreSQL hybrid retrieval;
-- implement persistent CandidateComparison/BestCandidateSnapshot/minimum improvement/rollback;
-- provide one semantic lineage/invalidation contract and isolate legacy parallel graphs;
-- implement a real multi-turn Tool-calling Agent Harness inside Operation/Attempt/ExternalEffect, while classifying ordinary creative work as Typed Capabilities;
-- commit the complete accepted Chapter/Canon/State/Arc/Obligation boundary through a short deterministic Book Acceptance transaction;
-- replace stale architecture string assertions with behavior/contract tests.
+- frozen the four orthogonal hierarchy responsibilities without adding empty organizational/Segment roots;
+- added explicit ArcPlan/ActualState/Progress/Outcome/Checkpoint/Revision and removed plan-to-actual fallback;
+- completed accepted-only Narrative Obligation semantics;
+- added ChapterExecutionIntent/ChapterMemo before accepted-bound Context compilation;
+- added Protected/Retrievable Context v2, layered memory and PostgreSQL hybrid retrieval;
+- added persistent CandidateComparison/BestCandidateSnapshot/minimum improvement/rollback;
+- provided one semantic lineage/invalidation contract and isolated legacy parallel graphs;
+- added a multi-turn Tool-calling Agent Harness inside Operation/Attempt/ExternalEffect while classifying ordinary creative work as Typed Capabilities;
+- committed the complete accepted Chapter/Canon/State/Arc/Obligation projection set through a short deterministic Book Acceptance transaction;
+- replaced stale architecture string assertions with behavior/contract tests.
 
-This convergence is complete only through domain contract, production composition, runtime reachability, persistence, Authority governance, downstream consumption and necessary tests.
+These capabilities have domain contracts, production composition, runtime reachability, persistence, Authority governance, downstream consumption and bounded tests. They are not long-form, real-provider or production qualified; those remain P1 evidence work rather than P0 implementation gaps.
 
 ### P1 — Long-form and Provider qualification
 
