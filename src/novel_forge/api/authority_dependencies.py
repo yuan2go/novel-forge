@@ -109,12 +109,11 @@ from novel_forge.modules.source_import import (
 from novel_forge.modules.agent_runtime.application import (
     AgentRuntimeAuthorityApplication,
 )
-from novel_forge.modules.agent_runtime.chapter_binding import (
-    AGENT_BOUND_CHAPTER_STAGES,
-    PostgresChapterAgentBindingRecorder,
-)
 from novel_forge.modules.agent_runtime.execution import (
     ChapterGatewayAgentExecutionPreparer,
+)
+from novel_forge.modules.agent_runtime.harness_runtime import (
+    build_scripted_agent_harness_factory,
 )
 from novel_forge.modules.agent_runtime.queries import AgentRuntimeQuery
 from novel_forge.modules.agent_runtime.scheduler import AgentAuthorityScheduler
@@ -973,23 +972,11 @@ def build_chapter_authority_application(
         in {"1", "true", "yes"},
         max_cost_per_model_call=execution.max_cost_per_call,
         budget_caps=execution.budget_caps(include_chapter_total=True),
-        agent_binding_recorder=PostgresChapterAgentBindingRecorder(
-            settings.database_url,
-            bound_stages=AGENT_BOUND_CHAPTER_STAGES,
-            required_stages=(AGENT_BOUND_CHAPTER_STAGES if controlled else frozenset()),
-            compatibility_allowed=not controlled,
-            environment=environment,
-            runtime_profile=environment,
-            release_channel=str(
-                values.get("NOVEL_FORGE_RELEASE_CHANNEL") or "VALIDATION"
-            ).upper(),
-            capability_pack_id=str(
-                values.get("NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID")
-                or "chapter_generation_pack"
-            ),
-            fault_injector=runtime_fault_injector,
-        ),
-        agent_binding_required=controlled,
+        # Ordinary Chapter model stages are governed Typed Capabilities. The
+        # old per-stage Agent binding bridge remains migration-only and is not
+        # reachable from canonical composition.
+        agent_binding_recorder=None,
+        agent_binding_required=False,
         runtime_fault_injector=runtime_fault_injector,
     )
 
@@ -1098,6 +1085,14 @@ def build_agent_authority_scheduler(
         settings.database_url,
         execution_preparer=preparer,
         worker_id=worker_id,
+        harness_factory=(
+            build_scripted_agent_harness_factory(
+                settings.database_url,
+                worker_id=worker_id,
+            )
+            if runtime_environment.fixture_allowed
+            else None
+        ),
     )
 
 

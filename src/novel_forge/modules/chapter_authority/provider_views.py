@@ -406,7 +406,10 @@ def build_provider_context_view(
     if stage == "reader_outcome":
         return _build_reader_outcome_context_view(context_bundle)
     correctness = context_bundle.get("context_correctness")
-    if context_bundle.get("context_contract_version") == "authority-context-bundle-v5":
+    if context_bundle.get("context_contract_version") in {
+        "authority-context-bundle-v5",
+        "authority-context-bundle-v6",
+    }:
         if not isinstance(correctness, Mapping):
             raise KernelError(
                 "CHAPTER_PROVIDER_CONTEXT_CORRECTNESS_REQUIRED",

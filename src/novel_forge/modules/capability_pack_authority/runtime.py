@@ -475,8 +475,8 @@ class CapabilityPackRuntimeResolver:
             workflow_node_id=request.workflow_node_id,
             operation_definition_ref=str(node["operation_definition_ref"]),
             operation_definition_hash=str(node["operation_definition_hash"]),
-            agent_definition_ref=str(node["agent_definition_ref"]),
-            agent_definition_hash=str(node["agent_definition_hash"]),
+            agent_definition_ref=str(node.get("agent_definition_ref") or ""),
+            agent_definition_hash=str(node.get("agent_definition_hash") or ""),
             capability_ref=str(node["capability_ref"]),
             capability_hash=str(node["capability_hash"]),
             execution_capability_id=str(node["execution_capability_id"]),
@@ -983,6 +983,17 @@ def _validate_active_agent(
     node: Mapping[str, Any],
 ) -> None:
     agent_ref = str(node.get("agent_definition_ref") or "")
+    agent_hash = str(node.get("agent_definition_hash") or "")
+    if not agent_ref and not agent_hash:
+        # Most creative workflow nodes are typed Capabilities, not autonomous
+        # Agents.  Their operation/capability/policy bindings are still frozen
+        # in the Pack snapshot and governed by the durable workflow.
+        return
+    if not agent_ref or not agent_hash:
+        raise KernelError(
+            "CAPABILITY_PACK_AGENT_DEFINITION_INVALID",
+            "Agent Definition reference and hash must be bound together",
+        )
     agent_id, separator, raw_version = agent_ref.rpartition("@")
     if not separator or not raw_version.isdigit():
         raise KernelError(

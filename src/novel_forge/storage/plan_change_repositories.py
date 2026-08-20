@@ -6,6 +6,11 @@ from typing import Any
 from psycopg.types.json import Jsonb
 
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.artifact_lineage import (
+    PostgresArtifactLineageRepository,
+    SemanticDiff,
+    semantic_dimensions_for,
+)
 
 
 class PlanChangeRepository:
@@ -260,6 +265,36 @@ class PlanChangeRepository:
                     """,
                     [project_id, str(impacted_version)],
                 )
+        self.cursor.execute(
+            """
+            SELECT book_id, semantic_diff
+            FROM authority_plan_change_proposal
+            WHERE proposal_id=%s AND project_id=%s
+            """,
+            [proposal_id, project_id],
+        )
+        proposal = self.cursor.fetchone()
+        if proposal is None:
+            raise KernelError(
+                "PLAN_CHANGE_NOT_FOUND", "PlanChangeProposal disappeared during impact"
+            )
+        raw_diff = tuple(dict(item) for item in proposal[1] or ())
+        fields = tuple(str(item.get("field") or "") for item in raw_diff)
+        dimensions = semantic_dimensions_for(
+            ("planning", *(item for item in fields if item))
+        )
+        PostgresArtifactLineageRepository(self.cursor).invalidate_downstream(
+            project_id=project_id,
+            book_id=str(proposal[0]),
+            semantic_diff=SemanticDiff(
+                source_asset_version_id=source_asset_version_id,
+                dimensions=dimensions,
+                summary="approved PlanChange semantic impact",
+                evidence={"proposal_id": proposal_id, "changes": list(raw_diff)},
+            ),
+            reason=f"approved PlanChange {proposal_id}",
+            created_by_operation_id=operation_id,
+        )
         return len(impacts)
 
     def mark_active(self, proposal_id: str) -> None:
@@ -283,8 +318,63 @@ class PlanChangeRepository:
         *,
         project_id: str,
         asset_version_id: str,
+        evidence_version_id: str,
         operation_id: str,
     ) -> None:
+        self.cursor.execute(
+            """
+            SELECT evidence.content, evidence.eligibility, evidence.governance,
+                   asset.asset_type
+            FROM authority_asset_version AS evidence
+            JOIN authority_asset AS asset ON asset.asset_id=evidence.asset_id
+            WHERE evidence.asset_version_id=%s AND asset.project_id=%s
+            """,
+            [evidence_version_id, project_id],
+        )
+        evidence = self.cursor.fetchone()
+        content = dict(evidence[0] or {}) if evidence is not None else {}
+        if (
+            evidence is None
+            or str(evidence[3]) != "plan_requalification_evidence"
+            or str(evidence[1]) != "ELIGIBLE"
+            or str(evidence[2]) != "CLEAR"
+            or str(content.get("target_asset_version_id") or "")
+            != asset_version_id
+            or str(content.get("resolution_status") or "") != "QUALIFIED"
+        ):
+            raise KernelError(
+                "PLAN_REVALIDATION_EVIDENCE_INVALID",
+                "revalidation requires qualified evidence for the exact stale plan",
+            )
+        self.cursor.execute(
+            """
+            SELECT invalidation_id
+            FROM authority_artifact_invalidation
+            WHERE project_id=%s AND target_asset_version_id=%s
+              AND status IN ('OPEN','REGENERATING')
+            FOR UPDATE
+            """,
+            [project_id, asset_version_id],
+        )
+        invalidation_ids = tuple(str(row[0]) for row in self.cursor.fetchall())
+        if not invalidation_ids:
+            raise KernelError(
+                "PLAN_REVALIDATION_EVIDENCE_INVALID",
+                "plan has no open semantic invalidation to resolve",
+            )
+        declared = {str(item) for item in content.get("invalidation_ids") or ()}
+        if not set(invalidation_ids).issubset(declared):
+            raise KernelError(
+                "PLAN_REVALIDATION_EVIDENCE_INCOMPLETE",
+                "requalification evidence does not cover every open invalidation",
+            )
+        lineage = PostgresArtifactLineageRepository(self.cursor)
+        for invalidation_id in invalidation_ids:
+            lineage.record_requalification(
+                invalidation_id=invalidation_id,
+                replacement_asset_version_id=asset_version_id,
+                resolved_by_operation_id=operation_id,
+            )
         self.cursor.execute(
             """
             UPDATE story_plan_binding

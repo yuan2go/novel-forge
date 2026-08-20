@@ -212,7 +212,7 @@ def test_materialization_rejects_missing_required_knowledge() -> None:
 
 def test_materialization_rejects_snapshot_version_mismatch() -> None:
     registered, snapshot = _registered_version_and_snapshot()
-    registered["pack_version"] = "2.0.0"
+    registered["pack_version"] = "9.9.9"
 
     with pytest.raises(KernelError) as raised:
         materialize_registered_pack_version(snapshot, registered)

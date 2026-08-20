@@ -66,7 +66,7 @@ def build_story_planning_pack_profile(
     template = next(
         item
         for item in manifest["workflow_template"]["nodes"]
-        if item.get("agent_definition_ref")
+        if item.get("node_id") == "draft"
     )
     nodes: list[dict[str, Any]] = []
     for stage, capability in capabilities:
@@ -79,7 +79,6 @@ def build_story_planning_pack_profile(
             handler_key="novel_forge.story_planning.generate",
             stage=stage,
             capability_id=capability,
-            agent_definition_ref=f"{stage.replace('.', '-')}-agent@1",
             input_asset_types=["planning_generation_input_snapshot"],
             output_asset_types=["planning_generation_candidate"],
             depends_on=[],
@@ -203,7 +202,7 @@ def build_reader_outcome_pack_profile(
     template = next(
         item
         for item in manifest["workflow_template"]["nodes"]
-        if item.get("agent_definition_ref")
+        if item.get("node_id") == "draft"
     )
     node = deepcopy(template)
     node.update(
@@ -216,7 +215,6 @@ def build_reader_outcome_pack_profile(
         handler_key=("novel_forge.book_followup_authority.reader_outcome.evaluate"),
         stage="reader_outcome",
         capability_id="quality.reader_outcome.judge",
-        agent_definition_ref="reader-outcome-agent@1",
         input_asset_types=["draft_version", "canon_snapshot"],
         output_asset_types=["reader_outcome_report"],
         depends_on=[],
@@ -319,7 +317,7 @@ def build_narrative_evaluation_pack_profile(
     template = next(
         item
         for item in manifest["workflow_template"]["nodes"]
-        if item.get("agent_definition_ref")
+        if item.get("node_id") == "draft"
     )
     node = deepcopy(template)
     node.update(
@@ -332,7 +330,6 @@ def build_narrative_evaluation_pack_profile(
         handler_key=NARRATIVE_EVALUATION_HANDLER,
         stage="narrative_semantic_evaluation",
         capability_id="quality.intrinsic.judge",
-        agent_definition_ref="narrative-semantic-evaluator@1",
         input_asset_types=[
             "book_design",
             "planning_generation_candidate",

@@ -82,7 +82,36 @@ _COMMON = frozenset({
     "structural_quality_report", "commercial_quality_report",
     "source_originality_quality_report", "longform_quality_report",
     "platform_quality_report",
+    "chapter_execution_intent", "chapter_memo", "arc_plan", "arc_actual_state",
+    "arc_checkpoint", "narrative_obligation_state", "character_timeline",
+    "relationship_timeline", "chapter_episodic_summary", "scene_episodic_summary",
+    "narrative_retrieval_document", "external_knowledge",
 })
+
+_ALWAYS_PROTECTED_TYPES = frozenset(
+    {
+        "chapter_plan",
+        "chapter_execution_intent",
+        "chapter_memo",
+        "canon_snapshot",
+        "story_state_snapshot",
+        "arc_actual_state",
+        "narrative_obligation_state",
+    }
+)
+
+
+def context_candidate_class(candidate: ContextCandidate) -> str:
+    explicit = str(candidate.context_class or "").upper()
+    if explicit not in {"PROTECTED", "RETRIEVABLE"}:
+        raise ValueError("context candidate class must be PROTECTED or RETRIEVABLE")
+    if (
+        candidate.asset_type in _ALWAYS_PROTECTED_TYPES
+        or candidate.narrative_function
+        in {"hard_world_rules", "critical_character_state", "critical_arc_state"}
+    ):
+        return "PROTECTED"
+    return explicit
 
 
 def _profile(
@@ -165,11 +194,16 @@ def select_context_candidates(
     for candidate in candidates:
         reason = _rejection_reason(project_id, profile, candidate)
         if reason:
+            if context_candidate_class(candidate) == "PROTECTED":
+                raise ValueError(
+                    f"protected context is unavailable: {candidate.asset_version_id}:{reason}"
+                )
             rejected.append({"asset_version_id": candidate.asset_version_id, "reason": reason})
         else:
             accepted.append(candidate)
     accepted.sort(
         key=lambda item: (
+            context_candidate_class(item) != "PROTECTED",
             item.asset_type not in profile.required_asset_types,
             -item.relevance_score,
             item.source_risk,
@@ -183,6 +217,10 @@ def select_context_candidates(
             rejected.append({"asset_version_id": candidate.asset_version_id, "reason": "invalid_token_estimate"})
             continue
         if used + candidate.estimated_tokens > token_budget:
+            if context_candidate_class(candidate) == "PROTECTED":
+                raise ValueError(
+                    "protected context exceeds token budget; explicit replanning is required"
+                )
             rejected.append({"asset_version_id": candidate.asset_version_id, "reason": "token_budget"})
             continue
         selected.append(candidate)
@@ -300,6 +338,12 @@ def build_authority_context_bundle(
                 if item.asset_type in profile.evidence_only_types
                 else item.allowed_use
             ),
+            "context_class": context_candidate_class(item),
+            "memory_layer": item.memory_layer,
+            "retrieval_reasons": list(item.retrieval_reasons),
+            "retrieval_scores": dict(item.retrieval_scores or {}),
+            "provenance": dict(item.provenance or {}),
+            "compression_trace": [dict(entry) for entry in item.compression_trace],
         }
         for item in selection.selected
     ]
@@ -331,7 +375,7 @@ def build_authority_context_bundle(
     ).hexdigest()
     context_manifest = {
         "type": "NarrativeContextManifest",
-        "contract_version": "narrative-context-manifest-v1",
+        "contract_version": "narrative-context-manifest-v2",
         "task": {
             "stage": profile.name,
             "target_capability_id": target_capability_id,
@@ -340,6 +384,7 @@ def build_authority_context_bundle(
         "scope": {"project_id": project_id, "book_id": book_id},
         "narrative_position": normalized_position,
         "authority_state_boundary": normalized_boundary,
+        "accepted_boundary": normalized_boundary,
         "selected_inputs": selected_inputs,
         "selected_asset_version_ids": selected,
         "rejected_inputs": list(selection.rejected),
@@ -356,10 +401,45 @@ def build_authority_context_bundle(
             if item.asset_type in {"knowledge_pack", "knowledge_card"}
         ],
         "narrative_boundaries": _narrative_boundaries(segments),
+        "protected_context": [
+            item for item in selected_inputs if item["context_class"] == "PROTECTED"
+        ],
+        "retrievable_context": [
+            item for item in selected_inputs if item["context_class"] == "RETRIEVABLE"
+        ],
+        "retrieval_trace": [
+            {
+                "asset_version_id": item["asset_version_id"],
+                "memory_layer": item["memory_layer"],
+                "reasons": item["retrieval_reasons"],
+                "scores": item["retrieval_scores"],
+                "provenance": item["provenance"],
+            }
+            for item in selected_inputs
+            if item["context_class"] == "RETRIEVABLE"
+        ],
+        "compression_trace": [
+            {
+                "asset_version_id": item["asset_version_id"],
+                "trace": item["compression_trace"],
+            }
+            for item in selected_inputs
+            if item["compression_trace"]
+        ],
         "token_budget": {
             "maximum": selection.token_budget,
             "estimated_used": selection.estimated_tokens,
             "remaining": selection.token_budget - selection.estimated_tokens,
+            "protected": sum(
+                candidate.estimated_tokens
+                for candidate in selection.selected
+                if context_candidate_class(candidate) == "PROTECTED"
+            ),
+            "retrievable": sum(
+                candidate.estimated_tokens
+                for candidate in selection.selected
+                if context_candidate_class(candidate) == "RETRIEVABLE"
+            ),
         },
         "replay": {
             "algorithm": "authority-context-selection-v1",
@@ -369,6 +449,11 @@ def build_authority_context_bundle(
         "policy_versions": policy_versions,
         "context_correctness": correctness,
     }
+    context_manifest["context_fingerprint"] = "sha256:" + hashlib.sha256(
+        json.dumps(
+            context_manifest, sort_keys=True, separators=(",", ":")
+        ).encode()
+    ).hexdigest()
     return {
         "project_id": project_id,
         "book_id": book_id,
@@ -417,7 +502,7 @@ def build_authority_context_bundle(
             "priority_rules": list(profile.priority_rules),
             "compression_policy": profile.compression_policy,
         },
-        "context_contract_version": "authority-context-bundle-v5",
+        "context_contract_version": "authority-context-bundle-v6",
     }
 
 

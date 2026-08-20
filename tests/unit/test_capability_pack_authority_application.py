@@ -101,6 +101,24 @@ def test_binding_set_cross_binds_agent_runtime_contract_to_compilation() -> None
                 "version": "v1",
                 "content_hash": HASH_A,
             },
+            {
+                "kind": "PROMPT_SYSTEM_INSTRUCTION",
+                "ref": "prompt-system",
+                "version": "v1",
+                "content_hash": HASH_A,
+            },
+            {
+                "kind": "PROMPT_TEMPLATE",
+                "ref": "prompt-template",
+                "version": "v1",
+                "content_hash": HASH_A,
+            },
+            {
+                "kind": "SKILL",
+                "ref": "prose-generation",
+                "version": "v1",
+                "content_hash": HASH_A,
+            },
         ],
         "tool_permission_snapshot": {
             "policy_id": "tools:chapter-generation-pack:v1",
@@ -234,6 +252,31 @@ def test_binding_set_rejects_prompt_hash_not_frozen_by_compilation() -> None:
     }
     manifest = {
         "workflow_template": {"workflow_id": "chapter", "workflow_version": "1"},
+        "prompt_binding": {
+            "system_instruction_ref": "prompt-system",
+            "system_instruction_version": "v1",
+            "system_instruction_hash": HASH_A,
+            "template_ref": "prompt-template",
+            "template_version": "v1",
+            "template_hash": HASH_A,
+            "compiler_version": "test:v1",
+        },
+        "skill_binding": {
+            "skills": [
+                {
+                    "skill_ref": "prose-generation",
+                    "version": "v1",
+                    "content_hash": HASH_A,
+                    "required": True,
+                    "input_contract_ref": (
+                        "schema:execution-input:prose-chapter-draft:v1"
+                    ),
+                    "output_contract_ref": (
+                        "schema:execution-output:prose-chapter-draft:v1"
+                    ),
+                }
+            ]
+        },
         "runtime_contract": {"commit_policy_ref": "commit:v1"},
         "governance": {
             "approval_policy_ref": "approval:v1",

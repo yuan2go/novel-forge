@@ -70,6 +70,11 @@ from novel_forge.modules.narrative_state import (
     compact_canon_facts,
     compact_current_state_facts,
 )
+from novel_forge.modules.context_builder.retrieval import (
+    HybridRetrievalQuery,
+    hybrid_retrieve,
+)
+from novel_forge.modules.longform_narrative import build_longform_projection_set
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 
@@ -905,6 +910,7 @@ class PostgresBookAuthority:
     ) -> None:
         if book["input_mode"] != "RESOLVED_AUTHORITY_INPUT":
             return
+        self._require_accepted_projection_boundary(book)
         if not command.parent_group_version_id:
             raise KernelError(
                 "CHAPTER_PRODUCTION_ADMISSION_REQUIRED",
@@ -955,6 +961,44 @@ class PostgresBookAuthority:
                 "Chapter command differs from authoritative design admission",
             )
 
+    def _require_accepted_projection_boundary(self, book: dict[str, Any]) -> None:
+        accepted_through = int(book["accepted_through_chapter"])
+        if accepted_through == 0:
+            return
+        projection_set_id = str(
+            book.get("active_longform_projection_set_id") or ""
+        )
+        if not projection_set_id:
+            raise KernelError(
+                "BOOK_ACCEPTED_PROJECTION_SET_INCOMPLETE",
+                "the next Chapter cannot start before the prior acceptance projection is complete",
+            )
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT 1
+                FROM authority_book_narrative_projection_set
+                WHERE projection_set_id=%s AND project_id=%s AND book_id=%s
+                  AND chapter_number=%s AND status='COMPLETE'
+                  AND story_state_asset_version_id=%s
+                  AND canon_snapshot_asset_version_id=%s
+                """,
+                [
+                    projection_set_id,
+                    book["project_id"],
+                    book["book_id"],
+                    accepted_through,
+                    book["active_story_state_version_id"],
+                    book["active_canon_snapshot_version_id"],
+                ],
+            )
+            complete = uow.cursor.fetchone()
+        if complete is None:
+            raise KernelError(
+                "BOOK_ACCEPTED_PROJECTION_SET_INCOMPLETE",
+                "the next Chapter cannot use an incomplete or mismatched accepted projection",
+            )
+
     def accept_chapter(
         self, chapter_request_id: str, *, principal: Principal
     ) -> dict[str, Any]:
@@ -980,6 +1024,9 @@ class PostgresBookAuthority:
                 "active_canon_snapshot_version_id": existing_acceptance[
                     "canon_snapshot_asset_version_id"
                 ],
+                "active_longform_projection_set_id": existing_acceptance[
+                    "longform_projection_set_id"
+                ],
             }
         if not request["chapter_root_operation_id"]:
             raise KernelError(
@@ -994,12 +1041,23 @@ class PostgresBookAuthority:
             request=request,
             evidence=evidence,
         )
+        selected_acceptance_outputs = select_chapter_acceptance_outputs(evidence)
+        execution_chapter_plan_asset_version_id = str(
+            selected_acceptance_outputs["chapter_plan"]["asset_version_id"]
+        )
         if bool(book["active_story_state_version_id"]) != bool(
             book["active_canon_snapshot_version_id"]
         ):
             raise KernelError(
                 "BOOK_NARRATIVE_STATE_CHECKPOINT_INCOMPLETE",
                 "Story State and Canon checkpoints must advance together",
+            )
+        if int(book["accepted_through_chapter"]) > 0 and not str(
+            book.get("active_longform_projection_set_id") or ""
+        ):
+            raise KernelError(
+                "BOOK_ACCEPTED_PROJECTION_SET_INCOMPLETE",
+                "the previous Accepted Chapter lacks its complete long-form projection set",
             )
         if book["active_story_state_version_id"]:
             acceptance_inputs = (
@@ -1098,6 +1156,75 @@ class PostgresBookAuthority:
                     "BOOK_CHILD_DELEGATION_MISSING",
                     "Chapter acceptance requires a persisted child delegation",
                 )
+            uow.cursor.execute(
+                """
+                SELECT outcome.content, story_state.content, chapter_plan.content
+                FROM authority_asset_version AS outcome
+                JOIN authority_asset_version AS story_state
+                  ON story_state.asset_version_id=%s
+                JOIN authority_asset_version AS chapter_plan
+                  ON chapter_plan.asset_version_id=%s
+                WHERE outcome.asset_version_id=%s
+                """,
+                [
+                    story_state.asset_version_id,
+                    execution_chapter_plan_asset_version_id,
+                    outcome.asset_version_id,
+                ],
+            )
+            projection_inputs = uow.cursor.fetchone()
+            if projection_inputs is None:
+                raise KernelError(
+                    "BOOK_LONGFORM_PROJECTION_INPUT_MISSING",
+                    "accepted long-form projection inputs are not materialized",
+                )
+            outcome_content = dict(projection_inputs[0])
+            story_state_content = dict(projection_inputs[1])
+            chapter_plan_content = dict(projection_inputs[2])
+            active_arc_plan_versions = tuple(
+                book["longform_context_versions"].get("arc_plan_versions") or ()
+            )
+            expected_progress_units = {
+                str(item.get("arc_plan_version_id") or item.get("arc_id") or ""):
+                int(item["expected_progress_units"])
+                for item in chapter_plan_content.get("required_arc_contributions") or ()
+                if isinstance(item, dict)
+                and str(item.get("arc_plan_version_id") or item.get("arc_id") or "")
+                and item.get("expected_progress_units") is not None
+            }
+            uow.cursor.execute(
+                """
+                SELECT arc_plan_version_id, state
+                FROM authority_arc_actual_state
+                WHERE project_id=%s AND book_id=%s
+                  AND arc_plan_version_id=ANY(%s)
+                """,
+                [
+                    request["project_id"],
+                    book["book_id"],
+                    list(active_arc_plan_versions),
+                ],
+            )
+            previous_arc_states = {
+                str(row[0]): dict(row[1]) for row in uow.cursor.fetchall()
+            }
+            longform_projection_set = build_longform_projection_set(
+                project_id=request["project_id"],
+                book_id=book["book_id"],
+                book_run_id=request["book_run_id"],
+                chapter_request_id=chapter_request_id,
+                chapter_number=int(request["chapter_number"]),
+                acceptance_id=acceptance_id,
+                acceptance_operation_id=admission.operation_id,
+                chapter_outcome_asset_version_id=outcome.asset_version_id,
+                story_state_asset_version_id=story_state.asset_version_id,
+                canon_snapshot_asset_version_id=canon_snapshot.asset_version_id,
+                active_arc_plan_version_ids=active_arc_plan_versions,
+                expected_progress_units=expected_progress_units,
+                previous_arc_states=previous_arc_states,
+                chapter_outcome=outcome_content,
+                story_state=story_state_content,
+            )
             uow.repositories.book_authority.commit_chapter_acceptance(
                 acceptance_id=acceptance_id,
                 project_id=request["project_id"],
@@ -1109,6 +1236,7 @@ class PostgresBookAuthority:
                 chapter_outcome_asset_version_id=outcome.asset_version_id,
                 story_state_asset_version_id=story_state.asset_version_id,
                 canon_snapshot_asset_version_id=canon_snapshot.asset_version_id,
+                longform_projection_set=longform_projection_set,
                 evidence={
                     "child_root_operation_id": request["chapter_root_operation_id"],
                     "child_saga_id": request["chapter_saga_id"],
@@ -1133,6 +1261,9 @@ class PostgresBookAuthority:
                 "chapter_outcome_asset_version_id": outcome.asset_version_id,
                 "story_state_asset_version_id": story_state.asset_version_id,
                 "canon_snapshot_asset_version_id": canon_snapshot.asset_version_id,
+                "longform_projection_set_id": longform_projection_set[
+                    "projection_set_id"
+                ],
             }
 
         self._execute_mutation(
@@ -1862,6 +1993,7 @@ class PostgresBookAuthority:
                        active_child_delegation_id, active_chapter_number,
                        active_plan_version_id, active_story_state_version_id,
                        active_canon_snapshot_version_id,
+                       active_longform_projection_set_id,
                        last_chapter_outcome_version_id, failure_reason,
                        COALESCE(input_snapshot_id, ''), input_mode
                 FROM authority_book_production WHERE book_run_id=%s
@@ -1898,6 +2030,7 @@ class PostgresBookAuthority:
             "active_plan_version_id",
             "active_story_state_version_id",
             "active_canon_snapshot_version_id",
+            "active_longform_projection_set_id",
             "last_chapter_outcome_version_id",
             "failure_reason",
             "input_snapshot_id",
@@ -2316,7 +2449,8 @@ class PostgresBookAuthority:
                 SELECT acceptance_operation_id,
                        chapter_outcome_asset_version_id,
                        story_state_asset_version_id,
-                       canon_snapshot_asset_version_id
+                       canon_snapshot_asset_version_id,
+                       longform_projection_set_id
                 FROM authority_book_chapter_acceptance
                 WHERE chapter_request_id=%s AND project_id=%s
                 """,
@@ -2330,6 +2464,7 @@ class PostgresBookAuthority:
             "chapter_outcome_asset_version_id": str(row[1]),
             "story_state_asset_version_id": str(row[2]),
             "canon_snapshot_asset_version_id": str(row[3]),
+            "longform_projection_set_id": str(row[4] or ""),
         }
 
     def _initial_narrative_state_inputs(
@@ -2396,7 +2531,60 @@ class PostgresBookAuthority:
         """Freeze compact current state from the immediately preceding acceptance."""
         if chapter_number <= 1:
             return requested
-        book_id = str(self.require(book_run_id)["book_id"])
+        book = self.require(book_run_id)
+        book_id = str(book["book_id"])
+        retrieval_text = " ".join(
+            str(item.get("safe_summary") or "")
+            for item in requested
+            if str(item.get("safe_summary") or "")
+        )
+        arc_plan_versions = tuple(
+            str(item)
+            for item in dict(book.get("longform_context_versions") or {}).get(
+                "arc_plan_versions", ()
+            )
+            if str(item)
+        )
+        entity_ids = tuple(
+            sorted(
+                {
+                    str(value)
+                    for item in requested
+                    for value in item.get("entity_ids") or ()
+                    if str(value)
+                }
+            )
+        )
+        relationship_ids = tuple(
+            sorted(
+                {
+                    str(value)
+                    for item in requested
+                    for value in item.get("relationship_ids") or ()
+                    if str(value)
+                }
+            )
+        )
+        character_ids = tuple(
+            sorted(
+                {
+                    str(value)
+                    for item in requested
+                    for value in item.get("character_ids") or ()
+                    if str(value)
+                }
+            )
+        )
+        obligation_ids = tuple(
+            sorted(
+                {
+                    str(value)
+                    for item in requested
+                    for value in item.get("obligation_ids") or ()
+                    if str(value)
+                }
+            )
+        )
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
@@ -2439,6 +2627,63 @@ class PostgresBookAuthority:
                 ],
             )
             rows = uow.cursor.fetchall()
+            uow.cursor.execute(
+                """
+                SELECT document.retrieval_document_id,
+                       document.source_asset_version_id,
+                       document.source_artifact_type,
+                       document.accepted_from_chapter,
+                       document.accepted_to_chapter,
+                       document.memory_layer,
+                       document.content_text,
+                       COALESCE(document.embedding, '[]'::jsonb),
+                       document.entity_ids, document.relationship_ids,
+                       document.character_ids, document.arc_plan_version_ids,
+                       document.obligation_ids, document.temporal_coordinate,
+                       document.metadata, version.content_hash
+                FROM authority_narrative_retrieval_document AS document
+                JOIN authority_asset_version AS version
+                  ON version.asset_version_id=document.source_asset_version_id
+                WHERE document.project_id=%s AND document.book_id=%s
+                  AND document.accepted_from_chapter<=%s
+                  AND (
+                    document.accepted_to_chapter IS NULL
+                    OR document.accepted_to_chapter>=%s
+                  )
+                  AND (
+                    (%s<>'' AND document.search_vector @@
+                      plainto_tsquery('simple', %s))
+                    OR document.accepted_from_chapter>=GREATEST(0, %s-12)
+                    OR document.entity_ids ?| %s::TEXT[]
+                    OR document.relationship_ids ?| %s::TEXT[]
+                    OR document.character_ids ?| %s::TEXT[]
+                    OR document.arc_plan_version_ids ?| %s::TEXT[]
+                    OR document.obligation_ids ?| %s::TEXT[]
+                  )
+                ORDER BY
+                  ts_rank(document.search_vector,
+                          plainto_tsquery('simple', %s)) DESC,
+                  document.accepted_from_chapter DESC,
+                  document.retrieval_document_id
+                LIMIT 256
+                """,
+                [
+                    project_id,
+                    book_id,
+                    chapter_number - 1,
+                    chapter_number - 1,
+                    retrieval_text,
+                    retrieval_text,
+                    chapter_number - 1,
+                    list(entity_ids),
+                    list(relationship_ids),
+                    list(character_ids),
+                    list(arc_plan_versions),
+                    list(obligation_ids),
+                    retrieval_text,
+                ],
+            )
+            retrieval_rows = uow.cursor.fetchall()
         if {str(row[0]) for row in rows} != {
             "story_state_snapshot",
             "canon_snapshot",
@@ -2522,11 +2767,107 @@ class PostgresBookAuthority:
                 }
             )
         governed = tuple(governed_items)
+        retrieval_documents = tuple(
+            {
+                "retrieval_document_id": str(row[0]),
+                "source_asset_version_id": str(row[1]),
+                "source_artifact_type": str(row[2]),
+                "accepted_from_chapter": int(row[3]),
+                "accepted_to_chapter": (
+                    int(row[4]) if row[4] is not None else None
+                ),
+                "memory_layer": str(row[5]),
+                "content_text": str(row[6]),
+                "embedding": list(row[7] or ()),
+                "entity_ids": list(row[8] or ()),
+                "relationship_ids": list(row[9] or ()),
+                "character_ids": list(row[10] or ()),
+                "arc_plan_version_ids": list(row[11] or ()),
+                "obligation_ids": list(row[12] or ()),
+                "temporal_coordinate": dict(row[13] or {}),
+                "metadata": dict(row[14] or {}),
+                "content_hash": str(row[15]),
+            }
+            for row in retrieval_rows
+        )
+        ranked_retrieval = hybrid_retrieve(
+            HybridRetrievalQuery(
+                text=retrieval_text,
+                accepted_through_chapter=chapter_number - 1,
+                entity_ids=entity_ids,
+                relationship_ids=relationship_ids,
+                character_ids=character_ids,
+                arc_plan_version_ids=arc_plan_versions,
+                obligation_ids=obligation_ids,
+                limit=24,
+            ),
+            retrieval_documents,
+        )
         merged: dict[str, dict[str, Any]] = {
-            str(item["asset_version_id"]): dict(item) for item in requested
+            str(item["asset_version_id"]): dict(item)
+            for item in requested
+            if str(item.get("asset_type") or "")
+            not in {"story_state_snapshot", "canon_snapshot"}
         }
         for item in governed:
-            merged.setdefault(str(item["asset_version_id"]), item)
+            merged[str(item["asset_version_id"])] = item
+        for item in ranked_retrieval:
+            source_version_id = str(item["source_asset_version_id"])
+            if source_version_id in merged:
+                continue
+            content_text = str(item.get("content_text") or "")
+            maximum_summary_chars = 4000
+            compressed = len(content_text) > maximum_summary_chars
+            merged[source_version_id] = {
+                "asset_type": "narrative_retrieval_document",
+                "physical_asset_type": str(item["source_artifact_type"]),
+                "asset_version_id": source_version_id,
+                "content_hash": str(item["content_hash"]),
+                "project_id": project_id,
+                "scope": {
+                    "project_id": project_id,
+                    "book_id": book_id,
+                    "accepted_through_chapter": chapter_number - 1,
+                },
+                "estimated_tokens": max(
+                    1, min(maximum_summary_chars, len(content_text)) // 4
+                ),
+                "safe_summary": content_text[:maximum_summary_chars],
+                "structured_facts": [],
+                "narrative_function": str(
+                    dict(item.get("metadata") or {}).get("projection_kind")
+                    or "accepted_historical_evidence"
+                ),
+                "source_use_mode": "generation",
+                "allowed_use": "generation",
+                "context_class": "RETRIEVABLE",
+                "memory_layer": str(item["memory_layer"]),
+                "relevance_score": float(item["retrieval_score"]),
+                "retrieval_reasons": list(item["retrieval_reasons"]),
+                "retrieval_scores": dict(item["retrieval_scores"]),
+                "provenance": {
+                    "retrieval_document_id": str(item["retrieval_document_id"]),
+                    "accepted_from_chapter": int(item["accepted_from_chapter"]),
+                    "temporal_coordinate": dict(
+                        item.get("temporal_coordinate") or {}
+                    ),
+                    "metadata": dict(item.get("metadata") or {}),
+                },
+                "compression_method": (
+                    "deterministic_safe_summary" if compressed else "none"
+                ),
+                "compression_trace": (
+                    [
+                        {
+                            "method": "deterministic_safe_summary",
+                            "input_characters": len(content_text),
+                            "output_characters": maximum_summary_chars,
+                        }
+                    ]
+                    if compressed
+                    else []
+                ),
+            }
         return tuple(merged.values())
 
     def _execute_mutation(
@@ -2831,7 +3172,7 @@ def select_chapter_acceptance_outputs(
             "final release gate has no accepted asset lineage",
         )
     expected_versions = {
-        "draft_version": str(release.get("source_asset_version_id") or ""),
+        "best_draft_candidate": str(release.get("source_asset_version_id") or ""),
         "re_review_report": str(accepted_versions.get("rereview") or ""),
         "canon_patch": str(accepted_versions.get("canon") or ""),
         "quality_score_report": str(accepted_versions.get("quality") or ""),
@@ -2877,7 +3218,7 @@ def _validate_chapter_acceptance_evidence(
         )
     required_types = (
         "chapter_plan",
-        "draft_version",
+        "best_draft_candidate",
         "re_review_report",
         "canon_patch",
         "quality_score_report",

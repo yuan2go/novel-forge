@@ -5,6 +5,12 @@ import json
 import unittest
 
 from novel_forge.modules.authority_security import Principal, PrincipalType
+from novel_forge.modules.artifact_lineage import (
+    ArtifactLineageEdge,
+    InvalidationPolicy,
+    PostgresArtifactLineageRepository,
+    semantic_dimensions_for,
+)
 from novel_forge.modules.plan_change_authority import (
     PlanChangeProposalCommand,
     PlanChangeSource,
@@ -206,6 +212,17 @@ class PlanChangeAuthorityPostgresTests(unittest.TestCase):
                 [proposal["proposal_id"]],
             )
             impact_count = int(uow.cursor.fetchone()[0])
+            uow.cursor.execute(
+                """
+                SELECT invalidation_id
+                FROM authority_artifact_invalidation
+                WHERE project_id=%s AND target_asset_version_id=%s
+                  AND status='OPEN'
+                ORDER BY invalidation_id
+                """,
+                [self.project_id, planned],
+            )
+            planned_invalidation_ids = [str(row[0]) for row in uow.cursor.fetchall()]
         self.assertEqual(active, proposed_version)
         self.assertEqual(impacted[planned], ("PLANNED", "STALE"))
         self.assertEqual(impacted[executed], ("EXECUTED", "CURRENT"))
@@ -214,10 +231,19 @@ class PlanChangeAuthorityPostgresTests(unittest.TestCase):
         )
         self.assertEqual(impact_count, 3)
 
+        requalification_evidence = self._seed_asset(
+            "plan-requalification-evidence",
+            "plan_requalification_evidence",
+            {
+                "target_asset_version_id": planned,
+                "resolution_status": "QUALIFIED",
+                "invalidation_ids": planned_invalidation_ids,
+            },
+        )
         revalidated = authority.revalidate(
             project_id=self.project_id,
             asset_version_id=planned,
-            evidence_version_id=source_evidence,
+            evidence_version_id=requalification_evidence,
             principal=self.principal,
         )
         self.assertEqual(revalidated["freshness"], "CURRENT")
@@ -350,6 +376,30 @@ class PlanChangeAuthorityPostgresTests(unittest.TestCase):
                     invalidation_policy,
                     operation_id,
                 ],
+            )
+            policy = (
+                InvalidationPolicy.IMMUNE_ACCEPTED_HISTORY
+                if execution_scope == "EXECUTED"
+                else (
+                    InvalidationPolicy.REQUALIFY
+                    if invalidation_policy == "REVALIDATE"
+                    else InvalidationPolicy.PROPAGATE
+                )
+            )
+            PostgresArtifactLineageRepository(uow.cursor).record_edge(
+                ArtifactLineageEdge(
+                    project_id=self.project_id,
+                    book_id=self.book_id,
+                    upstream_asset_version_id=source_version,
+                    downstream_asset_version_id=version_id,
+                    relationship_type="PLAN_IMPACT",
+                    semantic_dimensions=semantic_dimensions_for(
+                        ("PLAN_IMPACT", "planning")
+                    ),
+                    invalidation_policy=policy,
+                    context_fingerprint="",
+                    created_by_operation_id=operation_id,
+                )
             )
             uow.commit()
         return version_id

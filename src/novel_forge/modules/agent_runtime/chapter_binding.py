@@ -51,7 +51,7 @@ from novel_forge.modules.chapter_authority.execution_gateway import (
     ChapterExecutionBinding,
 )
 from novel_forge.modules.chapter_authority.model_effects import (
-    AGENT_MODEL_STAGES,
+    LEGACY_AGENT_BOUND_MODEL_STAGES,
     ModelProviderResult,
 )
 from novel_forge.modules.command_kernel.asset_commands import AuthorityAssetWriteCommand
@@ -67,7 +67,7 @@ from novel_forge.storage.authority_asset_store import AuthorityAssetWriter
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 
-AGENT_BOUND_CHAPTER_STAGES = AGENT_MODEL_STAGES - {
+AGENT_BOUND_CHAPTER_STAGES = LEGACY_AGENT_BOUND_MODEL_STAGES - {
     # Semantic evaluation is a Story Design operation with its own Principal,
     # binder, and Attempt; it is not a Chapter Agent node.
     "narrative_semantic_evaluation"

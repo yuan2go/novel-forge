@@ -3374,8 +3374,6 @@ def _drive_to_chapter_dispatch(
             SupervisorAction.CLOSE_CHAPTER_GROUP,
             SupervisorAction.GENERATE_CHAPTER_PLAN,
             SupervisorAction.FREEZE_CHAPTER_PLAN,
-            SupervisorAction.SCHEDULE_READER_OUTCOME,
-            SupervisorAction.SCHEDULE_LONGFORM_RECAP,
             SupervisorAction.UPDATE_CHECKPOINTS,
             SupervisorAction.START_REPLAN,
             SupervisorAction.ACTIVATE_REPLAN,

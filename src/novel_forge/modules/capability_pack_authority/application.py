@@ -159,6 +159,29 @@ def build_binding_set(
     nodes: list[dict[str, Any]] = []
     for raw in compiled.get("workflow_nodes") or ():
         node = dict(raw)
+        capability_definition = default_capability_registry().resolve(
+            str(node["capability_id"])
+        )
+        selected_skill = _select_capability_skill(
+            skill_bindings,
+            capability_id=str(node["capability_id"]),
+            input_contract_ref=str(capability_definition.input_schema_ref),
+            output_contract_ref=str(capability_definition.output_schema_ref),
+        )
+        prompt_system_ref = _versioned_ref(
+            str(prompt_binding.get("system_instruction_ref") or ""),
+            str(prompt_binding.get("system_instruction_version") or ""),
+        )
+        prompt_system_hash = str(
+            prompt_binding.get("system_instruction_hash") or ""
+        )
+        _require_artifact_identity(artifacts, prompt_system_ref, prompt_system_hash)
+        skill_ref = _versioned_ref(
+            str(selected_skill.get("skill_ref") or ""),
+            str(selected_skill.get("version") or ""),
+        )
+        skill_hash = str(selected_skill.get("content_hash") or "")
+        _require_artifact_identity(artifacts, skill_ref, skill_hash)
         definition_ref = f"{node['definition_name']}@{node['definition_version']}"
         binding: dict[str, Any] = {
             "ordinal": int(node["ordinal"]),
@@ -170,6 +193,33 @@ def build_binding_set(
             "agent_definition_ref": str(node.get("agent_definition_ref") or ""),
             "agent_definition_hash": "",
             "execution_capability_id": str(node["capability_id"]),
+            "execution_capability_hash": str(node["capability_contract_hash"]),
+            "prompt_bundle_ref": prompt_system_ref,
+            "prompt_bundle_hash": prompt_system_hash,
+            "skill_bundle_ref": skill_ref,
+            "skill_bundle_hash": skill_hash,
+            "prompt_system_instruction_ref": prompt_system_ref,
+            "prompt_system_instruction_hash": prompt_system_hash,
+            "prompt_template_ref": _versioned_ref(
+                str(prompt_binding.get("template_ref") or ""),
+                str(prompt_binding.get("template_version") or ""),
+            ),
+            "prompt_template_hash": str(prompt_binding.get("template_hash") or ""),
+            "prompt_compiler_version": str(
+                prompt_binding.get("compiler_version") or ""
+            ),
+            "skill_ref": str(selected_skill.get("skill_ref") or ""),
+            "skill_version": str(selected_skill.get("version") or ""),
+            "skill_content_hash": skill_hash,
+            "context_policy_payload": context,
+            "tool_policy_payload": tool,
+            "evaluation_policy_payload": evaluation,
+            "input_contract_ref": str(capability_definition.input_schema_ref),
+            "output_contract_ref": str(capability_definition.output_schema_ref),
+            "domain_acceptance_policy_ref": str(
+                governance.get("approval_policy_ref")
+                or "approval:chapter-domain-authority:v1"
+            ),
             "commit_authority": str(
                 node.get("commit_authority") or "CHAPTER_AUTHORITY"
             ),
@@ -346,6 +396,64 @@ def build_binding_set(
         "policy_bindings": policy_bindings,
     }
     return {**payload, "binding_set_hash": canonical_hash(payload)}
+
+
+def _select_capability_skill(
+    skills: Sequence[Mapping[str, Any]],
+    *,
+    capability_id: str,
+    input_contract_ref: str,
+    output_contract_ref: str,
+) -> dict[str, Any]:
+    """Select a Skill from the Pack without requiring an Agent Definition.
+
+    Exact input/output contract matches win.  Packs whose Skill contract is
+    intentionally broader may fall back to a single required Skill; multiple
+    ambiguous fallbacks fail closed instead of depending on list order.
+    """
+
+    exact = [
+        dict(item)
+        for item in skills
+        if str(item.get("input_contract_ref") or "") == input_contract_ref
+        and str(item.get("output_contract_ref") or "") == output_contract_ref
+    ]
+    if len(exact) == 1:
+        return exact[0]
+    output_matches = [
+        dict(item)
+        for item in skills
+        if str(item.get("output_contract_ref") or "") == output_contract_ref
+    ]
+    if len(output_matches) == 1:
+        return output_matches[0]
+    preferred_skill = (
+        "chapter-outline"
+        if capability_id.startswith("planning.")
+        else "context-builder-source-isolation"
+        if capability_id.startswith("retrieval.")
+        else "prose-generation"
+        if capability_id.startswith(("prose.", "revision."))
+        else "canon-continuity-graph"
+        if capability_id.startswith("canon.")
+        else "quality-review"
+        if capability_id.startswith(("review.", "quality.", "publishing.", "storage."))
+        else ""
+    )
+    preferred = [
+        dict(item)
+        for item in skills
+        if str(item.get("skill_ref") or "") == preferred_skill
+    ]
+    if len(preferred) == 1:
+        return preferred[0]
+    required = [dict(item) for item in skills if bool(item.get("required"))]
+    if len(required) == 1:
+        return required[0]
+    raise KernelError(
+        "CAPABILITY_PACK_SKILL_BINDING_AMBIGUOUS",
+        "Capability node requires one contract-matching Skill binding",
+    )
 
 
 class CapabilityPackAuthorityApplication:

@@ -374,10 +374,10 @@ class PlanningExecutionEvidence:
     external_receipt_ref: str
     capability_pack_attempt_snapshot_id: str
     capability_pack_attempt_snapshot_hash: str
-    agent_work_order_ref: str
-    agent_work_order_hash: str
-    agent_runtime_binding_ref: str
-    agent_runtime_binding_hash: str
+    capability_execution_ref: str
+    capability_execution_hash: str
+    capability_runtime_binding_ref: str
+    capability_runtime_binding_hash: str
     commit_authority: str
     fixture_protocol_only: bool
     real_provider_proven: bool = False
@@ -400,8 +400,8 @@ class PlanningExecutionEvidence:
             raise ValueError("Planning execution evidence is incomplete")
         for name in (
             "capability_pack_attempt_snapshot_hash",
-            "agent_work_order_hash",
-            "agent_runtime_binding_hash",
+            "capability_execution_hash",
+            "capability_runtime_binding_hash",
         ):
             if not _CONTENT_HASH.fullmatch(str(getattr(self, name))):
                 raise ValueError(f"{name} must be a SHA-256 content hash")

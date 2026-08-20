@@ -6,6 +6,9 @@ from dataclasses import asdict
 import hashlib
 import json
 from typing import Any, Mapping
+from uuid import uuid4
+
+from psycopg.types.json import Jsonb
 
 from novel_forge.modules.command_kernel.errors import KernelError
 
@@ -17,6 +20,17 @@ from .contracts import (
     AgentRuntimeBinding,
     ChapterNodeExecutionBinding,
 )
+from .harness import (
+    AcceptedBoundaryRef,
+    AgentHarnessBudget,
+    AgentHarnessSession,
+    AgentHarnessStatus,
+    AgentHarnessUsage,
+    AgentToolSpec,
+    AgentTranscriptEventType,
+    AutonomousAgentRole,
+    transcript_payload_hash,
+)
 
 
 class PostgresAgentRuntimeRepository:
@@ -26,6 +40,271 @@ class PostgresAgentRuntimeRepository:
 
     def __init__(self, cursor: Any) -> None:
         self.cursor = cursor
+
+    def create_harness_session(
+        self, session: AgentHarnessSession
+    ) -> AgentHarnessSession:
+        """Freeze one reasoning session under an admitted durable Operation."""
+
+        self.cursor.execute(
+            """
+            SELECT operation.project_id, operation.workspace_id, operation.status,
+                   COALESCE(book_run.book_run_id, ''),
+                   COALESCE(book_run.active_longform_projection_set_id, '')
+            FROM authority_operation AS operation
+            LEFT JOIN authority_book_production AS book_run
+              ON book_run.book_run_id=%s AND book_run.book_id=%s
+             AND book_run.project_id=operation.project_id
+            WHERE operation.operation_id=%s
+              AND operation.project_id=%s AND operation.workspace_id=%s
+            FOR UPDATE OF operation
+            """,
+            [
+                session.accepted_boundary.book_run_id,
+                session.accepted_boundary.book_id,
+                session.operation_id,
+                session.project_id,
+                session.workspace_id,
+            ],
+        )
+        owner = self.cursor.fetchone()
+        if owner is None or not str(owner[3] or "") or str(owner[2]) not in {
+            "ADMITTED",
+            "READY",
+            "EXECUTING",
+            "WAITING_EXTERNAL_RESULT",
+        }:
+            raise KernelError(
+                "AGENT_HARNESS_OPERATION_INVALID",
+                "Agent session requires an active scoped Authority Operation",
+            )
+        active_projection = str(owner[4] or "")
+        if (
+            session.accepted_boundary.accepted_through_chapter > 0
+            and active_projection != session.accepted_boundary.projection_set_id
+        ):
+            raise KernelError(
+                "AGENT_HARNESS_ACCEPTED_BOUNDARY_STALE",
+                "Agent session is not frozen at the Book's active complete projection set",
+            )
+        self.cursor.execute(
+            """
+            INSERT INTO authority_agent_harness_session(
+                agent_session_id, project_id, workspace_id, operation_id,
+                agent_role, status, accepted_boundary, tool_policy,
+                skill_bindings, budget, usage, next_sequence, version
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT(agent_session_id) DO NOTHING
+            """,
+            [
+                session.agent_session_id,
+                session.project_id,
+                session.workspace_id,
+                session.operation_id,
+                session.role.value,
+                session.status.value,
+                Jsonb(asdict(session.accepted_boundary)),
+                Jsonb([_tool_payload(tool) for tool in session.tool_policy]),
+                Jsonb([dict(item) for item in session.skill_bindings]),
+                Jsonb(asdict(session.budget)),
+                Jsonb(asdict(session.usage)),
+                session.next_sequence,
+                session.version,
+            ],
+        )
+        stored = self.require_harness_session(session.agent_session_id, lock=True)
+        if stored != session:
+            raise KernelError(
+                "AGENT_HARNESS_SESSION_CONFLICT",
+                "Agent session identity already has different frozen content",
+            )
+        return stored
+
+    def require_harness_session(
+        self, agent_session_id: str, *, lock: bool = False
+    ) -> AgentHarnessSession:
+        suffix = " FOR UPDATE" if lock else ""
+        self.cursor.execute(
+            """
+            SELECT agent_session_id, project_id, workspace_id, operation_id,
+                   agent_role, status, accepted_boundary, tool_policy,
+                   skill_bindings, budget, usage, next_sequence, version
+            FROM authority_agent_harness_session
+            WHERE agent_session_id=%s
+            """ + suffix,
+            [agent_session_id],
+        )
+        row = self.cursor.fetchone()
+        if row is None:
+            raise KernelError(
+                "AGENT_HARNESS_SESSION_NOT_FOUND", "Agent session does not exist"
+            )
+        boundary = dict(row[6] or {})
+        budget = dict(row[9] or {})
+        usage = dict(row[10] or {})
+        return AgentHarnessSession(
+            agent_session_id=str(row[0]),
+            project_id=str(row[1]),
+            workspace_id=str(row[2]),
+            operation_id=str(row[3]),
+            role=AutonomousAgentRole(str(row[4])),
+            status=AgentHarnessStatus(str(row[5])),
+            accepted_boundary=AcceptedBoundaryRef(**boundary),
+            tool_policy=tuple(_tool_from_payload(dict(item)) for item in row[7] or ()),
+            skill_bindings=tuple(dict(item) for item in row[8] or ()),
+            budget=AgentHarnessBudget(**budget),
+            usage=AgentHarnessUsage(**usage),
+            next_sequence=int(row[11]),
+            version=int(row[12]),
+        )
+
+    def append_event(
+        self,
+        *,
+        session: AgentHarnessSession,
+        request_id: str,
+        turn_number: int,
+        event_type: AgentTranscriptEventType,
+        payload: Mapping[str, Any],
+        trace_id: str,
+        attempt_id: str = "",
+        external_effect_id: str = "",
+        target_status: AgentHarnessStatus | None = None,
+        usage: AgentHarnessUsage | None = None,
+    ) -> AgentHarnessSession:
+        """CAS-append transcript evidence and advance the provenance projection."""
+
+        event_type = AgentTranscriptEventType(event_type)
+        if not request_id.strip() or turn_number < 0 or not trace_id.strip():
+            raise ValueError("Agent transcript event identity is incomplete")
+        current = self.require_harness_session(session.agent_session_id, lock=True)
+        if current.version != session.version or current.next_sequence != session.next_sequence:
+            raise KernelError(
+                "AGENT_HARNESS_SESSION_CAS_CONFLICT",
+                "Agent session transcript advanced concurrently",
+            )
+        if current.operation_id != session.operation_id:
+            raise KernelError(
+                "AGENT_HARNESS_OPERATION_DRIFT", "Agent session Operation changed"
+            )
+        if attempt_id:
+            self.cursor.execute(
+                """
+                SELECT 1 FROM authority_attempt
+                WHERE attempt_id=%s AND operation_id=%s
+                """,
+                [attempt_id, current.operation_id],
+            )
+            if self.cursor.fetchone() is None:
+                raise KernelError(
+                    "AGENT_HARNESS_ATTEMPT_DRIFT",
+                    "transcript Attempt is not owned by the session Operation",
+                )
+        if external_effect_id:
+            self.cursor.execute(
+                """
+                SELECT 1 FROM authority_external_effect
+                WHERE external_effect_id=%s AND operation_id=%s
+                """,
+                [external_effect_id, current.operation_id],
+            )
+            if self.cursor.fetchone() is None:
+                raise KernelError(
+                    "AGENT_HARNESS_EXTERNAL_EFFECT_DRIFT",
+                    "transcript ExternalEffect is not owned by the session Operation",
+                )
+        normalized = dict(payload)
+        event_id = str(uuid4())
+        self.cursor.execute(
+            """
+            INSERT INTO authority_agent_transcript_event(
+                transcript_event_id, agent_session_id, sequence, request_id,
+                turn_number, event_type, operation_id, attempt_id,
+                external_effect_id, payload, payload_hash, trace_id
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """,
+            [
+                event_id,
+                current.agent_session_id,
+                current.next_sequence,
+                request_id,
+                turn_number,
+                event_type.value,
+                current.operation_id,
+                attempt_id or None,
+                external_effect_id or None,
+                Jsonb(normalized),
+                transcript_payload_hash(normalized),
+                trace_id,
+            ],
+        )
+        next_status = AgentHarnessStatus(target_status or current.status)
+        next_usage = usage or current.usage
+        self.cursor.execute(
+            """
+            UPDATE authority_agent_harness_session
+            SET status=%s, usage=%s, next_sequence=next_sequence + 1,
+                version=version + 1, updated_at=NOW()
+            WHERE agent_session_id=%s AND version=%s AND next_sequence=%s
+            """,
+            [
+                next_status.value,
+                Jsonb(asdict(next_usage)),
+                current.agent_session_id,
+                current.version,
+                current.next_sequence,
+            ],
+        )
+        if self.cursor.rowcount != 1:
+            raise KernelError(
+                "AGENT_HARNESS_SESSION_CAS_CONFLICT",
+                "Agent session transcript advanced concurrently",
+            )
+        return self.require_harness_session(current.agent_session_id)
+
+    def committed_request_events(
+        self, *, agent_session_id: str
+    ) -> tuple[Mapping[str, Any], ...]:
+        """Restore only transcript slices closed by REQUEST_COMMITTED."""
+
+        self.cursor.execute(
+            """
+            SELECT sequence, request_id, turn_number, event_type, payload,
+                   operation_id, attempt_id, external_effect_id, trace_id,
+                   payload_hash
+            FROM authority_agent_transcript_event
+            WHERE agent_session_id=%s
+            ORDER BY sequence
+            """,
+            [agent_session_id],
+        )
+        rows = self.cursor.fetchall()
+        committed = {
+            str(row[1])
+            for row in rows
+            if str(row[3]) == AgentTranscriptEventType.REQUEST_COMMITTED.value
+        }
+        failed = {
+            str(row[1])
+            for row in rows
+            if str(row[3]) == AgentTranscriptEventType.REQUEST_FAILED.value
+        }
+        return tuple(
+            {
+                "sequence": int(row[0]),
+                "request_id": str(row[1]),
+                "turn_number": int(row[2]),
+                "event_type": str(row[3]),
+                "payload": dict(row[4] or {}),
+                "operation_id": str(row[5]),
+                "attempt_id": str(row[6] or ""),
+                "external_effect_id": str(row[7] or ""),
+                "trace_id": str(row[8]),
+                "payload_hash": str(row[9]),
+            }
+            for row in rows
+            if str(row[1]) in committed and str(row[1]) not in failed
+        )
 
     def register_capability_execution_mapping(
         self, mapping: AgentCapabilityExecutionMapping
@@ -1133,6 +1412,30 @@ class PostgresAgentRuntimeRepository:
             )
             grouped.setdefault(identity, []).append(payload)
         return grouped
+
+
+def _tool_payload(tool: AgentToolSpec) -> dict[str, Any]:
+    return {
+        "tool_name": tool.tool_name,
+        "kind": tool.kind.value,
+        "input_schema_ref": tool.input_schema_ref,
+        "output_schema_ref": tool.output_schema_ref,
+        "allowed_roles": [role.value for role in tool.allowed_roles],
+        "external_effect_required": tool.external_effect_required,
+        "authority_command_type": tool.authority_command_type,
+    }
+
+
+def _tool_from_payload(payload: Mapping[str, Any]) -> AgentToolSpec:
+    return AgentToolSpec(
+        tool_name=str(payload["tool_name"]),
+        kind=str(payload["kind"]),
+        input_schema_ref=str(payload["input_schema_ref"]),
+        output_schema_ref=str(payload["output_schema_ref"]),
+        allowed_roles=tuple(str(item) for item in payload["allowed_roles"]),
+        external_effect_required=bool(payload.get("external_effect_required", False)),
+        authority_command_type=str(payload.get("authority_command_type") or ""),
+    )
 
 
 def _version_ref(value: str) -> tuple[str, str]:

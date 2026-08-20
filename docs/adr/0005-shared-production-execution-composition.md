@@ -10,7 +10,10 @@ Planning, Reader, Source Import, Agent, and Book compositions previously obtaine
 
 Each API or worker process constructs one `ProductionExecutionComposition`. It owns the governed provider gateway, object-store ExternalEffect adapter, source object reader, execution environment, budget caps, and provider-session shutdown. Chapter and other domain applications are peer consumers.
 
-Chapter continues to own its binder, stage policy, 18-node saga, and chapter-specific execution contracts. PEP, Attempt, ExternalEffect, provider routing, and business Authorities are unchanged.
+Chapter continues to own its binder, stage policy, explicit saga, and
+chapter-specific execution contracts. The current canonical workflow has 21 nodes;
+node count is not part of this ADR's invariant. PEP, Attempt, ExternalEffect,
+provider routing, and business Authorities are unchanged.
 
 Architecture fitness forbids peer compositions from borrowing Chapter-owned model/object-store/external-effect internals and prevents duplicate runtime construction.
 

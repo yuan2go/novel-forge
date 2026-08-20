@@ -263,6 +263,10 @@ class NarrativeObligationType(StrEnum):
     MYSTERY = "MYSTERY"
     CONFLICT = "CONFLICT"
     OPEN_LOOP = "OPEN_LOOP"
+    HOOK = "HOOK"
+    CHARACTER_COMMITMENT = "CHARACTER_COMMITMENT"
+    READER_EXPECTATION = "READER_EXPECTATION"
+    NARRATIVE_DEBT = "NARRATIVE_DEBT"
 
 
 class NarrativeObligationStatus(StrEnum):
@@ -800,6 +804,22 @@ _OBLIGATION_PATCH_FIELDS: tuple[
     ("conflict_changes", NarrativeObligationType.CONFLICT, ("conflict_id",)),
     ("plot_thread_changes", NarrativeObligationType.OPEN_LOOP, ("thread_id",)),
     ("open_loop_changes", NarrativeObligationType.OPEN_LOOP, ("thread_id",)),
+    ("hook_changes", NarrativeObligationType.HOOK, ("hook_id",)),
+    (
+        "character_commitment_changes",
+        NarrativeObligationType.CHARACTER_COMMITMENT,
+        ("commitment_id",),
+    ),
+    (
+        "reader_expectation_changes",
+        NarrativeObligationType.READER_EXPECTATION,
+        ("expectation_id",),
+    ),
+    (
+        "narrative_debt_changes",
+        NarrativeObligationType.NARRATIVE_DEBT,
+        ("debt_id",),
+    ),
 )
 
 _SNAPSHOT_KIND_ALIASES = {
@@ -869,7 +889,7 @@ def events_from_canon_patch(
                     NarrativeStateKind.FORESHADOW_STATE: NarrativeObligationType.FORESHADOWING,
                     NarrativeStateKind.MYSTERY_STATE: NarrativeObligationType.MYSTERY,
                     NarrativeStateKind.PLOT_THREAD: NarrativeObligationType.OPEN_LOOP,
-                    NarrativeStateKind.NARRATIVE_DEBT: NarrativeObligationType.OPEN_LOOP,
+                    NarrativeStateKind.NARRATIVE_DEBT: NarrativeObligationType.NARRATIVE_DEBT,
                 }[kind]
                 changes[NarrativeStateKind.NARRATIVE_OBLIGATION].extend(
                     _normalize_obligation(
@@ -902,7 +922,20 @@ def events_from_canon_patch(
         if changes[kind]:
             continue
         for field in fields:
-            changes[kind].extend(_object_items(canon_patch.get(field)))
+            items = _object_items(canon_patch.get(field))
+            if kind is NarrativeStateKind.NARRATIVE_OBLIGATION:
+                changes[kind].extend(
+                    _normalize_obligation(
+                        item,
+                        NarrativeObligationType(
+                            str(item.get("obligation_type") or "").upper()
+                        ),
+                        source_chapter,
+                    )
+                    for item in items
+                )
+            else:
+                changes[kind].extend(items)
     for field, obligation_type, identity_fields in _OBLIGATION_PATCH_FIELDS:
         changes[NarrativeStateKind.NARRATIVE_OBLIGATION].extend(
             _normalize_obligation(
@@ -924,7 +957,7 @@ def events_from_canon_patch(
                     NarrativeStateKind.FORESHADOW_STATE: NarrativeObligationType.FORESHADOWING,
                     NarrativeStateKind.MYSTERY_STATE: NarrativeObligationType.MYSTERY,
                     NarrativeStateKind.PLOT_THREAD: NarrativeObligationType.OPEN_LOOP,
-                    NarrativeStateKind.NARRATIVE_DEBT: NarrativeObligationType.OPEN_LOOP,
+                    NarrativeStateKind.NARRATIVE_DEBT: NarrativeObligationType.NARRATIVE_DEBT,
                 }[kind]
                 changes[NarrativeStateKind.NARRATIVE_OBLIGATION].extend(
                     _normalize_obligation(
@@ -991,7 +1024,7 @@ def events_from_chapter_outcome(
     """Read v2 events or deterministically adapt immutable v1 evidence."""
 
     contract = str(chapter_outcome.get("contract_version") or "")
-    if contract == "chapter-outcome-v2":
+    if contract in {"chapter-outcome-v2", "chapter-outcome-v3"}:
         return tuple(
             NarrativeStateEvent.from_dict(item)
             for item in _object_items(chapter_outcome.get("state_events"))
@@ -1566,6 +1599,9 @@ def _normalize_obligation(
         or value.get("mystery_id")
         or value.get("conflict_id")
         or value.get("debt_id")
+        or value.get("hook_id")
+        or value.get("commitment_id")
+        or value.get("expectation_id")
         or ""
     )
     if not obligation_id:
@@ -1624,7 +1660,38 @@ def _normalize_obligation(
         "target_to_chapter",
         "due_from_chapter",
         "due_chapter",
+        "hook_id",
+        "commitment_id",
+        "expectation_id",
     }
+    current_development = str(
+        value.get("current_development")
+        or value.get("development")
+        or value.get("summary")
+        or ""
+    )
+    development_history = value.get("development_history") or ()
+    if not isinstance(development_history, (list, tuple)) or any(
+        not isinstance(item, dict) for item in development_history
+    ):
+        raise KernelError(
+            "NARRATIVE_OBLIGATION_DEVELOPMENT_HISTORY_INVALID",
+            "Narrative obligation development history must contain typed entries",
+        )
+    if current_development and not development_history:
+        development_history = (
+            {
+                "chapter": source_chapter,
+                "status": status,
+                "development": current_development,
+            },
+        )
+    dependencies = value.get("dependencies") or value.get("dependency_ids") or ()
+    if not isinstance(dependencies, (list, tuple)):
+        raise KernelError(
+            "NARRATIVE_OBLIGATION_DEPENDENCIES_INVALID",
+            "Narrative obligation dependencies must be a list",
+        )
     normalized = {key: item for key, item in value.items() if key not in excluded}
     normalized.update(
         {
@@ -1633,6 +1700,32 @@ def _normalize_obligation(
             "status": status,
             "priority": str(value.get("priority") or "MEDIUM").upper(),
             "target_window": window,
+            "introduced_at": (
+                dict(value["introduced_at"])
+                if isinstance(value.get("introduced_at"), dict)
+                else {"chapter": int(value.get("opened_chapter") or source_chapter)}
+            ),
+            "current_development": current_development,
+            "development_history": [dict(item) for item in development_history],
+            "dependencies": sorted({str(item) for item in dependencies if str(item)}),
+            "urgency": str(
+                value.get("urgency") or value.get("priority") or "MEDIUM"
+            ).upper(),
+            "reader_visibility": str(
+                value.get("reader_visibility") or "PARTIAL"
+            ).upper(),
+            "expected_payoff": (
+                dict(value["expected_payoff"])
+                if isinstance(value.get("expected_payoff"), dict)
+                else {}
+            ),
+            "actual_payoff": (
+                dict(value["actual_payoff"])
+                if isinstance(value.get("actual_payoff"), dict)
+                else dict(payoff)
+            ),
+            "overdue": bool(value.get("overdue", False)),
+            "stale": bool(value.get("stale", False)),
             "linked_character_ids": sorted(
                 {str(item) for item in value.get("linked_character_ids") or () if str(item)}
             ),
@@ -1642,7 +1735,19 @@ def _normalize_obligation(
             "linked_event_ids": sorted(
                 {str(item) for item in value.get("linked_event_ids") or () if str(item)}
             ),
+            "linked_volume_ids": sorted(
+                {str(item) for item in value.get("linked_volume_ids") or () if str(item)}
+            ),
             "payoff_evidence": payoff,
+            "resolution_evidence": (
+                [dict(item) for item in value.get("resolution_evidence") or ()]
+                if isinstance(value.get("resolution_evidence") or (), (list, tuple))
+                and all(
+                    isinstance(item, dict)
+                    for item in value.get("resolution_evidence") or ()
+                )
+                else []
+            ),
             "opened_chapter": int(value.get("opened_chapter") or source_chapter),
             "lifecycle_migration": (
                 {
@@ -1762,6 +1867,25 @@ def _validate_event_payload(
             raise KernelError(
                 "NARRATIVE_OBLIGATION_WINDOW_REQUIRED",
                 "developing or due obligation must have a scheduled target window",
+            )
+        if str(payload.get("urgency") or "") not in {
+            "LOW",
+            "MEDIUM",
+            "HIGH",
+            "CRITICAL",
+        }:
+            raise KernelError(
+                "NARRATIVE_OBLIGATION_URGENCY_INVALID",
+                "Narrative obligation urgency is invalid",
+            )
+        if str(payload.get("reader_visibility") or "") not in {
+            "HIDDEN",
+            "PARTIAL",
+            "VISIBLE",
+        }:
+            raise KernelError(
+                "NARRATIVE_OBLIGATION_VISIBILITY_INVALID",
+                "Narrative obligation reader visibility is invalid",
             )
         payoff = payload.get("payoff_evidence")
         if status is NarrativeObligationStatus.FULFILLED and (

@@ -63,7 +63,7 @@
     "tests/integration/test_capability_pack_integrity_constraints_postgres.py",
     "tests/integration/test_capability_pack_dependency_postgres.py",
     "tests/integration/test_agent_collaboration_postgres.py",
-    "tests/integration/test_agent_runtime_crash_recovery_postgres.py",
+    "tests/integration/test_agent_harness_scheduler_postgres.py",
     "tests/integration/test_chapter_authority_scheduler_postgres.py",
     "tests/unit/test_story_planning_runtime.py",
     "tests/unit/test_book_production_domain.py",

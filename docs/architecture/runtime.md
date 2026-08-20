@@ -8,7 +8,7 @@ The current worker groups are:
 
 | Worker | Responsibility |
 |---|---|
-| Agent Authority | Executes admitted Agent candidates through the governed execution plane. |
+| Agent Authority | Executes bounded multi-turn Agent sessions and isolated migration-compatible Agent candidates on Operation/Attempt/Lease/Fence. |
 | Chapter Authority | Coordinates chapter saga jobs and recovery. |
 | Content Authority | Materializes non-Chapter authority handler outputs. |
 | Source Authority | Commits governed source transformations and deconstruction observations. |
@@ -37,7 +37,33 @@ Acceptance always returns the Book to `READY`, including the final Chapter. This
 
 `GET /product/production/book-authority/runs/{book_run_id}/progress` is a PostgreSQL read projection. It separates the last accepted narrative progress timestamp and production blocker from non-blocking sidecar admission/Operation backlog.
 
-Chapter production is a separate 18-node saga (`chapter.slice.run`). Chapter-specific binders and policies turn frozen inputs into work orders. All provider and object-store execution comes from the shared production execution composition.
+Chapter production is a 21-node explicit saga (`chapter.slice.run`), including
+ExecutionIntent, Memo, and deterministic Best Candidate selection. Chapter-specific
+binders and policies turn frozen inputs into work orders. All provider and
+object-store execution comes from the shared production execution composition.
+
+## Agent Harness
+
+Only autonomous roles with goal decomposition, dynamic Tool selection,
+observation and adaptive replanning use the Agent Harness. Draft, Review,
+Revision, planning and other one-task model work are typed Capabilities and
+freeze Capability Pack execution without a synthetic Agent binding.
+
+An admitted Agent session runs inside the existing Agent Authority worker. Each
+model turn is a governed ExternalEffect; the append-only transcript records
+model requests, Tool requests/results, checkpoints and the final response with
+Operation/Attempt/trace lineage. Lease takeover restores a committed transcript
+and cannot duplicate an already committed model effect. Tools are restricted to
+accepted-boundary reads, typed Capability invocation and typed Authority Command
+submission. No Tool directly commits Canon, accepted Narrative State, Arc
+Actual, Obligation state, plan activation or Chapter acceptance.
+
+The repository's scripted Harness adapter is fixture-only. A controlled real
+provider/tool binding is intentionally not claimed by this implementation;
+until separately qualified, Agent Harness remains `NOT_PROVIDER_QUALIFIED`.
+The pre-Harness fixed Agent-candidate API is retained only under the explicit
+`/agent-runtime/migration/agent-runs` namespace for persisted-operation
+recovery. Canonical Chapter and Planning compositions cannot admit through it.
 
 ## Health and shutdown
 

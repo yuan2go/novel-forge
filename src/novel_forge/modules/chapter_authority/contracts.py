@@ -39,6 +39,20 @@ class ChapterNode(Enum):
         "chapter.plan",
         "chapter.plan.materialized",
     )
+    EXECUTION_INTENT = (
+        "execution_intent",
+        "chapter.execution_intent.prepare",
+        "chapter_execution_intent",
+        "chapter.execution_intent",
+        "chapter.execution_intent.materialized",
+    )
+    MEMO = (
+        "memo",
+        "chapter.memo.generate",
+        "chapter_memo",
+        "chapter.memo",
+        "chapter.memo.materialized",
+    )
     CONTEXT = (
         "context",
         "chapter.context.build",
@@ -73,6 +87,13 @@ class ChapterNode(Enum):
         "re_review_report",
         "chapter.rereview",
         "chapter.rereview.materialized",
+    )
+    BEST_CANDIDATE = (
+        "best_candidate",
+        "chapter.candidate.select_best",
+        "best_draft_candidate",
+        "chapter.best_candidate",
+        "chapter.best_candidate.materialized",
     )
     CANON_EXTRACTION = (
         "canon_extraction",
@@ -194,6 +215,64 @@ class ChapterInputAsset:
     content_hash: str
     content: dict[str, Any]
     blobs: tuple[dict[str, Any], ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class BeatPlan:
+    beat_id: str
+    ordinal: int
+    function: str
+    expected_reader_effect: str
+
+    def __post_init__(self) -> None:
+        if not self.beat_id or self.ordinal <= 0 or not self.function:
+            raise ValueError("BeatPlan requires identity, order, and function")
+
+
+@dataclass(frozen=True, slots=True)
+class ScenePlan:
+    scene_id: str
+    scene_version: int
+    chapter_plan_asset_version_id: str
+    ordinal: int
+    goal: str
+    entry_state: str
+    exit_state: str
+    beats: tuple[BeatPlan, ...]
+
+    def __post_init__(self) -> None:
+        if (
+            not self.scene_id
+            or self.scene_version <= 0
+            or not self.chapter_plan_asset_version_id
+            or self.ordinal <= 0
+            or not self.goal
+            or not self.beats
+        ):
+            raise ValueError("ScenePlan requires a versioned Chapter-local identity")
+        if tuple(beat.ordinal for beat in self.beats) != tuple(
+            range(1, len(self.beats) + 1)
+        ):
+            raise ValueError("ScenePlan Beat order must be contiguous")
+
+
+@dataclass(frozen=True, slots=True)
+class SceneOutcome:
+    scene_id: str
+    scene_plan_version: int
+    status: str
+    actual_state_delta: tuple[dict[str, Any], ...]
+    resolution_evidence: tuple[str, ...]
+
+    def __post_init__(self) -> None:
+        if (
+            not self.scene_id
+            or self.scene_plan_version <= 0
+            or self.status not in {"MATERIALIZED", "PARTIAL", "NOT_MATERIALIZED"}
+        ):
+            raise ValueError("SceneOutcome requires its ScenePlan identity and status")
+        if self.status == "MATERIALIZED" and not self.resolution_evidence:
+            raise ValueError("materialized SceneOutcome requires accepted evidence")
 
 
 @dataclass(frozen=True, slots=True)

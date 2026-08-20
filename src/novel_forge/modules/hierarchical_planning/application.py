@@ -10,6 +10,12 @@ from uuid import uuid4
 from psycopg.types.json import Jsonb
 
 from novel_forge.modules.authority_security import Principal
+from novel_forge.modules.artifact_lineage import (
+    ArtifactLineageEdge,
+    InvalidationPolicy,
+    PostgresArtifactLineageRepository,
+    semantic_dimensions_for,
+)
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.command_kernel.service import (
     AdmissionContext,
@@ -1073,6 +1079,27 @@ class PostgresHierarchicalPlanningAuthority:
                 invalidation_policy,
                 operation_id,
             ],
+        )
+        policy = {
+            "MARK_STALE": InvalidationPolicy.PROPAGATE,
+            "MARK_IMPACTED": InvalidationPolicy.REQUALIFY,
+            "REVALIDATE": InvalidationPolicy.REQUALIFY,
+            "NONE": InvalidationPolicy.INFORMATIONAL,
+        }[invalidation_policy]
+        PostgresArtifactLineageRepository(cursor).record_edge(
+            ArtifactLineageEdge(
+                project_id=project_id,
+                book_id=book_id,
+                upstream_asset_version_id=source,
+                downstream_asset_version_id=dependent,
+                relationship_type=dependency_type,
+                semantic_dimensions=semantic_dimensions_for(
+                    (dependency_type, "planning")
+                ),
+                invalidation_policy=policy,
+                context_fingerprint="",
+                created_by_operation_id=operation_id,
+            )
         )
 
 

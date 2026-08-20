@@ -68,6 +68,10 @@ def build_context_bundle(
     book_id: str = "",
     target_capability_id: str = "prose.chapter.draft",
     capability_pack_snapshot_ref: str = "",
+    execution_intent: dict[str, Any] | None = None,
+    execution_intent_asset_version_id: str = "",
+    chapter_memo: dict[str, Any] | None = None,
+    chapter_memo_asset_version_id: str = "",
 ) -> dict[str, Any]:
     _require_keys(plan, "chapter", "premise")
     objective = str(
@@ -108,6 +112,12 @@ def build_context_bundle(
             ),
             authority_freshness=str(item.get("authority_freshness") or "CURRENT"),
             semantic_projection=bool(item.get("semantic_projection", True)),
+            context_class=str(item.get("context_class") or "RETRIEVABLE"),
+            memory_layer=str(item.get("memory_layer") or ""),
+            retrieval_reasons=tuple(item.get("retrieval_reasons") or ()),
+            retrieval_scores=dict(item.get("retrieval_scores") or {}),
+            provenance=dict(item.get("provenance") or {}),
+            compression_trace=tuple(item.get("compression_trace") or ()),
         )
         for item in (governed_candidates or [])
     ]
@@ -141,8 +151,43 @@ def build_context_bundle(
             narrative_function="current_chapter_plan",
             safe_summary=plan_safe_summary,
             structured_facts=plan_structured_facts,
+            context_class="PROTECTED",
+            provenance={"authority": "PlanningAuthority"},
         ),
     )
+    for asset_type, asset_version_id, content in (
+        ("chapter_execution_intent", execution_intent_asset_version_id, execution_intent),
+        ("chapter_memo", chapter_memo_asset_version_id, chapter_memo),
+    ):
+        if bool(asset_version_id) != bool(content):
+            raise KernelError(
+                "CHAPTER_EXECUTION_CONTEXT_INCOMPLETE",
+                "Context requires both execution artifact content and AssetVersion identity",
+            )
+        if not content:
+            continue
+        rendered = json.dumps(content, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        candidates.insert(
+            1,
+            ContextCandidate(
+                asset_version_id=asset_version_id,
+                asset_type=asset_type,
+                project_id=project_id,
+                estimated_tokens=max(1, len(rendered) // 4),
+                relevance_score=1.0,
+                content_digest=str(
+                    content.get("intent_fingerprint")
+                    or content.get("memo_fingerprint")
+                    or ""
+                ),
+                invalidation_keys=(f"{asset_type}:{asset_version_id}",),
+                narrative_function=asset_type,
+                safe_summary=rendered,
+                structured_facts=(),
+                context_class="PROTECTED",
+                provenance={"authority": "ChapterWorkflow", "working_artifact": True},
+            ),
+        )
     refs = {**(version_refs or {}), "chapter_plan_version": plan_asset_version_id}
     governed = build_authority_context_bundle(
         project_id=project_id,

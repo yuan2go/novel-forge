@@ -303,9 +303,12 @@ class CapabilityPackPostgresHarness:
             if item["kind"] == "SKILL" and item["ref"] == proof_skill_ref
         )
         agent_version = max(
-            int(str(node["agent_definition_ref"]).rpartition("@")[2])
-            for node in compiled["workflow_nodes"]
-            if node.get("agent_definition_ref")
+            (
+                int(str(node["agent_definition_ref"]).rpartition("@")[2])
+                for node in compiled["workflow_nodes"]
+                if node.get("agent_definition_ref")
+            ),
+            default=0,
         )
         return PackVersionProof(
             pack_id=self.pack_id,

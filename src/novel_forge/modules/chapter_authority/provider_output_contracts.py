@@ -83,6 +83,8 @@ _CANON_SCHEMA_REQUIRED_IDENTITIES: dict[str, tuple[str, ...]] = {
     "character_arc_changes": ("character_id", "arc_id"),
     "arc_state_changes": ("arc_id",),
 }
+
+
 _READER_STATE_FIELDS = (
     "continue_intent",
     "curiosity",

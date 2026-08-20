@@ -268,7 +268,13 @@ def build_quality_context_view(
             **common,
             "revision_text": str(revision.get("text") or ""),
             "source_governance": manifest.get("source_governance", {}),
-            "context_manifest": context_bundle.get("context_manifest", {}),
+            # Quality consumes a provenance projection, not a second copy of
+            # the full Context Manifest (which remains persisted on the
+            # ContextBundle).  This keeps source evidence exact without
+            # spending the quality budget on duplicated retrieval traces.
+            "context_manifest": _source_context_manifest_view(
+                dict(context_bundle.get("context_manifest") or {})
+            ),
             "source_isolation_result": context_bundle.get(
                 "source_isolation_result", {}
             ),
@@ -350,6 +356,26 @@ def _require_profile_segment(
             "QUALITY_PROFILE_VERSION_MISSING",
             f"frozen {label} profile content is missing from ContextBundle",
         )
+
+
+def _source_context_manifest_view(manifest: dict[str, Any]) -> dict[str, Any]:
+    selected = manifest.get("selected_inputs") or ()
+    return {
+        "contract_version": manifest.get("contract_version"),
+        "context_fingerprint": manifest.get("context_fingerprint"),
+        "accepted_boundary": manifest.get("accepted_boundary", {}),
+        "selected_inputs": [
+            {
+                "asset_version_id": item.get("asset_version_id"),
+                "asset_type": item.get("asset_type"),
+                "context_class": item.get("context_class"),
+                "memory_layer": item.get("memory_layer"),
+                "provenance": item.get("provenance", {}),
+            }
+            for item in selected
+            if isinstance(item, dict)
+        ],
+    }
 
 
 def _segment_by_version(

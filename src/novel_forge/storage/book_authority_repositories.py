@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 from typing import Any, Callable
 
 from psycopg.types.json import Jsonb
@@ -318,6 +320,7 @@ class BookAuthorityRepository:
         chapter_outcome_asset_version_id: str,
         story_state_asset_version_id: str,
         canon_snapshot_asset_version_id: str,
+        longform_projection_set: dict[str, Any],
         evidence: dict[str, Any],
         expected_book_version: int,
         before_cursor_advance: Callable[[], None] | None = None,
@@ -328,14 +331,16 @@ class BookAuthorityRepository:
                 acceptance_id, project_id, book_run_id, chapter_request_id,
                 delegation_id, acceptance_operation_id, chapter_number,
                 chapter_outcome_asset_version_id, story_state_asset_version_id,
-                canon_snapshot_asset_version_id, evidence, status
+                canon_snapshot_asset_version_id, longform_projection_set_id,
+                evidence, status
             ) VALUES (
                 %(acceptance_id)s, %(project_id)s, %(book_run_id)s,
                 %(chapter_request_id)s, %(delegation_id)s,
                 %(acceptance_operation_id)s, %(chapter_number)s,
                 %(chapter_outcome_asset_version_id)s,
                 %(story_state_asset_version_id)s,
-                %(canon_snapshot_asset_version_id)s, %(evidence)s, 'COMMITTED'
+                %(canon_snapshot_asset_version_id)s,
+                %(longform_projection_set_id)s, %(evidence)s, 'COMMITTED'
             )
             ON CONFLICT (chapter_request_id) DO NOTHING
             """,
@@ -350,10 +355,14 @@ class BookAuthorityRepository:
                 "chapter_outcome_asset_version_id": chapter_outcome_asset_version_id,
                 "story_state_asset_version_id": story_state_asset_version_id,
                 "canon_snapshot_asset_version_id": canon_snapshot_asset_version_id,
+                "longform_projection_set_id": longform_projection_set[
+                    "projection_set_id"
+                ],
                 "evidence": Jsonb(evidence),
             },
         )
         inserted = self.cursor.rowcount == 1
+        self.commit_longform_projection_set(longform_projection_set)
         if before_cursor_advance is not None:
             before_cursor_advance()
         self.cursor.execute(
@@ -378,6 +387,7 @@ class BookAuthorityRepository:
                 active_story_state_version_id=%s,
                 active_canon_snapshot_version_id=%s,
                 last_chapter_outcome_version_id=%s,
+                active_longform_projection_set_id=%s,
                 state='READY',
                 version=version+1, updated_at=NOW()
             WHERE book_run_id=%s
@@ -390,6 +400,7 @@ class BookAuthorityRepository:
                 story_state_asset_version_id,
                 canon_snapshot_asset_version_id,
                 chapter_outcome_asset_version_id,
+                longform_projection_set["projection_set_id"],
                 book_run_id,
                 chapter_number - 1,
                 chapter_number,
@@ -399,6 +410,369 @@ class BookAuthorityRepository:
         if self.cursor.rowcount != 1:
             raise ValueError("Book cursor cannot accept a non-sequential Chapter")
         return inserted
+
+    def commit_longform_projection_set(self, projection: dict[str, Any]) -> None:
+        boundary = dict(projection["accepted_boundary"])
+        sources = dict(projection["source_versions"])
+        projection_set_id = str(projection["projection_set_id"])
+        self.cursor.execute(
+            """
+            INSERT INTO authority_book_narrative_projection_set(
+                projection_set_id, acceptance_id, project_id, book_id,
+                book_run_id, chapter_request_id, chapter_number,
+                acceptance_operation_id, chapter_outcome_asset_version_id,
+                story_state_asset_version_id, canon_snapshot_asset_version_id,
+                arc_state, obligation_state, projection_hash, status
+            ) VALUES (
+                %(projection_set_id)s, %(acceptance_id)s, %(project_id)s,
+                %(book_id)s, %(book_run_id)s, %(chapter_request_id)s,
+                %(chapter_number)s, %(acceptance_operation_id)s,
+                %(chapter_outcome_asset_version_id)s,
+                %(story_state_asset_version_id)s,
+                %(canon_snapshot_asset_version_id)s,
+                %(arc_state)s, %(obligation_state)s, %(projection_hash)s,
+                'COMPLETE'
+            )
+            ON CONFLICT (acceptance_id) DO NOTHING
+            """,
+            {
+                "projection_set_id": projection_set_id,
+                "acceptance_id": boundary["acceptance_id"],
+                "project_id": projection["project_id"],
+                "book_id": projection["book_id"],
+                "book_run_id": projection["book_run_id"],
+                "chapter_request_id": projection["chapter_request_id"],
+                "chapter_number": boundary["chapter_number"],
+                "acceptance_operation_id": boundary["acceptance_operation_id"],
+                "chapter_outcome_asset_version_id": sources[
+                    "chapter_outcome_asset_version_id"
+                ],
+                "story_state_asset_version_id": sources[
+                    "story_state_asset_version_id"
+                ],
+                "canon_snapshot_asset_version_id": sources[
+                    "canon_snapshot_asset_version_id"
+                ],
+                "arc_state": Jsonb(list(projection["arc_states"])),
+                "obligation_state": Jsonb(list(projection["obligation_states"])),
+                "projection_hash": projection["projection_hash"],
+            },
+        )
+        progress_by_id = {
+            str(item["progress_id"]): dict(item)
+            for item in projection["arc_progress"]
+        }
+        for progress in progress_by_id.values():
+            accepted = dict(progress["accepted_boundary"])
+            source = dict(progress["source"])
+            self.cursor.execute(
+                """
+                INSERT INTO authority_arc_progress_v2(
+                    progress_id, projection_set_id, project_id, book_id,
+                    arc_plan_version_id, chapter_number,
+                    acceptance_operation_id, chapter_outcome_asset_version_id,
+                    observation_status, contribution_kind, progress_units,
+                    cumulative_progress_units, deviation_units, evidence
+                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                ON CONFLICT (project_id, book_id, arc_plan_version_id, chapter_number)
+                DO NOTHING
+                """,
+                [
+                    progress["progress_id"],
+                    projection_set_id,
+                    projection["project_id"],
+                    projection["book_id"],
+                    progress["arc_plan_version_id"],
+                    accepted["chapter_number"],
+                    accepted["acceptance_operation_id"],
+                    source["chapter_outcome_asset_version_id"],
+                    progress["observation_status"],
+                    progress["contribution_kind"],
+                    progress["progress_units"],
+                    progress["cumulative_progress_units"],
+                    progress["deviation_units"],
+                    Jsonb(dict(progress["evidence"])),
+                ],
+            )
+        for state in projection["arc_states"]:
+            self.cursor.execute(
+                """
+                INSERT INTO authority_arc_actual_state(
+                    project_id, book_id, arc_plan_version_id,
+                    projection_set_id, accepted_through_chapter,
+                    acceptance_operation_id, observation_status,
+                    lifecycle_status, cumulative_progress_units,
+                    current_phase, state, version
+                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,1)
+                ON CONFLICT (project_id, book_id, arc_plan_version_id)
+                DO UPDATE SET
+                    projection_set_id=EXCLUDED.projection_set_id,
+                    accepted_through_chapter=EXCLUDED.accepted_through_chapter,
+                    acceptance_operation_id=EXCLUDED.acceptance_operation_id,
+                    observation_status=EXCLUDED.observation_status,
+                    lifecycle_status=EXCLUDED.lifecycle_status,
+                    cumulative_progress_units=EXCLUDED.cumulative_progress_units,
+                    current_phase=EXCLUDED.current_phase,
+                    state=EXCLUDED.state,
+                    version=authority_arc_actual_state.version+1,
+                    updated_at=NOW()
+                WHERE authority_arc_actual_state.accepted_through_chapter
+                      IN (EXCLUDED.accepted_through_chapter-1,
+                          EXCLUDED.accepted_through_chapter)
+                """,
+                [
+                    projection["project_id"],
+                    projection["book_id"],
+                    state["arc_plan_version_id"],
+                    projection_set_id,
+                    state["accepted_through_chapter"],
+                    state["acceptance_operation_id"],
+                    state["observation_status"],
+                    state["lifecycle_status"],
+                    state["cumulative_progress_units"],
+                    state["current_phase"],
+                    Jsonb(dict(state)),
+                ],
+            )
+        for checkpoint in projection["arc_checkpoints"]:
+            accepted = dict(checkpoint["accepted_boundary"])
+            self.cursor.execute(
+                """
+                INSERT INTO authority_arc_checkpoint_v2(
+                    checkpoint_id, projection_set_id, project_id, book_id,
+                    arc_plan_version_id, accepted_through_chapter,
+                    acceptance_operation_id, progress_id, decision, reasons,
+                    checkpoint
+                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                ON CONFLICT (project_id, book_id, arc_plan_version_id,
+                             accepted_through_chapter) DO NOTHING
+                """,
+                [
+                    checkpoint["checkpoint_id"],
+                    projection_set_id,
+                    projection["project_id"],
+                    projection["book_id"],
+                    checkpoint["arc_plan_version_id"],
+                    accepted["chapter_number"],
+                    accepted["acceptance_operation_id"],
+                    checkpoint["progress_id"],
+                    str(checkpoint["decision"]),
+                    Jsonb(list(checkpoint["reasons"])),
+                    Jsonb(dict(checkpoint)),
+                ],
+            )
+        for outcome in projection["arc_outcomes"]:
+            self.cursor.execute(
+                """
+                INSERT INTO authority_arc_outcome_v2(
+                    arc_outcome_id, projection_set_id, project_id, book_id,
+                    arc_plan_version_id, accepted_through_chapter,
+                    acceptance_operation_id, status, completion_evidence
+                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                ON CONFLICT (project_id, book_id, arc_plan_version_id) DO NOTHING
+                """,
+                [
+                    outcome["arc_outcome_id"],
+                    projection_set_id,
+                    projection["project_id"],
+                    projection["book_id"],
+                    outcome["arc_plan_version_id"],
+                    outcome["accepted_through_chapter"],
+                    outcome["acceptance_operation_id"],
+                    outcome["status"],
+                    Jsonb(dict(outcome["completion_evidence"])),
+                ],
+            )
+        for obligation in projection["obligation_states"]:
+            state = dict(obligation.get("state") or {})
+            obligation_id = str(
+                state.get("obligation_id") or obligation.get("entity_key") or ""
+            )
+            if not obligation_id:
+                raise ValueError("accepted obligation projection lacks identity")
+            self.cursor.execute(
+                """
+                INSERT INTO authority_narrative_obligation_state(
+                    project_id, book_id, obligation_id, projection_set_id,
+                    accepted_through_chapter, acceptance_operation_id,
+                    story_state_asset_version_id, obligation_type, status,
+                    state, version
+                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,1)
+                ON CONFLICT (project_id, book_id, obligation_id)
+                DO UPDATE SET
+                    projection_set_id=EXCLUDED.projection_set_id,
+                    accepted_through_chapter=EXCLUDED.accepted_through_chapter,
+                    acceptance_operation_id=EXCLUDED.acceptance_operation_id,
+                    story_state_asset_version_id=EXCLUDED.story_state_asset_version_id,
+                    obligation_type=EXCLUDED.obligation_type,
+                    status=EXCLUDED.status,
+                    state=EXCLUDED.state,
+                    version=authority_narrative_obligation_state.version+1,
+                    updated_at=NOW()
+                WHERE authority_narrative_obligation_state.accepted_through_chapter
+                      IN (EXCLUDED.accepted_through_chapter-1,
+                          EXCLUDED.accepted_through_chapter)
+                """,
+                [
+                    projection["project_id"],
+                    projection["book_id"],
+                    obligation_id,
+                    projection_set_id,
+                    obligation["accepted_through_chapter"],
+                    obligation["acceptance_operation_id"],
+                    obligation["story_state_asset_version_id"],
+                    state.get("obligation_type") or "UNKNOWN",
+                    state.get("status") or "UNKNOWN",
+                    Jsonb(dict(obligation)),
+                ],
+            )
+        self._commit_narrative_retrieval_documents(projection)
+
+    def _commit_narrative_retrieval_documents(
+        self, projection: dict[str, Any]
+    ) -> None:
+        """Index accepted evidence deterministically inside Book Acceptance."""
+
+        sources = dict(projection["source_versions"])
+        chapter = int(projection["accepted_boundary"]["chapter_number"])
+        operation_id = str(
+            projection["accepted_boundary"]["acceptance_operation_id"]
+        )
+        arc_ids = sorted(
+            {
+                str(item.get("arc_plan_version_id") or "")
+                for item in projection["arc_states"]
+                if str(item.get("arc_plan_version_id") or "")
+            }
+        )
+        obligation_ids = sorted(
+            {
+                str((item.get("state") or {}).get("obligation_id") or item.get("entity_key") or "")
+                for item in projection["obligation_states"]
+                if str((item.get("state") or {}).get("obligation_id") or item.get("entity_key") or "")
+            }
+        )
+        specifications = (
+            (
+                sources["chapter_outcome_asset_version_id"],
+                "L6",
+                None,
+                {"projection_kind": "accepted_chapter_outcome"},
+            ),
+            (
+                sources["chapter_outcome_asset_version_id"],
+                "L5",
+                {
+                    "arc_progress": list(projection["arc_progress"]),
+                    "arc_states": list(projection["arc_states"]),
+                    "arc_checkpoints": list(projection["arc_checkpoints"]),
+                },
+                {"projection_kind": "accepted_arc_state"},
+            ),
+            (
+                sources["story_state_asset_version_id"],
+                "L1",
+                None,
+                {"projection_kind": "accepted_current_state"},
+            ),
+            (
+                sources["story_state_asset_version_id"],
+                "L4",
+                {"obligations": list(projection["obligation_states"])},
+                {"projection_kind": "accepted_obligation_state"},
+            ),
+            (
+                sources["canon_snapshot_asset_version_id"],
+                "L2",
+                None,
+                {"projection_kind": "accepted_canon"},
+            ),
+        )
+        for source_version_id, memory_layer, projected_content, metadata in specifications:
+            self.cursor.execute(
+                """
+                SELECT asset.asset_type, version.content
+                FROM authority_asset_version AS version
+                JOIN authority_asset AS asset ON asset.asset_id=version.asset_id
+                WHERE version.asset_version_id=%s AND asset.project_id=%s
+                """,
+                [source_version_id, projection["project_id"]],
+            )
+            source = self.cursor.fetchone()
+            if source is None:
+                raise ValueError("accepted retrieval source AssetVersion is missing")
+            content = (
+                dict(projected_content)
+                if projected_content is not None
+                else dict(source[1] or {})
+            )
+            content_text = json.dumps(
+                content,
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            )
+            identity = (
+                f"{projection['project_id']}:{projection['book_id']}:"
+                f"{source_version_id}:{memory_layer}"
+            )
+            retrieval_document_id = "narrative-retrieval:" + hashlib.sha256(
+                identity.encode()
+            ).hexdigest()
+            document = {
+                "retrieval_document_id": retrieval_document_id,
+                "project_id": projection["project_id"],
+                "book_id": projection["book_id"],
+                "source_asset_version_id": source_version_id,
+                "source_artifact_type": str(source[0]),
+                "accepted_from_chapter": chapter,
+                "memory_layer": memory_layer,
+                "content_text": content_text,
+                "arc_plan_version_ids": arc_ids,
+                "obligation_ids": obligation_ids,
+                "metadata": {
+                    **metadata,
+                    "projection_set_id": projection["projection_set_id"],
+                    "accepted_boundary": dict(projection["accepted_boundary"]),
+                },
+            }
+            projection_hash = "sha256:" + hashlib.sha256(
+                json.dumps(
+                    document,
+                    ensure_ascii=False,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                ).encode()
+            ).hexdigest()
+            self.cursor.execute(
+                """
+                INSERT INTO authority_narrative_retrieval_document(
+                    retrieval_document_id, project_id, book_id,
+                    source_asset_version_id, source_artifact_type,
+                    accepted_from_chapter, memory_layer, content_text,
+                    arc_plan_version_ids, obligation_ids, temporal_coordinate,
+                    metadata, projection_hash, created_by_operation_id
+                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                ON CONFLICT(project_id, book_id, source_asset_version_id,
+                            memory_layer) DO NOTHING
+                """,
+                [
+                    retrieval_document_id,
+                    projection["project_id"],
+                    projection["book_id"],
+                    source_version_id,
+                    str(source[0]),
+                    chapter,
+                    memory_layer,
+                    content_text,
+                    Jsonb(arc_ids),
+                    Jsonb(obligation_ids),
+                    Jsonb({"accepted_chapter": chapter}),
+                    Jsonb(document["metadata"]),
+                    projection_hash,
+                    operation_id,
+                ],
+            )
 
     def abort(self, *, book_run_id: str, reason: str) -> None:
         self.cursor.execute(

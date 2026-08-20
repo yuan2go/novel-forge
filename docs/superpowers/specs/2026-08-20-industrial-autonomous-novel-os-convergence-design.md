@@ -8,7 +8,7 @@
 
 ## 1. Problem and desired outcome
 
-Novel Forge already has a strong industrial execution and truth-settlement base: PostgreSQL Authority, immutable Assets, Operation/Attempt, RuntimeJob, Lease/Fence, ExternalEffect/Receipt, Book/Chapter acceptance, accepted Canon/Narrative State, recovery, replay, trace, and cost evidence. The latest code does not yet provide the complete intelligence layer implied by the product target:
+At the frozen audit baseline, Novel Forge already had a strong industrial execution and truth-settlement base: PostgreSQL Authority, immutable Assets, Operation/Attempt, RuntimeJob, Lease/Fence, ExternalEffect/Receipt, Book/Chapter acceptance, accepted Canon/Narrative State, recovery, replay, trace, and cost evidence. The baseline did not yet provide the complete intelligence layer implied by the product target:
 
 - hierarchy semantics are mixed with production grouping;
 - planned Arc contributions can be recorded as actual evidence;
@@ -473,7 +473,7 @@ User / Studio Intent
 
 ## 18. Legacy and documentation convergence
 
-The implementation will:
+The convergence change:
 
 - update the canonical design and derived product/runtime views;
 - remove the exact-SHA historical implementation plan from current docs;

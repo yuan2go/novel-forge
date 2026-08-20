@@ -4,6 +4,7 @@ from __future__ import annotations
 from typing import Any
 
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.longform_narrative import normalize_arc_evidence
 from novel_forge.modules.narrative_state import (
     event_dicts,
     events_from_canon_patch,
@@ -27,6 +28,7 @@ def build_chapter_outcome(
     cost_receipt_refs: tuple[str, ...],
     created_by_operation_id: str,
     trace_id: str,
+    expected_arc_contributions: tuple[dict[str, Any], ...] = (),
 ) -> dict[str, Any]:
     """Build immutable accepted-actual evidence before Book acceptance commits it."""
 
@@ -67,9 +69,41 @@ def build_chapter_outcome(
             "CHAPTER_OUTCOME_STATE_EVENT_REQUIRED",
             "accepted ChapterOutcome requires at least one governed Narrative State event",
         )
+    declared_arcs: dict[str, dict[str, Any]] = {}
+    for contribution in expected_arc_contributions:
+        arc_plan_version_id = str(
+            contribution.get("arc_plan_version_id")
+            or contribution.get("arc_id")
+            or ""
+        )
+        if not arc_plan_version_id or arc_plan_version_id in declared_arcs:
+            raise KernelError(
+                "CHAPTER_OUTCOME_ARC_PLAN_INVALID",
+                "ChapterOutcome requires unique expected Arc contribution identities",
+            )
+        declared_arcs[arc_plan_version_id] = dict(contribution)
+    raw_arc_evidence = canon_patch.get("arc_evidence") or ()
+    if not isinstance(raw_arc_evidence, (list, tuple)):
+        raise KernelError(
+            "CHAPTER_OUTCOME_ARC_EVIDENCE_INVALID",
+            "qualified Arc evidence must be a list",
+        )
+    normalized_arc_evidence = normalize_arc_evidence(
+        declared=declared_arcs,
+        raw_evidence=(dict(item) for item in raw_arc_evidence if isinstance(item, dict)),
+    )
+    event_payloads = event_dicts(state_events)
+    scene_outcomes = canon_patch.get("scene_outcomes") or ()
+    if not isinstance(scene_outcomes, (list, tuple)) or any(
+        not isinstance(item, dict) for item in scene_outcomes
+    ):
+        raise KernelError(
+            "CHAPTER_OUTCOME_SCENE_EVIDENCE_INVALID",
+            "Scene outcomes must be typed objects",
+        )
     return {
         "type": "ChapterOutcome",
-        "contract_version": "chapter-outcome-v2",
+        "contract_version": "chapter-outcome-v3",
         "layer": "ACCEPTED_ACTUAL",
         "authority": {
             "status": "PENDING_BOOK_ACCEPTANCE",
@@ -88,7 +122,14 @@ def build_chapter_outcome(
         "canon_decision_asset_version_ids": list(
             canon_patch.get("decision_asset_version_ids") or []
         ),
-        "state_events": event_dicts(state_events),
+        "state_events": event_payloads,
+        "arc_evidence": list(normalized_arc_evidence),
+        "obligation_events": [
+            event
+            for event in event_payloads
+            if event.get("state_kind") == "narrative_obligation"
+        ],
+        "scene_outcomes": [dict(item) for item in scene_outcomes],
         "reader_state_observations": list(
             canon_patch.get("reader_state_signals") or []
         ),

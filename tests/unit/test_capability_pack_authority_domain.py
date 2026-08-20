@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import FrozenInstanceError
+from dataclasses import FrozenInstanceError, replace
 
 import pytest
 
@@ -103,6 +103,15 @@ def test_execution_snapshot_is_immutable_and_content_addressed() -> None:
     assert snapshot.snapshot_hash == canonical_hash(snapshot.to_dict())
     with pytest.raises(FrozenInstanceError):
         snapshot.pack_version = "2.0.0"  # type: ignore[misc]
+
+    capability_only = replace(
+        snapshot,
+        agent_definition_ref="",
+        agent_definition_hash="",
+    )
+    assert capability_only.capability_ref == "prose.chapter.draft@1"
+    with pytest.raises(ValueError, match="must be supplied together"):
+        replace(capability_only, agent_definition_ref="chapter-draft-agent@1")
 
 
 def test_execution_snapshot_rejects_missing_content_identity() -> None:

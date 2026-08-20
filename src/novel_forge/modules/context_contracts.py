@@ -28,6 +28,12 @@ class ContextCandidate:
     physical_asset_type: str = ""
     authority_freshness: str = "CURRENT"
     semantic_projection: bool = True
+    context_class: str = "RETRIEVABLE"
+    memory_layer: str = ""
+    retrieval_reasons: tuple[str, ...] = ()
+    retrieval_scores: dict[str, float] | None = None
+    provenance: dict[str, Any] | None = None
+    compression_trace: tuple[dict[str, Any], ...] = ()
 
 
 __all__ = ["ContextCandidate"]

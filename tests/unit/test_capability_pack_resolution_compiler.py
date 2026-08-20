@@ -138,7 +138,11 @@ class CapabilityPackP1ATests(unittest.TestCase):
         self.assertIsNotNone(result.compiled)
         compiled = result.compiled
         assert compiled is not None
-        self.assertEqual(len(compiled.workflow_nodes), 18)
+        node_ids = {node.node_id for node in compiled.workflow_nodes}
+        self.assertEqual(len(node_ids), 21)
+        self.assertTrue(
+            {"execution_intent", "memo", "best_candidate"}.issubset(node_ids)
+        )
         with self.assertRaises(FrozenInstanceError):
             compiled.pack_id = "changed"  # type: ignore[misc]
         detached = compiled.to_dict()

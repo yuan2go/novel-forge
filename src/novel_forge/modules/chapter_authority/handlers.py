@@ -41,6 +41,15 @@ from novel_forge.modules.chapter_authority.model_effects import (
     ChapterModelPort,
     ModelProviderResult,
 )
+from novel_forge.modules.chapter_authority.execution_artifacts import (
+    build_chapter_execution_intent,
+    qualify_chapter_memo,
+)
+from novel_forge.modules.chapter_authority.candidate_selection import (
+    CandidateEvidence,
+    build_best_candidate,
+    compare_candidates,
+)
 from novel_forge.modules.chapter_quality_authority import (
     QUALITY_GROUPS,
     build_multiscale_quality_report,
@@ -281,6 +290,96 @@ class _PlanHandler:
 
 
 @dataclass(frozen=True, slots=True)
+class _ExecutionIntentHandler:
+    def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
+        plan = request.require_input("chapter_plan")
+        accepted_inputs = [
+            {
+                **item.content,
+                "asset_type": item.asset_type,
+                "asset_version_id": item.asset_version_id,
+            }
+            for item in request.inputs
+            if item.asset_type in {"story_state_snapshot", "canon_snapshot"}
+        ]
+        return _output(
+            ChapterNode.EXECUTION_INTENT,
+            build_chapter_execution_intent(
+                project_id=request.project_id,
+                operation_id=request.operation_id,
+                chapter_plan_asset_version_id=plan.asset_version_id,
+                chapter_plan_content_hash=plan.content_hash,
+                chapter_plan=plan.content,
+                accepted_inputs=accepted_inputs,
+            ),
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class _MemoHandler:
+    def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
+        intent = request.require_input("chapter_execution_intent")
+        result = {
+            "execution_strategy": "materialize the locked objective through irreversible choice",
+            "tension_strategy": "carry accepted tension into escalating scene consequences",
+            "scene_directives": [
+                {
+                    "scene_id": str(item["scene_id"]),
+                    "directive": str(item.get("goal") or "advance the chapter objective"),
+                }
+                for item in intent.content.get("scene_plans") or ()
+            ],
+            "retrieval_queries": [
+                "previous accepted ending",
+                "active narrative obligations",
+                "relevant accepted arc history",
+            ],
+            "obligation_actions": [
+                {
+                    "obligation_id": str(
+                        (item.get("state") or {}).get("obligation_id")
+                        or item.get("entity_key")
+                        or ""
+                    ),
+                    "action": "DEVELOP",
+                }
+                for item in intent.content.get("active_obligations") or ()
+                if isinstance(item, dict)
+                and str(
+                    (item.get("state") or {}).get("obligation_id")
+                    or item.get("entity_key")
+                    or ""
+                )
+            ],
+            "arc_actions": [
+                {
+                    "arc_plan_version_id": str(
+                        item.get("arc_plan_version_id") or item.get("arc_id") or ""
+                    ),
+                    "action": str(
+                        item.get("contribution") or item.get("kind") or "ADVANCE"
+                    ),
+                }
+                for item in intent.content.get("required_arc_contributions") or ()
+                if isinstance(item, dict)
+            ],
+            "stop_conditions": ["do not contradict the locked ChapterPlan"],
+        }
+        return _output(
+            ChapterNode.MEMO,
+            qualify_chapter_memo(
+                intent=intent.content,
+                intent_asset_version_id=intent.asset_version_id,
+                result=result,
+                execution_evidence={
+                    "runtime": "deterministic-domain-service",
+                    "operation_id": request.operation_id,
+                },
+            ),
+        )
+
+
+@dataclass(frozen=True, slots=True)
 class _ContextHandler:
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
         plan = next(
@@ -312,12 +411,21 @@ class _ContextHandler:
         candidate_metadata = {
             str(item.get("asset_version_id")): dict(item)
             for item in request.command.get("context_candidates", [])
+            if str(item.get("asset_type") or "") != "chapter_plan"
         }
         governed_candidates = []
+        intent = request.require_input("chapter_execution_intent")
+        memo = request.require_input("chapter_memo")
         frozen_candidates = [
             item
             for item in request.inputs
-            if item is not plan and item.asset_type != "production_input_manifest"
+            if item is not plan
+            and item.asset_type
+            not in {
+                "production_input_manifest",
+                "chapter_execution_intent",
+                "chapter_memo",
+            }
         ]
         if set(candidate_metadata) != {
             item.asset_version_id for item in frozen_candidates
@@ -375,6 +483,8 @@ class _ContextHandler:
             version_refs=dict(request.command.get("context_version_refs", {})),
             required_asset_types=(
                 "chapter_plan",
+                "chapter_execution_intent",
+                "chapter_memo",
                 *sorted(required_candidate_types & available_candidate_types),
             ),
             token_budget=int(request.command.get("context_token_budget", 6000)),
@@ -387,14 +497,36 @@ class _ContextHandler:
             capability_pack_snapshot_ref=str(
                 request.command.get("capability_pack_snapshot_ref") or ""
             ),
+            execution_intent=intent.content,
+            execution_intent_asset_version_id=intent.asset_version_id,
+            chapter_memo=memo.content,
+            chapter_memo_asset_version_id=memo.asset_version_id,
         )
         bundle["production_input_manifest"] = manifest
         bundle["production_input_manifest_asset_version_id"] = (
             manifest_asset.asset_version_id if manifest_asset is not None else ""
         )
+        bundle["chapter_execution"] = {
+            "intent_asset_version_id": intent.asset_version_id,
+            "intent_fingerprint": str(intent.content.get("intent_fingerprint") or ""),
+            "memo_asset_version_id": memo.asset_version_id,
+            "memo_fingerprint": str(memo.content.get("memo_fingerprint") or ""),
+            "source_chapter_plan_asset_version_id": plan.asset_version_id,
+            "accepted_boundary": dict(intent.content.get("accepted_boundary") or {}),
+        }
+        source_plan_asset_version_id = str(
+            plan.content.get("source_chapter_plan_asset_version_id") or ""
+        )
         manifest_ids = {
             str(item.get("asset_version_id"))
             for item in manifest.get("selected_asset_versions", [])
+            if str(item.get("asset_version_id") or "")
+            != source_plan_asset_version_id
+        }
+        execution_ids = {intent.asset_version_id, memo.asset_version_id}
+        context_manifest_ids = {
+            str(item)
+            for item in bundle.get("selected_asset_version_ids", [])
         }
         frozen_ids = {item.asset_version_id for item in frozen_candidates}
         segment_ids = {
@@ -412,12 +544,14 @@ class _ContextHandler:
             for item in bundle.get("rejected_asset_versions", [])
             if str(item.get("asset_version_id") or "") != plan.asset_version_id
         }
+        context_external_selected_ids = context_selected_ids - execution_ids
         consistent = (
             bool(manifest)
             and manifest_ids == frozen_ids
             and context_selected_ids == segment_ids
-            and not context_selected_ids.intersection(context_rejected_ids)
-            and context_selected_ids.union(context_rejected_ids) == frozen_ids
+            and execution_ids.issubset(context_manifest_ids)
+            and not context_external_selected_ids.intersection(context_rejected_ids)
+            and context_external_selected_ids.union(context_rejected_ids) == frozen_ids
         )
         if not consistent:
             from novel_forge.modules.command_kernel.errors import KernelError
@@ -441,6 +575,7 @@ class _ContextHandler:
             "selected_asset_version_ids": sorted(manifest_ids),
             "frozen_input_asset_version_ids": sorted(frozen_ids),
             "context_segment_asset_version_ids": sorted(segment_ids),
+            "execution_artifact_version_ids": sorted(execution_ids),
             "context_rejected_asset_version_ids": sorted(context_rejected_ids),
             "consistent": True,
             "contract_version": "context-manifest-consistency-v2",
@@ -468,6 +603,8 @@ class _DraftHandler:
 
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
         plan = request.require_input("chapter_plan")
+        intent = request.require_input("chapter_execution_intent")
+        memo = request.require_input("chapter_memo")
         context = request.require_input("context_bundle")
         generated = self.provider.invoke(
             request,
@@ -475,6 +612,8 @@ class _DraftHandler:
             payload={
                 "plan": build_draft_plan_view(plan.content),
                 "style": build_draft_style_view(context.content),
+                "execution_intent": intent.content,
+                "chapter_memo": memo.content,
             },
         )
         return _model_output(
@@ -526,7 +665,7 @@ class _RevisionHandler:
             item for item in request.inputs if item.asset_type == "revision_task"
         )
         if quality_tasks:
-            revision = request.require_input("draft_version")
+            revision = request.require_input("best_draft_candidate")
             quality = request.require_input("quality_score_report")
             context = request.require_input("context_bundle")
             revised = self.provider.invoke(
@@ -623,9 +762,146 @@ class _ReReviewHandler:
 
 
 @dataclass(frozen=True, slots=True)
-class _CanonHandler:
+class _BestCandidateHandler:
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
         revision = request.require_input("draft_version")
+        rereview = request.require_input("re_review_report")
+        existing_best = next(
+            (
+                item
+                for item in request.inputs
+                if item.asset_type == "best_draft_candidate"
+            ),
+            None,
+        )
+        if existing_best is None:
+            previous_asset = request.require_input("draft_chapter")
+            previous_review = request.require_input("review_report")
+            previous_score = float(previous_review.content.get("score") or 0)
+            previous_blockers = _blocking_issue_codes(previous_review.content)
+            previous_review_id = previous_review.asset_version_id
+        else:
+            previous_asset = existing_best
+            selection = dict(existing_best.content.get("candidate_comparison") or {})
+            selected_id = str(
+                existing_best.content.get("selected_source_asset_version_id") or ""
+            )
+            selected_evidence = next(
+                (
+                    dict(selection.get(key) or {})
+                    for key in ("previous", "challenger")
+                    if str((selection.get(key) or {}).get("asset_version_id") or "")
+                    == selected_id
+                ),
+                {},
+            )
+            previous_score = float(selected_evidence.get("score") or 0)
+            previous_blockers = tuple(selected_evidence.get("blocker_codes") or ())
+            previous_review_id = str(
+                selected_evidence.get("review_asset_version_id") or ""
+            )
+        prior_quality = next(
+            (
+                item
+                for item in request.inputs
+                if item.asset_type == "quality_score_report"
+            ),
+            None,
+        )
+        if prior_quality is not None:
+            previous_blockers = tuple(
+                sorted(
+                    {
+                        *previous_blockers,
+                        *(
+                            str(
+                                item.get("observation")
+                                or item.get("issue", {}).get("code")
+                                or ""
+                            )
+                            for item in prior_quality.content.get("required_actions")
+                            or ()
+                        ),
+                    }
+                    - {""}
+                )
+            )
+        generation = int(request.command.get("correction_generation") or 0)
+        threshold = float(
+            (request.command.get("preparation_report") or {}).get(
+                "minimum_net_improvement", 3.0
+            )
+        )
+        comparison = compare_candidates(
+            project_id=request.project_id,
+            chapter_root_operation_id=str(
+                request.command.get("chapter_root_operation_id")
+                or request.correlation_id
+            ),
+            previous=CandidateEvidence(
+                asset_version_id=previous_asset.asset_version_id,
+                content=previous_asset.content,
+                score=previous_score,
+                blocker_codes=tuple(previous_blockers),
+                review_asset_version_id=previous_review_id,
+            ),
+            challenger=CandidateEvidence(
+                asset_version_id=revision.asset_version_id,
+                content=revision.content,
+                score=float(rereview.content.get("score") or 0),
+                blocker_codes=_blocking_issue_codes(rereview.content),
+                review_asset_version_id=rereview.asset_version_id,
+            ),
+            minimum_net_improvement=threshold,
+            correction_generation=generation,
+            maximum_correction_generations=int(
+                (request.command.get("preparation_report") or {}).get(
+                    "maximum_correction_generations", 1
+                )
+            ),
+        )
+        best, snapshot = build_best_candidate(
+            comparison=comparison,
+            candidates={
+                previous_asset.asset_version_id: previous_asset.content,
+                revision.asset_version_id: revision.content,
+            },
+        )
+        return ChapterHandlerOutput(
+            asset_type=ChapterNode.BEST_CANDIDATE.asset_type,
+            output_key=ChapterNode.BEST_CANDIDATE.output_key,
+            role="primary",
+            content=best,
+            auxiliary_outputs=(
+                ChapterAuxiliaryOutput(
+                    asset_type="candidate_comparison",
+                    output_key="chapter.best_candidate.comparison",
+                    role="selection_evidence",
+                    content=comparison,
+                    reference_asset_version_ids=(
+                        previous_asset.asset_version_id,
+                        revision.asset_version_id,
+                        rereview.asset_version_id,
+                    ),
+                ),
+                ChapterAuxiliaryOutput(
+                    asset_type="best_candidate_snapshot",
+                    output_key="chapter.best_candidate.snapshot",
+                    role="selection_evidence",
+                    content=snapshot,
+                    reference_asset_version_ids=(
+                        previous_asset.asset_version_id,
+                        revision.asset_version_id,
+                    ),
+                ),
+            ),
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class _CanonHandler:
+    def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
+        revision = request.require_input("best_draft_candidate")
         extraction = request.require_input("canon_extraction")
         proposal = request.require_input("canon_change_proposal")
         decisions = [
@@ -710,7 +986,7 @@ class _CanonExtractionHandler:
     provider: ChapterModelPort
 
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
-        revision = request.require_input("draft_version")
+        revision = request.require_input("best_draft_candidate")
         context = request.require_input("context_bundle")
         provider_extraction = None
         generated: ModelProviderResult | None = None
@@ -771,7 +1047,7 @@ class _QualityGroupHandler:
     provider: ChapterModelPort
 
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
-        revision = request.require_input("draft_version")
+        revision = request.require_input("best_draft_candidate")
         plan = request.require_input("chapter_plan")
         canon = request.require_input("canon_patch")
         context = request.require_input("context_bundle")
@@ -963,7 +1239,7 @@ class _QualityGroupHandler:
 class _QualityHandler:
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
         plan = request.require_input("chapter_plan")
-        revision = request.require_input("draft_version")
+        revision = request.require_input("best_draft_candidate")
         review = request.require_input("re_review_report")
         canon = request.require_input("canon_patch")
         context = request.require_input("context_bundle")
@@ -1318,7 +1594,7 @@ def _provider_usage_records(
 @dataclass(frozen=True, slots=True)
 class _PublishGateHandler:
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
-        revision = request.require_input("draft_version")
+        revision = request.require_input("best_draft_candidate")
         review = request.require_input("re_review_report")
         canon = request.require_input("canon_patch")
         quality = request.require_input("quality_score_report")
@@ -1344,7 +1620,7 @@ class _PublishGateHandler:
 @dataclass(frozen=True, slots=True)
 class _ExportHandler:
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
-        revision = request.require_input("draft_version")
+        revision = request.require_input("best_draft_candidate")
         publish_gate = request.require_input("publish_gate_report")
         return _output(
             ChapterNode.EXPORT,
@@ -1393,11 +1669,14 @@ def build_chapter_handler_registry(
         model_effects_required=bool(getattr(provider, "external_effect_backed", False))
     )
     registry.register(ChapterNode.PLAN, _PlanHandler())
+    registry.register(ChapterNode.EXECUTION_INTENT, _ExecutionIntentHandler())
+    registry.register(ChapterNode.MEMO, _MemoHandler())
     registry.register(ChapterNode.CONTEXT, _ContextHandler())
     registry.register(ChapterNode.DRAFT, _DraftHandler(provider))
     registry.register(ChapterNode.REVIEW, _ReviewHandler(provider))
     registry.register(ChapterNode.REVISION, _RevisionHandler(provider))
     registry.register(ChapterNode.REREVIEW, _ReReviewHandler(provider))
+    registry.register(ChapterNode.BEST_CANDIDATE, _BestCandidateHandler())
     registry.register(ChapterNode.CANON_EXTRACTION, _CanonExtractionHandler(provider))
     registry.register(ChapterNode.CANON_PROPOSAL, _CanonProposalHandler())
     registry.register(ChapterNode.CANON, _CanonHandler())
@@ -1430,6 +1709,21 @@ def _output(node: ChapterNode, content: dict[str, Any]) -> ChapterHandlerOutput:
         output_key=node.output_key,
         role="primary",
         content=content,
+    )
+
+
+def _blocking_issue_codes(review: dict[str, Any]) -> tuple[str, ...]:
+    return tuple(
+        sorted(
+            {
+                str(item.get("code") or "")
+                for item in review.get("issues") or ()
+                if isinstance(item, dict)
+                and str(item.get("severity") or "").lower()
+                in {"blocking", "blocker", "critical", "high"}
+                and str(item.get("code") or "")
+            }
+        )
     )
 
 

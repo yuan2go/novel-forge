@@ -712,6 +712,7 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
             "scene_plan": [
                 {
                     "scene_id": f"chapter:{chapter_number}:scene:1",
+                    "scene_version": 1,
                     "scene_group_id": f"chapter:{chapter_number}:group:1",
                     "goal": "make the choice unavoidable",
                     "conflict": "resistance turns private risk into public cost",
@@ -733,7 +734,17 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
                     "entry_state": arc_entry_state,
                     "exit_state": arc_exit_state,
                     "reader_effect": "relief converts to anticipation",
-                    "beats": ["pressure", "choice", "consequence"],
+                    "beats": [
+                        {
+                            "beat_id": f"chapter:{chapter_number}:scene:1:beat:{index}",
+                            "ordinal": index,
+                            "function": function,
+                            "expected_reader_effect": "rising irreversible pressure",
+                        }
+                        for index, function in enumerate(
+                            ("pressure", "choice", "consequence"), start=1
+                        )
+                    ],
                 }
             ],
             "expected_exit_state": {
@@ -1197,6 +1208,7 @@ def _canonical_narrative_provider_properties(
             "items": _strict_object(
                 {
                     "scene_id": string,
+                    "scene_version": {"type": "integer", "minimum": 1},
                     "scene_group_id": string,
                     "goal": string,
                     "conflict": string,
@@ -1236,7 +1248,18 @@ def _canonical_narrative_provider_properties(
                     "entry_state": string,
                     "exit_state": string,
                     "reader_effect": string,
-                    "beats": string_array,
+                    "beats": {
+                        "type": "array",
+                        "minItems": 1,
+                        "items": _strict_object(
+                            {
+                                "beat_id": string,
+                                "ordinal": {"type": "integer", "minimum": 1},
+                                "function": string,
+                                "expected_reader_effect": string,
+                            }
+                        ),
+                    },
                 }
             ),
         },
