@@ -185,7 +185,7 @@ class AuthorityMigrationsPostgresTests(unittest.TestCase):
         self.assertEqual(operation, (operation_id, "ADMITTED"))
         self.assertEqual(blob_project_column, ("NO",))
 
-    def test_existing_0091_head_upgrades_through_0092_and_0093(
+    def test_existing_0091_head_upgrades_through_0092_0093_and_0094(
         self,
     ) -> None:
         dedupe_key = "book:shared:version:3"
@@ -210,7 +210,7 @@ class AuthorityMigrationsPostgresTests(unittest.TestCase):
             psycopg.connect(self.test_url) as connection,
             connection.cursor() as cursor,
         ):
-            for migration in MIGRATIONS[:-2]:
+            for migration in MIGRATIONS[:-3]:
                 for statement in migration.upgrade_statements:
                     cursor.execute(statement)
                 cursor.execute(
@@ -641,10 +641,10 @@ class AuthorityMigrationsPostgresTests(unittest.TestCase):
 
         self.assertEqual(
             applied_before,
-            {migration.migration_id for migration in MIGRATIONS[:-2]},
+            {migration.migration_id for migration in MIGRATIONS[:-3]},
         )
         self.assertEqual(
-            MIGRATIONS[-3].migration_id,
+            MIGRATIONS[-4].migration_id,
             "20260814_0091_canonical_longform_runtime_completion",
         )
 
@@ -793,7 +793,7 @@ class AuthorityMigrationsPostgresTests(unittest.TestCase):
         }
 
         with psycopg.connect(self.test_url) as connection, connection.cursor() as cursor:
-            for migration in MIGRATIONS[:-1]:
+            for migration in MIGRATIONS[:-2]:
                 for statement in migration.upgrade_statements:
                     cursor.execute(statement)
                 cursor.execute(
@@ -801,7 +801,7 @@ class AuthorityMigrationsPostgresTests(unittest.TestCase):
                     [migration.migration_id],
                 )
             self.assertEqual(
-                MIGRATIONS[-2].migration_id,
+                MIGRATIONS[-3].migration_id,
                 "20260814_0092_longform_correctness_closure",
             )
             cursor.execute(

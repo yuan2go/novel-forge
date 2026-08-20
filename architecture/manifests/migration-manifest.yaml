@@ -1,7 +1,7 @@
 {
   "schema_version": "architecture-manifest.v1",
   "registry": "novel_forge.storage.migrations.versions:VERSION_MODULES",
-  "head": "20260820_0093_book_liveness_critical_path_closure",
+  "head": "20260820_0094_narrative_evaluator_codex_lineage",
   "migration_ids": [
     "20260625_0001_initial_industrial_schema",
     "20260628_0002_query_and_release_indexes",
@@ -95,6 +95,7 @@
     "20260814_0090_progressive_replan_scopes",
     "20260814_0091_canonical_longform_runtime_completion",
     "20260814_0092_longform_correctness_closure",
-    "20260820_0093_book_liveness_critical_path_closure"
+    "20260820_0093_book_liveness_critical_path_closure",
+    "20260820_0094_narrative_evaluator_codex_lineage"
   ]
 }

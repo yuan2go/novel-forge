@@ -17,6 +17,9 @@ from novel_forge.storage.migrations.versions import (
 from novel_forge.storage.migrations.versions import (
     v20260820_0093_book_liveness_critical_path_closure as liveness,
 )
+from novel_forge.storage.migrations.versions import (
+    v20260820_0094_narrative_evaluator_codex_lineage as codex_lineage,
+)
 
 
 def test_progressive_narrative_design_is_forward_only_head() -> None:
@@ -28,7 +31,7 @@ def test_progressive_narrative_design_is_forward_only_head() -> None:
     assert completion.DOWN_REVISION == current_head.MIGRATION_ID
     assert correctness.DOWN_REVISION == completion.MIGRATION_ID
     assert liveness.DOWN_REVISION == correctness.MIGRATION_ID
-    assert LATEST_MIGRATION_ID == liveness.MIGRATION_ID
+    assert LATEST_MIGRATION_ID == codex_lineage.MIGRATION_ID
     sql = "\n".join(migration.UPGRADE_STATEMENTS)
     assert "CREATE TABLE authority_narrative_design_qualification" in sql
     assert "LONGFORM_DESIGN_QUALIFIED" in sql

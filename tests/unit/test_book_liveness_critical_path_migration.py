@@ -4,6 +4,7 @@ from novel_forge.storage.migrations import LATEST_MIGRATION_ID, validate_migrati
 from novel_forge.storage.migrations.versions import (
     v20260814_0092_longform_correctness_closure as previous,
     v20260820_0093_book_liveness_critical_path_closure as migration,
+    v20260820_0094_narrative_evaluator_codex_lineage as codex_lineage,
 )
 
 
@@ -11,7 +12,7 @@ def test_book_liveness_closure_is_the_forward_only_backup_required_head() -> Non
     validate_migration_chain()
 
     assert migration.DOWN_REVISION == previous.MIGRATION_ID
-    assert LATEST_MIGRATION_ID == migration.MIGRATION_ID
+    assert LATEST_MIGRATION_ID == codex_lineage.MIGRATION_ID
     assert migration.FORWARD_ONLY is True
     assert migration.BACKUP_REQUIRED is True
     assert "pre-0093 backup" in migration.FORWARD_FIX
