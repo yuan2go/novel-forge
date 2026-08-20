@@ -801,6 +801,47 @@ class CodexProcessSupervisor:
                     last_heartbeat_monotonic = time.monotonic()
                 time.sleep(request.timeout.poll_interval_seconds)
             returncode = process.wait(timeout=max(1.0, request.timeout.termination_grace_seconds + 1.0))
+        except BaseException as exc:
+            termination_signal = self._terminate_process_group(
+                process, process_group, request.timeout
+            )
+            try:
+                returncode = process.wait(
+                    timeout=max(
+                        1.0, request.timeout.termination_grace_seconds + 1.0
+                    )
+                )
+            except subprocess.TimeoutExpired:
+                returncode = process.poll()
+            interrupted = replace(
+                receipt,
+                status=(
+                    ProcessReceiptStatus.CANCELLED
+                    if isinstance(exc, (KeyboardInterrupt, SystemExit))
+                    else ProcessReceiptStatus.FAILED
+                ),
+                result_integrity=self._inspect_result(
+                    layout, request.result_filename, request.result_format
+                )[0],
+                completed_at=_utc_now(),
+                elapsed_ms=int((time.monotonic() - started_monotonic) * 1000),
+                returncode=returncode,
+                termination_signal=termination_signal,
+                termination_reason=(
+                    "local supervisor interrupted: "
+                    f"{type(exc).__name__}: {exc}"
+                ),
+                failure_reason=(
+                    None
+                    if isinstance(exc, (KeyboardInterrupt, SystemExit))
+                    else f"{type(exc).__name__}: {exc}"
+                ),
+                local_termination_only=termination_signal is not None,
+            )
+            self.execution_directory.write_receipt(interrupted)
+            with self._active_processes_lock:
+                self._active_processes.pop(request.execution_id, None)
+            raise
         finally:
             stdout_handle.close()
             stderr_handle.close()
