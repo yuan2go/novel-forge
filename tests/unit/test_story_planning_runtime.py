@@ -16,7 +16,10 @@ from novel_forge.modules.production_execution.domain_execution import (
     DomainExecutionCandidate,
     DomainExecutionEvidence,
 )
-from novel_forge.modules.story_design_authority import GENERATOR_CATALOG
+from novel_forge.modules.story_design_authority import (
+    GENERATOR_CATALOG,
+    DesignTransition,
+)
 from novel_forge.modules.story_planning_runtime import (
     GENERATOR_INPUT_ROLES,
     CapabilityPackBackedPlanningExecutionBinder,
@@ -38,10 +41,40 @@ from novel_forge.modules.story_planning_runtime.execution import (
 from novel_forge.modules.story_planning_runtime.application import (
     _AUTHORITY_INPUT_ASSET_TYPES,
     _validate_frozen_arc_references,
+    StoryPlanningGenerationApplication,
 )
 
 
 HASH = "sha256:" + "a" * 64
+
+
+def test_story_design_transition_idempotency_is_scoped_to_expected_version() -> None:
+    captured: list[object] = []
+
+    class StoryDesignCapture:
+        def transition(self, command: object, *, principal: object) -> dict[str, int]:
+            captured.append(command)
+            return {"version": 8}
+
+    application = object.__new__(StoryPlanningGenerationApplication)
+    application.story_design = StoryDesignCapture()
+    command = _command("book_plan.generate")
+
+    result = application._transition(
+        command,
+        object(),
+        "candidate:v1",
+        HASH,
+        DesignTransition.STRUCTURAL_VALIDATE,
+        expected_version=7,
+        evidence={"passed": True},
+    )
+
+    assert result == {"version": 8}
+    transition = captured[0]
+    assert transition.idempotency_key.endswith(
+        ":story-design:STRUCTURAL_VALIDATE:candidate:v1:v7"
+    )
 
 
 def planning_fixture_response(

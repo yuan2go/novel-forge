@@ -1461,7 +1461,7 @@ class StoryPlanningGenerationApplication:
                 correlation_id=command.correlation_id,
                 idempotency_key=(
                     f"{command.idempotency_key}:story-design:{transition.value}:"
-                    f"{candidate_asset_version_id}"
+                    f"{candidate_asset_version_id}:v{expected_version}"
                 ),
                 asset_version_id=candidate_asset_version_id,
                 content_hash=content_hash,
