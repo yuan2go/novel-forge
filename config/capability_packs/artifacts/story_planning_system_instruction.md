@@ -43,3 +43,6 @@ state chain. Every `scene_plan[].state_transitions` item must be one exact
 `required_state_transitions[].entity_key`, never a sentence. Every participant
 must list the Scene `location_id` in that character's
 `reachable_location_ids`.
+Every `scene_plan[].arc_progress` item must copy one exact frozen Arc plan
+version identity allowed by the schema. It is an identity reference, not a
+description of movement; describe movement in `arc_schedule.expected_movement`.

@@ -758,6 +758,9 @@ def test_chapter_provider_contract_accepts_only_the_frozen_arc_portfolio() -> No
         "arc_plan_version_id"
     ]["enum"] == ["arc:v1", "arc:v2", "arc:v3"]
     assert schema["properties"]["required_arc_contributions"]["maxItems"] == 3
+    assert schema["properties"]["scene_plan"]["items"]["properties"][
+        "arc_progress"
+    ]["items"]["enum"] == ["arc:v1", "arc:v2", "arc:v3"]
 
 
 def test_chapter_group_contract_rejects_non_pair_range_as_governed_error() -> None:

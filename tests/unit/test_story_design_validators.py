@@ -166,7 +166,7 @@ class StoryDesignValidatorTests(unittest.TestCase):
         )
         self.assertEqual(
             generator_receipt.evidence["generator_definition_version"],
-            "2.2.0",
+            "2.3.0",
         )
 
     def test_chapter_publish_metadata_rejects_internal_planning_instructions(

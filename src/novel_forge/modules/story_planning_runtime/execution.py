@@ -1330,7 +1330,15 @@ def _canonical_narrative_provider_properties(
                             "the fact KNOWN."
                         ),
                     },
-                    "arc_progress": string_array,
+                    "arc_progress": {
+                        "type": "array",
+                        "minItems": 1,
+                        "items": scheduled_arc_ref,
+                        "description": (
+                            "Exact frozen Arc plan version identities advanced in "
+                            "this Scene; never prose or an Arc label."
+                        ),
+                    },
                     "information_gain": {
                         **string_array,
                         "description": (
