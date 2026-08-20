@@ -1,416 +1,197 @@
 # Claude Code Prompt — Canonical Design to Production Code
 
-下面这份提示工程用于持续把 Novel Forge 当前真实代码收敛到最新 Canonical Design。它是实施入口，不是新的架构 Source of Truth；若与 `docs/architecture/canonical-overall-design.md` 冲突，以重新审查后的 Canonical Design 和真实代码证据为准，并在同一变更中消除冲突。
+This file is the reusable implementation handoff. It is subordinate to `docs/architecture/canonical-overall-design.md`; it does not define an independent architecture.
 
 ---
 
-# Novel Forge / Autonomous Novel OS Canonical Implementation & Qualification
+# Novel Forge / Autonomous Novel OS — Canonical Implementation & Qualification
 
-请在以下仓库最新 `main` 上持续实施 Novel Forge：
+Repository:
 
 ```text
 https://github.com/yuan2go/novel-forge
 ```
 
-项目目标是建设：
+Goal: continuously converge the latest real code toward the Canonical Design for an Industrial Autonomous Novel OS capable of reliable, recoverable, verifiable high-quality long-form production.
 
-> **Human-AI Collaborative Long-form Narrative Operating System with a Governed Autonomous Production Runtime**
+## 1. Before coding: establish truth
 
-不是简单小说生成器，也不是自由聊天的 Multi-Agent Demo。
+Do not mechanically implement this prompt or an old Roadmap.
 
-## 1. 开发前必须先做真实性审查
-
-不要直接按照文档机械编码。开始任何修改前必须：
+Before any modification:
 
 ```text
-拉取最新 main
-→ 记录 HEAD / worktree / Python / migration head /主要入口
-→ 完整阅读 docs/architecture/canonical-overall-design.md
-→ 阅读 docs/README.md 与相关 current-runtime 文档
-→ 阅读当前真实代码、migrations、architecture manifests、tests、composition roots
-→ 对照 Canonical Design 检查 docs 与代码是否一致
-→ 识别 OUTDATED / SUPERSEDED / DEAD / LEGACY / FIXTURE_ONLY / UNWIRED / AUTHORITY_BYPASS / AI 残留
-→ 只清理有真实证据的失效内容
-→ 找到当前最重要的真实工程断点
-→ 再开始开发
+pull latest main
+→ record HEAD / worktree / environment / migration head
+→ read docs/README.md
+→ read docs/architecture/canonical-overall-design.md completely
+→ read relevant current-runtime docs / active ADRs
+→ trace the real production entries and code path
+→ inspect Domain / Authority / Runtime / persistence / provider / downstream consumers
+→ compare Design with code and runtime evidence
+→ identify OUTDATED / SUPERSEDED / LEGACY / DEAD / DUPLICATED / FIXTURE_ONLY / UNWIRED / AUTHORITY_BYPASS / PARALLEL_RUNTIME
+→ safely remove or converge only what evidence proves obsolete
+→ identify the highest-priority real gap
+→ then implement
 ```
 
-不要因为 Canonical Design 写了某项 Gap 就假设代码一定没有实现；近期 `main` 可能已经前进。反过来，也不要因为存在 DTO、Domain Type、Service、测试或文件名就认为能力已经完成。
+If Design and code disagree, determine whether the document is stale, the code has not converged, or a later implementation has legitimately superseded the design. Preserve the better architecture and update both code and Canonical documentation when the target decision changes.
 
-若文档与代码冲突：
+## 2. Canonical constraints
 
-1. 判断哪一方代表正确的目标架构；
-2. 保留可证明的现有正确实现；
-3. 消除真正的旁路或过期设计；
-4. 必要时同步更新 Canonical 文档；
-5. 不建设平行替代 Runtime。
+Preserve unless the same change deliberately updates the Canonical Design:
 
-## 2. 必须保持的架构约束
+- PostgreSQL is production business Source of Truth.
+- Agents/models/conversations/drafts/retrieval/MKAOS do not own Story Truth.
+- Agents propose; owning Authorities commit.
+- Planning/Arc = future intent; Accepted Outcome/Canon/Narrative State = accepted reality.
+- structural hierarchy is `Book → Volume → Narrative Segment → Chapter → Scene → Beat`; Arc is an orthogonal cross-time transformation graph.
+- `ChapterGroup` is a production/checkpoint construct, not automatically Narrative Segment.
+- future planning is progressively elaborated; do not pre-detail the whole Book.
+- Context is Minimum Sufficient Context and must stay bounded as the Book grows.
+- MKAOS supplies governed generalized narrative/domain intelligence, never copied source plots or story truth.
+- one durable production execution plane: `Command → Operation → Attempt → Lease/Fence → ExternalEffect → Provider/Tool → Receipt → Domain Commit`.
+- technical retry != semantic revision.
+- accepted history is immutable; Replan is future-only.
+- Reader/long-form/MKAOS/analytics sidecars are non-blocking by default unless explicit persisted governance marks them `HARD_BLOCKING`.
+- no new execution plane/Authority/Registry/framework merely to mirror a literary noun.
 
-### Authority
+## 3. Production-grade, not Maximum Complexity
 
-- PostgreSQL 是生产业务 Source of Truth。
-- Agent / Provider / Conversation / Draft / Proposal 都不是 Canonical Story Authority。
-- Agent 提议，Owning Domain Authority 接受/拒绝并提交。
-- 禁止 Agent → direct SQL → Canon/Plan/Book State。
-- Accepted history 不原地修改；未来变化走 version/supersession/replan，已接受或已发布内容的修正必须保留治理与 lineage。
-
-### Long-form model
-
-Canonical temporal hierarchy：
-
-```text
-Book → Volume → Narrative Segment → Chapter → Scene → Beat
-```
-
-`Arc` 是跨时间的 orthogonal graph dimension，不是 `Volume → Chapter` 的树状父层。
-
-不要重新引入被淘汰的：
-
-```text
-Book → Volume → Arc → Chapter
-```
-
-作为唯一层级模型。
-
-### Agent / Capability
-
-采用：
-
-```text
-少量稳定 Conversational Role / Agent Persona
-+
-大量 versioned Capability / Skill / Capability Pack
-+
-NarrativeScope / Context Contract
-```
-
-不要创建大量：
-
-```text
-BookCharacterAgent
-VolumeCharacterAgent
-ArcCharacterAgent
-...
-```
-
-目标一等可对话角色包括：
-
-```text
-Chief Editor
-Story Architect
-Character Director
-World Architect
-Theme & Philosophy Advisor
-Reader & Commercial Strategist
-Plot Doctor
-Research & Material Curator
-Chapter Director
-Chapter Editor
-Long-form Retrospective
-Reader Outcome Analyst
-```
-
-这些优先表达为现有 `AgentDefinition + capabilities + scope/context/policy`，不是每个角色一个 Authority/微服务/独立 Runtime。
-
-### Conversational Creative Studio
-
-作者既可以和 Chief Editor 对话，也可以直接进入专业 Agent。
-
-Conversation 不是 Authority。目标语义：
-
-```text
-Conversation / Collaboration Session
-→ candidate decisions
-→ Accepted / Rejected / Open / Deferred
-→ Proposal + rationale + scope
-→ Semantic Diff（如修改既有设计）
-→ Impact / Risk
-→ Human / Policy Decision
-→ Owning Authority Command
-→ Versioned Commit / Activation / Supersession
-```
-
-优先扩展当前 `agent_collaboration`；不要在没有独立生命周期证据时新建第二个 Chat/Conversation Authority。
-
-### Narrative Change
-
-不要新建一个与现有系统重叠的通用 `NarrativeChangeAuthority`。
-
-优先复用：
-
-```text
-agent_collaboration
-plan_change_authority
-revision / corrective_action
-story / book design authority
-planning / book_replan
-Canon / Narrative State acceptance boundary
-```
-
-统一变更级别：
-
-```text
-L0 Text
-L1 Scene
-L2 Chapter Structural
-L3 Arc / Volume Future
-L4 Book / Canon Critical
-```
-
-局部编辑不能偷偷升级成结构性剧情修改。
-
-### Chapter Editor
-
-章节生成后的主要人工编辑入口应是 `Chapter Editor`：
-
-```text
-Draft
-↔ Chapter Editor
-→ Revision
-→ Review / Re-review
-→ Correctness
-→ Canon / State candidate
-→ Quality
-→ Acceptance
-```
-
-如果作者改措辞、对话或局部场景，保持局部 Revision；如果影响 Chapter/Arc/Volume/Book，则自动升级到对应 Planning/PlanChange/Governance，而不是要求用户手工切换内部执行链。
-
-### Author Intent
-
-先评估当前 `NarrativeLayer.FUTURE_INTENT`、Story/Book Design、Planning contracts 是否足以承载 Author Intent / rationale。
-
-除非发现明确独立生命周期、并发或 Authority 需求，不要创建 `AuthorIntentAuthority`。
-
-Author Intent 需要能够进入 task-specific Context 和 Quality/Retrospective 判断，但仍不是 Accepted Story Truth。
-
-### Context / Memory / Knowledge
-
-明确区分：
-
-```text
-Authority Memory     = PostgreSQL accepted/design truth
-Working Memory       = frozen/reproducible task Context
-Interaction Evidence = conversation / rejected alternatives / rationale
-Retrieval Memory     = rebuildable search/vector projection
-MKAOS                = reusable methods / professional knowledge
-```
-
-Context 必须是 Minimum Sufficient Context，并能够区分：
-
-```text
-accepted truth
-future intent
-pending proposal
-reader knowledge
-character knowledge / belief
-MKAOS / source evidence
-```
-
-防止 stale/future/hidden knowledge leakage。
-
-### Execution Plane
-
-保留当前唯一生产执行语义：
-
-```text
-Command
-→ Operation
-→ Attempt
-→ Lease / Fence
-→ ExternalEffect
-→ Provider / Tool
-→ Receipt
-→ Domain Commit
-```
-
-`RuntimeJob` 按当前架构继续承担 durable worker execution/scheduling 角色。
-
-不要增加第二个：
-
-```text
-WorkOrder Engine
-Agent Workflow Engine
-Conversation Runtime Kernel
-Narrative Change Engine
-```
-
-除非真实代码证据表明现有执行模型无法满足需求，并在修改前证明原因。
-
-## 3. 实施质量要求
-
-禁止：
+Do not use:
 
 ```text
 Minimal Implementation
 Stub
 Placeholder
-Fixture-only Implementation
-Mock-only Proof
-Temporary Architecture
-Parallel Runtime
-为了测试通过的特殊生产路径
+Fixture-only implementation
+Mock-only proof
+Temporary architecture
+Parallel runtime
+Test-only production bypass
 ```
 
-对于确认需要建设的能力，按与项目定位匹配的生产级最佳实践实现。
+But also do not add speculative abstractions, Interfaces, Adapters, Registries, Authorities, configuration frameworks, compatibility layers or generic engines without concrete value.
 
-但同时禁止 AI 式过度设计：
+Prefer convergence and reuse of correct existing boundaries.
 
-```text
-无实际需求的 Interface/Adapter
-重复 Authority
-重复 Repository/Service 层
-平行 Workflow Engine
-无业务价值的配置系统
-未来假设驱动的兼容层
-人格化所有内部组件
-大量 session/build-plan 文档
-```
+## 4. Functionality must enter the canonical runtime
 
-原则：
+A new capability is not complete as a DTO/Domain Type/helper/standalone service/fixture/unit test.
 
-> **Production-grade ≠ Maximum Complexity。优先复用和收敛现有正确边界。**
-
-## 4. 新能力必须进入 Canonical Runtime
-
-新增能力不能只停留在：
+Trace and prove the required path according to the real architecture, potentially including:
 
 ```text
-DTO
-Enum
-Domain Type
-Service
-Helper
-Fixture
-Unit Test
-Standalone Module
-```
-
-根据能力性质，必须验证它真正进入必要的生产路径，例如：
-
-```text
-API / CLI / Operator Entry
+Entry
 → Application
-→ Domain Contract
+→ Domain contract
 → Owning Authority
-→ Command Kernel / RuntimeJob / Worker
-→ ProductionExecutionComposition
+→ RuntimeJob / Command Kernel / worker
+→ shared production execution
 → Provider / Tool
 → Persistence
 → Quality / Governance
-→ Consumer / downstream state
+→ State mutation
+→ downstream consumer
 → Trace / Metrics / Cost
 ```
 
-并通过 manifest、composition root、worker registration、migration、contract test 或真实运行证据证明，而不是根据 import 推测。
+Do not force layers that are not actually needed; do prove every layer the capability depends on.
 
-## 5. Reliability / Failure semantics
+## 5. Reliability and failure semantics
 
-根据本轮功能真实需求主动处理必要的：
+Implement only mechanisms required by actual risk, while explicitly evaluating:
 
-```text
-Idempotency
-Technical Retry
-Semantic Revision
-Recovery / Resume
-Replay
-Lease / Fence
-CAS / Optimistic Version
-Concurrency
-Transaction
-ExternalEffect
-Audit / Lineage
-Trace / Metrics / Cost
-Migration / Versioning
-```
+- idempotency;
+- transaction/atomicity;
+- technical retry;
+- semantic revision;
+- recovery/resume;
+- replay;
+- concurrency / CAS;
+- lease/fence ownership;
+- versioning/migration;
+- external-effect uncertainty;
+- audit/lineage;
+- trace/metrics/cost.
 
-不要机械把所有机制复制到每个模块。
+Never let provider success equal business success, stale workers commit after ownership transfer, or recovery depend on reconstructed in-memory workflow state.
 
-特别检查：
+## 6. Highest-priority Work Package
 
-- technical retry 和 semantic revision 是否混淆；
-- Provider 成功是否被错误等同于业务成功；
-- Agent/Conversation candidate 是否能绕过 Authority；
-- stale worker 是否能在 lease transfer 后提交；
-- accepted content 是否存在 in-place mutation；
-- recovery 是否依赖内存对象而不是 PostgreSQL state；
-- replay 是否有 exact logical input/provenance。
+Reinspect latest `main` first. If not already closed with real evidence, prioritize:
 
-## 6. 当前优先 Work Package
+> **WP-LIVE-01 — Chapter-to-Chapter Liveness & Critical Path Closure**
 
-在重新审查最新 `main` 后，优先判断是否应该实施：
+Observed failure to explain/reproduce: a real long-form run produced Chapter 1 and then failed to advance to Chapter 2 for hours.
 
-> **WP-CREATIVE-COLLAB-01 — Conversational Creative Collaboration + Chapter Editor + Narrative Change Integration**
-
-它的目标不是增加聊天 UI，而是把作者可持续介入创作的语义接到现有工业级 Runtime：
+Do not guess the exact incident root cause from code alone. Start from PostgreSQL Authority evidence and trace:
 
 ```text
-Human Conversation / Selected Text
-→ existing Agent Collaboration scope
-→ AgentDefinition / Capability / Context
-→ Provider reasoning
-→ Proposal / Decision Capture
-→ L0–L4 Change Classification
-→ Revision OR PlanChange OR Owning Design Authority
-→ Impact / Approval / Requalification when required
-→ Canonical Runtime
-→ Trace / Recovery / Audit
+Book state / accepted_through
+→ last progress time
+→ expected next transition
+→ active/blocked Operation / RuntimeJob / Attempt
+→ follow-up state/retry
+→ Chapter 2 request existence
+→ Chapter 2 first provider call
 ```
 
-重点核对和复用至少：
+Then prove the real code path from Chapter N acceptance to N+1 dispatch.
+
+Required architectural invariant:
 
 ```text
-agent_collaboration
-agent_runtime
-story_design_authority
-book_design_authority
-hierarchical_planning
-plan_change_authority
-book_replan
-chapter_authority / chapter_group_authority
-revision
-corrective_action
-chapter_quality_authority
-narrative_state
-context_builder / context_contracts
-production_execution
-command_kernel
-runtime_job
-provider_control / provider_qualification
+Accepted N
+→ required Accepted Outcome / Canon / Narrative State commit
+→ next planning/admission eligibility
+→ dispatch N+1
 ```
 
-但如果最新代码已经完整实现并证明该 Work Package，或者出现更高优先级的真实正确性断点，则根据证据调整 Work Package，不要为了执行提示词重复造功能。
+Reader Outcome, Long-form recap/diagnostics, MKAOS feedback, calibration and noncritical analytics must be detached from the default critical path. They may block only through an explicit persisted `HARD_BLOCKING` governance decision.
 
-## 7. 文档与 Legacy 清理
+Also ensure every nonterminal Book state is claimable or explicitly waiting on a durable condition, and add/repair progress explainability/stall detection using existing Authority/runtime data rather than inventing a second scheduler.
 
-只保留小而清晰的文档体系：
+Do not bypass Canon/Narrative State/acceptance correctness merely to make progression faster.
+
+### Liveness verification
+
+At minimum prove, as environment permits:
+
+- Chapter 1→2 automatic bounded progression;
+- slow/failing/retrying sidecar does not block N+1 by default;
+- worker/API crash and lease expiry recover;
+- provider timeout/retry ends in progress or explicit wait/failure, never silent stall;
+- acceptance is idempotent;
+- worker scheduling covers every actionable nonterminal state;
+- unattended 10-chapter campaign.
+
+If the latest code has already closed WP-LIVE-01 with pinned real evidence, do not reimplement it. Move to the highest-value next gap from the Canonical Design.
+
+## 7. Next target after liveness
+
+Do not implement everything at once. The next coherent target is **Hierarchical Narrative Production convergence**, reusing existing Planning/Narrative State/Context/Chapter runtime:
 
 ```text
-docs/architecture/canonical-overall-design.md = 唯一 Target Architecture
-docs/architecture/* companion               = 当前 Runtime/Boundary 说明
-docs/product/*                                = 派生产品视图
-docs/operations/*                             = 运维
-docs/development/*                            = 开发/验证
-docs/adr/*                                    = 仍有效的 durable decisions
+Progressive planning + Arc working set
+→ Chapter Mission
+→ current accepted Narrative State
+→ task-specific evidence
+→ bounded Chapter Production Packet
+→ Scene composition
+→ Draft / Diagnosis / Revision / Polish
+→ Narrative Verification / Quality
+→ Accepted Outcome
+→ Canon / Narrative State / Arc progress evidence
 ```
 
-不要新增：
+After that, extend the existing Arc planning toward the target Narrative Arc OS only where concrete production needs justify it: Thread/transformation semantics, relations/dependencies, Narrative Obligations, working-set scheduling, Chapter contributions, progress evidence, and governed future Arc evolution. Do not implement every named relation/object from the design as boilerplate.
 
-```text
-session-summary.md
-phase-N-plan.md
-TODO-analysis.md
-一次性 exact-SHA 报告
-重复蓝图
-大量 AI 生成设计说明
-```
+MKAOS Narrative Intelligence should provide generalized mechanisms/patterns to creative capabilities; it must not become a second planning system or copy source-specific narrative sequences.
 
-Legacy 只有在 migration/read-boundary 等被明确允许的路径中才可保留；不能成为新生产功能依赖。
+## 8. Testing and qualification
 
-## 8. 验证要求
-
-至少执行并记录适用于当前代码的：
+Run all verification appropriate to the change, at minimum where applicable:
 
 ```text
 Unit Test
@@ -422,168 +203,84 @@ Upgrade Migration
 Lint
 Type Check
 Build / package validation
-Capability Pack / Skill validation（如受影响）
 ```
 
-条件具备时还必须执行：
+When the touched path depends on them, continue to:
 
 ```text
 Real Provider
-Real Canonical Runtime
-Recovery / Retry / Replay Proof
-End-to-End / Design-only proof
+Canonical Runtime E2E
+Retry / Recovery Proof
+Replay Proof
+Chapter-to-Chapter Liveness Proof
+Long-form Proof
+Multi-book Proof
 ```
 
-如果真实 Provider、PostgreSQL、外部服务或市场环境不可用，要明确：
+If an external dependency is unavailable, report `NOT_RUN / BLOCKED` with the exact reason. Never substitute a Mock/Fixture and upgrade the conclusion.
 
-```text
-NOT_RUN / BLOCKED
-```
-
-以及具体原因，不能用 Mock/Fixture 替代后再升级结论。
-
-## 9. 证据等级
-
-最终对每项能力分别报告：
+Report separately:
 
 ```text
 CODE_IMPLEMENTED
 CANONICAL_WIRED
 TEST_EXECUTED
 RUNTIME_PROVEN
+LONGFORM_PROVEN
 PRODUCTION_QUALIFIED
 ```
 
-同时沿用项目 proof ladder：
+Bind claims to commit SHA, migration head, provider/config mode, executed commands, test results and evidence/receipt/trace when available.
+
+## 9. Work-package execution rule
+
+Do not stop after one minimal TODO.
 
 ```text
-MISSING
-SKELETON
-IMPLEMENTED
-WIRED
-FIXTURE_PROVEN
-REAL_PROVIDER_PROVEN
-LONGFORM_PROVEN
-MULTIBOOK_PROVEN
-PRODUCTION_PROVEN
+understand design
+→ inspect real code/evidence
+→ clean proven obsolete paths/docs
+→ identify highest-value blocker
+→ complete one coherent Work Package
+→ run verification
+→ fix real failures inside the same target chain
+→ re-review the canonical runtime
 ```
 
-必须绑定：
+Continue until the Work Package has a maintainable business/Authority/runtime/failure/verification closure, unless a genuine external block prevents it. Do not expand into unrelated Future scope.
 
-```text
-Commit SHA
-DB migration head
-配置/Provider 模式
-执行过的命令
-测试结果
-Evidence artifact / receipt / trace（如有）
-```
+## 10. Git / PR
 
-不得把：
+- start from latest `origin/main` on an isolated feature branch;
+- preserve user worktree changes;
+- keep commits coherent and diff free of unrelated changes;
+- push and create a Draft PR;
+- PR must state actual implementation, verification commands, NOT_RUN items and evidence level;
+- keep final worktree clean.
 
-```text
-代码阅读
-Mock
-Fixture
-单元测试
-单章成功
-```
+## 11. Final report
 
-升级成 Real Provider、Long-form、Multi-book 或 Production 结论。
+Keep the report concise:
 
-## 10. 持续推进规则
+1. starting HEAD / final HEAD;
+2. design/code deviations found before development;
+3. obsolete docs/Legacy/dead/duplicate paths cleaned;
+4. actual capability completed;
+5. key architecture decisions;
+6. Canonical Runtime change;
+7. tests and real runtime verification;
+8. current evidence level;
+9. unresolved real gaps;
+10. next highest-priority Work Package.
 
-不要实现一个很小 TODO 就停止。
-
-按以下循环持续推进同一个阶段：
-
-```text
-识别最重要真实断点
-→ 完成完整 Work Package
-→ 运行验证
-→ 根据失败修复真实问题
-→ 重新审查 Canonical Runtime
-→ 补齐同一目标链必要断点
-→ 再验证
-```
-
-直到该阶段形成：
-
-```text
-业务闭环
-+
-Authority closure
-+
-Runtime wiring
-+
-Failure semantics
-+
-Verification evidence
-```
-
-才结束。
-
-遇到真正外部阻塞时才停止，并明确区分：
-
-```text
-CODE_FAILURE
-ENVIRONMENT_BLOCKED
-REAL_PROVIDER_BLOCKED
-CI_ACCOUNT_BLOCKED
-EXTERNAL_SERVICE_BLOCKED
-```
-
-## 11. Git / PR
-
-- 从最新 `origin/main` 创建独立 feature branch；
-- 不覆盖用户现有未提交修改；
-- commit 要按真实逻辑边界组织；
-- push 后创建 Draft PR；
-- PR 描述列出设计目标、真实实现、验证命令、未运行项和证据等级；
-- 保持最终 worktree clean；
-- 不在同一 PR 混入无关重构。
-
-## 12. 最终输出
-
-最终报告只需要：
-
-1. 起始 HEAD / 最终 HEAD；
-2. 开发前发现的 Canonical Design 与真实代码偏差；
-3. 清理的过期设计、Legacy 和 AI 残留；
-4. 实际完成的能力；
-5. 关键架构决策；
-6. Canonical Runtime 如何变化；
-7. 测试与真实运行验证结果；
-8. 当前能力证据等级；
-9. 尚未解决的真实 Gap；
-10. 下一阶段最值得推进的 Work Package。
-
-最后必须额外输出：
+Finally output:
 
 ```text
 # 下一阶段 Claude Code Prompt
 ```
 
-生成下一轮可以直接执行的完整提示工程，使开发过程持续按照：
+Generate the next self-contained prompt from the **new latest code and evidence state**, not from the old roadmap.
 
-```text
-Canonical Design
-→ Real Code
-→ Verification
-→ Gap Review
-→ Next Work Package
-```
+## Final decision rule
 
-收敛。
-
----
-
-## 最终判断原则
-
-本任务不是为了增加更多 Agent、更多模块或更多文档。
-
-判断一个改动是否应该进入核心系统，只问：
-
-> 它是否真实提升了 Human-AI 创作协作、Narrative Correctness、Authority closure、Canonical Runtime、可靠性、可验证性或合理演进能力？
-
-如果答案是否定的，默认不增加该复杂度。
+The goal is not more Agents, more documents, more abstractions, or green tests in isolation. The goal is a single coherent architecture that can demonstrably preserve long-form narrative truth and quality while continuing Chapter-to-Chapter under real provider/runtime failure conditions.

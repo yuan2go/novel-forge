@@ -2,147 +2,54 @@
 
 - Status: Accepted
 - Date: 2026-08-04
-- Updated: 2026-08-14
+- Updated: 2026-08-20
 
 ## Context
 
-The repository already contains BookDesign Authority, Story Design Authority,
-Content Authority, hierarchical planning, PlanChange Authority, Book Authority,
-`story_plan_binding`, `active_story_plan_version`, `planning_horizon`, and
-`story_production_cursor`. Creating another BookPlan or Story Design subsystem
-would introduce a third active root and another execution state machine.
+The repository already contains BookDesign Authority, Story Design candidate/qualification lifecycle, hierarchical planning, PlanChange/Replan, Book production, active plan bindings, planning horizon and production cursor. Creating another BookPlan/StoryDesign/Arc Authority would establish competing roots and execution state machines.
 
-The code review also confirmed that `bind_active_contract()` previously copied
-the Operation that last activated a StoryDesign AssetVersion into Planning's
-formal binding and activation rows. That made two different authoritative state
-changes appear to be one Operation and provided no Planning-specific expected
-version, decision, audit, or outbox boundary.
+The target Canonical Design now also distinguishes the **semantic structural hierarchy** from production scheduling and makes Narrative Arc an orthogonal state-transformation graph.
 
-## Decision
+## Decisions
 
-### BookDesign is the unique whole-book design root
+### 1. BookDesign remains the whole-book design root
 
-The active, qualified BookDesign AssetVersion is the only formal root for the
-book's Story Intent and Story Foundation, including:
+The active qualified BookDesign version is the formal root for Book-level future design such as Story Foundation, Reader Promise, ending direction, core world/character constraints, core conflict and commercial positioning. Component proposals do not become a parallel active Book root.
 
-- Theme and thematic question;
-- Reader Promise;
-- Ending contract;
-- World constraints;
-- Character core;
-- Core conflict;
-- Commercial positioning.
+### 2. StoryDesign owns governed candidate generation/qualification, not a second root
 
-`authority_book.current_design_asset_version_id` and the active BookDesign
-projection identify that root. Theme, ending, world, character, or commercial
-candidates produced elsewhere are evidence or proposals until a BookDesign
-Transaction Command incorporates and activates them. They cannot establish a
-parallel active book root.
+StoryDesign may generate and qualify planning/design candidates through the shared production execution plane. Activation remains an explicit owning-domain decision. Provider output never becomes an active plan merely because candidate generation succeeded.
 
-### StoryDesign owns candidate lifecycle, not the BookDesign root
+### 3. Hierarchical Planning remains the Plan Authority
 
-Story Design Authority retains:
+No new Plan Authority or parallel BookPlan storage/runtime is introduced. Formal plan activation retains its own transaction/idempotency/version/audit semantics and may record causation from StoryDesign/PlanChange operations.
 
-- versioned `GeneratorDefinition` records;
-- candidate enrollment and materialization evidence;
-- structural and semantic validation;
-- bounded repair and qualification;
-- approval lifecycle;
-- activation of a typed planning candidate by logical key.
+### 4. Structural narrative semantics and production grouping are distinct
 
-Its `book_plan.generate`, `volume_plan.generate`, `arc_plan.generate`,
-`chapter_group_plan.generate`, and `chapter_plan.generate` definitions produce
-  planning candidates. Its theme, ending, world, and character definitions may
-produce component proposals, but those proposals do not replace the active
-  BookDesign root. A BookPlan candidate must explicitly depend on the active,
-  qualified BookDesign AssetVersion.
-
-### Content Authority is a deterministic handler runtime
-
-Content Authority admits typed Operations and executes registered deterministic
-handlers through the shared Command Kernel Attempt/Lease/Fence runtime. It may
-materialize candidate or receipt AssetVersions, but it does not own StoryDesign
-approval state, Planning activation, a second workflow graph, or a second
-scheduler authority. `ContentAuthorityScheduler` is a worker-facing adapter to
-the shared runtime, not an independent workflow engine.
-
-### Hierarchical Planning remains the Plan Authority
-
-The existing Planning tables and module remain authoritative. No new Plan
-Authority or parallel BookPlan tables will be created.
-
-Containment uses:
+The **target semantic hierarchy** is:
 
 ```text
-Book → Volume → ChapterGroup → Chapter
+Book → Volume → Narrative Segment → Chapter → Scene → Beat
 ```
 
-Arc uses the orthogonal-track model:
+The **current production implementation** may use `ChapterGroup` as a scheduling/checkpoint/planning execution construct. `ChapterGroup` is not redefined as Narrative Segment merely to make the trees match. Convergence should map/extend existing planning only when the target semantic distinction has real runtime value; do not create a duplicate hierarchy by default.
 
-```text
-Arc --ARC_CONTRIBUTION--> Volume / Chapter
-```
+### 5. Arc remains orthogonal to containment
 
-An Arc can cross volumes and a chapter can contribute to multiple arcs. Arc is
-therefore not a containment parent between Volume and ChapterGroup. The current
-validator, dependency projection, and PostgreSQL test
-`test_arc_crosses_volumes_and_chapter_contributes_to_multiple_arcs` already
-implement this meaning. Book Coordinator consumes the versioned Planning read
-model; it must not reconstruct containment or arc semantics itself.
+Arc is a cross-time desired state-transformation dimension. A Chapter may contribute to several Arcs; an Arc may cross Volume boundaries. The target may progressively enrich Arc semantics with Threads, scoped Macro/Meso/Micro transformations, relations, obligations, working-set scheduling and progress evidence, but these extend the existing Plan Authority rather than create an Arc-specific workflow/Authority plane.
 
-### Formal Plan Binding has its own Transaction Command
+### 6. Planned Arc graph is not Story Truth
 
-`planning.binding.activate` is the only formal path for a new active Planning
-binding. It has its own:
+Arc/Plan relations describe future intent. Important realized causality and Arc progress are established only through accepted Chapter Outcome/Narrative State evidence. Future Replan may split/merge/spawn/supersede planned Arcs; accepted history is immutable.
 
-- idempotency key and request digest;
-- authenticated Principal and Project/Book scope;
-- expected active AssetVersion;
-- replacement decision evidence;
-- Operation and completion contract;
-- Planning mutation, active projection, audit, and outbox event;
-- causation reference to a StoryDesign or PlanChange Operation.
+### 7. Cross-domain reads remain versioned/frozen
 
-All of these records commit in one PostgreSQL transaction. The command creates
-no Attempt or Lease. `created_by_operation_id` and
-`activated_by_operation_id` now refer to the Planning Operation rather than the
-StoryDesign Operation. A same-key replay returns the committed result; a fault
-after outbox insertion rolls back Operation, binding, activation, audit, and
-outbox together.
+Planning may consume frozen AssetVersion/query/snapshot contracts. Book coordination may consume Planning projections/cursors. Neither domain imports another domain's concrete repository to assemble private mutable truth. Quality/Agents emit evidence or proposals and cannot directly mutate Planning/Chapter/Canon state.
 
-### Cross-domain reads
+## Consequences
 
-Planning may consume frozen AssetVersion references and versioned query or
-snapshot contracts. Book Coordinator may consume Planning projections and
-cursors. Neither may import another domain's concrete repository to assemble
-private state. Quality can emit evidence or decisions but cannot mutate Chapter
-or Planning rows directly.
-
-## Progressive design dependency contract
-
-The existing `book_plan.generate` path creates a typed BookPlan candidate with
-explicit dependencies on:
-
-- `active_book_design_asset_version_id`;
-- `generator_definition_version`;
-- `context_manifest_version`;
-- `route_snapshot`;
-- `provider_receipt`.
-
-Qualification and StoryDesign approval precede the independent
-`planning.binding.activate` command. Book, Volume, Arc, ChapterGroup, and
-Chapter contracts carry layer-specific Narrative Qualification rather than one
-universal judge result. The existing Planning projection and PlanChange path
-are reused.
-
-## Current constraints and consequences
-
-- This ADR is the convergence decision; it is not evidence that real-provider
-  generation or sustained long-form production has run.
-- StoryDesign generation and semantic evaluation must remain governed Content
-  operations. Deterministic lifecycle transitions may be Transaction Commands,
-  but cannot perform inline provider execution.
-- PostgreSQL scope constraints from Migration 0052 reject cross-Project,
-  cross-Book, and mismatched Workspace/Book planning links.
-- Fixture execution never promotes a capability to real-provider or production
-  proof.
+- No `Book → Volume → Arc → Chapter` containment model is introduced as the canonical hierarchy.
+- No second Story/Plan/Arc runtime is justified by the richer Narrative Arc OS target.
+- `Narrative Segment` and `ChapterGroup` stay semantically distinct until code/runtime evidence justifies a concrete convergence mapping.
+- Progressive planning can preserve distant open design space while elaborating near-term Arc/Chapter detail.
+- Current implementations/tests remain evidence of current semantics only; this ADR does not establish real-provider or long-form proof.

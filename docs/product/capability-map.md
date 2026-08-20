@@ -1,178 +1,160 @@
 # Capability map
 
-This product view is subordinate to the [Canonical overall design](../architecture/canonical-overall-design.md). Runtime/proof claims must be re-established at the current SHA.
+This is a derived product view of the [Canonical overall design](../architecture/canonical-overall-design.md). Current proof must be re-established against the SHA under review.
 
-## 1. Agent, role, capability, Skill, and Capability Pack
+## 1. Core terminology
 
-| Term | Meaning |
+| Term | Canonical meaning |
 |---|---|
-| **Conversational Role** | A user-facing creative persona such as Chief Editor or Chapter Editor. It is expressed through versioned AgentDefinition, scope/context policy, capabilities, tools, and approval policy. It is not a Domain Authority or separate runtime service. |
-| **Agent** | A governed reasoning executor with a versioned definition, scope, permissions, budgets, tools, context, and candidate output. Its durable execution reuses the canonical production execution plane. It is not a Domain Authority. |
-| **Capability** | A versioned unit of work with typed input/output and risk/qualification contracts. |
-| **Skill** | A reusable, versioned procedure bound by content hash, contracts, dependencies, invocation limits, and drift policy. It owns no business Authority. |
-| **Capability Pack** | A validated, compiled, content-addressed manifest that freezes compatible roles, workflows, capabilities, Skills, prompts, tools, policies, gates, and release compatibility. |
-| **Authority** | The owning domain boundary that accepts/rejects and commits business state. Agent/role/provider output remains a proposal until Authority semantics accept it. |
+| Conversational Role | Stable user-facing creative persona backed by AgentDefinition + capabilities + scope/context/tool/policy. Not an Authority. |
+| Agent | Governed reasoning actor that produces typed proposals/candidates. Not business truth owner. |
+| Capability | Versioned semantic task contract — what can be done. |
+| Skill | Versioned procedure/method — how a capability is performed. |
+| Capability Pack | Immutable compatible deployment binding of capabilities, Skills, prompts, provider/model route, tools, context/eval/budget/policy. |
+| Rule | Deterministic constraint. |
+| Knowledge Asset | Governed reusable narrative/professional knowledge. |
+| Authority | Domain boundary that accepts/rejects and commits business state. |
 
-Conversational roles are deliberately few; capabilities may be numerous and composable. Do not multiply one Agent persona per narrative level or literary concept.
-
-## 2. Target conversational role map
-
-| Role | Core capability families | Primary interaction |
-|---|---|---|
-| Chief Editor | story/reader/theme/commercial synthesis, decision coordination | Book-wide/default entry |
-| Story Architect | Book/Volume/Segment/Arc architecture, ending reachability | long-form structure |
-| Character Director | identity/state/knowledge/relationship/development | character design and behavior |
-| World Architect | world rules/structure/state/consequence/realization | world design and consistency |
-| Theme & Philosophy Advisor | value conflict, theme embodiment, philosophical framing | thematic design |
-| Reader & Commercial Strategist | reader promise, hooks, rewards, serialization | reader/commercial fit |
-| Plot Doctor | diagnosis, alternative simulation, structural repair | existing plot problems |
-| Research & Material Curator | provenance/research/creative seed transformation/placement | source and idea integration |
-| Chapter Director | chapter/scene function, conflict, reveal, pacing, hook | pre-writing/local design |
-| Chapter Editor | text/scene/chapter revision and change escalation | post-draft editing |
-| Long-form Retrospective | drift, debt, Arc/character/world longitudinal diagnosis | rolling/Volume/Book review |
-| Reader Outcome Analyst | reader evidence, attribution, calibration | post-publication learning |
-
-Optional consultant roles may include Canon/Continuity Consultant, Quality Editor, and Style/Voice Editor. Quality Judge remains an evaluation role/boundary rather than a conversational persona whose result can be negotiated.
-
-## 3. Capability architecture
+## 2. Capability families
 
 ```text
 Creative Interaction
-├ session/scope/context
-├ decision capture
-├ proposal / semantic diff
-├ impact / risk
-└ author editing
+├ Chief Editor / specialist conversations
+├ decision capture / semantic diff / impact
+└ Chapter Editor / author approval
 
 Story Intelligence
-├ topic / genre / premise
-├ reader positioning
-├ commercial patterns
-└ story-potential evaluation
+├ premise / genre / reader / commercial positioning
+└ story potential / differentiation / ending direction
 
 Narrative Design
-├ Novel DNA / Book Architecture
-├ Volume Portfolio / Narrative Segments
-├ Arc Graph
-├ Character Development
-├ World Realization
-├ Theme / Philosophy
-├ Disclosure / Obligations
-└ Scheduling
+├ Story Foundation / Book Architecture
+├ World / Character / Relationship
+├ Narrative Threads / Transformation Maps
+├ Narrative Arc OS
+│  ├ Arc architecture / relations / obligations
+│  ├ Arc scheduling / working set
+│  ├ Narrative composition
+│  └ Arc progress analysis
+├ Volume / Narrative Segment
+└ progressive planning / replan
 
 Narrative Execution
-├ Chapter / Scene planning
-├ Context Compiler
-├ Prose / Dialogue / Description / Action
-└ Revision
+├ Chapter Mission
+├ Evidence / Context Compiler
+├ Scene architecture
+├ prose generation
+├ diagnosis / revision / polish
+└ narrative verification
 
-Narrative Correctness
-├ Canon / Narrative State / Narrative Events
-├ knowledge / belief / disclosure
-├ temporal / spatial / causal constraints
-└ obligations
+Narrative Authority
+├ Accepted Chapter / Accepted Outcome
+├ Canon / Narrative Events
+├ Narrative State / temporal query
+└ plan activation / PlanChange / Replan
 
 Knowledge
-├ Source Intelligence / Research
-├ MKAOS
-└ Retrieval
+├ Source Import / Source Intelligence
+├ MKAOS Narrative Intelligence
+├ professional/domain knowledge
+└ retrieval projections
 
-Quality / Governance
+Quality & Learning
 ├ deterministic correctness
 ├ independent semantic evaluation
-├ narrative / reader / commercial quality
+├ prose/character/world/structure quality
 ├ longitudinal quality
-├ qualification / approval / activation
-└ replan / Production Admission
+├ Reader Outcome / attribution
+└ governed adaptation
 
 Platform
 ├ Command Kernel / RuntimeJob
-├ Provider / Tool execution
+├ shared ProductionExecutionComposition
+├ Provider / Tool external effects
 ├ Agent Runtime / Collaboration
-├ PostgreSQL Authority
+├ PostgreSQL Authority / object artifacts
+├ retry / recovery / replay
 ├ trace / metrics / cost
-└ retry / recovery / replay
+└ qualification / admission
 ```
 
-## 4. Narrative hierarchy vs Agent architecture
+## 3. Narrative Arc capabilities
 
-The temporal hierarchy is:
+Arc capabilities do not imply a separate Arc runtime or Authority stack.
+
+- **Arc Architect:** converts desired state transitions into Arc proposals.
+- **Arc Scheduler:** selects a bounded current working set using plan/state/dependency/debt/cadence/capacity evidence.
+- **Narrative Composer:** compresses several Arc contributions into a small number of natural events.
+- **Arc Progress Analyst:** extracts proposed progress evidence from accepted outcomes.
+- **Narrative Obligation management:** durable setup/payoff/question/commitment tracking when needed.
+- **Arc evolution:** future-only split/merge/spawn/supersede/abandon/reopen under planning governance.
+
+Do not implement one Agent per Arc type or every possible relation as a separate service/type without a concrete use.
+
+## 4. Target conversational roles
+
+A small stable role set is preferred:
+
+- Chief Editor;
+- Story Architect;
+- Character Director;
+- World Architect;
+- Theme & Philosophy Advisor;
+- Reader & Commercial Strategist;
+- Plot Doctor;
+- Research & Material Curator;
+- Chapter Director;
+- Chapter Editor;
+- Long-form Retrospective;
+- Reader Outcome Analyst.
+
+Quality Judge is an evaluation boundary, not a negotiable conversational persona.
+
+## 5. Context / Memory / Knowledge boundary
 
 ```text
-Book → Volume → Narrative Segment → Chapter → Scene → Beat
+Authority Memory      accepted/design truth in PostgreSQL
+Working Memory        frozen task-specific Context
+Interaction Evidence  conversation / rationale / rejected alternatives
+Retrieval Memory      rebuildable search/vector projections
+MKAOS                  reusable methods/patterns/domain intelligence
 ```
 
-Arc is an orthogonal cross-time graph. Do not create `BookCharacterAgent`, `VolumeCharacterAgent`, `ArcCharacterAgent`, etc. A stable role/capability operates with a `NarrativeScope` and context contract.
+No Agent-private memory may override these sources.
 
-## 5. Narrative change capability
+## 6. Current implementation boundary
 
-Narrative change is a protocol across existing domains, not a new universal Authority:
+Current code contains substantial runtime surfaces for PostgreSQL Authorities, Command Kernel/RuntimeJob, progressive planning, Chapter/Book production, Narrative State, PlanChange/Replan, Source/MKAOS, Agent Collaboration/Runtime, provider governance, quality/reader functions and recovery.
 
-- Agent Collaboration: proposal/challenge/impact/human decision;
-- Revision/Corrective Action: Draft/prose repair;
-- PlanChange/Replan: future plan semantic changes;
-- Story/Book Design: foundational future design;
-- Canon/Narrative State: accepted reality boundary.
+The following target semantics require latest-code verification and, where absent, implementation/proof:
 
-Change levels are L0 Text, L1 Scene, L2 Chapter Structural, L3 Arc/Volume Future, and L4 Book/Canon Critical. Routing/escalation follows impact, not whichever Agent the author happened to open.
+- autonomous Chapter-to-Chapter liveness with advisory sidecars detached from the default critical path;
+- explicit progress/stall explainability for Book production;
+- plan-driven Chapter Mission / bounded Production Packet convergence;
+- richer Arc OS runtime/working-set/obligation/progress semantics;
+- MKAOS Narrative Intelligence selection/effectiveness;
+- sustained real-provider long-form quality;
+- calibrated Reader Outcome / real feedback loop;
+- multi-book production qualification.
 
-## 6. Knowledge and memory boundary
+## 7. Evidence model
 
-- PostgreSQL accepted/design Authority = durable business memory.
-- Context snapshot = bounded working memory.
-- conversation/collaboration evidence = episodic interaction evidence, not story truth.
-- search/vector indexes = rebuildable retrieval memory.
-- MKAOS = reusable method/professional knowledge, not per-Book memory.
-
-No Agent-owned private memory may silently override these sources.
-
-## 7. Current runtime capability/evidence boundary
-
-The repository already contains implementation surfaces for Authorities, progressive design/planning, Chapter production, Narrative State, PlanChange/Replan, Source/MKAOS, Agent Collaboration/Runtime, provider control/qualification, quality/reader functions, publishing, and recovery infrastructure. Exact proof must be established at the SHA under review.
-
-| Capability family | Current evidence boundary |
-|---|---|
-| Project/workspace/task/asset Authority | Implemented/runtime-wired in the current architecture. |
-| Story/Book Design + progressive planning | Implemented/runtime-wired; exact current qualification evidence must be checked. |
-| Narrative Semantic Evaluation / qualification | Current code contains explicit semantic-evaluation infrastructure; independent trust/evidence must be verified, not inferred from file presence. |
-| Chapter production and acceptance | Implemented/runtime-wired with bounded test evidence in the repository. |
-| Canonical Narrative State / accepted-event lineage | Implemented/runtime-wired with rebuild/integration evidence in the repository. |
-| PlanChange / Book replan | Implemented/runtime-wired with semantic diff/risk concepts. |
-| Source Intelligence / MKAOS | Implemented/runtime-wired with bounded fixture/integration evidence. |
-| Agent Collaboration / Agent Runtime | Implemented foundation/production slices; broad human conversational product workflow is not proven. |
-| Conversational role profiles | **Target capability; implementation/proof to be audited.** |
-| Conversation → Decision Capture → owning Authority | **Target capability; not proven as a complete canonical flow.** |
-| Chapter Editor selected-text/scene/chapter flow | **Target capability; not proven as a complete canonical flow.** |
-| Author Intent projection into Context/Quality | Existing future-intent/state primitives may support it; canonical end-to-end semantics are **not proven**. |
-| Real-provider sustained Book run | Requires explicit pinned evidence; code/config existence is insufficient. |
-| 30/100/300-chapter long-form correctness | Not established by ordinary bounded tests. |
-| Multi-book production correctness | Not proven. |
-| Production admission/operated deployment | Not proven by documentation. |
-
-## 8. Proof model
-
-Repository capability maturity:
-
-```text
-MISSING
-SKELETON
-IMPLEMENTED
-WIRED
-FIXTURE_PROVEN
-REAL_PROVIDER_PROVEN
-LONGFORM_PROVEN
-MULTIBOOK_PROVEN
-PRODUCTION_PROVEN
-```
-
-Engineering reports additionally distinguish:
+Report separately:
 
 ```text
 CODE_IMPLEMENTED
 CANONICAL_WIRED
 TEST_EXECUTED
 RUNTIME_PROVEN
+LONGFORM_PROVEN
 PRODUCTION_QUALIFIED
 ```
 
-These are not interchangeable. `TEST_EXECUTED` states that named tests ran; it does not promote fixture evidence to real-provider or production proof.
+And, where the repository maturity ladder is used:
+
+```text
+MISSING → SKELETON → IMPLEMENTED → WIRED → FIXTURE_PROVEN
+→ REAL_PROVIDER_PROVEN → LONGFORM_PROVEN → MULTIBOOK_PROVEN → PRODUCTION_PROVEN
+```
+
+Never promote fixture/mock/code-reading evidence to a higher proof class.

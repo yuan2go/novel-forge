@@ -1,70 +1,89 @@
 # Architecture overview
 
-Novel Forge is a local-first production backend for creating and governing long-form fiction assets. The **target product** is a Human-AI Collaborative Long-form Narrative Operating System with a Governed Autonomous Production Runtime, as defined in [`canonical-overall-design.md`](canonical-overall-design.md).
+Novel Forge's target architecture is defined only by [`canonical-overall-design.md`](canonical-overall-design.md). This file is a current-runtime view and must not promote target design to current proof.
 
-The **current runtime** is an early but substantial Novel Operating System backend: operations are versioned and traceable, business state belongs to named Authorities, model and object-store calls are fenced external effects, accepted outputs become governed/versioned assets, and Narrative State is derived from accepted lineage.
-
-The target Conversational Creative Studio is not yet equivalent to a proven user-facing product. Existing Agent Collaboration/Runtime, Planning/PlanChange, Revision, Narrative State, and Authority modules are the foundation that future conversational creative workflows must reuse; they must not create a second chat/runtime/authority plane.
-
-## Runtime shape
+## Current runtime shape
 
 ```text
-Operator / Admin UI / client
-              │
-              ▼
-       Authority FastAPI
-              │ admits commands
-              ▼
-     Domain Authority applications ─── concrete read projections
-              │
-       Command Kernel / Saga
-              │ creates RuntimeJobs
-              ▼
-       specialized workers
-              │
-              ▼
- ProductionExecutionComposition
-     ├── governed model gateway
-     └── object-store adapter
-              │
-              ▼
- PostgreSQL Authority + MinIO + configured provider
+Operator / API / workers
+        ↓
+Domain Authority applications
+        ↓
+Command Kernel / RuntimeJob
+        ↓
+specialized workers
+        ↓
+ProductionExecutionComposition
+  ├ governed model/provider gateway
+  └ object/artifact effects
+        ↓
+PostgreSQL Authority + object storage + configured provider
 ```
 
-The production roots are `novel_forge.api.authority_app`, the CLI modules in `pyproject.toml`, and the workers listed in `architecture/manifests/worker-manifest.yaml`. The accepted operations are enumerated in `production-entry-manifest.yaml`; undocumented imports do not establish a production entry.
+Stable current boundaries:
 
-## Stable boundaries
+- PostgreSQL is the production business Authority; memory implementations are fixtures.
+- Domain mutations go through owning applications/command semantics rather than Agent direct writes.
+- ProductionExecutionComposition is shared execution infrastructure, not Chapter-owned infrastructure.
+- Chapter/Book, Planning, Agent, Source/MKAOS, Quality/Reader and Provider systems are peer users of the shared execution plane.
+- accepted Chapter/Book lineage is the boundary from candidate output to story truth.
+- Narrative State is projected from accepted evidence; Context/retrieval are derived.
+- current planning already supports multiple Arc plan versions at a chapter cursor and cross-Arc planning semantics; this is not yet the complete target Narrative Arc OS described in the Canonical Design.
+- Legacy remains migration-only.
 
-- PostgreSQL is the only production business Authority. Memory implementations are fixtures only.
-- Domain mutations go through a named Authority application and the Command Kernel when the operation contract requires it.
-- Queries are concrete business read projections. They may join authority tables but do not mutate them.
-- `ProductionExecutionComposition` owns shared process-level provider and object-store execution infrastructure. Chapter, Planning, Reader, Source, Agent, and Book are peer consumers.
-- Chapter owns its chapter-specific saga/stage policy/binder/execution contract, not the shared execution plane.
-- Agents produce governed candidates/proposals; the relevant Domain Authority decides and commits business state.
-- Conversational Agent roles are target product profiles over the same Agent/Capability/Authority foundation, not new Authorities.
-- Plan changes reuse PlanChange/Replan and owning design Authorities; a second generalized Narrative Change runtime is not part of the target design.
-- The canonical temporal hierarchy is `Book → Volume → Narrative Segment → Chapter → Scene → Beat`; Arc is an orthogonal cross-time graph dimension.
-- Legacy code is migration-only and cannot be imported by production roots.
+## Target semantic shift
 
-## Current evidence boundary
+The converged target moves chapter production from broad context-driven generation toward:
 
-The table below is a repository-evidence summary, not a production claim. Exact evidence must always be re-established at the SHA being qualified.
+```text
+Progressive Plan + Arc Working Set
+→ Chapter Mission
+→ Current Narrative State
+→ task-specific evidence
+→ bounded Production Packet
+→ Scene composition
+→ prose
+→ verification / quality
+→ Accepted Outcome
+```
 
-| Area | Current repository evidence boundary |
-|---|---|
-| Authority API, workers, PostgreSQL schema | Implemented/runtime-wired; PostgreSQL test suites exist. |
-| Command Kernel, Attempt/Lease/Fence, ExternalEffect, RuntimeJob | Implemented/runtime-wired; fixture and PostgreSQL evidence exists in the repository. |
-| Chapter production saga | Implemented/runtime-wired with bounded test evidence; successful provider output is not Chapter acceptance. |
-| Progressive long-form design, qualification, and Chapter admission | Implemented/runtime-wired in current modules; exact-SHA engineering qualification remains required. |
-| Canonical Narrative State / accepted event lineage / temporal query | Implemented/runtime-wired; rebuild and PostgreSQL evidence exists. |
-| Book coordination, reader/recap, PlanChange/Replan | Implemented/runtime-wired with bounded fixture/PostgreSQL evidence. |
-| Source Import, Source Intelligence, MKAOS | Implemented/runtime-wired with bounded fixture/PostgreSQL evidence. |
-| Agent Collaboration/Agent Runtime/capability-pack foundation | Implemented first production slices; broad product-role and human conversational coverage is not proven. |
-| Conversational Creative Studio, Chapter Editor interaction, Conversation→Decision product lifecycle | **Target architecture; not proven as a complete canonical user/runtime flow.** |
-| Real external provider over sustained narrative production | Not established by documentation alone; requires pinned runtime evidence. |
-| 30/100/300-chapter long-form correctness | Not proven by ordinary fixture/integration tests. |
-| Multi-book production scale | Not proven. |
-| External publishing + real-reader closed loop | Partial modules/interfaces may exist; end-to-end operated proof is not established here. |
-| Production deployment/admission | Not proven by this document. |
+This should extend existing Planning/Narrative State/Context/Chapter Authority rather than create a second narrative runtime.
 
-Do not infer a higher proof state from the existence of code, fixtures, or one successful bounded run. Use the evidence vocabulary in [`../README.md`](../README.md) and the qualification model in the Canonical overall design.
+## Current liveness risk to reverify
+
+At the 2026-08-20 design review baseline, current Book coordination code still contains a structural liveness risk that must be reverified against the latest SHA before implementation:
+
+- accepted-chapter Reader/Long-form follow-up work is advanced before the supervisor reaches next-chapter planning/dispatch in some states;
+- follow-up advancement may execute/recover durable provider work rather than merely enqueue and return;
+- the Book worker's coordination-state whitelist does not visibly cover every nonterminal state handled by the supervisor.
+
+This is consistent with the observed real failure mode “Chapter 1 completes, Chapter 2 does not advance for hours.” It is a code-proven risk structure, **not proof of the exact incident root cause without PostgreSQL Operation/Attempt/Book-state evidence**.
+
+Until bounded Chapter 1→2 forward progress is proven on current code, long-form liveness is not proven even if local correctness/unit/PostgreSQL tests pass.
+
+## Evidence boundary
+
+The repository contains substantial implementation/runtime/test evidence for:
+
+- Command Kernel, Operation/Attempt/Lease/Fence, ExternalEffect, RuntimeJob;
+- PostgreSQL Authorities and migrations;
+- Chapter/Book production and acceptance;
+- progressive planning and semantic evaluation;
+- Narrative State / temporal replay / accepted lineage;
+- PlanChange/Replan;
+- Source/MKAOS;
+- Agent Collaboration/Runtime;
+- quality/reader surfaces;
+- qualification infrastructure.
+
+Current documentation does **not** establish by itself:
+
+- sustained real-provider Book production;
+- Chapter-to-Chapter bounded liveness;
+- 30/100/300-chapter correctness/quality;
+- target Chapter Mission/Production Packet and full Narrative Arc OS semantics;
+- real-reader learning closure;
+- multi-book production;
+- Production Admission.
+
+Use the evidence vocabulary in [`../README.md`](../README.md). Exact status must be re-established at the SHA under qualification.
