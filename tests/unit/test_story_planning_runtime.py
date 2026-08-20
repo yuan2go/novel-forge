@@ -289,6 +289,7 @@ def test_planning_provider_schema_is_codex_strict(
         assert "parent_version_id" not in schema["properties"]
         assert schema["properties"]["thread_id"]["minLength"] == 1
         assert schema["properties"]["arc_segments"]["minItems"] == 1
+        assert schema["properties"]["arc_relations"]["maxItems"] == 0
     if contract_type in {PlanContractType.VOLUME, PlanContractType.CHAPTER_GROUP}:
         assert schema["properties"]["chapter_range"]["minItems"] == 2
         assert schema["properties"]["chapter_range"]["maxItems"] == 2
@@ -407,6 +408,20 @@ def test_volume_and_chapter_provider_contracts_bind_timeline_segments() -> None:
         assert field in chapter["required"]
 
     assert "narrative_qualification" not in chapter["properties"]
+
+
+def test_arc_provider_allows_relations_only_with_distinct_frozen_arc_refs() -> None:
+    schema = planning_provider_output_schema(
+        PlanContractType.ARC,
+        logical_key="arc:primary",
+        related_arc_plan_version_ids=("arc:related:v1",),
+    )
+    relations = schema["properties"]["arc_relations"]
+
+    assert "maxItems" not in relations
+    refs = relations["items"]["properties"]
+    assert refs["source_arc_ref"]["enum"] == ["arc:primary", "arc:related:v1"]
+    assert refs["target_arc_ref"]["enum"] == ["arc:primary", "arc:related:v1"]
 
 
 @pytest.mark.parametrize(

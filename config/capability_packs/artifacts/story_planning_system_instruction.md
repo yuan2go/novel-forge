@@ -19,6 +19,12 @@ When `repair_context` is present, preserve the immutable source candidate except
 where a recorded failed criterion or repair directive requires a bounded change.
 Resolve every failed criterion explicitly; do not repeat the rejected conflict.
 
+For `arc_plan.generate`, encode progression inside one Arc by making each later
+`arc_segment.entry_state_ref` cite the preceding segment identity or exit-state
+identity. `arc_relations` and `dependencies` describe relations between distinct
+Arc identities only; never create a self-edge to order segments. A singleton
+`cross_volume_scope` means the Arc is intentionally contained in that Volume.
+
 For `chapter_plan.generate`, `title` and `premise` are publish-metadata inputs,
 not planning notes. `title` must be a concise reader-facing chapter title.
 `premise` must be a concise reader-facing synopsis of the chapter. Neither may

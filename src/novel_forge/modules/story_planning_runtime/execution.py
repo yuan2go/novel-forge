@@ -1079,7 +1079,11 @@ def _canonical_narrative_provider_properties(
                     }
                 ),
             },
-            "arc_relations": {"type": "array", "items": arc_relation},
+            "arc_relations": {
+                "type": "array",
+                **({"maxItems": 0} if len(set(arc_relation_refs)) < 2 else {}),
+                "items": arc_relation,
+            },
         }
     if contract_type is PlanContractType.CHAPTER_GROUP:
         return {**architecture, "narrative_segment_ref": segment_ref}
