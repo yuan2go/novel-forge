@@ -109,7 +109,9 @@ def book_followup_operation_definitions(
                     "reader_outcome_projection"
                     if name == READER_OUTCOME_DEFINITION
                     else "longform_recap_projection",
-                    "book_authority_checkpoint",
+                    "book_followup_progress_projection"
+                    if name == READER_OUTCOME_DEFINITION
+                    else "advisory_plan_change_proposal",
                 ],
                 "migration_owner": "book-followup-authority",
                 "legacy_entrypoints": (

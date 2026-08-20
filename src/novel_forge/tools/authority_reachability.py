@@ -19,6 +19,7 @@ AUTHORITY_ENTRY_MODULES: dict[str, str] = {
     "source-worker": "novel_forge.workers.source_authority",
     "mkaos-worker": "novel_forge.workers.mkaos_authority",
     "book-worker": "novel_forge.workers.book_authority",
+    "book-followup-worker": "novel_forge.workers.book_followup_authority",
     "outbox-worker": "novel_forge.workers.outbox_authority",
     "maintenance-worker": "novel_forge.workers.runtime_groups",
     "worker-healthcheck": "novel_forge.workers.healthcheck",

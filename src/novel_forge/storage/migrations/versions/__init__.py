@@ -93,6 +93,7 @@ from . import (
     v20260814_0090_progressive_replan_scopes,
     v20260814_0091_canonical_longform_runtime_completion,
     v20260814_0092_longform_correctness_closure,
+    v20260820_0093_book_liveness_critical_path_closure,
 )
 
 VERSION_MODULES = [
@@ -188,6 +189,7 @@ VERSION_MODULES = [
     v20260814_0090_progressive_replan_scopes,
     v20260814_0091_canonical_longform_runtime_completion,
     v20260814_0092_longform_correctness_closure,
+    v20260820_0093_book_liveness_critical_path_closure,
 ]
 
 __all__ = ["VERSION_MODULES"]

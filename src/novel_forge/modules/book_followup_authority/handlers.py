@@ -65,6 +65,21 @@ class ReaderOutcomeHandler:
                 "READER_OUTCOME_INPUT_INVALID",
                 "missing Reader Outcome fields: " + ", ".join(missing),
             )
+        try:
+            observed_through_chapter = int(
+                payload.get("observed_through_chapter")
+                or payload["chapter_number"]
+            )
+            if observed_through_chapter != int(payload["chapter_number"]):
+                raise KernelError(
+                    "READER_OUTCOME_ACCEPTED_HEAD_MISMATCH",
+                    "Reader Outcome must observe exactly its accepted Chapter head",
+                )
+        except (TypeError, ValueError) as exc:
+            raise KernelError(
+                "READER_OUTCOME_INPUT_INVALID",
+                "Reader Outcome accepted Chapter head is invalid",
+            ) from exc
         declared = tuple(request.command.get("input_asset_version_ids") or ())
         frozen = tuple(item.asset_version_id for item in request.inputs)
         if declared != frozen:
@@ -117,6 +132,30 @@ class ReaderOutcomeHandler:
             "skill_version": result.skill_version,
             "real_model_call": result.real_model_call,
             "execution": dict(result.execution_evidence or {}),
+            "accepted_input_lineage": {
+                "observed_through_chapter": observed_through_chapter,
+                "acceptance_operation_id": str(
+                    payload.get("acceptance_operation_id") or ""
+                ),
+                "book_production_input_snapshot_id": str(
+                    payload.get("book_production_input_snapshot_id") or ""
+                ),
+                "lineage_completeness": (
+                    "COMPLETE"
+                    if payload.get("acceptance_operation_id")
+                    and payload.get("book_production_input_snapshot_id")
+                    else "LEGACY_PARTIAL"
+                ),
+                "accepted_chapter_outcome_version": str(
+                    payload["chapter_outcome_version"]
+                ),
+                "accepted_story_state_version": str(
+                    payload["story_state_version"]
+                ),
+                "accepted_canon_snapshot_version": str(
+                    payload["canon_snapshot_version"]
+                ),
+            },
         }
         execution = dict(result.execution_evidence or {})
         execution_result = dict(execution.get("execution_result") or {})
@@ -136,6 +175,10 @@ class ReaderOutcomeHandler:
             "book_id": str(payload["book_id"]),
             "chapter_id": str(payload["chapter_id"]),
             "chapter_number": int(payload["chapter_number"]),
+            "observed_through_chapter": observed_through_chapter,
+            "accepted_input_lineage": dict(
+                common_evidence["accepted_input_lineage"]
+            ),
             **decision,
             "source_asset_versions": list(source_refs),
             "model_evidence": result.to_evidence(),
@@ -270,6 +313,7 @@ class LongformRecapHandler:
             "story_state_version",
             "reader_state_version",
             "quality_trend_version",
+            "chapter_outcome_versions",
         )
         missing = [name for name in required if payload.get(name) in (None, "")]
         if missing:
@@ -300,6 +344,30 @@ class LongformRecapHandler:
             raise KernelError(
                 "LONGFORM_RECAP_INPUT_INVALID", "chapter_range must have two boundaries"
             )
+        try:
+            observed_through_chapter = int(
+                payload.get("observed_through_chapter")
+                or chapter_range[1]
+            )
+        except (TypeError, ValueError) as exc:
+            raise KernelError(
+                "LONGFORM_RECAP_INPUT_INVALID",
+                "Long-form Recap accepted Chapter head is invalid",
+            ) from exc
+        chapter_outcome_versions = payload.get("chapter_outcome_versions")
+        if (
+            observed_through_chapter != chapter_range[1]
+            or not isinstance(chapter_outcome_versions, list)
+            or not chapter_outcome_versions
+            or any(
+                not isinstance(item, str) or not item
+                for item in chapter_outcome_versions
+            )
+        ):
+            raise KernelError(
+                "LONGFORM_RECAP_ACCEPTED_HEAD_MISMATCH",
+                "Long-form Recap must retain its accepted observation head and outcomes",
+            )
         declared = tuple(request.command.get("input_asset_version_ids") or ())
         frozen = tuple(item.asset_version_id for item in request.inputs)
         if declared != frozen:
@@ -315,6 +383,34 @@ class LongformRecapHandler:
             checkpoint_type=checkpoint_type,
             observations=dict(payload.get("observations") or {}),
         )
+        accepted_input_lineage = {
+            "observed_through_chapter": observed_through_chapter,
+            "acceptance_operation_id": str(
+                payload.get("acceptance_operation_id") or ""
+            ),
+            "book_production_input_snapshot_id": str(
+                payload.get("book_production_input_snapshot_id") or ""
+            ),
+            "lineage_completeness": (
+                "COMPLETE"
+                if payload.get("acceptance_operation_id")
+                and payload.get("book_production_input_snapshot_id")
+                else "LEGACY_PARTIAL"
+            ),
+            "book_design_version": str(payload["book_design_version"]),
+            "book_plan_version": str(payload["book_plan_version"]),
+            "volume_plan_version": str(payload["volume_plan_version"]),
+            "arc_plan_versions": list(payload["arc_plan_versions"]),
+            "accepted_chapter_outcome_versions": list(
+                payload.get("chapter_outcome_versions") or ()
+            ),
+            "accepted_story_state_version": str(payload["story_state_version"]),
+            "accepted_canon_snapshot_version": str(payload["canon_snapshot_version"]),
+        }
+        for output in outputs.values():
+            if isinstance(output, dict):
+                output["observed_through_chapter"] = observed_through_chapter
+                output["accepted_input_lineage"] = dict(accepted_input_lineage)
         auxiliaries = [
             AuthorityAuxiliaryOutput(
                 asset_type="longform_deviation_report",
@@ -323,7 +419,10 @@ class LongformRecapHandler:
                 content=outputs["deviation_report"],
                 qualification_policy="longform-recap-output-v1",
                 reference_asset_version_ids=source_refs,
-                evidence={"handler": "deterministic-longform-recap-v1"},
+                evidence={
+                    "handler": "deterministic-longform-recap-v1",
+                    "accepted_input_lineage": accepted_input_lineage,
+                },
             ),
             AuthorityAuxiliaryOutput(
                 asset_type="plan_adjustment_proposal",
@@ -332,7 +431,10 @@ class LongformRecapHandler:
                 content=outputs["adjustment_proposal"],
                 qualification_policy="longform-recap-output-v1",
                 reference_asset_version_ids=source_refs,
-                evidence={"authority_decision_required": True},
+                evidence={
+                    "authority_decision_required": True,
+                    "accepted_input_lineage": accepted_input_lineage,
+                },
             ),
         ]
         if outputs["replan_request"] is not None:
@@ -344,7 +446,10 @@ class LongformRecapHandler:
                     content=outputs["replan_request"],
                     qualification_policy="longform-recap-output-v1",
                     reference_asset_version_ids=source_refs,
-                    evidence={"authority_decision_required": True},
+                    evidence={
+                        "authority_decision_required": True,
+                        "accepted_input_lineage": accepted_input_lineage,
+                    },
                 )
             )
         return AuthorityHandlerOutput(
@@ -357,6 +462,7 @@ class LongformRecapHandler:
             evidence={
                 "handler": "deterministic-longform-recap-v1",
                 "plan_mutation_allowed": False,
+                "accepted_input_lineage": accepted_input_lineage,
             },
             auxiliary_outputs=tuple(auxiliaries),
         )

@@ -186,19 +186,15 @@ class ChapterGroupRepository:
         self,
         *,
         group_run_id: str,
-        recap_operation_id: str,
-        proposal_version_id: str,
     ) -> None:
         self.cursor.execute(
             """
             UPDATE authority_chapter_group_production
-            SET state='COMPLETED', recap_operation_id=%s,
-                plan_adjustment_proposal_version_id=%s,
-                version=version+1, updated_at=NOW()
+            SET state='COMPLETED', version=version+1, updated_at=NOW()
             WHERE group_run_id=%s AND state='CLOSURE_PENDING'
               AND accepted_through_chapter=chapter_end
             """,
-            [recap_operation_id, proposal_version_id, group_run_id],
+            [group_run_id],
         )
         if self.cursor.rowcount != 1:
             raise KernelError(

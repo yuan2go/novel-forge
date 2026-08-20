@@ -1277,22 +1277,10 @@ def build_book_authority_application(
     if not settings.database_url:
         raise RuntimeError("PostgreSQL database is required for Book Authority")
     build_id, commit_sha = authority_release_identity(env=env)
-    reader_model_port = build_reader_outcome_model_port(
+    followup = build_book_followup_authority_application(
         settings,
         execution=execution,
         env=env,
-    )
-    followup = BookFollowupAuthorityApplication(
-        settings.database_url,
-        application_build_id=build_id,
-        commit_sha=commit_sha,
-        model_port=reader_model_port,
-        worker_id=str(
-            (os.environ if env is None else env).get(
-                "NOVEL_FORGE_BOOK_FOLLOWUP_WORKER_ID"
-            )
-            or "book-followup-authority-worker"
-        ),
     )
     return PostgresBookAuthority(
         settings.database_url,
@@ -1309,6 +1297,34 @@ def build_book_authority_application(
                 or settings.environment
             )
         ).fixture_allowed,
+    )
+
+
+def build_book_followup_authority_application(
+    settings: IndustrialSettings,
+    *,
+    execution: ProductionExecutionComposition,
+    env: Mapping[str, str] | None = None,
+) -> BookFollowupAuthorityApplication:
+    """Compose advisory follow-up with the shared Production Execution Plane."""
+
+    if not settings.database_url:
+        raise RuntimeError("PostgreSQL database is required for Book Followup")
+    values = os.environ if env is None else env
+    build_id, commit_sha = authority_release_identity(env=values)
+    return BookFollowupAuthorityApplication(
+        settings.database_url,
+        application_build_id=build_id,
+        commit_sha=commit_sha,
+        model_port=build_reader_outcome_model_port(
+            settings,
+            execution=execution,
+            env=values,
+        ),
+        worker_id=str(
+            values.get("NOVEL_FORGE_BOOK_FOLLOWUP_WORKER_ID")
+            or "book-followup-authority-worker"
+        ),
     )
 
 
@@ -1676,6 +1692,7 @@ __all__ = [
     "build_content_authority_application",
     "build_content_authority_query",
     "build_book_authority_application",
+    "build_book_followup_authority_application",
     "build_book_production_composition",
     "build_reader_outcome_model_port",
     "build_narrative_semantic_evaluation_execution_port",

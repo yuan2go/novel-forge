@@ -49,17 +49,19 @@ Progressive Plan + Arc Working Set
 
 This should extend existing Planning/Narrative State/Context/Chapter Authority rather than create a second narrative runtime.
 
-## Current liveness risk to reverify
+## Current liveness implementation and evidence boundary
 
-At the 2026-08-20 design review baseline, current Book coordination code still contains a structural liveness risk that must be reverified against the latest SHA before implementation:
+WP-LIVE-01 removes the code-proven structural coupling identified at the 2026-08-20 baseline:
 
-- accepted-chapter Reader/Long-form follow-up work is advanced before the supervisor reaches next-chapter planning/dispatch in some states;
-- follow-up advancement may execute/recover durable provider work rather than merely enqueue and return;
-- the Book worker's coordination-state whitelist does not visibly cover every nonterminal state handled by the supervisor.
+- accepted-chapter Reader/Long-form work is admitted and executed by the isolated Book Followup worker;
+- Book acceptance commits AcceptedOutcome, Story State, Canon and accepted cursor before next-chapter eligibility, without synchronous sidecar execution;
+- Book worker claim states now derive from the Domain `ACTIONABLE` classification, while durable waits and terminals carry explicit semantics;
+- ChapterGroup production closure depends on committed accepted narrative truth, not Recap completion;
+- the PostgreSQL progress projection reports narrative progress and sidecar backlog separately.
 
-This is consistent with the observed real failure mode “Chapter 1 completes, Chapter 2 does not advance for hours.” It is a code-proven risk structure, **not proof of the exact incident root cause without PostgreSQL Operation/Attempt/Book-state evidence**.
+The historical structure is consistent with the observed failure mode “Chapter 1 completes, Chapter 2 does not advance for hours.” The exact incident database was not available at implementation time, so this remains a code-confirmed failure chain rather than a claim that every historical incident fact was reconstructed.
 
-Until bounded Chapter 1→2 forward progress is proven on current code, long-form liveness is not proven even if local correctness/unit/PostgreSQL tests pass.
+This phase intentionally ran no tests or runtime qualification. Bounded Chapter 1→2 progress, sidecar failure isolation, restart/fencing/replay, migrations, real Provider, and unattended campaigns remain WP-LIVE-02. `RUNTIME_PROVEN`, `LONGFORM_PROVEN`, and `PRODUCTION_QUALIFIED` therefore remain false.
 
 ## Evidence boundary
 

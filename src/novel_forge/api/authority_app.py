@@ -101,6 +101,7 @@ REQUIRED_RUNTIME_GROUPS = (
     "source_import",
     "mkaos",
     "book",
+    "book_followup",
     "outbox",
     "maintenance",
 )

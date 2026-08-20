@@ -550,84 +550,34 @@ class PostgresChapterGroupAuthority:
                 "CHAPTER_GROUP_CLOSURE_NOT_READY",
                 "all Chapters must be accepted before closure",
             )
-        recap = self._group_recap_evidence(group)
+        closure = self._production_closure_inputs(group)
         common_inputs = self.book.resolve_asset_refs(
             project_id=group["project_id"],
-            asset_version_ids=(
-                str(group["group_plan_version_id"]),
-                str(recap["recap_version_id"]),
-                str(recap["source_proposal_version_id"]),
-            ),
-        )
-        self._run_step(
-            group,
-            definition="chapter_group.recap.run",
-            suffix="close",
-            ordinal=9001,
-            payload={
-                "source_recap_operation_id": recap["operation_id"],
-                "chapter_range": [
-                    group["chapter_start"],
-                    group["chapter_end"],
-                ],
-            },
-            input_assets=common_inputs,
-            principal=principal,
-        )
-        actual = self._run_step(
-            group,
-            definition="chapter_group.plan_vs_actual.evaluate",
-            suffix="close",
-            ordinal=9002,
-            payload={
-                "chapter_range": [
-                    group["chapter_start"],
-                    group["chapter_end"],
-                ],
-                "accepted_chapters": list(
-                    range(
-                        int(group["chapter_start"]),
-                        int(group["chapter_end"]) + 1,
-                    )
-                ),
-                "objective_status": "OBSERVED",
-            },
-            input_assets=common_inputs,
-            principal=principal,
-        )
-        proposal = self._run_step(
-            group,
-            definition="chapter_group.plan_adjustment.propose",
-            suffix="close",
-            ordinal=9003,
-            payload={
-                "source_recap_operation_id": recap["operation_id"],
-                "source_proposal_version_id": recap["source_proposal_version_id"],
-                "plan_vs_actual_operation_id": actual,
-            },
-            input_assets=common_inputs,
-            principal=principal,
+            asset_version_ids=closure["asset_version_ids"],
         )
         close_operation = self._run_step(
             group,
             definition="chapter_group.production.close",
             suffix="close",
-            ordinal=9004,
+            ordinal=9001,
             payload={
-                "recap_operation_id": recap["operation_id"],
-                "adjustment_operation_id": proposal,
+                "chapter_range": [
+                    group["chapter_start"],
+                    group["chapter_end"],
+                ],
+                "accepted_chapters": closure["accepted_chapters"],
+                "accepted_outcome_versions": closure["accepted_outcome_versions"],
+                "story_state_versions": closure["story_state_versions"],
+                "canon_snapshot_versions": closure["canon_snapshot_versions"],
+                "production_correctness_committed": True,
+                "retrospective_completion_required": False,
             },
             input_assets=common_inputs,
             principal=principal,
         )
-        proposal_output = self._operation_output(
-            proposal, "chapter_group.adjustment_proposal"
-        )
         book = self.book.require(group["book_run_id"])
         self._commit_close(
             group,
-            recap_operation_id=recap["operation_id"],
-            proposal_version_id=proposal_output["asset_version_id"],
             close_operation_id=close_operation,
             book=book,
         )
@@ -861,16 +811,12 @@ class PostgresChapterGroupAuthority:
         self,
         group: dict[str, Any],
         *,
-        recap_operation_id: str,
-        proposal_version_id: str,
         close_operation_id: str,
         book: dict[str, Any],
     ) -> None:
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.repositories.chapter_group.close(
                 group_run_id=group["group_run_id"],
-                recap_operation_id=recap_operation_id,
-                proposal_version_id=proposal_version_id,
             )
             uow.cursor.execute(
                 """
@@ -975,50 +921,69 @@ class PostgresChapterGroupAuthority:
                     "project_id": group["project_id"],
                     "event_type": "chapter_group.production.closed",
                     "correlation_id": str(group["root_operation_id"]),
-                    "causation_id": recap_operation_id,
+                    "causation_id": close_operation_id,
                     "payload": {
                         "group_run_id": group["group_run_id"],
-                        "recap_operation_id": recap_operation_id,
-                        "proposal_version_id": proposal_version_id,
+                        "production_correctness_committed": True,
+                        "retrospective_completion_required": False,
                         "planning_horizon_id": horizon_id,
                     },
                 }
             )
             uow.commit()
 
-    def _group_recap_evidence(self, group: dict[str, Any]) -> dict[str, str]:
+    def _production_closure_inputs(
+        self, group: dict[str, Any]
+    ) -> dict[str, Any]:
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
-                SELECT link.operation_id, operation.status,
-                       recap.asset_version_id, proposal.asset_version_id
+                SELECT child.chapter_number, child.status,
+                       acceptance.chapter_outcome_asset_version_id,
+                       acceptance.story_state_asset_version_id,
+                       acceptance.canon_snapshot_asset_version_id,
+                       acceptance.status
                 FROM authority_chapter_group_chapter AS child
-                JOIN authority_book_followup_operation AS link
-                  ON link.chapter_request_id=child.chapter_request_id
-                 AND link.followup_type='LONGFORM_RECAP'
-                JOIN authority_operation AS operation
-                  ON operation.operation_id=link.operation_id
-                JOIN authority_operation_output_asset AS recap
-                  ON recap.operation_id=link.operation_id
-                 AND recap.output_key='longform.recap.report'
-                JOIN authority_operation_output_asset AS proposal
-                  ON proposal.operation_id=link.operation_id
-                 AND proposal.output_key='longform.recap.adjustment_proposal'
+                LEFT JOIN authority_book_chapter_acceptance AS acceptance
+                  ON acceptance.chapter_request_id=child.chapter_request_id
                 WHERE child.group_run_id=%s
-                  AND child.chapter_number=%s
+                ORDER BY child.chapter_number
                 """,
-                [group["group_run_id"], group["chapter_end"]],
+                [group["group_run_id"]],
             )
-            row = uow.cursor.fetchone()
-        if row is None or str(row[1]) != "SUCCEEDED":
+            rows = tuple(uow.cursor.fetchall())
+        expected = tuple(
+            range(int(group["chapter_start"]), int(group["chapter_end"]) + 1)
+        )
+        accepted = tuple(int(row[0]) for row in rows)
+        if (
+            accepted != expected
+            or any(str(row[1]) != "ACCEPTED" for row in rows)
+            or any(str(row[5]) != "COMMITTED" for row in rows)
+            or any(not row[index] for row in rows for index in (2, 3, 4))
+        ):
             raise KernelError(
-                "CHAPTER_GROUP_RECAP_NOT_READY",
-                "deterministic group-boundary Recap must succeed before close",
+                "CHAPTER_GROUP_PRODUCTION_CORRECTNESS_NOT_COMMITTED",
+                "closure requires every Chapter AcceptedOutcome, Story State, and Canon commit",
             )
+        outcomes = tuple(str(row[2]) for row in rows)
+        states = tuple(str(row[3]) for row in rows)
+        canons = tuple(str(row[4]) for row in rows)
         return {
-            "operation_id": str(row[0]),
-            "recap_version_id": str(row[2]),
-            "source_proposal_version_id": str(row[3]),
+            "accepted_chapters": list(accepted),
+            "accepted_outcome_versions": list(outcomes),
+            "story_state_versions": list(states),
+            "canon_snapshot_versions": list(canons),
+            "asset_version_ids": tuple(
+                dict.fromkeys(
+                    (
+                        str(group["group_plan_version_id"]),
+                        *outcomes,
+                        *states,
+                        *canons,
+                    )
+                )
+            ),
         }
 
     def _group_plan(self, project_id: str, asset_version_id: str) -> dict[str, Any]:
@@ -1087,29 +1052,6 @@ class PostgresChapterGroupAuthority:
                 "dispatch requires a current Frozen ChapterPlan bound to the group",
             )
         return {"content": dict(row[3])}
-
-    def _operation_output(self, operation_id: str, output_key: str) -> dict[str, str]:
-        with AuthorityUnitOfWork(self.database_url) as uow:
-            uow.cursor.execute(
-                """
-                SELECT binding.asset_version_id, version.content_hash
-                FROM authority_operation_output_asset AS binding
-                JOIN authority_asset_version AS version
-                  ON version.asset_version_id=binding.asset_version_id
-                WHERE binding.operation_id=%s AND binding.output_key=%s
-                """,
-                [operation_id, output_key],
-            )
-            row = uow.cursor.fetchone()
-        if row is None:
-            raise KernelError(
-                "CHAPTER_GROUP_STEP_OUTPUT_MISSING",
-                f"missing step output {output_key}",
-            )
-        return {
-            "asset_version_id": str(row[0]),
-            "content_hash": str(row[1]),
-        }
 
     def _control_step(
         self,

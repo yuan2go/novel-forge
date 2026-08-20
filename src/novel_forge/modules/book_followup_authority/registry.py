@@ -54,7 +54,7 @@ class BookFollowupHandlerRegistry:
             definition_name=definition_name,
             definition_version=definition_version,
             handler_key=f"novel_forge.book_followup_authority.{definition_name}",
-            handler_contract_version="book-followup-handler-v1",
+            handler_contract_version="book-followup-handler-v2",
             output_asset_type=asset_type,
             output_key=output_key,
             role="primary",

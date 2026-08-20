@@ -277,6 +277,20 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
         except (KernelError, ValueError, RuntimeError) as exc:
             raise _http_error(exc) from exc
 
+    @router.get("/runs/{book_run_id}/progress")
+    def book_progress(book_run_id: str) -> dict[str, Any]:
+        try:
+            book = _application(ctx).require(book_run_id)
+            principal = build_trusted_principal_resolver().resolve_api_principal()
+            principal.require("book.authority.query", book["project_id"])
+            return _composition(ctx).query.progress(
+                book_run_id=book_run_id
+            ).to_dict()
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (KernelError, ValueError, RuntimeError) as exc:
+            raise _http_error(exc) from exc
+
     @router.get("/runs/{book_run_id}/corrective-actions")
     def corrective_actions(
         book_run_id: str,

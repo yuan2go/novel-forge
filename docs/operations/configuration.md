@@ -24,6 +24,8 @@ Configuration is read from process environment and `.env`; process environment w
 
 Statement, lock, and idle-transaction timeouts are controlled by `NOVEL_FORGE_DB_STATEMENT_TIMEOUT`, `NOVEL_FORGE_DB_LOCK_TIMEOUT`, and `NOVEL_FORGE_DB_IDLE_TRANSACTION_TIMEOUT`. Service instance variables feed the connection-budget check against PostgreSQL `max_connections`.
 
+Book coordination and advisory follow-up use distinct database roles and instance budgets: `NOVEL_FORGE_DB_BOOK_INSTANCES` and `NOVEL_FORGE_DB_BOOK_FOLLOWUP_INSTANCES`. The Book Followup worker identity is configured by `NOVEL_FORGE_BOOK_FOLLOWUP_WORKER_ID`.
+
 ## Fixtures and controlled environments
 
 - `NOVEL_FORGE_MODEL_PROVIDER=mock` is a scripted provider.
