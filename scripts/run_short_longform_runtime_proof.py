@@ -46,6 +46,7 @@ from novel_forge.modules.canon_graph.approval_authority import (
 from novel_forge.infrastructure.settings import IndustrialSettings
 from novel_forge.modules.authority_security import Principal
 from novel_forge.modules.book_design_authority import (
+    BOOK_DESIGN_SCHEMA_VERSION,
     BookDesignAuthorityApplication,
     BookDesignAuthorityCommand,
     BookDesignAuthorityQuery,
@@ -1219,7 +1220,7 @@ def _seed_project_and_active_design(
             idempotency_key=f"book-design:propose:{book_id}",
             trace_id=f"trace:{project_id}:book-design:propose",
             payload={
-                "schema_version": "book-design.v1",
+                "schema_version": BOOK_DESIGN_SCHEMA_VERSION,
                 "title": campaign_book["title"],
                 "genre": campaign_book["genre"],
                 "premise": campaign_book["premise"],
@@ -1239,6 +1240,38 @@ def _seed_project_and_active_design(
                     "public correction imposes a named civic debt",
                 ],
                 "target_chapters": int(campaign_book["target_chapters"]),
+                "core_characters": [
+                    {
+                        "character_id": "lin-qiao",
+                        "role": "protagonist and archive witness",
+                        "long_term_goal": "make erased evidence publicly accountable",
+                        "causal_arc": "procedural avoidance becomes accountable agency",
+                        "conflict_function": "her protected status competes with disclosure",
+                    },
+                    {
+                        "character_id": "mei-an",
+                        "role": "engineering ally and independent constraint owner",
+                        "long_term_goal": "keep the city alive without secret custody",
+                        "causal_arc": "conditional cooperation becomes costly public trust",
+                        "conflict_function": "material safety challenges evidentiary urgency",
+                    },
+                ],
+                "opposition_forces": [
+                    {
+                        "force_id": "quiet-office",
+                        "goal": "contain crises by controlling their public record",
+                        "leverage": "institutional access and revision authority",
+                        "escalation_pattern": "procedural denial becomes physical erasure",
+                        "limit": "every revision leaves an auditable trace",
+                    }
+                ],
+                "narrative_dna": {
+                    "core_question": "Who must pay when hidden truth becomes public?",
+                    "recurring_choice": "procedural safety or accountable disclosure",
+                    "cost_logic": "every recovered fact transfers a named material debt",
+                    "distinctive_mechanism": "record revisions alter civic access and liability",
+                    "emotional_contract": "discovery creates hope only through visible cost",
+                },
             },
             **base,
         ),

@@ -107,6 +107,9 @@ def test_api_and_worker_share_the_canonical_book_production_composition() -> Non
     assert "self.replan.approve(" in composition
     assert "RESOLVED_AUTHORITY_INPUT" in query
     assert "build_book_production_composition(" in real_provider_proof
+    assert "build_book_design_authority_application(" in real_provider_proof
+    assert "build_narrative_evaluation_pack_profile(" in real_provider_proof
+    assert '"schema_version": BOOK_DESIGN_SCHEMA_VERSION' in real_provider_proof
     assert "PostgresBookProductionSupervisor(" not in real_provider_proof
     assert "_start_book_worker(" in longform_campaign
     assert "_start_followup_worker(" in longform_campaign
