@@ -2685,6 +2685,22 @@ class PostgresPlanningExecutionPreparer:
                     "content": document.content,
                 }
             )
+        repair_context: dict[str, Any] | None = None
+        if command.repair_of_candidate_id:
+            repair_document = self.query.require(
+                project_id=command.project_id,
+                asset_version_id=command.repair_of_candidate_id,
+            )
+            if repair_document.asset_type != "planning_generation_candidate":
+                raise KernelError(
+                    "PLANNING_REPAIR_SOURCE_INVALID",
+                    "Planning repair source must be an immutable generated candidate",
+                )
+            documents.append(repair_document)
+            repair_context = self._repair_context(
+                command=command,
+                source=repair_document,
+            )
         for ordinal, asset_version_id in enumerate(
             command.change_evidence_version_ids, start=1
         ):
@@ -2746,6 +2762,7 @@ class PostgresPlanningExecutionPreparer:
                 frozen_by_operation_id=operation_id,
                 inputs=inputs,
             ),
+            **({"repair_context": repair_context} if repair_context else {}),
             "token_budget": 16000,
             "source_isolation": "ABSTRACT_ASSETS_ONLY",
             "narrative_qualification_profiles": [
@@ -2803,6 +2820,104 @@ class PostgresPlanningExecutionPreparer:
                 )
             )
         return context, tuple(documents)
+
+    def _repair_context(
+        self,
+        *,
+        command: StoryPlanningGenerationCommand,
+        source: AuthorityAssetDocument,
+    ) -> dict[str, Any]:
+        """Freeze the rejected candidate and governed failure evidence for repair."""
+
+        _, separator, report_hash = command.repair_reason.partition(":")
+        if not separator or not report_hash.startswith("sha256:"):
+            raise KernelError(
+                "PLANNING_REPAIR_REASON_INVALID",
+                "Planning repair requires a validation report hash",
+            )
+        runtime = get_database_runtime(self.database_url)
+        with runtime.connection() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT validation_kind, status, report, report_hash,
+                           generation_operation_id
+                    FROM authority_story_planning_validation_report
+                    WHERE project_id=%s
+                      AND candidate_asset_version_id=%s
+                      AND report_hash=%s
+                    """,
+                    [
+                        command.project_id,
+                        command.repair_of_candidate_id,
+                        report_hash,
+                    ],
+                )
+                report_row = cursor.fetchone()
+                cursor.execute(
+                    """
+                    SELECT design_layer, profile_id, profile_version, profile_hash,
+                           capability_id, skill_ref, qualification_status,
+                           evaluation, evaluation_hash, qualification_hash,
+                           source_operation_id, evaluation_operation_id,
+                           evaluation_attempt_id, evaluation_asset_version_id,
+                           evaluation_evidence_hash
+                    FROM authority_narrative_design_qualification
+                    WHERE project_id=%s
+                      AND asset_version_id=%s
+                      AND qualification_status <> 'PASS'
+                    ORDER BY design_layer, profile_id
+                    """,
+                    [command.project_id, command.repair_of_candidate_id],
+                )
+                qualification_rows = cursor.fetchall()
+        if report_row is None or str(report_row[1]) != "FAIL":
+            raise KernelError(
+                "PLANNING_REPAIR_EVIDENCE_MISSING",
+                "Planning repair validation evidence is absent or not failed",
+            )
+        failures = [
+            {
+                "design_layer": str(row[0]),
+                "profile_id": str(row[1]),
+                "profile_version": str(row[2]),
+                "profile_hash": str(row[3]),
+                "capability_id": str(row[4]),
+                "skill_ref": str(row[5]),
+                "qualification_status": str(row[6]),
+                "evaluation": dict(row[7]),
+                "evaluation_hash": str(row[8]),
+                "qualification_hash": str(row[9]),
+                "source_operation_id": str(row[10]),
+                "evaluation_operation_id": str(row[11]),
+                "evaluation_attempt_id": str(row[12]),
+                "evaluation_asset_version_id": str(row[13]),
+                "evaluation_evidence_hash": str(row[14]),
+            }
+            for row in qualification_rows
+        ]
+        if str(report_row[0]) == "SEMANTIC" and not failures:
+            raise KernelError(
+                "PLANNING_REPAIR_EVIDENCE_MISSING",
+                "Semantic repair requires failed independent qualification evidence",
+            )
+        return {
+            "contract_version": "planning-repair-context-v1",
+            "source_candidate": {
+                "asset_version_id": source.asset_version_id,
+                "content_hash": source.content_hash,
+                "asset_type": source.asset_type,
+                "content": source.content,
+            },
+            "validation_failure": {
+                "validation_kind": str(report_row[0]),
+                "status": str(report_row[1]),
+                "report": dict(report_row[2]),
+                "report_hash": str(report_row[3]),
+                "generation_operation_id": str(report_row[4]),
+            },
+            "failed_narrative_qualifications": failures,
+        }
 
     @staticmethod
     def _allowed_tools(policy: Mapping[str, Any], stage: str) -> tuple[str, ...]:

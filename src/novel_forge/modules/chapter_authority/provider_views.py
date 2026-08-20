@@ -847,6 +847,52 @@ def _build_planning_context_view(
                 "Planning realization reference contract must be an object",
             )
         view["realization_reference_contract"] = _compact(reference_contract)
+    repair_context = context_bundle.get("repair_context")
+    if repair_context is not None:
+        if not isinstance(repair_context, Mapping):
+            raise KernelError(
+                "PLANNING_PROVIDER_CONTEXT_VIEW_INVALID",
+                "Planning repair context must be an object",
+            )
+        source = repair_context.get("source_candidate")
+        if not isinstance(source, Mapping) or not isinstance(
+            source.get("content"), Mapping
+        ):
+            raise KernelError(
+                "PLANNING_PROVIDER_CONTEXT_VIEW_INVALID",
+                "Planning repair context requires its immutable source candidate",
+            )
+        projected_source, omitted, truncated = _project_planning_content(
+            stage=stage,
+            role="repair_source_candidate",
+            content=source["content"],
+            chapter=chapter,
+            selectors=selectors,
+        )
+        repair_view = {
+            "contract_version": str(repair_context.get("contract_version") or ""),
+            "source_candidate": {
+                "asset_version_id": str(source.get("asset_version_id") or ""),
+                "content_hash": str(source.get("content_hash") or ""),
+                "content": projected_source,
+            },
+            "validation_failure": _compact(
+                repair_context.get("validation_failure") or {}
+            ),
+            "failed_narrative_qualifications": _compact(
+                repair_context.get("failed_narrative_qualifications") or []
+            ),
+        }
+        bounded_repair, repair_omitted, repair_truncated = _bound_planning_value(
+            repair_view
+        )
+        view["repair_context"] = bounded_repair
+        view["selection_explanation"]["omitted_item_count"] += (
+            omitted + repair_omitted
+        )
+        view["selection_explanation"]["truncated_character_count"] += (
+            truncated + repair_truncated
+        )
     if _serialized_character_count(view) > _MAX_PROVIDER_CONTEXT_CHARACTERS:
         raise KernelError(
             "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED",
