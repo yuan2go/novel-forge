@@ -2049,8 +2049,12 @@ def _collect_normalized_planning(
         FROM chosen
         JOIN authority_operation AS operation
           ON operation.operation_id=chosen.operation_id
-        JOIN authority_attempt AS attempt
-          ON attempt.operation_id=operation.operation_id
+        JOIN LATERAL (
+            SELECT current.*
+            FROM authority_attempt AS current
+            WHERE current.operation_id=operation.operation_id
+            ORDER BY current.attempt_number DESC LIMIT 1
+        ) AS attempt ON TRUE
         JOIN LATERAL (
             SELECT version.asset_version_id, version.content
             FROM authority_operation_output_asset AS output
@@ -2060,8 +2064,6 @@ def _collect_normalized_planning(
             WHERE output.operation_id=operation.operation_id
               AND asset.asset_type='model_call_log'
               AND version.content->>'candidate_accepted'='true'
-              AND version.content#>>'{production_execution,execution_request,attempt_id}'
-                  =attempt.attempt_id
             ORDER BY version.created_at DESC LIMIT 1
         ) AS log ON TRUE
         JOIN LATERAL (
@@ -2183,9 +2185,7 @@ def _collect_retry_evidence(database_url: str, *, project_id: str) -> dict[str, 
                snapshot.deployment_id, snapshot.binding_set_hash,
                binding.prompt_bundle_ref, binding.prompt_bundle_hash,
                binding.skill_bundle_ref, binding.skill_bundle_hash,
-               binding.context_bundle_hash, binding.tool_policy_hash,
-               log.asset_version_id AS model_call_log_asset_version_id,
-               log.content AS model_call_log
+               binding.context_bundle_hash, binding.tool_policy_hash
         FROM authority_attempt AS attempt
         JOIN LATERAL (
             SELECT lease_id, owner, fencing_token
@@ -2197,18 +2197,6 @@ def _collect_retry_evidence(database_url: str, *, project_id: str) -> dict[str, 
           ON snapshot.attempt_id=attempt.attempt_id
         JOIN authority_agent_runtime_binding AS binding
           ON binding.attempt_id=attempt.attempt_id
-        JOIN LATERAL (
-            SELECT version.asset_version_id, version.content
-            FROM authority_operation_output_asset AS output
-            JOIN authority_asset AS asset ON asset.asset_id=output.asset_id
-            JOIN authority_asset_version AS version
-              ON version.asset_version_id=output.asset_version_id
-            WHERE output.operation_id=attempt.operation_id
-              AND asset.asset_type='model_call_log'
-              AND version.content#>>'{production_execution,execution_request,attempt_id}'
-                  =attempt.attempt_id
-            ORDER BY version.created_at DESC LIMIT 1
-        ) AS log ON TRUE
         WHERE attempt.operation_id=%s
         ORDER BY attempt.attempt_number
         """,
@@ -2219,11 +2207,36 @@ def _collect_retry_evidence(database_url: str, *, project_id: str) -> dict[str, 
             "fault_injection": "not-proven",
             "evidence_refs": [f"operation:{operation_id}"],
         }
+    logs = _query_rows(
+        database_url,
+        """
+        SELECT version.asset_version_id, version.content
+        FROM authority_operation_output_asset AS output
+        JOIN authority_asset AS asset ON asset.asset_id=output.asset_id
+        JOIN authority_asset_version AS version
+          ON version.asset_version_id=output.asset_version_id
+        WHERE output.operation_id=%s
+          AND asset.asset_type='model_call_log'
+        ORDER BY version.created_at
+        """,
+        (operation_id,),
+    )
+    if (
+        len(logs) != 2
+        or _mapping(logs[0]["content"]).get("candidate_accepted") is not False
+        or _mapping(logs[1]["content"]).get("candidate_accepted") is not True
+    ):
+        return {
+            "fault_injection": "not-proven",
+            "evidence_refs": [f"operation:{operation_id}"],
+        }
     normalized: list[dict[str, Any]] = []
-    for row in attempts:
-        content = _mapping(row["model_call_log"])
+    for row, log in zip(attempts, logs, strict=True):
+        content = _mapping(log["content"])
         production = _mapping(content.get("production_execution"))
         input_manifest = _mapping(production.get("input_manifest"))
+        execution_request = _mapping(production.get("execution_request"))
+        execution_handle = _mapping(production.get("execution_handle"))
         normalized.append(
             {
                 "operation_id": operation_id,
@@ -2233,6 +2246,11 @@ def _collect_retry_evidence(database_url: str, *, project_id: str) -> dict[str, 
                 "lease_id": row["lease_id"],
                 "fencing_token": row["fencing_token"],
                 "fence_identity": (f"{row['attempt_id']}:{row['fencing_token']}"),
+                "provider_execution_attempt_id": execution_request.get("attempt_id"),
+                "external_effect_id": execution_request.get("external_effect_id"),
+                "local_execution_receipt_id": execution_handle.get(
+                    "local_execution_receipt_id"
+                ),
                 "candidate_accepted": content.get("candidate_accepted") is True,
                 "snapshot": {
                     key: row[key]
@@ -2266,7 +2284,7 @@ def _collect_retry_evidence(database_url: str, *, project_id: str) -> dict[str, 
                     f"attempt:{row['attempt_id']}",
                     f"lease:{row['lease_id']}",
                     f"pack-snapshot:{row['snapshot_id']}",
-                    f"asset-version:{row['model_call_log_asset_version_id']}",
+                    f"asset-version:{log['asset_version_id']}",
                 ],
                 **_provider_evidence(content),
             }
@@ -2291,6 +2309,23 @@ def _collect_retry_evidence(database_url: str, *, project_id: str) -> dict[str, 
         (operation_id,),
     )
     first, second = normalized
+    provider_executions = {
+        (
+            str(item.get("external_effect_id") or ""),
+            str(item.get("local_execution_receipt_id") or ""),
+        )
+        for item in normalized
+        if item["real_provider_call"] is True
+    }
+    provider_executions.discard(("", ""))
+    recovered_provider_result = (
+        second["attempt_status"] == "SUCCEEDED"
+        and second["candidate_accepted"] is True
+        and second["provider_execution_attempt_id"] == first["attempt_id"]
+        and second["external_effect_id"] == first["external_effect_id"]
+        and second["local_execution_receipt_id"]
+        == first["local_execution_receipt_id"]
+    )
     identity_keys = (
         "snapshot_hash",
         "pack_id",
@@ -2320,9 +2355,8 @@ def _collect_retry_evidence(database_url: str, *, project_id: str) -> dict[str, 
         "frozen_materialization_equal": materialization_equal,
         "stale_fence_commit_rejected": len(stale) == 1,
         "accepted_candidate_count": int(candidate[0]["count"]),
-        "provider_execution_count": sum(
-            1 for item in normalized if item["real_provider_call"] is True
-        ),
+        "provider_execution_count": len(provider_executions),
+        "recovered_provider_result": recovered_provider_result,
         "evidence_refs": [
             f"operation:{operation_id}",
             *[f"late-result-evidence:{row['evidence_id']}" for row in stale],
