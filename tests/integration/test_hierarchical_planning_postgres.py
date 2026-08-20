@@ -239,6 +239,24 @@ class HierarchicalPlanningPostgresTests(unittest.TestCase):
             PlanContractType.CHAPTER_GROUP,
             "group:1",
             parent=volume1,
+            extra={
+                "primary_arc_ids": [arc1["asset_version_id"]],
+                "secondary_arc_ids": [arc2["asset_version_id"]],
+                "required_arc_contributions": [
+                    arc1["asset_version_id"],
+                    arc2["asset_version_id"],
+                ],
+                "arc_checkpoint_expectations": [
+                    {
+                        "arc_plan_version_id": arc1["asset_version_id"],
+                        "expectation": "public accountability advances",
+                    },
+                    {
+                        "arc_plan_version_id": arc2["asset_version_id"],
+                        "expectation": "costly trust becomes actionable",
+                    },
+                ],
+            },
         )
         chapter = self._activate_and_bind(
             PlanContractType.CHAPTER,
@@ -435,6 +453,15 @@ class HierarchicalPlanningPostgresTests(unittest.TestCase):
                     "volume_plan_version_id": volume["asset_version_id"],
                     "segment_id": "segment:commitment",
                 },
+                "primary_arc_ids": [arc["asset_version_id"]],
+                "secondary_arc_ids": [],
+                "required_arc_contributions": [arc["asset_version_id"]],
+                "arc_checkpoint_expectations": [
+                    {
+                        "arc_plan_version_id": arc["asset_version_id"],
+                        "expectation": "denial becomes accountable action",
+                    }
+                ],
             },
         )
         chapter = self._activate_and_bind(
@@ -970,6 +997,10 @@ class HierarchicalPlanningPostgresTests(unittest.TestCase):
                     ],
                     "chapter_range": [1, 3],
                     "cost_range": [100, 300],
+                    "primary_arc_ids": [],
+                    "secondary_arc_ids": [],
+                    "required_arc_contributions": [],
+                    "arc_checkpoint_expectations": [],
                 }
             )
         else:
