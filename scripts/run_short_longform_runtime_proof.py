@@ -1909,12 +1909,26 @@ def _mapping(value: Any) -> dict[str, Any]:
 def _provider_evidence(content: Mapping[str, Any]) -> dict[str, Any]:
     production = _mapping(content.get("production_execution"))
     process = _mapping(production.get("process_evidence"))
+    handle = _mapping(production.get("execution_handle"))
+    result = _mapping(production.get("execution_result"))
     usage = _mapping(content.get("usage")) or _mapping(process.get("usage"))
     cost = _mapping(content.get("cost")) or _mapping(process.get("cost"))
+    transport = str(handle.get("transport") or "")
+    local_receipt_id = str(handle.get("local_execution_receipt_id") or "")
+    process_receipt_id = str(process.get("local_execution_receipt_id") or "")
+    real_process_receipt = (
+        transport == "LOCAL_CLI_REMOTE_INFERENCE"
+        and bool(local_receipt_id)
+        and local_receipt_id == process_receipt_id
+        and process.get("terminal_event_observed") is True
+        and result.get("outcome") == "SUCCEEDED"
+        and bool(result.get("process_receipt_ref"))
+    )
     return {
         "real_provider_call": content.get("real_model_call") is True
-        and process.get("real_model_call") is True,
-        "fixture_protocol_only": process.get("fixture_protocol_only"),
+        and content.get("fixture_protocol_only") is False
+        and real_process_receipt,
+        "fixture_protocol_only": content.get("fixture_protocol_only"),
         "usage": usage,
         "cost": cost,
         "model_authority": _mapping(process.get("model_authority")),
