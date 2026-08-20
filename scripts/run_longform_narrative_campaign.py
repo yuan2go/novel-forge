@@ -57,7 +57,6 @@ from run_short_longform_runtime_proof import (
     _campaign_initial_narrative_snapshots as _build_campaign_initial_snapshots,
     _chapter_outputs,
     _codex_version,
-    _complete_reader_sidecar,
     _install_profile,
     _install_narrative_evaluation_profile,
     _proof_bucket_names,
@@ -746,6 +745,60 @@ def _progress_observation(composition: Any, *, book_run_id: str) -> dict[str, An
     return _jsonable(composition.query.progress(book_run_id=book_run_id).to_dict())
 
 
+def _chapter_runtime_evidence(
+    database_url: str, *, book_run_id: str
+) -> list[dict[str, Any]]:
+    """Read Chapter liveness milestones without owning production state."""
+
+    return _query_rows(
+        database_url,
+        """
+        SELECT request.chapter_number, request.chapter_request_id,
+               request.created_at AS chapter_request_created_at,
+               request.chapter_root_operation_id,
+               root.created_at AS chapter_dispatch_at,
+               acceptance.created_at AS chapter_acceptance_at,
+               acceptance.chapter_outcome_asset_version_id,
+               acceptance.story_state_asset_version_id,
+               acceptance.canon_snapshot_asset_version_id,
+               provider.first_provider_call_at,
+               reader.operation_id AS reader_operation_id,
+               reader.operation_status AS reader_operation_status,
+               reader.operation_created_at AS reader_operation_created_at
+        FROM authority_book_chapter_request AS request
+        LEFT JOIN authority_operation AS root
+          ON root.operation_id=request.chapter_root_operation_id
+        LEFT JOIN authority_book_chapter_acceptance AS acceptance
+          ON acceptance.chapter_request_id=request.chapter_request_id
+         AND acceptance.status='COMMITTED'
+        LEFT JOIN LATERAL (
+            SELECT MIN(dispatch.created_at) AS first_provider_call_at
+            FROM authority_operation AS operation
+            JOIN authority_external_effect AS effect
+              ON effect.operation_id=operation.operation_id
+             AND effect.effect_type='model.invoke'
+            JOIN authority_external_effect_dispatch AS dispatch
+              ON dispatch.external_effect_id=effect.external_effect_id
+            WHERE operation.root_operation_id=request.chapter_root_operation_id
+        ) AS provider ON TRUE
+        LEFT JOIN LATERAL (
+            SELECT operation.operation_id,
+                   operation.status AS operation_status,
+                   operation.created_at AS operation_created_at
+            FROM authority_book_followup_operation AS link
+            JOIN authority_operation AS operation
+              ON operation.operation_id=link.operation_id
+            WHERE link.chapter_request_id=request.chapter_request_id
+              AND link.followup_type='READER_OUTCOME'
+            ORDER BY operation.created_at DESC LIMIT 1
+        ) AS reader ON TRUE
+        WHERE request.book_run_id=%s
+        ORDER BY request.chapter_number
+        """,
+        (book_run_id,),
+    )
+
+
 def _approve_observed_replan(
     composition: Any,
     *,
@@ -1028,13 +1081,6 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
                     followup_process=followup_process,
                 )
             )
-            _reader = _complete_reader_sidecar(
-                database_url=args.database_url,
-                project_id=state["project_id"],
-                chapter_request_id=str(request["chapter_request_id"]),
-                followup_process=followup_process,
-                timeout_seconds=1800.0,
-            )
             chapter_export = _export_chapter(
                 authority=composition.authority,
                 project_id=state["project_id"],
@@ -1090,6 +1136,9 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
                 ),
                 "failures": failures,
                 "last_supervisor_ticks": supervisor_ticks[-50:],
+                "chapter_runtime_evidence": _chapter_runtime_evidence(
+                    args.database_url, book_run_id=book_run_id
+                ),
                 "status": "RUNNING"
                 if chapter_number < target
                 else "CHECKPOINT_REACHED",

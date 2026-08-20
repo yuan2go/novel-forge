@@ -111,9 +111,14 @@ def test_api_and_worker_share_the_canonical_book_production_composition() -> Non
     assert "build_narrative_evaluation_pack_profile(" in real_provider_proof
     assert '"schema_version": BOOK_DESIGN_SCHEMA_VERSION' in real_provider_proof
     assert "PostgresBookProductionSupervisor(" not in real_provider_proof
+    chapter_one_to_two_path = real_provider_proof.split(
+        "for chapter_number in (1, 2):", 1
+    )[1].split("# The next-Chapter critical path", 1)[0]
+    assert "_complete_reader_sidecar(" not in chapter_one_to_two_path
     assert "_start_book_worker(" in longform_campaign
     assert "_start_followup_worker(" in longform_campaign
     assert "_wait_for_chapter_dispatch(" in longform_campaign
+    assert "_complete_reader_sidecar" not in longform_campaign
     assert "_drive_to_chapter_dispatch(" not in longform_campaign
     assert "_accept_chapter(" not in longform_campaign
 

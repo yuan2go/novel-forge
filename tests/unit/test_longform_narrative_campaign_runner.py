@@ -223,6 +223,28 @@ def test_campaign_counts_embedded_narrative_context_manifests(monkeypatch) -> No
     assert any("asset_type='context_bundle'" in sql for sql in observed_sql)
 
 
+def test_chapter_runtime_evidence_uses_authority_timestamps(monkeypatch) -> None:
+    campaign = _load_script()
+    observed: dict[str, object] = {}
+
+    def query_rows(_database_url: str, sql: str, params):
+        observed["sql"] = sql
+        observed["params"] = params
+        return [{"chapter_number": 2, "first_provider_call_at": "timestamp"}]
+
+    monkeypatch.setattr(campaign, "_query_rows", query_rows)
+
+    evidence = campaign._chapter_runtime_evidence(
+        "postgresql://authority", book_run_id="book-run-1"
+    )
+
+    assert evidence[0]["chapter_number"] == 2
+    assert observed["params"] == ("book-run-1",)
+    assert "authority_book_chapter_acceptance" in str(observed["sql"])
+    assert "authority_external_effect_dispatch" in str(observed["sql"])
+    assert "authority_book_followup_operation" in str(observed["sql"])
+
+
 def test_frozen_initial_narrative_state_supports_first_chapter_resource_delta() -> None:
     campaign = _load_script()
     root = Path(__file__).resolve().parents[2]

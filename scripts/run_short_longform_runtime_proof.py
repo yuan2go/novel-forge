@@ -3833,6 +3833,22 @@ def _run_book_phase(
     reader_reports: dict[int, dict[str, Any]] = {}
     runtime_inputs: dict[str, str] = {}
 
+    def stopped_result(chapter_number: int) -> dict[str, Any]:
+        _stop_followup_worker(followup_process, followup_log)
+        atexit.unregister(_stop_followup_worker)
+        return {
+            "stopped_after_chapter": chapter_number,
+            "book_run": authority.require(admission.book_run_id),
+            "progress": composition.query.progress(
+                book_run_id=admission.book_run_id
+            ).to_dict(),
+            "initial_snapshot": initial_snapshot.to_dict(),
+            "chapter_requests": chapter_requests,
+            "reader_reports": reader_reports,
+            "supervisor_ticks": supervisor_ticks,
+            "chapter_ticks": chapter_ticks,
+        }
+
     for chapter_number in (1, 2):
         checkpoint = authority.require(admission.book_run_id)
         if int(checkpoint["accepted_through_chapter"]) >= chapter_number:
@@ -3859,19 +3875,8 @@ def _run_book_phase(
             )
             chapter_requests[chapter_number] = request
             chapter_ticks[chapter_number] = []
-            reader = _complete_reader_sidecar(
-                database_url=database_url,
-                project_id=project_id,
-                chapter_request_id=str(request["chapter_request_id"]),
-                followup_process=followup_process,
-            )
-            reader_reports[chapter_number] = reader
-            runtime_inputs = _runtime_planning_inputs(
-                authority,
-                project_id=project_id,
-                chapter_request_id=str(request["chapter_request_id"]),
-                reader_report=reader,
-            )
+            if stop_after_chapter == chapter_number:
+                return stopped_result(chapter_number)
             continue
         request, dispatch_ticks = _drive_to_chapter_dispatch(
             supervisor,
@@ -3896,31 +3901,27 @@ def _run_book_phase(
                 chapter_number=chapter_number,
             )
         )
-        reader = _complete_reader_sidecar(
+        if stop_after_chapter == chapter_number:
+            return stopped_result(chapter_number)
+
+    # The next-Chapter critical path above never waits for advisory work.  This
+    # full three-Chapter proof explicitly consumes the already admitted Reader
+    # evidence only after Chapter 2 is durably accepted; it is not a Book
+    # progression precondition.
+    for chapter_number in (1, 2):
+        request = chapter_requests[chapter_number]
+        reader_reports[chapter_number] = _complete_reader_sidecar(
             database_url=database_url,
             project_id=project_id,
             chapter_request_id=str(request["chapter_request_id"]),
             followup_process=followup_process,
         )
-        reader_reports[chapter_number] = reader
-        runtime_inputs = _runtime_planning_inputs(
-            authority,
-            project_id=project_id,
-            chapter_request_id=str(request["chapter_request_id"]),
-            reader_report=reader,
-        )
-        if stop_after_chapter == chapter_number:
-            _stop_followup_worker(followup_process, followup_log)
-            atexit.unregister(_stop_followup_worker)
-            return {
-                "stopped_after_chapter": chapter_number,
-                "book_run": authority.require(admission.book_run_id),
-                "initial_snapshot": initial_snapshot.to_dict(),
-                "chapter_requests": chapter_requests,
-                "reader_reports": reader_reports,
-                "supervisor_ticks": supervisor_ticks,
-                "chapter_ticks": chapter_ticks,
-            }
+    runtime_inputs = _runtime_planning_inputs(
+        authority,
+        project_id=project_id,
+        chapter_request_id=str(chapter_requests[2]["chapter_request_id"]),
+        reader_report=reader_reports[2],
+    )
 
     original_chapter_3, original_projection = _generate_chapter_plan(
         planning,
