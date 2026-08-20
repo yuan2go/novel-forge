@@ -373,6 +373,11 @@ def test_realization_reference_contract_exposes_exact_frozen_authority_choices()
 
 def test_volume_and_chapter_provider_contracts_bind_timeline_segments() -> None:
     volume = planning_provider_output_schema(PlanContractType.VOLUME)
+    group = planning_provider_output_schema(
+        PlanContractType.CHAPTER_GROUP,
+        parent_version_id="volume:v1",
+        arc_plan_version_id="arc:v1",
+    )
     chapter = planning_provider_output_schema(
         PlanContractType.CHAPTER,
         parent_version_id="group:v1",
@@ -392,6 +397,21 @@ def test_volume_and_chapter_provider_contracts_bind_timeline_segments() -> None:
         "volume_plan_version_id",
         "segment_id",
     }
+    for field in (
+        "primary_arc_ids",
+        "secondary_arc_ids",
+        "required_arc_contributions",
+        "arc_checkpoint_expectations",
+    ):
+        assert field in group["required"]
+    assert group["properties"]["primary_arc_ids"]["items"]["const"] == "arc:v1"
+    assert group["properties"]["secondary_arc_ids"]["maxItems"] == 1
+    assert group["properties"]["required_arc_contributions"]["items"][
+        "const"
+    ] == "arc:v1"
+    assert group["properties"]["arc_checkpoint_expectations"]["items"][
+        "properties"
+    ]["arc_plan_version_id"]["const"] == "arc:v1"
     for field in (
         "chapter_intent",
         "arc_schedule",

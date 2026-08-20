@@ -1431,6 +1431,15 @@ def planning_provider_output_schema(
     for field in TYPE_FIELDS[contract_type]:
         if field in strings:
             properties[field] = string
+        elif field in {"primary_arc_ids", "secondary_arc_ids"}:
+            properties[field] = {
+                "type": "array",
+                "items": _frozen_arc_ref_schema(arc_plan_version_ids, string),
+            }
+            if field == "primary_arc_ids":
+                properties[field]["minItems"] = 1
+            if arc_plan_version_ids:
+                properties[field]["maxItems"] = len(arc_plan_version_ids)
         elif field in arrays:
             properties[field] = string_array
         elif field == "ending_contract":
@@ -1453,15 +1462,38 @@ def planning_provider_output_schema(
             }
         elif field == "required_arc_contributions":
             arc_ref = _frozen_arc_ref_schema(arc_plan_version_ids, string)
+            properties[field] = (
+                {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": arc_ref,
+                }
+                if contract_type is PlanContractType.CHAPTER_GROUP
+                else {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": _strict_object(
+                        {"arc_plan_version_id": arc_ref, "contribution": string}
+                    ),
+                }
+            )
+            if arc_plan_version_ids:
+                properties[field]["maxItems"] = min(3, len(arc_plan_version_ids))
+        elif field == "arc_checkpoint_expectations":
             properties[field] = {
                 "type": "array",
                 "minItems": 1,
                 "items": _strict_object(
-                    {"arc_plan_version_id": arc_ref, "contribution": string}
+                    {
+                        "arc_plan_version_id": _frozen_arc_ref_schema(
+                            arc_plan_version_ids, string
+                        ),
+                        "expectation": string,
+                    }
                 ),
             }
             if arc_plan_version_ids:
-                properties[field]["maxItems"] = min(3, len(arc_plan_version_ids))
+                properties[field]["maxItems"] = len(arc_plan_version_ids)
         elif field in integer_arrays:
             properties[field] = {
                 "type": "array",

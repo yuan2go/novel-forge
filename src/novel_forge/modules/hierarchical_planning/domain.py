@@ -202,6 +202,10 @@ TYPE_FIELDS = {
         "chapter_function_matrix",
         "chapter_range",
         "cost_range",
+        "primary_arc_ids",
+        "secondary_arc_ids",
+        "required_arc_contributions",
+        "arc_checkpoint_expectations",
     ),
     PlanContractType.CHAPTER: (
         "chapter_number",
