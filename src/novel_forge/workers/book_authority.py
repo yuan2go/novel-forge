@@ -34,22 +34,6 @@ from novel_forge.storage.database_runtime import close_all_database_runtimes
 from novel_forge.storage.worker_health import PostgresWorkerHealthObserver
 
 
-ACTIVE_STATES = (
-    "CHAPTER_SUBMITTED",
-    "CHAPTER_RUNNING",
-    "CHAPTER_WAITING_RETRY",
-    "CHAPTER_COMPLETED",
-    "READER_OUTCOME_PENDING",
-    "CHECKPOINT_PENDING",
-    "REPLAN_REQUIRED",
-    "REPLAN_GENERATING",
-    "CHAPTER_GROUP_REQUIRED",
-    "CHAPTER_PLAN_REQUIRED",
-    "READY",
-    "COMPLETED",
-)
-
-
 def schedule_book_coordination_jobs(
     query: PostgresBookProductionQuery,
     runtime_jobs: RuntimeJobAuthority,
@@ -58,7 +42,6 @@ def schedule_book_coordination_jobs(
     book_run_id: str = "",
 ) -> tuple[dict[str, object], ...]:
     pending = query.coordination_candidates(
-        active_states=ACTIVE_STATES,
         book_run_id=book_run_id,
         limit=limit,
     )

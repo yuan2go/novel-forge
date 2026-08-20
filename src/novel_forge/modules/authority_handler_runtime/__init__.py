@@ -3,6 +3,7 @@
 from .contracts import (
     AuthorityAuxiliaryOutput,
     AuthorityHandlerOutput,
+    AuthorityHandlerRegistry,
     AuthorityHandlerRegistration,
     AuthorityHandlerRequest,
     AuthorityInputAsset,
@@ -15,6 +16,7 @@ __all__ = [
     "AuthorityAuxiliaryOutput",
     "AuthorityExecutionResult",
     "AuthorityHandlerOutput",
+    "AuthorityHandlerRegistry",
     "AuthorityHandlerRegistration",
     "AuthorityHandlerRequest",
     "AuthorityInputAsset",

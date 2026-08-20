@@ -123,6 +123,183 @@ class BookProductionState(StrEnum):
     ABORTED = "ABORTED"
 
 
+class BookProductionStateClass(StrEnum):
+    """Scheduling meaning for every durable Book production state."""
+
+    ACTIONABLE = "ACTIONABLE"
+    DURABLE_WAIT = "DURABLE_WAIT"
+    TERMINAL = "TERMINAL"
+
+
+@dataclass(frozen=True, slots=True)
+class BookProductionStateSemantics:
+    state_class: BookProductionStateClass
+    next_expected_transition: str
+    blocking_class: str
+    blocking_reason: str
+    wake_condition: str
+
+
+def _state_semantics(
+    state_class: BookProductionStateClass,
+    next_expected_transition: str,
+    *,
+    blocking_class: str = "PRODUCTION_CRITICAL_WORK",
+    blocking_reason: str = (
+        "production-critical transition is active or eligible for worker execution"
+    ),
+    wake_condition: str = "BOOK_WORKER_TICK",
+) -> BookProductionStateSemantics:
+    return BookProductionStateSemantics(
+        state_class=state_class,
+        next_expected_transition=next_expected_transition,
+        blocking_class=blocking_class,
+        blocking_reason=blocking_reason,
+        wake_condition=wake_condition,
+    )
+
+
+BOOK_PRODUCTION_STATE_SEMANTICS: dict[
+    BookProductionState, BookProductionStateSemantics
+] = {
+    BookProductionState.INPUT_RESOLUTION_REQUIRED: _state_semantics(
+        BookProductionStateClass.DURABLE_WAIT,
+        "RESOLVE_AUTHORITY_INPUT",
+        blocking_class="INPUT_AUTHORITY_WAIT",
+        blocking_reason="governed Book production input is not resolved",
+        wake_condition="BOOK_INPUT_SNAPSHOT_RESOLVED",
+    ),
+    BookProductionState.PLANNING_REQUIRED: _state_semantics(
+        BookProductionStateClass.ACTIONABLE, "GENERATE_REQUIRED_PLAN"
+    ),
+    BookProductionState.PLAN_GENERATING: _state_semantics(
+        BookProductionStateClass.ACTIONABLE, "RECONCILE_PLAN_GENERATION"
+    ),
+    BookProductionState.PLAN_APPROVAL_PENDING: _state_semantics(
+        BookProductionStateClass.DURABLE_WAIT,
+        "APPROVE_GENERATED_PLAN",
+        blocking_class="PLAN_GOVERNANCE_WAIT",
+        blocking_reason="generated plan requires an owning Authority decision",
+        wake_condition="PLAN_AUTHORITY_DECISION_COMMITTED",
+    ),
+    BookProductionState.READY: _state_semantics(
+        BookProductionStateClass.ACTIONABLE,
+        "PLAN_OR_DISPATCH_NEXT_CHAPTER",
+        blocking_class="NONE",
+        wake_condition="BOOK_WORKER_TICK",
+    ),
+    BookProductionState.CHAPTER_GROUP_REQUIRED: _state_semantics(
+        BookProductionStateClass.ACTIONABLE, "GENERATE_OR_START_CHAPTER_GROUP"
+    ),
+    BookProductionState.CHAPTER_PLAN_REQUIRED: _state_semantics(
+        BookProductionStateClass.ACTIONABLE, "GENERATE_OR_FREEZE_CHAPTER_PLAN"
+    ),
+    BookProductionState.CHAPTER_SUBMITTED: _state_semantics(
+        BookProductionStateClass.ACTIONABLE, "RECONCILE_CHAPTER_OPERATION"
+    ),
+    BookProductionState.CHAPTER_RUNNING: _state_semantics(
+        BookProductionStateClass.ACTIONABLE, "RECONCILE_CHAPTER_OPERATION"
+    ),
+    BookProductionState.CHAPTER_WAITING_RETRY: _state_semantics(
+        BookProductionStateClass.ACTIONABLE, "RESUME_OR_RECONCILE_CHAPTER_RETRY"
+    ),
+    BookProductionState.CHAPTER_COMPLETED: _state_semantics(
+        BookProductionStateClass.ACTIONABLE, "COMMIT_CHAPTER_ACCEPTANCE"
+    ),
+    BookProductionState.CHAPTER_ACCEPTANCE_PENDING: _state_semantics(
+        BookProductionStateClass.ACTIONABLE, "COMMIT_CHAPTER_ACCEPTANCE"
+    ),
+    BookProductionState.CHAPTER_FAILED_RETRYABLE: _state_semantics(
+        BookProductionStateClass.ACTIONABLE, "RECONCILE_CHAPTER_RETRY"
+    ),
+    BookProductionState.CHAPTER_FAILED_TERMINAL: _state_semantics(
+        BookProductionStateClass.ACTIONABLE,
+        "ABORT_BOOK_AFTER_TERMINAL_CHAPTER_FAILURE",
+        blocking_class="TERMINAL_CHAPTER_FAILURE",
+    ),
+    BookProductionState.CANON_PENDING: _state_semantics(
+        BookProductionStateClass.ACTIONABLE, "REPLAY_ATOMIC_CHAPTER_ACCEPTANCE"
+    ),
+    BookProductionState.CANON_COMMITTED: _state_semantics(
+        BookProductionStateClass.ACTIONABLE, "NORMALIZE_ACCEPTED_BOOK_CURSOR"
+    ),
+    BookProductionState.READER_OUTCOME_PENDING: _state_semantics(
+        BookProductionStateClass.ACTIONABLE,
+        "NORMALIZE_LEGACY_NON_BLOCKING_FOLLOWUP_STATE",
+        blocking_class="LEGACY_STATE_RECOVERY",
+    ),
+    BookProductionState.FOLLOWUP_PENDING: _state_semantics(
+        BookProductionStateClass.ACTIONABLE,
+        "NORMALIZE_LEGACY_NON_BLOCKING_FOLLOWUP_STATE",
+        blocking_class="LEGACY_STATE_RECOVERY",
+    ),
+    BookProductionState.CHECKPOINT_PENDING: _state_semantics(
+        BookProductionStateClass.ACTIONABLE,
+        "NORMALIZE_LEGACY_NON_BLOCKING_FOLLOWUP_STATE",
+        blocking_class="LEGACY_STATE_RECOVERY",
+    ),
+    BookProductionState.REPLAN_REQUIRED: _state_semantics(
+        BookProductionStateClass.ACTIONABLE, "CREATE_GOVERNED_REPLAN"
+    ),
+    BookProductionState.REPLAN_GENERATING: _state_semantics(
+        BookProductionStateClass.ACTIONABLE, "RECONCILE_GOVERNED_REPLAN"
+    ),
+    BookProductionState.REPLAN_APPROVAL_PENDING: _state_semantics(
+        BookProductionStateClass.DURABLE_WAIT,
+        "APPROVE_REPLAN",
+        blocking_class="REPLAN_GOVERNANCE_WAIT",
+        blocking_reason="future-only replan requires an owning Authority decision",
+        wake_condition="REPLAN_AUTHORITY_DECISION_COMMITTED",
+    ),
+    BookProductionState.PAUSED: _state_semantics(
+        BookProductionStateClass.DURABLE_WAIT,
+        "RESUME_OR_ABORT_BOOK",
+        blocking_class="OPERATOR_WAIT",
+        blocking_reason="Book production is explicitly paused",
+        wake_condition="BOOK_RESUME_OR_ABORT_COMMAND",
+    ),
+    BookProductionState.COMPLETED: _state_semantics(
+        BookProductionStateClass.TERMINAL,
+        "NONE",
+        blocking_class="TERMINAL",
+        wake_condition="NONE",
+    ),
+    BookProductionState.ABORTED: _state_semantics(
+        BookProductionStateClass.TERMINAL,
+        "NONE",
+        blocking_class="TERMINAL",
+        blocking_reason="Book production was aborted",
+        wake_condition="NONE",
+    ),
+}
+
+
+def book_production_state_semantics(
+    state: BookProductionState | str,
+) -> BookProductionStateSemantics:
+    try:
+        parsed = (
+            state
+            if isinstance(state, BookProductionState)
+            else BookProductionState(state)
+        )
+        return BOOK_PRODUCTION_STATE_SEMANTICS[parsed]
+    except (ValueError, KeyError) as exc:
+        raise KernelError(
+            "BOOK_PRODUCTION_STATE_UNCLASSIFIED",
+            f"Book production state has no scheduling semantics: {state}",
+        ) from exc
+
+
+def actionable_book_production_states() -> tuple[str, ...]:
+    return tuple(
+        state.value
+        for state in BookProductionState
+        if BOOK_PRODUCTION_STATE_SEMANTICS[state].state_class
+        is BookProductionStateClass.ACTIONABLE
+    )
+
+
 @dataclass(frozen=True, slots=True)
 class StartBookProductionCommand:
     project_id: str
@@ -888,6 +1065,14 @@ class PostgresBookAuthority:
         outcome = outputs["chapter_outcome"]
         story_state = outputs["story_state_snapshot"]
         canon_snapshot = outputs["canon_snapshot"]
+        followup_snapshot = self._accepted_followup_snapshot(
+            book=book,
+            request=request,
+            chapter_outcome_asset_version_id=outcome.asset_version_id,
+            story_state_asset_version_id=story_state.asset_version_id,
+            canon_snapshot_asset_version_id=canon_snapshot.asset_version_id,
+            acceptance_operation_id=admission.operation_id,
+        )
         self._probe("before_acceptance")
         acceptance_id = (
             "chapter-acceptance:" + hashlib.sha256(stable_key.encode()).hexdigest()
@@ -933,6 +1118,7 @@ class PostgresBookAuthority:
                         if item["asset_type"] == "final_release_gate_report"
                     ),
                     "cost_receipt_refs": list(evidence.get("cost_receipt_refs") or ()),
+                    "followup_snapshot": followup_snapshot,
                 },
                 before_cursor_advance=lambda: self._probe(
                     "after_acceptance_before_cursor"
@@ -967,12 +1153,6 @@ class PostgresBookAuthority:
         )
         self._probe("after_acceptance_commit")
         result = self.require(request["book_run_id"])
-        if result["state"] == BookProductionState.COMPLETED.value:
-            coordinate_saga(
-                self.database_url,
-                self._book_graph_context(result, principal.principal_id),
-                str(result["saga_id"]),
-            )
         return {
             **result,
             "acceptance_operation_id": admission.operation_id,
@@ -1466,6 +1646,14 @@ class PostgresBookAuthority:
 
     def reconcile_chapter(self, chapter_request_id: str) -> dict[str, Any]:
         request = self.require_chapter_request(chapter_request_id)
+        if self._find_chapter_acceptance(
+            chapter_request_id=chapter_request_id,
+            project_id=request["project_id"],
+        ) is not None:
+            # Acceptance and the Book narrative cursor commit atomically. A
+            # ChapterGroup replay may still need to consume that acceptance,
+            # but reconciliation must never regress the accepted Book state.
+            return request
         root = request["chapter_root_operation_id"]
         if not root:
             return request
@@ -1585,98 +1773,10 @@ class PostgresBookAuthority:
             input_assets=input_assets,
         )
 
-    def complete_followup(
-        self, operation_id: str, *, replan_required: bool = False
-    ) -> dict[str, Any]:
-        with AuthorityUnitOfWork(self.database_url) as uow:
-            uow.cursor.execute(
-                """
-                SELECT link.book_run_id, link.followup_type, operation.status,
-                       request.chapter_number, book.target_chapter_count,
-                       book.saga_id, book.project_id, root.actor_id,
-                       root.trace_id, root.correlation_id
-                FROM authority_book_followup_operation AS link
-                JOIN authority_operation AS operation
-                  ON operation.operation_id=link.operation_id
-                JOIN authority_book_chapter_request AS request
-                  ON request.chapter_request_id=link.chapter_request_id
-                JOIN authority_book_production AS book
-                  ON book.book_run_id=link.book_run_id
-                JOIN authority_operation AS root
-                  ON root.operation_id=book.root_operation_id
-                WHERE link.operation_id=%s
-                """,
-                [operation_id],
-            )
-            row = uow.cursor.fetchone()
-            if row is None:
-                raise KernelError(
-                    "BOOK_FOLLOWUP_NOT_FOUND", "follow-up link does not exist"
-                )
-            if row[2] != "SUCCEEDED":
-                raise KernelError(
-                    "BOOK_FOLLOWUP_NOT_COMPLETE", f"follow-up Operation is {row[2]}"
-                )
-        if replan_required:
-            state = BookProductionState.REPLAN_REQUIRED
-        elif row[1] == "READER_OUTCOME":
-            state = BookProductionState.CHAPTER_COMPLETED
-        elif int(row[3]) >= int(row[4]):
-            state = BookProductionState.COMPLETED
-        else:
-            state = BookProductionState.READY
-        book = self.require(str(row[0]))
-        expected_version = int(book["version"])
-
-        def commit_followup(
-            uow: AuthorityUnitOfWork,
-            _command_operation_id: str,
-            _checkpoint: TransactionCheckpoint,
-        ) -> dict[str, Any]:
-            if not uow.repositories.book_authority.advance_if_version(
-                book_run_id=str(row[0]),
-                chapter_number=int(row[3]),
-                state=state.value,
-                expected_version=expected_version,
-            ):
-                raise KernelError(
-                    "BOOK_FOLLOWUP_CHECKPOINT_CONFLICT",
-                    "Book checkpoint changed before follow-up completion",
-                )
-            return {
-                "book_run_id": str(row[0]),
-                "followup_operation_id": operation_id,
-                "chapter_number": int(row[3]),
-                "state": state.value,
-            }
-
-        self._execute_mutation(
-            book=book,
-            action="followup_complete",
-            event_type="book.followup.completed",
-            idempotency_key=(
-                f"{book['stable_idempotency_key']}:followup:{operation_id}:"
-                f"replan:{str(replan_required).lower()}"
-            ),
-            actor_id=str(row[7]),
-            trace_id=str(row[8]),
-            correlation_id=str(row[9]),
-            causation_id=operation_id,
-            payload={"followup_type": str(row[1])},
-            handler=commit_followup,
-        )
-        if state is BookProductionState.COMPLETED:
-            coordinate_saga(
-                self.database_url,
-                GraphCommandContext(str(row[6]), str(row[7]), str(row[8]), str(row[9])),
-                str(row[5]),
-            )
-        return self.require(str(row[0]))
-
     def complete_book_checkpoint(
         self, book_run_id: str, *, chapter_number: int
     ) -> dict[str, Any]:
-        """Persist a non-Recap checkpoint and close the root Saga when terminal."""
+        """Persist final production closure and close the root Saga when terminal."""
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
@@ -1728,7 +1828,8 @@ class PostgresBookAuthority:
             action="checkpoint_advance",
             event_type="book.checkpoint.advanced",
             idempotency_key=(
-                f"{book['stable_idempotency_key']}:checkpoint:{chapter_number}"
+                f"{book['stable_idempotency_key']}:production-completion:"
+                f"{chapter_number}:v{expected_version}"
             ),
             actor_id=str(row[3]),
             trace_id=str(row[4]),
@@ -1756,7 +1857,6 @@ class PostgresBookAuthority:
                        stable_idempotency_key, state, current_chapter,
                        target_chapter_count, light_recap_cadence,
                        formal_recap_cadence, active_chapter_request_id,
-                       last_reader_outcome_operation_id, last_recap_operation_id,
                        version, paused_reason, failure_classification
                        ,accepted_through_chapter,
                        active_child_delegation_id, active_chapter_number,
@@ -1789,8 +1889,6 @@ class PostgresBookAuthority:
             "light_recap_cadence",
             "formal_recap_cadence",
             "active_chapter_request_id",
-            "last_reader_outcome_operation_id",
-            "last_recap_operation_id",
             "version",
             "paused_reason",
             "failure_classification",
@@ -1991,6 +2089,30 @@ class PostgresBookAuthority:
                 "BOOK_READER_OUTCOME_NOT_READY",
                 "Reader Outcome requires a completed Chapter operation",
             )
+        existing_operation_id = self._followup_operation_id(
+            chapter_request_id=chapter_request_id,
+            followup_type=followup_type,
+        )
+        if existing_operation_id:
+            return BookFollowupAdmission(
+                existing_operation_id,
+                str(request["project_id"]),
+                True,
+            )
+        required_lineage = (
+            "observed_through_chapter",
+            "acceptance_operation_id",
+            "book_production_input_snapshot_id",
+        )
+        missing_lineage = [
+            name for name in required_lineage if payload.get(name) in (None, "")
+        ]
+        if missing_lineage:
+            raise KernelError(
+                "BOOK_FOLLOWUP_ACCEPTED_LINEAGE_REQUIRED",
+                "new follow-up admission is missing accepted lineage: "
+                + ", ".join(missing_lineage),
+            )
         stable_key = (
             f"{request['stable_idempotency_key']}:{followup_type.lower()}:"
             f"{payload.get('checkpoint_type') or 'v1'}"
@@ -2009,12 +2131,25 @@ class PostgresBookAuthority:
                 input_assets=input_assets,
                 root_operation_id=None,
                 parent_operation_id=None,
-                causation_operation_id=request["chapter_root_operation_id"],
+                causation_operation_id=str(
+                    payload.get("acceptance_operation_id")
+                    or request["chapter_root_operation_id"]
+                ),
             ),
             principal=principal,
         )
+        existing_operation_id = self._followup_operation_id(
+            chapter_request_id=chapter_request_id,
+            followup_type=followup_type,
+        )
+        if existing_operation_id:
+            if existing_operation_id != admission.operation_id:
+                raise KernelError(
+                    "BOOK_FOLLOWUP_IDEMPOTENCY_CONFLICT",
+                    "Chapter follow-up replay resolved to a different Operation",
+                )
+            return admission
         followup_id = "book-followup:" + hashlib.sha256(stable_key.encode()).hexdigest()
-        current = self.require(request["book_run_id"])
 
         def commit_followup_link(
             uow: AuthorityUnitOfWork,
@@ -2029,7 +2164,6 @@ class PostgresBookAuthority:
                 followup_type=followup_type,
                 operation_id=admission.operation_id,
                 stable_idempotency_key=stable_key,
-                expected_book_version=int(current["version"]),
             )
             checkpoint("after_followup_link")
             return {
@@ -2039,7 +2173,7 @@ class PostgresBookAuthority:
             }
 
         self._execute_mutation(
-            book=current,
+            book=book,
             action="followup_link",
             event_type="book.followup.linked",
             idempotency_key=f"{stable_key}:book-link",
@@ -2054,6 +2188,103 @@ class PostgresBookAuthority:
             handler=commit_followup_link,
         )
         return admission
+
+    def _accepted_followup_snapshot(
+        self,
+        *,
+        book: dict[str, Any],
+        request: dict[str, Any],
+        chapter_outcome_asset_version_id: str,
+        story_state_asset_version_id: str,
+        canon_snapshot_asset_version_id: str,
+        acceptance_operation_id: str,
+    ) -> dict[str, Any]:
+        """Freeze the accepted head observed by asynchronous advisory work."""
+
+        command_payload = dict(request.get("command_payload") or {})
+        context_refs = dict(command_payload.get("context_version_refs") or {})
+        longform_refs = dict(book.get("longform_context_versions") or {})
+        arc_plan_versions = tuple(
+            str(item)
+            for item in (
+                context_refs.get("arc_plan_versions")
+                or longform_refs.get("arc_plan_versions")
+                or ()
+            )
+        )
+        return {
+            "schema_version": "book-followup-accepted-snapshot-v1",
+            "observed_through_chapter": int(request["chapter_number"]),
+            "book_production_input_snapshot_id": str(
+                context_refs.get("book_production_input_snapshot_id")
+                or book.get("input_snapshot_id")
+                or ""
+            ),
+            "book_design_version": str(
+                context_refs.get("book_design_version")
+                or book["book_design_version"]
+            ),
+            "book_plan_version": str(
+                context_refs.get("book_plan_version") or book["book_plan_version"]
+            ),
+            "volume_plan_version": str(
+                context_refs.get("volume_plan_version")
+                or longform_refs.get("volume_plan_version")
+                or ""
+            ),
+            "arc_plan_versions": list(arc_plan_versions),
+            "chapter_group_plan_version": str(
+                context_refs.get("chapter_group_plan_version")
+                or request.get("parent_group_version_id")
+                or ""
+            ),
+            "chapter_plan_version": str(request["chapter_plan_version"]),
+            "production_profile_version": str(request["production_profile_version"]),
+            "light_recap_cadence": int(book["light_recap_cadence"]),
+            "formal_recap_cadence": int(book["formal_recap_cadence"]),
+            "reader_segment_version": str(
+                context_refs.get("reader_segment_version")
+                or longform_refs.get("reader_segment_version")
+                or ""
+            ),
+            "reader_contract_version": str(
+                context_refs.get("reader_contract_version")
+                or longform_refs.get("reader_contract_version")
+                or ""
+            ),
+            "platform_profile_version": str(
+                context_refs.get("platform_profile_version")
+                or longform_refs.get("platform_profile_version")
+                or ""
+            ),
+            "quality_trend_version": str(
+                context_refs.get("quality_trend_version")
+                or longform_refs.get("quality_trend_version")
+                or ""
+            ),
+            "accepted_chapter_outcome_version": chapter_outcome_asset_version_id,
+            "accepted_story_state_version": story_state_asset_version_id,
+            "accepted_canon_snapshot_version": canon_snapshot_asset_version_id,
+            "acceptance_operation_id": acceptance_operation_id,
+            "chapter_root_operation_id": str(
+                request.get("chapter_root_operation_id") or ""
+            ),
+        }
+
+    def _followup_operation_id(
+        self, *, chapter_request_id: str, followup_type: str
+    ) -> str:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT operation_id
+                FROM authority_book_followup_operation
+                WHERE chapter_request_id=%s AND followup_type=%s
+                """,
+                [chapter_request_id, followup_type],
+            )
+            row = uow.cursor.fetchone()
+        return str(row[0]) if row is not None else ""
 
     def _book_graph_context(
         self, book: dict[str, Any], actor_id: str
@@ -2566,7 +2797,7 @@ def book_coordinate_definition(
     }
 
 
-def _select_chapter_acceptance_outputs(
+def select_chapter_acceptance_outputs(
     evidence: dict[str, Any],
 ) -> dict[str, dict[str, Any]]:
     """Resolve the accepted generation through final release lineage."""
@@ -2653,7 +2884,7 @@ def _validate_chapter_acceptance_evidence(
         "release_package",
         "final_release_gate_report",
     )
-    selected = _select_chapter_acceptance_outputs(evidence)
+    selected = select_chapter_acceptance_outputs(evidence)
     final_gate = selected["final_release_gate_report"]["content"]
     release = selected["release_package"]["content"]
     quality = selected["quality_score_report"]["content"]
@@ -2806,6 +3037,8 @@ __all__ = [
     "LONGFORM_CONTEXT_VERSION_KEYS",
     "BookProductionAdmission",
     "BookProductionState",
+    "BookProductionStateClass",
+    "BookProductionStateSemantics",
     "ChapterAuthorityCommandAdapter",
     "ChapterAuthorityCommandPort",
     "PostgresBookAuthority",
@@ -2813,4 +3046,7 @@ __all__ = [
     "SubmitBookChapterCommand",
     "stable_chapter_submission_key",
     "book_coordinate_definition",
+    "book_production_state_semantics",
+    "actionable_book_production_states",
+    "select_chapter_acceptance_outputs",
 ]

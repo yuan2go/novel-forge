@@ -33,8 +33,10 @@ from novel_forge.modules.story_planning_runtime import (
 from .governed_scheduler import PostgresBookAuthorityScheduler
 from .production import (
     BookProductionState,
+    BookProductionStateClass,
     PostgresBookAuthority,
     SubmitBookChapterCommand,
+    book_production_state_semantics,
 )
 from .queries import PostgresBookProductionQuery
 
@@ -95,15 +97,24 @@ class PostgresBookProductionSupervisor:
     def tick(self, book_run_id: str) -> BookProductionSupervisorTick:
         book = self.authority.require(book_run_id)
         before = str(book["state"])
+        semantics = book_production_state_semantics(before)
         if book["input_mode"] != "RESOLVED_AUTHORITY_INPUT":
             raise KernelError(
                 "BOOK_SUPERVISOR_RESOLVED_INPUT_REQUIRED",
                 "autonomous supervision cannot run in Legacy fixture input mode",
             )
-        if before in {
-            BookProductionState.PAUSED.value,
-            BookProductionState.ABORTED.value,
-        }:
+        if semantics.state_class is BookProductionStateClass.TERMINAL:
+            return self._result(book_run_id, before, SupervisorAction.NO_ACTION)
+        if before == BookProductionState.PLAN_APPROVAL_PENDING.value:
+            return self._result(
+                book_run_id,
+                before,
+                SupervisorAction.WAIT_PLAN_APPROVAL,
+            )
+        if (
+            semantics.state_class is BookProductionStateClass.DURABLE_WAIT
+            and before != BookProductionState.REPLAN_APPROVAL_PENDING.value
+        ):
             return self._result(book_run_id, before, SupervisorAction.NO_ACTION)
         if before == BookProductionState.REPLAN_APPROVAL_PENDING.value:
             replan = self._latest_replan(book_run_id)
@@ -148,17 +159,55 @@ class PostgresBookProductionSupervisor:
             BookProductionState.CHAPTER_RUNNING.value,
             BookProductionState.CHAPTER_WAITING_RETRY.value,
             BookProductionState.CHAPTER_COMPLETED.value,
+            BookProductionState.CHAPTER_ACCEPTANCE_PENDING.value,
+            BookProductionState.CHAPTER_FAILED_RETRYABLE.value,
+            BookProductionState.CHAPTER_FAILED_TERMINAL.value,
+            BookProductionState.CANON_PENDING.value,
+            BookProductionState.CANON_COMMITTED.value,
             BookProductionState.READER_OUTCOME_PENDING.value,
             BookProductionState.FOLLOWUP_PENDING.value,
             BookProductionState.CHECKPOINT_PENDING.value,
         }:
             group_run = self._active_group_run(book)
-            if group_run is not None and before in {
-                BookProductionState.CHAPTER_SUBMITTED.value,
-                BookProductionState.CHAPTER_RUNNING.value,
-                BookProductionState.CHAPTER_WAITING_RETRY.value,
-                BookProductionState.CHAPTER_COMPLETED.value,
-            }:
+            if (
+                group_run is not None
+                and group_run["state"] == ChapterGroupState.CLOSURE_PENDING.value
+                and before
+                in {
+                    BookProductionState.CANON_COMMITTED.value,
+                    BookProductionState.READER_OUTCOME_PENDING.value,
+                    BookProductionState.FOLLOWUP_PENDING.value,
+                    BookProductionState.CHECKPOINT_PENDING.value,
+                }
+            ):
+                closed = self.chapter_groups.close(
+                    str(group_run["group_run_id"]), principal=self.principal
+                )
+                return self._result(
+                    book_run_id,
+                    before,
+                    SupervisorAction.CLOSE_CHAPTER_GROUP,
+                    str(closed.get("root_operation_id") or ""),
+                    str(closed["group_run_id"]),
+                )
+            if (
+                group_run is not None
+                and group_run["active_chapter_request_id"] is not None
+                and before
+                in {
+                    BookProductionState.CHAPTER_SUBMITTED.value,
+                    BookProductionState.CHAPTER_RUNNING.value,
+                    BookProductionState.CHAPTER_WAITING_RETRY.value,
+                    BookProductionState.CHAPTER_COMPLETED.value,
+                    BookProductionState.CHAPTER_ACCEPTANCE_PENDING.value,
+                    BookProductionState.CHAPTER_FAILED_RETRYABLE.value,
+                    BookProductionState.CANON_PENDING.value,
+                    BookProductionState.CANON_COMMITTED.value,
+                    BookProductionState.READER_OUTCOME_PENDING.value,
+                    BookProductionState.FOLLOWUP_PENDING.value,
+                    BookProductionState.CHECKPOINT_PENDING.value,
+                }
+            ):
                 reconciled = self.chapter_groups.reconcile_and_accept(
                     str(group_run["group_run_id"]), principal=self.principal
                 )
@@ -169,15 +218,30 @@ class PostgresBookProductionSupervisor:
                     else SupervisorAction.RECONCILE_CHAPTER
                 )
                 return self._result(book_run_id, before, action)
+            if (
+                group_run is not None
+                and before == BookProductionState.CHAPTER_FAILED_TERMINAL.value
+            ):
+                request = self.authority.require_chapter_request(
+                    str(book["active_chapter_request_id"])
+                )
+                reason = str(request.get("failure_classification") or "")
+                self.chapter_groups.cancel(
+                    str(group_run["group_run_id"]),
+                    reason=reason
+                    or "Chapter Authority reached a terminal failure",
+                    principal=self.principal,
+                )
+                return self._result(
+                    book_run_id,
+                    before,
+                    SupervisorAction.ABORT_TERMINAL_CHAPTER,
+                )
             tick = self.scheduler.tick(book_run_id)
             action = self._scheduler_action(tick.action)
             return self._result(book_run_id, before, action, tick.operation_id)
         if (
-            before
-            in {
-                BookProductionState.READY.value,
-                BookProductionState.COMPLETED.value,
-            }
+            before == BookProductionState.READY.value
             and int(book["accepted_through_chapter"]) > 0
         ):
             checkpoint = self._checkpoint_if_needed(book)
@@ -187,31 +251,6 @@ class PostgresBookProductionSupervisor:
                     before,
                     SupervisorAction.UPDATE_CHECKPOINTS,
                     evidence_ref=checkpoint["volume_checkpoint"]["checkpoint_id"],
-                )
-            sidecar = self.scheduler.tick(book_run_id)
-            action = self._scheduler_action(sidecar.action)
-            if action is not SupervisorAction.NO_ACTION:
-                return self._result(book_run_id, before, action, sidecar.operation_id)
-            replan_report_id = self.query.checkpoint_replan_report_id(
-                book_run_id=str(book["book_run_id"]),
-                accepted_through_chapter=int(book["accepted_through_chapter"]),
-            )
-            if replan_report_id:
-                # A checkpoint finding becomes executable only after the
-                # governed Recap has emitted its Replan Request.
-                self.query.require_replan_source(book_run_id=str(book["book_run_id"]))
-                self.authority.advance_supervisor_checkpoint(
-                    str(book["book_run_id"]),
-                    expected_version=int(book["version"]),
-                    expected_state=str(book["state"]),
-                    target_state=BookProductionState.REPLAN_REQUIRED,
-                    principal=self.principal,
-                )
-                return self._result(
-                    book_run_id,
-                    before,
-                    SupervisorAction.UPDATE_CHECKPOINTS,
-                    evidence_ref=replan_report_id,
                 )
         if before == BookProductionState.REPLAN_REQUIRED.value:
             return self._start_replan(book)
@@ -234,12 +273,9 @@ class PostgresBookProductionSupervisor:
         if before == BookProductionState.COMPLETED.value:
             return self._result(book_run_id, before, SupervisorAction.NO_ACTION)
         if next_chapter > int(book["target_chapter_count"]):
-            self.authority.advance_supervisor_checkpoint(
+            self.authority.complete_book_checkpoint(
                 str(book["book_run_id"]),
-                expected_version=int(book["version"]),
-                expected_state=str(book["state"]),
-                target_state=BookProductionState.COMPLETED,
-                principal=self.principal,
+                chapter_number=int(book["accepted_through_chapter"]),
             )
             return self._result(book_run_id, before, SupervisorAction.COMPLETE)
         group = self._active_plan(book, "CHAPTER_GROUP", next_chapter)
@@ -720,11 +756,12 @@ class PostgresBookProductionSupervisor:
     def _scheduler_action(action: str) -> SupervisorAction:
         return {
             "RECONCILE_CHAPTER": SupervisorAction.RECONCILE_CHAPTER,
-            "ACCEPT_CHAPTER_AND_SUBMIT_READER_SHADOW": SupervisorAction.ACCEPT_CHAPTER,
-            "SUBMIT_READER_SHADOW": SupervisorAction.SCHEDULE_READER_OUTCOME,
-            "COMPLETE_READER_SHADOW": SupervisorAction.SCHEDULE_READER_OUTCOME,
-            "SUBMIT_LONGFORM_RECAP_SIDECAR": SupervisorAction.SCHEDULE_LONGFORM_RECAP,
-            "COMPLETE_LONGFORM_RECAP_SIDECAR": SupervisorAction.SCHEDULE_LONGFORM_RECAP,
+            "ACCEPT_CHAPTER": SupervisorAction.ACCEPT_CHAPTER,
+            "RECOVER_LEGACY_ACCEPTANCE": SupervisorAction.ACCEPT_CHAPTER,
+            "ABORT_TERMINAL_CHAPTER": SupervisorAction.ABORT_TERMINAL_CHAPTER,
+            "NORMALIZE_LEGACY_NON_BLOCKING_STATE": (
+                SupervisorAction.NORMALIZE_LEGACY_STATE
+            ),
         }.get(action, SupervisorAction.NO_ACTION)
 
     def _checkpoint_if_needed(self, book: dict[str, Any]) -> dict[str, Any] | None:

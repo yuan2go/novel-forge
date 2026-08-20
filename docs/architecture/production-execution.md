@@ -27,6 +27,8 @@ Provider registry + object store + environment
           └── Book coordination
 ```
 
+Reader/recap uses an isolated Book Followup deployment executor, not an additional execution plane. Admission is a `book_followup` RuntimeJob sourced from committed Chapter acceptance; model work is still a Command Kernel Operation with the common Attempt, lease/fence, ExternalEffect, Provider, receipt, and domain-output lifecycle. The executor consumes frozen accepted lineage and cannot update Book production state.
+
 ## What remains domain-owned
 
 Chapter keeps its binder, node/stage policies, saga definition, and chapter-specific work-order contracts. Planning, Reader, Source, Agent, and Book keep their own admission, validation, and commit authority. PEP cannot decide that a plan, chapter, reader finding, source analysis, or Agent candidate is accepted.

@@ -142,9 +142,8 @@ class BookFollowupAuthorityApplication:
                 ),
             )
         if request.root_operation_id is None:
-            # Standalone development/test operations need a graph context because
-            # the production execution binder requires an Authority Saga. Real
-            # Book production supplies and owns its coordinating root Saga.
+            # Follow-ups intentionally own a sidecar Saga. They retain acceptance
+            # causation but cannot join or delay the production-critical Book Saga.
             start_saga(
                 self.database_url,
                 GraphCommandContext(

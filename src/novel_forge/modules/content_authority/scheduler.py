@@ -4,7 +4,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from novel_forge.modules.authority_handler_runtime import AuthorityExecutionResult
+from novel_forge.modules.authority_handler_runtime import (
+    AuthorityExecutionResult,
+    AuthorityHandlerRegistry,
+)
 from novel_forge.modules.command_kernel.attempt_runtime import (
     WorkerLeaseCommand,
     WorkerResultCommand,
@@ -29,7 +32,6 @@ from novel_forge.modules.command_kernel.worker_execution import (
     WorkerFailureClass,
     WorkerFailureClassifier,
 )
-from novel_forge.modules.content_authority.registry import ContentHandlerRegistry
 from novel_forge.modules.content_authority.runtime import execute_content_handler
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
@@ -49,7 +51,7 @@ class ContentAuthorityScheduler:
         self,
         database_url: str,
         *,
-        registry: ContentHandlerRegistry,
+        registry: AuthorityHandlerRegistry,
         worker_id: str = "content-authority-worker",
         lease_seconds: int = 30,
     ) -> None:

@@ -11,7 +11,9 @@ Workers are thin process entry points around governed schedulers. Their deployme
 5. The worker records checkpoints, receipts, results, and heartbeat state.
 6. A Domain Authority accepts or rejects the candidate output.
 
-Book coordination is deliberately different: each worker tick chooses one deterministic supervisor action and persists it through a named Authority. It does not run a private Chapter scheduler or write Book tables directly.
+Book coordination is deliberately different: each worker tick chooses one deterministic production-critical supervisor action and persists it through a named Authority. It does not run a private Chapter scheduler, execute Reader/Recap providers, or write Book tables directly.
+
+Book Followup is a separate deployment executor with runtime group `book_followup`. It first claims a fenced `BOOK_FOLLOWUP_ADMISSION` RuntimeJob derived from immutable Chapter acceptance evidence, then executes the admitted `reader_outcome.evaluate` or `longform.recap` Operation with the shared Attempt scheduler and Production Execution Composition. Its process, database role, heartbeat, and claim capacity are isolated from Book coordination, so a slow Provider or retry backlog cannot consume the Book worker's single progression lane.
 
 ## Health
 
@@ -31,4 +33,4 @@ make authority-logs
 make authority-down
 ```
 
-Individual console scripts exist for source, import, MKAOS, Book, Agent, outbox, maintenance, and D0 provider workers. The Chapter and content workers are normally launched as Python modules by Compose. Prefer the manifest and Compose definitions over copied command lists in runbooks.
+Individual console scripts exist for source, import, MKAOS, Book, Book Followup, Agent, outbox, maintenance, and D0 provider workers. The Chapter and content workers are normally launched as Python modules by Compose. Prefer the manifest and Compose definitions over copied command lists in runbooks.

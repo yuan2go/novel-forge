@@ -21,6 +21,7 @@ WORKERS = (
     "source-import-worker",
     "mkaos-authority-worker",
     "book-authority-worker",
+    "book-followup-authority-worker",
     "outbox-worker",
     "maintenance-worker",
 )
@@ -263,7 +264,8 @@ def main() -> int:
                 "'chapter-authority-worker','content-authority-worker',"
                 "'source-authority-worker','source-import-worker',"
                 "'mkaos-authority-worker',"
-                "'book-authority-worker','outbox-worker','maintenance-worker'))) "
+                "'book-authority-worker','book-followup-authority-worker',"
+                "'outbox-worker','maintenance-worker'))) "
                 "FROM pg_stat_activity WHERE pid<>pg_backend_pid();",
             ),
             env=env,

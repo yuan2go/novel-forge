@@ -96,6 +96,17 @@ class AuthorityHandlerRegistration:
     handler: AuthorityHandler
 
 
+class AuthorityHandlerRegistry(Protocol):
+    """Registry seam consumed by the one shared fenced handler scheduler."""
+
+    @property
+    def definition_names(self) -> frozenset[str]: ...
+
+    def registration(
+        self, definition_name: str, definition_version: str
+    ) -> AuthorityHandlerRegistration: ...
+
+
 @dataclass(frozen=True, slots=True)
 class AuthorityMaterializedOutput:
     asset_id: str

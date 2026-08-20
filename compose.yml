@@ -29,6 +29,7 @@ x-authority-environment: &authority-environment
   NOVEL_FORGE_DB_SOURCE_INSTANCES: "2"
   NOVEL_FORGE_DB_MKAOS_INSTANCES: "1"
   NOVEL_FORGE_DB_BOOK_INSTANCES: "1"
+  NOVEL_FORGE_DB_BOOK_FOLLOWUP_INSTANCES: "1"
   NOVEL_FORGE_DB_OUTBOX_INSTANCES: "1"
   NOVEL_FORGE_DB_MAINTENANCE_INSTANCES: "1"
 
@@ -311,6 +312,26 @@ services:
     labels:
       novel-forge.runtime-group: book-authority
       novel-forge.operation-definitions: book.*
+      novel-forge.concurrency: "1"
+      novel-forge.database-max-connections: "3"
+
+  book-followup-authority-worker:
+    <<: *python-service
+    command: ["novel-forge-book-followup-worker"]
+    environment:
+      <<: *authority-environment
+      NOVEL_FORGE_SERVICE_NAME: book-followup-authority-worker
+      NOVEL_FORGE_DATABASE_ROLE: book_followup
+      NOVEL_FORGE_BOOK_FOLLOWUP_WORKER_ID: book-followup-authority-worker-1
+    depends_on: *worker-dependencies
+    healthcheck:
+      test: ["CMD", "python", "-m", "novel_forge.workers.healthcheck", "--worker-kind", "book_followup", "--worker-id", "book-followup-authority-worker-1"]
+      interval: 5s
+      timeout: 4s
+      retries: 30
+    labels:
+      novel-forge.runtime-group: book-followup-authority
+      novel-forge.operation-definitions: reader_outcome.evaluate,longform.recap
       novel-forge.concurrency: "1"
       novel-forge.database-max-connections: "3"
 

@@ -77,6 +77,7 @@ DEFAULT_ROLE_BUDGETS: dict[str, tuple[int, int]] = {
     "source": (0, 3),
     "mkaos": (0, 3),
     "book": (0, 3),
+    "book_followup": (0, 3),
     "callback": (0, 2),
     "dispatch": (0, 3),
     "outbox": (0, 2),
@@ -93,6 +94,7 @@ DEFAULT_AUTHORITY_ROLE_INSTANCES: dict[str, int] = {
     "source": 1,
     "mkaos": 1,
     "book": 1,
+    "book_followup": 1,
     "outbox": 1,
     "maintenance": 1,
 }

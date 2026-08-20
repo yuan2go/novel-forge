@@ -6,19 +6,9 @@ from dataclasses import dataclass
 from typing import Any
 
 from novel_forge.modules.authority_security import Principal
-from novel_forge.modules.book_followup_authority.application import (
-    BookFollowupAdmission,
-)
-from novel_forge.modules.book_followup_authority.domain import (
-    should_trigger_longform_recap,
-)
 from novel_forge.modules.command_kernel.errors import KernelError
 
-from .production import (
-    BookProductionState,
-    PostgresBookAuthority,
-    _select_chapter_acceptance_outputs,
-)
+from .production import BookProductionState, PostgresBookAuthority
 from .queries import PostgresBookProductionQuery
 
 
@@ -32,7 +22,35 @@ class BookAuthorityTick:
 
 
 class PostgresBookAuthorityScheduler:
-    """Advance one durable checkpoint; no Chapter execution state is copied."""
+    """Advance one production-critical checkpoint.
+
+    Reader Outcome, Longform Recap, analytics, and calibration are deliberately
+    absent. Their admissions and execution are owned by the Book Followup worker.
+    """
+
+    _CHAPTER_RECONCILIATION_STATES = frozenset(
+        {
+            BookProductionState.CHAPTER_SUBMITTED.value,
+            BookProductionState.CHAPTER_RUNNING.value,
+            BookProductionState.CHAPTER_WAITING_RETRY.value,
+            BookProductionState.CHAPTER_FAILED_RETRYABLE.value,
+        }
+    )
+    _CHAPTER_ACCEPTANCE_STATES = frozenset(
+        {
+            BookProductionState.CHAPTER_COMPLETED.value,
+            BookProductionState.CHAPTER_ACCEPTANCE_PENDING.value,
+            BookProductionState.CANON_PENDING.value,
+        }
+    )
+    _LEGACY_NON_BLOCKING_STATES = frozenset(
+        {
+            BookProductionState.CANON_COMMITTED.value,
+            BookProductionState.READER_OUTCOME_PENDING.value,
+            BookProductionState.FOLLOWUP_PENDING.value,
+            BookProductionState.CHECKPOINT_PENDING.value,
+        }
+    )
 
     def __init__(
         self,
@@ -48,344 +66,93 @@ class PostgresBookAuthorityScheduler:
     def tick(self, book_run_id: str) -> BookAuthorityTick:
         book = self.authority.require(book_run_id)
         before = str(book["state"])
-        if before in {
-            BookProductionState.CHAPTER_SUBMITTED.value,
-            BookProductionState.CHAPTER_RUNNING.value,
-            BookProductionState.CHAPTER_WAITING_RETRY.value,
-        }:
+        if before in self._CHAPTER_RECONCILIATION_STATES:
             request = self._active_request(book)
             self.authority.reconcile_chapter(request["chapter_request_id"])
             return self._result(book_run_id, before, "RECONCILE_CHAPTER")
-        if before == BookProductionState.CHAPTER_COMPLETED.value:
+        if before in self._CHAPTER_ACCEPTANCE_STATES:
             request = self._active_request(book)
             accepted = self.authority.accept_chapter(
                 request["chapter_request_id"], principal=self.principal
             )
-            admission = self._schedule_reader(accepted, request)
             return self._result(
                 book_run_id,
                 before,
-                "ACCEPT_CHAPTER_AND_SUBMIT_READER_SHADOW",
-                admission.operation_id,
+                "ACCEPT_CHAPTER",
+                str(accepted["acceptance_operation_id"]),
             )
-        if before in {
-            BookProductionState.READY.value,
-            BookProductionState.COMPLETED.value,
-            # Compatibility with runs admitted before sidecars became
-            # non-blocking Book children.
-            BookProductionState.READER_OUTCOME_PENDING.value,
-            BookProductionState.CHECKPOINT_PENDING.value,
-        }:
-            sidecar = self._tick_accepted_sidecars(book, before)
-            if sidecar is not None:
-                return sidecar
+        if before == BookProductionState.CHAPTER_FAILED_TERMINAL.value:
+            request = self._active_request(book)
+            reason = str(request.get("failure_classification") or "")
+            self.authority.cancel(
+                book_run_id,
+                reason=reason or "Chapter Authority reached a terminal failure",
+                principal=self.principal,
+            )
+            return self._result(book_run_id, before, "ABORT_TERMINAL_CHAPTER")
+        if before in self._LEGACY_NON_BLOCKING_STATES:
+            active_request_id = str(book.get("active_chapter_request_id") or "")
+            if active_request_id:
+                request = self.authority.reconcile_chapter(active_request_id)
+                if str(request["status_reference"]) == "SUCCEEDED":
+                    accepted = self.authority.accept_chapter(
+                        active_request_id,
+                        principal=self.principal,
+                    )
+                    return self._result(
+                        book_run_id,
+                        before,
+                        "RECOVER_LEGACY_ACCEPTANCE",
+                        str(accepted["acceptance_operation_id"]),
+                    )
+                return self._result(
+                    book_run_id,
+                    before,
+                    "RECONCILE_CHAPTER",
+                )
+            accepted_request_id = self.query.latest_accepted_chapter_request_id(
+                book_run_id=book_run_id,
+                project_id=str(book["project_id"]),
+            )
+            accepted_request = (
+                self.authority.require_chapter_request(accepted_request_id)
+                if accepted_request_id
+                else None
+            )
+            if (
+                accepted_request is None
+                or int(book["accepted_through_chapter"]) <= 0
+                or int(accepted_request["chapter_number"])
+                != int(book["accepted_through_chapter"])
+            ):
+                raise KernelError(
+                    "BOOK_LEGACY_STATE_RECOVERY_EVIDENCE_MISSING",
+                    "legacy sidecar state has neither an active Chapter nor a "
+                    "committed acceptance at the Book cursor",
+                )
+            if int(book["accepted_through_chapter"]) >= int(
+                book["target_chapter_count"]
+            ):
+                self.authority.complete_book_checkpoint(
+                    book_run_id,
+                    chapter_number=int(book["accepted_through_chapter"]),
+                )
+                return self._result(
+                    book_run_id,
+                    before,
+                    "NORMALIZE_LEGACY_NON_BLOCKING_STATE",
+                )
+            self.authority.advance_supervisor_checkpoint(
+                book_run_id,
+                expected_version=int(book["version"]),
+                expected_state=before,
+                target_state=BookProductionState.READY,
+                principal=self.principal,
+            )
+            return self._result(
+                book_run_id, before, "NORMALIZE_LEGACY_NON_BLOCKING_STATE"
+            )
         return BookAuthorityTick(book_run_id, before, before, "NOOP")
-
-    def _tick_accepted_sidecars(
-        self, book: dict[str, Any], before: str
-    ) -> BookAuthorityTick | None:
-        request = self._latest_accepted_request(book)
-        if request is None:
-            return None
-        reader_operation = self._followup_operation(
-            request["chapter_request_id"], "READER_OUTCOME"
-        )
-        if not reader_operation:
-            admission = self._schedule_reader(book, request)
-            return self._result(
-                book["book_run_id"],
-                before,
-                "SUBMIT_READER_SHADOW",
-                admission.operation_id,
-            )
-        operation_id = reader_operation
-        if self._operation_status(operation_id, book["project_id"]) != "SUCCEEDED":
-            self.authority.followup.run_or_recover(
-                BookFollowupAdmission(operation_id, book["project_id"], True)
-            )
-            return self._result(
-                book["book_run_id"],
-                before,
-                "COMPLETE_READER_SHADOW",
-                operation_id,
-            )
-        reader = self._output(operation_id, book["project_id"], "reader_outcome.report")
-        ending_reachability = self._ending_reachability(
-            book, int(request["chapter_number"])
-        )
-        trigger = should_trigger_longform_recap(
-            chapter_number=int(request["chapter_number"]),
-            light_cadence=int(book["light_recap_cadence"]),
-            formal_cadence=int(book["formal_recap_cadence"]),
-            chapter_group_complete=self._chapter_group_complete(request),
-            authority_requested=bool(ending_reachability.get("replan_required")),
-        )
-        if not trigger["should_trigger"]:
-            return None
-        recap_operation = self._followup_operation(
-            request["chapter_request_id"], "LONGFORM_RECAP"
-        )
-        if not recap_operation:
-            admission = self._schedule_recap(
-                book, request, reader, trigger, ending_reachability
-            )
-            return self._result(
-                book["book_run_id"],
-                before,
-                "SUBMIT_LONGFORM_RECAP_SIDECAR",
-                admission.operation_id,
-            )
-        if self._operation_status(recap_operation, book["project_id"]) != "SUCCEEDED":
-            self.authority.followup.run_or_recover(
-                BookFollowupAdmission(recap_operation, book["project_id"], True)
-            )
-            return self._result(
-                book["book_run_id"],
-                before,
-                "COMPLETE_LONGFORM_RECAP_SIDECAR",
-                recap_operation,
-            )
-        return None
-
-    def _chapter_group_complete(self, request: dict[str, Any]) -> bool:
-        group_version = str(request.get("parent_group_version_id") or "")
-        if not group_version:
-            return False
-        _start, end = self.query.require_chapter_group_range(group_version)
-        return int(request["chapter_number"]) == end
-
-    def _ending_reachability(
-        self, book: dict[str, Any], chapter_number: int
-    ) -> dict[str, Any]:
-        return self.query.ending_reachability(
-            book_run_id=str(book["book_run_id"]),
-            chapter_number=chapter_number,
-        )
-
-    def _latest_accepted_request(self, book: dict[str, Any]) -> dict[str, Any] | None:
-        request_id = self.query.latest_accepted_chapter_request_id(
-            book_run_id=str(book["book_run_id"]),
-            project_id=str(book["project_id"]),
-        )
-        return (
-            self.authority.require_chapter_request(request_id) if request_id else None
-        )
-
-    def _followup_operation(self, chapter_request_id: str, followup_type: str) -> str:
-        return self.query.followup_operation_id(
-            chapter_request_id=chapter_request_id,
-            followup_type=followup_type,
-        )
-
-    def _operation_status(self, operation_id: str, project_id: str) -> str:
-        return self.query.operation_status(
-            operation_id=operation_id, project_id=project_id
-        )
-
-    def _schedule_reader(
-        self, book: dict[str, Any], request: dict[str, Any]
-    ) -> BookFollowupAdmission:
-        evidence = self.authority.chapter_port.require_acceptance_evidence(
-            project_id=book["project_id"],
-            root_operation_id=request["chapter_root_operation_id"],
-        )
-        draft = self._evidence_output(evidence, "draft_version")
-        quality = self._evidence_output(evidence, "quality_score_report")
-        manifest = self._evidence_output(evidence, "production_input_manifest")
-        # Canon becomes authoritative only when Book acceptance commits the
-        # ChapterOutcome/StoryState/Canon pointer set.  Never consume a child
-        # operation projection as if it were accepted truth.
-        canon = self.authority.resolve_asset_refs(
-            project_id=book["project_id"],
-            asset_version_ids=(str(book["active_canon_snapshot_version_id"]),),
-        )[0]
-        frozen_versions = dict(book["longform_context_versions"])
-        projection = self._cursor_plan_projection(
-            book, chapter_cursor=int(request["chapter_number"])
-        )
-        arc_plan_versions = tuple(str(item) for item in projection["arc_plan_versions"])
-        authority_inputs = self.authority.resolve_asset_refs(
-            project_id=book["project_id"],
-            asset_version_ids=(
-                str(request["chapter_plan_version"]),
-                str(book["book_design_version"]),
-                str(book["book_plan_version"]),
-                str(projection["volume_plan_version"]),
-                *arc_plan_versions,
-                str(frozen_versions["reader_segment_version"]),
-                str(frozen_versions["reader_contract_version"]),
-                str(frozen_versions["platform_profile_version"]),
-                str(book["last_chapter_outcome_version_id"]),
-                str(book["active_story_state_version_id"]),
-            ),
-        )
-        return self.authority.schedule_reader_outcome(
-            request["chapter_request_id"],
-            principal=self.principal,
-            payload={
-                "book_id": book["book_id"],
-                "chapter_id": f"chapter:{request['chapter_number']}",
-                "chapter_number": int(request["chapter_number"]),
-                "final_draft_asset_version": draft["asset_version_id"],
-                "chapter_plan_asset_version": request["chapter_plan_version"],
-                "book_design_version": book["book_design_version"],
-                "book_plan_version": book["book_plan_version"],
-                "parent_plan_versions": {
-                    "volume_plan_version": projection["volume_plan_version"],
-                    "arc_plan_versions": list(arc_plan_versions),
-                },
-                "reader_segment_version": frozen_versions["reader_segment_version"],
-                "reader_contract_version": frozen_versions["reader_contract_version"],
-                "platform_profile_version": frozen_versions["platform_profile_version"],
-                "canon_snapshot_version": canon["asset_version_id"],
-                "chapter_outcome_version": book["last_chapter_outcome_version_id"],
-                "story_state_version": book["active_story_state_version_id"],
-                "quality_evidence_version": quality["asset_version_id"],
-                "input_manifest_ref": manifest["asset_version_id"],
-                "previous_reader_state_version": self._previous_reader_state(
-                    book, int(request["chapter_number"])
-                ),
-                "evaluation_profile_version": "reader-evaluation:v1",
-                "model_strategy_version": book["production_profile_version"],
-            },
-            input_assets=(
-                self._asset_ref(draft),
-                self._asset_ref(canon),
-                self._asset_ref(quality),
-                self._asset_ref(manifest),
-                *authority_inputs,
-            ),
-        )
-
-    def _schedule_recap(
-        self,
-        book: dict[str, Any],
-        request: dict[str, Any],
-        reader: dict[str, Any],
-        trigger: dict[str, Any],
-        ending_reachability: dict[str, Any],
-    ) -> BookFollowupAdmission:
-        chapter = int(request["chapter_number"])
-        frozen_versions = dict(book["longform_context_versions"])
-        projection = self._cursor_plan_projection(
-            book, chapter_cursor=int(request["chapter_number"])
-        )
-        arc_plan_versions = tuple(str(item) for item in projection["arc_plan_versions"])
-        authority_inputs = self.authority.resolve_asset_refs(
-            project_id=book["project_id"],
-            asset_version_ids=(
-                str(book["book_design_version"]),
-                str(book["book_plan_version"]),
-                str(projection["volume_plan_version"]),
-                *arc_plan_versions,
-                str(frozen_versions["quality_trend_version"]),
-                str(book["last_chapter_outcome_version_id"]),
-                str(book["active_story_state_version_id"]),
-                str(book["active_canon_snapshot_version_id"]),
-            ),
-        )
-        return self.authority.schedule_longform_recap(
-            request["chapter_request_id"],
-            principal=self.principal,
-            payload={
-                "book_id": book["book_id"],
-                "checkpoint_type": trigger["checkpoint_type"],
-                "chapter_range": [
-                    max(1, chapter - int(book["formal_recap_cadence"]) + 1),
-                    chapter,
-                ],
-                "book_design_version": book["book_design_version"],
-                "book_plan_version": book["book_plan_version"],
-                "volume_plan_version": projection["volume_plan_version"],
-                "arc_plan_versions": list(arc_plan_versions),
-                "canon_snapshot_version": book["active_canon_snapshot_version_id"],
-                "story_state_version": book["active_story_state_version_id"],
-                "reader_state_version": reader["asset_version_id"],
-                "quality_trend_version": frozen_versions["quality_trend_version"],
-                "chapter_outcome_versions": [book["last_chapter_outcome_version_id"]],
-                "observations": {
-                    "reader_state": dict(reader["content"].get("reader_state") or {}),
-                    "reader_qualification": {
-                        "qualification_status": str(
-                            reader["content"].get("judge_qualification_status")
-                            or "SHADOW"
-                        ),
-                        "sample_size": int(reader["content"].get("sample_size") or 0),
-                        "confidence": float(reader["content"].get("confidence") or 0),
-                        "disagreement": True,
-                        "position_bias": True,
-                        "ood": True,
-                        "drift_detected": False,
-                        "recent_reports": [],
-                        "last_adjustment_chapter": None,
-                    },
-                    "canon": {"conflicts": []},
-                    "quality_trend": {"direction": "STABLE"},
-                    "ending_reachability": ending_reachability,
-                },
-            },
-            input_assets=(
-                {
-                    "asset_version_id": reader["asset_version_id"],
-                    "content_hash": reader["content_hash"],
-                },
-                *authority_inputs,
-            ),
-        )
-
-    def _cursor_plan_projection(
-        self, book: dict[str, Any], *, chapter_cursor: int
-    ) -> dict[str, Any]:
-        snapshot_id = str(book.get("input_snapshot_id") or "")
-        if snapshot_id:
-            return self.query.require_cursor_plan_projection(
-                snapshot_id=snapshot_id,
-                chapter_cursor=chapter_cursor,
-            )
-        if str(book.get("input_mode") or "") != "LEGACY_FIXTURE_INPUT_MODE":
-            raise KernelError(
-                "BOOK_INPUT_SNAPSHOT_MISSING",
-                "governed Book follow-up requires its immutable input snapshot",
-            )
-        frozen = dict(book.get("longform_context_versions") or {})
-        arc_versions = tuple(
-            str(item) for item in frozen.get("arc_plan_versions") or ()
-        )
-        volume_version = str(frozen.get("volume_plan_version") or "")
-        if (
-            not volume_version
-            or not arc_versions
-            or len(arc_versions) != len(set(arc_versions))
-        ):
-            raise KernelError(
-                "BOOK_FIXTURE_PLAN_PROJECTION_INVALID",
-                "legacy fixture input requires an explicit ordered Volume and Arc projection",
-            )
-        return {
-            "chapter_cursor": chapter_cursor,
-            "volume_plan_version": volume_version,
-            "arc_plan_versions": arc_versions,
-        }
-
-    def _previous_reader_state(self, book: dict[str, Any], chapter_number: int) -> str:
-        return self.query.previous_reader_state(
-            book_run_id=str(book["book_run_id"]), chapter_number=chapter_number
-        )
-
-    @staticmethod
-    def _evidence_output(evidence: dict[str, Any], asset_type: str) -> dict[str, Any]:
-        accepted = _select_chapter_acceptance_outputs(evidence)
-        if asset_type in accepted:
-            return accepted[asset_type]
-        matches = [
-            item for item in evidence["outputs"] if item["asset_type"] == asset_type
-        ]
-        if len(matches) != 1:
-            raise KernelError(
-                "BOOK_CHAPTER_OUTPUT_MISSING",
-                f"Chapter Authority produced {len(matches)} {asset_type} outputs",
-            )
-        return matches[0]
 
     def _active_request(self, book: dict[str, Any]) -> dict[str, Any]:
         request_id = str(book["active_chapter_request_id"] or "")
@@ -406,22 +173,6 @@ class PostgresBookAuthorityScheduler:
             action,
             operation_id,
         )
-
-    def _output(
-        self, operation_id: str, project_id: str, output_key: str
-    ) -> dict[str, Any]:
-        return self.query.require_followup_output(
-            operation_id=operation_id,
-            project_id=project_id,
-            output_key=output_key,
-        )
-
-    @staticmethod
-    def _asset_ref(item: dict[str, Any]) -> dict[str, str]:
-        return {
-            "asset_version_id": str(item["asset_version_id"]),
-            "content_hash": str(item["content_hash"]),
-        }
 
 
 __all__ = ["BookAuthorityTick", "PostgresBookAuthorityScheduler"]

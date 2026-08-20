@@ -10,6 +10,7 @@
     "required_modules": [
       "authority-api",
       "book-authority",
+      "book-followup-authority",
       "book-design-authority",
       "capability-pack-authority",
       "chapter-authority",
@@ -31,6 +32,7 @@
       "source-authority",
       "mkaos-authority",
       "book-authority",
+      "book-followup-authority",
       "outbox-authority",
       "maintenance-runtime-group"
     ],
@@ -46,12 +48,15 @@
       "20260804_0066_runtime_job_attempt_lease_existence",
       "20260804_0067_activated_migration_archival_binding",
       "20260805_0071_capability_pack_authority",
-      "20260806_0072_capability_pack_integrity_hardening"
+      "20260806_0072_capability_pack_integrity_hardening",
+      "20260820_0093_book_liveness_critical_path_closure"
     ],
     "required_operation_definitions": [
       "chapter.slice.run",
       "creative.brief.create",
       "book.production.coordinate",
+      "reader_outcome.evaluate",
+      "longform.recap",
       "asset.create",
       "external_effect.reconcile",
       "canon.change.approve",

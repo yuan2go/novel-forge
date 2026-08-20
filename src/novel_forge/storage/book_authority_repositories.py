@@ -378,10 +378,7 @@ class BookAuthorityRepository:
                 active_story_state_version_id=%s,
                 active_canon_snapshot_version_id=%s,
                 last_chapter_outcome_version_id=%s,
-                state=CASE
-                    WHEN %s >= target_chapter_count THEN 'COMPLETED'
-                    ELSE 'READY'
-                END,
+                state='READY',
                 version=version+1, updated_at=NOW()
             WHERE book_run_id=%s
               AND accepted_through_chapter IN (%s, %s)
@@ -393,7 +390,6 @@ class BookAuthorityRepository:
                 story_state_asset_version_id,
                 canon_snapshot_asset_version_id,
                 chapter_outcome_asset_version_id,
-                chapter_number,
                 book_run_id,
                 chapter_number - 1,
                 chapter_number,
@@ -439,7 +435,6 @@ class BookAuthorityRepository:
         followup_type: str,
         operation_id: str,
         stable_idempotency_key: str,
-        expected_book_version: int,
     ) -> None:
         self.cursor.execute(
             """
@@ -459,22 +454,6 @@ class BookAuthorityRepository:
                 stable_idempotency_key,
             ],
         )
-        column = (
-            "last_reader_outcome_operation_id"
-            if followup_type == "READER_OUTCOME"
-            else "last_recap_operation_id"
-        )
-        self.cursor.execute(
-            f"""
-            UPDATE authority_book_production
-            SET {column}=%s, version=version+1, updated_at=NOW()
-            WHERE book_run_id=%s AND version=%s
-            """,
-            [operation_id, book_run_id, expected_book_version],
-        )
-        if self.cursor.rowcount != 1:
-            raise ValueError("Book checkpoint changed before follow-up link")
-
     def advance(
         self,
         *,
