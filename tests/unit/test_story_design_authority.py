@@ -55,7 +55,11 @@ class StoryDesignAuthorityContractTests(unittest.TestCase):
         )
         self.assertEqual(
             definitions["chapter_plan.generate"].definition_version,
-            "2.0.0",
+            "2.1.0",
+        )
+        self.assertEqual(
+            definitions["chapter_plan.generate"].maximum_structural_regenerations,
+            2,
         )
         self.assertEqual(
             definitions["chapter_plan.generate"].output_schema_version,

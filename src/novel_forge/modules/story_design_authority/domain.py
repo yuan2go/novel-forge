@@ -111,6 +111,7 @@ def _generator(
     definition_version: str = "1.0.0",
     output_schema_version: str = "",
     prompt_contract_version: str = "",
+    maximum_structural_regenerations: int = 1,
 ) -> GeneratorDefinition:
     key = operation_name.replace(".", "-")
     return GeneratorDefinition(
@@ -131,7 +132,7 @@ def _generator(
         ),
         activation_policy_key="single-active-logical-key-v1",
         maximum_semantic_repairs=2,
-        maximum_structural_regenerations=1,
+        maximum_structural_regenerations=maximum_structural_regenerations,
         risk_class=risk,
         definition_version=definition_version,
     )
@@ -209,9 +210,10 @@ GENERATOR_DEFINITIONS = (
         "planning.story_chapter.generate",
         "chapter_plan_candidate",
         risk="MEDIUM",
-        definition_version="2.0.0",
+        definition_version="2.1.0",
         output_schema_version="chapter-plan-generate-output-v7",
         prompt_contract_version="chapter-plan-generate-prompt-v6",
+        maximum_structural_regenerations=2,
     ),
 )
 
