@@ -95,6 +95,7 @@ from . import (
     v20260814_0092_longform_correctness_closure,
     v20260820_0093_book_liveness_critical_path_closure,
     v20260820_0094_industrial_autonomous_novel_os,
+    v20260821_0095_post_merge_correctness_repair,
 )
 
 VERSION_MODULES = [
@@ -192,6 +193,7 @@ VERSION_MODULES = [
     v20260814_0092_longform_correctness_closure,
     v20260820_0093_book_liveness_critical_path_closure,
     v20260820_0094_industrial_autonomous_novel_os,
+    v20260821_0095_post_merge_correctness_repair,
 ]
 
 __all__ = ["VERSION_MODULES"]
