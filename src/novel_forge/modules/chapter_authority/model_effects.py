@@ -52,6 +52,7 @@ MODEL_CAPABILITY_STAGES = frozenset(
         "quality_platform",
         "narrative_semantic_evaluation",
         "agent_session",
+        "retrieval",
     }
 )
 # Migration-only adapter surface. Normal Chapter composition does not install
@@ -342,9 +343,7 @@ class ExternalEffectChapterModelPort:
                 "book_id": str(
                     business_payload.get("book_id") or f"book:{request.project_id}"
                 ),
-                "agent_session_id": str(
-                    business_payload.get("agent_session_id") or ""
-                ),
+                "agent_session_id": str(business_payload.get("agent_session_id") or ""),
                 "target_asset_version_id": str(
                     business_payload.get("target_asset_version_id") or ""
                 ),
@@ -1236,6 +1235,27 @@ def _normalize_model_output(stage: str, raw: dict[str, Any]) -> dict[str, Any]:
         }
     if stage == "narrative_semantic_evaluation":
         return dict(raw)
+    if stage == "retrieval":
+        vectors = raw.get("vectors")
+        dimensions = int(raw.get("embedding_dimensions") or 0)
+        if (
+            not isinstance(vectors, list)
+            or not vectors
+            or dimensions <= 0
+            or any(
+                not isinstance(vector, list) or len(vector) != dimensions
+                for vector in vectors
+            )
+        ):
+            raise KernelError(
+                "MODEL_RESPONSE_INVALID",
+                "retrieval embedding response has invalid vector dimensions",
+            )
+        return {
+            "vectors": [[float(value) for value in vector] for vector in vectors],
+            "embedding_model": str(raw.get("embedding_model") or ""),
+            "embedding_dimensions": dimensions,
+        }
     if stage in {"review", "rereview"}:
         score_value = raw.get("score")
         if not isinstance(score_value, (int, float)) or isinstance(score_value, bool):

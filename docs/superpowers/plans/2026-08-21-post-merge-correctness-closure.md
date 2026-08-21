@@ -1,5 +1,9 @@
 # Post-Merge Correctness Closure Implementation Plan
 
+> **Status:** IMPLEMENTED; final proof level is recorded by the current tests
+> and Draft PR, not by the original unchecked execution checklist below.
+> **Implementation branch:** `codex/post-merge-correctness-closure`
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Close the 0094 upgrade gap, production Agent Harness composition, accepted Arc/Obligation semantics, and Memo-driven Context Retrieval without creating parallel authorities or provider runtimes.
@@ -19,7 +23,7 @@
 - Agent and embedding provider calls use the existing PEP, ExternalEffect, Receipt, model-call log, and cost ledger.
 - Book Acceptance performs no external call, ArcRevision generation, or PlanChange invocation.
 - ChapterMemo queries drive a durable retrieval operation before Context Build.
-- Lexical retrieval is named PostgreSQL Full-Text Search / FTS ranking, never BM25.
+- Lexical retrieval is named PostgreSQL Full-Text Search / FTS ranking.
 - Do not run long campaigns, sustained multi-Book generation, load tests, or large provider qualifications.
 
 ---
@@ -374,7 +378,7 @@ Book dispatch freezes accepted boundary, protected accepted refs, and policy ref
 
 - [ ] **Step 3: Implement retrieval query plan and PostgreSQL FTS candidate stage**
 
-Use Intent/Memo plus accepted structured signals. Filter future/stale/policy-ineligible documents at the frozen boundary. Capture `ts_rank` as `postgresql_fts` and do not label it BM25.
+Use Intent/Memo plus accepted structured signals. Filter future/stale/policy-ineligible documents at the frozen boundary. Capture `ts_rank` as `postgresql_fts`.
 
 - [ ] **Step 4: Add governed query embedding and hybrid rerank**
 
@@ -414,7 +418,7 @@ Audit old Arc contribution/checkpoint tables, old Plan freshness, obsolete Agent
 
 - [ ] **Step 2: Reconcile canonical documentation**
 
-Describe only final runtime call chains and earned proof levels. Mark the prior spec SUPERSEDED, remove its obsolete implementation plan, and replace every BM25 phrase with PostgreSQL FTS terminology.
+Describe only final runtime call chains and earned proof levels. Mark the prior spec SUPERSEDED, remove its obsolete implementation plan, and use PostgreSQL FTS terminology.
 
 - [ ] **Step 3: Run focused unit suites**
 

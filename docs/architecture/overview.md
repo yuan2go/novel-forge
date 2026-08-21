@@ -39,7 +39,8 @@ The converged target moves chapter production from broad context-driven generati
 Progressive Plan + Arc Working Set
 → active ChapterPlan
 → ChapterExecutionIntent / ChapterMemo
-→ Context v2 at the complete Accepted Boundary
+→ Retrieval Query Plan / immutable RetrievalResult at the frozen Accepted Boundary
+→ Context v2
 → Protected Context + hybrid retrieval
 → Draft / Review / Revision / Best Candidate
 → provisional Canon/Arc/Obligation evidence
@@ -92,7 +93,8 @@ The repository contains substantial implementation/runtime/test evidence for:
 - Source/MKAOS;
 - Agent Collaboration/Runtime;
 - multi-turn Agent Harness transcript/recovery contracts;
-- Context v2 protected/retrievable selection and layered-memory contracts;
+- Memo-driven Context v2 protected/retrievable selection, immutable retrieval
+  results, PostgreSQL FTS/graph/temporal ranking and layered-memory contracts;
 - ChapterExecutionIntent/ChapterMemo and Best Candidate selection;
 - accepted Arc/Obligation projection sets and semantic invalidation;
 - quality/reader surfaces;
@@ -103,8 +105,8 @@ Current documentation does **not** establish by itself:
 - sustained real-provider Book production;
 - long-running real-provider Chapter-to-Chapter liveness;
 - 30/100/300-chapter correctness/quality;
-- production-scale hybrid retrieval/index population and semantic reranking;
-- controlled-environment real-provider Agent Harness binding;
+- production-scale retrieval/index population and semantic reranking;
+- real-provider Agent Harness execution proof (controlled composition is wired);
 - real-reader learning closure;
 - multi-book production;
 - Production Admission.

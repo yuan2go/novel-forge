@@ -586,6 +586,8 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                 "NOVEL_FORGE_ENVIRONMENT": "test",
                 "NOVEL_FORGE_COMMIT_SHA": "e" * 40,
                 "NOVEL_FORGE_MODEL_PROVIDER": "scripted_provider_v2",
+                "NOVEL_FORGE_EMBEDDING_PROVIDER": "scripted_provider_v2",
+                "NOVEL_FORGE_EMBEDDING_MODEL": "scripted-embedding-v1",
                 "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": str(Path(root) / "objects"),
                 "NOVEL_FORGE_AUTHORITY_WORKER_ID": "two-chapter-pep-worker",
             }
@@ -685,7 +687,10 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                     )
                     self.assertEqual(int(uow.cursor.fetchone()[0]), chapter_number)
 
-                for _ in range(len(ChapterNode) + 2):
+                # A quality-gated Chapter may execute one bounded correction loop.
+                # Keep the proof bounded without assuming exactly one operation per
+                # canonical node.
+                for _ in range(len(ChapterNode) * 2 + 4):
                     scheduler = chapter.scheduler(principal=worker)
                     tick = scheduler.tick(
                         project_id=project_id,
@@ -714,6 +719,20 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                         str(accepted["last_chapter_outcome_version_id"]),
                     )
                 )
+                if chapter_number == 1:
+                    embedding_runtime = chapter.embedding_projection_runtime
+                    self.assertIsNotNone(embedding_runtime)
+                    assert embedding_runtime is not None
+                    embedding_operations = embedding_runtime.schedule_pending(
+                        project_id=project_id,
+                        limit=20,
+                    )
+                    self.assertEqual(len(embedding_operations), 6)
+                    for operation_id in embedding_operations:
+                        embedding_runtime.tick(
+                            project_id=project_id,
+                            operation_id=operation_id,
+                        )
 
             final = authority.require(book.book_run_id)
             self.assertEqual(final["state"], "READY")
@@ -786,6 +805,22 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                 context_bundles = [dict(row[0]) for row in uow.cursor.fetchall()]
                 uow.cursor.execute(
                     """
+                    SELECT version.content
+                    FROM authority_operation_output_asset AS output
+                    JOIN authority_operation AS operation
+                      ON operation.operation_id=output.operation_id
+                    JOIN authority_asset_version AS version
+                      ON version.asset_version_id=output.asset_version_id
+                    WHERE operation.project_id=%s
+                      AND operation.definition_name='chapter.context.retrieve'
+                      AND output.output_key='chapter.retrieval'
+                    ORDER BY operation.created_at
+                    """,
+                    [project_id],
+                )
+                retrieval_results = [dict(row[0]) for row in uow.cursor.fetchall()]
+                uow.cursor.execute(
+                    """
                     SELECT COUNT(*), COUNT(DISTINCT memory_layer)
                     FROM authority_narrative_retrieval_document
                     WHERE project_id=%s AND book_id=%s
@@ -824,6 +859,27 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                     [project_id],
                 )
                 multiscale_quality = dict(uow.cursor.fetchone()[0])
+                uow.cursor.execute(
+                    """
+                    SELECT COUNT(*), COUNT(receipt.receipt_id)
+                    FROM authority_external_effect AS effect
+                    JOIN authority_operation AS operation
+                      ON operation.operation_id=effect.operation_id
+                    LEFT JOIN authority_external_effect_dispatch AS dispatch
+                      ON dispatch.external_effect_id=effect.external_effect_id
+                     AND dispatch.status='SUCCEEDED'
+                    LEFT JOIN authority_external_receipt AS receipt
+                      ON receipt.dispatch_id=dispatch.dispatch_id
+                    WHERE operation.project_id=%s
+                      AND operation.definition_name='chapter.context.retrieve'
+                      AND effect.capability='model.retrieval'
+                      AND effect.status='SUCCEEDED'
+                    """,
+                    [project_id],
+                )
+                query_embedding_effects = tuple(
+                    int(value) for value in uow.cursor.fetchone()
+                )
             self.assertEqual(delegation_statuses, {"ACCEPTED": 2})
             self.assertEqual(acceptance_count, 2)
             self.assertGreater(int(event_projection_count), 0)
@@ -841,20 +897,48 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
             )
             self.assertEqual(len(current_state["disclosure_event"]), 2)
             self.assertEqual(len(context_bundles), 2)
-            self.assertEqual(retrieval_document_count, 10)
+            self.assertEqual(len(retrieval_results), 2)
+            chapter_two_retrieval = retrieval_results[1]
+            self.assertTrue(chapter_two_retrieval["result_fingerprint"])
+            self.assertEqual(
+                chapter_two_retrieval["query_plan"]["queries"],
+                [
+                    "previous accepted ending",
+                    "active narrative obligations",
+                    "relevant accepted arc history",
+                ],
+            )
+            self.assertTrue(chapter_two_retrieval["selected_documents"])
+            self.assertEqual(
+                chapter_two_retrieval["semantic_status"]["query_embedding_status"],
+                "READY",
+            )
+            self.assertEqual(query_embedding_effects, (1, 1))
+            self.assertTrue(
+                all(
+                    int(item["accepted_from_chapter"]) <= 1
+                    for item in chapter_two_retrieval["selected_documents"]
+                )
+            )
+            # Each accepted Chapter contributes the five structured
+            # correctness projections plus its accepted prose archive entry.
+            self.assertEqual(retrieval_document_count, 12)
             self.assertGreaterEqual(retrieval_layer_count, 5)
             self.assertTrue(context_bundles[1]["context_manifest"]["retrieval_trace"])
             accepted_retrieval_trace = [
                 item
-                for item in context_bundles[1]["context_manifest"][
-                    "retrieval_trace"
-                ]
-                if item["provenance"].get("retrieval_document_id")
+                for item in context_bundles[1]["context_manifest"]["retrieval_trace"]
+                if item["provenance"].get("retrieval_document_ids")
             ]
             self.assertTrue(accepted_retrieval_trace)
             self.assertTrue(
                 all(
-                    int(item["provenance"]["accepted_from_chapter"]) <= 1
+                    int(
+                        item["provenance"]["accepted_boundary"][
+                            "accepted_through_chapter"
+                        ]
+                    )
+                    == 1
                     for item in accepted_retrieval_trace
                 )
             )
@@ -870,9 +954,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
             )
             self.assertGreaterEqual(int(canon_gate_count), 2)
             self.assertTrue(all_canon_gates_passed)
-            self.assertEqual(
-                multiscale_quality["observation_status"], "NOT_OBSERVED"
-            )
+            self.assertEqual(multiscale_quality["observation_status"], "NOT_OBSERVED")
             self.assertEqual(multiscale_quality["accepted_observation_count"], 0)
             self.assertEqual(multiscale_quality["accepted_through_chapter"], 1)
             self.assertEqual(multiscale_quality["source_acceptance_ids"], [])
@@ -1276,7 +1358,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
 
     @staticmethod
     def _run_child(fixture: dict[str, object], root_operation_id: str) -> None:
-        for _ in range(len(ChapterNode) + 2):
+        for _ in range(len(ChapterNode) * 2 + 4):
             tick = (
                 fixture["chapter"]
                 .scheduler(principal=fixture["worker"])

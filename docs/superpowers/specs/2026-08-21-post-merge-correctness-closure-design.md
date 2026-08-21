@@ -40,7 +40,7 @@ The implementation must not:
 - make semantic index readiness a precondition of authoritative migration repair;
 - generate ArcRevision or invoke PlanChange inside Book Acceptance;
 - select historical retrieval evidence before ChapterMemo exists;
-- call PostgreSQL FTS BM25;
+- mislabel PostgreSQL FTS ranking;
 - materialize one database aggregate per L0-L9 taxonomy layer.
 
 ## 2. Reconciliation Findings
@@ -556,7 +556,7 @@ spend, or literary benchmark is part of acceptance.
 
 Canonical architecture, runtime, narrative-state, production-execution, and
 novel-production-flow documents will be updated to match the final code and proof
-level. All BM25 wording will be removed unless BM25 is actually implemented.
+level. Lexical ranking is named PostgreSQL FTS throughout.
 
 The 2026-08-20 exact-SHA convergence design is retained as historical context and
 marked SUPERSEDED. Its implementation plan is removed because it is an obsolete
@@ -571,3 +571,22 @@ provider tests do not establish PROVIDER_PROVEN or PRODUCTION_QUALIFIED.
 Implementation order is WP-1, WP-2, WP-3, WP-4, transitional-path cleanup,
 targeted tests, canonical documentation, explicit commits, feature-branch push,
 and Draft PR. Work stops after these four packages.
+
+## 12. Implemented Proof Boundary
+
+The four packages are implemented through their production compositions and
+targeted PostgreSQL recovery tests. Their earned status is deliberately narrower
+than production qualification:
+
+| Package | DEFINED | WIRED | RUNTIME_REACHABLE | PERSISTED | AUTHORITY_GOVERNED | RECOVERY_PROVEN | UNIT_TESTED | POSTGRES_SMOKE_TESTED | PROVIDER_WIRED | PROVIDER_PROVEN | PRODUCTION_QUALIFIED |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| WP-1 | yes | yes | yes | yes | yes | yes | yes | yes | n/a | no | no |
+| WP-2 | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
+| WP-3 | yes | yes | yes | yes | yes | yes | yes | yes | n/a | no | no |
+| WP-4 | yes | yes | yes | yes | yes | yes | yes | yes | yes | no | no |
+
+`RECOVERY_PROVEN` means the bounded failure/retry/receipt scenarios named in this
+specification passed targeted tests. It does not mean sustained operations under
+production load. Scripted provider receipts prove governed composition and
+reconciliation, not provider behavior. No real-provider, long-form, multi-Book,
+load, literary-quality, or production qualification was performed.

@@ -8,6 +8,9 @@ import json
 from typing import Any
 
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.context_builder.production_retrieval import (
+    build_retrieval_result,
+)
 
 from novel_forge.modules.chapter_authority.contracts import (
     ChapterAuxiliaryOutput,
@@ -325,7 +328,9 @@ class _MemoHandler:
             "scene_directives": [
                 {
                     "scene_id": str(item["scene_id"]),
-                    "directive": str(item.get("goal") or "advance the chapter objective"),
+                    "directive": str(
+                        item.get("goal") or "advance the chapter objective"
+                    ),
                 }
                 for item in intent.content.get("scene_plans") or ()
             ],
@@ -380,6 +385,137 @@ class _MemoHandler:
 
 
 @dataclass(frozen=True, slots=True)
+class _RetrievalHandler:
+    provider: ChapterModelPort
+    semantic_provider_bound: bool = False
+
+    def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
+        plan = request.require_input("chapter_plan")
+        intent = request.require_input("chapter_execution_intent")
+        memo = request.require_input("chapter_memo")
+        snapshot = dict(request.command.get("retrieval_snapshot") or {})
+        query_plan = dict(snapshot.get("query_plan") or {})
+        documents = [dict(item) for item in snapshot.get("documents") or ()]
+        if str(query_plan.get("intent_fingerprint") or "") != str(
+            intent.content.get("intent_fingerprint") or ""
+        ) or str(query_plan.get("memo_fingerprint") or "") != str(
+            memo.content.get("memo_fingerprint") or ""
+        ):
+            raise KernelError(
+                "RETRIEVAL_FROZEN_QUERY_IDENTITY_MISMATCH",
+                "retrieval query plan does not match frozen Intent and Memo",
+            )
+        expected_sources = {
+            (
+                str(item.get("source_asset_version_id") or ""),
+                str(item.get("source_content_hash") or ""),
+            )
+            for item in documents
+        }
+        control_ids = {
+            plan.asset_version_id,
+            intent.asset_version_id,
+            memo.asset_version_id,
+        }
+        frozen_sources = {
+            (item.asset_version_id, item.content_hash)
+            for item in request.inputs
+            if item.asset_version_id not in control_ids
+        }
+        if expected_sources != frozen_sources:
+            raise KernelError(
+                "RETRIEVAL_FROZEN_CANDIDATE_MISMATCH",
+                "retrieval document sources differ from frozen Operation inputs",
+            )
+        semantic_status = dict(snapshot.get("semantic_status") or {})
+        query_embedding: tuple[float, ...] = ()
+        query_embedding_evidence: dict[str, Any] = {}
+        if (
+            int(semantic_status.get("ready_document_count") or 0) > 0
+            and self.semantic_provider_bound
+        ):
+            provider_result = self.provider.invoke(
+                request,
+                stage="retrieval",
+                payload={
+                    "texts": [str(query_plan.get("postgresql_fts_query") or "")],
+                    "purpose": "accepted_history_query_embedding",
+                    "query_plan_fingerprint": str(
+                        query_plan.get("query_plan_fingerprint") or ""
+                    ),
+                },
+            )
+            vectors = provider_result.output.get("vectors")
+            if not isinstance(vectors, list) or len(vectors) != 1:
+                raise KernelError(
+                    "RETRIEVAL_QUERY_EMBEDDING_INVALID",
+                    "query embedding Provider returned the wrong batch cardinality",
+                )
+            query_embedding = tuple(float(item) for item in vectors[0])
+            expected_dimensions = int(
+                provider_result.output.get("embedding_dimensions") or 0
+            )
+            document_dimensions = {
+                int(item.get("embedding_dimensions") or 0)
+                for item in documents
+                if item.get("embedding")
+            }
+            query_model = str(provider_result.output.get("embedding_model") or "")
+            document_models = {
+                str(item.get("embedding_model") or "")
+                for item in documents
+                if item.get("embedding")
+            }
+            if document_dimensions != {expected_dimensions} or document_models != {
+                query_model
+            }:
+                raise KernelError(
+                    "RETRIEVAL_EMBEDDING_VERSION_MISMATCH",
+                    "query and document embedding identity or dimensions differ",
+                )
+            query_embedding_evidence = provider_result.to_evidence()
+            semantic_status.update(
+                {
+                    "query_embedding_status": "READY",
+                    "query_embedding_model": str(query_model),
+                    "query_embedding_dimensions": expected_dimensions,
+                    "provider_wired": True,
+                }
+            )
+        else:
+            semantic_status.update(
+                {
+                    "query_embedding_status": "NOT_READY",
+                    "provider_wired": self.semantic_provider_bound,
+                }
+            )
+            if query_plan.get("semantic_policy") == "REQUIRED":
+                raise KernelError(
+                    "RETRIEVAL_QUERY_EMBEDDING_REQUIRED",
+                    "semantic-required retrieval lacks a governed query embedding",
+                )
+        return _output(
+            ChapterNode.RETRIEVAL,
+            build_retrieval_result(
+                project_id=request.project_id,
+                book_id=str(
+                    plan.content.get("book_id") or f"book:{request.project_id}"
+                ),
+                intent_asset_version_id=intent.asset_version_id,
+                memo_asset_version_id=memo.asset_version_id,
+                query_plan=query_plan,
+                documents=documents,
+                discovery_rejections=tuple(
+                    dict(item) for item in snapshot.get("rejected_documents") or ()
+                ),
+                semantic_status=semantic_status,
+                query_embedding=query_embedding,
+                query_embedding_evidence=query_embedding_evidence,
+            ),
+        )
+
+
+@dataclass(frozen=True, slots=True)
 class _ContextHandler:
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
         plan = next(
@@ -417,6 +553,76 @@ class _ContextHandler:
         frozen_arc_plans: dict[str, dict[str, Any]] = {}
         intent = request.require_input("chapter_execution_intent")
         memo = request.require_input("chapter_memo")
+        retrieval = request.require_input("retrieval_result")
+        if (
+            retrieval.content.get("intent_asset_version_id") != intent.asset_version_id
+            or retrieval.content.get("memo_asset_version_id") != memo.asset_version_id
+            or dict(retrieval.content.get("accepted_boundary") or {})
+            != dict(intent.content.get("accepted_boundary") or {})
+        ):
+            raise KernelError(
+                "CONTEXT_RETRIEVAL_IDENTITY_MISMATCH",
+                "Context requires RetrievalResult for its exact Intent, Memo, and boundary",
+            )
+        selected_documents: dict[str, list[dict[str, Any]]] = {}
+        for document in retrieval.content.get("selected_documents") or ():
+            if isinstance(document, dict):
+                selected_documents.setdefault(
+                    str(document.get("source_asset_version_id") or ""), []
+                ).append(dict(document))
+        for source_id, documents in selected_documents.items():
+            if source_id in candidate_metadata:
+                continue
+            best = max(
+                documents,
+                key=lambda item: float(item.get("retrieval_score") or 0.0),
+            )
+            candidate_metadata[source_id] = {
+                "asset_version_id": source_id,
+                "asset_type": "narrative_retrieval_document",
+                "physical_asset_type": str(best.get("source_artifact_type") or ""),
+                "content_hash": str(best.get("source_content_hash") or ""),
+                "project_id": request.project_id,
+                "estimated_tokens": max(
+                    1, int(best.get("output_characters") or 0) // 4
+                ),
+                "safe_summary": str(best.get("safe_summary") or ""),
+                "structured_facts": [],
+                "narrative_function": str(
+                    dict(best.get("metadata") or {}).get("projection_kind")
+                    or "accepted_historical_evidence"
+                ),
+                "source_use_mode": "generation",
+                "allowed_use": "generation",
+                "context_class": "RETRIEVABLE",
+                "memory_layer": str(best.get("memory_layer") or ""),
+                "relevance_score": max(
+                    float(item.get("retrieval_score") or 0.0) for item in documents
+                ),
+                "retrieval_reasons": sorted(
+                    {
+                        str(reason)
+                        for item in documents
+                        for reason in item.get("retrieval_reasons") or ()
+                    }
+                ),
+                "retrieval_scores": dict(best.get("retrieval_scores") or {}),
+                "provenance": {
+                    "retrieval_result_asset_version_id": retrieval.asset_version_id,
+                    "retrieval_document_ids": sorted(
+                        str(item.get("retrieval_document_id") or "")
+                        for item in documents
+                    ),
+                    "accepted_boundary": dict(
+                        retrieval.content.get("accepted_boundary") or {}
+                    ),
+                    "source_projection_hashes": sorted(
+                        str(item.get("projection_hash") or "") for item in documents
+                    ),
+                },
+                "compression_method": str(best.get("compression_method") or "none"),
+                "compression_trace": [dict(best.get("compression_provenance") or {})],
+            }
         frozen_candidates = [
             item
             for item in request.inputs
@@ -426,6 +632,7 @@ class _ContextHandler:
                 "production_input_manifest",
                 "chapter_execution_intent",
                 "chapter_memo",
+                "retrieval_result",
             }
         ]
         if set(candidate_metadata) != {
@@ -488,6 +695,7 @@ class _ContextHandler:
                 "chapter_plan",
                 "chapter_execution_intent",
                 "chapter_memo",
+                "retrieval_result",
                 *sorted(required_candidate_types & available_candidate_types),
             ),
             token_budget=int(request.command.get("context_token_budget", 6000)),
@@ -504,6 +712,8 @@ class _ContextHandler:
             execution_intent_asset_version_id=intent.asset_version_id,
             chapter_memo=memo.content,
             chapter_memo_asset_version_id=memo.asset_version_id,
+            retrieval_result=retrieval.content,
+            retrieval_result_asset_version_id=retrieval.asset_version_id,
             frozen_arc_plans=frozen_arc_plans,
         )
         bundle["production_input_manifest"] = manifest
@@ -515,6 +725,10 @@ class _ContextHandler:
             "intent_fingerprint": str(intent.content.get("intent_fingerprint") or ""),
             "memo_asset_version_id": memo.asset_version_id,
             "memo_fingerprint": str(memo.content.get("memo_fingerprint") or ""),
+            "retrieval_result_asset_version_id": retrieval.asset_version_id,
+            "retrieval_result_fingerprint": str(
+                retrieval.content.get("result_fingerprint") or ""
+            ),
             "source_chapter_plan_asset_version_id": plan.asset_version_id,
             "accepted_boundary": dict(intent.content.get("accepted_boundary") or {}),
         }
@@ -524,13 +738,15 @@ class _ContextHandler:
         manifest_ids = {
             str(item.get("asset_version_id"))
             for item in manifest.get("selected_asset_versions", [])
-            if str(item.get("asset_version_id") or "")
-            != source_plan_asset_version_id
+            if str(item.get("asset_version_id") or "") != source_plan_asset_version_id
         }
-        execution_ids = {intent.asset_version_id, memo.asset_version_id}
+        execution_ids = {
+            intent.asset_version_id,
+            memo.asset_version_id,
+            retrieval.asset_version_id,
+        }
         context_manifest_ids = {
-            str(item)
-            for item in bundle.get("selected_asset_version_ids", [])
+            str(item) for item in bundle.get("selected_asset_version_ids", [])
         }
         frozen_ids = {item.asset_version_id for item in frozen_candidates}
         segment_ids = {
@@ -549,9 +765,14 @@ class _ContextHandler:
             if str(item.get("asset_version_id") or "") != plan.asset_version_id
         }
         context_external_selected_ids = context_selected_ids - execution_ids
+        dynamic_candidate_ids = set(selected_documents) - {
+            str(item.get("asset_version_id") or "")
+            for item in request.command.get("context_candidates", [])
+        }
+        static_candidate_ids = frozen_ids - dynamic_candidate_ids
         consistent = (
             bool(manifest)
-            and manifest_ids == frozen_ids
+            and manifest_ids == static_candidate_ids
             and context_selected_ids == segment_ids
             and execution_ids.issubset(context_manifest_ids)
             and not context_external_selected_ids.intersection(context_rejected_ids)
@@ -563,8 +784,8 @@ class _ContextHandler:
             raise KernelError(
                 "CONTEXT_MANIFEST_CONSISTENCY_FAILED",
                 "Manifest, frozen inputs, and Context selection partition differ: "
-                f"manifest_only={sorted(manifest_ids - frozen_ids)}; "
-                f"frozen_only={sorted(frozen_ids - manifest_ids)}; "
+                f"manifest_only={sorted(manifest_ids - static_candidate_ids)}; "
+                f"static_only={sorted(static_candidate_ids - manifest_ids)}; "
                 f"selected_only={sorted(context_selected_ids - frozen_ids)}; "
                 f"segment_only={sorted(segment_ids - context_selected_ids)}; "
                 f"unaccounted={sorted(frozen_ids - context_selected_ids - context_rejected_ids)}",
@@ -1669,12 +1890,19 @@ class _FinalReleaseGateHandler:
 def build_chapter_handler_registry(
     provider: ChapterModelPort,
 ) -> ChapterHandlerRegistry:
+    routes = getattr(getattr(provider, "adapter", None), "routes", {})
+    semantic_provider_bound = isinstance(routes, dict) and "retrieval" in routes
     registry = ChapterHandlerRegistry(
-        model_effects_required=bool(getattr(provider, "external_effect_backed", False))
+        model_effects_required=bool(getattr(provider, "external_effect_backed", False)),
+        semantic_retrieval_available=semantic_provider_bound,
     )
     registry.register(ChapterNode.PLAN, _PlanHandler())
     registry.register(ChapterNode.EXECUTION_INTENT, _ExecutionIntentHandler())
     registry.register(ChapterNode.MEMO, _MemoHandler())
+    registry.register(
+        ChapterNode.RETRIEVAL,
+        _RetrievalHandler(provider, semantic_provider_bound),
+    )
     registry.register(ChapterNode.CONTEXT, _ContextHandler())
     registry.register(ChapterNode.DRAFT, _DraftHandler(provider))
     registry.register(ChapterNode.REVIEW, _ReviewHandler(provider))

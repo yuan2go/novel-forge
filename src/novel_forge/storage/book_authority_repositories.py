@@ -454,9 +454,7 @@ class BookAuthorityRepository:
                 "chapter_outcome_asset_version_id": sources[
                     "chapter_outcome_asset_version_id"
                 ],
-                "story_state_asset_version_id": sources[
-                    "story_state_asset_version_id"
-                ],
+                "story_state_asset_version_id": sources["story_state_asset_version_id"],
                 "canon_snapshot_asset_version_id": sources[
                     "canon_snapshot_asset_version_id"
                 ],
@@ -469,8 +467,7 @@ class BookAuthorityRepository:
             },
         )
         progress_by_id = {
-            str(item["progress_id"]): dict(item)
-            for item in projection["arc_progress"]
+            str(item["progress_id"]): dict(item) for item in projection["arc_progress"]
         }
         for progress in progress_by_id.values():
             accepted = dict(progress["accepted_boundary"])
@@ -571,37 +568,66 @@ class BookAuthorityRepository:
                     Jsonb(dict(checkpoint)),
                 ],
             )
-            decision = str(checkpoint["decision"])
-            if decision in {"CORRECT", "REPLAN_REQUIRED"}:
-                checkpoint_id = str(checkpoint["checkpoint_id"])
-                followup_id = "arc-checkpoint-followup:" + hashlib.sha256(
-                    checkpoint_id.encode()
-                ).hexdigest()
-                self.cursor.execute(
-                    """
-                    INSERT INTO authority_arc_checkpoint_followup(
-                        followup_id, project_id, book_id, book_run_id,
-                        projection_set_id, checkpoint_id,
-                        accepted_through_chapter, decision, status,
-                        reason_evidence, target_plan_version_ids,
-                        idempotency_key, trace_id
-                    ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,'READY',%s,%s,%s,%s)
-                    ON CONFLICT(checkpoint_id) DO NOTHING
-                    """,
-                    [
-                        followup_id,
-                        projection["project_id"],
-                        projection["book_id"],
-                        projection["book_run_id"],
-                        projection_set_id,
-                        checkpoint_id,
-                        accepted["chapter_number"],
-                        decision,
-                        Jsonb(dict(checkpoint)),
-                        Jsonb([checkpoint["arc_plan_version_id"]]),
-                        f"{checkpoint_id}:arc-revision",
-                        f"{accepted['acceptance_operation_id']}:arc-checkpoint",
-                    ],
+        followup = _arc_checkpoint_followup(projection)
+        if followup is not None:
+            self.cursor.execute(
+                """
+                INSERT INTO authority_arc_checkpoint_followup(
+                    followup_id, project_id, book_id, book_run_id,
+                    projection_set_id, checkpoint_id,
+                    accepted_through_chapter, decision, status,
+                    reason_evidence, target_plan_version_ids,
+                    idempotency_key, trace_id
+                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,'READY',%s,%s,%s,%s)
+                ON CONFLICT(project_id,idempotency_key) DO NOTHING
+                """,
+                [
+                    followup["followup_id"],
+                    projection["project_id"],
+                    projection["book_id"],
+                    projection["book_run_id"],
+                    projection_set_id,
+                    followup["checkpoint_id"],
+                    followup["accepted_through_chapter"],
+                    followup["decision"],
+                    Jsonb(followup["reason_evidence"]),
+                    Jsonb(followup["target_plan_version_ids"]),
+                    followup["idempotency_key"],
+                    followup["trace_id"],
+                ],
+            )
+            self.cursor.execute(
+                """
+                SELECT checkpoint_id, accepted_through_chapter, decision,
+                       reason_evidence, target_plan_version_ids, trace_id
+                FROM authority_arc_checkpoint_followup
+                WHERE project_id=%s AND idempotency_key=%s
+                """,
+                [projection["project_id"], followup["idempotency_key"]],
+            )
+            persisted = self.cursor.fetchone()
+            expected = (
+                followup["checkpoint_id"],
+                followup["accepted_through_chapter"],
+                followup["decision"],
+                followup["reason_evidence"],
+                followup["target_plan_version_ids"],
+                followup["trace_id"],
+            )
+            if (
+                persisted is None
+                or (
+                    str(persisted[0]),
+                    int(persisted[1]),
+                    str(persisted[2]),
+                    dict(persisted[3] or {}),
+                    list(persisted[4] or []),
+                    str(persisted[5]),
+                )
+                != expected
+            ):
+                raise ValueError(
+                    "accepted Arc checkpoint follow-up idempotency conflict"
                 )
         for outcome in projection["arc_outcomes"]:
             self.cursor.execute(
@@ -670,16 +696,12 @@ class BookAuthorityRepository:
             )
         self._commit_narrative_retrieval_documents(projection)
 
-    def _commit_narrative_retrieval_documents(
-        self, projection: dict[str, Any]
-    ) -> None:
+    def _commit_narrative_retrieval_documents(self, projection: dict[str, Any]) -> None:
         """Index accepted evidence deterministically inside Book Acceptance."""
 
         sources = dict(projection["source_versions"])
         chapter = int(projection["accepted_boundary"]["chapter_number"])
-        operation_id = str(
-            projection["accepted_boundary"]["acceptance_operation_id"]
-        )
+        operation_id = str(projection["accepted_boundary"]["acceptance_operation_id"])
         arc_ids = sorted(
             {
                 str(item.get("arc_plan_version_id") or "")
@@ -689,12 +711,37 @@ class BookAuthorityRepository:
         )
         obligation_ids = sorted(
             {
-                str((item.get("state") or {}).get("obligation_id") or item.get("entity_key") or "")
+                str(
+                    (item.get("state") or {}).get("obligation_id")
+                    or item.get("entity_key")
+                    or ""
+                )
                 for item in projection["obligation_states"]
-                if str((item.get("state") or {}).get("obligation_id") or item.get("entity_key") or "")
+                if str(
+                    (item.get("state") or {}).get("obligation_id")
+                    or item.get("entity_key")
+                    or ""
+                )
             }
         )
-        specifications = (
+        chapter_outcome = dict(projection.get("source_chapter_outcome") or {})
+        # The canonical projector retains the accepted outcome in provenance;
+        # older projections may not, so the exact accepted outcome is loaded
+        # below when needed.
+        if not chapter_outcome:
+            self.cursor.execute(
+                """
+                SELECT content FROM authority_asset_version
+                WHERE asset_version_id=%s
+                """,
+                [sources["chapter_outcome_asset_version_id"]],
+            )
+            outcome_row = self.cursor.fetchone()
+            chapter_outcome = dict(outcome_row[0] or {}) if outcome_row else {}
+        accepted_draft_version_id = str(
+            chapter_outcome.get("accepted_draft_asset_version_id") or ""
+        )
+        specifications = [
             (
                 sources["chapter_outcome_asset_version_id"],
                 "L6",
@@ -729,8 +776,37 @@ class BookAuthorityRepository:
                 None,
                 {"projection_kind": "accepted_canon"},
             ),
-        )
-        for source_version_id, memory_layer, projected_content, metadata in specifications:
+        ]
+        if chapter_outcome.get("scene_outcomes"):
+            specifications.append(
+                (
+                    sources["chapter_outcome_asset_version_id"],
+                    "L3",
+                    {"scene_outcomes": list(chapter_outcome["scene_outcomes"])},
+                    {"projection_kind": "accepted_scene_episodic_history"},
+                )
+            )
+        if accepted_draft_version_id:
+            specifications.append(
+                (
+                    accepted_draft_version_id,
+                    "L0",
+                    None,
+                    {
+                        "projection_kind": "recent_accepted_prose",
+                        "archive_locator": {
+                            "asset_version_id": accepted_draft_version_id,
+                            "chapter": chapter,
+                        },
+                    },
+                )
+            )
+        for (
+            source_version_id,
+            memory_layer,
+            projected_content,
+            metadata,
+        ) in specifications:
             self.cursor.execute(
                 """
                 SELECT asset.asset_type, version.content
@@ -748,6 +824,7 @@ class BookAuthorityRepository:
                 if projected_content is not None
                 else dict(source[1] or {})
             )
+            graph = _retrieval_graph_metadata(content)
             content_text = json.dumps(
                 content,
                 ensure_ascii=False,
@@ -758,9 +835,9 @@ class BookAuthorityRepository:
                 f"{projection['project_id']}:{projection['book_id']}:"
                 f"{source_version_id}:{memory_layer}"
             )
-            retrieval_document_id = "narrative-retrieval:" + hashlib.sha256(
-                identity.encode()
-            ).hexdigest()
+            retrieval_document_id = (
+                "narrative-retrieval:" + hashlib.sha256(identity.encode()).hexdigest()
+            )
             document = {
                 "retrieval_document_id": retrieval_document_id,
                 "project_id": projection["project_id"],
@@ -770,6 +847,9 @@ class BookAuthorityRepository:
                 "accepted_from_chapter": chapter,
                 "memory_layer": memory_layer,
                 "content_text": content_text,
+                "entity_ids": graph["entity_ids"],
+                "relationship_ids": graph["relationship_ids"],
+                "character_ids": graph["character_ids"],
                 "arc_plan_version_ids": arc_ids,
                 "obligation_ids": obligation_ids,
                 "metadata": {
@@ -778,23 +858,27 @@ class BookAuthorityRepository:
                     "accepted_boundary": dict(projection["accepted_boundary"]),
                 },
             }
-            projection_hash = "sha256:" + hashlib.sha256(
-                json.dumps(
-                    document,
-                    ensure_ascii=False,
-                    sort_keys=True,
-                    separators=(",", ":"),
-                ).encode()
-            ).hexdigest()
+            projection_hash = (
+                "sha256:"
+                + hashlib.sha256(
+                    json.dumps(
+                        document,
+                        ensure_ascii=False,
+                        sort_keys=True,
+                        separators=(",", ":"),
+                    ).encode()
+                ).hexdigest()
+            )
             self.cursor.execute(
                 """
                 INSERT INTO authority_narrative_retrieval_document(
                     retrieval_document_id, project_id, book_id,
                     source_asset_version_id, source_artifact_type,
                     accepted_from_chapter, memory_layer, content_text,
+                    entity_ids, relationship_ids, character_ids,
                     arc_plan_version_ids, obligation_ids, temporal_coordinate,
                     metadata, projection_hash, created_by_operation_id
-                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
                 ON CONFLICT(project_id, book_id, source_asset_version_id,
                             memory_layer) DO NOTHING
                 """,
@@ -807,6 +891,9 @@ class BookAuthorityRepository:
                     chapter,
                     memory_layer,
                     content_text,
+                    Jsonb(graph["entity_ids"]),
+                    Jsonb(graph["relationship_ids"]),
+                    Jsonb(graph["character_ids"]),
                     Jsonb(arc_ids),
                     Jsonb(obligation_ids),
                     Jsonb({"accepted_chapter": chapter}),
@@ -870,6 +957,7 @@ class BookAuthorityRepository:
                 stable_idempotency_key,
             ],
         )
+
     def advance(
         self,
         *,
@@ -899,4 +987,132 @@ class BookAuthorityRepository:
         )
 
 
-__all__ = ["BookAuthorityRepository"]
+def _arc_checkpoint_followup(
+    projection: dict[str, Any],
+) -> dict[str, Any] | None:
+    """Aggregate all actionable Arcs at one accepted boundary into one intent.
+
+    A Chapter has one durable Recap/ArcRevision operation.  Persisting one
+    follow-up per Arc would strand every row after the first because that
+    operation is idempotent per accepted Chapter.  The aggregate preserves
+    every checkpoint as evidence and selects the strongest decision without
+    mutating any future plan in the Acceptance transaction.
+    """
+
+    actionable = [
+        dict(item)
+        for item in projection.get("arc_checkpoints") or ()
+        if str(item.get("decision") or "") in {"CORRECT", "REPLAN_REQUIRED"}
+    ]
+    if not actionable:
+        return None
+    actionable.sort(
+        key=lambda item: (
+            0 if str(item.get("decision")) == "REPLAN_REQUIRED" else 1,
+            str(item.get("arc_plan_version_id") or ""),
+            str(item.get("checkpoint_id") or ""),
+        )
+    )
+    boundaries = {
+        (
+            int(dict(item.get("accepted_boundary") or {}).get("chapter_number") or 0),
+            str(
+                dict(item.get("accepted_boundary") or {}).get("acceptance_operation_id")
+                or ""
+            ),
+        )
+        for item in actionable
+    }
+    if len(boundaries) != 1 or next(iter(boundaries))[0] <= 0:
+        raise ValueError("actionable Arc checkpoints do not share an accepted boundary")
+    chapter, acceptance_operation_id = next(iter(boundaries))
+    decision = (
+        "REPLAN_REQUIRED"
+        if any(str(item["decision"]) == "REPLAN_REQUIRED" for item in actionable)
+        else "CORRECT"
+    )
+    primary = next(
+        item for item in actionable if str(item.get("decision") or "") == decision
+    )
+    projection_set_id = str(projection["projection_set_id"])
+    identity = json.dumps(
+        {
+            "projection_set_id": projection_set_id,
+            "accepted_through_chapter": chapter,
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    return {
+        "followup_id": "arc-checkpoint-followup:"
+        + hashlib.sha256(identity.encode()).hexdigest(),
+        "checkpoint_id": str(primary["checkpoint_id"]),
+        "accepted_through_chapter": chapter,
+        "decision": decision,
+        "reason_evidence": {
+            "contract_version": "accepted-arc-checkpoint-followup-v2",
+            "projection_set_id": projection_set_id,
+            "accepted_through_chapter": chapter,
+            "aggregate_decision": decision,
+            "checkpoints": actionable,
+        },
+        "target_plan_version_ids": sorted(
+            {
+                str(item.get("arc_plan_version_id") or "")
+                for item in actionable
+                if str(item.get("arc_plan_version_id") or "")
+            }
+        ),
+        "idempotency_key": f"{projection_set_id}:{chapter}:arc-revision",
+        "trace_id": f"{acceptance_operation_id}:arc-checkpoint",
+    }
+
+
+def _retrieval_graph_metadata(content: Any) -> dict[str, list[str]]:
+    """Extract only graph identities actually present in accepted evidence."""
+
+    found = {
+        "entity_ids": set(),
+        "character_ids": set(),
+        "relationship_ids": set(),
+    }
+
+    def visit(value: Any, parent_key: str = "") -> None:
+        if isinstance(value, dict):
+            for key, item in value.items():
+                if key in found and isinstance(item, (list, tuple, set)):
+                    found[key].update(str(entry) for entry in item if str(entry))
+                elif key == "entity_id" and isinstance(item, str) and item:
+                    found["entity_ids"].add(item)
+                elif key == "character_id" and isinstance(item, str) and item:
+                    found["character_ids"].add(item)
+                    found["entity_ids"].add(item)
+                elif key == "relationship_id" and isinstance(item, str) and item:
+                    found["relationship_ids"].add(item)
+                elif key in {"subject", "object"} and isinstance(item, str) and item:
+                    found["entity_ids"].add(item)
+                elif key in {"character_state", "characters"} and isinstance(
+                    item, dict
+                ):
+                    found["character_ids"].update(
+                        str(identity) for identity in item if str(identity)
+                    )
+                    found["entity_ids"].update(
+                        str(identity) for identity in item if str(identity)
+                    )
+                elif key in {"relationship_state", "relationships"} and isinstance(
+                    item, dict
+                ):
+                    found["relationship_ids"].update(
+                        str(identity) for identity in item if str(identity)
+                    )
+                visit(item, key)
+        elif isinstance(value, (list, tuple)):
+            for item in value:
+                visit(item, parent_key)
+
+    visit(content)
+    return {key: sorted(values) for key, values in found.items()}
+
+
+__all__ = ["BookAuthorityRepository", "_arc_checkpoint_followup"]

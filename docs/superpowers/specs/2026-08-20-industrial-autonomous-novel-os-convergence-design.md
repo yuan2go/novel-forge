@@ -1,6 +1,9 @@
 # Industrial Autonomous Novel OS Convergence Design
 
-> **Status:** APPROVED implementation specification
+> **Status:** SUPERSEDED / HISTORICAL
+> **Superseded by:** `2026-08-21-post-merge-correctness-closure-design.md`
+> **Note:** This exact-SHA design records the pre-0094 convergence intent. Its
+> implementation/proof statements are not current runtime evidence.
 > **Canonical architecture:** `docs/architecture/canonical-overall-design.md`
 > **Novel Forge audit baseline:** `4fdf6adaa25ef085e4e6abab1f5b6ac71d86607a`
 > **InkOS architecture input:** `Narcooo/inkos@5da9fad03d65882adc030dc0043da8e8bc197dbd`
@@ -456,7 +459,7 @@ User / Studio Intent
 - session serialization becomes PostgreSQL lease/fence;
 - transcript becomes PostgreSQL append-only events;
 - Chapter Intent/Memo become immutable governed working artifacts;
-- BM25/rerank expands to PostgreSQL hybrid retrieval;
+- lexical/rerank expands to PostgreSQL Full-Text Search hybrid retrieval;
 - best snapshot becomes persisted lineage and rollback evidence;
 - Agent action proposals become typed Authority Commands.
 

@@ -55,11 +55,13 @@ class CapabilityPackValidatorTests(unittest.TestCase):
 
         self.assertTrue(report.ok, report.errors)
         self.assertEqual(report.pack_id, "chapter_generation_pack")
-        self.assertEqual(report.version, "2.0.0")
+        self.assertEqual(report.version, "2.1.0")
         node_ids = {node.node_id for node in manifest.workflow_template.nodes}
-        self.assertEqual(len(node_ids), 21)
+        self.assertEqual(len(node_ids), 22)
         self.assertTrue(
-            {"execution_intent", "memo", "best_candidate"}.issubset(node_ids)
+            {"execution_intent", "memo", "retrieval", "best_candidate"}.issubset(
+                node_ids
+            )
         )
         self.assertTrue(report.manifest_hash.startswith("sha256:"))
 
@@ -67,10 +69,22 @@ class CapabilityPackValidatorTests(unittest.TestCase):
         manifest = load_capability_pack(PACK_PATH)
         nodes = manifest.workflow_template.nodes
 
-        self.assertEqual(tuple(node.node_id for node in nodes), tuple(node.value for node in ChapterNode))
-        self.assertEqual(tuple(node.operation_name for node in nodes), tuple(node.definition_name for node in ChapterNode))
-        self.assertEqual(tuple(node.handler_key for node in nodes), tuple(node.handler_key for node in ChapterNode))
-        self.assertEqual(tuple(node.output_asset_types[0] for node in nodes), tuple(node.asset_type for node in ChapterNode))
+        self.assertEqual(
+            tuple(node.node_id for node in nodes),
+            tuple(node.value for node in ChapterNode),
+        )
+        self.assertEqual(
+            tuple(node.operation_name for node in nodes),
+            tuple(node.definition_name for node in ChapterNode),
+        )
+        self.assertEqual(
+            tuple(node.handler_key for node in nodes),
+            tuple(node.handler_key for node in ChapterNode),
+        )
+        self.assertEqual(
+            tuple(node.output_asset_types[0] for node in nodes),
+            tuple(node.asset_type for node in ChapterNode),
+        )
         self.assertEqual(
             tuple(node.depends_on for node in nodes),
             tuple(
@@ -87,7 +101,13 @@ class CapabilityPackValidatorTests(unittest.TestCase):
 
         codes = self._codes(payload)
 
-        self.assertTrue({"CAPABILITY_PACK_IDENTITY_INVALID", "CAPABILITY_PACK_TOOL_DEFAULT_ALLOW_FORBIDDEN", "CAPABILITY_PACK_HASH_INVALID"}.issubset(codes))
+        self.assertTrue(
+            {
+                "CAPABILITY_PACK_IDENTITY_INVALID",
+                "CAPABILITY_PACK_TOOL_DEFAULT_ALLOW_FORBIDDEN",
+                "CAPABILITY_PACK_HASH_INVALID",
+            }.issubset(codes)
+        )
 
     def test_json_type_fuzz_never_escapes_structured_validator(self) -> None:
         source = self._payload()
@@ -202,9 +222,7 @@ class CapabilityPackValidatorTests(unittest.TestCase):
 
     def test_all_referenced_capabilities_must_be_declared(self) -> None:
         payload = self._payload()
-        payload["compatibility"]["required_capabilities"].remove(
-            "prose.chapter.draft"
-        )
+        payload["compatibility"]["required_capabilities"].remove("prose.chapter.draft")
 
         self.assertIn(
             "CAPABILITY_PACK_CAPABILITY_DECLARATION_MISSING",
@@ -220,17 +238,13 @@ class CapabilityPackValidatorTests(unittest.TestCase):
 
     def test_pack_cannot_declare_itself_incompatible(self) -> None:
         payload = self._payload()
-        payload["compatibility"]["incompatible_packs"] = [
-            "chapter_generation_pack"
-        ]
+        payload["compatibility"]["incompatible_packs"] = ["chapter_generation_pack"]
 
         self.assertIn("CAPABILITY_PACK_COMPATIBILITY_INVALID", self._codes(payload))
 
     def test_skill_dependency_cycle_fails(self) -> None:
         payload = self._payload()
-        payload["skill_binding"]["skills"][0]["depends_on"] = [
-            "canon-continuity-graph"
-        ]
+        payload["skill_binding"]["skills"][0]["depends_on"] = ["canon-continuity-graph"]
 
         self.assertIn("CAPABILITY_PACK_SKILL_DEPENDENCY_CYCLE", self._codes(payload))
 
@@ -252,9 +266,7 @@ class CapabilityPackValidatorTests(unittest.TestCase):
 
     def test_database_table_allow_and_forbid_overlap_fails(self) -> None:
         payload = self._payload()
-        payload["tool_permissions"]["database"]["allowed_tables"] = [
-            "legacy_assets"
-        ]
+        payload["tool_permissions"]["database"]["allowed_tables"] = ["legacy_assets"]
 
         self.assertIn("CAPABILITY_PACK_TOOL_POLICY_INVALID", self._codes(payload))
 
@@ -266,9 +278,7 @@ class CapabilityPackValidatorTests(unittest.TestCase):
 
     def test_external_effect_tool_requires_runtime_permission(self) -> None:
         payload = self._payload()
-        payload["runtime_contract"]["execution"][
-            "external_effects_allowed"
-        ] = False
+        payload["runtime_contract"]["execution"]["external_effects_allowed"] = False
 
         self.assertIn("CAPABILITY_PACK_TOOL_POLICY_INVALID", self._codes(payload))
 
@@ -315,9 +325,7 @@ class CapabilityPackValidatorTests(unittest.TestCase):
 
     def test_context_required_version_ref_rejects_latest_alias(self) -> None:
         payload = self._payload()
-        payload["context_sources"]["required_version_refs"] = [
-            "knowledge-pack:latest"
-        ]
+        payload["context_sources"]["required_version_refs"] = ["knowledge-pack:latest"]
 
         self.assertIn("CAPABILITY_PACK_CONTEXT_POLICY_INVALID", self._codes(payload))
 
@@ -368,9 +376,18 @@ class CapabilityPackValidatorTests(unittest.TestCase):
             (("identity", "lifecycle"), "CAPABILITY_PACK_IDENTITY_INVALID"),
             (("role", "role_type"), "CAPABILITY_PACK_ROLE_INVALID"),
             (("skill_binding", "mode"), "CAPABILITY_PACK_SKILL_POLICY_INVALID"),
-            (("skill_binding", "skills", 0, "drift_policy"), "CAPABILITY_PACK_SKILL_POLICY_INVALID"),
-            (("context_sources", "source_isolation"), "CAPABILITY_PACK_CONTEXT_POLICY_INVALID"),
-            (("tool_permissions", "tools", 0, "permission"), "CAPABILITY_PACK_TOOL_POLICY_INVALID"),
+            (
+                ("skill_binding", "skills", 0, "drift_policy"),
+                "CAPABILITY_PACK_SKILL_POLICY_INVALID",
+            ),
+            (
+                ("context_sources", "source_isolation"),
+                "CAPABILITY_PACK_CONTEXT_POLICY_INVALID",
+            ),
+            (
+                ("tool_permissions", "tools", 0, "permission"),
+                "CAPABILITY_PACK_TOOL_POLICY_INVALID",
+            ),
             (("governance", "release_channel"), "CAPABILITY_PACK_GOVERNANCE_INVALID"),
         )
         for path, expected_code in cases:
@@ -422,9 +439,7 @@ class CapabilityPackValidatorTests(unittest.TestCase):
     def test_unknown_skill_dependency_fails(self) -> None:
         payload = self._payload()
         payload["skill_binding"]["skills"][0]["depends_on"] = ["missing-skill"]
-        self.assertIn(
-            "CAPABILITY_PACK_SKILL_DEPENDENCY_UNKNOWN", self._codes(payload)
-        )
+        self.assertIn("CAPABILITY_PACK_SKILL_DEPENDENCY_UNKNOWN", self._codes(payload))
 
     def test_non_string_skill_dependency_fails_without_crashing(self) -> None:
         payload = self._payload()
@@ -437,9 +452,7 @@ class CapabilityPackValidatorTests(unittest.TestCase):
         payload["workflow_template"]["nodes"].append(
             copy.deepcopy(payload["workflow_template"]["nodes"][0])
         )
-        self.assertIn(
-            "CAPABILITY_PACK_WORKFLOW_NODE_DUPLICATE", self._codes(payload)
-        )
+        self.assertIn("CAPABILITY_PACK_WORKFLOW_NODE_DUPLICATE", self._codes(payload))
 
     def test_workflow_unknown_dependency_fails(self) -> None:
         payload = self._payload()
@@ -450,28 +463,22 @@ class CapabilityPackValidatorTests(unittest.TestCase):
 
     def test_workflow_cycle_fails(self) -> None:
         payload = self._payload()
-        payload["workflow_template"]["nodes"][0]["depends_on"] = [
-            "final_release_gate"
-        ]
+        payload["workflow_template"]["nodes"][0]["depends_on"] = ["final_release_gate"]
         self.assertIn("CAPABILITY_PACK_WORKFLOW_CYCLE", self._codes(payload))
 
     def test_chapter_workflow_unknown_operation_binding_fails(self) -> None:
         payload = self._payload()
         payload["workflow_template"]["nodes"][0]["operation_name"] = "chapter.unknown"
 
-        self.assertIn(
-            "CAPABILITY_PACK_WORKFLOW_BINDING_INVALID", self._codes(payload)
-        )
+        self.assertIn("CAPABILITY_PACK_WORKFLOW_BINDING_INVALID", self._codes(payload))
 
     def test_workflow_unknown_operation_definition_fails(self) -> None:
         payload = self._payload()
-        payload["workflow_template"]["nodes"][0][
-            "operation_definition_ref"
-        ] = "chapter.unknown@1.0.0"
-
-        self.assertIn(
-            "CAPABILITY_PACK_WORKFLOW_BINDING_INVALID", self._codes(payload)
+        payload["workflow_template"]["nodes"][0]["operation_definition_ref"] = (
+            "chapter.unknown@1.0.0"
         )
+
+        self.assertIn("CAPABILITY_PACK_WORKFLOW_BINDING_INVALID", self._codes(payload))
 
     def test_pack_id_rename_cannot_bypass_governed_workflow_contract(self) -> None:
         payload = self._payload()
@@ -481,32 +488,28 @@ class CapabilityPackValidatorTests(unittest.TestCase):
         node["operation_definition_ref"] = "alternate.plan.generate@1.0.0"
         node["handler_key"] = "novel_forge.alternate.plan"
 
-        self.assertIn(
-            "CAPABILITY_PACK_WORKFLOW_BINDING_INVALID", self._codes(payload)
-        )
+        self.assertIn("CAPABILITY_PACK_WORKFLOW_BINDING_INVALID", self._codes(payload))
 
     def test_generic_operation_ref_must_match_operation_name(self) -> None:
         payload = self._payload()
         payload["identity"]["pack_id"] = "alternate_generation_pack"
-        payload["workflow_template"]["nodes"][0][
-            "operation_definition_ref"
-        ] = "alternate.plan.generate@1.0.0"
+        payload["workflow_template"]["nodes"][0]["operation_definition_ref"] = (
+            "alternate.plan.generate@1.0.0"
+        )
 
         self.assertIn("CAPABILITY_PACK_WORKFLOW_BINDING_INVALID", self._codes(payload))
 
     def test_workflow_timeout_must_match_capability_definition(self) -> None:
         payload = self._payload()
-        payload["workflow_template"]["nodes"][0][
-            "timeout_policy_ref"
-        ] = "timeout:unbound:v1"
+        payload["workflow_template"]["nodes"][0]["timeout_policy_ref"] = (
+            "timeout:unbound:v1"
+        )
 
         self.assertIn("CAPABILITY_PACK_WORKFLOW_BINDING_INVALID", self._codes(payload))
 
     def test_completion_node_must_be_a_real_terminal(self) -> None:
         payload = self._payload()
-        payload["workflow_template"]["completion"][
-            "required_terminal_nodes"
-        ] = ["plan"]
+        payload["workflow_template"]["completion"]["required_terminal_nodes"] = ["plan"]
 
         self.assertIn("CAPABILITY_PACK_WORKFLOW_TERMINAL_UNKNOWN", self._codes(payload))
 
@@ -527,9 +530,9 @@ class CapabilityPackValidatorTests(unittest.TestCase):
 
     def test_completion_terminal_nodes_must_be_an_array(self) -> None:
         payload = self._payload()
-        payload["workflow_template"]["completion"][
-            "required_terminal_nodes"
-        ] = "final_release_gate"
+        payload["workflow_template"]["completion"]["required_terminal_nodes"] = (
+            "final_release_gate"
+        )
 
         self.assertIn("CAPABILITY_PACK_PROTOCOL_INVALID", self._codes(payload))
 
@@ -538,9 +541,7 @@ class CapabilityPackValidatorTests(unittest.TestCase):
         payload["workflow_template"]["completion"]["required_terminal_nodes"] = [
             "missing"
         ]
-        self.assertIn(
-            "CAPABILITY_PACK_WORKFLOW_TERMINAL_UNKNOWN", self._codes(payload)
-        )
+        self.assertIn("CAPABILITY_PACK_WORKFLOW_TERMINAL_UNKNOWN", self._codes(payload))
 
     def test_non_default_deny_tool_policy_fails(self) -> None:
         payload = self._payload()
@@ -576,25 +577,25 @@ class CapabilityPackValidatorTests(unittest.TestCase):
 
     def test_allowed_and_forbidden_asset_overlap_fails(self) -> None:
         payload = self._payload()
-        payload["context_sources"]["allowed_asset_types"].append(
-            "raw_source_document"
-        )
+        payload["context_sources"]["allowed_asset_types"].append("raw_source_document")
         self.assertIn("CAPABILITY_PACK_CONTEXT_ASSET_OVERLAP", self._codes(payload))
 
     def test_unknown_judge_capability_fails(self) -> None:
         payload = self._payload()
-        payload["evaluation"]["required_gates"][0][
-            "judge_capability_id"
-        ] = "unknown.quality.judge"
+        payload["evaluation"]["required_gates"][0]["judge_capability_id"] = (
+            "unknown.quality.judge"
+        )
         self.assertIn(
             "CAPABILITY_PACK_EVALUATION_CAPABILITY_UNKNOWN", self._codes(payload)
         )
 
-    def test_registered_non_judge_capability_cannot_be_an_evaluation_judge(self) -> None:
+    def test_registered_non_judge_capability_cannot_be_an_evaluation_judge(
+        self,
+    ) -> None:
         payload = self._payload()
-        payload["evaluation"]["required_gates"][0][
-            "judge_capability_id"
-        ] = "prose.chapter.draft"
+        payload["evaluation"]["required_gates"][0]["judge_capability_id"] = (
+            "prose.chapter.draft"
+        )
 
         self.assertIn(
             "CAPABILITY_PACK_EVALUATION_CAPABILITY_UNKNOWN", self._codes(payload)
@@ -616,9 +617,7 @@ class CapabilityPackValidatorTests(unittest.TestCase):
 
     def test_runtime_contract_without_authority_binding_fails(self) -> None:
         payload = self._payload()
-        payload["runtime_contract"]["execution"][
-            "binds_authority_operation"
-        ] = False
+        payload["runtime_contract"]["execution"]["binds_authority_operation"] = False
         self.assertIn(
             "CAPABILITY_PACK_AUTHORITY_BINDING_REQUIRED", self._codes(payload)
         )
@@ -629,9 +628,7 @@ class CapabilityPackValidatorTests(unittest.TestCase):
             path.write_text("{invalid", encoding="utf-8")
             with self.assertRaises(CapabilityPackLoadError) as raised:
                 load_capability_pack(path)
-        self.assertEqual(
-            raised.exception.issue.code, "CAPABILITY_PACK_JSON_INVALID"
-        )
+        self.assertEqual(raised.exception.issue.code, "CAPABILITY_PACK_JSON_INVALID")
 
     def test_loader_rejects_duplicate_json_object_keys(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -654,9 +651,7 @@ class CapabilityPackValidatorTests(unittest.TestCase):
 
     def test_payload_loader_does_not_coerce_tuple_to_json_array(self) -> None:
         payload = self._payload()
-        payload["compatibility"]["required_capabilities"] = (
-            "prose.chapter.draft",
-        )
+        payload["compatibility"]["required_capabilities"] = ("prose.chapter.draft",)
 
         with self.assertRaises(CapabilityPackLoadError) as raised:
             load_capability_pack_payload(payload)
@@ -678,9 +673,7 @@ class CapabilityPackValidatorTests(unittest.TestCase):
             path.write_bytes(b" " * (1024 * 1024 + 1))
             with self.assertRaises(CapabilityPackLoadError) as raised:
                 load_capability_pack(path)
-        self.assertEqual(
-            raised.exception.issue.code, "CAPABILITY_PACK_FILE_TOO_LARGE"
-        )
+        self.assertEqual(raised.exception.issue.code, "CAPABILITY_PACK_FILE_TOO_LARGE")
 
 
 if __name__ == "__main__":

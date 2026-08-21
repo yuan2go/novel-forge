@@ -34,7 +34,11 @@ def _cosine(left: Iterable[float], right: Iterable[float]) -> float:
     if not a or len(a) != len(b):
         return 0.0
     denominator = math.sqrt(sum(v * v for v in a)) * math.sqrt(sum(v * v for v in b))
-    return 0.0 if denominator == 0 else sum(x * y for x, y in zip(a, b, strict=True)) / denominator
+    return (
+        0.0
+        if denominator == 0
+        else sum(x * y for x, y in zip(a, b, strict=True)) / denominator
+    )
 
 
 def hybrid_retrieve(
@@ -50,14 +54,18 @@ def hybrid_retrieve(
         accepted_from = int(document.get("accepted_from_chapter") or 0)
         accepted_to = document.get("accepted_to_chapter")
         if accepted_from > query.accepted_through_chapter or (
-            accepted_to is not None and query.accepted_through_chapter > int(accepted_to)
+            accepted_to is not None
+            and query.accepted_through_chapter > int(accepted_to)
         ):
             continue
         content_tokens = _tokens(str(document.get("content_text") or ""))
-        lexical = (
+        lexical_overlap = (
             len(query_tokens & content_tokens) / max(1, len(query_tokens))
             if query_tokens
             else 0.0
+        )
+        postgresql_fts = max(
+            0.0, min(1.0, float(document.get("postgresql_fts_rank") or 0.0))
         )
         embedding = _cosine(
             query.query_embedding,
@@ -71,11 +79,15 @@ def hybrid_retrieve(
         arc = _overlap(
             query.arc_plan_version_ids, document.get("arc_plan_version_ids") or ()
         )
-        obligation = _overlap(query.obligation_ids, document.get("obligation_ids") or ())
+        obligation = _overlap(
+            query.obligation_ids, document.get("obligation_ids") or ()
+        )
         distance = max(0, query.accepted_through_chapter - accepted_from)
         temporal = 1.0 / (1.0 + distance)
         scores = {
-            "lexical": lexical,
+            "postgresql_fts": postgresql_fts,
+            "lexical_overlap": lexical_overlap,
+            "lexical": lexical_overlap,
             "embedding": embedding,
             "entity": entity,
             "relationship": relationship,
@@ -85,9 +97,15 @@ def hybrid_retrieve(
             "obligation": obligation,
         }
         total = (
-            lexical * 0.22 + embedding * 0.18 + entity * 0.10
-            + relationship * 0.10 + character * 0.10 + temporal * 0.08
-            + arc * 0.11 + obligation * 0.11
+            postgresql_fts * 0.16
+            + lexical_overlap * 0.06
+            + embedding * 0.18
+            + entity * 0.10
+            + relationship * 0.10
+            + character * 0.10
+            + temporal * 0.08
+            + arc * 0.11
+            + obligation * 0.11
         )
         reasons = [key for key, value in scores.items() if value > 0]
         ranked.append(

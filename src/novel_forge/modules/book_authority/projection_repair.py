@@ -45,15 +45,18 @@ BOOK_PROJECTION_REPAIR_HANDLER = "novel_forge.book_authority.projection_repair"
 
 
 def _hash(value: Any) -> str:
-    return "sha256:" + hashlib.sha256(
-        json.dumps(
-            value,
-            sort_keys=True,
-            separators=(",", ":"),
-            ensure_ascii=False,
-            default=str,
-        ).encode()
-    ).hexdigest()
+    return (
+        "sha256:"
+        + hashlib.sha256(
+            json.dumps(
+                value,
+                sort_keys=True,
+                separators=(",", ":"),
+                ensure_ascii=False,
+                default=str,
+            ).encode()
+        ).hexdigest()
+    )
 
 
 def validate_terminal_repair_rows(
@@ -266,9 +269,10 @@ class PostgresBookProjectionRepairAuthority:
             )
             processed.append(chapter)
         repair = self.require(repair_id)
-        if int(repair["next_chapter"]) > int(
-            repair["target_accepted_through_chapter"]
-        ) and repair["authoritative_status"] != "AUTHORITATIVE_REPAIR_COMPLETE":
+        if (
+            int(repair["next_chapter"]) > int(repair["target_accepted_through_chapter"])
+            and repair["authoritative_status"] != "AUTHORITATIVE_REPAIR_COMPLETE"
+        ):
             repair = self._activate_terminal(claim, repair, actor_id=actor_id)
         return self._result(repair, tuple(processed))
 
@@ -335,11 +339,14 @@ class PostgresBookProjectionRepairAuthority:
                 "BOOK_PROJECTION_REPAIR_OPERATION_RECOVERY_REQUIRED",
                 "latest projection repair Operation is not recoverable",
             )
-        if self._durable_operation_result(
-            operation_id=operation_id,
-            repair_id=str(repair["repair_id"]),
-            action=action,
-        ) is None:
+        if (
+            self._durable_operation_result(
+                operation_id=operation_id,
+                repair_id=str(repair["repair_id"]),
+                action=action,
+            )
+            is None
+        ):
             return
 
         def unexpected_handler(
@@ -491,11 +498,10 @@ class PostgresBookProjectionRepairAuthority:
                     "repair requires every frozen ArcPlan AssetVersion",
                 )
             expected_progress = {
-                str(item.get("arc_plan_version_id") or item.get("arc_id") or ""):
-                int(item["expected_progress_units"])
-                for item in source["chapter_plan"].get(
-                    "required_arc_contributions"
+                str(item.get("arc_plan_version_id") or item.get("arc_id") or ""): int(
+                    item["expected_progress_units"]
                 )
+                for item in source["chapter_plan"].get("required_arc_contributions")
                 or ()
                 if isinstance(item, Mapping)
                 and str(item.get("arc_plan_version_id") or item.get("arc_id") or "")
@@ -513,19 +519,13 @@ class PostgresBookProjectionRepairAuthority:
                     chapter_outcome_asset_version_id=source[
                         "chapter_outcome_asset_version_id"
                     ],
-                    chapter_outcome_content_hash=source[
-                        "chapter_outcome_content_hash"
-                    ],
-                    story_state_asset_version_id=source[
-                        "story_state_asset_version_id"
-                    ],
+                    chapter_outcome_content_hash=source["chapter_outcome_content_hash"],
+                    story_state_asset_version_id=source["story_state_asset_version_id"],
                     story_state_content_hash=source["story_state_content_hash"],
                     canon_snapshot_asset_version_id=source[
                         "canon_snapshot_asset_version_id"
                     ],
-                    canon_snapshot_content_hash=source[
-                        "canon_snapshot_content_hash"
-                    ],
+                    canon_snapshot_content_hash=source["canon_snapshot_content_hash"],
                     chapter_plan_asset_version_id=source[
                         "chapter_plan_asset_version_id"
                     ],
@@ -538,8 +538,7 @@ class PostgresBookProjectionRepairAuthority:
                     chapter_outcome=source["chapter_outcome"],
                     story_state=source["story_state"],
                     source_contract=str(
-                        source["chapter_outcome"].get("contract_version")
-                        or "UNKNOWN"
+                        source["chapter_outcome"].get("contract_version") or "UNKNOWN"
                     ),
                 )
             )
@@ -565,9 +564,12 @@ class PostgresBookProjectionRepairAuthority:
                     "BOOK_PROJECTION_REPAIR_ACCEPTANCE_CAS_FAILED",
                     "accepted Chapter projection pointer changed during repair",
                 )
-            checkpoint_id = "book-projection-repair-checkpoint:" + hashlib.sha256(
-                f"{repair_id}:{chapter_number}:{projection['projection_hash']}".encode()
-            ).hexdigest()
+            checkpoint_id = (
+                "book-projection-repair-checkpoint:"
+                + hashlib.sha256(
+                    f"{repair_id}:{chapter_number}:{projection['projection_hash']}".encode()
+                ).hexdigest()
+            )
             adaptation = dict(projection["projection_provenance"])
             source_digest = _hash(
                 {
@@ -693,9 +695,7 @@ class PostgresBookProjectionRepairAuthority:
                     "terminal activation requires every Chapter checkpoint",
                 )
             rows = self._terminal_rows(uow, repair_id, context["book_run_id"])
-            proof = validate_terminal_repair_rows(
-                target_chapter=target, rows=rows
-            )
+            proof = validate_terminal_repair_rows(target_chapter=target, rows=rows)
             current_target_digest = self._target_evidence_digest(
                 uow, context["book_run_id"], context["project_id"], target
             )
@@ -844,9 +844,7 @@ class PostgresBookProjectionRepairAuthority:
                         "repair_id": str(repair["repair_id"]),
                         "book_run_id": str(repair["book_run_id"]),
                         "action": action,
-                        "target_evidence_digest": str(
-                            repair["target_evidence_digest"]
-                        ),
+                        "target_evidence_digest": str(repair["target_evidence_digest"]),
                     },
                 },
                 "input_assets": input_assets,
@@ -960,9 +958,16 @@ class PostgresBookProjectionRepairAuthority:
                     expected_operation_version=int(current["operation_version"]),
                 ),
                 outcome="success",
-                result={**result, "recovered_from_durable_checkpoint": existing is not None},
+                result={
+                    **result,
+                    "recovered_from_durable_checkpoint": existing is not None,
+                },
             )
-            return {"operation_id": operation_id, **result, "replayed": bool(admitted["replayed"])}
+            return {
+                "operation_id": operation_id,
+                **result,
+                "replayed": bool(admitted["replayed"]),
+            }
         except Exception as exc:
             retryable = not (
                 isinstance(exc, KernelError)
@@ -973,7 +978,9 @@ class PostgresBookProjectionRepairAuthority:
                     self.database_url,
                     worker,
                     retryable=retryable,
-                    error_code=exc.code if isinstance(exc, KernelError) else "PROGRAMMING_BUG",
+                    error_code=exc.code
+                    if isinstance(exc, KernelError)
+                    else "PROGRAMMING_BUG",
                     error_message=str(exc),
                     failure_class="RETRYABLE" if retryable else "FINAL",
                 )
@@ -1060,7 +1067,8 @@ class PostgresBookProjectionRepairAuthority:
         if missing:
             raise KernelError(
                 "BOOK_PROJECTION_REPAIR_FROZEN_INPUT_MISSING",
-                "repair Operation source AssetVersion is missing: " + ", ".join(missing),
+                "repair Operation source AssetVersion is missing: "
+                + ", ".join(missing),
             )
         return str(book[0]), [
             {"asset_version_id": asset_id, "content_hash": hashes[asset_id]}
@@ -1468,8 +1476,7 @@ class PostgresBookProjectionRepairAuthority:
         states = {
             str(item.get("arc_plan_version_id") or ""): dict(item)
             for item in row[0] or ()
-            if isinstance(item, Mapping)
-            and str(item.get("arc_plan_version_id") or "")
+            if isinstance(item, Mapping) and str(item.get("arc_plan_version_id") or "")
         }
         uow.cursor.execute(
             """
@@ -1618,7 +1625,11 @@ class PostgresBookProjectionRepairAuthority:
                 ],
             )
             row = uow.cursor.fetchone()
-            if row is None or str(row[0]) != projection_set_id or dict(row[1]) != dict(state):
+            if (
+                row is None
+                or str(row[0]) != projection_set_id
+                or dict(row[1]) != dict(state)
+            ):
                 raise KernelError(
                     "BOOK_PROJECTION_REPAIR_COMPONENT_CONFLICT",
                     "ArcActualState does not match the canonical projection",
@@ -1637,7 +1648,11 @@ class PostgresBookProjectionRepairAuthority:
                 [projection["project_id"], projection["book_id"], obligation_id],
             )
             row = uow.cursor.fetchone()
-            if row is None or str(row[0]) != projection_set_id or dict(row[1]) != dict(obligation):
+            if (
+                row is None
+                or str(row[0]) != projection_set_id
+                or dict(row[1]) != dict(obligation)
+            ):
                 raise KernelError(
                     "BOOK_PROJECTION_REPAIR_COMPONENT_CONFLICT",
                     "NarrativeObligation state does not match canonical projection",
@@ -1657,7 +1672,7 @@ class PostgresBookProjectionRepairAuthority:
             ],
         )
         retrieval = uow.cursor.fetchone()
-        if retrieval is None or int(retrieval[0]) != 5 or not bool(retrieval[1]):
+        if retrieval is None or int(retrieval[0]) < 5 or not bool(retrieval[1]):
             raise KernelError(
                 "BOOK_PROJECTION_REPAIR_COMPONENT_CONFLICT",
                 "accepted retrieval projections are incomplete",

@@ -57,6 +57,10 @@ from novel_forge.modules.command_kernel.runtime import (
 )
 from novel_forge.modules.command_kernel.service import AdmissionContext, admit_command
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+from novel_forge.modules.context_builder.production_retrieval import (
+    build_retrieval_query_plan,
+    discover_accepted_retrieval_candidates,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -116,6 +120,7 @@ def admit_single_chapter_saga(
         application_build_id=request.application_build_id,
         commit_sha=request.commit_sha,
         model_effects_required=registry.model_effects_required,
+        semantic_retrieval_available=registry.semantic_retrieval_available,
     )
     root_definition = chapter_root_operation_definition(
         application_build_id=request.application_build_id,
@@ -271,6 +276,20 @@ def run_single_chapter_slice(
         ]
         if node is ChapterNode.PLAN:
             input_assets.append(_chapter_plan_input(request))
+        input_overrides: dict[str, Any] = {}
+        if node is ChapterNode.RETRIEVAL:
+            extra_inputs, snapshot = _retrieval_admission_snapshot(
+                database_url,
+                request=request,
+                plan_asset_version_id=outputs[ChapterNode.PLAN].asset_version_id,
+                intent_asset_version_id=outputs[
+                    ChapterNode.EXECUTION_INTENT
+                ].asset_version_id,
+                memo_asset_version_id=outputs[ChapterNode.MEMO].asset_version_id,
+                semantic_provider_bound=registry.semantic_retrieval_available,
+            )
+            input_assets.extend(extra_inputs)
+            input_overrides["retrieval_snapshot"] = snapshot
         if node in {ChapterNode.EXECUTION_INTENT, ChapterNode.CONTEXT}:
             if node is ChapterNode.CONTEXT:
                 input_assets.append(
@@ -295,6 +314,18 @@ def run_single_chapter_slice(
                     for item in candidates
                     if str(item.get("asset_type") or "") != "chapter_plan"
                 )
+                retrieval = _asset_content(
+                    database_url,
+                    project_id=request.project_id,
+                    asset_version_id=outputs[ChapterNode.RETRIEVAL].asset_version_id,
+                )
+                input_assets.extend(
+                    {
+                        "asset_version_id": str(item["asset_version_id"]),
+                        "content_hash": str(item["content_hash"]),
+                    }
+                    for item in retrieval.get("selected_source_asset_versions", ())
+                )
             input_assets.extend(
                 {
                     "asset_version_id": str(item["asset_version_id"]),
@@ -313,6 +344,11 @@ def run_single_chapter_slice(
                     ].asset_version_id,
                 )
             )
+        input_assets = list(
+            {
+                str(item["asset_version_id"]): dict(item) for item in input_assets
+            }.values()
+        )
         operation_id = admit_command(
             database_url,
             _command(
@@ -324,6 +360,7 @@ def run_single_chapter_slice(
                 parent_operation_id=root,
                 causation_operation_id=previous_operation_id or root,
                 definition_version=definition_version,
+                input_overrides=input_overrides,
             ),
             context=admission,
         )["operation_id"]
@@ -668,10 +705,16 @@ def _input_nodes(node: ChapterNode) -> tuple[ChapterNode, ...]:
             ChapterNode.PLAN,
             ChapterNode.EXECUTION_INTENT,
         ),
+        ChapterNode.RETRIEVAL: (
+            ChapterNode.PLAN,
+            ChapterNode.EXECUTION_INTENT,
+            ChapterNode.MEMO,
+        ),
         ChapterNode.CONTEXT: (
             ChapterNode.PLAN,
             ChapterNode.EXECUTION_INTENT,
             ChapterNode.MEMO,
+            ChapterNode.RETRIEVAL,
         ),
         ChapterNode.DRAFT: (
             ChapterNode.PLAN,
@@ -735,6 +778,80 @@ def _input_nodes(node: ChapterNode) -> tuple[ChapterNode, ...]:
             ChapterNode.CONTEXT,
         ),
     }[node]
+
+
+def _retrieval_admission_snapshot(
+    database_url: str,
+    *,
+    request: SingleChapterRequest,
+    plan_asset_version_id: str,
+    intent_asset_version_id: str,
+    memo_asset_version_id: str,
+    semantic_provider_bound: bool = False,
+) -> tuple[list[dict[str, str]], dict[str, Any]]:
+    plan = _asset_content(
+        database_url,
+        project_id=request.project_id,
+        asset_version_id=plan_asset_version_id,
+    )
+    intent = _asset_content(
+        database_url,
+        project_id=request.project_id,
+        asset_version_id=intent_asset_version_id,
+    )
+    memo = _asset_content(
+        database_url,
+        project_id=request.project_id,
+        asset_version_id=memo_asset_version_id,
+    )
+    semantic_policy = str(
+        dict(request.context_version_refs or {}).get("semantic_retrieval_policy")
+        or "FALLBACK_ALLOWED"
+    )
+    query_plan = build_retrieval_query_plan(
+        intent=intent,
+        memo=memo,
+        semantic_policy=semantic_policy,
+    )
+    if query_plan["semantic_policy"] == "REQUIRED" and not semantic_provider_bound:
+        raise KernelError(
+            "RETRIEVAL_QUERY_EMBEDDING_BINDING_REQUIRED",
+            "semantic-required retrieval has no governed Provider binding",
+        )
+    discovery = discover_accepted_retrieval_candidates(
+        database_url,
+        project_id=request.project_id,
+        book_id=str(plan.get("book_id") or f"book:{request.project_id}"),
+        query_plan=query_plan,
+    )
+    return list(discovery.candidate_inputs), {
+        "query_plan": discovery.query_plan,
+        "documents": [dict(item) for item in discovery.documents],
+        "rejected_documents": [dict(item) for item in discovery.rejected_documents],
+        "semantic_status": dict(discovery.semantic_status),
+    }
+
+
+def _asset_content(
+    database_url: str, *, project_id: str, asset_version_id: str
+) -> dict[str, Any]:
+    with AuthorityUnitOfWork(database_url) as uow:
+        uow.cursor.execute(
+            """
+            SELECT version.content
+            FROM authority_asset_version AS version
+            JOIN authority_asset AS asset ON asset.asset_id=version.asset_id
+            WHERE version.asset_version_id=%s AND asset.project_id=%s
+            """,
+            [asset_version_id, project_id],
+        )
+        row = uow.cursor.fetchone()
+    if row is None:
+        raise KernelError(
+            "CHAPTER_FROZEN_ASSET_MISSING",
+            "Chapter admission source AssetVersion is missing",
+        )
+    return dict(row[0] or {})
 
 
 def _measurement_evidence_inputs(

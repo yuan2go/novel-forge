@@ -1,9 +1,12 @@
 """Application facade for PostgreSQL-only chapter commands and strong queries."""
+
 from __future__ import annotations
 
 from collections.abc import Callable
 
-from novel_forge.modules.chapter_authority.handlers import build_chapter_handler_registry
+from novel_forge.modules.chapter_authority.handlers import (
+    build_chapter_handler_registry,
+)
 from novel_forge.modules.chapter_authority.model_effects import (
     ChapterAgentBindingRecorder,
     ExternalEffectChapterModelPort,
@@ -21,7 +24,12 @@ from novel_forge.modules.chapter_authority.orchestrator import (
 from novel_forge.modules.chapter_authority.scheduler import ChapterAuthorityScheduler
 from novel_forge.modules.authority_security import Principal
 from novel_forge.modules.chapter_authority.queries import ChapterAuthorityQuery
-from novel_forge.modules.command_kernel.external_effect_adapters import ExternalEffectAdapter
+from novel_forge.modules.command_kernel.external_effect_adapters import (
+    ExternalEffectAdapter,
+)
+from novel_forge.modules.context_builder.embedding_projection import (
+    RetrievalEmbeddingProjectionRuntime,
+)
 
 
 class ChapterAuthorityApplication:
@@ -33,12 +41,16 @@ class ChapterAuthorityApplication:
         object_store_adapter: ExternalEffectAdapter,
         worker_id: str,
         capability_binder: PostgresChapterExecutionContractBinder | None = None,
+        embedding_capability_binder: PostgresChapterExecutionContractBinder
+        | None = None,
         allow_synchronous_fixture: bool = True,
         max_cost_per_model_call: str = "0",
         budget_caps: dict[str, str] | None = None,
         agent_binding_recorder: ChapterAgentBindingRecorder | None = None,
         agent_binding_required: bool = False,
         runtime_fault_injector: Callable[[str], None] | None = None,
+        application_build_id: str = "chapter-authority-runtime",
+        commit_sha: str = "0" * 40,
     ) -> None:
         if not database_url or not worker_id:
             raise ValueError("PostgreSQL database and worker identity are required")
@@ -56,6 +68,31 @@ class ChapterAuthorityApplication:
             capability_binder=capability_binder,
         )
         self.registry = build_chapter_handler_registry(self._model_port)
+        self._embedding_model_port = (
+            ExternalEffectChapterModelPort(
+                database_url,
+                adapter=model_adapter,
+                worker_id=f"{worker_id}:retrieval-embedding:model",
+                max_cost_per_call=max_cost_per_model_call,
+                budget_caps=budget_caps,
+                fault_injector=runtime_fault_injector,
+                capability_binder=embedding_capability_binder,
+                execution_binding_domain="retrieval_projection",
+            )
+            if self.registry.semantic_retrieval_available
+            else None
+        )
+        self.embedding_projection_runtime = (
+            RetrievalEmbeddingProjectionRuntime(
+                database_url,
+                provider=self._embedding_model_port,
+                worker_id=f"{worker_id}:retrieval-embedding",
+                application_build_id=application_build_id,
+                commit_sha=commit_sha,
+            )
+            if self._embedding_model_port is not None
+            else None
+        )
         self._object_store_adapter = object_store_adapter
         self.worker_id = worker_id
         self.allow_synchronous_fixture = allow_synchronous_fixture
@@ -92,7 +129,9 @@ class ChapterAuthorityApplication:
 
     def scheduler(self, *, principal: Principal) -> ChapterAuthorityScheduler:
         if principal.principal_type.value != "worker":
-            raise PermissionError("Chapter scheduler requires a configured worker Principal")
+            raise PermissionError(
+                "Chapter scheduler requires a configured worker Principal"
+            )
         return ChapterAuthorityScheduler(
             self.database_url,
             registry=self.registry,

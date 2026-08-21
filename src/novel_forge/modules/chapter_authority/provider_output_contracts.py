@@ -305,18 +305,18 @@ def _canon_schema() -> dict[str, Any]:
         required=tuple(change_properties),
     )
     properties = {
-            field: {
-                "type": "array",
-                # Each semantic array owns its schema.  Sharing ``change`` here
-                # lets a field-specific refinement silently mutate every other
-                # Canon change contract.
-                "items": (
-                    fact if field == "canon_facts" else json.loads(json.dumps(change))
-                ),
-                **({"minItems": 1} if field == "canon_facts" else {}),
-            }
-            for field in _CANON_FIELDS
+        field: {
+            "type": "array",
+            # Each semantic array owns its schema.  Sharing ``change`` here
+            # lets a field-specific refinement silently mutate every other
+            # Canon change contract.
+            "items": (
+                fact if field == "canon_facts" else json.loads(json.dumps(change))
+            ),
+            **({"minItems": 1} if field == "canon_facts" else {}),
         }
+        for field in _CANON_FIELDS
+    }
     properties["arc_evidence"] = {
         "type": "array",
         "items": _object_schema(
@@ -333,14 +333,24 @@ def _canon_schema() -> dict[str, Any]:
                 "actual_consequences": {"type": "array", "items": {"type": "string"}},
                 "obligation_ids": {"type": "array", "items": {"type": "string"}},
                 "resolution_evidence": {"type": "array", "items": {"type": "string"}},
-                "completion_criterion_ids": {"type": "array", "items": {"type": "string"}},
+                "completion_criterion_ids": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                },
                 "phase_to": _nullable({"type": "string"}),
             },
             required=(
-                "arc_plan_version_id", "observation_status", "contribution_kind",
-                "progress_units", "effect_dimensions", "milestone_ids",
-                "actual_consequences", "obligation_ids", "resolution_evidence",
-                "completion_criterion_ids", "phase_to",
+                "arc_plan_version_id",
+                "observation_status",
+                "contribution_kind",
+                "progress_units",
+                "effect_dimensions",
+                "milestone_ids",
+                "actual_consequences",
+                "obligation_ids",
+                "resolution_evidence",
+                "completion_criterion_ids",
+                "phase_to",
             ),
         ),
     }
@@ -528,6 +538,27 @@ def _reader_outcome_schema() -> dict[str, Any]:
     )
 
 
+def _retrieval_embedding_schema() -> dict[str, Any]:
+    return _object_schema(
+        {
+            "vectors": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 32,
+                "items": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 8192,
+                    "items": {"type": "number"},
+                },
+            },
+            "embedding_model": {"type": "string", "minLength": 1},
+            "embedding_dimensions": {"type": "integer", "minimum": 1},
+        },
+        required=("vectors", "embedding_model", "embedding_dimensions"),
+    )
+
+
 def chapter_provider_output_schema(stage: str) -> dict[str, Any]:
     """Return the exact provider-facing result contract for a Chapter stage."""
 
@@ -545,6 +576,8 @@ def chapter_provider_output_schema(stage: str) -> dict[str, Any]:
         schema = _quality_schema()
     elif stage == "reader_outcome":
         schema = _reader_outcome_schema()
+    elif stage == "retrieval":
+        schema = _retrieval_embedding_schema()
     else:
         raise KernelError(
             "CHAPTER_PROVIDER_OUTPUT_SCHEMA_UNSUPPORTED",

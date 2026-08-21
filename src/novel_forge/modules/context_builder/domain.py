@@ -4,6 +4,7 @@ The module is shared by compatibility services and PostgreSQL Authority
 handlers.  It never discovers assets or persists results; callers must supply
 project-scoped, versioned candidates and persist the returned payload.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
@@ -16,7 +17,13 @@ from novel_forge.modules.context_contracts import ContextCandidate
 
 ELIGIBLE_QUALIFICATIONS = {"ELIGIBLE"}
 BLOCKED_QUALIFICATIONS = {"REVOKED", "STALE", "QUARANTINED", "REQUIRES_APPROVAL"}
-SOURCE_MODES = {"generation", "summary_only", "structure_only", "review_only", "eval_only"}
+SOURCE_MODES = {
+    "generation",
+    "summary_only",
+    "structure_only",
+    "review_only",
+    "eval_only",
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -70,29 +77,68 @@ _RAW_TYPES = frozenset(
         "parallel_pair",
     }
 )
-_COMMON = frozenset({
-    "chapter_plan", "chapter_plan_version", "outline_version", "volume_arc", "world_bible",
-    "character_card", "canon_snapshot", "story_state_snapshot",
-    "style_policy", "knowledge_pack", "knowledge_card", "material_asset", "material_card",
-    "quality_rubric", "quality_profile", "platform_profile", "context_profile",
-    "theme_arc", "theme_beat", "closure_plan", "review_issue", "review_report",
-    "draft_chapter", "draft_version", "quality_report", "longform_recap_report",
-    "operator_checklist", "operator_approval", "approval_decision", "source_leakage_report",
-    "originality_risk_report", "anti_ai_report", "platform_rule_report",
-    "structural_quality_report", "commercial_quality_report",
-    "source_originality_quality_report", "longform_quality_report",
-    "platform_quality_report",
-    "chapter_execution_intent", "chapter_memo", "arc_plan", "arc_actual_state",
-    "arc_checkpoint", "narrative_obligation_state", "character_timeline",
-    "relationship_timeline", "chapter_episodic_summary", "scene_episodic_summary",
-    "narrative_retrieval_document", "external_knowledge",
-})
+_COMMON = frozenset(
+    {
+        "chapter_plan",
+        "chapter_plan_version",
+        "outline_version",
+        "volume_arc",
+        "world_bible",
+        "character_card",
+        "canon_snapshot",
+        "story_state_snapshot",
+        "style_policy",
+        "knowledge_pack",
+        "knowledge_card",
+        "material_asset",
+        "material_card",
+        "quality_rubric",
+        "quality_profile",
+        "platform_profile",
+        "context_profile",
+        "theme_arc",
+        "theme_beat",
+        "closure_plan",
+        "review_issue",
+        "review_report",
+        "draft_chapter",
+        "draft_version",
+        "quality_report",
+        "longform_recap_report",
+        "operator_checklist",
+        "operator_approval",
+        "approval_decision",
+        "source_leakage_report",
+        "originality_risk_report",
+        "anti_ai_report",
+        "platform_rule_report",
+        "structural_quality_report",
+        "commercial_quality_report",
+        "source_originality_quality_report",
+        "longform_quality_report",
+        "platform_quality_report",
+        "chapter_execution_intent",
+        "chapter_memo",
+        "arc_plan",
+        "arc_actual_state",
+        "retrieval_result",
+        "arc_checkpoint",
+        "narrative_obligation_state",
+        "character_timeline",
+        "relationship_timeline",
+        "chapter_episodic_summary",
+        "scene_episodic_summary",
+        "narrative_retrieval_document",
+        "external_knowledge",
+    }
+)
 
 _ALWAYS_PROTECTED_TYPES = frozenset(
     {
         "chapter_plan",
         "chapter_execution_intent",
         "chapter_memo",
+        "retrieval_result",
         "canon_snapshot",
         "story_state_snapshot",
         "arc_actual_state",
@@ -135,42 +181,95 @@ def _profile(
         copyright_mode="abstract_or_project_owned_only",
         evidence_only_types=frozenset(evidence_only),
         review_only_types=frozenset(review_only),
-        priority_rules=("required_first", "stage_fit", "narrative_function", "relevance", "lower_risk"),
+        priority_rules=(
+            "required_first",
+            "stage_fit",
+            "narrative_function",
+            "relevance",
+            "lower_risk",
+        ),
     )
 
 
 CONTEXT_PROFILES: dict[str, ContextProfile] = {
-    "creative": _profile("creative", required=(), maximum=4200, allowed={"creative_brief", "source_policy"}),
-    "worldbuilding": _profile("worldbuilding", required=("creative_brief",), maximum=5000, allowed={"creative_brief", "world_rule"}),
-    "character": _profile("character", required=("creative_brief", "world_bible"), maximum=4800, allowed={"creative_brief"}),
-    "outline": _profile("outline", required=("world_bible", "character_card"), maximum=6000, allowed={"creative_brief"}),
-    "chapter_plan": _profile("chapter_plan", required=("outline_version",), maximum=5200),
+    "creative": _profile(
+        "creative",
+        required=(),
+        maximum=4200,
+        allowed={"creative_brief", "source_policy"},
+    ),
+    "worldbuilding": _profile(
+        "worldbuilding",
+        required=("creative_brief",),
+        maximum=5000,
+        allowed={"creative_brief", "world_rule"},
+    ),
+    "character": _profile(
+        "character",
+        required=("creative_brief", "world_bible"),
+        maximum=4800,
+        allowed={"creative_brief"},
+    ),
+    "outline": _profile(
+        "outline",
+        required=("world_bible", "character_card"),
+        maximum=6000,
+        allowed={"creative_brief"},
+    ),
+    "chapter_plan": _profile(
+        "chapter_plan", required=("outline_version",), maximum=5200
+    ),
     "draft": _profile(
         "draft",
         required=("chapter_plan",),
         maximum=16000,
         review_only={"review_report", "review_issue", "quality_report"},
         evidence_only={
-            "operator_checklist", "operator_approval", "approval_decision", "source_leakage_report",
-            "originality_risk_report", "anti_ai_report", "platform_rule_report",
-            "quality_rubric", "quality_profile", "platform_profile", "context_profile",
-            "structural_quality_report", "commercial_quality_report",
-            "source_originality_quality_report", "longform_quality_report",
+            "operator_checklist",
+            "operator_approval",
+            "approval_decision",
+            "source_leakage_report",
+            "originality_risk_report",
+            "anti_ai_report",
+            "platform_rule_report",
+            "quality_rubric",
+            "quality_profile",
+            "platform_profile",
+            "context_profile",
+            "structural_quality_report",
+            "commercial_quality_report",
+            "source_originality_quality_report",
+            "longform_quality_report",
             "platform_quality_report",
         },
     ),
-    "review": _profile("review", required=("draft_version",), maximum=5000, evidence_only={"source_policy"}),
-    "revision": _profile("revision", required=("draft_version", "review_report"), maximum=5000),
-    "canon_extraction": _profile("canon_extraction", required=("draft_version",), maximum=4200),
+    "review": _profile(
+        "review",
+        required=("draft_version",),
+        maximum=5000,
+        evidence_only={"source_policy"},
+    ),
+    "revision": _profile(
+        "revision", required=("draft_version", "review_report"), maximum=5000
+    ),
+    "canon_extraction": _profile(
+        "canon_extraction", required=("draft_version",), maximum=4200
+    ),
     "quality": _profile("quality", required=("draft_version",), maximum=5200),
-    "longform_recap": _profile("longform_recap", required=("longform_recap_report",), maximum=6000),
+    "longform_recap": _profile(
+        "longform_recap", required=("longform_recap_report",), maximum=6000
+    ),
     "ending": _profile("ending", required=("closure_plan", "theme_arc"), maximum=7000),
 }
 
 
 def resolve_context_profile(name: str) -> ContextProfile:
     normalized = name.strip().lower().replace("-", "_")
-    aliases = {"prose": "draft", "chapter_outline": "chapter_plan", "recap": "longform_recap"}
+    aliases = {
+        "prose": "draft",
+        "chapter_outline": "chapter_plan",
+        "recap": "longform_recap",
+    }
     normalized = aliases.get(normalized, normalized)
     try:
         return CONTEXT_PROFILES[normalized]
@@ -198,7 +297,9 @@ def select_context_candidates(
                 raise ValueError(
                     f"protected context is unavailable: {candidate.asset_version_id}:{reason}"
                 )
-            rejected.append({"asset_version_id": candidate.asset_version_id, "reason": reason})
+            rejected.append(
+                {"asset_version_id": candidate.asset_version_id, "reason": reason}
+            )
         else:
             accepted.append(candidate)
     accepted.sort(
@@ -214,14 +315,24 @@ def select_context_candidates(
     used = 0
     for candidate in accepted:
         if candidate.estimated_tokens < 0:
-            rejected.append({"asset_version_id": candidate.asset_version_id, "reason": "invalid_token_estimate"})
+            rejected.append(
+                {
+                    "asset_version_id": candidate.asset_version_id,
+                    "reason": "invalid_token_estimate",
+                }
+            )
             continue
         if used + candidate.estimated_tokens > token_budget:
             if context_candidate_class(candidate) == "PROTECTED":
                 raise ValueError(
                     "protected context exceeds token budget; explicit replanning is required"
                 )
-            rejected.append({"asset_version_id": candidate.asset_version_id, "reason": "token_budget"})
+            rejected.append(
+                {
+                    "asset_version_id": candidate.asset_version_id,
+                    "reason": "token_budget",
+                }
+            )
             continue
         selected.append(candidate)
         used += candidate.estimated_tokens
@@ -312,17 +423,27 @@ def build_authority_context_bundle(
     }
     digest_payload = {
         "manifest": [
-            {"asset_version_id": item.asset_version_id, "content_digest": item.content_digest}
+            {
+                "asset_version_id": item.asset_version_id,
+                "content_digest": item.content_digest,
+            }
             for item in selection.selected
         ],
         "stage_context_view": stage_view,
         "context_correctness": correctness,
     }
-    actual_context_digest = "sha256:" + hashlib.sha256(
-        json.dumps(digest_payload, sort_keys=True, separators=(",", ":")).encode()
-    ).hexdigest()
-    policy_versions = sorted({item.policy_version for item in selection.selected if item.policy_version})
-    invalidation_keys = sorted({key for item in selection.selected for key in item.invalidation_keys})
+    actual_context_digest = (
+        "sha256:"
+        + hashlib.sha256(
+            json.dumps(digest_payload, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+    )
+    policy_versions = sorted(
+        {item.policy_version for item in selection.selected if item.policy_version}
+    )
+    invalidation_keys = sorted(
+        {key for item in selection.selected for key in item.invalidation_keys}
+    )
     normalized_position = _normalize_narrative_position(narrative_position)
     selected_inputs = [
         {
@@ -370,9 +491,12 @@ def build_authority_context_bundle(
             "copyright_mode": profile.copyright_mode,
         },
     }
-    replay_input_digest = "sha256:" + hashlib.sha256(
-        json.dumps(replay_inputs, sort_keys=True, separators=(",", ":")).encode()
-    ).hexdigest()
+    replay_input_digest = (
+        "sha256:"
+        + hashlib.sha256(
+            json.dumps(replay_inputs, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+    )
     context_manifest = {
         "type": "NarrativeContextManifest",
         "contract_version": "narrative-context-manifest-v2",
@@ -449,11 +573,12 @@ def build_authority_context_bundle(
         "policy_versions": policy_versions,
         "context_correctness": correctness,
     }
-    context_manifest["context_fingerprint"] = "sha256:" + hashlib.sha256(
-        json.dumps(
-            context_manifest, sort_keys=True, separators=(",", ":")
-        ).encode()
-    ).hexdigest()
+    context_manifest["context_fingerprint"] = (
+        "sha256:"
+        + hashlib.sha256(
+            json.dumps(context_manifest, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+    )
     return {
         "project_id": project_id,
         "book_id": book_id,
@@ -470,8 +595,16 @@ def build_authority_context_bundle(
         "canon_snapshot_version": refs.get("canon_snapshot_version", ""),
         "style_policy_version": refs.get("style_policy_version", ""),
         "operator_checklist_version": refs.get("operator_checklist_version", ""),
-        "knowledge_pack_versions": [item.asset_version_id for item in selection.selected if item.asset_type == "knowledge_pack"],
-        "material_asset_versions": [item.asset_version_id for item in selection.selected if item.asset_type in {"material_asset", "material_card"}],
+        "knowledge_pack_versions": [
+            item.asset_version_id
+            for item in selection.selected
+            if item.asset_type == "knowledge_pack"
+        ],
+        "material_asset_versions": [
+            item.asset_version_id
+            for item in selection.selected
+            if item.asset_type in {"material_asset", "material_card"}
+        ],
         "source_policy_versions": policy_versions,
         "selected_asset_versions": selected,
         "selected_asset_version_ids": selected,
@@ -530,9 +663,7 @@ def _context_correctness_receipt(
         str(item) for item in accessible_knowledge_fact_ids if str(item).strip()
     }
     required_long_distance = {
-        str(item)
-        for item in required_long_distance_fact_ids
-        if str(item).strip()
+        str(item) for item in required_long_distance_fact_ids if str(item).strip()
     }
     facts = [
         (segment, dict(fact))
@@ -560,10 +691,11 @@ def _context_correctness_receipt(
             "character_knowledge",
             "character_belief",
         }
-        hidden_truth = (
-            state_kind in {"canon_fact", "story_truth", ""}
-            and visibility in {"HIDDEN", "RESTRICTED", "NOT_ACCESSIBLE"}
-        )
+        hidden_truth = state_kind in {
+            "canon_fact",
+            "story_truth",
+            "",
+        } and visibility in {"HIDDEN", "RESTRICTED", "NOT_ACCESSIBLE"}
         identity = _epistemic_fact_identity(fact)
         if (epistemic or hidden_truth) and identity and identity not in accessible:
             hidden.append(_fact_identity(fact))
@@ -600,9 +732,7 @@ def _context_correctness_receipt(
         )
         semantic_sources.setdefault(key, set()).add(segment.asset_version_id)
     duplicates = [
-        sorted(sources)
-        for sources in semantic_sources.values()
-        if len(sources) > 1
+        sorted(sources) for sources in semantic_sources.values() if len(sources) > 1
     ]
     irrelevant_full = [
         item.asset_version_id
@@ -738,12 +868,8 @@ def _narrative_boundaries(
                 "state_kind": kind,
                 "entity_key": str(fact.get("entity_key") or ""),
                 "entity_version": int(fact.get("entity_version") or 0),
-                "effective_from_chapter": int(
-                    fact.get("effective_from_chapter") or 0
-                ),
-                "effective_to_chapter": int(
-                    fact.get("effective_to_chapter") or 0
-                ),
+                "effective_from_chapter": int(fact.get("effective_from_chapter") or 0),
+                "effective_to_chapter": int(fact.get("effective_to_chapter") or 0),
             }
             if kind in {"character_knowledge", "character_belief"}:
                 knowledge.append({**base, "state": state})
@@ -769,6 +895,7 @@ def _narrative_boundaries(
                 "conflict_state",
             }:
                 state_constraints.append({**base, "state": state})
+
     def order(item: dict[str, Any]) -> tuple[str, str]:
         return (str(item["state_kind"]), str(item["entity_key"]))
 
@@ -781,15 +908,23 @@ def _narrative_boundaries(
     }
 
 
-def _context_segment(candidate: ContextCandidate, profile: ContextProfile) -> ContextSegment:
+def _context_segment(
+    candidate: ContextCandidate, profile: ContextProfile
+) -> ContextSegment:
     safe_summary = candidate.safe_summary.strip()
     facts = tuple(dict(item) for item in candidate.structured_facts)
     if not safe_summary and not facts:
         # Version identity alone is not usable model context.  The caller must provide
         # safe material, while project-owned planning assets may use a concise marker.
         safe_summary = f"[{candidate.asset_type}:{candidate.asset_version_id}]"
-    allowed_use = "evidence_only" if candidate.asset_type in profile.evidence_only_types else (
-        "structure_only" if candidate.source_use_mode == "structure_only" else candidate.allowed_use
+    allowed_use = (
+        "evidence_only"
+        if candidate.asset_type in profile.evidence_only_types
+        else (
+            "structure_only"
+            if candidate.source_use_mode == "structure_only"
+            else candidate.allowed_use
+        )
     )
     return ContextSegment(
         asset_version_id=candidate.asset_version_id,
@@ -811,10 +946,15 @@ def _context_segment(candidate: ContextCandidate, profile: ContextProfile) -> Co
     )
 
 
-def _rejection_reason(project_id: str, profile: ContextProfile, candidate: ContextCandidate) -> str:
+def _rejection_reason(
+    project_id: str, profile: ContextProfile, candidate: ContextCandidate
+) -> str:
     if candidate.project_id != project_id:
         return "cross_project"
-    if candidate.qualification in BLOCKED_QUALIFICATIONS or candidate.qualification not in ELIGIBLE_QUALIFICATIONS:
+    if (
+        candidate.qualification in BLOCKED_QUALIFICATIONS
+        or candidate.qualification not in ELIGIBLE_QUALIFICATIONS
+    ):
         return f"qualification:{candidate.qualification}"
     if candidate.governance_status != "CLEAR":
         return f"governance:{candidate.governance_status}"

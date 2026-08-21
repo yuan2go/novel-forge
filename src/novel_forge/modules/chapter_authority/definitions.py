@@ -7,8 +7,8 @@ from typing import Any
 from novel_forge.modules.chapter_authority.contracts import ChapterNode
 
 
-CHAPTER_SLICE_DEFINITION_VERSION = "2.0.11"
-CHAPTER_MODEL_EFFECT_DEFINITION_VERSION = "3.0.0"
+CHAPTER_SLICE_DEFINITION_VERSION = "2.1.0"
+CHAPTER_MODEL_EFFECT_DEFINITION_VERSION = "3.1.0"
 CHAPTER_MODEL_WORKFLOW_DEFINITION_ID = "chapter_authority_slice"
 CHAPTER_MODEL_WORKFLOW_DEFINITION_VERSION = CHAPTER_MODEL_EFFECT_DEFINITION_VERSION
 CHAPTER_MODEL_WORKFLOW_DEFINITION_REF = (
@@ -29,8 +29,8 @@ CHAPTER_QUALITY_PROVIDER_NODES = frozenset(
         ChapterNode.QUALITY_PLATFORM,
     }
 )
-CHAPTER_QUALITY_GROUP_TIMEOUT_SECONDS = (
-    CHAPTER_MODEL_OPERATION_TIMEOUT_SECONDS * len(CHAPTER_QUALITY_PROVIDER_NODES)
+CHAPTER_QUALITY_GROUP_TIMEOUT_SECONDS = CHAPTER_MODEL_OPERATION_TIMEOUT_SECONDS * len(
+    CHAPTER_QUALITY_PROVIDER_NODES
 )
 CHAPTER_LONG_TIMEOUT_POLICY_NODES = frozenset(
     {
@@ -61,6 +61,7 @@ def chapter_operation_definitions(
     application_build_id: str,
     commit_sha: str,
     model_effects_required: bool = False,
+    semantic_retrieval_available: bool = False,
 ) -> tuple[dict[str, Any], ...]:
     if not application_build_id or len(commit_sha) != 40:
         raise ValueError(
@@ -72,6 +73,7 @@ def chapter_operation_definitions(
             application_build_id=application_build_id,
             commit_sha=commit_sha,
             model_effects_required=model_effects_required,
+            semantic_retrieval_available=semantic_retrieval_available,
         )
         for node in ChapterNode
     )
@@ -145,7 +147,13 @@ def _definition(
     application_build_id: str,
     commit_sha: str,
     model_effects_required: bool,
+    semantic_retrieval_available: bool,
 ) -> dict[str, Any]:
+    # Provider availability is runtime policy, not OperationDefinition
+    # identity.  In particular Retrieval may use its declared model capability
+    # when semantic projection is ready, or complete under an explicitly
+    # frozen FTS/graph/temporal fallback policy without a model effect.
+    del semantic_retrieval_available
     command_schema = _chapter_command_schema()
     completion: dict[str, Any] = {
         "version": f"{node.definition_name}.completion.v1",
@@ -166,6 +174,7 @@ def _definition(
     }
     external_capabilities: list[str] = []
     model_capability = {
+        ChapterNode.RETRIEVAL: "model.retrieval",
         ChapterNode.DRAFT: "model.draft",
         ChapterNode.REVIEW: "model.review",
         ChapterNode.REVISION: "model.revision",
@@ -178,10 +187,11 @@ def _definition(
         ChapterNode.QUALITY_PLATFORM: "model.quality_platform",
     }.get(node)
     if model_effects_required and model_capability:
-        completion["required_external_effects"] = [
-            {"capability": model_capability, "allowed_states": ["SUCCEEDED"]}
-        ]
         external_capabilities = [model_capability]
+        if node is not ChapterNode.RETRIEVAL:
+            completion["required_external_effects"] = [
+                {"capability": model_capability, "allowed_states": ["SUCCEEDED"]}
+            ]
     if node is ChapterNode.CANON:
         completion["required_asset_selectors"].append(
             {
@@ -241,6 +251,17 @@ def _definition(
                 "selector": "context_manifest_consistency_report",
                 "output_key": "chapter.context.manifest_consistency",
                 "role": "completion_evidence",
+                "lifecycle": "ACTIVE",
+                "eligibility": "ELIGIBLE",
+                "governance": "CLEAR",
+            }
+        )
+    if node is ChapterNode.RETRIEVAL:
+        completion["required_asset_selectors"].append(
+            {
+                "selector": "retrieval_result",
+                "output_key": "chapter.retrieval",
+                "role": "primary",
                 "lifecycle": "ACTIVE",
                 "eligibility": "ELIGIBLE",
                 "governance": "CLEAR",
@@ -416,6 +437,7 @@ def _chapter_command_schema() -> dict[str, Any]:
                 "items": {"type": "object"},
             },
             "context_version_refs": {"type": "object"},
+            "retrieval_snapshot": {"type": "object"},
             "context_token_budget": {"type": "integer"},
             "preparation_report": {"type": "object"},
             "chapter_idempotency_key": {"type": "string"},

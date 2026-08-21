@@ -102,7 +102,7 @@ _STAGES = frozenset(
         "narrative_semantic_evaluation",
     }
 )
-_OPTIONAL_DOMAIN_STAGES = frozenset({"agent_session"})
+_OPTIONAL_DOMAIN_STAGES = frozenset({"agent_session", "retrieval"})
 
 _PLANNING_STAGES = frozenset(
     {
@@ -128,6 +128,7 @@ _STAGE_CAPABILITIES = {
     "reader_outcome": CapabilityId.QUALITY_READER_OUTCOME_JUDGE,
     "narrative_semantic_evaluation": CapabilityId.QUALITY_INTRINSIC_JUDGE,
     "agent_session": CapabilityId.AGENT_WORKSPACE_EXECUTE,
+    "retrieval": CapabilityId.RETRIEVAL_EMBED,
 }
 
 
@@ -1447,6 +1448,22 @@ def default_chapter_fixture_response(
 ) -> dict[str, Any]:
     """Deterministic chapter fixture used only by SCRIPTED_FIXTURE routes."""
 
+    if stage == "retrieval":
+        texts = inputs.get("texts")
+        if not isinstance(texts, list) or not texts:
+            raise ValueError("fixture retrieval embedding requires texts")
+        dimensions = 8
+        vectors = []
+        for text_value in texts:
+            digest = hashlib.sha256(str(text_value).encode()).digest()
+            vectors.append(
+                [round((digest[index] / 127.5) - 1.0, 8) for index in range(dimensions)]
+            )
+        return {
+            "vectors": vectors,
+            "embedding_model": "deterministic-fixture-embedding-v1",
+            "embedding_dimensions": dimensions,
+        }
     if stage == "agent_session":
         observations = inputs.get("observations")
         tools = inputs.get("tools")
@@ -2103,6 +2120,12 @@ def _language_semantic_contract(required_language: str | None) -> str:
 def _stage_semantic_contract(
     stage: str, *, required_language: str | None = None
 ) -> str:
+    if stage == "retrieval":
+        return (
+            "Return exactly one numeric embedding vector for each frozen input text, "
+            "in the same order. Return the actual embedding model identity and vector "
+            "dimensions. Do not add facts, summarize, retrieve, or mutate Authority state."
+        )
     if stage == "agent_session":
         return (
             "Reason only over the frozen accepted boundary, committed transcript, "
@@ -2694,9 +2717,8 @@ class ProductionExecutionGatewayExternalEffectAdapter:
         provider_adapters: Mapping[str, Any] | None = None,
     ) -> None:
         route_names = set(routes)
-        if (
-            not _STAGES.issubset(route_names)
-            or not route_names.issubset(_STAGES | _OPTIONAL_DOMAIN_STAGES)
+        if not _STAGES.issubset(route_names) or not route_names.issubset(
+            _STAGES | _OPTIONAL_DOMAIN_STAGES
         ):
             raise ValueError("all governed execution stages must use the gateway")
         self.database_url = database_url

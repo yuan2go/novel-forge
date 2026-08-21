@@ -190,6 +190,7 @@ _PACK_SKILL_FOR_STAGE = {
     "reader_outcome": "quality-review",
     "narrative_semantic_evaluation": "quality-review",
     "agent_session": "agent-loop-governance",
+    "retrieval": "context-builder-source-isolation",
 }
 
 
@@ -250,10 +251,14 @@ def _scripted_narrative_evaluation_fixture_enabled(
     narrower boundary than the general runtime fixture flag.
     """
 
-    explicit = str(
-        values.get("NOVEL_FORGE_TEST_ALLOW_SCRIPTED_NARRATIVE_EVALUATION_FIXTURE")
-        or ""
-    ).strip().lower()
+    explicit = (
+        str(
+            values.get("NOVEL_FORGE_TEST_ALLOW_SCRIPTED_NARRATIVE_EVALUATION_FIXTURE")
+            or ""
+        )
+        .strip()
+        .lower()
+    )
     return runtime_environment is RuntimeEnvironment.TEST and explicit in {
         "1",
         "true",
@@ -286,9 +291,7 @@ def build_book_design_authority_application(
             )
         ),
         allow_scripted_evaluation_fixture=(
-            _scripted_narrative_evaluation_fixture_enabled(
-                runtime_environment, values
-            )
+            _scripted_narrative_evaluation_fixture_enabled(runtime_environment, values)
         ),
         narrative_evaluator_principal=(
             build_trusted_principal_resolver(
@@ -408,6 +411,21 @@ def build_production_execution_composition(
                 "agent_session",
                 "NOVEL_FORGE_AGENT_PROVIDER",
                 "NOVEL_FORGE_AGENT_MODEL",
+            )
+        )
+    embedding_provider = str(values.get("NOVEL_FORGE_EMBEDDING_PROVIDER") or "").strip()
+    embedding_model = str(values.get("NOVEL_FORGE_EMBEDDING_MODEL") or "").strip()
+    if bool(embedding_provider) != bool(embedding_model):
+        raise RuntimeError(
+            "semantic retrieval binding requires both "
+            "NOVEL_FORGE_EMBEDDING_PROVIDER and NOVEL_FORGE_EMBEDDING_MODEL"
+        )
+    if embedding_provider and embedding_model:
+        stage_routes.append(
+            (
+                "retrieval",
+                "NOVEL_FORGE_EMBEDDING_PROVIDER",
+                "NOVEL_FORGE_EMBEDDING_MODEL",
             )
         )
     for stage, provider_key, model_key in stage_routes:
@@ -600,11 +618,7 @@ def build_production_execution_composition(
             policy.fallback_policy_ref,
             policy.fallback_policy_version,
         )
-        if (
-            codex_cli
-            and repository_artifacts is not None
-            and stage != "agent_session"
-        ):
+        if codex_cli and repository_artifacts is not None and stage != "agent_session":
             system_artifact = repository_artifacts.resolve(
                 ArtifactKind.PROMPT_SYSTEM_INSTRUCTION,
                 "prompt-system:chapter-generation-pack",
@@ -990,11 +1004,43 @@ def build_chapter_authority_application(
         pack_required=controlled,
     )
     execution.gateway.register_execution_binder("chapter", binder)
+    embedding_binder = None
+    if "retrieval" in execution.gateway.routes:
+        embedding_binder = PostgresChapterExecutionContractBinder(
+            settings.database_url,
+            execution.gateway.routes,
+            # Document embeddings are a rebuildable projection Operation, not a
+            # node in the Chapter Saga.  It still freezes the PEP route, source,
+            # prompt/skill/tool contracts and receipt, but must not borrow the
+            # Chapter Capability Pack's workflow-node authority.
+            capability_pack_id="",
+            pack_environment=environment,
+            pack_runtime_profile=environment,
+            pack_release_channel=str(
+                values.get("NOVEL_FORGE_RELEASE_CHANNEL") or "VALIDATION"
+            ),
+            pack_required=False,
+        )
+        execution.gateway.register_execution_binder(
+            "retrieval_projection", embedding_binder
+        )
+    if runtime_environment.controlled:
+        application_build_id, commit_sha = authority_release_identity(env=env)
+    else:
+        application_build_id = str(
+            values.get("NOVEL_FORGE_APPLICATION_BUILD_ID")
+            or "chapter-authority-fixture"
+        )
+        commit_sha = str(values.get("NOVEL_FORGE_COMMIT_SHA") or "0" * 40)
     return ChapterAuthorityApplication(
         settings.database_url,
         model_adapter=execution.gateway,
         object_store_adapter=execution.object_store,
         capability_binder=binder,
+        # The gateway-side projection binder freezes the PEP execution
+        # contract.  No Chapter Capability Pack preflight is run here because
+        # the projection is not a Chapter workflow node.
+        embedding_capability_binder=None,
         worker_id=str(
             values.get("NOVEL_FORGE_AUTHORITY_WORKER_ID") or "chapter-authority-api"
         ),
@@ -1011,6 +1057,8 @@ def build_chapter_authority_application(
         agent_binding_recorder=None,
         agent_binding_required=False,
         runtime_fault_injector=runtime_fault_injector,
+        application_build_id=application_build_id,
+        commit_sha=commit_sha,
     )
 
 
@@ -1164,9 +1212,7 @@ def build_agent_authority_scheduler(
             commit_sha=planning.commit_sha,
             worker_id=f"{worker_id}:plan-change",
         )
-        principal = build_trusted_principal_resolver(
-            env=values
-        ).resolve_api_principal()
+        principal = build_trusted_principal_resolver(env=values).resolve_api_principal()
         harness_factory = build_production_agent_harness_factory(
             settings.database_url,
             adapter=execution.gateway,
@@ -1466,10 +1512,7 @@ def build_book_production_composition(
         allow_scripted_qualification_fixture=(
             _scripted_narrative_evaluation_fixture_enabled(
                 RuntimeEnvironment.parse(
-                    str(
-                        values.get("NOVEL_FORGE_ENVIRONMENT")
-                        or settings.environment
-                    )
+                    str(values.get("NOVEL_FORGE_ENVIRONMENT") or settings.environment)
                 ),
                 values,
             )
@@ -1763,9 +1806,7 @@ def build_story_planning_generation_application(
             )
         ),
         allow_scripted_evaluation_fixture=(
-            _scripted_narrative_evaluation_fixture_enabled(
-                runtime_environment, values
-            )
+            _scripted_narrative_evaluation_fixture_enabled(runtime_environment, values)
         ),
         narrative_evaluator_principal=(
             build_trusted_principal_resolver(

@@ -55,6 +55,43 @@ def build_chapter_plan(
     }
 
 
+def _retrieval_result_context_reference(content: dict[str, Any]) -> dict[str, Any]:
+    """Render replay identity without duplicating retrieved text in the prompt.
+
+    The immutable RetrievalResult remains a frozen Operation input. Context Build
+    consumes its full content to materialize exact source candidates, while this
+    protected reference preserves replay identity and ranking evidence without
+    spending the Draft token budget on a second copy of selected/rejected payloads.
+    """
+
+    return {
+        "type": content.get("type"),
+        "contract_version": content.get("contract_version"),
+        "accepted_boundary": dict(content.get("accepted_boundary") or {}),
+        "intent_asset_version_id": content.get("intent_asset_version_id"),
+        "intent_fingerprint": content.get("intent_fingerprint"),
+        "memo_asset_version_id": content.get("memo_asset_version_id"),
+        "memo_fingerprint": content.get("memo_fingerprint"),
+        "query_plan": dict(content.get("query_plan") or {}),
+        "query_plan_fingerprint": content.get("query_plan_fingerprint"),
+        "retrieval_policy": dict(content.get("retrieval_policy") or {}),
+        "semantic_status": dict(content.get("semantic_status") or {}),
+        "selected_documents": [
+            {
+                "retrieval_document_id": item.get("retrieval_document_id"),
+                "source_asset_version_id": item.get("source_asset_version_id"),
+                "source_content_hash": item.get("source_content_hash"),
+                "projection_hash": item.get("projection_hash"),
+                "retrieval_score": item.get("retrieval_score"),
+                "retrieval_reasons": list(item.get("retrieval_reasons") or ()),
+            }
+            for item in content.get("selected_documents") or ()
+            if isinstance(item, dict)
+        ],
+        "result_fingerprint": content.get("result_fingerprint"),
+    }
+
+
 def build_context_bundle(
     *,
     plan: dict[str, Any],
@@ -73,6 +110,8 @@ def build_context_bundle(
     execution_intent_asset_version_id: str = "",
     chapter_memo: dict[str, Any] | None = None,
     chapter_memo_asset_version_id: str = "",
+    retrieval_result: dict[str, Any] | None = None,
+    retrieval_result_asset_version_id: str = "",
     frozen_arc_plans: dict[str, dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     _require_keys(plan, "chapter", "premise")
@@ -158,8 +197,13 @@ def build_context_bundle(
         ),
     )
     for asset_type, asset_version_id, content in (
-        ("chapter_execution_intent", execution_intent_asset_version_id, execution_intent),
+        (
+            "chapter_execution_intent",
+            execution_intent_asset_version_id,
+            execution_intent,
+        ),
         ("chapter_memo", chapter_memo_asset_version_id, chapter_memo),
+        ("retrieval_result", retrieval_result_asset_version_id, retrieval_result),
     ):
         if bool(asset_version_id) != bool(content):
             raise KernelError(
@@ -168,7 +212,17 @@ def build_context_bundle(
             )
         if not content:
             continue
-        rendered = json.dumps(content, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        rendered_content = (
+            _retrieval_result_context_reference(content)
+            if asset_type == "retrieval_result"
+            else content
+        )
+        rendered = json.dumps(
+            rendered_content,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        )
         candidates.insert(
             1,
             ContextCandidate(
@@ -180,6 +234,7 @@ def build_context_bundle(
                 content_digest=str(
                     content.get("intent_fingerprint")
                     or content.get("memo_fingerprint")
+                    or content.get("result_fingerprint")
                     or ""
                 ),
                 invalidation_keys=(f"{asset_type}:{asset_version_id}",),
@@ -268,18 +323,12 @@ def _provider_accessible_fact_ids(plan: dict[str, Any]) -> set[str]:
     """Derive one chapter-wide boundary without cross-POV knowledge union."""
 
     scene_boundaries = [
-        {
-            str(fact)
-            for fact in scene.get("accessible_knowledge") or ()
-            if str(fact)
-        }
+        {str(fact) for fact in scene.get("accessible_knowledge") or () if str(fact)}
         for scene in plan.get("scene_plan") or ()
         if isinstance(scene, dict)
         and str(scene.get("focalization") or "") != "OMNISCIENT"
     ]
-    accessible = (
-        set.intersection(*scene_boundaries) if scene_boundaries else set()
-    )
+    accessible = set.intersection(*scene_boundaries) if scene_boundaries else set()
     accessible.update(
         str(item.get("fact_id") or "")
         for item in plan.get("disclosures") or ()

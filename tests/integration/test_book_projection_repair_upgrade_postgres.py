@@ -17,6 +17,11 @@ from novel_forge.modules.book_authority.projection_repair import (
     PostgresBookProjectionRepairAuthority,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.context_builder.production_retrieval import (
+    build_retrieval_query_plan,
+    build_retrieval_result,
+    discover_accepted_retrieval_candidates,
+)
 from novel_forge.modules.runtime_job import RuntimeJobAuthority
 from novel_forge.storage.database_runtime import close_all_database_runtimes
 from novel_forge.storage.migrations import MIGRATIONS
@@ -226,7 +231,8 @@ def _seed_accepted_history(
             project_id=project_id,
             asset_version_id="arc-plan:repair-upgrade:v1",
             asset_type="arc_plan",
-            content=arc_content or {
+            content=arc_content
+            or {
                 "objective": "fixture objective",
                 "dependencies": [],
                 "closure_conditions": ["accepted evidence only"],
@@ -271,12 +277,8 @@ def _seed_accepted_history(
             request_id = f"chapter-request:repair-upgrade:{chapter}"
             chapter_operation_id = f"operation:repair-upgrade:chapter:{chapter}"
             acceptance_operation_id = f"operation:repair-upgrade:accept:{chapter}"
-            _insert_operation(
-                cursor, chapter_operation_id, project_id, workspace_id
-            )
-            _insert_operation(
-                cursor, acceptance_operation_id, project_id, workspace_id
-            )
+            _insert_operation(cursor, chapter_operation_id, project_id, workspace_id)
+            _insert_operation(cursor, acceptance_operation_id, project_id, workspace_id)
             cursor.execute(
                 """
                 INSERT INTO authority_saga(
@@ -315,7 +317,8 @@ def _seed_accepted_history(
                 project_id=project_id,
                 asset_version_id=outcome_id,
                 asset_type="chapter_outcome",
-                content=(outcome_contents or {}).get(chapter) or {
+                content=(outcome_contents or {}).get(chapter)
+                or {
                     "contract_version": "chapter-outcome-legacy-v1",
                     "chapter_number": chapter,
                 },
@@ -359,9 +362,7 @@ def _seed_accepted_history(
                         {
                             "execution_chapter_plan_asset_version_id": plan_id,
                             "context_version_refs": {
-                                "arc_plan_versions": [
-                                    "arc-plan:repair-upgrade:v1"
-                                ]
+                                "arc_plan_versions": ["arc-plan:repair-upgrade:v1"]
                             },
                         }
                     ),
@@ -449,9 +450,7 @@ class BookProjectionRepairUpgradePostgresTests(unittest.TestCase):
         self.admin_url = _database_url("postgres")
         with psycopg.connect(self.admin_url, autocommit=True) as connection:
             connection.execute(
-                sql.SQL("CREATE DATABASE {}").format(
-                    sql.Identifier(self.database_name)
-                )
+                sql.SQL("CREATE DATABASE {}").format(sql.Identifier(self.database_name))
             )
         self.database_url = _database_url(self.database_name)
 
@@ -466,9 +465,7 @@ class BookProjectionRepairUpgradePostgresTests(unittest.TestCase):
                 [self.database_name],
             )
             connection.execute(
-                sql.SQL("DROP DATABASE {}").format(
-                    sql.Identifier(self.database_name)
-                )
+                sql.SQL("DROP DATABASE {}").format(sql.Identifier(self.database_name))
             )
 
     def test_0093_accepted_history_upgrades_through_0094_and_repairs(self) -> None:
@@ -628,46 +625,44 @@ class BookProjectionRepairUpgradePostgresTests(unittest.TestCase):
         }
         outcome_contents = {
             chapter: {
-                    "contract_version": "chapter-outcome-v3",
-                    "project_id": "project:repair-upgrade",
-                    "book_id": "book:repair-upgrade",
-                    "chapter_number": chapter,
-                    "arc_evidence": [
-                        {
-                            "arc_plan_version_id": "arc-plan:repair-upgrade:v1",
-                            "observation_status": "OBSERVED",
-                            "contribution_kind": "PRIMARY",
-                            "progress_units": 1 if chapter == 1 else 0,
-                            "resolution_evidence": [f"scene:{chapter}:1"],
-                            "obligation_ids": ["promise:repair"],
-                        }
-                    ],
-                }
+                "contract_version": "chapter-outcome-v3",
+                "project_id": "project:repair-upgrade",
+                "book_id": "book:repair-upgrade",
+                "chapter_number": chapter,
+                "arc_evidence": [
+                    {
+                        "arc_plan_version_id": "arc-plan:repair-upgrade:v1",
+                        "observation_status": "OBSERVED",
+                        "contribution_kind": "PRIMARY",
+                        "progress_units": 1 if chapter == 1 else 0,
+                        "resolution_evidence": [f"scene:{chapter}:1"],
+                        "obligation_ids": ["promise:repair"],
+                    }
+                ],
+            }
             for chapter in (1, 2)
         }
         state = {
-                "current_state": {
-                    "narrative_obligation": [
-                        {
-                            "entity_key": "obligation_id=promise:repair",
-                            "state": {
-                                "obligation_id": "promise:repair",
-                                "obligation_type": "PROMISE",
-                                "status": "OPEN",
-                                "opened_chapter": 1,
-                                "target_window": {
-                                    "status": "SCHEDULED",
-                                    "from_chapter": 1,
-                                    "to_chapter": 1,
-                                },
-                                "linked_arc_ids": [
-                                    "arc-plan:repair-upgrade:v1"
-                                ],
+            "current_state": {
+                "narrative_obligation": [
+                    {
+                        "entity_key": "obligation_id=promise:repair",
+                        "state": {
+                            "obligation_id": "promise:repair",
+                            "obligation_type": "PROMISE",
+                            "status": "OPEN",
+                            "opened_chapter": 1,
+                            "target_window": {
+                                "status": "SCHEDULED",
+                                "from_chapter": 1,
+                                "to_chapter": 1,
                             },
-                        }
-                    ]
-                }
+                            "linked_arc_ids": ["arc-plan:repair-upgrade:v1"],
+                        },
+                    }
+                ]
             }
+        }
         scope = _seed_accepted_history(
             self.database_url,
             arc_content=arc_content,
@@ -697,7 +692,8 @@ class BookProjectionRepairUpgradePostgresTests(unittest.TestCase):
             followup = connection.execute(
                 """
                 SELECT followup.decision, followup.status,
-                       followup.reason_evidence->'overdue_obligation_ids',
+                       followup.reason_evidence->'checkpoints'->0
+                           ->'overdue_obligation_ids',
                        book.state
                 FROM authority_arc_checkpoint_followup AS followup
                 JOIN authority_book_production AS book
@@ -711,6 +707,141 @@ class BookProjectionRepairUpgradePostgresTests(unittest.TestCase):
         self.assertEqual(followup[0:2], ("CORRECT", "READY"))
         self.assertEqual(followup[2], ["promise:repair"])
         self.assertEqual(followup[3], "CHECKPOINT_PENDING")
+
+    def test_postgresql_fts_retrieval_freezes_memo_boundary_and_excludes_future(
+        self,
+    ) -> None:
+        _apply_through(self.database_url, REVISION_0093)
+        scope = _seed_accepted_history(self.database_url)
+        _apply_through(self.database_url, REVISION_0095)
+        jobs = RuntimeJobAuthority(self.database_url)
+        claim = jobs.claim(
+            runtime_group="book_repair",
+            worker_id="repair-retrieval-worker",
+            lease_seconds=30,
+            job_kinds=("BOOK_PROJECTION_REPAIR",),
+        )
+        assert claim is not None
+        jobs.start(claim)
+        repaired = PostgresBookProjectionRepairAuthority(
+            self.database_url,
+            application_build_id="repair-upgrade-test",
+            commit_sha="a" * 40,
+        ).run_batch(claim, actor_id="repair-retrieval-worker", maximum_chapters=4)
+        self.assertTrue(repaired.complete)
+        with psycopg.connect(self.database_url) as connection:
+            source = connection.execute(
+                """
+                SELECT source_asset_version_id,source_artifact_type,content_text
+                FROM authority_narrative_retrieval_document
+                WHERE book_id=%s ORDER BY retrieval_document_id LIMIT 1
+                """,
+                [scope["book_id"]],
+            ).fetchone()
+            assert source is not None
+            future_id = "narrative-retrieval:future-boundary"
+            future_document = {
+                "retrieval_document_id": future_id,
+                "project_id": scope["project_id"],
+                "book_id": scope["book_id"],
+                "source_asset_version_id": str(source[0]),
+                "source_artifact_type": str(source[1]),
+                "accepted_from_chapter": 3,
+                "memory_layer": "L9",
+                "content_text": "future accepted fact must not leak",
+                "metadata": {"projection_kind": "future_fixture"},
+            }
+            projection_hash = _content_hash(future_document)
+            connection.execute(
+                """
+                INSERT INTO authority_narrative_retrieval_document(
+                    retrieval_document_id,project_id,book_id,
+                    source_asset_version_id,source_artifact_type,
+                    accepted_from_chapter,memory_layer,content_text,
+                    metadata,projection_hash,created_by_operation_id
+                )
+                SELECT %s,%s,%s,%s,%s,3,'L9',%s,%s,%s,
+                       created_by_operation_id
+                FROM authority_narrative_retrieval_document
+                WHERE book_id=%s ORDER BY retrieval_document_id LIMIT 1
+                """,
+                [
+                    future_id,
+                    scope["project_id"],
+                    scope["book_id"],
+                    str(source[0]),
+                    str(source[1]),
+                    future_document["content_text"],
+                    Jsonb(future_document["metadata"]),
+                    projection_hash,
+                    scope["book_id"],
+                ],
+            )
+            connection.commit()
+        intent = {
+            "chapter": 3,
+            "intent_fingerprint": "sha256:" + "1" * 64,
+            "accepted_boundary": {"accepted_through_chapter": 2},
+            "required_arc_contributions": [],
+            "active_obligations": [],
+            "retrieval_graph": {},
+        }
+        memo = {
+            "chapter": 3,
+            "qualification": "QUALIFIED",
+            "memo_fingerprint": "sha256:" + "2" * 64,
+            "accepted_boundary": {"accepted_through_chapter": 2},
+            "retrieval_queries": ["chapter outcome"],
+            "arc_actions": [],
+            "obligation_actions": [],
+        }
+        query_plan = build_retrieval_query_plan(intent=intent, memo=memo)
+        discovery = discover_accepted_retrieval_candidates(
+            self.database_url,
+            project_id=scope["project_id"],
+            book_id=scope["book_id"],
+            query_plan=query_plan,
+        )
+        self.assertTrue(discovery.documents)
+        self.assertNotIn(
+            future_id,
+            {item["retrieval_document_id"] for item in discovery.documents},
+        )
+        self.assertIn(
+            (future_id, "FUTURE_ACCEPTED_BOUNDARY"),
+            {
+                (item["retrieval_document_id"], item["reason"])
+                for item in discovery.rejected_documents
+            },
+        )
+        result = build_retrieval_result(
+            project_id=scope["project_id"],
+            book_id=scope["book_id"],
+            intent_asset_version_id="intent:chapter:3:v1",
+            memo_asset_version_id="memo:chapter:3:v1",
+            query_plan=query_plan,
+            documents=discovery.documents,
+            discovery_rejections=discovery.rejected_documents,
+            semantic_status=discovery.semantic_status,
+        )
+        self.assertEqual(result["accepted_boundary"], {"accepted_through_chapter": 2})
+        self.assertEqual(
+            result["ranking"]["lexical_signal"],
+            "PostgreSQL Full-Text Search / ts_rank",
+        )
+        self.assertEqual(
+            result,
+            build_retrieval_result(
+                project_id=scope["project_id"],
+                book_id=scope["book_id"],
+                intent_asset_version_id="intent:chapter:3:v1",
+                memo_asset_version_id="memo:chapter:3:v1",
+                query_plan=query_plan,
+                documents=discovery.documents,
+                discovery_rejections=discovery.rejected_documents,
+                semantic_status=discovery.semantic_status,
+            ),
+        )
 
     def _exercise_upgrade(self, *, already_at_0094: bool) -> None:
         _apply_through(self.database_url, REVISION_0093)

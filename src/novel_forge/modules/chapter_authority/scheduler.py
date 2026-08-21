@@ -20,6 +20,7 @@ from novel_forge.modules.chapter_authority.orchestrator import (
     _command,
     _input_nodes,
     _measurement_evidence_inputs,
+    _retrieval_admission_snapshot,
 )
 from novel_forge.modules.chapter_authority.runtime import execute_chapter_handler
 from novel_forge.modules.chapter_authority.model_effects import (
@@ -145,12 +146,11 @@ class ChapterAuthorityScheduler:
         )
         coordinated = coordinate_saga(self.database_url, context, saga["saga_id"])
         chapter_complete = all(
-            children.get(node, {}).get("status") == "SUCCEEDED"
-            for node in ChapterNode
+            children.get(node, {}).get("status") == "SUCCEEDED" for node in ChapterNode
         )
-        if (
-            coordinated["status"] == "SUCCEEDED" and chapter_complete
-        ) or coordinated["status"] in {
+        if (coordinated["status"] == "SUCCEEDED" and chapter_complete) or coordinated[
+            "status"
+        ] in {
             "FAILED_FINAL",
             "DEAD_LETTER",
             "MANUAL_INTERVENTION",
@@ -527,6 +527,7 @@ class ChapterAuthorityScheduler:
         activate_immediately: bool = False,
     ) -> dict[str, Any]:
         inputs: list[dict[str, str]] = []
+        effective_overrides = dict(input_overrides or {})
         for source in _input_nodes(node):
             source_operation = children.get(source)
             if source_operation is None or source_operation["status"] != "SUCCEEDED":
@@ -547,6 +548,26 @@ class ChapterAuthorityScheduler:
                         "chapter.production_input_manifest",
                     )
                 )
+        if node is ChapterNode.RETRIEVAL:
+            extra_inputs, snapshot = _retrieval_admission_snapshot(
+                self.database_url,
+                request=request,
+                plan_asset_version_id=self._primary_output(
+                    str(children[ChapterNode.PLAN]["operation_id"]),
+                    root["project_id"],
+                )["asset_version_id"],
+                intent_asset_version_id=self._primary_output(
+                    str(children[ChapterNode.EXECUTION_INTENT]["operation_id"]),
+                    root["project_id"],
+                )["asset_version_id"],
+                memo_asset_version_id=self._primary_output(
+                    str(children[ChapterNode.MEMO]["operation_id"]),
+                    root["project_id"],
+                )["asset_version_id"],
+                semantic_provider_bound=self.registry.semantic_retrieval_available,
+            )
+            inputs.extend(extra_inputs)
+            effective_overrides["retrieval_snapshot"] = snapshot
         if node in {ChapterNode.EXECUTION_INTENT, ChapterNode.CONTEXT}:
             candidates = request.context_candidates
             if node is ChapterNode.EXECUTION_INTENT:
@@ -565,6 +586,20 @@ class ChapterAuthorityScheduler:
                     item
                     for item in candidates
                     if str(item.get("asset_type") or "") != "chapter_plan"
+                )
+                retrieval_ref = self._primary_output(
+                    str(children[ChapterNode.RETRIEVAL]["operation_id"]),
+                    root["project_id"],
+                )
+                retrieval = self._asset_content(
+                    retrieval_ref["asset_version_id"], root["project_id"]
+                )
+                inputs.extend(
+                    {
+                        "asset_version_id": str(item["asset_version_id"]),
+                        "content_hash": str(item["content_hash"]),
+                    }
+                    for item in retrieval.get("selected_source_asset_versions", ())
                 )
             inputs.extend(
                 {
@@ -596,6 +631,9 @@ class ChapterAuthorityScheduler:
             )
         if explicit_inputs is not None:
             inputs = list(explicit_inputs)
+        inputs = list(
+            {str(item["asset_version_id"]): dict(item) for item in inputs}.values()
+        )
         admission = AdmissionContext(
             actor_id=root["actor_id"],
             permissions=self.permissions,
@@ -622,7 +660,7 @@ class ChapterAuthorityScheduler:
                 parent_operation_id=root["operation_id"],
                 causation_operation_id=previous_id,
                 definition_version=root["definition_version"],
-                input_overrides=input_overrides,
+                input_overrides=effective_overrides,
             ),
             context=admission,
         )
