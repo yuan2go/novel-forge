@@ -208,6 +208,10 @@ def _register_agents(
     agent_skill_ref: str | None = None,
     agent_domain: str = "chapter",
     agent_scope_type: str = "CHAPTER",
+    agent_role: str = "",
+    allowed_tools: tuple[str, ...] = ("request_production_execution",),
+    authority_scope_ref: str = "scope:chapter@1",
+    default_scope_policy_ref: str = "scope:chapter-frozen@1",
 ) -> None:
     artifacts = list(compiled["resolved_artifacts"])
     prompt = next(
@@ -270,13 +274,13 @@ def _register_agents(
             version=definition_version,
             agent_type=f"{agent_domain.upper()}_STAGE",
             domain=agent_domain,
-            role=f"{agent_domain.upper()}_STAGE_AGENT",
+            role=agent_role or f"{agent_domain.upper()}_STAGE_AGENT",
             capability_refs=(f"{capability.capability_id}@{capability_version}",),
             input_contract_ref=capability.input_schema_ref,
             output_contract_ref=capability.output_schema_ref,
-            authority_scope_ref="scope:chapter@1",
-            default_scope_policy_ref="scope:chapter-frozen@1",
-            allowed_tools=("request_production_execution",),
+            authority_scope_ref=authority_scope_ref,
+            default_scope_policy_ref=default_scope_policy_ref,
+            allowed_tools=allowed_tools,
             allowed_context_types=("context_bundle",),
             execution_policy_ref="execution:pep@1",
             approval_policy_ref="approval:chapter-authority@1",
@@ -303,7 +307,7 @@ def _register_agents(
                         "input_schema_ref": capability.input_schema_ref,
                         "output_schema_ref": capability.output_schema_ref,
                         "supported_message_types": ["PROPOSAL"],
-                        "supported_scope_types": ["CHAPTER"],
+                        "supported_scope_types": [agent_scope_type],
                         "risk_class": capability.risk_class,
                         "execution_requirements": dict(
                             capability.execution_requirements
@@ -384,8 +388,21 @@ def _install_pack(
     compiler: Principal,
     approver: Principal,
     agent_admin: Principal,
+    pack_path: Path = PACK_PATH,
+    agent_skill_ref: str | None = None,
+    agent_domain: str = "chapter",
+    agent_scope_type: str = "CHAPTER",
+    agent_role: str = "",
+    allowed_tools: tuple[str, ...] = ("request_production_execution",),
+    authority_scope_ref: str = "scope:chapter@1",
+    default_scope_policy_ref: str = "scope:chapter-frozen@1",
 ) -> dict[str, Any]:
-    manifest = json.loads(PACK_PATH.read_text(encoding="utf-8"))
+    manifest = json.loads(pack_path.read_text(encoding="utf-8"))
+    identity = dict(manifest.get("identity") or {})
+    pack_id = str(identity["pack_id"])
+    pack_version = str(identity["version"])
+    workflow = dict(manifest.get("workflow_template") or {})
+    workflow_ref = f"{workflow['workflow_id']}@{workflow['workflow_version']}"
     resolver = default_chapter_artifact_resolver(ROOT)
     catalog = {
         "schema_version": "novelos.capability_pack.artifact_catalog.v1",
@@ -408,15 +425,16 @@ def _install_pack(
             "owner_project_id": project_id,
             "dependencies": [],
         },
+        pack_id=pack_id,
     )
-    compilation_id = f"compilation:real-codex:{commit_sha[:12]}"
+    compilation_id = f"compilation:real-codex:{pack_id}:{commit_sha[:12]}"
     compilation = _pack_command(
         app,
         compiler,
         action="capability_pack.compile",
         project_id=project_id,
         workspace_id=workspace_id,
-        pack_version=PACK_VERSION,
+        pack_version=pack_version,
         compilation_id=compilation_id,
         payload={
             "target_runtime_profile": "validation",
@@ -424,6 +442,7 @@ def _install_pack(
             "release_sha": commit_sha,
             "release_channel": "VALIDATION",
         },
+        pack_id=pack_id,
     )
     compiled = dict(compilation["compiled"])
     _register_agents(
@@ -434,6 +453,13 @@ def _install_pack(
         build_id=build_id,
         commit_sha=commit_sha,
         principal=agent_admin,
+        agent_skill_ref=agent_skill_ref,
+        agent_domain=agent_domain,
+        agent_scope_type=agent_scope_type,
+        agent_role=agent_role,
+        allowed_tools=allowed_tools,
+        authority_scope_ref=authority_scope_ref,
+        default_scope_policy_ref=default_scope_policy_ref,
     )
     approval = _pack_command(
         app,
@@ -441,7 +467,7 @@ def _install_pack(
         action="capability_pack.approval.decide",
         project_id=project_id,
         workspace_id=workspace_id,
-        pack_version=PACK_VERSION,
+        pack_version=pack_version,
         compilation_id=compilation_id,
         payload={
             "compilation_hash": compilation["compilation_hash"],
@@ -456,7 +482,7 @@ def _install_pack(
                 "allowed_project_ids": [project_id],
                 "allowed_workspace_ids": [workspace_id],
                 "allowed_book_ids": [book_id],
-                "allowed_workflow_definition_refs": [WORKFLOW_REF],
+                "allowed_workflow_definition_refs": [workflow_ref],
                 "allow_canary": False,
                 "allow_percentage_rollout": False,
                 "allow_full_rollout": True,
@@ -467,15 +493,16 @@ def _install_pack(
             "evidence_refs": [f"runtime-proof:{commit_sha}"],
             "enforce_duties_separation": True,
         },
+        pack_id=pack_id,
     )
-    deployment_id = f"deployment:real-codex:{commit_sha[:12]}"
+    deployment_id = f"deployment:real-codex:{pack_id}:{commit_sha[:12]}"
     deployment = _pack_command(
         app,
         compiler,
         action="capability_pack.deployment.create",
         project_id=project_id,
         workspace_id=workspace_id,
-        pack_version=PACK_VERSION,
+        pack_version=pack_version,
         compilation_id=compilation_id,
         deployment_id=deployment_id,
         payload={
@@ -486,6 +513,7 @@ def _install_pack(
             "environment": "validation",
             "rollout_policy_ref": "rollout:stable-sha256:v1",
         },
+        pack_id=pack_id,
     )
     activation = _pack_command(
         app,
@@ -493,13 +521,14 @@ def _install_pack(
         action="capability_pack.deployment.activate",
         project_id=project_id,
         workspace_id=workspace_id,
-        pack_version=PACK_VERSION,
+        pack_version=pack_version,
         deployment_id=deployment_id,
         expected_activation_version=0,
         payload={
             "environment": "validation",
             "reason": "activate exact-SHA real Codex proof",
         },
+        pack_id=pack_id,
     )
     return {
         "registration": registered,
@@ -1410,9 +1439,7 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
         principal=operator,
     )
     crash = OneShotProviderSuccessCrash()
-    production_execution = build_production_execution_composition(
-        settings, env=env
-    )
+    production_execution = build_production_execution_composition(settings, env=env)
     chapter = build_chapter_authority_application(
         settings,
         execution=production_execution,
