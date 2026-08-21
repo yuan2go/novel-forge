@@ -26,13 +26,24 @@ from novel_forge.modules.command_kernel.attempt_runtime import (
     WorkerLeaseCommand,
     WorkerResultCommand,
     acquire_attempt_lease,
+    checkpoint_attempt_for_external_reconciliation,
     create_attempt,
     queue_attempt,
     start_attempt,
     submit_attempt_failure,
     submit_attempt_result,
 )
+from novel_forge.modules.command_kernel.cancellation import (
+    acknowledge_worker_cancellation,
+)
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.command_kernel.external_effect_runtime import (
+    EffectCommandContext,
+    EffectRecoveryDisposition,
+    classify_external_effect_recovery,
+    reconcile_external_effect,
+    resume_operation_from_completed_effect,
+)
 from novel_forge.modules.command_kernel.runtime import (
     OperationTransitionCommand,
     transition_operation,
@@ -44,6 +55,11 @@ from novel_forge.modules.command_kernel.operation_graph import (
     start_saga,
 )
 from novel_forge.modules.command_kernel.service import AdmissionContext, admit_command
+from novel_forge.modules.command_kernel.worker_execution import (
+    WorkerFailureClass,
+    WorkerFailureClassifier,
+)
+from novel_forge.modules.production_execution.contracts import ExecutionRecoveryAction
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 
@@ -204,7 +220,6 @@ class RetrievalEmbeddingProjectionRuntime:
                           document.retrieval_document_id
                       AND projection.projection_version=%s
                       AND projection.source_content_hash=version.content_hash
-                      AND projection.status='READY'
                 )
                 ORDER BY document.created_at, document.retrieval_document_id
                 LIMIT %s
@@ -293,6 +308,15 @@ class RetrievalEmbeddingProjectionRuntime:
                 1,
                 "",
             )
+            self._persist_projection_status(
+                project_id=project_id,
+                operation_id=projection_operation_id,
+                status="PENDING",
+                evidence={
+                    "reason": "embedding_projection_admitted",
+                    "admission_replayed": bool(admission.get("replayed")),
+                },
+            )
             admitted_ids.append(projection_operation_id)
         return tuple(admitted_ids)
 
@@ -303,7 +327,11 @@ class RetrievalEmbeddingProjectionRuntime:
                 SELECT project_id, operation_id
                 FROM authority_operation
                 WHERE definition_name=%s
-                  AND status IN ('ADMITTED','READY','EXECUTING','FAILED_RETRYABLE')
+                  AND status IN (
+                      'ADMITTED','READY','EXECUTING','FAILED_RETRYABLE',
+                      'WAITING_EXTERNAL_RESULT','RECONCILIATION_REQUIRED',
+                      'CANCELLATION_REQUESTED'
+                  )
                 ORDER BY created_at, operation_id
                 LIMIT %s
                 """,
@@ -320,6 +348,21 @@ class RetrievalEmbeddingProjectionRuntime:
         if state["status"] == "SUCCEEDED":
             self._coordinate_terminal_saga(state, project_id, document_id)
             return EmbeddingProjectionTick(operation_id, document_id, "SUCCEEDED", True)
+        if state["status"] in {"FAILED_FINAL", "DEAD_LETTER", "CANCELLED"}:
+            terminal_projection_status = _projection_status_for_operation(
+                str(state["status"])
+            )
+            assert terminal_projection_status is not None
+            self._persist_projection_status(
+                project_id=project_id,
+                operation_id=operation_id,
+                status=terminal_projection_status,
+                evidence={"operation_status": str(state["status"])},
+            )
+            self._coordinate_terminal_saga(state, project_id, document_id)
+            return EmbeddingProjectionTick(
+                operation_id, document_id, str(state["status"]), True
+            )
         if state["status"] == "ADMITTED":
             transition_operation(
                 self.database_url,
@@ -347,9 +390,19 @@ class RetrievalEmbeddingProjectionRuntime:
                 correlation_id=document_id,
             )
             if attempt["dead_letter"] or not attempt["attempt_id"]:
-                raise KernelError(
-                    "RETRIEVAL_EMBEDDING_RETRY_EXHAUSTED",
-                    "embedding projection exhausted its retry policy",
+                state = self._operation_state(project_id, operation_id)
+                self._persist_projection_status(
+                    project_id=project_id,
+                    operation_id=operation_id,
+                    status="DEAD_LETTER",
+                    evidence={
+                        "operation_status": str(state["status"]),
+                        "reason": "embedding_projection_retry_exhausted",
+                    },
+                )
+                self._coordinate_terminal_saga(state, project_id, document_id)
+                return EmbeddingProjectionTick(
+                    operation_id, document_id, "DEAD_LETTER", False
                 )
             attempt_id = str(attempt["attempt_id"])
             queue_attempt(
@@ -360,7 +413,12 @@ class RetrievalEmbeddingProjectionRuntime:
                 correlation_id=document_id,
             )
             attempt_status = "QUEUED"
-        elif state["status"] == "EXECUTING" and state["attempt_id"]:
+        elif state["status"] in {
+            "EXECUTING",
+            "WAITING_EXTERNAL_RESULT",
+            "RECONCILIATION_REQUIRED",
+            "CANCELLATION_REQUESTED",
+        } and state["attempt_id"]:
             attempt_id = str(state["attempt_id"])
             attempt_status = str(state["attempt_status"])
         else:
@@ -388,7 +446,64 @@ class RetrievalEmbeddingProjectionRuntime:
         )
         if attempt_status in {"QUEUED", "LEASED"}:
             start_attempt(self.database_url, worker)
+        self._persist_projection_status(
+            project_id=project_id,
+            operation_id=operation_id,
+            status=(
+                "RECONCILIATION_REQUIRED"
+                if str(state["status"])
+                in {"WAITING_EXTERNAL_RESULT", "RECONCILIATION_REQUIRED"}
+                else "RUNNING"
+            ),
+            evidence={
+                "attempt_id": attempt_id,
+                "fencing_token": worker.fencing_token,
+                "operation_status": str(state["status"]),
+            },
+            worker=worker,
+        )
         try:
+            if str(state["status"]) in {
+                "WAITING_EXTERNAL_RESULT",
+                "RECONCILIATION_REQUIRED",
+                "CANCELLATION_REQUESTED",
+            }:
+                self._reconcile_external_effects(state, worker)
+                state = self._operation_state(project_id, operation_id)
+                if state["status"] != "EXECUTING":
+                    projection_status = _projection_status_for_operation(
+                        str(state["status"])
+                    ) or (
+                        "RECONCILIATION_REQUIRED"
+                        if state["status"]
+                        in {
+                            "WAITING_EXTERNAL_RESULT",
+                            "RECONCILIATION_REQUIRED",
+                            "COMPENSATION_REQUIRED",
+                        }
+                        else "RUNNING"
+                    )
+                    self._persist_projection_status(
+                        project_id=project_id,
+                        operation_id=operation_id,
+                        status=projection_status,
+                        evidence={
+                            "attempt_id": attempt_id,
+                            "operation_status": str(state["status"]),
+                            "reason": "external_effect_reconciled",
+                        },
+                    )
+                    if projection_status in {
+                        "FAILED_FINAL",
+                        "DEAD_LETTER",
+                        "CANCELLED",
+                    }:
+                        self._coordinate_terminal_saga(
+                            state, project_id, document_id
+                        )
+                    return EmbeddingProjectionTick(
+                        operation_id, document_id, str(state["status"]), False
+                    )
             result = execute_authority_handler(
                 self.database_url,
                 command=worker,
@@ -430,20 +545,450 @@ class RetrievalEmbeddingProjectionRuntime:
                 operation_id, document_id, "SUCCEEDED", result.replayed
             )
         except Exception as exc:
-            try:
+            self._handle_failure(
+                worker=worker,
+                operation_id=operation_id,
+                document_id=document_id,
+                error=exc,
+            )
+            raise
+
+    def _handle_failure(
+        self,
+        *,
+        worker: WorkerLeaseCommand,
+        operation_id: str,
+        document_id: str,
+        error: Exception,
+    ) -> None:
+        classification = WorkerFailureClassifier.classify(error)
+        error_code = (
+            error.code if isinstance(error, KernelError) else type(error).__name__
+        )
+        if classification is WorkerFailureClass.UNKNOWN_EXTERNAL_STATE:
+            self._persist_projection_status(
+                project_id=worker.project_id,
+                operation_id=operation_id,
+                status="RECONCILIATION_REQUIRED",
+                evidence={
+                    "attempt_id": worker.attempt_id,
+                    "error_code": error_code,
+                    "reason": "external_state_unknown",
+                },
+                worker=worker,
+            )
+            checkpoint_attempt_for_external_reconciliation(
+                self.database_url,
+                worker,
+                {
+                    "reason": "external_state_unknown",
+                    "error_code": error_code,
+                    "error_message": str(error),
+                },
+            )
+            return
+        if classification is WorkerFailureClass.CANCELLATION:
+            current = self._operation_state(worker.project_id, operation_id)
+            acknowledge_worker_cancellation(
+                self.database_url,
+                worker,
+                expected_operation_version=int(current["version"]),
+            )
+        elif classification in {
+            WorkerFailureClass.LEASE_CONFLICT,
+            WorkerFailureClass.FENCING_CONFLICT,
+        }:
+            return
+        else:
+            submit_attempt_failure(
+                self.database_url,
+                worker,
+                retryable=classification is WorkerFailureClass.RETRYABLE,
+                error_code=error_code,
+                error_message=str(error),
+                failure_class=classification.value,
+            )
+        current = self._operation_state(worker.project_id, operation_id)
+        projection_status = _projection_status_for_operation(str(current["status"]))
+        if projection_status is None:
+            projection_status = (
+                "RECONCILIATION_REQUIRED"
+                if current["status"] == "RECONCILIATION_REQUIRED"
+                else "FAILED_FINAL"
+            )
+        self._persist_projection_status(
+            project_id=worker.project_id,
+            operation_id=operation_id,
+            status=projection_status,
+            evidence={
+                "attempt_id": worker.attempt_id,
+                "operation_status": str(current["status"]),
+                "error_code": error_code,
+                "failure_class": classification.value,
+            },
+        )
+        if projection_status in {"FAILED_FINAL", "DEAD_LETTER", "CANCELLED"}:
+            self._coordinate_terminal_saga(current, worker.project_id, document_id)
+
+    def _reconcile_external_effects(
+        self,
+        state: dict[str, Any],
+        worker: WorkerLeaseCommand,
+    ) -> None:
+        operation_id = str(state["operation_id"])
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT external_effect_id, status, request_payload
+                FROM authority_external_effect
+                WHERE operation_id=%s AND project_id=%s
+                  AND capability='model.retrieval'
+                ORDER BY created_at, external_effect_id
+                """,
+                [operation_id, worker.project_id],
+            )
+            effects = tuple(uow.cursor.fetchall())
+        if not effects:
+            if state["status"] == "CANCELLATION_REQUESTED":
+                acknowledge_worker_cancellation(
+                    self.database_url,
+                    worker,
+                    expected_operation_version=int(state["version"]),
+                )
+                return
+            raise KernelError(
+                "RETRIEVAL_EMBEDDING_RECONCILIATION_EVIDENCE_MISSING",
+                "embedding reconciliation has no ExternalEffect evidence",
+            )
+        adapter = getattr(self.provider, "adapter", None)
+        context = EffectCommandContext(
+            operation_id=operation_id,
+            project_id=worker.project_id,
+            actor_id=worker.worker_id,
+            trace_id=worker.trace_id,
+            correlation_id=worker.correlation_id,
+        )
+        matched_attempt = False
+        for effect_id_value, effect_status, request_payload in effects:
+            effect_id = str(effect_id_value)
+            metadata = (
+                request_payload.get("_production_execution")
+                if isinstance(request_payload, dict)
+                else None
+            )
+            if not isinstance(metadata, dict):
+                raise KernelError(
+                    "RETRIEVAL_EMBEDDING_EXECUTION_IDENTITY_INVALID",
+                    "embedding ExternalEffect has no frozen execution identity",
+                )
+            if str(metadata.get("attempt_id") or "") != worker.attempt_id:
+                continue
+            matched_attempt = True
+            disposition = classify_external_effect_recovery(str(effect_status))
+            current = self._operation_state(worker.project_id, operation_id)
+            if disposition is EffectRecoveryDisposition.DISPATCH_PLANNED:
+                if current["status"] == "CANCELLATION_REQUESTED":
+                    acknowledge_worker_cancellation(
+                        self.database_url,
+                        worker,
+                        expected_operation_version=int(current["version"]),
+                    )
+                    return
+                transition_operation(
+                    self.database_url,
+                    OperationTransitionCommand(
+                        operation_id=operation_id,
+                        project_id=worker.project_id,
+                        expected_version=int(current["version"]),
+                        expected_status=str(current["status"]),
+                        target_status="EXECUTING",
+                        actor_id=worker.worker_id,
+                        reason="planned embedding effect is confirmed undispatched",
+                        trace_id=worker.trace_id,
+                        correlation_id=worker.correlation_id,
+                        causation_id=effect_id,
+                    ),
+                )
+                continue
+            if disposition is EffectRecoveryDisposition.CONSUME_SUCCEEDED:
+                if current["status"] == "CANCELLATION_REQUESTED":
+                    acknowledge_worker_cancellation(
+                        self.database_url,
+                        worker,
+                        expected_operation_version=int(current["version"]),
+                    )
+                    return
+                resume_operation_from_completed_effect(
+                    self.database_url,
+                    context,
+                    effect_id=effect_id,
+                )
+                continue
+            if disposition is EffectRecoveryDisposition.RETRY_POLICY:
                 submit_attempt_failure(
                     self.database_url,
                     worker,
                     retryable=True,
-                    error_code=(
-                        exc.code if isinstance(exc, KernelError) else type(exc).__name__
-                    ),
-                    error_message=str(exc),
-                    failure_class="RETRYABLE",
+                    error_code="RETRIEVAL_EMBEDDING_EXTERNAL_EFFECT_RETRY_REQUIRED",
+                    error_message="Provider recorded a definitive retryable failure",
+                    failure_class=WorkerFailureClass.RETRYABLE.value,
                 )
-            except KernelError:
-                pass
-            raise
+                return
+            if disposition is EffectRecoveryDisposition.TERMINAL_FAILURE:
+                submit_attempt_failure(
+                    self.database_url,
+                    worker,
+                    retryable=False,
+                    error_code="RETRIEVAL_EMBEDDING_EXTERNAL_EFFECT_FINAL_FAILURE",
+                    error_message="Provider recorded a terminal embedding failure",
+                    failure_class=WorkerFailureClass.FINAL_FAILURE.value,
+                )
+                return
+            if disposition is EffectRecoveryDisposition.TERMINAL_CANCELLED:
+                if current["status"] != "CANCELLATION_REQUESTED":
+                    transition_operation(
+                        self.database_url,
+                        OperationTransitionCommand(
+                            operation_id=operation_id,
+                            project_id=worker.project_id,
+                            expected_version=int(current["version"]),
+                            expected_status=str(current["status"]),
+                            target_status="CANCELLATION_REQUESTED",
+                            actor_id=worker.worker_id,
+                            reason="Provider confirms embedding effect cancellation",
+                            trace_id=worker.trace_id,
+                            correlation_id=worker.correlation_id,
+                            causation_id=effect_id,
+                        ),
+                    )
+                    current = self._operation_state(worker.project_id, operation_id)
+                acknowledge_worker_cancellation(
+                    self.database_url,
+                    worker,
+                    expected_operation_version=int(current["version"]),
+                )
+                return
+            if disposition is EffectRecoveryDisposition.OPERATOR_RECONCILIATION:
+                if current["status"] == "WAITING_EXTERNAL_RESULT":
+                    transition_operation(
+                        self.database_url,
+                        OperationTransitionCommand(
+                            operation_id=operation_id,
+                            project_id=worker.project_id,
+                            expected_version=int(current["version"]),
+                            expected_status="WAITING_EXTERNAL_RESULT",
+                            target_status="RECONCILIATION_REQUIRED",
+                            actor_id=worker.worker_id,
+                            reason="embedding effect requires operator reconciliation",
+                            trace_id=worker.trace_id,
+                            correlation_id=worker.correlation_id,
+                            causation_id=effect_id,
+                        ),
+                    )
+                self._persist_projection_status(
+                    project_id=worker.project_id,
+                    operation_id=operation_id,
+                    status="RECONCILIATION_REQUIRED",
+                    evidence={
+                        "attempt_id": worker.attempt_id,
+                        "external_effect_id": effect_id,
+                        "reason": "operator_reconciliation_required",
+                    },
+                    worker=worker,
+                )
+                checkpoint_attempt_for_external_reconciliation(
+                    self.database_url,
+                    worker,
+                    {"reason": "operator_reconciliation_required"},
+                )
+                return
+            authorize = getattr(adapter, "for_recovery", None)
+            if not callable(authorize):
+                raise KernelError(
+                    "RETRIEVAL_EMBEDDING_RECOVERY_AUTHORIZATION_MISSING",
+                    "embedding reconciliation requires a recovery-capable PEP adapter",
+                )
+            try:
+                execution_fence = int(metadata.get("fencing_token") or 0)
+            except (TypeError, ValueError) as exc:
+                raise KernelError(
+                    "RETRIEVAL_EMBEDDING_EXECUTION_IDENTITY_INVALID",
+                    "embedding ExternalEffect has an invalid execution fence",
+                ) from exc
+            if execution_fence <= 0:
+                raise KernelError(
+                    "RETRIEVAL_EMBEDDING_EXECUTION_IDENTITY_INVALID",
+                    "embedding ExternalEffect has no frozen execution fence",
+                )
+            recovery_adapter = authorize(
+                execution_id=f"embedding-execution:{effect_id}",
+                external_effect_id=effect_id,
+                operation_id=operation_id,
+                attempt_id=worker.attempt_id,
+                execution_fencing_token=execution_fence,
+                recovery_fencing_token=worker.fencing_token,
+                recovery_worker_id=worker.worker_id,
+                action=ExecutionRecoveryAction.QUERY,
+                trace_id=worker.trace_id,
+                correlation_id=worker.correlation_id,
+            )
+            outcome = str(
+                reconcile_external_effect(
+                    self.database_url,
+                    context,
+                    effect_id=effect_id,
+                    adapter=recovery_adapter,
+                    attempt_command=worker,
+                )["outcome"]
+            )
+            if outcome == "ambiguous":
+                self._persist_projection_status(
+                    project_id=worker.project_id,
+                    operation_id=operation_id,
+                    status="RECONCILIATION_REQUIRED",
+                    evidence={
+                        "attempt_id": worker.attempt_id,
+                        "external_effect_id": effect_id,
+                        "reconciliation_outcome": outcome,
+                    },
+                    worker=worker,
+                )
+                checkpoint_attempt_for_external_reconciliation(
+                    self.database_url,
+                    worker,
+                    {
+                        "reason": "provider_query_remains_ambiguous",
+                        "external_effect_id": effect_id,
+                    },
+                )
+                return
+            if outcome in {"not_found", "failed_final", "cancelled"}:
+                return
+        if not matched_attempt:
+            raise KernelError(
+                "RETRIEVAL_EMBEDDING_RECONCILIATION_EVIDENCE_MISSING",
+                "current embedding Attempt has no matching ExternalEffect",
+            )
+
+    def _persist_projection_status(
+        self,
+        *,
+        project_id: str,
+        operation_id: str,
+        status: str,
+        evidence: dict[str, Any],
+        worker: WorkerLeaseCommand | None = None,
+    ) -> None:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            if worker is not None:
+                attempt = uow.repositories.attempt_runtime.get_for_update(
+                    worker.attempt_id, worker.project_id
+                )
+                valid, _current_token = (
+                    uow.repositories.attempt_runtime.current_fence(
+                        worker.attempt_id,
+                        worker.worker_id,
+                        worker.fencing_token,
+                    )
+                )
+                if not valid:
+                    raise KernelError(
+                        "ATTEMPT_FENCING_TOKEN_STALE",
+                        "embedding projection status carries a stale Attempt fence",
+                    )
+                if attempt["status"] not in {"RUNNING", "CHECKPOINTED"}:
+                    raise KernelError(
+                        "ATTEMPT_STATUS_CONFLICT",
+                        "embedding projection status requires an active Attempt",
+                    )
+            uow.cursor.execute(
+                """
+                SELECT operation.command_payload, document.project_id,
+                       document.book_id
+                FROM authority_operation AS operation
+                JOIN authority_narrative_retrieval_document AS document
+                  ON document.retrieval_document_id=
+                     operation.command_payload->'payload'->>'retrieval_document_id'
+                WHERE operation.operation_id=%s AND operation.project_id=%s
+                  AND operation.definition_name=%s
+                """,
+                [operation_id, project_id, EMBEDDING_DEFINITION_NAME],
+            )
+            row = uow.cursor.fetchone()
+            if row is None:
+                raise KernelError(
+                    "RETRIEVAL_EMBEDDING_OPERATION_MISSING",
+                    "embedding projection Operation is missing",
+                )
+            payload = dict(dict(row[0] or {}).get("payload") or {})
+            document_id = str(payload.get("retrieval_document_id") or "")
+            source_version_id = str(payload.get("source_asset_version_id") or "")
+            source_hash = str(payload.get("source_content_hash") or "")
+            projection_version = str(payload.get("projection_version") or "")
+            projection_id = _projection_id(document_id, projection_version)
+            uow.cursor.execute(
+                """
+                SELECT source_asset_version_id, source_content_hash,
+                       projection_version, operation_id, status
+                FROM authority_retrieval_embedding_projection
+                WHERE retrieval_document_id=%s AND projection_version=%s
+                FOR UPDATE
+                """,
+                [document_id, projection_version],
+            )
+            current = uow.cursor.fetchone()
+            if current is None:
+                uow.cursor.execute(
+                    """
+                    INSERT INTO authority_retrieval_embedding_projection(
+                        embedding_projection_id, project_id, book_id,
+                        retrieval_document_id, source_asset_version_id,
+                        source_content_hash, projection_version, status,
+                        operation_id, evidence
+                    ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                    """,
+                    [
+                        projection_id,
+                        project_id,
+                        str(row[2]),
+                        document_id,
+                        source_version_id,
+                        source_hash,
+                        projection_version,
+                        status,
+                        operation_id,
+                        Jsonb(evidence),
+                    ],
+                )
+            else:
+                identity = (
+                    str(current[0]),
+                    str(current[1]),
+                    str(current[2]),
+                    str(current[3]),
+                )
+                expected_identity = (
+                    source_version_id,
+                    source_hash,
+                    projection_version,
+                    operation_id,
+                )
+                if identity != expected_identity:
+                    raise KernelError(
+                        "RETRIEVAL_EMBEDDING_IDEMPOTENCY_CONFLICT",
+                        "embedding projection identity differs from its frozen source",
+                    )
+                if str(current[4]) != "READY":
+                    uow.cursor.execute(
+                        """
+                        UPDATE authority_retrieval_embedding_projection
+                        SET status=%s, evidence=evidence || %s,
+                            version=version+1, updated_at=NOW()
+                        WHERE embedding_projection_id=%s
+                        """,
+                        [status, Jsonb(evidence), projection_id],
+                    )
+            uow.commit()
 
     def _persist_ready_projection(
         self, worker: WorkerLeaseCommand, operation_id: str, candidate_version_id: str
@@ -527,15 +1072,9 @@ class RetrievalEmbeddingProjectionRuntime:
                     "ready embedding projection requires the exact PEP route snapshot",
                 )
             projection_hash = _hash(projection)
-            projection_id = (
-                "retrieval-embedding:"
-                + hashlib.sha256(
-                    (
-                        projection["retrieval_document_id"]
-                        + ":"
-                        + projection["projection_version"]
-                    ).encode()
-                ).hexdigest()
+            projection_id = _projection_id(
+                projection["retrieval_document_id"],
+                projection["projection_version"],
             )
             uow.cursor.execute(
                 """
@@ -553,7 +1092,7 @@ class RetrievalEmbeddingProjectionRuntime:
                 )
             uow.cursor.execute(
                 """
-                INSERT INTO authority_retrieval_embedding_projection(
+                INSERT INTO authority_retrieval_embedding_projection AS current(
                     embedding_projection_id, project_id, book_id,
                     retrieval_document_id, source_asset_version_id,
                     source_content_hash, projection_version, status,
@@ -561,7 +1100,23 @@ class RetrievalEmbeddingProjectionRuntime:
                     embedding_dimensions, route_snapshot_id, external_effect_id,
                     receipt_id, operation_id, projection_hash, evidence
                 ) VALUES (%s,%s,%s,%s,%s,%s,%s,'READY',%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
-                ON CONFLICT(retrieval_document_id, projection_version) DO NOTHING
+                ON CONFLICT(retrieval_document_id, projection_version) DO UPDATE
+                SET status='READY', embedding=EXCLUDED.embedding,
+                    embedding_model=EXCLUDED.embedding_model,
+                    embedding_provider=EXCLUDED.embedding_provider,
+                    embedding_dimensions=EXCLUDED.embedding_dimensions,
+                    route_snapshot_id=EXCLUDED.route_snapshot_id,
+                    external_effect_id=EXCLUDED.external_effect_id,
+                    receipt_id=EXCLUDED.receipt_id,
+                    operation_id=EXCLUDED.operation_id,
+                    projection_hash=EXCLUDED.projection_hash,
+                    evidence=EXCLUDED.evidence,
+                    version=current.version+1, updated_at=NOW()
+                WHERE current.status<>'READY'
+                  AND current.source_asset_version_id=
+                      EXCLUDED.source_asset_version_id
+                  AND current.source_content_hash=EXCLUDED.source_content_hash
+                  AND current.operation_id=EXCLUDED.operation_id
                 """,
                 [
                     projection_id,
@@ -754,6 +1309,24 @@ def _hash(value: dict[str, Any]) -> str:
             json.dumps(value, sort_keys=True, separators=(",", ":")).encode()
         ).hexdigest()
     )
+
+
+def _projection_id(document_id: str, projection_version: str) -> str:
+    return "retrieval-embedding:" + hashlib.sha256(
+        f"{document_id}:{projection_version}".encode()
+    ).hexdigest()
+
+
+def _projection_status_for_operation(operation_status: str) -> str | None:
+    return {
+        "FAILED_RETRYABLE": "FAILED_RETRYABLE",
+        "FAILED_FINAL": "FAILED_FINAL",
+        "DEAD_LETTER": "DEAD_LETTER",
+        "CANCELLED": "CANCELLED",
+        "WAITING_EXTERNAL_RESULT": "RECONCILIATION_REQUIRED",
+        "RECONCILIATION_REQUIRED": "RECONCILIATION_REQUIRED",
+        "COMPENSATION_REQUIRED": "RECONCILIATION_REQUIRED",
+    }.get(operation_status)
 
 
 __all__ = [

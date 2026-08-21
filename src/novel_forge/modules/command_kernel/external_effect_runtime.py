@@ -1011,6 +1011,102 @@ def reconcile_external_effect(
         raise KernelError(
             "RECONCILIATION_OUTCOME_INVALID", "provider query is inconclusive"
         )
+    reconciliation_evidence = {
+        **result.evidence,
+        "provider_correlation_id": result.provider_correlation_id,
+    }
+    if result.outcome == "success":
+        with AuthorityUnitOfWork(database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT dispatch_id, generation
+                FROM authority_external_effect_dispatch
+                WHERE external_effect_id=%s
+                ORDER BY generation DESC
+                LIMIT 1
+                """,
+                [effect_id],
+            )
+            dispatch = uow.cursor.fetchone()
+        if dispatch is None:
+            raise KernelError(
+                "EFFECT_RECONCILIATION_DISPATCH_MISSING",
+                "successful reconciliation has no original Provider dispatch",
+            )
+        generation = int(dispatch[1])
+        reconciliation_receipt_id = (
+            f"reconciliation:{effect_id}:{generation}:success"
+        )
+        accept_external_effect_receipt(
+            database_url,
+            context,
+            dispatch_id=str(dispatch[0]),
+            provider=effect["provider"],
+            receipt_id=reconciliation_receipt_id,
+            message_id=reconciliation_receipt_id,
+            payload_hash=_hash(result.evidence),
+            provider_correlation_id=result.provider_correlation_id,
+            generation=generation,
+            outcome="success",
+            evidence=result.evidence,
+        )
+        with AuthorityUnitOfWork(database_url) as uow:
+            repository = uow.repositories.external_effects
+            repository.record_reconciliation_evidence(
+                {
+                    "reconciliation_id": str(uuid4()),
+                    "external_effect_id": effect_id,
+                    "provider": effect["provider"],
+                    "stable_idempotency_key": effect["stable_idempotency_key"],
+                    "outcome": result.outcome,
+                    "evidence": reconciliation_evidence,
+                    "trace_id": context.trace_id,
+                    "correlation_id": context.correlation_id,
+                }
+            )
+            _record(
+                repository,
+                context,
+                effect_id,
+                "external_effect.reconciled",
+                {
+                    "outcome": result.outcome,
+                    "receipt_id": reconciliation_receipt_id,
+                },
+            )
+            operation = uow.repositories.attempt_runtime.operation_state(
+                context.operation_id, context.project_id
+            )
+            target_status = str(operation["status"])
+            if target_status == "CANCELLATION_REQUESTED":
+                target_status = "COMPENSATION_REQUIRED"
+                _cas_operation(
+                    uow,
+                    operation_id=context.operation_id,
+                    project_id=context.project_id,
+                    expected_status="CANCELLATION_REQUESTED",
+                    expected_version=int(operation["version"]),
+                    target_status=target_status,
+                    actor_id=context.actor_id,
+                    reason="cancelled Operation reconciled a successful external effect",
+                    trace_id=context.trace_id,
+                    correlation_id=context.correlation_id,
+                    causation_id=effect_id,
+                )
+            uow.commit()
+        _resolve_reconciled_budget(
+            database_url,
+            project_id=context.project_id,
+            effect_id=effect_id,
+            outcome=result.outcome,
+            evidence=result.evidence,
+        )
+        return {
+            "external_effect_id": effect_id,
+            "outcome": result.outcome,
+            "operation_status": target_status,
+            "receipt_id": reconciliation_receipt_id,
+        }
     with AuthorityUnitOfWork(database_url) as uow:
         repository = uow.repositories.external_effects
         _validate_effect_context(context)
@@ -1023,10 +1119,7 @@ def reconcile_external_effect(
                 "provider": effect["provider"],
                 "stable_idempotency_key": effect["stable_idempotency_key"],
                 "outcome": result.outcome,
-                "evidence": {
-                    **result.evidence,
-                    "provider_correlation_id": result.provider_correlation_id,
-                },
+                "evidence": reconciliation_evidence,
                 "trace_id": context.trace_id,
                 "correlation_id": context.correlation_id,
             }
@@ -1526,16 +1619,28 @@ def _resolve_reconciled_budget(
     if row is None:
         return
     if outcome == "success":
+        normalized = dict(evidence)
+        usage = normalized.get("usage")
+        cost = normalized.get("cost")
+        if isinstance(usage, dict):
+            normalized.setdefault(
+                "actual_tokens",
+                int(usage.get("total_tokens") or 0)
+                or int(usage.get("input_tokens") or 0)
+                + int(usage.get("output_tokens") or 0),
+            )
+        if isinstance(cost, dict):
+            normalized.setdefault("actual_cost", str(cost.get("amount") or "0"))
         settle_provider_budget(
             database_url,
             reservation_id=str(row[0]),
             project_id=project_id,
-            actual_amount=str(evidence.get("actual_cost") or row[1]),
-            actual_tokens=int(evidence.get("actual_tokens") or row[2]),
+            actual_amount=str(normalized.get("actual_cost") or row[1]),
+            actual_tokens=int(normalized.get("actual_tokens") or row[2]),
             evidence={
-                **evidence,
+                **normalized,
                 "reconciled": True,
-                "cost_fallback_to_reservation": "actual_cost" not in evidence,
+                "cost_fallback_to_reservation": "actual_cost" not in normalized,
             },
         )
     elif outcome in {"not_found", "failed_final", "cancelled"}:

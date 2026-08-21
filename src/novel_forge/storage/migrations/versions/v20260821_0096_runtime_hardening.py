@@ -27,6 +27,25 @@ UPGRADE_STATEMENTS = [
         )
     )
     """,
+    """
+    ALTER TABLE authority_retrieval_embedding_projection
+    DROP CONSTRAINT authority_retrieval_embedding_projection_status_check
+    """,
+    """
+    UPDATE authority_retrieval_embedding_projection
+    SET status='FAILED_FINAL', version=version+1, updated_at=NOW(),
+        evidence=evidence || '{"migration":"FAILED_TERMINAL_TO_FAILED_FINAL"}'::jsonb
+    WHERE status='FAILED_TERMINAL'
+    """,
+    """
+    ALTER TABLE authority_retrieval_embedding_projection
+    ADD CONSTRAINT authority_retrieval_embedding_projection_status_check CHECK (
+        status IN (
+            'PENDING','RUNNING','READY','FAILED_RETRYABLE','FAILED_FINAL',
+            'DEAD_LETTER','CANCELLED','RECONCILIATION_REQUIRED'
+        )
+    )
+    """,
 ]
 
 

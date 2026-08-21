@@ -5,7 +5,7 @@ from novel_forge.storage.migrations.versions import (
 )
 
 
-def test_0096_is_forward_only_and_expands_arc_terminal_evidence() -> None:
+def test_0096_is_forward_only_and_expands_runtime_terminal_evidence() -> None:
     validate_migration_chain()
     sql = "\n".join(migration.UPGRADE_STATEMENTS)
 
@@ -19,5 +19,16 @@ def test_0096_is_forward_only_and_expands_arc_terminal_evidence() -> None:
         "CANCELLED",
         "RECONCILIATION_REQUIRED",
         "MANUAL_INTERVENTION",
+    ):
+        assert f"'{status}'" in sql
+
+    assert "authority_retrieval_embedding_projection" in sql
+    assert "FAILED_TERMINAL_TO_FAILED_FINAL" in sql
+    for status in (
+        "FAILED_RETRYABLE",
+        "FAILED_FINAL",
+        "DEAD_LETTER",
+        "CANCELLED",
+        "RECONCILIATION_REQUIRED",
     ):
         assert f"'{status}'" in sql

@@ -410,7 +410,20 @@ class ExternalEffectRuntimePostgresTests(unittest.TestCase):
             adapter=provider,
         )
         self.assertEqual(reconciled["outcome"], "success")
-        self._assert_effect(effect, "SUCCEEDED", "UNKNOWN")
+        self.assertTrue(reconciled["receipt_id"])
+        self._assert_effect(effect, "SUCCEEDED", "SUCCEEDED")
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT receipt.status
+                FROM authority_external_receipt AS receipt
+                JOIN authority_external_effect_dispatch AS dispatch
+                  ON dispatch.dispatch_id=receipt.dispatch_id
+                WHERE dispatch.external_effect_id=%s
+                """,
+                [effect],
+            )
+            self.assertEqual(cursor.fetchone(), ("VERIFIED",))
 
     def test_reconciliation_not_found_allows_retry_and_ambiguous_stays_blocked(
         self,

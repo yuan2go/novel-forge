@@ -542,20 +542,7 @@ class ExternalEffectRepository:
             raise KernelError("EFFECT_STATUS_CONFLICT", "receipt cannot change terminal effect")
 
     def record_reconciliation(self, row: dict[str, Any]) -> None:
-        self.cursor.execute(
-            """
-            INSERT INTO authority_effect_reconciliation_evidence (
-                reconciliation_id, external_effect_id, provider,
-                stable_idempotency_key, outcome, evidence, trace_id, correlation_id
-            )
-            VALUES (
-                %(reconciliation_id)s, %(external_effect_id)s, %(provider)s,
-                %(stable_idempotency_key)s, %(outcome)s, %(evidence)s,
-                %(trace_id)s, %(correlation_id)s
-            )
-            """,
-            {**row, "evidence": Jsonb(row["evidence"])},
-        )
+        self.record_reconciliation_evidence(row)
         target = {
             "success": "SUCCEEDED",
             "not_found": "FAILED_RETRYABLE",
@@ -577,6 +564,22 @@ class ExternalEffectRepository:
         )
         if self.cursor.rowcount != 1:
             raise KernelError("EFFECT_STATUS_CONFLICT", "effect is not reconcilable")
+
+    def record_reconciliation_evidence(self, row: dict[str, Any]) -> None:
+        self.cursor.execute(
+            """
+            INSERT INTO authority_effect_reconciliation_evidence (
+                reconciliation_id, external_effect_id, provider,
+                stable_idempotency_key, outcome, evidence, trace_id, correlation_id
+            )
+            VALUES (
+                %(reconciliation_id)s, %(external_effect_id)s, %(provider)s,
+                %(stable_idempotency_key)s, %(outcome)s, %(evidence)s,
+                %(trace_id)s, %(correlation_id)s
+            )
+            """,
+            {**row, "evidence": Jsonb(row["evidence"])},
+        )
 
     def complete_compensated_effect(self, external_effect_id: str) -> None:
         self.cursor.execute(

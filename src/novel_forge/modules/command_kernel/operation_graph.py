@@ -429,6 +429,18 @@ def coordinate_saga(
                     lease["fencing_token"],
                 )
             changed = True
+        elif any(step["status"] == "CANCELLED" for step in steps):
+            target_status = "CANCELLED"
+            repository.update_saga(saga_id, saga["version"], target_status)
+            if repository.complete_root(saga["root_operation_id"], target_status):
+                _record_operation_transition(
+                    repository,
+                    context,
+                    saga["root_operation_id"],
+                    target_status,
+                    lease["fencing_token"],
+                )
+            changed = True
         elif any(step["status"] in FAILURE_STATUSES for step in steps):
             compensatable = [
                 step["operation_id"]
