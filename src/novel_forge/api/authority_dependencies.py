@@ -22,6 +22,7 @@ from novel_forge.modules.chapter_authority.execution_gateway import (
     ChapterExecutionRoute,
     PostgresChapterExecutionContractBinder,
     PostgresProductionExecutionPayloadResolver,
+    PostgresRetrievalProjectionExecutionContractBinder,
     ProductionExecutionGatewayExternalEffectAdapter,
     chapter_stage_capability,
     default_chapter_fixture_response,
@@ -1009,21 +1010,38 @@ def build_chapter_authority_application(
     execution.gateway.register_execution_binder("chapter", binder)
     embedding_binder = None
     if "retrieval" in execution.gateway.routes:
-        embedding_binder = PostgresChapterExecutionContractBinder(
-            settings.database_url,
-            execution.gateway.routes,
-            # Document embeddings are a rebuildable projection Operation, not a
-            # node in the Chapter Saga.  It still freezes the PEP route, source,
-            # prompt/skill/tool contracts and receipt, but must not borrow the
-            # Chapter Capability Pack's workflow-node authority.
-            capability_pack_id="",
-            pack_environment=environment,
-            pack_runtime_profile=environment,
-            pack_release_channel=str(
-                values.get("NOVEL_FORGE_RELEASE_CHANNEL") or "VALIDATION"
-            ),
-            pack_required=False,
-        )
+        if controlled:
+            artifacts = default_chapter_artifact_resolver(settings.root)
+            embedding_binder = PostgresRetrievalProjectionExecutionContractBinder(
+                settings.database_url,
+                execution.gateway.routes,
+                frozen_artifacts={
+                    "system_instruction": artifacts.resolve(
+                        ArtifactKind.PROMPT_SYSTEM_INSTRUCTION,
+                        "prompt-system:chapter-generation-pack",
+                        "v1",
+                    ),
+                    "prompt_template": artifacts.resolve(
+                        ArtifactKind.PROMPT_TEMPLATE,
+                        "prompt-template:chapter-generation-pack",
+                        "v2",
+                    ),
+                    "skill": artifacts.resolve(
+                        ArtifactKind.SKILL,
+                        "context-builder-source-isolation",
+                        "context-builder-source-isolation-v1",
+                    ),
+                },
+            )
+        else:
+            embedding_binder = PostgresChapterExecutionContractBinder(
+                settings.database_url,
+                execution.gateway.routes,
+                capability_pack_id="",
+                pack_environment=environment,
+                pack_runtime_profile=environment,
+                pack_required=False,
+            )
         execution.gateway.register_execution_binder(
             "retrieval_projection", embedding_binder
         )
@@ -1040,10 +1058,9 @@ def build_chapter_authority_application(
         model_adapter=execution.gateway,
         object_store_adapter=execution.object_store,
         capability_binder=binder,
-        # The gateway-side projection binder freezes the PEP execution
-        # contract.  No Chapter Capability Pack preflight is run here because
-        # the projection is not a Chapter workflow node.
-        embedding_capability_binder=None,
+        # Projection is not a Chapter Saga node. Its domain contract freezes
+        # Provider materialization without borrowing Chapter Pack authority.
+        embedding_capability_binder=(embedding_binder if controlled else None),
         worker_id=str(
             values.get("NOVEL_FORGE_AUTHORITY_WORKER_ID") or "chapter-authority-api"
         ),

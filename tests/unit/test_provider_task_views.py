@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -13,8 +15,13 @@ from novel_forge.modules.chapter_authority.provider_views import (
 )
 from novel_forge.modules.chapter_authority.execution_gateway import (
     PostgresChapterExecutionContractBinder,
+    PostgresRetrievalProjectionExecutionContractBinder,
     _materialize_chapter_codex_prompt,
     _stage_tool_permissions,
+)
+from novel_forge.modules.capability_packs.artifacts import (
+    ArtifactKind,
+    default_chapter_artifact_resolver,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.production_execution import ExecutionRuntimeClass
@@ -903,3 +910,93 @@ def test_retrieval_projection_scope_requires_frozen_source_asset() -> None:
         )
 
     assert raised.value.code == "RETRIEVAL_PROJECTION_SCOPE_MISSING"
+
+
+def test_retrieval_projection_freezes_domain_materialization_before_effect() -> None:
+    root = Path(__file__).resolve().parents[2]
+    artifacts = default_chapter_artifact_resolver(root)
+    system = artifacts.resolve(
+        ArtifactKind.PROMPT_SYSTEM_INSTRUCTION,
+        "prompt-system:chapter-generation-pack",
+        "v1",
+    )
+    template = artifacts.resolve(
+        ArtifactKind.PROMPT_TEMPLATE,
+        "prompt-template:chapter-generation-pack",
+        "v2",
+    )
+    skill = artifacts.resolve(
+        ArtifactKind.SKILL,
+        "context-builder-source-isolation",
+        "context-builder-source-isolation-v1",
+    )
+    binder = object.__new__(PostgresRetrievalProjectionExecutionContractBinder)
+    binder.routes = {
+        "retrieval": SimpleNamespace(
+            release_sha="a" * 40,
+            system_instruction_hash=system.content_hash,
+            template_hash=template.content_hash,
+            skill_content_hash=skill.content_hash,
+            model_profile=SimpleNamespace(contract_hash="model-profile-hash"),
+            route_policy=SimpleNamespace(contract_hash="route-policy-hash"),
+        )
+    }
+    binder.frozen_artifacts = {
+        "system_instruction": system,
+        "prompt_template": template,
+        "skill": skill,
+    }
+    binder._artifacts = lambda _metadata: ()  # type: ignore[method-assign] # noqa: SLF001
+    binder._materialize_selected_inputs = (  # type: ignore[method-assign] # noqa: SLF001
+        lambda **_values: [
+            {
+                "asset_version_id": "asset-version:accepted",
+                "artifact_type": "best_draft_candidate",
+                "content_hash": "sha256:" + "b" * 64,
+                "content": {"text": "accepted-only text"},
+            }
+        ]
+    )
+    captured: dict[str, object] = {}
+
+    def persist(**values: object) -> SimpleNamespace:
+        captured.update(values)
+        return SimpleNamespace(
+            asset_version_id="asset-version:materialization",
+            asset_type="capability_materialization_manifest",
+            content_hash="sha256:" + "c" * 64,
+        )
+
+    binder._ensure_contract = persist  # type: ignore[method-assign] # noqa: SLF001
+
+    preflight = binder.freeze_before_external_effect(
+        capability="model.retrieval",
+        request_payload={
+            "stage": "retrieval",
+            "trace_id": "trace:1",
+            "correlation_id": "correlation:1",
+            "_production_execution": {
+                "operation_id": "operation:1",
+                "attempt_id": "attempt:1",
+                "project_id": "project:1",
+                "fencing_token": 3,
+                "source_asset_version_id": "asset-version:accepted",
+                "source_content_hash": "sha256:" + "b" * 64,
+            },
+        },
+        snapshot_fencing_token=3,
+        snapshot_worker_id="worker:1",
+    )
+
+    contract = captured["contract"]
+    assert isinstance(contract, dict)
+    assert contract["runtime_kind"] == "FROZEN_RETRIEVAL_PROJECTION_CONTRACT"
+    assert contract["source_asset_version_id"] == "asset-version:accepted"
+    assert contract["route_identity"]["release_sha"] == "a" * 40
+    assert preflight.effect_binding["runtime_kind"] == (
+        "FROZEN_RETRIEVAL_PROJECTION_CONTRACT"
+    )
+    assert (
+        preflight.effect_binding["materialization_hash"]
+        == contract["materialization_hash"]
+    )

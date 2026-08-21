@@ -264,8 +264,8 @@ class ChapterExecutionBinding:
 
 @dataclass(frozen=True, slots=True)
 class ChapterCapabilityPreflight:
-    attempt_snapshot: CapabilityPackAttemptSnapshot
-    materialization: CapabilityPackArtifactMaterialization
+    attempt_snapshot: CapabilityPackAttemptSnapshot | None
+    materialization: CapabilityPackArtifactMaterialization | None
     materialization_artifact: ArtifactPointer
     effect_binding: Mapping[str, Any]
 
@@ -395,15 +395,23 @@ class PostgresChapterExecutionContractBinder:
             project_id=project_id,
             artifacts=artifacts,
         )
-        context_selection = [
-            item
-            for item in selected_inputs
-            if item["artifact_type"] == "context_bundle"
-        ]
+        retrieval_projection = (
+            str(metadata.get("execution_binding_domain") or "")
+            == "retrieval_projection"
+        )
+        context_selection = (
+            selected_inputs
+            if retrieval_projection
+            else [
+                item
+                for item in selected_inputs
+                if item["artifact_type"] == "context_bundle"
+            ]
+        )
         if len(context_selection) != 1:
             raise KernelError(
                 "CHAPTER_CAPABILITY_CONTEXT_INVALID",
-                "controlled Chapter execution requires exactly one frozen Context Bundle",
+                "controlled execution requires exactly one frozen Provider context",
             )
         tool_payload = json.loads(
             attempt_snapshot.execution_snapshot.tool_policy_payload_json
@@ -607,18 +615,20 @@ class PostgresChapterExecutionContractBinder:
         attempt_pack_snapshot: CapabilityPackAttemptSnapshot | None = None
         materialization_contract: Mapping[str, Any] | None = None
         if isinstance(capability_runtime, Mapping):
+            runtime_kind = str(capability_runtime.get("runtime_kind") or "")
             snapshot_id = str(capability_runtime.get("snapshot_id") or "")
             snapshot_hash = str(capability_runtime.get("snapshot_hash") or "")
-            attempt_pack_snapshot = self.pack_resolver.require_attempt_snapshot(
-                attempt_id=attempt_id,
-                snapshot_id=snapshot_id,
-                snapshot_hash=snapshot_hash,
-            )
-            if attempt_pack_snapshot.operation_id != operation_id:
-                raise KernelError(
-                    "CAPABILITY_PACK_SNAPSHOT_INCONSISTENT",
-                    "frozen Capability Snapshot belongs to another Operation",
+            if runtime_kind != "FROZEN_RETRIEVAL_PROJECTION_CONTRACT":
+                attempt_pack_snapshot = self.pack_resolver.require_attempt_snapshot(
+                    attempt_id=attempt_id,
+                    snapshot_id=snapshot_id,
+                    snapshot_hash=snapshot_hash,
                 )
+                if attempt_pack_snapshot.operation_id != operation_id:
+                    raise KernelError(
+                        "CAPABILITY_PACK_SNAPSHOT_INCONSISTENT",
+                        "frozen Capability Snapshot belongs to another Operation",
+                    )
             materialization_version_id = str(
                 capability_runtime.get("materialization_asset_version_id") or ""
             )
@@ -636,16 +646,32 @@ class PostgresChapterExecutionContractBinder:
                     "ExternalEffect Capability materialization identity drifted",
                 )
             frozen = document.content.get("contract", document.content)
+            pack_identity_valid = (
+                str(
+                    (frozen.get("attempt_snapshot") or {}).get("snapshot_id")
+                    if isinstance(frozen, Mapping)
+                    and isinstance(frozen.get("attempt_snapshot"), Mapping)
+                    else ""
+                )
+                == snapshot_id
+            )
+            domain_identity_valid = (
+                runtime_kind == "FROZEN_RETRIEVAL_PROJECTION_CONTRACT"
+                and isinstance(frozen, Mapping)
+                and frozen.get("runtime_kind") == runtime_kind
+                and str(frozen.get("operation_id") or "") == operation_id
+                and str(frozen.get("attempt_id") or "") == attempt_id
+            )
+            materialization_identity_valid = (
+                domain_identity_valid
+                if runtime_kind == "FROZEN_RETRIEVAL_PROJECTION_CONTRACT"
+                else pack_identity_valid
+            )
             if (
                 not isinstance(frozen, Mapping)
                 or str(frozen.get("materialization_hash") or "")
                 != str(capability_runtime.get("materialization_hash") or "")
-                or str(
-                    (frozen.get("attempt_snapshot") or {}).get("snapshot_id")
-                    if isinstance(frozen.get("attempt_snapshot"), Mapping)
-                    else ""
-                )
-                != snapshot_id
+                or not materialization_identity_valid
             ):
                 raise KernelError(
                     "CAPABILITY_PACK_SNAPSHOT_INCONSISTENT",
@@ -657,7 +683,10 @@ class PostgresChapterExecutionContractBinder:
                 asset_version_id=document.asset_version_id,
                 artifact_type=document.asset_type,
                 content_hash=document.content_hash,
-                schema_version="novelos.chapter_capability_materialization.v1",
+                schema_version=str(
+                    frozen.get("schema_version")
+                    or "novelos.chapter_capability_materialization.v1"
+                ),
                 source_eligibility="NOT_SOURCE_DERIVED",
             )
             if all(
@@ -675,11 +704,20 @@ class PostgresChapterExecutionContractBinder:
             if attempt_pack_snapshot is not None
             else None
         )
+        domain_materialization = (
+            materialization_contract is not None
+            and materialization_contract.get("runtime_kind")
+            == "FROZEN_RETRIEVAL_PROJECTION_CONTRACT"
+        )
         context_ref = next(
             (
                 item.artifact_ref
                 for item in artifacts
                 if item.artifact_type == "context_bundle"
+                or (
+                    domain_materialization
+                    and item.artifact_type != "capability_materialization_manifest"
+                )
             ),
             f"context:none:{operation_id}",
         )
@@ -728,6 +766,13 @@ class PostgresChapterExecutionContractBinder:
                 "book_design",
                 "planning_generation_candidate",
             )
+            if domain_materialization:
+                context_allowed_asset_types = tuple(
+                    str(item.get("artifact_type") or "")
+                    for item in materialization_contract.get("context_selection") or ()
+                    if isinstance(item, Mapping)
+                    and str(item.get("artifact_type") or "")
+                )
         else:
             context_policy_ref = pack_snapshot.context_policy_ref
             context_policy_payload = json.loads(
@@ -806,6 +851,8 @@ class PostgresChapterExecutionContractBinder:
                 if stage == "reader_outcome"
                 else "narrative_semantic_evaluation_candidate"
                 if stage == "narrative_semantic_evaluation"
+                else "retrieval_embedding_candidate"
+                if stage == "retrieval"
                 else "review_candidate"
             ),
             requires_validation_manifest=True,
@@ -1407,6 +1454,199 @@ class PostgresChapterExecutionContractBinder:
                 trace_id=trace_id,
                 correlation_id=correlation_id,
             )
+        )
+
+
+class PostgresRetrievalProjectionExecutionContractBinder(
+    PostgresChapterExecutionContractBinder
+):
+    """Freeze a non-Agent projection contract before the Provider effect.
+
+    Retrieval projection is not a Chapter Saga node and therefore must not
+    borrow the Chapter Capability Pack. It still uses the same PEP binder,
+    immutable Authority AssetVersion, Tool policy, schema and route hashes.
+    """
+
+    def __init__(
+        self,
+        database_url: str,
+        routes: Mapping[str, ChapterExecutionRoute],
+        *,
+        frozen_artifacts: Mapping[str, Any],
+    ) -> None:
+        super().__init__(
+            database_url,
+            routes,
+            capability_pack_id="",
+            pack_required=False,
+        )
+        required = {"system_instruction", "prompt_template", "skill"}
+        if set(frozen_artifacts) != required:
+            raise ValueError("retrieval projection artifacts are incomplete")
+        self.frozen_artifacts = dict(frozen_artifacts)
+
+    def freeze_before_external_effect(
+        self,
+        *,
+        capability: str,
+        request_payload: Mapping[str, Any],
+        snapshot_fencing_token: int,
+        snapshot_worker_id: str,
+    ) -> ChapterCapabilityPreflight | None:
+        stage = str(request_payload.get("stage") or "")
+        metadata = request_payload.get("_production_execution")
+        if capability != "model.retrieval" or stage != "retrieval":
+            raise KernelError(
+                "RETRIEVAL_PROJECTION_CAPABILITY_INVALID",
+                "projection binder only accepts model.retrieval",
+            )
+        if not isinstance(metadata, Mapping):
+            raise KernelError(
+                "RETRIEVAL_PROJECTION_CONTRACT_MISSING",
+                "projection Provider metadata is missing",
+            )
+        operation_id = str(metadata.get("operation_id") or "")
+        attempt_id = str(metadata.get("attempt_id") or "")
+        project_id = str(metadata.get("project_id") or "")
+        execution_fencing_token = int(metadata.get("fencing_token") or 0)
+        if (
+            not all(
+                (
+                    operation_id,
+                    attempt_id,
+                    project_id,
+                    snapshot_worker_id,
+                )
+            )
+            or execution_fencing_token <= 0
+            or snapshot_fencing_token <= 0
+        ):
+            raise KernelError(
+                "RETRIEVAL_PROJECTION_CONTRACT_MISSING",
+                "projection Attempt/Fence identity is incomplete",
+            )
+        pointers = self._artifacts(metadata)
+        selected_inputs = self._materialize_selected_inputs(
+            project_id=project_id,
+            artifacts=pointers,
+        )
+        source_asset_version_id = str(metadata.get("source_asset_version_id") or "")
+        source_content_hash = str(metadata.get("source_content_hash") or "")
+        if (
+            len(selected_inputs) != 1
+            or not source_asset_version_id
+            or not source_content_hash
+            or selected_inputs[0]["asset_version_id"] != source_asset_version_id
+            or selected_inputs[0]["content_hash"] != source_content_hash
+        ):
+            raise KernelError(
+                "RETRIEVAL_PROJECTION_SCOPE_MISSING",
+                "projection contract requires its exact frozen source AssetVersion",
+            )
+        system = self.frozen_artifacts["system_instruction"]
+        template = self.frozen_artifacts["prompt_template"]
+        skill = self.frozen_artifacts["skill"]
+        route = self.routes[stage]
+        if (
+            system.content_hash != route.system_instruction_hash
+            or template.content_hash != route.template_hash
+            or skill.content_hash != route.skill_content_hash
+        ):
+            raise KernelError(
+                "RETRIEVAL_PROJECTION_ROUTE_ARTIFACT_DRIFT",
+                "projection Provider artifacts differ from the frozen route",
+            )
+        output_schema = chapter_provider_output_schema(stage)
+        output_schema_ref = chapter_provider_output_schema_ref(stage)
+        contract_without_hash: dict[str, Any] = {
+            "schema_version": "novelos.provider_capability_materialization.v1",
+            "runtime_kind": "FROZEN_RETRIEVAL_PROJECTION_CONTRACT",
+            "stage": stage,
+            "capability_requirement": capability,
+            "operation_id": operation_id,
+            "attempt_id": attempt_id,
+            "execution_fencing_token": execution_fencing_token,
+            "snapshot_creation_fencing_token": snapshot_fencing_token,
+            "source_asset_version_id": source_asset_version_id,
+            "source_content_hash": source_content_hash,
+            "route_identity": {
+                "release_sha": route.release_sha,
+                "model_profile_hash": route.model_profile.contract_hash,
+                "route_policy_hash": route.route_policy.contract_hash,
+                "system_instruction_hash": system.content_hash,
+                "template_hash": template.content_hash,
+                "skill_content_hash": skill.content_hash,
+            },
+            "pack_artifacts": {
+                "system_instruction": system.to_dict(),
+                "prompt_template": template.to_dict(),
+                "skill": skill.to_dict(),
+            },
+            "context_selection": selected_inputs,
+            "knowledge_selection": [],
+            "tool_permissions": {
+                "default": "DENY",
+                "allowed": ["model.provider.invoke"],
+                "denied": [],
+                "invoked": ["model.provider.invoke"],
+                "governing_policy_ref": "permission:retrieval-embed:v1",
+                "governing_policy_hash": canonical_hash(
+                    {
+                        "default": "DENY",
+                        "allowed": ["model.provider.invoke"],
+                        "stage": stage,
+                    }
+                ),
+            },
+            "output_schema": {
+                "ref": output_schema_ref,
+                "content_hash": canonical_hash(output_schema),
+                "content": output_schema,
+            },
+        }
+        materialization_hash = canonical_hash(contract_without_hash)
+        contract = {
+            **contract_without_hash,
+            "materialization_hash": materialization_hash,
+        }
+        token = _identity_token(
+            f"{project_id}:{operation_id}:{attempt_id}:{stage}:projection-capability"
+        )
+        document = self._ensure_contract(
+            operation_id=operation_id,
+            project_id=project_id,
+            logical_ref=f"production_execution/capability_materializations/{token}",
+            asset_type="capability_materialization_manifest",
+            contract=contract,
+            trace_id=str(request_payload.get("trace_id") or ""),
+            correlation_id=str(request_payload.get("correlation_id") or ""),
+        )
+        pointer = ArtifactPointer(
+            artifact_ref=f"asset-version:{document.asset_version_id}",
+            asset_version_id=document.asset_version_id,
+            artifact_type=document.asset_type,
+            content_hash=document.content_hash,
+            schema_version="novelos.provider_capability_materialization.v1",
+            source_eligibility="NOT_SOURCE_DERIVED",
+        )
+        return ChapterCapabilityPreflight(
+            attempt_snapshot=None,
+            materialization=None,
+            materialization_artifact=pointer,
+            effect_binding={
+                "runtime_kind": "FROZEN_RETRIEVAL_PROJECTION_CONTRACT",
+                "materialization_asset_version_id": document.asset_version_id,
+                "materialization_content_hash": document.content_hash,
+                "materialization_hash": materialization_hash,
+                "source_asset_version_id": source_asset_version_id,
+                "source_content_hash": source_content_hash,
+                "prompt_system_instruction_hash": system.content_hash,
+                "prompt_template_hash": template.content_hash,
+                "skill_content_hash": skill.content_hash,
+                "allowed_tools": ["model.provider.invoke"],
+                "output_schema_ref": output_schema_ref,
+                "output_schema_hash": canonical_hash(output_schema),
+            },
         )
 
 
@@ -3303,6 +3543,7 @@ __all__ = [
     "PostgresChapterExecutionContractBinder",
     "PostgresChapterExecutionPayloadResolver",
     "PostgresProductionExecutionPayloadResolver",
+    "PostgresRetrievalProjectionExecutionContractBinder",
     "ProductionExecutionGatewayExternalEffectAdapter",
     "chapter_stage_capability",
     "default_chapter_fixture_response",
