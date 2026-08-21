@@ -34,6 +34,7 @@ from novel_forge.modules.agent_runtime.production import (
     PostgresAgentExecutionContractBinder,
     build_production_agent_harness_factory,
 )
+from novel_forge.modules.agent_runtime.policy import SERVER_AGENT_TOOL_CATALOG
 from novel_forge.modules.agent_runtime.scheduler import AgentAuthorityScheduler
 from novel_forge.modules.authority_security import Principal, PrincipalType
 from novel_forge.modules.book_authority import (
@@ -544,31 +545,6 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
     )
 
     execution = build_production_execution_composition(settings, env=env)
-    if args.setup_only:
-        return _jsonable(
-            {
-                "schema_version": (
-                    "novel-forge.small-real-provider-qualification-preflight.v1"
-                ),
-                "release_sha": commit_sha,
-                "project_id": project_id,
-                "book_run_id": book.book_run_id,
-                "chapter_pack_compilation_hash": chapter_pack["compilation"][
-                    "compilation_hash"
-                ],
-                "agent_pack_compilation_hash": agent_pack["compilation"][
-                    "compilation_hash"
-                ],
-                "configured_routes": sorted(execution.gateway.routes),
-                "proof_flags": {
-                    "SETUP_PREFLIGHT": True,
-                    "PROVIDER_WIRED": True,
-                    "PROVIDER_PROVEN": False,
-                    "LONGFORM_PROVEN": False,
-                    "PRODUCTION_QUALIFIED": False,
-                },
-            }
-        )
     agent_application = build_agent_runtime_authority_application(
         settings, execution=execution, env=env
     )
@@ -598,7 +574,14 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
                 acceptance_id="",
                 projection_set_id="",
             ),
-            tool_policy=(),
+            tool_policy=tuple(
+                SERVER_AGENT_TOOL_CATALOG[name]
+                for name in (
+                    "narrative.query_accepted",
+                    "story_planning.generate_candidate",
+                    "plan_change.submit",
+                )
+            ),
             skill_bindings=(),
             budget=AgentHarnessBudget(
                 max_turns=3,
@@ -615,6 +598,35 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
         ),
         principal=operator,
     )
+    if args.setup_only:
+        return _jsonable(
+            {
+                "schema_version": (
+                    "novel-forge.small-real-provider-qualification-preflight.v1"
+                ),
+                "release_sha": commit_sha,
+                "project_id": project_id,
+                "book_run_id": book.book_run_id,
+                "agent_session_id": admitted_agent["agent_session_id"],
+                "agent_execution_contract_hash": admitted_agent[
+                    "execution_contract_hash"
+                ],
+                "chapter_pack_compilation_hash": chapter_pack["compilation"][
+                    "compilation_hash"
+                ],
+                "agent_pack_compilation_hash": agent_pack["compilation"][
+                    "compilation_hash"
+                ],
+                "configured_routes": sorted(execution.gateway.routes),
+                "proof_flags": {
+                    "SETUP_PREFLIGHT": True,
+                    "PROVIDER_WIRED": True,
+                    "PROVIDER_PROVEN": False,
+                    "LONGFORM_PROVEN": False,
+                    "PRODUCTION_QUALIFIED": False,
+                },
+            }
+        )
     agent_binder = PostgresAgentExecutionContractBinder(
         args.database_url,
         execution.gateway.routes,
