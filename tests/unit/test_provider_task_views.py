@@ -12,6 +12,7 @@ from novel_forge.modules.chapter_authority.provider_views import (
     project_reader_outcome_context_input,
 )
 from novel_forge.modules.chapter_authority.execution_gateway import (
+    PostgresChapterExecutionContractBinder,
     _materialize_chapter_codex_prompt,
     _stage_tool_permissions,
 )
@@ -856,3 +857,49 @@ def test_fully_rendered_provider_prompt_is_bounded_against_long_history() -> Non
     assert heavy_evidence["provider_view"]["provider_context_estimated_tokens"] <= (
         light_evidence["provider_view"]["provider_context_estimated_tokens"] + 40
     )
+
+
+def test_retrieval_projection_binds_source_asset_scope_without_chapter_zero() -> None:
+    binder = object.__new__(PostgresChapterExecutionContractBinder)
+    metadata = {
+        "execution_binding_domain": "retrieval_projection",
+        "source_asset_version_id": "asset-version:accepted-input",
+    }
+
+    scope = binder._target_scope(  # noqa: SLF001
+        metadata=metadata,
+        project_id="project:1",
+        book_id="book:1",
+        chapter=0,
+    )
+    claims = binder._resource_claims(  # noqa: SLF001
+        metadata=metadata,
+        chapter=0,
+        stage="retrieval",
+    )
+
+    assert scope == {
+        "scope_kind": "asset_version",
+        "scope_id": "asset-version:accepted-input",
+        "project_id": "project:1",
+        "book_id": "book:1",
+        "asset_version_id": "asset-version:accepted-input",
+    }
+    assert claims == (
+        "asset-version:accepted-input",
+        "stage:retrieval",
+    )
+
+
+def test_retrieval_projection_scope_requires_frozen_source_asset() -> None:
+    binder = object.__new__(PostgresChapterExecutionContractBinder)
+
+    with pytest.raises(KernelError) as raised:
+        binder._target_scope(  # noqa: SLF001
+            metadata={"execution_binding_domain": "retrieval_projection"},
+            project_id="project:1",
+            book_id="book:1",
+            chapter=0,
+        )
+
+    assert raised.value.code == "RETRIEVAL_PROJECTION_SCOPE_MISSING"

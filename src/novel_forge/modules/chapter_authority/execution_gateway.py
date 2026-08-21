@@ -1153,7 +1153,26 @@ class PostgresChapterExecutionContractBinder:
         book_id: str,
         chapter: int,
     ) -> dict[str, Any]:
-        del metadata
+        if str(metadata.get("execution_binding_domain") or "") == (
+            "retrieval_projection"
+        ):
+            source_asset_version_id = str(
+                metadata.get("source_asset_version_id")
+                or metadata.get("target_asset_version_id")
+                or ""
+            )
+            if not source_asset_version_id:
+                raise KernelError(
+                    "RETRIEVAL_PROJECTION_SCOPE_MISSING",
+                    "Retrieval projection requires a frozen source AssetVersion",
+                )
+            return {
+                "scope_kind": "asset_version",
+                "scope_id": source_asset_version_id,
+                "project_id": project_id,
+                "book_id": book_id,
+                "asset_version_id": source_asset_version_id,
+            }
         return {
             "scope_kind": "chapter",
             "scope_id": f"{book_id}:chapter:{chapter}",
@@ -1169,7 +1188,23 @@ class PostgresChapterExecutionContractBinder:
         chapter: int,
         stage: str,
     ) -> tuple[str, ...]:
-        del metadata
+        if str(metadata.get("execution_binding_domain") or "") == (
+            "retrieval_projection"
+        ):
+            source_asset_version_id = str(
+                metadata.get("source_asset_version_id")
+                or metadata.get("target_asset_version_id")
+                or ""
+            )
+            if not source_asset_version_id:
+                raise KernelError(
+                    "RETRIEVAL_PROJECTION_SCOPE_MISSING",
+                    "Retrieval projection requires a frozen source AssetVersion",
+                )
+            return (
+                source_asset_version_id,
+                f"stage:{stage}",
+            )
         return (f"chapter:{chapter}", f"stage:{stage}")
 
     @staticmethod

@@ -396,6 +396,9 @@ class ExternalEffectChapterModelPort:
                 "target_asset_version_id": str(
                     business_payload.get("target_asset_version_id") or ""
                 ),
+                "source_asset_version_id": str(
+                    business_payload.get("source_asset_version_id") or ""
+                ),
                 "target_content_hash": str(
                     business_payload.get("target_content_hash") or ""
                 ),

@@ -261,7 +261,7 @@ class RetrievalEmbeddingProjectionPostgresTests(unittest.TestCase):
                     source_asset_version_id,source_artifact_type,
                     accepted_from_chapter,memory_layer,content_text,
                     metadata,projection_hash,created_by_operation_id
-                ) VALUES (%s,%s,%s,%s,'best_draft_candidate',1,'L0',%s,%s,%s,%s)
+                ) VALUES (%s,%s,%s,%s,'best_draft_candidate',0,'L0',%s,%s,%s,%s)
                 """,
                 [
                     document_id,
