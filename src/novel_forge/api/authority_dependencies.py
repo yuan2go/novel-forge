@@ -61,6 +61,9 @@ from novel_forge.modules.book_authority.supervisor import (
     PostgresBookProductionSupervisor,
 )
 from novel_forge.modules.book_authority.queries import PostgresBookProductionQuery
+from novel_forge.modules.book_authority.projection_repair import (
+    PostgresBookProjectionRepairAuthority,
+)
 from novel_forge.modules.corrective_action import CorrectiveActionQuery
 from novel_forge.modules.book_replan import BookReplanCoordinator
 from novel_forge.modules.chapter_group_authority import PostgresChapterGroupAuthority
@@ -1424,6 +1427,15 @@ def build_book_production_composition(
         corrective_actions=CorrectiveActionQuery(settings.database_url),
         supervisor=supervisor,
         principal=principal,
+        projection_repair=PostgresBookProjectionRepairAuthority(
+            settings.database_url,
+            application_build_id=authority.application_build_id,
+            commit_sha=authority.commit_sha,
+            worker_id=str(
+                values.get("NOVEL_FORGE_BOOK_REPAIR_WORKER_ID")
+                or "book-projection-repair-worker"
+            ),
+        ),
     )
 
 

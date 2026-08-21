@@ -68,6 +68,10 @@ class BookProgressProjection:
     next_chapter_request_id: str
     next_chapter_dispatch_state: str
     pending_sidecar_backlog: dict[str, Any]
+    authoritative_repair_status: str = "NOT_REQUIRED"
+    authoritative_repair_next_chapter: int | None = None
+    authoritative_repair_target_chapter: int | None = None
+    authoritative_repair_last_error: dict[str, Any] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -105,6 +109,13 @@ class PostgresBookProductionQuery:
                 FROM authority_book_production AS book
                 WHERE book.state = ANY(%s)
                   AND (%s='' OR book.book_run_id=%s)
+                  AND NOT EXISTS (
+                      SELECT 1
+                      FROM authority_book_projection_repair AS repair
+                      WHERE repair.book_run_id=book.book_run_id
+                        AND repair.authoritative_status<>
+                            'AUTHORITATIVE_REPAIR_COMPLETE'
+                  )
                   AND (
                       book.state <> 'READY'
                       OR book.input_mode='RESOLVED_AUTHORITY_INPUT'
@@ -208,6 +219,16 @@ class PostgresBookProductionQuery:
                 [book_run_id],
             )
             runtime_job = uow.cursor.fetchone()
+            uow.cursor.execute(
+                """
+                SELECT authoritative_status, next_chapter,
+                       target_accepted_through_chapter, last_error
+                FROM authority_book_projection_repair
+                WHERE book_run_id=%s
+                """,
+                [book_run_id],
+            )
+            projection_repair = uow.cursor.fetchone()
             active_operation_id = str(book[10])
             attempt = None
             if active_operation_id:
@@ -414,6 +435,26 @@ class PostgresBookProductionQuery:
             next_chapter_request_id=next_request_id,
             next_chapter_dispatch_state=next_dispatch_state,
             pending_sidecar_backlog=sidecar_backlog,
+            authoritative_repair_status=(
+                str(projection_repair[0])
+                if projection_repair is not None
+                else "NOT_REQUIRED"
+            ),
+            authoritative_repair_next_chapter=(
+                int(projection_repair[1])
+                if projection_repair is not None
+                else None
+            ),
+            authoritative_repair_target_chapter=(
+                int(projection_repair[2])
+                if projection_repair is not None
+                else None
+            ),
+            authoritative_repair_last_error=(
+                dict(projection_repair[3] or {})
+                if projection_repair is not None
+                else None
+            ),
         )
 
     def governance_action_versions(

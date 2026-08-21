@@ -2,13 +2,44 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Mapping
 
 from novel_forge.modules.longform_narrative import build_longform_projection_set
 
 
 CANONICAL_LONGFORM_PROJECTOR_VERSION = "accepted-longform-projector-v2"
+
+
+def frozen_arc_plan_version_ids(
+    *, request_payload: Mapping[str, Any], book_context: Mapping[str, Any]
+) -> tuple[str, ...]:
+    """Resolve Arc scope from the frozen Chapter command before Book fallback."""
+
+    refs = request_payload.get("context_version_refs")
+    refs = dict(refs) if isinstance(refs, Mapping) else {}
+    raw = refs.get("arc_plan_versions") or refs.get("arc_plan_version")
+    if isinstance(raw, str):
+        values = (raw,)
+    elif isinstance(raw, (list, tuple)):
+        values = tuple(raw)
+    else:
+        candidates = request_payload.get("context_candidates")
+        values = tuple(
+            item.get("asset_version_id")
+            for item in candidates or ()
+            if isinstance(item, Mapping)
+            and str(item.get("asset_type") or "") == "arc_plan"
+        )
+    normalized = tuple(dict.fromkeys(str(item) for item in values if str(item)))
+    if normalized:
+        return normalized
+    fallback = book_context.get("arc_plan_versions") or book_context.get(
+        "arc_plan_version"
+    )
+    if isinstance(fallback, str):
+        return (fallback,) if fallback else ()
+    return tuple(dict.fromkeys(str(item) for item in fallback or () if str(item)))
 
 
 @dataclass(frozen=True, slots=True)
@@ -34,7 +65,6 @@ class AcceptedLongformEvidence:
     chapter_outcome: Mapping[str, Any]
     story_state: Mapping[str, Any]
     source_contract: str = ""
-    adaptation_context: Mapping[str, Any] = field(default_factory=dict)
 
 
 def project_accepted_longform(
@@ -71,7 +101,6 @@ def project_accepted_longform(
                     "resolution_evidence",
                 ],
                 "forbidden_substitute": "chapter_plan.expected_progress",
-                "context": dict(evidence.adaptation_context),
             }
         )
     return build_longform_projection_set(
@@ -109,5 +138,6 @@ def project_accepted_longform(
 __all__ = [
     "AcceptedLongformEvidence",
     "CANONICAL_LONGFORM_PROJECTOR_VERSION",
+    "frozen_arc_plan_version_ids",
     "project_accepted_longform",
 ]

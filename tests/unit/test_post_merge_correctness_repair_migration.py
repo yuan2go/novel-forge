@@ -21,6 +21,15 @@ def test_0095_is_forward_only_registration_not_projection_business_logic() -> No
     assert "RETRIEVAL_SEMANTIC_PROJECTION_READY" in sql
     assert "active_longform_projection_set_id IS NULL" in sql
     assert "active_projection.chapter_number<>production.accepted_through_chapter" in sql
+    assert "ACCEPTED_CHAPTER_SEQUENCE_INVALID" in sql
+    assert "authority_sha256_jsonb(repair.repair_input)" in sql
+    assert "FOREIGN KEY(attempt_id, fencing_token)" in sql
+    assert "runtime_fencing_token" in sql
+    assert "terminal_command_fencing_token" in sql
+    assert "terminal_runtime_fencing_token" in sql
+    assert "acceptance_operation_status" in sql
+    assert "chapter_plan_content_hash" in sql
+    assert "authority_attempt_identity_operation_idx" in sql
     assert "authority_arc_progress_v2" not in sql
     assert "authority_arc_actual_state" not in sql
     assert "authority_narrative_obligation_state" not in sql

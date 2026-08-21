@@ -127,6 +127,101 @@ def execute_book_coordination_claim(
         raise
 
 
+def execute_book_projection_repair_claim(
+    runtime_jobs: RuntimeJobAuthority,
+    composition: BookProductionComposition,
+    claim: RuntimeJobClaim,
+    *,
+    lease_seconds: int = 30,
+    maximum_chapters: int = 4,
+) -> dict[str, object]:
+    """Execute one bounded repair envelope and atomically hand off continuation."""
+
+    if (
+        claim.job_kind != "BOOK_PROJECTION_REPAIR"
+        or claim.runtime_group != "book_repair"
+        or claim.subject_kind != "BOOK_RUN"
+    ):
+        raise RuntimeError("Book repair worker received an invalid RuntimeJob")
+    runtime_jobs.start(claim)
+    runtime_jobs.checkpoint(
+        claim,
+        {
+            "stage": "BOOK_PROJECTION_REPAIR_STARTED",
+            "repair_id": claim.input_snapshot.get("repair_id", ""),
+            "batch_start": claim.input_snapshot.get("batch_start", 1),
+        },
+    )
+    handoff_committed = False
+    try:
+        with LeaseHeartbeatGuard(
+            lambda: runtime_jobs.heartbeat(claim, lease_seconds=lease_seconds),
+            lease_seconds=lease_seconds,
+            label=f"runtime-job:{claim.attempt_id}",
+        ):
+            batch = composition.projection_repair.run_batch(
+                claim,
+                actor_id=composition.principal.principal_id,
+                maximum_chapters=maximum_chapters,
+            )
+        result = asdict(batch)
+        result["complete"] = batch.complete
+        runtime_jobs.checkpoint(
+            claim,
+            {
+                "stage": "BOOK_PROJECTION_REPAIR_BATCH_COMMITTED",
+                **result,
+            },
+        )
+        if batch.complete:
+            runtime_jobs.complete(claim, result)
+            return result
+        continuation = RuntimeJobSpec(
+            job_kind="BOOK_PROJECTION_REPAIR",
+            runtime_group="book_repair",
+            subject_kind="BOOK_RUN",
+            subject_id=batch.book_run_id,
+            project_id=claim.project_id,
+            dedupe_key=(
+                f"projection-repair:{batch.book_run_id}:chapter:{batch.next_chapter}"
+            ),
+            input_snapshot={
+                "repair_id": batch.repair_id,
+                "book_run_id": batch.book_run_id,
+                "target_accepted_through_chapter": batch.target_chapter,
+                "target_evidence_digest": claim.input_snapshot.get(
+                    "target_evidence_digest", ""
+                ),
+                "batch_start": batch.next_chapter,
+            },
+            priority=20,
+            max_attempts=10,
+        )
+        handoff = runtime_jobs.complete_and_schedule_continuation(
+            claim, result, continuation
+        )
+        handoff_committed = True
+        composition.projection_repair.link_continuation(
+            repair_id=batch.repair_id,
+            prior_runtime_job_id=claim.runtime_job_id,
+            runtime_job_id=str(handoff["continuation_runtime_job_id"]),
+        )
+        return {**result, **handoff}
+    except Exception as exc:
+        if not handoff_committed:
+            runtime_jobs.fail(
+                claim,
+                {
+                    "code": exc.code
+                    if hasattr(exc, "code")
+                    else type(exc).__name__,
+                    "message": str(exc),
+                    "repair_id": claim.input_snapshot.get("repair_id", ""),
+                },
+            )
+        raise
+
+
 def main() -> int:
     settings = IndustrialSettings.from_env()
     if settings.storage_authority != "postgresql" or not settings.database_url:
@@ -170,6 +265,39 @@ def main() -> int:
     signal.signal(signal.SIGTERM, stop)
     try:
         while not stopping:
+            repair_claim = runtime_jobs.claim(
+                runtime_group="book_repair",
+                worker_id=worker_id,
+                lease_seconds=lease_seconds,
+                job_kinds=("BOOK_PROJECTION_REPAIR",),
+            )
+            if repair_claim is not None:
+                supervisor.polled(idle=False)
+                try:
+                    failures = boundary.execute_batch(
+                        (repair_claim,),
+                        identity=lambda item: (
+                            item.project_id,
+                            item.runtime_job_id,
+                        ),
+                        execute=lambda item: execute_book_projection_repair_claim(
+                            runtime_jobs,
+                            composition,
+                            item,
+                            lease_seconds=lease_seconds,
+                        ),
+                        on_task_start=supervisor.operation_started,
+                        on_task_finish=lambda operation_id, succeeded: (
+                            supervisor.operation_finished(
+                                operation_id, succeeded=succeeded
+                            )
+                        ),
+                    )
+                    supervisor.batch_completed(failures)
+                except WorkerProgrammingError as error:
+                    supervisor.fatal(error)
+                    return WorkerSupervisor.FATAL_EXIT_CODE
+                continue
             schedule_book_coordination_jobs(
                 composition.query,
                 runtime_jobs,
@@ -227,6 +355,7 @@ if __name__ == "__main__":
 __all__ = [
     "cli",
     "execute_book_coordination_claim",
+    "execute_book_projection_repair_claim",
     "main",
     "schedule_book_coordination_jobs",
 ]

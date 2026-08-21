@@ -1,5 +1,6 @@
 from novel_forge.modules.book_authority.longform_projection import (
     AcceptedLongformEvidence,
+    frozen_arc_plan_version_ids,
     project_accepted_longform,
 )
 
@@ -27,7 +28,6 @@ def _evidence(*, outcome: dict) -> AcceptedLongformEvidence:
         chapter_outcome=outcome,
         story_state={"current_state": {"narrative_obligation": []}},
         source_contract=str(outcome.get("contract_version") or "legacy-v1"),
-        adaptation_context={"mode": "REPAIR"},
     )
 
 
@@ -47,7 +47,14 @@ def test_live_and_repair_use_one_deterministic_projection() -> None:
         }
     )
 
-    assert project_accepted_longform(evidence) == project_accepted_longform(evidence)
+    live_projection = project_accepted_longform(evidence)
+    repair_projection = project_accepted_longform(evidence)
+
+    assert live_projection == repair_projection
+    adaptations = live_projection["projection_provenance"].get(
+        "contract_adaptation_evidence", []
+    )
+    assert all("context" not in item for item in adaptations)
 
 
 def test_legacy_missing_arc_evidence_is_unknown_not_planned_actual() -> None:
@@ -59,7 +66,7 @@ def test_legacy_missing_arc_evidence_is_unknown_not_planned_actual() -> None:
     assert progress["observation_status"] == "UNKNOWN"
     assert progress["progress_units"] == 0
     assert progress["cumulative_progress_units"] == 0
-    assert progress["deviation_units"] == -9
+    assert progress["deviation_units"] is None
     adaptation = projection["projection_provenance"][
         "contract_adaptation_evidence"
     ][0]
@@ -83,3 +90,12 @@ def test_projection_hash_covers_source_hashes_and_adaptation() -> None:
         "canon_snapshot": "sha256:" + "3" * 64,
         "chapter_plan": "sha256:" + "4" * 64,
     }
+
+
+def test_frozen_chapter_arc_scope_wins_over_current_book_context() -> None:
+    assert frozen_arc_plan_version_ids(
+        request_payload={
+            "context_version_refs": {"arc_plan_versions": ["arc:frozen"]}
+        },
+        book_context={"arc_plan_versions": ["arc:current"]},
+    ) == ("arc:frozen",)

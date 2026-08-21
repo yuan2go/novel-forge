@@ -21,6 +21,7 @@ TERMINAL_JOB_STATUSES = frozenset(
 OPERATIONAL_RUNTIME_JOB_CONTRACTS = {
     "BOOK_COORDINATION_TICK": ("book", "BOOK_RUN"),
     "BOOK_FOLLOWUP_ADMISSION": ("book_followup", "CHAPTER_ACCEPTANCE"),
+    "BOOK_PROJECTION_REPAIR": ("book_repair", "BOOK_RUN"),
     "OPERATION_DEADLINE_SCAN": ("maintenance", "AUTHORITY_MAINTENANCE_SCAN"),
     "ATTEMPT_LEASE_EXPIRY_SCAN": ("maintenance", "AUTHORITY_MAINTENANCE_SCAN"),
     "OUTBOX_RECOVERY_SCAN": ("maintenance", "AUTHORITY_MAINTENANCE_SCAN"),
@@ -677,6 +678,153 @@ class RuntimeJobAuthority:
             "status": "SUCCEEDED",
             "result_id": result_id,
             "result_hash": result_hash,
+        }
+
+    def complete_and_schedule_continuation(
+        self,
+        claim: RuntimeJobClaim,
+        result: dict[str, Any],
+        continuation: RuntimeJobSpec,
+    ) -> dict[str, Any]:
+        """Atomically close a bounded envelope and register its next envelope."""
+
+        if (
+            continuation.project_id != claim.project_id
+            or continuation.runtime_group != claim.runtime_group
+            or continuation.job_kind != claim.job_kind
+            or continuation.subject_kind != claim.subject_kind
+            or continuation.subject_id != claim.subject_id
+            or continuation.runtime_job_id == claim.runtime_job_id
+        ):
+            raise ValueError("RuntimeJob continuation must preserve its governed subject")
+        result_hash = canonical_payload_hash(result)
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            self._lock_and_assert_claim(uow, claim)
+            result_id = f"runtime-result:{uuid4()}"
+            uow.cursor.execute(
+                """
+                INSERT INTO authority_runtime_job_result(
+                    result_id, runtime_job_id, attempt_id, fencing_token,
+                    status, result, result_hash
+                ) VALUES (%s,%s,%s,%s,'SUCCEEDED',%s,%s)
+                """,
+                [
+                    result_id,
+                    claim.runtime_job_id,
+                    claim.attempt_id,
+                    claim.fencing_token,
+                    Jsonb(result),
+                    result_hash,
+                ],
+            )
+            uow.cursor.execute(
+                """
+                UPDATE authority_runtime_job_attempt
+                SET status='SUCCEEDED', result_hash=%s, completed_at=NOW()
+                WHERE attempt_id=%s
+                """,
+                [result_hash, claim.attempt_id],
+            )
+            self._release_lease(uow, claim, reason="bounded_continuation")
+            uow.cursor.execute(
+                """
+                UPDATE authority_runtime_job
+                SET status='SUCCEEDED', claimed_by='', result_hash=%s,
+                    completed_at=NOW(), updated_at=NOW()
+                WHERE runtime_job_id=%s AND current_attempt_id=%s
+                  AND current_fencing_token=%s
+                """,
+                [
+                    result_hash,
+                    claim.runtime_job_id,
+                    claim.attempt_id,
+                    claim.fencing_token,
+                ],
+            )
+            if uow.cursor.rowcount != 1:
+                self._raise_stale_claim()
+            self._append_event(
+                uow,
+                runtime_job_id=claim.runtime_job_id,
+                attempt_id=claim.attempt_id,
+                event_type="runtime_job.succeeded_with_continuation",
+                worker_id=claim.worker_id,
+                fencing_token=claim.fencing_token,
+                payload={
+                    "result_id": result_id,
+                    "result_hash": result_hash,
+                    "continuation_runtime_job_id": continuation.runtime_job_id,
+                },
+            )
+            uow.cursor.execute(
+                """
+                INSERT INTO authority_runtime_job(
+                    runtime_job_id, job_kind, runtime_group, subject_kind,
+                    subject_id, project_id, dedupe_key, input_snapshot,
+                    input_hash, status, priority, available_at, max_attempts
+                ) VALUES (
+                    %s,%s,%s,%s,%s,%s,%s,%s,%s,'READY',%s,
+                    COALESCE(%s, NOW()),%s
+                )
+                ON CONFLICT DO NOTHING
+                """,
+                [
+                    continuation.runtime_job_id,
+                    continuation.job_kind,
+                    continuation.runtime_group,
+                    continuation.subject_kind,
+                    continuation.subject_id,
+                    continuation.project_id,
+                    continuation.dedupe_key,
+                    Jsonb(continuation.input_snapshot),
+                    continuation.input_hash,
+                    continuation.priority,
+                    continuation.available_at,
+                    continuation.max_attempts,
+                ],
+            )
+            created = uow.cursor.rowcount == 1
+            uow.cursor.execute(
+                """
+                SELECT input_hash, status
+                FROM authority_runtime_job
+                WHERE runtime_job_id=%s AND project_id=%s
+                FOR UPDATE
+                """,
+                [continuation.runtime_job_id, continuation.project_id],
+            )
+            next_row = uow.cursor.fetchone()
+            if next_row is None or str(next_row[0]) != continuation.input_hash:
+                raise KernelError(
+                    "RUNTIME_JOB_IDEMPOTENCY_CONFLICT",
+                    "continuation identity belongs to different input",
+                )
+            if created:
+                self._append_event(
+                    uow,
+                    runtime_job_id=continuation.runtime_job_id,
+                    attempt_id="",
+                    event_type="runtime_job.scheduled",
+                    worker_id="",
+                    fencing_token=0,
+                    payload={
+                        "job_kind": continuation.job_kind,
+                        "runtime_group": continuation.runtime_group,
+                        "subject_kind": continuation.subject_kind,
+                        "subject_id": continuation.subject_id,
+                        "input_hash": continuation.input_hash,
+                        "continued_from": claim.runtime_job_id,
+                    },
+                )
+            uow.commit()
+        return {
+            "runtime_job_id": claim.runtime_job_id,
+            "status": "SUCCEEDED",
+            "result_id": result_id,
+            "result_hash": result_hash,
+            "continuation_runtime_job_id": continuation.runtime_job_id,
+            "continuation_status": str(next_row[1]),
+            "continuation_created": created,
         }
 
     def fail(

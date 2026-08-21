@@ -76,6 +76,7 @@ from novel_forge.modules.context_builder.retrieval import (
 )
 from novel_forge.modules.book_authority.longform_projection import (
     AcceptedLongformEvidence,
+    frozen_arc_plan_version_ids,
     project_accepted_longform,
 )
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
@@ -980,19 +981,42 @@ class PostgresBookAuthority:
             uow.cursor.execute(
                 """
                 SELECT 1
-                FROM authority_book_narrative_projection_set
-                WHERE projection_set_id=%s AND project_id=%s AND book_id=%s
-                  AND chapter_number=%s AND status='COMPLETE'
-                  AND story_state_asset_version_id=%s
-                  AND canon_snapshot_asset_version_id=%s
+                FROM authority_book_narrative_projection_set AS projection
+                JOIN authority_book_chapter_acceptance AS acceptance
+                  ON acceptance.acceptance_id=projection.acceptance_id
+                 AND acceptance.longform_projection_set_id=
+                     projection.projection_set_id
+                 AND acceptance.status='COMMITTED'
+                WHERE projection.projection_set_id=%s
+                  AND projection.project_id=%s AND projection.book_id=%s
+                  AND projection.book_run_id=%s
+                  AND projection.chapter_number=%s
+                  AND projection.status='COMPLETE'
+                  AND projection.chapter_outcome_asset_version_id=%s
+                  AND projection.story_state_asset_version_id=%s
+                  AND projection.canon_snapshot_asset_version_id=%s
+                  AND acceptance.book_run_id=%s
+                  AND acceptance.project_id=%s
+                  AND acceptance.chapter_number=%s
+                  AND acceptance.chapter_outcome_asset_version_id=
+                      projection.chapter_outcome_asset_version_id
+                  AND acceptance.story_state_asset_version_id=
+                      projection.story_state_asset_version_id
+                  AND acceptance.canon_snapshot_asset_version_id=
+                      projection.canon_snapshot_asset_version_id
                 """,
                 [
                     projection_set_id,
                     book["project_id"],
                     book["book_id"],
+                    book["book_run_id"],
                     accepted_through,
+                    book["last_chapter_outcome_version_id"],
                     book["active_story_state_version_id"],
                     book["active_canon_snapshot_version_id"],
+                    book["book_run_id"],
+                    book["project_id"],
+                    accepted_through,
                 ],
             )
             complete = uow.cursor.fetchone()
@@ -1184,8 +1208,9 @@ class PostgresBookAuthority:
             outcome_content = dict(projection_inputs[0])
             story_state_content = dict(projection_inputs[1])
             chapter_plan_content = dict(projection_inputs[2])
-            active_arc_plan_versions = tuple(
-                book["longform_context_versions"].get("arc_plan_versions") or ()
+            active_arc_plan_versions = frozen_arc_plan_version_ids(
+                request_payload=dict(request.get("command_payload") or {}),
+                book_context=dict(book["longform_context_versions"]),
             )
             expected_progress_units = {
                 str(item.get("arc_plan_version_id") or item.get("arc_id") or ""):
@@ -1243,7 +1268,6 @@ class PostgresBookAuthority:
                     source_contract=str(
                         outcome_content.get("contract_version") or "UNKNOWN"
                     ),
-                    adaptation_context={"mode": "LIVE_ACCEPTANCE"},
                 )
             )
             uow.repositories.book_authority.commit_chapter_acceptance(

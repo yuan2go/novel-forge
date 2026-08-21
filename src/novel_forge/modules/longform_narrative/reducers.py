@@ -160,6 +160,7 @@ def build_arc_progress(
         deviation_units=(
             progress_units - expected_progress_units
             if expected_progress_units is not None
+            and observation not in _OBSERVATION_ZERO_ONLY
             else None
         ),
         evidence={

@@ -28,6 +28,10 @@ from .queries import (
     BookProgressProjection,
     PostgresBookProductionQuery,
 )
+from .projection_repair import (
+    PostgresBookProjectionRepairAuthority,
+    ProjectionRepairBatchResult,
+)
 
 __all__ = [
     "BookProductionState",
@@ -53,4 +57,6 @@ __all__ = [
     "BookFollowupAdmissionCandidate",
     "BookProgressProjection",
     "PostgresBookProductionQuery",
+    "PostgresBookProjectionRepairAuthority",
+    "ProjectionRepairBatchResult",
 ]

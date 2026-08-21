@@ -22,6 +22,7 @@ from novel_forge.modules.story_planning_runtime import (
 )
 
 from .input_resolver import BookProductionInputResolver
+from .projection_repair import PostgresBookProjectionRepairAuthority
 from .production import PostgresBookAuthority
 from .queries import PostgresBookProductionQuery
 from .supervisor import (
@@ -46,6 +47,7 @@ class BookProductionComposition:
     corrective_actions: CorrectiveActionQuery
     supervisor: PostgresBookProductionSupervisor
     principal: Principal
+    projection_repair: PostgresBookProjectionRepairAuthority
 
     def tick(self, book_run_id: str) -> BookProductionSupervisorTick:
         return self.supervisor.tick(book_run_id)
