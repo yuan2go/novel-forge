@@ -47,9 +47,17 @@ _EXTERNAL_RUNTIMES = (
 _EXTERNAL_BACKENDS = ("remote-external-action", "scripted-fixture")
 _AGENT_RUNTIMES = (
     ExecutionRuntimeClass.AGENT_WORKSPACE_TRANSACTION,
+    ExecutionRuntimeClass.REMOTE_PROVIDER_API,
+    ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE,
     ExecutionRuntimeClass.SCRIPTED_FIXTURE,
 )
-_AGENT_BACKENDS = ("agent-workspace", "scripted-fixture")
+_AGENT_BACKENDS = (
+    "agent-workspace",
+    "remote-provider",
+    "remote-provider-*",
+    "codex-cli",
+    "scripted-fixture",
+)
 
 
 class CapabilityRegistry:
@@ -329,11 +337,13 @@ def default_capability_registry() -> CapabilityRegistry:
                 ExecutionDomain.RETRIEVAL,
                 runtimes=(
                     ExecutionRuntimeClass.REMOTE_PROVIDER_API,
+                    ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE,
                     ExecutionRuntimeClass.REMOTE_EXTERNAL_ACTION,
                     ExecutionRuntimeClass.SCRIPTED_FIXTURE,
                 ),
                 backends=(
                     "remote-provider-*",
+                    "codex-cli",
                     "remote-external-action",
                     "scripted-fixture",
                 ),
