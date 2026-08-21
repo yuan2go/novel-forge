@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict
+from decimal import Decimal
 import hashlib
 import json
 from typing import Any, Callable, Mapping
@@ -55,6 +56,36 @@ from .harness_runtime import (
 
 
 AGENT_SESSION_STAGE = "agent_session"
+
+
+def _agent_turn_reservation_limits(
+    *, session: AgentHarnessSession, provider_call_cap: str
+) -> tuple[str, int]:
+    """Reserve only the unspent Session budget for the next model effect.
+
+    The authoritative aggregate gate still lives in the shared budget runtime.
+    This sizing prevents each Agent turn from presenting the whole Session cap
+    as a new reservation after earlier turns have already settled.
+    """
+
+    provider_maximum = Decimal(provider_call_cap)
+    remaining_cost = Decimal(session.budget.max_cost_amount) - Decimal(
+        session.usage.cost_amount
+    )
+    remaining_input_tokens = (
+        session.budget.max_input_tokens - session.usage.input_tokens
+    )
+    if remaining_cost < 0 or remaining_input_tokens <= 0:
+        raise KernelError(
+            "AGENT_HARNESS_BUDGET_EXHAUSTED",
+            "Agent Session has no reservable model-turn budget remaining",
+        )
+    if remaining_cost == 0 and provider_maximum > 0:
+        raise KernelError(
+            "AGENT_HARNESS_BUDGET_EXHAUSTED",
+            "Agent Session has no reservable model-turn cost remaining",
+        )
+    return str(min(provider_maximum, remaining_cost)), remaining_input_tokens
 
 
 def agent_route_execution_identity(
@@ -231,6 +262,10 @@ class PostgresProductionAgentModelTurnPort:
     ) -> AgentModelTurn:
         self._require_frozen_execution_contract(session)
         self._require_active_boundary(session)
+        reservation_amount, reservation_tokens = _agent_turn_reservation_limits(
+            session=session,
+            provider_call_cap=self.model_port.max_cost_per_call,
+        )
         context = self._context_asset(session, instruction)
         effect_instance = f"{request_id}:turn:{turn_number}"
         request = ChapterHandlerRequest(
@@ -264,6 +299,8 @@ class PostgresProductionAgentModelTurnPort:
         result = self.model_port.invoke(
             request,
             stage=AGENT_SESSION_STAGE,
+            reservation_amount=reservation_amount,
+            reservation_tokens=reservation_tokens,
             payload={
                 "agent_session_id": session.agent_session_id,
                 "operation_id": session.operation_id,

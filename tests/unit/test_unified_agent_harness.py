@@ -21,13 +21,18 @@ from novel_forge.modules.agent_runtime.harness import (
     UnifiedAgentHarness,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.agent_runtime.production import (
+    _agent_turn_reservation_limits,
+)
 
 
 class _Transcript:
     def __init__(self) -> None:
         self.events: list[dict[str, Any]] = []
 
-    def append_event(self, *, session: AgentHarnessSession, **values: Any) -> AgentHarnessSession:
+    def append_event(
+        self, *, session: AgentHarnessSession, **values: Any
+    ) -> AgentHarnessSession:
         self.events.append({"request_id": values["request_id"], **values})
         return replace(
             session,
@@ -197,6 +202,45 @@ def test_harness_observes_dynamic_tool_then_commits_final_response() -> None:
     ]
 
 
+def test_agent_turn_reserves_only_remaining_aggregate_budget() -> None:
+    session = replace(
+        _session(),
+        usage=AgentHarnessUsage(
+            turns=1,
+            tool_calls=1,
+            external_effects=1,
+            input_tokens=40,
+            output_tokens=5,
+            cost_amount="0.2",
+        ),
+    )
+
+    amount, tokens = _agent_turn_reservation_limits(
+        session=session,
+        provider_call_cap="1.0",
+    )
+
+    assert amount == "0.8"
+    assert tokens == 60
+
+
+def test_agent_turn_reservation_fails_before_effect_when_input_budget_is_spent() -> (
+    None
+):
+    session = replace(
+        _session(),
+        usage=AgentHarnessUsage(input_tokens=100),
+    )
+
+    with pytest.raises(KernelError) as raised:
+        _agent_turn_reservation_limits(
+            session=session,
+            provider_call_cap="1.0",
+        )
+
+    assert raised.value.code == "AGENT_HARNESS_BUDGET_EXHAUSTED"
+
+
 def test_harness_turn_budget_fails_closed_without_committing_request() -> None:
     transcript = _Transcript()
     model = _Model(
@@ -228,7 +272,9 @@ def test_harness_turn_budget_fails_closed_without_committing_request() -> None:
             attempt_id="attempt-1",
             trace_id="trace-1",
         )
-    assert transcript.events[-1]["event_type"] is AgentTranscriptEventType.REQUEST_FAILED
+    assert (
+        transcript.events[-1]["event_type"] is AgentTranscriptEventType.REQUEST_FAILED
+    )
     assert not any(
         event["event_type"] is AgentTranscriptEventType.REQUEST_COMMITTED
         for event in transcript.events

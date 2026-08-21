@@ -278,12 +278,44 @@ class ExternalEffectChapterModelPort:
         self.query = AuthorityAssetQuery(database_url)
         self.writer = AuthorityAssetWriter(database_url)
 
+    def _bounded_reservation_amount(self, requested: str | None) -> str:
+        if requested is None:
+            return self.max_cost_per_call
+        try:
+            amount = Decimal(requested)
+            maximum = Decimal(self.max_cost_per_call)
+        except (InvalidOperation, ValueError) as exc:
+            raise KernelError(
+                "MODEL_EFFECT_RESERVATION_OVERRIDE_INVALID",
+                "model effect reservation amount must be numeric",
+            ) from exc
+        if amount < 0 or amount > maximum:
+            raise KernelError(
+                "MODEL_EFFECT_RESERVATION_OVERRIDE_INVALID",
+                "model effect reservation amount must be within the Provider call cap",
+            )
+        return str(amount)
+
+    @staticmethod
+    def _bounded_reservation_tokens(requested: int | None, *, default: int) -> int:
+        if requested is None:
+            return default
+        tokens = int(requested)
+        if tokens < 0 or tokens > default:
+            raise KernelError(
+                "MODEL_EFFECT_RESERVATION_OVERRIDE_INVALID",
+                "model effect token reservation must be within the frozen context cap",
+            )
+        return tokens
+
     def invoke(
         self,
         request: ChapterHandlerRequest,
         *,
         stage: str,
         payload: dict[str, Any],
+        reservation_amount: str | None = None,
+        reservation_tokens: int | None = None,
     ) -> ModelProviderResult:
         if stage not in MODEL_CAPABILITY_STAGES | {"reader_outcome"}:
             raise KernelError(
@@ -294,6 +326,16 @@ class ExternalEffectChapterModelPort:
             request.command.get("payload")
             if isinstance(request.command.get("payload"), dict)
             else request.command
+        )
+        default_reservation_tokens = resolve_stage_context_token_budget(
+            business_payload, stage, default=0
+        )
+        bounded_reservation_amount = self._bounded_reservation_amount(
+            reservation_amount
+        )
+        bounded_reservation_tokens = self._bounded_reservation_tokens(
+            reservation_tokens,
+            default=default_reservation_tokens,
         )
         context = EffectCommandContext(
             operation_id=request.operation_id,
@@ -485,10 +527,8 @@ class ExternalEffectChapterModelPort:
                 stable_idempotency_key=f"budget:{stable_key}",
                 provider=self.adapter.provider,
                 currency="USD",
-                estimated_amount=self.max_cost_per_call,
-                estimated_tokens=resolve_stage_context_token_budget(
-                    business_payload, stage, default=0
-                ),
+                estimated_amount=bounded_reservation_amount,
+                estimated_tokens=bounded_reservation_tokens,
                 chapter=int(
                     business_payload.get("chapter_number")
                     or business_payload.get("chapter")
