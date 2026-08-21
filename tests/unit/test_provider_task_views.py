@@ -722,6 +722,8 @@ def test_agent_codex_prompt_accepts_query_tool_without_required_knowledge() -> N
     )
 
     assert "narrative.query_accepted" in prompt
+    assert "first ungrounded Agent turn" in prompt
+    assert "Returning FINAL" in prompt
     assert evidence["allowed_tools"] == [
         "model.provider.invoke",
         "narrative.query_accepted",

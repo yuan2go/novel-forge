@@ -1054,6 +1054,10 @@ def build_chapter_authority_application(
         in {"1", "true", "yes"},
         max_cost_per_model_call=execution.max_cost_per_call,
         budget_caps=execution.budget_caps(include_chapter_total=True),
+        # Retrieval projection is project/operation/provider governed but is
+        # not a Chapter-stage model effect.  Applying the Chapter aggregate
+        # cap here creates a cap with no Chapter budget lineage to charge.
+        embedding_budget_caps=execution.budget_caps(),
         # Ordinary Chapter model stages are governed Typed Capabilities. The
         # old per-stage Agent binding bridge remains migration-only and is not
         # reachable from canonical composition.

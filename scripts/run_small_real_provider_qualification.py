@@ -591,7 +591,10 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
                 max_turns=3,
                 max_tool_calls=2,
                 max_external_effects=4,
-                max_input_tokens=20_000,
+                # Two governed model turns each materialize the frozen Agent
+                # Skill and execution contract. Keep the aggregate bounded,
+                # but large enough for the required tool/observation roundtrip.
+                max_input_tokens=50_000,
                 max_output_tokens=4_000,
                 max_cost_amount="2.00",
             ),

@@ -1476,9 +1476,7 @@ def default_chapter_fixture_response(
                 "action": "TOOL_CALL",
                 "tool_call": {
                     "tool_name": str(first.get("tool_name") or ""),
-                    "arguments": {
-                        "payload_json": '{"scope":"accepted_boundary"}'
-                    },
+                    "arguments": {"payload_json": '{"scope":"accepted_boundary"}'},
                     "reason": "ground the proposal in accepted facts",
                 },
                 "final_response": None,
@@ -2479,6 +2477,19 @@ def _materialize_production_codex_prompt(
     stage_semantic_contract = _stage_semantic_contract(
         stage, required_language=required_language
     )
+    if (
+        stage == "agent_session"
+        and int(inputs.get("turn_number") or 0) == 1
+        and not inputs.get("observations")
+        and "narrative.query_accepted" in agent_tool_names
+    ):
+        stage_semantic_contract += (
+            " This is the first ungrounded Agent turn. You MUST return action "
+            "TOOL_CALL with tool_name narrative.query_accepted and arguments "
+            'payload_json set to a JSON object string (use "{}" when no narrower '
+            "query is needed). Returning FINAL before this governed accepted-boundary "
+            "query is semantically invalid."
+        )
     prompt = "\n\n".join(
         (
             "<system_instruction>\n" + system_text + "\n</system_instruction>",

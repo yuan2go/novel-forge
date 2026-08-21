@@ -46,6 +46,7 @@ class ChapterAuthorityApplication:
         allow_synchronous_fixture: bool = True,
         max_cost_per_model_call: str = "0",
         budget_caps: dict[str, str] | None = None,
+        embedding_budget_caps: dict[str, str] | None = None,
         agent_binding_recorder: ChapterAgentBindingRecorder | None = None,
         agent_binding_required: bool = False,
         runtime_fault_injector: Callable[[str], None] | None = None,
@@ -74,7 +75,11 @@ class ChapterAuthorityApplication:
                 adapter=model_adapter,
                 worker_id=f"{worker_id}:retrieval-embedding:model",
                 max_cost_per_call=max_cost_per_model_call,
-                budget_caps=budget_caps,
+                budget_caps=(
+                    embedding_budget_caps
+                    if embedding_budget_caps is not None
+                    else budget_caps
+                ),
                 fault_injector=runtime_fault_injector,
                 capability_binder=embedding_capability_binder,
                 execution_binding_domain="retrieval_projection",

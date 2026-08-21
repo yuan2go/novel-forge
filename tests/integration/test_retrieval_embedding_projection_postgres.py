@@ -286,6 +286,7 @@ class RetrievalEmbeddingProjectionPostgresTests(unittest.TestCase):
                 "NOVEL_FORGE_MODEL_PROVIDER": "scripted_provider_v2",
                 "NOVEL_FORGE_EMBEDDING_PROVIDER": "scripted_provider_v2",
                 "NOVEL_FORGE_EMBEDDING_MODEL": "scripted-embedding-v1",
+                "NOVEL_FORGE_CHAPTER_PROVIDER_CAP": "1.00",
                 "NOVEL_FORGE_COMMIT_SHA": "e" * 40,
                 "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": str(
                     Path(directory) / "objects"
@@ -297,6 +298,14 @@ class RetrievalEmbeddingProjectionPostgresTests(unittest.TestCase):
                 execution=execution,
                 env=env,
                 runtime_fault_injector=fault,
+            )
+            self.assertEqual(
+                application._model_port.budget_caps.get("chapter_total"),  # noqa: SLF001
+                "1.00",
+            )
+            self.assertNotIn(
+                "chapter_total",
+                application._embedding_model_port.budget_caps,  # type: ignore[union-attr] # noqa: SLF001
             )
             runtime = application.embedding_projection_runtime
             self.assertIsNotNone(runtime)
@@ -470,7 +479,9 @@ class RetrievalEmbeddingProjectionPostgresTests(unittest.TestCase):
                 self.assertEqual(row[4], expected[4])
                 if label == "unresolved":
                     self.assertGreaterEqual(adapter.recovery_authorizations, 2)
-                    self.assertEqual(runtime.schedule_pending(project_id=project_id), ())
+                    self.assertEqual(
+                        runtime.schedule_pending(project_id=project_id), ()
+                    )
                 self.assertTrue(document_id)
 
     def test_retry_exhaustion_dead_letters_without_reusing_an_unknown_effect(
@@ -489,7 +500,9 @@ class RetrievalEmbeddingProjectionPostgresTests(unittest.TestCase):
         for _attempt_number in range(3):
             with self.assertRaises(KernelError) as failure:
                 runtime.tick(project_id=project_id, operation_id=operation_id)
-            self.assertTrue(failure.exception.code.startswith("MODEL_EFFECT_RETRYABLE_"))
+            self.assertTrue(
+                failure.exception.code.startswith("MODEL_EFFECT_RETRYABLE_")
+            )
         exhausted = runtime.tick(project_id=project_id, operation_id=operation_id)
         self.assertEqual(exhausted.status, "DEAD_LETTER")
         with transaction() as connection, connection.cursor() as cursor:
@@ -706,9 +719,14 @@ class RetrievalEmbeddingProjectionPostgresTests(unittest.TestCase):
         source_version_id = identifier("embedding-recovery-source-version")
         content_text = f"Accepted semantic source for {label}."
         source_content = {"chapter": 1, "text": content_text}
-        source_hash = "sha256:" + hashlib.sha256(
-            json.dumps(source_content, sort_keys=True, separators=(",", ":")).encode()
-        ).hexdigest()
+        source_hash = (
+            "sha256:"
+            + hashlib.sha256(
+                json.dumps(
+                    source_content, sort_keys=True, separators=(",", ":")
+                ).encode()
+            ).hexdigest()
+        )
         document_id = identifier("embedding-recovery-document")
         document = {
             "retrieval_document_id": document_id,
@@ -721,9 +739,12 @@ class RetrievalEmbeddingProjectionPostgresTests(unittest.TestCase):
             "content_text": content_text,
             "metadata": {"projection_kind": "recent_accepted_prose"},
         }
-        projection_hash = "sha256:" + hashlib.sha256(
-            json.dumps(document, sort_keys=True, separators=(",", ":")).encode()
-        ).hexdigest()
+        projection_hash = (
+            "sha256:"
+            + hashlib.sha256(
+                json.dumps(document, sort_keys=True, separators=(",", ":")).encode()
+            ).hexdigest()
+        )
         with transaction() as connection, connection.cursor() as cursor:
             insert_definition(cursor, definition_name)
             insert_operation(
