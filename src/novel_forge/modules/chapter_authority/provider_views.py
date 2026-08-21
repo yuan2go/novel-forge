@@ -221,8 +221,14 @@ def build_provider_task_view(stage: str, inputs: Mapping[str, Any]) -> dict[str,
             )
         return _task(
             stage,
+            agent_session_id=str(inputs.get("agent_session_id") or ""),
+            operation_id=str(inputs.get("operation_id") or ""),
             instruction=str(inputs.get("instruction") or ""),
             accepted_boundary=_compact(boundary),
+            execution_contract_hash=str(inputs.get("execution_contract_hash") or ""),
+            execution_contract_summary=_compact(
+                inputs.get("execution_contract_summary")
+            ),
             tools=_compact(tools),
             skills=_compact(inputs.get("skills")),
             committed_transcript=_compact(inputs.get("committed_transcript")),

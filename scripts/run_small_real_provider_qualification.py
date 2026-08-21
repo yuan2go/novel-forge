@@ -563,9 +563,13 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
             agent_session_id=f"agent-session:{project_id}",
             agent_role=AutonomousAgentRole.STUDIO_DIRECTOR,
             instruction=(
-                "Your first action MUST call narrative.query_accepted exactly once. "
-                "After receiving the Tool observation, call no other Tool and return "
-                "a concise final response confirming only what the accepted boundary proves."
+                "This is an already admitted, frozen, read-only qualification session; "
+                "the execution contract summary supplied with this turn is sufficient. "
+                "Your first action MUST call narrative.query_accepted exactly once, "
+                "with an empty JSON object as its arguments. Do not hard-stop or ask "
+                "for more contract fields. After receiving the Tool observation, call "
+                "no other Tool and return a concise final response confirming only "
+                "what the accepted boundary proves."
             ),
             accepted_boundary=AcceptedBoundaryRef(
                 book_id=book_id,

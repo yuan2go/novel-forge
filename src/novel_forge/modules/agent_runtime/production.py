@@ -265,8 +265,27 @@ class PostgresProductionAgentModelTurnPort:
             request,
             stage=AGENT_SESSION_STAGE,
             payload={
+                "agent_session_id": session.agent_session_id,
+                "operation_id": session.operation_id,
                 "instruction": instruction,
                 "accepted_boundary": asdict(session.accepted_boundary),
+                "execution_contract_hash": session.execution_contract_hash,
+                "execution_contract_summary": {
+                    "contract_version": session.execution_contract.get(
+                        "contract_version"
+                    ),
+                    "release_sha": session.execution_contract.get("release_sha"),
+                    "authority_policy": session.execution_contract.get(
+                        "authority_policy"
+                    ),
+                    "runtime_binding": dict(
+                        session.execution_contract.get("runtime_binding") or {}
+                    ),
+                    "policy_hash": dict(
+                        session.execution_contract.get("agent_policy") or {}
+                    ).get("policy_hash"),
+                    "budget": asdict(session.budget),
+                },
                 "tools": [self._tool_payload(item) for item in session.tool_policy],
                 "skills": [dict(item) for item in session.skill_bindings],
                 "committed_transcript": [dict(item) for item in committed_transcript],

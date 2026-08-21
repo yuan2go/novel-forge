@@ -59,9 +59,22 @@ def test_agent_turn_contract_requires_exactly_one_action() -> None:
             "final_response": None,
         },
     )
-    assert normalize_model_output("agent_session", tool)["tool_call"][
-        "tool_name"
-    ] == "narrative.query_accepted"
+    normalized = normalize_model_output("agent_session", tool)
+    assert normalized["tool_call"]["tool_name"] == "narrative.query_accepted"
+    assert normalized["tool_call"]["arguments"] == {}
+    assert normalize_model_output("agent_session", normalized) == normalized
+    final = validate_chapter_provider_output_schema(
+        "agent_session",
+        {
+            "message": "Report the bounded result.",
+            "action": "FINAL",
+            "tool_call": None,
+            "final_response": {"payload_json": '{"accepted_only":true}'},
+        },
+    )
+    normalized_final = normalize_model_output("agent_session", final)
+    assert normalized_final["final_response"] == {"accepted_only": True}
+    assert normalize_model_output("agent_session", normalized_final) == normalized_final
     with pytest.raises(KernelError, match="exactly one"):
         normalize_model_output(
             "agent_session",

@@ -1193,6 +1193,13 @@ def _decode_agent_json_envelope(
         raise KernelError(
             "MODEL_RESPONSE_INVALID", f"Agent {field} envelope is missing"
         )
+    if "payload_json" not in value:
+        decoded = dict(value)
+        if decoded or allow_empty:
+            return decoded
+        raise KernelError(
+            "MODEL_RESPONSE_INVALID", f"Agent {field} must decode to an object"
+        )
     payload_json = value.get("payload_json")
     if not isinstance(payload_json, str):
         raise KernelError(
