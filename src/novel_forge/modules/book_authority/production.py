@@ -239,9 +239,14 @@ BOOK_PRODUCTION_STATE_SEMANTICS: dict[
         blocking_class="LEGACY_STATE_RECOVERY",
     ),
     BookProductionState.CHECKPOINT_PENDING: _state_semantics(
-        BookProductionStateClass.ACTIONABLE,
-        "NORMALIZE_LEGACY_NON_BLOCKING_FOLLOWUP_STATE",
-        blocking_class="LEGACY_STATE_RECOVERY",
+        BookProductionStateClass.DURABLE_WAIT,
+        "RECONCILE_ARC_CHECKPOINT_FOLLOWUP",
+        blocking_class="ARC_CHECKPOINT_FOLLOWUP_WAIT",
+        blocking_reason=(
+            "accepted Arc checkpoint requires a future-only correction or "
+            "replan decision before another Chapter may start"
+        ),
+        wake_condition="ARC_CHECKPOINT_FOLLOWUP_STATE_CHANGED",
     ),
     BookProductionState.REPLAN_REQUIRED: _state_semantics(
         BookProductionStateClass.ACTIONABLE, "CREATE_GOVERNED_REPLAN"
@@ -1535,6 +1540,30 @@ class PostgresBookAuthority:
         if book["state"] != BookProductionState.PAUSED.value:
             raise KernelError(
                 "BOOK_GATE_NOT_PAUSED", "only a paused Book production can resume"
+            )
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT status, followup_id
+                FROM authority_arc_checkpoint_followup
+                WHERE book_run_id=%s
+                  AND projection_set_id=%s
+                  AND status IN (
+                    'FAILED_FINAL','DEAD_LETTER','CANCELLED',
+                    'MANUAL_INTERVENTION'
+                  )
+                ORDER BY updated_at DESC, followup_id
+                LIMIT 1
+                """,
+                [book_run_id, str(book["active_longform_projection_set_id"] or "")],
+            )
+            unresolved_arc_followup = uow.cursor.fetchone()
+        if unresolved_arc_followup is not None:
+            raise KernelError(
+                "ARC_CHECKPOINT_RECOVERY_REQUIRED",
+                "Book cannot resume until terminal Arc follow-up evidence is "
+                "resolved or the Book is explicitly aborted: "
+                f"{unresolved_arc_followup[1]} ({unresolved_arc_followup[0]})",
             )
         context = self._book_graph_context(book, principal.principal_id)
         transition_saga_gate(

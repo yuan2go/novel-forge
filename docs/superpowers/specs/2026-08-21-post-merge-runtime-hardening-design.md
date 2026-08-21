@@ -36,10 +36,11 @@ READY -> RUNNING -> PROPOSED -> WAITING_APPROVAL -> COMPLETED
 `FAILED_RETRYABLE` keeps the stable follow-up/idempotency identity and is
 actionable for retry. Exhaustion, `FAILED_FINAL`, `DEAD_LETTER` and unresolved
 reconciliation record terminal evidence and place the Book in the existing
-non-advancing governed/manual state. `CANCELLED` records cancellation evidence,
-clears no accepted pointer and requires an explicit new checkpoint request or
-operator recovery. No failure rewrites Accepted Chapter, Canon, Story State or
-Arc Actual.
+non-advancing governed/manual state. `CANCELLED` records cancellation evidence
+and clears no accepted pointer. A Book with unresolved terminal follow-up
+evidence cannot use generic resume to skip the checkpoint; an operator must
+resolve the evidence through a governed repair/replan or explicitly abort. No
+failure rewrites Accepted Chapter, Canon, Story State or Arc Actual.
 
 ## Embedding unknown-state closure
 

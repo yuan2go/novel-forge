@@ -45,6 +45,7 @@ from novel_forge.storage.migrations.versions import (
     v20260820_0093_book_liveness_critical_path_closure as liveness_migration,
     v20260820_0094_industrial_autonomous_novel_os as novel_os_migration,
     v20260821_0095_post_merge_correctness_repair as repair_migration,
+    v20260821_0096_runtime_hardening as runtime_hardening_migration,
 )
 
 
@@ -88,7 +89,8 @@ def test_capability_pack_authority_remains_in_linear_migration_chain() -> None:
     assert liveness_migration.DOWN_REVISION == correctness_migration.MIGRATION_ID
     assert novel_os_migration.DOWN_REVISION == liveness_migration.MIGRATION_ID
     assert repair_migration.DOWN_REVISION == novel_os_migration.MIGRATION_ID
-    assert LATEST_MIGRATION_ID == repair_migration.MIGRATION_ID
+    assert runtime_hardening_migration.DOWN_REVISION == repair_migration.MIGRATION_ID
+    assert LATEST_MIGRATION_ID == runtime_hardening_migration.MIGRATION_ID
     assert migration.FORWARD_ONLY is True
 
 

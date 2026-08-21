@@ -16,6 +16,9 @@ from novel_forge.modules.book_authority.production import PostgresBookAuthority
 from novel_forge.modules.book_authority.projection_repair import (
     PostgresBookProjectionRepairAuthority,
 )
+from novel_forge.modules.book_followup_authority.coordinator import (
+    PostgresBookFollowupCoordinator,
+)
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.context_builder.production_retrieval import (
     build_retrieval_query_plan,
@@ -32,6 +35,7 @@ from tests.integration.authority_postgres_support import DATABASE_URL
 REVISION_0093 = "20260820_0093_book_liveness_critical_path_closure"
 REVISION_0094 = "20260820_0094_industrial_autonomous_novel_os"
 REVISION_0095 = "20260821_0095_post_merge_correctness_repair"
+REVISION_0096 = "20260821_0096_runtime_hardening"
 
 
 def _database_url(database_name: str) -> str:
@@ -707,6 +711,226 @@ class BookProjectionRepairUpgradePostgresTests(unittest.TestCase):
         self.assertEqual(followup[0:2], ("CORRECT", "READY"))
         self.assertEqual(followup[2], ["promise:repair"])
         self.assertEqual(followup[3], "CHECKPOINT_PENDING")
+
+    def test_arc_followup_reconciles_canonical_failures_and_retry_replay(self) -> None:
+        _apply_through(self.database_url, REVISION_0093)
+        arc_content = {
+            "contract_version": "arc-plan-v1",
+            "logical_key": "arc:repair-upgrade",
+            "objective": "pay the accepted promise",
+            "dependencies": [],
+            "closure_conditions": ["promise is paid on page"],
+            "target_progress_units": 5,
+            "target_window": {"from_chapter": 1, "to_chapter": 10},
+        }
+        outcome_contents = {
+            chapter: {
+                "contract_version": "chapter-outcome-v3",
+                "project_id": "project:repair-upgrade",
+                "book_id": "book:repair-upgrade",
+                "chapter_number": chapter,
+                "arc_evidence": [
+                    {
+                        "arc_plan_version_id": "arc-plan:repair-upgrade:v1",
+                        "observation_status": "OBSERVED",
+                        "contribution_kind": "PRIMARY",
+                        "progress_units": 1 if chapter == 1 else 0,
+                        "resolution_evidence": [f"scene:{chapter}:1"],
+                        "obligation_ids": ["promise:repair"],
+                    }
+                ],
+            }
+            for chapter in (1, 2)
+        }
+        story_state = {
+            "current_state": {
+                "narrative_obligation": [
+                    {
+                        "entity_key": "obligation_id=promise:repair",
+                        "state": {
+                            "obligation_id": "promise:repair",
+                            "obligation_type": "PROMISE",
+                            "status": "OPEN",
+                            "opened_chapter": 1,
+                            "target_window": {
+                                "status": "SCHEDULED",
+                                "from_chapter": 1,
+                                "to_chapter": 1,
+                            },
+                            "linked_arc_ids": ["arc-plan:repair-upgrade:v1"],
+                        },
+                    }
+                ]
+            }
+        }
+        scope = _seed_accepted_history(
+            self.database_url,
+            arc_content=arc_content,
+            outcome_contents=outcome_contents,
+            story_state_contents={2: story_state},
+        )
+        _apply_through(self.database_url, REVISION_0096)
+        jobs = RuntimeJobAuthority(self.database_url)
+        claim = jobs.claim(
+            runtime_group="book_repair",
+            worker_id="arc-followup-hardening-worker",
+            lease_seconds=30,
+            job_kinds=("BOOK_PROJECTION_REPAIR",),
+        )
+        assert claim is not None
+        jobs.start(claim)
+        repaired = PostgresBookProjectionRepairAuthority(
+            self.database_url,
+            application_build_id="repair-upgrade-test",
+            commit_sha="a" * 40,
+        ).run_batch(claim, actor_id="arc-followup-hardening-worker", maximum_chapters=4)
+        self.assertTrue(repaired.complete)
+
+        recap_operation_id = "operation:arc-followup-hardening:recap"
+        with psycopg.connect(self.database_url) as connection, connection.cursor() as cursor:
+            _insert_operation(
+                cursor,
+                recap_operation_id,
+                scope["project_id"],
+                "workspace:repair-upgrade",
+            )
+            revision_id = "arc-revision:hardening:v1"
+            revision_hash = _insert_asset(
+                cursor,
+                project_id=scope["project_id"],
+                asset_version_id=revision_id,
+                asset_type="arc_revision_candidate",
+                content={"type": "ArcRevisionCandidate", "future_only": True},
+            )
+            cursor.execute(
+                """
+                INSERT INTO authority_operation_output_asset(
+                    operation_id, asset_id, asset_version_id,
+                    output_key, role, content_hash
+                ) VALUES (%s,%s,%s,'longform.recap.replan_request',
+                          'proposal',%s)
+                """,
+                [recap_operation_id, "asset:" + revision_id, revision_id, revision_hash],
+            )
+            cursor.execute(
+                """
+                UPDATE authority_arc_checkpoint_followup
+                SET operation_id=%s,status='RUNNING',last_error='{}'::jsonb
+                WHERE book_run_id=%s
+                """,
+                [recap_operation_id, scope["book_run_id"]],
+            )
+            truth_before = cursor.execute(
+                """
+                SELECT accepted_through_chapter,active_story_state_version_id,
+                       active_canon_snapshot_version_id,
+                       active_longform_projection_set_id
+                FROM authority_book_production WHERE book_run_id=%s
+                """,
+                [scope["book_run_id"]],
+            ).fetchone()
+            connection.commit()
+
+        coordinator = PostgresBookFollowupCoordinator(
+            SimpleNamespace(database_url=self.database_url),
+            query=SimpleNamespace(),
+            principal=SimpleNamespace(),
+        )
+
+        for operation_status, followup_status, book_state in (
+            ("FAILED_RETRYABLE", "FAILED_RETRYABLE", "CHECKPOINT_PENDING"),
+            ("RECONCILIATION_REQUIRED", "RECONCILIATION_REQUIRED", "CHECKPOINT_PENDING"),
+            ("FAILED_FINAL", "FAILED_FINAL", "PAUSED"),
+            ("DEAD_LETTER", "DEAD_LETTER", "PAUSED"),
+            ("CANCELLED", "CANCELLED", "PAUSED"),
+        ):
+            with self.subTest(operation_status=operation_status):
+                with psycopg.connect(self.database_url) as connection:
+                    connection.execute(
+                        """
+                        UPDATE authority_operation
+                        SET status=%s,version=version+1 WHERE operation_id=%s
+                        """,
+                        [operation_status, recap_operation_id],
+                    )
+                    connection.execute(
+                        """
+                        UPDATE authority_arc_checkpoint_followup
+                        SET status='RUNNING',last_error='{}'::jsonb,version=version+1
+                        WHERE operation_id=%s
+                        """,
+                        [recap_operation_id],
+                    )
+                    connection.execute(
+                        """
+                        UPDATE authority_book_production
+                        SET state='CHECKPOINT_PENDING',paused_reason='',failure_reason='',
+                            version=version+1 WHERE book_run_id=%s
+                        """,
+                        [scope["book_run_id"]],
+                    )
+                    connection.commit()
+                coordinator.reconcile_arc_checkpoint_followup(recap_operation_id)
+                coordinator.reconcile_arc_checkpoint_followup(recap_operation_id)
+                with psycopg.connect(self.database_url) as connection:
+                    observed = connection.execute(
+                        """
+                        SELECT followup.status,followup.last_error->>'operation_status',
+                               book.state,book.accepted_through_chapter,
+                               book.active_story_state_version_id,
+                               book.active_canon_snapshot_version_id,
+                               book.active_longform_projection_set_id
+                        FROM authority_arc_checkpoint_followup AS followup
+                        JOIN authority_book_production AS book
+                          ON book.book_run_id=followup.book_run_id
+                        WHERE followup.operation_id=%s
+                        """,
+                        [recap_operation_id],
+                    ).fetchone()
+                self.assertEqual(observed[0:3], (followup_status, operation_status, book_state))
+                self.assertEqual(observed[3:], truth_before)
+
+        for decision in ("CORRECT", "REPLAN_REQUIRED"):
+            with self.subTest(decision=decision):
+                with psycopg.connect(self.database_url) as connection:
+                    connection.execute(
+                        "UPDATE authority_operation SET status='SUCCEEDED',version=version+1 WHERE operation_id=%s",
+                        [recap_operation_id],
+                    )
+                    connection.execute(
+                        """
+                        UPDATE authority_arc_checkpoint_followup
+                        SET decision=%s,status='RUNNING',last_error='{}'::jsonb,
+                            version=version+1 WHERE operation_id=%s
+                        """,
+                        [decision, recap_operation_id],
+                    )
+                    connection.execute(
+                        """
+                        UPDATE authority_book_production
+                        SET state='CHECKPOINT_PENDING',paused_reason='',failure_reason='',
+                            version=version+1 WHERE book_run_id=%s
+                        """,
+                        [scope["book_run_id"]],
+                    )
+                    connection.commit()
+                coordinator.reconcile_arc_checkpoint_followup(recap_operation_id)
+                coordinator.reconcile_arc_checkpoint_followup(recap_operation_id)
+                with psycopg.connect(self.database_url) as connection:
+                    success = connection.execute(
+                        """
+                        SELECT followup.status,book.state,
+                               (SELECT COUNT(*) FROM authority_operation_output_asset
+                                WHERE operation_id=%s
+                                  AND output_key='longform.recap.replan_request')
+                        FROM authority_arc_checkpoint_followup AS followup
+                        JOIN authority_book_production AS book
+                          ON book.book_run_id=followup.book_run_id
+                        WHERE followup.operation_id=%s
+                        """,
+                        [recap_operation_id, recap_operation_id],
+                    ).fetchone()
+                self.assertEqual(success, ("PROPOSED", "REPLAN_REQUIRED", 1))
 
     def test_postgresql_fts_retrieval_freezes_memo_boundary_and_excludes_future(
         self,

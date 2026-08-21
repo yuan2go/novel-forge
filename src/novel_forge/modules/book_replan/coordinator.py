@@ -143,6 +143,7 @@ class BookReplanCoordinator:
         plan_change: PostgresPlanChangeAuthority,
         input_resolver: BookProductionInputResolver,
         principal: Principal,
+        fault_injector: Any | None = None,
     ) -> None:
         if not database_url:
             raise ValueError("Book Replan requires PostgreSQL")
@@ -152,6 +153,7 @@ class BookReplanCoordinator:
         self.plan_change = plan_change
         self.input_resolver = input_resolver
         self.principal = principal
+        self.fault_injector = fault_injector or (lambda _checkpoint: None)
 
     def start(self, command: CoordinateBookReplanCommand) -> dict[str, Any]:
         self.principal.require("book.authority.execute", command.project_id)
@@ -271,6 +273,7 @@ class BookReplanCoordinator:
             ),
             principal=self.principal,
         )
+        self.fault_injector("after_plan_change_proposal_before_replan_checkpoint")
         replan_id = (
             "book-replan:"
             + hashlib.sha256(

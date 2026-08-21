@@ -9,8 +9,10 @@ from novel_forge.modules.book_authority.input_resolver import (
 from novel_forge.modules.book_authority.production import (
     LONGFORM_CONTEXT_VERSION_KEYS,
     BookProductionState,
+    BookProductionStateClass,
     PostgresBookAuthority,
     SubmitBookChapterCommand,
+    book_production_state_semantics,
     stable_chapter_submission_key,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
@@ -24,6 +26,20 @@ from novel_forge.storage.migrations.runner import MIGRATIONS
 
 
 class BookProductionAuthorityTests(unittest.TestCase):
+    def test_arc_checkpoint_pending_is_a_durable_non_dispatching_wait(self) -> None:
+        semantics = book_production_state_semantics(
+            BookProductionState.CHECKPOINT_PENDING
+        )
+
+        self.assertEqual(semantics.state_class, BookProductionStateClass.DURABLE_WAIT)
+        self.assertEqual(
+            semantics.next_expected_transition,
+            "RECONCILE_ARC_CHECKPOINT_FOLLOWUP",
+        )
+        self.assertEqual(
+            semantics.wake_condition, "ARC_CHECKPOINT_FOLLOWUP_STATE_CHANGED"
+        )
+
     def test_resolved_input_snapshot_exposes_api_serialization(self) -> None:
         self.assertTrue(callable(BookProductionInputSnapshot.to_dict))
 
@@ -123,8 +139,8 @@ class BookProductionAuthorityTests(unittest.TestCase):
             recap["output_contract"]["auxiliary_asset_types"],
         )
         self.assertEqual(
-            recap["output_contract"]["optional_auxiliary_asset_types"],
-            ["replan_request"],
+            set(recap["output_contract"]["optional_auxiliary_asset_types"]),
+            {"replan_request", "arc_revision_candidate"},
         )
 
     def test_book_states_and_database_constraints_cover_recovery(self) -> None:
