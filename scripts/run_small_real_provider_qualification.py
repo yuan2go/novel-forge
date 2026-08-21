@@ -821,7 +821,7 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
         """
         SELECT sequence,event_type,payload,payload_hash,created_at
         FROM authority_agent_transcript_event
-        WHERE agent_session_id=%s ORDER BY sequence_number
+        WHERE agent_session_id=%s ORDER BY sequence
         """,
         (str(admitted_agent["agent_session_id"]),),
     )
