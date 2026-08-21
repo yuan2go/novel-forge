@@ -166,6 +166,32 @@ def _retrieval_embedding_output_contract(
     }
 
 
+def _provider_context_selection(
+    stage: str,
+    selected_inputs: list[dict[str, Any]],
+    *,
+    retrieval_projection: bool,
+) -> list[dict[str, Any]]:
+    if retrieval_projection:
+        context = selected_inputs
+    elif stage == "retrieval":
+        context = [
+            item for item in selected_inputs if item["artifact_type"] == "chapter_memo"
+        ]
+    else:
+        context = [
+            item
+            for item in selected_inputs
+            if item["artifact_type"] == "context_bundle"
+        ]
+    if len(context) != 1:
+        raise KernelError(
+            "CHAPTER_CAPABILITY_CONTEXT_INVALID",
+            "controlled execution requires exactly one frozen Provider context",
+        )
+    return context
+
+
 def _stage_tool_permissions(
     policy: Mapping[str, Any], stage: str
 ) -> tuple[tuple[str, ...], tuple[str, ...]]:
@@ -425,20 +451,11 @@ class PostgresChapterExecutionContractBinder:
             str(metadata.get("execution_binding_domain") or "")
             == "retrieval_projection"
         )
-        context_selection = (
-            selected_inputs
-            if retrieval_projection
-            else [
-                item
-                for item in selected_inputs
-                if item["artifact_type"] == "context_bundle"
-            ]
+        context_selection = _provider_context_selection(
+            stage,
+            selected_inputs,
+            retrieval_projection=retrieval_projection,
         )
-        if len(context_selection) != 1:
-            raise KernelError(
-                "CHAPTER_CAPABILITY_CONTEXT_INVALID",
-                "controlled execution requires exactly one frozen Provider context",
-            )
         tool_payload = json.loads(
             attempt_snapshot.execution_snapshot.tool_policy_payload_json
         )

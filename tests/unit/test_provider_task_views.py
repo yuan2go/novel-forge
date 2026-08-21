@@ -17,6 +17,7 @@ from novel_forge.modules.chapter_authority.execution_gateway import (
     PostgresChapterExecutionContractBinder,
     PostgresRetrievalProjectionExecutionContractBinder,
     _materialize_chapter_codex_prompt,
+    _provider_context_selection,
     _stage_tool_permissions,
 )
 from novel_forge.modules.capability_packs.artifacts import (
@@ -896,6 +897,32 @@ def test_retrieval_projection_binds_source_asset_scope_without_chapter_zero() ->
         "asset-version:accepted-input",
         "stage:retrieval",
     )
+
+
+def test_chapter_retrieval_uses_only_frozen_memo_as_provider_context() -> None:
+    selected = [
+        {"artifact_type": "chapter_plan", "asset_version_id": "plan:v1"},
+        {"artifact_type": "chapter_execution_intent", "asset_version_id": "intent:v1"},
+        {"artifact_type": "chapter_memo", "asset_version_id": "memo:v1"},
+    ]
+
+    assert _provider_context_selection(
+        "retrieval", selected, retrieval_projection=False
+    ) == [{"artifact_type": "chapter_memo", "asset_version_id": "memo:v1"}]
+
+
+def test_chapter_retrieval_rejects_ambiguous_memo_context() -> None:
+    with pytest.raises(KernelError) as raised:
+        _provider_context_selection(
+            "retrieval",
+            [
+                {"artifact_type": "chapter_memo", "asset_version_id": "memo:v1"},
+                {"artifact_type": "chapter_memo", "asset_version_id": "memo:v2"},
+            ],
+            retrieval_projection=False,
+        )
+
+    assert raised.value.code == "CHAPTER_CAPABILITY_CONTEXT_INVALID"
 
 
 def test_retrieval_projection_scope_requires_frozen_source_asset() -> None:
