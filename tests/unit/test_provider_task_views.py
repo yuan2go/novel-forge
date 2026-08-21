@@ -1000,3 +1000,24 @@ def test_retrieval_projection_freezes_domain_materialization_before_effect() -> 
         preflight.effect_binding["materialization_hash"]
         == contract["materialization_hash"]
     )
+
+    first_contract = dict(contract)
+    binder.freeze_before_external_effect(
+        capability="model.retrieval",
+        request_payload={
+            "stage": "retrieval",
+            "trace_id": "trace:1",
+            "correlation_id": "correlation:1",
+            "_production_execution": {
+                "operation_id": "operation:1",
+                "attempt_id": "attempt:1",
+                "project_id": "project:1",
+                "fencing_token": 3,
+                "source_asset_version_id": "asset-version:accepted",
+                "source_content_hash": "sha256:" + "b" * 64,
+            },
+        },
+        snapshot_fencing_token=4,
+        snapshot_worker_id="worker:recovery",
+    )
+    assert captured["contract"] == first_contract

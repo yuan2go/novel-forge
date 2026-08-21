@@ -1566,7 +1566,9 @@ class PostgresRetrievalProjectionExecutionContractBinder(
             "operation_id": operation_id,
             "attempt_id": attempt_id,
             "execution_fencing_token": execution_fencing_token,
-            "snapshot_creation_fencing_token": snapshot_fencing_token,
+            # A recovery worker's newer fence authorizes takeover but must not
+            # alter the original Provider execution semantics.
+            "snapshot_creation_fencing_token": execution_fencing_token,
             "source_asset_version_id": source_asset_version_id,
             "source_content_hash": source_content_hash,
             "route_identity": {
