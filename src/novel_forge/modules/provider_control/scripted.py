@@ -116,6 +116,12 @@ class ScriptedProviderAdapterV2:
                 "plot_thread_changes": [], "resource_state_changes": [],
                 "narrative_pattern_fingerprints": [], "theme_movements": [],
                 "antagonist_pressure_changes": [],
+                "character_knowledge_changes": [],
+                "character_belief_changes": [],
+                "character_arc_changes": [],
+                "arc_state_changes": [],
+                "disclosure_events": [],
+                "arc_evidence": [],
             }
         if request.stage.startswith("quality_"):
             inputs = request.request_payload.get("input")

@@ -156,7 +156,7 @@ UPGRADE_STATEMENTS = [
         idempotency_key TEXT NOT NULL,
         trace_id TEXT NOT NULL,
         operation_id TEXT REFERENCES authority_operation(operation_id),
-        plan_change_id TEXT,
+        plan_change_id TEXT REFERENCES authority_plan_change_proposal(proposal_id),
         last_error JSONB NOT NULL DEFAULT '{}'::jsonb,
         version BIGINT NOT NULL DEFAULT 1 CHECK (version > 0),
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -297,6 +297,10 @@ UPGRADE_STATEMENTS = [
     """
     CREATE INDEX authority_arc_checkpoint_followup_operation_idx
     ON authority_arc_checkpoint_followup(operation_id)
+    """,
+    """
+    CREATE INDEX authority_arc_checkpoint_followup_plan_change_idx
+    ON authority_arc_checkpoint_followup(plan_change_id)
     """,
     """
     CREATE INDEX authority_retrieval_embedding_projection_status_idx

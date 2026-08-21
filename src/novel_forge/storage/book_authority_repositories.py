@@ -325,6 +325,10 @@ class BookAuthorityRepository:
         expected_book_version: int,
         before_cursor_advance: Callable[[], None] | None = None,
     ) -> bool:
+        checkpoint_followup_required = any(
+            str(item.get("decision") or "") in {"CORRECT", "REPLAN_REQUIRED"}
+            for item in longform_projection_set.get("arc_checkpoints") or ()
+        )
         self.cursor.execute(
             """
             INSERT INTO authority_book_chapter_acceptance(
@@ -388,7 +392,7 @@ class BookAuthorityRepository:
                 active_canon_snapshot_version_id=%s,
                 last_chapter_outcome_version_id=%s,
                 active_longform_projection_set_id=%s,
-                state='READY',
+                state=%s,
                 version=version+1, updated_at=NOW()
             WHERE book_run_id=%s
               AND accepted_through_chapter IN (%s, %s)
@@ -401,6 +405,7 @@ class BookAuthorityRepository:
                 canon_snapshot_asset_version_id,
                 chapter_outcome_asset_version_id,
                 longform_projection_set["projection_set_id"],
+                "CHECKPOINT_PENDING" if checkpoint_followup_required else "READY",
                 book_run_id,
                 chapter_number - 1,
                 chapter_number,
@@ -566,6 +571,38 @@ class BookAuthorityRepository:
                     Jsonb(dict(checkpoint)),
                 ],
             )
+            decision = str(checkpoint["decision"])
+            if decision in {"CORRECT", "REPLAN_REQUIRED"}:
+                checkpoint_id = str(checkpoint["checkpoint_id"])
+                followup_id = "arc-checkpoint-followup:" + hashlib.sha256(
+                    checkpoint_id.encode()
+                ).hexdigest()
+                self.cursor.execute(
+                    """
+                    INSERT INTO authority_arc_checkpoint_followup(
+                        followup_id, project_id, book_id, book_run_id,
+                        projection_set_id, checkpoint_id,
+                        accepted_through_chapter, decision, status,
+                        reason_evidence, target_plan_version_ids,
+                        idempotency_key, trace_id
+                    ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,'READY',%s,%s,%s,%s)
+                    ON CONFLICT(checkpoint_id) DO NOTHING
+                    """,
+                    [
+                        followup_id,
+                        projection["project_id"],
+                        projection["book_id"],
+                        projection["book_run_id"],
+                        projection_set_id,
+                        checkpoint_id,
+                        accepted["chapter_number"],
+                        decision,
+                        Jsonb(dict(checkpoint)),
+                        Jsonb([checkpoint["arc_plan_version_id"]]),
+                        f"{checkpoint_id}:arc-revision",
+                        f"{accepted['acceptance_operation_id']}:arc-checkpoint",
+                    ],
+                )
         for outcome in projection["arc_outcomes"]:
             self.cursor.execute(
                 """

@@ -1222,20 +1222,71 @@ class PostgresBookAuthority:
             }
             uow.cursor.execute(
                 """
-                SELECT arc_plan_version_id, state
-                FROM authority_arc_actual_state
-                WHERE project_id=%s AND book_id=%s
-                  AND arc_plan_version_id=ANY(%s)
+                SELECT version.asset_version_id, version.content_hash,
+                       version.content
+                FROM authority_asset_version AS version
+                JOIN authority_asset AS asset ON asset.asset_id=version.asset_id
+                WHERE version.asset_version_id=ANY(%s) AND asset.project_id=%s
                 """,
-                [
-                    request["project_id"],
-                    book["book_id"],
-                    list(active_arc_plan_versions),
-                ],
+                [list(active_arc_plan_versions), request["project_id"]],
             )
-            previous_arc_states = {
-                str(row[0]): dict(row[1]) for row in uow.cursor.fetchall()
+            arc_plan_rows = uow.cursor.fetchall()
+            arc_plan_snapshots = {
+                str(row[0]): dict(row[2] or {}) for row in arc_plan_rows
             }
+            arc_plan_content_hashes = {
+                str(row[0]): str(row[1]) for row in arc_plan_rows
+            }
+            if set(arc_plan_snapshots) != set(active_arc_plan_versions):
+                raise KernelError(
+                    "BOOK_FROZEN_ARC_PLAN_MISSING",
+                    "accepted projection requires every frozen ArcPlan AssetVersion",
+                )
+            previous_arc_states: dict[str, dict[str, Any]] = {}
+            if int(request["chapter_number"]) > 1:
+                uow.cursor.execute(
+                    """
+                    SELECT arc_state
+                    FROM authority_book_narrative_projection_set
+                    WHERE book_run_id=%s AND chapter_number=%s
+                      AND status='COMPLETE'
+                    """,
+                    [request["book_run_id"], int(request["chapter_number"]) - 1],
+                )
+                previous_projection = uow.cursor.fetchone()
+                if previous_projection is None:
+                    raise KernelError(
+                        "BOOK_PREVIOUS_LONGFORM_PROJECTION_MISSING",
+                        "accepted projection requires the preceding Book-run projection",
+                    )
+                previous_arc_states = {
+                    str(item.get("arc_plan_version_id") or ""): dict(item)
+                    for item in previous_projection[0] or ()
+                    if isinstance(item, dict)
+                    and str(item.get("arc_plan_version_id") or "")
+                }
+                uow.cursor.execute(
+                    """
+                    SELECT outcome.arc_plan_version_id, outcome.status,
+                           outcome.accepted_through_chapter
+                    FROM authority_arc_outcome_v2 AS outcome
+                    JOIN authority_book_narrative_projection_set AS projection
+                      ON projection.projection_set_id=outcome.projection_set_id
+                    WHERE projection.book_run_id=%s
+                      AND outcome.accepted_through_chapter < %s
+                    """,
+                    [request["book_run_id"], int(request["chapter_number"])],
+                )
+                for arc_id, lifecycle, accepted_chapter in uow.cursor.fetchall():
+                    previous_arc_states.setdefault(
+                        str(arc_id),
+                        {
+                            "arc_plan_version_id": str(arc_id),
+                            "lifecycle_status": str(lifecycle),
+                            "accepted_through_chapter": int(accepted_chapter),
+                            "cumulative_progress_units": 0,
+                        },
+                    )
             longform_projection_set = project_accepted_longform(
                 AcceptedLongformEvidence(
                     project_id=request["project_id"],
@@ -1263,6 +1314,8 @@ class PostgresBookAuthority:
                     active_arc_plan_version_ids=active_arc_plan_versions,
                     expected_progress_units=expected_progress_units,
                     previous_arc_states=previous_arc_states,
+                    arc_plan_snapshots=arc_plan_snapshots,
+                    arc_plan_content_hashes=arc_plan_content_hashes,
                     chapter_outcome=outcome_content,
                     story_state=story_state_content,
                     source_contract=str(

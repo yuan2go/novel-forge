@@ -6,6 +6,7 @@ import json
 from typing import Any
 
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.longform_narrative import normalize_frozen_arc_plan
 from novel_forge.modules.context_builder.domain import (
     ContextCandidate,
     build_authority_context_bundle,
@@ -72,6 +73,7 @@ def build_context_bundle(
     execution_intent_asset_version_id: str = "",
     chapter_memo: dict[str, Any] | None = None,
     chapter_memo_asset_version_id: str = "",
+    frozen_arc_plans: dict[str, dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     _require_keys(plan, "chapter", "premise")
     objective = str(
@@ -247,6 +249,16 @@ def build_context_bundle(
             "disclosures": list(plan.get("disclosures") or []),
             "knowledge_boundaries": list(plan.get("knowledge_boundaries") or []),
             "expected_exit_state": dict(plan.get("expected_exit_state") or {}),
+            "required_arc_contributions": list(
+                plan.get("required_arc_contributions") or []
+            ),
+            "frozen_arc_plans": [
+                normalize_frozen_arc_plan(
+                    arc_plan_version_id=arc_id,
+                    content=content,
+                )
+                for arc_id, content in sorted((frozen_arc_plans or {}).items())
+            ],
         },
         "provider_projection_contract_version": "minimum-sufficient-context-v2",
     }

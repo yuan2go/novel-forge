@@ -62,6 +62,8 @@ class AcceptedLongformEvidence:
     active_arc_plan_version_ids: tuple[str, ...]
     expected_progress_units: Mapping[str, int]
     previous_arc_states: Mapping[str, Mapping[str, Any]]
+    arc_plan_snapshots: Mapping[str, Mapping[str, Any]]
+    arc_plan_content_hashes: Mapping[str, str]
     chapter_outcome: Mapping[str, Any]
     story_state: Mapping[str, Any]
     source_contract: str = ""
@@ -123,6 +125,7 @@ def project_accepted_longform(
         previous_arc_states=evidence.previous_arc_states,
         chapter_outcome=outcome,
         story_state=evidence.story_state,
+        arc_plan_snapshots=evidence.arc_plan_snapshots,
         projector_version=CANONICAL_LONGFORM_PROJECTOR_VERSION,
         chapter_plan_asset_version_id=evidence.chapter_plan_asset_version_id,
         source_content_hashes={
@@ -130,6 +133,12 @@ def project_accepted_longform(
             "story_state": evidence.story_state_content_hash,
             "canon_snapshot": evidence.canon_snapshot_content_hash,
             "chapter_plan": evidence.chapter_plan_content_hash,
+            **{
+                f"arc_plan:{arc_id}": content_hash
+                for arc_id, content_hash in sorted(
+                    evidence.arc_plan_content_hashes.items()
+                )
+            },
         },
         contract_adaptation_evidence=adaptations,
     )

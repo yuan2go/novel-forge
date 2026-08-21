@@ -802,6 +802,9 @@ class PostgresBookProductionSupervisor:
                 ),
                 trace_id=f"{book['root_operation_id']}:replan:{accepted_chapter}",
                 correlation_id=str(source["recap_operation_id"]),
+                target_asset_version_id=str(
+                    source.get("target_asset_version_id") or ""
+                ),
             )
         )
         return self._result(

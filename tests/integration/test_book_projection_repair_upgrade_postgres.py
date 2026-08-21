@@ -130,7 +130,14 @@ def _insert_asset(
     return digest
 
 
-def _seed_accepted_history(database_url: str, *, chapters: int = 2) -> dict[str, str]:
+def _seed_accepted_history(
+    database_url: str,
+    *,
+    chapters: int = 2,
+    arc_content: dict[str, object] | None = None,
+    outcome_contents: dict[int, dict[str, object]] | None = None,
+    story_state_contents: dict[int, dict[str, object]] | None = None,
+) -> dict[str, str]:
     project_id = "project:repair-upgrade"
     workspace_id = "workspace:repair-upgrade"
     book_id = "book:repair-upgrade"
@@ -219,7 +226,7 @@ def _seed_accepted_history(database_url: str, *, chapters: int = 2) -> dict[str,
             project_id=project_id,
             asset_version_id="arc-plan:repair-upgrade:v1",
             asset_type="arc_plan",
-            content={
+            content=arc_content or {
                 "objective": "fixture objective",
                 "dependencies": [],
                 "closure_conditions": ["accepted evidence only"],
@@ -308,7 +315,7 @@ def _seed_accepted_history(database_url: str, *, chapters: int = 2) -> dict[str,
                 project_id=project_id,
                 asset_version_id=outcome_id,
                 asset_type="chapter_outcome",
-                content={
+                content=(outcome_contents or {}).get(chapter) or {
                     "contract_version": "chapter-outcome-legacy-v1",
                     "chapter_number": chapter,
                 },
@@ -318,7 +325,8 @@ def _seed_accepted_history(database_url: str, *, chapters: int = 2) -> dict[str,
                 project_id=project_id,
                 asset_version_id=state_id,
                 asset_type="story_state",
-                content={"current_state": {"narrative_obligation": []}},
+                content=(story_state_contents or {}).get(chapter)
+                or {"current_state": {"narrative_obligation": []}},
             )
             _insert_asset(
                 cursor,
@@ -606,6 +614,103 @@ class BookProjectionRepairUpgradePostgresTests(unittest.TestCase):
         self.assertEqual(row[1], 6)
         self.assertTrue(str(row[2]).startswith("longform-projection:"))
         self.assertEqual(row[3], 2)
+
+    def test_repair_persists_accepted_obligation_checkpoint_followup(self) -> None:
+        _apply_through(self.database_url, REVISION_0093)
+        arc_content = {
+            "contract_version": "arc-plan-v1",
+            "logical_key": "arc:repair-upgrade",
+            "objective": "pay the accepted promise",
+            "dependencies": [],
+            "closure_conditions": ["promise is paid on page"],
+            "target_progress_units": 5,
+            "target_window": {"from_chapter": 1, "to_chapter": 10},
+        }
+        outcome_contents = {
+            chapter: {
+                    "contract_version": "chapter-outcome-v3",
+                    "project_id": "project:repair-upgrade",
+                    "book_id": "book:repair-upgrade",
+                    "chapter_number": chapter,
+                    "arc_evidence": [
+                        {
+                            "arc_plan_version_id": "arc-plan:repair-upgrade:v1",
+                            "observation_status": "OBSERVED",
+                            "contribution_kind": "PRIMARY",
+                            "progress_units": 1 if chapter == 1 else 0,
+                            "resolution_evidence": [f"scene:{chapter}:1"],
+                            "obligation_ids": ["promise:repair"],
+                        }
+                    ],
+                }
+            for chapter in (1, 2)
+        }
+        state = {
+                "current_state": {
+                    "narrative_obligation": [
+                        {
+                            "entity_key": "obligation_id=promise:repair",
+                            "state": {
+                                "obligation_id": "promise:repair",
+                                "obligation_type": "PROMISE",
+                                "status": "OPEN",
+                                "opened_chapter": 1,
+                                "target_window": {
+                                    "status": "SCHEDULED",
+                                    "from_chapter": 1,
+                                    "to_chapter": 1,
+                                },
+                                "linked_arc_ids": [
+                                    "arc-plan:repair-upgrade:v1"
+                                ],
+                            },
+                        }
+                    ]
+                }
+            }
+        scope = _seed_accepted_history(
+            self.database_url,
+            arc_content=arc_content,
+            outcome_contents=outcome_contents,
+            story_state_contents={2: state},
+        )
+        _apply_through(self.database_url, REVISION_0095)
+        jobs = RuntimeJobAuthority(self.database_url)
+        claim = jobs.claim(
+            runtime_group="book_repair",
+            worker_id="repair-arc-followup-worker",
+            lease_seconds=30,
+            job_kinds=("BOOK_PROJECTION_REPAIR",),
+        )
+        assert claim is not None
+        jobs.start(claim)
+        repair = PostgresBookProjectionRepairAuthority(
+            self.database_url,
+            application_build_id="repair-upgrade-test",
+            commit_sha="a" * 40,
+        )
+        result = repair.run_batch(
+            claim, actor_id="repair-arc-followup-worker", maximum_chapters=4
+        )
+        self.assertTrue(result.complete)
+        with psycopg.connect(self.database_url) as connection:
+            followup = connection.execute(
+                """
+                SELECT followup.decision, followup.status,
+                       followup.reason_evidence->'overdue_obligation_ids',
+                       book.state
+                FROM authority_arc_checkpoint_followup AS followup
+                JOIN authority_book_production AS book
+                  ON book.book_run_id=followup.book_run_id
+                WHERE followup.book_run_id=%s
+                ORDER BY followup.accepted_through_chapter DESC
+                LIMIT 1
+                """,
+                [scope["book_run_id"]],
+            ).fetchone()
+        self.assertEqual(followup[0:2], ("CORRECT", "READY"))
+        self.assertEqual(followup[2], ["promise:repair"])
+        self.assertEqual(followup[3], "CHECKPOINT_PENDING")
 
     def _exercise_upgrade(self, *, already_at_0094: bool) -> None:
         _apply_through(self.database_url, REVISION_0093)

@@ -304,8 +304,7 @@ def _canon_schema() -> dict[str, Any]:
         },
         required=tuple(change_properties),
     )
-    schema = _object_schema(
-        {
+    properties = {
             field: {
                 "type": "array",
                 # Each semantic array owns its schema.  Sharing ``change`` here
@@ -317,8 +316,37 @@ def _canon_schema() -> dict[str, Any]:
                 **({"minItems": 1} if field == "canon_facts" else {}),
             }
             for field in _CANON_FIELDS
-        },
-        required=_CANON_FIELDS,
+        }
+    properties["arc_evidence"] = {
+        "type": "array",
+        "items": _object_schema(
+            {
+                "arc_plan_version_id": {"type": "string", "minLength": 1},
+                "observation_status": {
+                    "type": "string",
+                    "enum": ["OBSERVED", "NOT_OBSERVED", "NOT_MATERIALIZED", "UNKNOWN"],
+                },
+                "contribution_kind": {"type": "string", "minLength": 1},
+                "progress_units": {"type": "integer", "minimum": 0},
+                "effect_dimensions": {"type": "array", "items": {"type": "string"}},
+                "milestone_ids": {"type": "array", "items": {"type": "string"}},
+                "actual_consequences": {"type": "array", "items": {"type": "string"}},
+                "obligation_ids": {"type": "array", "items": {"type": "string"}},
+                "resolution_evidence": {"type": "array", "items": {"type": "string"}},
+                "completion_criterion_ids": {"type": "array", "items": {"type": "string"}},
+                "phase_to": _nullable({"type": "string"}),
+            },
+            required=(
+                "arc_plan_version_id", "observation_status", "contribution_kind",
+                "progress_units", "effect_dimensions", "milestone_ids",
+                "actual_consequences", "obligation_ids", "resolution_evidence",
+                "completion_criterion_ids", "phase_to",
+            ),
+        ),
+    }
+    schema = _object_schema(
+        properties,
+        required=(*_CANON_FIELDS, "arc_evidence"),
     )
     for field, identities in _CANON_SCHEMA_REQUIRED_IDENTITIES.items():
         change_schema = schema["properties"][field]["items"]
@@ -528,7 +556,7 @@ def chapter_provider_output_schema(stage: str) -> dict[str, Any]:
 def chapter_provider_output_schema_ref(stage: str) -> str:
     chapter_provider_output_schema(stage)
     version = (
-        "v9"
+        "v10"
         if stage == "canon_extraction"
         else "v2"
         if stage in _QUALITY_STAGES
@@ -601,6 +629,26 @@ def validate_chapter_provider_output_semantics(
                 raise KernelError(
                     "CHAPTER_PROVIDER_OUTPUT_SEMANTIC_INVALID",
                     "Disclosure requires one fact_id or proposition_id",
+                )
+        seen_arc_ids: set[str] = set()
+        for evidence in normalized.get("arc_evidence", []):
+            arc_id = str(evidence.get("arc_plan_version_id") or "")
+            if arc_id in seen_arc_ids:
+                raise KernelError(
+                    "CHAPTER_PROVIDER_OUTPUT_SEMANTIC_INVALID",
+                    "Arc evidence must contain one observation per frozen ArcPlan",
+                )
+            seen_arc_ids.add(arc_id)
+            status = str(evidence.get("observation_status") or "")
+            if status == "OBSERVED" and not evidence.get("resolution_evidence"):
+                raise KernelError(
+                    "CHAPTER_PROVIDER_OUTPUT_SEMANTIC_INVALID",
+                    "observed Arc evidence requires accepted-prose location evidence",
+                )
+            if status != "OBSERVED" and int(evidence.get("progress_units") or 0):
+                raise KernelError(
+                    "CHAPTER_PROVIDER_OUTPUT_SEMANTIC_INVALID",
+                    "unobserved Arc evidence cannot advance actual progress",
                 )
         for field in _CANON_FIELDS:
             if field == "canon_facts":

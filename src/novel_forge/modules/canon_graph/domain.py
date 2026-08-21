@@ -105,6 +105,15 @@ def extract_canon_candidates(
             "CANON_EXTRACTION_INPUT_INVALID", "accepted revision text is required"
         )
     annotations = tuple(operator_annotations)
+    raw_arc_evidence = [
+        dict(item)
+        for item in (
+            (provider_extraction or {}).get("arc_evidence")
+            or revision.get("arc_evidence")
+            or ()
+        )
+        if isinstance(item, dict)
+    ]
     assertions = list(revision.get("canon_assertions", []))
     # Every accepted chapter has a deterministic event assertion, so a real-provider
     # path never silently produces an empty Canon update when optional structured
@@ -221,6 +230,7 @@ def extract_canon_candidates(
         "digest_identity_only": semantic_count == 0,
         "semantic_coverage": "INSUFFICIENT" if semantic_count == 0 else "EXTRACTED",
         "provider_assertions_optional": True,
+        "arc_evidence": raw_arc_evidence,
         "canon_extraction_contract_version": "canon-semantic-extraction-v4",
     }
 
@@ -302,6 +312,10 @@ def build_canon_update(
             }
         ),
         "state_changes": state_changes,
+        "arc_evidence": [
+            dict(item) for item in extraction.get("arc_evidence") or ()
+            if isinstance(item, dict)
+        ],
         "rebuildable": True,
         "rollback_aware": True,
         "canon_contract_version": "canon-update-domain-v6",

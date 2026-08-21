@@ -1799,12 +1799,12 @@ def test_planning_retry_reuses_frozen_pack_after_measured_provider_result() -> N
         effect_count, dispatch_count, dispatch_generations = uow.cursor.fetchone()
     assert [(row[0], row[1]) for row in attempts] == [
         (1, "FAILED_RETRYABLE"),
-        # Planning remains approval-gated after Provider success, so the
-        # successful Attempt is deliberately held at RESULT_SUBMITTED while
-        # the Operation waits for Planning Authority approval.
-        (2, "RESULT_SUBMITTED"),
+        # The worker Attempt is terminal after its immutable Candidate is
+        # materialized; Planning Authority approval gates the Candidate, not
+        # the already-completed Provider Attempt.
+        (2, "SUCCEEDED"),
     ]
-    assert operation_status == "WAITING_GATE"
+    assert operation_status == "SUCCEEDED"
     assert attempts[0][2] != attempts[1][2]
     assert attempts[0][3] == attempts[1][3]
     assert attempts[0][4] == attempts[1][4] == "1.1.0"

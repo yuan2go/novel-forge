@@ -468,6 +468,28 @@ class PostgresBookProjectionRepairAuthority:
                 request_payload=source["command_payload"],
                 book_context=context["longform_context_versions"],
             )
+            uow.cursor.execute(
+                """
+                SELECT version.asset_version_id, version.content_hash,
+                       version.content
+                FROM authority_asset_version AS version
+                JOIN authority_asset AS asset ON asset.asset_id=version.asset_id
+                WHERE version.asset_version_id=ANY(%s) AND asset.project_id=%s
+                """,
+                [list(active_arcs), context["project_id"]],
+            )
+            arc_plan_rows = uow.cursor.fetchall()
+            arc_plan_snapshots = {
+                str(row[0]): dict(row[2] or {}) for row in arc_plan_rows
+            }
+            arc_plan_content_hashes = {
+                str(row[0]): str(row[1]) for row in arc_plan_rows
+            }
+            if set(arc_plan_snapshots) != set(active_arcs):
+                raise KernelError(
+                    "BOOK_PROJECTION_REPAIR_FROZEN_ARC_PLAN_MISSING",
+                    "repair requires every frozen ArcPlan AssetVersion",
+                )
             expected_progress = {
                 str(item.get("arc_plan_version_id") or item.get("arc_id") or ""):
                 int(item["expected_progress_units"])
@@ -511,6 +533,8 @@ class PostgresBookProjectionRepairAuthority:
                     active_arc_plan_version_ids=active_arcs,
                     expected_progress_units=expected_progress,
                     previous_arc_states=previous_arc_states,
+                    arc_plan_snapshots=arc_plan_snapshots,
+                    arc_plan_content_hashes=arc_plan_content_hashes,
                     chapter_outcome=source["chapter_outcome"],
                     story_state=source["story_state"],
                     source_contract=str(
@@ -690,6 +714,16 @@ class PostgresBookProjectionRepairAuthority:
                 """
                 UPDATE authority_book_production
                 SET active_longform_projection_set_id=%s,
+                    state=CASE
+                        WHEN state='READY' AND EXISTS (
+                            SELECT 1
+                            FROM authority_arc_checkpoint_followup AS followup
+                            WHERE followup.book_run_id=
+                                  authority_book_production.book_run_id
+                              AND followup.status='READY'
+                        ) THEN 'CHECKPOINT_PENDING'
+                        ELSE state
+                    END,
                     version=version+1, updated_at=NOW()
                 WHERE book_run_id=%s AND project_id=%s
                   AND version=%s AND accepted_through_chapter=%s
@@ -1431,12 +1465,35 @@ class PostgresBookProjectionRepairAuthority:
                 "BOOK_PROJECTION_REPAIR_PREVIOUS_PROJECTION_MISSING",
                 "repair must rebuild accepted projections in chapter order",
             )
-        return {
+        states = {
             str(item.get("arc_plan_version_id") or ""): dict(item)
             for item in row[0] or ()
             if isinstance(item, Mapping)
             and str(item.get("arc_plan_version_id") or "")
         }
+        uow.cursor.execute(
+            """
+            SELECT outcome.arc_plan_version_id, outcome.status,
+                   outcome.accepted_through_chapter
+            FROM authority_arc_outcome_v2 AS outcome
+            JOIN authority_book_narrative_projection_set AS projection
+              ON projection.projection_set_id=outcome.projection_set_id
+            WHERE projection.book_run_id=%s
+              AND outcome.accepted_through_chapter < %s
+            """,
+            [context["book_run_id"], chapter_number],
+        )
+        for arc_id, lifecycle, accepted_chapter in uow.cursor.fetchall():
+            states.setdefault(
+                str(arc_id),
+                {
+                    "arc_plan_version_id": str(arc_id),
+                    "lifecycle_status": str(lifecycle),
+                    "accepted_through_chapter": int(accepted_chapter),
+                    "cumulative_progress_units": 0,
+                },
+            )
+        return states
 
     @staticmethod
     def _assert_projection_equal(

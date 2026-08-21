@@ -414,6 +414,7 @@ class _ContextHandler:
             if str(item.get("asset_type") or "") != "chapter_plan"
         }
         governed_candidates = []
+        frozen_arc_plans: dict[str, dict[str, Any]] = {}
         intent = request.require_input("chapter_execution_intent")
         memo = request.require_input("chapter_memo")
         frozen_candidates = [
@@ -464,6 +465,8 @@ class _ContextHandler:
                     ),
                 }
             )
+            if item.asset_type == "arc_plan":
+                frozen_arc_plans[item.asset_version_id] = dict(item.content)
         available_candidate_types = {
             str(item["asset_type"]) for item in governed_candidates
         }
@@ -501,6 +504,7 @@ class _ContextHandler:
             execution_intent_asset_version_id=intent.asset_version_id,
             chapter_memo=memo.content,
             chapter_memo_asset_version_id=memo.asset_version_id,
+            frozen_arc_plans=frozen_arc_plans,
         )
         bundle["production_input_manifest"] = manifest
         bundle["production_input_manifest_asset_version_id"] = (

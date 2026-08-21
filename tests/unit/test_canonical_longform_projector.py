@@ -25,6 +25,15 @@ def _evidence(*, outcome: dict) -> AcceptedLongformEvidence:
         active_arc_plan_version_ids=("arc:v1",),
         expected_progress_units={"arc:v1": 9},
         previous_arc_states={},
+        arc_plan_snapshots={
+            "arc:v1": {
+                "objective": "accepted evidence closes the promise",
+                "closure_conditions": ["promise paid"],
+                "dependencies": [],
+                "target_window": {"from_chapter": 1, "to_chapter": 3},
+            }
+        },
+        arc_plan_content_hashes={"arc:v1": "sha256:" + "5" * 64},
         chapter_outcome=outcome,
         story_state={"current_state": {"narrative_obligation": []}},
         source_contract=str(outcome.get("contract_version") or "legacy-v1"),
@@ -89,6 +98,7 @@ def test_projection_hash_covers_source_hashes_and_adaptation() -> None:
         "story_state": "sha256:" + "2" * 64,
         "canon_snapshot": "sha256:" + "3" * 64,
         "chapter_plan": "sha256:" + "4" * 64,
+        "arc_plan:arc:v1": "sha256:" + "5" * 64,
     }
 
 

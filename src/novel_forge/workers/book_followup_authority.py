@@ -189,6 +189,9 @@ def main() -> int:
                 actor_id=principal.principal_id,
                 limit=batch_size,
             )
+            coordinator.reconcile_completed_arc_checkpoint_followups(
+                limit=batch_size
+            )
             schedule_book_followup_admission_jobs(
                 coordinator,
                 runtime_jobs,
@@ -230,10 +233,12 @@ def main() -> int:
                 def execute(item: tuple[str, str]) -> object:
                     operation_id, project_id = item
                     principal.require("book.authority.execute", project_id)
-                    return scheduler.run_or_recover(
+                    result = scheduler.run_or_recover(
                         operation_id=operation_id,
                         project_id=project_id,
                     )
+                    coordinator.reconcile_arc_checkpoint_followup(operation_id)
+                    return result
 
                 try:
                     failures = boundary.execute_batch(

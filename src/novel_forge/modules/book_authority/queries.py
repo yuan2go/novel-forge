@@ -565,6 +565,16 @@ class PostgresBookProductionQuery:
                                         acceptance.chapter_number
                                     AND report.replan_required=TRUE
                               )
+                              OR EXISTS (
+                                  SELECT 1
+                                  FROM authority_arc_checkpoint_followup AS arc_followup
+                                  WHERE arc_followup.book_run_id=acceptance.book_run_id
+                                    AND arc_followup.accepted_through_chapter=
+                                        acceptance.chapter_number
+                                    AND arc_followup.status IN (
+                                        'READY','RUNNING','FAILED_RETRYABLE'
+                                    )
+                              )
                           )
                       )
                   )
@@ -587,6 +597,41 @@ class PostgresBookProductionQuery:
             )
             for row in rows
         )
+
+    def arc_checkpoint_followup(
+        self, *, book_run_id: str, chapter_number: int
+    ) -> dict[str, Any] | None:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT followup.followup_id, followup.decision,
+                       followup.reason_evidence,
+                       followup.target_plan_version_ids,
+                       followup.checkpoint_id, followup.projection_set_id,
+                       followup.status
+                FROM authority_arc_checkpoint_followup AS followup
+                WHERE followup.book_run_id=%s
+                  AND followup.accepted_through_chapter=%s
+                  AND followup.status IN (
+                      'READY','RUNNING','PROPOSED','FAILED_RETRYABLE'
+                  )
+                ORDER BY followup.created_at, followup.followup_id
+                LIMIT 1
+                """,
+                [book_run_id, chapter_number],
+            )
+            row = uow.cursor.fetchone()
+        if row is None:
+            return None
+        return {
+            "followup_id": str(row[0]),
+            "decision": str(row[1]),
+            "reason_evidence": dict(row[2] or {}),
+            "target_plan_version_ids": list(row[3] or []),
+            "checkpoint_id": str(row[4]),
+            "projection_set_id": str(row[5]),
+            "status": str(row[6]),
+        }
 
     def require_accepted_followup_snapshot(
         self, *, chapter_request_id: str
@@ -900,7 +945,11 @@ class PostgresBookProductionQuery:
                 SELECT recap.asset_version_id, request.asset_version_id,
                        operation.operation_id,
                        COALESCE(NULLIF(request_version.content->>'affected_scope',''),
-                                'CHAPTER_GROUP')
+                                'CHAPTER_GROUP'),
+                       COALESCE(
+                           request_version.content #>> '{target_plan_version_ids,0}',
+                           ''
+                       )
                 FROM authority_book_followup_operation AS followup
                 JOIN authority_operation AS operation
                   ON operation.operation_id=followup.operation_id
@@ -931,6 +980,7 @@ class PostgresBookProductionQuery:
             "replan_request_asset_version_id": str(row[1]),
             "recap_operation_id": str(row[2]),
             "affected_scope": str(row[3]),
+            "target_asset_version_id": str(row[4]),
         }
 
     def require_input_snapshot(self, snapshot_id: str) -> dict[str, Any]:

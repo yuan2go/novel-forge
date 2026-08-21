@@ -39,6 +39,7 @@ CANON_FIELDS = (
     "character_arc_changes",
     "arc_state_changes",
     "disclosure_events",
+    "arc_evidence",
 )
 
 
@@ -160,7 +161,7 @@ def test_quality_prompt_and_schema_version_require_dimension_evidence() -> None:
     )
     assert (
         chapter_provider_output_schema_ref("canon_extraction")
-        == "schema:chapter-provider-output:canon_extraction:v9"
+        == "schema:chapter-provider-output:canon_extraction:v10"
     )
 
 

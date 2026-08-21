@@ -1577,6 +1577,7 @@ def default_chapter_fixture_response(
             "character_arc_changes": character_arc_changes,
             "arc_state_changes": [],
             "disclosure_events": disclosure_events,
+            "arc_evidence": [],
         }
         return {
             "canon_facts": [
