@@ -694,7 +694,14 @@ class CapabilityPackPostgresHarness:
             )
             scheduler = chapter.scheduler(principal=worker)
             ticks = []
-            for expected_node in ("plan", "context", "draft"):
+            for expected_node in (
+                "plan",
+                "execution_intent",
+                "memo",
+                "retrieval",
+                "context",
+                "draft",
+            ):
                 tick = scheduler.tick(
                     project_id=self.project_id,
                     root_operation_id=admission.root_operation_id,
@@ -714,18 +721,17 @@ class CapabilityPackPostgresHarness:
                        snapshot.trace_id, snapshot.span_id,
                        snapshot.deployment_id, snapshot.binding_set_id,
                        snapshot.binding_set_hash,
-                       binding.binding_id,
-                       binding.capability_pack_attempt_snapshot_id,
-                       binding.capability_pack_attempt_snapshot_hash,
-                       binding.capability_pack_deployment_id,
-                       binding.capability_pack_binding_set_id,
-                       binding.capability_pack_binding_set_hash
+                       effect.external_effect_id,
+                       effect.request_payload,
+                       dispatch.receipt_id,
+                       dispatch.evidence
                 FROM authority_attempt_capability_pack_snapshot AS snapshot
-                JOIN authority_agent_runtime_binding AS binding
-                  ON binding.operation_id=snapshot.operation_id
-                 AND binding.attempt_id=snapshot.attempt_id
                 JOIN authority_operation AS operation
                   ON operation.operation_id=snapshot.operation_id
+                JOIN authority_external_effect AS effect
+                  ON effect.operation_id=snapshot.operation_id
+                JOIN authority_external_effect_dispatch AS dispatch
+                  ON dispatch.external_effect_id=effect.external_effect_id
                 WHERE operation.root_operation_id=%s
                   AND snapshot.workflow_node_id='draft'
                 """,
@@ -747,12 +753,10 @@ class CapabilityPackPostgresHarness:
                 "deployment_id",
                 "binding_set_id",
                 "binding_set_hash",
-                "binding_id",
-                "binding_snapshot_id",
-                "binding_snapshot_hash",
-                "binding_deployment_id",
-                "binding_binding_set_id",
-                "binding_binding_set_hash",
+                "external_effect_id",
+                "effect_request_payload",
+                "receipt_id",
+                "dispatch_evidence",
             )
             result = dict(zip(fields, row, strict=True))
             result["root_operation_id"] = admission.root_operation_id

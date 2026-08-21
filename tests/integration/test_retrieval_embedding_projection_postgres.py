@@ -344,6 +344,7 @@ class RetrievalEmbeddingProjectionPostgresTests(unittest.TestCase):
                 """
                 SELECT projection.status,projection.embedding_model,
                        projection.embedding_dimensions,
+                       vector_dims(projection.embedding_vector),
                        projection.external_effect_id,projection.receipt_id,
                        operation.status,effect.status,effect.capability
                 FROM authority_retrieval_embedding_projection AS projection
@@ -374,9 +375,10 @@ class RetrievalEmbeddingProjectionPostgresTests(unittest.TestCase):
         self.assertEqual(row[0], "READY")
         self.assertEqual(row[1], "deterministic-fixture-embedding-v1")
         self.assertEqual(row[2], 8)
-        self.assertTrue(row[3])
+        self.assertEqual(row[3], 8)
         self.assertTrue(row[4])
-        self.assertEqual(row[5:8], ("SUCCEEDED", "SUCCEEDED", "model.retrieval"))
+        self.assertTrue(row[5])
+        self.assertEqual(row[6:9], ("SUCCEEDED", "SUCCEEDED", "model.retrieval"))
         self.assertEqual(saga, ("SUCCEEDED", 1))
 
     def test_unknown_effect_reconciles_without_blind_redispatch(self) -> None:

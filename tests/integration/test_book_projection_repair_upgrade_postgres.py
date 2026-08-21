@@ -1002,6 +1002,7 @@ class BookProjectionRepairUpgradePostgresTests(unittest.TestCase):
                 ],
             )
             connection.commit()
+        _apply_through(self.database_url, REVISION_0096)
         intent = {
             "chapter": 3,
             "intent_fingerprint": "sha256:" + "1" * 64,

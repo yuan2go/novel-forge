@@ -1096,12 +1096,14 @@ class RetrievalEmbeddingProjectionRuntime:
                     embedding_projection_id, project_id, book_id,
                     retrieval_document_id, source_asset_version_id,
                     source_content_hash, projection_version, status,
-                    embedding, embedding_model, embedding_provider,
+                    embedding, embedding_vector,
+                    embedding_model, embedding_provider,
                     embedding_dimensions, route_snapshot_id, external_effect_id,
                     receipt_id, operation_id, projection_hash, evidence
-                ) VALUES (%s,%s,%s,%s,%s,%s,%s,'READY',%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                ) VALUES (%s,%s,%s,%s,%s,%s,%s,'READY',%s,%s::vector,%s,%s,%s,%s,%s,%s,%s,%s,%s)
                 ON CONFLICT(retrieval_document_id, projection_version) DO UPDATE
                 SET status='READY', embedding=EXCLUDED.embedding,
+                    embedding_vector=EXCLUDED.embedding_vector,
                     embedding_model=EXCLUDED.embedding_model,
                     embedding_provider=EXCLUDED.embedding_provider,
                     embedding_dimensions=EXCLUDED.embedding_dimensions,
@@ -1127,6 +1129,7 @@ class RetrievalEmbeddingProjectionRuntime:
                     projection["source_content_hash"],
                     projection["projection_version"],
                     Jsonb(projection["embedding"]),
+                    _pgvector_literal(projection["embedding"]),
                     projection["embedding_model"],
                     projection["embedding_provider"],
                     projection["embedding_dimensions"],
@@ -1315,6 +1318,10 @@ def _projection_id(document_id: str, projection_version: str) -> str:
     return "retrieval-embedding:" + hashlib.sha256(
         f"{document_id}:{projection_version}".encode()
     ).hexdigest()
+
+
+def _pgvector_literal(vector: list[float]) -> str:
+    return "[" + ",".join(format(float(item), ".17g") for item in vector) + "]"
 
 
 def _projection_status_for_operation(operation_status: str) -> str | None:

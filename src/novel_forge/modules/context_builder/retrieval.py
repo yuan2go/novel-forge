@@ -11,6 +11,19 @@ from typing import Any
 
 _TOKEN = re.compile(r"[\w\u3400-\u9fff]+", re.UNICODE)
 
+RANKING_POLICY_VERSION = "accepted-hybrid-ranking-v3"
+RANKING_WEIGHTS = {
+    "postgresql_fts": 0.16,
+    "lexical_overlap": 0.06,
+    "embedding": 0.18,
+    "entity": 0.10,
+    "relationship": 0.10,
+    "character_timeline": 0.10,
+    "temporal": 0.08,
+    "arc": 0.11,
+    "obligation": 0.11,
+}
+
 
 @dataclass(frozen=True, slots=True)
 class HybridRetrievalQuery:
@@ -96,16 +109,8 @@ def hybrid_retrieve(
             "arc": arc,
             "obligation": obligation,
         }
-        total = (
-            postgresql_fts * 0.16
-            + lexical_overlap * 0.06
-            + embedding * 0.18
-            + entity * 0.10
-            + relationship * 0.10
-            + character * 0.10
-            + temporal * 0.08
-            + arc * 0.11
-            + obligation * 0.11
+        total = sum(
+            scores[signal] * weight for signal, weight in RANKING_WEIGHTS.items()
         )
         reasons = [key for key, value in scores.items() if value > 0]
         ranked.append(
@@ -134,4 +139,9 @@ def _overlap(expected: Iterable[str], actual: Iterable[str]) -> float:
     return len(left & right) / len(left)
 
 
-__all__ = ["HybridRetrievalQuery", "hybrid_retrieve"]
+__all__ = [
+    "RANKING_POLICY_VERSION",
+    "RANKING_WEIGHTS",
+    "HybridRetrievalQuery",
+    "hybrid_retrieve",
+]

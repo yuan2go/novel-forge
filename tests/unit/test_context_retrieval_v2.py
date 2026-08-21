@@ -66,6 +66,7 @@ def _document() -> dict[str, object]:
         "embedding_route_snapshot_id": "route:embedding:v1",
         "embedding_receipt_id": "receipt:embedding:7",
         "embedding_projection_version": "accepted-retrieval-embedding-v1",
+        "candidate_channels": ["FTS", "VECTOR"],
     }
 
 
@@ -77,6 +78,8 @@ def test_memo_is_the_authoritative_retrieval_query_input() -> None:
     assert plan["arc_plan_version_ids"] == ["arc:trust:v3"]
     assert plan["obligation_ids"] == ["promise:return-key"]
     assert plan["semantic_policy"] == "FALLBACK_ALLOWED"
+    assert plan["ranking_policy_version"] == "accepted-hybrid-ranking-v3"
+    assert sum(plan["ranking_weights"].values()) == 1.0
 
 
 def test_retrieval_result_is_reproducible_and_records_all_ranking_provenance() -> None:
@@ -115,6 +118,10 @@ def test_retrieval_result_is_reproducible_and_records_all_ranking_provenance() -
 
     assert first == second
     assert first["result_fingerprint"].startswith("sha256:")
+    assert first["candidate_channels"] == ["FTS", "VECTOR"]
+    assert first["ranking"]["ranking_policy_version"] == (
+        "accepted-hybrid-ranking-v3"
+    )
     selected = first["selected_documents"][0]
     assert {
         "postgresql_fts",

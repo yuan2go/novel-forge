@@ -21,6 +21,15 @@ def test_0096_is_forward_only_and_expands_runtime_terminal_evidence() -> None:
         "MANUAL_INTERVENTION",
     ):
         assert f"'{status}'" in sql
+    assert "CREATE EXTENSION IF NOT EXISTS vector" in sql
+    assert "embedding_vector vector" in sql
+    assert "vector_cosine_ops" in sql
+    assert "halfvec_cosine_ops" in sql
+    assert "authority_retrieval_candidate_snapshot" in sql
+    assert "authority_retrieval_candidate_snapshot_immutable" in sql
+    assert "authority_retrieval_candidate_snapshot_scope" in sql
+    assert "query_plan_fingerprint" in sql
+    assert "ranking_policy_version" in sql
 
     assert "authority_retrieval_embedding_projection" in sql
     assert "FAILED_TERMINAL_TO_FAILED_FINAL" in sql
