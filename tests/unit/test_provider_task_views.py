@@ -13,6 +13,7 @@ from novel_forge.modules.chapter_authority.provider_views import (
 )
 from novel_forge.modules.chapter_authority.execution_gateway import (
     _materialize_chapter_codex_prompt,
+    _stage_tool_permissions,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.production_execution import ExecutionRuntimeClass
@@ -635,6 +636,121 @@ def test_provider_knowledge_deduplicates_and_strips_materialization_metadata() -
             "content": {"principles": ["preserve causal continuity"]},
         }
     ]
+
+
+def test_agent_codex_prompt_accepts_query_tool_without_required_knowledge() -> None:
+    *_, request = contracts(
+        backend_id="codex-cli",
+        runtime=ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE,
+    )
+    boundary = {
+        "book_id": "book:1",
+        "book_run_id": "book-run:1",
+        "accepted_through_chapter": 0,
+        "acceptance_id": "",
+        "projection_set_id": "",
+    }
+    prompt, evidence = _materialize_chapter_codex_prompt(
+        request=request,
+        stage="agent_session",
+        inputs={
+            "instruction": "Query accepted evidence first.",
+            "accepted_boundary": boundary,
+            "tools": [
+                {
+                    "tool_name": "narrative.query_accepted",
+                    "kind": "READ_ONLY_QUERY",
+                }
+            ],
+            "skills": [],
+            "committed_transcript": [],
+            "observations": [],
+            "turn_number": 1,
+        },
+        materialization={
+            "materialization_hash": "sha256:" + "a" * 64,
+            "pack_artifacts": {
+                "system_instruction": {
+                    "ref": "system",
+                    "version": "v1",
+                    "content_hash": "sha256:" + "b" * 64,
+                    "content": {"text": "Operate inside the accepted boundary."},
+                },
+                "prompt_template": {
+                    "ref": "template",
+                    "version": "v1",
+                    "content_hash": "sha256:" + "c" * 64,
+                    "content": {
+                        "text": (
+                            "{{stage}} {{target_scope}} {{input_manifest}} "
+                            "{{context_bundle}} {{output_schema_ref}}"
+                        )
+                    },
+                },
+                "skill": {
+                    "ref": "skill",
+                    "version": "v1",
+                    "content_hash": "sha256:" + "d" * 64,
+                    "content": {"text": "Use governed Tools only."},
+                },
+            },
+            "context_selection": [
+                {
+                    "asset_version_id": "context:agent",
+                    "content": {
+                        "protected": True,
+                        "source_authority": "POSTGRESQL_ACCEPTED_BOUNDARY",
+                        "accepted_boundary": boundary,
+                        "estimated_tokens": 100,
+                    },
+                }
+            ],
+            "knowledge_selection": [],
+            "tool_permissions": {
+                "allowed": [
+                    "model.provider.invoke",
+                    "narrative.query_accepted",
+                ],
+                "denied": [],
+            },
+            "output_schema": {
+                "ref": "schema:agent-output:v1",
+                "content_hash": "sha256:" + "e" * 64,
+                "content": {"type": "object"},
+            },
+        },
+    )
+
+    assert "narrative.query_accepted" in prompt
+    assert evidence["allowed_tools"] == [
+        "model.provider.invoke",
+        "narrative.query_accepted",
+    ]
+    assert evidence["knowledge_content_hashes"] == []
+
+
+def test_stage_tool_permissions_preserve_governed_query_tools() -> None:
+    allowed, denied = _stage_tool_permissions(
+        {
+            "default": "DENY",
+            "tools": [
+                {
+                    "tool_ref": "model.provider.invoke",
+                    "permission": "EXECUTE",
+                    "allowed_operations": ["agent_session"],
+                },
+                {
+                    "tool_ref": "narrative.query_accepted",
+                    "permission": "QUERY",
+                    "allowed_operations": ["agent_session"],
+                },
+            ],
+        },
+        "agent_session",
+    )
+
+    assert allowed == ("model.provider.invoke", "narrative.query_accepted")
+    assert denied == ()
 
 
 def test_oversized_task_knowledge_fails_closed() -> None:

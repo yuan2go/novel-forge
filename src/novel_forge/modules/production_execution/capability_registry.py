@@ -28,6 +28,9 @@ _PLANNING_CAPABILITIES = frozenset(
         CapabilityId.PLANNING_STORY_CHAPTER_GENERATE,
     }
 )
+_PROVIDER_RUNTIME_V2_CAPABILITIES = frozenset(
+    {CapabilityId.AGENT_WORKSPACE_EXECUTE, CapabilityId.RETRIEVAL_EMBED}
+)
 
 _MODEL_RUNTIMES = (
     ExecutionRuntimeClass.REMOTE_PROVIDER_API,
@@ -148,7 +151,12 @@ def capability_contract_version(capability_id: CapabilityId | str) -> int:
         if isinstance(capability_id, CapabilityId)
         else CapabilityId(str(capability_id))
     )
-    return 2 if identity in _PLANNING_CAPABILITIES else 1
+    return (
+        2
+        if identity in _PLANNING_CAPABILITIES
+        or identity in _PROVIDER_RUNTIME_V2_CAPABILITIES
+        else 1
+    )
 
 
 def _definition(

@@ -175,7 +175,7 @@ def _stage_tool_permissions(
         operations = {str(value) for value in item.get("allowed_operations") or ()}
         if (
             tool_ref
-            and str(item.get("permission") or "").upper() == "EXECUTE"
+            and str(item.get("permission") or "").upper() in {"EXECUTE", "QUERY"}
             and stage in operations
         ):
             allowed.add(tool_ref)
@@ -2411,7 +2411,7 @@ def _materialize_production_codex_prompt(
         or len(context) != 1
         or not isinstance(context[0], Mapping)
         or not isinstance(knowledge, list)
-        or not knowledge
+        or (not knowledge and stage not in {"agent_session", "retrieval"})
         or not isinstance(tools, Mapping)
         or not isinstance(schema, Mapping)
         or not isinstance(schema.get("content"), Mapping)
@@ -2431,7 +2431,7 @@ def _materialize_production_codex_prompt(
     knowledge_view = build_provider_knowledge_view(
         item for item in knowledge if isinstance(item, Mapping)
     )
-    if not knowledge_view:
+    if not knowledge_view and stage not in {"agent_session", "retrieval"}:
         raise KernelError(
             "CHAPTER_CAPABILITY_MATERIALIZATION_INVALID",
             "Provider Knowledge projection is empty",
@@ -2452,10 +2452,20 @@ def _materialize_production_codex_prompt(
             "frozen Prompt Template contains unresolved placeholders",
         )
     allowed = tuple(str(item) for item in tools.get("allowed") or ())
-    if allowed != ("model.provider.invoke",):
+    agent_tool_names = {
+        str(item.get("tool_name") or "")
+        for item in inputs.get("tools") or ()
+        if isinstance(item, Mapping)
+    }
+    required_allowed = (
+        {"model.provider.invoke", *agent_tool_names}
+        if stage == "agent_session"
+        else {"model.provider.invoke"}
+    )
+    if set(allowed) != required_allowed:
         raise KernelError(
             "CHAPTER_CAPABILITY_TOOL_UNAUTHORIZED",
-            "Codex execution permits only the governed provider invocation",
+            "Codex execution differs from the governed Provider/Agent Tool set",
         )
     required_language = _required_language_from_context(context_content)
     stage_semantic_contract = _stage_semantic_contract(
@@ -2526,7 +2536,14 @@ def _materialize_production_codex_prompt(
         "provider_view": {
             "task_contract_version": task_view["contract_version"],
             "context_contract_version": context_view["contract_version"],
-            "selection_explanation": context_view["selection_explanation"],
+            "selection_explanation": context_view.get(
+                "selection_explanation",
+                {
+                    "policy": "accepted-boundary-only",
+                    "selected_count": 1,
+                    "omitted_count": 0,
+                },
+            ),
             "component_characters": component_characters,
             "component_estimated_tokens": component_tokens,
             "authority_context_estimated_tokens": authority_context_tokens,

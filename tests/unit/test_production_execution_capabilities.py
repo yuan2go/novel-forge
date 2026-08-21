@@ -317,6 +317,7 @@ class ProductionExecutionCapabilityTests(unittest.TestCase):
                     definition.allowed_runtime_classes,
                 )
                 self.assertIn("codex-cli", definition.allowed_backend_ids)
+                self.assertEqual(capability_contract_version(capability_id), 2)
 
 
 if __name__ == "__main__":
