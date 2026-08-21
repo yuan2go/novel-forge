@@ -270,7 +270,7 @@ class ContextAuthorityDomainTests(unittest.TestCase):
         )
 
         self.assertEqual(
-            first["context_contract_version"], "authority-context-bundle-v5"
+            first["context_contract_version"], "authority-context-bundle-v6"
         )
         self.assertEqual(
             first["actual_context_digest"], replayed["actual_context_digest"]
@@ -278,8 +278,14 @@ class ContextAuthorityDomainTests(unittest.TestCase):
         self.assertEqual(first["context_manifest"], replayed["context_manifest"])
         manifest = first["context_manifest"]
         self.assertEqual(
-            manifest["contract_version"], "narrative-context-manifest-v1"
+            manifest["contract_version"], "narrative-context-manifest-v2"
         )
+        self.assertEqual(
+            manifest["accepted_boundary"]["accepted_through_chapter"], 11
+        )
+        self.assertIn("protected_context", manifest)
+        self.assertIn("retrievable_context", manifest)
+        self.assertTrue(manifest["context_fingerprint"].startswith("sha256:"))
         self.assertEqual(manifest["narrative_position"]["chapter"], 12)
         self.assertEqual(
             manifest["authority_state_boundary"]["accepted_through_chapter"],

@@ -1529,20 +1529,12 @@ class _Resolver:
                 prompt_bundle_ref="prompt-bundle:planning:v1",
             ),
         )
-        work_order = SimpleNamespace(
-            operation_id="operation-1",
-            attempt_id="attempt-1",
-            fencing_token=7,
-            execution_capability=definition.capability,
-            project_id="project-1",
-            book_id="book-1",
-            work_order_id="work-order-1",
-            to_context=lambda: {"work_order_id": "work-order-1"},
-        )
         binding = SimpleNamespace(
             operation_id="operation-1",
             attempt_id="attempt-1",
             fencing_token=7,
+            project_id="project-1",
+            book_id="book-1",
             execution_capability_id=definition.capability,
             capability_pack_attempt_snapshot_id=HASH,
             capability_pack_attempt_snapshot_hash=HASH,
@@ -1551,10 +1543,10 @@ class _Resolver:
             binding_id="binding-1",
             binding_hash=HASH,
         )
-        return PlanningExecutionBundle(snapshot, work_order, binding, _ExecutionPort())
+        return PlanningExecutionBundle(snapshot, binding, _ExecutionPort())
 
 
-def test_planning_binder_requires_pack_agent_and_pep_on_one_attempt() -> None:
+def test_planning_binder_requires_pack_capability_and_pep_on_one_attempt() -> None:
     command = _command("book_plan.generate")
     candidate = CapabilityPackBackedPlanningExecutionBinder(_Resolver()).execute(
         operation_id="operation-1",
@@ -1574,9 +1566,9 @@ def test_planning_binder_requires_pack_agent_and_pep_on_one_attempt() -> None:
     ]["objective"]
 
 
-def test_planning_agent_cannot_claim_chapter_commit_authority() -> None:
+def test_planning_capability_cannot_claim_chapter_commit_authority() -> None:
     command = _command("chapter_plan.generate")
-    with pytest.raises(KernelError, match="Planning Agent can only submit"):
+    with pytest.raises(KernelError, match="Planning Capability can only submit"):
         CapabilityPackBackedPlanningExecutionBinder(
             _Resolver(commit_authority="CHAPTER_AUTHORITY")
         ).execute(

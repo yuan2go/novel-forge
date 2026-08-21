@@ -198,8 +198,7 @@ def settle_provider_budget(
             """,
             [amount, actual_tokens, Jsonb(evidence), reservation_id, project_id],
         )
-            if amount > 0:
-                uow.cursor.execute(
+            uow.cursor.execute(
                 """
                 INSERT INTO authority_operation_cost_evidence (
                     cost_evidence_id, operation_id, provider, model,
@@ -216,7 +215,7 @@ def settle_provider_budget(
                     row["currency"],
                     Jsonb({**evidence, "reservation_id": reservation_id}),
                 ],
-                )
+            )
             request = _request_from_row(row)
             _record(uow, request, reservation_id, "authority.budget.settled", {"amount": str(amount)})
             uow.commit()

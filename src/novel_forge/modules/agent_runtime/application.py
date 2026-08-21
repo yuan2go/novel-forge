@@ -50,7 +50,16 @@ from .definitions import (
     AGENT_RUNTIME_ADMIN_OPERATIONS,
     AGENT_RUNTIME_DEFINITION_VERSION,
     AGENT_RUNTIME_EXECUTION_HANDLER_KEY,
+    AGENT_RUNTIME_HARNESS_HANDLER_KEY,
     agent_runtime_operation_definitions,
+)
+from .harness import (
+    AcceptedBoundaryRef,
+    AgentHarnessBudget,
+    AgentHarnessSession,
+    AgentHarnessStatus,
+    AgentToolSpec,
+    AutonomousAgentRole,
 )
 
 
@@ -202,6 +211,63 @@ class AgentRunAdmissionRequest:
         payload["input_asset_versions"] = [item[0] for item in self.input_assets]
         payload.pop("input_assets")
         return payload
+
+
+@dataclass(frozen=True, slots=True)
+class AgentHarnessAdmissionRequest:
+    project_id: str
+    workspace_id: str
+    book_id: str
+    actor_id: str
+    agent_session_id: str
+    agent_role: AutonomousAgentRole
+    instruction: str
+    accepted_boundary: AcceptedBoundaryRef
+    tool_policy: tuple[AgentToolSpec, ...]
+    skill_bindings: tuple[Mapping[str, Any], ...]
+    budget: AgentHarnessBudget
+    idempotency_key: str
+    trace_id: str
+    correlation_id: str
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "agent_role", AutonomousAgentRole(self.agent_role))
+        required = (
+            self.project_id,
+            self.workspace_id,
+            self.book_id,
+            self.actor_id,
+            self.agent_session_id,
+            self.instruction,
+            self.idempotency_key,
+            self.trace_id,
+            self.correlation_id,
+        )
+        if any(not value.strip() for value in required):
+            raise ValueError("Agent Harness admission is incomplete")
+        if self.accepted_boundary.book_id != self.book_id:
+            raise ValueError("Agent Harness accepted boundary belongs to another Book")
+        if not self.tool_policy:
+            raise ValueError("Agent Harness requires a frozen Tool policy")
+
+    def command_input(self) -> dict[str, Any]:
+        return {
+            "agent_session_id": self.agent_session_id,
+            "agent_role": self.agent_role.value,
+            "book_id": self.book_id,
+            "instruction": self.instruction,
+            "accepted_boundary": asdict(self.accepted_boundary),
+            "tool_policy": [
+                {
+                    **asdict(tool),
+                    "kind": tool.kind.value,
+                    "allowed_roles": [role.value for role in tool.allowed_roles],
+                }
+                for tool in self.tool_policy
+            ],
+            "skill_bindings": [dict(item) for item in self.skill_bindings],
+            "budget": asdict(self.budget),
+        }
 
 
 class AgentRuntimeAuthorityApplication:
@@ -425,6 +491,157 @@ class AgentRuntimeAuthorityApplication:
             "status": str(current["status"]),
             "replayed": bool(admitted["replayed"]),
         }
+
+    def admit_harness_session(
+        self,
+        request: AgentHarnessAdmissionRequest,
+        *,
+        principal: Principal,
+    ) -> dict[str, Any]:
+        """Admit a true autonomous session under the existing durable kernel."""
+
+        principal.require("agent.authority.execute", request.project_id)
+        if principal.principal_id != request.actor_id:
+            raise PermissionError("Agent Harness actor must be the trusted Principal")
+        self._register_definitions()
+        context = AdmissionContext(
+            actor_id=principal.principal_id,
+            permissions=principal.permissions,
+            available_handlers=frozenset({AGENT_RUNTIME_HARNESS_HANDLER_KEY}),
+            application_build_id=self.application_build_id,
+            commit_sha=self.commit_sha,
+        )
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            self._validate_harness_accepted_boundary(uow, request)
+            admitted = admit_command_in_uow(
+                uow,
+                {
+                    "definition_name": "agent.session.execute",
+                    "definition_version": AGENT_RUNTIME_DEFINITION_VERSION,
+                    "project_id": request.project_id,
+                    "workspace_id": request.workspace_id,
+                    "book_id": request.book_id,
+                    "agent_id": request.agent_role.value,
+                    "agent_role": request.agent_role.value,
+                    "actor_id": principal.principal_id,
+                    "idempotency_scope": "project:agent-harness",
+                    "idempotency_key": request.idempotency_key,
+                    "trace_id": request.trace_id,
+                    "span_id": str(uuid4()),
+                    "correlation_id": request.correlation_id,
+                    "causation_id": "",
+                    "input": request.command_input(),
+                    "input_assets": [],
+                },
+                context=context,
+            )
+            operation_id = str(admitted["operation_id"])
+            session = AgentHarnessSession(
+                agent_session_id=request.agent_session_id,
+                project_id=request.project_id,
+                workspace_id=request.workspace_id,
+                operation_id=operation_id,
+                role=request.agent_role,
+                status=AgentHarnessStatus.READY,
+                accepted_boundary=request.accepted_boundary,
+                tool_policy=request.tool_policy,
+                skill_bindings=request.skill_bindings,
+                budget=request.budget,
+            )
+            stored = uow.repositories.agent_runtime.create_harness_session(session)
+            uow.commit()
+        start_saga(
+            self.database_url,
+            GraphCommandContext(
+                project_id=request.project_id,
+                actor_id=principal.principal_id,
+                trace_id=request.trace_id,
+                correlation_id=request.correlation_id,
+            ),
+            root_operation_id=operation_id,
+        )
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            state = uow.repositories.attempt_runtime.operation_state(
+                operation_id, request.project_id
+            )
+        if state["status"] == "ADMITTED":
+            transition_operation(
+                self.database_url,
+                OperationTransitionCommand(
+                    operation_id=operation_id,
+                    project_id=request.project_id,
+                    expected_version=int(state["version"]),
+                    expected_status="ADMITTED",
+                    target_status="READY",
+                    actor_id=principal.principal_id,
+                    reason="governed Agent Harness session admitted",
+                    trace_id=request.trace_id,
+                    correlation_id=request.correlation_id,
+                    causation_id=operation_id,
+                ),
+            )
+        return {
+            "agent_session_id": stored.agent_session_id,
+            "agent_run_id": operation_id,
+            "operation_id": operation_id,
+            "status": "READY",
+            "accepted_boundary": asdict(stored.accepted_boundary),
+            "replayed": bool(admitted["replayed"]),
+        }
+
+    @staticmethod
+    def _validate_harness_accepted_boundary(
+        uow: AuthorityUnitOfWork,
+        request: AgentHarnessAdmissionRequest,
+    ) -> None:
+        boundary = request.accepted_boundary
+        uow.cursor.execute(
+            """
+            SELECT production.book_id, production.workspace_id,
+                   production.accepted_through_chapter,
+                   COALESCE(production.active_longform_projection_set_id, ''),
+                   COALESCE(projection.acceptance_id, ''),
+                   COALESCE(projection.chapter_number, 0),
+                   COALESCE(projection.status, '')
+            FROM authority_book_production AS production
+            LEFT JOIN authority_book_narrative_projection_set AS projection
+              ON projection.projection_set_id=
+                 production.active_longform_projection_set_id
+            WHERE production.book_run_id=%s AND production.project_id=%s
+            """,
+            [boundary.book_run_id, request.project_id],
+        )
+        row = uow.cursor.fetchone()
+        if row is None or (str(row[0]), str(row[1])) != (
+            request.book_id,
+            request.workspace_id,
+        ):
+            raise KernelError(
+                "AGENT_HARNESS_ACCEPTED_BOUNDARY_INVALID",
+                "Agent Harness Book boundary is missing or outside its scope",
+            )
+        accepted_through = int(row[2])
+        active_projection_set_id = str(row[3])
+        if boundary.accepted_through_chapter == 0:
+            valid = (
+                accepted_through == 0
+                and not active_projection_set_id
+                and not boundary.acceptance_id
+                and not boundary.projection_set_id
+            )
+        else:
+            valid = (
+                accepted_through == boundary.accepted_through_chapter
+                and active_projection_set_id == boundary.projection_set_id
+                and str(row[4]) == boundary.acceptance_id
+                and int(row[5]) == boundary.accepted_through_chapter
+                and str(row[6]) == "COMPLETE"
+            )
+        if not valid:
+            raise KernelError(
+                "AGENT_HARNESS_ACCEPTED_BOUNDARY_STALE",
+                "Agent Harness must bind the latest complete accepted projection set",
+            )
 
     def _register_definitions(self) -> None:
         with AuthorityUnitOfWork(self.database_url) as uow:
@@ -854,6 +1071,7 @@ def _ref_integer_version(value: str) -> int:
 
 
 __all__ = [
+    "AgentHarnessAdmissionRequest",
     "AgentRunAdmissionRequest",
     "AgentRuntimeAdminCommand",
     "AgentRuntimeAuthorityApplication",

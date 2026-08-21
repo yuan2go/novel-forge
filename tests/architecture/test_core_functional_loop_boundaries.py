@@ -20,7 +20,7 @@ def _read(relative: str) -> str:
     return (ROOT / relative).read_text(encoding="utf-8")
 
 
-def test_planning_generators_share_capability_pack_agent_pep_candidate_runtime() -> (
+def test_planning_generators_share_capability_pack_pep_candidate_runtime() -> (
     None
 ):
     domain = _read("src/novel_forge/modules/story_planning_runtime/domain.py")
@@ -35,7 +35,9 @@ def test_planning_generators_share_capability_pack_agent_pep_candidate_runtime()
     ):
         assert generator in domain
     assert "CapabilityPackAttemptSnapshot" in binder
-    assert "AgentWorkOrder" in binder
+    assert "PlanningCapabilityBinding" in binder
+    assert "AgentWorkOrder" not in binder
+    assert "agent_collaboration" not in binder
     assert "DomainExecutionCommand" in binder
     assert "production_execution_gateway_backed" in binder
     assert "external_effect_backed" in binder
@@ -45,8 +47,10 @@ def test_planning_generators_share_capability_pack_agent_pep_candidate_runtime()
 
 def test_planning_candidate_and_commit_authority_boundaries_are_explicit() -> None:
     binder = _read("src/novel_forge/modules/story_planning_runtime/binder.py")
-    assert 'forbidden_change_types=("authority.commit", "plan.activate")' in binder
-    assert 'forbidden_changes=("plan.activate", "published_chapter.modify")' in binder
+    assert "Planning Capability can only submit a Candidate" in binder
+    assert '"STORY_DESIGN_AUTHORITY"' in binder
+    assert '"HIERARCHICAL_PLANNING_AUTHORITY"' in binder
+    assert '"PLAN_CHANGE_AUTHORITY"' in binder
     for authority in (
         "BOOK_DESIGN_AUTHORITY",
         "STORY_DESIGN_AUTHORITY",
@@ -111,10 +115,8 @@ def test_replan_has_no_implicit_approval_path_and_worker_stops_pending() -> None
     command_block = command_block.split("class BookReplanCoordinator:", 1)[0]
     assert "auto_approve_low_risk" not in command_block
     assert "WAIT_REPLAN_APPROVAL" in supervisor
-    assert (
-        '"REPLAN_APPROVAL_PENDING"'
-        not in worker.split("ACTIVE_STATES", 1)[1].split(")", 1)[0]
-    )
+    assert "if before == BookProductionState.REPLAN_APPROVAL_PENDING.value" in supervisor
+    assert "self.replan.approve" not in worker
 
 
 def test_book_run_and_replan_bind_immutable_input_snapshots() -> None:
@@ -149,10 +151,14 @@ def test_book_durable_mutations_use_transaction_commands_not_attempt_runtime() -
         "book.production.aborted",
         "book.supervisor.checkpoint.advanced",
         "book.followup.linked",
-        "book.followup.completed",
-        "book.checkpoint.advanced",
     ):
         assert event_type in production
+    assert "book.checkpoint.advanced" in production
+    followup_definitions = _read(
+        "src/novel_forge/modules/book_followup_authority/definitions.py"
+    )
+    assert "book_followup.{name}.materialized" in followup_definitions
+    assert "book.followup.completed" not in production
 
 
 def test_chapter_group_arc_and_ending_business_evidence_is_acceptance_bound() -> None:
@@ -160,10 +166,13 @@ def test_chapter_group_arc_and_ending_business_evidence_is_acceptance_bound() ->
     checkpoint = _read("src/novel_forge/modules/book_production/checkpoints.py")
     assert "parent_group_version_id" in production
     assert "authority_book_chapter_acceptance" in checkpoint
-    assert "authority_arc_contribution" in checkpoint
+    assert "authority_arc_actual_state" in checkpoint
+    assert "authority_arc_checkpoint_v2" in checkpoint
+    assert "authority_arc_contribution" not in checkpoint
+    assert "actual_arc_contributions) or" not in checkpoint
     assert "chapter_acceptance_operation_id" in checkpoint
     assert "authority_book_volume_checkpoint" in checkpoint
-    assert "authority_book_arc_checkpoint" in checkpoint
+    assert "authority_book_arc_checkpoint" not in checkpoint
     assert "authority_ending_reachability_report" in checkpoint
     assert "execute_transaction_command" in checkpoint
 

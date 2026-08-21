@@ -657,6 +657,27 @@ def _merge_state(
             new["known_fact_ids"] = sorted(known)
         new.pop("acquired_fact_ids", None)
         new.pop("forgotten_fact_ids", None)
+    if kind is NarrativeStateKind.NARRATIVE_OBLIGATION:
+        history = [dict(item) for item in old.get("development_history") or ()]
+        seen = {
+            (
+                int(item.get("chapter") or 0),
+                str(item.get("status") or ""),
+                str(item.get("development") or ""),
+            )
+            for item in history
+        }
+        for item in payload.get("development_history") or ():
+            normalized = dict(item)
+            identity = (
+                int(normalized.get("chapter") or 0),
+                str(normalized.get("status") or ""),
+                str(normalized.get("development") or ""),
+            )
+            if identity not in seen:
+                history.append(normalized)
+                seen.add(identity)
+        new["development_history"] = history
     return new
 
 

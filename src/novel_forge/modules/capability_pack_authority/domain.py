@@ -203,6 +203,8 @@ class CapabilityPackExecutionSnapshot:
         optional = {
             "rollout_id",
             "assignment_ref",
+            "agent_definition_ref",
+            "agent_definition_hash",
             "prompt_system_instruction_ref",
             "prompt_system_instruction_hash",
             "prompt_template_ref",
@@ -215,6 +217,10 @@ class CapabilityPackExecutionSnapshot:
             "tool_policy_payload_json",
             "evaluation_policy_payload_json",
         }
+        if bool(self.agent_definition_ref) != bool(self.agent_definition_hash):
+            raise ValueError(
+                "agent_definition_ref and agent_definition_hash must be supplied together"
+            )
         for name, value in asdict(self).items():
             if name in optional or name == "activation_version":
                 continue
@@ -226,7 +232,6 @@ class CapabilityPackExecutionSnapshot:
             "catalog_snapshot_hash",
             "binding_set_hash",
             "operation_definition_hash",
-            "agent_definition_hash",
             "capability_hash",
             "execution_capability_hash",
             "prompt_bundle_hash",
@@ -241,6 +246,10 @@ class CapabilityPackExecutionSnapshot:
         for name in hash_fields:
             if not _CONTENT_HASH.fullmatch(str(getattr(self, name))):
                 raise ValueError(f"{name} must be a SHA-256 content hash")
+        if self.agent_definition_hash and not _CONTENT_HASH.fullmatch(
+            self.agent_definition_hash
+        ):
+            raise ValueError("agent_definition_hash must be a SHA-256 content hash")
         for name in (
             "prompt_system_instruction_hash",
             "prompt_template_hash",

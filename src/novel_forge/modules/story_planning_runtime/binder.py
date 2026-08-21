@@ -1,40 +1,15 @@
-"""Capability-Pack/Agent/PEP binding for Story Planning candidates."""
+"""Capability-Pack/PEP binding for Story Planning candidate capabilities."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from decimal import Decimal
 from typing import Protocol
 from uuid import NAMESPACE_URL, uuid5
 
-from novel_forge.infrastructure.environment import RuntimeEnvironment
-from novel_forge.modules.agent_collaboration.application import (
-    AgentCollaborationApplication,
-)
-from novel_forge.modules.agent_collaboration.domain import (
-    AgentCollaborationSession,
-    AgentMessageType,
-    AgentScopeContract,
-    AgentWorkOrder,
-    AssetReadScope,
-    AuthorityScope,
-    KnowledgeVisibility,
-    KnowledgeVisibilityScope,
-    NarrativeScope,
-    NarrativeScopeType,
-    Participant,
-    ParticipantSnapshot,
-    ProposalScope,
-    SessionStatus,
-    TemporalScope,
-)
-from novel_forge.modules.agent_runtime.contracts import AgentRuntimeBinding
-from novel_forge.modules.agent_runtime.coordinator import AgentTurnExecutionCoordinator
 from novel_forge.modules.capability_pack_authority import CapabilityPackAttemptSnapshot
 from novel_forge.modules.capability_pack_authority.runtime import (
     CapabilityPackResolutionRequest,
     CapabilityPackRuntimeResolver,
-    chapter_node_binding_from_snapshot,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.production_execution.domain_execution import (
@@ -57,10 +32,40 @@ from .domain import (
 
 
 @dataclass(frozen=True, slots=True)
+class PlanningCapabilityBinding:
+    """Immutable, Attempt-fenced execution identity for a typed Capability."""
+
+    binding_id: str
+    operation_id: str
+    attempt_id: str
+    fencing_token: int
+    project_id: str
+    workspace_id: str
+    book_id: str
+    capability_ref: str
+    capability_hash: str
+    execution_capability_id: str
+    execution_capability_hash: str
+    input_manifest_ref: str
+    commit_authority: str
+    capability_pack_attempt_snapshot_id: str
+    capability_pack_attempt_snapshot_hash: str
+
+    @property
+    def binding_hash(self) -> str:
+        return canonical_hash(
+            {
+                name: getattr(self, name)
+                for name in self.__dataclass_fields__
+                if name != "binding_hash"
+            }
+        )
+
+
+@dataclass(frozen=True, slots=True)
 class PlanningExecutionBundle:
     attempt_snapshot: CapabilityPackAttemptSnapshot
-    work_order: AgentWorkOrder
-    runtime_binding: AgentRuntimeBinding
+    capability_binding: PlanningCapabilityBinding
     execution_port: DomainExecutionPort
 
 
@@ -154,7 +159,7 @@ class PlanningExecutionBundleResolver(Protocol):
 
 
 class PostgresPlanningExecutionBundleResolver:
-    """Freeze Pack, Agent WorkOrder, runtime binding, and PEP on one Attempt.
+    """Freeze Pack, Capability binding, and PEP on one durable Attempt.
 
     The injected preparer is the single transport-specific seam. It must return
     an ExternalEffect-backed Production Execution Plane port; this resolver owns
@@ -193,7 +198,6 @@ class PostgresPlanningExecutionBundleResolver:
         self.release_channel = release_channel
         self.release_sha = release_sha
         self.pack_resolver = CapabilityPackRuntimeResolver(database_url)
-        self.turn_coordinator = AgentTurnExecutionCoordinator(database_url)
 
     def resolve(
         self,
@@ -225,20 +229,8 @@ class PostgresPlanningExecutionBundleResolver:
             execution_fencing_token=fencing_token,
             worker_id=worker_id,
         )
-        node = chapter_node_binding_from_snapshot(attempt_snapshot.execution_snapshot)
-        node.update(
-            {
-                "budget_policy_ref": (
-                    attempt_snapshot.execution_snapshot.budget_policy_ref
-                ),
-                "approval_policy_ref": (
-                    attempt_snapshot.execution_snapshot.approval_policy_ref
-                ),
-            }
-        )
-        if str(node["execution_capability_id"]) != definition.capability or str(
-            node["commit_authority"]
-        ) not in {
+        frozen = attempt_snapshot.execution_snapshot
+        if frozen.execution_capability_id != definition.capability or frozen.commit_authority not in {
             "STORY_DESIGN_AUTHORITY",
             "HIERARCHICAL_PLANNING_AUTHORITY",
             "PLAN_CHANGE_AUTHORITY",
@@ -257,7 +249,6 @@ class PostgresPlanningExecutionBundleResolver:
             definition=definition,
             attempt_snapshot=attempt_snapshot,
         )
-        frozen = attempt_snapshot.execution_snapshot
         CapabilityPackRuntimeResolver.validate_runtime_admission(
             frozen,
             {
@@ -284,59 +275,42 @@ class PostgresPlanningExecutionBundleResolver:
         )
         with AuthorityUnitOfWork(self.database_url) as uow:
             operation = self._operation(uow, operation_id, command.project_id)
+            operation_name, separator, operation_version = (
+                frozen.operation_definition_ref.rpartition("@")
+            )
             if (
                 operation["definition_name"],
                 operation["definition_version"],
                 operation["definition_hash"],
             ) != (
-                str(node["operation_definition_name"]),
-                str(node["operation_definition_version"]),
-                str(node["operation_definition_hash"]),
+                operation_name if separator else "",
+                operation_version if separator else "",
+                frozen.operation_definition_hash,
             ):
                 raise KernelError(
                     "PLANNING_OPERATION_BINDING_DRIFT",
                     "Planning Operation differs from the frozen Pack node",
                 )
-            agent = uow.repositories.agent_runtime.lock_definition_version(
-                str(node["agent_id"]), int(node["agent_definition_version"])
-            )
-            capability = self._capability(agent, node)
-            if (
-                RuntimeEnvironment.parse(self.runtime_profile).controlled
-                and capability.get("qualification_status") != "QUALIFIED_REAL_RUNTIME"
-            ):
-                raise KernelError(
-                    "PLANNING_AGENT_CAPABILITY_NOT_RUNTIME_QUALIFIED",
-                    "controlled Planning execution requires REAL_RUNTIME qualification",
-                )
-            work_order = self._work_order(
-                uow,
-                operation=operation,
-                attempt_id=attempt_id,
-                fencing_token=fencing_token,
-                command=command,
-                inputs=inputs,
-                definition=definition,
-                prepared=prepared,
-                node=node,
-                agent=agent,
-                capability=capability,
-            )
-            runtime_binding = self._runtime_binding(
-                operation=operation,
-                work_order=work_order,
-                prepared=prepared,
-                node=node,
-                agent=agent,
-                capability=capability,
-                snapshot=attempt_snapshot,
-            )
-            self.turn_coordinator.freeze_turn_in_uow(uow, work_order, runtime_binding)
-            uow.commit()
+        capability_binding = PlanningCapabilityBinding(
+            binding_id=_identity("planning-capability-binding", attempt_id),
+            operation_id=operation_id,
+            attempt_id=attempt_id,
+            fencing_token=fencing_token,
+            project_id=command.project_id,
+            workspace_id=command.workspace_id,
+            book_id=command.book_id,
+            capability_ref=frozen.capability_ref,
+            capability_hash=frozen.capability_hash,
+            execution_capability_id=frozen.execution_capability_id,
+            execution_capability_hash=frozen.execution_capability_hash,
+            input_manifest_ref=prepared.input_manifest_ref,
+            commit_authority=frozen.commit_authority,
+            capability_pack_attempt_snapshot_id=attempt_snapshot.snapshot_id,
+            capability_pack_attempt_snapshot_hash=attempt_snapshot.snapshot_hash,
+        )
         return PlanningExecutionBundle(
             attempt_snapshot,
-            work_order,
-            runtime_binding,
+            capability_binding,
             prepared.execution_port,
         )
 
@@ -359,8 +333,8 @@ class PostgresPlanningExecutionBundleResolver:
         row = uow.cursor.fetchone()
         if row is None:
             raise KernelError(
-                "PLANNING_AGENT_OPERATION_INVALID",
-                "Planning Agent binding requires an admitted Saga Operation",
+                "PLANNING_CAPABILITY_OPERATION_INVALID",
+                "Planning Capability binding requires an admitted Saga Operation",
             )
         snapshot = dict(row[2] or {})
         return {
@@ -370,312 +344,6 @@ class PostgresPlanningExecutionBundleResolver:
             "definition_hash": str(snapshot.get("definition_hash") or ""),
             "saga_id": str(row[3]),
         }
-
-    @staticmethod
-    def _capability(
-        agent: dict[str, object], node: dict[str, object]
-    ) -> dict[str, object]:
-        expected_definition = (
-            str(node["agent_id"]),
-            int(node["agent_definition_version"]),
-            str(node["agent_definition_hash"]),
-        )
-        actual_definition = (
-            str(agent["agent_id"]),
-            int(agent["definition_version"]),
-            str(agent["definition_hash"]),
-        )
-        if actual_definition != expected_definition:
-            raise KernelError(
-                "PLANNING_AGENT_DEFINITION_DRIFT",
-                "Agent Definition differs from the frozen Pack node",
-            )
-        definition_drift = [
-            key
-            for key, expected in {
-                "capability_pack_ref": node["capability_pack_ref"],
-                "input_contract_ref": node["input_contract_ref"],
-                "output_contract_ref": node["output_contract_ref"],
-            }.items()
-            if str(agent.get(key)) != str(expected)
-        ]
-        if definition_drift:
-            raise KernelError(
-                "PLANNING_AGENT_DEFINITION_DRIFT",
-                "Agent Definition differs from Pack contracts: "
-                + ", ".join(definition_drift),
-            )
-        matches = [
-            dict(item)
-            for item in list(agent["capabilities"])  # type: ignore[arg-type]
-            if str(item["capability_id"]) == str(node["capability_id"])
-            and int(item["capability_version"]) == int(node["capability_version"])
-        ]
-        if len(matches) != 1:
-            raise KernelError(
-                "PLANNING_AGENT_CAPABILITY_NOT_BOUND",
-                "Agent Definition lacks the exact Planning capability",
-            )
-        capability = matches[0]
-        if str(capability["capability_hash"]) != str(node["capability_hash"]) or str(
-            capability["execution_capability_id"]
-        ) != str(node["execution_capability_id"]):
-            raise KernelError(
-                "PLANNING_AGENT_CAPABILITY_DRIFT",
-                "Agent capability differs from the frozen Pack node",
-            )
-        return capability
-
-    def _work_order(
-        self,
-        uow: AuthorityUnitOfWork,
-        *,
-        operation: dict[str, str],
-        attempt_id: str,
-        fencing_token: int,
-        command: StoryPlanningGenerationCommand,
-        inputs: tuple[FrozenPlanningInput, ...],
-        definition: GeneratorDefinition,
-        prepared: PreparedPlanningExecution,
-        node: dict[str, object],
-        agent: dict[str, object],
-        capability: dict[str, object],
-    ) -> AgentWorkOrder:
-        turn_id = _identity("planning-agent-turn", attempt_id)
-        existing = uow.repositories.agent_collaboration.find_work_order_by_turn(turn_id)
-        if existing is not None:
-            if existing.operation_id != operation["operation_id"]:
-                raise KernelError(
-                    "PLANNING_AGENT_WORK_ORDER_CONFLICT",
-                    "Planning Attempt already has another Agent WorkOrder",
-                )
-            return existing
-        session_id = _identity("planning-agent-session", attempt_id)
-        scope_id = _identity("planning-agent-scope", attempt_id)
-        participants_id = _identity("planning-agent-participants", attempt_id)
-        collaboration = AgentCollaborationApplication(
-            uow.repositories.agent_collaboration
-        )
-        collaboration.create_collaboration_session(
-            AgentCollaborationSession(
-                session_id=session_id,
-                project_id=command.project_id,
-                owner_authority=str(node["commit_authority"]),
-                business_goal=(
-                    f"Generate {command.planning_scope.value} plan candidate "
-                    f"{command.logical_key}."
-                ),
-                issue_type=f"{command.planning_scope.value}_PLAN_CANDIDATE",
-                scope_snapshot_ref="",
-                participant_snapshot_ref="",
-                current_candidate_version_ref="",
-                status=SessionStatus.CREATED,
-                round_number=0,
-                turn_number=0,
-                execution_count=0,
-                spent_budget=Decimal("0"),
-                budget_ref=str(node["budget_policy_ref"]),
-                termination_policy_ref="termination:single-planning-candidate:v1",
-                created_operation_id=operation["operation_id"],
-                saga_id=operation["saga_id"],
-                authority_decision_ref="",
-                last_turn_id="",
-                attempt_id=attempt_id,
-            )
-        )
-        narrative_scope = self._narrative_scope(command)
-        scope = AgentScopeContract(
-            scope_contract_id=f"scope:planning:{command.planning_scope.value.lower()}",
-            version=1,
-            narrative=narrative_scope,
-            asset_read=AssetReadScope(
-                allowed_asset_types=tuple(sorted({item.asset_type for item in inputs})),
-                asset_version_ids=tuple(item.asset_version_id for item in inputs),
-                forbidden_asset_types=("raw_source", "published_chapter"),
-            ),
-            proposal=ProposalScope(
-                allowed_asset_types=(definition.output_candidate_type,),
-                allowed_change_types=(f"{command.generator_operation_name}.propose",),
-                forbidden_asset_types=("active_plan", "published_chapter"),
-                forbidden_change_types=("authority.commit", "plan.activate"),
-            ),
-            authority=AuthorityScope(
-                authority_type=str(node["commit_authority"]),
-                allowed_narrative_scopes=(narrative_scope.kind,),
-                allowed_change_types=(f"{command.generator_operation_name}.propose",),
-            ),
-            temporal=TemporalScope(0, (1, 1), 1, 0),
-            knowledge=KnowledgeVisibilityScope(
-                allowed=(
-                    KnowledgeVisibility.AUTHOR_KNOWLEDGE,
-                    KnowledgeVisibility.PUBLIC_CANON,
-                    KnowledgeVisibility.HIDDEN_PLANNING,
-                )
-            ),
-        )
-        collaboration.freeze_scope(
-            session_id,
-            scope.freeze(
-                snapshot_id=scope_id, authority_id=str(node["commit_authority"])
-            ),
-        )
-        collaboration.assign_participants(
-            session_id,
-            ParticipantSnapshot.freeze(
-                snapshot_id=participants_id,
-                participants=(
-                    Participant(
-                        agent_id=str(agent["agent_id"]),
-                        agent_definition_version=int(agent["definition_version"]),
-                        role=str(agent["role"]),
-                    ),
-                ),
-            ),
-        )
-        return AgentWorkOrder(
-            work_order_id=_identity("planning-agent-work-order", attempt_id),
-            collaboration_session_id=session_id,
-            turn_id=turn_id,
-            operation_id=operation["operation_id"],
-            attempt_id=attempt_id,
-            fencing_token=fencing_token,
-            agent_id=str(agent["agent_id"]),
-            agent_definition_version=int(agent["definition_version"]),
-            capability=str(capability["capability_id"]),
-            message_type=AgentMessageType.PROPOSAL,
-            business_goal=f"Generate {command.logical_key} as a Candidate.",
-            current_issue=(
-                f"scope={command.planning_scope.value}; logical_id={command.logical_key}; "
-                f"parent_version={command.parent_version_id or 'ROOT'}"
-            ),
-            scope_snapshot_ref=scope_id,
-            participant_snapshot_ref=participants_id,
-            input_asset_versions=tuple(item.asset_version_id for item in inputs),
-            candidate_version_ref="",
-            context_bundle_ref=prepared.context_bundle_asset_version_id,
-            evidence_refs=(prepared.prompt_bundle_ref, prepared.skill_bundle_ref),
-            must_preserve=("frozen input AssetVersions", "Domain Authority commit"),
-            must_change=(definition.output_candidate_type,),
-            forbidden_changes=("plan.activate", "published_chapter.modify"),
-            acceptance_criteria=(
-                "PEP validation manifest present",
-                "Candidate schema valid",
-                "Story Design Authority owns activation",
-            ),
-            risk_level=definition.risk_class,
-            budget_policy_ref=str(node["budget_policy_ref"]),
-            timeout_policy_ref=prepared.timeout_policy_ref,
-            approval_policy_ref=str(node["approval_policy_ref"]),
-            failure_policy="AUTHORITY_BOUNDED_REPAIR",
-            continuation_policy="STORY_DESIGN_VALIDATE_THEN_PLAN_AUTHORITY",
-            project_id=command.project_id,
-            workspace_id=command.workspace_id,
-            book_id=command.book_id,
-            route_snapshot_ref=prepared.route_snapshot_ref,
-            input_manifest_ref=prepared.input_manifest_ref,
-            capability_version=int(capability["capability_version"]),
-            execution_capability=str(capability["execution_capability_id"]),
-        )
-
-    @staticmethod
-    def _narrative_scope(
-        command: StoryPlanningGenerationCommand,
-    ) -> NarrativeScope:
-        kind = NarrativeScopeType(command.planning_scope.value)
-        common: dict[str, str | NarrativeScopeType] = {
-            "kind": kind,
-            "book_id": command.book_id,
-        }
-        if kind is NarrativeScopeType.VOLUME:
-            common["volume_id"] = command.logical_key
-        elif kind is NarrativeScopeType.ARC:
-            common["arc_id"] = command.logical_key
-        elif kind is NarrativeScopeType.CHAPTER_GROUP:
-            common.update(
-                volume_id=str(command.input_versions["volume_plan"]),
-                chapter_group_id=command.logical_key,
-            )
-        elif kind is NarrativeScopeType.CHAPTER:
-            common.update(
-                volume_id=str(command.input_versions["volume_plan"]),
-                arc_id=str(command.input_versions["arc_plans"]),
-                chapter_group_id=str(command.input_versions["chapter_group_plan"]),
-                chapter_id=command.logical_key,
-            )
-        return NarrativeScope(**common)  # type: ignore[arg-type]
-
-    @staticmethod
-    def _runtime_binding(
-        *,
-        operation: dict[str, str],
-        work_order: AgentWorkOrder,
-        prepared: PreparedPlanningExecution,
-        node: dict[str, object],
-        agent: dict[str, object],
-        capability: dict[str, object],
-        snapshot: CapabilityPackAttemptSnapshot,
-    ) -> AgentRuntimeBinding:
-        frozen = snapshot.execution_snapshot
-        return AgentRuntimeBinding(
-            binding_id=_identity(
-                "planning-agent-runtime-binding", work_order.attempt_id
-            ),
-            project_id=work_order.project_id,
-            workspace_id=work_order.workspace_id,
-            book_id=work_order.book_id,
-            workflow_definition_ref=frozen.workflow_definition_ref,
-            workflow_node_id=frozen.workflow_node_id,
-            operation_definition_ref=frozen.operation_definition_ref,
-            operation_definition_hash=frozen.operation_definition_hash,
-            operation_id=work_order.operation_id,
-            attempt_id=work_order.attempt_id,
-            fencing_token=work_order.fencing_token,
-            work_order_id=work_order.work_order_id,
-            agent_id=work_order.agent_id,
-            agent_definition_version=work_order.agent_definition_version,
-            agent_definition_hash=str(agent["definition_hash"]),
-            capability_id=work_order.capability,
-            capability_version=work_order.capability_version,
-            capability_hash=str(capability["capability_hash"]),
-            execution_capability_id=work_order.execution_capability,
-            chapter_node_binding_ref=str(node["chapter_node_binding_ref"]),
-            capability_pack_ref=str(node["capability_pack_ref"]),
-            capability_pack_compilation_hash=str(
-                node["capability_pack_compilation_hash"]
-            ),
-            context_bundle_asset_version_id=prepared.context_bundle_asset_version_id,
-            context_bundle_hash=prepared.context_bundle_hash,
-            prompt_bundle_ref=prepared.prompt_bundle_ref,
-            prompt_bundle_hash=prepared.prompt_bundle_hash,
-            skill_bundle_ref=prepared.skill_bundle_ref,
-            skill_bundle_hash=prepared.skill_bundle_hash,
-            tool_policy_ref=frozen.tool_policy_ref,
-            tool_policy_hash=frozen.tool_policy_hash,
-            tool_permission_snapshot_ref=prepared.tool_permission_snapshot_ref,
-            tool_permission_snapshot_hash=prepared.tool_permission_snapshot_hash,
-            context_policy_ref=prepared.context_policy_ref,
-            context_policy_hash=prepared.context_policy_hash,
-            route_snapshot_ref=prepared.route_snapshot_ref,
-            route_snapshot_hash=prepared.route_snapshot_hash,
-            input_manifest_ref=prepared.input_manifest_ref,
-            input_manifest_hash=prepared.input_manifest_hash,
-            budget_policy_ref=frozen.budget_policy_ref,
-            timeout_policy_ref=prepared.timeout_policy_ref,
-            approval_policy_ref=frozen.approval_policy_ref,
-            validation_policy_ref=prepared.validation_policy_ref,
-            commit_policy_ref=prepared.commit_policy_ref,
-            commit_authority=frozen.commit_authority,
-            release_sha=frozen.release_sha,
-            capability_pack_deployment_id=frozen.deployment_id,
-            capability_pack_activation_version=frozen.activation_version,
-            capability_pack_binding_set_id=frozen.binding_set_id,
-            capability_pack_binding_set_hash=frozen.binding_set_hash,
-            capability_pack_scope_type=frozen.selected_scope_type.value,
-            capability_pack_assignment_ref=frozen.assignment_ref,
-            capability_pack_attempt_snapshot_id=snapshot.snapshot_id,
-            capability_pack_attempt_snapshot_hash=snapshot.snapshot_hash,
-        )
-
 
 class PlanningExecutionBinder(Protocol):
     def execute(
@@ -692,7 +360,7 @@ class PlanningExecutionBinder(Protocol):
 
 
 class CapabilityPackBackedPlanningExecutionBinder:
-    """Validate one frozen Pack/Agent binding and submit only through PEP."""
+    """Validate one frozen typed-Capability binding and submit only through PEP."""
 
     production_execution_gateway_backed = True
 
@@ -736,8 +404,8 @@ class CapabilityPackBackedPlanningExecutionBinder:
                 # Domain port receives only its immutable reference here.
                 prompt=bundle.attempt_snapshot.execution_snapshot.prompt_bundle_ref,
                 context={
-                    "input_manifest_ref": bundle.runtime_binding.input_manifest_ref,
-                    "work_order_id": bundle.work_order.work_order_id,
+                    "input_manifest_ref": bundle.capability_binding.input_manifest_ref,
+                    "capability_binding_id": bundle.capability_binding.binding_id,
                     "logical_key": command.logical_key,
                     "planning_scope": command.planning_scope.value,
                 },
@@ -767,11 +435,15 @@ class CapabilityPackBackedPlanningExecutionBinder:
                 capability_pack_attempt_snapshot_hash=(
                     bundle.attempt_snapshot.snapshot_hash
                 ),
-                agent_work_order_ref=bundle.work_order.work_order_id,
-                agent_work_order_hash=canonical_hash(bundle.work_order.to_context()),
-                agent_runtime_binding_ref=bundle.runtime_binding.binding_id,
-                agent_runtime_binding_hash=bundle.runtime_binding.binding_hash,
-                commit_authority=bundle.runtime_binding.commit_authority,
+                capability_execution_ref=bundle.capability_binding.binding_id,
+                capability_execution_hash=bundle.capability_binding.binding_hash,
+                capability_runtime_binding_ref=(
+                    bundle.attempt_snapshot.snapshot_id
+                ),
+                capability_runtime_binding_hash=(
+                    bundle.attempt_snapshot.snapshot_hash
+                ),
+                commit_authority=bundle.capability_binding.commit_authority,
                 fixture_protocol_only=evidence.fixture_protocol_only,
                 real_provider_proven=(
                     evidence.real_model_call and not evidence.fixture_protocol_only
@@ -791,8 +463,7 @@ class CapabilityPackBackedPlanningExecutionBinder:
         definition: GeneratorDefinition,
     ) -> None:
         snapshot = bundle.attempt_snapshot
-        binding = bundle.runtime_binding
-        work_order = bundle.work_order
+        binding = bundle.capability_binding
         if not getattr(
             bundle.execution_port, "production_execution_gateway_backed", False
         ) or not getattr(bundle.execution_port, "external_effect_backed", False):
@@ -808,24 +479,16 @@ class CapabilityPackBackedPlanningExecutionBinder:
                 snapshot.execution_fencing_token,
             )
             != identity
-            or (binding.operation_id, binding.attempt_id, binding.fencing_token)
-            != identity
-            or (
-                work_order.operation_id,
-                work_order.attempt_id,
-                work_order.fencing_token,
-            )
-            != identity
+            or (binding.operation_id, binding.attempt_id, binding.fencing_token) != identity
         ):
             raise KernelError(
                 "PLANNING_EXECUTION_ATTEMPT_DRIFT",
-                "Pack Snapshot, Agent binding, and WorkOrder must use one Attempt fence",
+                "Pack Snapshot and Capability binding must use one Attempt fence",
             )
         execution_snapshot = snapshot.execution_snapshot
         if (
             execution_snapshot.execution_capability_id != definition.capability
             or binding.execution_capability_id != definition.capability
-            or work_order.execution_capability != definition.capability
         ):
             raise KernelError(
                 "PLANNING_EXECUTION_CAPABILITY_DRIFT",
@@ -837,7 +500,7 @@ class CapabilityPackBackedPlanningExecutionBinder:
         ):
             raise KernelError(
                 "PLANNING_CAPABILITY_PACK_SNAPSHOT_DRIFT",
-                "Agent binding must consume the frozen Attempt Pack Snapshot",
+                "Capability binding must consume the frozen Attempt Pack Snapshot",
             )
         if binding.commit_authority not in {
             "STORY_DESIGN_AUTHORITY",
@@ -846,15 +509,15 @@ class CapabilityPackBackedPlanningExecutionBinder:
         }:
             raise KernelError(
                 "PLANNING_COMMIT_AUTHORITY_INVALID",
-                "Planning Agent can only submit a Candidate to a planning Authority",
+                "Planning Capability can only submit a Candidate to a planning Authority",
             )
         if (
-            work_order.project_id != command.project_id
-            or work_order.book_id != command.book_id
+            binding.project_id != command.project_id
+            or binding.book_id != command.book_id
         ):
             raise KernelError(
-                "PLANNING_WORK_ORDER_SCOPE_DRIFT",
-                "Planning Agent WorkOrder belongs to another Project or Book",
+                "PLANNING_CAPABILITY_SCOPE_DRIFT",
+                "Planning Capability binding belongs to another Project or Book",
             )
 
 
@@ -867,6 +530,7 @@ __all__ = [
     "PlanningExecutionPreparer",
     "PlanningExecutionBinder",
     "PlanningExecutionBundle",
+    "PlanningCapabilityBinding",
     "PlanningExecutionBundleResolver",
     "PostgresPlanningExecutionBundleResolver",
     "PreparedPlanningExecution",

@@ -55,8 +55,12 @@ class CapabilityPackValidatorTests(unittest.TestCase):
 
         self.assertTrue(report.ok, report.errors)
         self.assertEqual(report.pack_id, "chapter_generation_pack")
-        self.assertEqual(report.version, "1.12.0")
-        self.assertEqual(len(manifest.workflow_template.nodes), 18)
+        self.assertEqual(report.version, "2.0.0")
+        node_ids = {node.node_id for node in manifest.workflow_template.nodes}
+        self.assertEqual(len(node_ids), 21)
+        self.assertTrue(
+            {"execution_intent", "memo", "best_candidate"}.issubset(node_ids)
+        )
         self.assertTrue(report.manifest_hash.startswith("sha256:"))
 
     def test_fixture_maps_current_chapter_authority_nodes(self) -> None:

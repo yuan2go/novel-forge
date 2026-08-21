@@ -87,7 +87,7 @@ class ChapterOutcomeStoryStateTests(unittest.TestCase):
 
     def test_chapter_outcome_binds_plan_and_normalized_state_events(self) -> None:
         outcome = self._chapter_outcome()
-        self.assertEqual(outcome["contract_version"], "chapter-outcome-v2")
+        self.assertEqual(outcome["contract_version"], "chapter-outcome-v3")
         self.assertEqual(outcome["chapter_plan_version_id"], "plan-v1")
         self.assertEqual(outcome["accepted_draft_asset_version_id"], "draft-v1")
         self.assertEqual(outcome["canon_patch_asset_version_id"], "canon-patch-v1")

@@ -8,7 +8,7 @@ from novel_forge.modules.chapter_authority.contracts import ChapterNode
 
 
 CHAPTER_SLICE_DEFINITION_VERSION = "2.0.11"
-CHAPTER_MODEL_EFFECT_DEFINITION_VERSION = "2.3.10"
+CHAPTER_MODEL_EFFECT_DEFINITION_VERSION = "3.0.0"
 CHAPTER_MODEL_WORKFLOW_DEFINITION_ID = "chapter_authority_slice"
 CHAPTER_MODEL_WORKFLOW_DEFINITION_VERSION = CHAPTER_MODEL_EFFECT_DEFINITION_VERSION
 CHAPTER_MODEL_WORKFLOW_DEFINITION_REF = (
@@ -246,6 +246,27 @@ def _definition(
                 "governance": "CLEAR",
             }
         )
+    if node is ChapterNode.BEST_CANDIDATE:
+        completion["required_asset_selectors"].extend(
+            (
+                {
+                    "selector": "candidate_comparison",
+                    "output_key": "chapter.best_candidate.comparison",
+                    "role": "selection_evidence",
+                    "lifecycle": "ACTIVE",
+                    "eligibility": "ELIGIBLE",
+                    "governance": "CLEAR",
+                },
+                {
+                    "selector": "best_candidate_snapshot",
+                    "output_key": "chapter.best_candidate.snapshot",
+                    "role": "selection_evidence",
+                    "lifecycle": "ACTIVE",
+                    "eligibility": "ELIGIBLE",
+                    "governance": "CLEAR",
+                },
+            )
+        )
     if node is ChapterNode.QUALITY:
         from novel_forge.modules.chapter_quality_authority import QUALITY_DIMENSIONS
 
@@ -398,6 +419,8 @@ def _chapter_command_schema() -> dict[str, Any]:
             "context_token_budget": {"type": "integer"},
             "preparation_report": {"type": "object"},
             "chapter_idempotency_key": {"type": "string"},
+            "chapter_root_operation_id": {"type": "string"},
+            "correction_generation": {"type": "integer", "minimum": 0},
             "canon_reextraction_generation": {"type": "integer", "minimum": 1},
             "supersedes_proposal_asset_version_id": {"type": "string"},
         },

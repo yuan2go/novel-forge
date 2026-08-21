@@ -20,7 +20,7 @@ class ChapterOutcomeCommitHandler:
             )
         required_types = (
             "chapter_plan",
-            "draft_version",
+            "best_draft_candidate",
             "re_review_report",
             "canon_patch",
             "quality_score_report",
@@ -52,7 +52,7 @@ class ChapterOutcomeCommitHandler:
             chapter_number=int(payload["chapter_number"]),
             chapter_plan_version_id=inputs["chapter_plan"].asset_version_id,
             parent_group_version_id=str(payload.get("parent_group_version_id") or ""),
-            accepted_draft_version_id=inputs["draft_version"].asset_version_id,
+            accepted_draft_version_id=inputs["best_draft_candidate"].asset_version_id,
             final_release_gate_version_id=inputs[
                 "final_release_gate_report"
             ].asset_version_id,
@@ -64,6 +64,14 @@ class ChapterOutcomeCommitHandler:
             cost_receipt_refs=tuple(payload.get("cost_receipt_refs") or ()),
             created_by_operation_id=request.operation_id,
             trace_id=request.trace_id,
+            expected_arc_contributions=tuple(
+                dict(item)
+                for item in (
+                    inputs["chapter_plan"].content.get("required_arc_contributions")
+                    or ()
+                )
+                if isinstance(item, dict)
+            ),
         )
         outcome_version_id = (
             f"authority-output:{request.operation_id}:chapter.outcome:v1"
@@ -108,7 +116,7 @@ class ChapterOutcomeCommitHandler:
             output_key="chapter.outcome",
             role="primary",
             content=outcome,
-            qualification_policy="chapter-outcome-acceptance-v2",
+            qualification_policy="chapter-outcome-acceptance-v3",
             reference_asset_version_ids=source_refs,
             evidence=evidence,
             auxiliary_outputs=(

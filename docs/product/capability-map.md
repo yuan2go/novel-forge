@@ -7,9 +7,12 @@ This is a derived product view of the [Canonical overall design](../architecture
 | Term | Canonical meaning |
 |---|---|
 | Conversational Role | Stable user-facing creative persona backed by AgentDefinition + capabilities + scope/context/tool/policy. Not an Authority. |
-| Agent | Governed reasoning actor that produces typed proposals/candidates. Not business truth owner. |
-| Capability | Versioned semantic task contract — what can be done. |
-| Skill | Versioned procedure/method — how a capability is performed. |
+| Autonomous Agent | Multi-turn governed actor with goal decomposition, dynamic Tool choice, observation and adaptive replanning. Produces proposals/candidates, never business truth. |
+| Typed Capability | One versioned semantic task producing an immutable candidate/evidence artifact. Ordinary LLM work belongs here. |
+| Skill | Versioned procedure/method; binding a Skill never grants Tool or mutation permission. |
+| Tool | Typed read query, Capability invocation or Authority Command submission endpoint. |
+| Domain Service | Deterministic validation/reduction/comparison/diff/projection logic. |
+| Durable Workflow | Explicit transitions, recovery and stop conditions deciding when bounded work executes. |
 | Capability Pack | Immutable compatible deployment binding of capabilities, Skills, prompts, provider/model route, tools, context/eval/budget/policy. |
 | Rule | Deterministic constraint. |
 | Knowledge Asset | Governed reusable narrative/professional knowledge. |
@@ -40,11 +43,12 @@ Narrative Design
 └ progressive planning / replan
 
 Narrative Execution
-├ Chapter Mission
-├ Evidence / Context Compiler
+├ ChapterExecutionIntent / ChapterMemo
+├ Protected + retrievable Context Compiler v2
+├ hybrid long-form retrieval / compression
 ├ Scene architecture
 ├ prose generation
-├ diagnosis / revision / polish
+├ diagnosis / revision / re-review / Best Candidate
 └ narrative verification
 
 Narrative Authority
@@ -91,9 +95,14 @@ Arc capabilities do not imply a separate Arc runtime or Authority stack.
 
 Do not implement one Agent per Arc type or every possible relation as a separate service/type without a concrete use.
 
-## 4. Target conversational roles
+## 4. Autonomous Agents and conversational roles
 
-A small stable role set is preferred:
+A very small autonomous set is preferred:
+
+- Studio/Director Agent;
+- Research/Knowledge Agent.
+
+User-facing creative roles may provide stable perspectives without becoming separate autonomous runtimes:
 
 - Chief Editor;
 - Story Architect;
@@ -110,17 +119,19 @@ A small stable role set is preferred:
 
 Quality Judge is an evaluation boundary, not a negotiable conversational persona.
 
+Worldbuilding, Character, Outline, Chapter Plan, Draft, Review, Revision and Canon Extraction remain Typed Capabilities unless their production behavior demonstrates a real multi-step dynamic Tool/replanning lifecycle.
+
 ## 5. Context / Memory / Knowledge boundary
 
 ```text
-Authority Memory      accepted/design truth in PostgreSQL
-Working Memory        frozen task-specific Context
-Interaction Evidence  conversation / rationale / rejected alternatives
-Retrieval Memory      rebuildable search/vector projections
-MKAOS                  reusable methods/patterns/domain intelligence
+L0 Recent accepted verbatim      L5 Arc/debt state
+L1 Current accepted state        L6 episodic summaries
+L2 Canon fact graph              L7 lexical/vector/graph index
+L3 character/relation timeline   L8 full accepted text archive
+L4 obligation graph              L9 external knowledge/reference
 ```
 
-No Agent-private memory may override these sources.
+Accepted lineage and L1/L2/L4/L5 are authoritative or deterministic accepted projections. L3/L6/L7 are rebuildable. L9 is Source/MKAOS evidence. No Agent-private memory may override these sources.
 
 ## 6. Current implementation boundary
 
@@ -130,8 +141,12 @@ The following target semantics require latest-code verification and, where absen
 
 - autonomous Chapter-to-Chapter liveness with advisory sidecars detached from the default critical path;
 - explicit progress/stall explainability for Book production;
-- plan-driven Chapter Mission / bounded Production Packet convergence;
-- richer Arc OS runtime/working-set/obligation/progress semantics;
+- ChapterExecutionIntent/ChapterMemo and Protected/Retrievable Context v2;
+- hybrid long-form retrieval and layered Narrative Memory;
+- explicit Arc actual/progress/outcome/checkpoint/revision and complete obligations;
+- persistent Best Candidate/minimum improvement/rollback;
+- multi-turn dynamic Tool-calling Agent Harness;
+- unified semantic lineage/invalidation;
 - MKAOS Narrative Intelligence selection/effectiveness;
 - sustained real-provider long-form quality;
 - calibrated Reader Outcome / real feedback loop;

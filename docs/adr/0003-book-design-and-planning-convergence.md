@@ -26,13 +26,18 @@ No new Plan Authority or parallel BookPlan storage/runtime is introduced. Formal
 
 ### 4. Structural narrative semantics and production grouping are distinct
 
-The **target semantic hierarchy** is:
+The target model has four orthogonal structures:
 
 ```text
-Book → Volume → Narrative Segment → Chapter → Scene → Beat
+Organization/IP:     Studio → Portfolio → Universe → Series → Book
+Narrative containment: Book → Volume → [Narrative Segment] → Chapter → Scene → Beat
+Long-form change:    Arc Graph
+Production control:  ChapterGroup
 ```
 
-The **current production implementation** may use `ChapterGroup` as a scheduling/checkpoint/planning execution construct. `ChapterGroup` is not redefined as Narrative Segment merely to make the trees match. Convergence should map/extend existing planning only when the target semantic distinction has real runtime value; do not create a duplicate hierarchy by default.
+Organizational concepts are not mandatory Aggregate roots. `Narrative Segment` is admitted only when a stable contiguous dramatic interval has a distinct invariant, versioning value and real consumer independent of Arc, Volume and ChapterGroup. The audited baseline has no such consumer, so convergence must not add a Segment persistence/Authority layer merely to complete the tree.
+
+`ChapterGroup` remains a scheduling/checkpoint/planning coordination construct. Scene is an addressable/versioned Chapter child whose outcome is accepted with its Chapter; Beat remains embedded unless a real independent lifecycle appears.
 
 ### 5. Arc remains orthogonal to containment
 
@@ -42,7 +47,13 @@ Arc is a cross-time desired state-transformation dimension. A Chapter may contri
 
 Arc/Plan relations describe future intent. Important realized causality and Arc progress are established only through accepted Chapter Outcome/Narrative State evidence. Future Replan may split/merge/spawn/supersede planned Arcs; accepted history is immutable.
 
-### 7. Cross-domain reads remain versioned/frozen
+The Arc contract family distinguishes `ArcPlan`, `ArcActualState`, `ArcProgress`, `ArcOutcome`, `ArcCheckpoint` and future-only `ArcRevision`. Missing actual evidence is explicit `NOT_OBSERVED`, `NOT_MATERIALIZED` or `UNKNOWN`; ChapterPlan declarations are never promoted to `ACTUAL`.
+
+### 7. Book Acceptance owns the complete Chapter truth boundary
+
+All model calls, retrieval, embedding and semantic evaluation finish before acceptance. The short Book Acceptance transaction performs only fence/CAS and lineage validation, deterministic reducers, authoritative writes/current-pointer advancement and outbox. One accepted boundary logically completes Chapter, ChapterOutcome, Canon, Narrative State, ArcProgress and Narrative Obligation state before Chapter N+1 drafting may start.
+
+### 8. Cross-domain reads remain versioned/frozen
 
 Planning may consume frozen AssetVersion/query/snapshot contracts. Book coordination may consume Planning projections/cursors. Neither domain imports another domain's concrete repository to assemble private mutable truth. Quality/Agents emit evidence or proposals and cannot directly mutate Planning/Chapter/Canon state.
 
@@ -50,6 +61,6 @@ Planning may consume frozen AssetVersion/query/snapshot contracts. Book coordina
 
 - No `Book → Volume → Arc → Chapter` containment model is introduced as the canonical hierarchy.
 - No second Story/Plan/Arc runtime is justified by the richer Narrative Arc OS target.
-- `Narrative Segment` and `ChapterGroup` stay semantically distinct until code/runtime evidence justifies a concrete convergence mapping.
+- No Narrative Segment root is created until code/runtime evidence proves its independent consumer and lifecycle.
 - Progressive planning can preserve distant open design space while elaborating near-term Arc/Chapter detail.
 - Current implementations/tests remain evidence of current semantics only; this ADR does not establish real-provider or long-form proof.

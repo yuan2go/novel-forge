@@ -17,8 +17,8 @@ def test_distinct_pack_versions_freeze_distinct_trusted_compilations() -> None:
     assert version_1.catalog_snapshot_hash != version_2.catalog_snapshot_hash
     assert version_1.prompt_hash != version_2.prompt_hash
     assert version_1.skill_hash != version_2.skill_hash
-    assert version_1.agent_definition_version == 1
-    assert version_2.agent_definition_version == 2
+    assert version_1.agent_definition_version == 0
+    assert version_2.agent_definition_version == 0
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
         uow.cursor.execute(
             """

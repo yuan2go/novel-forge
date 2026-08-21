@@ -15,11 +15,16 @@ class RuntimeJobBoundaryTests(unittest.TestCase):
             set(OPERATIONAL_RUNTIME_JOB_CONTRACTS),
             {
                 "BOOK_COORDINATION_TICK",
+                "BOOK_FOLLOWUP_ADMISSION",
                 "OPERATION_DEADLINE_SCAN",
                 "ATTEMPT_LEASE_EXPIRY_SCAN",
                 "OUTBOX_RECOVERY_SCAN",
                 "EXTERNAL_EFFECT_RECONCILIATION_SCAN",
             },
+        )
+        self.assertEqual(
+            OPERATIONAL_RUNTIME_JOB_CONTRACTS["BOOK_FOLLOWUP_ADMISSION"],
+            ("book_followup", "CHAPTER_ACCEPTANCE"),
         )
 
     def test_runtime_job_does_not_own_business_attempts_or_effects(self) -> None:

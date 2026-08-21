@@ -23,7 +23,7 @@ from novel_forge.modules.chapter_authority.orchestrator import (
 )
 from novel_forge.modules.chapter_authority.runtime import execute_chapter_handler
 from novel_forge.modules.chapter_authority.model_effects import (
-    AGENT_MODEL_STAGES,
+    MODEL_CAPABILITY_STAGES,
     ChapterAgentBindingRecorder,
 )
 from novel_forge.modules.command_kernel.attempt_runtime import (
@@ -306,10 +306,14 @@ class ChapterAuthorityScheduler:
             ChapterNode.REVIEW: self._initial_primary(
                 root, request, ChapterNode.REVIEW
             ),
+            ChapterNode.BEST_CANDIDATE: self._initial_primary(
+                root, request, ChapterNode.BEST_CANDIDATE
+            ),
         }
         sequence = (
             ChapterNode.REVISION,
             ChapterNode.REREVIEW,
+            ChapterNode.BEST_CANDIDATE,
             ChapterNode.CANON_EXTRACTION,
             ChapterNode.CANON_PROPOSAL,
             ChapterNode.CANON,
@@ -381,6 +385,11 @@ class ChapterAuthorityScheduler:
                     register_step=False,
                     explicit_inputs=inputs,
                     dependency_operation_ids=dependencies,
+                    input_overrides=(
+                        {"correction_generation": generation}
+                        if node is ChapterNode.BEST_CANDIDATE
+                        else None
+                    ),
                     timeline_step_key=f"quality-correction:{generation}:{node.value}",
                     timeline_ordinal=2000 + ordinal,
                     activate_immediately=True,
@@ -538,13 +547,31 @@ class ChapterAuthorityScheduler:
                         "chapter.production_input_manifest",
                     )
                 )
-        if node is ChapterNode.CONTEXT:
+        if node in {ChapterNode.EXECUTION_INTENT, ChapterNode.CONTEXT}:
+            candidates = request.context_candidates
+            if node is ChapterNode.EXECUTION_INTENT:
+                candidates = tuple(
+                    item
+                    for item in candidates
+                    if str(item.get("asset_type") or "")
+                    in {"story_state_snapshot", "canon_snapshot"}
+                )
+            else:
+                # The typed PLAN output is the exact authoritative execution
+                # plan.  The original planning candidate may remain in the
+                # root input snapshot for lineage, but cannot become a second
+                # chapter_plan input to Context compilation.
+                candidates = tuple(
+                    item
+                    for item in candidates
+                    if str(item.get("asset_type") or "") != "chapter_plan"
+                )
             inputs.extend(
                 {
                     "asset_version_id": str(item["asset_version_id"]),
                     "content_hash": str(item["content_hash"]),
                 }
-                for item in request.context_candidates
+                for item in candidates
             )
         if node is ChapterNode.QUALITY:
             context_operation = children[ChapterNode.CONTEXT]
@@ -665,11 +692,13 @@ class ChapterAuthorityScheduler:
             str(initial_quality["operation_id"]), request.project_id
         )
         if node is ChapterNode.REVISION:
-            initial_revision = self._initial_primary(
-                root, request, ChapterNode.REVISION
-            )
             return (
-                [initial_revision, quality_ref, common[ChapterNode.CONTEXT], *tasks],
+                [
+                    common[ChapterNode.BEST_CANDIDATE],
+                    quality_ref,
+                    common[ChapterNode.CONTEXT],
+                    *tasks,
+                ],
                 [str(initial_quality["operation_id"])],
             )
         revision_operation = correction[ChapterNode.REVISION]
@@ -690,14 +719,29 @@ class ChapterAuthorityScheduler:
         rereview_ref = self._primary_output(
             str(rereview_operation["operation_id"]), request.project_id
         )
+        if node is ChapterNode.BEST_CANDIDATE:
+            return (
+                [
+                    common[ChapterNode.BEST_CANDIDATE],
+                    revision_ref,
+                    rereview_ref,
+                    quality_ref,
+                    *tasks,
+                ],
+                [str(rereview_operation["operation_id"])],
+            )
+        best_operation = correction[ChapterNode.BEST_CANDIDATE]
+        best_ref = self._primary_output(
+            str(best_operation["operation_id"]), request.project_id
+        )
         if node is ChapterNode.CANON_EXTRACTION:
             return (
                 [
-                    revision_ref,
+                    best_ref,
                     rereview_ref,
                     common[ChapterNode.CONTEXT],
                 ],
-                [str(rereview_operation["operation_id"])],
+                [str(best_operation["operation_id"])],
             )
         extraction_operation = correction[ChapterNode.CANON_EXTRACTION]
         extraction_ref = self._primary_output(
@@ -715,7 +759,7 @@ class ChapterAuthorityScheduler:
         if node is ChapterNode.CANON:
             return (
                 [
-                    revision_ref,
+                    best_ref,
                     rereview_ref,
                     extraction_ref,
                     proposal_ref,
@@ -731,7 +775,7 @@ class ChapterAuthorityScheduler:
             return (
                 [
                     common[ChapterNode.PLAN],
-                    revision_ref,
+                    best_ref,
                     rereview_ref,
                     canon_ref,
                     common[ChapterNode.CONTEXT],
@@ -755,7 +799,7 @@ class ChapterAuthorityScheduler:
         return (
             [
                 common[ChapterNode.PLAN],
-                revision_ref,
+                best_ref,
                 rereview_ref,
                 canon_ref,
                 common[ChapterNode.CONTEXT],
@@ -1174,7 +1218,7 @@ class ChapterAuthorityScheduler:
             if (
                 operation["status"]
                 in {"WAITING_EXTERNAL_RESULT", "RECONCILIATION_REQUIRED"}
-                and node.value in AGENT_MODEL_STAGES
+                and node.value in MODEL_CAPABILITY_STAGES
             ):
                 recovery_mode = self._reconcile_agent_effects(
                     request,
@@ -1225,7 +1269,7 @@ class ChapterAuthorityScheduler:
                 self.fault_injector("after_domain_asset_materialized")
                 if (
                     self.agent_binding_recorder is not None
-                    and node.value in AGENT_MODEL_STAGES
+                    and node.value in MODEL_CAPABILITY_STAGES
                 ):
                     self.agent_binding_recorder.finalize_domain_commit(
                         project_id=project_id,
@@ -1275,7 +1319,7 @@ class ChapterAuthorityScheduler:
                 self.agent_binding_recorder is not None
                 and isinstance(exc, KernelError)
                 and _is_domain_validation_failure(exc.code)
-                and node.value in AGENT_MODEL_STAGES
+                and node.value in MODEL_CAPABILITY_STAGES
             ):
                 self.agent_binding_recorder.record_domain_rejection(
                     project_id=project_id,

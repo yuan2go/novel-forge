@@ -9,9 +9,6 @@ from uuid import uuid4
 from psycopg.types.json import Jsonb
 
 from novel_forge.modules.authority_security import Principal
-from novel_forge.modules.book_authority.input_resolver import (
-    project_current_plan_cursor,
-)
 from novel_forge.modules.book_production.domain import (
     ArcStatus,
     EndingReachabilityInput,
@@ -24,7 +21,6 @@ from novel_forge.modules.command_kernel.service import (
     TransactionCheckpoint,
     execute_transaction_command,
 )
-from novel_forge.modules.story_planning_runtime import canonical_hash
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 
@@ -122,7 +118,6 @@ class PostgresBookNarrativeCheckpointAuthority:
     ) -> dict[str, Any]:
         row = self._acceptance_context(uow.cursor, book_run_id, chapter_request_id)
         chapter_plan = dict(row[12])
-        outcome = dict(row[14])
         volumes = self._portfolio_assets(
             uow.cursor,
             project_id=str(row[0]),
@@ -133,53 +128,30 @@ class PostgresBookNarrativeCheckpointAuthority:
             project_id=str(row[0]),
             asset_version_ids=tuple(str(item) for item in row[16]),
         )
+        # Imported lazily to keep the Book production package independent from
+        # Book Authority package initialization.
+        from novel_forge.modules.book_authority.input_resolver import (
+            project_current_plan_cursor,
+        )
+
         current_volume, current_arcs = project_current_plan_cursor(
             volumes=volumes,
             arcs=arcs,
             chapter_cursor=int(row[4]),
         )
         declared = required_arc_contributions(chapter_plan)
-        actual_raw = outcome.get("actual_arc_contributions") or declared.values()
-        actual = {
-            str(item.get("arc_plan_version_id") or item.get("arc_id") or ""): dict(
-                item
-            )
-            for item in actual_raw
-            if isinstance(item, dict)
-        }
         active_arcs = current_arcs
         if any(arc_id not in active_arcs for arc_id in declared):
             raise KernelError(
                 "ARC_CONTRIBUTION_PLAN_SCOPE_INVALID",
                 "ChapterPlan declares an Arc outside the Book input snapshot",
             )
-        for arc_id, evidence in actual.items():
-            if not arc_id or arc_id not in declared:
-                raise KernelError(
-                    "ARC_CONTRIBUTION_UNDECLARED",
-                    "Chapter acceptance cannot add an undeclared Arc contribution",
-                )
-            self._insert_contribution(
-                uow.cursor,
-                project_id=str(row[0]),
-                book_id=str(row[2]),
-                arc_plan_version=arc_id,
-                chapter_plan_version=str(row[11]),
-                chapter_request_id=chapter_request_id,
-                acceptance_operation_id=str(row[10]),
-                recorded_by_operation_id=operation_id,
-                evidence_version_id=str(row[13]),
-                evidence=evidence,
-            )
-        arc_status = self._append_arc_checkpoints(
+        arc_status, observed_count = self._accepted_arc_projection(
             uow.cursor,
             project_id=str(row[0]),
             book_id=str(row[2]),
+            projection_set_id=str(row[17] or ""),
             active_arcs=active_arcs,
-            chapter_number=int(row[4]),
-            acceptance_operation_id=operation_id,
-            actual_arc_ids=frozenset(actual),
-            target_chapter_count=int(row[5]),
         )
         reachability = self._append_ending_report(
             uow.cursor,
@@ -224,7 +196,8 @@ class PostgresBookNarrativeCheckpointAuthority:
                     "chapter_request_id": chapter_request_id,
                     "volume_checkpoint_id": volume["checkpoint_id"],
                     "ending_report_hash": reachability["report_hash"],
-                    "arc_contribution_count": len(actual),
+                    "observed_arc_count": observed_count,
+                    "longform_projection_set_id": str(row[17]),
                 },
             }
         )
@@ -232,7 +205,8 @@ class PostgresBookNarrativeCheckpointAuthority:
             "arc_status_snapshot": arc_status,
             "ending_reachability": reachability,
             "volume_checkpoint": volume,
-            "contribution_count": len(actual),
+            "observed_arc_count": observed_count,
+            "longform_projection_set_id": str(row[17]),
         }
 
     def _register_definition(self) -> None:
@@ -287,6 +261,7 @@ class PostgresBookNarrativeCheckpointAuthority:
                    acceptance.chapter_outcome_asset_version_id, outcome.content
                    , snapshot.volume_portfolio_plan_versions
                    , snapshot.arc_portfolio_plan_versions
+                   , acceptance.longform_projection_set_id
             FROM authority_book_production AS book
             JOIN authority_book_production_input_snapshot AS snapshot
               ON snapshot.snapshot_id=book.input_snapshot_id
@@ -339,103 +314,58 @@ class PostgresBookNarrativeCheckpointAuthority:
         return [by_id[item] for item in asset_version_ids]
 
     @staticmethod
-    def _insert_contribution(cursor: Any, **value: Any) -> None:
-        evidence_hash = canonical_hash(value["evidence"])
-        identity = f"{value['arc_plan_version']}:{value['chapter_request_id']}:ACTUAL"
-        contribution_id = (
-            "arc-contribution:" + hashlib.sha256(identity.encode()).hexdigest()
-        )
-        cursor.execute(
-            """
-            INSERT INTO authority_arc_contribution(
-                contribution_id, project_id, book_id, arc_plan_version_id,
-                chapter_plan_version_id, chapter_request_id,
-                chapter_acceptance_operation_id, contribution_evidence_version_id,
-                contribution_kind, evidence_hash, recorded_by_operation_id
-            ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,'ACTUAL',%s,%s)
-            ON CONFLICT (arc_plan_version_id, chapter_request_id, contribution_kind)
-            DO NOTHING
-            """,
-            [
-                contribution_id,
-                value["project_id"],
-                value["book_id"],
-                value["arc_plan_version"],
-                value["chapter_plan_version"],
-                value["chapter_request_id"],
-                value["acceptance_operation_id"],
-                value["evidence_version_id"],
-                evidence_hash,
-                value["recorded_by_operation_id"],
-            ],
-        )
-
-    @staticmethod
-    def _append_arc_checkpoints(
+    def _accepted_arc_projection(
         cursor: Any,
         *,
         project_id: str,
         book_id: str,
+        projection_set_id: str,
         active_arcs: tuple[str, ...],
-        chapter_number: int,
-        acceptance_operation_id: str,
-        actual_arc_ids: frozenset[str],
-        target_chapter_count: int,
-    ) -> dict[str, str]:
+    ) -> tuple[dict[str, str], int]:
+        if not projection_set_id:
+            raise KernelError(
+                "BOOK_LONGFORM_PROJECTION_INCOMPLETE",
+                "narrative checkpoint requires the complete acceptance projection set",
+            )
+        cursor.execute(
+            """
+            SELECT state.arc_plan_version_id, state.lifecycle_status,
+                   state.observation_status, checkpoint.decision
+            FROM authority_arc_actual_state AS state
+            JOIN authority_arc_checkpoint_v2 AS checkpoint
+              ON checkpoint.projection_set_id=state.projection_set_id
+             AND checkpoint.arc_plan_version_id=state.arc_plan_version_id
+            WHERE state.project_id=%s AND state.book_id=%s
+              AND state.projection_set_id=%s
+              AND state.arc_plan_version_id=ANY(%s::text[])
+            """,
+            [
+                project_id,
+                book_id,
+                projection_set_id,
+                list(active_arcs),
+            ],
+        )
+        rows = cursor.fetchall()
+        if {str(row[0]) for row in rows} != set(active_arcs):
+            raise KernelError(
+                "BOOK_LONGFORM_PROJECTION_INCOMPLETE",
+                "accepted Arc projection does not cover the frozen active Arc set",
+            )
         result: dict[str, str] = {}
-        for arc_id in active_arcs:
-            cursor.execute(
-                """
-                SELECT COALESCE(MAX(version),0), COALESCE(MAX(contribution_count),0)
-                FROM authority_book_arc_checkpoint
-                WHERE project_id=%s AND arc_plan_version=%s
-                """,
-                [project_id, arc_id],
-            )
-            previous_version, previous_count = cursor.fetchone()
-            count = int(previous_count) + (1 if arc_id in actual_arc_ids else 0)
-            remaining = target_chapter_count - chapter_number
-            if remaining == 0:
-                status = ArcStatus.CLOSURE_PENDING
-            elif arc_id in actual_arc_ids:
-                status = ArcStatus.ACTIVE
-            elif int(previous_version) > 0:
-                status = ArcStatus.STALLED
+        observed_count = 0
+        for arc_id, lifecycle_status, observation_status, decision in rows:
+            lifecycle = str(lifecycle_status)
+            observation = str(observation_status)
+            observed_count += observation == "OBSERVED"
+            if lifecycle == "COMPLETED":
+                status = ArcStatus.COMPLETED.value
+            elif lifecycle == "ABANDONED":
+                status = ArcStatus.ABORTED.value
             else:
-                status = ArcStatus.PLANNED
-            version = int(previous_version) + 1
-            checkpoint_id = f"arc-checkpoint:{hashlib.sha256(f'{arc_id}:{version}'.encode()).hexdigest()}"
-            cursor.execute(
-                """
-                INSERT INTO authority_book_arc_checkpoint(
-                    checkpoint_id, project_id, book_id, arc_plan_version,
-                    current_stage, arc_status, contribution_count,
-                    required_next_contribution, closure_condition_status,
-                    stagnation_risk, cross_volume_status, last_updated_chapter,
-                    arc_debt, version, updated_by_operation_id
-                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
-                ON CONFLICT (project_id, arc_plan_version, version) DO NOTHING
-                """,
-                [
-                    checkpoint_id,
-                    project_id,
-                    book_id,
-                    arc_id,
-                    f"chapter:{chapter_number}",
-                    status.value,
-                    count,
-                    Jsonb({"required_after_chapter": chapter_number}),
-                    "PENDING" if status is not ArcStatus.COMPLETED else "SATISFIED",
-                    "HIGH" if status is ArcStatus.STALLED and remaining <= 2 else "LOW",
-                    "ACTIVE_SPAN",
-                    chapter_number,
-                    Jsonb({"missed_contribution": arc_id not in actual_arc_ids}),
-                    version,
-                    acceptance_operation_id,
-                ],
-            )
-            result[arc_id] = status.value
-        return result
+                status = str(decision or lifecycle)
+            result[str(arc_id)] = status
+        return result, observed_count
 
     @staticmethod
     def _append_ending_report(

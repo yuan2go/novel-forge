@@ -1339,6 +1339,33 @@ def _validate_scene_architecture(
     }
     previous_story_time: dict[str, tuple[int, int]] = {}
     for scene in scenes:
+        scene_version = int(scene.get("scene_version") or 1)
+        beats = scene.get("beats") or ()
+        if scene_version <= 0 or not beats:
+            raise KernelError(
+                "SCENE_TYPED_CHILD_INVALID",
+                "ScenePlan requires a positive version and at least one Beat",
+            )
+        beat_ids: list[str] = []
+        for ordinal, raw_beat in enumerate(beats, start=1):
+            if isinstance(raw_beat, dict):
+                beat_id = str(raw_beat.get("beat_id") or "")
+                beat_ordinal = int(raw_beat.get("ordinal") or 0)
+                function = str(raw_beat.get("function") or "")
+                if not beat_id or beat_ordinal != ordinal or not function:
+                    raise KernelError(
+                        "BEAT_TYPED_CHILD_INVALID",
+                        "Beat requires stable identity, contiguous order, and function",
+                    )
+                beat_ids.append(beat_id)
+            elif not str(raw_beat):
+                raise KernelError(
+                    "BEAT_TYPED_CHILD_INVALID", "legacy Beat text cannot be empty"
+                )
+        if len(beat_ids) != len(set(beat_ids)):
+            raise KernelError(
+                "BEAT_TYPED_CHILD_INVALID", "Beat identities must be unique"
+            )
         participants = {str(item) for item in scene.get("participants") or ()}
         pov = str(scene.get("pov_character_id") or "")
         focalization = str(scene.get("focalization") or "")

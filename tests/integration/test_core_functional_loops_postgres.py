@@ -170,7 +170,7 @@ def _activate_planning_pack(harness: CapabilityPackPostgresHarness) -> str:
     template = next(
         node
         for node in harness._base_manifest["workflow_template"]["nodes"]
-        if node.get("agent_definition_ref")
+        if node.get("node_id") == "draft"
     )
     nodes = []
     for generator, capability in zip(
@@ -193,7 +193,6 @@ def _activate_planning_pack(harness: CapabilityPackPostgresHarness) -> str:
             handler_key="novel_forge.story_planning.generate",
             stage=generator,
             capability_id=capability,
-            agent_definition_ref=f"{generator.replace('.', '-')}-agent@1",
             input_asset_types=["planning_generation_input_snapshot"],
             output_asset_types=["planning_generation_candidate"],
             depends_on=[],
@@ -421,10 +420,10 @@ class _ExternalEffectPepFixturePlanningBinder:
                 external_receipt_ref=f"external-effect:{digest}",
                 capability_pack_attempt_snapshot_id=f"pack-snapshot:{digest}",
                 capability_pack_attempt_snapshot_hash=digest,
-                agent_work_order_ref=f"work-order:{digest}",
-                agent_work_order_hash=digest,
-                agent_runtime_binding_ref=f"runtime-binding:{digest}",
-                agent_runtime_binding_hash=digest,
+                capability_execution_ref=f"capability-execution:{digest}",
+                capability_execution_hash=digest,
+                capability_runtime_binding_ref=f"runtime-binding:{digest}",
+                capability_runtime_binding_hash=digest,
                 commit_authority="STORY_DESIGN_AUTHORITY",
                 fixture_protocol_only=True,
             ),

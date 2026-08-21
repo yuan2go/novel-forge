@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from dataclasses import asdict
 from typing import Any
 
 from novel_forge.modules.command_kernel.errors import KernelError
@@ -37,6 +38,56 @@ class AgentRuntimeQuery:
                 activation_status=activation_status,
                 limit=limit,
             )
+
+    def require_harness_session(
+        self, *, project_id: str, agent_session_id: str
+    ) -> dict[str, Any]:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            session = uow.repositories.agent_runtime.require_harness_session(
+                agent_session_id
+            )
+            if session.project_id != project_id:
+                raise KernelError(
+                    "AGENT_HARNESS_SESSION_NOT_FOUND", "Agent session does not exist"
+                )
+            uow.cursor.execute(
+                """
+                SELECT sequence, request_id, turn_number, event_type, payload,
+                       attempt_id, external_effect_id, trace_id, payload_hash,
+                       created_at
+                FROM authority_agent_transcript_event
+                WHERE agent_session_id=%s
+                ORDER BY sequence
+                """,
+                [agent_session_id],
+            )
+            transcript = [
+                {
+                    "sequence": int(row[0]),
+                    "request_id": str(row[1]),
+                    "turn_number": int(row[2]),
+                    "event_type": str(row[3]),
+                    "payload": dict(row[4] or {}),
+                    "attempt_id": str(row[5] or ""),
+                    "external_effect_id": str(row[6] or ""),
+                    "trace_id": str(row[7]),
+                    "payload_hash": str(row[8]),
+                    "created_at": _timestamp(row[9]),
+                }
+                for row in uow.cursor.fetchall()
+            ]
+        payload = asdict(session)
+        payload["role"] = session.role.value
+        payload["status"] = session.status.value
+        payload["tool_policy"] = [
+            {
+                **asdict(tool),
+                "kind": tool.kind.value,
+                "allowed_roles": [role.value for role in tool.allowed_roles],
+            }
+            for tool in session.tool_policy
+        ]
+        return {**payload, "transcript": transcript}
 
     def recovery_health(self, *, project_id: str = "") -> dict[str, Any]:
         """Aggregate derived recovery backlog without creating runtime state."""

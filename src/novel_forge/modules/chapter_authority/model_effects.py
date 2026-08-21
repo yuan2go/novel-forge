@@ -38,7 +38,7 @@ from novel_forge.modules.provider_control.contracts import (
 from novel_forge.modules.production_execution.contracts import ExecutionRecoveryAction
 
 
-AGENT_MODEL_STAGES = frozenset(
+MODEL_CAPABILITY_STAGES = frozenset(
     {
         "draft",
         "review",
@@ -53,6 +53,9 @@ AGENT_MODEL_STAGES = frozenset(
         "narrative_semantic_evaluation",
     }
 )
+# Migration-only adapter surface. Normal Chapter composition does not install
+# a Chapter Agent Binding Recorder; these are Typed Capabilities.
+LEGACY_AGENT_BOUND_MODEL_STAGES = MODEL_CAPABILITY_STAGES
 
 
 @dataclass(frozen=True, slots=True)
@@ -279,7 +282,7 @@ class ExternalEffectChapterModelPort:
         stage: str,
         payload: dict[str, Any],
     ) -> ModelProviderResult:
-        if stage not in AGENT_MODEL_STAGES | {"reader_outcome"}:
+        if stage not in MODEL_CAPABILITY_STAGES | {"reader_outcome"}:
             raise KernelError(
                 "MODEL_EFFECT_STAGE_UNSUPPORTED", f"unsupported model stage: {stage}"
             )

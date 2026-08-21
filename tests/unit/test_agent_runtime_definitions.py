@@ -4,6 +4,7 @@ from novel_forge.modules.agent_runtime.definitions import (
     AGENT_RUNTIME_ADMIN_HANDLER_KEY,
     AGENT_RUNTIME_DEFINITION_VERSION,
     AGENT_RUNTIME_EXECUTION_HANDLER_KEY,
+    AGENT_RUNTIME_HARNESS_HANDLER_KEY,
     agent_runtime_operation_definitions,
 )
 
@@ -24,6 +25,7 @@ def test_agent_runtime_definitions_use_shared_kernel_execution_classes() -> None
         "agent.chapter_binding.register",
         "agent.chapter_binding.activate",
         "agent.candidate.execute",
+        "agent.session.execute",
     }
     for name, definition in definitions.items():
         assert definition["definition_version"] == AGENT_RUNTIME_DEFINITION_VERSION
@@ -34,6 +36,11 @@ def test_agent_runtime_definitions_use_shared_kernel_execution_classes() -> None
         if name == "agent.candidate.execute":
             assert definition["execution_mode"] == "worker"
             assert definition["handler_key"] == AGENT_RUNTIME_EXECUTION_HANDLER_KEY
+        elif name == "agent.session.execute":
+            assert definition["execution_mode"] == "worker"
+            assert definition["handler_key"] == AGENT_RUNTIME_HARNESS_HANDLER_KEY
+            assert definition["policy"]["agent_session_provenance_only"] is True
+            assert definition["policy"]["authority_commands_submit_only"] is True
         else:
             assert definition["execution_mode"] == "transactional"
             assert definition["handler_key"] == AGENT_RUNTIME_ADMIN_HANDLER_KEY

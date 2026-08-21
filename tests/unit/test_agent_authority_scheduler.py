@@ -48,7 +48,7 @@ def _operation() -> dict[str, Any]:
         "project_id": "project-1",
         "workspace_id": "workspace-1",
         "definition_name": "agent.candidate.execute",
-        "definition_version": "1.0.0",
+        "definition_version": "2.0.0",
         "definition_snapshot": {"definition_hash": HASH_A},
         "command_payload": {
             "agent_id": "draft-agent",
@@ -121,7 +121,7 @@ def test_work_order_and_runtime_binding_reuse_attempt_and_fence() -> None:
     assert first.fencing_token == 9
     assert binding.attempt_id == first.attempt_id
     assert binding.work_order_id == first.work_order_id
-    assert binding.operation_definition_ref == "agent.candidate.execute@1.0.0"
+    assert binding.operation_definition_ref == "agent.candidate.execute@2.0.0"
     assert binding.chapter_node_binding_ref == "chapter-binding:draft@5"
     assert binding.tool_policy_ref == "tool-policy:draft@1"
     assert binding.tool_permission_snapshot_ref == "tools:attempt-1"

@@ -652,19 +652,6 @@ def _validate_workflow(
     known = {value for value in node_ids if isinstance(value, str) and value}
     seen: set[str] = set()
     graph: dict[str, tuple[str, ...]] = {}
-    agent_bound_stages = {
-        "draft",
-        "review",
-        "revision",
-        "rereview",
-        "canon_extraction",
-        "quality_structural",
-        "quality_commercial",
-        "quality_source_originality",
-        "quality_longform",
-        "quality_platform",
-        "reader_outcome",
-    }
     for index, node in enumerate(workflow.nodes):
         path = f"$.workflow_template.nodes[{index}]"
         for field, value in (
@@ -700,19 +687,6 @@ def _validate_workflow(
             resolved=resolved,
             issues=issues,
         )
-        if (
-            isinstance(node.stage, str)
-            and node.stage in agent_bound_stages
-            and (
-                not isinstance(node.agent_definition_ref, str)
-                or "@" not in node.agent_definition_ref
-            )
-        ):
-            issues.error(
-                "CAPABILITY_PACK_AGENT_BINDING_REQUIRED",
-                f"{path}.agent_definition_ref",
-                "model-backed workflow node requires an exact Agent Definition ref",
-            )
         if node.commit_authority not in _COMMIT_AUTHORITIES:
             issues.error(
                 "CAPABILITY_PACK_COMMIT_AUTHORITY_INVALID",

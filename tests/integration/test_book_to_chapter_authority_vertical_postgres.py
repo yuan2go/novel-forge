@@ -21,6 +21,7 @@ from novel_forge.modules.book_authority.production import (
     StartBookProductionCommand,
     SubmitBookChapterCommand,
     _validate_chapter_acceptance_evidence,
+    select_chapter_acceptance_outputs,
 )
 from novel_forge.modules.book_authority.queries import PostgresBookProductionQuery
 from novel_forge.modules.book_authority.governed_scheduler import (
@@ -28,9 +29,6 @@ from novel_forge.modules.book_authority.governed_scheduler import (
 )
 from novel_forge.modules.book_followup_authority.application import (
     BookFollowupAuthorityApplication,
-)
-from novel_forge.modules.book_followup_authority.query import (
-    BookFollowupProjectionQuery,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.content_intelligence import PacingAnalysisService
@@ -102,14 +100,14 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                 "source_chapter_plan_asset_version_id": execution_plan,
                 "source_chapter_plan_content_hash": execution_hash,
             },
-            "draft_version": {},
+            "best_draft_candidate": {},
             "re_review_report": {"decision": "PASSED", "blocking_issue_count": 0},
             "canon_patch": {"gate": "PASSED", "conflicts": []},
             "canon_snapshot": {},
             "quality_score_report": {"gate": "PASSED_WITH_UNCALIBRATED"},
             "release_package": {
                 "release_status": "READY_FOR_BLOB_VERIFICATION",
-                "source_asset_version_id": "draft_version:v1",
+                "source_asset_version_id": "best_draft_candidate:v1",
             },
             "final_release_gate_report": {
                 "gate": "PASSED",
@@ -187,7 +185,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                     "content_hash": f"sha256:{asset_type}:superseded",
                 }
                 for asset_type in (
-                    "draft_version",
+                    "best_draft_candidate",
                     "re_review_report",
                     "canon_patch",
                     "quality_score_report",
@@ -226,15 +224,15 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
             "budgets": [],
         }
         self.assertEqual(
-            PostgresBookAuthorityScheduler._evidence_output(
-                corrected_evidence, "draft_version"
-            )["asset_version_id"],
-            "draft_version:v1",
+            select_chapter_acceptance_outputs(corrected_evidence)[
+                "best_draft_candidate"
+            ]["asset_version_id"],
+            "best_draft_candidate:v1",
         )
         self.assertEqual(
-            PostgresBookAuthorityScheduler._evidence_output(
-                corrected_evidence, "quality_score_report"
-            )["asset_version_id"],
+            select_chapter_acceptance_outputs(corrected_evidence)[
+                "quality_score_report"
+            ]["asset_version_id"],
             "quality_score_report:v1",
         )
 
@@ -301,7 +299,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                 },
             )
 
-    def test_book_chapter_reader_outcome_recap_and_checkpoint_are_one_governed_chain(
+    def test_book_acceptance_atomically_materializes_projection_set_without_sidecar_ownership(
         self,
     ) -> None:
         project_id = identifier("book-chapter-vertical")
@@ -443,49 +441,17 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                     claim,
                 )
 
-            reader_tick = runtime_tick()
-            reader_complete_tick = runtime_tick()
-            recap_tick = runtime_tick()
-            recap_complete_tick = runtime_tick()
+            acceptance_tick = runtime_tick()
+            self.assertEqual(acceptance_tick["action"], "ACCEPT_CHAPTER")
+            accepted = authority.require(book.book_run_id)
+            self.assertEqual(accepted["state"], "READY")
+            self.assertEqual(accepted["current_chapter"], 1)
+            self.assertTrue(accepted["active_longform_projection_set_id"])
+            authority.complete_book_checkpoint(book.book_run_id, chapter_number=1)
             final = authority.require(book.book_run_id)
 
             self.assertEqual(final["state"], "COMPLETED")
             self.assertEqual(final["current_chapter"], 1)
-            self.assertEqual(reader_tick["state"], "COMPLETED")
-            self.assertEqual(reader_complete_tick["state"], "COMPLETED")
-            self.assertEqual(recap_tick["state"], "COMPLETED")
-            self.assertEqual(recap_complete_tick["state"], "COMPLETED")
-            self.assertEqual(
-                reader_tick["action"],
-                "ACCEPT_CHAPTER_AND_SUBMIT_READER_SHADOW",
-            )
-            self.assertEqual(reader_complete_tick["action"], "COMPLETE_READER_SHADOW")
-            self.assertEqual(recap_tick["action"], "SUBMIT_LONGFORM_RECAP_SIDECAR")
-            self.assertEqual(
-                recap_complete_tick["action"],
-                "COMPLETE_LONGFORM_RECAP_SIDECAR",
-            )
-            query = BookFollowupProjectionQuery(DATABASE_URL)
-            reader_projection = query.reader_outcome(
-                project_id=project_id,
-                operation_id=str(reader_tick["operation_id"]),
-            )
-            recap_projection = query.longform_recap(
-                project_id=project_id,
-                operation_id=str(recap_tick["operation_id"]),
-            )
-            self.assertEqual(reader_projection["content"]["gate"], "PASS")
-            self.assertEqual(reader_projection["content"]["mode"], "SHADOW")
-            self.assertEqual(
-                reader_projection["content"]["calibration_status"],
-                "UNCALIBRATED",
-            )
-            self.assertEqual(
-                reader_projection["content"]["score_semantics"], "RAW_SCORE"
-            )
-            self.assertFalse(reader_projection["content"]["publish_blocking"])
-            self.assertNotIn("completion_probability", reader_projection["content"])
-            self.assertFalse(recap_projection["content"]["plan_mutation_allowed"])
             with AuthorityUnitOfWork(DATABASE_URL) as uow:
                 uow.cursor.execute(
                     """
@@ -500,46 +466,40 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                 terminal = uow.cursor.fetchone()
                 uow.cursor.execute(
                     """
-                    SELECT COUNT(*) FROM authority_external_effect
-                    WHERE operation_id=%s AND capability='model.reader_outcome'
-                    """,
-                    [reader_tick["operation_id"]],
-                )
-                reader_effects = int(uow.cursor.fetchone()[0])
-                uow.cursor.execute(
-                    """
                     SELECT operation.definition_name,
                            jsonb_array_length(operation.input_asset_snapshot)
                     FROM authority_operation AS operation
-                    WHERE operation.operation_id = ANY(%s)
+                    WHERE operation.operation_id=%s
                     ORDER BY operation.definition_name
                     """,
-                    [
-                        [
-                            book.root_operation_id,
-                            reader_tick["operation_id"],
-                            recap_tick["operation_id"],
-                        ]
-                    ],
+                    [book.root_operation_id],
                 )
                 frozen_input_counts = dict(uow.cursor.fetchall())
-                # Exact hash matching is already enforced by admission. Here the
-                # containment check is performed by version id below because
-                # jsonb array objects also carry project_id.
                 uow.cursor.execute(
                     """
-                    SELECT COUNT(*)
-                    FROM authority_operation,
-                         jsonb_array_elements(input_asset_snapshot) AS input
-                    WHERE operation_id=%s
-                      AND input->>'asset_version_id'=%s
+                    SELECT COUNT(*),
+                           COUNT(*) FILTER (
+                               WHERE projection_set_id=%s
+                           ),
+                           COUNT(*) FILTER (
+                               WHERE chapter_outcome_asset_version_id=%s
+                                 AND story_state_asset_version_id=%s
+                                 AND canon_snapshot_asset_version_id=%s
+                           )
+                    FROM authority_book_narrative_projection_set
+                    WHERE book_run_id=%s AND chapter_number=1
                     """,
                     [
-                        recap_tick["operation_id"],
+                        final["active_longform_projection_set_id"],
                         final["last_chapter_outcome_version_id"],
+                        final["active_story_state_version_id"],
+                        final["active_canon_snapshot_version_id"],
+                        book.book_run_id,
                     ],
                 )
-                recap_outcome_inputs = int(uow.cursor.fetchone()[0])
+                projection_set_evidence = tuple(
+                    int(value) for value in uow.cursor.fetchone()
+                )
                 uow.cursor.execute(
                     """
                     SELECT COUNT(*),
@@ -570,15 +530,12 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                     int(value) for value in uow.cursor.fetchone()
                 )
             self.assertEqual(terminal, ("SUCCEEDED", "SUCCEEDED"))
-            self.assertEqual(runtime_job_evidence, (4, 4, 4, 4))
-            self.assertEqual(reader_effects, 1)
-            self.assertEqual(recap_outcome_inputs, 1)
+            self.assertEqual(runtime_job_evidence, (1, 1, 1, 1))
+            self.assertEqual(projection_set_evidence, (1, 1, 1))
             self.assertEqual(
                 frozen_input_counts,
                 {
                     "book.production.coordinate": 12,
-                    "longform.recap": 9,
-                    "reader_outcome.evaluate": 14,
                 },
             )
 
@@ -759,6 +716,10 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                 )
 
             final = authority.require(book.book_run_id)
+            self.assertEqual(final["state"], "READY")
+            final = authority.complete_book_checkpoint(
+                book.book_run_id, chapter_number=2
+            )
             self.assertEqual(final["state"], "COMPLETED")
             self.assertEqual(final["current_chapter"], 2)
             self.assertEqual(final["accepted_through_chapter"], 2)
@@ -825,6 +786,17 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
                 context_bundles = [dict(row[0]) for row in uow.cursor.fetchall()]
                 uow.cursor.execute(
                     """
+                    SELECT COUNT(*), COUNT(DISTINCT memory_layer)
+                    FROM authority_narrative_retrieval_document
+                    WHERE project_id=%s AND book_id=%s
+                    """,
+                    [project_id, f"book:{project_id}"],
+                )
+                retrieval_document_count, retrieval_layer_count = (
+                    int(value) for value in uow.cursor.fetchone()
+                )
+                uow.cursor.execute(
+                    """
                     SELECT COUNT(*), BOOL_AND(version.content->>'gate'='PASSED')
                     FROM authority_operation_output_asset AS output
                     JOIN authority_operation AS operation
@@ -869,6 +841,23 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
             )
             self.assertEqual(len(current_state["disclosure_event"]), 2)
             self.assertEqual(len(context_bundles), 2)
+            self.assertEqual(retrieval_document_count, 10)
+            self.assertGreaterEqual(retrieval_layer_count, 5)
+            self.assertTrue(context_bundles[1]["context_manifest"]["retrieval_trace"])
+            accepted_retrieval_trace = [
+                item
+                for item in context_bundles[1]["context_manifest"][
+                    "retrieval_trace"
+                ]
+                if item["provenance"].get("retrieval_document_id")
+            ]
+            self.assertTrue(accepted_retrieval_trace)
+            self.assertTrue(
+                all(
+                    int(item["provenance"]["accepted_from_chapter"]) <= 1
+                    for item in accepted_retrieval_trace
+                )
+            )
             self.assertEqual(
                 context_bundles[1]["chapter_execution_expectations"][
                     "required_state_transitions"
@@ -881,10 +870,12 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
             )
             self.assertGreaterEqual(int(canon_gate_count), 2)
             self.assertTrue(all_canon_gates_passed)
-            self.assertEqual(multiscale_quality["observation_status"], "MEASURED")
-            self.assertEqual(multiscale_quality["accepted_observation_count"], 1)
+            self.assertEqual(
+                multiscale_quality["observation_status"], "NOT_OBSERVED"
+            )
+            self.assertEqual(multiscale_quality["accepted_observation_count"], 0)
             self.assertEqual(multiscale_quality["accepted_through_chapter"], 1)
-            self.assertEqual(len(multiscale_quality["source_acceptance_ids"]), 1)
+            self.assertEqual(multiscale_quality["source_acceptance_ids"], [])
 
             rebuilt = NarrativeStateRebuildService(DATABASE_URL).rebuild(
                 project_id=project_id,

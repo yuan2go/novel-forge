@@ -38,9 +38,11 @@ These are derived from the Canonical Design and cannot independently change arch
 
 ## Development / Operations
 
-Keep existing operational and development guides focused on executable procedures. The reusable Claude Code handoff is:
+Keep operational and development guides focused on executable procedures. Approved implementation specifications may live under `superpowers/specs/` while active; they are subordinate to the Canonical Design and must preserve exact evidence/proof boundaries.
 
-- [`development/claude-code-canonical-implementation-prompt.md`](development/claude-code-canonical-implementation-prompt.md)
+Current approved convergence specification:
+
+- [`superpowers/specs/2026-08-20-industrial-autonomous-novel-os-convergence-design.md`](superpowers/specs/2026-08-20-industrial-autonomous-novel-os-convergence-design.md)
 
 ## ADRs
 
@@ -65,13 +67,16 @@ Do not keep an obsolete document merely because it was expensive to produce.
 Completion dimensions:
 
 ```text
-CODE_IMPLEMENTED
-CANONICAL_WIRED
-TEST_EXECUTED
-RUNTIME_PROVEN
-LONGFORM_PROVEN
-PRODUCTION_QUALIFIED
+DEFINED
+WIRED
+RUNTIME_REACHABLE
+PERSISTED
+AUTHORITY_GOVERNED
+CONSUMED
+UNIT/SMOKE_TESTED
 ```
+
+Qualification remains separate: `REAL_PROVIDER_PROVEN`, `LONGFORM_PROVEN`, `MULTIBOOK_PROVEN`, and `PRODUCTION_QUALIFIED` are never implied by implementation evidence.
 
 Repository maturity ladder where used:
 

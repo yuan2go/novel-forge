@@ -19,6 +19,12 @@ from novel_forge.modules.authority_handler_runtime.contracts import (
 )
 from novel_forge.modules.command_kernel.attempt_runtime import WorkerLeaseCommand
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.artifact_lineage import (
+    ArtifactLineageEdge,
+    PostgresArtifactLineageRepository,
+    lineage_policy_for,
+    semantic_dimensions_for,
+)
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 
@@ -59,6 +65,9 @@ def execute_authority_handler(
                 "Attempt operation changed during handler execution",
             )
         created_any = False
+        input_types = {
+            item.asset_version_id: item.asset_type for item in request.inputs
+        }
         for item in outputs:
             content_hash = _content_hash(item.content)
             identity = _stable_identity(request.operation_id, item.output_key)
@@ -97,6 +106,58 @@ def execute_authority_handler(
                 },
             )
             created_any = created_any or created
+            lineage = PostgresArtifactLineageRepository(uow.cursor)
+            references = tuple(
+                dict.fromkeys(
+                    (
+                        *(input_item.asset_version_id for input_item in request.inputs),
+                        *item.reference_asset_version_ids,
+                    )
+                )
+            )
+            for upstream_asset_version_id in references:
+                upstream_type = input_types.get(upstream_asset_version_id)
+                if upstream_type is None:
+                    uow.cursor.execute(
+                        """
+                        SELECT asset.asset_type
+                        FROM authority_asset_version AS version
+                        JOIN authority_asset AS asset ON asset.asset_id=version.asset_id
+                        WHERE version.asset_version_id=%s AND asset.project_id=%s
+                        """,
+                        [upstream_asset_version_id, request.project_id],
+                    )
+                    upstream_row = uow.cursor.fetchone()
+                    if upstream_row is None:
+                        raise KernelError(
+                            "ARTIFACT_LINEAGE_SOURCE_NOT_FOUND",
+                            "Authority output references an unknown source AssetVersion",
+                        )
+                    upstream_type = str(upstream_row[0])
+                command_payload = request.command.get("payload")
+                payload = command_payload if isinstance(command_payload, dict) else {}
+                book_id = str(
+                    request.command.get("book_id") or payload.get("book_id") or ""
+                )
+                lineage.record_edge(
+                    ArtifactLineageEdge(
+                        project_id=request.project_id,
+                        book_id=book_id,
+                        upstream_asset_version_id=upstream_asset_version_id,
+                        downstream_asset_version_id=identity[1],
+                        relationship_type="CONSUMES",
+                        semantic_dimensions=semantic_dimensions_for(
+                            (upstream_type, item.asset_type)
+                        ),
+                        invalidation_policy=lineage_policy_for(item.asset_type),
+                        context_fingerprint=str(
+                            item.content.get("context_fingerprint")
+                            or item.content.get("context_manifest_fingerprint")
+                            or ""
+                        ),
+                        created_by_operation_id=request.operation_id,
+                    )
+                )
             materialized.append(
                 AuthorityMaterializedOutput(
                     asset_id=identity[0],
@@ -250,6 +311,7 @@ def _load_request(
         story_design_candidate_id = ""
         repair_candidate_id = ""
         plan_change_candidate_id = ""
+        semantic_revalidation_target_id = ""
         policy = dict(snapshot.get("policy") or {})
         payload = dict(operation["command_payload"].get("payload") or {})
         if policy.get("evaluation_candidate_asset_input_allowed") is True:
@@ -264,6 +326,13 @@ def _load_request(
             plan_change_candidate_id = str(
                 payload.get("proposed_asset_version_id") or ""
             )
+        if (
+            operation["definition_name"] == "plan_change.revalidate"
+            and policy.get("semantic_revalidation_target_input_allowed") is True
+        ):
+            semantic_revalidation_target_id = str(
+                payload.get("asset_version_id") or ""
+            )
         frozen = uow.repositories.chapter_authority.frozen_inputs(
             command.project_id,
             list(operation["input_asset_snapshot"] or []),
@@ -272,6 +341,9 @@ def _load_request(
             story_design_candidate_asset_version_id=story_design_candidate_id,
             repair_candidate_asset_version_id=repair_candidate_id,
             plan_change_candidate_asset_version_id=plan_change_candidate_id,
+            semantic_revalidation_target_asset_version_id=(
+                semantic_revalidation_target_id
+            ),
         )
     return AuthorityHandlerRequest(
         operation_id=operation["operation_id"],

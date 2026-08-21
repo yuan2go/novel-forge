@@ -8,7 +8,7 @@ runtime facts.  The scheduler only coordinates them.
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
-from typing import Any, Protocol
+from typing import Any, Callable, Protocol
 from uuid import NAMESPACE_URL, uuid4, uuid5
 
 from psycopg.types.json import Jsonb
@@ -38,6 +38,10 @@ from novel_forge.modules.command_kernel.attempt_runtime import (
 from novel_forge.modules.command_kernel.cancellation import (
     acknowledge_worker_cancellation,
 )
+from novel_forge.modules.command_kernel.completion import (
+    CompletionCommandContext,
+    finalize_operation_completion,
+)
 from novel_forge.modules.command_kernel.deadline_runtime import (
     probe_operation_execution,
 )
@@ -62,6 +66,15 @@ from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 from .contracts import AgentRuntimeBinding
 from .coordinator import AgentTurnExecutionCoordinator
+from .harness import (
+    AgentHarnessResult,
+    AgentHarnessStatus,
+    AgentTranscriptEventType,
+    UnifiedAgentHarness,
+)
+
+
+AgentHarnessFactory = Callable[[str, str, str], UnifiedAgentHarness]
 
 
 @dataclass(frozen=True, slots=True)
@@ -145,6 +158,8 @@ class AgentAuthorityScheduler:
         execution_preparer: AgentExecutionPreparer,
         worker_id: str,
         lease_seconds: int = 30,
+        harness_factory: AgentHarnessFactory | None = None,
+        harness_fault_injector: Callable[[str], None] | None = None,
     ) -> None:
         if not database_url or not worker_id or lease_seconds <= 0:
             raise ValueError("Agent scheduler requires database, worker, and lease")
@@ -152,6 +167,8 @@ class AgentAuthorityScheduler:
         self.execution_preparer = execution_preparer
         self.worker_id = worker_id
         self.lease_seconds = lease_seconds
+        self.harness_factory = harness_factory
+        self.harness_fault_injector = harness_fault_injector or (lambda _point: None)
         self.turn_coordinator = AgentTurnExecutionCoordinator(database_url)
 
     def pending_runs(self, *, limit: int = 20) -> tuple[tuple[str, str], ...]:
@@ -162,7 +179,14 @@ class AgentAuthorityScheduler:
                 """
                 SELECT project_id, operation_id
                 FROM authority_operation
-                WHERE definition_name='agent.candidate.execute'
+                WHERE definition_name IN (
+                    'agent.candidate.execute',
+                    'agent.session.execute'
+                )
+                  AND (
+                    definition_name <> 'agent.session.execute'
+                    OR %s
+                  )
                   AND status IN (
                     'READY', 'FAILED_RETRYABLE', 'EXECUTING',
                     'WAITING_EXTERNAL_RESULT', 'RECONCILIATION_REQUIRED',
@@ -171,7 +195,7 @@ class AgentAuthorityScheduler:
                 ORDER BY created_at, operation_id
                 LIMIT %s
                 """,
-                [limit],
+                [self.harness_factory is not None, limit],
             )
             return tuple((str(row[0]), str(row[1])) for row in uow.cursor.fetchall())
 
@@ -198,6 +222,13 @@ class AgentAuthorityScheduler:
         )
         if attempt_status in {"QUEUED", "LEASED"}:
             start_attempt(self.database_url, worker)
+        if operation["definition_name"] == "agent.session.execute":
+            return self._tick_harness(
+                operation=operation,
+                worker=worker,
+                attempt_id=attempt_id,
+                recovery_mode=recovery_mode,
+            )
         try:
             collaboration_session_id = self._collaboration_session_for_attempt(
                 operation=operation,
@@ -286,6 +317,24 @@ class AgentAuthorityScheduler:
                     "recovery_mode": recovery_mode,
                 },
             )
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                submitted = uow.repositories.attempt_runtime.operation_state(
+                    agent_run_id, project_id
+                )
+            if str(submitted["status"]) == "WAITING_GATE":
+                finalize_operation_completion(
+                    self.database_url,
+                    CompletionCommandContext(
+                        project_id=project_id,
+                        actor_id=self.worker_id,
+                        trace_id=str(operation["trace_id"]),
+                        correlation_id=str(operation["correlation_id"]),
+                        causation_id=attempt_id,
+                    ),
+                    operation_id=agent_run_id,
+                    expected_status="WAITING_GATE",
+                    expected_version=int(submitted["version"]),
+                )
         except Exception as exc:
             self._handle_failure(worker, exc)
             raise
@@ -298,6 +347,211 @@ class AgentAuthorityScheduler:
             candidate_version_id=result.candidate_version_id,
             recovery_mode=recovery_mode,
         )
+
+    def _tick_harness(
+        self,
+        *,
+        operation: dict[str, Any],
+        worker: WorkerLeaseCommand,
+        attempt_id: str,
+        recovery_mode: str,
+    ) -> AgentSchedulerTick:
+        if self.harness_factory is None:
+            raise KernelError(
+                "AGENT_HARNESS_RUNTIME_UNBOUND",
+                "Agent session worker has no governed Harness binding",
+            )
+        operation_id = str(operation["operation_id"])
+        project_id = str(operation["project_id"])
+        payload = dict(operation["command_payload"] or {})
+        session_id = str(payload.get("agent_session_id") or "")
+        instruction = str(payload.get("instruction") or "")
+        try:
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                session = uow.repositories.agent_runtime.require_harness_session(
+                    session_id
+                )
+            if session.operation_id != operation_id or session.project_id != project_id:
+                raise KernelError(
+                    "AGENT_HARNESS_OPERATION_DRIFT",
+                    "Harness session belongs to another durable Operation",
+                )
+            harness = self.harness_factory(
+                project_id,
+                attempt_id,
+                str(operation["trace_id"]),
+            )
+            if session.status is AgentHarnessStatus.COMPLETED:
+                committed = harness.transcript.committed_request_events(
+                    agent_session_id=session.agent_session_id
+                )
+                response_events = [
+                    item
+                    for item in committed
+                    if str(item.get("event_type") or "") == "REQUEST_COMMITTED"
+                ]
+                if not response_events:
+                    raise KernelError(
+                        "AGENT_HARNESS_COMMITTED_RESPONSE_MISSING",
+                        "completed Harness session has no committed response",
+                    )
+                response = dict(response_events[-1].get("payload") or {}).get(
+                    "response"
+                )
+                if not isinstance(response, dict) or not response:
+                    raise KernelError(
+                        "AGENT_HARNESS_COMMITTED_RESPONSE_INVALID",
+                        "completed Harness response is not replayable",
+                    )
+                result = AgentHarnessResult(
+                    session=session,
+                    request_id=str(response_events[-1].get("request_id") or ""),
+                    response=response,
+                    observations=(),
+                )
+            else:
+                if session.status is AgentHarnessStatus.FAILED:
+                    session = harness.transcript.append_event(
+                        session=session,
+                        request_id=f"agent-session-recovery:{attempt_id}",
+                        turn_number=0,
+                        event_type=AgentTranscriptEventType.CHECKPOINT,
+                        payload={
+                            "reason": "durable_attempt_retry",
+                            "prior_events_remain_non_committed": True,
+                        },
+                        trace_id=str(operation["trace_id"]),
+                        attempt_id=attempt_id,
+                        target_status=AgentHarnessStatus.CHECKPOINTED,
+                    )
+                with LeaseHeartbeatGuard(
+                    lambda: heartbeat_attempt(
+                        self.database_url, worker, self.lease_seconds
+                    ),
+                    lease_seconds=self.lease_seconds,
+                    label=f"agent-harness-attempt:{attempt_id}",
+                    probe=lambda: probe_operation_execution(
+                        self.database_url,
+                        operation_id=operation_id,
+                        project_id=project_id,
+                    ),
+                ):
+                    result = harness.execute_request(
+                        session=session,
+                        request_id=f"agent-session-request:{attempt_id}",
+                        instruction=instruction,
+                        attempt_id=attempt_id,
+                        trace_id=str(operation["trace_id"]),
+                    )
+                self.harness_fault_injector("after_harness_transcript_commit")
+            self._record_harness_completion(
+                operation=operation,
+                result=result,
+                attempt_id=attempt_id,
+                fencing_token=worker.fencing_token,
+            )
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                state = uow.repositories.attempt_runtime.operation_state(
+                    operation_id, project_id
+                )
+            submit_attempt_result(
+                self.database_url,
+                WorkerResultCommand(
+                    **worker.__dict__,
+                    expected_operation_status=str(state["status"]),
+                    expected_operation_version=int(state["version"]),
+                ),
+                outcome="success",
+                result={
+                    "agent_session_id": result.session.agent_session_id,
+                    "response": dict(result.response),
+                    "transcript_last_sequence": result.session.next_sequence - 1,
+                },
+            )
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                submitted = uow.repositories.attempt_runtime.operation_state(
+                    operation_id, project_id
+                )
+            if str(submitted["status"]) == "WAITING_GATE":
+                finalize_operation_completion(
+                    self.database_url,
+                    CompletionCommandContext(
+                        project_id=project_id,
+                        actor_id=self.worker_id,
+                        trace_id=str(operation["trace_id"]),
+                        correlation_id=str(operation["correlation_id"]),
+                        causation_id=attempt_id,
+                    ),
+                    operation_id=operation_id,
+                    expected_status="WAITING_GATE",
+                    expected_version=int(submitted["version"]),
+                )
+        except Exception as exc:
+            self._handle_failure(worker, exc)
+            raise
+        status = self._operation(project_id, operation_id)["status"]
+        return AgentSchedulerTick(
+            agent_run_id=operation_id,
+            operation_id=operation_id,
+            attempt_id=attempt_id,
+            operation_status=str(status),
+            candidate_version_id="",
+            recovery_mode=recovery_mode,
+        )
+
+    def _record_harness_completion(
+        self,
+        *,
+        operation: dict[str, Any],
+        result: AgentHarnessResult,
+        attempt_id: str,
+        fencing_token: int,
+    ) -> None:
+        operation_id = str(operation["operation_id"])
+        project_id = str(operation["project_id"])
+        evidence = {
+            "agent_session_id": result.session.agent_session_id,
+            "attempt_id": attempt_id,
+            "fencing_token": fencing_token,
+            "transcript_last_sequence": result.session.next_sequence - 1,
+            "provenance_only": True,
+            "authority_mutation": False,
+        }
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                INSERT INTO authority_completion_gate(
+                    gate_id, operation_id, gate_key, status, evidence
+                ) VALUES (
+                    %s, %s, 'agent_session_transcript_committed', 'PASSED', %s
+                )
+                ON CONFLICT(operation_id, gate_key) DO UPDATE
+                SET status=EXCLUDED.status, evidence=EXCLUDED.evidence,
+                    evaluated_at=NOW()
+                """,
+                [str(uuid4()), operation_id, Jsonb(evidence)],
+            )
+            uow.repositories.operation_graph.record_event(
+                {
+                    "event_id": str(uuid4()),
+                    "audit_id": str(uuid4()),
+                    "outbox_id": str(uuid4()),
+                    "aggregate_type": "authority_agent_harness_session",
+                    "aggregate_id": result.session.agent_session_id,
+                    "operation_id": operation_id,
+                    "project_id": project_id,
+                    "event_type": "authority.agent.session.completed",
+                    "correlation_id": str(operation["correlation_id"]),
+                    "causation_id": attempt_id,
+                    "payload": {
+                        **evidence,
+                        "operation_id": operation_id,
+                        "project_id": project_id,
+                        "trace_id": str(operation["trace_id"]),
+                    },
+                }
+            )
+            uow.commit()
 
     def _attempt(self, operation: dict[str, Any]) -> tuple[str, str, str]:
         operation_id = str(operation["operation_id"])
@@ -458,7 +712,9 @@ class AgentAuthorityScheduler:
                            ->>'max_attempts')::int, 1)
                 FROM authority_operation
                 WHERE operation_id=%s AND project_id=%s
-                  AND definition_name='agent.candidate.execute'
+                  AND definition_name IN (
+                    'agent.candidate.execute', 'agent.session.execute'
+                  )
                 """,
                 [operation_id, project_id],
             )

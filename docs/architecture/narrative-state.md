@@ -9,9 +9,10 @@ and future planning. It does not merge their Authorities or storage lifecycles.
 | Surface | Classification | Owner and rule |
 |---|---|---|
 | Canon decision and accepted Canon snapshot | `TRUTH` | Canon and Book acceptance decide narrative validity. Model output is only a candidate. |
-| ChapterOutcome v2 | `ACCEPTED_ACTUAL` | Immutable actuals for one chapter; authoritative only when a committed Book acceptance points to the AssetVersion. |
+| ChapterOutcome v3 | `ACCEPTED_ACTUAL` | Immutable state, Arc, obligation and Scene evidence for one chapter; authoritative only when a committed Book acceptance points to the AssetVersion. |
 | NarrativeStateEvent v2 | `STATE_EVENT` | Append-only delta stored inside ChapterOutcome; never updated or deleted. |
 | StoryStateSnapshot v2 | `CURRENT_STATE` | Deterministic, entity-aware projection of accepted events; rebuildable and not an Authority replacement. |
+| ArcProgress / NarrativeObligationState | `ACCEPTED_PROJECTION` | Deterministic ChapterOutcome projections at the exact accepted boundary; never inferred from ChapterPlan. |
 | Temporal query result | `TEMPORAL_PROJECTION` | Read-only replay at an inclusive accepted chapter boundary. |
 | ChapterPlan and hierarchical plans | `FUTURE_INTENT` | Planning/PlanChange Authority owns candidates and activation; plans never become actuals automatically. |
 | ContextBundle | `EXECUTION_CONTEXT` | Frozen, isolated and token-budgeted input with exact AssetVersion refs. It cannot mutate state. |
@@ -22,8 +23,8 @@ The accepted flow is:
 
 ```text
 committed Book chapter acceptance
-  -> immutable ChapterOutcome v2 events
-  -> deterministic StoryState/Canon current snapshots
+  -> immutable ChapterOutcome v3 events
+  -> deterministic StoryState/Canon/Arc/Obligation current projections
   -> accepted-only temporal replay and compact Context
   -> future planning candidate
 ```
@@ -77,11 +78,8 @@ accepted after the requested boundary.
 | World rule | rule id | activate/upsert; definition change requires explicit supersession |
 | Resource | entity + resource | initial balance or reconciled increment/decrement |
 | Power | character id | checked tier/state transition |
-| Foreshadow | thread id | open/transition/pay/close lifecycle |
-| Reader promise | promise id | open/transition/pay/close lifecycle |
-| Plot thread | thread id | open/transition/resolve lifecycle |
-| Narrative debt | source kind + entity | derived open/resolved lifecycle |
-| Mystery | mystery id | open/transition/resolve lifecycle |
+| Narrative Obligation | obligation id | unified promise/foreshadow/mystery/open-loop/conflict/hook/commitment/expectation/debt lifecycle with development/payoff evidence |
+| Legacy foreshadow/promise/plot thread/debt/mystery | legacy identity | deterministic input adapter into Narrative Obligation; not a parallel target projection |
 | Antagonist | antagonist id | entity-aware upsert/transition |
 | Arc | arc id | entity-aware lifecycle |
 | Reward and theme movement | event identity | append-only |
@@ -114,21 +112,39 @@ selection, rejection, source isolation, immutable refs and token budgets.
 Historical evidence is obtained through an explicit temporal read; the normal
 Context is not an unbounded history list.
 
+Context v2 protects the exact active plan and critical accepted
+state/Canon/Arc/Obligation entries from token trimming, then retrieves
+historical evidence through lexical, embedding, entity/relationship, timeline,
+temporal, Arc and obligation signals. The 21-node Chapter composition consumes
+the resulting Manifest/Bundle after ExecutionIntent and Memo. Missing protected
+budget fails closed; vector similarity is only one retrieval signal.
+
+## Arc observation defect at the audit baseline
+
+At baseline `4fdf6adaa25ef085e4e6abab1f5b6ac71d86607a`, the post-acceptance Arc
+checkpoint code fell back from missing ChapterOutcome actual contributions to
+ChapterPlan declarations and recorded them as `ACTUAL`. Forward migration 0094
+and the current reducer remove that fallback. Only qualified accepted Arc
+evidence may materialize actual progress; absent evidence stays
+`NOT_OBSERVED`, `NOT_MATERIALIZED`, or `UNKNOWN`.
+
 ## Migration and rebuild
 
-Forward-only migration `20260812_0082_narrative_state_contract_v2` adds:
+Forward-only migration `20260812_0082_narrative_state_contract_v2` established:
 
 - accepted-only event and current-state views;
 - an accepted v1/v2 rebuild-source view;
 - event/entity/reducer/accepted-chapter evidence on reducer receipts;
 - replay indexes keyed by Project, kind, entity and accepted chapter.
 
-The migration does not rewrite AssetVersion, ChapterOutcome or Book acceptance
-history. `NarrativeStateRebuildService` reads accepted outcomes in chapter
-order, adapts v1 evidence at the input boundary, replays v2 reducers and returns
-a deterministic projection/hash without mutating Authority. Persisting a
-replacement projection remains an owning Authority operation outside this
-read-only service.
+Forward-only migration `20260820_0094_industrial_autonomous_novel_os` extends
+the accepted event and rebuild views to `chapter-outcome-v3` and adds the
+atomic long-form projection set. Neither migration rewrites AssetVersion,
+ChapterOutcome or Book acceptance history. `NarrativeStateRebuildService`
+reads accepted outcomes in chapter order, adapts earlier evidence at the input
+boundary, replays deterministic reducers and returns a projection/hash without
+mutating Authority. Persisting a replacement projection remains an owning
+Authority operation outside this read-only service.
 
 ## Qualification boundary
 

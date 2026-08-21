@@ -59,6 +59,7 @@ class AuthorityHandlerRepository:
         story_design_candidate_asset_version_id: str = "",
         repair_candidate_asset_version_id: str = "",
         plan_change_candidate_asset_version_id: str = "",
+        semantic_revalidation_target_asset_version_id: str = "",
     ) -> list[dict[str, Any]]:
         resolved: list[dict[str, Any]] = []
         for snapshot in snapshots:
@@ -90,6 +91,27 @@ class AuthorityHandlerRepository:
                 raise KernelError(
                     "AUTHORITY_INPUT_SNAPSHOT_STALE",
                     f"frozen authority input is missing or changed: {asset_version_id}",
+                )
+            self.cursor.execute(
+                """
+                SELECT invalidation_id, reason
+                FROM authority_artifact_invalidation
+                WHERE project_id=%s AND target_asset_version_id=%s
+                  AND status IN ('OPEN','REGENERATING')
+                ORDER BY created_at DESC LIMIT 1
+                """,
+                [project_id, asset_version_id],
+            )
+            invalidation = self.cursor.fetchone()
+            if (
+                invalidation is not None
+                and asset_version_id
+                != semantic_revalidation_target_asset_version_id
+            ):
+                raise KernelError(
+                    "AUTHORITY_INPUT_SEMANTICALLY_STALE",
+                    "frozen authority input has unresolved semantic invalidation: "
+                    f"{asset_version_id} ({invalidation[1]})",
                 )
             production_eligible = (
                 row[4] == "ACTIVE" and row[5] == "ELIGIBLE" and row[6] == "CLEAR"

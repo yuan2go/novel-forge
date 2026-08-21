@@ -49,7 +49,7 @@ from .domain import (
 )
 
 
-VERSION = "1.0.3"
+VERSION = "1.0.4"
 DEFINITIONS = {
     "plan_change.propose": (
         "plan_change_proposal",
@@ -504,6 +504,7 @@ class PostgresPlanChangeAuthority:
             uow.repositories.plan_change.revalidate(
                 project_id=project_id,
                 asset_version_id=asset_version_id,
+                evidence_version_id=evidence_version_id,
                 operation_id=operation_id,
             )
             event_id = str(uuid4())
@@ -882,6 +883,9 @@ def _definition(
             "impact_analysis_required": True,
             "plan_change_candidate_asset_input_allowed": (
                 name in {"plan_change.propose", "plan_change.activate"}
+            ),
+            "semantic_revalidation_target_input_allowed": (
+                name == "plan_change.revalidate"
             ),
         },
         "completion_contract": {

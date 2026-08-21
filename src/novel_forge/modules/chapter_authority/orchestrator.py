@@ -271,21 +271,36 @@ def run_single_chapter_slice(
         ]
         if node is ChapterNode.PLAN:
             input_assets.append(_chapter_plan_input(request))
-        if node is ChapterNode.CONTEXT:
-            input_assets.append(
-                _operation_output_by_key(
-                    database_url,
-                    operation_ids[ChapterNode.PLAN],
-                    request.project_id,
-                    "chapter.production_input_manifest",
+        if node in {ChapterNode.EXECUTION_INTENT, ChapterNode.CONTEXT}:
+            if node is ChapterNode.CONTEXT:
+                input_assets.append(
+                    _operation_output_by_key(
+                        database_url,
+                        operation_ids[ChapterNode.PLAN],
+                        request.project_id,
+                        "chapter.production_input_manifest",
+                    )
                 )
-            )
+            candidates = request.context_candidates
+            if node is ChapterNode.EXECUTION_INTENT:
+                candidates = tuple(
+                    item
+                    for item in candidates
+                    if str(item.get("asset_type") or "")
+                    in {"story_state_snapshot", "canon_snapshot"}
+                )
+            else:
+                candidates = tuple(
+                    item
+                    for item in candidates
+                    if str(item.get("asset_type") or "") != "chapter_plan"
+                )
             input_assets.extend(
                 {
                     "asset_version_id": str(item["asset_version_id"]),
                     "content_hash": str(item["content_hash"]),
                 }
-                for item in request.context_candidates
+                for item in candidates
             )
         if node is ChapterNode.QUALITY:
             input_assets.extend(
@@ -570,6 +585,7 @@ def _command(
             "context_token_budget": request.context_token_budget,
             "preparation_report": dict(request.preparation_report or {}),
             "chapter_idempotency_key": request.idempotency_key,
+            "chapter_root_operation_id": root_operation_id or "",
             **dict(input_overrides or {}),
         },
         "input_assets": input_assets,
@@ -640,15 +656,29 @@ def _input_nodes(node: ChapterNode) -> tuple[ChapterNode, ...]:
     if node in QUALITY_GROUP_NODES:
         return (
             ChapterNode.PLAN,
-            ChapterNode.REVISION,
+            ChapterNode.BEST_CANDIDATE,
             ChapterNode.REREVIEW,
             ChapterNode.CANON,
             ChapterNode.CONTEXT,
         )
     return {
         ChapterNode.PLAN: (),
-        ChapterNode.CONTEXT: (ChapterNode.PLAN,),
-        ChapterNode.DRAFT: (ChapterNode.PLAN, ChapterNode.CONTEXT),
+        ChapterNode.EXECUTION_INTENT: (ChapterNode.PLAN,),
+        ChapterNode.MEMO: (
+            ChapterNode.PLAN,
+            ChapterNode.EXECUTION_INTENT,
+        ),
+        ChapterNode.CONTEXT: (
+            ChapterNode.PLAN,
+            ChapterNode.EXECUTION_INTENT,
+            ChapterNode.MEMO,
+        ),
+        ChapterNode.DRAFT: (
+            ChapterNode.PLAN,
+            ChapterNode.EXECUTION_INTENT,
+            ChapterNode.MEMO,
+            ChapterNode.CONTEXT,
+        ),
         ChapterNode.REVIEW: (ChapterNode.DRAFT, ChapterNode.CONTEXT),
         ChapterNode.REVISION: (
             ChapterNode.DRAFT,
@@ -661,14 +691,20 @@ def _input_nodes(node: ChapterNode) -> tuple[ChapterNode, ...]:
             ChapterNode.REVISION,
             ChapterNode.CONTEXT,
         ),
-        ChapterNode.CANON_EXTRACTION: (
+        ChapterNode.BEST_CANDIDATE: (
+            ChapterNode.DRAFT,
+            ChapterNode.REVIEW,
             ChapterNode.REVISION,
+            ChapterNode.REREVIEW,
+        ),
+        ChapterNode.CANON_EXTRACTION: (
+            ChapterNode.BEST_CANDIDATE,
             ChapterNode.REREVIEW,
             ChapterNode.CONTEXT,
         ),
         ChapterNode.CANON_PROPOSAL: (ChapterNode.CANON_EXTRACTION,),
         ChapterNode.CANON: (
-            ChapterNode.REVISION,
+            ChapterNode.BEST_CANDIDATE,
             ChapterNode.REREVIEW,
             ChapterNode.CANON_EXTRACTION,
             ChapterNode.CANON_PROPOSAL,
@@ -676,20 +712,20 @@ def _input_nodes(node: ChapterNode) -> tuple[ChapterNode, ...]:
         ),
         ChapterNode.QUALITY: (
             ChapterNode.PLAN,
-            ChapterNode.REVISION,
+            ChapterNode.BEST_CANDIDATE,
             ChapterNode.REREVIEW,
             ChapterNode.CANON,
             ChapterNode.CONTEXT,
             *QUALITY_GROUP_NODES,
         ),
         ChapterNode.PUBLISH_GATE: (
-            ChapterNode.REVISION,
+            ChapterNode.BEST_CANDIDATE,
             ChapterNode.REREVIEW,
             ChapterNode.CANON,
             ChapterNode.QUALITY,
             ChapterNode.CONTEXT,
         ),
-        ChapterNode.EXPORT: (ChapterNode.REVISION, ChapterNode.PUBLISH_GATE),
+        ChapterNode.EXPORT: (ChapterNode.BEST_CANDIDATE, ChapterNode.PUBLISH_GATE),
         ChapterNode.FINAL_RELEASE_GATE: (
             ChapterNode.EXPORT,
             ChapterNode.PUBLISH_GATE,

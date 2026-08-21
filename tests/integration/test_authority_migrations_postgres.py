@@ -209,7 +209,13 @@ class AuthorityMigrationsPostgresTests(unittest.TestCase):
             psycopg.connect(self.test_url) as connection,
             connection.cursor() as cursor,
         ):
-            for migration in MIGRATIONS[:-1]:
+            migrations_before_correctness = tuple(
+                migration
+                for migration in MIGRATIONS
+                if migration.migration_id
+                <= "20260814_0091_canonical_longform_runtime_completion"
+            )
+            for migration in migrations_before_correctness:
                 for statement in migration.upgrade_statements:
                     cursor.execute(statement)
                 cursor.execute(
@@ -640,10 +646,10 @@ class AuthorityMigrationsPostgresTests(unittest.TestCase):
 
         self.assertEqual(
             applied_before,
-            {migration.migration_id for migration in MIGRATIONS[:-1]},
+            {migration.migration_id for migration in migrations_before_correctness},
         )
         self.assertEqual(
-            MIGRATIONS[-2].migration_id,
+            migrations_before_correctness[-1].migration_id,
             "20260814_0091_canonical_longform_runtime_completion",
         )
 

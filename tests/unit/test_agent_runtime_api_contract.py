@@ -19,19 +19,29 @@ def test_agent_runtime_authority_routes_cover_control_and_query_surface() -> Non
         for method in route.methods
     }
 
-    assert ("POST", "/product/production/agent-runtime/agent-runs") in routes
-    assert ("GET", "/product/production/agent-runtime/agent-runs") in routes
+    assert ("POST", "/product/production/agent-runtime/agent-sessions") in routes
+    assert (
+        "GET",
+        "/product/production/agent-runtime/agent-sessions/{agent_session_id}",
+    ) in routes
+    assert ("POST", "/product/production/agent-runtime/agent-runs") not in routes
+    assert (
+        "POST", "/product/production/agent-runtime/migration/agent-runs"
+    ) in routes
+    assert (
+        "GET", "/product/production/agent-runtime/migration/agent-runs"
+    ) in routes
     assert (
         "GET",
         "/product/production/agent-runtime/health/recovery",
     ) in routes
     assert (
         "POST",
-        "/product/production/agent-runtime/agent-runs/{agent_run_id}/cancel",
+        "/product/production/agent-runtime/migration/agent-runs/{agent_run_id}/cancel",
     ) in routes
     assert (
         "POST",
-        "/product/production/agent-runtime/agent-runs/{agent_run_id}/retry",
+        "/product/production/agent-runtime/migration/agent-runs/{agent_run_id}/retry",
     ) in routes
     assert ("GET", "/product/production/agent-runtime/agents") in routes
     assert (

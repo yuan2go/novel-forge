@@ -5,9 +5,10 @@ from __future__ import annotations
 from typing import Any
 
 
-AGENT_RUNTIME_DEFINITION_VERSION = "1.0.0"
+AGENT_RUNTIME_DEFINITION_VERSION = "2.0.0"
 AGENT_RUNTIME_ADMIN_HANDLER_KEY = "novel_forge.agent_runtime.admin"
 AGENT_RUNTIME_EXECUTION_HANDLER_KEY = "novel_forge.agent_runtime.candidate"
+AGENT_RUNTIME_HARNESS_HANDLER_KEY = "novel_forge.agent_runtime.harness"
 
 AGENT_RUNTIME_ADMIN_OPERATIONS = (
     "agent.definition.register",
@@ -16,7 +17,11 @@ AGENT_RUNTIME_ADMIN_OPERATIONS = (
     "agent.chapter_binding.register",
     "agent.chapter_binding.activate",
 )
-AGENT_RUNTIME_OPERATIONS = (*AGENT_RUNTIME_ADMIN_OPERATIONS, "agent.candidate.execute")
+AGENT_RUNTIME_OPERATIONS = (
+    *AGENT_RUNTIME_ADMIN_OPERATIONS,
+    "agent.candidate.execute",
+    "agent.session.execute",
+)
 AGENT_RUNTIME_MODEL_EFFECT_CAPABILITIES = (
     "model.draft",
     "model.review",
@@ -52,8 +57,15 @@ def agent_runtime_operation_definitions(
 def _definition(
     name: str, *, application_build_id: str, commit_sha: str
 ) -> dict[str, Any]:
-    execution = name == "agent.candidate.execute"
-    command_schema = _execution_schema() if execution else _admin_schema()
+    execution = name in {"agent.candidate.execute", "agent.session.execute"}
+    harness = name == "agent.session.execute"
+    command_schema = (
+        _harness_schema()
+        if harness
+        else _execution_schema()
+        if execution
+        else _admin_schema()
+    )
     result_schema = (
         {
             "type": "object",
@@ -65,16 +77,41 @@ def _definition(
             },
             "additionalProperties": False,
         }
-        if execution
+        if execution and not harness
+        else {
+            "type": "object",
+            "required": ["agent_session_id", "response", "transcript_last_sequence"],
+            "properties": {
+                "agent_session_id": {"type": "string"},
+                "response": {"type": "object"},
+                "transcript_last_sequence": {"type": "integer"},
+            },
+            "additionalProperties": False,
+        }
+        if harness
         else {"type": "object"}
     )
     permission = "agent.authority.execute" if execution else "agent.authority.admin"
     completion = (
         {
-            "version": "agent.candidate.execute.completion.v1",
-            "required_gates": [{"gate_key": "agent_candidate_validated"}],
+            "version": f"{name}.completion.v1",
+            "required_gates": [
+                {
+                    "gate_key": (
+                        "agent_session_transcript_committed"
+                        if harness
+                        else "agent_candidate_validated"
+                    )
+                }
+            ],
             "required_evidence": ["trace", "audit", "cost_when_provider_used"],
-            "required_outbox_events": ["authority.agent.candidate.validated"],
+            "required_outbox_events": [
+                (
+                    "authority.agent.session.completed"
+                    if harness
+                    else "authority.agent.candidate.validated"
+                )
+            ],
         }
         if execution
         else {
@@ -93,7 +130,9 @@ def _definition(
         "input_contract": command_schema,
         "output_contract": result_schema,
         "handler_key": (
-            AGENT_RUNTIME_EXECUTION_HANDLER_KEY
+            AGENT_RUNTIME_HARNESS_HANDLER_KEY
+            if harness
+            else AGENT_RUNTIME_EXECUTION_HANDLER_KEY
             if execution
             else AGENT_RUNTIME_ADMIN_HANDLER_KEY
         ),
@@ -104,10 +143,16 @@ def _definition(
         "permissions": [permission],
         "approval_policy": {"required": False},
         "idempotency_scope": (
-            "project:agent-runtime" if execution else "system:agent-definition"
+            "project:agent-harness"
+            if harness
+            else "project:agent-runtime"
+            if execution
+            else "system:agent-definition"
         ),
         "concurrency_key_template": (
-            "project:{project_id}:book:{book_id}:agent:{agent_id}"
+            "project:{project_id}:workspace:{workspace_id}:agent-role:{agent_role}"
+            if harness
+            else "project:{project_id}:book:{book_id}:agent:{agent_id}"
             if execution
             else "agent-definition:{agent_id}"
         ),
@@ -127,7 +172,11 @@ def _definition(
         },
         "irreversible_effect_policy": {"allowed": False},
         "external_capabilities": (
-            list(AGENT_RUNTIME_MODEL_EFFECT_CAPABILITIES) if execution else []
+            ["model.agent_session", "tool.remote.invoke"]
+            if harness
+            else list(AGENT_RUNTIME_MODEL_EFFECT_CAPABILITIES)
+            if execution
+            else []
         ),
         "definition_status": "enabled",
         "evidence_status": {
@@ -150,7 +199,9 @@ def _definition(
             "attempt_owner": "command_kernel",
             "capability_pack_controls_operation": False,
             "candidate_only": execution,
-            "domain_commit_required": execution,
+            "domain_commit_required": execution and not harness,
+            "agent_session_provenance_only": harness,
+            "authority_commands_submit_only": harness,
             "local_storage_writes": "forbidden",
         },
         "completion_contract": completion,
@@ -249,11 +300,42 @@ def _execution_schema() -> dict[str, Any]:
     }
 
 
+def _harness_schema() -> dict[str, Any]:
+    return {
+        "type": "object",
+        "required": [
+            "agent_session_id",
+            "agent_role",
+            "book_id",
+            "instruction",
+            "accepted_boundary",
+            "tool_policy",
+            "skill_bindings",
+            "budget",
+        ],
+        "properties": {
+            "agent_session_id": {"type": "string"},
+            "agent_role": {
+                "type": "string",
+                "enum": ["STUDIO_DIRECTOR", "RESEARCH_KNOWLEDGE"],
+            },
+            "book_id": {"type": "string"},
+            "instruction": {"type": "string", "minLength": 1},
+            "accepted_boundary": {"type": "object"},
+            "tool_policy": {"type": "array", "minItems": 1},
+            "skill_bindings": {"type": "array"},
+            "budget": {"type": "object"},
+        },
+        "additionalProperties": False,
+    }
+
+
 __all__ = [
     "AGENT_RUNTIME_ADMIN_HANDLER_KEY",
     "AGENT_RUNTIME_ADMIN_OPERATIONS",
     "AGENT_RUNTIME_DEFINITION_VERSION",
     "AGENT_RUNTIME_EXECUTION_HANDLER_KEY",
+    "AGENT_RUNTIME_HARNESS_HANDLER_KEY",
     "AGENT_RUNTIME_MODEL_EFFECT_CAPABILITIES",
     "AGENT_RUNTIME_OPERATIONS",
     "agent_runtime_operation_definitions",
