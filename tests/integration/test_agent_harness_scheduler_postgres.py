@@ -1069,6 +1069,21 @@ class AgentHarnessSchedulerPostgresTests(unittest.TestCase):
                     """,
                     [before[0][0]],
                 ).fetchone()[0]
+                evidence_counts = connection.execute(
+                    """
+                    SELECT asset.asset_type,
+                           COUNT(DISTINCT version.asset_version_id),
+                           COUNT(DISTINCT version.content->>'external_effect_id')
+                    FROM authority_operation_output_asset AS output
+                    JOIN authority_asset_version AS version
+                      ON version.asset_version_id=output.asset_version_id
+                    JOIN authority_asset AS asset ON asset.asset_id=version.asset_id
+                    WHERE output.operation_id=%s
+                      AND asset.asset_type IN ('model_call_log','cost_ledger')
+                    GROUP BY asset.asset_type
+                    """,
+                    [operation_id],
+                ).fetchall()
             self.assertEqual(len(effects), 2)
             self.assertEqual(
                 str(
@@ -1090,6 +1105,10 @@ class AgentHarnessSchedulerPostgresTests(unittest.TestCase):
             )
             self.assertEqual(int(first_dispatch_count), 1)
             self.assertEqual(int(transcript_count), 8)
+            self.assertEqual(
+                {str(row[0]): (int(row[1]), int(row[2])) for row in evidence_counts},
+                {"model_call_log": (2, 2), "cost_ledger": (2, 2)},
+            )
 
 
 if __name__ == "__main__":

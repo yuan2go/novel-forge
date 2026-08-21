@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
+import hashlib
 import json
 import math
 from typing import Any, Mapping, Protocol
@@ -322,7 +323,6 @@ class ExternalEffectChapterModelPort:
             raise KernelError(
                 "MODEL_EFFECT_STAGE_UNSUPPORTED", f"unsupported model stage: {stage}"
             )
-        logical_ref = _model_log_ref(request.operation_id, request.attempt_id, stage)
         business_payload = (
             request.command.get("payload")
             if isinstance(request.command.get("payload"), dict)
@@ -495,6 +495,13 @@ class ExternalEffectChapterModelPort:
                 else dict(self.adapter.capability_profile)
             ),
         )
+        external_effect_id = str(effect["external_effect_id"])
+        logical_ref = _model_log_ref(
+            request.operation_id,
+            request.attempt_id,
+            stage,
+            external_effect_id,
+        )
         self.fault_injector("after_external_effect_plan")
         effect_adapter = self.adapter
         if bool(effect.get("replayed")):
@@ -585,14 +592,12 @@ class ExternalEffectChapterModelPort:
             recorder = self.agent_binding_recorder
             if recorder is not None:
                 recorder.record_compatibility_usage(request, stage=stage)
-        completed = self.completed_effect_result(
-            str(effect["external_effect_id"]), request.project_id
-        )
+        completed = self.completed_effect_result(external_effect_id, request.project_id)
         if completed is not None:
             self._validate_retrieval_result_contract(
                 stage=stage,
                 project_id=request.project_id,
-                external_effect_id=str(effect["external_effect_id"]),
+                external_effect_id=external_effect_id,
                 result=completed,
             )
             if bool(effect.get("replayed")):
@@ -632,13 +637,13 @@ class ExternalEffectChapterModelPort:
                 stage,
                 completed,
                 logical_ref,
-                external_effect_id=str(effect["external_effect_id"]),
+                external_effect_id=external_effect_id,
             )
             self._ensure_cost_evidence(
                 request,
                 stage,
                 completed,
-                external_effect_id=str(effect["external_effect_id"]),
+                external_effect_id=external_effect_id,
             )
             if frozen_work_order is not None and execution_binding is not None:
                 self.agent_binding_recorder.accept_candidate(
@@ -697,7 +702,7 @@ class ExternalEffectChapterModelPort:
                     stage,
                     dispatched=dispatched,
                     logical_ref=logical_ref,
-                    external_effect_id=str(effect["external_effect_id"]),
+                    external_effect_id=external_effect_id,
                 )
                 self._record_failed_cost_evidence(
                     request,
@@ -705,7 +710,7 @@ class ExternalEffectChapterModelPort:
                     dispatched=dispatched,
                     usage=usage,
                     cost=cost,
-                    external_effect_id=str(effect["external_effect_id"]),
+                    external_effect_id=external_effect_id,
                 )
             _raise_model_effect_failure(dispatched)
         result = ModelProviderResult.from_evidence(
@@ -714,7 +719,7 @@ class ExternalEffectChapterModelPort:
         self._validate_retrieval_result_contract(
             stage=stage,
             project_id=request.project_id,
-            external_effect_id=str(effect["external_effect_id"]),
+            external_effect_id=external_effect_id,
             result=result,
         )
         self.fault_injector("after_provider_success")
@@ -736,7 +741,7 @@ class ExternalEffectChapterModelPort:
             stage,
             result,
             logical_ref,
-            external_effect_id=str(effect["external_effect_id"]),
+            external_effect_id=external_effect_id,
         )
         self._ensure_cost_evidence(
             request,
@@ -928,13 +933,31 @@ class ExternalEffectChapterModelPort:
     ) -> None:
         """Persist model/cost evidence for an already-dispatched governed effect."""
 
+        execution = result.execution_evidence or {}
+        execution_request = execution.get("execution_request")
+        external_effect_id = (
+            str(execution_request.get("external_effect_id") or "")
+            if isinstance(execution_request, Mapping)
+            else ""
+        )
         self._record_model_call(
             request,
             stage,
             result,
-            _model_log_ref(request.operation_id, request.attempt_id, stage),
+            _model_log_ref(
+                request.operation_id,
+                request.attempt_id,
+                stage,
+                external_effect_id,
+            ),
+            external_effect_id=external_effect_id,
         )
-        self._ensure_cost_evidence(request, stage, result)
+        self._ensure_cost_evidence(
+            request,
+            stage,
+            result,
+            external_effect_id=external_effect_id,
+        )
 
     def completed_effect_result(
         self, external_effect_id: str, project_id: str
@@ -990,14 +1013,19 @@ class ExternalEffectChapterModelPort:
             AuthorityAssetWriteCommand(
                 operation_id=request.operation_id,
                 project_id=request.project_id,
-                asset_id=(
-                    f"model-call:{request.operation_id}:{request.attempt_id}:{stage}"
+                asset_id=_model_call_asset_id(
+                    request.operation_id,
+                    request.attempt_id,
+                    stage,
+                    external_effect_id,
                 ),
                 asset_type="model_call_log",
                 schema_version="model-call-log.v1",
                 logical_ref=logical_ref,
                 category="runs",
-                output_key=f"model_call.{stage}",
+                output_key=_evidence_output_key(
+                    f"model_call.{stage}", external_effect_id
+                ),
                 role="model_evidence",
                 content={
                     "type": "model_call_log",
@@ -1064,14 +1092,20 @@ class ExternalEffectChapterModelPort:
             AuthorityAssetWriteCommand(
                 operation_id=request.operation_id,
                 project_id=request.project_id,
-                asset_id=(
-                    f"model-call:{request.operation_id}:{request.attempt_id}:{stage}"
+                asset_id=_model_call_asset_id(
+                    request.operation_id,
+                    request.attempt_id,
+                    stage,
+                    external_effect_id,
                 ),
                 asset_type="model_call_log",
                 schema_version="model-call-log.v1",
                 logical_ref=logical_ref,
                 category="runs",
-                output_key=f"model_call.{stage}.failed.{request.attempt_id}",
+                output_key=_evidence_output_key(
+                    f"model_call.{stage}.failed.{request.attempt_id}",
+                    external_effect_id,
+                ),
                 role="model_failure_evidence",
                 content={
                     "type": "model_call_log",
@@ -1106,7 +1140,12 @@ class ExternalEffectChapterModelPort:
         cost: Mapping[str, Any],
         external_effect_id: str = "",
     ) -> None:
-        logical_ref = _cost_log_ref(request.operation_id, request.attempt_id, stage)
+        logical_ref = _cost_log_ref(
+            request.operation_id,
+            request.attempt_id,
+            stage,
+            external_effect_id,
+        )
         try:
             self.query.require(project_id=request.project_id, logical_ref=logical_ref)
             return
@@ -1119,14 +1158,20 @@ class ExternalEffectChapterModelPort:
             AuthorityAssetWriteCommand(
                 operation_id=request.operation_id,
                 project_id=request.project_id,
-                asset_id=(
-                    f"cost-ledger:{request.operation_id}:{request.attempt_id}:{stage}"
+                asset_id=_cost_ledger_asset_id(
+                    request.operation_id,
+                    request.attempt_id,
+                    stage,
+                    external_effect_id,
                 ),
                 asset_type="cost_ledger",
                 schema_version="model-cost-ledger.v1",
                 logical_ref=logical_ref,
                 category="runs",
-                output_key=f"cost_ledger.{stage}.failed.{request.attempt_id}",
+                output_key=_evidence_output_key(
+                    f"cost_ledger.{stage}.failed.{request.attempt_id}",
+                    external_effect_id,
+                ),
                 role="cost_failure_evidence",
                 content={
                     "type": "cost_ledger",
@@ -1158,7 +1203,12 @@ class ExternalEffectChapterModelPort:
                 trace_id=request.trace_id,
                 correlation_id=request.correlation_id,
                 reference_asset_ids=(
-                    f"model-call:{request.operation_id}:{request.attempt_id}:{stage}",
+                    _model_call_asset_id(
+                        request.operation_id,
+                        request.attempt_id,
+                        stage,
+                        external_effect_id,
+                    ),
                 ),
             )
         )
@@ -1170,7 +1220,12 @@ class ExternalEffectChapterModelPort:
         result: ModelProviderResult,
         external_effect_id: str = "",
     ) -> None:
-        logical_ref = _cost_log_ref(request.operation_id, request.attempt_id, stage)
+        logical_ref = _cost_log_ref(
+            request.operation_id,
+            request.attempt_id,
+            stage,
+            external_effect_id,
+        )
         try:
             self.query.require(project_id=request.project_id, logical_ref=logical_ref)
             return
@@ -1181,14 +1236,19 @@ class ExternalEffectChapterModelPort:
             AuthorityAssetWriteCommand(
                 operation_id=request.operation_id,
                 project_id=request.project_id,
-                asset_id=(
-                    f"cost-ledger:{request.operation_id}:{request.attempt_id}:{stage}"
+                asset_id=_cost_ledger_asset_id(
+                    request.operation_id,
+                    request.attempt_id,
+                    stage,
+                    external_effect_id,
                 ),
                 asset_type="cost_ledger",
                 schema_version="model-cost-ledger.v1",
                 logical_ref=logical_ref,
                 category="runs",
-                output_key=f"cost_ledger.{stage}",
+                output_key=_evidence_output_key(
+                    f"cost_ledger.{stage}", external_effect_id
+                ),
                 role="cost_evidence",
                 content={
                     "type": "cost_ledger",
@@ -1226,18 +1286,72 @@ class ExternalEffectChapterModelPort:
                 trace_id=request.trace_id,
                 correlation_id=request.correlation_id,
                 reference_asset_ids=(
-                    f"model-call:{request.operation_id}:{request.attempt_id}:{stage}",
+                    _model_call_asset_id(
+                        request.operation_id,
+                        request.attempt_id,
+                        stage,
+                        external_effect_id,
+                    ),
                 ),
             )
         )
 
 
-def _model_log_ref(operation_id: str, attempt_id: str, stage: str) -> str:
-    return f"runs/model_calls/{operation_id}-{attempt_id}-{stage}.json"
+def _evidence_instance_token(external_effect_id: str) -> str:
+    return (
+        hashlib.sha256(external_effect_id.encode("utf-8")).hexdigest()[:20]
+        if external_effect_id
+        else ""
+    )
 
 
-def _cost_log_ref(operation_id: str, attempt_id: str, stage: str) -> str:
-    return f"runs/cost_ledgers/{operation_id}-{attempt_id}-{stage}.json"
+def _evidence_output_key(base: str, external_effect_id: str) -> str:
+    token = _evidence_instance_token(external_effect_id)
+    return f"{base}.{token}" if token else base
+
+
+def _model_call_asset_id(
+    operation_id: str,
+    attempt_id: str,
+    stage: str,
+    external_effect_id: str = "",
+) -> str:
+    base = f"model-call:{operation_id}:{attempt_id}:{stage}"
+    token = _evidence_instance_token(external_effect_id)
+    return f"{base}:{token}" if token else base
+
+
+def _cost_ledger_asset_id(
+    operation_id: str,
+    attempt_id: str,
+    stage: str,
+    external_effect_id: str = "",
+) -> str:
+    base = f"cost-ledger:{operation_id}:{attempt_id}:{stage}"
+    token = _evidence_instance_token(external_effect_id)
+    return f"{base}:{token}" if token else base
+
+
+def _model_log_ref(
+    operation_id: str,
+    attempt_id: str,
+    stage: str,
+    external_effect_id: str = "",
+) -> str:
+    token = _evidence_instance_token(external_effect_id)
+    suffix = f"-{token}" if token else ""
+    return f"runs/model_calls/{operation_id}-{attempt_id}-{stage}{suffix}.json"
+
+
+def _cost_log_ref(
+    operation_id: str,
+    attempt_id: str,
+    stage: str,
+    external_effect_id: str = "",
+) -> str:
+    token = _evidence_instance_token(external_effect_id)
+    suffix = f"-{token}" if token else ""
+    return f"runs/cost_ledgers/{operation_id}-{attempt_id}-{stage}{suffix}.json"
 
 
 def _raise_model_effect_failure(dispatched: dict[str, Any]) -> None:
