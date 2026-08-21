@@ -25,6 +25,9 @@ from novel_forge.modules.agent_runtime.application import (
     AgentRuntimeAdminCommand,
     AgentRuntimeAuthorityApplication,
 )
+from novel_forge.modules.agent_runtime.definitions import (
+    agent_runtime_operation_definitions,
+)
 from novel_forge.modules.authority_security import Principal, PrincipalType
 from novel_forge.modules.capability_pack_authority.application import (
     CapabilityPackAuthorityApplication,
@@ -126,6 +129,11 @@ class CapabilityPackPostgresHarness:
                 application_build_id=self.application_build_id,
                 commit_sha=self.release_sha,
                 model_effects_required=True,
+            ):
+                uow.repositories.definitions.register(definition)
+            for definition in agent_runtime_operation_definitions(
+                application_build_id=self.application_build_id,
+                commit_sha=self.release_sha,
             ):
                 uow.repositories.definitions.register(definition)
             uow.commit()
@@ -461,7 +469,9 @@ class CapabilityPackPostgresHarness:
             registered.add(agent_ref)
             stage = str(node["node_id"])
             skill_name = (
-                "prose-generation"
+                "agent-loop-governance"
+                if stage == "agent_session"
+                else "prose-generation"
                 if stage in {"draft", "revision"}
                 else "canon-continuity-graph"
                 if stage == "canon_extraction"
@@ -488,27 +498,54 @@ class CapabilityPackPostgresHarness:
                 input_schema_ref=capability_definition.input_schema_ref,
                 output_schema_ref=capability_definition.output_schema_ref,
                 supported_message_types=(AgentMessageType.PROPOSAL,),
-                supported_scope_types=("CHAPTER",),
+                supported_scope_types=(
+                    ("BOOK",) if stage == "agent_session" else ("CHAPTER",)
+                ),
                 risk_class=capability_definition.risk_class.value.upper(),
                 execution_requirements={"production_execution_gateway_required": True},
                 qualification_status="QUALIFIED_FIXTURE",
             )
+            is_agent_session = stage == "agent_session"
             definition = AgentDefinition(
                 agent_id=agent_id,
                 version=definition_version,
-                agent_type="CHAPTER_STAGE",
-                domain="chapter",
-                role="CHAPTER_STAGE_AGENT",
+                agent_type=(
+                    "AUTONOMOUS_SESSION" if is_agent_session else "CHAPTER_STAGE"
+                ),
+                domain=("agent_runtime" if is_agent_session else "chapter"),
+                role=("STUDIO_DIRECTOR" if is_agent_session else "CHAPTER_STAGE_AGENT"),
                 capability_refs=(f"{capability.capability_id}@{capability_version}",),
                 input_contract_ref=capability.input_schema_ref,
                 output_contract_ref=capability.output_schema_ref,
-                authority_scope_ref="scope:chapter@1",
-                default_scope_policy_ref="scope:chapter-frozen@1",
-                allowed_tools=("request_production_execution",),
+                authority_scope_ref=(
+                    "scope:book@1" if is_agent_session else "scope:chapter@1"
+                ),
+                default_scope_policy_ref=(
+                    "scope:accepted-book-boundary@1"
+                    if is_agent_session
+                    else "scope:chapter-frozen@1"
+                ),
+                allowed_tools=(
+                    (
+                        "narrative.query_accepted",
+                        "story_planning.generate_candidate",
+                        "plan_change.submit",
+                    )
+                    if is_agent_session
+                    else ("request_production_execution",)
+                ),
                 allowed_context_types=("context_bundle",),
                 execution_policy_ref="execution:pep@1",
-                approval_policy_ref="approval:chapter-authority@1",
-                quality_policy_ref="quality:chapter-domain-handler@1",
+                approval_policy_ref=(
+                    "approval:agent-submit-only@1"
+                    if is_agent_session
+                    else "approval:chapter-authority@1"
+                ),
+                quality_policy_ref=(
+                    "quality:agent-transcript-gate@1"
+                    if is_agent_session
+                    else "quality:chapter-domain-handler@1"
+                ),
                 status="ACTIVE",
             )
             command_base = {
@@ -534,7 +571,7 @@ class CapabilityPackPostgresHarness:
                         "input_schema_ref": capability.input_schema_ref,
                         "output_schema_ref": capability.output_schema_ref,
                         "supported_message_types": ["PROPOSAL"],
-                        "supported_scope_types": ["CHAPTER"],
+                        "supported_scope_types": list(capability.supported_scope_types),
                         "risk_class": capability.risk_class,
                         "execution_requirements": dict(
                             capability.execution_requirements

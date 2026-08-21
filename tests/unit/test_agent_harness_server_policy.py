@@ -28,13 +28,19 @@ def _definition(*, tools: tuple[str, ...]) -> dict[str, object]:
         "agent_id": "studio-director",
         "definition_version": 7,
         "definition_hash": "sha256:" + "1" * 64,
+        "activation_version": 3,
+        "runtime_contract_hash": "sha256:" + "4" * 64,
         "role": "STUDIO_DIRECTOR",
         "allowed_tools": list(tools),
         "capability_pack_ref": "agent_session_pack@1.0.0",
+        "prompt_bundle_ref": "prompt-bundle:studio:v1",
+        "prompt_bundle_hash": "sha256:" + "5" * 64,
         "tool_policy_ref": "tool-policy:studio:v1",
         "tool_policy_hash": "sha256:" + "2" * 64,
         "skill_bundle_ref": "skill-bundle:studio:v1",
         "skill_bundle_hash": "sha256:" + "3" * 64,
+        "context_policy_ref": "context-policy:studio:v1",
+        "context_policy_hash": "sha256:" + "6" * 64,
     }
 
 

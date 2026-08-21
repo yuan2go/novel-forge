@@ -53,7 +53,10 @@ def canonical_artifact_json(content: Any) -> str:
 
 
 def artifact_content_hash(content: Any) -> str:
-    return "sha256:" + hashlib.sha256(canonical_artifact_json(content).encode("utf-8")).hexdigest()
+    return (
+        "sha256:"
+        + hashlib.sha256(canonical_artifact_json(content).encode("utf-8")).hexdigest()
+    )
 
 
 def is_floating_version(value: str) -> bool:
@@ -94,7 +97,9 @@ class ExplicitArtifactResolver:
     def __init__(self, artifacts: Iterable[ResolvedArtifact]) -> None:
         values: dict[tuple[ArtifactKind, str, str], ResolvedArtifact] = {}
         for artifact in artifacts:
-            if is_floating_version(artifact.version) or is_floating_version(artifact.ref):
+            if is_floating_version(artifact.version) or is_floating_version(
+                artifact.ref
+            ):
                 raise ValueError("floating artifact versions are forbidden")
             if artifact.content_hash != artifact_content_hash(
                 json.loads(artifact.content_json)
@@ -113,9 +118,7 @@ class ExplicitArtifactResolver:
             values[key] = artifact
         self._values = MappingProxyType(values)
 
-    def resolve(
-        self, kind: ArtifactKind, ref: str, version: str
-    ) -> ResolvedArtifact:
+    def resolve(self, kind: ArtifactKind, ref: str, version: str) -> ResolvedArtifact:
         if is_floating_version(ref) or is_floating_version(version):
             raise ValueError("floating artifact versions are forbidden")
         matching_identity = [
@@ -138,7 +141,9 @@ class ExplicitArtifactResolver:
     def artifacts(self) -> tuple[ResolvedArtifact, ...]:
         return tuple(
             self._values[key]
-            for key in sorted(self._values, key=lambda item: (item[0].value, item[1], item[2]))
+            for key in sorted(
+                self._values, key=lambda item: (item[0].value, item[1], item[2])
+            )
         )
 
     def snapshot_hash(self) -> str:
@@ -163,7 +168,11 @@ class ExplicitArtifactResolver:
         if not catalog.is_absolute():
             catalog = root / catalog
         payload = _load_unique_json(catalog)
-        if not isinstance(payload, Mapping) or payload.get("schema_version") != "novelos.capability_pack.artifact_catalog.v1":
+        if (
+            not isinstance(payload, Mapping)
+            or payload.get("schema_version")
+            != "novelos.capability_pack.artifact_catalog.v1"
+        ):
             raise ValueError("artifact catalog schema is unsupported")
         entries = payload.get("artifacts")
         if not isinstance(entries, list):
@@ -280,6 +289,11 @@ def default_chapter_artifact_resolver(
             "canon-continuity-graph-v1",
             "skills/canon-continuity-graph/SKILL.md",
         ),
+        (
+            "agent-loop-governance",
+            "agent-loop-governance-v1",
+            "skills/agent-loop-governance/SKILL.md",
+        ),
     )
     for ref, version, source in skill_sources:
         text = (root / source).read_bytes().decode("utf-8", errors="strict")
@@ -304,6 +318,18 @@ def default_chapter_artifact_resolver(
             "prompt-template:chapter-generation-pack",
             "v2",
             "config/capability_packs/artifacts/chapter_generation_template.md",
+        ),
+        (
+            ArtifactKind.PROMPT_SYSTEM_INSTRUCTION,
+            "prompt-system:agent-session-pack",
+            "v1",
+            "config/capability_packs/artifacts/agent_session_system_instruction.md",
+        ),
+        (
+            ArtifactKind.PROMPT_TEMPLATE,
+            "prompt-template:agent-session-pack",
+            "v1",
+            "config/capability_packs/artifacts/agent_session_template.md",
         ),
     ):
         text = (root / source).read_bytes().decode("utf-8", errors="strict")

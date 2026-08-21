@@ -30,7 +30,10 @@ from novel_forge.modules.story_planning_runtime import (
     StoryPlanningGenerationApplication,
     StoryPlanningGenerationCommand,
 )
-from novel_forge.storage.authority_asset_store import AuthorityAssetQuery, AuthorityAssetWriter
+from novel_forge.storage.authority_asset_store import (
+    AuthorityAssetQuery,
+    AuthorityAssetWriter,
+)
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from novel_forge.storage.database_runtime import get_database_runtime
 
@@ -42,9 +45,11 @@ from .harness import (
     AgentToolSpec,
     UnifiedAgentHarness,
 )
+from .definitions import AGENT_SESSION_WORKFLOW_DEFINITION_REF
 from .harness_runtime import (
     BoundAgentToolRouter,
     PostgresAgentHarnessTranscript,
+    PostgresAgentSessionUsageMeter,
     PostgresOperationCancellation,
 )
 
@@ -52,8 +57,60 @@ from .harness_runtime import (
 AGENT_SESSION_STAGE = "agent_session"
 
 
+def agent_route_execution_identity(
+    route: Any, *, capability_pack_id: str
+) -> dict[str, Any]:
+    """Canonical deployment identity used at admission and every model turn."""
+
+    identity = {
+        "contract_version": "agent-route-execution-identity.v1",
+        "stage": AGENT_SESSION_STAGE,
+        "provider": route.model_profile.model_provider,
+        "model_id": route.model_profile.model_id,
+        "reasoning_effort": route.model_profile.reasoning_effort,
+        "model_profile_id": route.model_profile.profile_id,
+        "model_profile_version": route.model_profile.profile_version,
+        "model_profile_hash": route.model_profile.contract_hash,
+        "route_policy_id": route.route_policy.policy_id,
+        "route_policy_version": route.route_policy.policy_version,
+        "route_policy_ref": (
+            f"{route.route_policy.policy_id}:v{route.route_policy.policy_version}"
+        ),
+        "route_policy_hash": route.route_policy.contract_hash,
+        "fallback_policy_id": route.fallback_policy.policy_id,
+        "fallback_policy_version": route.fallback_policy.policy_version,
+        "fallback_policy_hash": route.fallback_policy.contract_hash,
+        "backend_id": route.model_profile.backend_id,
+        "backend_version": route.backend_version,
+        "runtime_class": route.model_profile.runtime_class.value,
+        "runtime_host_id": route.runtime_host_id,
+        "auth_profile_ref": route.auth_profile_ref,
+        "prompt_version": route.prompt_version,
+        "skill_version": route.skill_version,
+        "system_instruction_hash": route.system_instruction_hash,
+        "template_hash": route.template_hash,
+        "skill_content_hash": route.skill_content_hash,
+        "prompt_compiler_version": route.prompt_compiler_version,
+        "output_schema_ref": route.output_schema_ref,
+        "release_sha": route.release_sha,
+        "capability_pack_id": capability_pack_id,
+        "gateway": "PRODUCTION_EXECUTION_GATEWAY",
+    }
+    return {**identity, "runtime_binding_hash": canonical_policy_hash(identity)}
+
+
 class PostgresAgentExecutionContractBinder(PostgresChapterExecutionContractBinder):
     """Agent-owned contract projection over the shared gateway binder mechanics."""
+
+    def __init__(
+        self, database_url: str, routes: Mapping[str, Any], **values: Any
+    ) -> None:
+        super().__init__(
+            database_url,
+            routes,
+            workflow_definition_ref=AGENT_SESSION_WORKFLOW_DEFINITION_REF,
+            **values,
+        )
 
     def _target_scope(
         self,
@@ -92,6 +149,50 @@ class PostgresAgentExecutionContractBinder(PostgresChapterExecutionContractBinde
         del stage
         return ("agent.session.execute", graph["definition_name"])
 
+    def freeze_before_external_effect(
+        self,
+        *,
+        capability: str,
+        request_payload: Mapping[str, Any],
+        snapshot_fencing_token: int,
+        snapshot_worker_id: str,
+    ) -> Any:
+        preflight = super().freeze_before_external_effect(
+            capability=capability,
+            request_payload=request_payload,
+            snapshot_fencing_token=snapshot_fencing_token,
+            snapshot_worker_id=snapshot_worker_id,
+        )
+        metadata = request_payload.get("_production_execution")
+        contract = (
+            dict(metadata.get("agent_execution_contract") or {})
+            if isinstance(metadata, Mapping)
+            else {}
+        )
+        if not contract:
+            return preflight
+        expected_pack_hash = str(contract.get("capability_pack_snapshot_hash") or "")
+        if expected_pack_hash and (
+            preflight is None
+            or preflight.attempt_snapshot.execution_snapshot.snapshot_hash
+            != expected_pack_hash
+        ):
+            raise KernelError(
+                "AGENT_EXECUTION_CAPABILITY_PACK_DRIFT",
+                "Attempt Capability Pack differs from admission-frozen identity",
+            )
+        expected_binding = dict(contract.get("runtime_binding") or {})
+        current_binding = agent_route_execution_identity(
+            self.routes[AGENT_SESSION_STAGE],
+            capability_pack_id=self.capability_pack_id,
+        )
+        if expected_binding != current_binding:
+            raise KernelError(
+                "AGENT_EXECUTION_RUNTIME_BINDING_DRIFT",
+                "current provider route differs from admission-frozen identity",
+            )
+        return preflight
+
 
 class PostgresProductionAgentModelTurnPort:
     """Turn port backed by the shared gateway, ExternalEffect, receipt and budget."""
@@ -128,6 +229,7 @@ class PostgresProductionAgentModelTurnPort:
         committed_transcript: Any,
         observations: Any,
     ) -> AgentModelTurn:
+        self._require_frozen_execution_contract(session)
         self._require_active_boundary(session)
         context = self._context_asset(session, instruction)
         effect_instance = f"{request_id}:turn:{turn_number}"
@@ -140,6 +242,8 @@ class PostgresProductionAgentModelTurnPort:
             command={
                 "book_id": session.accepted_boundary.book_id,
                 "agent_session_id": session.agent_session_id,
+                "agent_execution_contract": dict(session.execution_contract),
+                "agent_execution_contract_hash": session.execution_contract_hash,
                 "chapter_number": session.accepted_boundary.accepted_through_chapter,
                 "_effect_instance": effect_instance,
                 "context_token_budget": session.budget.max_input_tokens,
@@ -195,6 +299,53 @@ class PostgresProductionAgentModelTurnPort:
                 dict(final_response) if isinstance(final_response, Mapping) else None
             ),
         )
+
+    def _require_frozen_execution_contract(self, session: AgentHarnessSession) -> None:
+        contract = dict(session.execution_contract)
+        if not contract:
+            # Historical fixture sessions are intentionally not provider proof.
+            return
+        if canonical_policy_hash(contract) != session.execution_contract_hash:
+            raise KernelError(
+                "AGENT_EXECUTION_CONTRACT_CORRUPT",
+                "Agent Session execution contract hash differs from content",
+            )
+        binder = self.model_port.capability_binder
+        pack_id = str(getattr(binder, "capability_pack_id", ""))
+        route = self.model_port.adapter.routes.get(AGENT_SESSION_STAGE)
+        if route is None:
+            raise KernelError(
+                "AGENT_EXECUTION_RUNTIME_UNBOUND",
+                "Agent Session has no current production route to validate",
+            )
+        current = agent_route_execution_identity(route, capability_pack_id=pack_id)
+        if dict(contract.get("runtime_binding") or {}) != current:
+            raise KernelError(
+                "AGENT_EXECUTION_RUNTIME_BINDING_DRIFT",
+                "current provider/model/route differs from admission-frozen identity",
+            )
+        runtime = get_database_runtime(self.database_url)
+        with runtime.connection() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT command_payload->'execution_contract',
+                           command_payload->>'execution_contract_hash'
+                    FROM authority_operation
+                    WHERE operation_id=%s AND project_id=%s
+                    """,
+                    [session.operation_id, session.project_id],
+                )
+                row = cursor.fetchone()
+        if (
+            row is None
+            or dict(row[0] or {}) != contract
+            or str(row[1] or "") != (session.execution_contract_hash)
+        ):
+            raise KernelError(
+                "AGENT_EXECUTION_CONTRACT_DRIFT",
+                "Session and Operation do not share the same frozen execution contract",
+            )
 
     def _context_asset(self, session: AgentHarnessSession, instruction: str) -> Any:
         logical_ref = f"agent_harness/context/{session.agent_session_id}"
@@ -285,7 +436,13 @@ class PostgresProductionAgentModelTurnPort:
 
     def _effect_id(self, operation_id: str, effect_instance: str) -> str:
         stable_key = ":".join(
-            (operation_id, self.attempt_id, AGENT_SESSION_STAGE, effect_instance, "attempt-v1")
+            (
+                operation_id,
+                self.attempt_id,
+                AGENT_SESSION_STAGE,
+                effect_instance,
+                "attempt-v1",
+            )
         )
         runtime = get_database_runtime(self.database_url)
         with runtime.connection() as connection:
@@ -464,6 +621,7 @@ class ProductionAgentToolBindings:
                 arguments.get("governance_action_version_ids") or ()
             ),
             auto_approve_low_risk=False,
+            parent_agent_session_operation_id=session.operation_id,
         )
         result = self.planning.generate(command, principal=self.principal)
         candidate_effect_id = self._required_candidate_effect(
@@ -481,6 +639,7 @@ class ProductionAgentToolBindings:
             },
             operation_id=session.operation_id,
             attempt_id=self.attempt_id,
+            external_effect_id=candidate_effect_id,
         )
 
     def submit_plan_change(
@@ -505,13 +664,9 @@ class ProductionAgentToolBindings:
                     f"agent-plan-change:{session.agent_session_id}:{request_id}"
                 ),
                 source_type=PlanChangeSource(str(arguments["source_type"])),
-                source_evidence_version_id=str(
-                    arguments["source_evidence_version_id"]
-                ),
+                source_evidence_version_id=str(arguments["source_evidence_version_id"]),
                 target_asset_version_id=str(arguments["target_asset_version_id"]),
-                proposed_asset_version_id=str(
-                    arguments["proposed_asset_version_id"]
-                ),
+                proposed_asset_version_id=str(arguments["proposed_asset_version_id"]),
             ),
             principal=self.principal,
         )
@@ -536,10 +691,17 @@ class ProductionAgentToolBindings:
             with connection.cursor() as cursor:
                 cursor.execute(
                     """
-                    SELECT external_effect_id FROM authority_external_effect
-                    WHERE operation_id=%s AND project_id=%s
-                      AND status='SUCCEEDED'
-                    ORDER BY created_at DESC LIMIT 1
+                    SELECT effect.external_effect_id
+                    FROM authority_external_effect AS effect
+                    JOIN authority_external_effect_dispatch AS dispatch
+                      ON dispatch.external_effect_id=effect.external_effect_id
+                    JOIN authority_external_receipt AS receipt
+                      ON receipt.dispatch_id=dispatch.dispatch_id
+                    WHERE effect.operation_id=%s AND effect.project_id=%s
+                      AND effect.status='SUCCEEDED'
+                      AND receipt.status='VERIFIED'
+                      AND receipt.payload->>'outcome'='success'
+                    ORDER BY receipt.received_at DESC LIMIT 1
                     """,
                     [operation_id, project_id],
                 )
@@ -611,6 +773,7 @@ def build_production_agent_harness_factory(
             cancellation=PostgresOperationCancellation(
                 database_url, project_id=project_id
             ),
+            usage_meter=PostgresAgentSessionUsageMeter(database_url),
         )
 
     return factory
@@ -629,5 +792,6 @@ __all__ = [
     "PostgresAgentExecutionContractBinder",
     "ProductionAgentToolBindings",
     "build_production_agent_harness_factory",
+    "agent_route_execution_identity",
     "canonical_policy_hash",
 ]

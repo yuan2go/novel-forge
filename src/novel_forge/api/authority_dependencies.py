@@ -120,6 +120,7 @@ from novel_forge.modules.agent_runtime.harness_runtime import (
 )
 from novel_forge.modules.agent_runtime.production import (
     PostgresAgentExecutionContractBinder,
+    agent_route_execution_identity,
     build_production_agent_harness_factory,
 )
 from novel_forge.modules.agent_runtime.queries import AgentRuntimeQuery
@@ -594,6 +595,8 @@ def build_production_execution_composition(
             policy_id=(
                 "story-design.narrative-semantic-evaluator.route"
                 if stage == "narrative_semantic_evaluation"
+                else "chapter.agent_session.route"
+                if stage == "agent_session"
                 else f"chapter.{stage}.route"
             ),
             policy_version=1,
@@ -1073,6 +1076,9 @@ def build_agent_runtime_authority_application(
     build_id, commit_sha = authority_release_identity(env=env)
     values = os.environ if env is None else env
     route = execution.gateway.routes.get("agent_session") if execution else None
+    agent_pack_id = str(
+        values.get("NOVEL_FORGE_AGENT_CAPABILITY_PACK_ID") or "agent_session_pack"
+    )
     return AgentRuntimeAuthorityApplication(
         settings.database_url,
         application_build_id=build_id,
@@ -1082,16 +1088,7 @@ def build_agent_runtime_authority_application(
         ).value,
         release_channel=str(values.get("NOVEL_FORGE_RELEASE_CHANNEL") or "VALIDATION"),
         production_agent_model_binding=(
-            {
-                "stage": "agent_session",
-                "provider": route.model_profile.model_provider,
-                "model_id": route.model_profile.model_id,
-                "model_profile_id": route.model_profile.profile_id,
-                "model_profile_hash": route.model_profile.contract_hash,
-                "route_policy_id": route.route_policy.policy_id,
-                "route_policy_hash": route.route_policy.contract_hash,
-                "gateway": "PRODUCTION_EXECUTION_GATEWAY",
-            }
+            agent_route_execution_identity(route, capability_pack_id=agent_pack_id)
             if route is not None
             else None
         ),

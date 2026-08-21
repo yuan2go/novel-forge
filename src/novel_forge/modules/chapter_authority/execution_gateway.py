@@ -283,6 +283,7 @@ class PostgresChapterExecutionContractBinder:
         pack_runtime_profile: str = "development",
         pack_release_channel: str = "VALIDATION",
         pack_required: bool = False,
+        workflow_definition_ref: str = CHAPTER_MODEL_WORKFLOW_DEFINITION_REF,
     ) -> None:
         route_names = set(routes)
         if (
@@ -302,6 +303,7 @@ class PostgresChapterExecutionContractBinder:
         self.pack_runtime_profile = pack_runtime_profile
         self.pack_release_channel = pack_release_channel
         self.pack_required = pack_required
+        self.workflow_definition_ref = workflow_definition_ref
         self.pack_resolver = CapabilityPackRuntimeResolver(database_url)
 
     def freeze_before_external_effect(
@@ -1241,7 +1243,7 @@ class PostgresChapterExecutionContractBinder:
                     project_id=project_id,
                     workspace_id=workspace_id,
                     book_id=book_id,
-                    workflow_definition_ref=CHAPTER_MODEL_WORKFLOW_DEFINITION_REF,
+                    workflow_definition_ref=self.workflow_definition_ref,
                     workflow_node_id=stage,
                     environment=self.pack_environment,
                     runtime_profile=self.pack_runtime_profile,

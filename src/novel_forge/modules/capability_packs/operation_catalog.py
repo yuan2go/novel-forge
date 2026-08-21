@@ -30,6 +30,11 @@ from novel_forge.modules.story_design_authority.evaluation_runtime import (
     NARRATIVE_EVALUATION_HANDLER,
     NARRATIVE_EVALUATION_VERSION,
 )
+from novel_forge.modules.agent_runtime.definitions import (
+    AGENT_RUNTIME_HARNESS_HANDLER_KEY,
+    AGENT_SESSION_WORKFLOW_DEFINITION_ID,
+    AGENT_SESSION_WORKFLOW_DEFINITION_VERSION,
+)
 from novel_forge.storage.authority_repositories import definition_hash
 
 
@@ -375,6 +380,24 @@ def narrative_evaluation_workflow_binding_catalog() -> WorkflowBindingCatalog:
     )
 
 
+def agent_session_workflow_binding_catalog() -> WorkflowBindingCatalog:
+    return WorkflowBindingCatalog(
+        AGENT_SESSION_WORKFLOW_DEFINITION_ID,
+        AGENT_SESSION_WORKFLOW_DEFINITION_VERSION,
+        (
+            WorkflowBinding(
+                node_id="agent_session",
+                operation_name="agent.session.execute",
+                stage="agent_session",
+                handler_key=AGENT_RUNTIME_HARNESS_HANDLER_KEY,
+                capability_id="agent.workspace.execute",
+                depends_on=(),
+                primary_output_asset_type="",
+            ),
+        ),
+    )
+
+
 def governed_workflow_binding_catalog(
     workflow_id: str, workflow_version: str
 ) -> WorkflowBindingCatalog:
@@ -383,6 +406,7 @@ def governed_workflow_binding_catalog(
         story_planning_workflow_binding_catalog(),
         reader_outcome_workflow_binding_catalog(),
         narrative_evaluation_workflow_binding_catalog(),
+        agent_session_workflow_binding_catalog(),
     )
     for catalog in catalogs:
         if (catalog.workflow_id, catalog.workflow_version) == (
@@ -416,6 +440,7 @@ __all__ = [
     "WorkflowBinding",
     "WorkflowBindingCatalog",
     "chapter_operation_definition_catalog",
+    "agent_session_workflow_binding_catalog",
     "chapter_workflow_binding_catalog",
     "governed_workflow_binding_catalog",
     "narrative_evaluation_workflow_binding_catalog",

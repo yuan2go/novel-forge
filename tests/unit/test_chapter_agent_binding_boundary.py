@@ -49,9 +49,7 @@ def test_development_compatibility_is_explicitly_recorded() -> None:
     )
     recorder.record_compatibility_usage = Mock()  # type: ignore[method-assign]
 
-    result = recorder.freeze(
-        _request(), stage="review", execution_binding=Mock()
-    )
+    result = recorder.freeze(_request(), stage="review", execution_binding=Mock())
 
     assert result is None
     recorder.record_compatibility_usage.assert_called_once_with(  # type: ignore[attr-defined]
@@ -59,8 +57,9 @@ def test_development_compatibility_is_explicitly_recorded() -> None:
     )
 
 
-def test_model_backed_chapter_stages_share_the_agent_binding_boundary() -> None:
+def test_legacy_binding_surface_tracks_model_capability_stages() -> None:
     assert AGENT_BOUND_CHAPTER_STAGES == {
+        "retrieval",
         "draft",
         "review",
         "revision",
@@ -71,4 +70,5 @@ def test_model_backed_chapter_stages_share_the_agent_binding_boundary() -> None:
         "quality_source_originality",
         "quality_longform",
         "quality_platform",
+        "agent_session",
     }

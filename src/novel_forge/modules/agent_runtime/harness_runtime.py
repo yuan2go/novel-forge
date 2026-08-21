@@ -106,6 +106,99 @@ class PostgresOperationCancellation:
         return str(state["status"]) in {"CANCELLATION_REQUESTED", "CANCELLED"}
 
 
+class PostgresAgentSessionUsageMeter:
+    """Aggregate existing receipt/ledger evidence over Agent causation lineage."""
+
+    def __init__(self, database_url: str) -> None:
+        self.database_url = database_url
+
+    def measure(
+        self, *, session: AgentHarnessSession, usage: AgentHarnessUsage
+    ) -> AgentHarnessUsage:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            params = [session.operation_id, session.project_id, session.project_id]
+            uow.cursor.execute(
+                """
+                WITH RECURSIVE descendants AS (
+                  SELECT operation_id FROM authority_operation
+                  WHERE operation_id=%s AND project_id=%s
+                  UNION
+                  SELECT child.operation_id
+                  FROM authority_operation AS child
+                  JOIN descendants AS parent
+                    ON child.parent_operation_id=parent.operation_id
+                    OR child.causation_operation_id=parent.operation_id
+                  WHERE child.project_id=%s
+                ), latest_receipts AS (
+                  SELECT DISTINCT ON (effect.external_effect_id)
+                         effect.external_effect_id, receipt.payload
+                  FROM authority_external_effect AS effect
+                  LEFT JOIN authority_external_effect_dispatch AS dispatch
+                    ON dispatch.external_effect_id=effect.external_effect_id
+                  LEFT JOIN authority_external_receipt AS receipt
+                    ON receipt.dispatch_id=dispatch.dispatch_id
+                   AND receipt.status='VERIFIED'
+                   AND receipt.payload->>'outcome'='success'
+                  WHERE effect.operation_id IN (
+                    SELECT operation_id FROM descendants
+                  )
+                  ORDER BY effect.external_effect_id, receipt.received_at DESC
+                )
+                SELECT external_effect_id, payload FROM latest_receipts
+                """,
+                params,
+            )
+            receipts = uow.cursor.fetchall()
+            uow.cursor.execute(
+                """
+                WITH RECURSIVE descendants AS (
+                  SELECT operation_id FROM authority_operation
+                  WHERE operation_id=%s AND project_id=%s
+                  UNION
+                  SELECT child.operation_id
+                  FROM authority_operation AS child
+                  JOIN descendants AS parent
+                    ON child.parent_operation_id=parent.operation_id
+                    OR child.causation_operation_id=parent.operation_id
+                  WHERE child.project_id=%s
+                )
+                SELECT COALESCE(SUM(
+                  CASE WHEN status='SETTLED' THEN settled_amount
+                       ELSE reserved_amount END
+                ), 0)
+                FROM authority_budget_reservation
+                WHERE operation_id IN (SELECT operation_id FROM descendants)
+                  AND status IN ('RESERVED','HELD_UNKNOWN','SETTLED')
+                """,
+                params,
+            )
+            amount = str(uow.cursor.fetchone()[0])
+        input_tokens = 0
+        output_tokens = 0
+        for _effect_id, raw_payload in receipts:
+            payload = dict(raw_payload or {})
+            evidence = payload.get("evidence")
+            if not isinstance(evidence, Mapping):
+                continue
+            usage_evidence = evidence.get("usage")
+            if not isinstance(usage_evidence, Mapping):
+                production = evidence.get("production_execution")
+                usage_evidence = (
+                    production.get("usage") if isinstance(production, Mapping) else None
+                )
+            if isinstance(usage_evidence, Mapping):
+                input_tokens += int(usage_evidence.get("input_tokens") or 0)
+                output_tokens += int(usage_evidence.get("output_tokens") or 0)
+        return AgentHarnessUsage(
+            turns=usage.turns,
+            tool_calls=usage.tool_calls,
+            external_effects=len(receipts),
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            cost_amount=amount,
+        )
+
+
 AgentToolHandler = Callable[
     [AgentToolSpec, AgentToolCall, AgentHarnessSession, str, int],
     AgentToolObservation,
@@ -399,9 +492,7 @@ class PostgresScriptedAgentModelTurnPort:
                 else None
             ),
             final_response=(
-                dict(final_response)
-                if isinstance(final_response, Mapping)
-                else None
+                dict(final_response) if isinstance(final_response, Mapping) else None
             ),
         )
 
@@ -414,9 +505,7 @@ def build_scripted_agent_harness_factory(
 ) -> Callable[[str, str, str], UnifiedAgentHarness]:
     """Build the explicitly fixture-only durable Agent Harness composition."""
 
-    def factory(
-        project_id: str, attempt_id: str, trace_id: str
-    ) -> UnifiedAgentHarness:
+    def factory(project_id: str, attempt_id: str, trace_id: str) -> UnifiedAgentHarness:
         def query_accepted(
             spec: AgentToolSpec,
             call: AgentToolCall,
@@ -467,12 +556,11 @@ def build_scripted_agent_harness_factory(
                 worker_id=worker_id,
                 lease_seconds=lease_seconds,
             ),
-            tools=BoundAgentToolRouter(
-                {"narrative.query_accepted": query_accepted}
-            ),
+            tools=BoundAgentToolRouter({"narrative.query_accepted": query_accepted}),
             cancellation=PostgresOperationCancellation(
                 database_url, project_id=project_id
             ),
+            usage_meter=PostgresAgentSessionUsageMeter(database_url),
         )
 
     return factory
@@ -482,6 +570,7 @@ __all__ = [
     "AgentToolHandler",
     "BoundAgentToolRouter",
     "PostgresAgentHarnessTranscript",
+    "PostgresAgentSessionUsageMeter",
     "PostgresOperationCancellation",
     "PostgresScriptedAgentModelTurnPort",
     "ScriptedAgentHarnessEffectAdapter",

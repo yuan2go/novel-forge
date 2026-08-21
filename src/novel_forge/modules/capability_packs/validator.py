@@ -72,9 +72,7 @@ _EXTERNAL_EFFECT_TOOL_REFS = frozenset({"model.provider.invoke", "storage.object
 _SOURCE_ISOLATION_MODES = frozenset(
     {"ABSTRACT_ASSETS_ONLY", "FROZEN_ASSETS_ONLY", "RAW_ALLOWED_WITH_APPROVAL"}
 )
-_RUNTIME_PROFILES = frozenset(
-    {"development", "test", "validation", "production"}
-)
+_RUNTIME_PROFILES = frozenset({"development", "test", "validation", "production"})
 _COMMIT_AUTHORITIES = frozenset(
     {
         "BOOK_DESIGN_AUTHORITY",
@@ -84,6 +82,7 @@ _COMMIT_AUTHORITIES = frozenset(
         "READER_JUDGE_AUTHORITY",
         "BOOK_FOLLOWUP_AUTHORITY",
         "PLAN_CHANGE_AUTHORITY",
+        "AGENT_RUNTIME_AUTHORITY",
     }
 )
 _VOLATILE_IDENTITY_KEYS = frozenset(
@@ -900,7 +899,10 @@ def _validate_operation_binding(
                 f"{path}.{field}",
                 "workflow binding differs from the governed Authority/Scheduler contract",
             )
-    if binding.primary_output_asset_type not in node.output_asset_types:
+    if (
+        binding.primary_output_asset_type
+        and binding.primary_output_asset_type not in node.output_asset_types
+    ):
         issues.error(
             "CAPABILITY_PACK_WORKFLOW_BINDING_INVALID",
             f"{path}.output_asset_types",
@@ -1308,16 +1310,13 @@ def _validate_assets(
                 "default_requirement must be OPTIONAL or REQUIRED",
             )
         stages = {
-            str(value)
-            for value in _json_items(project_pack.get("required_stages"))
+            str(value) for value in _json_items(project_pack.get("required_stages"))
         }
         capability_ids = {
             str(value)
             for value in _json_items(project_pack.get("required_capability_ids"))
         }
-        known_stages = {
-            str(node.stage) for node in manifest.workflow_template.nodes
-        }
+        known_stages = {str(node.stage) for node in manifest.workflow_template.nodes}
         known_capabilities = {
             str(node.capability_id) for node in manifest.workflow_template.nodes
         }
@@ -1375,7 +1374,10 @@ def _validate_evaluation(
             "$.evaluation.evaluation_id",
             "evaluation_id must be a non-empty string",
         )
-    if not manifest.evaluation.required_gates:
+    if (
+        manifest.identity.capability_type == "production_workflow"
+        and not manifest.evaluation.required_gates
+    ):
         issues.error(
             "CAPABILITY_PACK_EVALUATION_INVALID",
             "$.evaluation.required_gates",

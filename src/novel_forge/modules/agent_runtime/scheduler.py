@@ -7,7 +7,7 @@ runtime facts.  The scheduler only coordinates them.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, replace
+from dataclasses import asdict, dataclass, replace
 from typing import Any, Callable, Protocol
 from uuid import NAMESPACE_URL, uuid4, uuid5
 
@@ -517,6 +517,8 @@ class AgentAuthorityScheduler:
             "transcript_last_sequence": result.session.next_sequence - 1,
             "provenance_only": True,
             "authority_mutation": False,
+            "execution_contract_hash": result.session.execution_contract_hash,
+            "aggregate_usage": asdict(result.session.usage),
         }
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
@@ -800,9 +802,7 @@ class AgentAuthorityScheduler:
         recovery_mode: str,
     ) -> str:
         operation_id = str(operation["operation_id"])
-        base_session_id = str(
-            operation["command_payload"]["collaboration_session_id"]
-        )
+        base_session_id = str(operation["command_payload"]["collaboration_session_id"])
         with AuthorityUnitOfWork(self.database_url) as uow:
             repository = uow.repositories.agent_collaboration
             uow.cursor.execute(
@@ -819,9 +819,7 @@ class AgentAuthorityScheduler:
 
             base = repository.get_session(base_session_id)
             if recovery_mode == "fresh_attempt" and not base.attempt_id:
-                bound = repository.update_session(
-                    replace(base, attempt_id=attempt_id)
-                )
+                bound = repository.update_session(replace(base, attempt_id=attempt_id))
                 uow.commit()
                 return bound.session_id
             if base.attempt_id == attempt_id:
@@ -850,9 +848,7 @@ class AgentAuthorityScheduler:
                 SessionStatus.FAILED,
             }:
                 repository.update_session(
-                    CollaborationStateMachine.transition(
-                        prior, SessionStatus.FAILED
-                    )
+                    CollaborationStateMachine.transition(prior, SessionStatus.FAILED)
                 )
             session_id = str(
                 uuid5(
@@ -891,9 +887,7 @@ class AgentAuthorityScheduler:
             )
             application.assign_participants(
                 created.session_id,
-                repository.get_participant_snapshot(
-                    prior.participant_snapshot_ref
-                ),
+                repository.get_participant_snapshot(prior.participant_snapshot_ref),
             )
             uow.commit()
             return created.session_id
@@ -977,9 +971,7 @@ class AgentAuthorityScheduler:
                     "AGENT_EXTERNAL_EFFECT_OPERATOR_RECONCILIATION_REQUIRED",
                     "ExternalEffect status requires operator reconciliation",
                 )
-            frozen_fence = int(
-                metadata.get("fencing_token") or execution_fencing_token
-            )
+            frozen_fence = int(metadata.get("fencing_token") or execution_fencing_token)
             authorize = getattr(adapter, "for_recovery", None)
             if not callable(authorize):
                 raise KernelError(
@@ -1142,9 +1134,7 @@ def build_runtime_binding(
         capability_pack_binding_set_hash=str(
             command.get("capability_pack_binding_set_hash") or ""
         ),
-        capability_pack_scope_type=str(
-            command.get("capability_pack_scope_type") or ""
-        ),
+        capability_pack_scope_type=str(command.get("capability_pack_scope_type") or ""),
         capability_pack_assignment_ref=str(
             command.get("capability_pack_assignment_ref") or ""
         ),

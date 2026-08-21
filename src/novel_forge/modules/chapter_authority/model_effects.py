@@ -344,6 +344,12 @@ class ExternalEffectChapterModelPort:
                     business_payload.get("book_id") or f"book:{request.project_id}"
                 ),
                 "agent_session_id": str(business_payload.get("agent_session_id") or ""),
+                "agent_execution_contract": dict(
+                    business_payload.get("agent_execution_contract") or {}
+                ),
+                "agent_execution_contract_hash": str(
+                    business_payload.get("agent_execution_contract_hash") or ""
+                ),
                 "target_asset_version_id": str(
                     business_payload.get("target_asset_version_id") or ""
                 ),

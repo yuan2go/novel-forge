@@ -55,7 +55,9 @@ class CapabilityTypePolicyCatalog:
         try:
             return self._policies[capability_type]
         except KeyError as exc:
-            raise KeyError(f"capability type is not governed: {capability_type}") from exc
+            raise KeyError(
+                f"capability type is not governed: {capability_type}"
+            ) from exc
 
     def policies(self) -> tuple[CapabilityTypePolicy, ...]:
         return tuple(self._policies[key] for key in sorted(self._policies))
@@ -94,6 +96,30 @@ def default_capability_type_catalog() -> CapabilityTypePolicyCatalog:
                     "RETIRED",
                 ),
                 allowed_release_channels=("DEV", "VALIDATION", "CANARY", "PRODUCTION"),
+                allowed_status_lifecycle_channels=lifecycle_channels,
+            ),
+            CapabilityTypePolicy(
+                capability_type="agent_session_runtime",
+                policy_class="AUTHORITY_BOUND_AGENT_EXECUTION",
+                generation=False,
+                allows_external_effects=True,
+                requires_authority_operation=True,
+                requires_attempt_fence=True,
+                allows_raw_source=False,
+                required_audit_level="FULL",
+                allowed_lifecycles=(
+                    "DESIGN",
+                    "VALIDATION",
+                    "PRODUCTION",
+                    "MAINTENANCE",
+                    "RETIRED",
+                ),
+                allowed_release_channels=(
+                    "DEV",
+                    "VALIDATION",
+                    "CANARY",
+                    "PRODUCTION",
+                ),
                 allowed_status_lifecycle_channels=lifecycle_channels,
             ),
         )
@@ -178,6 +204,30 @@ def default_tool_definition_catalog() -> ToolDefinitionCatalog:
                 True,
                 False,
                 ("object_store.put",),
+            ),
+            ToolDefinition(
+                "narrative.query_accepted",
+                ("QUERY",),
+                "LOW",
+                True,
+                False,
+                ("tool.remote.invoke",),
+            ),
+            ToolDefinition(
+                "story_planning.generate_candidate",
+                ("EXECUTE",),
+                "HIGH",
+                True,
+                False,
+                ("tool.remote.invoke",),
+            ),
+            ToolDefinition(
+                "plan_change.submit",
+                ("EXECUTE",),
+                "CRITICAL",
+                True,
+                True,
+                ("tool.remote.invoke",),
             ),
         )
     )

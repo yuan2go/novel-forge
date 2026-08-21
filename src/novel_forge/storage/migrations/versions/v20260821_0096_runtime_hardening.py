@@ -14,6 +14,25 @@ FORWARD_FIX = (
 
 UPGRADE_STATEMENTS = [
     """
+    ALTER TABLE authority_agent_harness_session
+    ADD COLUMN execution_contract JSONB NOT NULL DEFAULT '{}'::jsonb
+    """,
+    """
+    ALTER TABLE authority_agent_harness_session
+    ADD COLUMN execution_contract_hash TEXT NOT NULL DEFAULT '' CHECK (
+        execution_contract_hash = '' OR
+        execution_contract_hash ~ '^sha256:[0-9a-f]{64}$'
+    )
+    """,
+    """
+    ALTER TABLE authority_agent_harness_session
+    ADD CONSTRAINT authority_agent_harness_execution_contract_identity_check
+    CHECK (
+        (execution_contract = '{}'::jsonb AND execution_contract_hash = '') OR
+        (execution_contract <> '{}'::jsonb AND execution_contract_hash <> '')
+    )
+    """,
+    """
     ALTER TABLE authority_arc_checkpoint_followup
     DROP CONSTRAINT authority_arc_checkpoint_followup_status_check
     """,
