@@ -128,6 +128,7 @@ class AgentHarnessRequest(BaseModel):
     book_id: str
     actor_id: str
     agent_session_id: str
+    agent_id: str = ""
     agent_role: AutonomousAgentRole
     instruction: str = Field(min_length=1)
     accepted_boundary: dict[str, Any]
@@ -247,6 +248,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                         request.correlation_id
                         or f"correlation:agent-session:{uuid4()}"
                     ),
+                    agent_id=request.agent_id,
                 ),
                 principal=principal,
             )

@@ -118,6 +118,10 @@ from novel_forge.modules.agent_runtime.execution import (
 from novel_forge.modules.agent_runtime.harness_runtime import (
     build_scripted_agent_harness_factory,
 )
+from novel_forge.modules.agent_runtime.production import (
+    PostgresAgentExecutionContractBinder,
+    build_production_agent_harness_factory,
+)
 from novel_forge.modules.agent_runtime.queries import AgentRuntimeQuery
 from novel_forge.modules.agent_runtime.scheduler import AgentAuthorityScheduler
 from novel_forge.modules.capability_pack_authority.application import (
@@ -185,6 +189,7 @@ _PACK_SKILL_FOR_STAGE = {
     "quality_platform": "quality-review",
     "reader_outcome": "quality-review",
     "narrative_semantic_evaluation": "quality-review",
+    "agent_session": "agent-loop-governance",
 }
 
 
@@ -343,7 +348,7 @@ def build_production_execution_composition(
     repository_artifacts = (
         default_chapter_artifact_resolver(settings.root) if controlled else None
     )
-    for stage, provider_key, model_key in (
+    stage_routes = [
         ("draft", "NOVEL_FORGE_DRAFT_PROVIDER", "NOVEL_FORGE_DRAFT_MODEL"),
         ("review", "NOVEL_FORGE_REVIEW_PROVIDER", "NOVEL_FORGE_REVIEW_MODEL"),
         ("revision", "NOVEL_FORGE_REVISION_PROVIDER", "NOVEL_FORGE_REVISION_MODEL"),
@@ -388,17 +393,38 @@ def build_production_execution_composition(
             "NOVEL_FORGE_NARRATIVE_EVALUATOR_PROVIDER",
             "NOVEL_FORGE_NARRATIVE_EVALUATOR_MODEL",
         ),
-    ):
+    ]
+    agent_provider = str(values.get("NOVEL_FORGE_AGENT_PROVIDER") or "").strip()
+    agent_model = str(values.get("NOVEL_FORGE_AGENT_MODEL") or "").strip()
+    agent_binding_enabled = bool(agent_provider and agent_model)
+    if bool(agent_provider) != bool(agent_model):
+        raise RuntimeError(
+            "Agent production binding requires both NOVEL_FORGE_AGENT_PROVIDER "
+            "and NOVEL_FORGE_AGENT_MODEL"
+        )
+    if agent_binding_enabled:
+        stage_routes.append(
+            (
+                "agent_session",
+                "NOVEL_FORGE_AGENT_PROVIDER",
+                "NOVEL_FORGE_AGENT_MODEL",
+            )
+        )
+    for stage, provider_key, model_key in stage_routes:
         capability_definition = default_capability_registry().resolve(
             chapter_stage_capability(stage)
         )
-        if stage == "narrative_semantic_evaluation" and controlled:
+        if stage in {"narrative_semantic_evaluation", "agent_session"} and controlled:
             if not all(
                 str(values.get(key) or "").strip()
                 for key in (
                     provider_key,
                     model_key,
-                    "NOVEL_FORGE_NARRATIVE_SEMANTIC_EVALUATION_REASONING_EFFORT",
+                    (
+                        "NOVEL_FORGE_AGENT_REASONING_EFFORT"
+                        if stage == "agent_session"
+                        else "NOVEL_FORGE_NARRATIVE_SEMANTIC_EVALUATION_REASONING_EFFORT"
+                    ),
                 )
             ):
                 raise RuntimeError(
@@ -574,7 +600,11 @@ def build_production_execution_composition(
             policy.fallback_policy_ref,
             policy.fallback_policy_version,
         )
-        if codex_cli and repository_artifacts is not None:
+        if (
+            codex_cli
+            and repository_artifacts is not None
+            and stage != "agent_session"
+        ):
             system_artifact = repository_artifacts.resolve(
                 ArtifactKind.PROMPT_SYSTEM_INSTRUCTION,
                 "prompt-system:chapter-generation-pack",
@@ -987,12 +1017,14 @@ def build_chapter_authority_application(
 def build_agent_runtime_authority_application(
     settings: IndustrialSettings,
     *,
+    execution: ProductionExecutionComposition | None = None,
     env: Mapping[str, str] | None = None,
 ) -> AgentRuntimeAuthorityApplication:
     if settings.storage_authority != "postgresql" or not settings.database_url:
         raise RuntimeError("Agent Runtime Authority requires PostgreSQL authority")
     build_id, commit_sha = authority_release_identity(env=env)
     values = os.environ if env is None else env
+    route = execution.gateway.routes.get("agent_session") if execution else None
     return AgentRuntimeAuthorityApplication(
         settings.database_url,
         application_build_id=build_id,
@@ -1001,6 +1033,20 @@ def build_agent_runtime_authority_application(
             str(values.get("NOVEL_FORGE_ENVIRONMENT") or settings.environment)
         ).value,
         release_channel=str(values.get("NOVEL_FORGE_RELEASE_CHANNEL") or "VALIDATION"),
+        production_agent_model_binding=(
+            {
+                "stage": "agent_session",
+                "provider": route.model_profile.model_provider,
+                "model_id": route.model_profile.model_id,
+                "model_profile_id": route.model_profile.profile_id,
+                "model_profile_hash": route.model_profile.contract_hash,
+                "route_policy_id": route.route_policy.policy_id,
+                "route_policy_hash": route.route_policy.contract_hash,
+                "gateway": "PRODUCTION_EXECUTION_GATEWAY",
+            }
+            if route is not None
+            else None
+        ),
     )
 
 
@@ -1084,18 +1130,59 @@ def build_agent_authority_scheduler(
         max_cost_per_call=execution.max_cost_per_call,
         budget_caps=execution.budget_caps(include_chapter_total=True),
     )
+    harness_factory = None
+    if runtime_environment.fixture_allowed:
+        harness_factory = build_scripted_agent_harness_factory(
+            settings.database_url,
+            worker_id=worker_id,
+        )
+    elif "agent_session" in execution.gateway.routes:
+        agent_binder = PostgresAgentExecutionContractBinder(
+            settings.database_url,
+            execution.gateway.routes,
+            capability_pack_id=str(
+                values.get("NOVEL_FORGE_AGENT_CAPABILITY_PACK_ID")
+                or "agent_session_pack"
+            ),
+            pack_environment=environment,
+            pack_runtime_profile=environment,
+            pack_release_channel=str(
+                values.get("NOVEL_FORGE_RELEASE_CHANNEL") or "VALIDATION"
+            ),
+            pack_required=True,
+        )
+        planning = build_story_planning_generation_application(
+            settings,
+            execution=execution,
+            env=values,
+        )
+        plan_change = PostgresPlanChangeAuthority(
+            settings.database_url,
+            story_design=planning.story_design,
+            planning=planning.planning,
+            application_build_id=planning.application_build_id,
+            commit_sha=planning.commit_sha,
+            worker_id=f"{worker_id}:plan-change",
+        )
+        principal = build_trusted_principal_resolver(
+            env=values
+        ).resolve_api_principal()
+        harness_factory = build_production_agent_harness_factory(
+            settings.database_url,
+            adapter=execution.gateway,
+            capability_binder=agent_binder,
+            planning=planning,
+            plan_change=plan_change,
+            principal=principal,
+            worker_id=worker_id,
+            max_cost_per_call=execution.max_cost_per_call,
+            budget_caps=execution.budget_caps(),
+        )
     return AgentAuthorityScheduler(
         settings.database_url,
         execution_preparer=preparer,
         worker_id=worker_id,
-        harness_factory=(
-            build_scripted_agent_harness_factory(
-                settings.database_url,
-                worker_id=worker_id,
-            )
-            if runtime_environment.fixture_allowed
-            else None
-        ),
+        harness_factory=harness_factory,
     )
 
 

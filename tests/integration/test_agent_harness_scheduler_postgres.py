@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import replace
+from pathlib import Path
+import tempfile
 import unittest
 
 from novel_forge.modules.agent_runtime.application import (
@@ -18,6 +20,14 @@ from novel_forge.modules.agent_runtime.harness import (
 from novel_forge.modules.agent_runtime.harness_runtime import (
     build_scripted_agent_harness_factory,
 )
+from novel_forge.modules.agent_runtime.production import (
+    PostgresAgentExecutionContractBinder,
+    build_production_agent_harness_factory,
+)
+from novel_forge.api.authority_dependencies import (
+    build_production_execution_composition,
+)
+from novel_forge.infrastructure.settings import IndustrialSettings
 from novel_forge.modules.agent_runtime.scheduler import AgentAuthorityScheduler
 from novel_forge.modules.authority_security import Principal, PrincipalType
 from novel_forge.modules.book_authority.production import (
@@ -414,6 +424,223 @@ class AgentHarnessSchedulerPostgresTests(unittest.TestCase):
                 [operation_id, session_id, before[4]],
             ).fetchone()
         self.assertEqual(tuple(after), (2, 6, 2))
+
+    def test_controlled_unbound_harness_fails_before_operation_admission(self) -> None:
+        project_id, prior_session_id, _operation_id, _worker_id = self._admit_fixture()
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            prior = uow.repositories.agent_runtime.require_harness_session(
+                prior_session_id
+            )
+        actor_id = "agent-harness-recovery-operator"
+        principal = Principal(
+            principal_id=actor_id,
+            principal_type=PrincipalType.LOCAL_OPERATOR,
+            permissions=frozenset({"agent.authority.execute"}),
+            project_scope=frozenset({project_id}),
+            authentication_source="integration-fixture",
+        )
+        session_id = identifier("controlled-unbound-agent-session")
+        application = AgentRuntimeAuthorityApplication(
+            DATABASE_URL,
+            application_build_id="agent-harness-controlled-unbound",
+            commit_sha=RELEASE_SHA,
+            runtime_environment="validation",
+            production_agent_model_binding=None,
+        )
+        with self.assertRaises(KernelError) as caught:
+            application.admit_harness_session(
+                AgentHarnessAdmissionRequest(
+                    project_id=project_id,
+                    workspace_id=prior.workspace_id,
+                    book_id=prior.accepted_boundary.book_id,
+                    actor_id=actor_id,
+                    agent_session_id=session_id,
+                    agent_role=prior.role,
+                    instruction="This must not become a stranded READY operation.",
+                    accepted_boundary=prior.accepted_boundary,
+                    tool_policy=prior.tool_policy,
+                    skill_bindings=(),
+                    budget=prior.budget,
+                    idempotency_key=f"{project_id}:controlled-unbound",
+                    trace_id=identifier("controlled-unbound-trace"),
+                    correlation_id=identifier("controlled-unbound-correlation"),
+                    agent_id="studio-director",
+                ),
+                principal=principal,
+            )
+        self.assertEqual(
+            caught.exception.code, "AGENT_HARNESS_PRODUCTION_MODEL_UNBOUND"
+        )
+        with connect() as connection:
+            count = connection.execute(
+                """
+                SELECT COUNT(*) FROM authority_agent_harness_session
+                WHERE agent_session_id=%s
+                """,
+                [session_id],
+            ).fetchone()[0]
+        self.assertEqual(int(count), 0)
+
+    def test_pep_gateway_receipt_recovers_before_transcript_without_duplicate_model_effect(
+        self,
+    ) -> None:
+        project_id, session_id, operation_id, worker_id = self._admit_fixture()
+        with tempfile.TemporaryDirectory() as directory:
+            settings = IndustrialSettings(
+                root=Path(directory), database_url=DATABASE_URL
+            )
+            execution = build_production_execution_composition(
+                settings,
+                env={
+                    "NOVEL_FORGE_ENVIRONMENT": "test",
+                    "NOVEL_FORGE_DRAFT_PROVIDER": "mock",
+                    "NOVEL_FORGE_REVIEW_PROVIDER": "mock",
+                    "NOVEL_FORGE_REVISION_PROVIDER": "mock",
+                    "NOVEL_FORGE_AGENT_PROVIDER": "mock",
+                    "NOVEL_FORGE_AGENT_MODEL": "fixture-agent-model",
+                    "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": "objects",
+                },
+            )
+            binder = PostgresAgentExecutionContractBinder(
+                DATABASE_URL,
+                execution.gateway.routes,
+                capability_pack_id="agent_session_pack",
+                pack_environment="test",
+                pack_runtime_profile="test",
+                pack_release_channel="VALIDATION",
+                pack_required=False,
+            )
+
+            def crash_after_provider(point: str) -> None:
+                if point == "after_provider_success":
+                    raise _SimulatedProcessCrash(point)
+
+            first_factory = build_production_agent_harness_factory(
+                DATABASE_URL,
+                adapter=execution.gateway,
+                capability_binder=binder,
+                planning=_UnusedPort(),  # type: ignore[arg-type]
+                plan_change=_UnusedPort(),  # type: ignore[arg-type]
+                principal=Principal(
+                    principal_id="pep-agent-worker",
+                    principal_type=PrincipalType.SERVICE,
+                    permissions=frozenset(),
+                    project_scope=frozenset({project_id}),
+                    authentication_source="integration-fixture",
+                ),
+                worker_id=worker_id,
+                model_fault_injector=crash_after_provider,
+            )
+            with self.assertRaises(_SimulatedProcessCrash):
+                AgentAuthorityScheduler(
+                    DATABASE_URL,
+                    execution_preparer=_UnusedPort(),  # type: ignore[arg-type]
+                    worker_id=worker_id,
+                    harness_factory=first_factory,
+                    lease_seconds=1,
+                ).tick(project_id=project_id, agent_run_id=operation_id)
+
+            with connect() as connection:
+                before = connection.execute(
+                    """
+                    SELECT effect.external_effect_id, effect.status,
+                           effect.provider, effect.capability,
+                           attempt.attempt_id
+                    FROM authority_external_effect AS effect
+                    JOIN authority_attempt AS attempt
+                      ON attempt.operation_id=effect.operation_id
+                    WHERE effect.operation_id=%s
+                      AND effect.effect_type='model.invoke'
+                    ORDER BY effect.created_at
+                    """,
+                    [operation_id],
+                ).fetchall()
+                self.assertEqual(len(before), 1)
+                self.assertEqual(tuple(before[0][1:4]), (
+                    "SUCCEEDED",
+                    "production_execution_gateway",
+                    "model.agent_session",
+                ))
+                connection.execute(
+                    """
+                    UPDATE authority_lease_acquisition
+                    SET expires_at=acquired_at + INTERVAL '1 millisecond'
+                    WHERE attempt_id=%s AND status='HELD'
+                    """,
+                    [before[0][4]],
+                )
+                connection.commit()
+
+            recovered_worker = f"{worker_id}:recovered"
+            recovered_factory = build_production_agent_harness_factory(
+                DATABASE_URL,
+                adapter=execution.gateway,
+                capability_binder=binder,
+                planning=_UnusedPort(),  # type: ignore[arg-type]
+                plan_change=_UnusedPort(),  # type: ignore[arg-type]
+                principal=Principal(
+                    principal_id="pep-agent-worker",
+                    principal_type=PrincipalType.SERVICE,
+                    permissions=frozenset(),
+                    project_scope=frozenset({project_id}),
+                    authentication_source="integration-fixture",
+                ),
+                worker_id=recovered_worker,
+            )
+            recovered = AgentAuthorityScheduler(
+                DATABASE_URL,
+                execution_preparer=_UnusedPort(),  # type: ignore[arg-type]
+                worker_id=recovered_worker,
+                harness_factory=recovered_factory,
+                lease_seconds=1,
+            ).tick(project_id=project_id, agent_run_id=operation_id)
+            self.assertEqual(recovered.operation_status, "SUCCEEDED")
+
+            with connect() as connection:
+                effects = connection.execute(
+                    """
+                    SELECT effect.request_payload,
+                           receipt.payload->'evidence'
+                    FROM authority_external_effect AS effect
+                    JOIN LATERAL (
+                      SELECT external_receipt.payload
+                      FROM authority_external_effect_dispatch AS dispatch
+                      JOIN authority_external_receipt AS external_receipt
+                        ON external_receipt.dispatch_id=dispatch.dispatch_id
+                      WHERE dispatch.external_effect_id=effect.external_effect_id
+                      ORDER BY external_receipt.received_at DESC LIMIT 1
+                    ) AS receipt ON TRUE
+                    WHERE effect.operation_id=%s
+                      AND effect.effect_type='model.invoke'
+                    ORDER BY effect.created_at
+                    """,
+                    [operation_id],
+                ).fetchall()
+                transcript_count = connection.execute(
+                    """
+                    SELECT COUNT(*) FROM authority_agent_transcript_event
+                    WHERE agent_session_id=%s
+                    """,
+                    [session_id],
+                ).fetchone()[0]
+                first_dispatch_count = connection.execute(
+                    """
+                    SELECT COUNT(*) FROM authority_external_effect_dispatch
+                    WHERE external_effect_id=%s
+                    """,
+                    [before[0][0]],
+                ).fetchone()[0]
+            self.assertEqual(len(effects), 2)
+            self.assertEqual(
+                str(
+                    effects[0][1]["production_execution"]["execution_request"][
+                        "capability"
+                    ]
+                ),
+                "agent.workspace.execute",
+            )
+            self.assertEqual(int(first_dispatch_count), 1)
+            self.assertEqual(int(transcript_count), 8)
 
 
 if __name__ == "__main__":

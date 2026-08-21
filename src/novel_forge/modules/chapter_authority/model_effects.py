@@ -51,6 +51,7 @@ MODEL_CAPABILITY_STAGES = frozenset(
         "quality_longform",
         "quality_platform",
         "narrative_semantic_evaluation",
+        "agent_session",
     }
 )
 # Migration-only adapter surface. Normal Chapter composition does not install
@@ -299,7 +300,23 @@ class ExternalEffectChapterModelPort:
             trace_id=request.trace_id,
             correlation_id=request.correlation_id,
         )
-        stable_key = f"{request.operation_id}:{request.attempt_id}:{stage}:attempt-v1"
+        effect_instance = str(request.command.get("_effect_instance") or "").strip()
+        if effect_instance and (len(effect_instance) > 200 or "/" in effect_instance):
+            raise KernelError(
+                "MODEL_EFFECT_INSTANCE_INVALID",
+                "model effect instance must be a bounded stable identity",
+            )
+        stable_key = ":".join(
+            item
+            for item in (
+                request.operation_id,
+                request.attempt_id,
+                stage,
+                effect_instance,
+                "attempt-v1",
+            )
+            if item
+        )
         execution_fencing_token, execution_worker_id = self._execution_identity(
             request,
             stable_key=stable_key,
@@ -324,6 +341,9 @@ class ExternalEffectChapterModelPort:
                 ),
                 "book_id": str(
                     business_payload.get("book_id") or f"book:{request.project_id}"
+                ),
+                "agent_session_id": str(
+                    business_payload.get("agent_session_id") or ""
                 ),
                 "target_asset_version_id": str(
                     business_payload.get("target_asset_version_id") or ""
@@ -1168,6 +1188,52 @@ def _normalize_model_output(stage: str, raw: dict[str, Any]) -> dict[str, Any]:
         if not text:
             raise KernelError("MODEL_RESPONSE_INVALID", "draft response has no text")
         return {"text": text}
+    if stage == "agent_session":
+        message = str(raw.get("message") or "").strip()
+        action = str(raw.get("action") or "").strip().upper()
+        tool_call = raw.get("tool_call")
+        final_response = raw.get("final_response")
+        if not message or action not in {"TOOL_CALL", "FINAL"}:
+            raise KernelError(
+                "MODEL_RESPONSE_INVALID",
+                "Agent model turn requires a message and one explicit action",
+            )
+        if action == "TOOL_CALL":
+            if not isinstance(tool_call, dict) or final_response is not None:
+                raise KernelError(
+                    "MODEL_RESPONSE_INVALID",
+                    "Agent Tool action requires exactly one typed Tool call",
+                )
+            normalized_call = {
+                "tool_name": str(tool_call.get("tool_name") or "").strip(),
+                "arguments": dict(tool_call.get("arguments") or {}),
+                "reason": str(tool_call.get("reason") or "").strip(),
+            }
+            if not normalized_call["tool_name"] or not normalized_call["reason"]:
+                raise KernelError(
+                    "MODEL_RESPONSE_INVALID", "Agent Tool call is incomplete"
+                )
+            return {
+                "message": message,
+                "action": action,
+                "tool_call": normalized_call,
+                "final_response": None,
+            }
+        if (
+            tool_call is not None
+            or not isinstance(final_response, dict)
+            or not final_response
+        ):
+            raise KernelError(
+                "MODEL_RESPONSE_INVALID",
+                "Agent final action requires exactly one non-empty response",
+            )
+        return {
+            "message": message,
+            "action": action,
+            "tool_call": None,
+            "final_response": dict(final_response),
+        }
     if stage == "narrative_semantic_evaluation":
         return dict(raw)
     if stage in {"review", "rereview"}:

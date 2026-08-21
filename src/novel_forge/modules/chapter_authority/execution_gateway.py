@@ -102,6 +102,7 @@ _STAGES = frozenset(
         "narrative_semantic_evaluation",
     }
 )
+_OPTIONAL_DOMAIN_STAGES = frozenset({"agent_session"})
 
 _PLANNING_STAGES = frozenset(
     {
@@ -126,6 +127,7 @@ _STAGE_CAPABILITIES = {
     "quality_platform": CapabilityId.QUALITY_PLATFORM_JUDGE,
     "reader_outcome": CapabilityId.QUALITY_READER_OUTCOME_JUDGE,
     "narrative_semantic_evaluation": CapabilityId.QUALITY_INTRINSIC_JUDGE,
+    "agent_session": CapabilityId.AGENT_WORKSPACE_EXECUTE,
 }
 
 
@@ -201,7 +203,7 @@ class ChapterExecutionRoute:
     real_provider_validation_eligible: bool
 
     def __post_init__(self) -> None:
-        if self.stage not in _STAGES:
+        if self.stage not in _STAGES | _OPTIONAL_DOMAIN_STAGES:
             raise ValueError(f"unsupported Chapter execution stage: {self.stage}")
         if (
             self.model_profile.profile_id
@@ -281,7 +283,12 @@ class PostgresChapterExecutionContractBinder:
         pack_release_channel: str = "VALIDATION",
         pack_required: bool = False,
     ) -> None:
-        if not database_url or set(routes) != _STAGES:
+        route_names = set(routes)
+        if (
+            not database_url
+            or not _STAGES.issubset(route_names)
+            or not route_names.issubset(_STAGES | _OPTIONAL_DOMAIN_STAGES)
+        ):
             raise ValueError(
                 "PostgreSQL and all governed execution routes are required"
             )
@@ -673,7 +680,10 @@ class PostgresChapterExecutionContractBinder:
             ),
             f"context:none:{operation_id}",
         )
-        token = _identity_token(f"{project_id}:{operation_id}:{attempt_id}:{stage}")
+        contract_instance = external_effect_id if stage == "agent_session" else stage
+        token = _identity_token(
+            f"{project_id}:{operation_id}:{attempt_id}:{contract_instance}"
+        )
         route_ref = f"production_execution/routes/{token}"
         input_ref = f"production_execution/inputs/{token}"
         prompt_ref = f"production_execution/prompt_bundles/{token}"
@@ -1437,6 +1447,30 @@ def default_chapter_fixture_response(
 ) -> dict[str, Any]:
     """Deterministic chapter fixture used only by SCRIPTED_FIXTURE routes."""
 
+    if stage == "agent_session":
+        observations = inputs.get("observations")
+        tools = inputs.get("tools")
+        if not observations and isinstance(tools, list) and tools:
+            first = tools[0] if isinstance(tools[0], Mapping) else {}
+            return {
+                "message": "Inspect the frozen accepted boundary.",
+                "action": "TOOL_CALL",
+                "tool_call": {
+                    "tool_name": str(first.get("tool_name") or ""),
+                    "arguments": {"scope": "accepted_boundary"},
+                    "reason": "ground the proposal in accepted facts",
+                },
+                "final_response": None,
+            }
+        return {
+            "message": "Return an authority-bounded proposal.",
+            "action": "FINAL",
+            "tool_call": None,
+            "final_response": {
+                "candidate_only": True,
+                "instruction": str(inputs.get("instruction") or ""),
+            },
+        }
     if stage == "draft":
         plan = inputs.get("plan") if isinstance(inputs.get("plan"), Mapping) else {}
         return {
@@ -2068,6 +2102,17 @@ def _language_semantic_contract(required_language: str | None) -> str:
 def _stage_semantic_contract(
     stage: str, *, required_language: str | None = None
 ) -> str:
+    if stage == "agent_session":
+        return (
+            "Reason only over the frozen accepted boundary, committed transcript, "
+            "observations, and server Tool snapshot. Choose exactly one action: "
+            "request one Tool by copying its exact tool_name, or return one final "
+            "candidate/proposal response. A Skill supplies method only and never "
+            "adds permission. Never claim to mutate Canon, Accepted Narrative State, "
+            "Arc Actual, Narrative Obligation lifecycle, active Plan pointers, or "
+            "Chapter acceptance. Authority Commands submit proposals only; the owning "
+            "Authority decides them."
+        )
     if stage == "narrative_semantic_evaluation":
         return (
             "Independently evaluate only the immutable candidate against every frozen "
@@ -2647,7 +2692,11 @@ class ProductionExecutionGatewayExternalEffectAdapter:
         session_factory: Callable[[str], ChapterExecutionGatewaySession],
         provider_adapters: Mapping[str, Any] | None = None,
     ) -> None:
-        if set(routes) != _STAGES:
+        route_names = set(routes)
+        if (
+            not _STAGES.issubset(route_names)
+            or not route_names.issubset(_STAGES | _OPTIONAL_DOMAIN_STAGES)
+        ):
             raise ValueError("all governed execution stages must use the gateway")
         self.database_url = database_url
         self.routes = dict(routes)

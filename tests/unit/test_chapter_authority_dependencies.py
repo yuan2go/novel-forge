@@ -178,6 +178,9 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
             "NOVEL_FORGE_NARRATIVE_EVALUATOR_PROVIDER": "openai",
             "NOVEL_FORGE_NARRATIVE_EVALUATOR_MODEL": "gpt-test",
             "NOVEL_FORGE_NARRATIVE_SEMANTIC_EVALUATION_REASONING_EFFORT": "high",
+            "NOVEL_FORGE_AGENT_PROVIDER": "openai",
+            "NOVEL_FORGE_AGENT_MODEL": "gpt-test",
+            "NOVEL_FORGE_AGENT_REASONING_EFFORT": "high",
             "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": "object-store",
             "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_BACKEND": "minio",
             "NOVEL_FORGE_PROVIDER_MAX_COST_PER_CALL": "1.00",
@@ -225,6 +228,10 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
         )
         self.assertTrue(
             execution.gateway.capability_profile.real_provider_validation_eligible
+        )
+        self.assertEqual(
+            execution.gateway.routes["agent_session"].model_profile.model_id,
+            "gpt-test",
         )
 
     def test_provider_validation_composes_codex_directly_without_provider_v2(

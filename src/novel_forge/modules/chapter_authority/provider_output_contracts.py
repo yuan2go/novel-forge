@@ -131,6 +131,28 @@ def _draft_schema() -> dict[str, Any]:
     )
 
 
+def _agent_session_schema() -> dict[str, Any]:
+    """Strict provider contract for one governed Agent Harness turn."""
+
+    tool_call = _object_schema(
+        {
+            "tool_name": {"type": "string", "minLength": 1},
+            "arguments": {"type": "object"},
+            "reason": {"type": "string", "minLength": 1},
+        },
+        required=("tool_name", "arguments", "reason"),
+    )
+    return _object_schema(
+        {
+            "message": {"type": "string", "minLength": 1},
+            "action": {"type": "string", "enum": ["TOOL_CALL", "FINAL"]},
+            "tool_call": _nullable(tool_call),
+            "final_response": _nullable({"type": "object"}),
+        },
+        required=("message", "action", "tool_call", "final_response"),
+    )
+
+
 def _review_schema() -> dict[str, Any]:
     issue = _object_schema(
         {
@@ -483,6 +505,8 @@ def chapter_provider_output_schema(stage: str) -> dict[str, Any]:
 
     if stage == "draft":
         schema = _draft_schema()
+    elif stage == "agent_session":
+        schema = _agent_session_schema()
     elif stage in {"review", "rereview"}:
         schema = _review_schema()
     elif stage == "revision":

@@ -16,6 +16,7 @@ from novel_forge.modules.chapter_authority.provider_output_contracts import (
     validate_chapter_provider_output_schema,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.chapter_authority.model_effects import normalize_model_output
 
 
 CANON_FIELDS = (
@@ -39,6 +40,35 @@ CANON_FIELDS = (
     "arc_state_changes",
     "disclosure_events",
 )
+
+
+def test_agent_turn_contract_requires_exactly_one_action() -> None:
+    schema = chapter_provider_output_schema("agent_session")
+    assert schema["properties"]["action"]["enum"] == ["TOOL_CALL", "FINAL"]
+    tool = validate_chapter_provider_output_schema(
+        "agent_session",
+        {
+            "message": "Inspect accepted state.",
+            "action": "TOOL_CALL",
+            "tool_call": {
+                "tool_name": "narrative.query_accepted",
+                "arguments": {},
+                "reason": "ground in accepted facts",
+            },
+            "final_response": None,
+        },
+    )
+    assert normalize_model_output("agent_session", tool)["tool_call"][
+        "tool_name"
+    ] == "narrative.query_accepted"
+    with pytest.raises(KernelError, match="exactly one"):
+        normalize_model_output(
+            "agent_session",
+            {
+                **tool,
+                "final_response": {"candidate_only": True},
+            },
+        )
 
 
 def test_revision_prompt_requires_issue_resolution_and_language_continuity() -> None:

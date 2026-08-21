@@ -189,6 +189,24 @@ def build_provider_task_view(stage: str, inputs: Mapping[str, Any]) -> dict[str,
             evaluation_target=_compact(target),
             qualification_profiles=_compact(profiles),
         )
+    if stage == "agent_session":
+        boundary = inputs.get("accepted_boundary")
+        tools = inputs.get("tools")
+        if not isinstance(boundary, Mapping) or not isinstance(tools, list) or not tools:
+            raise KernelError(
+                "AGENT_PROVIDER_TASK_INVALID",
+                "Agent turn requires a frozen accepted boundary and Tool snapshot",
+            )
+        return _task(
+            stage,
+            instruction=str(inputs.get("instruction") or ""),
+            accepted_boundary=_compact(boundary),
+            tools=_compact(tools),
+            skills=_compact(inputs.get("skills")),
+            committed_transcript=_compact(inputs.get("committed_transcript")),
+            observations=_compact(inputs.get("observations")),
+            turn_number=int(inputs.get("turn_number") or 0),
+        )
     if stage == "draft":
         return _task(
             stage,
@@ -402,6 +420,27 @@ def build_provider_context_view(
                 "selected_count": 1,
                 "omitted_count": 0,
             },
+        }
+    if stage == "agent_session":
+        boundary = context_bundle.get("accepted_boundary")
+        if (
+            context_bundle.get("protected") is not True
+            or context_bundle.get("source_authority")
+            != "POSTGRESQL_ACCEPTED_BOUNDARY"
+            or not isinstance(boundary, Mapping)
+            or dict(boundary) != dict(task_view.get("accepted_boundary") or {})
+        ):
+            raise KernelError(
+                "AGENT_PROVIDER_CONTEXT_INVALID",
+                "Agent context must preserve the exact accepted boundary",
+            )
+        return {
+            "contract_version": "provider-context-view-v2",
+            "schema_version": "novelos.agent_harness_context_view.v1",
+            "stage": stage,
+            "source_isolation": "ACCEPTED_BOUNDARY_ONLY",
+            "accepted_boundary": _compact(boundary),
+            "protected": True,
         }
     if stage == "reader_outcome":
         return _build_reader_outcome_context_view(context_bundle)
