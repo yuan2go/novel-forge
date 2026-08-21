@@ -53,7 +53,7 @@ def test_agent_turn_contract_requires_exactly_one_action() -> None:
             "action": "TOOL_CALL",
             "tool_call": {
                 "tool_name": "narrative.query_accepted",
-                "arguments": {},
+                "arguments": {"payload_json": "{}"},
                 "reason": "ground in accepted facts",
             },
             "final_response": None,

@@ -1476,7 +1476,9 @@ def default_chapter_fixture_response(
                 "action": "TOOL_CALL",
                 "tool_call": {
                     "tool_name": str(first.get("tool_name") or ""),
-                    "arguments": {"scope": "accepted_boundary"},
+                    "arguments": {
+                        "payload_json": '{"scope":"accepted_boundary"}'
+                    },
                     "reason": "ground the proposal in accepted facts",
                 },
                 "final_response": None,
@@ -1486,8 +1488,12 @@ def default_chapter_fixture_response(
             "action": "FINAL",
             "tool_call": None,
             "final_response": {
-                "candidate_only": True,
-                "instruction": str(inputs.get("instruction") or ""),
+                "payload_json": _canonical(
+                    {
+                        "candidate_only": True,
+                        "instruction": str(inputs.get("instruction") or ""),
+                    }
+                )
             },
         }
     if stage == "draft":
@@ -2133,7 +2139,9 @@ def _stage_semantic_contract(
             "Reason only over the frozen accepted boundary, committed transcript, "
             "observations, and server Tool snapshot. Choose exactly one action: "
             "request one Tool by copying its exact tool_name, or return one final "
-            "candidate/proposal response. A Skill supplies method only and never "
+            "candidate/proposal response. Encode Tool arguments and final response as one JSON "
+            "object string in the required payload_json envelope. The outer response "
+            "must still match the strict schema exactly. A Skill supplies method only and never "
             "adds permission. Never claim to mutate Canon, Accepted Narrative State, "
             "Arc Actual, Narrative Obligation lifecycle, active Plan pointers, or "
             "Chapter acceptance. Authority Commands submit proposals only; the owning "

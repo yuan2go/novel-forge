@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
+import json
 from typing import Any, Mapping, Protocol
 
 from novel_forge.modules.chapter_authority.contracts import (
@@ -1185,6 +1186,31 @@ def _object(payload: dict[str, Any], key: str) -> dict[str, Any]:
     return value
 
 
+def _decode_agent_json_envelope(
+    value: Any, *, field: str, allow_empty: bool
+) -> dict[str, Any]:
+    if not isinstance(value, Mapping):
+        raise KernelError(
+            "MODEL_RESPONSE_INVALID", f"Agent {field} envelope is missing"
+        )
+    payload_json = value.get("payload_json")
+    if not isinstance(payload_json, str):
+        raise KernelError(
+            "MODEL_RESPONSE_INVALID", f"Agent {field} payload_json is missing"
+        )
+    try:
+        decoded = json.loads(payload_json)
+    except json.JSONDecodeError as exc:
+        raise KernelError(
+            "MODEL_RESPONSE_INVALID", f"Agent {field} payload_json is invalid"
+        ) from exc
+    if not isinstance(decoded, dict) or (not decoded and not allow_empty):
+        raise KernelError(
+            "MODEL_RESPONSE_INVALID", f"Agent {field} must decode to an object"
+        )
+    return decoded
+
+
 def _normalize_model_output(stage: str, raw: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(raw, dict):
         raise KernelError("MODEL_RESPONSE_INVALID", "model response must be an object")
@@ -1209,9 +1235,12 @@ def _normalize_model_output(stage: str, raw: dict[str, Any]) -> dict[str, Any]:
                     "MODEL_RESPONSE_INVALID",
                     "Agent Tool action requires exactly one typed Tool call",
                 )
+            arguments = _decode_agent_json_envelope(
+                tool_call.get("arguments"), field="Tool arguments", allow_empty=True
+            )
             normalized_call = {
                 "tool_name": str(tool_call.get("tool_name") or "").strip(),
-                "arguments": dict(tool_call.get("arguments") or {}),
+                "arguments": arguments,
                 "reason": str(tool_call.get("reason") or "").strip(),
             }
             if not normalized_call["tool_name"] or not normalized_call["reason"]:
@@ -1237,7 +1266,9 @@ def _normalize_model_output(stage: str, raw: dict[str, Any]) -> dict[str, Any]:
             "message": message,
             "action": action,
             "tool_call": None,
-            "final_response": dict(final_response),
+            "final_response": _decode_agent_json_envelope(
+                final_response, field="final response", allow_empty=False
+            ),
         }
     if stage == "narrative_semantic_evaluation":
         return dict(raw)

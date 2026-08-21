@@ -134,10 +134,14 @@ def _draft_schema() -> dict[str, Any]:
 def _agent_session_schema() -> dict[str, Any]:
     """Strict provider contract for one governed Agent Harness turn."""
 
+    json_envelope = _object_schema(
+        {"payload_json": {"type": "string", "minLength": 2}},
+        required=("payload_json",),
+    )
     tool_call = _object_schema(
         {
             "tool_name": {"type": "string", "minLength": 1},
-            "arguments": {"type": "object"},
+            "arguments": json_envelope,
             "reason": {"type": "string", "minLength": 1},
         },
         required=("tool_name", "arguments", "reason"),
@@ -147,7 +151,7 @@ def _agent_session_schema() -> dict[str, Any]:
             "message": {"type": "string", "minLength": 1},
             "action": {"type": "string", "enum": ["TOOL_CALL", "FINAL"]},
             "tool_call": _nullable(tool_call),
-            "final_response": _nullable({"type": "object"}),
+            "final_response": _nullable(json_envelope),
         },
         required=("message", "action", "tool_call", "final_response"),
     )
