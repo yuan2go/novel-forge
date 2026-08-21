@@ -64,7 +64,12 @@ Capability Pack, Skill bindings, Tool policy and Authority policy on the server,
 then executes Agent model turns through PEP. If that binding is absent,
 admission fails before a READY Operation is created. This earns
 `PROVIDER_WIRED`, not `PROVIDER_PROVEN`; no real-provider Harness qualification
-was run in this closure.
+was run in the 0095 closure. At the reconciled latest-main baseline, the policy
+snapshot is durable in the Operation command but the Session does not yet own a
+complete frozen provider/model/route/release execution contract, execution-time
+binding equality is not enforced, and delegated Capability cost/effects are not
+yet included in the Session aggregate budget. Those gaps must fail closed before
+the Harness is described as recovery-proven.
 The pre-Harness fixed Agent-candidate API is retained only under the explicit
 `/agent-runtime/migration/agent-runs` namespace for persisted-operation
 recovery. Canonical Chapter and Planning compositions cannot admit through it.
@@ -83,6 +88,9 @@ recovery. Canonical Chapter and Planning compositions cannot admit through it.
 - Stable idempotency keys replay an existing admission instead of duplicating business work.
 - CAS/version checks prevent stale business transitions.
 - Attempt leases and fences prevent stale worker commits.
-- ExternalEffect identity and receipts prevent blind re-execution after uncertain outcomes.
+- ExternalEffect identity and receipts are the required mechanism preventing
+  blind re-execution after uncertain outcomes. Each worker must classify
+  `UNKNOWN_EXTERNAL_STATE` as reconciliation, not ordinary retry; latest-main
+  embedding projection did not yet satisfy this invariant at reconciliation.
 - Outbox records are committed with business state and delivered later.
 - Supervisor checkpoints and trace/correlation identities survive process restarts.

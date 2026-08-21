@@ -1,6 +1,16 @@
 # Post-Merge Correctness Closure Design
 
-Status: APPROVED
+Status: SUPERSEDED / HISTORICAL_ONLY
+
+Superseded by:
+`2026-08-21-post-merge-runtime-hardening-design.md`
+
+This document records the 0095 design and implementation boundary. Its former
+`RECOVERY_PROVEN` table is historical evidence from bounded scenarios, not a
+current claim: latest-main reconciliation found incomplete Arc follow-up
+terminal-state handling, blind retry after unknown embedding outcomes, an
+unfrozen Agent Harness execution binding, and semantic reranking without an
+independent semantic candidate channel.
 
 Date: 2026-08-21
 

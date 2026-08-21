@@ -60,7 +60,11 @@ fallback in the RetrievalResult. There is no silent downgrade.
 ## Recovery
 
 Restart the normal Book/Chapter workers; do not edit projection pointers
-manually. The repair scheduler resumes from the durable checkpoint and the
-embedding scheduler reconciles successful receipts before considering another
-provider dispatch. A stale or expired worker lease cannot commit either
-projection state.
+manually. The repair scheduler resumes from the durable checkpoint. Embedding
+projection is safe to retry only after the original ExternalEffect has been
+reconciled: a completed receipt is consumed, a provider-confirmed non-execution
+may authorize a new Attempt, and an unresolved outcome remains in
+reconciliation/manual state. The 0095 latest-main baseline did not yet implement
+that complete unknown-state branch; operators must not treat ordinary
+`FAILED_RETRYABLE` as proof that a second provider dispatch is safe. A stale or
+expired worker lease cannot commit projection state.

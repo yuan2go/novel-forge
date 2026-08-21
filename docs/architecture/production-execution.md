@@ -33,7 +33,7 @@ Reader/recap uses an isolated Book Followup deployment executor, not an addition
 
 Chapter keeps its binder, node/stage policies, saga definition, and chapter-specific work-order contracts. Planning, Reader, Source, Agent, and Book keep their own admission, validation, and commit authority. PEP cannot decide that a plan, chapter, reader finding, source analysis, or Agent candidate is accepted.
 
-The target Unified Agent Harness is another governed PEP client, not a replacement runtime. Each model turn or remote Tool call is an Attempt-bound ExternalEffect with a frozen role/Tool/Skill/budget snapshot and receipt. The Harness may resume a transcript and choose another allowed Tool; it cannot own plan activation, Canon/State mutation, Arc/Obligation advancement or Chapter acceptance.
+The target Unified Agent Harness is another governed PEP client, not a replacement runtime. Admission freezes Definition, role, Tool/Skill/Capability Pack, prompt/context policy, provider/model/reasoning/route, release, accepted boundary and aggregate budget identity. Each model turn or remote Tool call is an Attempt-bound ExternalEffect with a receipt. Every Attempt validates its execution binding against the admission contract; restart or deployment drift cannot silently substitute a new runtime. Delegated Capability and Tool effects remain authoritative in their child Operations and ledgers, and aggregate to the parent Session through Operation lineage. The Harness may resume a transcript and choose another allowed Tool; it cannot own plan activation, Canon/State mutation, Arc/Obligation advancement or Chapter acceptance.
 
 ## Effect lifecycle
 
