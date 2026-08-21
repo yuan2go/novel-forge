@@ -38,6 +38,7 @@ CHAPTER_MODEL_POLICY_KEYS = (
     "quality-intrinsic-judge",
     "quality-originality-judge",
     "quality-platform-judge",
+    "retrieval-embed",
 )
 
 
@@ -183,6 +184,29 @@ def test_catalog_contains_each_chapter_model_execution_contract(
         assert artifact.content_hash.startswith("sha256:")
 
 
+def test_retrieval_embedding_contract_is_bounded_and_exact() -> None:
+    resolver = default_chapter_artifact_resolver(ROOT)
+
+    input_schema = json.loads(
+        resolver.resolve(
+            ArtifactKind.SCHEMA,
+            "schema:execution-input:retrieval-embed:v1",
+            "v1",
+        ).content_json
+    )
+    output_schema = json.loads(
+        resolver.resolve(
+            ArtifactKind.SCHEMA,
+            "schema:execution-output:retrieval-embed:v1",
+            "v1",
+        ).content_json
+    )
+
+    assert input_schema["properties"]["texts"]["maxItems"] == 32
+    assert output_schema["properties"]["vectors"]["items"]["maxItems"] == 8192
+    assert output_schema["additionalProperties"] is False
+
+
 def test_materialization_rejects_registered_catalog_content_hash_drift() -> None:
     registered, snapshot = _registered_version_and_snapshot()
     registered["artifact_catalog"]["artifacts"][0]["content"] = {"changed": True}
@@ -259,8 +283,8 @@ def test_codex_prompt_materializes_typed_target_scope_as_json() -> None:
             "context_selection": [
                 {
                     "asset_version_id": "context:v1",
-                        "content": {
-                            "context_segments": [],
+                    "content": {
+                        "context_segments": [],
                         "language_contract": {
                             "required_language": "zh-CN",
                             "reader_facing_prose": "REQUIRED",

@@ -933,11 +933,16 @@ def test_retrieval_projection_freezes_domain_materialization_before_effect() -> 
     binder = object.__new__(PostgresRetrievalProjectionExecutionContractBinder)
     binder.routes = {
         "retrieval": SimpleNamespace(
+            stage="retrieval",
             release_sha="a" * 40,
+            embedding_dimensions=8,
             system_instruction_hash=system.content_hash,
             template_hash=template.content_hash,
             skill_content_hash=skill.content_hash,
-            model_profile=SimpleNamespace(contract_hash="model-profile-hash"),
+            model_profile=SimpleNamespace(
+                contract_hash="model-profile-hash",
+                model_id="gpt-semantic-test",
+            ),
             route_policy=SimpleNamespace(contract_hash="route-policy-hash"),
         )
     }
@@ -993,6 +998,13 @@ def test_retrieval_projection_freezes_domain_materialization_before_effect() -> 
     assert contract["runtime_kind"] == "FROZEN_RETRIEVAL_PROJECTION_CONTRACT"
     assert contract["source_asset_version_id"] == "asset-version:accepted"
     assert contract["route_identity"]["release_sha"] == "a" * 40
+    assert contract["embedding_output_contract"] == {
+        "contract_version": "retrieval-embedding-output-v1",
+        "embedding_model": "gpt-semantic-test",
+        "embedding_dimensions": 8,
+        "vector_normalization": "L2_UNIT",
+        "placeholder_vectors_allowed": False,
+    }
     assert preflight.effect_binding["runtime_kind"] == (
         "FROZEN_RETRIEVAL_PROJECTION_CONTRACT"
     )

@@ -149,6 +149,23 @@ def _identity_token(value: str) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()[:20]
 
 
+def _retrieval_embedding_output_contract(
+    route: "ChapterExecutionRoute",
+) -> dict[str, Any]:
+    if route.stage != "retrieval" or route.embedding_dimensions <= 0:
+        raise KernelError(
+            "RETRIEVAL_EMBEDDING_OUTPUT_CONTRACT_MISSING",
+            "controlled retrieval execution requires a frozen model and dimensions",
+        )
+    return {
+        "contract_version": "retrieval-embedding-output-v1",
+        "embedding_model": route.model_profile.model_id,
+        "embedding_dimensions": route.embedding_dimensions,
+        "vector_normalization": "L2_UNIT",
+        "placeholder_vectors_allowed": False,
+    }
+
+
 def _stage_tool_permissions(
     policy: Mapping[str, Any], stage: str
 ) -> tuple[tuple[str, ...], tuple[str, ...]]:
@@ -202,6 +219,7 @@ class ChapterExecutionRoute:
     output_schema_ref: str
     release_sha: str
     real_provider_validation_eligible: bool
+    embedding_dimensions: int = 0
 
     def __post_init__(self) -> None:
         if self.stage not in _STAGES | _OPTIONAL_DOMAIN_STAGES:
@@ -235,6 +253,14 @@ class ChapterExecutionRoute:
             raise ValueError("Chapter execution route is incomplete")
         if len(self.release_sha) != 40:
             raise ValueError("Chapter execution route requires a full release SHA")
+        if self.stage == "retrieval" and not 1 <= self.embedding_dimensions <= 8192:
+            raise ValueError(
+                "retrieval execution route requires 1..8192 embedding dimensions"
+            )
+        if self.stage != "retrieval" and self.embedding_dimensions != 0:
+            raise ValueError(
+                "embedding dimensions may only be bound to the retrieval route"
+            )
         definition = default_capability_registry().resolve(
             chapter_stage_capability(self.stage)
         )
@@ -427,6 +453,11 @@ class PostgresChapterExecutionContractBinder:
             request_payload=request_payload,
         )
         schema_hash = canonical_hash(provider_schema)
+        embedding_output_contract = (
+            _retrieval_embedding_output_contract(route)
+            if stage == "retrieval"
+            else None
+        )
         contract_without_hash: dict[str, Any] = {
             "schema_version": "novelos.chapter_capability_materialization.v1",
             "stage": stage,
@@ -488,6 +519,10 @@ class PostgresChapterExecutionContractBinder:
                 "content": provider_schema,
             },
         }
+        if embedding_output_contract is not None:
+            contract_without_hash["embedding_output_contract"] = (
+                embedding_output_contract
+            )
         materialization_hash = canonical_hash(contract_without_hash)
         contract = {
             **contract_without_hash,
@@ -542,6 +577,8 @@ class PostgresChapterExecutionContractBinder:
             "output_schema_ref": provider_schema_ref,
             "output_schema_hash": schema_hash,
         }
+        if embedding_output_contract is not None:
+            effect_binding["embedding_output_contract"] = embedding_output_contract
         return ChapterCapabilityPreflight(
             attempt_snapshot=attempt_snapshot,
             materialization=materialization,
@@ -1558,6 +1595,7 @@ class PostgresRetrievalProjectionExecutionContractBinder(
             )
         output_schema = chapter_provider_output_schema(stage)
         output_schema_ref = chapter_provider_output_schema_ref(stage)
+        embedding_output_contract = _retrieval_embedding_output_contract(route)
         contract_without_hash: dict[str, Any] = {
             "schema_version": "novelos.provider_capability_materialization.v1",
             "runtime_kind": "FROZEN_RETRIEVAL_PROJECTION_CONTRACT",
@@ -1573,6 +1611,8 @@ class PostgresRetrievalProjectionExecutionContractBinder(
             "source_content_hash": source_content_hash,
             "route_identity": {
                 "release_sha": route.release_sha,
+                "embedding_model": route.model_profile.model_id,
+                "embedding_dimensions": route.embedding_dimensions,
                 "model_profile_hash": route.model_profile.contract_hash,
                 "route_policy_hash": route.route_policy.contract_hash,
                 "system_instruction_hash": system.content_hash,
@@ -1605,6 +1645,7 @@ class PostgresRetrievalProjectionExecutionContractBinder(
                 "content_hash": canonical_hash(output_schema),
                 "content": output_schema,
             },
+            "embedding_output_contract": embedding_output_contract,
         }
         materialization_hash = canonical_hash(contract_without_hash)
         contract = {
@@ -1648,6 +1689,7 @@ class PostgresRetrievalProjectionExecutionContractBinder(
                 "allowed_tools": ["model.provider.invoke"],
                 "output_schema_ref": output_schema_ref,
                 "output_schema_hash": canonical_hash(output_schema),
+                "embedding_output_contract": embedding_output_contract,
             },
         )
 
@@ -2401,13 +2443,51 @@ def _language_semantic_contract(required_language: str | None) -> str:
 
 
 def _stage_semantic_contract(
-    stage: str, *, required_language: str | None = None
+    stage: str,
+    *,
+    required_language: str | None = None,
+    embedding_output_contract: Mapping[str, Any] | None = None,
 ) -> str:
     if stage == "retrieval":
+        if embedding_output_contract is None:
+            return (
+                "Return exactly one numeric embedding vector for each frozen input "
+                "text, in the same order. Return the actual embedding model identity "
+                "and vector dimensions. Do not add facts, summarize, retrieve, or "
+                "mutate Authority state."
+            )
+        expected_model = str(embedding_output_contract.get("embedding_model") or "")
+        try:
+            expected_dimensions = int(
+                embedding_output_contract.get("embedding_dimensions") or 0
+            )
+        except (TypeError, ValueError) as exc:
+            raise KernelError(
+                "RETRIEVAL_EMBEDDING_OUTPUT_CONTRACT_INVALID",
+                "frozen retrieval embedding dimensions are invalid",
+            ) from exc
+        if (
+            not expected_model
+            or not 1 <= expected_dimensions <= 8192
+            or embedding_output_contract.get("vector_normalization") != "L2_UNIT"
+            or embedding_output_contract.get("placeholder_vectors_allowed") is not False
+        ):
+            raise KernelError(
+                "RETRIEVAL_EMBEDDING_OUTPUT_CONTRACT_INVALID",
+                "frozen retrieval embedding model, dimensions, or vector policy is invalid",
+            )
         return (
             "Return exactly one numeric embedding vector for each frozen input text, "
-            "in the same order. Return the actual embedding model identity and vector "
-            "dimensions. Do not add facts, summarize, retrieve, or mutate Authority state."
+            "in the same order. The frozen output identity is exact: set embedding_model "
+            f"to {_canonical(expected_model)} and embedding_dimensions to "
+            f"{expected_dimensions}. Every vector must have exactly "
+            f"{expected_dimensions} finite numeric entries and non-zero L2 norm; normalize "
+            "each vector to unit length. Produce a genuine dense semantic representation "
+            "whose latent axes remain consistent across calls under this exact contract, "
+            "so meaningfully similar passages remain close without lexical, entity, Arc, "
+            "or obligation overlap. Never emit a placeholder, sentinel, all-zero vector, "
+            "provider-unavailable identity, summary, or invented fact. Do not retrieve or "
+            "mutate Authority state."
         )
     if stage == "agent_session":
         return (
@@ -2751,8 +2831,20 @@ def _materialize_production_codex_prompt(
             "Codex execution differs from the governed Provider/Agent Tool set",
         )
     required_language = _required_language_from_context(context_content)
+    embedding_output_contract = materialization.get("embedding_output_contract")
+    if stage == "retrieval" and not isinstance(embedding_output_contract, Mapping):
+        raise KernelError(
+            "RETRIEVAL_EMBEDDING_OUTPUT_CONTRACT_MISSING",
+            "controlled retrieval prompt requires a frozen embedding output contract",
+        )
     stage_semantic_contract = _stage_semantic_contract(
-        stage, required_language=required_language
+        stage,
+        required_language=required_language,
+        embedding_output_contract=(
+            embedding_output_contract
+            if isinstance(embedding_output_contract, Mapping)
+            else None
+        ),
     )
     if (
         stage == "agent_session"
@@ -2829,6 +2921,11 @@ def _materialize_production_codex_prompt(
         "allowed_tools": list(allowed),
         "output_schema_ref": str(schema.get("ref") or ""),
         "output_schema_hash": str(schema.get("content_hash") or ""),
+        "embedding_output_contract": (
+            dict(embedding_output_contract)
+            if isinstance(embedding_output_contract, Mapping)
+            else None
+        ),
         "provider_view": {
             "task_contract_version": task_view["contract_version"],
             "context_contract_version": context_view["contract_version"],

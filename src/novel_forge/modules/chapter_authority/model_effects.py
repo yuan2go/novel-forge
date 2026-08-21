@@ -6,6 +6,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 import json
+import math
 from typing import Any, Mapping, Protocol
 
 from novel_forge.modules.chapter_authority.contracts import (
@@ -588,6 +589,12 @@ class ExternalEffectChapterModelPort:
             str(effect["external_effect_id"]), request.project_id
         )
         if completed is not None:
+            self._validate_retrieval_result_contract(
+                stage=stage,
+                project_id=request.project_id,
+                external_effect_id=str(effect["external_effect_id"]),
+                result=completed,
+            )
             if bool(effect.get("replayed")):
                 authorize = getattr(self.adapter, "for_recovery", None)
                 if callable(authorize):
@@ -704,6 +711,12 @@ class ExternalEffectChapterModelPort:
         result = ModelProviderResult.from_evidence(
             dict(dispatched["provider_evidence"])
         )
+        self._validate_retrieval_result_contract(
+            stage=stage,
+            project_id=request.project_id,
+            external_effect_id=str(effect["external_effect_id"]),
+            result=result,
+        )
         self.fault_injector("after_provider_success")
         settle_provider_budget(
             self.database_url,
@@ -738,6 +751,73 @@ class ExternalEffectChapterModelPort:
                 execution_binding=execution_binding,
             )
         return result
+
+    def _validate_retrieval_result_contract(
+        self,
+        *,
+        stage: str,
+        project_id: str,
+        external_effect_id: str,
+        result: ModelProviderResult,
+    ) -> None:
+        if stage != "retrieval":
+            return
+        runtime = get_database_runtime(self.database_url)
+        with runtime.connection() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT request_payload->'_production_execution'
+                                          ->'capability_runtime'
+                                          ->'embedding_output_contract'
+                    FROM authority_external_effect
+                    WHERE project_id=%s AND external_effect_id=%s
+                    """,
+                    [project_id, external_effect_id],
+                )
+                row = cursor.fetchone()
+        frozen = row[0] if row is not None else None
+        if not isinstance(frozen, Mapping):
+            if result.real_model_call:
+                raise KernelError(
+                    "RETRIEVAL_EMBEDDING_OUTPUT_CONTRACT_MISSING",
+                    "real retrieval Provider result has no frozen output identity",
+                )
+            return
+        expected_model = str(frozen.get("embedding_model") or "")
+        expected_dimensions = int(frozen.get("embedding_dimensions") or 0)
+        vectors = result.output.get("vectors")
+        returned_model = str(result.output.get("embedding_model") or "")
+        returned_dimensions = int(result.output.get("embedding_dimensions") or 0)
+        if (
+            not expected_model
+            or expected_dimensions <= 0
+            or result.model_id != expected_model
+            or returned_model != expected_model
+            or returned_dimensions != expected_dimensions
+            or not isinstance(vectors, list)
+            or not vectors
+        ):
+            raise KernelError(
+                "RETRIEVAL_EMBEDDING_OUTPUT_IDENTITY_MISMATCH",
+                "retrieval Provider output differs from its frozen model/dimensions",
+            )
+        for vector in vectors:
+            if not isinstance(vector, list) or len(vector) != expected_dimensions:
+                raise KernelError(
+                    "RETRIEVAL_EMBEDDING_OUTPUT_IDENTITY_MISMATCH",
+                    "retrieval Provider vector differs from frozen dimensions",
+                )
+            numeric = [float(value) for value in vector]
+            norm = math.sqrt(sum(value * value for value in numeric))
+            if (
+                not all(math.isfinite(value) for value in numeric)
+                or not 0.99 <= norm <= 1.01
+            ):
+                raise KernelError(
+                    "RETRIEVAL_EMBEDDING_VECTOR_INVALID",
+                    "retrieval Provider vector must be finite, non-placeholder, and L2-normalized",
+                )
 
     def _request_timeout_seconds(self, request: ChapterHandlerRequest) -> int:
         """Bind Provider time to the frozen Operation policy, not its lease."""

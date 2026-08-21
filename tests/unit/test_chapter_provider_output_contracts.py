@@ -93,6 +93,23 @@ def test_revision_prompt_requires_issue_resolution_and_language_continuity() -> 
     assert "resolved_issue_codes" in contract
 
 
+def test_retrieval_prompt_freezes_model_dimensions_and_rejects_placeholders() -> None:
+    contract = _stage_semantic_contract(
+        "retrieval",
+        embedding_output_contract={
+            "embedding_model": "gpt-semantic-test",
+            "embedding_dimensions": 8,
+            "vector_normalization": "L2_UNIT",
+            "placeholder_vectors_allowed": False,
+        },
+    )
+
+    assert '"gpt-semantic-test"' in contract
+    assert "exactly 8 finite numeric entries" in contract
+    assert "L2 norm" in contract
+    assert "provider-unavailable" in contract
+
+
 def test_zh_cn_language_contract_overrides_legacy_revision_language() -> None:
     contract = _stage_semantic_contract("revision", required_language="zh-CN")
 

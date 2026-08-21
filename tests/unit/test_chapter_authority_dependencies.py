@@ -183,6 +183,7 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
             "NOVEL_FORGE_AGENT_REASONING_EFFORT": "high",
             "NOVEL_FORGE_EMBEDDING_PROVIDER": "openai",
             "NOVEL_FORGE_EMBEDDING_MODEL": "text-embedding-test",
+            "NOVEL_FORGE_EMBEDDING_DIMENSIONS": "1536",
             "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": "object-store",
             "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_BACKEND": "minio",
             "NOVEL_FORGE_PROVIDER_MAX_COST_PER_CALL": "1.00",

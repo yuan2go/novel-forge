@@ -423,6 +423,24 @@ def build_production_execution_composition(
             "NOVEL_FORGE_EMBEDDING_PROVIDER and NOVEL_FORGE_EMBEDDING_MODEL"
         )
     if embedding_provider and embedding_model:
+        raw_embedding_dimensions = str(
+            values.get("NOVEL_FORGE_EMBEDDING_DIMENSIONS") or ""
+        ).strip()
+        if controlled and not raw_embedding_dimensions:
+            raise RuntimeError(
+                "controlled semantic retrieval requires "
+                "NOVEL_FORGE_EMBEDDING_DIMENSIONS"
+            )
+        try:
+            embedding_dimensions = int(raw_embedding_dimensions or "8")
+        except ValueError as exc:
+            raise RuntimeError(
+                "NOVEL_FORGE_EMBEDDING_DIMENSIONS must be an integer"
+            ) from exc
+        if not 1 <= embedding_dimensions <= 8192:
+            raise RuntimeError(
+                "NOVEL_FORGE_EMBEDDING_DIMENSIONS must be between 1 and 8192"
+            )
         stage_routes.append(
             (
                 "retrieval",
@@ -697,6 +715,7 @@ def build_production_execution_composition(
             output_schema_ref=capability_definition.output_schema_ref,
             release_sha=release_sha,
             real_provider_validation_eligible=real_provider_eligible,
+            embedding_dimensions=(embedding_dimensions if stage == "retrieval" else 0),
         )
     if controlled:
         _build_id, verified_release_sha = authority_release_identity(env=values)

@@ -407,6 +407,7 @@ def _runtime_environment(
             "NOVEL_FORGE_AGENT_SESSION_SKILL_BUNDLE_HASH": agent_skill["content_hash"],
             "NOVEL_FORGE_EMBEDDING_PROVIDER": "codex-cli",
             "NOVEL_FORGE_EMBEDDING_MODEL": args.model,
+            "NOVEL_FORGE_EMBEDDING_DIMENSIONS": "8",
             "NOVEL_FORGE_NARRATIVE_EVALUATOR_PROVIDER": "codex-cli",
             "NOVEL_FORGE_NARRATIVE_EVALUATOR_MODEL": args.model,
             "NOVEL_FORGE_NARRATIVE_SEMANTIC_EVALUATION_REASONING_EFFORT": (
