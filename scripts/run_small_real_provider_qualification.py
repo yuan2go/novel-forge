@@ -665,6 +665,7 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
     )
     if agent_tick.operation_status != "SUCCEEDED":
         raise RuntimeError(f"real Agent Session ended {agent_tick.operation_status}")
+    execution.close()
 
     document_id, document_asset_version_id = _seed_accepted_retrieval_document(
         args.database_url,
@@ -698,7 +699,7 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
         pass
     else:
         raise RuntimeError("embedding crash injection did not trigger")
-    embedding_application.close()
+    embedding_execution.close()
     expired_lease = _expire_active_lease(args.database_url, embedding_operation_id)
     recovered_env = {
         **env,
@@ -797,7 +798,7 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
             break
     else:
         raise RuntimeError("one-Chapter qualification did not reach Draft")
-    recovered_application.close()
+    recovered_execution.close()
 
     agent_evidence = _collect_evidence(
         args.database_url,
