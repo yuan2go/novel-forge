@@ -4,7 +4,10 @@ import unittest
 import hashlib
 import json
 
-from novel_forge.modules.chapter_authority.contracts import ChapterNode, QUALITY_GROUP_NODES
+from novel_forge.modules.chapter_authority.contracts import (
+    ChapterNode,
+    QUALITY_GROUP_NODES,
+)
 from novel_forge.modules.chapter_authority.handlers import (
     DeterministicFixtureChapterProvider,
     build_chapter_handler_registry,
@@ -41,26 +44,37 @@ class PostgreSQLOnlyChapterSliceTests(unittest.TestCase):
                 "allowed_use": "evidence_only",
                 "source_use_mode": "generation",
                 "safe_summary": "Human-calibrated fixture quality evidence.",
-                "structured_facts": [{
-                    "key": "dimension_evidence",
-                    "value": [{
-                        "dimension": item,
-                        "gate_status": "WAIVED_BY_APPROVAL",
-                        "calibration_status": "HUMAN_CALIBRATED",
-                        "human_verified": True,
-                        "fixture_protocol_only": True,
-                    } for item in dimensions],
-                }],
+                "structured_facts": [
+                    {
+                        "key": "dimension_evidence",
+                        "value": [
+                            {
+                                "dimension": item,
+                                "gate_status": "WAIVED_BY_APPROVAL",
+                                "calibration_status": "HUMAN_CALIBRATED",
+                                "human_verified": True,
+                                "fixture_protocol_only": True,
+                            }
+                            for item in dimensions
+                        ],
+                    }
+                ],
                 "narrative_function": "quality_evidence",
             }
+
         candidates = (
             {
-                "asset_version_id": f"{project_id}:chapter-plan-v1", "asset_type": "chapter_plan",
-                "project_id": project_id, "estimated_tokens": 120,
+                "asset_version_id": f"{project_id}:chapter-plan-v1",
+                "asset_type": "chapter_plan",
+                "project_id": project_id,
+                "estimated_tokens": 120,
                 "safe_summary": "A complete authoritative ChapterPlan.",
-                "structured_facts": [], "narrative_function": "chapter_plan",
+                "structured_facts": [],
+                "narrative_function": "chapter_plan",
                 "content": {
-                    "project_id": project_id, "chapter": 1, "title": "The Cost of a Promise",
+                    "project_id": project_id,
+                    "chapter": 1,
+                    "title": "The Cost of a Promise",
                     "premise": "The protagonist must pay a visible cost to keep a promise.",
                     "chapter_objective": "Force a public choice with an irreversible loss.",
                     "scene_sequence": [{"scene_id": "s1", "goal": "keep the promise"}],
@@ -68,8 +82,10 @@ class PostgreSQLOnlyChapterSliceTests(unittest.TestCase):
                 },
             },
             {
-                "asset_version_id": f"{project_id}:checklist-v1", "asset_type": "operator_checklist",
-                "project_id": project_id, "estimated_tokens": 20,
+                "asset_version_id": f"{project_id}:checklist-v1",
+                "asset_type": "operator_checklist",
+                "project_id": project_id,
+                "estimated_tokens": 20,
                 "safe_summary": "Operator checklist completed.",
                 "structured_facts": [
                     {"key": "completed", "value": True},
@@ -82,27 +98,42 @@ class PostgreSQLOnlyChapterSliceTests(unittest.TestCase):
             },
             {
                 "asset_version_id": f"{project_id}:quality-rubric-v1",
-                "asset_type": "quality_rubric", "project_id": project_id,
+                "asset_type": "quality_rubric",
+                "project_id": project_id,
                 "safe_summary": "Versioned quality thresholds.",
-                "structured_facts": [{"key": "thresholds", "value": {"readability": 70}}],
-                "estimated_tokens": 20, "narrative_function": "quality_policy",
+                "structured_facts": [
+                    {"key": "thresholds", "value": {"readability": 70}}
+                ],
+                "estimated_tokens": 20,
+                "narrative_function": "quality_policy",
             },
             {
                 "asset_version_id": f"{project_id}:platform-profile-v1",
-                "asset_type": "platform_profile", "project_id": project_id,
+                "asset_type": "platform_profile",
+                "project_id": project_id,
                 "safe_summary": "Versioned internal platform policy.",
-                "structured_facts": [{"key": "platform_rules", "value": {
-                    "chapter_length": {"minimum": 10, "maximum": 10000},
-                    "format": {"paragraph_max": 500}, "sensitive_content": [],
-                    "ai_content": {"mode": "internal"},
-                    "opening": ["visible conflict"], "rhythm": ["payoff"],
-                    "publish_metadata": {"title_required": True},
-                }}],
-                "estimated_tokens": 30, "narrative_function": "platform_policy",
+                "structured_facts": [
+                    {
+                        "key": "platform_rules",
+                        "value": {
+                            "chapter_length": {"minimum": 10, "maximum": 10000},
+                            "format": {"paragraph_max": 500},
+                            "sensitive_content": [],
+                            "ai_content": {"mode": "internal"},
+                            "opening": ["visible conflict"],
+                            "rhythm": ["payoff"],
+                            "publish_metadata": {"title_required": True},
+                        },
+                    }
+                ],
+                "estimated_tokens": 30,
+                "narrative_function": "platform_policy",
             },
             {
-                "asset_version_id": f"{project_id}:approval-v1", "asset_type": "operator_approval",
-                "project_id": project_id, "estimated_tokens": 20,
+                "asset_version_id": f"{project_id}:approval-v1",
+                "asset_type": "operator_approval",
+                "project_id": project_id,
+                "estimated_tokens": 20,
                 "safe_summary": "Operator approved fixture release evidence.",
                 "structured_facts": [
                     {"key": "approved", "value": True},
@@ -132,34 +163,73 @@ class PostgreSQLOnlyChapterSliceTests(unittest.TestCase):
                 ],
                 "narrative_function": "release_evidence",
             },
-            report("commercial_quality_report", (
-                "golden_opening", "reader_promise", "reward", "protagonist_charm",
-                "antagonist_pressure", "toxic_point", "chapter_hook",
-                "suspense_progression", "emotional_curve", "serialization_function",
-            )),
-            report("source_originality_quality_report", (
-                "originality", "anti_ai", "style_drift",
-            )),
-            report("longform_quality_report", (
-                "character_motivation_drift", "relationship_continuity",
-                "timeline_consistency", "foreshadow_status", "promise_payoff_debt",
-                "world_rule_conflict", "power_state_conflict",
-                "narrative_pattern_repetition", "arc_progress",
-            )),
-            report("platform_quality_report", (
-                "chapter_length", "format", "sensitive_content", "ai_content_policy",
-                "opening_expectations", "platform_rhythm", "publish_metadata",
-            )),
+            report(
+                "commercial_quality_report",
+                (
+                    "golden_opening",
+                    "reader_promise",
+                    "reward",
+                    "protagonist_charm",
+                    "antagonist_pressure",
+                    "toxic_point",
+                    "chapter_hook",
+                    "suspense_progression",
+                    "emotional_curve",
+                    "serialization_function",
+                ),
+            ),
+            report(
+                "source_originality_quality_report",
+                (
+                    "originality",
+                    "anti_ai",
+                    "style_drift",
+                ),
+            ),
+            report(
+                "longform_quality_report",
+                (
+                    "character_motivation_drift",
+                    "relationship_continuity",
+                    "timeline_consistency",
+                    "foreshadow_status",
+                    "promise_payoff_debt",
+                    "world_rule_conflict",
+                    "power_state_conflict",
+                    "narrative_pattern_repetition",
+                    "arc_progress",
+                ),
+            ),
+            report(
+                "platform_quality_report",
+                (
+                    "chapter_length",
+                    "format",
+                    "sensitive_content",
+                    "ai_content_policy",
+                    "opening_expectations",
+                    "platform_rhythm",
+                    "publish_metadata",
+                ),
+            ),
         )
         with transaction() as connection, connection.cursor() as cursor:
             for candidate in candidates:
-                content = dict(candidate.get("content") or {
-                    "safe_summary": candidate["safe_summary"],
-                    "structured_facts": candidate["structured_facts"],
-                })
-                content_hash = "sha256:" + hashlib.sha256(
-                    json.dumps(content, sort_keys=True, separators=(",", ":")).encode()
-                ).hexdigest()
+                content = dict(
+                    candidate.get("content")
+                    or {
+                        "safe_summary": candidate["safe_summary"],
+                        "structured_facts": candidate["structured_facts"],
+                    }
+                )
+                content_hash = (
+                    "sha256:"
+                    + hashlib.sha256(
+                        json.dumps(
+                            content, sort_keys=True, separators=(",", ":")
+                        ).encode()
+                    ).hexdigest()
+                )
                 candidate["content_hash"] = content_hash
                 asset_id = f"{candidate['asset_version_id']}:asset"
                 cursor.execute(
@@ -173,7 +243,12 @@ class PostgreSQLOnlyChapterSliceTests(unittest.TestCase):
                         eligibility, governance, content, content_hash, schema_version
                     ) VALUES (%s, %s, 1, 'ACTIVE', 'ELIGIBLE', 'CLEAR', %s, %s, 'integration-fixture.v1')
                     """,
-                    [candidate["asset_version_id"], asset_id, json.dumps(content), content_hash],
+                    [
+                        candidate["asset_version_id"],
+                        asset_id,
+                        json.dumps(content),
+                        content_hash,
+                    ],
                 )
                 cursor.execute(
                     """
@@ -181,11 +256,16 @@ class PostgreSQLOnlyChapterSliceTests(unittest.TestCase):
                         qualification_id, asset_version_id, policy_version, decision, evidence
                     ) VALUES (%s, %s, 'fixture-release-evidence-v1', 'ELIGIBLE', '{}'::jsonb)
                     """,
-                    [f"{candidate['asset_version_id']}:qualification", candidate["asset_version_id"]],
+                    [
+                        f"{candidate['asset_version_id']}:qualification",
+                        candidate["asset_version_id"],
+                    ],
                 )
         return candidates
 
-    def test_one_chapter_uses_authority_handlers_recovery_and_verified_export(self) -> None:
+    def test_one_chapter_uses_authority_handlers_recovery_and_verified_export(
+        self,
+    ) -> None:
         project_id = identifier("chapter-project")
         request = SingleChapterRequest(
             project_id=project_id,
@@ -233,14 +313,15 @@ class PostgreSQLOnlyChapterSliceTests(unittest.TestCase):
         # Canon no longer emits eleven delta arrays mislabeled as snapshots;
         # accepted current state is materialized with ChapterOutcome at Book
         # acceptance. Keep the count tied to the remaining protocol families.
-        expected_output_count = (
-            len(ChapterNode) + 41 + 8 + len(QUALITY_GROUP_NODES)
-        )
+        # RetrievalResult adds one immutable production artifact between Memo
+        # and Context; the remaining ten non-dimension protocol outputs are
+        # deterministic preparation, continuity, Hook/Pacing, Context and
+        # longitudinal measurement evidence.
+        expected_output_count = len(ChapterNode) + 41 + 10 + len(QUALITY_GROUP_NODES)
         self.assertEqual(len(manifest["outputs"]), expected_output_count)
         self.assertEqual(
             sum(
-                item["asset_type"]
-                == "multiscale_narrative_quality_report"
+                item["asset_type"] == "multiscale_narrative_quality_report"
                 for item in manifest["outputs"]
             ),
             1,
@@ -268,8 +349,12 @@ class PostgreSQLOnlyChapterSliceTests(unittest.TestCase):
         self.assertEqual(manifest["attempt_counts"][ChapterNode.DRAFT.value], 2)
         for node in ChapterNode:
             self.assertEqual(manifest["operation_statuses"][node.value], "SUCCEEDED")
-            self.assertEqual(manifest["attempt_terminal_statuses"][node.value], "SUCCEEDED")
-            self.assertEqual(manifest["qualification_decisions"][node.value], "ELIGIBLE")
+            self.assertEqual(
+                manifest["attempt_terminal_statuses"][node.value], "SUCCEEDED"
+            )
+            self.assertEqual(
+                manifest["qualification_decisions"][node.value], "ELIGIBLE"
+            )
         self.assertEqual(manifest["export"]["blob_status"], "AVAILABLE")
         self.assertEqual(manifest["export"]["effect_status"], "SUCCEEDED")
         self.assertEqual(manifest["export"]["dispatch_status"], "SUCCEEDED")
@@ -325,7 +410,9 @@ class PostgreSQLOnlyChapterSliceTests(unittest.TestCase):
                 """,
                 [result.root_operation_id, result.root_operation_id],
             )
-            self.assertEqual(cursor.fetchone()[0], 18)
+            # Every production node, including deterministic preparation and
+            # Memo-driven Retrieval, now freezes an explicit input snapshot.
+            self.assertEqual(cursor.fetchone()[0], len(ChapterNode))
 
     def test_standard_success_adapter_completes_without_unknown_probe(self) -> None:
         project_id = identifier("chapter-project-success")

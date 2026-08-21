@@ -214,6 +214,7 @@ def build_longform_recap_outputs(
     rewards = _mapping(observations.get("reward_ledger"))
     promises = _mapping(observations.get("promise_ledger"))
     ending_reachability = _mapping(observations.get("ending_reachability"))
+    arc_checkpoint = _mapping(observations.get("accepted_arc_checkpoint"))
     _add_if(deviations, bool(canon.get("conflicts")), "CANON_CONFLICT", "BLOCKING", canon)
     _add_if(
         deviations,
@@ -221,6 +222,21 @@ def build_longform_recap_outputs(
         "ENDING_REACHABILITY_AT_RISK",
         "BLOCKING",
         ending_reachability,
+    )
+    checkpoint_decision = str(arc_checkpoint.get("decision") or "")
+    _add_if(
+        deviations,
+        checkpoint_decision == "REPLAN_REQUIRED",
+        "ARC_CHECKPOINT_REPLAN_REQUIRED",
+        "BLOCKING",
+        arc_checkpoint,
+    )
+    _add_if(
+        deviations,
+        checkpoint_decision == "CORRECT",
+        "ARC_CHECKPOINT_CORRECTION",
+        "MAJOR",
+        arc_checkpoint,
     )
     reader_allowed = bool(
         reader_consumption["future_production_influence_allowed"]
@@ -291,8 +307,38 @@ def build_longform_recap_outputs(
         if action["severity"] == "BLOCKING"
     ]
     affected_scope = _widest_scope(blocking_actions)
-    replan = (
-        {
+    if checkpoint_decision in {"CORRECT", "REPLAN_REQUIRED"}:
+        replan = {
+            "type": "ArcRevisionCandidate",
+            "contract_version": "arc-revision-candidate-v1",
+            "decision_status": "AUTHORITY_PENDING",
+            "based_on_checkpoint_id": str(arc_checkpoint.get("checkpoint_id") or ""),
+            "projection_set_id": str(arc_checkpoint.get("projection_set_id") or ""),
+            "future_from_chapter": end + 1,
+            "reason_refs": [item["type"] for item in deviations],
+            "reason_evidence": dict(arc_checkpoint.get("reason_evidence") or {}),
+            "target_plan_version_ids": list(
+                arc_checkpoint.get("target_plan_version_ids") or ()
+            ),
+            "affected_scope": "ARC",
+            "impact_scope": {
+                "chapter_range": [end + 1, end + 1],
+                "future_only": True,
+            },
+            "preserved_invariants": [
+                "accepted_canon",
+                "executed_chapter_history",
+                "accepted_arc_actual_state",
+                "unaffected_active_plan_versions",
+            ],
+            "decision_evidence": [dict(arc_checkpoint)],
+            "required_authority": "PLAN_CHANGE_AUTHORITY",
+            "candidate_only": True,
+            "plan_mutation_allowed": False,
+        }
+    else:
+        replan = (
+            {
             "contract_version": "book-replan-request-v2",
             "decision_status": "AUTHORITY_PENDING",
             "reason_refs": [item["type"] for item in blocking],
@@ -309,9 +355,9 @@ def build_longform_recap_outputs(
             "decision_evidence": blocking,
             "required_authority": _authority_for_scope(affected_scope),
         }
-        if blocking
-        else None
-    )
+            if blocking
+            else None
+        )
     return {
         "recap": recap,
         "deviation_report": deviation_report,
@@ -353,6 +399,8 @@ def _required_action_for_deviation(
         "QUALITY_TREND_DECLINE": "CHAPTER_GROUP",
         "REWARD_CADENCE_FAILURE": "ARC",
         "PROMISE_DEBT": "ARC",
+        "ARC_CHECKPOINT_CORRECTION": "ARC",
+        "ARC_CHECKPOINT_REPLAN_REQUIRED": "ARC",
         "MAIN_PLOT_STAGNATION": "ARC",
         "ARC_GOAL_DRIFT": "ARC",
         "CHARACTER_ARC_DRIFT": "ARC",

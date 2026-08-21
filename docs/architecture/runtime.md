@@ -37,8 +37,8 @@ Acceptance always returns the Book to `READY`, including the final Chapter. This
 
 `GET /product/production/book-authority/runs/{book_run_id}/progress` is a PostgreSQL read projection. It separates the last accepted narrative progress timestamp and production blocker from non-blocking sidecar admission/Operation backlog.
 
-Chapter production is a 21-node explicit saga (`chapter.slice.run`), including
-ExecutionIntent, Memo, and deterministic Best Candidate selection. Chapter-specific
+Chapter production is a 22-node explicit saga (`chapter.slice.run`), including
+ExecutionIntent, Memo, immutable RetrievalResult, and deterministic Best Candidate selection. Chapter-specific
 binders and policies turn frozen inputs into work orders. All provider and
 object-store execution comes from the shared production execution composition.
 
@@ -58,9 +58,13 @@ accepted-boundary reads, typed Capability invocation and typed Authority Command
 submission. No Tool directly commits Canon, accepted Narrative State, Arc
 Actual, Obligation state, plan activation or Chapter acceptance.
 
-The repository's scripted Harness adapter is fixture-only. A controlled real
-provider/tool binding is intentionally not claimed by this implementation;
-until separately qualified, Agent Harness remains `NOT_PROVIDER_QUALIFIED`.
+The repository's scripted Harness adapter is fixture-only. Controlled
+validation/production composition now resolves the Agent Definition, Role,
+Capability Pack, Skill bindings, Tool policy and Authority policy on the server,
+then executes Agent model turns through PEP. If that binding is absent,
+admission fails before a READY Operation is created. This earns
+`PROVIDER_WIRED`, not `PROVIDER_PROVEN`; no real-provider Harness qualification
+was run in this closure.
 The pre-Harness fixed Agent-candidate API is retained only under the explicit
 `/agent-runtime/migration/agent-runs` namespace for persisted-operation
 recovery. Canonical Chapter and Planning compositions cannot admit through it.

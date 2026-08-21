@@ -76,7 +76,7 @@ def book_followup_operation_definitions(
                     "role": "primary",
                     "auxiliary_asset_types": list(auxiliary_types),
                     "optional_auxiliary_asset_types": (
-                        ["replan_request"]
+                        ["replan_request", "arc_revision_candidate"]
                         if name == LONGFORM_RECAP_DEFINITION
                         else []
                     ),

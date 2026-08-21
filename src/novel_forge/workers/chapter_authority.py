@@ -1,4 +1,5 @@
 """Standalone bounded PostgreSQL Chapter Authority worker."""
+
 from __future__ import annotations
 
 import signal
@@ -16,7 +17,9 @@ from novel_forge.modules.command_kernel.worker_execution import (
     WorkerProgrammingError,
     WorkerSupervisor,
 )
-from novel_forge.modules.command_kernel.deadline_runtime import scan_expired_operation_deadlines
+from novel_forge.modules.command_kernel.deadline_runtime import (
+    scan_expired_operation_deadlines,
+)
 from novel_forge.storage.worker_health import PostgresWorkerHealthObserver
 from novel_forge.storage.database_runtime import close_all_database_runtimes
 
@@ -40,7 +43,8 @@ def run_worker(*, poll_seconds: float = 1.0, batch_size: int = 10) -> int:
     shutdown = _Shutdown()
     boundary = AuthorityWorkerExecutionBoundary(worker_kind="chapter")
     supervisor = WorkerSupervisor(
-        worker_kind="chapter", worker_id=worker.principal_id,
+        worker_kind="chapter",
+        worker_id=worker.principal_id,
         observer=PostgresWorkerHealthObserver(settings.database_url),
     )
 
@@ -53,6 +57,27 @@ def run_worker(*, poll_seconds: float = 1.0, batch_size: int = 10) -> int:
         scan_expired_operation_deadlines(
             settings.database_url, actor_id=worker.principal_id, limit=batch_size
         )
+        embedding_runtime = application.embedding_projection_runtime
+        if embedding_runtime is not None:
+            embedding_runtime.schedule_pending(limit=batch_size)
+            embedding_operations = embedding_runtime.pending_operations(
+                limit=batch_size
+            )
+            if embedding_operations:
+                supervisor.polled(idle=False)
+                failures = boundary.execute_batch(
+                    embedding_operations,
+                    identity=lambda item: (item[0], item[1]),
+                    execute=lambda item: embedding_runtime.tick(
+                        project_id=item[0], operation_id=item[1]
+                    ),
+                    on_task_start=supervisor.operation_started,
+                    on_task_finish=lambda operation_id, succeeded: (
+                        supervisor.operation_finished(operation_id, succeeded=succeeded)
+                    ),
+                )
+                supervisor.batch_completed(failures)
+                continue
         roots = scheduler.pending_roots(limit=batch_size)
         if not roots:
             supervisor.polled(idle=True)
@@ -68,8 +93,8 @@ def run_worker(*, poll_seconds: float = 1.0, batch_size: int = 10) -> int:
                     project_id=item[0], root_operation_id=item[1]
                 ),
                 on_task_start=supervisor.operation_started,
-                on_task_finish=lambda operation_id, succeeded: supervisor.operation_finished(
-                    operation_id, succeeded=succeeded
+                on_task_finish=lambda operation_id, succeeded: (
+                    supervisor.operation_finished(operation_id, succeeded=succeeded)
                 ),
             )
             supervisor.batch_completed(failures)

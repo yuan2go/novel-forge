@@ -131,6 +131,28 @@ def _draft_schema() -> dict[str, Any]:
     )
 
 
+def _agent_session_schema() -> dict[str, Any]:
+    """Strict provider contract for one governed Agent Harness turn."""
+
+    tool_call = _object_schema(
+        {
+            "tool_name": {"type": "string", "minLength": 1},
+            "arguments": {"type": "object"},
+            "reason": {"type": "string", "minLength": 1},
+        },
+        required=("tool_name", "arguments", "reason"),
+    )
+    return _object_schema(
+        {
+            "message": {"type": "string", "minLength": 1},
+            "action": {"type": "string", "enum": ["TOOL_CALL", "FINAL"]},
+            "tool_call": _nullable(tool_call),
+            "final_response": _nullable({"type": "object"}),
+        },
+        required=("message", "action", "tool_call", "final_response"),
+    )
+
+
 def _review_schema() -> dict[str, Any]:
     issue = _object_schema(
         {
@@ -282,21 +304,59 @@ def _canon_schema() -> dict[str, Any]:
         },
         required=tuple(change_properties),
     )
+    properties = {
+        field: {
+            "type": "array",
+            # Each semantic array owns its schema.  Sharing ``change`` here
+            # lets a field-specific refinement silently mutate every other
+            # Canon change contract.
+            "items": (
+                fact if field == "canon_facts" else json.loads(json.dumps(change))
+            ),
+            **({"minItems": 1} if field == "canon_facts" else {}),
+        }
+        for field in _CANON_FIELDS
+    }
+    properties["arc_evidence"] = {
+        "type": "array",
+        "items": _object_schema(
+            {
+                "arc_plan_version_id": {"type": "string", "minLength": 1},
+                "observation_status": {
+                    "type": "string",
+                    "enum": ["OBSERVED", "NOT_OBSERVED", "NOT_MATERIALIZED", "UNKNOWN"],
+                },
+                "contribution_kind": {"type": "string", "minLength": 1},
+                "progress_units": {"type": "integer", "minimum": 0},
+                "effect_dimensions": {"type": "array", "items": {"type": "string"}},
+                "milestone_ids": {"type": "array", "items": {"type": "string"}},
+                "actual_consequences": {"type": "array", "items": {"type": "string"}},
+                "obligation_ids": {"type": "array", "items": {"type": "string"}},
+                "resolution_evidence": {"type": "array", "items": {"type": "string"}},
+                "completion_criterion_ids": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                },
+                "phase_to": _nullable({"type": "string"}),
+            },
+            required=(
+                "arc_plan_version_id",
+                "observation_status",
+                "contribution_kind",
+                "progress_units",
+                "effect_dimensions",
+                "milestone_ids",
+                "actual_consequences",
+                "obligation_ids",
+                "resolution_evidence",
+                "completion_criterion_ids",
+                "phase_to",
+            ),
+        ),
+    }
     schema = _object_schema(
-        {
-            field: {
-                "type": "array",
-                # Each semantic array owns its schema.  Sharing ``change`` here
-                # lets a field-specific refinement silently mutate every other
-                # Canon change contract.
-                "items": (
-                    fact if field == "canon_facts" else json.loads(json.dumps(change))
-                ),
-                **({"minItems": 1} if field == "canon_facts" else {}),
-            }
-            for field in _CANON_FIELDS
-        },
-        required=_CANON_FIELDS,
+        properties,
+        required=(*_CANON_FIELDS, "arc_evidence"),
     )
     for field, identities in _CANON_SCHEMA_REQUIRED_IDENTITIES.items():
         change_schema = schema["properties"][field]["items"]
@@ -478,11 +538,34 @@ def _reader_outcome_schema() -> dict[str, Any]:
     )
 
 
+def _retrieval_embedding_schema() -> dict[str, Any]:
+    return _object_schema(
+        {
+            "vectors": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 32,
+                "items": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 8192,
+                    "items": {"type": "number"},
+                },
+            },
+            "embedding_model": {"type": "string", "minLength": 1},
+            "embedding_dimensions": {"type": "integer", "minimum": 1},
+        },
+        required=("vectors", "embedding_model", "embedding_dimensions"),
+    )
+
+
 def chapter_provider_output_schema(stage: str) -> dict[str, Any]:
     """Return the exact provider-facing result contract for a Chapter stage."""
 
     if stage == "draft":
         schema = _draft_schema()
+    elif stage == "agent_session":
+        schema = _agent_session_schema()
     elif stage in {"review", "rereview"}:
         schema = _review_schema()
     elif stage == "revision":
@@ -493,6 +576,8 @@ def chapter_provider_output_schema(stage: str) -> dict[str, Any]:
         schema = _quality_schema()
     elif stage == "reader_outcome":
         schema = _reader_outcome_schema()
+    elif stage == "retrieval":
+        schema = _retrieval_embedding_schema()
     else:
         raise KernelError(
             "CHAPTER_PROVIDER_OUTPUT_SCHEMA_UNSUPPORTED",
@@ -504,7 +589,7 @@ def chapter_provider_output_schema(stage: str) -> dict[str, Any]:
 def chapter_provider_output_schema_ref(stage: str) -> str:
     chapter_provider_output_schema(stage)
     version = (
-        "v9"
+        "v10"
         if stage == "canon_extraction"
         else "v2"
         if stage in _QUALITY_STAGES
@@ -577,6 +662,26 @@ def validate_chapter_provider_output_semantics(
                 raise KernelError(
                     "CHAPTER_PROVIDER_OUTPUT_SEMANTIC_INVALID",
                     "Disclosure requires one fact_id or proposition_id",
+                )
+        seen_arc_ids: set[str] = set()
+        for evidence in normalized.get("arc_evidence", []):
+            arc_id = str(evidence.get("arc_plan_version_id") or "")
+            if arc_id in seen_arc_ids:
+                raise KernelError(
+                    "CHAPTER_PROVIDER_OUTPUT_SEMANTIC_INVALID",
+                    "Arc evidence must contain one observation per frozen ArcPlan",
+                )
+            seen_arc_ids.add(arc_id)
+            status = str(evidence.get("observation_status") or "")
+            if status == "OBSERVED" and not evidence.get("resolution_evidence"):
+                raise KernelError(
+                    "CHAPTER_PROVIDER_OUTPUT_SEMANTIC_INVALID",
+                    "observed Arc evidence requires accepted-prose location evidence",
+                )
+            if status != "OBSERVED" and int(evidence.get("progress_units") or 0):
+                raise KernelError(
+                    "CHAPTER_PROVIDER_OUTPUT_SEMANTIC_INVALID",
+                    "unobserved Arc evidence cannot advance actual progress",
                 )
         for field in _CANON_FIELDS:
             if field == "canon_facts":

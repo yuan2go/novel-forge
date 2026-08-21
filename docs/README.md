@@ -42,7 +42,11 @@ Keep operational and development guides focused on executable procedures. Approv
 
 Current approved convergence specification:
 
-- [`superpowers/specs/2026-08-20-industrial-autonomous-novel-os-convergence-design.md`](superpowers/specs/2026-08-20-industrial-autonomous-novel-os-convergence-design.md)
+- [`superpowers/specs/2026-08-21-post-merge-correctness-closure-design.md`](superpowers/specs/2026-08-21-post-merge-correctness-closure-design.md)
+
+Current repair runbook:
+
+- [`operations/post-0094-projection-repair.md`](operations/post-0094-projection-repair.md)
 
 ## ADRs
 

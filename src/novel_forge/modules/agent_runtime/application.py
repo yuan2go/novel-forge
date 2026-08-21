@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field as dataclass_field, replace
 from typing import Any, Mapping
 from uuid import uuid4
 
@@ -61,6 +61,7 @@ from .harness import (
     AgentToolSpec,
     AutonomousAgentRole,
 )
+from .policy import ServerAgentHarnessPolicyResolver
 
 
 @dataclass(frozen=True, slots=True)
@@ -229,6 +230,8 @@ class AgentHarnessAdmissionRequest:
     idempotency_key: str
     trace_id: str
     correlation_id: str
+    agent_id: str = ""
+    policy_snapshot: Mapping[str, Any] = dataclass_field(default_factory=dict)
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "agent_role", AutonomousAgentRole(self.agent_role))
@@ -253,6 +256,7 @@ class AgentHarnessAdmissionRequest:
     def command_input(self) -> dict[str, Any]:
         return {
             "agent_session_id": self.agent_session_id,
+            "agent_id": self.agent_id or self.agent_role.value,
             "agent_role": self.agent_role.value,
             "book_id": self.book_id,
             "instruction": self.instruction,
@@ -267,6 +271,7 @@ class AgentHarnessAdmissionRequest:
             ],
             "skill_bindings": [dict(item) for item in self.skill_bindings],
             "budget": asdict(self.budget),
+            "policy_snapshot": dict(self.policy_snapshot),
         }
 
 
@@ -280,6 +285,7 @@ class AgentRuntimeAuthorityApplication:
         runtime_environment: str = "development",
         release_channel: str = "VALIDATION",
         fault_injector: TransactionCheckpoint | None = None,
+        production_agent_model_binding: Mapping[str, Any] | None = None,
     ) -> None:
         if not database_url:
             raise ValueError("Agent Runtime Authority requires PostgreSQL")
@@ -292,6 +298,10 @@ class AgentRuntimeAuthorityApplication:
         self.release_channel = release_channel.strip().upper()
         self.pack_resolver = CapabilityPackRuntimeResolver(database_url)
         self.fault_injector = fault_injector
+        self.harness_policy = ServerAgentHarnessPolicyResolver(
+            database_url,
+            production_model_binding=production_agent_model_binding,
+        )
 
     def execute_admin(
         self,
@@ -512,71 +522,86 @@ class AgentRuntimeAuthorityApplication:
             commit_sha=self.commit_sha,
         )
         with AuthorityUnitOfWork(self.database_url) as uow:
-            self._validate_harness_accepted_boundary(uow, request)
+            effective = request
+            if self.runtime_environment.controlled:
+                tools, skills, policy = self.harness_policy.resolve_in_uow(
+                    uow,
+                    agent_id=request.agent_id,
+                    role=request.agent_role,
+                    caller_tools=request.tool_policy,
+                    caller_skills=request.skill_bindings,
+                )
+                effective = replace(
+                    request,
+                    tool_policy=tools,
+                    skill_bindings=skills,
+                    policy_snapshot=policy,
+                )
+            self._validate_harness_accepted_boundary(uow, effective)
             admitted = admit_command_in_uow(
                 uow,
                 {
                     "definition_name": "agent.session.execute",
                     "definition_version": AGENT_RUNTIME_DEFINITION_VERSION,
-                    "project_id": request.project_id,
-                    "workspace_id": request.workspace_id,
-                    "book_id": request.book_id,
-                    "agent_id": request.agent_role.value,
-                    "agent_role": request.agent_role.value,
+                    "project_id": effective.project_id,
+                    "workspace_id": effective.workspace_id,
+                    "book_id": effective.book_id,
+                    "agent_id": effective.agent_id or effective.agent_role.value,
+                    "agent_role": effective.agent_role.value,
                     "actor_id": principal.principal_id,
                     "idempotency_scope": "project:agent-harness",
-                    "idempotency_key": request.idempotency_key,
-                    "trace_id": request.trace_id,
+                    "idempotency_key": effective.idempotency_key,
+                    "trace_id": effective.trace_id,
                     "span_id": str(uuid4()),
-                    "correlation_id": request.correlation_id,
+                    "correlation_id": effective.correlation_id,
                     "causation_id": "",
-                    "input": request.command_input(),
+                    "input": effective.command_input(),
                     "input_assets": [],
                 },
                 context=context,
             )
             operation_id = str(admitted["operation_id"])
             session = AgentHarnessSession(
-                agent_session_id=request.agent_session_id,
-                project_id=request.project_id,
-                workspace_id=request.workspace_id,
+                agent_session_id=effective.agent_session_id,
+                project_id=effective.project_id,
+                workspace_id=effective.workspace_id,
                 operation_id=operation_id,
-                role=request.agent_role,
+                role=effective.agent_role,
                 status=AgentHarnessStatus.READY,
-                accepted_boundary=request.accepted_boundary,
-                tool_policy=request.tool_policy,
-                skill_bindings=request.skill_bindings,
-                budget=request.budget,
+                accepted_boundary=effective.accepted_boundary,
+                tool_policy=effective.tool_policy,
+                skill_bindings=effective.skill_bindings,
+                budget=effective.budget,
             )
             stored = uow.repositories.agent_runtime.create_harness_session(session)
             uow.commit()
         start_saga(
             self.database_url,
             GraphCommandContext(
-                project_id=request.project_id,
+                project_id=effective.project_id,
                 actor_id=principal.principal_id,
-                trace_id=request.trace_id,
-                correlation_id=request.correlation_id,
+                trace_id=effective.trace_id,
+                correlation_id=effective.correlation_id,
             ),
             root_operation_id=operation_id,
         )
         with AuthorityUnitOfWork(self.database_url) as uow:
             state = uow.repositories.attempt_runtime.operation_state(
-                operation_id, request.project_id
+                operation_id, effective.project_id
             )
         if state["status"] == "ADMITTED":
             transition_operation(
                 self.database_url,
                 OperationTransitionCommand(
                     operation_id=operation_id,
-                    project_id=request.project_id,
+                    project_id=effective.project_id,
                     expected_version=int(state["version"]),
                     expected_status="ADMITTED",
                     target_status="READY",
                     actor_id=principal.principal_id,
                     reason="governed Agent Harness session admitted",
-                    trace_id=request.trace_id,
-                    correlation_id=request.correlation_id,
+                    trace_id=effective.trace_id,
+                    correlation_id=effective.correlation_id,
                     causation_id=operation_id,
                 ),
             )
@@ -586,6 +611,7 @@ class AgentRuntimeAuthorityApplication:
             "operation_id": operation_id,
             "status": "READY",
             "accepted_boundary": asdict(stored.accepted_boundary),
+            "policy_hash": str(effective.policy_snapshot.get("policy_hash") or ""),
             "replayed": bool(admitted["replayed"]),
         }
 

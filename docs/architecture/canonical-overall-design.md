@@ -609,18 +609,22 @@ L1/L2/L4/L5 and accepted lineage are authoritative story projections. L3/L6/L7 a
 The Writer should not receive Book Bible + all characters + all history. Context is compiled only at the latest complete Accepted Boundary:
 
 ```text
-Accepted Boundary
-→ protected correctness resolution
-→ hybrid retrieval
+ChapterPlan
+→ ChapterExecutionIntent
+→ qualified ChapterMemo
+→ Retrieval Query Plan at the frozen Accepted Boundary
+→ PostgreSQL FTS / graph / temporal retrieval
+→ optional governed semantic signal
 → rerank
 → compressible evidence compression
+→ immutable RetrievalResult
 → Context Manifest v2
 → Chapter Production Packet
 ```
 
 **Protected Context** includes the exact active ChapterPlan, qualified ChapterExecutionIntent/ChapterMemo constraints, accepted Canon/current state, hard world rules, critical character/relationship state, due obligations, relevant Arc actual/checkpoint state and forbidden/knowledge boundaries. Protected entries are typed, never filename-classified. If they exceed budget, compilation fails; none is silently dropped or semantically weakened.
 
-**Retrievable Context** includes accepted historical chapter/scene text, episodic summaries, entity/relationship history, character timelines, Arc/obligation history, world consequences, prior setup/payoff and external governed knowledge. PostgreSQL hybrid retrieval combines lexical/full-text, embedding, entity/relationship, timeline/temporal, Arc and obligation relevance, accepted-boundary eligibility, rerank and optional compression. Vector similarity is one signal, never the memory system.
+**Retrievable Context** includes accepted historical chapter/scene text, episodic summaries, entity/relationship history, character timelines, Arc/obligation history, world consequences, prior setup/payoff and external governed knowledge. PostgreSQL retrieval combines Full-Text Search (`ts_rank`), governed embedding projection, entity/relationship, timeline/temporal, Arc and obligation relevance, accepted-boundary eligibility, rerank and optional compression. Vector similarity is one signal, never the memory system.
 
 The bounded packet contains only what the chapter needs, conceptually including:
 
@@ -739,7 +743,9 @@ Accepted state + qualified future design
 → active ChapterPlan
 → ChapterExecutionIntent
 → ChapterMemo
-→ Evidence/Context compilation
+→ Retrieval Query Plan
+→ immutable RetrievalResult
+→ Context compilation
 → Chapter Production Packet
 → Scene Plan
 → immutable Draft Candidate
@@ -1063,7 +1069,7 @@ Therefore the target system **converges the existing architecture**; it does not
 
 Every Work Package begins by re-reading the latest code and current runtime evidence. The ordering below changes if later evidence proves a gap is already closed.
 
-### P0 — Industrial Autonomous Novel OS convergence — IMPLEMENTED / UNIT+SMOKE TESTED
+### P0 — Correctness closure — WIRED / RUNTIME_REACHABLE / TARGETED POSTGRES TESTED
 
 The convergence implementation now preserves the industrial base and has:
 
@@ -1078,7 +1084,20 @@ The convergence implementation now preserves the industrial base and has:
 - committed the complete accepted Chapter/Canon/State/Arc/Obligation projection set through a short deterministic Book Acceptance transaction;
 - replaced stale architecture string assertions with behavior/contract tests.
 
-These capabilities have domain contracts, production composition, runtime reachability, persistence, Authority governance, downstream consumption and bounded tests. They are not long-form, real-provider or production qualified; those remain P1 evidence work rather than P0 implementation gaps.
+Forward migration 0095 now registers durable post-0094 projection repair;
+repair and live acceptance share the same deterministic accepted projector and
+only terminal fenced CAS activates the repaired head. Agent Harness controlled
+composition is server-policy-owned and PEP-backed. Arc/Obligation checkpoint
+inputs are accepted and deterministic, with post-commit ArcRevision/PlanChange.
+Memo now drives a durable RetrievalResult before Context, and semantic document
+and query embeddings use the same ExternalEffect/Receipt governance as other
+provider calls.
+
+These capabilities have domain contracts, production composition, runtime
+reachability, persistence, Authority governance, downstream consumption and
+bounded unit/PostgreSQL tests. Agent and embedding routes are
+`PROVIDER_WIRED`; scripted receipts are not `PROVIDER_PROVEN`. They are not
+long-form or production qualified; those remain later evidence work.
 
 ### P1 — Long-form and Provider qualification
 

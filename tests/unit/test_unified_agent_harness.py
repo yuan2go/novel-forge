@@ -86,6 +86,12 @@ class _Cancellation:
         return False
 
 
+class _Cancelled:
+    def cancellation_requested(self, *, operation_id: str) -> bool:
+        assert operation_id == "operation-1"
+        return True
+
+
 def _session(*, max_turns: int = 3) -> AgentHarnessSession:
     return AgentHarnessSession(
         agent_session_id="session-1",
@@ -269,3 +275,26 @@ def test_harness_rejects_model_evidence_from_another_attempt() -> None:
             attempt_id="attempt-1",
             trace_id="trace-1",
         )
+
+
+def test_harness_cancellation_stops_before_the_next_model_effect() -> None:
+    transcript = _Transcript()
+    model = _Model(())
+    with pytest.raises(KernelError, match="cancelled") as caught:
+        UnifiedAgentHarness(
+            transcript=transcript,
+            model=model,
+            tools=_Tools(),
+            cancellation=_Cancelled(),
+        ).execute_request(
+            session=_session(),
+            request_id="request-cancelled",
+            instruction="Stop safely.",
+            attempt_id="attempt-1",
+            trace_id="trace-1",
+        )
+    assert caught.value.code == "AGENT_HARNESS_CANCELLED"
+    assert [event["event_type"] for event in transcript.events] == [
+        AgentTranscriptEventType.REQUEST_STARTED,
+        AgentTranscriptEventType.SESSION_STOPPED,
+    ]

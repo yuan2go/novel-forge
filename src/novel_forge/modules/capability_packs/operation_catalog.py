@@ -275,6 +275,7 @@ _NON_PROVIDER_CAPABILITIES = {
     "plan": "planning.chapter.generate",
     "execution_intent": "planning.chapter.generate",
     "memo": "planning.chapter.generate",
+    "retrieval": "retrieval.embed",
     "best_candidate": "planning.chapter.generate",
     "context": "retrieval.index.query",
     "canon_proposal": "canon.extract",

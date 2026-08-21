@@ -197,7 +197,8 @@ def _definition(
             "authority": "postgresql",
             "agent_run_status_owner": "projection",
             "attempt_owner": "command_kernel",
-            "capability_pack_controls_operation": False,
+            "capability_pack_controls_operation": harness,
+            "server_tool_policy_authoritative": harness,
             "candidate_only": execution,
             "domain_commit_required": execution and not harness,
             "agent_session_provenance_only": harness,
@@ -305,6 +306,7 @@ def _harness_schema() -> dict[str, Any]:
         "type": "object",
         "required": [
             "agent_session_id",
+            "agent_id",
             "agent_role",
             "book_id",
             "instruction",
@@ -312,9 +314,11 @@ def _harness_schema() -> dict[str, Any]:
             "tool_policy",
             "skill_bindings",
             "budget",
+            "policy_snapshot",
         ],
         "properties": {
             "agent_session_id": {"type": "string"},
+            "agent_id": {"type": "string", "minLength": 1},
             "agent_role": {
                 "type": "string",
                 "enum": ["STUDIO_DIRECTOR", "RESEARCH_KNOWLEDGE"],
@@ -325,6 +329,7 @@ def _harness_schema() -> dict[str, Any]:
             "tool_policy": {"type": "array", "minItems": 1},
             "skill_bindings": {"type": "array"},
             "budget": {"type": "object"},
+            "policy_snapshot": {"type": "object"},
         },
         "additionalProperties": False,
     }

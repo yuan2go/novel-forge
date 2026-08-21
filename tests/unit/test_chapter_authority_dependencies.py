@@ -178,6 +178,11 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
             "NOVEL_FORGE_NARRATIVE_EVALUATOR_PROVIDER": "openai",
             "NOVEL_FORGE_NARRATIVE_EVALUATOR_MODEL": "gpt-test",
             "NOVEL_FORGE_NARRATIVE_SEMANTIC_EVALUATION_REASONING_EFFORT": "high",
+            "NOVEL_FORGE_AGENT_PROVIDER": "openai",
+            "NOVEL_FORGE_AGENT_MODEL": "gpt-test",
+            "NOVEL_FORGE_AGENT_REASONING_EFFORT": "high",
+            "NOVEL_FORGE_EMBEDDING_PROVIDER": "openai",
+            "NOVEL_FORGE_EMBEDDING_MODEL": "text-embedding-test",
             "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": "object-store",
             "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_BACKEND": "minio",
             "NOVEL_FORGE_PROVIDER_MAX_COST_PER_CALL": "1.00",
@@ -214,7 +219,7 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
                 provider_registry=registry,
                 env=controlled_environment,
             )
-            build_chapter_authority_application(
+            application = build_chapter_authority_application(
                 settings,
                 execution=execution,
                 env=controlled_environment,
@@ -226,6 +231,31 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
         self.assertTrue(
             execution.gateway.capability_profile.real_provider_validation_eligible
         )
+        self.assertEqual(
+            execution.gateway.routes["agent_session"].model_profile.model_id,
+            "gpt-test",
+        )
+        self.assertEqual(
+            execution.gateway.routes["retrieval"].model_profile.model_id,
+            "text-embedding-test",
+        )
+        self.assertIsNotNone(application.embedding_projection_runtime)
+        self.assertIn("retrieval_projection", execution.gateway.execution_binders)
+
+    def test_semantic_route_requires_provider_and_model_as_one_binding(self) -> None:
+        settings = IndustrialSettings(
+            root=Path("."), database_url="postgresql://authority"
+        )
+        with self.assertRaisesRegex(RuntimeError, "semantic retrieval binding"):
+            build_production_execution_composition(
+                settings,
+                env={
+                    "NOVEL_FORGE_ENVIRONMENT": "test",
+                    "NOVEL_FORGE_MODEL_PROVIDER": "scripted_provider_v2",
+                    "NOVEL_FORGE_EMBEDDING_PROVIDER": "scripted_provider_v2",
+                    "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": "object-store",
+                },
+            )
 
     def test_provider_validation_composes_codex_directly_without_provider_v2(
         self,

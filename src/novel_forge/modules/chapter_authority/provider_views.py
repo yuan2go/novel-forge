@@ -141,6 +141,24 @@ _OPERATIONAL_KEYS = {
 def build_provider_task_view(stage: str, inputs: Mapping[str, Any]) -> dict[str, Any]:
     """Return one non-duplicated stage payload without Authority audit metadata."""
 
+    if stage == "retrieval":
+        texts = inputs.get("texts")
+        if (
+            not isinstance(texts, list)
+            or not texts
+            or len(texts) > 32
+            or any(not isinstance(item, str) or not item.strip() for item in texts)
+        ):
+            raise KernelError(
+                "RETRIEVAL_PROVIDER_TASK_INVALID",
+                "retrieval embedding requires a bounded non-empty text batch",
+            )
+        return _task(
+            stage,
+            texts=_compact(texts),
+            purpose=str(inputs.get("purpose") or ""),
+            query_plan_fingerprint=str(inputs.get("query_plan_fingerprint") or ""),
+        )
     if stage in _PLANNING_STAGES:
         command = inputs.get("planning_command")
         if not isinstance(command, Mapping):
@@ -188,6 +206,28 @@ def build_provider_task_view(stage: str, inputs: Mapping[str, Any]) -> dict[str,
             stage,
             evaluation_target=_compact(target),
             qualification_profiles=_compact(profiles),
+        )
+    if stage == "agent_session":
+        boundary = inputs.get("accepted_boundary")
+        tools = inputs.get("tools")
+        if (
+            not isinstance(boundary, Mapping)
+            or not isinstance(tools, list)
+            or not tools
+        ):
+            raise KernelError(
+                "AGENT_PROVIDER_TASK_INVALID",
+                "Agent turn requires a frozen accepted boundary and Tool snapshot",
+            )
+        return _task(
+            stage,
+            instruction=str(inputs.get("instruction") or ""),
+            accepted_boundary=_compact(boundary),
+            tools=_compact(tools),
+            skills=_compact(inputs.get("skills")),
+            committed_transcript=_compact(inputs.get("committed_transcript")),
+            observations=_compact(inputs.get("observations")),
+            turn_number=int(inputs.get("turn_number") or 0),
         )
     if stage == "draft":
         return _task(
@@ -382,6 +422,17 @@ def build_provider_context_view(
 ) -> dict[str, Any]:
     """Project Minimum Sufficient Context with deterministic bounded cardinality."""
 
+    if stage == "retrieval":
+        return {
+            "contract_version": "provider-context-view-v2",
+            "schema_version": "novelos.retrieval_input_context.v1",
+            "stage": stage,
+            "source_isolation": "FROZEN_RETRIEVAL_TEXT_ONLY",
+            "protected": True,
+            "query_plan_fingerprint": str(
+                task_view.get("query_plan_fingerprint") or ""
+            ),
+        }
     if stage in _PLANNING_STAGES:
         return _build_planning_context_view(stage, context_bundle)
     if stage == "narrative_semantic_evaluation":
@@ -402,6 +453,26 @@ def build_provider_context_view(
                 "selected_count": 1,
                 "omitted_count": 0,
             },
+        }
+    if stage == "agent_session":
+        boundary = context_bundle.get("accepted_boundary")
+        if (
+            context_bundle.get("protected") is not True
+            or context_bundle.get("source_authority") != "POSTGRESQL_ACCEPTED_BOUNDARY"
+            or not isinstance(boundary, Mapping)
+            or dict(boundary) != dict(task_view.get("accepted_boundary") or {})
+        ):
+            raise KernelError(
+                "AGENT_PROVIDER_CONTEXT_INVALID",
+                "Agent context must preserve the exact accepted boundary",
+            )
+        return {
+            "contract_version": "provider-context-view-v2",
+            "schema_version": "novelos.agent_harness_context_view.v1",
+            "stage": stage,
+            "source_isolation": "ACCEPTED_BOUNDARY_ONLY",
+            "accepted_boundary": _compact(boundary),
+            "protected": True,
         }
     if stage == "reader_outcome":
         return _build_reader_outcome_context_view(context_bundle)

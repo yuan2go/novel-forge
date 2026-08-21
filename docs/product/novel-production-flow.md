@@ -73,7 +73,26 @@ ChapterExecutionIntent freezes the exact Plan interpretation and accepted bounda
 
 ## 5. Evidence and Context
 
-Build Context v2 in three stages:
+Build Context v2 only after the Memo has produced its frozen query inputs:
+
+```text
+ChapterPlan
+→ ChapterExecutionIntent
+→ qualified ChapterMemo
+→ Retrieval Query Plan
+→ chapter.context.retrieve
+→ immutable RetrievalResult
+→ chapter.context.build
+→ Draft
+```
+
+The Book command freezes the accepted boundary, protected Authority refs and
+retrieval policy. It does not preselect historical prose before Memo. The
+Retrieval Operation freezes every selected candidate AssetVersion and records
+selected/rejected documents, ranking evidence and a result fingerprint so the
+Context build is replayable.
+
+Context v2 then builds three partitions:
 
 1. protected correctness context that fails closed on budget overflow;
 2. task-specific state/evidence retrieval;
@@ -81,12 +100,18 @@ Build Context v2 in three stages:
 
 Examples: combat retrieves only currently legal skills/weapons/resources/injuries/environment; investigation retrieves relevant clues, known/unknown facts and beliefs. MKAOS enrichment may improve creative realization but cannot create Story Truth.
 
-Retrieval combines lexical/BM25-style full text, embedding, entity/relationship, character timeline, temporal, Arc and Narrative Obligation relevance, rerank and compressible-evidence compression. Provider context must remain bounded as the Book grows; protected entries cannot be silently dropped.
+Retrieval combines PostgreSQL Full-Text Search (`to_tsvector`,
+`plainto_tsquery`, `ts_rank`), governed embedding projections,
+entity/relationship, character timeline, temporal, Arc and Narrative
+Obligation relevance, recency, rerank and compressible-evidence compression.
+This signal is named PostgreSQL FTS ranking. Provider context must remain bounded
+as the Book grows; protected entries cannot be silently dropped.
 
 ## 6. Chapter production
 
 ```text
-ChapterPlan + ExecutionIntent + Memo + Production Packet
+ChapterPlan + ExecutionIntent + Memo
+→ RetrievalResult + Context Manifest / Production Packet
 → Scene Plan
 → Draft Candidate
 → Review / bounded Revision / Re-review

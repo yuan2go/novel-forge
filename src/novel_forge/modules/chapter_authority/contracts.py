@@ -1,4 +1,5 @@
 """Typed boundary between chapter business handlers and PostgreSQL authority."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -16,9 +17,7 @@ def resolve_stage_context_token_budget(
     budget = int(command.get("context_token_budget") or default)
     report = command.get("preparation_report")
     stage_budgets = (
-        report.get("stage_context_token_budgets")
-        if isinstance(report, dict)
-        else None
+        report.get("stage_context_token_budgets") if isinstance(report, dict) else None
     )
     if isinstance(stage_budgets, dict):
         stage_key = "quality" if stage.startswith("quality_") else stage
@@ -52,6 +51,13 @@ class ChapterNode(Enum):
         "chapter_memo",
         "chapter.memo",
         "chapter.memo.materialized",
+    )
+    RETRIEVAL = (
+        "retrieval",
+        "chapter.context.retrieve",
+        "retrieval_result",
+        "chapter.retrieval",
+        "chapter.retrieval.materialized",
     )
     CONTEXT = (
         "context",
@@ -324,9 +330,15 @@ class ChapterNodeHandler(Protocol):
 
 
 class ChapterHandlerRegistry:
-    def __init__(self, *, model_effects_required: bool = False) -> None:
+    def __init__(
+        self,
+        *,
+        model_effects_required: bool = False,
+        semantic_retrieval_available: bool = False,
+    ) -> None:
         self._handlers: dict[ChapterNode, ChapterNodeHandler] = {}
         self.model_effects_required = model_effects_required
+        self.semantic_retrieval_available = semantic_retrieval_available
 
     def register(self, node: ChapterNode, handler: ChapterNodeHandler) -> None:
         if node in self._handlers:

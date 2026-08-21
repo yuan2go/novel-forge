@@ -70,11 +70,11 @@ from novel_forge.modules.narrative_state import (
     compact_canon_facts,
     compact_current_state_facts,
 )
-from novel_forge.modules.context_builder.retrieval import (
-    HybridRetrievalQuery,
-    hybrid_retrieve,
+from novel_forge.modules.book_authority.longform_projection import (
+    AcceptedLongformEvidence,
+    frozen_arc_plan_version_ids,
+    project_accepted_longform,
 )
-from novel_forge.modules.longform_narrative import build_longform_projection_set
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 
@@ -965,9 +965,7 @@ class PostgresBookAuthority:
         accepted_through = int(book["accepted_through_chapter"])
         if accepted_through == 0:
             return
-        projection_set_id = str(
-            book.get("active_longform_projection_set_id") or ""
-        )
+        projection_set_id = str(book.get("active_longform_projection_set_id") or "")
         if not projection_set_id:
             raise KernelError(
                 "BOOK_ACCEPTED_PROJECTION_SET_INCOMPLETE",
@@ -977,19 +975,42 @@ class PostgresBookAuthority:
             uow.cursor.execute(
                 """
                 SELECT 1
-                FROM authority_book_narrative_projection_set
-                WHERE projection_set_id=%s AND project_id=%s AND book_id=%s
-                  AND chapter_number=%s AND status='COMPLETE'
-                  AND story_state_asset_version_id=%s
-                  AND canon_snapshot_asset_version_id=%s
+                FROM authority_book_narrative_projection_set AS projection
+                JOIN authority_book_chapter_acceptance AS acceptance
+                  ON acceptance.acceptance_id=projection.acceptance_id
+                 AND acceptance.longform_projection_set_id=
+                     projection.projection_set_id
+                 AND acceptance.status='COMMITTED'
+                WHERE projection.projection_set_id=%s
+                  AND projection.project_id=%s AND projection.book_id=%s
+                  AND projection.book_run_id=%s
+                  AND projection.chapter_number=%s
+                  AND projection.status='COMPLETE'
+                  AND projection.chapter_outcome_asset_version_id=%s
+                  AND projection.story_state_asset_version_id=%s
+                  AND projection.canon_snapshot_asset_version_id=%s
+                  AND acceptance.book_run_id=%s
+                  AND acceptance.project_id=%s
+                  AND acceptance.chapter_number=%s
+                  AND acceptance.chapter_outcome_asset_version_id=
+                      projection.chapter_outcome_asset_version_id
+                  AND acceptance.story_state_asset_version_id=
+                      projection.story_state_asset_version_id
+                  AND acceptance.canon_snapshot_asset_version_id=
+                      projection.canon_snapshot_asset_version_id
                 """,
                 [
                     projection_set_id,
                     book["project_id"],
                     book["book_id"],
+                    book["book_run_id"],
                     accepted_through,
+                    book["last_chapter_outcome_version_id"],
                     book["active_story_state_version_id"],
                     book["active_canon_snapshot_version_id"],
+                    book["book_run_id"],
+                    book["project_id"],
+                    accepted_through,
                 ],
             )
             complete = uow.cursor.fetchone()
@@ -1181,12 +1202,14 @@ class PostgresBookAuthority:
             outcome_content = dict(projection_inputs[0])
             story_state_content = dict(projection_inputs[1])
             chapter_plan_content = dict(projection_inputs[2])
-            active_arc_plan_versions = tuple(
-                book["longform_context_versions"].get("arc_plan_versions") or ()
+            active_arc_plan_versions = frozen_arc_plan_version_ids(
+                request_payload=dict(request.get("command_payload") or {}),
+                book_context=dict(book["longform_context_versions"]),
             )
             expected_progress_units = {
-                str(item.get("arc_plan_version_id") or item.get("arc_id") or ""):
-                int(item["expected_progress_units"])
+                str(item.get("arc_plan_version_id") or item.get("arc_id") or ""): int(
+                    item["expected_progress_units"]
+                )
                 for item in chapter_plan_content.get("required_arc_contributions") or ()
                 if isinstance(item, dict)
                 and str(item.get("arc_plan_version_id") or item.get("arc_id") or "")
@@ -1194,36 +1217,104 @@ class PostgresBookAuthority:
             }
             uow.cursor.execute(
                 """
-                SELECT arc_plan_version_id, state
-                FROM authority_arc_actual_state
-                WHERE project_id=%s AND book_id=%s
-                  AND arc_plan_version_id=ANY(%s)
+                SELECT version.asset_version_id, version.content_hash,
+                       version.content
+                FROM authority_asset_version AS version
+                JOIN authority_asset AS asset ON asset.asset_id=version.asset_id
+                WHERE version.asset_version_id=ANY(%s) AND asset.project_id=%s
                 """,
-                [
-                    request["project_id"],
-                    book["book_id"],
-                    list(active_arc_plan_versions),
-                ],
+                [list(active_arc_plan_versions), request["project_id"]],
             )
-            previous_arc_states = {
-                str(row[0]): dict(row[1]) for row in uow.cursor.fetchall()
+            arc_plan_rows = uow.cursor.fetchall()
+            arc_plan_snapshots = {
+                str(row[0]): dict(row[2] or {}) for row in arc_plan_rows
             }
-            longform_projection_set = build_longform_projection_set(
-                project_id=request["project_id"],
-                book_id=book["book_id"],
-                book_run_id=request["book_run_id"],
-                chapter_request_id=chapter_request_id,
-                chapter_number=int(request["chapter_number"]),
-                acceptance_id=acceptance_id,
-                acceptance_operation_id=admission.operation_id,
-                chapter_outcome_asset_version_id=outcome.asset_version_id,
-                story_state_asset_version_id=story_state.asset_version_id,
-                canon_snapshot_asset_version_id=canon_snapshot.asset_version_id,
-                active_arc_plan_version_ids=active_arc_plan_versions,
-                expected_progress_units=expected_progress_units,
-                previous_arc_states=previous_arc_states,
-                chapter_outcome=outcome_content,
-                story_state=story_state_content,
+            arc_plan_content_hashes = {
+                str(row[0]): str(row[1]) for row in arc_plan_rows
+            }
+            if set(arc_plan_snapshots) != set(active_arc_plan_versions):
+                raise KernelError(
+                    "BOOK_FROZEN_ARC_PLAN_MISSING",
+                    "accepted projection requires every frozen ArcPlan AssetVersion",
+                )
+            previous_arc_states: dict[str, dict[str, Any]] = {}
+            if int(request["chapter_number"]) > 1:
+                uow.cursor.execute(
+                    """
+                    SELECT arc_state
+                    FROM authority_book_narrative_projection_set
+                    WHERE book_run_id=%s AND chapter_number=%s
+                      AND status='COMPLETE'
+                    """,
+                    [request["book_run_id"], int(request["chapter_number"]) - 1],
+                )
+                previous_projection = uow.cursor.fetchone()
+                if previous_projection is None:
+                    raise KernelError(
+                        "BOOK_PREVIOUS_LONGFORM_PROJECTION_MISSING",
+                        "accepted projection requires the preceding Book-run projection",
+                    )
+                previous_arc_states = {
+                    str(item.get("arc_plan_version_id") or ""): dict(item)
+                    for item in previous_projection[0] or ()
+                    if isinstance(item, dict)
+                    and str(item.get("arc_plan_version_id") or "")
+                }
+                uow.cursor.execute(
+                    """
+                    SELECT outcome.arc_plan_version_id, outcome.status,
+                           outcome.accepted_through_chapter
+                    FROM authority_arc_outcome_v2 AS outcome
+                    JOIN authority_book_narrative_projection_set AS projection
+                      ON projection.projection_set_id=outcome.projection_set_id
+                    WHERE projection.book_run_id=%s
+                      AND outcome.accepted_through_chapter < %s
+                    """,
+                    [request["book_run_id"], int(request["chapter_number"])],
+                )
+                for arc_id, lifecycle, accepted_chapter in uow.cursor.fetchall():
+                    previous_arc_states.setdefault(
+                        str(arc_id),
+                        {
+                            "arc_plan_version_id": str(arc_id),
+                            "lifecycle_status": str(lifecycle),
+                            "accepted_through_chapter": int(accepted_chapter),
+                            "cumulative_progress_units": 0,
+                        },
+                    )
+            longform_projection_set = project_accepted_longform(
+                AcceptedLongformEvidence(
+                    project_id=request["project_id"],
+                    book_id=book["book_id"],
+                    book_run_id=request["book_run_id"],
+                    chapter_request_id=chapter_request_id,
+                    chapter_number=int(request["chapter_number"]),
+                    acceptance_id=acceptance_id,
+                    acceptance_operation_id=admission.operation_id,
+                    chapter_outcome_asset_version_id=outcome.asset_version_id,
+                    chapter_outcome_content_hash=outcome.content_hash,
+                    story_state_asset_version_id=story_state.asset_version_id,
+                    story_state_content_hash=story_state.content_hash,
+                    canon_snapshot_asset_version_id=canon_snapshot.asset_version_id,
+                    canon_snapshot_content_hash=canon_snapshot.content_hash,
+                    chapter_plan_asset_version_id=(
+                        execution_chapter_plan_asset_version_id
+                    ),
+                    chapter_plan_content_hash=str(
+                        selected_acceptance_outputs["chapter_plan"].get("content_hash")
+                        or ""
+                    ),
+                    active_arc_plan_version_ids=active_arc_plan_versions,
+                    expected_progress_units=expected_progress_units,
+                    previous_arc_states=previous_arc_states,
+                    arc_plan_snapshots=arc_plan_snapshots,
+                    arc_plan_content_hashes=arc_plan_content_hashes,
+                    chapter_outcome=outcome_content,
+                    story_state=story_state_content,
+                    source_contract=str(
+                        outcome_content.get("contract_version") or "UNKNOWN"
+                    ),
+                )
             )
             uow.repositories.book_authority.commit_chapter_acceptance(
                 acceptance_id=acceptance_id,
@@ -1777,10 +1868,13 @@ class PostgresBookAuthority:
 
     def reconcile_chapter(self, chapter_request_id: str) -> dict[str, Any]:
         request = self.require_chapter_request(chapter_request_id)
-        if self._find_chapter_acceptance(
-            chapter_request_id=chapter_request_id,
-            project_id=request["project_id"],
-        ) is not None:
+        if (
+            self._find_chapter_acceptance(
+                chapter_request_id=chapter_request_id,
+                project_id=request["project_id"],
+            )
+            is not None
+        ):
             # Acceptance and the Book narrative cursor commit atomically. A
             # ChapterGroup replay may still need to consume that acceptance,
             # but reconciliation must never regress the accepted Book state.
@@ -2354,8 +2448,7 @@ class PostgresBookAuthority:
                 or ""
             ),
             "book_design_version": str(
-                context_refs.get("book_design_version")
-                or book["book_design_version"]
+                context_refs.get("book_design_version") or book["book_design_version"]
             ),
             "book_plan_version": str(
                 context_refs.get("book_plan_version") or book["book_plan_version"]
@@ -2533,58 +2626,6 @@ class PostgresBookAuthority:
             return requested
         book = self.require(book_run_id)
         book_id = str(book["book_id"])
-        retrieval_text = " ".join(
-            str(item.get("safe_summary") or "")
-            for item in requested
-            if str(item.get("safe_summary") or "")
-        )
-        arc_plan_versions = tuple(
-            str(item)
-            for item in dict(book.get("longform_context_versions") or {}).get(
-                "arc_plan_versions", ()
-            )
-            if str(item)
-        )
-        entity_ids = tuple(
-            sorted(
-                {
-                    str(value)
-                    for item in requested
-                    for value in item.get("entity_ids") or ()
-                    if str(value)
-                }
-            )
-        )
-        relationship_ids = tuple(
-            sorted(
-                {
-                    str(value)
-                    for item in requested
-                    for value in item.get("relationship_ids") or ()
-                    if str(value)
-                }
-            )
-        )
-        character_ids = tuple(
-            sorted(
-                {
-                    str(value)
-                    for item in requested
-                    for value in item.get("character_ids") or ()
-                    if str(value)
-                }
-            )
-        )
-        obligation_ids = tuple(
-            sorted(
-                {
-                    str(value)
-                    for item in requested
-                    for value in item.get("obligation_ids") or ()
-                    if str(value)
-                }
-            )
-        )
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
@@ -2627,63 +2668,6 @@ class PostgresBookAuthority:
                 ],
             )
             rows = uow.cursor.fetchall()
-            uow.cursor.execute(
-                """
-                SELECT document.retrieval_document_id,
-                       document.source_asset_version_id,
-                       document.source_artifact_type,
-                       document.accepted_from_chapter,
-                       document.accepted_to_chapter,
-                       document.memory_layer,
-                       document.content_text,
-                       COALESCE(document.embedding, '[]'::jsonb),
-                       document.entity_ids, document.relationship_ids,
-                       document.character_ids, document.arc_plan_version_ids,
-                       document.obligation_ids, document.temporal_coordinate,
-                       document.metadata, version.content_hash
-                FROM authority_narrative_retrieval_document AS document
-                JOIN authority_asset_version AS version
-                  ON version.asset_version_id=document.source_asset_version_id
-                WHERE document.project_id=%s AND document.book_id=%s
-                  AND document.accepted_from_chapter<=%s
-                  AND (
-                    document.accepted_to_chapter IS NULL
-                    OR document.accepted_to_chapter>=%s
-                  )
-                  AND (
-                    (%s<>'' AND document.search_vector @@
-                      plainto_tsquery('simple', %s))
-                    OR document.accepted_from_chapter>=GREATEST(0, %s-12)
-                    OR document.entity_ids ?| %s::TEXT[]
-                    OR document.relationship_ids ?| %s::TEXT[]
-                    OR document.character_ids ?| %s::TEXT[]
-                    OR document.arc_plan_version_ids ?| %s::TEXT[]
-                    OR document.obligation_ids ?| %s::TEXT[]
-                  )
-                ORDER BY
-                  ts_rank(document.search_vector,
-                          plainto_tsquery('simple', %s)) DESC,
-                  document.accepted_from_chapter DESC,
-                  document.retrieval_document_id
-                LIMIT 256
-                """,
-                [
-                    project_id,
-                    book_id,
-                    chapter_number - 1,
-                    chapter_number - 1,
-                    retrieval_text,
-                    retrieval_text,
-                    chapter_number - 1,
-                    list(entity_ids),
-                    list(relationship_ids),
-                    list(character_ids),
-                    list(arc_plan_versions),
-                    list(obligation_ids),
-                    retrieval_text,
-                ],
-            )
-            retrieval_rows = uow.cursor.fetchall()
         if {str(row[0]) for row in rows} != {
             "story_state_snapshot",
             "canon_snapshot",
@@ -2767,42 +2751,6 @@ class PostgresBookAuthority:
                 }
             )
         governed = tuple(governed_items)
-        retrieval_documents = tuple(
-            {
-                "retrieval_document_id": str(row[0]),
-                "source_asset_version_id": str(row[1]),
-                "source_artifact_type": str(row[2]),
-                "accepted_from_chapter": int(row[3]),
-                "accepted_to_chapter": (
-                    int(row[4]) if row[4] is not None else None
-                ),
-                "memory_layer": str(row[5]),
-                "content_text": str(row[6]),
-                "embedding": list(row[7] or ()),
-                "entity_ids": list(row[8] or ()),
-                "relationship_ids": list(row[9] or ()),
-                "character_ids": list(row[10] or ()),
-                "arc_plan_version_ids": list(row[11] or ()),
-                "obligation_ids": list(row[12] or ()),
-                "temporal_coordinate": dict(row[13] or {}),
-                "metadata": dict(row[14] or {}),
-                "content_hash": str(row[15]),
-            }
-            for row in retrieval_rows
-        )
-        ranked_retrieval = hybrid_retrieve(
-            HybridRetrievalQuery(
-                text=retrieval_text,
-                accepted_through_chapter=chapter_number - 1,
-                entity_ids=entity_ids,
-                relationship_ids=relationship_ids,
-                character_ids=character_ids,
-                arc_plan_version_ids=arc_plan_versions,
-                obligation_ids=obligation_ids,
-                limit=24,
-            ),
-            retrieval_documents,
-        )
         merged: dict[str, dict[str, Any]] = {
             str(item["asset_version_id"]): dict(item)
             for item in requested
@@ -2811,63 +2759,6 @@ class PostgresBookAuthority:
         }
         for item in governed:
             merged[str(item["asset_version_id"])] = item
-        for item in ranked_retrieval:
-            source_version_id = str(item["source_asset_version_id"])
-            if source_version_id in merged:
-                continue
-            content_text = str(item.get("content_text") or "")
-            maximum_summary_chars = 4000
-            compressed = len(content_text) > maximum_summary_chars
-            merged[source_version_id] = {
-                "asset_type": "narrative_retrieval_document",
-                "physical_asset_type": str(item["source_artifact_type"]),
-                "asset_version_id": source_version_id,
-                "content_hash": str(item["content_hash"]),
-                "project_id": project_id,
-                "scope": {
-                    "project_id": project_id,
-                    "book_id": book_id,
-                    "accepted_through_chapter": chapter_number - 1,
-                },
-                "estimated_tokens": max(
-                    1, min(maximum_summary_chars, len(content_text)) // 4
-                ),
-                "safe_summary": content_text[:maximum_summary_chars],
-                "structured_facts": [],
-                "narrative_function": str(
-                    dict(item.get("metadata") or {}).get("projection_kind")
-                    or "accepted_historical_evidence"
-                ),
-                "source_use_mode": "generation",
-                "allowed_use": "generation",
-                "context_class": "RETRIEVABLE",
-                "memory_layer": str(item["memory_layer"]),
-                "relevance_score": float(item["retrieval_score"]),
-                "retrieval_reasons": list(item["retrieval_reasons"]),
-                "retrieval_scores": dict(item["retrieval_scores"]),
-                "provenance": {
-                    "retrieval_document_id": str(item["retrieval_document_id"]),
-                    "accepted_from_chapter": int(item["accepted_from_chapter"]),
-                    "temporal_coordinate": dict(
-                        item.get("temporal_coordinate") or {}
-                    ),
-                    "metadata": dict(item.get("metadata") or {}),
-                },
-                "compression_method": (
-                    "deterministic_safe_summary" if compressed else "none"
-                ),
-                "compression_trace": (
-                    [
-                        {
-                            "method": "deterministic_safe_summary",
-                            "input_characters": len(content_text),
-                            "output_characters": maximum_summary_chars,
-                        }
-                    ]
-                    if compressed
-                    else []
-                ),
-            }
         return tuple(merged.values())
 
     def _execute_mutation(

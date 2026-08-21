@@ -40,53 +40,6 @@ def _required(*values: str) -> None:
 
 
 @dataclass(frozen=True, slots=True)
-class ArcPlan:
-    """Desired future transformation. It is never actual narrative evidence."""
-
-    project_id: str
-    book_id: str
-    arc_id: str
-    arc_plan_version_id: str
-    objective: str
-    initial_state: str
-    target_state: str
-    completion_criteria: tuple[str, ...]
-    dependency_arc_ids: tuple[str, ...] = ()
-    target_window_start: int = 0
-    target_window_end: int = 0
-
-    def __post_init__(self) -> None:
-        _required(
-            self.project_id,
-            self.book_id,
-            self.arc_id,
-            self.arc_plan_version_id,
-            self.objective,
-            self.initial_state,
-            self.target_state,
-        )
-        if not self.completion_criteria:
-            raise KernelError(
-                "ARC_PLAN_COMPLETION_CRITERIA_REQUIRED",
-                "ArcPlan requires explicit completion criteria",
-            )
-        if self.target_window_start < 0 or self.target_window_end < 0:
-            raise KernelError("ARC_PLAN_WINDOW_INVALID", "ArcPlan window cannot be negative")
-        if self.target_window_end and self.target_window_end < self.target_window_start:
-            raise KernelError("ARC_PLAN_WINDOW_INVALID", "ArcPlan window is reversed")
-
-    def to_dict(self) -> dict[str, Any]:
-        return {
-            "type": "ArcPlan",
-            "contract_version": "arc-plan-v2",
-            "layer": "FUTURE_INTENT",
-            **asdict(self),
-            "completion_criteria": list(self.completion_criteria),
-            "dependency_arc_ids": list(self.dependency_arc_ids),
-        }
-
-
-@dataclass(frozen=True, slots=True)
 class ArcActualState:
     project_id: str
     book_id: str
@@ -251,7 +204,6 @@ __all__ = [
     "ArcLifecycleStatus",
     "ArcObservationStatus",
     "ArcOutcome",
-    "ArcPlan",
     "ArcProgress",
     "ArcRevision",
 ]

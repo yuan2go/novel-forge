@@ -151,6 +151,30 @@ class ReaderOutcomeAndRecapDomainTests(unittest.TestCase):
             "PLAN_CHANGE_AUTHORITY",
         )
 
+    def test_accepted_arc_checkpoint_emits_future_only_revision_candidate(self) -> None:
+        outputs = build_longform_recap_outputs(
+            project_id="project:1",
+            book_id="book:1",
+            chapter_range=(4, 8),
+            checkpoint_type=LongformCheckpointType.ARC_CHECKPOINT,
+            observations={
+                "accepted_arc_checkpoint": {
+                    "checkpoint_id": "checkpoint:arc:8",
+                    "projection_set_id": "projection:8",
+                    "decision": "CORRECT",
+                    "target_plan_version_ids": ["arc-plan:v1"],
+                    "reason_evidence": {"reasons": ["OBLIGATION_OVERDUE"]},
+                }
+            },
+        )
+
+        revision = outputs["replan_request"]
+        self.assertEqual(revision["type"], "ArcRevisionCandidate")
+        self.assertEqual(revision["based_on_checkpoint_id"], "checkpoint:arc:8")
+        self.assertEqual(revision["future_from_chapter"], 9)
+        self.assertEqual(revision["target_plan_version_ids"], ["arc-plan:v1"])
+        self.assertFalse(revision["plan_mutation_allowed"])
+
 
 if __name__ == "__main__":
     unittest.main()

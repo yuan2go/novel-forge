@@ -91,6 +91,10 @@ def normalize_arc_evidence(
             "actual_consequences": _text_items(raw.get("actual_consequences")),
             "obligation_ids": _text_items(raw.get("obligation_ids")),
             "resolution_evidence": resolution_evidence,
+            "completion_criterion_ids": _text_items(
+                raw.get("completion_criterion_ids")
+            ),
+            "phase_to": str(raw.get("phase_to") or ""),
         }
     for arc_plan_version_id in declared_ids:
         observed.setdefault(
@@ -105,6 +109,8 @@ def normalize_arc_evidence(
                 "actual_consequences": [],
                 "obligation_ids": [],
                 "resolution_evidence": [],
+                "completion_criterion_ids": [],
+                "phase_to": "",
             },
         )
     return tuple(observed[arc_id] for arc_id in declared_ids)
@@ -160,6 +166,7 @@ def build_arc_progress(
         deviation_units=(
             progress_units - expected_progress_units
             if expected_progress_units is not None
+            and observation not in _OBSERVATION_ZERO_ONLY
             else None
         ),
         evidence={
@@ -168,6 +175,9 @@ def build_arc_progress(
             "actual_consequences": _text_items(evidence.get("actual_consequences")),
             "obligation_ids": _text_items(evidence.get("obligation_ids")),
             "resolution_evidence": _text_items(evidence.get("resolution_evidence")),
+            "completion_criterion_ids": _text_items(
+                evidence.get("completion_criterion_ids")
+            ),
         },
     )
     return progress.to_dict()
@@ -180,6 +190,11 @@ def build_arc_checkpoint(
     completion_criteria_satisfied: bool,
     overdue_obligation_ids: Iterable[str],
     dependency_blockers: Iterable[str],
+    stale_obligation_ids: Iterable[str] = (),
+    violated_obligation_ids: Iterable[str] = (),
+    unknown_dependency_ids: Iterable[str] = (),
+    plan_evaluation_status: str = "OBSERVED",
+    target_window_status: str = "IN_WINDOW",
 ) -> dict[str, Any]:
     boundary = dict(progress.get("accepted_boundary") or {})
     observation = ArcObservationStatus(
@@ -187,23 +202,45 @@ def build_arc_checkpoint(
     )
     overdue = tuple(dict.fromkeys(str(item) for item in overdue_obligation_ids if str(item)))
     blockers = tuple(dict.fromkeys(str(item) for item in dependency_blockers if str(item)))
+    stale = tuple(dict.fromkeys(str(item) for item in stale_obligation_ids if str(item)))
+    violated = tuple(
+        dict.fromkeys(str(item) for item in violated_obligation_ids if str(item))
+    )
+    unknown_dependencies = tuple(
+        dict.fromkeys(str(item) for item in unknown_dependency_ids if str(item))
+    )
     cumulative = int(progress.get("cumulative_progress_units") or 0)
     reasons: list[str] = []
-    if observation in {ArcObservationStatus.NOT_OBSERVED, ArcObservationStatus.UNKNOWN}:
-        decision = ArcCheckpointDecision.UNKNOWN
-        reasons.append(observation.value)
-    elif observation is ArcObservationStatus.NOT_MATERIALIZED:
-        decision = ArcCheckpointDecision.CONTINUE
-        reasons.append("NOT_SCHEDULED_THIS_CHAPTER")
-    elif completion_criteria_satisfied and cumulative >= target_progress_units:
-        decision = ArcCheckpointDecision.COMPLETED
-        reasons.append("COMPLETION_CRITERIA_SATISFIED")
-    elif blockers:
+    if blockers:
         decision = ArcCheckpointDecision.REPLAN_REQUIRED
         reasons.append("DEPENDENCY_BLOCKED")
+    elif violated:
+        decision = ArcCheckpointDecision.REPLAN_REQUIRED
+        reasons.append("OBLIGATION_VIOLATED")
+    elif target_window_status == "OVERDUE":
+        decision = ArcCheckpointDecision.REPLAN_REQUIRED
+        reasons.append("ARC_TARGET_WINDOW_OVERDUE")
     elif overdue:
         decision = ArcCheckpointDecision.CORRECT
         reasons.append("OBLIGATION_OVERDUE")
+    elif stale:
+        decision = ArcCheckpointDecision.CORRECT
+        reasons.append("OBLIGATION_STALE")
+    elif unknown_dependencies:
+        decision = ArcCheckpointDecision.UNKNOWN
+        reasons.append("DEPENDENCY_UNKNOWN")
+    elif plan_evaluation_status != "OBSERVED":
+        decision = ArcCheckpointDecision.UNKNOWN
+        reasons.append("ARC_PLAN_EVALUATION_UNKNOWN")
+    elif observation in {ArcObservationStatus.NOT_OBSERVED, ArcObservationStatus.UNKNOWN}:
+        decision = ArcCheckpointDecision.UNKNOWN
+        reasons.append(observation.value)
+    elif completion_criteria_satisfied and cumulative >= target_progress_units:
+        decision = ArcCheckpointDecision.COMPLETED
+        reasons.append("COMPLETION_CRITERIA_SATISFIED")
+    elif observation is ArcObservationStatus.NOT_MATERIALIZED:
+        decision = ArcCheckpointDecision.CONTINUE
+        reasons.append("NOT_SCHEDULED_THIS_CHAPTER")
     elif int(progress.get("progress_units") or 0) == 0:
         decision = ArcCheckpointDecision.CORRECT
         reasons.append("NO_MATERIAL_PROGRESS")
@@ -230,8 +267,173 @@ def build_arc_checkpoint(
         "decision": decision,
         "reasons": reasons,
         "overdue_obligation_ids": list(overdue),
+        "stale_obligation_ids": list(stale),
+        "violated_obligation_ids": list(violated),
         "dependency_blockers": list(blockers),
+        "unknown_dependency_ids": list(unknown_dependencies),
+        "plan_evaluation_status": plan_evaluation_status,
+        "target_window_status": target_window_status,
     }
+
+
+def _criterion_id(arc_plan_version_id: str, ordinal: int, criterion: str) -> str:
+    identity = f"{arc_plan_version_id}|{ordinal}|{criterion}"
+    return "arc-criterion:" + hashlib.sha256(identity.encode()).hexdigest()
+
+
+def normalize_frozen_arc_plan(
+    *, arc_plan_version_id: str, content: Mapping[str, Any]
+) -> dict[str, Any]:
+    """Adapt the canonical Planning Arc asset without creating another Plan authority."""
+
+    closure = tuple(
+        str(item).strip() for item in content.get("closure_conditions") or ()
+        if str(item).strip()
+    )
+    criteria = [
+        {"criterion_id": _criterion_id(arc_plan_version_id, index, item), "text": item}
+        for index, item in enumerate(closure, start=1)
+    ]
+    dependencies = list(
+        dict.fromkeys(
+            str(item).strip() for item in content.get("dependencies") or ()
+            if str(item).strip()
+        )
+    )
+    logical_key = str(content.get("logical_key") or "")
+    for relation in content.get("arc_relations") or ():
+        if not isinstance(relation, Mapping):
+            continue
+        source = str(relation.get("source_arc_ref") or "")
+        target = str(relation.get("target_arc_ref") or "")
+        if source and source != arc_plan_version_id and target in {
+            logical_key,
+            arc_plan_version_id,
+        }:
+            dependencies.append(source)
+    dependencies = list(dict.fromkeys(dependencies))
+    window = content.get("target_window")
+    if isinstance(window, Mapping):
+        start = int(window.get("from_chapter") or window.get("start_chapter") or 0)
+        end = int(window.get("to_chapter") or window.get("end_chapter") or 0)
+        window_status = "SCHEDULED" if start > 0 and end >= start else "UNKNOWN"
+    else:
+        start = end = 0
+        window_status = "UNKNOWN"
+    target_units = int(content.get("target_progress_units") or len(criteria) or 0)
+    observed = bool(str(content.get("objective") or "").strip() and criteria)
+    return {
+        "arc_plan_version_id": arc_plan_version_id,
+        "logical_key": logical_key,
+        "objective": str(content.get("objective") or ""),
+        "completion_criteria": criteria,
+        "dependency_arc_ids": list(dependencies),
+        "target_window": {
+            "status": window_status,
+            "from_chapter": start,
+            "to_chapter": end,
+        },
+        "target_progress_units": target_units,
+        "expected_milestone_ids": [
+            str(item.get("segment_id") or "")
+            for item in content.get("arc_segments") or ()
+            if isinstance(item, Mapping) and str(item.get("segment_id") or "")
+        ],
+        "evaluation_status": "OBSERVED" if observed else "UNKNOWN",
+        "source_contract_version": str(content.get("contract_version") or ""),
+    }
+
+
+def reduce_accepted_obligations(
+    *, entries: Iterable[Mapping[str, Any]], chapter_number: int
+) -> list[dict[str, Any]]:
+    """Evaluate lifecycle from accepted state and chapter coordinates only."""
+
+    source = [dict(item) for item in entries]
+    base: dict[str, dict[str, Any]] = {}
+    for entry in source:
+        state = dict(entry.get("state") or {})
+        obligation_id = str(state.get("obligation_id") or entry.get("entity_key") or "")
+        if obligation_id:
+            base[obligation_id] = state
+    evaluations: dict[str, dict[str, Any]] = {}
+    for obligation_id, state in base.items():
+        status = str(state.get("status") or "UNKNOWN").upper()
+        window = dict(state.get("target_window") or {})
+        window_status = str(window.get("status") or "UNKNOWN").upper()
+        start = int(window.get("from_chapter") or 0)
+        end = int(window.get("to_chapter") or 0)
+        payoff = dict(state.get("payoff_evidence") or state.get("actual_payoff") or {})
+        resolution = state.get("resolution_evidence") or ()
+        fulfilled = status == "FULFILLED" and bool(payoff or resolution)
+        violated = status in {"VIOLATED", "CANCELLED"} and bool(
+            state.get("violation_evidence") or resolution
+        )
+        overdue = bool(
+            not fulfilled and not violated and window_status == "SCHEDULED"
+            and end > 0 and chapter_number > end
+        )
+        due = bool(
+            not fulfilled and not violated and window_status == "SCHEDULED"
+            and start > 0 and start <= chapter_number <= end
+        )
+        history_chapters = [
+            int(item.get("chapter") or 0)
+            for item in state.get("development_history") or ()
+            if isinstance(item, Mapping)
+        ]
+        last_observed = max(
+            [int(state.get("opened_chapter") or 0), *history_chapters], default=0
+        )
+        stale_after = int(state.get("stale_after_chapters") or 3)
+        stale = bool(
+            not fulfilled and not violated and last_observed > 0
+            and chapter_number - last_observed >= stale_after
+        )
+        lifecycle = (
+            "FULFILLED" if fulfilled else "VIOLATED" if violated else
+            "OVERDUE" if overdue else "STALE" if stale else "DUE" if due else
+            "OPEN" if status != "UNKNOWN" else "UNKNOWN"
+        )
+        evaluations[obligation_id] = {
+            "lifecycle": lifecycle,
+            "due": due,
+            "overdue": overdue,
+            "stale": stale,
+            "fulfilled": fulfilled,
+            "violated": violated,
+            "evaluated_at_chapter": chapter_number,
+            "policy_version": "accepted-obligation-lifecycle-v1",
+            "payoff_evidence": payoff,
+        }
+    result: list[dict[str, Any]] = []
+    for entry in source:
+        state = dict(entry.get("state") or {})
+        obligation_id = str(state.get("obligation_id") or entry.get("entity_key") or "")
+        evaluation = dict(evaluations.get(obligation_id) or {"lifecycle": "UNKNOWN"})
+        dependency_ids = [str(item) for item in state.get("dependencies") or () if str(item)]
+        unresolved: list[str] = []
+        blocked: list[str] = []
+        unknown: list[str] = []
+        for dependency_id in dependency_ids:
+            dependency = evaluations.get(dependency_id)
+            if dependency is None or dependency.get("lifecycle") == "UNKNOWN":
+                unknown.append(dependency_id)
+            elif dependency.get("fulfilled"):
+                continue
+            elif dependency.get("violated"):
+                blocked.append(dependency_id)
+            else:
+                unresolved.append(dependency_id)
+        evaluation["dependency_state"] = (
+            "BLOCKED" if blocked else "UNKNOWN" if unknown else
+            "UNRESOLVED" if unresolved else "SATISFIED"
+        )
+        evaluation["unresolved_dependency_ids"] = unresolved
+        evaluation["blocked_dependency_ids"] = blocked
+        evaluation["unknown_dependency_ids"] = unknown
+        result.append({**entry, "state": {**state, "accepted_evaluation": evaluation}})
+    return result
 
 
 def build_longform_projection_set(
@@ -251,6 +453,11 @@ def build_longform_projection_set(
     previous_arc_states: Mapping[str, Mapping[str, Any]],
     chapter_outcome: Mapping[str, Any],
     story_state: Mapping[str, Any],
+    arc_plan_snapshots: Mapping[str, Mapping[str, Any]] | None = None,
+    projector_version: str = "accepted-longform-projector-v1",
+    chapter_plan_asset_version_id: str = "",
+    source_content_hashes: Mapping[str, str] | None = None,
+    contract_adaptation_evidence: Iterable[Mapping[str, Any]] = (),
 ) -> dict[str, Any]:
     """Build the complete deterministic long-form projection for one acceptance."""
 
@@ -286,26 +493,63 @@ def build_longform_projection_set(
             "LONGFORM_PROJECTION_ARC_SCOPE_INVALID",
             "ChapterOutcome Arc evidence is outside the accepted Book Arc snapshot",
         )
+    obligation_entries = [
+        dict(item)
+        for item in (story_state.get("current_state") or {}).get(
+            "narrative_obligation", ()
+        )
+        if isinstance(item, Mapping)
+    ]
+    obligations = [
+        {
+            **entry,
+            "accepted_through_chapter": chapter_number,
+            "acceptance_operation_id": acceptance_operation_id,
+            "story_state_asset_version_id": story_state_asset_version_id,
+        }
+        for entry in reduce_accepted_obligations(
+            entries=obligation_entries, chapter_number=chapter_number
+        )
+    ]
+    obligation_by_id = {
+        str((item.get("state") or {}).get("obligation_id") or item.get("entity_key") or ""):
+        dict(item)
+        for item in obligations
+        if str((item.get("state") or {}).get("obligation_id") or item.get("entity_key") or "")
+    }
+    raw_plans = dict(arc_plan_snapshots or {})
+    plan_snapshots = {
+        arc_id: normalize_frozen_arc_plan(
+            arc_plan_version_id=arc_id,
+            content=dict(raw_plans.get(arc_id) or {}),
+        )
+        for arc_id in active_arcs
+    }
     progress_rows: list[dict[str, Any]] = []
-    arc_states: list[dict[str, Any]] = []
+    arc_states_by_id: dict[str, dict[str, Any]] = {}
+    evidence_used: dict[str, dict[str, Any]] = {}
     checkpoints: list[dict[str, Any]] = []
     arc_outcomes: list[dict[str, Any]] = []
     expected = dict(expected_progress_units or {})
     for arc_plan_version_id in active_arcs:
-        evidence = evidence_by_arc.get(
-            arc_plan_version_id,
-            {
-                "arc_plan_version_id": arc_plan_version_id,
-                "observation_status": ArcObservationStatus.NOT_MATERIALIZED.value,
-                "contribution_kind": "NOT_SCHEDULED",
-                "progress_units": 0,
-                "effect_dimensions": [],
-                "milestone_ids": [],
-                "actual_consequences": [],
-                "obligation_ids": [],
-                "resolution_evidence": [],
-            },
-        )
+        scheduled = arc_plan_version_id in expected
+        evidence = evidence_by_arc.get(arc_plan_version_id) or {
+            "arc_plan_version_id": arc_plan_version_id,
+            "observation_status": (
+                ArcObservationStatus.NOT_OBSERVED.value
+                if scheduled else ArcObservationStatus.NOT_MATERIALIZED.value
+            ),
+            "contribution_kind": "UNOBSERVED" if scheduled else "NOT_SCHEDULED",
+            "progress_units": 0,
+            "effect_dimensions": [],
+            "milestone_ids": [],
+            "actual_consequences": [],
+            "obligation_ids": [],
+            "resolution_evidence": [],
+            "completion_criterion_ids": [],
+            "phase_to": "",
+        }
+        evidence_used[arc_plan_version_id] = dict(evidence)
         previous = dict(previous_arc_states.get(arc_plan_version_id) or {})
         progress = build_arc_progress(
             project_id=project_id,
@@ -320,24 +564,13 @@ def build_longform_projection_set(
             evidence=evidence,
             expected_progress_units=expected.get(arc_plan_version_id),
         )
-        target_units = int(previous.get("target_progress_units") or 0)
-        checkpoint = build_arc_checkpoint(
-            progress=progress,
-            target_progress_units=target_units,
-            completion_criteria_satisfied=bool(
-                evidence.get("completion_criteria_satisfied", False)
-            ),
-            overdue_obligation_ids=(),
-            dependency_blockers=(),
+        plan = plan_snapshots[arc_plan_version_id]
+        target_units = int(
+            plan.get("target_progress_units")
+            or previous.get("target_progress_units")
+            or 0
         )
-        decision = ArcCheckpointDecision(str(checkpoint["decision"]))
-        lifecycle = (
-            "COMPLETED"
-            if decision is ArcCheckpointDecision.COMPLETED
-            else "ACTIVE"
-        )
-        arc_states.append(
-            {
+        arc_states_by_id[arc_plan_version_id] = {
                 "type": "ArcActualState",
                 "contract_version": "arc-actual-state-v1",
                 "project_id": project_id,
@@ -346,7 +579,7 @@ def build_longform_projection_set(
                 "accepted_through_chapter": chapter_number,
                 "acceptance_operation_id": acceptance_operation_id,
                 "observation_status": progress["observation_status"],
-                "lifecycle_status": lifecycle,
+                "lifecycle_status": "ACTIVE",
                 "cumulative_progress_units": progress[
                     "cumulative_progress_units"
                 ],
@@ -357,10 +590,105 @@ def build_longform_projection_set(
                     or ""
                 ),
                 "latest_progress_id": progress["progress_id"],
-                "latest_checkpoint_id": checkpoint["checkpoint_id"],
+                "latest_checkpoint_id": "",
+                "frozen_plan_evaluation": plan,
+            }
+        progress_rows.append(progress)
+
+    for progress in progress_rows:
+        arc_plan_version_id = str(progress["arc_plan_version_id"])
+        evidence = evidence_used[arc_plan_version_id]
+        plan = plan_snapshots[arc_plan_version_id]
+        dependency_blockers: list[str] = []
+        unknown_dependencies: list[str] = []
+        dependency_states: dict[str, str] = {}
+        for dependency_id in plan.get("dependency_arc_ids") or ():
+            dependency = arc_states_by_id.get(dependency_id) or dict(
+                previous_arc_states.get(dependency_id) or {}
+            )
+            lifecycle = str(dependency.get("lifecycle_status") or "UNKNOWN")
+            dependency_states[dependency_id] = lifecycle
+            if lifecycle == "COMPLETED":
+                continue
+            if lifecycle in {"BLOCKED", "ABANDONED"}:
+                dependency_blockers.append(dependency_id)
+            elif lifecycle == "UNKNOWN" or not dependency:
+                unknown_dependencies.append(dependency_id)
+            else:
+                dependency_blockers.append(dependency_id)
+        linked_obligations = set(str(item) for item in evidence.get("obligation_ids") or ())
+        linked_obligations.update(
+            obligation_id
+            for obligation_id, item in obligation_by_id.items()
+            if arc_plan_version_id in {
+                str(value) for value in (item.get("state") or {}).get("linked_arc_ids") or ()
             }
         )
-        progress_rows.append(progress)
+        overdue: list[str] = []
+        stale: list[str] = []
+        violated: list[str] = []
+        obligation_evaluations: dict[str, Any] = {}
+        for obligation_id in sorted(linked_obligations):
+            evaluation = dict(
+                (obligation_by_id.get(obligation_id, {}).get("state") or {}).get(
+                    "accepted_evaluation"
+                ) or {}
+            )
+            obligation_evaluations[obligation_id] = evaluation
+            if evaluation.get("overdue"):
+                overdue.append(obligation_id)
+            if evaluation.get("stale"):
+                stale.append(obligation_id)
+            if evaluation.get("violated"):
+                violated.append(obligation_id)
+        window = dict(plan.get("target_window") or {})
+        if window.get("status") != "SCHEDULED":
+            target_window_status = "UNKNOWN"
+        elif chapter_number > int(window.get("to_chapter") or 0):
+            target_window_status = "OVERDUE"
+        elif chapter_number < int(window.get("from_chapter") or 0):
+            target_window_status = "BEFORE_WINDOW"
+        else:
+            target_window_status = "IN_WINDOW"
+        required_criteria = {
+            str(item.get("criterion_id") or "")
+            for item in plan.get("completion_criteria") or ()
+            if str(item.get("criterion_id") or "")
+        }
+        satisfied_criteria = {
+            str(item) for item in evidence.get("completion_criterion_ids") or ()
+            if str(item)
+        }
+        completion_satisfied = bool(
+            required_criteria and required_criteria.issubset(satisfied_criteria)
+        )
+        checkpoint = build_arc_checkpoint(
+            progress=progress,
+            target_progress_units=int(
+                arc_states_by_id[arc_plan_version_id].get(
+                    "target_progress_units"
+                ) or 0
+            ),
+            completion_criteria_satisfied=completion_satisfied,
+            overdue_obligation_ids=overdue,
+            stale_obligation_ids=stale,
+            violated_obligation_ids=violated,
+            dependency_blockers=dependency_blockers,
+            unknown_dependency_ids=unknown_dependencies,
+            plan_evaluation_status=str(plan.get("evaluation_status") or "UNKNOWN"),
+            target_window_status=target_window_status,
+        )
+        checkpoint["frozen_arc_plan"] = plan
+        checkpoint["dependency_states"] = dependency_states
+        checkpoint["obligation_evaluations"] = obligation_evaluations
+        checkpoint["completion_criterion_ids"] = sorted(satisfied_criteria)
+        decision = ArcCheckpointDecision(str(checkpoint["decision"]))
+        state = arc_states_by_id[arc_plan_version_id]
+        state["lifecycle_status"] = (
+            "COMPLETED" if decision is ArcCheckpointDecision.COMPLETED else
+            "BLOCKED" if dependency_blockers else "ACTIVE"
+        )
+        state["latest_checkpoint_id"] = checkpoint["checkpoint_id"]
         checkpoints.append(checkpoint)
         if decision is ArcCheckpointDecision.COMPLETED:
             outcome_identity = "|".join(
@@ -393,22 +721,7 @@ def build_longform_projection_set(
                     },
                 }
             )
-    obligation_entries = [
-        dict(item)
-        for item in (story_state.get("current_state") or {}).get(
-            "narrative_obligation", ()
-        )
-        if isinstance(item, Mapping)
-    ]
-    obligations = [
-        {
-            **entry,
-            "accepted_through_chapter": chapter_number,
-            "acceptance_operation_id": acceptance_operation_id,
-            "story_state_asset_version_id": story_state_asset_version_id,
-        }
-        for entry in obligation_entries
-    ]
+    arc_states = [arc_states_by_id[arc_id] for arc_id in active_arcs]
     projection = {
         "type": "AcceptedNarrativeProjectionSet",
         "contract_version": "accepted-narrative-projection-set-v1",
@@ -430,12 +743,23 @@ def build_longform_projection_set(
             "chapter_outcome_asset_version_id": chapter_outcome_asset_version_id,
             "story_state_asset_version_id": story_state_asset_version_id,
             "canon_snapshot_asset_version_id": canon_snapshot_asset_version_id,
+            "chapter_plan_asset_version_id": chapter_plan_asset_version_id,
         },
         "arc_progress": progress_rows,
         "arc_states": arc_states,
         "arc_checkpoints": checkpoints,
         "arc_outcomes": arc_outcomes,
         "obligation_states": obligations,
+        "projection_provenance": {
+            "projector_version": projector_version,
+            "source_content_hashes": dict(source_content_hashes or {}),
+            "contract_adaptation_evidence": [
+                dict(item) for item in contract_adaptation_evidence
+            ],
+            "actual_state_policy": "ACCEPTED_EVIDENCE_ONLY",
+            "arc_plan_source": "FROZEN_PLANNING_ASSET_VERSION",
+            "obligation_policy_version": "accepted-obligation-lifecycle-v1",
+        },
     }
     digest_payload = {
         key: value for key, value in projection.items() if key != "projection_hash"
@@ -453,4 +777,6 @@ __all__ = [
     "build_arc_progress",
     "build_longform_projection_set",
     "normalize_arc_evidence",
+    "normalize_frozen_arc_plan",
+    "reduce_accepted_obligations",
 ]

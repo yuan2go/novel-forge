@@ -37,6 +37,7 @@ class BookProductionCompositionTests(unittest.TestCase):
             story_design=story_design,
         )
         preparation = SimpleNamespace()
+        projection_repair = SimpleNamespace()
 
         execution = SimpleNamespace()
         with (
@@ -51,6 +52,10 @@ class BookProductionCompositionTests(unittest.TestCase):
             patch(
                 "novel_forge.api.authority_dependencies.build_production_preparation_service",
                 return_value=preparation,
+            ),
+            patch(
+                "novel_forge.api.authority_dependencies.PostgresBookProjectionRepairAuthority",
+                return_value=projection_repair,
             ),
         ):
             composition = build_book_production_composition(
@@ -69,6 +74,7 @@ class BookProductionCompositionTests(unittest.TestCase):
         self.assertIs(composition.authority, book)
         self.assertIs(composition.planning, planning)
         self.assertIs(composition.production_preparation, preparation)
+        self.assertIs(composition.projection_repair, projection_repair)
         self.assertIs(composition.followup, followup)
         self.assertIs(composition.chapter_groups.book, book)
         self.assertIs(composition.plan_change.story_design, story_design)
@@ -114,6 +120,7 @@ class BookProductionCompositionTests(unittest.TestCase):
                 project_scope=frozenset({"project:1"}),
                 authentication_source="test",
             ),
+            projection_repair=SimpleNamespace(),
         )
         assert composition.query is not None
 
@@ -163,6 +170,7 @@ class BookProductionCompositionTests(unittest.TestCase):
                 project_scope=frozenset({"project:1"}),
                 authentication_source="test",
             ),
+            projection_repair=SimpleNamespace(),
         )
         assert composition.query is not None
 
@@ -205,6 +213,7 @@ class BookProductionCompositionTests(unittest.TestCase):
                 project_scope=frozenset({"project:1"}),
                 authentication_source="test",
             ),
+            projection_repair=SimpleNamespace(),
         )
         assert worker_composition.query is not None
         with self.assertRaises(PermissionError):

@@ -32,7 +32,9 @@ def test_agent_runtime_definitions_use_shared_kernel_execution_classes() -> None
         assert definition["policy"]["authority"] == "postgresql"
         assert definition["policy"]["agent_run_status_owner"] == "projection"
         assert definition["policy"]["attempt_owner"] == "command_kernel"
-        assert definition["policy"]["capability_pack_controls_operation"] is False
+        assert definition["policy"]["capability_pack_controls_operation"] is (
+            name == "agent.session.execute"
+        )
         if name == "agent.candidate.execute":
             assert definition["execution_mode"] == "worker"
             assert definition["handler_key"] == AGENT_RUNTIME_EXECUTION_HANDLER_KEY

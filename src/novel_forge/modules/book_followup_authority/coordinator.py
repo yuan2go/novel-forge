@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from psycopg.types.json import Jsonb
+
 from novel_forge.modules.authority_security import Principal
 from novel_forge.modules.book_authority.production import (
     PostgresBookAuthority,
@@ -21,6 +23,7 @@ from novel_forge.modules.book_followup_authority.domain import (
     should_trigger_longform_recap,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 
 @dataclass(frozen=True, slots=True)
@@ -96,12 +99,17 @@ class PostgresBookFollowupCoordinator:
             book_run_id=candidate.book_run_id,
             chapter_number=candidate.chapter_number,
         )
+        arc_checkpoint = self.query.arc_checkpoint_followup(
+            book_run_id=candidate.book_run_id,
+            chapter_number=candidate.chapter_number,
+        )
         trigger = should_trigger_longform_recap(
             chapter_number=candidate.chapter_number,
             light_cadence=int(snapshot["light_recap_cadence"]),
             formal_cadence=int(snapshot["formal_recap_cadence"]),
             chapter_group_complete=self._chapter_group_complete(snapshot),
             authority_requested=bool(ending_reachability.get("replan_required")),
+            arc_checkpoint=arc_checkpoint is not None,
         )
         if not trigger["should_trigger"]:
             raise KernelError(
@@ -113,7 +121,13 @@ class PostgresBookFollowupCoordinator:
             reader=reader,
             trigger=trigger,
             ending_reachability=ending_reachability,
+            arc_checkpoint=arc_checkpoint,
         )
+        if arc_checkpoint is not None:
+            self._bind_arc_checkpoint_followup(
+                followup_id=str(arc_checkpoint["followup_id"]),
+                operation_id=admission.operation_id,
+            )
         return self._result(candidate, "ADMIT_LONGFORM_RECAP", admission)
 
     def _schedule_reader(self, snapshot: dict[str, Any]) -> BookFollowupAdmission:
@@ -201,6 +215,7 @@ class PostgresBookFollowupCoordinator:
         reader: dict[str, Any],
         trigger: dict[str, Any],
         ending_reachability: dict[str, Any],
+        arc_checkpoint: dict[str, Any] | None,
     ) -> BookFollowupAdmission:
         chapter = int(snapshot["chapter_number"])
         arc_plan_versions = tuple(str(item) for item in snapshot["arc_plan_versions"])
@@ -269,6 +284,7 @@ class PostgresBookFollowupCoordinator:
                     "canon": {"conflicts": []},
                     "quality_trend": {"direction": "STABLE"},
                     "ending_reachability": ending_reachability,
+                    "accepted_arc_checkpoint": dict(arc_checkpoint or {}),
                 },
             },
             input_assets=(
@@ -279,6 +295,114 @@ class PostgresBookFollowupCoordinator:
                 *authority_inputs,
             ),
         )
+
+    def _bind_arc_checkpoint_followup(
+        self, *, followup_id: str, operation_id: str
+    ) -> None:
+        with AuthorityUnitOfWork(self.authority.database_url) as uow:
+            uow.cursor.execute(
+                """
+                UPDATE authority_arc_checkpoint_followup
+                SET operation_id=%s, status='RUNNING', version=version+1,
+                    updated_at=NOW()
+                WHERE followup_id=%s
+                  AND status IN ('READY','RUNNING','FAILED_RETRYABLE')
+                  AND (operation_id IS NULL OR operation_id=%s)
+                """,
+                [operation_id, followup_id, operation_id],
+            )
+            if uow.cursor.rowcount != 1:
+                raise KernelError(
+                    "ARC_CHECKPOINT_FOLLOWUP_BINDING_CONFLICT",
+                    "Arc checkpoint follow-up raced with another operation",
+                )
+            uow.commit()
+
+    def reconcile_arc_checkpoint_followup(self, operation_id: str) -> None:
+        """Advance only after the durable Recap/ArcRevision output exists."""
+
+        with AuthorityUnitOfWork(self.authority.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT followup.followup_id, followup.book_run_id,
+                       followup.decision, operation.status,
+                       EXISTS(
+                           SELECT 1 FROM authority_operation_output_asset AS output
+                           WHERE output.operation_id=operation.operation_id
+                             AND output.output_key='longform.recap.replan_request'
+                       )
+                FROM authority_arc_checkpoint_followup AS followup
+                JOIN authority_operation AS operation
+                  ON operation.operation_id=followup.operation_id
+                WHERE followup.operation_id=%s
+                FOR UPDATE OF followup
+                """,
+                [operation_id],
+            )
+            row = uow.cursor.fetchone()
+            if row is None:
+                return
+            status = str(row[3])
+            if status not in {"SUCCEEDED", "FAILED", "CANCELLED"}:
+                return
+            has_revision = bool(row[4])
+            next_status = (
+                "PROPOSED" if status == "SUCCEEDED" and has_revision else
+                "FAILED_RETRYABLE" if status == "FAILED" else "FAILED_TERMINAL"
+            )
+            uow.cursor.execute(
+                """
+                UPDATE authority_arc_checkpoint_followup
+                SET status=%s, last_error=%s, version=version+1,
+                    updated_at=NOW()
+                WHERE followup_id=%s AND operation_id=%s
+                """,
+                [
+                    next_status,
+                    Jsonb({} if next_status == "PROPOSED" else {"operation_status": status}),
+                    str(row[0]),
+                    operation_id,
+                ],
+            )
+            if next_status == "PROPOSED":
+                uow.cursor.execute(
+                    """
+                    UPDATE authority_book_production
+                    SET state='REPLAN_REQUIRED', version=version+1,
+                        updated_at=NOW()
+                    WHERE book_run_id=%s
+                      AND state IN ('CHECKPOINT_PENDING','READY')
+                    """,
+                    [str(row[1])],
+                )
+                if uow.cursor.rowcount != 1:
+                    raise KernelError(
+                        "ARC_CHECKPOINT_BOOK_STATE_CONFLICT",
+                        "Book left checkpoint-pending before ArcRevision admission",
+                    )
+            uow.commit()
+
+    def reconcile_completed_arc_checkpoint_followups(self, *, limit: int) -> int:
+        if limit <= 0:
+            raise ValueError("Arc checkpoint reconciliation limit must be positive")
+        with AuthorityUnitOfWork(self.authority.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT followup.operation_id
+                FROM authority_arc_checkpoint_followup AS followup
+                JOIN authority_operation AS operation
+                  ON operation.operation_id=followup.operation_id
+                WHERE followup.status='RUNNING'
+                  AND operation.status IN ('SUCCEEDED','FAILED','CANCELLED')
+                ORDER BY followup.updated_at, followup.followup_id
+                LIMIT %s
+                """,
+                [limit],
+            )
+            operation_ids = [str(row[0]) for row in uow.cursor.fetchall()]
+        for operation_id in operation_ids:
+            self.reconcile_arc_checkpoint_followup(operation_id)
+        return len(operation_ids)
 
     def _chapter_group_complete(self, snapshot: dict[str, Any]) -> bool:
         group_version = str(snapshot.get("chapter_group_plan_version") or "")

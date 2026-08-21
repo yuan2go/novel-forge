@@ -256,7 +256,9 @@ def create_authority_app(settings: IndustrialSettings):
         ),
         book_design_authority_query=build_book_design_authority_query(settings),
         agent_runtime_authority_application=(
-            build_agent_runtime_authority_application(settings)
+            build_agent_runtime_authority_application(
+                settings, execution=production_execution
+            )
         ),
         agent_runtime_query=build_agent_runtime_query(settings),
         capability_pack_authority_application=(

@@ -260,7 +260,11 @@ class BookReplanCoordinator:
                 trace_id=command.trace_id,
                 correlation_id=command.correlation_id,
                 stable_idempotency_key=f"{command.idempotency_key}:plan-change",
-                source_type=PlanChangeSource.LONGFORM_RECAP,
+                source_type=(
+                    PlanChangeSource.ARC_CLOSURE_RISK
+                    if replan_request.get("type") == "ArcRevisionCandidate"
+                    else PlanChangeSource.LONGFORM_RECAP
+                ),
                 source_evidence_version_id=command.replan_request_asset_version_id,
                 target_asset_version_id=target["asset_version_id"],
                 proposed_asset_version_id=generated.candidate_asset_version_id,
@@ -332,6 +336,21 @@ class BookReplanCoordinator:
                     "BOOK_REPLAN_STATE_CONFLICT",
                     "Book state changed before Replan admission",
                 )
+            if replan_request.get("type") == "ArcRevisionCandidate":
+                uow.cursor.execute(
+                    """
+                    UPDATE authority_arc_checkpoint_followup
+                    SET status='WAITING_APPROVAL', plan_change_id=%s,
+                        version=version+1, updated_at=NOW()
+                    WHERE operation_id=%s AND status='PROPOSED'
+                    """,
+                    [proposal["proposal_id"], recap_operation_id],
+                )
+                if uow.cursor.rowcount != 1:
+                    raise KernelError(
+                        "ARC_REVISION_FOLLOWUP_STATE_CONFLICT",
+                        "ArcRevision follow-up was not ready for PlanChange",
+                    )
             self._event(
                 uow,
                 operation_id=operation_id,
@@ -696,6 +715,14 @@ class BookReplanCoordinator:
                     "BOOK_REPLAN_STATE_CONFLICT",
                     "Replan status changed before resume checkpoint",
                 )
+            uow.cursor.execute(
+                """
+                UPDATE authority_arc_checkpoint_followup
+                SET status='COMPLETED', version=version+1, updated_at=NOW()
+                WHERE plan_change_id=%s AND status='WAITING_APPROVAL'
+                """,
+                [replan["plan_change_proposal_id"]],
+            )
             self._event(
                 uow,
                 operation_id=operation_id,
@@ -947,6 +974,7 @@ class BookReplanCoordinator:
         if content.get("contract_version") not in {
             "book-replan-request-v1",
             "book-replan-request-v2",
+            "arc-revision-candidate-v1",
         }:
             raise KernelError(
                 "BOOK_REPLAN_SOURCE_INVALID",

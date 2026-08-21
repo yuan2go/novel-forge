@@ -168,6 +168,12 @@ class CanonConflictQualityCorrectionFixture(DeterministicFixtureChapterProvider)
                     "narrative_pattern_fingerprints",
                     "theme_movements",
                     "antagonist_pressure_changes",
+                    "character_knowledge_changes",
+                    "character_belief_changes",
+                    "character_arc_changes",
+                    "arc_state_changes",
+                    "disclosure_events",
+                    "arc_evidence",
                 )
             }
             output["world_rule_usages"] = [

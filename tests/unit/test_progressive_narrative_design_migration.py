@@ -20,6 +20,9 @@ from novel_forge.storage.migrations.versions import (
 from novel_forge.storage.migrations.versions import (
     v20260820_0094_industrial_autonomous_novel_os as novel_os,
 )
+from novel_forge.storage.migrations.versions import (
+    v20260821_0095_post_merge_correctness_repair as repair,
+)
 
 
 def test_progressive_narrative_design_is_forward_only_head() -> None:
@@ -32,7 +35,8 @@ def test_progressive_narrative_design_is_forward_only_head() -> None:
     assert correctness.DOWN_REVISION == completion.MIGRATION_ID
     assert liveness.DOWN_REVISION == correctness.MIGRATION_ID
     assert novel_os.DOWN_REVISION == liveness.MIGRATION_ID
-    assert LATEST_MIGRATION_ID == novel_os.MIGRATION_ID
+    assert repair.DOWN_REVISION == novel_os.MIGRATION_ID
+    assert LATEST_MIGRATION_ID == repair.MIGRATION_ID
     sql = "\n".join(migration.UPGRADE_STATEMENTS)
     assert "CREATE TABLE authority_narrative_design_qualification" in sql
     assert "LONGFORM_DESIGN_QUALIFIED" in sql

@@ -440,7 +440,12 @@ class LongformRecapHandler:
         if outputs["replan_request"] is not None:
             auxiliaries.append(
                 AuthorityAuxiliaryOutput(
-                    asset_type="replan_request",
+                    asset_type=(
+                        "arc_revision_candidate"
+                        if outputs["replan_request"].get("type")
+                        == "ArcRevisionCandidate"
+                        else "replan_request"
+                    ),
                     output_key="longform.recap.replan_request",
                     role="proposal",
                     content=outputs["replan_request"],

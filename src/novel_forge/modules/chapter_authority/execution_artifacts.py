@@ -11,9 +11,12 @@ from novel_forge.modules.command_kernel.errors import KernelError
 
 
 def _hash(value: Mapping[str, Any]) -> str:
-    return "sha256:" + hashlib.sha256(
-        json.dumps(value, sort_keys=True, separators=(",", ":")).encode()
-    ).hexdigest()
+    return (
+        "sha256:"
+        + hashlib.sha256(
+            json.dumps(value, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+    )
 
 
 def build_chapter_execution_intent(
@@ -27,8 +30,14 @@ def build_chapter_execution_intent(
 ) -> dict[str, Any]:
     """Compile a locked execution intent from Plan plus accepted state only."""
 
-    chapter = int(chapter_plan.get("chapter") or chapter_plan.get("chapter_number") or 0)
-    if chapter <= 0 or not chapter_plan_asset_version_id or not chapter_plan_content_hash:
+    chapter = int(
+        chapter_plan.get("chapter") or chapter_plan.get("chapter_number") or 0
+    )
+    if (
+        chapter <= 0
+        or not chapter_plan_asset_version_id
+        or not chapter_plan_content_hash
+    ):
         raise KernelError(
             "CHAPTER_EXECUTION_INTENT_PLAN_INVALID",
             "ExecutionIntent requires an exact authoritative ChapterPlan version",
@@ -73,8 +82,7 @@ def build_chapter_execution_intent(
             beats.append(
                 {
                     "beat_id": str(
-                        beat.get("beat_id")
-                        or f"{raw['scene_id']}:beat:{beat_ordinal}"
+                        beat.get("beat_id") or f"{raw['scene_id']}:beat:{beat_ordinal}"
                     ),
                     "ordinal": beat_ordinal,
                     "function": str(beat.get("function") or ""),
@@ -114,18 +122,32 @@ def build_chapter_execution_intent(
             ),
         },
         "chapter_objective": str(
-            chapter_plan.get("objective")
-            or chapter_plan.get("primary_function")
-            or ""
+            chapter_plan.get("objective") or chapter_plan.get("primary_function") or ""
         ),
         "required_arc_contributions": list(
             chapter_plan.get("required_arc_contributions") or ()
         ),
         "active_obligations": list(
-            ((story or {}).get("current_state") or {}).get(
-                "narrative_obligation", ()
-            )
+            ((story or {}).get("current_state") or {}).get("narrative_obligation", ())
         ),
+        "retrieval_graph": {
+            key: sorted(
+                {
+                    *(str(item) for item in chapter_plan.get(key) or () if str(item)),
+                    *(
+                        str(item)
+                        for source in accepted_by_type.values()
+                        for item in _graph_ids(source, key)
+                        if str(item)
+                    ),
+                }
+            )
+            for key in (
+                "entity_ids",
+                "character_ids",
+                "relationship_ids",
+            )
+        },
         "previous_ending": str((story or {}).get("previous_ending") or ""),
         "reader_tension": dict((story or {}).get("reader_tension") or {}),
         "scene_plans": scenes,
@@ -133,6 +155,21 @@ def build_chapter_execution_intent(
     }
     intent["intent_fingerprint"] = _hash(intent)
     return intent
+
+
+def _graph_ids(value: Any, target_key: str) -> set[str]:
+    found: set[str] = set()
+    if isinstance(value, Mapping):
+        for key, item in value.items():
+            if key == target_key and isinstance(item, (list, tuple, set)):
+                found.update(str(entry) for entry in item if str(entry))
+            elif key == target_key[:-1] and isinstance(item, str) and item:
+                found.add(item)
+            found.update(_graph_ids(item, target_key))
+    elif isinstance(value, (list, tuple)):
+        for item in value:
+            found.update(_graph_ids(item, target_key))
+    return found
 
 
 def qualify_chapter_memo(

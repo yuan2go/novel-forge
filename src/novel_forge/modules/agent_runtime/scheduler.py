@@ -183,10 +183,6 @@ class AgentAuthorityScheduler:
                     'agent.candidate.execute',
                     'agent.session.execute'
                 )
-                  AND (
-                    definition_name <> 'agent.session.execute'
-                    OR %s
-                  )
                   AND status IN (
                     'READY', 'FAILED_RETRYABLE', 'EXECUTING',
                     'WAITING_EXTERNAL_RESULT', 'RECONCILIATION_REQUIRED',
@@ -195,7 +191,7 @@ class AgentAuthorityScheduler:
                 ORDER BY created_at, operation_id
                 LIMIT %s
                 """,
-                [self.harness_factory is not None, limit],
+                [limit],
             )
             return tuple((str(row[0]), str(row[1])) for row in uow.cursor.fetchall())
 
@@ -410,7 +406,11 @@ class AgentAuthorityScheduler:
                     observations=(),
                 )
             else:
-                if session.status is AgentHarnessStatus.FAILED:
+                if session.status in {
+                    AgentHarnessStatus.FAILED,
+                    AgentHarnessStatus.RUNNING,
+                    AgentHarnessStatus.WAITING_TOOL,
+                }:
                     session = harness.transcript.append_event(
                         session=session,
                         request_id=f"agent-session-recovery:{attempt_id}",
@@ -419,6 +419,7 @@ class AgentAuthorityScheduler:
                         payload={
                             "reason": "durable_attempt_retry",
                             "prior_events_remain_non_committed": True,
+                            "prior_status": session.status.value,
                         },
                         trace_id=str(operation["trace_id"]),
                         attempt_id=attempt_id,

@@ -139,9 +139,7 @@ class ChapterAuthorityDefinitionTests(unittest.TestCase):
             ],
             "deterministic_continuity_report",
         )
-        quality_definition = definitions[
-            list(ChapterNode).index(ChapterNode.QUALITY)
-        ]
+        quality_definition = definitions[list(ChapterNode).index(ChapterNode.QUALITY)]
         self.assertIn(
             {
                 "selector": "narrative_runtime_measurement",
@@ -151,9 +149,7 @@ class ChapterAuthorityDefinitionTests(unittest.TestCase):
                 "eligibility": "ELIGIBLE",
                 "governance": "CLEAR",
             },
-            quality_definition["completion_contract"][
-                "required_asset_selectors"
-            ],
+            quality_definition["completion_contract"]["required_asset_selectors"],
         )
         self.assertEqual(
             definitions[list(ChapterNode).index(ChapterNode.EXPORT)][
@@ -215,6 +211,18 @@ class ChapterAuthorityDefinitionTests(unittest.TestCase):
                 {"capability": capability, "allowed_states": ["SUCCEEDED"]},
                 definition["completion_contract"]["required_external_effects"],
             )
+        retrieval = definitions[list(ChapterNode).index(ChapterNode.RETRIEVAL)]
+        self.assertEqual(retrieval["external_capabilities"], ["model.retrieval"])
+        self.assertNotIn("required_external_effects", retrieval["completion_contract"])
+        self.assertEqual(
+            retrieval,
+            chapter_operation_definitions(
+                application_build_id="unit-test-build",
+                commit_sha="a" * 40,
+                model_effects_required=True,
+                semantic_retrieval_available=True,
+            )[list(ChapterNode).index(ChapterNode.RETRIEVAL)],
+        )
         for node in CHAPTER_QUALITY_PROVIDER_NODES:
             definition = definitions[list(ChapterNode).index(node)]
             self.assertEqual(
@@ -253,9 +261,7 @@ class ChapterAuthorityDefinitionTests(unittest.TestCase):
             },
         }
 
-        self.assertEqual(
-            resolve_stage_context_token_budget(command, "draft"), 16_000
-        )
+        self.assertEqual(resolve_stage_context_token_budget(command, "draft"), 16_000)
         self.assertEqual(
             resolve_stage_context_token_budget(command, "quality_longform"),
             28_000,

@@ -12,6 +12,7 @@ from novel_forge.storage.migrations.versions import (
     v20260814_0092_longform_correctness_closure as correctness,
     v20260820_0093_book_liveness_critical_path_closure as liveness,
     v20260820_0094_industrial_autonomous_novel_os as novel_os,
+    v20260821_0095_post_merge_correctness_repair as repair,
 )
 
 
@@ -27,7 +28,8 @@ def test_terminal_lineage_is_a_forward_only_projection_fix() -> None:
     assert correctness.DOWN_REVISION == completion.MIGRATION_ID
     assert liveness.DOWN_REVISION == correctness.MIGRATION_ID
     assert novel_os.DOWN_REVISION == liveness.MIGRATION_ID
-    assert LATEST_MIGRATION_ID == novel_os.MIGRATION_ID
+    assert repair.DOWN_REVISION == novel_os.MIGRATION_ID
+    assert LATEST_MIGRATION_ID == repair.MIGRATION_ID
     assert migration.DOWN_REVISION == previous.MIGRATION_ID
     assert migration.FORWARD_ONLY is True
     assert "MIGRATION_ONLY base projection" in sql

@@ -115,7 +115,7 @@ Context is not an unbounded history list.
 Context v2 protects the exact active plan and critical accepted
 state/Canon/Arc/Obligation entries from token trimming, then retrieves
 historical evidence through lexical, embedding, entity/relationship, timeline,
-temporal, Arc and obligation signals. The 21-node Chapter composition consumes
+temporal, Arc and obligation signals. The 22-node Chapter composition consumes
 the resulting Manifest/Bundle after ExecutionIntent and Memo. Missing protected
 budget fails closed; vector similarity is only one retrieval signal.
 
@@ -143,8 +143,23 @@ atomic long-form projection set. Neither migration rewrites AssetVersion,
 ChapterOutcome or Book acceptance history. `NarrativeStateRebuildService`
 reads accepted outcomes in chapter order, adapts earlier evidence at the input
 boundary, replays deterministic reducers and returns a projection/hash without
-mutating Authority. Persisting a replacement projection remains an owning
-Authority operation outside this read-only service.
+mutating Authority.
+
+Migration `20260821_0095_post_merge_correctness_repair` is the forward repair
+for installations that upgraded through 0094 with accepted history but missing
+or stale projection pointers. The migration only discovers/registers work.
+The durable runtime executes bounded repair Operations under Attempt lease and
+fence, and uses the same canonical accepted-evidence projector as live Book
+Acceptance. It validates the continuous `1..N` acceptance sequence, exact
+AssetVersion hashes and all projection components before a single terminal CAS
+activates Chapter N. Partial repair never advances the Book pointer. Missing
+legacy Arc evidence remains `UNKNOWN`; planned contribution is forbidden as a
+substitute.
+
+`AUTHORITATIVE_REPAIR_COMPLETE` is independent from
+`RETRIEVAL_SEMANTIC_PROJECTION_READY`. Document embeddings are versioned,
+receipt-backed, rebuildable projections and cannot block correct Canon/State
+recovery or an explicitly frozen FTS/graph/temporal fallback profile.
 
 ## Qualification boundary
 
