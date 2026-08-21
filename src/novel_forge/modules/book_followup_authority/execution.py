@@ -41,6 +41,7 @@ class PostgresReaderOutcomeExecutionContractBinder(
     execution_binding_domain = "reader_outcome"
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
+        kwargs.setdefault("workflow_definition_ref", self.workflow_definition_ref)
         super().__init__(*args, **kwargs)
         self.reader_query = AuthorityAssetQuery(self.database_url)
         self.reader_writer = AuthorityAssetWriter(self.database_url)
