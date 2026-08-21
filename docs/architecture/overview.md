@@ -75,14 +75,15 @@ ChapterPlan declarations cannot create actual progress; accepted Arc evidence
 materializes progress, while missing evidence remains `NOT_OBSERVED`,
 `NOT_MATERIALIZED`, or `UNKNOWN` according to the explicit contract.
 
-Bounded fixture Chapter 1→2 and PostgreSQL replay are smoke-tested. The 0095
-Agent Harness and embedding paths are wired through PEP, but latest-main
-reconciliation found that their complete frozen-identity and unknown-effect
-recovery contracts were not yet proven. Arc follow-up success is reachable,
-while canonical Operation terminal states were not all reconciled into an
-actionable Book state. Sustained real Provider operation and unattended
-long-form campaigns remain unqualified.
-`LONGFORM_PROVEN`, `PROVIDER_QUALIFIED`, and `PRODUCTION_QUALIFIED` are false.
+Bounded fixture Chapter 1→2 and PostgreSQL replay are smoke-tested. Runtime
+hardening closes canonical Arc follow-up terminal handling, embedding
+unknown-effect reconciliation, frozen Agent execution identity/aggregate
+budgeting, and independent PostgreSQL vector candidate discovery. An exact-SHA
+small qualification ran one real Agent Session, document/query embeddings with
+receipt-backed crash recovery, and one Memo→Retrieval→Context→Draft slice.
+Those bounded paths are `PROVIDER_PROVEN`; sustained real Provider operation and
+unattended long-form campaigns remain unqualified. `LONGFORM_PROVEN` and
+`PRODUCTION_QUALIFIED` are false.
 
 ## Evidence boundary
 

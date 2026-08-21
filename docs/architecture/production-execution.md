@@ -45,4 +45,11 @@ All retrieval, embedding, compression and semantic/model evaluation required by 
 
 ## Provider status
 
-Provider routing is fail-closed in controlled environments. The default development Compose route is scripted and supports fixture proof only. Real-provider qualification and an actual real-provider run are separate evidence requirements; neither follows from a buildable route or a green mock run.
+Provider routing is fail-closed in controlled environments. The default
+development Compose route is scripted and supports fixture proof only. The
+2026-08-22 exact-SHA bounded qualification separately exercised the real Codex
+CLI route for one Agent Session, document/query embeddings and one Chapter
+Memo→Retrieval→Draft slice, including receipt-backed embedding recovery. That
+evidence is `PROVIDER_PROVEN` only for the bounded paths and release recorded in
+`docs/qualification/`; it does not make the default scripted route real and does
+not imply `LONGFORM_PROVEN` or `PRODUCTION_QUALIFIED`.

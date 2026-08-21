@@ -40,14 +40,14 @@ These are derived from the Canonical Design and cannot independently change arch
 
 Keep operational and development guides focused on executable procedures. Approved implementation specifications may live under `superpowers/specs/` while active; they are subordinate to the Canonical Design and must preserve exact evidence/proof boundaries.
 
-Current runtime-hardening specification:
+Completed runtime-hardening evidence:
 
-- [`superpowers/specs/2026-08-21-post-merge-runtime-hardening-design.md`](superpowers/specs/2026-08-21-post-merge-runtime-hardening-design.md)
+- [`qualification/2026-08-22-post-merge-runtime-hardening.md`](qualification/2026-08-22-post-merge-runtime-hardening.md)
 
-The prior post-merge correctness specification and implementation plan are
-retained as `SUPERSEDED / HISTORICAL_ONLY`. They describe the 0095 delivery
-intent and cannot be used as evidence that its terminal failure paths or
-semantic candidate discovery were complete.
+The runtime-hardening design, prior post-merge correctness specification and
+implementation plan are retained as `COMPLETED / HISTORICAL_ONLY` or
+`SUPERSEDED / HISTORICAL_ONLY`. They describe delivery intent and cannot
+replace the exact-SHA qualification evidence or current executable contracts.
 
 Current repair runbook:
 

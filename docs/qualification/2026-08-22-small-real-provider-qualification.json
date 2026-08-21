@@ -1,0 +1,198 @@
+{
+  "schema_version": "novel-forge.small-real-provider-qualification-summary.v1",
+  "evidence_class": "EXACT_SHA_QUALIFICATION_SNAPSHOT",
+  "architecture_authority": false,
+  "created_at": "2026-08-22T00:58:00+08:00",
+  "baseline_main_sha": "1fcb1789c1c46643a2bf63cac8ae22a94ea3e67f",
+  "qualified_release_sha": "00b5572b8559d851df79aab028cee5eebfe5a0c3",
+  "branch": "codex/post-merge-runtime-hardening",
+  "environment": {
+    "runtime_environment": "validation",
+    "provider": "codex-cli",
+    "transport": "LOCAL_CLI_REMOTE_INFERENCE",
+    "authentication": "ChatGPT Codex CLI login",
+    "model": "gpt-5.6-sol",
+    "reasoning_effort": "medium",
+    "postgresql_authority": true,
+    "object_store": "MinIO"
+  },
+  "scope": {
+    "project_id": "small-provider:00b5572b:35ee03b947d2",
+    "workspace_id": "workspace:small-provider:00b5572b:35ee03b947d2",
+    "book_id": "book:small-provider:00b5572b:35ee03b947d2",
+    "book_run_id": "book-run:19ae026d-3a67-4778-9f4f-36d3db648e06",
+    "accepted_through_chapter": 0,
+    "fixture_inputs_are_not_human_or_longform_proof": true
+  },
+  "capability_packs": {
+    "agent_pack_compilation_hash": "sha256:0ed44fdce1316b30a2fcdab3e17a6f555606eed6459fd7f76c0252af50d979c9",
+    "chapter_pack_compilation_hash": "sha256:6048047bee3d2728d110ca990d5a136c3fc4d15638c43b28f1b05756d12ef9f5"
+  },
+  "agent_qualification": {
+    "passed": true,
+    "session_id": "agent-session:small-provider:00b5572b:35ee03b947d2",
+    "operation_id": "ffa4ccd8-2bd3-4275-af07-98ad74b8e88a",
+    "attempt_id": "65e8bd8f-7878-42ff-8dc5-19082caab4c1",
+    "status": "SUCCEEDED",
+    "policy_hash": "sha256:e00a4bb78c0824258a52683ddff8d0a10e473ab4edb22bad6bd70422331a7d0b",
+    "agent_definition_hash": "sha256:5fcea812e3868a396c869db083298ba8ee3a446477db325fe7ae1a78b32adae1",
+    "runtime_contract_hash": "sha256:d12db5aa90b5665dd3e2a6c70efede57583c08a1ba85933b6a915e41f0d9b9c4",
+    "runtime_binding_hash": "sha256:c838d7d6985b0f9a9a3fea49b16867b70fa008cca80fc63c66d835a0fd4b80bb",
+    "capability_pack_snapshot_hash": "sha256:4f0458fda37ba2f1c51a84dce86e2ef4e04e822588a343e32edc6597a83b33be",
+    "route_snapshot_ids": [
+      "production_execution/routes/58efd367f694caf24220",
+      "production_execution/routes/f55d1c31b7aec0bc3958"
+    ],
+    "external_effect_ids": [
+      "ee05d678-8474-44fe-9b9d-697ad30b2967",
+      "9129985e-a028-4a4f-893e-480ac444fc6c"
+    ],
+    "receipt_ids": [
+      "process-receipt:2a1be1fa8a9d55d30c9d17b9",
+      "process-receipt:4d89a50c332331fc37f8c180"
+    ],
+    "usage": {
+      "turns": 2,
+      "tool_calls": 1,
+      "tool": "narrative.query_accepted",
+      "input_tokens": 39016,
+      "output_tokens": 620,
+      "total_tokens": 39636,
+      "estimated_cost_usd": "0.07285600",
+      "external_effects": 2
+    },
+    "transcript_events": [
+      "REQUEST_STARTED",
+      "MODEL_MESSAGE",
+      "TOOL_REQUESTED",
+      "TOOL_OBSERVED",
+      "MODEL_MESSAGE",
+      "REQUEST_COMMITTED"
+    ],
+    "authority_mutation": false
+  },
+  "embedding_qualification": {
+    "passed": true,
+    "operation_id": "8424a108-776c-4de1-a575-c983edbaa560",
+    "attempt_id": "cf24b8f2-0aa8-4185-8198-28dcc7f98870",
+    "embedding_projection_id": "retrieval-embedding:42b37977f4b22164107e113d52bf17b6b8a70aad7535280a13fac290f328229e",
+    "projection_hash": "sha256:d787a3855aa8b2e2fd9f7af0714a146313a78abbe72483ea5625de0069d90e99",
+    "embedding_model": "gpt-5.6-sol",
+    "embedding_dimensions": 8,
+    "vector_dimensions": 8,
+    "route_snapshot_id": "production_execution/routes/9d3ad5c7a26116c678c5",
+    "external_effect_id": "868431d1-0c55-4386-aa43-5d2e245062bc",
+    "receipt_id": "process-receipt:a9ff623395062e1f044bf6cb",
+    "provider_success_crash_injected": true,
+    "receipt_replay": true,
+    "provider_dispatch_count": 1,
+    "estimated_cost_usd": "0.0315735",
+    "total_tokens": 20030
+  },
+  "chapter_intelligence_qualification": {
+    "passed": true,
+    "bounded_stop": "DRAFT",
+    "root_operation_id": "a9b68f3a-48c7-47a4-ad80-72c602c931bf",
+    "stage_operation_ids": {
+      "chapter_plan": "c408581d-dfc4-4833-ba9d-73be02fd7686",
+      "execution_intent": "0a63188b-d97e-4582-a322-04caa0dad561",
+      "chapter_memo": "6a32c626-10c2-4376-8077-dcfbf50fe4ba",
+      "retrieval": "32333bed-6b29-4705-994e-57dd0cb1198b",
+      "context": "a89c7e44-359d-49d4-8757-0cf88be86306",
+      "draft": "fc34abda-1018-4952-89da-0d9449a6ed2b"
+    },
+    "provider_attempt_ids": {
+      "query_embedding": "c233d563-9d3f-4193-ac31-6e56410d4674",
+      "draft": "d37178ec-6754-436b-83f9-e6a1b3519c3f"
+    },
+    "route_snapshot_ids": {
+      "query_embedding": "production_execution/routes/15edda2ab89b31ec03ad",
+      "draft": "production_execution/routes/5cb42378f075245f2732"
+    },
+    "external_effect_ids": {
+      "query_embedding": "0ae70e10-5527-48df-8982-2c4ad03e7335",
+      "draft": "4d4682c5-f89c-41fa-82fb-32f0c3127f41"
+    },
+    "receipt_ids": {
+      "query_embedding": "process-receipt:34e4f274f44e39f5e51bb989",
+      "draft": "process-receipt:fa89ba42e21e89acfc7aec6e"
+    },
+    "retrieval_result_asset_version_id": "authority-output:32333bed-6b29-4705-994e-57dd0cb1198b:chapter.retrieval:v1",
+    "retrieval_result_fingerprint": "sha256:4224fc66b4cfb7b865ec94d921aa4f2f4f867198d2ebaa56a7bd3a503d47cd46",
+    "candidate_snapshot_id": "retrieval-candidates:5bb9a7dace0478619bfc3a397b58252d6aa8339c4f72488d5e16dc3c9e4b4f9f",
+    "candidate_snapshot_hash": "sha256:e4711f31ff3d4776d7317804977043414f67d6cefde3cf8ab63335bf2320c633",
+    "context_asset_version_id": "authority-output:a89c7e44-359d-49d4-8757-0cf88be86306:chapter.context:v1",
+    "context_fingerprint": "sha256:94d6ba523334bbedd0ba601ece1235417bf7909f58765b5e79a5b7ae36cb01b0",
+    "draft_asset_version_id": "authority-output:fc34abda-1018-4952-89da-0d9449a6ed2b:chapter.draft:v1",
+    "draft_content_hash": "sha256:a0caae4abb09a4d0895781fe4e9b29435a5b8640ed6892a9ce0ff4b306fbc998",
+    "draft_repeats_exact_retrieval_and_context_fingerprints": true,
+    "semantic_policy": "REQUIRED",
+    "semantic_status": "RETRIEVAL_SEMANTIC_CANDIDATES_READY",
+    "ranking_policy_version": "accepted-hybrid-ranking-v3",
+    "candidate_channels_declared": [
+      "FTS",
+      "ENTITY",
+      "RELATIONSHIP",
+      "CHARACTER",
+      "ARC",
+      "OBLIGATION",
+      "TEMPORAL",
+      "VECTOR"
+    ],
+    "selected_candidate_channels": [
+      "TEMPORAL",
+      "VECTOR"
+    ],
+    "selected_candidate_scores": {
+      "lexical": 0.0,
+      "entity": 0.0,
+      "relationship": 0.0,
+      "arc": 0.0,
+      "obligation": 0.0,
+      "embedding": 0.30584028366239213,
+      "postgresql_fts": 1e-20
+    },
+    "future_leak": false,
+    "estimated_cost_usd": "0.1177085",
+    "total_tokens": 44822
+  },
+  "postgresql_cross_check": {
+    "external_effects": 5,
+    "dispatches": 5,
+    "verified_receipts": 5,
+    "model_call_log_asset_versions": 5,
+    "model_call_log_distinct_external_effects": 5,
+    "cost_ledger_asset_versions": 5,
+    "cost_ledger_distinct_external_effects": 5
+  },
+  "aggregate_usage": {
+    "real_model_calls": 5,
+    "total_tokens": 104488,
+    "estimated_cost_usd": "0.222138",
+    "provider_billed": false,
+    "pricing_ref": "proof-estimate:gpt-5.6-sol:2026-08-09:not-provider-billing"
+  },
+  "trace_ids": [
+    "trace:small-provider:00b5572b:35ee03b947d2:agent-session",
+    "retrieval-embedding:retrieval-document:small-provider:00b5572b:35ee03b947d2:accepted-ledger",
+    "trace:small-provider:00b5572b:35ee03b947d2:chapter:1"
+  ],
+  "proof_flags": {
+    "LOCAL_TESTED": true,
+    "POSTGRES_TESTED": true,
+    "PROVIDER_WIRED": true,
+    "PROVIDER_PROVEN": true,
+    "RECOVERY_PROVEN": true,
+    "LONGFORM_PROVEN": false,
+    "PRODUCTION_QUALIFIED": false,
+    "CI_TESTED": false
+  },
+  "non_claims": {
+    "provider_billed_cost": false,
+    "literary_quality": false,
+    "human_behavior_calibration": false,
+    "ten_chapter_campaign": false,
+    "longform_proven": false,
+    "production_qualified": false
+  }
+}

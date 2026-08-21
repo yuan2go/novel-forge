@@ -1,14 +1,16 @@
 # Post-Merge Runtime Hardening Design
 
-> **Status:** ACTIVE IMPLEMENTATION BASELINE
-> **Baseline:** latest `main` at execution start; exact SHA is recorded in the
-> qualification evidence and Draft PR.
+> **Status:** COMPLETED / HISTORICAL_ONLY
+> **Baseline:** `1fcb1789c1c46643a2bf63cac8ae22a94ea3e67f`
+> **Qualified release:** `00b5572b8559d851df79aab028cee5eebfe5a0c3`
+>
+> Final evidence: [`../../qualification/2026-08-22-post-merge-runtime-hardening.md`](../../qualification/2026-08-22-post-merge-runtime-hardening.md).
 
 This specification reconciles the 0095 design with the production runtime. It
 does not add a new Authority, provider runtime, Agent runtime, Context runtime,
 retry runtime, Arc type or memory taxonomy.
 
-## Reconciled latest-main facts
+## Reconciled audit-baseline facts
 
 | Work package | Current code fact | Unearned claim |
 |---|---|---|
@@ -20,6 +22,9 @@ retry runtime, Arc type or memory taxonomy.
 The former post-merge correctness specification and plan are
 `SUPERSEDED / HISTORICAL_ONLY`. Historical migrations remain immutable;
 persistence changes are forward-only.
+
+All four rows above describe the starting audit baseline. They were closed by
+the qualified release above and must not be read as current-runtime gaps.
 
 ## Arc follow-up closure
 

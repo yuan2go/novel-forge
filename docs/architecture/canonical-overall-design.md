@@ -1094,22 +1094,24 @@ Memo now drives a durable RetrievalResult before Context, and semantic document
 and query embeddings use the same ExternalEffect/Receipt governance as other
 provider calls.
 
-Latest-main reconciliation after the 0095 merge found four remaining closure
-gaps: Arc follow-up did not consume all canonical Operation terminal states;
-embedding unknown outcomes could become blind retry; Agent Harness admission did
-not yet freeze and validate the complete execution binding or aggregate child
-cost/effects; and embedding similarity reranked only candidates already found by
-FTS/graph/recent discovery. Therefore the affected packages are not yet
-`RECOVERY_PROVEN`, and semantic candidate retrieval is not yet
-`RUNTIME_REACHABLE`. Agent and embedding routes are `PROVIDER_WIRED`; scripted
-receipts are not `PROVIDER_PROVEN`. None of these capabilities is long-form or
-production qualified.
+Post-merge runtime hardening closes the four 0095 follow-on gaps without adding
+a parallel Authority or runtime: Arc follow-up consumes canonical Operation
+retry/final/dead-letter/cancellation states; embedding unknown outcomes
+checkpoint and reconcile the original ExternalEffect/Receipt; Agent admission
+freezes and validates the complete execution binding while Session budgets
+aggregate descendant ledgers; and PostgreSQL vector search is an independent,
+accepted-boundary-governed candidate channel before hybrid reranking. Targeted
+PostgreSQL recovery tests cover those contracts. The 2026-08-22 exact-SHA small
+qualification additionally proves the real Provider wiring for one Agent
+Session, document/query embeddings and one Memo→Retrieval→Draft slice. This is
+bounded `PROVIDER_PROVEN` evidence only. None of these capabilities is
+`LONGFORM_PROVEN` or `PRODUCTION_QUALIFIED`.
 
-### P1 — Long-form and Provider qualification
+### P1 — Long-form qualification
 
-After convergence is implemented and bounded smoke tests pass:
+The bounded current-SHA real-provider Chapter proof is complete. Further gates
+remain separate, explicitly authorized runs:
 
-- current-SHA real-provider Chapter proof;
 - independent judge/calibration qualification;
 - 10 → 30 → 100 → 300 chapter campaigns with failure injection;
 - human editorial comparison;
