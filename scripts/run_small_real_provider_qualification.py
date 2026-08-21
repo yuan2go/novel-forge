@@ -908,6 +908,22 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
         semantic.get("query_embedding_dimensions") or 0
     ):
         raise RuntimeError("document/query embedding dimensions drifted")
+    retrieval_fingerprint = str(retrieval_content.get("result_fingerprint") or "")
+    context_fingerprint = str(
+        dict(context["context_manifest"] or {}).get("context_fingerprint") or ""
+    )
+    if (
+        not retrieval_fingerprint
+        or str(draft.get("retrieval_result_fingerprint") or "") != retrieval_fingerprint
+    ):
+        raise RuntimeError(
+            "Draft does not preserve its exact RetrievalResult fingerprint"
+        )
+    if (
+        not context_fingerprint
+        or str(draft.get("context_fingerprint") or "") != context_fingerprint
+    ):
+        raise RuntimeError("Draft does not preserve its exact Context fingerprint")
     future_leak = any(
         int(item.get("accepted_from_chapter") or 0) > 0 for item in selected
     )
@@ -995,9 +1011,7 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
                 "future_leak": future_leak,
                 "query_embedding_evidence": query_evidence,
                 "context_asset_version_id": context["asset_version_id"],
-                "context_fingerprint": dict(context["context_manifest"] or {}).get(
-                    "context_fingerprint"
-                ),
+                "context_fingerprint": context_fingerprint,
                 "draft": draft,
                 "model_and_cost_evidence": chapter_models,
                 "operations": chapter_evidence["operations"],

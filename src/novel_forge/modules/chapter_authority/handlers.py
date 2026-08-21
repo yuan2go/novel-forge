@@ -434,9 +434,7 @@ class _RetrievalHandler:
             request.database_url,
             project_id=request.project_id,
             operation_id=request.operation_id,
-            query_plan_fingerprint=str(
-                query_plan.get("query_plan_fingerprint") or ""
-            ),
+            query_plan_fingerprint=str(query_plan.get("query_plan_fingerprint") or ""),
         )
         if frozen_union is None:
             query_embedding: tuple[float, ...] = ()
@@ -453,9 +451,7 @@ class _RetrievalHandler:
                     request,
                     stage="retrieval",
                     payload={
-                        "texts": [
-                            str(query_plan.get("postgresql_fts_query") or "")
-                        ],
+                        "texts": [str(query_plan.get("postgresql_fts_query") or "")],
                         "purpose": "accepted_history_query_embedding",
                         "query_plan_fingerprint": str(
                             query_plan.get("query_plan_fingerprint") or ""
@@ -866,6 +862,8 @@ class _DraftHandler:
             normalize_draft_result(
                 plan=plan.content,
                 context_asset_version_id=context.asset_version_id,
+                context_content_hash=context.content_hash,
+                context_content=context.content,
                 result=generated.output,
                 provider_evidence=_provider_evidence(generated),
             ),

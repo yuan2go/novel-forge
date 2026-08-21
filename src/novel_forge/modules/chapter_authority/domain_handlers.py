@@ -344,17 +344,57 @@ def normalize_draft_result(
     *,
     plan: dict[str, Any],
     context_asset_version_id: str,
+    context_content_hash: str = "",
+    context_content: dict[str, Any] | None = None,
     result: dict[str, Any],
     provider_evidence: dict[str, Any],
 ) -> dict[str, Any]:
     text = str(result.get("text") or "").strip()
     if not text:
         raise KernelError("CHAPTER_MODEL_OUTPUT_INVALID", "draft result has no text")
+    lineage: dict[str, Any] = {}
+    if context_content is not None:
+        manifest = context_content.get("context_manifest")
+        execution = context_content.get("chapter_execution")
+        context_fingerprint = (
+            str(manifest.get("context_fingerprint") or "")
+            if isinstance(manifest, dict)
+            else ""
+        )
+        retrieval_result_asset_version_id = (
+            str(execution.get("retrieval_result_asset_version_id") or "")
+            if isinstance(execution, dict)
+            else ""
+        )
+        retrieval_result_fingerprint = (
+            str(execution.get("retrieval_result_fingerprint") or "")
+            if isinstance(execution, dict)
+            else ""
+        )
+        if not all(
+            (
+                context_content_hash,
+                context_fingerprint,
+                retrieval_result_asset_version_id,
+                retrieval_result_fingerprint,
+            )
+        ):
+            raise KernelError(
+                "CHAPTER_DRAFT_CONTEXT_LINEAGE_INVALID",
+                "draft requires exact ContextBundle and RetrievalResult fingerprints",
+            )
+        lineage = {
+            "context_bundle_content_hash": context_content_hash,
+            "context_fingerprint": context_fingerprint,
+            "retrieval_result_asset_version_id": retrieval_result_asset_version_id,
+            "retrieval_result_fingerprint": retrieval_result_fingerprint,
+        }
     return {
         "chapter": plan["chapter"],
         "title": plan["title"],
         "text": text,
         "context_bundle_id": context_asset_version_id,
+        **lineage,
         "provider_evidence": dict(provider_evidence),
     }
 
