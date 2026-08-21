@@ -74,7 +74,10 @@ from novel_forge.modules.context_builder.retrieval import (
     HybridRetrievalQuery,
     hybrid_retrieve,
 )
-from novel_forge.modules.longform_narrative import build_longform_projection_set
+from novel_forge.modules.book_authority.longform_projection import (
+    AcceptedLongformEvidence,
+    project_accepted_longform,
+)
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 
@@ -1208,22 +1211,40 @@ class PostgresBookAuthority:
             previous_arc_states = {
                 str(row[0]): dict(row[1]) for row in uow.cursor.fetchall()
             }
-            longform_projection_set = build_longform_projection_set(
-                project_id=request["project_id"],
-                book_id=book["book_id"],
-                book_run_id=request["book_run_id"],
-                chapter_request_id=chapter_request_id,
-                chapter_number=int(request["chapter_number"]),
-                acceptance_id=acceptance_id,
-                acceptance_operation_id=admission.operation_id,
-                chapter_outcome_asset_version_id=outcome.asset_version_id,
-                story_state_asset_version_id=story_state.asset_version_id,
-                canon_snapshot_asset_version_id=canon_snapshot.asset_version_id,
-                active_arc_plan_version_ids=active_arc_plan_versions,
-                expected_progress_units=expected_progress_units,
-                previous_arc_states=previous_arc_states,
-                chapter_outcome=outcome_content,
-                story_state=story_state_content,
+            longform_projection_set = project_accepted_longform(
+                AcceptedLongformEvidence(
+                    project_id=request["project_id"],
+                    book_id=book["book_id"],
+                    book_run_id=request["book_run_id"],
+                    chapter_request_id=chapter_request_id,
+                    chapter_number=int(request["chapter_number"]),
+                    acceptance_id=acceptance_id,
+                    acceptance_operation_id=admission.operation_id,
+                    chapter_outcome_asset_version_id=outcome.asset_version_id,
+                    chapter_outcome_content_hash=outcome.content_hash,
+                    story_state_asset_version_id=story_state.asset_version_id,
+                    story_state_content_hash=story_state.content_hash,
+                    canon_snapshot_asset_version_id=canon_snapshot.asset_version_id,
+                    canon_snapshot_content_hash=canon_snapshot.content_hash,
+                    chapter_plan_asset_version_id=(
+                        execution_chapter_plan_asset_version_id
+                    ),
+                    chapter_plan_content_hash=str(
+                        selected_acceptance_outputs["chapter_plan"].get(
+                            "content_hash"
+                        )
+                        or ""
+                    ),
+                    active_arc_plan_version_ids=active_arc_plan_versions,
+                    expected_progress_units=expected_progress_units,
+                    previous_arc_states=previous_arc_states,
+                    chapter_outcome=outcome_content,
+                    story_state=story_state_content,
+                    source_contract=str(
+                        outcome_content.get("contract_version") or "UNKNOWN"
+                    ),
+                    adaptation_context={"mode": "LIVE_ACCEPTANCE"},
+                )
             )
             uow.repositories.book_authority.commit_chapter_acceptance(
                 acceptance_id=acceptance_id,

@@ -251,6 +251,10 @@ def build_longform_projection_set(
     previous_arc_states: Mapping[str, Mapping[str, Any]],
     chapter_outcome: Mapping[str, Any],
     story_state: Mapping[str, Any],
+    projector_version: str = "accepted-longform-projector-v1",
+    chapter_plan_asset_version_id: str = "",
+    source_content_hashes: Mapping[str, str] | None = None,
+    contract_adaptation_evidence: Iterable[Mapping[str, Any]] = (),
 ) -> dict[str, Any]:
     """Build the complete deterministic long-form projection for one acceptance."""
 
@@ -430,12 +434,21 @@ def build_longform_projection_set(
             "chapter_outcome_asset_version_id": chapter_outcome_asset_version_id,
             "story_state_asset_version_id": story_state_asset_version_id,
             "canon_snapshot_asset_version_id": canon_snapshot_asset_version_id,
+            "chapter_plan_asset_version_id": chapter_plan_asset_version_id,
         },
         "arc_progress": progress_rows,
         "arc_states": arc_states,
         "arc_checkpoints": checkpoints,
         "arc_outcomes": arc_outcomes,
         "obligation_states": obligations,
+        "projection_provenance": {
+            "projector_version": projector_version,
+            "source_content_hashes": dict(source_content_hashes or {}),
+            "contract_adaptation_evidence": [
+                dict(item) for item in contract_adaptation_evidence
+            ],
+            "actual_state_policy": "ACCEPTED_EVIDENCE_ONLY",
+        },
     }
     digest_payload = {
         key: value for key, value in projection.items() if key != "projection_hash"

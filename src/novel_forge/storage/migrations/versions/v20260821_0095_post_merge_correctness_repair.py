@@ -13,6 +13,10 @@ FORWARD_FIX = (
 
 UPGRADE_STATEMENTS = [
     """
+    ALTER TABLE authority_book_narrative_projection_set
+    ADD COLUMN projection_provenance JSONB NOT NULL DEFAULT '{}'::jsonb
+    """,
+    """
     CREATE TABLE authority_book_projection_repair (
         repair_id TEXT PRIMARY KEY,
         project_id TEXT NOT NULL REFERENCES authority_project(project_id),

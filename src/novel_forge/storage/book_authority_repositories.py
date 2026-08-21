@@ -422,7 +422,8 @@ class BookAuthorityRepository:
                 book_run_id, chapter_request_id, chapter_number,
                 acceptance_operation_id, chapter_outcome_asset_version_id,
                 story_state_asset_version_id, canon_snapshot_asset_version_id,
-                arc_state, obligation_state, projection_hash, status
+                arc_state, obligation_state, projection_hash,
+                projection_provenance, status
             ) VALUES (
                 %(projection_set_id)s, %(acceptance_id)s, %(project_id)s,
                 %(book_id)s, %(book_run_id)s, %(chapter_request_id)s,
@@ -431,6 +432,7 @@ class BookAuthorityRepository:
                 %(story_state_asset_version_id)s,
                 %(canon_snapshot_asset_version_id)s,
                 %(arc_state)s, %(obligation_state)s, %(projection_hash)s,
+                %(projection_provenance)s,
                 'COMPLETE'
             )
             ON CONFLICT (acceptance_id) DO NOTHING
@@ -456,6 +458,9 @@ class BookAuthorityRepository:
                 "arc_state": Jsonb(list(projection["arc_states"])),
                 "obligation_state": Jsonb(list(projection["obligation_states"])),
                 "projection_hash": projection["projection_hash"],
+                "projection_provenance": Jsonb(
+                    dict(projection.get("projection_provenance") or {})
+                ),
             },
         )
         progress_by_id = {
