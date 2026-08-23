@@ -144,6 +144,11 @@ def content_intelligence_output_schema(stage: str) -> dict[str, Any]:
             "minItems": 1,
             "items": {"type": "string", "minLength": 1, "maxLength": 2_000},
         }
+        tag_list = {
+            "type": "array",
+            "maxItems": 32,
+            "items": {"type": "string", "minLength": 1, "maxLength": 200},
+        }
         return {
             "$schema": "https://json-schema.org/draft/2020-12/schema",
             "type": "object",
@@ -155,6 +160,61 @@ def content_intelligence_output_schema(stage: str) -> dict[str, Any]:
                 "conflict_generators": string_list,
                 "review_checks": string_list,
                 "copyright_boundaries": string_list,
+                "knowledge_kind": {
+                    "enum": ["NARRATIVE_INTELLIGENCE", "DOMAIN_INTELLIGENCE"]
+                },
+                "semantic_family": {
+                    "enum": [
+                        "NARRATIVE_PRIMITIVE",
+                        "NARRATIVE_MECHANISM",
+                        "ARC_BEAT_PATTERN",
+                        "CONFLICT_ESCALATION_REVERSAL_PAYOFF",
+                        "CHARACTER_TRANSFORMATION",
+                        "RELATIONSHIP",
+                        "MYSTERY_CLUE_REVEAL",
+                        "WORLD_CONSEQUENCE",
+                        "FACTION_DYNAMICS",
+                        "POWER_RESOURCE_PROGRESSION",
+                        "READER_EMOTIONAL_CURVE",
+                        "THEME_MORAL_DILEMMA",
+                        "SCENE_INTERACTION",
+                        "ANTI_PATTERN_FAILURE",
+                        "PROFESSIONAL_CAUSAL_MECHANISM",
+                    ]
+                },
+                "mechanism": {"type": "string", "minLength": 1, "maxLength": 2_000},
+                "applicability": string_list,
+                "failure_conditions": string_list,
+                "selection_tags": {
+                    "type": "object",
+                    "properties": {
+                        "genre": tag_list,
+                        "conflict": tag_list,
+                        "reader_effect": tag_list,
+                        "theme": tag_list,
+                    },
+                    "required": ["genre", "conflict", "reader_effect", "theme"],
+                    "additionalProperties": False,
+                },
+                "repetition_key": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200,
+                },
+                "originality_boundary": {
+                    "type": "object",
+                    "properties": {
+                        "source_specific_sequence_reusable": {"const": False},
+                        "named_entity_substitution_allowed": {"const": False},
+                        "expression_reuse_allowed": {"const": False},
+                    },
+                    "required": [
+                        "source_specific_sequence_reusable",
+                        "named_entity_substitution_allowed",
+                        "expression_reuse_allowed",
+                    ],
+                    "additionalProperties": False,
+                },
             },
             "required": [
                 "concept_name",
@@ -164,6 +224,14 @@ def content_intelligence_output_schema(stage: str) -> dict[str, Any]:
                 "conflict_generators",
                 "review_checks",
                 "copyright_boundaries",
+                "knowledge_kind",
+                "semantic_family",
+                "mechanism",
+                "applicability",
+                "failure_conditions",
+                "selection_tags",
+                "repetition_key",
+                "originality_boundary",
             ],
             "additionalProperties": False,
         }
@@ -238,6 +306,30 @@ def content_intelligence_fixture_response(
             "copyright_boundaries": [
                 "Do not reuse names, expressions, settings, scenes, or plot combinations."
             ],
+            "knowledge_kind": "NARRATIVE_INTELLIGENCE",
+            "semantic_family": "CONFLICT_ESCALATION_REVERSAL_PAYOFF",
+            "mechanism": (
+                "Bind progress to a choice between incompatible benefits so the "
+                "same causal event advances conflict and changes reader expectation."
+            ),
+            "applicability": [
+                "Use when the target plan needs causally coupled progress and cost."
+            ],
+            "failure_conditions": [
+                "Reject when the mechanism would reproduce a source-specific event sequence."
+            ],
+            "selection_tags": {
+                "genre": [],
+                "conflict": ["incompatible benefits", "cost of progress"],
+                "reader_effect": ["anticipation", "tension"],
+                "theme": ["choice and consequence"],
+            },
+            "repetition_key": "incompatible-benefit-progress-cost",
+            "originality_boundary": {
+                "source_specific_sequence_reusable": False,
+                "named_entity_substitution_allowed": False,
+                "expression_reuse_allowed": False,
+            },
         }
     raise ValueError(f"unsupported content-intelligence fixture stage: {stage}")
 
@@ -367,6 +459,45 @@ def validate_content_intelligence_output(
             )
         ):
             raise ValueError(f"invalid MKAOS field: {field}")
+    if payload.get("knowledge_kind") not in {
+        "NARRATIVE_INTELLIGENCE",
+        "DOMAIN_INTELLIGENCE",
+    }:
+        raise ValueError("invalid MKAOS knowledge_kind")
+    if not isinstance(payload.get("semantic_family"), str):
+        raise ValueError("invalid MKAOS semantic_family")
+    for field in ("mechanism", "repetition_key"):
+        if not isinstance(payload.get(field), str) or not payload[field].strip():
+            raise ValueError(f"invalid MKAOS field: {field}")
+    for field in ("applicability", "failure_conditions"):
+        values = payload.get(field)
+        if not isinstance(values, list) or not values:
+            raise ValueError(f"invalid MKAOS field: {field}")
+    tags = payload.get("selection_tags")
+    if (
+        not isinstance(tags, Mapping)
+        or set(tags)
+        != {
+            "genre",
+            "conflict",
+            "reader_effect",
+            "theme",
+        }
+        or any(not isinstance(value, list) for value in tags.values())
+    ):
+        raise ValueError("invalid MKAOS selection_tags")
+    boundary = payload.get("originality_boundary")
+    if (
+        not isinstance(boundary, Mapping)
+        or set(boundary)
+        != {
+            "source_specific_sequence_reusable",
+            "named_entity_substitution_allowed",
+            "expression_reuse_allowed",
+        }
+        or any(value is not False for value in boundary.values())
+    ):
+        raise ValueError("invalid MKAOS originality_boundary")
     return payload
 
 

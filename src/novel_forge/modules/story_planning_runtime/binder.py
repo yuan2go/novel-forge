@@ -47,6 +47,9 @@ class PlanningCapabilityBinding:
     execution_capability_id: str
     execution_capability_hash: str
     input_manifest_ref: str
+    context_bundle_asset_version_id: str
+    context_bundle_hash: str
+    narrative_intelligence_selection_digest: str
     commit_authority: str
     capability_pack_attempt_snapshot_id: str
     capability_pack_attempt_snapshot_hash: str
@@ -76,6 +79,7 @@ class PreparedPlanningExecution:
     execution_port: DomainExecutionPort
     context_bundle_asset_version_id: str
     context_bundle_hash: str
+    narrative_intelligence_selection_digest: str
     route_snapshot_ref: str
     route_snapshot_hash: str
     input_manifest_ref: str
@@ -95,6 +99,7 @@ class PreparedPlanningExecution:
     def __post_init__(self) -> None:
         references = (
             self.context_bundle_asset_version_id,
+            self.narrative_intelligence_selection_digest,
             self.route_snapshot_ref,
             self.input_manifest_ref,
             self.prompt_bundle_ref,
@@ -107,6 +112,7 @@ class PreparedPlanningExecution:
         )
         hashes = (
             self.context_bundle_hash,
+            self.narrative_intelligence_selection_digest,
             self.route_snapshot_hash,
             self.input_manifest_hash,
             self.prompt_bundle_hash,
@@ -230,11 +236,15 @@ class PostgresPlanningExecutionBundleResolver:
             worker_id=worker_id,
         )
         frozen = attempt_snapshot.execution_snapshot
-        if frozen.execution_capability_id != definition.capability or frozen.commit_authority not in {
-            "STORY_DESIGN_AUTHORITY",
-            "HIERARCHICAL_PLANNING_AUTHORITY",
-            "PLAN_CHANGE_AUTHORITY",
-        }:
+        if (
+            frozen.execution_capability_id != definition.capability
+            or frozen.commit_authority
+            not in {
+                "STORY_DESIGN_AUTHORITY",
+                "HIERARCHICAL_PLANNING_AUTHORITY",
+                "PLAN_CHANGE_AUTHORITY",
+            }
+        ):
             raise KernelError(
                 "PLANNING_CAPABILITY_PACK_NODE_INVALID",
                 "Capability Pack node cannot submit this Planning Candidate",
@@ -304,6 +314,11 @@ class PostgresPlanningExecutionBundleResolver:
             execution_capability_id=frozen.execution_capability_id,
             execution_capability_hash=frozen.execution_capability_hash,
             input_manifest_ref=prepared.input_manifest_ref,
+            context_bundle_asset_version_id=(prepared.context_bundle_asset_version_id),
+            context_bundle_hash=prepared.context_bundle_hash,
+            narrative_intelligence_selection_digest=(
+                prepared.narrative_intelligence_selection_digest
+            ),
             commit_authority=frozen.commit_authority,
             capability_pack_attempt_snapshot_id=attempt_snapshot.snapshot_id,
             capability_pack_attempt_snapshot_hash=attempt_snapshot.snapshot_hash,
@@ -344,6 +359,7 @@ class PostgresPlanningExecutionBundleResolver:
             "definition_hash": str(snapshot.get("definition_hash") or ""),
             "saga_id": str(row[3]),
         }
+
 
 class PlanningExecutionBinder(Protocol):
     def execute(
@@ -437,14 +453,27 @@ class CapabilityPackBackedPlanningExecutionBinder:
                 ),
                 capability_execution_ref=bundle.capability_binding.binding_id,
                 capability_execution_hash=bundle.capability_binding.binding_hash,
-                capability_runtime_binding_ref=(
-                    bundle.attempt_snapshot.snapshot_id
-                ),
-                capability_runtime_binding_hash=(
-                    bundle.attempt_snapshot.snapshot_hash
-                ),
+                capability_runtime_binding_ref=(bundle.attempt_snapshot.snapshot_id),
+                capability_runtime_binding_hash=(bundle.attempt_snapshot.snapshot_hash),
                 commit_authority=bundle.capability_binding.commit_authority,
                 fixture_protocol_only=evidence.fixture_protocol_only,
+                context_bundle_asset_version_id=(
+                    getattr(
+                        bundle.capability_binding,
+                        "context_bundle_asset_version_id",
+                        "",
+                    )
+                ),
+                context_bundle_hash=getattr(
+                    bundle.capability_binding, "context_bundle_hash", ""
+                ),
+                narrative_intelligence_selection_digest=(
+                    getattr(
+                        bundle.capability_binding,
+                        "narrative_intelligence_selection_digest",
+                        "",
+                    )
+                ),
                 real_provider_proven=(
                     evidence.real_model_call and not evidence.fixture_protocol_only
                 ),
@@ -473,14 +502,14 @@ class CapabilityPackBackedPlanningExecutionBinder:
             )
         identity = (operation_id, attempt_id, fencing_token)
         if (
-            (
-                snapshot.operation_id,
-                snapshot.attempt_id,
-                snapshot.execution_fencing_token,
-            )
-            != identity
-            or (binding.operation_id, binding.attempt_id, binding.fencing_token) != identity
-        ):
+            snapshot.operation_id,
+            snapshot.attempt_id,
+            snapshot.execution_fencing_token,
+        ) != identity or (
+            binding.operation_id,
+            binding.attempt_id,
+            binding.fencing_token,
+        ) != identity:
             raise KernelError(
                 "PLANNING_EXECUTION_ATTEMPT_DRIFT",
                 "Pack Snapshot and Capability binding must use one Attempt fence",

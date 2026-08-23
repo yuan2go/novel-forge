@@ -282,6 +282,14 @@ def build_context_bundle(
         ),
     )
     task_narrative_projection = build_task_narrative_projection(plan)
+    mission = dict((execution_intent or {}).get("chapter_mission") or {})
+    if execution_intent and not mission:
+        raise KernelError(
+            "CHAPTER_EXECUTION_CONTEXT_MISSION_MISSING",
+            "Draft Context requires the compiled Chapter Mission",
+        )
+    mission_outcomes = dict(mission.get("required_outcomes") or {})
+    mission_boundaries = dict(mission.get("knowledge_and_disclosure_boundaries") or {})
     return {
         **governed,
         "chapter": plan["chapter"],
@@ -296,17 +304,48 @@ def build_context_bundle(
         "forbidden_source_count": 0,
         "task_narrative_projection": task_narrative_projection,
         "chapter_execution_expectations": {
-            "contract_version": "chapter-execution-expectations-v2",
+            "contract_version": "chapter-execution-expectations-v3",
             "chapter_plan_asset_version_id": plan_asset_version_id,
+            "chapter_execution_intent_asset_version_id": (
+                execution_intent_asset_version_id
+            ),
+            "mission_fingerprint": str(mission.get("mission_fingerprint") or ""),
+            "why_this_chapter_exists": str(
+                mission.get("why_this_chapter_exists") or objective
+            ),
+            "entry_state": dict(mission.get("entry_state") or {}),
+            "required_beats": list(mission.get("required_beats") or ()),
             "required_state_transitions": list(
-                plan.get("required_state_transitions") or []
+                mission_outcomes.get("state_transitions")
+                or plan.get("required_state_transitions")
+                or []
             ),
-            "disclosures": list(plan.get("disclosures") or []),
-            "knowledge_boundaries": list(plan.get("knowledge_boundaries") or []),
-            "expected_exit_state": dict(plan.get("expected_exit_state") or {}),
+            "disclosures": list(
+                mission_boundaries.get("disclosures") or plan.get("disclosures") or []
+            ),
+            "knowledge_boundaries": list(
+                mission_boundaries.get("knowledge_boundaries")
+                or plan.get("knowledge_boundaries")
+                or []
+            ),
+            "expected_exit_state": dict(
+                mission.get("expected_exit_state")
+                or plan.get("expected_exit_state")
+                or {}
+            ),
             "required_arc_contributions": list(
-                plan.get("required_arc_contributions") or []
+                mission.get("arc_contributions")
+                or plan.get("required_arc_contributions")
+                or []
             ),
+            "forbidden_changes": dict(mission.get("forbidden_changes") or {}),
+            "reader_effect": dict(mission.get("reader_effect") or {}),
+            "hook_intent": dict(mission.get("hook_intent") or {}),
+            "unresolved_obligation_intent": dict(
+                mission.get("unresolved_obligation_intent") or {}
+            ),
+            "narrative_composition": dict(mission.get("narrative_composition") or {}),
+            "arc_working_set": dict(mission.get("arc_working_set") or {}),
             "frozen_arc_plans": [
                 normalize_frozen_arc_plan(
                     arc_plan_version_id=arc_id,

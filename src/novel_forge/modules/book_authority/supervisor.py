@@ -225,8 +225,7 @@ class PostgresBookProductionSupervisor:
                 reason = str(request.get("failure_classification") or "")
                 self.chapter_groups.cancel(
                     str(group_run["group_run_id"]),
-                    reason=reason
-                    or "Chapter Authority reached a terminal failure",
+                    reason=reason or "Chapter Authority reached a terminal failure",
                     principal=self.principal,
                 )
                 return self._result(
@@ -383,6 +382,7 @@ class PostgresBookProductionSupervisor:
             str(chapter_plan["asset_version_id"])
         )
         chapter_admission = self.query.require_chapter_production_admission(
+            book_run_id=str(book["book_run_id"]),
             snapshot_id=str(book["input_snapshot_id"]),
             chapter_group_plan_version_id=str(group["asset_version_id"]),
             chapter_plan_version_id=str(chapter_plan["asset_version_id"]),
@@ -448,7 +448,7 @@ class PostgresBookProductionSupervisor:
                 ),
             )
         context_version_refs = {
-            **self._context_version_refs(book, group),
+            **self._context_version_refs(book, group, chapter_plan),
             **dict(prepared.context_version_refs),
             "longform_design_qualification_hash": chapter_admission[
                 "longform_design_qualification_hash"
@@ -525,11 +525,14 @@ class PostgresBookProductionSupervisor:
             snapshot_id=str(book["input_snapshot_id"]),
             chapter_cursor=chapter_number,
         )
-        arc_versions = self._generation_arc_versions(
+        arc_working_set = self._generation_arc_working_set(
             book=book,
             generator=generator,
             chapter_number=chapter_number,
-            active=tuple(cursor_projection["arc_plan_versions"]),
+        )
+        arc_versions = tuple(
+            str(item["arc_plan_version_id"])
+            for item in arc_working_set["selected_contributions"]
         )
         inputs = self._resolve_generation_inputs(
             book,
@@ -572,11 +575,13 @@ class PostgresBookProductionSupervisor:
                 ),
                 idempotency_key=(
                     f"{book['stable_idempotency_key']}:{generator}:{chapter_number}:"
-                    f"snapshot:{book['input_snapshot_id']}"
+                    f"snapshot:{book['input_snapshot_id']}:"
+                    f"working-set:{arc_working_set['working_set_digest']}"
                 ),
                 trace_id=f"{book['root_operation_id']}:{generator}:{chapter_number}",
                 correlation_id=str(book["root_operation_id"]),
                 auto_approve_low_risk=True,
+                arc_working_set=arc_working_set,
             ),
             principal=self.principal,
         )
@@ -700,54 +705,39 @@ class PostgresBookProductionSupervisor:
         )
         return self.chapter_groups.require(group_run_id) if group_run_id else None
 
-    def _generation_arc_versions(
+    def _generation_arc_working_set(
         self,
         *,
         book: dict[str, Any],
         generator: str,
         chapter_number: int,
-        active: tuple[str, ...],
-    ) -> tuple[str, ...]:
-        if not active:
-            raise KernelError(
-                "BOOK_SUPERVISOR_ACTIVE_ARC_MISSING",
-                "resolved Book input has no Active Arc plan",
-            )
-        if generator != "chapter_plan.generate":
-            return active
-        group = self._active_plan(book, "CHAPTER_GROUP", chapter_number)
-        if group is None:
-            raise KernelError(
-                "BOOK_SUPERVISOR_CHAPTER_GROUP_MISSING",
-                "Chapter generation requires current Narrative Scheduling",
-            )
-        rows = [
-            item
-            for item in group["content"].get("chapter_function_matrix") or ()
-            if isinstance(item, dict)
-            and int(item.get("chapter_number") or 0) == chapter_number
-        ]
-        if len(rows) != 1:
-            raise KernelError(
-                "BOOK_SUPERVISOR_SCHEDULE_ROW_INVALID",
-                "Narrative Scheduling must contain one Chapter function row",
-            )
-        scheduled = tuple(
-            str(item.get("arc_plan_version_id") or "")
-            for item in rows[0].get("arc_cadence") or ()
-            if isinstance(item, dict) and str(item.get("action") or "") != "DORMANT"
+    ) -> dict[str, Any]:
+        schedule_row: dict[str, Any] | None = None
+        if generator == "chapter_plan.generate":
+            group = self._active_plan(book, "CHAPTER_GROUP", chapter_number)
+            if group is None:
+                raise KernelError(
+                    "BOOK_SUPERVISOR_CHAPTER_GROUP_MISSING",
+                    "Chapter generation requires current Narrative Scheduling",
+                )
+            rows = [
+                item
+                for item in group["content"].get("chapter_function_matrix") or ()
+                if isinstance(item, dict)
+                and int(item.get("chapter_number") or 0) == chapter_number
+            ]
+            if len(rows) != 1:
+                raise KernelError(
+                    "BOOK_SUPERVISOR_SCHEDULE_ROW_INVALID",
+                    "Narrative Scheduling must contain one Chapter function row",
+                )
+            schedule_row = rows[0]
+        return self.query.require_arc_working_set(
+            book_run_id=str(book["book_run_id"]),
+            snapshot_id=str(book["input_snapshot_id"]),
+            chapter_number=chapter_number,
+            schedule_row=schedule_row,
         )
-        if (
-            not scheduled
-            or len(scheduled) > 3
-            or len(set(scheduled)) != len(scheduled)
-            or not set(scheduled).issubset(active)
-        ):
-            raise KernelError(
-                "BOOK_SUPERVISOR_SCHEDULE_ARC_INVALID",
-                "Chapter Arc context must be a bounded subset of active Scheduling",
-            )
-        return scheduled
 
     @staticmethod
     def _scheduler_action(action: str) -> SupervisorAction:
@@ -822,16 +812,34 @@ class PostgresBookProductionSupervisor:
         return dict(result)
 
     def _context_version_refs(
-        self, book: dict[str, Any], group: dict[str, Any]
+        self,
+        book: dict[str, Any],
+        group: dict[str, Any],
+        chapter_plan: dict[str, Any],
     ) -> dict[str, Any]:
         projection = self.query.require_cursor_plan_projection(
             snapshot_id=str(book["input_snapshot_id"]),
             chapter_cursor=int(book["accepted_through_chapter"]) + 1,
         )
+        envelope = (chapter_plan.get("content") or {}).get("constraint_envelope")
+        working_set = dict(
+            envelope.get("arc_working_set") if isinstance(envelope, dict) else {}
+        )
+        if not working_set:
+            raise KernelError(
+                "BOOK_SUPERVISOR_ARC_WORKING_SET_MISSING",
+                "Chapter dispatch requires its frozen Arc Working Set",
+            )
         return {
             **dict(book["longform_context_versions"]),
             "volume_plan_version": projection["volume_plan_version"],
             "arc_plan_versions": list(projection["arc_plan_versions"]),
+            "selected_arc_plan_versions": [
+                str(item["arc_plan_version_id"])
+                for item in working_set["selected_contributions"]
+            ],
+            "arc_working_set": working_set,
+            "arc_working_set_digest": working_set["working_set_digest"],
             "book_design_version": book["book_design_version"],
             "book_plan_version": book["book_plan_version"],
             "chapter_group_plan_version": group["asset_version_id"],

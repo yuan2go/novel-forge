@@ -214,6 +214,9 @@ TYPE_FIELDS = {
         "reward_action",
         "ending_hook",
         "prohibited_outcomes",
+        "narrative_density",
+        "arc_cadence",
+        "obligation_actions",
     ),
 }
 

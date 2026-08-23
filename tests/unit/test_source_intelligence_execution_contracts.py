@@ -5,6 +5,7 @@ import pytest
 from novel_forge.modules.production_execution import default_capability_registry
 from novel_forge.modules.source_import.execution_contracts import (
     CLASSIFICATION_STAGE,
+    MKAOS_STAGE,
     content_intelligence_fixture_response,
     content_intelligence_output_schema,
     validate_content_intelligence_output,
@@ -65,3 +66,26 @@ def test_malformed_unknown_or_inconsistent_classifier_output_fails_validation() 
     malformed = {**output, "confidence": 0.99}
     with pytest.raises(ValueError, match="top alternative"):
         validate_content_intelligence_output(CLASSIFICATION_STAGE, schema, malformed)
+
+
+def test_mkaos_extraction_requires_structured_originality_safe_intelligence() -> None:
+    schema = content_intelligence_output_schema(MKAOS_STAGE)
+    output = content_intelligence_fixture_response(MKAOS_STAGE, {})
+    assert output["semantic_family"] == "CONFLICT_ESCALATION_REVERSAL_PAYOFF"
+    assert output["originality_boundary"] == {
+        "source_specific_sequence_reusable": False,
+        "named_entity_substitution_allowed": False,
+        "expression_reuse_allowed": False,
+    }
+    assert schema["additionalProperties"] is False
+    validate_content_intelligence_output(MKAOS_STAGE, schema, output)
+
+    unsafe = {
+        **output,
+        "originality_boundary": {
+            **output["originality_boundary"],
+            "named_entity_substitution_allowed": True,
+        },
+    }
+    with pytest.raises(ValueError, match="originality_boundary"):
+        validate_content_intelligence_output(MKAOS_STAGE, schema, unsafe)

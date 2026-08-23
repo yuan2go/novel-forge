@@ -172,6 +172,7 @@ class StoryPlanningGenerationCommand:
     repair_number: int = 0
     auto_approve_low_risk: bool = False
     parent_agent_session_operation_id: str = ""
+    arc_working_set: Mapping[str, Any] | None = None
 
     def __post_init__(self) -> None:
         required = (
@@ -287,6 +288,38 @@ class StoryPlanningGenerationCommand:
         object.__setattr__(self, "dependent_arc_plan_version_ids", dependent_arcs)
         object.__setattr__(self, "change_evidence_version_ids", change_evidence)
         object.__setattr__(self, "governance_action_version_ids", governance_actions)
+        working_set = dict(self.arc_working_set or {})
+        if working_set:
+            body = {
+                key: value
+                for key, value in working_set.items()
+                if key != "working_set_digest"
+            }
+            selected = [
+                str(item.get("arc_plan_version_id") or "")
+                for item in working_set.get("selected_contributions") or ()
+                if isinstance(item, Mapping)
+            ]
+            frozen_arcs = [primary_arc, *related_arcs]
+            if (
+                self.generator_operation_name
+                not in {"chapter_group_plan.generate", "chapter_plan.generate"}
+                or working_set.get("contract_version") != "arc-working-set-v1"
+                or working_set.get("project_id") != self.project_id
+                or working_set.get("book_id") != self.book_id
+                or int(working_set.get("target_chapter") or 0) <= 0
+                or working_set.get("working_set_digest") != canonical_hash(body)
+                or not selected
+                or selected != frozen_arcs
+            ):
+                raise ValueError(
+                    "Planning Arc Working Set must exactly bind the frozen bounded Arc portfolio"
+                )
+        object.__setattr__(
+            self,
+            "arc_working_set",
+            MappingProxyType(working_set) if working_set else None,
+        )
         if self.parent_agent_session_operation_id and self.repair_of_candidate_id:
             raise ValueError(
                 "Planning generation cannot have both repair and Agent parent causation"
@@ -387,6 +420,9 @@ class PlanningExecutionEvidence:
     fixture_protocol_only: bool
     real_provider_proven: bool = False
     production_verified: bool = False
+    context_bundle_asset_version_id: str = ""
+    context_bundle_hash: str = ""
+    narrative_intelligence_selection_digest: str = ""
 
     def __post_init__(self) -> None:
         required = tuple(
@@ -398,6 +434,9 @@ class PlanningExecutionEvidence:
                 "fixture_protocol_only",
                 "real_provider_proven",
                 "production_verified",
+                "context_bundle_asset_version_id",
+                "context_bundle_hash",
+                "narrative_intelligence_selection_digest",
             }
             and not name.endswith("_hash")
         )
@@ -421,6 +460,19 @@ class PlanningExecutionEvidence:
             raise ValueError("Planning execution commit authority is not allowed")
         if self.production_verified and not self.real_provider_proven:
             raise ValueError("production verification cannot exceed provider evidence")
+        lineage = (
+            self.context_bundle_asset_version_id,
+            self.context_bundle_hash,
+            self.narrative_intelligence_selection_digest,
+        )
+        if any(lineage) and (
+            not all(lineage)
+            or not _CONTENT_HASH.fullmatch(self.context_bundle_hash)
+            or not _CONTENT_HASH.fullmatch(self.narrative_intelligence_selection_digest)
+        ):
+            raise ValueError(
+                "Planning Context / Narrative Intelligence lineage is invalid"
+            )
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -501,6 +553,7 @@ def build_planning_constraint_envelope(
     frozen_inputs: tuple[FrozenPlanningInput, ...],
     input_contents: Mapping[str, Mapping[str, Any]],
     candidate_payload: Mapping[str, Any],
+    arc_working_set: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Compile immutable parent constraints for validation and downstream execution."""
     if generator_operation_name not in GENERATOR_SCOPE:
@@ -617,6 +670,7 @@ def build_planning_constraint_envelope(
             "wider_scope_requires_new_plan_change": True,
             "preserve_executed_history": True,
         },
+        **({"arc_working_set": dict(arc_working_set)} if arc_working_set else {}),
     }
     return {**body, "envelope_digest": canonical_hash(body)}
 

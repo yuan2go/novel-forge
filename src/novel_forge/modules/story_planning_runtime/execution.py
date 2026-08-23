@@ -45,6 +45,8 @@ from novel_forge.modules.hierarchical_planning.domain import (
     PlanContractType,
     RealizationLevel,
 )
+from novel_forge.modules.mkaos_authority import MkaosAuthorityQuery
+from novel_forge.modules.mkaos_authority.domain import NarrativeIntelligenceNeed
 from novel_forge.modules.production_execution import (
     ArtifactPointer,
     ExecutionOutcome,
@@ -104,6 +106,185 @@ _PLANNING_STAGES = frozenset(
 # the Effect from terminalizing while the Operation still has retry budget and
 # prevents nested retry amplification.
 PLANNING_EXTERNAL_EFFECT_MAX_ATTEMPTS = STORY_PLANNING_MAX_ATTEMPTS
+
+
+def _planning_narrative_intelligence_need(
+    *,
+    command: StoryPlanningGenerationCommand,
+    selected_inputs: list[dict[str, Any]],
+    production_profile: Mapping[str, Any],
+    recent_repetition_keys: tuple[str, ...] = (),
+) -> NarrativeIntelligenceNeed:
+    """Translate frozen Authority inputs into a bounded semantic selection need."""
+
+    sources: list[Any] = [
+        item.get("content")
+        for item in selected_inputs
+        if isinstance(item.get("content"), Mapping)
+    ]
+    sources.extend((production_profile, dict(command.arc_working_set or {})))
+    stage = command.generator_operation_name
+    scope = {
+        "book_plan.generate": "STORY",
+        "volume_plan.generate": "STORY",
+        "arc_plan.generate": "ARC",
+        "chapter_group_plan.generate": "CHAPTER",
+        "chapter_plan.generate": "SCENE",
+    }[stage]
+    families = {
+        "book_plan.generate": (
+            "NARRATIVE_MECHANISM",
+            "CHARACTER_TRANSFORMATION",
+            "READER_EMOTIONAL_CURVE",
+            "THEME_MORAL_DILEMMA",
+            "PROFESSIONAL_CAUSAL_MECHANISM",
+        ),
+        "volume_plan.generate": (
+            "ARC_BEAT_PATTERN",
+            "CONFLICT_ESCALATION_REVERSAL_PAYOFF",
+            "WORLD_CONSEQUENCE",
+            "FACTION_DYNAMICS",
+            "READER_EMOTIONAL_CURVE",
+        ),
+        "arc_plan.generate": (
+            "ARC_BEAT_PATTERN",
+            "CONFLICT_ESCALATION_REVERSAL_PAYOFF",
+            "CHARACTER_TRANSFORMATION",
+            "RELATIONSHIP",
+            "MYSTERY_CLUE_REVEAL",
+            "POWER_RESOURCE_PROGRESSION",
+        ),
+        "chapter_group_plan.generate": (
+            "CONFLICT_ESCALATION_REVERSAL_PAYOFF",
+            "MYSTERY_CLUE_REVEAL",
+            "WORLD_CONSEQUENCE",
+            "READER_EMOTIONAL_CURVE",
+            "ANTI_PATTERN_FAILURE",
+        ),
+        "chapter_plan.generate": (
+            "NARRATIVE_PRIMITIVE",
+            "SCENE_INTERACTION",
+            "CONFLICT_ESCALATION_REVERSAL_PAYOFF",
+            "RELATIONSHIP",
+            "MYSTERY_CLUE_REVEAL",
+            "READER_EMOTIONAL_CURVE",
+            "ANTI_PATTERN_FAILURE",
+            "PROFESSIONAL_CAUSAL_MECHANISM",
+        ),
+    }[stage]
+    return NarrativeIntelligenceNeed(
+        scope=scope,
+        target_stage=stage,
+        current_state_terms=_selection_terms(
+            sources,
+            {
+                "current_state",
+                "current_phase",
+                "lifecycle",
+                "status",
+                "entry_state",
+                "state_before",
+                "obligation_status",
+                "checkpoint_status",
+            },
+        ),
+        desired_transformation_terms=_selection_terms(
+            sources,
+            {
+                "objective",
+                "purpose",
+                "desired_transformation",
+                "required_state_delta",
+                "required_outcomes",
+                "chapter_function",
+                "exit_state",
+                "expected_exit_state",
+                "contribution_action",
+                "action",
+            },
+        ),
+        genre_tags=_selection_terms(sources, {"genre", "genre_tags"}),
+        conflict_tags=_selection_terms(
+            sources, {"conflict", "conflict_tags", "conflict_type"}
+        ),
+        reader_effect_tags=_selection_terms(
+            sources,
+            {
+                "reader_effect",
+                "reader_effect_tags",
+                "intended_reader_effect",
+                "reader_promise",
+                "reader_intent",
+            },
+        ),
+        theme_tags=_selection_terms(sources, {"theme", "theme_tags"}),
+        hard_constraints=_selection_terms(
+            sources,
+            {
+                "hard_constraints",
+                "constraints",
+                "forbidden_changes",
+                "prohibited_changes",
+            },
+        ),
+        recently_used_repetition_keys=_merge_selection_terms(
+            _selection_terms(
+                sources,
+                {
+                    "recently_used_repetition_keys",
+                    "repetition_keys",
+                    "recent_patterns",
+                },
+            ),
+            recent_repetition_keys,
+        ),
+        semantic_families=families,
+    )
+
+
+def _selection_terms(
+    sources: list[Any], keys: set[str], *, limit: int = 32
+) -> tuple[str, ...]:
+    values: list[str] = []
+
+    def visit(value: Any) -> None:
+        if len(values) >= limit:
+            return
+        if isinstance(value, Mapping):
+            for key, item in value.items():
+                if str(key).strip().casefold() in keys:
+                    collect(item)
+                visit(item)
+        elif isinstance(value, (list, tuple)):
+            for item in value:
+                visit(item)
+
+    def collect(value: Any) -> None:
+        if len(values) >= limit:
+            return
+        if isinstance(value, str) and value.strip():
+            values.append(value.strip()[:500])
+        elif isinstance(value, Mapping):
+            for item in value.values():
+                collect(item)
+        elif isinstance(value, (list, tuple)):
+            for item in value:
+                collect(item)
+
+    normalized_keys = {key.casefold() for key in keys}
+    keys.clear()
+    keys.update(normalized_keys)
+    for source in sources:
+        visit(source)
+    return tuple(sorted(set(values))[:limit])
+
+
+def _narrative_intelligence_limit(stage: str) -> int:
+    return 4 if stage in {"book_plan.generate", "volume_plan.generate"} else 6
+
+
+def _merge_selection_terms(*values: tuple[str, ...]) -> tuple[str, ...]:
+    return tuple(sorted({item for group in values for item in group if item}))[:32]
 
 
 @dataclass(frozen=True, slots=True)
@@ -641,7 +822,13 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
             "arc_schedule": [
                 {
                     "arc_plan_version_id": arc_id,
-                    "role": "PRIMARY" if index == 0 else "SECONDARY",
+                    "role": (
+                        "PRIMARY"
+                        if index == 0
+                        else "SECONDARY"
+                        if index == 1
+                        else "TOUCH"
+                    ),
                     "segment_id": f"arc-segment:{index + 1}",
                     "expected_movement": (
                         f"{arc_entry_state} becomes {arc_exit_state}"
@@ -728,7 +915,7 @@ def planning_fixture_response(stage: str, inputs: Mapping[str, Any]) -> dict[str
                     "location_id": "location:witness-room",
                     "narrative_time_relation": "ESTABLISHES",
                     "accessible_knowledge": [],
-                    "arc_progress": [str(versions.get("arc_plans") or "arc:primary")],
+                    "arc_progress": list(arc_plan_ids or ("arc:primary",)),
                     "information_gain": ["fact:hidden-cost"],
                     "state_transitions": ["protagonist:accountability"],
                     "entry_state": arc_entry_state,
@@ -1423,6 +1610,7 @@ def planning_provider_output_schema(
         elif field == "chapter_number":
             properties[field] = {"type": "integer", "minimum": 1}
         elif field == "chapter_function_matrix":
+            arc_ref = _frozen_arc_ref_schema(arc_plan_version_ids, string)
             properties[field] = {
                 "type": "array",
                 "minItems": 3,
@@ -1438,7 +1626,7 @@ def planning_provider_output_schema(
                             "minItems": 1,
                             "items": _strict_object(
                                 {
-                                    "arc_plan_version_id": string,
+                                    "arc_plan_version_id": arc_ref,
                                     "contribution": string,
                                 }
                             ),
@@ -1464,7 +1652,7 @@ def planning_provider_output_schema(
                             "maxItems": 3,
                             "items": _strict_object(
                                 {
-                                    "arc_plan_version_id": string,
+                                    "arc_plan_version_id": arc_ref,
                                     "action": {
                                         "type": "string",
                                         "enum": [
@@ -1495,6 +1683,51 @@ def planning_provider_output_schema(
                                 }
                             ),
                         },
+                    }
+                ),
+            }
+        elif field == "narrative_density":
+            properties[field] = {
+                "type": "string",
+                "enum": ["LOW", "MEDIUM", "HIGH"],
+            }
+        elif field == "arc_cadence":
+            properties[field] = {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": min(3, len(arc_plan_version_ids))
+                if arc_plan_version_ids
+                else 3,
+                "items": _strict_object(
+                    {
+                        "arc_plan_version_id": _frozen_arc_ref_schema(
+                            arc_plan_version_ids, string
+                        ),
+                        "action": {
+                            "type": "string",
+                            "enum": [
+                                "ADVANCE",
+                                "TOUCH",
+                                "DORMANT",
+                                "REACTIVATE",
+                                "SETUP",
+                                "PAYOFF",
+                            ],
+                        },
+                    }
+                ),
+            }
+        elif field == "obligation_actions":
+            properties[field] = {
+                "type": "array",
+                "items": _strict_object(
+                    {
+                        "obligation_id": string,
+                        "action": {
+                            "type": "string",
+                            "enum": ["SETUP", "ADVANCE", "PAYOFF"],
+                        },
+                        "due_chapter": {"type": "integer", "minimum": 1},
                     }
                 ),
             }
@@ -1964,6 +2197,7 @@ class PostgresPlanningExecutionPreparer:
         self.query = AuthorityAssetQuery(database_url)
         self.writer = AuthorityAssetWriter(database_url)
         self.pack_runtime = CapabilityPackRuntimeResolver(database_url)
+        self.mkaos = MkaosAuthorityQuery(database_url)
 
     def prepare(
         self,
@@ -2072,6 +2306,9 @@ class PostgresPlanningExecutionPreparer:
                 item.to_dict(include_content=True)
                 for item in pack_materialization.required_knowledge
             ],
+            "narrative_intelligence_selection": context_document.content.get(
+                "narrative_intelligence", {}
+            ),
             "tool_permissions": {
                 "default": str(tools.get("default") or ""),
                 "allowed": list(allowed_tools),
@@ -2113,6 +2350,7 @@ class PostgresPlanningExecutionPreparer:
                 )
             },
             candidate_payload={},
+            arc_working_set=command.arc_working_set,
         )
         stable_request_payload = {
             "stage": command.generator_operation_name,
@@ -2142,6 +2380,7 @@ class PostgresPlanningExecutionPreparer:
                     ),
                     "repair_number": command.repair_number,
                     "repair_reason": command.repair_reason,
+                    "arc_working_set": dict(command.arc_working_set or {}),
                 },
                 "frozen_inputs": [
                     {
@@ -2163,6 +2402,10 @@ class PostgresPlanningExecutionPreparer:
                         "narrative_load_projection"
                     ],
                 },
+                "arc_working_set": dict(command.arc_working_set or {}),
+                "narrative_intelligence": context_document.content.get(
+                    "narrative_intelligence", {}
+                ),
             },
             "trace_id": command.trace_id,
             "correlation_id": command.correlation_id,
@@ -2339,6 +2582,9 @@ class PostgresPlanningExecutionPreparer:
             ),
             context_bundle_asset_version_id=context_document.asset_version_id,
             context_bundle_hash=context_document.content_hash,
+            narrative_intelligence_selection_digest=str(
+                context_document.content["narrative_intelligence"]["selection_digest"]
+            ),
             route_snapshot_ref=binding.route_snapshot.route_snapshot_id,
             route_snapshot_hash=contract_documents["route"].content_hash,
             input_manifest_ref=binding.input_manifest.manifest_id,
@@ -2687,6 +2933,59 @@ class PostgresPlanningExecutionPreparer:
                 "PLANNING_LANGUAGE_CONTRACT_INVALID",
                 "Book Authority language contract must be an object",
             )
+        logical_ref = f"planning/context_bundles/{operation_id}-{attempt_id}.json"
+        try:
+            frozen_context = self.query.require(
+                project_id=command.project_id, logical_ref=logical_ref
+            )
+        except KernelError as exc:
+            if exc.code != "AUTHORITY_ASSET_NOT_FOUND":
+                raise
+        else:
+            self._validate_frozen_context_retry(
+                context=frozen_context,
+                command=command,
+                selected_inputs=selected,
+            )
+            selection = frozen_context.content.get("narrative_intelligence")
+            if not isinstance(selection, Mapping):
+                raise KernelError(
+                    "PLANNING_CONTEXT_BUNDLE_INVALID",
+                    "Frozen Planning Context lacks Narrative Intelligence selection",
+                )
+            self._append_narrative_intelligence_documents(
+                command=command,
+                selection=selection,
+                documents=documents,
+            )
+            return frozen_context, tuple(documents)
+        need = _planning_narrative_intelligence_need(
+            command=command,
+            selected_inputs=selected,
+            production_profile=production_profile,
+            recent_repetition_keys=tuple(
+                dict.fromkeys(
+                    str(item.get("repetition_key") or "")
+                    for item in self.mkaos.list_planning_usage(
+                        project_id=command.project_id,
+                        book_id=command.book_id,
+                        limit=100,
+                    )
+                    if str(item.get("repetition_key") or "")
+                )
+            )[:32],
+        )
+        narrative_intelligence = self.mkaos.resolve_narrative_intelligence(
+            project_id=command.project_id,
+            need=need,
+            limit=_narrative_intelligence_limit(command.generator_operation_name),
+        )
+        self._append_narrative_intelligence_documents(
+            command=command,
+            selection=narrative_intelligence,
+            documents=documents,
+            selected_inputs=selected,
+        )
         content = {
             "schema_version": "novelos.planning_context_bundle.v1",
             "project_id": command.project_id,
@@ -2695,6 +2994,8 @@ class PostgresPlanningExecutionPreparer:
             "planning_scope": command.planning_scope.value,
             "logical_key": command.logical_key,
             "input_versions": selected,
+            "arc_working_set": dict(command.arc_working_set or {}),
+            "narrative_intelligence": narrative_intelligence,
             "token_budget": 16000,
             "source_isolation": "ABSTRACT_ASSETS_ONLY",
             "narrative_qualification_profiles": [
@@ -2718,40 +3019,108 @@ class PostgresPlanningExecutionPreparer:
                 else {}
             ),
         }
-        logical_ref = f"planning/context_bundles/{operation_id}-{attempt_id}.json"
-        try:
-            context = self.query.require(
-                project_id=command.project_id, logical_ref=logical_ref
+        context = self.writer.materialize_output(
+            AuthorityAssetWriteCommand(
+                operation_id=operation_id,
+                project_id=command.project_id,
+                asset_id=f"planning-context:{attempt_id}",
+                asset_type="context_bundle",
+                schema_version="novelos.planning_context_bundle.v1",
+                logical_ref=logical_ref,
+                category="planning_context",
+                output_key="planning.context_bundle",
+                role="context_bundle",
+                content=content,
+                qualification_policy="planning-context-source-isolation-v1",
+                trace_id=command.trace_id,
+                correlation_id=command.correlation_id,
+                reference_asset_ids=tuple(document.asset_id for document in documents),
             )
-            if context.content != content:
-                raise KernelError(
-                    "PLANNING_CONTEXT_BUNDLE_CONFLICT",
-                    "Planning Attempt context changed after freeze",
-                )
-        except KernelError as exc:
-            if exc.code != "AUTHORITY_ASSET_NOT_FOUND":
-                raise
-            context = self.writer.materialize_output(
-                AuthorityAssetWriteCommand(
-                    operation_id=operation_id,
-                    project_id=command.project_id,
-                    asset_id=f"planning-context:{attempt_id}",
-                    asset_type="context_bundle",
-                    schema_version="novelos.planning_context_bundle.v1",
-                    logical_ref=logical_ref,
-                    category="planning_context",
-                    output_key="planning.context_bundle",
-                    role="context_bundle",
-                    content=content,
-                    qualification_policy="planning-context-source-isolation-v1",
-                    trace_id=command.trace_id,
-                    correlation_id=command.correlation_id,
-                    reference_asset_ids=tuple(
-                        document.asset_id for document in documents
-                    ),
-                )
-            )
+        )
         return context, tuple(documents)
+
+    def _append_narrative_intelligence_documents(
+        self,
+        *,
+        command: StoryPlanningGenerationCommand,
+        selection: Mapping[str, Any],
+        documents: list[AuthorityAssetDocument],
+        selected_inputs: list[dict[str, Any]] | None = None,
+    ) -> None:
+        selected = selection.get("selected")
+        if not isinstance(selected, list):
+            raise KernelError(
+                "PLANNING_NARRATIVE_INTELLIGENCE_INVALID",
+                "Narrative Intelligence selection must expose a bounded card list",
+            )
+        if len(selected) > 12:
+            raise KernelError(
+                "PLANNING_NARRATIVE_INTELLIGENCE_INVALID",
+                "Narrative Intelligence selection exceeds Planning bandwidth",
+            )
+        for ordinal, item in enumerate(selected, start=1):
+            if not isinstance(item, Mapping):
+                raise KernelError(
+                    "PLANNING_NARRATIVE_INTELLIGENCE_INVALID",
+                    "Narrative Intelligence selection item is malformed",
+                )
+            asset_version_id = str(item.get("knowledge_card_asset_version_id") or "")
+            document = self.query.require(
+                project_id=command.project_id,
+                asset_version_id=asset_version_id,
+            )
+            if (
+                document.asset_type != "knowledge_card"
+                or document.content_hash != str(item.get("content_hash") or "")
+                or document.lifecycle != "ACTIVE"
+                or document.governance != "CLEAR"
+                or document.eligibility not in {"ELIGIBLE", "PRODUCTION_ELIGIBLE"}
+            ):
+                raise KernelError(
+                    "PLANNING_NARRATIVE_INTELLIGENCE_DRIFT",
+                    "Selected KnowledgeCard differs from its governed frozen version",
+                )
+            documents.append(document)
+            if selected_inputs is not None:
+                selected_inputs.append(
+                    {
+                        "role": f"narrative_intelligence:{ordinal}",
+                        "asset_version_id": document.asset_version_id,
+                        "asset_type": document.asset_type,
+                        "content_hash": document.content_hash,
+                        "content": dict(item.get("selected_content") or {}),
+                        "selection_score": int(item.get("score") or 0),
+                        "selection_reasons": list(item.get("match_reasons") or ()),
+                    }
+                )
+
+    @staticmethod
+    def _validate_frozen_context_retry(
+        *,
+        context: AuthorityAssetDocument,
+        command: StoryPlanningGenerationCommand,
+        selected_inputs: list[dict[str, Any]],
+    ) -> None:
+        content = context.content
+        frozen_inputs = content.get("input_versions")
+        if (
+            context.asset_type != "context_bundle"
+            or context.lifecycle != "ACTIVE"
+            or context.governance != "CLEAR"
+            or content.get("schema_version") != "novelos.planning_context_bundle.v1"
+            or content.get("project_id") != command.project_id
+            or content.get("workspace_id") != command.workspace_id
+            or content.get("book_id") != command.book_id
+            or content.get("planning_scope") != command.planning_scope.value
+            or content.get("logical_key") != command.logical_key
+            or content.get("arc_working_set") != dict(command.arc_working_set or {})
+            or not isinstance(frozen_inputs, list)
+            or frozen_inputs[: len(selected_inputs)] != selected_inputs
+        ):
+            raise KernelError(
+                "PLANNING_CONTEXT_BUNDLE_CONFLICT",
+                "Planning Attempt context changed after freeze",
+            )
 
     @staticmethod
     def _allowed_tools(policy: Mapping[str, Any], stage: str) -> tuple[str, ...]:

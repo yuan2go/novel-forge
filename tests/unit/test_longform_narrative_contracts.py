@@ -8,6 +8,7 @@ from novel_forge.modules.longform_narrative import (
     ArcObservationStatus,
     build_arc_checkpoint,
     build_arc_progress,
+    build_arc_working_set,
     build_longform_projection_set,
     normalize_arc_evidence,
     normalize_frozen_arc_plan,
@@ -149,7 +150,9 @@ def test_overdue_obligation_requires_correction_without_model_decision() -> None
     assert checkpoint["reasons"] == ["OBLIGATION_OVERDUE"]
 
 
-def test_projection_set_is_complete_and_marks_unscheduled_arc_not_materialized() -> None:
+def test_projection_set_is_complete_and_marks_unscheduled_arc_not_materialized() -> (
+    None
+):
     projection = build_longform_projection_set(
         project_id="project:1",
         book_id="book:1",
@@ -218,9 +221,7 @@ def test_normalization_preserves_accepted_completion_and_phase_evidence() -> Non
         ),
     )
 
-    assert normalized[0]["completion_criterion_ids"] == [
-        "criterion:earned-choice"
-    ]
+    assert normalized[0]["completion_criterion_ids"] == ["criterion:earned-choice"]
     assert normalized[0]["phase_to"] == "CONSEQUENCE"
 
 
@@ -308,7 +309,8 @@ def test_dependency_and_overdue_obligation_drive_real_checkpoint_inputs() -> Non
     )
 
     checkpoint = next(
-        item for item in projection["arc_checkpoints"]
+        item
+        for item in projection["arc_checkpoints"]
         if item["arc_plan_version_id"] == "arc:b"
     )
     assert checkpoint["decision"] == ArcCheckpointDecision.REPLAN_REQUIRED
@@ -365,7 +367,243 @@ def test_completion_requires_frozen_criterion_ids_not_plan_assertion() -> None:
         },
     )
 
-    assert projection["arc_checkpoints"][0]["decision"] == ArcCheckpointDecision.COMPLETED
+    assert (
+        projection["arc_checkpoints"][0]["decision"] == ArcCheckpointDecision.COMPLETED
+    )
     assert projection["arc_outcomes"][0]["completion_evidence"][
         "resolution_evidence"
     ] == ["scene:2:1"]
+
+
+def test_completed_arc_and_cumulative_criteria_never_regress() -> None:
+    plan = normalize_frozen_arc_plan(
+        arc_plan_version_id="arc:complete",
+        content={
+            "objective": "finish",
+            "closure_conditions": ["choice", "cost"],
+            "target_progress_units": 2,
+        },
+    )
+    criteria = [item["criterion_id"] for item in plan["completion_criteria"]]
+    projection = build_longform_projection_set(
+        project_id="project:1",
+        book_id="book:1",
+        book_run_id="book-run:1",
+        chapter_request_id="chapter-request:3",
+        chapter_number=3,
+        acceptance_id="acceptance:3",
+        acceptance_operation_id="operation:accept:3",
+        chapter_outcome_asset_version_id="outcome:v3",
+        story_state_asset_version_id="story-state:v3",
+        canon_snapshot_asset_version_id="canon:v3",
+        active_arc_plan_version_ids=("arc:complete",),
+        expected_progress_units={"arc:complete": 1},
+        previous_arc_states={
+            "arc:complete": {
+                "cumulative_progress_units": 1,
+                "lifecycle_status": "ACTIVE",
+                "satisfied_completion_criterion_ids": [criteria[0]],
+                "last_material_progress_chapter": 2,
+            }
+        },
+        chapter_outcome={
+            "arc_evidence": [
+                {
+                    "arc_plan_version_id": "arc:complete",
+                    "observation_status": "OBSERVED",
+                    "progress_units": 1,
+                    "resolution_evidence": ["scene:3:1"],
+                    "completion_criterion_ids": [criteria[1]],
+                }
+            ]
+        },
+        story_state={"current_state": {"narrative_obligation": []}},
+        arc_plan_snapshots={
+            "arc:complete": {
+                "objective": "finish",
+                "closure_conditions": ["choice", "cost"],
+                "target_progress_units": 2,
+            }
+        },
+    )
+    state = projection["arc_states"][0]
+    assert state["lifecycle_status"] == "COMPLETED"
+    assert state["satisfied_completion_criterion_ids"] == criteria
+
+    later = build_longform_projection_set(
+        project_id="project:1",
+        book_id="book:1",
+        book_run_id="book-run:1",
+        chapter_request_id="chapter-request:4",
+        chapter_number=4,
+        acceptance_id="acceptance:4",
+        acceptance_operation_id="operation:accept:4",
+        chapter_outcome_asset_version_id="outcome:v4",
+        story_state_asset_version_id="story-state:v4",
+        canon_snapshot_asset_version_id="canon:v4",
+        active_arc_plan_version_ids=("arc:complete",),
+        expected_progress_units={},
+        previous_arc_states={"arc:complete": state},
+        chapter_outcome={"arc_evidence": []},
+        story_state={"current_state": {"narrative_obligation": []}},
+        arc_plan_snapshots={
+            "arc:complete": {
+                "objective": "finish",
+                "closure_conditions": ["choice", "cost"],
+                "target_progress_units": 2,
+            }
+        },
+    )
+    assert later["arc_states"][0]["lifecycle_status"] == "COMPLETED"
+
+
+def test_arc_working_set_corrects_static_cadence_from_accepted_debt() -> None:
+    projection = {
+        "projection_set_id": "projection:4",
+        "projection_hash": "sha256:" + "a" * 64,
+        "accepted_boundary": {"chapter_number": 4},
+        "arc_states": [
+            {
+                "arc_plan_version_id": "arc:static",
+                "lifecycle_status": "ACTIVE",
+                "last_material_progress_chapter": 4,
+            },
+            {
+                "arc_plan_version_id": "arc:overdue",
+                "lifecycle_status": "ACTIVE",
+                "last_material_progress_chapter": 1,
+            },
+        ],
+        "arc_progress": [],
+        "arc_checkpoints": [],
+        "obligation_states": [
+            {
+                "entity_key": "promise:late",
+                "state": {
+                    "obligation_id": "promise:late",
+                    "linked_arc_ids": ["arc:overdue"],
+                    "accepted_evaluation": {"overdue": True},
+                },
+            }
+        ],
+    }
+    working_set = build_arc_working_set(
+        project_id="project:1",
+        book_id="book:1",
+        chapter_number=5,
+        arc_plan_snapshots={
+            "arc:static": {"objective": "static", "closure_conditions": ["done"]},
+            "arc:overdue": {
+                "objective": "pay debt",
+                "closure_conditions": ["paid"],
+            },
+        },
+        accepted_projection=projection,
+        accepted_narrative_state={
+            "asset_version_id": "story-state:v4",
+            "content_hash": "sha256:" + "b" * 64,
+            "content": {"accepted_through_chapter": 4, "current_state": {}},
+        },
+        narrative_load_policy={"limits": {"max_active_arcs": 1}},
+        schedule_row={
+            "narrative_density": "LOW",
+            "arc_cadence": [{"arc_plan_version_id": "arc:static", "action": "ADVANCE"}],
+        },
+        reader_intent={"reward_mode": "PAYOFF"},
+    )
+
+    assert working_set["selected_contributions"] == [
+        {
+            "arc_plan_version_id": "arc:overdue",
+            "role": "PRIMARY",
+            "action": "PAYOFF",
+            "score": 68,
+            "reason_codes": [
+                "OBLIGATION_OVERDUE",
+                "STARVATION_PRESSURE",
+                "READER_PAYOFF_INTENT",
+            ],
+        }
+    ]
+    assert working_set["schedule_correction"] == {
+        "status": "CORRECTED_FROM_GROUP_CADENCE",
+        "added_arc_plan_version_ids": ["arc:overdue"],
+        "removed_arc_plan_version_ids": ["arc:static"],
+    }
+    assert working_set["authority_boundary"][
+        "actual_progress_requires_accepted_chapter_outcome"
+    ]
+
+
+def test_arc_working_set_filters_terminal_and_dependency_illegal_arcs() -> None:
+    working_set = build_arc_working_set(
+        project_id="project:1",
+        book_id="book:1",
+        chapter_number=3,
+        arc_plan_snapshots={
+            "arc:root": {"objective": "root", "closure_conditions": ["done"]},
+            "arc:dependent": {
+                "objective": "dependent",
+                "closure_conditions": ["done"],
+                "dependencies": ["arc:root"],
+            },
+            "arc:finished": {
+                "objective": "finished",
+                "closure_conditions": ["done"],
+            },
+        },
+        accepted_projection={
+            "accepted_boundary": {"chapter_number": 2},
+            "arc_states": [
+                {
+                    "arc_plan_version_id": "arc:root",
+                    "lifecycle_status": "ACTIVE",
+                    "current_phase": "CLIMAX",
+                },
+                {
+                    "arc_plan_version_id": "arc:dependent",
+                    "lifecycle_status": "BLOCKED",
+                },
+                {
+                    "arc_plan_version_id": "arc:finished",
+                    "lifecycle_status": "COMPLETED",
+                },
+            ],
+        },
+        accepted_narrative_state={
+            "asset_version_id": "story-state:v2",
+            "content_hash": "sha256:" + "c" * 64,
+            "content": {"accepted_through_chapter": 2, "current_state": {}},
+        },
+        narrative_load_policy={"limits": {"max_active_arcs": 3}},
+    )
+    assert [
+        item["arc_plan_version_id"] for item in working_set["selected_contributions"]
+    ] == ["arc:root"]
+    by_id = {item["arc_plan_version_id"]: item for item in working_set["candidates"]}
+    assert working_set["selected_contributions"][0]["action"] == "PAYOFF"
+    assert by_id["arc:root"]["payoff_readiness"] == "READY"
+    assert by_id["arc:dependent"]["dependency_blockers"] == ["arc:root"]
+    assert by_id["arc:finished"]["reasons"] == ["TERMINAL_COMPLETED"]
+    assert working_set["accepted_reality"]["narrative_state"]["content_hash"] == (
+        "sha256:" + "c" * 64
+    )
+
+
+def test_arc_working_set_rejects_a_stale_narrative_state_boundary() -> None:
+    with pytest.raises(KernelError, match="Narrative State differs"):
+        build_arc_working_set(
+            project_id="project:1",
+            book_id="book:1",
+            chapter_number=2,
+            arc_plan_snapshots={
+                "arc:one": {"objective": "advance", "closure_conditions": ["done"]}
+            },
+            accepted_projection={"accepted_boundary": {"chapter_number": 1}},
+            accepted_narrative_state={
+                "asset_version_id": "story-state:v0",
+                "content_hash": "sha256:" + "d" * 64,
+                "content": {"accepted_through_chapter": 0, "current_state": {}},
+            },
+            narrative_load_policy={"limits": {"max_active_arcs": 1}},
+        )
