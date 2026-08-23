@@ -166,7 +166,6 @@ class PostgresBookProductionSupervisor:
             BookProductionState.CANON_COMMITTED.value,
             BookProductionState.READER_OUTCOME_PENDING.value,
             BookProductionState.FOLLOWUP_PENDING.value,
-            BookProductionState.CHECKPOINT_PENDING.value,
         }:
             group_run = self._active_group_run(book)
             if (
@@ -177,7 +176,6 @@ class PostgresBookProductionSupervisor:
                     BookProductionState.CANON_COMMITTED.value,
                     BookProductionState.READER_OUTCOME_PENDING.value,
                     BookProductionState.FOLLOWUP_PENDING.value,
-                    BookProductionState.CHECKPOINT_PENDING.value,
                 }
             ):
                 closed = self.chapter_groups.close(
@@ -205,7 +203,6 @@ class PostgresBookProductionSupervisor:
                     BookProductionState.CANON_COMMITTED.value,
                     BookProductionState.READER_OUTCOME_PENDING.value,
                     BookProductionState.FOLLOWUP_PENDING.value,
-                    BookProductionState.CHECKPOINT_PENDING.value,
                 }
             ):
                 reconciled = self.chapter_groups.reconcile_and_accept(

@@ -96,6 +96,7 @@ from . import (
     v20260820_0093_book_liveness_critical_path_closure,
     v20260820_0094_industrial_autonomous_novel_os,
     v20260821_0095_post_merge_correctness_repair,
+    v20260821_0096_runtime_hardening,
 )
 
 VERSION_MODULES = [
@@ -194,6 +195,7 @@ VERSION_MODULES = [
     v20260820_0093_book_liveness_critical_path_closure,
     v20260820_0094_industrial_autonomous_novel_os,
     v20260821_0095_post_merge_correctness_repair,
+    v20260821_0096_runtime_hardening,
 ]
 
 __all__ = ["VERSION_MODULES"]

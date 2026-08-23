@@ -13,7 +13,7 @@ def test_0095_is_forward_only_registration_not_projection_business_logic() -> No
     validate_migration_chain()
     assert migration.DOWN_REVISION == previous.MIGRATION_ID
     assert migration.FORWARD_ONLY is True
-    assert migration.MIGRATION_ID == LATEST_MIGRATION_ID
+    assert migration.MIGRATION_ID != LATEST_MIGRATION_ID
     assert "CREATE TABLE authority_book_projection_repair" in sql
     assert "CREATE TABLE authority_book_projection_repair_checkpoint" in sql
     assert "BOOK_PROJECTION_REPAIR" in sql

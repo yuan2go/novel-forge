@@ -68,12 +68,17 @@ class PostgresAgentRuntimeRepository:
             ],
         )
         owner = self.cursor.fetchone()
-        if owner is None or not str(owner[3] or "") or str(owner[2]) not in {
-            "ADMITTED",
-            "READY",
-            "EXECUTING",
-            "WAITING_EXTERNAL_RESULT",
-        }:
+        if (
+            owner is None
+            or not str(owner[3] or "")
+            or str(owner[2])
+            not in {
+                "ADMITTED",
+                "READY",
+                "EXECUTING",
+                "WAITING_EXTERNAL_RESULT",
+            }
+        ):
             raise KernelError(
                 "AGENT_HARNESS_OPERATION_INVALID",
                 "Agent session requires an active scoped Authority Operation",
@@ -92,8 +97,9 @@ class PostgresAgentRuntimeRepository:
             INSERT INTO authority_agent_harness_session(
                 agent_session_id, project_id, workspace_id, operation_id,
                 agent_role, status, accepted_boundary, tool_policy,
-                skill_bindings, budget, usage, next_sequence, version
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                skill_bindings, budget, execution_contract,
+                execution_contract_hash, usage, next_sequence, version
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT(agent_session_id) DO NOTHING
             """,
             [
@@ -107,6 +113,8 @@ class PostgresAgentRuntimeRepository:
                 Jsonb([_tool_payload(tool) for tool in session.tool_policy]),
                 Jsonb([dict(item) for item in session.skill_bindings]),
                 Jsonb(asdict(session.budget)),
+                Jsonb(dict(session.execution_contract)),
+                session.execution_contract_hash,
                 Jsonb(asdict(session.usage)),
                 session.next_sequence,
                 session.version,
@@ -128,10 +136,12 @@ class PostgresAgentRuntimeRepository:
             """
             SELECT agent_session_id, project_id, workspace_id, operation_id,
                    agent_role, status, accepted_boundary, tool_policy,
-                   skill_bindings, budget, usage, next_sequence, version
+                   skill_bindings, budget, execution_contract,
+                   execution_contract_hash, usage, next_sequence, version
             FROM authority_agent_harness_session
             WHERE agent_session_id=%s
-            """ + suffix,
+            """
+            + suffix,
             [agent_session_id],
         )
         row = self.cursor.fetchone()
@@ -141,7 +151,7 @@ class PostgresAgentRuntimeRepository:
             )
         boundary = dict(row[6] or {})
         budget = dict(row[9] or {})
-        usage = dict(row[10] or {})
+        usage = dict(row[12] or {})
         return AgentHarnessSession(
             agent_session_id=str(row[0]),
             project_id=str(row[1]),
@@ -153,9 +163,11 @@ class PostgresAgentRuntimeRepository:
             tool_policy=tuple(_tool_from_payload(dict(item)) for item in row[7] or ()),
             skill_bindings=tuple(dict(item) for item in row[8] or ()),
             budget=AgentHarnessBudget(**budget),
+            execution_contract=dict(row[10] or {}),
+            execution_contract_hash=str(row[11] or ""),
             usage=AgentHarnessUsage(**usage),
-            next_sequence=int(row[11]),
-            version=int(row[12]),
+            next_sequence=int(row[13]),
+            version=int(row[14]),
         )
 
     def append_event(
@@ -178,7 +190,10 @@ class PostgresAgentRuntimeRepository:
         if not request_id.strip() or turn_number < 0 or not trace_id.strip():
             raise ValueError("Agent transcript event identity is incomplete")
         current = self.require_harness_session(session.agent_session_id, lock=True)
-        if current.version != session.version or current.next_sequence != session.next_sequence:
+        if (
+            current.version != session.version
+            or current.next_sequence != session.next_sequence
+        ):
             raise KernelError(
                 "AGENT_HARNESS_SESSION_CAS_CONFLICT",
                 "Agent session transcript advanced concurrently",
@@ -203,10 +218,28 @@ class PostgresAgentRuntimeRepository:
         if external_effect_id:
             self.cursor.execute(
                 """
+                WITH RECURSIVE descendants AS (
+                  SELECT operation_id
+                  FROM authority_operation
+                  WHERE operation_id=%s AND project_id=%s
+                  UNION
+                  SELECT child.operation_id
+                  FROM authority_operation AS child
+                  JOIN descendants AS parent
+                    ON child.parent_operation_id=parent.operation_id
+                    OR child.causation_operation_id=parent.operation_id
+                  WHERE child.project_id=%s
+                )
                 SELECT 1 FROM authority_external_effect
-                WHERE external_effect_id=%s AND operation_id=%s
+                WHERE external_effect_id=%s
+                  AND operation_id IN (SELECT operation_id FROM descendants)
                 """,
-                [external_effect_id, current.operation_id],
+                [
+                    current.operation_id,
+                    current.project_id,
+                    current.project_id,
+                    external_effect_id,
+                ],
             )
             if self.cursor.fetchone() is None:
                 raise KernelError(
@@ -336,9 +369,7 @@ class PostgresAgentRuntimeRepository:
             [mapping.capability_id, mapping.capability_version],
         )
         row = self.cursor.fetchone()
-        if row is None or (
-            str(row[0]), str(row[1])
-        ) != (
+        if row is None or (str(row[0]), str(row[1])) != (
             mapping.execution_capability_id,
             mapping.execution_capability_hash,
         ):
@@ -480,9 +511,7 @@ class PostgresAgentRuntimeRepository:
             )
         return self.get_definition_activation(agent_id)
 
-    def get_definition_activation(
-        self, agent_id: str
-    ) -> AgentDefinitionActivation:
+    def get_definition_activation(self, agent_id: str) -> AgentDefinitionActivation:
         self.cursor.execute(
             """
             SELECT agent_id, definition_version, activation_status,
@@ -795,12 +824,8 @@ class PostgresAgentRuntimeRepository:
         operation_name, operation_version = _version_ref(
             binding.operation_definition_ref
         )
-        agent_id, agent_version = _integer_version_ref(
-            binding.agent_definition_ref
-        )
-        capability_id, capability_version = _integer_version_ref(
-            binding.capability_ref
-        )
+        agent_id, agent_version = _integer_version_ref(binding.agent_definition_ref)
+        capability_id, capability_version = _integer_version_ref(binding.capability_ref)
         definition = self.cursor.execute(
             """
             SELECT definition_hash FROM authority_operation_definition
@@ -808,7 +833,10 @@ class PostgresAgentRuntimeRepository:
             """,
             [operation_name, operation_version],
         ).fetchone()
-        if definition is None or str(definition[0]) != binding.operation_definition_hash:
+        if (
+            definition is None
+            or str(definition[0]) != binding.operation_definition_hash
+        ):
             raise KernelError(
                 "CHAPTER_AGENT_OPERATION_DEFINITION_DRIFT",
                 "Chapter binding differs from the enabled OperationDefinition",
@@ -1069,9 +1097,7 @@ class PostgresAgentRuntimeRepository:
                 )
         return result
 
-    def save_runtime_binding(
-        self, binding: AgentRuntimeBinding
-    ) -> AgentRuntimeBinding:
+    def save_runtime_binding(self, binding: AgentRuntimeBinding) -> AgentRuntimeBinding:
         operation_name, operation_version = _version_ref(
             binding.operation_definition_ref
         )
@@ -1105,9 +1131,7 @@ class PostgresAgentRuntimeRepository:
                 "release_sha": binding.release_sha,
             }
             drift = [
-                key
-                for key, value in expected.items()
-                if str(active[key]) != str(value)
+                key for key, value in expected.items() if str(active[key]) != str(value)
             ]
             if drift:
                 raise KernelError(

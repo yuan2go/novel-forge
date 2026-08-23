@@ -295,6 +295,30 @@ class ProductionExecutionCapabilityTests(unittest.TestCase):
             definition.capability_id, CapabilityId.PUBLISHING_RELEASE_SUBMIT
         )
 
+    def test_agent_turn_and_retrieval_embedding_allow_real_codex_runtime(self) -> None:
+        registry = default_capability_registry()
+        codex = backend_profile(
+            backend_id="codex-cli",
+            runtime_class=ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE,
+            provider_idempotency=False,
+            callback=False,
+        )
+
+        for capability_id in (
+            CapabilityId.AGENT_WORKSPACE_EXECUTE,
+            CapabilityId.RETRIEVAL_EMBED,
+        ):
+            with self.subTest(capability_id=capability_id.value):
+                definition = registry.require_backend(
+                    capability_id, codex, environment="validation"
+                )
+                self.assertIn(
+                    ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE,
+                    definition.allowed_runtime_classes,
+                )
+                self.assertIn("codex-cli", definition.allowed_backend_ids)
+                self.assertEqual(capability_contract_version(capability_id), 2)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -48,7 +48,6 @@ class PostgresBookAuthorityScheduler:
             BookProductionState.CANON_COMMITTED.value,
             BookProductionState.READER_OUTCOME_PENDING.value,
             BookProductionState.FOLLOWUP_PENDING.value,
-            BookProductionState.CHECKPOINT_PENDING.value,
         }
     )
 

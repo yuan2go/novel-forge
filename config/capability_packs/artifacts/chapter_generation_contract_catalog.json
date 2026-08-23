@@ -485,6 +485,56 @@
         "additionalProperties": false
       }
     },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:execution-input:retrieval-embed:v1",
+      "version": "v1",
+      "content": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "novel-forge://schemas/execution-input/retrieval-embed/v1",
+        "type": "object",
+        "required": ["texts", "purpose", "query_plan_fingerprint"],
+        "properties": {
+          "texts": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 32,
+            "items": {"type": "string", "minLength": 1}
+          },
+          "purpose": {"type": "string", "minLength": 1},
+          "query_plan_fingerprint": {"type": "string", "minLength": 1},
+          "candidate_projection_cutoff": {"type": "string"}
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:execution-output:retrieval-embed:v1",
+      "version": "v1",
+      "content": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "novel-forge://schemas/execution-output/retrieval-embed/v1",
+        "type": "object",
+        "required": ["vectors", "embedding_model", "embedding_dimensions"],
+        "properties": {
+          "vectors": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 32,
+            "items": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 8192,
+              "items": {"type": "number"}
+            }
+          },
+          "embedding_model": {"type": "string", "minLength": 1},
+          "embedding_dimensions": {"type": "integer", "minimum": 1, "maximum": 8192}
+        },
+        "additionalProperties": false
+      }
+    },
 
     {"kind": "TIMEOUT_POLICY", "ref": "timeout:canon-extract:v1", "version": "v1", "content": {"policy_id": "timeout:canon-extract:v1", "operation_timeout_seconds": 600, "timeout_action": "FAIL_ATTEMPT", "authority_binding": "chapter_operation_definition@3.0.0"}},
     {"kind": "TIMEOUT_POLICY", "ref": "timeout:planning-chapter-generate:v1", "version": "v1", "content": {"policy_id": "timeout:planning-chapter-generate:v1", "operation_timeout_seconds": 60, "timeout_action": "FAIL_ATTEMPT", "authority_binding": "chapter_operation_definition@3.0.0"}},
@@ -726,6 +776,157 @@
         "operation_is_authority": true,
         "attempt_fence_required": true,
         "stale_attempt_result_rejected": true
+      }
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:execution-input:agent-workspace-execute:v1",
+      "version": "v1",
+      "content": {
+        "$id": "schema:execution-input:agent-workspace-execute:v1",
+        "type": "object",
+        "required": ["instruction", "accepted_boundary"],
+        "additionalProperties": true
+      }
+    },
+    {
+      "kind": "SCHEMA",
+      "ref": "schema:execution-output:agent-workspace-execute:v1",
+      "version": "v1",
+      "content": {
+        "$id": "schema:execution-output:agent-workspace-execute:v1",
+        "type": "object",
+        "required": ["message"],
+        "additionalProperties": true
+      }
+    },
+    {
+      "kind": "TIMEOUT_POLICY",
+      "ref": "timeout:agent-workspace-execute:v1",
+      "version": "v1",
+      "content": {
+        "policy_id": "timeout:agent-workspace-execute:v1",
+        "operation_timeout_seconds": 300,
+        "attempt_timeout_seconds": 300,
+        "external_effect_timeout_seconds": 120
+      }
+    },
+    {
+      "kind": "TOOL_POLICY",
+      "ref": "tools:agent-session-pack:v1",
+      "version": "v1",
+      "content": {
+        "policy_id": "tools:agent-session-pack:v1",
+        "default": "DENY",
+        "empty_allowlist_semantics": "DENY_ALL",
+        "audit_high_and_critical": true,
+        "critical_requires_approval": true,
+        "inline_auth_material_allowed": false,
+        "explicit_tool_refs": [
+          "model.provider.invoke",
+          "narrative.query_accepted",
+          "story_planning.generate_candidate",
+          "plan_change.submit"
+        ]
+      }
+    },
+    {
+      "kind": "CONTEXT_POLICY",
+      "ref": "context-policy:agent-session-pack:v1",
+      "version": "v1",
+      "content": {
+        "policy_id": "context-policy:agent-session-pack:v1",
+        "max_tokens": 16000,
+        "source_isolation": "ABSTRACT_ASSETS_ONLY",
+        "reject_cross_project": true,
+        "required_version_refs": ["accepted_boundary"],
+        "allowed_asset_types": [
+          "context_bundle",
+          "canon_snapshot",
+          "story_state",
+          "chapter_outcome"
+        ],
+        "forbidden_asset_types": ["raw_source_chunk", "raw_source_document"]
+      }
+    },
+    {
+      "kind": "APPROVAL_POLICY",
+      "ref": "chapter.agent_session.route:v1",
+      "version": "v1",
+      "content": {
+        "policy_id": "chapter.agent_session.route",
+        "policy_version": 1,
+        "default_model_profile_id": "chapter.agent_session.default",
+        "allowed_model_profile_ids": ["chapter.agent_session.default"],
+        "rule_set_ref": "route-rules:chapter:agent_session:v1",
+        "fallback_policy": "FAIL_CLOSED",
+        "fallback_policy_ref": "chapter.agent_session.fail-closed",
+        "fallback_policy_version": 1,
+        "reasoning_downgrade_policy": "PROHIBITED",
+        "status": "ACTIVE"
+      }
+    },
+    {
+      "kind": "PROTOCOL",
+      "ref": "agent-session-input.v1",
+      "version": "v1",
+      "content": {
+        "protocol_id": "agent-session-input.v1",
+        "schema_ref": "schema:execution-input:agent-workspace-execute:v1",
+        "accepted_boundary_required": true,
+        "execution_contract_required": true
+      }
+    },
+    {
+      "kind": "PROTOCOL",
+      "ref": "agent-session-output.v1",
+      "version": "v1",
+      "content": {
+        "protocol_id": "agent-session-output.v1",
+        "schema_ref": "schema:execution-output:agent-workspace-execute:v1",
+        "durable_transcript_required": true,
+        "business_truth_mutation_allowed": false
+      }
+    },
+    {
+      "kind": "VALIDATION_POLICY",
+      "ref": "validation:agent-session-pack:v1",
+      "version": "v1",
+      "content": {
+        "policy_id": "validation:agent-session-pack:v1",
+        "failure_mode": "FAIL_CLOSED",
+        "required_validators": [
+          "schema",
+          "execution_contract",
+          "accepted_boundary",
+          "authority_submission"
+        ],
+        "validation_evidence_required": true,
+        "client_asserted_pass_allowed": false
+      }
+    },
+    {
+      "kind": "COMMIT_POLICY",
+      "ref": "commit:agent-session-pack:v1",
+      "version": "v1",
+      "content": {
+        "policy_id": "commit:agent-session-pack:v1",
+        "domain_authority_commit_only": true,
+        "agent_business_truth_commit_allowed": false,
+        "attempt_fence_required": true,
+        "completion_receipt_required": true
+      }
+    },
+    {
+      "kind": "BUDGET_POLICY",
+      "ref": "budget:agent-session-pack:v1",
+      "version": "v1",
+      "content": {
+        "policy_id": "budget:agent-session-pack:v1",
+        "bounded": true,
+        "receipt_required": true,
+        "hard_stop_on_exhaustion": true,
+        "aggregate_causation_lineage": true
       }
     }
   ]

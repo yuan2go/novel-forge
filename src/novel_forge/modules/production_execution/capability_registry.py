@@ -28,6 +28,9 @@ _PLANNING_CAPABILITIES = frozenset(
         CapabilityId.PLANNING_STORY_CHAPTER_GENERATE,
     }
 )
+_PROVIDER_RUNTIME_V2_CAPABILITIES = frozenset(
+    {CapabilityId.AGENT_WORKSPACE_EXECUTE, CapabilityId.RETRIEVAL_EMBED}
+)
 
 _MODEL_RUNTIMES = (
     ExecutionRuntimeClass.REMOTE_PROVIDER_API,
@@ -47,9 +50,17 @@ _EXTERNAL_RUNTIMES = (
 _EXTERNAL_BACKENDS = ("remote-external-action", "scripted-fixture")
 _AGENT_RUNTIMES = (
     ExecutionRuntimeClass.AGENT_WORKSPACE_TRANSACTION,
+    ExecutionRuntimeClass.REMOTE_PROVIDER_API,
+    ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE,
     ExecutionRuntimeClass.SCRIPTED_FIXTURE,
 )
-_AGENT_BACKENDS = ("agent-workspace", "scripted-fixture")
+_AGENT_BACKENDS = (
+    "agent-workspace",
+    "remote-provider",
+    "remote-provider-*",
+    "codex-cli",
+    "scripted-fixture",
+)
 
 
 class CapabilityRegistry:
@@ -140,7 +151,12 @@ def capability_contract_version(capability_id: CapabilityId | str) -> int:
         if isinstance(capability_id, CapabilityId)
         else CapabilityId(str(capability_id))
     )
-    return 2 if identity in _PLANNING_CAPABILITIES else 1
+    return (
+        2
+        if identity in _PLANNING_CAPABILITIES
+        or identity in _PROVIDER_RUNTIME_V2_CAPABILITIES
+        else 1
+    )
 
 
 def _definition(
@@ -329,11 +345,13 @@ def default_capability_registry() -> CapabilityRegistry:
                 ExecutionDomain.RETRIEVAL,
                 runtimes=(
                     ExecutionRuntimeClass.REMOTE_PROVIDER_API,
+                    ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE,
                     ExecutionRuntimeClass.REMOTE_EXTERNAL_ACTION,
                     ExecutionRuntimeClass.SCRIPTED_FIXTURE,
                 ),
                 backends=(
                     "remote-provider-*",
+                    "codex-cli",
                     "remote-external-action",
                     "scripted-fixture",
                 ),

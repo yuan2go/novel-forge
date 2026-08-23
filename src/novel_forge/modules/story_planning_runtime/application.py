@@ -356,7 +356,13 @@ class StoryPlanningGenerationApplication:
                 "trace_id": command.trace_id,
                 "span_id": str(uuid4()),
                 "correlation_id": command.correlation_id,
-                "causation_id": command.repair_of_candidate_id,
+                "causation_id": (
+                    command.parent_agent_session_operation_id
+                    or command.repair_of_candidate_id
+                ),
+                "causation_operation_id": (
+                    command.parent_agent_session_operation_id or None
+                ),
                 "input": {
                     "project_id": command.project_id,
                     "input_asset_version_ids": [
@@ -397,7 +403,10 @@ class StoryPlanningGenerationApplication:
                     reason="Planning Generation inputs and Pack route are frozen",
                     trace_id=command.trace_id,
                     correlation_id=command.correlation_id,
-                    causation_id=command.repair_of_candidate_id,
+                    causation_id=(
+                        command.parent_agent_session_operation_id
+                        or command.repair_of_candidate_id
+                    ),
                 ),
             )
             start_saga(
@@ -1695,9 +1704,7 @@ class StoryPlanningGenerationApplication:
                 action_id = str(
                     override.get("governance_action_asset_version_id") or ""
                 )
-                action_hash = str(
-                    override.get("governance_action_content_hash") or ""
-                )
+                action_hash = str(override.get("governance_action_content_hash") or "")
                 frozen = governed_by_id.get(action_id)
                 if frozen is None or frozen.content_hash != action_hash:
                     raise KernelError(
@@ -2378,17 +2385,16 @@ def _command_payload(command: StoryPlanningGenerationCommand) -> dict[str, Any]:
             command.arc_scope_volume_plan_version_ids
         ),
         "related_arc_plan_version_ids": list(command.related_arc_plan_version_ids),
-        "dependent_arc_plan_version_ids": list(
-            command.dependent_arc_plan_version_ids
-        ),
+        "dependent_arc_plan_version_ids": list(command.dependent_arc_plan_version_ids),
         "change_evidence_version_ids": list(command.change_evidence_version_ids),
-        "governance_action_version_ids": list(
-            command.governance_action_version_ids
-        ),
+        "governance_action_version_ids": list(command.governance_action_version_ids),
         "repair_of_candidate_id": command.repair_of_candidate_id,
         "repair_reason": command.repair_reason,
         "repair_number": command.repair_number,
         "auto_approve_low_risk": command.auto_approve_low_risk,
+        "parent_agent_session_operation_id": (
+            command.parent_agent_session_operation_id
+        ),
     }
 
 
@@ -2424,6 +2430,9 @@ def _command_from_payload(payload: dict[str, Any]) -> StoryPlanningGenerationCom
         repair_reason=str(payload.get("repair_reason") or ""),
         repair_number=int(payload.get("repair_number") or 0),
         auto_approve_low_risk=bool(payload.get("auto_approve_low_risk", False)),
+        parent_agent_session_operation_id=str(
+            payload.get("parent_agent_session_operation_id") or ""
+        ),
     )
 
 

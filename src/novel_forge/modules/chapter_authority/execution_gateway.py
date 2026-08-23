@@ -149,6 +149,49 @@ def _identity_token(value: str) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()[:20]
 
 
+def _retrieval_embedding_output_contract(
+    route: "ChapterExecutionRoute",
+) -> dict[str, Any]:
+    if route.stage != "retrieval" or route.embedding_dimensions <= 0:
+        raise KernelError(
+            "RETRIEVAL_EMBEDDING_OUTPUT_CONTRACT_MISSING",
+            "controlled retrieval execution requires a frozen model and dimensions",
+        )
+    return {
+        "contract_version": "retrieval-embedding-output-v1",
+        "embedding_model": route.model_profile.model_id,
+        "embedding_dimensions": route.embedding_dimensions,
+        "vector_normalization": "L2_UNIT",
+        "placeholder_vectors_allowed": False,
+    }
+
+
+def _provider_context_selection(
+    stage: str,
+    selected_inputs: list[dict[str, Any]],
+    *,
+    retrieval_projection: bool,
+) -> list[dict[str, Any]]:
+    if retrieval_projection:
+        context = selected_inputs
+    elif stage == "retrieval":
+        context = [
+            item for item in selected_inputs if item["artifact_type"] == "chapter_memo"
+        ]
+    else:
+        context = [
+            item
+            for item in selected_inputs
+            if item["artifact_type"] == "context_bundle"
+        ]
+    if len(context) != 1:
+        raise KernelError(
+            "CHAPTER_CAPABILITY_CONTEXT_INVALID",
+            "controlled execution requires exactly one frozen Provider context",
+        )
+    return context
+
+
 def _stage_tool_permissions(
     policy: Mapping[str, Any], stage: str
 ) -> tuple[tuple[str, ...], tuple[str, ...]]:
@@ -175,7 +218,7 @@ def _stage_tool_permissions(
         operations = {str(value) for value in item.get("allowed_operations") or ()}
         if (
             tool_ref
-            and str(item.get("permission") or "").upper() == "EXECUTE"
+            and str(item.get("permission") or "").upper() in {"EXECUTE", "QUERY"}
             and stage in operations
         ):
             allowed.add(tool_ref)
@@ -202,6 +245,7 @@ class ChapterExecutionRoute:
     output_schema_ref: str
     release_sha: str
     real_provider_validation_eligible: bool
+    embedding_dimensions: int = 0
 
     def __post_init__(self) -> None:
         if self.stage not in _STAGES | _OPTIONAL_DOMAIN_STAGES:
@@ -235,6 +279,14 @@ class ChapterExecutionRoute:
             raise ValueError("Chapter execution route is incomplete")
         if len(self.release_sha) != 40:
             raise ValueError("Chapter execution route requires a full release SHA")
+        if self.stage == "retrieval" and not 1 <= self.embedding_dimensions <= 8192:
+            raise ValueError(
+                "retrieval execution route requires 1..8192 embedding dimensions"
+            )
+        if self.stage != "retrieval" and self.embedding_dimensions != 0:
+            raise ValueError(
+                "embedding dimensions may only be bound to the retrieval route"
+            )
         definition = default_capability_registry().resolve(
             chapter_stage_capability(self.stage)
         )
@@ -264,8 +316,8 @@ class ChapterExecutionBinding:
 
 @dataclass(frozen=True, slots=True)
 class ChapterCapabilityPreflight:
-    attempt_snapshot: CapabilityPackAttemptSnapshot
-    materialization: CapabilityPackArtifactMaterialization
+    attempt_snapshot: CapabilityPackAttemptSnapshot | None
+    materialization: CapabilityPackArtifactMaterialization | None
     materialization_artifact: ArtifactPointer
     effect_binding: Mapping[str, Any]
 
@@ -283,6 +335,7 @@ class PostgresChapterExecutionContractBinder:
         pack_runtime_profile: str = "development",
         pack_release_channel: str = "VALIDATION",
         pack_required: bool = False,
+        workflow_definition_ref: str = CHAPTER_MODEL_WORKFLOW_DEFINITION_REF,
     ) -> None:
         route_names = set(routes)
         if (
@@ -302,6 +355,7 @@ class PostgresChapterExecutionContractBinder:
         self.pack_runtime_profile = pack_runtime_profile
         self.pack_release_channel = pack_release_channel
         self.pack_required = pack_required
+        self.workflow_definition_ref = workflow_definition_ref
         self.pack_resolver = CapabilityPackRuntimeResolver(database_url)
 
     def freeze_before_external_effect(
@@ -393,16 +447,15 @@ class PostgresChapterExecutionContractBinder:
             project_id=project_id,
             artifacts=artifacts,
         )
-        context_selection = [
-            item
-            for item in selected_inputs
-            if item["artifact_type"] == "context_bundle"
-        ]
-        if len(context_selection) != 1:
-            raise KernelError(
-                "CHAPTER_CAPABILITY_CONTEXT_INVALID",
-                "controlled Chapter execution requires exactly one frozen Context Bundle",
-            )
+        retrieval_projection = (
+            str(metadata.get("execution_binding_domain") or "")
+            == "retrieval_projection"
+        )
+        context_selection = _provider_context_selection(
+            stage,
+            selected_inputs,
+            retrieval_projection=retrieval_projection,
+        )
         tool_payload = json.loads(
             attempt_snapshot.execution_snapshot.tool_policy_payload_json
         )
@@ -417,6 +470,11 @@ class PostgresChapterExecutionContractBinder:
             request_payload=request_payload,
         )
         schema_hash = canonical_hash(provider_schema)
+        embedding_output_contract = (
+            _retrieval_embedding_output_contract(route)
+            if stage == "retrieval"
+            else None
+        )
         contract_without_hash: dict[str, Any] = {
             "schema_version": "novelos.chapter_capability_materialization.v1",
             "stage": stage,
@@ -478,6 +536,10 @@ class PostgresChapterExecutionContractBinder:
                 "content": provider_schema,
             },
         }
+        if embedding_output_contract is not None:
+            contract_without_hash["embedding_output_contract"] = (
+                embedding_output_contract
+            )
         materialization_hash = canonical_hash(contract_without_hash)
         contract = {
             **contract_without_hash,
@@ -532,6 +594,8 @@ class PostgresChapterExecutionContractBinder:
             "output_schema_ref": provider_schema_ref,
             "output_schema_hash": schema_hash,
         }
+        if embedding_output_contract is not None:
+            effect_binding["embedding_output_contract"] = embedding_output_contract
         return ChapterCapabilityPreflight(
             attempt_snapshot=attempt_snapshot,
             materialization=materialization,
@@ -605,18 +669,20 @@ class PostgresChapterExecutionContractBinder:
         attempt_pack_snapshot: CapabilityPackAttemptSnapshot | None = None
         materialization_contract: Mapping[str, Any] | None = None
         if isinstance(capability_runtime, Mapping):
+            runtime_kind = str(capability_runtime.get("runtime_kind") or "")
             snapshot_id = str(capability_runtime.get("snapshot_id") or "")
             snapshot_hash = str(capability_runtime.get("snapshot_hash") or "")
-            attempt_pack_snapshot = self.pack_resolver.require_attempt_snapshot(
-                attempt_id=attempt_id,
-                snapshot_id=snapshot_id,
-                snapshot_hash=snapshot_hash,
-            )
-            if attempt_pack_snapshot.operation_id != operation_id:
-                raise KernelError(
-                    "CAPABILITY_PACK_SNAPSHOT_INCONSISTENT",
-                    "frozen Capability Snapshot belongs to another Operation",
+            if runtime_kind != "FROZEN_RETRIEVAL_PROJECTION_CONTRACT":
+                attempt_pack_snapshot = self.pack_resolver.require_attempt_snapshot(
+                    attempt_id=attempt_id,
+                    snapshot_id=snapshot_id,
+                    snapshot_hash=snapshot_hash,
                 )
+                if attempt_pack_snapshot.operation_id != operation_id:
+                    raise KernelError(
+                        "CAPABILITY_PACK_SNAPSHOT_INCONSISTENT",
+                        "frozen Capability Snapshot belongs to another Operation",
+                    )
             materialization_version_id = str(
                 capability_runtime.get("materialization_asset_version_id") or ""
             )
@@ -634,16 +700,32 @@ class PostgresChapterExecutionContractBinder:
                     "ExternalEffect Capability materialization identity drifted",
                 )
             frozen = document.content.get("contract", document.content)
+            pack_identity_valid = (
+                str(
+                    (frozen.get("attempt_snapshot") or {}).get("snapshot_id")
+                    if isinstance(frozen, Mapping)
+                    and isinstance(frozen.get("attempt_snapshot"), Mapping)
+                    else ""
+                )
+                == snapshot_id
+            )
+            domain_identity_valid = (
+                runtime_kind == "FROZEN_RETRIEVAL_PROJECTION_CONTRACT"
+                and isinstance(frozen, Mapping)
+                and frozen.get("runtime_kind") == runtime_kind
+                and str(frozen.get("operation_id") or "") == operation_id
+                and str(frozen.get("attempt_id") or "") == attempt_id
+            )
+            materialization_identity_valid = (
+                domain_identity_valid
+                if runtime_kind == "FROZEN_RETRIEVAL_PROJECTION_CONTRACT"
+                else pack_identity_valid
+            )
             if (
                 not isinstance(frozen, Mapping)
                 or str(frozen.get("materialization_hash") or "")
                 != str(capability_runtime.get("materialization_hash") or "")
-                or str(
-                    (frozen.get("attempt_snapshot") or {}).get("snapshot_id")
-                    if isinstance(frozen.get("attempt_snapshot"), Mapping)
-                    else ""
-                )
-                != snapshot_id
+                or not materialization_identity_valid
             ):
                 raise KernelError(
                     "CAPABILITY_PACK_SNAPSHOT_INCONSISTENT",
@@ -655,7 +737,10 @@ class PostgresChapterExecutionContractBinder:
                 asset_version_id=document.asset_version_id,
                 artifact_type=document.asset_type,
                 content_hash=document.content_hash,
-                schema_version="novelos.chapter_capability_materialization.v1",
+                schema_version=str(
+                    frozen.get("schema_version")
+                    or "novelos.chapter_capability_materialization.v1"
+                ),
                 source_eligibility="NOT_SOURCE_DERIVED",
             )
             if all(
@@ -673,11 +758,20 @@ class PostgresChapterExecutionContractBinder:
             if attempt_pack_snapshot is not None
             else None
         )
+        domain_materialization = (
+            materialization_contract is not None
+            and materialization_contract.get("runtime_kind")
+            == "FROZEN_RETRIEVAL_PROJECTION_CONTRACT"
+        )
         context_ref = next(
             (
                 item.artifact_ref
                 for item in artifacts
                 if item.artifact_type == "context_bundle"
+                or (
+                    domain_materialization
+                    and item.artifact_type != "capability_materialization_manifest"
+                )
             ),
             f"context:none:{operation_id}",
         )
@@ -726,6 +820,13 @@ class PostgresChapterExecutionContractBinder:
                 "book_design",
                 "planning_generation_candidate",
             )
+            if domain_materialization:
+                context_allowed_asset_types = tuple(
+                    str(item.get("artifact_type") or "")
+                    for item in materialization_contract.get("context_selection") or ()
+                    if isinstance(item, Mapping)
+                    and str(item.get("artifact_type") or "")
+                )
         else:
             context_policy_ref = pack_snapshot.context_policy_ref
             context_policy_payload = json.loads(
@@ -804,6 +905,8 @@ class PostgresChapterExecutionContractBinder:
                 if stage == "reader_outcome"
                 else "narrative_semantic_evaluation_candidate"
                 if stage == "narrative_semantic_evaluation"
+                else "retrieval_embedding_candidate"
+                if stage == "retrieval"
                 else "review_candidate"
             ),
             requires_validation_manifest=True,
@@ -1151,7 +1254,26 @@ class PostgresChapterExecutionContractBinder:
         book_id: str,
         chapter: int,
     ) -> dict[str, Any]:
-        del metadata
+        if str(metadata.get("execution_binding_domain") or "") == (
+            "retrieval_projection"
+        ):
+            source_asset_version_id = str(
+                metadata.get("source_asset_version_id")
+                or metadata.get("target_asset_version_id")
+                or ""
+            )
+            if not source_asset_version_id:
+                raise KernelError(
+                    "RETRIEVAL_PROJECTION_SCOPE_MISSING",
+                    "Retrieval projection requires a frozen source AssetVersion",
+                )
+            return {
+                "scope_kind": "asset_version",
+                "scope_id": source_asset_version_id,
+                "project_id": project_id,
+                "book_id": book_id,
+                "asset_version_id": source_asset_version_id,
+            }
         return {
             "scope_kind": "chapter",
             "scope_id": f"{book_id}:chapter:{chapter}",
@@ -1167,7 +1289,23 @@ class PostgresChapterExecutionContractBinder:
         chapter: int,
         stage: str,
     ) -> tuple[str, ...]:
-        del metadata
+        if str(metadata.get("execution_binding_domain") or "") == (
+            "retrieval_projection"
+        ):
+            source_asset_version_id = str(
+                metadata.get("source_asset_version_id")
+                or metadata.get("target_asset_version_id")
+                or ""
+            )
+            if not source_asset_version_id:
+                raise KernelError(
+                    "RETRIEVAL_PROJECTION_SCOPE_MISSING",
+                    "Retrieval projection requires a frozen source AssetVersion",
+                )
+            return (
+                source_asset_version_id,
+                f"stage:{stage}",
+            )
         return (f"chapter:{chapter}", f"stage:{stage}")
 
     @staticmethod
@@ -1241,7 +1379,7 @@ class PostgresChapterExecutionContractBinder:
                     project_id=project_id,
                     workspace_id=workspace_id,
                     book_id=book_id,
-                    workflow_definition_ref=CHAPTER_MODEL_WORKFLOW_DEFINITION_REF,
+                    workflow_definition_ref=self.workflow_definition_ref,
                     workflow_node_id=stage,
                     environment=self.pack_environment,
                     runtime_profile=self.pack_runtime_profile,
@@ -1373,6 +1511,206 @@ class PostgresChapterExecutionContractBinder:
         )
 
 
+class PostgresRetrievalProjectionExecutionContractBinder(
+    PostgresChapterExecutionContractBinder
+):
+    """Freeze a non-Agent projection contract before the Provider effect.
+
+    Retrieval projection is not a Chapter Saga node and therefore must not
+    borrow the Chapter Capability Pack. It still uses the same PEP binder,
+    immutable Authority AssetVersion, Tool policy, schema and route hashes.
+    """
+
+    def __init__(
+        self,
+        database_url: str,
+        routes: Mapping[str, ChapterExecutionRoute],
+        *,
+        frozen_artifacts: Mapping[str, Any],
+    ) -> None:
+        super().__init__(
+            database_url,
+            routes,
+            capability_pack_id="",
+            pack_required=False,
+        )
+        required = {"system_instruction", "prompt_template", "skill"}
+        if set(frozen_artifacts) != required:
+            raise ValueError("retrieval projection artifacts are incomplete")
+        self.frozen_artifacts = dict(frozen_artifacts)
+
+    def freeze_before_external_effect(
+        self,
+        *,
+        capability: str,
+        request_payload: Mapping[str, Any],
+        snapshot_fencing_token: int,
+        snapshot_worker_id: str,
+    ) -> ChapterCapabilityPreflight | None:
+        stage = str(request_payload.get("stage") or "")
+        metadata = request_payload.get("_production_execution")
+        if capability != "model.retrieval" or stage != "retrieval":
+            raise KernelError(
+                "RETRIEVAL_PROJECTION_CAPABILITY_INVALID",
+                "projection binder only accepts model.retrieval",
+            )
+        if not isinstance(metadata, Mapping):
+            raise KernelError(
+                "RETRIEVAL_PROJECTION_CONTRACT_MISSING",
+                "projection Provider metadata is missing",
+            )
+        operation_id = str(metadata.get("operation_id") or "")
+        attempt_id = str(metadata.get("attempt_id") or "")
+        project_id = str(metadata.get("project_id") or "")
+        execution_fencing_token = int(metadata.get("fencing_token") or 0)
+        if (
+            not all(
+                (
+                    operation_id,
+                    attempt_id,
+                    project_id,
+                    snapshot_worker_id,
+                )
+            )
+            or execution_fencing_token <= 0
+            or snapshot_fencing_token <= 0
+        ):
+            raise KernelError(
+                "RETRIEVAL_PROJECTION_CONTRACT_MISSING",
+                "projection Attempt/Fence identity is incomplete",
+            )
+        pointers = self._artifacts(metadata)
+        selected_inputs = self._materialize_selected_inputs(
+            project_id=project_id,
+            artifacts=pointers,
+        )
+        source_asset_version_id = str(metadata.get("source_asset_version_id") or "")
+        source_content_hash = str(metadata.get("source_content_hash") or "")
+        if (
+            len(selected_inputs) != 1
+            or not source_asset_version_id
+            or not source_content_hash
+            or selected_inputs[0]["asset_version_id"] != source_asset_version_id
+            or selected_inputs[0]["content_hash"] != source_content_hash
+        ):
+            raise KernelError(
+                "RETRIEVAL_PROJECTION_SCOPE_MISSING",
+                "projection contract requires its exact frozen source AssetVersion",
+            )
+        system = self.frozen_artifacts["system_instruction"]
+        template = self.frozen_artifacts["prompt_template"]
+        skill = self.frozen_artifacts["skill"]
+        route = self.routes[stage]
+        if (
+            system.content_hash != route.system_instruction_hash
+            or template.content_hash != route.template_hash
+            or skill.content_hash != route.skill_content_hash
+        ):
+            raise KernelError(
+                "RETRIEVAL_PROJECTION_ROUTE_ARTIFACT_DRIFT",
+                "projection Provider artifacts differ from the frozen route",
+            )
+        output_schema = chapter_provider_output_schema(stage)
+        output_schema_ref = chapter_provider_output_schema_ref(stage)
+        embedding_output_contract = _retrieval_embedding_output_contract(route)
+        contract_without_hash: dict[str, Any] = {
+            "schema_version": "novelos.provider_capability_materialization.v1",
+            "runtime_kind": "FROZEN_RETRIEVAL_PROJECTION_CONTRACT",
+            "stage": stage,
+            "capability_requirement": capability,
+            "operation_id": operation_id,
+            "attempt_id": attempt_id,
+            "execution_fencing_token": execution_fencing_token,
+            # A recovery worker's newer fence authorizes takeover but must not
+            # alter the original Provider execution semantics.
+            "snapshot_creation_fencing_token": execution_fencing_token,
+            "source_asset_version_id": source_asset_version_id,
+            "source_content_hash": source_content_hash,
+            "route_identity": {
+                "release_sha": route.release_sha,
+                "embedding_model": route.model_profile.model_id,
+                "embedding_dimensions": route.embedding_dimensions,
+                "model_profile_hash": route.model_profile.contract_hash,
+                "route_policy_hash": route.route_policy.contract_hash,
+                "system_instruction_hash": system.content_hash,
+                "template_hash": template.content_hash,
+                "skill_content_hash": skill.content_hash,
+            },
+            "pack_artifacts": {
+                "system_instruction": system.to_dict(),
+                "prompt_template": template.to_dict(),
+                "skill": skill.to_dict(),
+            },
+            "context_selection": selected_inputs,
+            "knowledge_selection": [],
+            "tool_permissions": {
+                "default": "DENY",
+                "allowed": ["model.provider.invoke"],
+                "denied": [],
+                "invoked": ["model.provider.invoke"],
+                "governing_policy_ref": "permission:retrieval-embed:v1",
+                "governing_policy_hash": canonical_hash(
+                    {
+                        "default": "DENY",
+                        "allowed": ["model.provider.invoke"],
+                        "stage": stage,
+                    }
+                ),
+            },
+            "output_schema": {
+                "ref": output_schema_ref,
+                "content_hash": canonical_hash(output_schema),
+                "content": output_schema,
+            },
+            "embedding_output_contract": embedding_output_contract,
+        }
+        materialization_hash = canonical_hash(contract_without_hash)
+        contract = {
+            **contract_without_hash,
+            "materialization_hash": materialization_hash,
+        }
+        token = _identity_token(
+            f"{project_id}:{operation_id}:{attempt_id}:{stage}:projection-capability"
+        )
+        document = self._ensure_contract(
+            operation_id=operation_id,
+            project_id=project_id,
+            logical_ref=f"production_execution/capability_materializations/{token}",
+            asset_type="capability_materialization_manifest",
+            contract=contract,
+            trace_id=str(request_payload.get("trace_id") or ""),
+            correlation_id=str(request_payload.get("correlation_id") or ""),
+        )
+        pointer = ArtifactPointer(
+            artifact_ref=f"asset-version:{document.asset_version_id}",
+            asset_version_id=document.asset_version_id,
+            artifact_type=document.asset_type,
+            content_hash=document.content_hash,
+            schema_version="novelos.provider_capability_materialization.v1",
+            source_eligibility="NOT_SOURCE_DERIVED",
+        )
+        return ChapterCapabilityPreflight(
+            attempt_snapshot=None,
+            materialization=None,
+            materialization_artifact=pointer,
+            effect_binding={
+                "runtime_kind": "FROZEN_RETRIEVAL_PROJECTION_CONTRACT",
+                "materialization_asset_version_id": document.asset_version_id,
+                "materialization_content_hash": document.content_hash,
+                "materialization_hash": materialization_hash,
+                "source_asset_version_id": source_asset_version_id,
+                "source_content_hash": source_content_hash,
+                "prompt_system_instruction_hash": system.content_hash,
+                "prompt_template_hash": template.content_hash,
+                "skill_content_hash": skill.content_hash,
+                "allowed_tools": ["model.provider.invoke"],
+                "output_schema_ref": output_schema_ref,
+                "output_schema_hash": canonical_hash(output_schema),
+                "embedding_output_contract": embedding_output_contract,
+            },
+        )
+
+
 class ChapterFixtureResponseFactory(Protocol):
     def __call__(self, stage: str, inputs: Mapping[str, Any]) -> dict[str, Any]: ...
 
@@ -1474,7 +1812,7 @@ def default_chapter_fixture_response(
                 "action": "TOOL_CALL",
                 "tool_call": {
                     "tool_name": str(first.get("tool_name") or ""),
-                    "arguments": {"scope": "accepted_boundary"},
+                    "arguments": {"payload_json": '{"scope":"accepted_boundary"}'},
                     "reason": "ground the proposal in accepted facts",
                 },
                 "final_response": None,
@@ -1484,8 +1822,12 @@ def default_chapter_fixture_response(
             "action": "FINAL",
             "tool_call": None,
             "final_response": {
-                "candidate_only": True,
-                "instruction": str(inputs.get("instruction") or ""),
+                "payload_json": _canonical(
+                    {
+                        "candidate_only": True,
+                        "instruction": str(inputs.get("instruction") or ""),
+                    }
+                )
             },
         }
     if stage == "draft":
@@ -2118,20 +2460,60 @@ def _language_semantic_contract(required_language: str | None) -> str:
 
 
 def _stage_semantic_contract(
-    stage: str, *, required_language: str | None = None
+    stage: str,
+    *,
+    required_language: str | None = None,
+    embedding_output_contract: Mapping[str, Any] | None = None,
 ) -> str:
     if stage == "retrieval":
+        if embedding_output_contract is None:
+            return (
+                "Return exactly one numeric embedding vector for each frozen input "
+                "text, in the same order. Return the actual embedding model identity "
+                "and vector dimensions. Do not add facts, summarize, retrieve, or "
+                "mutate Authority state."
+            )
+        expected_model = str(embedding_output_contract.get("embedding_model") or "")
+        try:
+            expected_dimensions = int(
+                embedding_output_contract.get("embedding_dimensions") or 0
+            )
+        except (TypeError, ValueError) as exc:
+            raise KernelError(
+                "RETRIEVAL_EMBEDDING_OUTPUT_CONTRACT_INVALID",
+                "frozen retrieval embedding dimensions are invalid",
+            ) from exc
+        if (
+            not expected_model
+            or not 1 <= expected_dimensions <= 8192
+            or embedding_output_contract.get("vector_normalization") != "L2_UNIT"
+            or embedding_output_contract.get("placeholder_vectors_allowed") is not False
+        ):
+            raise KernelError(
+                "RETRIEVAL_EMBEDDING_OUTPUT_CONTRACT_INVALID",
+                "frozen retrieval embedding model, dimensions, or vector policy is invalid",
+            )
         return (
             "Return exactly one numeric embedding vector for each frozen input text, "
-            "in the same order. Return the actual embedding model identity and vector "
-            "dimensions. Do not add facts, summarize, retrieve, or mutate Authority state."
+            "in the same order. The frozen output identity is exact: set embedding_model "
+            f"to {_canonical(expected_model)} and embedding_dimensions to "
+            f"{expected_dimensions}. Every vector must have exactly "
+            f"{expected_dimensions} finite numeric entries and non-zero L2 norm; normalize "
+            "each vector to unit length. Produce a genuine dense semantic representation "
+            "whose latent axes remain consistent across calls under this exact contract, "
+            "so meaningfully similar passages remain close without lexical, entity, Arc, "
+            "or obligation overlap. Never emit a placeholder, sentinel, all-zero vector, "
+            "provider-unavailable identity, summary, or invented fact. Do not retrieve or "
+            "mutate Authority state."
         )
     if stage == "agent_session":
         return (
             "Reason only over the frozen accepted boundary, committed transcript, "
             "observations, and server Tool snapshot. Choose exactly one action: "
             "request one Tool by copying its exact tool_name, or return one final "
-            "candidate/proposal response. A Skill supplies method only and never "
+            "candidate/proposal response. Encode Tool arguments and final response as one JSON "
+            "object string in the required payload_json envelope. The outer response "
+            "must still match the strict schema exactly. A Skill supplies method only and never "
             "adds permission. Never claim to mutate Canon, Accepted Narrative State, "
             "Arc Actual, Narrative Obligation lifecycle, active Plan pointers, or "
             "Chapter acceptance. Authority Commands submit proposals only; the owning "
@@ -2409,7 +2791,7 @@ def _materialize_production_codex_prompt(
         or len(context) != 1
         or not isinstance(context[0], Mapping)
         or not isinstance(knowledge, list)
-        or not knowledge
+        or (not knowledge and stage not in {"agent_session", "retrieval"})
         or not isinstance(tools, Mapping)
         or not isinstance(schema, Mapping)
         or not isinstance(schema.get("content"), Mapping)
@@ -2429,7 +2811,7 @@ def _materialize_production_codex_prompt(
     knowledge_view = build_provider_knowledge_view(
         item for item in knowledge if isinstance(item, Mapping)
     )
-    if not knowledge_view:
+    if not knowledge_view and stage not in {"agent_session", "retrieval"}:
         raise KernelError(
             "CHAPTER_CAPABILITY_MATERIALIZATION_INVALID",
             "Provider Knowledge projection is empty",
@@ -2450,15 +2832,50 @@ def _materialize_production_codex_prompt(
             "frozen Prompt Template contains unresolved placeholders",
         )
     allowed = tuple(str(item) for item in tools.get("allowed") or ())
-    if allowed != ("model.provider.invoke",):
+    agent_tool_names = {
+        str(item.get("tool_name") or "")
+        for item in inputs.get("tools") or ()
+        if isinstance(item, Mapping)
+    }
+    required_allowed = (
+        {"model.provider.invoke", *agent_tool_names}
+        if stage == "agent_session"
+        else {"model.provider.invoke"}
+    )
+    if set(allowed) != required_allowed:
         raise KernelError(
             "CHAPTER_CAPABILITY_TOOL_UNAUTHORIZED",
-            "Codex execution permits only the governed provider invocation",
+            "Codex execution differs from the governed Provider/Agent Tool set",
         )
     required_language = _required_language_from_context(context_content)
+    embedding_output_contract = materialization.get("embedding_output_contract")
+    if stage == "retrieval" and not isinstance(embedding_output_contract, Mapping):
+        raise KernelError(
+            "RETRIEVAL_EMBEDDING_OUTPUT_CONTRACT_MISSING",
+            "controlled retrieval prompt requires a frozen embedding output contract",
+        )
     stage_semantic_contract = _stage_semantic_contract(
-        stage, required_language=required_language
+        stage,
+        required_language=required_language,
+        embedding_output_contract=(
+            embedding_output_contract
+            if isinstance(embedding_output_contract, Mapping)
+            else None
+        ),
     )
+    if (
+        stage == "agent_session"
+        and int(inputs.get("turn_number") or 0) == 1
+        and not inputs.get("observations")
+        and "narrative.query_accepted" in agent_tool_names
+    ):
+        stage_semantic_contract += (
+            " This is the first ungrounded Agent turn. You MUST return action "
+            "TOOL_CALL with tool_name narrative.query_accepted and arguments "
+            'payload_json set to a JSON object string (use "{}" when no narrower '
+            "query is needed). Returning FINAL before this governed accepted-boundary "
+            "query is semantically invalid."
+        )
     prompt = "\n\n".join(
         (
             "<system_instruction>\n" + system_text + "\n</system_instruction>",
@@ -2521,10 +2938,22 @@ def _materialize_production_codex_prompt(
         "allowed_tools": list(allowed),
         "output_schema_ref": str(schema.get("ref") or ""),
         "output_schema_hash": str(schema.get("content_hash") or ""),
+        "embedding_output_contract": (
+            dict(embedding_output_contract)
+            if isinstance(embedding_output_contract, Mapping)
+            else None
+        ),
         "provider_view": {
             "task_contract_version": task_view["contract_version"],
             "context_contract_version": context_view["contract_version"],
-            "selection_explanation": context_view["selection_explanation"],
+            "selection_explanation": context_view.get(
+                "selection_explanation",
+                {
+                    "policy": "accepted-boundary-only",
+                    "selected_count": 1,
+                    "omitted_count": 0,
+                },
+            ),
             "component_characters": component_characters,
             "component_estimated_tokens": component_tokens,
             "authority_context_estimated_tokens": authority_context_tokens,
@@ -3230,6 +3659,7 @@ __all__ = [
     "PostgresChapterExecutionContractBinder",
     "PostgresChapterExecutionPayloadResolver",
     "PostgresProductionExecutionPayloadResolver",
+    "PostgresRetrievalProjectionExecutionContractBinder",
     "ProductionExecutionGatewayExternalEffectAdapter",
     "chapter_stage_capability",
     "default_chapter_fixture_response",

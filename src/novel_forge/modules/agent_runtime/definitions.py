@@ -9,6 +9,12 @@ AGENT_RUNTIME_DEFINITION_VERSION = "2.0.0"
 AGENT_RUNTIME_ADMIN_HANDLER_KEY = "novel_forge.agent_runtime.admin"
 AGENT_RUNTIME_EXECUTION_HANDLER_KEY = "novel_forge.agent_runtime.candidate"
 AGENT_RUNTIME_HARNESS_HANDLER_KEY = "novel_forge.agent_runtime.harness"
+AGENT_SESSION_WORKFLOW_DEFINITION_ID = "agent_session_runtime"
+AGENT_SESSION_WORKFLOW_DEFINITION_VERSION = AGENT_RUNTIME_DEFINITION_VERSION
+AGENT_SESSION_WORKFLOW_DEFINITION_REF = (
+    f"{AGENT_SESSION_WORKFLOW_DEFINITION_ID}@"
+    f"{AGENT_SESSION_WORKFLOW_DEFINITION_VERSION}"
+)
 
 AGENT_RUNTIME_ADMIN_OPERATIONS = (
     "agent.definition.register",
@@ -315,6 +321,8 @@ def _harness_schema() -> dict[str, Any]:
             "skill_bindings",
             "budget",
             "policy_snapshot",
+            "execution_contract",
+            "execution_contract_hash",
         ],
         "properties": {
             "agent_session_id": {"type": "string"},
@@ -330,6 +338,11 @@ def _harness_schema() -> dict[str, Any]:
             "skill_bindings": {"type": "array"},
             "budget": {"type": "object"},
             "policy_snapshot": {"type": "object"},
+            "execution_contract": {"type": "object"},
+            "execution_contract_hash": {
+                "type": "string",
+                "pattern": "^$|^sha256:[0-9a-f]{64}$",
+            },
         },
         "additionalProperties": False,
     }
@@ -341,6 +354,9 @@ __all__ = [
     "AGENT_RUNTIME_DEFINITION_VERSION",
     "AGENT_RUNTIME_EXECUTION_HANDLER_KEY",
     "AGENT_RUNTIME_HARNESS_HANDLER_KEY",
+    "AGENT_SESSION_WORKFLOW_DEFINITION_ID",
+    "AGENT_SESSION_WORKFLOW_DEFINITION_REF",
+    "AGENT_SESSION_WORKFLOW_DEFINITION_VERSION",
     "AGENT_RUNTIME_MODEL_EFFECT_CAPABILITIES",
     "AGENT_RUNTIME_OPERATIONS",
     "agent_runtime_operation_definitions",

@@ -144,7 +144,11 @@ class AgentHarnessUsage:
             for label, used, maximum in (
                 ("turns", self.turns, budget.max_turns),
                 ("tool_calls", self.tool_calls, budget.max_tool_calls),
-                ("external_effects", self.external_effects, budget.max_external_effects),
+                (
+                    "external_effects",
+                    self.external_effects,
+                    budget.max_external_effects,
+                ),
                 ("input_tokens", self.input_tokens, budget.max_input_tokens),
                 ("output_tokens", self.output_tokens, budget.max_output_tokens),
                 ("cost", float(self.cost_amount), float(budget.max_cost_amount)),
@@ -175,10 +179,17 @@ class AgentToolSpec:
             "allowed_roles",
             tuple(AutonomousAgentRole(role) for role in self.allowed_roles),
         )
-        if not all(
-            value.strip()
-            for value in (self.tool_name, self.input_schema_ref, self.output_schema_ref)
-        ) or not self.allowed_roles:
+        if (
+            not all(
+                value.strip()
+                for value in (
+                    self.tool_name,
+                    self.input_schema_ref,
+                    self.output_schema_ref,
+                )
+            )
+            or not self.allowed_roles
+        ):
             raise ValueError("Agent Tool specification is incomplete")
         lowered = self.tool_name.strip().lower()
         if lowered in _FORBIDDEN_DIRECT_MUTATIONS:
@@ -186,7 +197,10 @@ class AgentToolSpec:
         if self.kind is AgentToolKind.AUTHORITY_COMMAND:
             if not self.authority_command_type.strip():
                 raise ValueError("Authority Command Tool requires a command type")
-            if self.authority_command_type.strip().lower() in _FORBIDDEN_DIRECT_MUTATIONS:
+            if (
+                self.authority_command_type.strip().lower()
+                in _FORBIDDEN_DIRECT_MUTATIONS
+            ):
                 raise ValueError("Agent cannot bind a direct truth-mutation command")
 
 
@@ -202,6 +216,8 @@ class AgentHarnessSession:
     tool_policy: tuple[AgentToolSpec, ...]
     skill_bindings: tuple[Mapping[str, Any], ...]
     budget: AgentHarnessBudget
+    execution_contract: Mapping[str, Any] = field(default_factory=dict)
+    execution_contract_hash: str = ""
     usage: AgentHarnessUsage = field(default_factory=AgentHarnessUsage)
     next_sequence: int = 1
     version: int = 1
@@ -209,15 +225,19 @@ class AgentHarnessSession:
     def __post_init__(self) -> None:
         object.__setattr__(self, "role", AutonomousAgentRole(self.role))
         object.__setattr__(self, "status", AgentHarnessStatus(self.status))
-        if any(
-            not value.strip()
-            for value in (
-                self.agent_session_id,
-                self.project_id,
-                self.workspace_id,
-                self.operation_id,
+        if (
+            any(
+                not value.strip()
+                for value in (
+                    self.agent_session_id,
+                    self.project_id,
+                    self.workspace_id,
+                    self.operation_id,
+                )
             )
-        ) or self.next_sequence <= 0 or self.version <= 0:
+            or self.next_sequence <= 0
+            or self.version <= 0
+        ):
             raise ValueError("Agent Harness session is incomplete")
         names = [tool.tool_name for tool in self.tool_policy]
         if len(names) != len(set(names)):
@@ -226,6 +246,17 @@ class AgentHarnessSession:
             required = ("skill_id", "skill_version", "skill_hash")
             if any(not str(binding.get(key) or "").strip() for key in required):
                 raise ValueError("Agent Harness Skill binding is not frozen")
+        frozen_contract = dict(self.execution_contract)
+        object.__setattr__(self, "execution_contract", frozen_contract)
+        if bool(frozen_contract) != bool(self.execution_contract_hash):
+            raise ValueError("Agent Harness execution contract identity is incomplete")
+        if frozen_contract and (
+            self.execution_contract_hash
+            != canonical_execution_contract_hash(frozen_contract)
+        ):
+            raise ValueError(
+                "Agent Harness execution contract hash differs from content"
+            )
 
 
 @dataclass(frozen=True, slots=True)
@@ -250,12 +281,22 @@ class AgentModelTurn:
     def __post_init__(self) -> None:
         if not all(
             value.strip()
-            for value in (self.message, self.operation_id, self.attempt_id, self.external_effect_id)
+            for value in (
+                self.message,
+                self.operation_id,
+                self.attempt_id,
+                self.external_effect_id,
+            )
         ):
             raise ValueError("model turn requires Attempt/ExternalEffect evidence")
         if (self.tool_call is None) == (self.final_response is None):
-            raise ValueError("model turn must choose one Tool or return one final response")
-        if min(self.input_tokens, self.output_tokens) < 0 or float(self.cost_amount) < 0:
+            raise ValueError(
+                "model turn must choose one Tool or return one final response"
+            )
+        if (
+            min(self.input_tokens, self.output_tokens) < 0
+            or float(self.cost_amount) < 0
+        ):
             raise ValueError("model turn usage is invalid")
 
 
@@ -327,6 +368,12 @@ class AgentCancellationPort(Protocol):
     def cancellation_requested(self, *, operation_id: str) -> bool: ...
 
 
+class AgentSessionUsageMeter(Protocol):
+    def measure(
+        self, *, session: AgentHarnessSession, usage: AgentHarnessUsage
+    ) -> AgentHarnessUsage: ...
+
+
 @dataclass(frozen=True, slots=True)
 class AgentHarnessResult:
     session: AgentHarnessSession
@@ -345,6 +392,7 @@ class UnifiedAgentHarness:
         model: AgentModelTurnPort,
         tools: AgentToolRouter,
         cancellation: AgentCancellationPort,
+        usage_meter: AgentSessionUsageMeter | None = None,
     ) -> None:
         if not getattr(model, "external_effect_backed", False):
             raise ValueError("Agent Harness model turns must be ExternalEffect-backed")
@@ -352,6 +400,7 @@ class UnifiedAgentHarness:
         self.model = model
         self.tools = tools
         self.cancellation = cancellation
+        self.usage_meter = usage_meter
 
     def execute_request(
         self,
@@ -362,19 +411,27 @@ class UnifiedAgentHarness:
         attempt_id: str,
         trace_id: str,
     ) -> AgentHarnessResult:
-        if session.status not in {AgentHarnessStatus.READY, AgentHarnessStatus.CHECKPOINTED}:
+        if session.status not in {
+            AgentHarnessStatus.READY,
+            AgentHarnessStatus.CHECKPOINTED,
+        }:
             raise KernelError(
                 "AGENT_HARNESS_SESSION_NOT_RUNNABLE",
                 f"session cannot run from {session.status.value}",
             )
-        if not all(value.strip() for value in (request_id, instruction, attempt_id, trace_id)):
+        if not all(
+            value.strip() for value in (request_id, instruction, attempt_id, trace_id)
+        ):
             raise ValueError("Agent Harness request identity is incomplete")
         current = self.transcript.append_event(
             session=session,
             request_id=request_id,
             turn_number=0,
             event_type=AgentTranscriptEventType.REQUEST_STARTED,
-            payload={"instruction": instruction, "accepted_boundary": asdict(session.accepted_boundary)},
+            payload={
+                "instruction": instruction,
+                "accepted_boundary": asdict(session.accepted_boundary),
+            },
             trace_id=trace_id,
             attempt_id=attempt_id,
             target_status=AgentHarnessStatus.RUNNING,
@@ -385,7 +442,9 @@ class UnifiedAgentHarness:
         )
         try:
             for turn_number in range(1, current.budget.max_turns + 1):
-                if self.cancellation.cancellation_requested(operation_id=current.operation_id):
+                if self.cancellation.cancellation_requested(
+                    operation_id=current.operation_id
+                ):
                     current = self.transcript.append_event(
                         session=current,
                         request_id=request_id,
@@ -396,7 +455,9 @@ class UnifiedAgentHarness:
                         attempt_id=attempt_id,
                         target_status=AgentHarnessStatus.CANCELLED,
                     )
-                    raise KernelError("AGENT_HARNESS_CANCELLED", "Agent request was cancelled")
+                    raise KernelError(
+                        "AGENT_HARNESS_CANCELLED", "Agent request was cancelled"
+                    )
                 turn = self.model.next_turn(
                     session=current,
                     request_id=request_id,
@@ -405,7 +466,10 @@ class UnifiedAgentHarness:
                     committed_transcript=committed,
                     observations=tuple(observations),
                 )
-                if turn.operation_id != current.operation_id or turn.attempt_id != attempt_id:
+                if (
+                    turn.operation_id != current.operation_id
+                    or turn.attempt_id != attempt_id
+                ):
                     raise KernelError(
                         "AGENT_HARNESS_EXECUTION_IDENTITY_DRIFT",
                         "model turn is not owned by the leased Operation/Attempt",
@@ -417,6 +481,8 @@ class UnifiedAgentHarness:
                     output_tokens=turn.output_tokens,
                     cost_amount=turn.cost_amount,
                 )
+                if self.usage_meter is not None:
+                    usage = self.usage_meter.measure(session=current, usage=usage)
                 usage.require_within(current.budget)
                 current = self.transcript.append_event(
                     session=current,
@@ -425,7 +491,9 @@ class UnifiedAgentHarness:
                     event_type=AgentTranscriptEventType.MODEL_MESSAGE,
                     payload={
                         "message": turn.message,
-                        "tool_call": None if turn.tool_call is None else asdict(turn.tool_call),
+                        "tool_call": None
+                        if turn.tool_call is None
+                        else asdict(turn.tool_call),
                         "final_response": turn.final_response,
                     },
                     trace_id=trace_id,
@@ -459,7 +527,11 @@ class UnifiedAgentHarness:
                     request_id=request_id,
                     turn_number=turn_number,
                     event_type=AgentTranscriptEventType.TOOL_REQUESTED,
-                    payload={"tool": turn.tool_call.tool_name, "arguments": dict(turn.tool_call.arguments), "reason": turn.tool_call.reason},
+                    payload={
+                        "tool": turn.tool_call.tool_name,
+                        "arguments": dict(turn.tool_call.arguments),
+                        "reason": turn.tool_call.reason,
+                    },
                     trace_id=trace_id,
                     attempt_id=attempt_id,
                     target_status=AgentHarnessStatus.WAITING_TOOL,
@@ -488,6 +560,10 @@ class UnifiedAgentHarness:
                 observed_usage = current.usage.add(
                     external_effects=1 if observation.external_effect_id else 0
                 )
+                if self.usage_meter is not None:
+                    observed_usage = self.usage_meter.measure(
+                        session=current, usage=observed_usage
+                    )
                 observed_usage.require_within(current.budget)
                 event_type = (
                     AgentTranscriptEventType.AUTHORITY_COMMAND_SUBMITTED
@@ -503,7 +579,8 @@ class UnifiedAgentHarness:
                         "tool": observation.tool_name,
                         "result": dict(observation.result),
                         "authority_command_id": observation.authority_command_id,
-                        "candidate_only": spec.kind is not AgentToolKind.READ_ONLY_QUERY,
+                        "candidate_only": spec.kind
+                        is not AgentToolKind.READ_ONLY_QUERY,
                     },
                     trace_id=trace_id,
                     attempt_id=attempt_id,
@@ -531,7 +608,8 @@ class UnifiedAgentHarness:
                     attempt_id=attempt_id,
                     target_status=(
                         AgentHarnessStatus.ESCALATION_REQUIRED
-                        if getattr(exc, "code", "") in {
+                        if getattr(exc, "code", "")
+                        in {
                             "AGENT_HARNESS_BUDGET_EXHAUSTED",
                             "AGENT_HARNESS_TURN_LIMIT",
                         }
@@ -544,7 +622,9 @@ class UnifiedAgentHarness:
     def _authorize_tool(
         session: AgentHarnessSession, call: AgentToolCall
     ) -> AgentToolSpec:
-        matches = [tool for tool in session.tool_policy if tool.tool_name == call.tool_name]
+        matches = [
+            tool for tool in session.tool_policy if tool.tool_name == call.tool_name
+        ]
         if len(matches) != 1:
             raise KernelError(
                 "AGENT_HARNESS_TOOL_FORBIDDEN",
@@ -560,7 +640,16 @@ class UnifiedAgentHarness:
 
 
 def transcript_payload_hash(payload: Mapping[str, Any]) -> str:
-    encoded = json.dumps(dict(payload), sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    encoded = json.dumps(
+        dict(payload), sort_keys=True, separators=(",", ":"), ensure_ascii=False
+    )
+    return "sha256:" + hashlib.sha256(encoded.encode("utf-8")).hexdigest()
+
+
+def canonical_execution_contract_hash(payload: Mapping[str, Any]) -> str:
+    encoded = json.dumps(
+        dict(payload), sort_keys=True, separators=(",", ":"), ensure_ascii=False
+    )
     return "sha256:" + hashlib.sha256(encoded.encode("utf-8")).hexdigest()
 
 
@@ -575,6 +664,7 @@ __all__ = [
     "AgentHarnessUsage",
     "AgentModelTurn",
     "AgentModelTurnPort",
+    "AgentSessionUsageMeter",
     "AgentToolCall",
     "AgentToolKind",
     "AgentToolObservation",
@@ -583,5 +673,6 @@ __all__ = [
     "AgentTranscriptEventType",
     "AutonomousAgentRole",
     "UnifiedAgentHarness",
+    "canonical_execution_contract_hash",
     "transcript_payload_hash",
 ]

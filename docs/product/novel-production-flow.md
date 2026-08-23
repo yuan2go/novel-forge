@@ -101,9 +101,13 @@ Context v2 then builds three partitions:
 Examples: combat retrieves only currently legal skills/weapons/resources/injuries/environment; investigation retrieves relevant clues, known/unknown facts and beliefs. MKAOS enrichment may improve creative realization but cannot create Story Truth.
 
 Retrieval combines PostgreSQL Full-Text Search (`to_tsvector`,
-`plainto_tsquery`, `ts_rank`), governed embedding projections,
-entity/relationship, character timeline, temporal, Arc and Narrative
-Obligation relevance, recency, rerank and compressible-evidence compression.
+`plainto_tsquery`, `ts_rank`), an independently scoped PostgreSQL vector
+candidate channel, entity/relationship, character timeline, temporal, Arc and
+Narrative Obligation channels, followed by union, dedupe, versioned hybrid
+rerank and compressible-evidence compression. Vector candidates are filtered by
+Project, Book, Accepted Boundary, document lifecycle and compatible embedding
+identity before they enter the union; vector top-k is never allowed to discover
+future or stale evidence and filter it only afterwards.
 This signal is named PostgreSQL FTS ranking. Provider context must remain bounded
 as the Book grows; protected entries cannot be silently dropped.
 

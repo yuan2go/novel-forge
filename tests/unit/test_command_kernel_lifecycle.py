@@ -34,7 +34,11 @@ class CommandKernelLifecycleTests(unittest.TestCase):
         )
         require_transition("WAITING_CHILDREN", "WAITING_GATE")
         require_transition("WAITING_GATE", "SUCCEEDED")
+        require_transition("WAITING_EXTERNAL_RESULT", "FAILED_FINAL")
+        require_transition("WAITING_EXTERNAL_RESULT", "CANCELLED")
+        require_transition("RECONCILIATION_REQUIRED", "FAILED_RETRYABLE")
         require_transition("RECONCILIATION_REQUIRED", "COMPENSATION_REQUIRED")
+        require_transition("RECONCILIATION_REQUIRED", "CANCELLATION_REQUESTED")
 
     def test_every_nonterminal_attempt_state_has_the_designed_outgoing_rules(self) -> None:
         self.assertEqual(

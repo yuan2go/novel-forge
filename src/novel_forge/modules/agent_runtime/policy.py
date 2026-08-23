@@ -35,7 +35,7 @@ SERVER_AGENT_TOOL_CATALOG: dict[str, AgentToolSpec] = {
         input_schema_ref="schema:agent-tool:story-planning-candidate:v1",
         output_schema_ref="schema:agent-tool:story-planning-candidate-result:v1",
         allowed_roles=(AutonomousAgentRole.STUDIO_DIRECTOR,),
-        external_effect_required=False,
+        external_effect_required=True,
     ),
     "plan_change.submit": AgentToolSpec(
         tool_name="plan_change.submit",
@@ -138,18 +138,30 @@ class ServerAgentHarnessPolicyResolver:
             "agent_id": str(definition["agent_id"]),
             "agent_definition_version": int(definition["definition_version"]),
             "agent_definition_hash": str(definition["definition_hash"]),
+            "agent_definition_activation_version": int(
+                definition["activation_version"]
+            ),
+            "agent_runtime_contract_hash": str(definition["runtime_contract_hash"]),
             "role": role.value,
             "capability_pack_ref": str(definition["capability_pack_ref"]),
+            "prompt_bundle_ref": str(definition["prompt_bundle_ref"]),
+            "prompt_bundle_hash": str(definition["prompt_bundle_hash"]),
             "tool_policy_ref": str(definition["tool_policy_ref"]),
             "tool_policy_hash": str(definition["tool_policy_hash"]),
             "skill_bundle_ref": str(definition["skill_bundle_ref"]),
             "skill_bundle_hash": str(definition["skill_bundle_hash"]),
+            "context_policy_ref": str(definition["context_policy_ref"]),
+            "context_policy_hash": str(definition["context_policy_hash"]),
             "authority_policy": "SUBMIT_ONLY_NO_DIRECT_MUTATION",
             "tools": self._tool_payloads(resolved),
             "model_binding": dict(self.production_model_binding or {}),
             "skills_do_not_grant_authority": True,
         }
-        return resolved, skills, {**policy, "policy_hash": canonical_policy_hash(policy)}
+        return (
+            resolved,
+            skills,
+            {**policy, "policy_hash": canonical_policy_hash(policy)},
+        )
 
     @staticmethod
     def _tool_payloads(tools: tuple[AgentToolSpec, ...]) -> list[dict[str, Any]]:

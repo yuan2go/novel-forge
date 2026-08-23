@@ -62,9 +62,16 @@ The repository's scripted Harness adapter is fixture-only. Controlled
 validation/production composition now resolves the Agent Definition, Role,
 Capability Pack, Skill bindings, Tool policy and Authority policy on the server,
 then executes Agent model turns through PEP. If that binding is absent,
-admission fails before a READY Operation is created. This earns
-`PROVIDER_WIRED`, not `PROVIDER_PROVEN`; no real-provider Harness qualification
-was run in this closure.
+admission fails before a READY Operation is created. Runtime hardening now
+persists the complete Definition/Tool/Skill/Pack/prompt/context/provider/model/
+reasoning/route/release/Accepted-Boundary/budget contract and validates it before
+every model turn. Restart or deployment drift cannot silently substitute a new
+binding. Session usage aggregates Agent turns and descendant Capability/Tool
+effects from authoritative Operation lineage and ledgers without copying child
+costs. The bounded exact-SHA qualification ran two real model turns around one
+`narrative.query_accepted` observation and recovered a committed transcript.
+This earns `PROVIDER_PROVEN` only for that small Agent slice; it does not earn
+long-form or production qualification.
 The pre-Harness fixed Agent-candidate API is retained only under the explicit
 `/agent-runtime/migration/agent-runs` namespace for persisted-operation
 recovery. Canonical Chapter and Planning compositions cannot admit through it.
@@ -83,6 +90,9 @@ recovery. Canonical Chapter and Planning compositions cannot admit through it.
 - Stable idempotency keys replay an existing admission instead of duplicating business work.
 - CAS/version checks prevent stale business transitions.
 - Attempt leases and fences prevent stale worker commits.
-- ExternalEffect identity and receipts prevent blind re-execution after uncertain outcomes.
+- ExternalEffect identity and receipts are the required mechanism preventing
+  blind re-execution after uncertain outcomes. Each worker must classify
+  `UNKNOWN_EXTERNAL_STATE` as reconciliation, not ordinary retry; latest-main
+  embedding projection did not yet satisfy this invariant at reconciliation.
 - Outbox records are committed with business state and delivered later.
 - Supervisor checkpoints and trace/correlation identities survive process restarts.

@@ -171,6 +171,46 @@ class ChapterAuthorityDomainHandlerTests(unittest.TestCase):
         )
         self.assertEqual(exported["release_status"], "READY_FOR_BLOB_VERIFICATION")
 
+    def test_draft_freezes_context_and_retrieval_fingerprints(self) -> None:
+        draft = normalize_draft_result(
+            plan={"chapter": 1, "title": "Exact retrieval"},
+            context_asset_version_id="context-version-1",
+            context_content_hash="sha256:context",
+            context_content={
+                "context_manifest": {
+                    "context_fingerprint": "sha256:context-fingerprint"
+                },
+                "chapter_execution": {
+                    "retrieval_result_asset_version_id": "retrieval-version-1",
+                    "retrieval_result_fingerprint": "sha256:retrieval-fingerprint",
+                },
+            },
+            result={"text": "A bounded candidate draft."},
+            provider_evidence={"provider_id": "provider-1", "real_model_call": True},
+        )
+
+        self.assertEqual(draft["context_bundle_content_hash"], "sha256:context")
+        self.assertEqual(draft["context_fingerprint"], "sha256:context-fingerprint")
+        self.assertEqual(
+            draft["retrieval_result_asset_version_id"], "retrieval-version-1"
+        )
+        self.assertEqual(
+            draft["retrieval_result_fingerprint"], "sha256:retrieval-fingerprint"
+        )
+
+    def test_draft_rejects_incomplete_context_lineage(self) -> None:
+        with self.assertRaisesRegex(
+            KernelError, "CHAPTER_DRAFT_CONTEXT_LINEAGE_INVALID"
+        ):
+            normalize_draft_result(
+                plan={"chapter": 1, "title": "Missing retrieval"},
+                context_asset_version_id="context-version-1",
+                context_content_hash="sha256:context",
+                context_content={"context_manifest": {}},
+                result={"text": "A candidate draft."},
+                provider_evidence={"provider_id": "provider-1"},
+            )
+
     def test_quality_and_export_fail_closed(self) -> None:
         with self.assertRaisesRegex(KernelError, "QUALITY_REREVIEW_REQUIRED"):
             build_quality_report(

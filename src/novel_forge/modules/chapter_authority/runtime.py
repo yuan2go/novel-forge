@@ -32,6 +32,7 @@ class _ChapterHandlerAdapter:
     attempt_id: str
     fencing_token: int
     worker_id: str
+    database_url: str
 
     def execute(self, request: AuthorityHandlerRequest) -> AuthorityHandlerOutput:
         chapter_request = ChapterHandlerRequest(
@@ -54,6 +55,7 @@ class _ChapterHandlerAdapter:
             attempt_id=self.attempt_id,
             fencing_token=self.fencing_token,
             worker_id=self.worker_id,
+            database_url=self.database_url,
         )
         output = self.registry.require(self.node).execute(chapter_request)
         return AuthorityHandlerOutput(
@@ -113,6 +115,7 @@ def execute_chapter_handler(
                 command.attempt_id,
                 command.fencing_token,
                 command.worker_id,
+                database_url,
             ),
         ),
     )

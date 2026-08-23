@@ -304,6 +304,7 @@ class ChapterHandlerRequest:
     attempt_id: str = ""
     fencing_token: int = 0
     worker_id: str = ""
+    database_url: str = ""
 
     def require_input(self, asset_type: str) -> ChapterInputAsset:
         matching = [item for item in self.inputs if item.asset_type == asset_type]

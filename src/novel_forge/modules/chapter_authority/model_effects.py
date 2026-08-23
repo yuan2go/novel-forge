@@ -5,6 +5,9 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
+import hashlib
+import json
+import math
 from typing import Any, Mapping, Protocol
 
 from novel_forge.modules.chapter_authority.contracts import (
@@ -277,22 +280,63 @@ class ExternalEffectChapterModelPort:
         self.query = AuthorityAssetQuery(database_url)
         self.writer = AuthorityAssetWriter(database_url)
 
+    def _bounded_reservation_amount(self, requested: str | None) -> str:
+        if requested is None:
+            return self.max_cost_per_call
+        try:
+            amount = Decimal(requested)
+            maximum = Decimal(self.max_cost_per_call)
+        except (InvalidOperation, ValueError) as exc:
+            raise KernelError(
+                "MODEL_EFFECT_RESERVATION_OVERRIDE_INVALID",
+                "model effect reservation amount must be numeric",
+            ) from exc
+        if amount < 0 or amount > maximum:
+            raise KernelError(
+                "MODEL_EFFECT_RESERVATION_OVERRIDE_INVALID",
+                "model effect reservation amount must be within the Provider call cap",
+            )
+        return str(amount)
+
+    @staticmethod
+    def _bounded_reservation_tokens(requested: int | None, *, default: int) -> int:
+        if requested is None:
+            return default
+        tokens = int(requested)
+        if tokens < 0 or tokens > default:
+            raise KernelError(
+                "MODEL_EFFECT_RESERVATION_OVERRIDE_INVALID",
+                "model effect token reservation must be within the frozen context cap",
+            )
+        return tokens
+
     def invoke(
         self,
         request: ChapterHandlerRequest,
         *,
         stage: str,
         payload: dict[str, Any],
+        reservation_amount: str | None = None,
+        reservation_tokens: int | None = None,
     ) -> ModelProviderResult:
         if stage not in MODEL_CAPABILITY_STAGES | {"reader_outcome"}:
             raise KernelError(
                 "MODEL_EFFECT_STAGE_UNSUPPORTED", f"unsupported model stage: {stage}"
             )
-        logical_ref = _model_log_ref(request.operation_id, request.attempt_id, stage)
         business_payload = (
             request.command.get("payload")
             if isinstance(request.command.get("payload"), dict)
             else request.command
+        )
+        default_reservation_tokens = resolve_stage_context_token_budget(
+            business_payload, stage, default=0
+        )
+        bounded_reservation_amount = self._bounded_reservation_amount(
+            reservation_amount
+        )
+        bounded_reservation_tokens = self._bounded_reservation_tokens(
+            reservation_tokens,
+            default=default_reservation_tokens,
         )
         context = EffectCommandContext(
             operation_id=request.operation_id,
@@ -344,8 +388,20 @@ class ExternalEffectChapterModelPort:
                     business_payload.get("book_id") or f"book:{request.project_id}"
                 ),
                 "agent_session_id": str(business_payload.get("agent_session_id") or ""),
+                "agent_execution_contract": dict(
+                    business_payload.get("agent_execution_contract") or {}
+                ),
+                "agent_execution_contract_hash": str(
+                    business_payload.get("agent_execution_contract_hash") or ""
+                ),
                 "target_asset_version_id": str(
                     business_payload.get("target_asset_version_id") or ""
+                ),
+                "source_asset_version_id": str(
+                    business_payload.get("source_asset_version_id") or ""
+                ),
+                "source_content_hash": str(
+                    business_payload.get("source_content_hash") or ""
                 ),
                 "target_content_hash": str(
                     business_payload.get("target_content_hash") or ""
@@ -439,6 +495,13 @@ class ExternalEffectChapterModelPort:
                 else dict(self.adapter.capability_profile)
             ),
         )
+        external_effect_id = str(effect["external_effect_id"])
+        logical_ref = _model_log_ref(
+            request.operation_id,
+            request.attempt_id,
+            stage,
+            external_effect_id,
+        )
         self.fault_injector("after_external_effect_plan")
         effect_adapter = self.adapter
         if bool(effect.get("replayed")):
@@ -478,10 +541,8 @@ class ExternalEffectChapterModelPort:
                 stable_idempotency_key=f"budget:{stable_key}",
                 provider=self.adapter.provider,
                 currency="USD",
-                estimated_amount=self.max_cost_per_call,
-                estimated_tokens=resolve_stage_context_token_budget(
-                    business_payload, stage, default=0
-                ),
+                estimated_amount=bounded_reservation_amount,
+                estimated_tokens=bounded_reservation_tokens,
                 chapter=int(
                     business_payload.get("chapter_number")
                     or business_payload.get("chapter")
@@ -531,10 +592,14 @@ class ExternalEffectChapterModelPort:
             recorder = self.agent_binding_recorder
             if recorder is not None:
                 recorder.record_compatibility_usage(request, stage=stage)
-        completed = self.completed_effect_result(
-            str(effect["external_effect_id"]), request.project_id
-        )
+        completed = self.completed_effect_result(external_effect_id, request.project_id)
         if completed is not None:
+            self._validate_retrieval_result_contract(
+                stage=stage,
+                project_id=request.project_id,
+                external_effect_id=external_effect_id,
+                result=completed,
+            )
             if bool(effect.get("replayed")):
                 authorize = getattr(self.adapter, "for_recovery", None)
                 if callable(authorize):
@@ -572,13 +637,13 @@ class ExternalEffectChapterModelPort:
                 stage,
                 completed,
                 logical_ref,
-                external_effect_id=str(effect["external_effect_id"]),
+                external_effect_id=external_effect_id,
             )
             self._ensure_cost_evidence(
                 request,
                 stage,
                 completed,
-                external_effect_id=str(effect["external_effect_id"]),
+                external_effect_id=external_effect_id,
             )
             if frozen_work_order is not None and execution_binding is not None:
                 self.agent_binding_recorder.accept_candidate(
@@ -637,7 +702,7 @@ class ExternalEffectChapterModelPort:
                     stage,
                     dispatched=dispatched,
                     logical_ref=logical_ref,
-                    external_effect_id=str(effect["external_effect_id"]),
+                    external_effect_id=external_effect_id,
                 )
                 self._record_failed_cost_evidence(
                     request,
@@ -645,11 +710,17 @@ class ExternalEffectChapterModelPort:
                     dispatched=dispatched,
                     usage=usage,
                     cost=cost,
-                    external_effect_id=str(effect["external_effect_id"]),
+                    external_effect_id=external_effect_id,
                 )
             _raise_model_effect_failure(dispatched)
         result = ModelProviderResult.from_evidence(
             dict(dispatched["provider_evidence"])
+        )
+        self._validate_retrieval_result_contract(
+            stage=stage,
+            project_id=request.project_id,
+            external_effect_id=external_effect_id,
+            result=result,
         )
         self.fault_injector("after_provider_success")
         settle_provider_budget(
@@ -670,7 +741,7 @@ class ExternalEffectChapterModelPort:
             stage,
             result,
             logical_ref,
-            external_effect_id=str(effect["external_effect_id"]),
+            external_effect_id=external_effect_id,
         )
         self._ensure_cost_evidence(
             request,
@@ -685,6 +756,73 @@ class ExternalEffectChapterModelPort:
                 execution_binding=execution_binding,
             )
         return result
+
+    def _validate_retrieval_result_contract(
+        self,
+        *,
+        stage: str,
+        project_id: str,
+        external_effect_id: str,
+        result: ModelProviderResult,
+    ) -> None:
+        if stage != "retrieval":
+            return
+        runtime = get_database_runtime(self.database_url)
+        with runtime.connection() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT request_payload->'_production_execution'
+                                          ->'capability_runtime'
+                                          ->'embedding_output_contract'
+                    FROM authority_external_effect
+                    WHERE project_id=%s AND external_effect_id=%s
+                    """,
+                    [project_id, external_effect_id],
+                )
+                row = cursor.fetchone()
+        frozen = row[0] if row is not None else None
+        if not isinstance(frozen, Mapping):
+            if result.real_model_call:
+                raise KernelError(
+                    "RETRIEVAL_EMBEDDING_OUTPUT_CONTRACT_MISSING",
+                    "real retrieval Provider result has no frozen output identity",
+                )
+            return
+        expected_model = str(frozen.get("embedding_model") or "")
+        expected_dimensions = int(frozen.get("embedding_dimensions") or 0)
+        vectors = result.output.get("vectors")
+        returned_model = str(result.output.get("embedding_model") or "")
+        returned_dimensions = int(result.output.get("embedding_dimensions") or 0)
+        if (
+            not expected_model
+            or expected_dimensions <= 0
+            or result.model_id != expected_model
+            or returned_model != expected_model
+            or returned_dimensions != expected_dimensions
+            or not isinstance(vectors, list)
+            or not vectors
+        ):
+            raise KernelError(
+                "RETRIEVAL_EMBEDDING_OUTPUT_IDENTITY_MISMATCH",
+                "retrieval Provider output differs from its frozen model/dimensions",
+            )
+        for vector in vectors:
+            if not isinstance(vector, list) or len(vector) != expected_dimensions:
+                raise KernelError(
+                    "RETRIEVAL_EMBEDDING_OUTPUT_IDENTITY_MISMATCH",
+                    "retrieval Provider vector differs from frozen dimensions",
+                )
+            numeric = [float(value) for value in vector]
+            norm = math.sqrt(sum(value * value for value in numeric))
+            if (
+                not all(math.isfinite(value) for value in numeric)
+                or not 0.99 <= norm <= 1.01
+            ):
+                raise KernelError(
+                    "RETRIEVAL_EMBEDDING_VECTOR_INVALID",
+                    "retrieval Provider vector must be finite, non-placeholder, and L2-normalized",
+                )
 
     def _request_timeout_seconds(self, request: ChapterHandlerRequest) -> int:
         """Bind Provider time to the frozen Operation policy, not its lease."""
@@ -795,13 +933,31 @@ class ExternalEffectChapterModelPort:
     ) -> None:
         """Persist model/cost evidence for an already-dispatched governed effect."""
 
+        execution = result.execution_evidence or {}
+        execution_request = execution.get("execution_request")
+        external_effect_id = (
+            str(execution_request.get("external_effect_id") or "")
+            if isinstance(execution_request, Mapping)
+            else ""
+        )
         self._record_model_call(
             request,
             stage,
             result,
-            _model_log_ref(request.operation_id, request.attempt_id, stage),
+            _model_log_ref(
+                request.operation_id,
+                request.attempt_id,
+                stage,
+                external_effect_id,
+            ),
+            external_effect_id=external_effect_id,
         )
-        self._ensure_cost_evidence(request, stage, result)
+        self._ensure_cost_evidence(
+            request,
+            stage,
+            result,
+            external_effect_id=external_effect_id,
+        )
 
     def completed_effect_result(
         self, external_effect_id: str, project_id: str
@@ -857,14 +1013,19 @@ class ExternalEffectChapterModelPort:
             AuthorityAssetWriteCommand(
                 operation_id=request.operation_id,
                 project_id=request.project_id,
-                asset_id=(
-                    f"model-call:{request.operation_id}:{request.attempt_id}:{stage}"
+                asset_id=_model_call_asset_id(
+                    request.operation_id,
+                    request.attempt_id,
+                    stage,
+                    external_effect_id,
                 ),
                 asset_type="model_call_log",
                 schema_version="model-call-log.v1",
                 logical_ref=logical_ref,
                 category="runs",
-                output_key=f"model_call.{stage}",
+                output_key=_evidence_output_key(
+                    f"model_call.{stage}", external_effect_id
+                ),
                 role="model_evidence",
                 content={
                     "type": "model_call_log",
@@ -931,14 +1092,20 @@ class ExternalEffectChapterModelPort:
             AuthorityAssetWriteCommand(
                 operation_id=request.operation_id,
                 project_id=request.project_id,
-                asset_id=(
-                    f"model-call:{request.operation_id}:{request.attempt_id}:{stage}"
+                asset_id=_model_call_asset_id(
+                    request.operation_id,
+                    request.attempt_id,
+                    stage,
+                    external_effect_id,
                 ),
                 asset_type="model_call_log",
                 schema_version="model-call-log.v1",
                 logical_ref=logical_ref,
                 category="runs",
-                output_key=f"model_call.{stage}.failed.{request.attempt_id}",
+                output_key=_evidence_output_key(
+                    f"model_call.{stage}.failed.{request.attempt_id}",
+                    external_effect_id,
+                ),
                 role="model_failure_evidence",
                 content={
                     "type": "model_call_log",
@@ -973,7 +1140,12 @@ class ExternalEffectChapterModelPort:
         cost: Mapping[str, Any],
         external_effect_id: str = "",
     ) -> None:
-        logical_ref = _cost_log_ref(request.operation_id, request.attempt_id, stage)
+        logical_ref = _cost_log_ref(
+            request.operation_id,
+            request.attempt_id,
+            stage,
+            external_effect_id,
+        )
         try:
             self.query.require(project_id=request.project_id, logical_ref=logical_ref)
             return
@@ -986,14 +1158,20 @@ class ExternalEffectChapterModelPort:
             AuthorityAssetWriteCommand(
                 operation_id=request.operation_id,
                 project_id=request.project_id,
-                asset_id=(
-                    f"cost-ledger:{request.operation_id}:{request.attempt_id}:{stage}"
+                asset_id=_cost_ledger_asset_id(
+                    request.operation_id,
+                    request.attempt_id,
+                    stage,
+                    external_effect_id,
                 ),
                 asset_type="cost_ledger",
                 schema_version="model-cost-ledger.v1",
                 logical_ref=logical_ref,
                 category="runs",
-                output_key=f"cost_ledger.{stage}.failed.{request.attempt_id}",
+                output_key=_evidence_output_key(
+                    f"cost_ledger.{stage}.failed.{request.attempt_id}",
+                    external_effect_id,
+                ),
                 role="cost_failure_evidence",
                 content={
                     "type": "cost_ledger",
@@ -1025,7 +1203,12 @@ class ExternalEffectChapterModelPort:
                 trace_id=request.trace_id,
                 correlation_id=request.correlation_id,
                 reference_asset_ids=(
-                    f"model-call:{request.operation_id}:{request.attempt_id}:{stage}",
+                    _model_call_asset_id(
+                        request.operation_id,
+                        request.attempt_id,
+                        stage,
+                        external_effect_id,
+                    ),
                 ),
             )
         )
@@ -1037,7 +1220,12 @@ class ExternalEffectChapterModelPort:
         result: ModelProviderResult,
         external_effect_id: str = "",
     ) -> None:
-        logical_ref = _cost_log_ref(request.operation_id, request.attempt_id, stage)
+        logical_ref = _cost_log_ref(
+            request.operation_id,
+            request.attempt_id,
+            stage,
+            external_effect_id,
+        )
         try:
             self.query.require(project_id=request.project_id, logical_ref=logical_ref)
             return
@@ -1048,14 +1236,19 @@ class ExternalEffectChapterModelPort:
             AuthorityAssetWriteCommand(
                 operation_id=request.operation_id,
                 project_id=request.project_id,
-                asset_id=(
-                    f"cost-ledger:{request.operation_id}:{request.attempt_id}:{stage}"
+                asset_id=_cost_ledger_asset_id(
+                    request.operation_id,
+                    request.attempt_id,
+                    stage,
+                    external_effect_id,
                 ),
                 asset_type="cost_ledger",
                 schema_version="model-cost-ledger.v1",
                 logical_ref=logical_ref,
                 category="runs",
-                output_key=f"cost_ledger.{stage}",
+                output_key=_evidence_output_key(
+                    f"cost_ledger.{stage}", external_effect_id
+                ),
                 role="cost_evidence",
                 content={
                     "type": "cost_ledger",
@@ -1093,18 +1286,72 @@ class ExternalEffectChapterModelPort:
                 trace_id=request.trace_id,
                 correlation_id=request.correlation_id,
                 reference_asset_ids=(
-                    f"model-call:{request.operation_id}:{request.attempt_id}:{stage}",
+                    _model_call_asset_id(
+                        request.operation_id,
+                        request.attempt_id,
+                        stage,
+                        external_effect_id,
+                    ),
                 ),
             )
         )
 
 
-def _model_log_ref(operation_id: str, attempt_id: str, stage: str) -> str:
-    return f"runs/model_calls/{operation_id}-{attempt_id}-{stage}.json"
+def _evidence_instance_token(external_effect_id: str) -> str:
+    return (
+        hashlib.sha256(external_effect_id.encode("utf-8")).hexdigest()[:20]
+        if external_effect_id
+        else ""
+    )
 
 
-def _cost_log_ref(operation_id: str, attempt_id: str, stage: str) -> str:
-    return f"runs/cost_ledgers/{operation_id}-{attempt_id}-{stage}.json"
+def _evidence_output_key(base: str, external_effect_id: str) -> str:
+    token = _evidence_instance_token(external_effect_id)
+    return f"{base}.{token}" if token else base
+
+
+def _model_call_asset_id(
+    operation_id: str,
+    attempt_id: str,
+    stage: str,
+    external_effect_id: str = "",
+) -> str:
+    base = f"model-call:{operation_id}:{attempt_id}:{stage}"
+    token = _evidence_instance_token(external_effect_id)
+    return f"{base}:{token}" if token else base
+
+
+def _cost_ledger_asset_id(
+    operation_id: str,
+    attempt_id: str,
+    stage: str,
+    external_effect_id: str = "",
+) -> str:
+    base = f"cost-ledger:{operation_id}:{attempt_id}:{stage}"
+    token = _evidence_instance_token(external_effect_id)
+    return f"{base}:{token}" if token else base
+
+
+def _model_log_ref(
+    operation_id: str,
+    attempt_id: str,
+    stage: str,
+    external_effect_id: str = "",
+) -> str:
+    token = _evidence_instance_token(external_effect_id)
+    suffix = f"-{token}" if token else ""
+    return f"runs/model_calls/{operation_id}-{attempt_id}-{stage}{suffix}.json"
+
+
+def _cost_log_ref(
+    operation_id: str,
+    attempt_id: str,
+    stage: str,
+    external_effect_id: str = "",
+) -> str:
+    token = _evidence_instance_token(external_effect_id)
+    suffix = f"-{token}" if token else ""
+    return f"runs/cost_ledgers/{operation_id}-{attempt_id}-{stage}{suffix}.json"
 
 
 def _raise_model_effect_failure(dispatched: dict[str, Any]) -> None:
@@ -1179,6 +1426,38 @@ def _object(payload: dict[str, Any], key: str) -> dict[str, Any]:
     return value
 
 
+def _decode_agent_json_envelope(
+    value: Any, *, field: str, allow_empty: bool
+) -> dict[str, Any]:
+    if not isinstance(value, Mapping):
+        raise KernelError(
+            "MODEL_RESPONSE_INVALID", f"Agent {field} envelope is missing"
+        )
+    if "payload_json" not in value:
+        decoded = dict(value)
+        if decoded or allow_empty:
+            return decoded
+        raise KernelError(
+            "MODEL_RESPONSE_INVALID", f"Agent {field} must decode to an object"
+        )
+    payload_json = value.get("payload_json")
+    if not isinstance(payload_json, str):
+        raise KernelError(
+            "MODEL_RESPONSE_INVALID", f"Agent {field} payload_json is missing"
+        )
+    try:
+        decoded = json.loads(payload_json)
+    except json.JSONDecodeError as exc:
+        raise KernelError(
+            "MODEL_RESPONSE_INVALID", f"Agent {field} payload_json is invalid"
+        ) from exc
+    if not isinstance(decoded, dict) or (not decoded and not allow_empty):
+        raise KernelError(
+            "MODEL_RESPONSE_INVALID", f"Agent {field} must decode to an object"
+        )
+    return decoded
+
+
 def _normalize_model_output(stage: str, raw: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(raw, dict):
         raise KernelError("MODEL_RESPONSE_INVALID", "model response must be an object")
@@ -1203,9 +1482,12 @@ def _normalize_model_output(stage: str, raw: dict[str, Any]) -> dict[str, Any]:
                     "MODEL_RESPONSE_INVALID",
                     "Agent Tool action requires exactly one typed Tool call",
                 )
+            arguments = _decode_agent_json_envelope(
+                tool_call.get("arguments"), field="Tool arguments", allow_empty=True
+            )
             normalized_call = {
                 "tool_name": str(tool_call.get("tool_name") or "").strip(),
-                "arguments": dict(tool_call.get("arguments") or {}),
+                "arguments": arguments,
                 "reason": str(tool_call.get("reason") or "").strip(),
             }
             if not normalized_call["tool_name"] or not normalized_call["reason"]:
@@ -1231,7 +1513,9 @@ def _normalize_model_output(stage: str, raw: dict[str, Any]) -> dict[str, Any]:
             "message": message,
             "action": action,
             "tool_call": None,
-            "final_response": dict(final_response),
+            "final_response": _decode_agent_json_envelope(
+                final_response, field="final response", allow_empty=False
+            ),
         }
     if stage == "narrative_semantic_evaluation":
         return dict(raw)

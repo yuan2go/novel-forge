@@ -7,7 +7,9 @@ import fnmatch
 import json
 from typing import Any
 
-from novel_forge.modules.production_execution.capability_registry import CapabilityRegistry
+from novel_forge.modules.production_execution.capability_registry import (
+    CapabilityRegistry,
+)
 
 from .artifacts import (
     ArtifactKind,
@@ -48,7 +50,9 @@ class _Issues:
         self.errors.append(CapabilityPackCompilationIssue(code, path, message))
 
     def warning(self, code: str, path: str, message: str) -> None:
-        self.warnings.append(CapabilityPackCompilationIssue(code, path, message, "WARNING"))
+        self.warnings.append(
+            CapabilityPackCompilationIssue(code, path, message, "WARNING")
+        )
 
 
 def validate_capability_pack_semantics(
@@ -67,9 +71,15 @@ def validate_capability_pack_semantics(
     capabilities: dict[str, Any] = {}
 
     try:
-        type_policy = capability_type_catalog.resolve(str(manifest.identity.capability_type))
+        type_policy = capability_type_catalog.resolve(
+            str(manifest.identity.capability_type)
+        )
     except KeyError as exc:
-        issues.error("CAPABILITY_PACK_CAPABILITY_TYPE_UNKNOWN", "$.identity.capability_type", str(exc))
+        issues.error(
+            "CAPABILITY_PACK_CAPABILITY_TYPE_UNKNOWN",
+            "$.identity.capability_type",
+            str(exc),
+        )
         type_policy = None
     if type_policy is not None:
         triple = (
@@ -84,16 +94,35 @@ def validate_capability_pack_semantics(
                 "status, lifecycle, and release_channel are not a governed combination",
             )
         execution = manifest.runtime_contract.execution
-        if type_policy.requires_authority_operation and execution.get("binds_authority_operation") is not True:
-            issues.error("CAPABILITY_PACK_AUTHORITY_BINDING_REQUIRED", "$.runtime_contract.execution.binds_authority_operation", "capability type requires Authority Operation binding")
-        if type_policy.requires_attempt_fence and execution.get("binds_attempt_fence") is not True:
-            issues.error("CAPABILITY_PACK_AUTHORITY_BINDING_REQUIRED", "$.runtime_contract.execution.binds_attempt_fence", "capability type requires Attempt fencing")
+        if (
+            type_policy.requires_authority_operation
+            and execution.get("binds_authority_operation") is not True
+        ):
+            issues.error(
+                "CAPABILITY_PACK_AUTHORITY_BINDING_REQUIRED",
+                "$.runtime_contract.execution.binds_authority_operation",
+                "capability type requires Authority Operation binding",
+            )
+        if (
+            type_policy.requires_attempt_fence
+            and execution.get("binds_attempt_fence") is not True
+        ):
+            issues.error(
+                "CAPABILITY_PACK_AUTHORITY_BINDING_REQUIRED",
+                "$.runtime_contract.execution.binds_attempt_fence",
+                "capability type requires Attempt fencing",
+            )
         if manifest.audit.audit_level != type_policy.required_audit_level:
-            issues.error("CAPABILITY_PACK_POLICY_BINDING_INVALID", "$.audit.audit_level", "audit level is weaker than the Capability Type policy")
+            issues.error(
+                "CAPABILITY_PACK_POLICY_BINDING_INVALID",
+                "$.audit.audit_level",
+                "audit level is weaker than the Capability Type policy",
+            )
 
     if (
         manifest.workflow_template.workflow_id != workflow_catalog.workflow_id
-        or manifest.workflow_template.workflow_version != workflow_catalog.workflow_version
+        or manifest.workflow_template.workflow_version
+        != workflow_catalog.workflow_version
     ):
         issues.error(
             "CAPABILITY_PACK_OPERATION_DEFINITION_NOT_FOUND",
@@ -116,14 +145,24 @@ def validate_capability_pack_semantics(
         ref = str(node.operation_definition_ref)
         name, separator, version = ref.rpartition("@")
         if not separator:
-            issues.error("CAPABILITY_PACK_OPERATION_DEFINITION_NOT_FOUND", f"{path}.operation_definition_ref", "operation definition ref is not exact")
+            issues.error(
+                "CAPABILITY_PACK_OPERATION_DEFINITION_NOT_FOUND",
+                f"{path}.operation_definition_ref",
+                "operation definition ref is not exact",
+            )
             continue
         try:
             operation = operation_catalog.resolve(name, version)
         except KeyError as exc:
-            issues.error("CAPABILITY_PACK_OPERATION_DEFINITION_NOT_FOUND", f"{path}.operation_definition_ref", str(exc))
+            issues.error(
+                "CAPABILITY_PACK_OPERATION_DEFINITION_NOT_FOUND",
+                f"{path}.operation_definition_ref",
+                str(exc),
+            )
             continue
-        operations[(operation.definition_name, operation.definition_version)] = operation
+        operations[(operation.definition_name, operation.definition_version)] = (
+            operation
+        )
         operation_by_node[str(node.node_id)] = operation
         if not operation.enabled:
             issues.error(
@@ -132,11 +171,19 @@ def validate_capability_pack_semantics(
                 "disabled OperationDefinition cannot be compiled",
             )
         if operation.definition_hash != node.operation_definition_hash:
-            issues.error("CAPABILITY_PACK_OPERATION_DEFINITION_DRIFT", f"{path}.operation_definition_hash", "Authority OperationDefinition content hash differs from the Manifest constraint")
+            issues.error(
+                "CAPABILITY_PACK_OPERATION_DEFINITION_DRIFT",
+                f"{path}.operation_definition_hash",
+                "Authority OperationDefinition content hash differs from the Manifest constraint",
+            )
         try:
             binding = workflow_catalog.resolve(str(node.node_id))
         except KeyError as exc:
-            issues.error("CAPABILITY_PACK_OPERATION_DEFINITION_DRIFT", f"{path}.node_id", str(exc))
+            issues.error(
+                "CAPABILITY_PACK_OPERATION_DEFINITION_DRIFT",
+                f"{path}.node_id",
+                str(exc),
+            )
             continue
         expected = {
             "operation_name": binding.operation_name,
@@ -154,20 +201,36 @@ def validate_capability_pack_semantics(
         }
         for field, expected_value in expected.items():
             if actual[field] != expected_value:
-                issues.error("CAPABILITY_PACK_OPERATION_DEFINITION_DRIFT", f"{path}.{field}", "Manifest binding differs from the current Authority/Scheduler contract")
+                issues.error(
+                    "CAPABILITY_PACK_OPERATION_DEFINITION_DRIFT",
+                    f"{path}.{field}",
+                    "Manifest binding differs from the current Authority/Scheduler contract",
+                )
         retry = json.loads(operation.retry_policy_json)
         if (
             node.retry_policy.max_attempts != retry.get("max_attempts")
             or node.retry_policy.retryable_errors
             or node.retry_policy.dead_letter_on_exhausted is not True
         ):
-            issues.error("CAPABILITY_PACK_OPERATION_POLICY_CONFLICT", f"{path}.retry_policy", "Manifest retry constraints differ from the Authority retry policy")
+            issues.error(
+                "CAPABILITY_PACK_OPERATION_POLICY_CONFLICT",
+                f"{path}.retry_policy",
+                "Manifest retry constraints differ from the Authority retry policy",
+            )
         approval = json.loads(operation.approval_policy_json)
         if node.approval.get("required") is not approval.get("required"):
-            issues.error("CAPABILITY_PACK_OPERATION_POLICY_CONFLICT", f"{path}.approval.required", "Manifest admission approval differs from OperationDefinition")
+            issues.error(
+                "CAPABILITY_PACK_OPERATION_POLICY_CONFLICT",
+                f"{path}.approval.required",
+                "Manifest admission approval differs from OperationDefinition",
+            )
         compensation = json.loads(operation.compensation_policy_json)
         if node.compensation.get("supported") is not compensation.get("supported"):
-            issues.error("CAPABILITY_PACK_OPERATION_POLICY_CONFLICT", f"{path}.compensation.supported", "Manifest compensation differs from OperationDefinition")
+            issues.error(
+                "CAPABILITY_PACK_OPERATION_POLICY_CONFLICT",
+                f"{path}.compensation.supported",
+                "Manifest compensation differs from OperationDefinition",
+            )
         completion = json.loads(operation.completion_contract_json)
         selectors = {
             str(item.get("selector"))
@@ -175,33 +238,53 @@ def validate_capability_pack_semantics(
             if isinstance(item, dict) and item.get("selector")
         }
         authoritative_outputs[str(node.node_id)] = selectors
-        if binding.primary_output_asset_type not in node.output_asset_types or binding.primary_output_asset_type not in selectors:
-            issues.error("CAPABILITY_PACK_OPERATION_DEFINITION_DRIFT", f"{path}.output_asset_types", "primary output differs from Authority completion selectors")
+        if binding.primary_output_asset_type and (
+            binding.primary_output_asset_type not in node.output_asset_types
+            or binding.primary_output_asset_type not in selectors
+        ):
+            issues.error(
+                "CAPABILITY_PACK_OPERATION_DEFINITION_DRIFT",
+                f"{path}.output_asset_types",
+                "primary output differs from Authority completion selectors",
+            )
 
     required_capabilities = {
         str(item) for item in manifest.compatibility.required_capabilities
     }
     used_capabilities = {
         str(node.capability_id) for node in manifest.workflow_template.nodes
-    } | {
-        str(gate.judge_capability_id) for gate in manifest.evaluation.required_gates
-    }
+    } | {str(gate.judge_capability_id) for gate in manifest.evaluation.required_gates}
     missing_capabilities = sorted(used_capabilities - required_capabilities)
     if missing_capabilities:
-        issues.error("CAPABILITY_PACK_CAPABILITY_SET_INCOMPLETE", "$.compatibility.required_capabilities", "required_capabilities omits used capabilities: " + ", ".join(missing_capabilities))
+        issues.error(
+            "CAPABILITY_PACK_CAPABILITY_SET_INCOMPLETE",
+            "$.compatibility.required_capabilities",
+            "required_capabilities omits used capabilities: "
+            + ", ".join(missing_capabilities),
+        )
     unused_capabilities = sorted(required_capabilities - used_capabilities)
     if unused_capabilities:
-        issues.warning("CAPABILITY_PACK_CAPABILITY_SET_UNUSED", "$.compatibility.required_capabilities", "declared capabilities are unused: " + ", ".join(unused_capabilities))
+        issues.warning(
+            "CAPABILITY_PACK_CAPABILITY_SET_UNUSED",
+            "$.compatibility.required_capabilities",
+            "declared capabilities are unused: " + ", ".join(unused_capabilities),
+        )
     for capability_id in sorted(required_capabilities | used_capabilities):
         try:
             capabilities[capability_id] = capability_registry.resolve(capability_id)
         except ValueError as exc:
-            issues.error("CAPABILITY_PACK_CAPABILITY_UNKNOWN", "$.compatibility.required_capabilities", str(exc))
+            issues.error(
+                "CAPABILITY_PACK_CAPABILITY_UNKNOWN",
+                "$.compatibility.required_capabilities",
+                str(exc),
+            )
 
     _validate_asset_flow(manifest, authoritative_outputs, issues)
     _validate_tools(manifest, operation_by_node, tool_catalog, issues)
 
-    def resolve(kind: ArtifactKind, ref: str, version: str | None = None, path: str = "$") -> ResolvedArtifact | None:
+    def resolve(
+        kind: ArtifactKind, ref: str, version: str | None = None, path: str = "$"
+    ) -> ResolvedArtifact | None:
         try:
             resolved = artifact_resolver.resolve(
                 kind, ref, version or exact_ref_version(ref)
@@ -222,23 +305,70 @@ def validate_capability_pack_semantics(
         return resolved
 
     for index, skill in enumerate(manifest.skill_binding.skills):
-        item = resolve(ArtifactKind.SKILL, str(skill.skill_ref), str(skill.version), f"$.skill_binding.skills[{index}]")
+        item = resolve(
+            ArtifactKind.SKILL,
+            str(skill.skill_ref),
+            str(skill.version),
+            f"$.skill_binding.skills[{index}]",
+        )
         if item is not None and item.content_hash != skill.content_hash:
-            issues.error("CAPABILITY_PACK_ARTIFACT_HASH_MISMATCH", f"$.skill_binding.skills[{index}].content_hash", "Skill content hash differs from the resolved repository file")
-        resolve(ArtifactKind.SCHEMA, str(skill.input_contract_ref), path=f"$.skill_binding.skills[{index}].input_contract_ref")
-        resolve(ArtifactKind.SCHEMA, str(skill.output_contract_ref), path=f"$.skill_binding.skills[{index}].output_contract_ref")
+            issues.error(
+                "CAPABILITY_PACK_ARTIFACT_HASH_MISMATCH",
+                f"$.skill_binding.skills[{index}].content_hash",
+                "Skill content hash differs from the resolved repository file",
+            )
+        resolve(
+            ArtifactKind.SCHEMA,
+            str(skill.input_contract_ref),
+            path=f"$.skill_binding.skills[{index}].input_contract_ref",
+        )
+        resolve(
+            ArtifactKind.SCHEMA,
+            str(skill.output_contract_ref),
+            path=f"$.skill_binding.skills[{index}].output_contract_ref",
+        )
     prompt = manifest.prompt_binding
-    system = resolve(ArtifactKind.PROMPT_SYSTEM_INSTRUCTION, str(prompt.system_instruction_ref), str(prompt.system_instruction_version), "$.prompt_binding.system_instruction_ref")
-    template = resolve(ArtifactKind.PROMPT_TEMPLATE, str(prompt.template_ref), str(prompt.template_version), "$.prompt_binding.template_ref")
+    system = resolve(
+        ArtifactKind.PROMPT_SYSTEM_INSTRUCTION,
+        str(prompt.system_instruction_ref),
+        str(prompt.system_instruction_version),
+        "$.prompt_binding.system_instruction_ref",
+    )
+    template = resolve(
+        ArtifactKind.PROMPT_TEMPLATE,
+        str(prompt.template_ref),
+        str(prompt.template_version),
+        "$.prompt_binding.template_ref",
+    )
     if system is not None and system.content_hash != prompt.system_instruction_hash:
-        issues.error("CAPABILITY_PACK_ARTIFACT_HASH_MISMATCH", "$.prompt_binding.system_instruction_hash", "system instruction hash differs from resolved content")
+        issues.error(
+            "CAPABILITY_PACK_ARTIFACT_HASH_MISMATCH",
+            "$.prompt_binding.system_instruction_hash",
+            "system instruction hash differs from resolved content",
+        )
     if template is not None and template.content_hash != prompt.template_hash:
-        issues.error("CAPABILITY_PACK_ARTIFACT_HASH_MISMATCH", "$.prompt_binding.template_hash", "template hash differs from resolved content")
-    resolve(ArtifactKind.SCHEMA, str(prompt.input_schema_ref), path="$.prompt_binding.input_schema_ref")
-    resolve(ArtifactKind.SCHEMA, str(prompt.output_schema_ref), path="$.prompt_binding.output_schema_ref")
+        issues.error(
+            "CAPABILITY_PACK_ARTIFACT_HASH_MISMATCH",
+            "$.prompt_binding.template_hash",
+            "template hash differs from resolved content",
+        )
+    resolve(
+        ArtifactKind.SCHEMA,
+        str(prompt.input_schema_ref),
+        path="$.prompt_binding.input_schema_ref",
+    )
+    resolve(
+        ArtifactKind.SCHEMA,
+        str(prompt.output_schema_ref),
+        path="$.prompt_binding.output_schema_ref",
+    )
 
     for ref in manifest.compatibility.required_schema_versions:
-        resolve(ArtifactKind.SCHEMA, str(ref), path="$.compatibility.required_schema_versions")
+        resolve(
+            ArtifactKind.SCHEMA,
+            str(ref),
+            path="$.compatibility.required_schema_versions",
+        )
     context_policy = resolve(
         ArtifactKind.CONTEXT_POLICY,
         str(manifest.context_sources.policy_id),
@@ -295,9 +425,17 @@ def validate_capability_pack_semantics(
                 "Manifest Tool bindings differ from the resolved policy",
             )
     for index, tool in enumerate(manifest.tool_permissions.tools):
-        resolve(ArtifactKind.BUDGET_POLICY, str(tool.budget_policy_ref), path=f"$.tool_permissions.tools[{index}].budget_policy_ref")
+        resolve(
+            ArtifactKind.BUDGET_POLICY,
+            str(tool.budget_policy_ref),
+            path=f"$.tool_permissions.tools[{index}].budget_policy_ref",
+        )
     if manifest.tool_permissions.external_models.get("allowed") is True:
-        resolve(ArtifactKind.APPROVAL_POLICY, str(manifest.tool_permissions.external_models.get("route_policy_ref")), path="$.tool_permissions.external_models.route_policy_ref")
+        resolve(
+            ArtifactKind.APPROVAL_POLICY,
+            str(manifest.tool_permissions.external_models.get("route_policy_ref")),
+            path="$.tool_permissions.external_models.route_policy_ref",
+        )
     if manifest.tool_permissions.retrieval.get("allowed") is True:
         source_policy = resolve(
             ArtifactKind.SOURCE_POLICY,
@@ -323,9 +461,7 @@ def validate_capability_pack_semantics(
                     )
             if sorted(policy_content.get("allowed_eligibility", ())) != sorted(
                 str(item)
-                for item in manifest.assets.source_policy.get(
-                    "allowed_eligibility", ()
-                )
+                for item in manifest.assets.source_policy.get("allowed_eligibility", ())
             ):
                 issues.error(
                     "CAPABILITY_PACK_POLICY_BINDING_INVALID",
@@ -380,13 +516,45 @@ def validate_capability_pack_semantics(
                     "resolved compensation policy differs from OperationDefinition",
                 )
     runtime = manifest.runtime_contract
-    for field in ("input_protocol_ref", "output_protocol_ref", "error_protocol_ref", "state_protocol_ref", "event_protocol_ref", "audit_protocol_ref", "rollback_protocol_ref"):
-        resolve(ArtifactKind.PROTOCOL, str(getattr(runtime, field)), path=f"$.runtime_contract.{field}")
-    resolve(ArtifactKind.COMMIT_POLICY, str(runtime.commit_policy_ref), path="$.runtime_contract.commit_policy_ref")
-    resolve(ArtifactKind.VALIDATION_POLICY, str(runtime.validation_policy_ref), path="$.runtime_contract.validation_policy_ref")
-    resolve(ArtifactKind.APPROVAL_POLICY, str(manifest.governance.approval_policy_ref), path="$.governance.approval_policy_ref")
-    resolve(ArtifactKind.COMPENSATION_POLICY, str(manifest.governance.rollback.get("policy_ref")), path="$.governance.rollback.policy_ref")
-    resolve(ArtifactKind.BUDGET_POLICY, str(manifest.governance.cost_tracking.get("budget_policy_ref")), path="$.governance.cost_tracking.budget_policy_ref")
+    for field in (
+        "input_protocol_ref",
+        "output_protocol_ref",
+        "error_protocol_ref",
+        "state_protocol_ref",
+        "event_protocol_ref",
+        "audit_protocol_ref",
+        "rollback_protocol_ref",
+    ):
+        resolve(
+            ArtifactKind.PROTOCOL,
+            str(getattr(runtime, field)),
+            path=f"$.runtime_contract.{field}",
+        )
+    resolve(
+        ArtifactKind.COMMIT_POLICY,
+        str(runtime.commit_policy_ref),
+        path="$.runtime_contract.commit_policy_ref",
+    )
+    resolve(
+        ArtifactKind.VALIDATION_POLICY,
+        str(runtime.validation_policy_ref),
+        path="$.runtime_contract.validation_policy_ref",
+    )
+    resolve(
+        ArtifactKind.APPROVAL_POLICY,
+        str(manifest.governance.approval_policy_ref),
+        path="$.governance.approval_policy_ref",
+    )
+    resolve(
+        ArtifactKind.COMPENSATION_POLICY,
+        str(manifest.governance.rollback.get("policy_ref")),
+        path="$.governance.rollback.policy_ref",
+    )
+    resolve(
+        ArtifactKind.BUDGET_POLICY,
+        str(manifest.governance.cost_tracking.get("budget_policy_ref")),
+        path="$.governance.cost_tracking.budget_policy_ref",
+    )
     for index, rule in enumerate(manifest.assets.rules):
         rule_artifact = resolve(
             ArtifactKind.RULE,
@@ -395,11 +563,9 @@ def validate_capability_pack_semantics(
         )
         if rule_artifact is not None:
             rule_content = json.loads(rule_artifact.content_json)
-            if (
-                rule_content.get("severity") != rule.get("severity")
-                or rule_content.get("hard_constraint")
-                is not rule.get("hard_constraint")
-            ):
+            if rule_content.get("severity") != rule.get("severity") or rule_content.get(
+                "hard_constraint"
+            ) is not rule.get("hard_constraint"):
                 issues.error(
                     "CAPABILITY_PACK_POLICY_BINDING_INVALID",
                     f"$.assets.rules[{index}]",
@@ -430,7 +596,9 @@ def validate_capability_pack_semantics(
         manifest_hash=manifest.manifest_hash,
         errors=tuple(issues.errors),
         warnings=tuple(issues.warnings),
-        resolved_artifacts=tuple(sorted(f"{key[0]}:{key[1]}@{key[2]}" for key in artifacts)),
+        resolved_artifacts=tuple(
+            sorted(f"{key[0]}:{key[1]}@{key[2]}" for key in artifacts)
+        ),
         resolved_operations=tuple(
             f"{name}@{version}" for name, version in sorted(operations)
         ),
@@ -475,21 +643,61 @@ def _validate_asset_flow(
             available.update(authoritative_outputs.get(ancestor, set()))
         missing = sorted(set(str(item) for item in node.input_asset_types) - available)
         if missing:
-            issues.error("CAPABILITY_PACK_WORKFLOW_INPUT_UNSATISFIED", f"workflow:{node_id}.input_asset_types", "workflow inputs have no ancestor or external producer: " + ", ".join(missing))
-    produced = set().union(*authoritative_outputs.values()) if authoritative_outputs else set()
-    missing_outputs = sorted(set(str(item) for item in manifest.workflow_template.completion.required_output_asset_types) - produced)
+            issues.error(
+                "CAPABILITY_PACK_WORKFLOW_INPUT_UNSATISFIED",
+                f"workflow:{node_id}.input_asset_types",
+                "workflow inputs have no ancestor or external producer: "
+                + ", ".join(missing),
+            )
+    produced = (
+        set().union(*authoritative_outputs.values()) if authoritative_outputs else set()
+    )
+    missing_outputs = sorted(
+        set(
+            str(item)
+            for item in manifest.workflow_template.completion.required_output_asset_types
+        )
+        - produced
+    )
     if missing_outputs:
-        issues.error("CAPABILITY_PACK_COMPLETION_OUTPUT_UNPRODUCED", "$.workflow_template.completion.required_output_asset_types", "completion output has no Authority producer: " + ", ".join(missing_outputs))
+        issues.error(
+            "CAPABILITY_PACK_COMPLETION_OUTPUT_UNPRODUCED",
+            "$.workflow_template.completion.required_output_asset_types",
+            "completion output has no Authority producer: "
+            + ", ".join(missing_outputs),
+        )
     generic_evidence = {"trace", "audit"}
     for index, gate in enumerate(manifest.evaluation.required_gates):
-        missing = sorted(set(str(item) for item in gate.required_evidence) - produced - generic_evidence)
+        missing = sorted(
+            set(str(item) for item in gate.required_evidence)
+            - produced
+            - generic_evidence
+        )
         if missing:
-            issues.error("CAPABILITY_PACK_EVALUATION_EVIDENCE_UNPRODUCED", f"$.evaluation.required_gates[{index}].required_evidence", "evaluation evidence has no Authority producer: " + ", ".join(missing))
+            issues.error(
+                "CAPABILITY_PACK_EVALUATION_EVIDENCE_UNPRODUCED",
+                f"$.evaluation.required_gates[{index}].required_evidence",
+                "evaluation evidence has no Authority producer: " + ", ".join(missing),
+            )
         if gate.blocking is True:
-            completion_chain = set(str(item) for item in manifest.workflow_template.completion.required_evidence) | set(str(item) for item in manifest.workflow_template.completion.required_output_asset_types)
-            consumed = {str(item) for node in nodes.values() for item in node.input_asset_types}
-            if not set(str(item) for item in gate.required_evidence) & (completion_chain | consumed):
-                issues.error("CAPABILITY_PACK_EVALUATION_EVIDENCE_UNPRODUCED", f"$.evaluation.required_gates[{index}]", "blocking gate is not connected to completion or a downstream decision")
+            completion_chain = set(
+                str(item)
+                for item in manifest.workflow_template.completion.required_evidence
+            ) | set(
+                str(item)
+                for item in manifest.workflow_template.completion.required_output_asset_types
+            )
+            consumed = {
+                str(item) for node in nodes.values() for item in node.input_asset_types
+            }
+            if not set(str(item) for item in gate.required_evidence) & (
+                completion_chain | consumed
+            ):
+                issues.error(
+                    "CAPABILITY_PACK_EVALUATION_EVIDENCE_UNPRODUCED",
+                    f"$.evaluation.required_gates[{index}]",
+                    "blocking gate is not connected to completion or a downstream decision",
+                )
 
 
 def _validate_tools(
@@ -504,10 +712,19 @@ def _validate_tools(
         try:
             definition = tool_catalog.resolve(str(tool.tool_ref))
         except KeyError as exc:
-            issues.error("CAPABILITY_PACK_TOOL_CAPABILITY_CONFLICT", f"{path}.tool_ref", str(exc))
+            issues.error(
+                "CAPABILITY_PACK_TOOL_CAPABILITY_CONFLICT", f"{path}.tool_ref", str(exc)
+            )
             continue
-        if _RISK_ORDER.get(str(tool.risk_class), -1) < _RISK_ORDER[definition.minimum_risk_class]:
-            issues.error("CAPABILITY_PACK_TOOL_CAPABILITY_CONFLICT", f"{path}.risk_class", "tool risk is lower than the governed ToolDefinition")
+        if (
+            _RISK_ORDER.get(str(tool.risk_class), -1)
+            < _RISK_ORDER[definition.minimum_risk_class]
+        ):
+            issues.error(
+                "CAPABILITY_PACK_TOOL_CAPABILITY_CONFLICT",
+                f"{path}.risk_class",
+                "tool risk is lower than the governed ToolDefinition",
+            )
         if str(tool.permission) not in definition.allowed_permissions:
             issues.error(
                 "CAPABILITY_PACK_TOOL_CAPABILITY_CONFLICT",
@@ -515,20 +732,36 @@ def _validate_tools(
                 "tool action is not authorized by the governed ToolDefinition",
             )
         if definition.audit_required and tool.audit_required is not True:
-            issues.error("CAPABILITY_PACK_HIGH_RISK_TOOL_AUDIT_REQUIRED", f"{path}.audit_required", "ToolDefinition requires audit")
+            issues.error(
+                "CAPABILITY_PACK_HIGH_RISK_TOOL_AUDIT_REQUIRED",
+                f"{path}.audit_required",
+                "ToolDefinition requires audit",
+            )
         if definition.approval_required and tool.approval_required is not True:
-            issues.error("CAPABILITY_PACK_CRITICAL_TOOL_APPROVAL_REQUIRED", f"{path}.approval_required", "ToolDefinition requires approval")
+            issues.error(
+                "CAPABILITY_PACK_CRITICAL_TOOL_APPROVAL_REQUIRED",
+                f"{path}.approval_required",
+                "ToolDefinition requires approval",
+            )
         for node_id in tool.allowed_operations:
             operation = operation_by_node.get(str(node_id))
             if operation is None:
-                issues.error("CAPABILITY_PACK_TOOL_OPERATION_UNKNOWN", f"{path}.allowed_operations", f"tool operation is not resolved: {node_id}")
+                issues.error(
+                    "CAPABILITY_PACK_TOOL_OPERATION_UNKNOWN",
+                    f"{path}.allowed_operations",
+                    f"tool operation is not resolved: {node_id}",
+                )
                 continue
             if not any(
                 fnmatch.fnmatch(capability, pattern)
                 for capability in operation.external_capabilities
                 for pattern in definition.external_capability_patterns
             ):
-                issues.error("CAPABILITY_PACK_TOOL_CAPABILITY_CONFLICT", f"{path}.allowed_operations", f"OperationDefinition does not authorize {tool.tool_ref}: {node_id}")
+                issues.error(
+                    "CAPABILITY_PACK_TOOL_CAPABILITY_CONFLICT",
+                    f"{path}.allowed_operations",
+                    f"OperationDefinition does not authorize {tool.tool_ref}: {node_id}",
+                )
             else:
                 covered_external_capabilities.update(
                     (str(node_id), capability)

@@ -26,6 +26,26 @@ from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 
+_ARC_FOLLOWUP_OPERATION_STATUS = {
+    "ADMITTED": "RUNNING",
+    "READY": "RUNNING",
+    "EXECUTING": "RUNNING",
+    "WAITING_CHILDREN": "RUNNING",
+    "WAITING_GATE": "RUNNING",
+    "FAILED_RETRYABLE": "FAILED_RETRYABLE",
+    "WAITING_EXTERNAL_RESULT": "RECONCILIATION_REQUIRED",
+    "RECONCILIATION_REQUIRED": "RECONCILIATION_REQUIRED",
+    "CANCELLATION_REQUESTED": "RECONCILIATION_REQUIRED",
+    "WAITING_APPROVAL": "WAITING_APPROVAL",
+    "FAILED_FINAL": "FAILED_FINAL",
+    "DEAD_LETTER": "DEAD_LETTER",
+    "CANCELLED": "CANCELLED",
+}
+_ARC_FOLLOWUP_TERMINALS = frozenset(
+    {"FAILED_FINAL", "DEAD_LETTER", "CANCELLED", "MANUAL_INTERVENTION"}
+)
+
+
 @dataclass(frozen=True, slots=True)
 class BookFollowupCoordinationResult:
     book_run_id: str
@@ -319,7 +339,7 @@ class PostgresBookFollowupCoordinator:
             uow.commit()
 
     def reconcile_arc_checkpoint_followup(self, operation_id: str) -> None:
-        """Advance only after the durable Recap/ArcRevision output exists."""
+        """Project canonical Operation state into future-only Book governance."""
 
         with AuthorityUnitOfWork(self.authority.database_url) as uow:
             uow.cursor.execute(
@@ -330,26 +350,61 @@ class PostgresBookFollowupCoordinator:
                            SELECT 1 FROM authority_operation_output_asset AS output
                            WHERE output.operation_id=operation.operation_id
                              AND output.output_key='longform.recap.replan_request'
-                       )
+                       ), followup.status, followup.projection_set_id,
+                       followup.last_error, operation.version,
+                       COALESCE(attempt.attempt_id, ''),
+                       COALESCE(attempt.attempt_number, 0),
+                       COALESCE(attempt.status, ''),
+                       COALESCE(attempt.error, '{}'::jsonb),
+                       book.state,
+                       COALESCE(book.active_longform_projection_set_id, '')
                 FROM authority_arc_checkpoint_followup AS followup
                 JOIN authority_operation AS operation
                   ON operation.operation_id=followup.operation_id
+                JOIN authority_book_production AS book
+                  ON book.book_run_id=followup.book_run_id
+                LEFT JOIN LATERAL (
+                    SELECT candidate.attempt_id, candidate.attempt_number,
+                           candidate.status, candidate.error
+                    FROM authority_attempt AS candidate
+                    WHERE candidate.operation_id=operation.operation_id
+                    ORDER BY candidate.attempt_number DESC
+                    LIMIT 1
+                ) AS attempt ON TRUE
                 WHERE followup.operation_id=%s
-                FOR UPDATE OF followup
+                FOR UPDATE OF followup, book
                 """,
                 [operation_id],
             )
             row = uow.cursor.fetchone()
             if row is None:
                 return
-            status = str(row[3])
-            if status not in {"SUCCEEDED", "FAILED", "CANCELLED"}:
-                return
+            operation_status = str(row[3])
             has_revision = bool(row[4])
-            next_status = (
-                "PROPOSED" if status == "SUCCEEDED" and has_revision else
-                "FAILED_RETRYABLE" if status == "FAILED" else "FAILED_TERMINAL"
-            )
+            if operation_status == "SUCCEEDED":
+                next_status = "PROPOSED" if has_revision else "MANUAL_INTERVENTION"
+            else:
+                next_status = _ARC_FOLLOWUP_OPERATION_STATUS.get(operation_status)
+            if next_status is None:
+                return
+
+            evidence = {
+                "operation_id": operation_id,
+                "operation_status": operation_status,
+                "operation_version": int(row[8]),
+                "attempt_id": str(row[9]),
+                "attempt_number": int(row[10]),
+                "attempt_status": str(row[11]),
+                "attempt_error": dict(row[12] or {}),
+                "accepted_truth_preserved": True,
+                "future_production_only": True,
+                "recovery_action": self._arc_followup_recovery_action(next_status),
+            }
+            if next_status == "MANUAL_INTERVENTION":
+                evidence["error_code"] = "ARC_REVISION_OUTPUT_MISSING"
+            stored_error = dict(row[7] or {})
+            if str(row[5]) == next_status and stored_error == evidence:
+                return
             uow.cursor.execute(
                 """
                 UPDATE authority_arc_checkpoint_followup
@@ -359,27 +414,59 @@ class PostgresBookFollowupCoordinator:
                 """,
                 [
                     next_status,
-                    Jsonb({} if next_status == "PROPOSED" else {"operation_status": status}),
+                    Jsonb({} if next_status == "PROPOSED" else evidence),
                     str(row[0]),
                     operation_id,
                 ],
             )
             if next_status == "PROPOSED":
-                uow.cursor.execute(
-                    """
-                    UPDATE authority_book_production
-                    SET state='REPLAN_REQUIRED', version=version+1,
-                        updated_at=NOW()
-                    WHERE book_run_id=%s
-                      AND state IN ('CHECKPOINT_PENDING','READY')
-                    """,
-                    [str(row[1])],
-                )
-                if uow.cursor.rowcount != 1:
+                if str(row[13]) in {"CHECKPOINT_PENDING", "READY"} and str(
+                    row[14]
+                ) == str(row[6]):
+                    uow.cursor.execute(
+                        """
+                        UPDATE authority_book_production
+                        SET state='REPLAN_REQUIRED', version=version+1,
+                            updated_at=NOW()
+                        WHERE book_run_id=%s AND state=%s
+                          AND active_longform_projection_set_id=%s
+                        """,
+                        [str(row[1]), str(row[13]), str(row[6])],
+                    )
+                elif str(row[13]) not in {
+                    "REPLAN_REQUIRED",
+                    "REPLAN_GENERATING",
+                    "REPLAN_APPROVAL_PENDING",
+                } and str(row[14]) == str(row[6]):
                     raise KernelError(
                         "ARC_CHECKPOINT_BOOK_STATE_CONFLICT",
                         "Book left checkpoint-pending before ArcRevision admission",
                     )
+            elif next_status in _ARC_FOLLOWUP_TERMINALS:
+                reason = (
+                    "Arc checkpoint follow-up requires governed recovery: "
+                    f"{next_status} ({operation_id})"
+                )
+                if str(row[14]) == str(row[6]) and str(row[13]) not in {
+                    "COMPLETED",
+                    "ABORTED",
+                    "PAUSED",
+                }:
+                    uow.cursor.execute(
+                        """
+                        UPDATE authority_book_production
+                        SET state='PAUSED', paused_reason=%s, failure_reason=%s,
+                            version=version+1, updated_at=NOW()
+                        WHERE book_run_id=%s AND state=%s
+                          AND active_longform_projection_set_id=%s
+                        """,
+                        [reason, next_status, str(row[1]), str(row[13]), str(row[6])],
+                    )
+                    if uow.cursor.rowcount != 1:
+                        raise KernelError(
+                            "ARC_CHECKPOINT_BOOK_STATE_CONFLICT",
+                            "Book changed before terminal Arc follow-up was governed",
+                        )
             uow.commit()
 
     def reconcile_completed_arc_checkpoint_followups(self, *, limit: int) -> int:
@@ -392,8 +479,15 @@ class PostgresBookFollowupCoordinator:
                 FROM authority_arc_checkpoint_followup AS followup
                 JOIN authority_operation AS operation
                   ON operation.operation_id=followup.operation_id
-                WHERE followup.status='RUNNING'
-                  AND operation.status IN ('SUCCEEDED','FAILED','CANCELLED')
+                WHERE followup.status IN (
+                    'RUNNING','FAILED_RETRYABLE','RECONCILIATION_REQUIRED'
+                )
+                  AND operation.status IN (
+                    'ADMITTED','READY','EXECUTING','WAITING_CHILDREN',
+                    'WAITING_EXTERNAL_RESULT','WAITING_GATE','WAITING_APPROVAL',
+                    'FAILED_RETRYABLE','FAILED_FINAL','CANCELLATION_REQUESTED',
+                    'RECONCILIATION_REQUIRED','SUCCEEDED','CANCELLED','DEAD_LETTER'
+                  )
                 ORDER BY followup.updated_at, followup.followup_id
                 LIMIT %s
                 """,
@@ -403,6 +497,19 @@ class PostgresBookFollowupCoordinator:
         for operation_id in operation_ids:
             self.reconcile_arc_checkpoint_followup(operation_id)
         return len(operation_ids)
+
+    @staticmethod
+    def _arc_followup_recovery_action(status: str) -> str:
+        return {
+            "RUNNING": "WAIT_FOR_OPERATION_TERMINAL_OR_CHECKPOINT",
+            "FAILED_RETRYABLE": "RETRY_SAME_OPERATION_WITH_STABLE_IDEMPOTENCY",
+            "RECONCILIATION_REQUIRED": "RECONCILE_ORIGINAL_EXTERNAL_EFFECT",
+            "WAITING_APPROVAL": "OPERATOR_APPROVAL_REQUIRED",
+            "FAILED_FINAL": "OPERATOR_REVIEW_OR_EXPLICIT_RERUN",
+            "DEAD_LETTER": "DEAD_LETTER_REDRIVE_OR_ABORT",
+            "CANCELLED": "EXPLICIT_CHECKPOINT_REREQUEST_OR_ABORT",
+            "MANUAL_INTERVENTION": "REPAIR_MISSING_ARC_REVISION_EVIDENCE",
+        }.get(status, "NONE")
 
     def _chapter_group_complete(self, snapshot: dict[str, Any]) -> bool:
         group_version = str(snapshot.get("chapter_group_plan_version") or "")

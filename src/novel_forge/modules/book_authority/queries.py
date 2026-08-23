@@ -613,7 +613,8 @@ class PostgresBookProductionQuery:
                 WHERE followup.book_run_id=%s
                   AND followup.accepted_through_chapter=%s
                   AND followup.status IN (
-                      'READY','RUNNING','PROPOSED','FAILED_RETRYABLE'
+                      'READY','RUNNING','PROPOSED','FAILED_RETRYABLE',
+                      'RECONCILIATION_REQUIRED'
                   )
                 ORDER BY followup.created_at, followup.followup_id
                 LIMIT 1

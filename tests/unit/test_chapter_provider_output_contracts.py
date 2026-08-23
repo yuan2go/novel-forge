@@ -53,15 +53,28 @@ def test_agent_turn_contract_requires_exactly_one_action() -> None:
             "action": "TOOL_CALL",
             "tool_call": {
                 "tool_name": "narrative.query_accepted",
-                "arguments": {},
+                "arguments": {"payload_json": "{}"},
                 "reason": "ground in accepted facts",
             },
             "final_response": None,
         },
     )
-    assert normalize_model_output("agent_session", tool)["tool_call"][
-        "tool_name"
-    ] == "narrative.query_accepted"
+    normalized = normalize_model_output("agent_session", tool)
+    assert normalized["tool_call"]["tool_name"] == "narrative.query_accepted"
+    assert normalized["tool_call"]["arguments"] == {}
+    assert normalize_model_output("agent_session", normalized) == normalized
+    final = validate_chapter_provider_output_schema(
+        "agent_session",
+        {
+            "message": "Report the bounded result.",
+            "action": "FINAL",
+            "tool_call": None,
+            "final_response": {"payload_json": '{"accepted_only":true}'},
+        },
+    )
+    normalized_final = normalize_model_output("agent_session", final)
+    assert normalized_final["final_response"] == {"accepted_only": True}
+    assert normalize_model_output("agent_session", normalized_final) == normalized_final
     with pytest.raises(KernelError, match="exactly one"):
         normalize_model_output(
             "agent_session",
@@ -78,6 +91,23 @@ def test_revision_prompt_requires_issue_resolution_and_language_continuity() -> 
     assert "Resolve every supplied review issue" in contract
     assert "Preserve the reader-facing language" in contract
     assert "resolved_issue_codes" in contract
+
+
+def test_retrieval_prompt_freezes_model_dimensions_and_rejects_placeholders() -> None:
+    contract = _stage_semantic_contract(
+        "retrieval",
+        embedding_output_contract={
+            "embedding_model": "gpt-semantic-test",
+            "embedding_dimensions": 8,
+            "vector_normalization": "L2_UNIT",
+            "placeholder_vectors_allowed": False,
+        },
+    )
+
+    assert '"gpt-semantic-test"' in contract
+    assert "exactly 8 finite numeric entries" in contract
+    assert "L2 norm" in contract
+    assert "provider-unavailable" in contract
 
 
 def test_zh_cn_language_contract_overrides_legacy_revision_language() -> None:

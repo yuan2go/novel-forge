@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -12,7 +14,15 @@ from novel_forge.modules.chapter_authority.provider_views import (
     project_reader_outcome_context_input,
 )
 from novel_forge.modules.chapter_authority.execution_gateway import (
+    PostgresChapterExecutionContractBinder,
+    PostgresRetrievalProjectionExecutionContractBinder,
     _materialize_chapter_codex_prompt,
+    _provider_context_selection,
+    _stage_tool_permissions,
+)
+from novel_forge.modules.capability_packs.artifacts import (
+    ArtifactKind,
+    default_chapter_artifact_resolver,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.production_execution import ExecutionRuntimeClass
@@ -637,6 +647,123 @@ def test_provider_knowledge_deduplicates_and_strips_materialization_metadata() -
     ]
 
 
+def test_agent_codex_prompt_accepts_query_tool_without_required_knowledge() -> None:
+    *_, request = contracts(
+        backend_id="codex-cli",
+        runtime=ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE,
+    )
+    boundary = {
+        "book_id": "book:1",
+        "book_run_id": "book-run:1",
+        "accepted_through_chapter": 0,
+        "acceptance_id": "",
+        "projection_set_id": "",
+    }
+    prompt, evidence = _materialize_chapter_codex_prompt(
+        request=request,
+        stage="agent_session",
+        inputs={
+            "instruction": "Query accepted evidence first.",
+            "accepted_boundary": boundary,
+            "tools": [
+                {
+                    "tool_name": "narrative.query_accepted",
+                    "kind": "READ_ONLY_QUERY",
+                }
+            ],
+            "skills": [],
+            "committed_transcript": [],
+            "observations": [],
+            "turn_number": 1,
+        },
+        materialization={
+            "materialization_hash": "sha256:" + "a" * 64,
+            "pack_artifacts": {
+                "system_instruction": {
+                    "ref": "system",
+                    "version": "v1",
+                    "content_hash": "sha256:" + "b" * 64,
+                    "content": {"text": "Operate inside the accepted boundary."},
+                },
+                "prompt_template": {
+                    "ref": "template",
+                    "version": "v1",
+                    "content_hash": "sha256:" + "c" * 64,
+                    "content": {
+                        "text": (
+                            "{{stage}} {{target_scope}} {{input_manifest}} "
+                            "{{context_bundle}} {{output_schema_ref}}"
+                        )
+                    },
+                },
+                "skill": {
+                    "ref": "skill",
+                    "version": "v1",
+                    "content_hash": "sha256:" + "d" * 64,
+                    "content": {"text": "Use governed Tools only."},
+                },
+            },
+            "context_selection": [
+                {
+                    "asset_version_id": "context:agent",
+                    "content": {
+                        "protected": True,
+                        "source_authority": "POSTGRESQL_ACCEPTED_BOUNDARY",
+                        "accepted_boundary": boundary,
+                        "estimated_tokens": 100,
+                    },
+                }
+            ],
+            "knowledge_selection": [],
+            "tool_permissions": {
+                "allowed": [
+                    "model.provider.invoke",
+                    "narrative.query_accepted",
+                ],
+                "denied": [],
+            },
+            "output_schema": {
+                "ref": "schema:agent-output:v1",
+                "content_hash": "sha256:" + "e" * 64,
+                "content": {"type": "object"},
+            },
+        },
+    )
+
+    assert "narrative.query_accepted" in prompt
+    assert "first ungrounded Agent turn" in prompt
+    assert "Returning FINAL" in prompt
+    assert evidence["allowed_tools"] == [
+        "model.provider.invoke",
+        "narrative.query_accepted",
+    ]
+    assert evidence["knowledge_content_hashes"] == []
+
+
+def test_stage_tool_permissions_preserve_governed_query_tools() -> None:
+    allowed, denied = _stage_tool_permissions(
+        {
+            "default": "DENY",
+            "tools": [
+                {
+                    "tool_ref": "model.provider.invoke",
+                    "permission": "EXECUTE",
+                    "allowed_operations": ["agent_session"],
+                },
+                {
+                    "tool_ref": "narrative.query_accepted",
+                    "permission": "QUERY",
+                    "allowed_operations": ["agent_session"],
+                },
+            ],
+        },
+        "agent_session",
+    )
+
+    assert allowed == ("model.provider.invoke", "narrative.query_accepted")
+    assert denied == ()
+
+
 def test_oversized_task_knowledge_fails_closed() -> None:
     with pytest.raises(Exception) as raised:
         build_provider_knowledge_view(
@@ -738,3 +865,198 @@ def test_fully_rendered_provider_prompt_is_bounded_against_long_history() -> Non
     assert heavy_evidence["provider_view"]["provider_context_estimated_tokens"] <= (
         light_evidence["provider_view"]["provider_context_estimated_tokens"] + 40
     )
+
+
+def test_retrieval_projection_binds_source_asset_scope_without_chapter_zero() -> None:
+    binder = object.__new__(PostgresChapterExecutionContractBinder)
+    metadata = {
+        "execution_binding_domain": "retrieval_projection",
+        "source_asset_version_id": "asset-version:accepted-input",
+    }
+
+    scope = binder._target_scope(  # noqa: SLF001
+        metadata=metadata,
+        project_id="project:1",
+        book_id="book:1",
+        chapter=0,
+    )
+    claims = binder._resource_claims(  # noqa: SLF001
+        metadata=metadata,
+        chapter=0,
+        stage="retrieval",
+    )
+
+    assert scope == {
+        "scope_kind": "asset_version",
+        "scope_id": "asset-version:accepted-input",
+        "project_id": "project:1",
+        "book_id": "book:1",
+        "asset_version_id": "asset-version:accepted-input",
+    }
+    assert claims == (
+        "asset-version:accepted-input",
+        "stage:retrieval",
+    )
+
+
+def test_chapter_retrieval_uses_only_frozen_memo_as_provider_context() -> None:
+    selected = [
+        {"artifact_type": "chapter_plan", "asset_version_id": "plan:v1"},
+        {"artifact_type": "chapter_execution_intent", "asset_version_id": "intent:v1"},
+        {"artifact_type": "chapter_memo", "asset_version_id": "memo:v1"},
+    ]
+
+    assert _provider_context_selection(
+        "retrieval", selected, retrieval_projection=False
+    ) == [{"artifact_type": "chapter_memo", "asset_version_id": "memo:v1"}]
+
+
+def test_chapter_retrieval_rejects_ambiguous_memo_context() -> None:
+    with pytest.raises(KernelError) as raised:
+        _provider_context_selection(
+            "retrieval",
+            [
+                {"artifact_type": "chapter_memo", "asset_version_id": "memo:v1"},
+                {"artifact_type": "chapter_memo", "asset_version_id": "memo:v2"},
+            ],
+            retrieval_projection=False,
+        )
+
+    assert raised.value.code == "CHAPTER_CAPABILITY_CONTEXT_INVALID"
+
+
+def test_retrieval_projection_scope_requires_frozen_source_asset() -> None:
+    binder = object.__new__(PostgresChapterExecutionContractBinder)
+
+    with pytest.raises(KernelError) as raised:
+        binder._target_scope(  # noqa: SLF001
+            metadata={"execution_binding_domain": "retrieval_projection"},
+            project_id="project:1",
+            book_id="book:1",
+            chapter=0,
+        )
+
+    assert raised.value.code == "RETRIEVAL_PROJECTION_SCOPE_MISSING"
+
+
+def test_retrieval_projection_freezes_domain_materialization_before_effect() -> None:
+    root = Path(__file__).resolve().parents[2]
+    artifacts = default_chapter_artifact_resolver(root)
+    system = artifacts.resolve(
+        ArtifactKind.PROMPT_SYSTEM_INSTRUCTION,
+        "prompt-system:chapter-generation-pack",
+        "v1",
+    )
+    template = artifacts.resolve(
+        ArtifactKind.PROMPT_TEMPLATE,
+        "prompt-template:chapter-generation-pack",
+        "v2",
+    )
+    skill = artifacts.resolve(
+        ArtifactKind.SKILL,
+        "context-builder-source-isolation",
+        "context-builder-source-isolation-v1",
+    )
+    binder = object.__new__(PostgresRetrievalProjectionExecutionContractBinder)
+    binder.routes = {
+        "retrieval": SimpleNamespace(
+            stage="retrieval",
+            release_sha="a" * 40,
+            embedding_dimensions=8,
+            system_instruction_hash=system.content_hash,
+            template_hash=template.content_hash,
+            skill_content_hash=skill.content_hash,
+            model_profile=SimpleNamespace(
+                contract_hash="model-profile-hash",
+                model_id="gpt-semantic-test",
+            ),
+            route_policy=SimpleNamespace(contract_hash="route-policy-hash"),
+        )
+    }
+    binder.frozen_artifacts = {
+        "system_instruction": system,
+        "prompt_template": template,
+        "skill": skill,
+    }
+    binder._artifacts = lambda _metadata: ()  # type: ignore[method-assign] # noqa: SLF001
+    binder._materialize_selected_inputs = (  # type: ignore[method-assign] # noqa: SLF001
+        lambda **_values: [
+            {
+                "asset_version_id": "asset-version:accepted",
+                "artifact_type": "best_draft_candidate",
+                "content_hash": "sha256:" + "b" * 64,
+                "content": {"text": "accepted-only text"},
+            }
+        ]
+    )
+    captured: dict[str, object] = {}
+
+    def persist(**values: object) -> SimpleNamespace:
+        captured.update(values)
+        return SimpleNamespace(
+            asset_version_id="asset-version:materialization",
+            asset_type="capability_materialization_manifest",
+            content_hash="sha256:" + "c" * 64,
+        )
+
+    binder._ensure_contract = persist  # type: ignore[method-assign] # noqa: SLF001
+
+    preflight = binder.freeze_before_external_effect(
+        capability="model.retrieval",
+        request_payload={
+            "stage": "retrieval",
+            "trace_id": "trace:1",
+            "correlation_id": "correlation:1",
+            "_production_execution": {
+                "operation_id": "operation:1",
+                "attempt_id": "attempt:1",
+                "project_id": "project:1",
+                "fencing_token": 3,
+                "source_asset_version_id": "asset-version:accepted",
+                "source_content_hash": "sha256:" + "b" * 64,
+            },
+        },
+        snapshot_fencing_token=3,
+        snapshot_worker_id="worker:1",
+    )
+
+    contract = captured["contract"]
+    assert isinstance(contract, dict)
+    assert contract["runtime_kind"] == "FROZEN_RETRIEVAL_PROJECTION_CONTRACT"
+    assert contract["source_asset_version_id"] == "asset-version:accepted"
+    assert contract["route_identity"]["release_sha"] == "a" * 40
+    assert contract["embedding_output_contract"] == {
+        "contract_version": "retrieval-embedding-output-v1",
+        "embedding_model": "gpt-semantic-test",
+        "embedding_dimensions": 8,
+        "vector_normalization": "L2_UNIT",
+        "placeholder_vectors_allowed": False,
+    }
+    assert preflight.effect_binding["runtime_kind"] == (
+        "FROZEN_RETRIEVAL_PROJECTION_CONTRACT"
+    )
+    assert (
+        preflight.effect_binding["materialization_hash"]
+        == contract["materialization_hash"]
+    )
+
+    first_contract = dict(contract)
+    binder.freeze_before_external_effect(
+        capability="model.retrieval",
+        request_payload={
+            "stage": "retrieval",
+            "trace_id": "trace:1",
+            "correlation_id": "correlation:1",
+            "_production_execution": {
+                "operation_id": "operation:1",
+                "attempt_id": "attempt:1",
+                "project_id": "project:1",
+                "fencing_token": 3,
+                "source_asset_version_id": "asset-version:accepted",
+                "source_content_hash": "sha256:" + "b" * 64,
+            },
+        },
+        snapshot_fencing_token=4,
+        snapshot_worker_id="worker:recovery",
+    )
+    assert captured["contract"] == first_contract

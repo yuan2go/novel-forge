@@ -22,6 +22,7 @@ from novel_forge.modules.chapter_authority.execution_gateway import (
     ChapterExecutionRoute,
     PostgresChapterExecutionContractBinder,
     PostgresProductionExecutionPayloadResolver,
+    PostgresRetrievalProjectionExecutionContractBinder,
     ProductionExecutionGatewayExternalEffectAdapter,
     chapter_stage_capability,
     default_chapter_fixture_response,
@@ -120,6 +121,7 @@ from novel_forge.modules.agent_runtime.harness_runtime import (
 )
 from novel_forge.modules.agent_runtime.production import (
     PostgresAgentExecutionContractBinder,
+    agent_route_execution_identity,
     build_production_agent_harness_factory,
 )
 from novel_forge.modules.agent_runtime.queries import AgentRuntimeQuery
@@ -421,6 +423,24 @@ def build_production_execution_composition(
             "NOVEL_FORGE_EMBEDDING_PROVIDER and NOVEL_FORGE_EMBEDDING_MODEL"
         )
     if embedding_provider and embedding_model:
+        raw_embedding_dimensions = str(
+            values.get("NOVEL_FORGE_EMBEDDING_DIMENSIONS") or ""
+        ).strip()
+        if controlled and not raw_embedding_dimensions:
+            raise RuntimeError(
+                "controlled semantic retrieval requires "
+                "NOVEL_FORGE_EMBEDDING_DIMENSIONS"
+            )
+        try:
+            embedding_dimensions = int(raw_embedding_dimensions or "8")
+        except ValueError as exc:
+            raise RuntimeError(
+                "NOVEL_FORGE_EMBEDDING_DIMENSIONS must be an integer"
+            ) from exc
+        if not 1 <= embedding_dimensions <= 8192:
+            raise RuntimeError(
+                "NOVEL_FORGE_EMBEDDING_DIMENSIONS must be between 1 and 8192"
+            )
         stage_routes.append(
             (
                 "retrieval",
@@ -594,6 +614,8 @@ def build_production_execution_composition(
             policy_id=(
                 "story-design.narrative-semantic-evaluator.route"
                 if stage == "narrative_semantic_evaluation"
+                else "chapter.agent_session.route"
+                if stage == "agent_session"
                 else f"chapter.{stage}.route"
             ),
             policy_version=1,
@@ -693,6 +715,7 @@ def build_production_execution_composition(
             output_schema_ref=capability_definition.output_schema_ref,
             release_sha=release_sha,
             real_provider_validation_eligible=real_provider_eligible,
+            embedding_dimensions=(embedding_dimensions if stage == "retrieval" else 0),
         )
     if controlled:
         _build_id, verified_release_sha = authority_release_identity(env=values)
@@ -1006,21 +1029,38 @@ def build_chapter_authority_application(
     execution.gateway.register_execution_binder("chapter", binder)
     embedding_binder = None
     if "retrieval" in execution.gateway.routes:
-        embedding_binder = PostgresChapterExecutionContractBinder(
-            settings.database_url,
-            execution.gateway.routes,
-            # Document embeddings are a rebuildable projection Operation, not a
-            # node in the Chapter Saga.  It still freezes the PEP route, source,
-            # prompt/skill/tool contracts and receipt, but must not borrow the
-            # Chapter Capability Pack's workflow-node authority.
-            capability_pack_id="",
-            pack_environment=environment,
-            pack_runtime_profile=environment,
-            pack_release_channel=str(
-                values.get("NOVEL_FORGE_RELEASE_CHANNEL") or "VALIDATION"
-            ),
-            pack_required=False,
-        )
+        if controlled:
+            artifacts = default_chapter_artifact_resolver(settings.root)
+            embedding_binder = PostgresRetrievalProjectionExecutionContractBinder(
+                settings.database_url,
+                execution.gateway.routes,
+                frozen_artifacts={
+                    "system_instruction": artifacts.resolve(
+                        ArtifactKind.PROMPT_SYSTEM_INSTRUCTION,
+                        "prompt-system:chapter-generation-pack",
+                        "v1",
+                    ),
+                    "prompt_template": artifacts.resolve(
+                        ArtifactKind.PROMPT_TEMPLATE,
+                        "prompt-template:chapter-generation-pack",
+                        "v2",
+                    ),
+                    "skill": artifacts.resolve(
+                        ArtifactKind.SKILL,
+                        "context-builder-source-isolation",
+                        "context-builder-source-isolation-v1",
+                    ),
+                },
+            )
+        else:
+            embedding_binder = PostgresChapterExecutionContractBinder(
+                settings.database_url,
+                execution.gateway.routes,
+                capability_pack_id="",
+                pack_environment=environment,
+                pack_runtime_profile=environment,
+                pack_required=False,
+            )
         execution.gateway.register_execution_binder(
             "retrieval_projection", embedding_binder
         )
@@ -1037,10 +1077,9 @@ def build_chapter_authority_application(
         model_adapter=execution.gateway,
         object_store_adapter=execution.object_store,
         capability_binder=binder,
-        # The gateway-side projection binder freezes the PEP execution
-        # contract.  No Chapter Capability Pack preflight is run here because
-        # the projection is not a Chapter workflow node.
-        embedding_capability_binder=None,
+        # Projection is not a Chapter Saga node. Its domain contract freezes
+        # Provider materialization without borrowing Chapter Pack authority.
+        embedding_capability_binder=(embedding_binder if controlled else None),
         worker_id=str(
             values.get("NOVEL_FORGE_AUTHORITY_WORKER_ID") or "chapter-authority-api"
         ),
@@ -1051,6 +1090,10 @@ def build_chapter_authority_application(
         in {"1", "true", "yes"},
         max_cost_per_model_call=execution.max_cost_per_call,
         budget_caps=execution.budget_caps(include_chapter_total=True),
+        # Retrieval projection is project/operation/provider governed but is
+        # not a Chapter-stage model effect.  Applying the Chapter aggregate
+        # cap here creates a cap with no Chapter budget lineage to charge.
+        embedding_budget_caps=execution.budget_caps(),
         # Ordinary Chapter model stages are governed Typed Capabilities. The
         # old per-stage Agent binding bridge remains migration-only and is not
         # reachable from canonical composition.
@@ -1073,6 +1116,9 @@ def build_agent_runtime_authority_application(
     build_id, commit_sha = authority_release_identity(env=env)
     values = os.environ if env is None else env
     route = execution.gateway.routes.get("agent_session") if execution else None
+    agent_pack_id = str(
+        values.get("NOVEL_FORGE_AGENT_CAPABILITY_PACK_ID") or "agent_session_pack"
+    )
     return AgentRuntimeAuthorityApplication(
         settings.database_url,
         application_build_id=build_id,
@@ -1082,16 +1128,7 @@ def build_agent_runtime_authority_application(
         ).value,
         release_channel=str(values.get("NOVEL_FORGE_RELEASE_CHANNEL") or "VALIDATION"),
         production_agent_model_binding=(
-            {
-                "stage": "agent_session",
-                "provider": route.model_profile.model_provider,
-                "model_id": route.model_profile.model_id,
-                "model_profile_id": route.model_profile.profile_id,
-                "model_profile_hash": route.model_profile.contract_hash,
-                "route_policy_id": route.route_policy.policy_id,
-                "route_policy_hash": route.route_policy.contract_hash,
-                "gateway": "PRODUCTION_EXECUTION_GATEWAY",
-            }
+            agent_route_execution_identity(route, capability_pack_id=agent_pack_id)
             if route is not None
             else None
         ),

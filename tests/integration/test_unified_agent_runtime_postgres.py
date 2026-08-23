@@ -140,7 +140,14 @@ class UnifiedAgentRuntimePostgresTests(unittest.TestCase):
                 )
             )
             observed = []
-            for expected in ("plan", "execution_intent", "memo", "context", "draft"):
+            for expected in (
+                "plan",
+                "execution_intent",
+                "memo",
+                "retrieval",
+                "context",
+                "draft",
+            ):
                 tick = scheduler.tick(
                     project_id=project_id,
                     root_operation_id=admission.root_operation_id,

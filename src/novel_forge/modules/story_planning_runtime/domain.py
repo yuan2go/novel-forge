@@ -171,6 +171,7 @@ class StoryPlanningGenerationCommand:
     repair_reason: str = ""
     repair_number: int = 0
     auto_approve_low_risk: bool = False
+    parent_agent_session_operation_id: str = ""
 
     def __post_init__(self) -> None:
         required = (
@@ -286,6 +287,10 @@ class StoryPlanningGenerationCommand:
         object.__setattr__(self, "dependent_arc_plan_version_ids", dependent_arcs)
         object.__setattr__(self, "change_evidence_version_ids", change_evidence)
         object.__setattr__(self, "governance_action_version_ids", governance_actions)
+        if self.parent_agent_session_operation_id and self.repair_of_candidate_id:
+            raise ValueError(
+                "Planning generation cannot have both repair and Agent parent causation"
+            )
 
     @property
     def planning_scope(self) -> PlanningScope:
@@ -844,9 +849,7 @@ def canonical_hash(value: Any) -> str:
 
 def _extra_roles_are_allowed(generator: str, roles: set[str]) -> bool:
     planning_roles = {
-        role
-        for role in roles
-        if not role.startswith("narrative_governance_action:")
+        role for role in roles if not role.startswith("narrative_governance_action:")
     }
     if not planning_roles:
         return True

@@ -10,6 +10,8 @@ from typing import Any
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.context_builder.production_retrieval import (
     build_retrieval_result,
+    freeze_retrieval_candidate_union,
+    load_frozen_retrieval_candidate_union,
 )
 
 from novel_forge.modules.chapter_authority.contracts import (
@@ -428,72 +430,84 @@ class _RetrievalHandler:
                 "retrieval document sources differ from frozen Operation inputs",
             )
         semantic_status = dict(snapshot.get("semantic_status") or {})
-        query_embedding: tuple[float, ...] = ()
-        query_embedding_evidence: dict[str, Any] = {}
-        if (
-            int(semantic_status.get("ready_document_count") or 0) > 0
-            and self.semantic_provider_bound
-        ):
-            provider_result = self.provider.invoke(
-                request,
-                stage="retrieval",
-                payload={
-                    "texts": [str(query_plan.get("postgresql_fts_query") or "")],
-                    "purpose": "accepted_history_query_embedding",
-                    "query_plan_fingerprint": str(
-                        query_plan.get("query_plan_fingerprint") or ""
-                    ),
-                },
-            )
-            vectors = provider_result.output.get("vectors")
-            if not isinstance(vectors, list) or len(vectors) != 1:
-                raise KernelError(
-                    "RETRIEVAL_QUERY_EMBEDDING_INVALID",
-                    "query embedding Provider returned the wrong batch cardinality",
+        frozen_union = load_frozen_retrieval_candidate_union(
+            request.database_url,
+            project_id=request.project_id,
+            operation_id=request.operation_id,
+            query_plan_fingerprint=str(query_plan.get("query_plan_fingerprint") or ""),
+        )
+        if frozen_union is None:
+            query_embedding: tuple[float, ...] = ()
+            query_embedding_model = ""
+            query_embedding_dimensions = 0
+            query_embedding_evidence: dict[str, Any] = {}
+            semantic_enabled = query_plan.get("semantic_policy") != "DISABLED"
+            if (
+                semantic_enabled
+                and int(semantic_status.get("ready_document_count") or 0) > 0
+                and self.semantic_provider_bound
+            ):
+                provider_result = self.provider.invoke(
+                    request,
+                    stage="retrieval",
+                    payload={
+                        "texts": [str(query_plan.get("postgresql_fts_query") or "")],
+                        "purpose": "accepted_history_query_embedding",
+                        "query_plan_fingerprint": str(
+                            query_plan.get("query_plan_fingerprint") or ""
+                        ),
+                        "candidate_projection_cutoff": str(
+                            query_plan.get("candidate_projection_cutoff") or ""
+                        ),
+                    },
                 )
-            query_embedding = tuple(float(item) for item in vectors[0])
-            expected_dimensions = int(
-                provider_result.output.get("embedding_dimensions") or 0
-            )
-            document_dimensions = {
-                int(item.get("embedding_dimensions") or 0)
-                for item in documents
-                if item.get("embedding")
-            }
-            query_model = str(provider_result.output.get("embedding_model") or "")
-            document_models = {
-                str(item.get("embedding_model") or "")
-                for item in documents
-                if item.get("embedding")
-            }
-            if document_dimensions != {expected_dimensions} or document_models != {
-                query_model
-            }:
-                raise KernelError(
-                    "RETRIEVAL_EMBEDDING_VERSION_MISMATCH",
-                    "query and document embedding identity or dimensions differ",
+                vectors = provider_result.output.get("vectors")
+                if not isinstance(vectors, list) or len(vectors) != 1:
+                    raise KernelError(
+                        "RETRIEVAL_QUERY_EMBEDDING_INVALID",
+                        "query embedding Provider returned the wrong batch cardinality",
+                    )
+                query_embedding = tuple(float(item) for item in vectors[0])
+                query_embedding_dimensions = int(
+                    provider_result.output.get("embedding_dimensions") or 0
                 )
-            query_embedding_evidence = provider_result.to_evidence()
-            semantic_status.update(
-                {
-                    "query_embedding_status": "READY",
-                    "query_embedding_model": str(query_model),
-                    "query_embedding_dimensions": expected_dimensions,
-                    "provider_wired": True,
-                }
-            )
-        else:
-            semantic_status.update(
-                {
-                    "query_embedding_status": "NOT_READY",
-                    "provider_wired": self.semantic_provider_bound,
-                }
-            )
-            if query_plan.get("semantic_policy") == "REQUIRED":
+                query_embedding_model = str(
+                    provider_result.output.get("embedding_model") or ""
+                )
+                if (
+                    not query_embedding_model
+                    or query_embedding_dimensions <= 0
+                    or len(query_embedding) != query_embedding_dimensions
+                ):
+                    raise KernelError(
+                        "RETRIEVAL_QUERY_EMBEDDING_INVALID",
+                        "query embedding Provider returned incompatible identity",
+                    )
+                query_embedding_evidence = provider_result.to_evidence()
+            elif query_plan.get("semantic_policy") == "REQUIRED":
                 raise KernelError(
                     "RETRIEVAL_QUERY_EMBEDDING_REQUIRED",
-                    "semantic-required retrieval lacks a governed query embedding",
+                    "semantic-required retrieval lacks a compatible governed projection/provider",
                 )
+            semantic_status["provider_wired"] = self.semantic_provider_bound
+            frozen_union = freeze_retrieval_candidate_union(
+                request.database_url,
+                project_id=request.project_id,
+                book_id=str(
+                    plan.content.get("book_id") or f"book:{request.project_id}"
+                ),
+                operation_id=request.operation_id,
+                attempt_id=request.attempt_id,
+                fencing_token=request.fencing_token,
+                worker_id=request.worker_id,
+                query_plan=query_plan,
+                base_documents=documents,
+                semantic_status=semantic_status,
+                query_embedding=query_embedding,
+                query_embedding_model=query_embedding_model,
+                query_embedding_dimensions=query_embedding_dimensions,
+                query_embedding_evidence=query_embedding_evidence,
+            )
         return _output(
             ChapterNode.RETRIEVAL,
             build_retrieval_result(
@@ -504,13 +518,15 @@ class _RetrievalHandler:
                 intent_asset_version_id=intent.asset_version_id,
                 memo_asset_version_id=memo.asset_version_id,
                 query_plan=query_plan,
-                documents=documents,
+                documents=frozen_union.documents,
                 discovery_rejections=tuple(
                     dict(item) for item in snapshot.get("rejected_documents") or ()
                 ),
-                semantic_status=semantic_status,
-                query_embedding=query_embedding,
-                query_embedding_evidence=query_embedding_evidence,
+                semantic_status=frozen_union.semantic_status,
+                query_embedding=frozen_union.query_embedding,
+                query_embedding_evidence=frozen_union.query_embedding_evidence,
+                candidate_snapshot_id=frozen_union.candidate_snapshot_id,
+                candidate_snapshot_hash=frozen_union.snapshot_hash,
             ),
         )
 
@@ -846,6 +862,8 @@ class _DraftHandler:
             normalize_draft_result(
                 plan=plan.content,
                 context_asset_version_id=context.asset_version_id,
+                context_content_hash=context.content_hash,
+                context_content=context.content,
                 result=generated.output,
                 provider_evidence=_provider_evidence(generated),
             ),

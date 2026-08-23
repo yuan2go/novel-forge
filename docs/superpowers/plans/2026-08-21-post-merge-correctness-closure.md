@@ -1,7 +1,8 @@
 # Post-Merge Correctness Closure Implementation Plan
 
-> **Status:** IMPLEMENTED; final proof level is recorded by the current tests
-> and Draft PR, not by the original unchecked execution checklist below.
+> **Status:** SUPERSEDED / HISTORICAL_ONLY. This is the 0095 delivery record,
+> not a current execution checklist or proof source. Latest-main reconciliation
+> is governed by `../specs/2026-08-21-post-merge-runtime-hardening-design.md`.
 > **Implementation branch:** `codex/post-merge-correctness-closure`
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.

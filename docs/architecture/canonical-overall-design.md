@@ -363,14 +363,15 @@ The Harness executes inside the existing durable plane:
 ```text
 RuntimeJob / Operation / Attempt / Lease / Fence
 └── Agent Session
-    ├── frozen role, Tool policy, Skill bindings and budgets
+    ├── frozen Definition/role/Tool/Skill/Pack/provider/model/route/release
+    ├── frozen Accepted Boundary and aggregate budget
     ├── append-only transcript events
     ├── model-turn ExternalEffect / Receipt
     ├── Tool observation
     └── next turn / checkpoint / stop / escalation
 ```
 
-It must support multi-turn resume, dynamic allowlisted Tool selection, Skill id/version/hash provenance, cancellation/deadline checks, token/cost/turn/effect hard stops, committed-request restoration and runtime trace. Skill activation never grants permission. An Agent may query, invoke Capabilities and submit typed Authority Commands; it cannot directly mutate Canon, accepted Narrative State, Arc actuals, Narrative Obligations, active plans or Chapter acceptance.
+It must support multi-turn resume, dynamic allowlisted Tool selection, Skill id/version/hash provenance, cancellation/deadline checks, token/cost/turn/effect hard stops, committed-request restoration and runtime trace. Every turn validates the Attempt execution binding against the immutable admission contract; restart or configuration drift never silently replaces provider, model, route, Pack or policy. Session budgets aggregate Agent turns plus descendant Typed Capability and Tool tokens, cost and effects through authoritative Operation/ledger lineage rather than copied accounting rows. Skill activation never grants permission. An Agent may query, invoke Capabilities and submit typed Authority Commands; it cannot directly mutate Canon, accepted Narrative State, Arc actuals, Narrative Obligations, active plans or Chapter acceptance.
 
 ---
 
@@ -613,8 +614,8 @@ ChapterPlan
 → ChapterExecutionIntent
 → qualified ChapterMemo
 → Retrieval Query Plan at the frozen Accepted Boundary
-→ PostgreSQL FTS / graph / temporal retrieval
-→ optional governed semantic signal
+→ parallel PostgreSQL FTS / vector / graph / temporal candidate channels
+→ accepted-boundary and embedding-compatibility governed candidate union
 → rerank
 → compressible evidence compression
 → immutable RetrievalResult
@@ -624,7 +625,7 @@ ChapterPlan
 
 **Protected Context** includes the exact active ChapterPlan, qualified ChapterExecutionIntent/ChapterMemo constraints, accepted Canon/current state, hard world rules, critical character/relationship state, due obligations, relevant Arc actual/checkpoint state and forbidden/knowledge boundaries. Protected entries are typed, never filename-classified. If they exceed budget, compilation fails; none is silently dropped or semantically weakened.
 
-**Retrievable Context** includes accepted historical chapter/scene text, episodic summaries, entity/relationship history, character timelines, Arc/obligation history, world consequences, prior setup/payoff and external governed knowledge. PostgreSQL retrieval combines Full-Text Search (`ts_rank`), governed embedding projection, entity/relationship, timeline/temporal, Arc and obligation relevance, accepted-boundary eligibility, rerank and optional compression. Vector similarity is one signal, never the memory system.
+**Retrievable Context** includes accepted historical chapter/scene text, episodic summaries, entity/relationship history, character timelines, Arc/obligation history, world consequences, prior setup/payoff and external governed knowledge. PostgreSQL retrieval runs independent Full-Text Search (`ts_rank`), vector, entity/relationship, timeline/temporal, Arc and obligation candidate channels. Every channel applies Project, Book, Accepted Boundary and lifecycle eligibility; the vector channel additionally requires compatible embedding model/version/dimensions. The frozen union records all contributing channels, deduplicates by retrieval document, then applies a versioned hybrid ranking policy and optional compression. Vector similarity is one signal, never the memory system.
 
 The bounded packet contains only what the chapter needs, conceptually including:
 
@@ -1069,7 +1070,7 @@ Therefore the target system **converges the existing architecture**; it does not
 
 Every Work Package begins by re-reading the latest code and current runtime evidence. The ordering below changes if later evidence proves a gap is already closed.
 
-### P0 — Correctness closure — WIRED / RUNTIME_REACHABLE / TARGETED POSTGRES TESTED
+### P0 — Correctness closure baseline — PARTIALLY HARDENED
 
 The convergence implementation now preserves the industrial base and has:
 
@@ -1093,17 +1094,24 @@ Memo now drives a durable RetrievalResult before Context, and semantic document
 and query embeddings use the same ExternalEffect/Receipt governance as other
 provider calls.
 
-These capabilities have domain contracts, production composition, runtime
-reachability, persistence, Authority governance, downstream consumption and
-bounded unit/PostgreSQL tests. Agent and embedding routes are
-`PROVIDER_WIRED`; scripted receipts are not `PROVIDER_PROVEN`. They are not
-long-form or production qualified; those remain later evidence work.
+Post-merge runtime hardening closes the four 0095 follow-on gaps without adding
+a parallel Authority or runtime: Arc follow-up consumes canonical Operation
+retry/final/dead-letter/cancellation states; embedding unknown outcomes
+checkpoint and reconcile the original ExternalEffect/Receipt; Agent admission
+freezes and validates the complete execution binding while Session budgets
+aggregate descendant ledgers; and PostgreSQL vector search is an independent,
+accepted-boundary-governed candidate channel before hybrid reranking. Targeted
+PostgreSQL recovery tests cover those contracts. The 2026-08-22 exact-SHA small
+qualification additionally proves the real Provider wiring for one Agent
+Session, document/query embeddings and one Memo→Retrieval→Draft slice. This is
+bounded `PROVIDER_PROVEN` evidence only. None of these capabilities is
+`LONGFORM_PROVEN` or `PRODUCTION_QUALIFIED`.
 
-### P1 — Long-form and Provider qualification
+### P1 — Long-form qualification
 
-After convergence is implemented and bounded smoke tests pass:
+The bounded current-SHA real-provider Chapter proof is complete. Further gates
+remain separate, explicitly authorized runs:
 
-- current-SHA real-provider Chapter proof;
 - independent judge/calibration qualification;
 - 10 → 30 → 100 → 300 chapter campaigns with failure injection;
 - human editorial comparison;

@@ -108,8 +108,10 @@ OPERATION_TRANSITIONS: dict[OperationStatus, frozenset[OperationStatus]] = {
             OperationStatus.WAITING_APPROVAL,
             OperationStatus.SUCCEEDED,
             OperationStatus.FAILED_RETRYABLE,
+            OperationStatus.FAILED_FINAL,
             OperationStatus.RECONCILIATION_REQUIRED,
             OperationStatus.CANCELLATION_REQUESTED,
+            OperationStatus.CANCELLED,
         }
     ),
     OperationStatus.WAITING_GATE: frozenset(
@@ -142,7 +144,10 @@ OPERATION_TRANSITIONS: dict[OperationStatus, frozenset[OperationStatus]] = {
         {
             OperationStatus.EXECUTING,
             OperationStatus.SUCCEEDED,
+            OperationStatus.FAILED_RETRYABLE,
             OperationStatus.FAILED_FINAL,
+            OperationStatus.DEAD_LETTER,
+            OperationStatus.CANCELLATION_REQUESTED,
             OperationStatus.COMPENSATION_REQUIRED,
             OperationStatus.CANCELLED,
         }

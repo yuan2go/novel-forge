@@ -4,6 +4,7 @@ import unittest
 import tempfile
 import hashlib
 import json
+from dataclasses import replace
 from pathlib import Path
 
 from novel_forge.api.authority_dependencies import (
@@ -514,6 +515,57 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
             self.assertEqual(
                 dict(cursor.fetchall()), {"cost_ledger": 1, "model_call_log": 1}
             )
+
+    def test_model_effect_accepts_only_lower_internal_reservation_limits(self) -> None:
+        request = replace(
+            self._request(), command={"chapter": 1, "context_token_budget": 200}
+        )
+        port = ExternalEffectChapterModelPort(
+            DATABASE_URL,
+            adapter=_ModelAdapter(),
+            worker_id="bounded-model-worker",
+            max_cost_per_call="0.01",
+        )
+
+        port.invoke(
+            request,
+            stage="draft",
+            payload={"prompt": "write"},
+            reservation_amount="0.005",
+            reservation_tokens=120,
+        )
+
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT reserved_amount, estimated_tokens
+                FROM authority_budget_reservation
+                WHERE operation_id=%s
+                """,
+                [request.operation_id],
+            )
+            amount, tokens = cursor.fetchone()
+        self.assertEqual(str(amount), "0.00500000")
+        self.assertEqual(tokens, 120)
+
+        invalid_request = self._request()
+        with self.assertRaises(KernelError) as raised:
+            port.invoke(
+                invalid_request,
+                stage="draft",
+                payload={"prompt": "write"},
+                reservation_amount="0.02",
+            )
+        self.assertEqual(
+            raised.exception.code,
+            "MODEL_EFFECT_RESERVATION_OVERRIDE_INVALID",
+        )
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT COUNT(*) FROM authority_external_effect WHERE operation_id=%s",
+                [invalid_request.operation_id],
+            )
+            self.assertEqual(cursor.fetchone()[0], 0)
 
     def test_effect_timeout_uses_frozen_operation_policy_not_worker_lease(self) -> None:
         request = self._request()

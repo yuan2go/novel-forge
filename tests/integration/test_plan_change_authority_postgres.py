@@ -136,6 +136,32 @@ class PlanChangeAuthorityPostgresTests(unittest.TestCase):
             ),
             principal=self.principal,
         )
+        proposal_replay = authority.propose(
+            PlanChangeProposalCommand(
+                project_id=self.project_id,
+                workspace_id=f"workspace:{self.project_id}",
+                book_id=self.book_id,
+                actor_id=self.principal.principal_id,
+                trace_id=f"trace:{self.project_id}",
+                correlation_id=f"book:{self.book_id}",
+                stable_idempotency_key=f"{self.project_id}:change:1",
+                source_type=PlanChangeSource.LONGFORM_RECAP,
+                source_evidence_version_id=source_evidence,
+                target_asset_version_id=old["asset_version_id"],
+                proposed_asset_version_id=proposed_version,
+            ),
+            principal=self.principal,
+        )
+        self.assertEqual(proposal_replay["proposal_id"], proposal["proposal_id"])
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                """
+                SELECT COUNT(*) FROM authority_plan_change_proposal
+                WHERE project_id=%s AND stable_idempotency_key=%s
+                """,
+                [self.project_id, f"{self.project_id}:change:1"],
+            )
+            self.assertEqual(int(uow.cursor.fetchone()[0]), 1)
         self.assertEqual(proposal["status"], "PENDING_APPROVAL")
         self.assertEqual(proposal["risk"], "HIGH")
         self.assertIn(

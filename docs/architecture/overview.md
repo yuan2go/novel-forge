@@ -75,10 +75,15 @@ ChapterPlan declarations cannot create actual progress; accepted Arc evidence
 materializes progress, while missing evidence remains `NOT_OBSERVED`,
 `NOT_MATERIALIZED`, or `UNKNOWN` according to the explicit contract.
 
-Bounded fixture Chapter 1→2, Agent Harness process-crash takeover without
-duplicated effects, and PostgreSQL replay are smoke-tested. Sustained real
-Provider operation and unattended long-form campaigns remain unqualified.
-`LONGFORM_PROVEN`, `PROVIDER_QUALIFIED`, and `PRODUCTION_QUALIFIED` are false.
+Bounded fixture Chapter 1→2 and PostgreSQL replay are smoke-tested. Runtime
+hardening closes canonical Arc follow-up terminal handling, embedding
+unknown-effect reconciliation, frozen Agent execution identity/aggregate
+budgeting, and independent PostgreSQL vector candidate discovery. An exact-SHA
+small qualification ran one real Agent Session, document/query embeddings with
+receipt-backed crash recovery, and one Memo→Retrieval→Context→Draft slice.
+Those bounded paths are `PROVIDER_PROVEN`; sustained real Provider operation and
+unattended long-form campaigns remain unqualified. `LONGFORM_PROVEN` and
+`PRODUCTION_QUALIFIED` are false.
 
 ## Evidence boundary
 
@@ -92,9 +97,10 @@ The repository contains substantial implementation/runtime/test evidence for:
 - PlanChange/Replan;
 - Source/MKAOS;
 - Agent Collaboration/Runtime;
-- multi-turn Agent Harness transcript/recovery contracts;
+- multi-turn Agent Harness transcript contracts and partial recovery wiring;
 - Memo-driven Context v2 protected/retrievable selection, immutable retrieval
-  results, PostgreSQL FTS/graph/temporal ranking and layered-memory contracts;
+  results, PostgreSQL FTS/graph/temporal candidate discovery, embedding-based
+  reranking and layered-memory contracts;
 - ChapterExecutionIntent/ChapterMemo and Best Candidate selection;
 - accepted Arc/Obligation projection sets and semantic invalidation;
 - quality/reader surfaces;
@@ -105,7 +111,7 @@ Current documentation does **not** establish by itself:
 - sustained real-provider Book production;
 - long-running real-provider Chapter-to-Chapter liveness;
 - 30/100/300-chapter correctness/quality;
-- production-scale retrieval/index population and semantic reranking;
+- independent PostgreSQL vector candidate retrieval at production scale;
 - real-provider Agent Harness execution proof (controlled composition is wired);
 - real-reader learning closure;
 - multi-book production;

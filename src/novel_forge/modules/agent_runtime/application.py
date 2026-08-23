@@ -51,6 +51,7 @@ from .definitions import (
     AGENT_RUNTIME_DEFINITION_VERSION,
     AGENT_RUNTIME_EXECUTION_HANDLER_KEY,
     AGENT_RUNTIME_HARNESS_HANDLER_KEY,
+    AGENT_SESSION_WORKFLOW_DEFINITION_REF,
     agent_runtime_operation_definitions,
 )
 from .harness import (
@@ -60,6 +61,7 @@ from .harness import (
     AgentHarnessStatus,
     AgentToolSpec,
     AutonomousAgentRole,
+    canonical_execution_contract_hash,
 )
 from .policy import ServerAgentHarnessPolicyResolver
 
@@ -180,7 +182,8 @@ class AgentRunAdmissionRequest:
         required = (
             value
             for name, value in asdict(self).items()
-            if name not in {
+            if name
+            not in {
                 "agent_definition_version",
                 "capability_version",
                 "chapter_number",
@@ -232,6 +235,8 @@ class AgentHarnessAdmissionRequest:
     correlation_id: str
     agent_id: str = ""
     policy_snapshot: Mapping[str, Any] = dataclass_field(default_factory=dict)
+    execution_contract: Mapping[str, Any] = dataclass_field(default_factory=dict)
+    execution_contract_hash: str = ""
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "agent_role", AutonomousAgentRole(self.agent_role))
@@ -252,6 +257,15 @@ class AgentHarnessAdmissionRequest:
             raise ValueError("Agent Harness accepted boundary belongs to another Book")
         if not self.tool_policy:
             raise ValueError("Agent Harness requires a frozen Tool policy")
+        if bool(self.execution_contract) != bool(self.execution_contract_hash):
+            raise ValueError("Agent Harness execution contract identity is incomplete")
+        if self.execution_contract and (
+            self.execution_contract_hash
+            != canonical_execution_contract_hash(self.execution_contract)
+        ):
+            raise ValueError(
+                "Agent Harness execution contract hash differs from content"
+            )
 
     def command_input(self) -> dict[str, Any]:
         return {
@@ -272,6 +286,8 @@ class AgentHarnessAdmissionRequest:
             "skill_bindings": [dict(item) for item in self.skill_bindings],
             "budget": asdict(self.budget),
             "policy_snapshot": dict(self.policy_snapshot),
+            "execution_contract": dict(self.execution_contract),
+            "execution_contract_hash": self.execution_contract_hash,
         }
 
 
@@ -531,11 +547,138 @@ class AgentRuntimeAuthorityApplication:
                     caller_tools=request.tool_policy,
                     caller_skills=request.skill_bindings,
                 )
+                model_binding = dict(policy.get("model_binding") or {})
+                pack_id = str(model_binding.get("capability_pack_id") or "")
+                pack = self.pack_resolver.resolve_in_uow(
+                    uow,
+                    CapabilityPackResolutionRequest(
+                        project_id=request.project_id,
+                        workspace_id=request.workspace_id,
+                        book_id=request.book_id,
+                        workflow_definition_ref=(AGENT_SESSION_WORKFLOW_DEFINITION_REF),
+                        workflow_node_id="agent_session",
+                        environment=self.runtime_environment.value,
+                        runtime_profile=self.runtime_environment.value,
+                        release_channel=self.release_channel,
+                        release_sha=self.commit_sha,
+                        operation_definition_ref=(
+                            f"agent.session.execute@{AGENT_RUNTIME_DEFINITION_VERSION}"
+                        ),
+                        pack_id=pack_id,
+                    ),
+                )
+                expected_definition_ref = (
+                    f"{policy['agent_id']}@{policy['agent_definition_version']}"
+                )
+                drift = []
+                for name, expected, actual in (
+                    (
+                        "agent_definition_ref",
+                        expected_definition_ref,
+                        pack.agent_definition_ref,
+                    ),
+                    (
+                        "agent_definition_hash",
+                        policy["agent_definition_hash"],
+                        pack.agent_definition_hash,
+                    ),
+                    (
+                        "prompt_bundle_ref",
+                        policy["prompt_bundle_ref"],
+                        pack.prompt_bundle_ref,
+                    ),
+                    (
+                        "prompt_bundle_hash",
+                        policy["prompt_bundle_hash"],
+                        pack.prompt_bundle_hash,
+                    ),
+                    (
+                        "skill_bundle_ref",
+                        policy["skill_bundle_ref"],
+                        pack.skill_bundle_ref,
+                    ),
+                    (
+                        "skill_bundle_hash",
+                        policy["skill_bundle_hash"],
+                        pack.skill_bundle_hash,
+                    ),
+                    (
+                        "tool_policy_ref",
+                        policy["tool_policy_ref"],
+                        pack.tool_policy_ref,
+                    ),
+                    (
+                        "tool_policy_hash",
+                        policy["tool_policy_hash"],
+                        pack.tool_policy_hash,
+                    ),
+                    (
+                        "context_policy_ref",
+                        policy["context_policy_ref"],
+                        pack.context_policy_ref,
+                    ),
+                    (
+                        "context_policy_hash",
+                        policy["context_policy_hash"],
+                        pack.context_policy_hash,
+                    ),
+                    (
+                        "route_policy_ref",
+                        model_binding.get("route_policy_ref"),
+                        pack.route_policy_ref,
+                    ),
+                    (
+                        "route_policy_hash",
+                        model_binding.get("route_policy_hash"),
+                        pack.route_policy_hash,
+                    ),
+                    ("release_sha", self.commit_sha, pack.release_sha),
+                ):
+                    expected_value = str(expected or "")
+                    actual_value = str(actual or "")
+                    if name.endswith("_hash"):
+                        expected_value = expected_value.removeprefix("sha256:")
+                        actual_value = actual_value.removeprefix("sha256:")
+                    if expected_value != actual_value:
+                        drift.append(name)
+                if drift:
+                    raise KernelError(
+                        "AGENT_ADMISSION_EXECUTION_CONTRACT_DRIFT",
+                        "Agent Definition, Capability Pack, and provider route differ: "
+                        + ", ".join(drift),
+                    )
+                policy_without_hash = {
+                    key: value for key, value in policy.items() if key != "policy_hash"
+                }
+                frozen_policy = {
+                    **policy_without_hash,
+                    "capability_pack_execution_snapshot": pack.to_dict(),
+                    "capability_pack_snapshot_hash": pack.snapshot_hash,
+                }
+                frozen_policy["policy_hash"] = canonical_execution_contract_hash(
+                    frozen_policy
+                )
+                execution_contract = {
+                    "contract_version": "agent-session-execution-contract.v1",
+                    "agent_policy": frozen_policy,
+                    "runtime_binding": model_binding,
+                    "capability_pack_execution_snapshot": pack.to_dict(),
+                    "capability_pack_snapshot_hash": pack.snapshot_hash,
+                    "release_sha": self.commit_sha,
+                    "accepted_boundary": asdict(request.accepted_boundary),
+                    "budget": asdict(request.budget),
+                    "authority_policy": "SUBMIT_ONLY_NO_DIRECT_MUTATION",
+                }
+                execution_contract_hash = canonical_execution_contract_hash(
+                    execution_contract
+                )
                 effective = replace(
                     request,
                     tool_policy=tools,
                     skill_bindings=skills,
-                    policy_snapshot=policy,
+                    policy_snapshot=frozen_policy,
+                    execution_contract=execution_contract,
+                    execution_contract_hash=execution_contract_hash,
                 )
             self._validate_harness_accepted_boundary(uow, effective)
             admitted = admit_command_in_uow(
@@ -572,6 +715,8 @@ class AgentRuntimeAuthorityApplication:
                 tool_policy=effective.tool_policy,
                 skill_bindings=effective.skill_bindings,
                 budget=effective.budget,
+                execution_contract=effective.execution_contract,
+                execution_contract_hash=effective.execution_contract_hash,
             )
             stored = uow.repositories.agent_runtime.create_harness_session(session)
             uow.commit()
@@ -612,6 +757,7 @@ class AgentRuntimeAuthorityApplication:
             "status": "READY",
             "accepted_boundary": asdict(stored.accepted_boundary),
             "policy_hash": str(effective.policy_snapshot.get("policy_hash") or ""),
+            "execution_contract_hash": stored.execution_contract_hash,
             "replayed": bool(admitted["replayed"]),
         }
 
@@ -695,7 +841,9 @@ class AgentRuntimeAuthorityApplication:
         )
         row = uow.cursor.fetchone()
         if row is None:
-            raise KernelError("OPERATION_NOT_FOUND", "Agent admin Operation disappeared")
+            raise KernelError(
+                "OPERATION_NOT_FOUND", "Agent admin Operation disappeared"
+            )
         action, project_id, command_payload, actor_id, trace_id, correlation_id = row
         command = dict(command_payload or {})
         agent_id = str(command["agent_id"])
@@ -950,8 +1098,7 @@ class AgentRuntimeAuthorityApplication:
             )
         if (
             capability["capability_hash"] != request.capability_hash
-            or capability["execution_capability_id"]
-            != request.execution_capability_id
+            or capability["execution_capability_id"] != request.execution_capability_id
             or capability["execution_capability_hash"]
             != request.execution_capability_hash
         ):
@@ -1025,13 +1172,16 @@ class AgentRuntimeAuthorityApplication:
             request.participant_snapshot_ref
         )
         participant = next(
-            (item for item in participants.participants if item.agent_id == request.agent_id),
+            (
+                item
+                for item in participants.participants
+                if item.agent_id == request.agent_id
+            ),
             None,
         )
         if (
             participant is None
-            or participant.agent_definition_version
-            != request.agent_definition_version
+            or participant.agent_definition_version != request.agent_definition_version
         ):
             raise KernelError(
                 "AGENT_COLLABORATION_PARTICIPANT_DRIFT",
@@ -1070,8 +1220,7 @@ class AgentRuntimeAuthorityApplication:
         )
         if (
             definition is None
-            or str(definition["definition_hash"])
-            != request.operation_definition_hash
+            or str(definition["definition_hash"]) != request.operation_definition_hash
         ):
             raise KernelError(
                 "AGENT_OPERATION_DEFINITION_DRIFT",

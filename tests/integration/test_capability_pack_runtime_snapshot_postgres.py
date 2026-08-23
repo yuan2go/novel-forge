@@ -31,7 +31,7 @@ from tests.integration.capability_pack_postgres_support import (
 )
 
 
-def test_attempt_snapshot_is_frozen_once_and_shared_by_gateway_and_agent_binding() -> (
+def test_attempt_snapshot_is_frozen_once_and_shared_by_gateway_and_pep_effect() -> (
     None
 ):
     harness = CapabilityPackPostgresHarness("pack-attempt-snapshot")
@@ -40,11 +40,14 @@ def test_attempt_snapshot_is_frozen_once_and_shared_by_gateway_and_agent_binding
     harness.activate(baseline)
     runtime = harness.run_draft_attempt()
 
-    assert runtime["binding_snapshot_id"] == runtime["snapshot_id"]
-    assert runtime["binding_snapshot_hash"] == runtime["snapshot_hash"]
-    assert runtime["binding_deployment_id"] == runtime["deployment_id"]
-    assert runtime["binding_binding_set_id"] == runtime["binding_set_id"]
-    assert runtime["binding_binding_set_hash"] == runtime["binding_set_hash"]
+    capability_runtime = runtime["effect_request_payload"]["_production_execution"][
+        "capability_runtime"
+    ]
+    assert capability_runtime["snapshot_id"] == runtime["snapshot_id"]
+    assert capability_runtime["snapshot_hash"] == runtime["snapshot_hash"]
+    assert capability_runtime["binding_set_hash"] == runtime["binding_set_hash"]
+    assert runtime["external_effect_id"]
+    assert runtime["receipt_id"]
     assert (
         runtime["snapshot_creation_fencing_token"] == runtime["execution_fencing_token"]
     )
@@ -266,11 +269,13 @@ def test_rollout_and_rollback_do_not_reassign_historical_runtime_evidence() -> N
         uow.cursor.execute(
             """
             SELECT snapshot.deployment_id, snapshot.snapshot_hash,
-                   binding.capability_pack_deployment_id,
-                   binding.capability_pack_attempt_snapshot_hash
+                   effect.request_payload #>>
+                     '{_production_execution,capability_runtime,snapshot_id}',
+                   effect.request_payload #>>
+                     '{_production_execution,capability_runtime,snapshot_hash}'
             FROM authority_attempt_capability_pack_snapshot AS snapshot
-            JOIN authority_agent_runtime_binding AS binding
-              ON binding.capability_pack_attempt_snapshot_id=snapshot.snapshot_id
+            JOIN authority_external_effect AS effect
+              ON effect.operation_id=snapshot.operation_id
             WHERE snapshot.snapshot_id=%s
             """,
             [historical["snapshot_id"]],
@@ -278,7 +283,7 @@ def test_rollout_and_rollback_do_not_reassign_historical_runtime_evidence() -> N
         assert uow.cursor.fetchone() == (
             baseline.deployment_id,
             historical["snapshot_hash"],
-            baseline.deployment_id,
+            historical["snapshot_id"],
             historical["snapshot_hash"],
         )
         uow.commit()
@@ -289,15 +294,18 @@ def test_rollout_and_rollback_do_not_reassign_historical_runtime_evidence() -> N
     metrics_v2 = CapabilityPackAuthorityQuery(DATABASE_URL).usage_metrics(
         candidate.deployment_id, project_id=harness.project_id
     )
-    assert metrics_v1["runtime_binding_count"] == 1
-    assert metrics_v2["runtime_binding_count"] == 1
+    # Chapter stages are governed Typed Capabilities.  The deprecated
+    # per-stage Agent binding bridge is intentionally absent from canonical
+    # composition, so Agent-only usage metrics do not count these snapshots.
+    assert metrics_v1["runtime_binding_count"] == 0
+    assert metrics_v2["runtime_binding_count"] == 0
     assert metrics_v1["real_provider_call_evidence_count"] == 0
     assert metrics_v1["real_provider_call_evidence_present"] is False
     assert metrics_v1["provider_vertical_qualification_status"] == "NOT_STARTED"
     assert metrics_v1["production_verified"] is False
 
 
-def test_postgres_rejects_historical_snapshot_and_runtime_binding_mutation() -> None:
+def test_postgres_rejects_historical_snapshot_mutation() -> None:
     harness = CapabilityPackPostgresHarness("pack-snapshot-attack")
     version = harness.register_compile_approve("1.0.0", generation=1)
     deployment = harness.deploy(version)
@@ -312,17 +320,6 @@ def test_postgres_rejects_historical_snapshot_and_runtime_binding_mutation() -> 
                 WHERE snapshot_id=%s
                 """,
                 [runtime["snapshot_id"]],
-            )
-            connection.commit()
-        connection.rollback()
-        with pytest.raises(psycopg.DatabaseError):
-            cursor.execute(
-                """
-                UPDATE authority_agent_runtime_binding
-                SET capability_pack_binding_set_id='wrong-binding-set'
-                WHERE binding_id=%s
-                """,
-                [runtime["binding_id"]],
             )
             connection.commit()
         connection.rollback()
