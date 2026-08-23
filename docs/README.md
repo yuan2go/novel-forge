@@ -27,7 +27,7 @@ It covers Vision/Non-Goals, business/capability/system architecture, Authority/S
 - [`architecture/authority-model.md`](architecture/authority-model.md) — PostgreSQL ownership/mutation rules.
 - [`architecture/production-execution.md`](architecture/production-execution.md) — shared execution/provider boundary.
 - [`architecture/narrative-state.md`](architecture/narrative-state.md) — current Narrative State v2/accepted-event contract.
-- [`architecture/source-and-knowledge.md`](architecture/source-and-knowledge.md) — Source/MKAOS and target Narrative Intelligence boundary.
+- [`architecture/source-and-knowledge.md`](architecture/source-and-knowledge.md) — Source/MKAOS boundary and current structured Narrative Intelligence selection/lineage.
 
 ## Product views
 
@@ -38,16 +38,16 @@ These are derived from the Canonical Design and cannot independently change arch
 
 ## Development / Operations
 
-Keep operational and development guides focused on executable procedures. Approved implementation specifications may live under `superpowers/specs/` while active; they are subordinate to the Canonical Design and must preserve exact evidence/proof boundaries.
+Keep operational and development guides focused on executable procedures. Approved implementation specifications may live under `superpowers/specs/` only while active; completed or superseded delivery plans are removed once their durable decisions and qualification evidence have converged into the Canonical Design, ADRs, current-runtime companions, or qualification records.
 
 Completed runtime-hardening evidence:
 
 - [`qualification/2026-08-22-post-merge-runtime-hardening.md`](qualification/2026-08-22-post-merge-runtime-hardening.md)
 
-The runtime-hardening design, prior post-merge correctness specification and
-implementation plan are retained as `COMPLETED / HISTORICAL_ONLY` or
-`SUPERSEDED / HISTORICAL_ONLY`. They describe delivery intent and cannot
-replace the exact-SHA qualification evidence or current executable contracts.
+The completed runtime-hardening design and superseded post-merge design/plan
+were removed after review because they duplicated the Canonical Design and
+current executable contracts. The exact-SHA qualification above is retained as
+the durable evidence record.
 
 Current repair runbook:
 
