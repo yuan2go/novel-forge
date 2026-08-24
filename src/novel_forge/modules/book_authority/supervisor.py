@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any
 
 from novel_forge.modules.authority_security import Principal
@@ -26,7 +26,9 @@ from novel_forge.modules.production_preparation import (
 )
 from novel_forge.modules.story_planning_runtime import (
     GENERATOR_INPUT_ROLES,
+    NarrativeSearchRequest,
     PlanningGenerationStatus,
+    PostgresNarrativeSearchApplication,
     StoryPlanningGenerationApplication,
     StoryPlanningGenerationCommand,
 )
@@ -64,6 +66,7 @@ class PostgresBookProductionSupervisor:
         principal: Principal,
         replan: Any,
         production_preparation: ProductionPreparationService,
+        narrative_search: PostgresNarrativeSearchApplication | None = None,
         context_token_budget: int = 16_000,
         quality_context_token_budget: int | None = None,
     ) -> None:
@@ -85,6 +88,9 @@ class PostgresBookProductionSupervisor:
             quality_context_token_budget or context_token_budget
         )
         self.production_preparation = production_preparation
+        self.narrative_search = narrative_search or PostgresNarrativeSearchApplication(
+            authority.database_url, planning=planning
+        )
         self.scheduler = PostgresBookAuthorityScheduler(
             authority, query=query, principal=principal
         )
@@ -111,6 +117,16 @@ class PostgresBookProductionSupervisor:
                 before,
                 SupervisorAction.WAIT_PLAN_APPROVAL,
             )
+        if before == BookProductionState.CHECKPOINT_PENDING.value:
+            checkpoint = self._checkpoint_if_needed(book)
+            if checkpoint is not None:
+                return self._result(
+                    book_run_id,
+                    before,
+                    SupervisorAction.UPDATE_CHECKPOINTS,
+                    evidence_ref=checkpoint["volume_checkpoint"]["checkpoint_id"],
+                )
+            return self._result(book_run_id, before, SupervisorAction.NO_ACTION)
         if (
             semantics.state_class is BookProductionStateClass.DURABLE_WAIT
             and before != BookProductionState.REPLAN_APPROVAL_PENDING.value
@@ -298,6 +314,27 @@ class PostgresBookProductionSupervisor:
                 result.generation_operation_id,
                 result.candidate_asset_version_id,
             )
+        if group[
+            "execution_scope"
+        ] == PlanExecutionScope.PLANNED.value and self._plan_working_set_is_stale(
+            book=book,
+            plan=group,
+            generator="chapter_group_plan.generate",
+            chapter_number=next_chapter,
+        ):
+            result = self._replace_planned_working_set(
+                book=book,
+                plan=group,
+                generator="chapter_group_plan.generate",
+                chapter_number=next_chapter,
+            )
+            return self._result(
+                book_run_id,
+                before,
+                SupervisorAction.GENERATE_CHAPTER_GROUP,
+                result.generation_operation_id,
+                result.candidate_asset_version_id,
+            )
         if group["execution_scope"] == PlanExecutionScope.PLANNED.value:
             operation_id = self._freeze_plan(
                 book, group, PlanContractType.CHAPTER_GROUP
@@ -354,6 +391,25 @@ class PostgresBookProductionSupervisor:
                 expected_state=str(book["state"]),
                 target_state=target,
                 principal=self.principal,
+            )
+            return self._result(
+                book_run_id,
+                before,
+                SupervisorAction.GENERATE_CHAPTER_PLAN,
+                result.generation_operation_id,
+                result.candidate_asset_version_id,
+            )
+        if self._plan_working_set_is_stale(
+            book=book,
+            plan=chapter_plan,
+            generator="chapter_plan.generate",
+            chapter_number=next_chapter,
+        ):
+            result = self._replace_planned_working_set(
+                book=book,
+                plan=chapter_plan,
+                generator="chapter_plan.generate",
+                chapter_number=next_chapter,
             )
             return self._result(
                 book_run_id,
@@ -542,7 +598,12 @@ class PostgresBookProductionSupervisor:
         return report
 
     def _generate_plan(
-        self, book: dict[str, Any], generator: str, chapter_number: int
+        self,
+        book: dict[str, Any],
+        generator: str,
+        chapter_number: int,
+        *,
+        replacement_plan: dict[str, Any] | None = None,
     ) -> Any:
         cursor_projection = self.query.require_cursor_plan_projection(
             snapshot_id=str(book["input_snapshot_id"]),
@@ -572,42 +633,184 @@ class PostgresBookProductionSupervisor:
                 ]
             )
         )
-        return self.planning.generate(
-            StoryPlanningGenerationCommand(
+        generation = StoryPlanningGenerationCommand(
+            project_id=str(book["project_id"]),
+            workspace_id=str(book["workspace_id"]),
+            book_id=str(book["book_id"]),
+            actor_id=self.principal.principal_id,
+            generator_operation_name=generator,
+            logical_key=(
+                str(replacement_plan["content"]["logical_key"])
+                if replacement_plan is not None
+                else f"chapter-group:containing:{chapter_number}"
+                if generator == "chapter_group_plan.generate"
+                else f"chapter:{chapter_number}"
+            ),
+            input_versions=inputs,
+            parent_version_id=parent,
+            related_arc_plan_version_ids=(
+                tuple(arc_versions[1:])
+                if generator in {"chapter_group_plan.generate", "chapter_plan.generate"}
+                else ()
+            ),
+            governance_action_version_ids=self._governance_action_versions(
                 project_id=str(book["project_id"]),
-                workspace_id=str(book["workspace_id"]),
-                book_id=str(book["book_id"]),
-                actor_id=self.principal.principal_id,
-                generator_operation_name=generator,
-                logical_key=(
-                    f"chapter-group:containing:{chapter_number}"
-                    if generator == "chapter_group_plan.generate"
-                    else f"chapter:{chapter_number}"
+                input_version_ids=tuple(inputs.values()),
+            ),
+            idempotency_key=(
+                f"{book['stable_idempotency_key']}:{generator}:{chapter_number}:"
+                f"snapshot:{book['input_snapshot_id']}:"
+                f"working-set:{arc_working_set['working_set_digest']}"
+            ),
+            trace_id=f"{book['root_operation_id']}:{generator}:{chapter_number}",
+            correlation_id=str(book["root_operation_id"]),
+            auto_approve_low_risk=(
+                generator != "chapter_group_plan.generate" and replacement_plan is None
+            ),
+            arc_working_set=arc_working_set,
+        )
+        if generator == "chapter_group_plan.generate":
+            accepted_through = int(book["accepted_through_chapter"])
+            parent_state = str(book.get("active_story_state_version_id") or "")
+            if accepted_through == 0:
+                parent_state = str(
+                    self.query.require_input_snapshot(
+                        str(book["input_snapshot_id"])
+                    ).get("initial_story_state_version")
+                    or ""
+                )
+            search = self.narrative_search.explore(
+                NarrativeSearchRequest(
+                    generation=generation,
+                    planning_horizon={
+                        "level": "CHAPTER_GROUP",
+                        "starts_at_chapter": chapter_number,
+                        "near_future": True,
+                    },
+                    desired_transformation={
+                        "arc_working_set_digest": arc_working_set["working_set_digest"],
+                        "selected_arc_contributions": list(
+                            arc_working_set["selected_contributions"]
+                        ),
+                    },
+                    hard_constraints=(
+                        "accepted reality is immutable",
+                        "only selected working-set arcs may receive contributions",
+                        "preserve POV knowledge and forbidden-change boundaries",
+                    ),
+                    accepted_through_chapter=accepted_through,
+                    book_run_id=str(book["book_run_id"]),
+                    parent_state_asset_version_id=parent_state,
+                    expected_active_asset_version_id=(
+                        str(replacement_plan["asset_version_id"])
+                        if replacement_plan is not None
+                        else ""
+                    ),
+                    replacement_decision_evidence=(
+                        self._working_set_replacement_evidence(
+                            book=book,
+                            plan=replacement_plan,
+                            arc_working_set=arc_working_set,
+                        )
+                        if replacement_plan is not None
+                        else {}
+                    ),
                 ),
-                input_versions=inputs,
-                parent_version_id=parent,
-                related_arc_plan_version_ids=(
-                    tuple(arc_versions[1:])
-                    if generator
-                    in {"chapter_group_plan.generate", "chapter_plan.generate"}
-                    else ()
-                ),
-                governance_action_version_ids=self._governance_action_versions(
-                    project_id=str(book["project_id"]),
-                    input_version_ids=tuple(inputs.values()),
-                ),
-                idempotency_key=(
-                    f"{book['stable_idempotency_key']}:{generator}:{chapter_number}:"
-                    f"snapshot:{book['input_snapshot_id']}:"
-                    f"working-set:{arc_working_set['working_set_digest']}"
-                ),
-                trace_id=f"{book['root_operation_id']}:{generator}:{chapter_number}",
-                correlation_id=str(book["root_operation_id"]),
-                auto_approve_low_risk=True,
+                principal=self.principal,
+                activate_selected=True,
+            )
+            return search.selected_generation
+        result = self.planning.generate(generation, principal=self.principal)
+        if replacement_plan is None:
+            return result
+        if result.status is not PlanningGenerationStatus.APPROVAL_PENDING:
+            raise KernelError(
+                "BOOK_SUPERVISOR_PLAN_REPLACEMENT_INVALID",
+                "replacement candidate did not stop at the approval boundary",
+            )
+        self.planning.approve_candidate(
+            result.candidate_asset_version_id,
+            principal=self.principal,
+            idempotency_key=f"{generation.idempotency_key}:approve-replacement",
+            trace_id=generation.trace_id,
+            correlation_id=generation.correlation_id,
+        )
+        activation = self.planning.activate_candidate(
+            result.candidate_asset_version_id,
+            principal=self.principal,
+            idempotency_key=f"{generation.idempotency_key}:activate-replacement",
+            trace_id=generation.trace_id,
+            correlation_id=generation.correlation_id,
+            expected_active_asset_version_id=str(replacement_plan["asset_version_id"]),
+            decision_evidence=self._working_set_replacement_evidence(
+                book=book,
+                plan=replacement_plan,
                 arc_working_set=arc_working_set,
             ),
-            principal=self.principal,
         )
+        return replace(
+            result,
+            status=PlanningGenerationStatus.ACTIVE,
+            story_design_state=dict(activation["story_design"]),
+            planning_binding=dict(activation["planning_binding"]),
+        )
+
+    def _plan_working_set_is_stale(
+        self,
+        *,
+        book: dict[str, Any],
+        plan: dict[str, Any],
+        generator: str,
+        chapter_number: int,
+    ) -> bool:
+        expected = self._generation_arc_working_set(
+            book=book,
+            generator=generator,
+            chapter_number=chapter_number,
+        )
+        envelope = plan["content"].get("constraint_envelope")
+        declared = (
+            envelope.get("arc_working_set") if isinstance(envelope, dict) else None
+        )
+        return declared != expected
+
+    def _replace_planned_working_set(
+        self,
+        *,
+        book: dict[str, Any],
+        plan: dict[str, Any],
+        generator: str,
+        chapter_number: int,
+    ) -> Any:
+        if plan["execution_scope"] != PlanExecutionScope.PLANNED.value:
+            raise KernelError(
+                "BOOK_SUPERVISOR_FROZEN_PLAN_WORKING_SET_STALE",
+                "a Frozen near-future plan requires explicit PlanChange before replacement",
+            )
+        return self._generate_plan(
+            book,
+            generator,
+            chapter_number,
+            replacement_plan=plan,
+        )
+
+    @staticmethod
+    def _working_set_replacement_evidence(
+        *,
+        book: dict[str, Any],
+        plan: dict[str, Any] | None,
+        arc_working_set: dict[str, Any],
+    ) -> dict[str, Any]:
+        return {
+            "authority": "BOOK_PRODUCTION_SUPERVISOR",
+            "reason": "accepted-reality Arc Working Set changed before freeze",
+            "book_run_id": str(book["book_run_id"]),
+            "accepted_through_chapter": int(book["accepted_through_chapter"]),
+            "replaced_asset_version_id": str(
+                (plan or {}).get("asset_version_id") or ""
+            ),
+            "working_set_digest": str(arc_working_set["working_set_digest"]),
+        }
 
     def _governance_action_versions(
         self, *, project_id: str, input_version_ids: tuple[str, ...]

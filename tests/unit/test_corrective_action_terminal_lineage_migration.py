@@ -15,6 +15,7 @@ from novel_forge.storage.migrations.versions import (
     v20260821_0095_post_merge_correctness_repair as repair,
     v20260821_0096_runtime_hardening as runtime_hardening,
     v20260824_0097_narrative_evaluator_codex_lineage as codex_lineage,
+    v20260825_0098_narrative_evolution_engine as evolution,
 )
 
 
@@ -33,7 +34,8 @@ def test_terminal_lineage_is_a_forward_only_projection_fix() -> None:
     assert repair.DOWN_REVISION == novel_os.MIGRATION_ID
     assert runtime_hardening.DOWN_REVISION == repair.MIGRATION_ID
     assert codex_lineage.DOWN_REVISION == runtime_hardening.MIGRATION_ID
-    assert LATEST_MIGRATION_ID == codex_lineage.MIGRATION_ID
+    assert evolution.DOWN_REVISION == codex_lineage.MIGRATION_ID
+    assert LATEST_MIGRATION_ID == evolution.MIGRATION_ID
     assert migration.DOWN_REVISION == previous.MIGRATION_ID
     assert migration.FORWARD_ONLY is True
     assert "MIGRATION_ONLY base projection" in sql

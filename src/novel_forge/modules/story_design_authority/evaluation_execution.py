@@ -21,6 +21,7 @@ from novel_forge.modules.chapter_authority.execution_gateway import (
 )
 from novel_forge.modules.chapter_authority.model_effects import (
     ExternalEffectChapterModelPort,
+    model_call_log_ref,
 )
 from novel_forge.modules.command_kernel.asset_commands import AuthorityAssetWriteCommand
 from novel_forge.modules.command_kernel.errors import KernelError
@@ -64,6 +65,7 @@ class PostgresNarrativeEvaluationExecutionContractBinder(
     execution_binding_domain = "narrative_evaluation"
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
+        kwargs.setdefault("workflow_definition_ref", self.workflow_definition_ref)
         super().__init__(*args, **kwargs)
         self.evaluation_query = AuthorityAssetQuery(self.database_url)
         self.evaluation_writer = AuthorityAssetWriter(self.database_url)
@@ -451,9 +453,26 @@ class GatewayNarrativeSemanticEvaluationExecutionPort:
             require_pass=False,
         )
         del qualification
-        logical_ref = (
-            f"runs/model_calls/{request.operation_id}-{request.attempt_id}-"
-            f"{NARRATIVE_EVALUATION_STAGE}.json"
+        execution_request = (
+            result.execution_evidence.get("execution_request")
+            if isinstance(result.execution_evidence, Mapping)
+            else None
+        )
+        external_effect_id = (
+            str(execution_request.get("external_effect_id") or "")
+            if isinstance(execution_request, Mapping)
+            else ""
+        )
+        if not external_effect_id:
+            raise KernelError(
+                "NARRATIVE_EVALUATION_PROVIDER_EVIDENCE_INVALID",
+                "real-provider evaluator result has no ExternalEffect identity",
+            )
+        logical_ref = model_call_log_ref(
+            request.operation_id,
+            request.attempt_id,
+            NARRATIVE_EVALUATION_STAGE,
+            external_effect_id,
         )
         log = self.query.require(project_id=request.project_id, logical_ref=logical_ref)
         provider_evidence = log.content.get("provider_evidence")

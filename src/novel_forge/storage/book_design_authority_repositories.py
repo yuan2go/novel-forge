@@ -1,4 +1,5 @@
 """PostgreSQL write model for the Book + BookDesign Track B slice."""
+
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -9,12 +10,19 @@ from psycopg.types.json import Jsonb
 
 from novel_forge.modules.book_design_authority.domain import (
     BOOK_DESIGN_SCHEMA_VERSION,
+    EVOLUTION_BOOK_DESIGN_SCHEMA_VERSION,
     BookDesignPayload,
     BookScope,
     evidence_hash,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.story_design_authority import required_qualification_profiles
+
+
+_PROGRESSIVE_BOOK_DESIGN_SCHEMAS = {
+    BOOK_DESIGN_SCHEMA_VERSION,
+    EVOLUTION_BOOK_DESIGN_SCHEMA_VERSION,
+}
 
 
 class BookDesignAuthorityRepository:
@@ -34,9 +42,13 @@ class BookDesignAuthorityRepository:
         )
         row = self.cursor.fetchone()
         if row is None or row[0] != scope.project_id:
-            raise KernelError("BOOK_SCOPE_CONFLICT", "workspace does not belong to project")
+            raise KernelError(
+                "BOOK_SCOPE_CONFLICT", "workspace does not belong to project"
+            )
         if row[1] and row[1] != scope.book_id:
-            raise KernelError("BOOK_SCOPE_CONFLICT", "workspace is already bound to another book")
+            raise KernelError(
+                "BOOK_SCOPE_CONFLICT", "workspace is already bound to another book"
+            )
         self.cursor.execute(
             """
             INSERT INTO authority_book (
@@ -48,18 +60,34 @@ class BookDesignAuthorityRepository:
                       'DESIGN_PENDING', %s, %s, %s)
             """,
             [
-                scope.book_id, scope.project_id, scope.workspace_id, scope.principal,
+                scope.book_id,
+                scope.project_id,
+                scope.workspace_id,
+                scope.principal,
                 scope.service_identity,
-                Jsonb({"project_id": scope.project_id, "workspace_id": scope.workspace_id, "book_id": scope.book_id}),
-                Jsonb(scope.production_profile), Jsonb(scope.runtime_policy),
-                scope.release_identity, book_asset_version_id, operation_id, operation_id,
+                Jsonb(
+                    {
+                        "project_id": scope.project_id,
+                        "workspace_id": scope.workspace_id,
+                        "book_id": scope.book_id,
+                    }
+                ),
+                Jsonb(scope.production_profile),
+                Jsonb(scope.runtime_policy),
+                scope.release_identity,
+                book_asset_version_id,
+                operation_id,
+                operation_id,
             ],
         )
         self.cursor.execute(
             "UPDATE authority_workspace SET book_id = %s, updated_at = NOW() WHERE workspace_id = %s AND project_id = %s",
             [scope.book_id, scope.workspace_id, scope.project_id],
         )
-    def book_for_update(self, *, project_id: str, workspace_id: str, book_id: str) -> dict[str, Any]:
+
+    def book_for_update(
+        self, *, project_id: str, workspace_id: str, book_id: str
+    ) -> dict[str, Any]:
         self.cursor.execute(
             """
             SELECT book_id, project_id, workspace_id, version,
@@ -73,11 +101,17 @@ class BookDesignAuthorityRepository:
         )
         row = self.cursor.fetchone()
         if row is None:
-            raise KernelError("BOOK_NOT_FOUND", "Book authority root does not exist in scope")
+            raise KernelError(
+                "BOOK_NOT_FOUND", "Book authority root does not exist in scope"
+            )
         return {
-            "book_id": row[0], "project_id": row[1], "workspace_id": row[2],
-            "version": int(row[3]), "book_asset_version_id": row[4],
-            "current_design_asset_version_id": row[5], "status": row[6],
+            "book_id": row[0],
+            "project_id": row[1],
+            "workspace_id": row[2],
+            "version": int(row[3]),
+            "book_asset_version_id": row[4],
+            "current_design_asset_version_id": row[5],
+            "status": row[6],
         }
 
     def propose(
@@ -102,7 +136,9 @@ class BookDesignAuthorityRepository:
             [asset_id],
         )
         if self.cursor.fetchone() != (book["project_id"], "book_design"):
-            raise KernelError("BOOK_DESIGN_ASSET_CONFLICT", "BookDesign Asset identity has drifted")
+            raise KernelError(
+                "BOOK_DESIGN_ASSET_CONFLICT", "BookDesign Asset identity has drifted"
+            )
         self.cursor.execute(
             "SELECT COALESCE(MAX(version_number), 0) + 1 FROM authority_asset_version WHERE asset_id = %s",
             [asset_id],
@@ -113,12 +149,12 @@ class BookDesignAuthorityRepository:
         structurally_valid = True
         eligibility = (
             "ELIGIBLE"
-            if design.schema_version != BOOK_DESIGN_SCHEMA_VERSION
+            if design.schema_version not in _PROGRESSIVE_BOOK_DESIGN_SCHEMAS
             else "INELIGIBLE"
         )
         candidate_status = (
             "VALIDATED"
-            if design.schema_version != BOOK_DESIGN_SCHEMA_VERSION
+            if design.schema_version not in _PROGRESSIVE_BOOK_DESIGN_SCHEMAS
             else "EVALUATION_PENDING"
         )
         self.cursor.execute(
@@ -147,7 +183,7 @@ class BookDesignAuthorityRepository:
             "content_hash": design.content_hash,
             "semantic_evaluation_status": (
                 "NOT_REQUIRED_LEGACY"
-                if design.schema_version != BOOK_DESIGN_SCHEMA_VERSION
+                if design.schema_version not in _PROGRESSIVE_BOOK_DESIGN_SCHEMAS
                 else "EVALUATION_PENDING"
             ),
             "candidate_generation_does_not_evaluate_itself": True,
@@ -169,9 +205,17 @@ class BookDesignAuthorityRepository:
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """,
             [
-                f"candidate:{asset_version_id}", book["project_id"], book["workspace_id"],
-                book["book_id"], asset_id, asset_version_id, design.schema_version,
-                design.content_hash, candidate_status, operation_id, operation_id,
+                f"candidate:{asset_version_id}",
+                book["project_id"],
+                book["workspace_id"],
+                book["book_id"],
+                asset_id,
+                asset_version_id,
+                design.schema_version,
+                design.content_hash,
+                candidate_status,
+                operation_id,
+                operation_id,
             ],
         )
         self.cursor.execute(
@@ -182,8 +226,12 @@ class BookDesignAuthorityRepository:
             ) VALUES (%s, %s, %s, %s, %s, 'REQUIRED', %s)
             """,
             [
-                str(uuid4()), book["project_id"], book["book_id"], asset_version_id,
-                book["book_asset_version_id"], operation_id,
+                str(uuid4()),
+                book["project_id"],
+                book["book_id"],
+                asset_version_id,
+                book["book_asset_version_id"],
+                operation_id,
             ],
         )
         self.cursor.execute(
@@ -195,13 +243,22 @@ class BookDesignAuthorityRepository:
                       'book-design-validation.v3', %s, %s, %s)
             """,
             [
-                str(uuid4()), book["project_id"], book["book_id"], asset_version_id,
-                Jsonb(validation), evidence_hash(validation), operation_id,
+                str(uuid4()),
+                book["project_id"],
+                book["book_id"],
+                asset_version_id,
+                Jsonb(validation),
+                evidence_hash(validation),
+                operation_id,
             ],
         )
         self._bind_output(
-            operation_id=operation_id, asset_id=asset_id, asset_version_id=asset_version_id,
-            output_key="book_design.candidate", role="candidate", content_hash=design.content_hash,
+            operation_id=operation_id,
+            asset_id=asset_id,
+            asset_version_id=asset_version_id,
+            output_key="book_design.candidate",
+            role="candidate",
+            content_hash=design.content_hash,
         )
         return {
             "asset_id": asset_id,
@@ -220,7 +277,7 @@ class BookDesignAuthorityRepository:
         passed: bool,
     ) -> dict[str, str]:
         candidate = self._candidate_for_update(book, asset_version_id)
-        if candidate["schema_version"] != BOOK_DESIGN_SCHEMA_VERSION:
+        if candidate["schema_version"] not in _PROGRESSIVE_BOOK_DESIGN_SCHEMAS:
             raise KernelError(
                 "BOOK_DESIGN_EVALUATION_NOT_REQUIRED",
                 "legacy BookDesign candidates do not enter the independent evaluation path",
@@ -318,12 +375,17 @@ class BookDesignAuthorityRepository:
     ) -> str:
         candidate = self._candidate_for_update(book, asset_version_id)
         if candidate["status"] != "VALIDATED":
-            raise KernelError("BOOK_DESIGN_DECISION_CONFLICT", "only a validated candidate can be decided")
-        if candidate["schema_version"] == BOOK_DESIGN_SCHEMA_VERSION:
+            raise KernelError(
+                "BOOK_DESIGN_DECISION_CONFLICT",
+                "only a validated candidate can be decided",
+            )
+        if candidate["schema_version"] in _PROGRESSIVE_BOOK_DESIGN_SCHEMAS:
             self._require_progressive_qualification(book, asset_version_id)
         normalized = decision.strip().upper()
         if normalized not in {"APPROVE", "REJECT"}:
-            raise KernelError("BOOK_DESIGN_DECISION_INVALID", "decision must be APPROVE or REJECT")
+            raise KernelError(
+                "BOOK_DESIGN_DECISION_INVALID", "decision must be APPROVE or REJECT"
+            )
         decision_id = str(uuid4())
         self.cursor.execute(
             """
@@ -333,9 +395,21 @@ class BookDesignAuthorityRepository:
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
             """,
             [
-                decision_id, book["project_id"], book["book_id"], asset_version_id,
-                normalized, reason, decided_by, operation_id,
-                Jsonb({"schema_version": "asset-decision.v1", "decision": normalized, "reason": reason}),
+                decision_id,
+                book["project_id"],
+                book["book_id"],
+                asset_version_id,
+                normalized,
+                reason,
+                decided_by,
+                operation_id,
+                Jsonb(
+                    {
+                        "schema_version": "asset-decision.v1",
+                        "decision": normalized,
+                        "reason": reason,
+                    }
+                ),
             ],
         )
         self.cursor.execute(
@@ -344,7 +418,11 @@ class BookDesignAuthorityRepository:
             SET status = %s, last_operation_id = %s, updated_at = NOW()
             WHERE asset_version_id = %s
             """,
-            ["APPROVED" if normalized == "APPROVE" else "REJECTED", operation_id, asset_version_id],
+            [
+                "APPROVED" if normalized == "APPROVE" else "REJECTED",
+                operation_id,
+                asset_version_id,
+            ],
         )
         return decision_id
 
@@ -358,7 +436,10 @@ class BookDesignAuthorityRepository:
     ) -> dict[str, str]:
         candidate = self._candidate_for_update(book, asset_version_id)
         if candidate["status"] != "APPROVED":
-            raise KernelError("BOOK_DESIGN_ACTIVATION_CONFLICT", "only an approved candidate can activate")
+            raise KernelError(
+                "BOOK_DESIGN_ACTIVATION_CONFLICT",
+                "only an approved candidate can activate",
+            )
         self.cursor.execute(
             """
             SELECT decision_id FROM authority_asset_decision
@@ -369,7 +450,9 @@ class BookDesignAuthorityRepository:
         )
         row = self.cursor.fetchone()
         if row is None:
-            raise KernelError("BOOK_DESIGN_APPROVAL_MISSING", "approval decision is missing")
+            raise KernelError(
+                "BOOK_DESIGN_APPROVAL_MISSING", "approval decision is missing"
+            )
         decision_id = str(row[0])
         previous = str(book["current_design_asset_version_id"] or "")
         self.cursor.execute(
@@ -385,7 +468,10 @@ class BookDesignAuthorityRepository:
                 [previous],
             )
             if self.cursor.rowcount != 1:
-                raise KernelError("BOOK_DESIGN_SUPERSESSION_CONFLICT", "previous active version changed")
+                raise KernelError(
+                    "BOOK_DESIGN_SUPERSESSION_CONFLICT",
+                    "previous active version changed",
+                )
             self.cursor.execute(
                 "UPDATE authority_book_design_candidate SET status = 'SUPERSEDED', updated_at = NOW() WHERE asset_version_id = %s AND status = 'ACTIVE'",
                 [previous],
@@ -397,14 +483,24 @@ class BookDesignAuthorityRepository:
                     successor_asset_version_id, superseded_by_operation_id, reason
                 ) VALUES (%s, %s, %s, %s, %s, %s, %s)
                 """,
-                [str(uuid4()), book["project_id"], book["book_id"], previous, asset_version_id, operation_id, reason],
+                [
+                    str(uuid4()),
+                    book["project_id"],
+                    book["book_id"],
+                    previous,
+                    asset_version_id,
+                    operation_id,
+                    reason,
+                ],
             )
         self.cursor.execute(
             "UPDATE authority_asset_version SET lifecycle = 'ACTIVE' WHERE asset_version_id = %s AND lifecycle = 'CANDIDATE'",
             [asset_version_id],
         )
         if self.cursor.rowcount != 1:
-            raise KernelError("BOOK_DESIGN_ACTIVATION_CONFLICT", "candidate lifecycle changed")
+            raise KernelError(
+                "BOOK_DESIGN_ACTIVATION_CONFLICT", "candidate lifecycle changed"
+            )
         logical_ref = f"books/{book['book_id']}/design"
         self.cursor.execute(
             """
@@ -427,8 +523,14 @@ class BookDesignAuthorityRepository:
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, 1, %s)
             """,
             [
-                activation_id, book["project_id"], book["book_id"], candidate["asset_id"],
-                asset_version_id, decision_id, operation_id, reason,
+                activation_id,
+                book["project_id"],
+                book["book_id"],
+                candidate["asset_id"],
+                asset_version_id,
+                decision_id,
+                operation_id,
+                reason,
             ],
         )
         self.cursor.execute(
@@ -449,15 +551,22 @@ class BookDesignAuthorityRepository:
             [asset_version_id, operation_id, book["book_id"], book["version"]],
         )
         if self.cursor.rowcount != 1:
-            raise KernelError("BOOK_VERSION_CONFLICT", "Book projection changed during activation")
+            raise KernelError(
+                "BOOK_VERSION_CONFLICT", "Book projection changed during activation"
+            )
         self._bind_output(
-            operation_id=operation_id, asset_id=candidate["asset_id"],
-            asset_version_id=asset_version_id, output_key="book_design.active",
-            role="active", content_hash=candidate["content_hash"],
+            operation_id=operation_id,
+            asset_id=candidate["asset_id"],
+            asset_version_id=asset_version_id,
+            output_key="book_design.active",
+            role="active",
+            content_hash=candidate["content_hash"],
         )
         return {"activation_id": activation_id, "previous_asset_version_id": previous}
 
-    def _candidate_for_update(self, book: dict[str, Any], asset_version_id: str) -> dict[str, str]:
+    def _candidate_for_update(
+        self, book: dict[str, Any], asset_version_id: str
+    ) -> dict[str, str]:
         self.cursor.execute(
             """
             SELECT asset_id, asset_version_id, content_hash, status,
@@ -467,11 +576,18 @@ class BookDesignAuthorityRepository:
               AND asset_version_id = %s
             FOR UPDATE
             """,
-            [book["project_id"], book["workspace_id"], book["book_id"], asset_version_id],
+            [
+                book["project_id"],
+                book["workspace_id"],
+                book["book_id"],
+                asset_version_id,
+            ],
         )
         row = self.cursor.fetchone()
         if row is None:
-            raise KernelError("BOOK_DESIGN_CANDIDATE_NOT_FOUND", "candidate is outside Book scope")
+            raise KernelError(
+                "BOOK_DESIGN_CANDIDATE_NOT_FOUND", "candidate is outside Book scope"
+            )
         return {
             "asset_id": row[0],
             "asset_version_id": row[1],
@@ -504,7 +620,9 @@ class BookDesignAuthorityRepository:
             ORDER BY design_layer
             """,
             [
-                book["project_id"], book["book_id"], asset_version_id,
+                book["project_id"],
+                book["book_id"],
+                asset_version_id,
                 asset_version_id,
             ],
         )
@@ -527,8 +645,14 @@ class BookDesignAuthorityRepository:
                 )
 
     def _bind_output(
-        self, *, operation_id: str, asset_id: str, asset_version_id: str,
-        output_key: str, role: str, content_hash: str,
+        self,
+        *,
+        operation_id: str,
+        asset_id: str,
+        asset_version_id: str,
+        output_key: str,
+        role: str,
+        content_hash: str,
     ) -> None:
         self.cursor.execute(
             """

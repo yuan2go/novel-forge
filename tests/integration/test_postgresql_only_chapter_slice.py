@@ -78,6 +78,32 @@ class PostgreSQLOnlyChapterSliceTests(unittest.TestCase):
                     "premise": "The protagonist must pay a visible cost to keep a promise.",
                     "chapter_objective": "Force a public choice with an irreversible loss.",
                     "scene_sequence": [{"scene_id": "s1", "goal": "keep the promise"}],
+                    "required_arc_contributions": [
+                        {
+                            "arc_plan_version_id": f"{project_id}:fixture-arc-plan-v1",
+                            "contribution": "ADVANCE",
+                        }
+                    ],
+                    "constraint_envelope": {
+                        "arc_working_set": {
+                            "selected_contributions": [
+                                {
+                                    "arc_plan_version_id": f"{project_id}:fixture-arc-plan-v1",
+                                    "role": "PRIMARY",
+                                    "action": "ADVANCE",
+                                }
+                            ]
+                        }
+                    },
+                    "scene_plan": [
+                        {
+                            "scene_id": "s1",
+                            "goal": "keep the promise",
+                            "conflict": "safety requires breaking the promise",
+                            "arc_progress": [f"{project_id}:fixture-arc-plan-v1"],
+                            "beats": ["pressure", "choice", "visible cost"],
+                        }
+                    ],
                     "chapter_hook": "The loss creates a second debt.",
                 },
             },

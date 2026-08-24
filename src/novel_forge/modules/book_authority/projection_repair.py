@@ -159,11 +159,13 @@ class PostgresBookProjectionRepairAuthority:
             raise ValueError("repair worker identity and lease duration are required")
         self.worker_id = worker_id
         self.command_lease_seconds = command_lease_seconds
-        with AuthorityUnitOfWork(database_url) as uow:
+
+    def _register_definition(self) -> None:
+        with AuthorityUnitOfWork(self.database_url) as uow:
             uow.repositories.definitions.register(
                 book_projection_repair_definition(
-                    application_build_id=application_build_id,
-                    commit_sha=commit_sha,
+                    application_build_id=self.application_build_id,
+                    commit_sha=self.commit_sha,
                 )
             )
             uow.commit()
@@ -216,6 +218,7 @@ class PostgresBookProjectionRepairAuthority:
         actor_id: str,
         maximum_chapters: int = 4,
     ) -> ProjectionRepairBatchResult:
+        self._register_definition()
         if (
             claim.job_kind != "BOOK_PROJECTION_REPAIR"
             or claim.runtime_group != "book_repair"

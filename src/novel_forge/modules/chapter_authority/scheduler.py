@@ -838,6 +838,7 @@ class ChapterAuthorityScheduler:
             [
                 common[ChapterNode.PLAN],
                 best_ref,
+                revision_ref,
                 rereview_ref,
                 canon_ref,
                 common[ChapterNode.CONTEXT],

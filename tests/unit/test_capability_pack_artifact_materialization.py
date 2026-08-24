@@ -350,9 +350,7 @@ def test_codex_prompt_projects_governed_context_once_without_runtime_evidence() 
                     "asset_version_id": "plan:v1",
                     "asset_type": "chapter_plan",
                     "safe_summary": "SEMANTIC-CONTEXT-ONCE",
-                    "structured_facts": [
-                        {"kind": "objective", "value": "investigate"}
-                    ],
+                    "structured_facts": [{"kind": "objective", "value": "investigate"}],
                     "content_digest": HASH,
                     "allowed_use": "generation",
                 }
@@ -413,6 +411,36 @@ def test_quality_prompt_uses_budgeted_quality_view_not_full_context_bundle() -> 
             {"safe_summary": "GENERIC-CONTEXT-MUST-NOT-RENDER-FOR-QUALITY"}
         ],
     }
+    prompt, _ = _materialize_chapter_codex_prompt(
+        request=request,
+        stage="quality_longform",
+        inputs={
+            "revision": {"text": "The revised chapter."},
+            "quality_context": {
+                "type": "LongformQualityContextView",
+                "revision_text": "The revised chapter.",
+                "previous_state_snapshots": {
+                    "canon_snapshot": {
+                        "ledger": [{"structured_facts": ["QUALITY-SEMANTIC-STATE"]}]
+                    }
+                },
+                "token_budget": 28_000,
+                "coverage_report": {"critical_facts_preserved": True},
+            },
+            "dimensions": ["canon_consistency"],
+        },
+        materialization=_prompt_materialization(context),
+    )
+
+    assert "QUALITY-SEMANTIC-STATE" in prompt
+    assert "GENERIC-CONTEXT-MUST-NOT-RENDER-FOR-QUALITY" not in prompt
+
+
+def test_reader_outcome_prompt_projects_semantics_without_authority_lineage() -> None:
+    *_, request = contracts(
+        backend_id="codex-cli",
+        runtime=ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE,
+    )
     context = {
         "schema_version": "novelos.reader_outcome_context_bundle.v2",
         "selected_inputs": [
@@ -457,36 +485,6 @@ def test_quality_prompt_uses_budgeted_quality_view_not_full_context_bundle() -> 
             },
         ],
     }
-    prompt, _ = _materialize_chapter_codex_prompt(
-        request=request,
-        stage="quality_longform",
-        inputs={
-            "revision": {"text": "The revised chapter."},
-            "quality_context": {
-                "type": "LongformQualityContextView",
-                "revision_text": "The revised chapter.",
-                "previous_state_snapshots": {
-                    "canon_snapshot": {
-                        "ledger": [{"structured_facts": ["QUALITY-SEMANTIC-STATE"]}]
-                    }
-                },
-                "token_budget": 28_000,
-                "coverage_report": {"critical_facts_preserved": True},
-            },
-            "dimensions": ["canon_consistency"],
-        },
-        materialization=_prompt_materialization(context),
-    )
-
-    assert "QUALITY-SEMANTIC-STATE" in prompt
-    assert "GENERIC-CONTEXT-MUST-NOT-RENDER-FOR-QUALITY" not in prompt
-
-
-def test_reader_outcome_prompt_projects_semantics_without_authority_lineage() -> None:
-    *_, request = contracts(
-        backend_id="codex-cli",
-        runtime=ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE,
-    )
     prompt, _ = _materialize_chapter_codex_prompt(
         request=request,
         stage="reader_outcome",
@@ -539,9 +537,7 @@ def _prompt_materialization(context: dict[str, object]) -> dict[str, object]:
                 "content": {"text": "Skill body."},
             },
         },
-        "context_selection": [
-            {"asset_version_id": "context:v1", "content": context}
-        ],
+        "context_selection": [{"asset_version_id": "context:v1", "content": context}],
         "knowledge_selection": [
             {"content_hash": HASH, "content": {"rules": ["causal cost"]}}
         ],

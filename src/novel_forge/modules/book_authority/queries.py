@@ -111,7 +111,27 @@ class PostgresBookProductionQuery:
                              AND job.subject_id=book.book_run_id
                        ), 0) AS previous_tick_count
                 FROM authority_book_production AS book
-                WHERE book.state = ANY(%s)
+                WHERE (
+                      book.state = ANY(%s)
+                      OR (
+                          book.state='CHECKPOINT_PENDING'
+                          AND EXISTS (
+                              SELECT 1
+                              FROM authority_book_chapter_acceptance AS acceptance
+                              WHERE acceptance.book_run_id=book.book_run_id
+                                AND acceptance.chapter_number=
+                                    book.accepted_through_chapter
+                                AND acceptance.status='COMMITTED'
+                                AND NOT EXISTS (
+                                    SELECT 1
+                                    FROM authority_book_volume_checkpoint AS checkpoint
+                                    WHERE checkpoint.book_run_id=book.book_run_id
+                                      AND checkpoint.accepted_through_chapter=
+                                          acceptance.chapter_number
+                                )
+                          )
+                      )
+                  )
                   AND (%s='' OR book.book_run_id=%s)
                   AND NOT EXISTS (
                       SELECT 1
@@ -496,9 +516,7 @@ class PostgresBookProductionQuery:
 
         if limit <= 0:
             raise ValueError("follow-up admission candidate limit must be positive")
-        projects = tuple(
-            dict.fromkeys(str(item) for item in project_ids if str(item))
-        )
+        projects = tuple(dict.fromkeys(str(item) for item in project_ids if str(item)))
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """

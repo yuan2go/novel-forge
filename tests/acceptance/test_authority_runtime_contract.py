@@ -46,6 +46,6 @@ def test_chapter_saga_contract_remains_closed_without_claiming_runtime_proof() -
     assert [item["definition_name"] for item in children] == [
         node.definition_name for node in ChapterNode
     ]
-    assert len(children) == 18
+    assert len(children) == 22
     assert definition["evidence_status"]["integration_proven"] is False
     assert definition["evidence_status"]["real_provider_proven"] is False

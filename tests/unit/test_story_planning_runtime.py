@@ -34,6 +34,7 @@ from novel_forge.modules.story_planning_runtime import (
 )
 from novel_forge.modules.story_planning_runtime.execution import (
     PLANNING_EXTERNAL_EFFECT_MAX_ATTEMPTS,
+    _recent_activated_repetition_keys,
     _realization_reference_contract,
     planning_fixture_response as _planning_fixture_response,
     planning_provider_output_schema,
@@ -46,6 +47,28 @@ from novel_forge.modules.story_planning_runtime.application import (
 
 
 HASH = "sha256:" + "a" * 64
+
+
+def test_repetition_debt_ignores_unselected_search_branches() -> None:
+    assert _recent_activated_repetition_keys(
+        (
+            {
+                "repetition_key": "unselected-branch",
+                "plan_binding_id": "",
+                "plan_freshness": "",
+            },
+            {
+                "repetition_key": "stale-plan",
+                "plan_binding_id": "binding:stale",
+                "plan_freshness": "STALE",
+            },
+            {
+                "repetition_key": "selected-plan",
+                "plan_binding_id": "binding:current",
+                "plan_freshness": "CURRENT",
+            },
+        )
+    ) == ("selected-plan",)
 
 
 def test_story_design_transition_idempotency_is_scoped_to_expected_version() -> None:
@@ -270,19 +293,19 @@ def test_planning_provider_schema_is_codex_strict(
         "input:b",
     ]
     world = schema["properties"]["world_realization"]["items"]["properties"]
-    character = schema["properties"]["character_realization"]["items"][
-        "properties"
-    ]
+    character = schema["properties"]["character_realization"]["items"]["properties"]
     assert world["invariant_refs"]["items"]["properties"]["domain_type"] == {
         "type": "string",
         "const": "WORLD_INVARIANT",
     }
-    assert "world_invariant" not in world["invariant_refs"]["items"][
-        "properties"
-    ]["authority_role"]["enum"]
-    assert "book_design" not in character["state_ref"]["properties"][
-        "authority_role"
-    ]["enum"]
+    assert (
+        "world_invariant"
+        not in world["invariant_refs"]["items"]["properties"]["authority_role"]["enum"]
+    )
+    assert (
+        "book_design"
+        not in character["state_ref"]["properties"]["authority_role"]["enum"]
+    )
     if contract_type not in {PlanContractType.BOOK, PlanContractType.ARC}:
         assert schema["properties"]["parent_version_id"]["const"] == "parent:v1"
     if contract_type is PlanContractType.ARC:
@@ -339,16 +362,16 @@ def test_planning_provider_schema_is_codex_strict(
         assert schema["properties"]["required_state_transitions"]["maxItems"] == 8
 
 
-def test_realization_reference_contract_exposes_exact_frozen_authority_choices() -> None:
+def test_realization_reference_contract_exposes_exact_frozen_authority_choices() -> (
+    None
+):
     contract = _realization_reference_contract(
         project_id="project-1",
         book_id="book-1",
         frozen_by_operation_id="operation:planning",
         inputs=(
             FrozenPlanningInput("world_bible", "world:v1", HASH, "world_bible"),
-            FrozenPlanningInput(
-                "character_cast", "cast:v1", HASH, "character_cast"
-            ),
+            FrozenPlanningInput("character_cast", "cast:v1", HASH, "character_cast"),
         ),
     )
 
@@ -406,12 +429,15 @@ def test_volume_and_chapter_provider_contracts_bind_timeline_segments() -> None:
         assert field in group["required"]
     assert group["properties"]["primary_arc_ids"]["items"]["const"] == "arc:v1"
     assert group["properties"]["secondary_arc_ids"]["maxItems"] == 1
-    assert group["properties"]["required_arc_contributions"]["items"][
-        "const"
-    ] == "arc:v1"
-    assert group["properties"]["arc_checkpoint_expectations"]["items"][
-        "properties"
-    ]["arc_plan_version_id"]["const"] == "arc:v1"
+    assert (
+        group["properties"]["required_arc_contributions"]["items"]["const"] == "arc:v1"
+    )
+    assert (
+        group["properties"]["arc_checkpoint_expectations"]["items"]["properties"][
+            "arc_plan_version_id"
+        ]["const"]
+        == "arc:v1"
+    )
     for field in (
         "chapter_intent",
         "arc_schedule",
@@ -745,6 +771,7 @@ def test_overdue_identity_requires_action_even_within_numeric_allowance() -> Non
         content=content,
     )
 
+
 def test_chapter_provider_contract_accepts_only_the_frozen_arc_portfolio() -> None:
     schema = planning_provider_output_schema(
         PlanContractType.CHAPTER,
@@ -758,9 +785,9 @@ def test_chapter_provider_contract_accepts_only_the_frozen_arc_portfolio() -> No
         "arc_plan_version_id"
     ]["enum"] == ["arc:v1", "arc:v2", "arc:v3"]
     assert schema["properties"]["required_arc_contributions"]["maxItems"] == 3
-    assert schema["properties"]["scene_plan"]["items"]["properties"][
-        "arc_progress"
-    ]["items"]["enum"] == ["arc:v1", "arc:v2", "arc:v3"]
+    assert schema["properties"]["scene_plan"]["items"]["properties"]["arc_progress"][
+        "items"
+    ]["enum"] == ["arc:v1", "arc:v2", "arc:v3"]
 
 
 def test_chapter_group_contract_rejects_non_pair_range_as_governed_error() -> None:
@@ -1355,9 +1382,9 @@ def test_book_contract_accepts_window_for_declared_story_truth() -> None:
         content=content,
     )
 
-    assert contract.content["knowledge_disclosure_obligations"][
-        "story_truth_ids"
-    ] == ["truth:revision-traces"]
+    assert contract.content["knowledge_disclosure_obligations"]["story_truth_ids"] == [
+        "truth:revision-traces"
+    ]
 
 
 def test_volume_contract_rejects_gapped_narrative_segments() -> None:

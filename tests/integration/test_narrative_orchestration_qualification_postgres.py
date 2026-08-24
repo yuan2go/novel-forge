@@ -153,17 +153,23 @@ def _qualification_planning_response(
         versions = dict(command.get("input_versions") or {})
         arc_truth = str(versions["arc_plans"])
         related = tuple(str(item) for item in command["related_arc_plan_version_ids"])
-        arc_obligation, arc_countermove = related
+        if not related:
+            raise AssertionError("qualification ChapterGroup requires a related Arc")
+        cadence = (
+            [
+                {"arc_plan_version_id": related[1], "action": "ADVANCE"},
+                {"arc_plan_version_id": arc_truth, "action": "TOUCH"},
+                {"arc_plan_version_id": related[0], "action": "DORMANT"},
+            ]
+            if len(related) == 2
+            else [
+                {"arc_plan_version_id": related[0], "action": "ADVANCE"},
+                {"arc_plan_version_id": arc_truth, "action": "TOUCH"},
+            ]
+        )
         for row in payload["chapter_function_matrix"]:
             row["narrative_density"] = "MEDIUM"
-            row["arc_cadence"] = [
-                {
-                    "arc_plan_version_id": arc_countermove,
-                    "action": "ADVANCE",
-                },
-                {"arc_plan_version_id": arc_truth, "action": "TOUCH"},
-                {"arc_plan_version_id": arc_obligation, "action": "DORMANT"},
-            ]
+            row["arc_cadence"] = cadence
     elif stage == "chapter_plan.generate":
         # The Group row owns the density ceiling.  The Chapter candidate may
         # refine Arc contributions through the governed Working Set, but must
@@ -1171,10 +1177,21 @@ def test_accepted_reality_closes_three_chapter_orchestration_loop(
         )
         assert chapter_three_active_plan is not None
         chapter_three_plan_version = str(chapter_three_active_plan["asset_version_id"])
+        chapter_three_active_group = composition.query.active_plan_covering_chapter(
+            project_id=project_id,
+            book_id=book_id,
+            contract_type="CHAPTER_GROUP",
+            chapter_number=3,
+        )
+        assert chapter_three_active_group is not None
+        chapter_three_group_version = str(
+            chapter_three_active_group["asset_version_id"]
+        )
+        assert chapter_three_group_version != activated["group"]
         valid_three_admission = composition.query.require_chapter_production_admission(
             book_run_id=admission.book_run_id,
             snapshot_id=snapshot.snapshot_id,
-            chapter_group_plan_version_id=activated["group"],
+            chapter_group_plan_version_id=chapter_three_group_version,
             chapter_plan_version_id=chapter_three_plan_version,
             chapter_number=3,
             accepted_through_chapter=2,
@@ -1185,10 +1202,22 @@ def test_accepted_reality_closes_three_chapter_orchestration_loop(
                 pre_dispatch_book["active_canon_snapshot_version_id"]
             ),
         )
+        chapter_three_frozen_working_set = dict(
+            chapter_three_active_plan["content"]["constraint_envelope"][
+                "arc_working_set"
+            ]
+        )
         assert (
             valid_three_admission["arc_working_set_digest"]
-            == working_sets[3]["working_set_digest"]
+            == chapter_three_frozen_working_set["working_set_digest"]
         )
+        assert {
+            item["arc_plan_version_id"]
+            for item in chapter_three_frozen_working_set["selected_contributions"]
+        } == {
+            item["arc_plan_version_id"]
+            for item in working_sets[3]["selected_contributions"]
+        }
         with pytest.raises(CheckViolation, match="content is immutable"):
             with transaction() as connection, connection.cursor() as cursor:
                 cursor.execute(
@@ -1362,11 +1391,19 @@ def test_accepted_reality_closes_three_chapter_orchestration_loop(
             preparation = dict(command_payload["preparation_report"])
             chapter_admission = dict(preparation["chapter_production_admission"])
             assert chapter_admission["admission"] == "CHAPTER_PRODUCTION_ADMITTED"
-            expected = working_sets[int(chapter_number)]["working_set_digest"]
-            assert chapter_admission["arc_working_set_digest"] == expected
             plan_version, plan_hash, plan = artifacts_by_chapter[int(chapter_number)][
                 "chapter.plan"
             ]
+            frozen_working_set = dict(plan["constraint_envelope"]["arc_working_set"])
+            expected = frozen_working_set["working_set_digest"]
+            assert chapter_admission["arc_working_set_digest"] == expected
+            assert {
+                str(item["arc_plan_version_id"])
+                for item in frozen_working_set["selected_contributions"]
+            } == {
+                str(item["arc_plan_version_id"])
+                for item in working_sets[int(chapter_number)]["selected_contributions"]
+            }
             intent_version, _intent_hash, intent = artifacts_by_chapter[
                 int(chapter_number)
             ]["chapter.execution_intent"]
@@ -1416,7 +1453,7 @@ def test_accepted_reality_closes_three_chapter_orchestration_loop(
             }.issubset(mission)
             expected_arc_ids = {
                 str(item["arc_plan_version_id"])
-                for item in working_sets[int(chapter_number)]["selected_contributions"]
+                for item in frozen_working_set["selected_contributions"]
             }
             assert {
                 str(item["arc_plan_version_id"])
@@ -1460,38 +1497,44 @@ def test_accepted_reality_closes_three_chapter_orchestration_loop(
                 context["chapter_execution"]["memo_fingerprint"]
                 == memo["memo_fingerprint"]
             )
-        assert len(intelligence_usage) == 1
-        intelligence_context = dict(intelligence_usage[0][0])
-        intelligence_candidate = dict(intelligence_usage[0][1])
-        assert (
-            intelligence_context["narrative_intelligence"]["authority_boundary"][
-                "semantic_role"
-            ]
-            == "POSSIBILITY_ONLY"
-        )
-        assert (
-            intelligence_candidate["execution_evidence"]["fixture_protocol_only"]
-            is True
-        )
-        assert intelligence_usage[0][2]
-        provider_task_view = dict(intelligence_usage[0][3])
-        assert (
-            provider_task_view["input"]["narrative_intelligence"]["selected"][0][
-                "knowledge_card_asset_version_id"
-            ]
-            == narrative_card_version
-        )
-        assert str(intelligence_usage[0][4]) == "SUCCEEDED"
-        assert intelligence_usage[0][5]
+        assert len(intelligence_usage) == 3
+        assert sum(bool(row[2]) for row in intelligence_usage) == 1
+        for usage in intelligence_usage:
+            intelligence_context = dict(usage[0])
+            intelligence_candidate = dict(usage[1])
+            assert (
+                intelligence_context["narrative_intelligence"]["authority_boundary"][
+                    "semantic_role"
+                ]
+                == "POSSIBILITY_ONLY"
+            )
+            assert (
+                intelligence_candidate["execution_evidence"]["fixture_protocol_only"]
+                is True
+            )
+            provider_task_view = dict(usage[3])
+            assert (
+                provider_task_view["input"]["narrative_intelligence"]["selected"][0][
+                    "knowledge_card_asset_version_id"
+                ]
+                == narrative_card_version
+            )
+            assert str(usage[4]) == "SUCCEEDED"
+            assert usage[5]
         traced_usage = MkaosAuthorityQuery(DATABASE_URL).list_planning_usage(
             project_id=project_id, book_id=book_id
         )
-        assert len(traced_usage) == 1
-        assert traced_usage[0]["knowledge_card_asset_version_id"] == (
-            narrative_card_version
-        )
-        assert traced_usage[0]["consumption_status"] == "FIXTURE_PROTOCOL_USED"
-        assert traced_usage[0]["plan_binding_id"]
-        assert traced_usage[0]["plan_execution_scope"] == "FROZEN"
-        assert traced_usage[0]["plan_freshness"] == "CURRENT"
+        matching_usage = [
+            item
+            for item in traced_usage
+            if item["knowledge_card_asset_version_id"] == narrative_card_version
+        ]
+        assert len(matching_usage) == 3
+        assert {item["consumption_status"] for item in matching_usage} == {
+            "FIXTURE_PROTOCOL_USED"
+        }
+        bound_usage = [item for item in matching_usage if item["plan_binding_id"]]
+        assert len(bound_usage) == 1
+        assert bound_usage[0]["plan_execution_scope"] == "FROZEN"
+        assert bound_usage[0]["plan_freshness"] == "CURRENT"
         execution.close()

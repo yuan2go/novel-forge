@@ -708,6 +708,23 @@ class _ContextHandler:
             "quality_rubric",
             "platform_profile",
         }
+        # These inputs are not prose-generation context, but once Preparation
+        # freezes them the downstream Quality/Publish nodes must consume the
+        # exact evidence.  Protect them from draft-oriented token eviction;
+        # Context rendering still keeps every one evidence-only.
+        quality_evidence_types = {
+            "operator_checklist",
+            "operator_approval",
+            "approval_decision",
+            "structural_quality_report",
+            "commercial_quality_report",
+            "source_originality_quality_report",
+            "longform_quality_report",
+            "platform_quality_report",
+        }
+        required_candidate_types.update(
+            quality_evidence_types & available_candidate_types
+        )
         if int(plan.content["chapter"]) > 1:
             required_candidate_types.update(CONTINUING_CHAPTER_REQUIRED_ASSET_TYPES)
         bundle = build_context_bundle(

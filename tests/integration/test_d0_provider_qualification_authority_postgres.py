@@ -84,7 +84,9 @@ class D0ProviderQualificationAuthorityPostgresTests(unittest.TestCase):
         ).run_or_recover(operation_id=admitted["operation_id"], project_id=project_id)
 
         self.assertEqual(result["status"], "BLOCKED_MISSING_CREDENTIALS")
-        self.assertEqual(replay["report_asset_version_id"], result["report_asset_version_id"])
+        self.assertEqual(
+            replay["report_asset_version_id"], result["report_asset_version_id"]
+        )
         self.assertTrue(replay["replayed"])
         self.assertEqual(len(store.objects), 2)
         self.assertEqual(restarted_store.objects, {})
@@ -106,7 +108,10 @@ class D0ProviderQualificationAuthorityPostgresTests(unittest.TestCase):
                 [result["operation_id"]],
             )
             row = cursor.fetchone()
-            self.assertEqual(row, ("WAITING_GATE", 1, 3, 1))
+            # The fixture protocol persists both the synchronous basic receipt and
+            # the reconciled unknown-after-send receipt. The cancelled probe has
+            # no provider receipt, so replay must preserve exactly two receipts.
+            self.assertEqual(row, ("WAITING_GATE", 1, 3, 2))
             cursor.execute(
                 """
                 SELECT run.fixture_protocol_only, run.decision, run.sdk_max_retries,

@@ -1,16 +1,19 @@
 """Strongly typed Book and BookDesign contracts for the Track B slice."""
+
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field as dataclass_field
 import hashlib
 import json
 from typing import Any, Mapping
 
 from novel_forge.modules.command_kernel.errors import KernelError
+
 BOOK_SCHEMA_VERSION = "book-authority.v1"
 LEGACY_BOOK_DESIGN_SCHEMA_VERSION = "book-design.v1"
 COUPLED_BOOK_DESIGN_SCHEMA_VERSION = "book-design.v2"
 BOOK_DESIGN_SCHEMA_VERSION = "book-design.v3"
+EVOLUTION_BOOK_DESIGN_SCHEMA_VERSION = "book-design.v4"
 
 
 def _required_string(value: Any, field: str) -> str:
@@ -54,21 +57,34 @@ class BookScope:
     ) -> "BookScope":
         _strict_keys(
             payload,
-            {"schema_version", "title", "production_profile", "runtime_policy", "release_identity"},
+            {
+                "schema_version",
+                "title",
+                "production_profile",
+                "runtime_policy",
+                "release_identity",
+            },
             "Book",
         )
         schema_version = str(payload.get("schema_version") or BOOK_SCHEMA_VERSION)
         if schema_version != BOOK_SCHEMA_VERSION:
-            raise KernelError("BOOK_SCHEMA_UNSUPPORTED", f"unsupported Book schema: {schema_version}")
+            raise KernelError(
+                "BOOK_SCHEMA_UNSUPPORTED", f"unsupported Book schema: {schema_version}"
+            )
         production_profile = payload.get("production_profile")
         runtime_policy = payload.get("runtime_policy")
-        if not isinstance(production_profile, dict) or not isinstance(runtime_policy, dict):
+        if not isinstance(production_profile, dict) or not isinstance(
+            runtime_policy, dict
+        ):
             raise KernelError(
-                "BOOK_SCOPE_INVALID", "production_profile and runtime_policy must be objects"
+                "BOOK_SCOPE_INVALID",
+                "production_profile and runtime_policy must be objects",
             )
         for field, value in (
-            ("project_id", project_id), ("workspace_id", workspace_id),
-            ("book_id", book_id), ("principal", principal),
+            ("project_id", project_id),
+            ("workspace_id", workspace_id),
+            ("book_id", book_id),
+            ("principal", principal),
             ("service_identity", service_identity),
         ):
             _required_string(value, field)
@@ -80,16 +96,22 @@ class BookScope:
             service_identity=service_identity,
             production_profile=dict(production_profile),
             runtime_policy=dict(runtime_policy),
-            release_identity=_required_string(payload.get("release_identity"), "release_identity"),
+            release_identity=_required_string(
+                payload.get("release_identity"), "release_identity"
+            ),
             schema_version=schema_version,
         )
 
     def content(self, *, title: str) -> dict[str, Any]:
-        return {**asdict(self), "title": _required_string(title, "title"), "book_scope": {
-            "project_id": self.project_id,
-            "workspace_id": self.workspace_id,
-            "book_id": self.book_id,
-        }}
+        return {
+            **asdict(self),
+            "title": _required_string(title, "title"),
+            "book_scope": {
+                "project_id": self.project_id,
+                "workspace_id": self.workspace_id,
+                "book_id": self.book_id,
+            },
+        }
 
 
 @dataclass(frozen=True, slots=True)
@@ -106,7 +128,12 @@ class ProtagonistDesign:
             raise KernelError("BOOK_DESIGN_INVALID", "protagonist must be an object")
         allowed = {"name", "external_goal", "internal_need", "flaw", "arc"}
         _strict_keys(payload, allowed, "protagonist")
-        return cls(**{field: _required_string(payload.get(field), f"protagonist.{field}") for field in allowed})
+        return cls(
+            **{
+                field: _required_string(payload.get(field), f"protagonist.{field}")
+                for field in allowed
+            }
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -124,20 +151,39 @@ class BookDesignPayload:
     core_characters: tuple[dict[str, str], ...]
     opposition_forces: tuple[dict[str, str], ...]
     narrative_dna: dict[str, str]
+    creative_foundation: dict[str, str] = dataclass_field(default_factory=dict)
+    world_system: tuple[dict[str, str], ...] = ()
+    character_system: tuple[dict[str, str], ...] = ()
     schema_version: str = BOOK_DESIGN_SCHEMA_VERSION
 
     @classmethod
     def from_mapping(cls, payload: Mapping[str, Any]) -> "BookDesignPayload":
         if not isinstance(payload, Mapping):
-            raise KernelError("BOOK_DESIGN_INVALID", "BookDesign payload must be an object")
+            raise KernelError(
+                "BOOK_DESIGN_INVALID", "BookDesign payload must be an object"
+            )
         base_fields = {
-            "schema_version", "title", "genre", "premise", "theme", "core_conflict",
-            "reader_promise", "ending", "protagonist", "world_rules", "target_chapters",
+            "schema_version",
+            "title",
+            "genre",
+            "premise",
+            "theme",
+            "core_conflict",
+            "reader_promise",
+            "ending",
+            "protagonist",
+            "world_rules",
+            "target_chapters",
         }
         progressive_fields = {
             "core_characters",
             "opposition_forces",
             "narrative_dna",
+        }
+        evolution_fields = {
+            "creative_foundation",
+            "world_system",
+            "character_system",
         }
         schema_version = str(payload.get("schema_version") or "")
         if schema_version == COUPLED_BOOK_DESIGN_SCHEMA_VERSION:
@@ -146,13 +192,21 @@ class BookDesignPayload:
                 "new BookDesign candidates cannot carry generator-owned qualification",
             )
         allowed = (
-            base_fields | progressive_fields
-            if schema_version == BOOK_DESIGN_SCHEMA_VERSION
+            base_fields
+            | progressive_fields
+            | (
+                evolution_fields
+                if schema_version == EVOLUTION_BOOK_DESIGN_SCHEMA_VERSION
+                else set()
+            )
+            if schema_version
+            in {BOOK_DESIGN_SCHEMA_VERSION, EVOLUTION_BOOK_DESIGN_SCHEMA_VERSION}
             else base_fields
         )
         _strict_keys(payload, allowed, "BookDesign")
         if schema_version not in {
             BOOK_DESIGN_SCHEMA_VERSION,
+            EVOLUTION_BOOK_DESIGN_SCHEMA_VERSION,
             LEGACY_BOOK_DESIGN_SCHEMA_VERSION,
         }:
             raise KernelError(
@@ -161,17 +215,33 @@ class BookDesignPayload:
             )
         rules = payload.get("world_rules")
         if not isinstance(rules, list) or not rules:
-            raise KernelError("BOOK_DESIGN_INVALID", "world_rules must be a non-empty list")
-        normalized_rules = tuple(_required_string(rule, "world_rules[]") for rule in rules)
+            raise KernelError(
+                "BOOK_DESIGN_INVALID", "world_rules must be a non-empty list"
+            )
+        normalized_rules = tuple(
+            _required_string(rule, "world_rules[]") for rule in rules
+        )
         if len(set(normalized_rules)) != len(normalized_rules):
             raise KernelError("BOOK_DESIGN_INVALID", "world_rules must be unique")
         target_chapters = payload.get("target_chapters")
-        if not isinstance(target_chapters, int) or isinstance(target_chapters, bool) or target_chapters < 3:
-            raise KernelError("BOOK_DESIGN_INVALID", "target_chapters must be an integer >= 3")
+        if (
+            not isinstance(target_chapters, int)
+            or isinstance(target_chapters, bool)
+            or target_chapters < 3
+        ):
+            raise KernelError(
+                "BOOK_DESIGN_INVALID", "target_chapters must be an integer >= 3"
+            )
         core_characters: tuple[dict[str, str], ...] = ()
         opposition_forces: tuple[dict[str, str], ...] = ()
         narrative_dna: dict[str, str] = {}
-        if schema_version == BOOK_DESIGN_SCHEMA_VERSION:
+        creative_foundation: dict[str, str] = {}
+        world_system: tuple[dict[str, str], ...] = ()
+        character_system: tuple[dict[str, str], ...] = ()
+        if schema_version in {
+            BOOK_DESIGN_SCHEMA_VERSION,
+            EVOLUTION_BOOK_DESIGN_SCHEMA_VERSION,
+        }:
             core_characters = _typed_records(
                 payload.get("core_characters"),
                 "core_characters",
@@ -211,13 +281,79 @@ class BookDesignPayload:
                 field: _required_string(dna_value.get(field), f"narrative_dna.{field}")
                 for field in sorted(dna_fields)
             }
+        if schema_version == EVOLUTION_BOOK_DESIGN_SCHEMA_VERSION:
+            foundation_value = payload.get("creative_foundation")
+            foundation_fields = {
+                "target_reader",
+                "why_worth_writing",
+                "subgenre",
+                "core_desire",
+                "core_fear",
+                "narrative_engine",
+                "differentiation",
+                "emotional_contract",
+                "serialization_potential",
+                "thematic_question",
+                "ending_direction",
+            }
+            if not isinstance(foundation_value, Mapping):
+                raise KernelError(
+                    "BOOK_DESIGN_INVALID", "creative_foundation must be an object"
+                )
+            _strict_keys(foundation_value, foundation_fields, "creative_foundation")
+            creative_foundation = {
+                name: _required_string(
+                    foundation_value.get(name), f"creative_foundation.{name}"
+                )
+                for name in sorted(foundation_fields)
+            }
+            world_system = _typed_records(
+                payload.get("world_system"),
+                "world_system",
+                (
+                    "rule_id",
+                    "rule",
+                    "cost",
+                    "exception",
+                    "consequence",
+                    "conflict_potential",
+                    "narrative_function",
+                ),
+            )
+            character_system = _typed_records(
+                payload.get("character_system"),
+                "character_system",
+                (
+                    "character_id",
+                    "name",
+                    "role",
+                    "desire",
+                    "need",
+                    "fear",
+                    "wound",
+                    "false_belief",
+                    "values",
+                    "moral_boundary",
+                    "agency",
+                    "capability",
+                    "weakness",
+                    "voice",
+                    "secret",
+                    "relationship_function",
+                    "arc_direction",
+                ),
+            )
         return cls(
             title=_required_string(payload.get("title"), "title"),
             genre=_required_string(payload.get("genre"), "genre"),
             premise=_required_string(payload.get("premise"), "premise"),
             theme=_required_string(payload.get("theme"), "theme"),
-            core_conflict=_required_string(payload.get("core_conflict"), "core_conflict"),
-            reader_promise=_required_string(payload.get("reader_promise"), "reader_promise"),
+            core_conflict=_required_string(
+                payload.get("core_conflict"), "core_conflict"
+            ),
+            reader_promise=_required_string(
+                payload.get("reader_promise"), "reader_promise"
+            ),
             ending=_required_string(payload.get("ending"), "ending"),
             protagonist=ProtagonistDesign.from_mapping(payload.get("protagonist")),
             world_rules=normalized_rules,
@@ -225,6 +361,9 @@ class BookDesignPayload:
             core_characters=core_characters,
             opposition_forces=opposition_forces,
             narrative_dna=narrative_dna,
+            creative_foundation=creative_foundation,
+            world_system=world_system,
+            character_system=character_system,
             schema_version=schema_version,
         )
 
@@ -233,12 +372,20 @@ class BookDesignPayload:
         payload["world_rules"] = list(self.world_rules)
         payload["core_characters"] = [dict(item) for item in self.core_characters]
         payload["opposition_forces"] = [dict(item) for item in self.opposition_forces]
+        payload["world_system"] = [dict(item) for item in self.world_system]
+        payload["character_system"] = [dict(item) for item in self.character_system]
         if self.schema_version == LEGACY_BOOK_DESIGN_SCHEMA_VERSION:
             for field in (
                 "core_characters",
                 "opposition_forces",
                 "narrative_dna",
+                "creative_foundation",
+                "world_system",
+                "character_system",
             ):
+                payload.pop(field, None)
+        elif self.schema_version == BOOK_DESIGN_SCHEMA_VERSION:
+            for field in ("creative_foundation", "world_system", "character_system"):
                 payload.pop(field, None)
         return payload
 
@@ -251,7 +398,9 @@ class BookDesignPayload:
 
 
 def evidence_hash(payload: Mapping[str, Any]) -> str:
-    encoded = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    encoded = json.dumps(
+        payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    ).encode("utf-8")
     return "sha256:" + hashlib.sha256(encoded).hexdigest()
 
 
@@ -274,7 +423,9 @@ def _typed_records(
         }
         identity = record[required_fields[0]]
         if identity in identities:
-            raise KernelError("BOOK_DESIGN_INVALID", f"{field} identities must be unique")
+            raise KernelError(
+                "BOOK_DESIGN_INVALID", f"{field} identities must be unique"
+            )
         identities.add(identity)
         records.append(record)
     return tuple(records)
@@ -283,6 +434,7 @@ def _typed_records(
 __all__ = [
     "BOOK_DESIGN_SCHEMA_VERSION",
     "COUPLED_BOOK_DESIGN_SCHEMA_VERSION",
+    "EVOLUTION_BOOK_DESIGN_SCHEMA_VERSION",
     "LEGACY_BOOK_DESIGN_SCHEMA_VERSION",
     "BOOK_SCHEMA_VERSION",
     "BookDesignPayload",

@@ -14,6 +14,7 @@ from novel_forge.infrastructure.settings import IndustrialSettings
 from novel_forge.modules.authority_security import Principal, PrincipalType
 from novel_forge.modules.book_design_authority import (
     BOOK_DESIGN_SCHEMA_VERSION,
+    EVOLUTION_BOOK_DESIGN_SCHEMA_VERSION,
     BookDesignAuthorityApplication,
     BookDesignAuthorityCommand,
     BookDesignAuthorityQuery,
@@ -328,6 +329,74 @@ class BookDesignAuthorityPostgresTests(unittest.TestCase):
                 [self.book_id],
             )
             self.assertEqual(int(uow.cursor.fetchone()[0]), 0)
+
+    def test_evolution_foundation_activates_as_typed_context_assets(self) -> None:
+        self._book_command(
+            "book.create",
+            payload={
+                "schema_version": "book-authority.v1",
+                "title": "Evolution Foundation",
+                "production_profile": {},
+                "runtime_policy": {"silent_fallback": False},
+                "release_identity": "book-design-evolution@" + "b" * 40,
+            },
+            idempotency_key=f"book:create:{self.book_id}",
+        )
+        book = self.query.require_book(project_id=self.project_id, book_id=self.book_id)
+        candidate = self._book_command(
+            "book_design.propose",
+            payload=self._evolution_design(),
+            idempotency_key=f"design:evolution:{self.book_id}",
+            expected_book_version=book["version"],
+        )
+        self.assertEqual(candidate["status"], "EVALUATION_PENDING")
+        self._evaluate(candidate)
+        self._book_command(
+            "book_design.decide",
+            payload={"decision": "APPROVE", "reason": "qualified foundation"},
+            idempotency_key=f"design:evolution:approve:{self.book_id}",
+            expected_book_version=book["version"],
+            target_asset_version_id=candidate["asset_version_id"],
+        )
+        activated = self._book_command(
+            "book_design.activate",
+            payload={"reason": "opening foundation selected"},
+            idempotency_key=f"design:evolution:activate:{self.book_id}",
+            expected_book_version=book["version"],
+            target_asset_version_id=candidate["asset_version_id"],
+        )
+
+        self.assertEqual(
+            set(activated["foundation_asset_versions"]),
+            {
+                "creative_foundation",
+                "world_bible",
+                "character_cast",
+                "character_arc_portfolio",
+                "theme_contract",
+                "ending_intent",
+                "reader_promise",
+            },
+        )
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                """
+                SELECT asset.asset_type, version.content
+                FROM authority_asset_version AS version
+                JOIN authority_asset AS asset ON asset.asset_id=version.asset_id
+                WHERE version.asset_version_id=ANY(%s::text[])
+                """,
+                [list(activated["foundation_asset_versions"].values())],
+            )
+            assets = {str(row[0]): dict(row[1]) for row in uow.cursor.fetchall()}
+        self.assertEqual(
+            assets["world_bible"]["rules"][0]["narrative_function"],
+            "Turn knowledge into costly agency.",
+        )
+        self.assertEqual(
+            assets["character_cast"]["characters"][0]["false_belief"],
+            "Only certainty protects people.",
+        )
 
     def test_semantically_failed_design_is_persisted_as_rejected_lineage(self) -> None:
         self._book_command(
@@ -982,6 +1051,57 @@ class BookDesignAuthorityPostgresTests(unittest.TestCase):
                 "emotional_contract": "Discovery brings hope and public cost.",
             },
         }
+
+    @classmethod
+    def _evolution_design(cls) -> dict:
+        design = cls._design("collective custody of truth")
+        design["schema_version"] = EVOLUTION_BOOK_DESIGN_SCHEMA_VERSION
+        design["creative_foundation"] = {
+            "target_reader": "mystery readers who value consequential choices",
+            "why_worth_writing": "public truth carries a personal cost",
+            "subgenre": "institutional speculative mystery",
+            "core_desire": "recover erased belonging",
+            "core_fear": "certainty will isolate Mara",
+            "narrative_engine": "each anomaly forces disclosure or concealment",
+            "differentiation": "geography changes through archival choices",
+            "emotional_contract": "wonder converts into shared responsibility",
+            "serialization_potential": "districts expose distinct bargains",
+            "thematic_question": "Can public truth remain humane?",
+            "ending_direction": "collective custody replaces solitary control",
+        }
+        design["world_system"] = [
+            {
+                "rule_id": "witness-delay",
+                "rule": "Witnessed places resist erasure.",
+                "cost": "The witness becomes exposed.",
+                "exception": "A witness may recant.",
+                "consequence": "Access remains open for seven days.",
+                "conflict_potential": "The archive pressures witnesses.",
+                "narrative_function": "Turn knowledge into costly agency.",
+            }
+        ]
+        design["character_system"] = [
+            {
+                "character_id": "mara",
+                "name": "Mara",
+                "role": "protagonist",
+                "desire": "restore the district",
+                "need": "share uncertain evidence",
+                "fear": "causing another erasure",
+                "wound": "a failed solitary proof",
+                "false_belief": "Only certainty protects people.",
+                "values": "truth and care",
+                "moral_boundary": "never fabricate a witness",
+                "agency": "chooses what to disclose",
+                "capability": "reads archival topology",
+                "weakness": "withholds uncertainty",
+                "voice": "precise until cornered",
+                "secret": "her first map caused harm",
+                "relationship_function": "learn accountable trust",
+                "arc_direction": "certainty becomes collective responsibility",
+            }
+        ]
+        return design
 
 
 if __name__ == "__main__":

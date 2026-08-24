@@ -29,7 +29,9 @@ from novel_forge.modules.plan_change_authority import (
 )
 from novel_forge.modules.story_planning_runtime import (
     GENERATOR_INPUT_ROLES,
+    NarrativeSearchRequest,
     PlanningGenerationStatus,
+    PostgresNarrativeSearchApplication,
     StoryPlanningGenerationApplication,
     StoryPlanningGenerationCommand,
 )
@@ -144,6 +146,7 @@ class BookReplanCoordinator:
         input_resolver: BookProductionInputResolver,
         principal: Principal,
         fault_injector: Any | None = None,
+        narrative_search: PostgresNarrativeSearchApplication | None = None,
     ) -> None:
         if not database_url:
             raise ValueError("Book Replan requires PostgreSQL")
@@ -154,6 +157,9 @@ class BookReplanCoordinator:
         self.input_resolver = input_resolver
         self.principal = principal
         self.fault_injector = fault_injector or (lambda _checkpoint: None)
+        self.narrative_search = narrative_search or PostgresNarrativeSearchApplication(
+            database_url, planning=planning
+        )
 
     def start(self, command: CoordinateBookReplanCommand) -> dict[str, Any]:
         self.principal.require("book.authority.execute", command.project_id)
@@ -223,31 +229,62 @@ class BookReplanCoordinator:
             "chapter_plan.generate",
         }:
             related_arc_plan_version_ids = frozen_related_arc_plan_version_ids
-        generated = self.planning.generate(
-            StoryPlanningGenerationCommand(
-                project_id=command.project_id,
-                workspace_id=command.workspace_id,
-                book_id=command.book_id,
-                actor_id=self.principal.principal_id,
-                generator_operation_name=generator,
-                logical_key=target["logical_key"],
-                input_versions=inputs,
-                parent_version_id=target["parent_version_id"],
-                arc_scope_volume_plan_version_ids=(arc_scope_volume_plan_version_ids),
-                related_arc_plan_version_ids=related_arc_plan_version_ids,
-                dependent_arc_plan_version_ids=dependent_arc_plan_version_ids,
-                change_evidence_version_ids=(
-                    command.source_recap_asset_version_id,
-                    command.replan_request_asset_version_id,
-                ),
-                governance_action_version_ids=governance_action_version_ids,
-                idempotency_key=f"{command.idempotency_key}:replacement-candidate",
-                trace_id=command.trace_id,
-                correlation_id=recap_operation_id,
-                auto_approve_low_risk=False,
+        generation = StoryPlanningGenerationCommand(
+            project_id=command.project_id,
+            workspace_id=command.workspace_id,
+            book_id=command.book_id,
+            actor_id=self.principal.principal_id,
+            generator_operation_name=generator,
+            logical_key=target["logical_key"],
+            input_versions=inputs,
+            parent_version_id=target["parent_version_id"],
+            arc_scope_volume_plan_version_ids=(arc_scope_volume_plan_version_ids),
+            related_arc_plan_version_ids=related_arc_plan_version_ids,
+            dependent_arc_plan_version_ids=dependent_arc_plan_version_ids,
+            change_evidence_version_ids=(
+                command.source_recap_asset_version_id,
+                command.replan_request_asset_version_id,
             ),
-            principal=self.principal,
+            governance_action_version_ids=governance_action_version_ids,
+            idempotency_key=f"{command.idempotency_key}:replacement-candidate",
+            trace_id=command.trace_id,
+            correlation_id=recap_operation_id,
+            auto_approve_low_risk=False,
         )
+        if generator == "chapter_plan.generate":
+            generated = self.planning.generate(generation, principal=self.principal)
+        else:
+            generated = self.narrative_search.explore(
+                NarrativeSearchRequest(
+                    generation=generation,
+                    planning_horizon={
+                        "level": SCOPE_CONTRACT[command.affected_scope],
+                        "future_only": True,
+                        "affected_scope": command.affected_scope,
+                    },
+                    desired_transformation={
+                        "replan_request_asset_version_id": (
+                            command.replan_request_asset_version_id
+                        ),
+                        "target_asset_version_id": target["asset_version_id"],
+                        "impact_scope": dict(replan_request.get("impact_scope") or {}),
+                    },
+                    hard_constraints=tuple(
+                        str(item)
+                        for item in replan_request.get("preserved_invariants") or ()
+                    )
+                    or (
+                        "accepted chapters and accepted narrative state are immutable",
+                    ),
+                    accepted_through_chapter=int(book["accepted_through_chapter"]),
+                    book_run_id=command.book_run_id,
+                    parent_state_asset_version_id=str(
+                        book.get("active_story_state_version_id") or ""
+                    ),
+                ),
+                principal=self.principal,
+                activate_selected=False,
+            ).selected_generation
         if generated.status is not PlanningGenerationStatus.APPROVAL_PENDING:
             raise KernelError(
                 "BOOK_REPLAN_CANDIDATE_NOT_PENDING",

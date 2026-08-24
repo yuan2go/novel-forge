@@ -1343,6 +1343,17 @@ def _model_log_ref(
     return f"runs/model_calls/{operation_id}-{attempt_id}-{stage}{suffix}.json"
 
 
+def model_call_log_ref(
+    operation_id: str,
+    attempt_id: str,
+    stage: str,
+    external_effect_id: str = "",
+) -> str:
+    """Return the authoritative, per-effect ModelCallLog locator."""
+
+    return _model_log_ref(operation_id, attempt_id, stage, external_effect_id)
+
+
 def _cost_log_ref(
     operation_id: str,
     attempt_id: str,
@@ -1758,5 +1769,6 @@ __all__ = [
     "ChapterModelPort",
     "ExternalEffectChapterModelPort",
     "ModelProviderResult",
+    "model_call_log_ref",
     "normalize_model_output",
 ]

@@ -435,9 +435,12 @@ def test_planning_provider_view_uses_command_and_projected_inputs_only() -> None
     assert view["segments"][0]["content"] == {
         "premise": "Truth requires a visible cost."
     }
-    assert view["realization_reference_contract"]["references_by_domain"][
-        "WORLD_STATE"
-    ][0]["authority_role"] == "world_bible"
+    assert (
+        view["realization_reference_contract"]["references_by_domain"]["WORLD_STATE"][
+            0
+        ]["authority_role"]
+        == "world_bible"
+    )
     assert view["selection_explanation"]["policy"] == (
         "minimum-sufficient-planning-context-v2"
     )
@@ -547,6 +550,8 @@ def test_planning_repair_view_projects_source_and_failed_criteria() -> None:
                     }
                 ],
                 "authoritative_narrative_load": _authoritative_load(),
+                "arc_working_set": _arc_working_set(),
+                "narrative_intelligence": _narrative_intelligence(),
             },
         ),
     )
@@ -561,9 +566,12 @@ def test_planning_repair_view_projects_source_and_failed_criteria() -> None:
         "Expose the concealed audit."
     )
     assert "execution_evidence" not in repair["source_candidate"]["content"]
-    assert repair["failed_narrative_qualifications"][0]["evaluation"]["criteria"][
-        0
-    ]["repair_directive"] == "Align the antagonist target belief with the ending."
+    assert (
+        repair["failed_narrative_qualifications"][0]["evaluation"]["criteria"][0][
+            "repair_directive"
+        ]
+        == "Align the antagonist target belief with the ending."
+    )
 
 
 def test_chapter_planning_projects_local_plan_and_long_state_before_provider() -> None:

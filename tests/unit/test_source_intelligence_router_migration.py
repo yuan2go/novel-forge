@@ -20,6 +20,7 @@ from novel_forge.storage.migrations.versions import (
     v20260821_0095_post_merge_correctness_repair as repair_migration,
     v20260821_0096_runtime_hardening as runtime_hardening_migration,
     v20260824_0097_narrative_evaluator_codex_lineage as codex_lineage_migration,
+    v20260825_0098_narrative_evolution_engine as evolution_migration,
 )
 
 
@@ -47,8 +48,12 @@ def test_source_intelligence_router_is_forward_only_migration_head() -> None:
     assert novel_os_migration.DOWN_REVISION == liveness_migration.MIGRATION_ID
     assert repair_migration.DOWN_REVISION == novel_os_migration.MIGRATION_ID
     assert runtime_hardening_migration.DOWN_REVISION == repair_migration.MIGRATION_ID
-    assert codex_lineage_migration.DOWN_REVISION == runtime_hardening_migration.MIGRATION_ID
-    assert LATEST_MIGRATION_ID == codex_lineage_migration.MIGRATION_ID
+    assert (
+        codex_lineage_migration.DOWN_REVISION
+        == runtime_hardening_migration.MIGRATION_ID
+    )
+    assert evolution_migration.DOWN_REVISION == codex_lineage_migration.MIGRATION_ID
+    assert LATEST_MIGRATION_ID == evolution_migration.MIGRATION_ID
 
 
 def test_profile_and_analysis_plan_use_existing_asset_authority() -> None:

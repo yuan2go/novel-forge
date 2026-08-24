@@ -1,4 +1,5 @@
 """Storage-free internal release gate and export manifest builder."""
+
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -26,8 +27,10 @@ def prepare_internal_release(
     required_dimensions = set(QUALITY_DIMENSIONS)
     by_dimension = {str(item.get("dimension")): item for item in dimensions}
     source_gate = [
-        item for item in dimensions
-        if item.get("gate_type") == "source_originality_quality_gate" and item.get("blocking")
+        item
+        for item in dimensions
+        if item.get("gate_type") == "source_originality_quality_gate"
+        and item.get("blocking")
     ]
     evidence_types = {
         str(item.get("asset_type")): item
@@ -38,9 +41,8 @@ def prepare_internal_release(
         str(item.get("key")): item.get("value")
         for item in checklist.get("structured_facts", [])
     }
-    operator_approval = (
-        evidence_types.get("approval_decision")
-        or evidence_types.get("operator_approval", {})
+    operator_approval = evidence_types.get("approval_decision") or evidence_types.get(
+        "operator_approval", {}
     )
     approval_facts = {
         str(item.get("key")): item.get("value")
@@ -52,6 +54,7 @@ def prepare_internal_release(
         )
     )
     approval_required = bool(approval_requirements)
+
     def real_provider_uncalibrated_pass(item: dict[str, Any]) -> bool:
         return (
             quality.get("fixture") is False
@@ -67,14 +70,14 @@ def prepare_internal_release(
             status in {"PASSED", "PASSED_WITH_WARNINGS"}
             or real_provider_uncalibrated_pass(item)
             or (
-            status == "WAIVED_BY_APPROVAL"
-            and _fixture_waiver_is_valid(
-                item,
-                evidence_types=evidence_types,
-                project_id=project_id,
-                target_asset_version_id=revision_asset_version_id,
+                status == "WAIVED_BY_APPROVAL"
+                and _fixture_waiver_is_valid(
+                    item,
+                    evidence_types=evidence_types,
+                    project_id=project_id,
+                    target_asset_version_id=revision_asset_version_id,
+                )
             )
-        )
         )
 
     checks = {
@@ -83,11 +86,13 @@ def prepare_internal_release(
             and quality.get("target_asset_version_id") == revision_asset_version_id
             and required_dimensions.issubset(by_dimension)
         ),
-        "latest_rereview_passed": review.get("report_type") == "ReReviewReport" and review.get("decision") == "PASSED" and int(review.get("blocking_issue_count", 0)) == 0,
-        "canon_consistent": canon.get("gate") == "PASSED" and not canon.get("conflicts"),
+        "latest_rereview_passed": review.get("report_type") == "ReReviewReport"
+        and review.get("decision") == "PASSED"
+        and int(review.get("blocking_issue_count", 0)) == 0,
+        "canon_consistent": canon.get("gate") == "PASSED"
+        and not canon.get("conflicts"),
         "source_eligible_and_leakage_clear": (
-            bool(source_gate)
-            and cleared("source_leakage")
+            bool(source_gate) and cleared("source_leakage")
         ),
         "originality_risk_clear": cleared("originality"),
         "anti_ai_clear_or_approved": cleared("anti_ai"),
@@ -95,8 +100,11 @@ def prepare_internal_release(
             all(
                 cleared(item)
                 for item in (
-                    "chapter_length", "format", "sensitive_content",
-                    "ai_content_policy", "publish_metadata",
+                    "chapter_length",
+                    "format",
+                    "sensitive_content",
+                    "ai_content_policy",
+                    "publish_metadata",
                 )
             )
         ),
@@ -153,10 +161,8 @@ def prepare_internal_release(
         "release_readiness": "INTERNAL_REVIEW_RELEASE",
         "external_publish_permitted": False,
         "production_verified": False,
-        "fixture_protocol_only": bool(quality.get("fixture")) or any(
-            item.get("gate_status") == "WAIVED_BY_APPROVAL"
-            for item in dimensions
-        ),
+        "fixture_protocol_only": bool(quality.get("fixture"))
+        or any(item.get("gate_status") == "WAIVED_BY_APPROVAL" for item in dimensions),
         "checks": checks,
         "release_manifest": {
             "revision_asset_version_id": revision_asset_version_id,
@@ -165,7 +171,9 @@ def prepare_internal_release(
             "canon_asset_version_id": canon_asset_version_id,
             "context_bundle_version_id": context_bundle_version_id,
             "operator_checklist_version_id": checklist.get("asset_version_id", ""),
-            "operator_approval_version_id": operator_approval.get("asset_version_id", ""),
+            "operator_approval_version_id": operator_approval.get(
+                "asset_version_id", ""
+            ),
             "blob_verification_required": True,
             "blob_verification_status": "PENDING_EXPORT",
         },
@@ -204,15 +212,13 @@ def _fixture_waiver_is_valid(
         and waiver.get("fixture_protocol_only") is True
         and waiver.get("production_verified") is False
         and waiver.get("dimension") == dimension.get("dimension")
-        and waiver.get("approval_asset_version_id")
-        == approval.get("asset_version_id")
+        and waiver.get("approval_asset_version_id") == approval.get("asset_version_id")
         and waiver.get("checklist_asset_version_id")
         == checklist.get("asset_version_id")
         and isinstance(scope, dict)
         and scope.get("project_id") == project_id
         and scope.get("scope_type") == "PROJECT_FIXTURE"
-        and waiver.get("target_asset_version_id")
-        == target_asset_version_id
+        and waiver.get("target_asset_version_id") == target_asset_version_id
         and scope.get("release_readiness") == "INTERNAL_REVIEW_RELEASE"
     )
 
@@ -225,7 +231,14 @@ def build_export_blob_manifest(
     publish_gate_asset_version_id: str,
 ) -> dict[str, Any]:
     if publish_gate.get("gate") != "PASSED":
-        raise KernelError("CHAPTER_QUALITY_GATE_BLOCKED", "Export requires a passed publish gate")
+        failed = ", ".join(
+            str(item) for item in publish_gate.get("failed_checks") or ()
+        )
+        detail = f"; failed checks: {failed}" if failed else ""
+        raise KernelError(
+            "CHAPTER_QUALITY_GATE_BLOCKED",
+            f"Export requires a passed publish gate{detail}",
+        )
     return {
         "chapter": revision["chapter"],
         "title": revision["title"],
@@ -264,7 +277,8 @@ def finalize_blob_verified_release(
     blob = content_blobs[0]
     checks = {
         "pre_release_gate_passed": publish_gate.get("gate") == "PASSED",
-        "quality_gate_passed": quality.get("gate") in {
+        "quality_gate_passed": quality.get("gate")
+        in {
             "PASSED",
             "PASSED_WITH_UNCALIBRATED",
         },
@@ -273,7 +287,8 @@ def finalize_blob_verified_release(
             and review.get("decision") == "PASSED"
             and int(review.get("blocking_issue_count", 0)) == 0
         ),
-        "canon_consistent": canon.get("gate") == "PASSED" and not canon.get("conflicts"),
+        "canon_consistent": canon.get("gate") == "PASSED"
+        and not canon.get("conflicts"),
         "export_awaited_blob_verification": (
             export_package.get("release_status") == "READY_FOR_BLOB_VERIFICATION"
         ),
@@ -328,9 +343,18 @@ def finalize_blob_verified_release(
         "blob_receipt": {
             key: blob.get(key)
             for key in (
-                "blob_id", "provider", "object_key", "expected_hash", "actual_hash",
-                "expected_size", "actual_size", "media_type", "external_effect_id",
-                "dispatch_id", "receipt_id", "receipt_status",
+                "blob_id",
+                "provider",
+                "object_key",
+                "expected_hash",
+                "actual_hash",
+                "expected_size",
+                "actual_size",
+                "media_type",
+                "external_effect_id",
+                "dispatch_id",
+                "receipt_id",
+                "receipt_status",
             )
         },
         "rollback_metadata": {

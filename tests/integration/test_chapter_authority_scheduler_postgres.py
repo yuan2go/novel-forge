@@ -4,7 +4,10 @@ import hashlib
 import json
 import unittest
 
-from novel_forge.modules.chapter_authority.contracts import ChapterNode
+from novel_forge.modules.chapter_authority.contracts import (
+    QUALITY_GROUP_NODES,
+    ChapterNode,
+)
 from novel_forge.modules.chapter_quality_authority import QUALITY_DIMENSIONS
 from novel_forge.modules.chapter_authority.handlers import (
     DeterministicFixtureChapterProvider,
@@ -364,11 +367,15 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
             worker_id="corrective-fixture-worker",
             permissions=frozenset({"chapter.authority.execute"}),
         )
-        for _ in range(6):
+        for _ in ChapterNode:
             tick = scheduler.tick(
                 project_id=project_id,
                 root_operation_id=admission.root_operation_id,
             )
+            if tick.node == ChapterNode.REREVIEW.value:
+                break
+        else:
+            self.fail("Chapter rereview did not execute")
         self.assertEqual(tick.node, ChapterNode.REREVIEW.value)
 
         corrective = CorrectiveActionQuery(DATABASE_URL).list(
@@ -451,19 +458,21 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
         self.assertEqual(correction_counts[ChapterNode.REVISION.definition_name], 1)
         self.assertEqual(correction_counts[ChapterNode.REREVIEW.definition_name], 1)
         self.assertEqual(correction_counts[ChapterNode.QUALITY.definition_name], 1)
+        expected_correction_nodes = {
+            ChapterNode.REVISION,
+            ChapterNode.REREVIEW,
+            ChapterNode.BEST_CANDIDATE,
+            ChapterNode.CANON_EXTRACTION,
+            ChapterNode.CANON_PROPOSAL,
+            ChapterNode.CANON,
+            *QUALITY_GROUP_NODES,
+            ChapterNode.QUALITY,
+        }
         self.assertEqual(
-            sum(correction_counts.values()),
-            5 + len(
-                {
-                    ChapterNode.REVISION,
-                    ChapterNode.REREVIEW,
-                    ChapterNode.CANON_EXTRACTION,
-                    ChapterNode.CANON_PROPOSAL,
-                    ChapterNode.CANON,
-                    ChapterNode.QUALITY,
-                }
-            ),
+            set(correction_counts),
+            {node.definition_name for node in expected_correction_nodes},
         )
+        self.assertTrue(all(count == 1 for count in correction_counts.values()))
         with transaction() as connection, connection.cursor() as cursor:
             cursor.execute(
                 """
@@ -900,9 +909,7 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
             self.assertEqual(cursor.fetchone(), terminal_state)
 
     def test_canon_extraction_forward_recovery_exhaustion_dead_letters(self) -> None:
-        class CanonExtractionRetryExhaustedFixture(
-            DeterministicFixtureChapterProvider
-        ):
+        class CanonExtractionRetryExhaustedFixture(DeterministicFixtureChapterProvider):
             supports_semantic_extraction = True
 
             def __init__(self) -> None:
@@ -1177,9 +1184,7 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
         )
         self.assertEqual(corrective[0]["status"], "CANCELLED")
         self.assertEqual(corrective[0]["resolution"], "CANCELLED")
-        self.assertEqual(
-            corrective[0]["evaluation_operation_id"], operation_id
-        )
+        self.assertEqual(corrective[0]["evaluation_operation_id"], operation_id)
 
     def test_superseded_quality_action_is_not_executed(self) -> None:
         project_id, admission, _registry, scheduler, action = (
@@ -1257,8 +1262,7 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
                 for item in CorrectiveActionQuery(DATABASE_URL).list(
                     project_id=project_id
                 )
-                if item["issue_type"]
-                in {"canon_consistency", "timeline_consistency"}
+                if item["issue_type"] in {"canon_consistency", "timeline_consistency"}
             ]
             if {item["status"] for item in projected} == {
                 "RESOLVED",
@@ -1605,7 +1609,7 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
             permissions=frozenset({"chapter.authority.execute"}),
         )
         waiting = None
-        for _ in range(12):
+        for _ in ChapterNode:
             tick = scheduler.tick(
                 project_id=project_id, root_operation_id=admission.root_operation_id
             )
@@ -1978,6 +1982,32 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
                 "premise": "A prepared promise creates a visible cost.",
                 "chapter_objective": "Force a public choice with a visible cost.",
                 "scene_sequence": [{"scene_id": "s1", "goal": "keep the promise"}],
+                "required_arc_contributions": [
+                    {
+                        "arc_plan_version_id": f"{project_id}:fixture-arc-plan-v1",
+                        "contribution": "ADVANCE",
+                    }
+                ],
+                "constraint_envelope": {
+                    "arc_working_set": {
+                        "selected_contributions": [
+                            {
+                                "arc_plan_version_id": f"{project_id}:fixture-arc-plan-v1",
+                                "role": "PRIMARY",
+                                "action": "ADVANCE",
+                            }
+                        ]
+                    }
+                },
+                "scene_plan": [
+                    {
+                        "scene_id": "s1",
+                        "goal": "keep the promise",
+                        "conflict": "safety requires breaking the promise",
+                        "arc_progress": [f"{project_id}:fixture-arc-plan-v1"],
+                        "beats": ["pressure", "choice", "visible cost"],
+                    }
+                ],
                 "chapter_hook": "The cost creates a new obligation.",
                 "conflict_chain": ["promise collides with institutional safety"],
                 "emotional_curve": ["resolve", "fear", "costly resolve"],
@@ -2172,6 +2202,32 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
                     "premise": "A promise creates a visible irreversible cost.",
                     "chapter_objective": "Force a public choice with an irreversible loss.",
                     "scene_sequence": [{"scene_id": "s1", "goal": "keep the promise"}],
+                    "required_arc_contributions": [
+                        {
+                            "arc_plan_version_id": f"{project_id}:fixture-arc-plan-v1",
+                            "contribution": "ADVANCE",
+                        }
+                    ],
+                    "constraint_envelope": {
+                        "arc_working_set": {
+                            "selected_contributions": [
+                                {
+                                    "arc_plan_version_id": f"{project_id}:fixture-arc-plan-v1",
+                                    "role": "PRIMARY",
+                                    "action": "ADVANCE",
+                                }
+                            ]
+                        }
+                    },
+                    "scene_plan": [
+                        {
+                            "scene_id": "s1",
+                            "goal": "keep the promise",
+                            "conflict": "safety requires breaking the promise",
+                            "arc_progress": [f"{project_id}:fixture-arc-plan-v1"],
+                            "beats": ["pressure", "choice", "visible cost"],
+                        }
+                    ],
                     "chapter_hook": "The cost creates a new obligation.",
                 },
             ),
@@ -2230,11 +2286,7 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
                     },
                     {
                         "key": "waived_dimensions",
-                        "value": [
-                            dimension
-                            for dimension in QUALITY_DIMENSIONS
-                            if with_waiver and dimension not in excluded_dimensions
-                        ],
+                        "value": list(QUALITY_DIMENSIONS) if with_waiver else [],
                     },
                     {
                         "key": "scope",

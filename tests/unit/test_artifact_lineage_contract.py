@@ -21,21 +21,42 @@ def test_lineage_identity_is_stable_and_accepted_history_is_immune() -> None:
         context_fingerprint="sha256:" + "a" * 64,
         created_by_operation_id="operation-1",
     )
-    replay = ArtifactLineageEdge(**{
-        "project_id": edge.project_id,
-        "book_id": edge.book_id,
-        "upstream_asset_version_id": edge.upstream_asset_version_id,
-        "downstream_asset_version_id": edge.downstream_asset_version_id,
-        "relationship_type": edge.relationship_type,
-        "semantic_dimensions": edge.semantic_dimensions,
-        "invalidation_policy": edge.invalidation_policy,
-        "context_fingerprint": edge.context_fingerprint,
-        "created_by_operation_id": edge.created_by_operation_id,
-    })
+    replay = ArtifactLineageEdge(
+        **{
+            "project_id": edge.project_id,
+            "book_id": edge.book_id,
+            "upstream_asset_version_id": edge.upstream_asset_version_id,
+            "downstream_asset_version_id": edge.downstream_asset_version_id,
+            "relationship_type": edge.relationship_type,
+            "semantic_dimensions": edge.semantic_dimensions,
+            "invalidation_policy": edge.invalidation_policy,
+            "context_fingerprint": edge.context_fingerprint,
+            "created_by_operation_id": edge.created_by_operation_id,
+        }
+    )
 
     assert edge.lineage_edge_id == replay.lineage_edge_id
     assert edge.invalidation_policy is InvalidationPolicy.REQUALIFY
-    assert lineage_policy_for("accepted_chapter") is InvalidationPolicy.IMMUNE_ACCEPTED_HISTORY
+    assert (
+        lineage_policy_for("accepted_chapter")
+        is InvalidationPolicy.IMMUNE_ACCEPTED_HISTORY
+    )
+    assert (
+        lineage_policy_for("reader_outcome_report")
+        is InvalidationPolicy.IMMUNE_ACCEPTED_HISTORY
+    )
+    assert (
+        lineage_policy_for("reader_state_transition")
+        is InvalidationPolicy.IMMUNE_ACCEPTED_HISTORY
+    )
+    assert (
+        lineage_policy_for("longform_recap")
+        is InvalidationPolicy.IMMUNE_ACCEPTED_HISTORY
+    )
+    assert (
+        lineage_policy_for("replan_request")
+        is InvalidationPolicy.IMMUNE_ACCEPTED_HISTORY
+    )
 
 
 def test_semantic_diff_requires_explicit_dimensions_and_evidence() -> None:
