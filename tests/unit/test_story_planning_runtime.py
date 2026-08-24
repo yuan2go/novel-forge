@@ -16,7 +16,10 @@ from novel_forge.modules.production_execution.domain_execution import (
     DomainExecutionCandidate,
     DomainExecutionEvidence,
 )
-from novel_forge.modules.story_design_authority import GENERATOR_CATALOG
+from novel_forge.modules.story_design_authority import (
+    GENERATOR_CATALOG,
+    DesignTransition,
+)
 from novel_forge.modules.story_planning_runtime import (
     GENERATOR_INPUT_ROLES,
     CapabilityPackBackedPlanningExecutionBinder,
@@ -31,16 +34,47 @@ from novel_forge.modules.story_planning_runtime import (
 )
 from novel_forge.modules.story_planning_runtime.execution import (
     PLANNING_EXTERNAL_EFFECT_MAX_ATTEMPTS,
+    _realization_reference_contract,
     planning_fixture_response as _planning_fixture_response,
     planning_provider_output_schema,
 )
 from novel_forge.modules.story_planning_runtime.application import (
     _AUTHORITY_INPUT_ASSET_TYPES,
     _validate_frozen_arc_references,
+    StoryPlanningGenerationApplication,
 )
 
 
 HASH = "sha256:" + "a" * 64
+
+
+def test_story_design_transition_idempotency_is_scoped_to_expected_version() -> None:
+    captured: list[object] = []
+
+    class StoryDesignCapture:
+        def transition(self, command: object, *, principal: object) -> dict[str, int]:
+            captured.append(command)
+            return {"version": 8}
+
+    application = object.__new__(StoryPlanningGenerationApplication)
+    application.story_design = StoryDesignCapture()
+    command = _command("book_plan.generate")
+
+    result = application._transition(
+        command,
+        object(),
+        "candidate:v1",
+        HASH,
+        DesignTransition.STRUCTURAL_VALIDATE,
+        expected_version=7,
+        evidence={"passed": True},
+    )
+
+    assert result == {"version": 8}
+    transition = captured[0]
+    assert transition.idempotency_key.endswith(
+        ":story-design:STRUCTURAL_VALIDATE:candidate:v1:v7"
+    )
 
 
 def planning_fixture_response(
@@ -235,12 +269,27 @@ def test_planning_provider_schema_is_codex_strict(
         "input:a",
         "input:b",
     ]
+    world = schema["properties"]["world_realization"]["items"]["properties"]
+    character = schema["properties"]["character_realization"]["items"][
+        "properties"
+    ]
+    assert world["invariant_refs"]["items"]["properties"]["domain_type"] == {
+        "type": "string",
+        "const": "WORLD_INVARIANT",
+    }
+    assert "world_invariant" not in world["invariant_refs"]["items"][
+        "properties"
+    ]["authority_role"]["enum"]
+    assert "book_design" not in character["state_ref"]["properties"][
+        "authority_role"
+    ]["enum"]
     if contract_type not in {PlanContractType.BOOK, PlanContractType.ARC}:
         assert schema["properties"]["parent_version_id"]["const"] == "parent:v1"
     if contract_type is PlanContractType.ARC:
         assert "parent_version_id" not in schema["properties"]
         assert schema["properties"]["thread_id"]["minLength"] == 1
         assert schema["properties"]["arc_segments"]["minItems"] == 1
+        assert schema["properties"]["arc_relations"]["maxItems"] == 0
     if contract_type in {PlanContractType.VOLUME, PlanContractType.CHAPTER_GROUP}:
         assert schema["properties"]["chapter_range"]["minItems"] == 2
         assert schema["properties"]["chapter_range"]["maxItems"] == 2
@@ -290,8 +339,45 @@ def test_planning_provider_schema_is_codex_strict(
         assert schema["properties"]["required_state_transitions"]["maxItems"] == 8
 
 
+def test_realization_reference_contract_exposes_exact_frozen_authority_choices() -> None:
+    contract = _realization_reference_contract(
+        project_id="project-1",
+        book_id="book-1",
+        frozen_by_operation_id="operation:planning",
+        inputs=(
+            FrozenPlanningInput("world_bible", "world:v1", HASH, "world_bible"),
+            FrozenPlanningInput(
+                "character_cast", "cast:v1", HASH, "character_cast"
+            ),
+        ),
+    )
+
+    world = contract["references_by_domain"]["WORLD_STATE"]
+    character = contract["references_by_domain"]["CHARACTER_STATE"]
+    assert world == [
+        {
+            "project_id": "project-1",
+            "book_id": "book-1",
+            "authority_role": "world_bible",
+            "asset_version_id": "world:v1",
+            "asset_type": "world_bible",
+            "content_hash": HASH,
+            "domain_type": "WORLD_STATE",
+            "freshness": "CURRENT",
+            "frozen_by_operation_id": "operation:planning",
+        }
+    ]
+    assert character[0]["authority_role"] == "character_cast"
+    assert character[0]["asset_version_id"] == "cast:v1"
+
+
 def test_volume_and_chapter_provider_contracts_bind_timeline_segments() -> None:
     volume = planning_provider_output_schema(PlanContractType.VOLUME)
+    group = planning_provider_output_schema(
+        PlanContractType.CHAPTER_GROUP,
+        parent_version_id="volume:v1",
+        arc_plan_version_id="arc:v1",
+    )
     chapter = planning_provider_output_schema(
         PlanContractType.CHAPTER,
         parent_version_id="group:v1",
@@ -312,6 +398,21 @@ def test_volume_and_chapter_provider_contracts_bind_timeline_segments() -> None:
         "segment_id",
     }
     for field in (
+        "primary_arc_ids",
+        "secondary_arc_ids",
+        "required_arc_contributions",
+        "arc_checkpoint_expectations",
+    ):
+        assert field in group["required"]
+    assert group["properties"]["primary_arc_ids"]["items"]["const"] == "arc:v1"
+    assert group["properties"]["secondary_arc_ids"]["maxItems"] == 1
+    assert group["properties"]["required_arc_contributions"]["items"][
+        "const"
+    ] == "arc:v1"
+    assert group["properties"]["arc_checkpoint_expectations"]["items"][
+        "properties"
+    ]["arc_plan_version_id"]["const"] == "arc:v1"
+    for field in (
         "chapter_intent",
         "arc_schedule",
         "setups",
@@ -327,6 +428,20 @@ def test_volume_and_chapter_provider_contracts_bind_timeline_segments() -> None:
         assert field in chapter["required"]
 
     assert "narrative_qualification" not in chapter["properties"]
+
+
+def test_arc_provider_allows_relations_only_with_distinct_frozen_arc_refs() -> None:
+    schema = planning_provider_output_schema(
+        PlanContractType.ARC,
+        logical_key="arc:primary",
+        related_arc_plan_version_ids=("arc:related:v1",),
+    )
+    relations = schema["properties"]["arc_relations"]
+
+    assert "maxItems" not in relations
+    refs = relations["items"]["properties"]
+    assert refs["source_arc_ref"]["enum"] == ["arc:primary", "arc:related:v1"]
+    assert refs["target_arc_ref"]["enum"] == ["arc:primary", "arc:related:v1"]
 
 
 @pytest.mark.parametrize(
@@ -510,6 +625,51 @@ def test_operational_plan_consumes_accepted_narrative_debt_projection() -> None:
         )
 
 
+def test_narrative_load_counts_world_concepts_not_revealed_facts() -> None:
+    content = planning_fixture_response(
+        "chapter_plan.generate",
+        {
+            "planning_command": {
+                "logical_key": "chapter:2",
+                "parent_version_id": "chapter-group:v1",
+                "input_versions": {"arc_plans": "arc:v1"},
+            }
+        },
+    )
+    content["scene_plan"] = [
+        {
+            **content["scene_plan"][0],
+            "information_gain": [f"fact:reveal:{index}" for index in range(12)],
+        }
+    ]
+
+    contract = validate_planning_contract(
+        project_id="project-1",
+        book_id="book-1",
+        contract_type=PlanContractType.CHAPTER,
+        asset_version_id="chapter:fact-rich",
+        parent_version_id="chapter-group:v1",
+        execution_scope=PlanExecutionScope.PLANNED,
+        content=content,
+    )
+    assert contract.logical_key == "chapter:2"
+
+    content["world_deltas"] = [
+        {"subject": f"world-concept:{index}", "change": "introduced"}
+        for index in range(5)
+    ]
+    with pytest.raises(KernelError, match="NARRATIVE_LOAD_BUDGET_EXCEEDED"):
+        validate_planning_contract(
+            project_id="project-1",
+            book_id="book-1",
+            contract_type=PlanContractType.CHAPTER,
+            asset_version_id="chapter:world-load-exceeded",
+            parent_version_id="chapter-group:v1",
+            execution_scope=PlanExecutionScope.PLANNED,
+            content=content,
+        )
+
+
 def test_overdue_identity_requires_action_even_within_numeric_allowance() -> None:
     content = planning_fixture_response(
         "chapter_plan.generate",
@@ -585,7 +745,6 @@ def test_overdue_identity_requires_action_even_within_numeric_allowance() -> Non
         content=content,
     )
 
-
 def test_chapter_provider_contract_accepts_only_the_frozen_arc_portfolio() -> None:
     schema = planning_provider_output_schema(
         PlanContractType.CHAPTER,
@@ -599,6 +758,9 @@ def test_chapter_provider_contract_accepts_only_the_frozen_arc_portfolio() -> No
         "arc_plan_version_id"
     ]["enum"] == ["arc:v1", "arc:v2", "arc:v3"]
     assert schema["properties"]["required_arc_contributions"]["maxItems"] == 3
+    assert schema["properties"]["scene_plan"]["items"]["properties"][
+        "arc_progress"
+    ]["items"]["enum"] == ["arc:v1", "arc:v2", "arc:v3"]
 
 
 def test_chapter_group_contract_rejects_non_pair_range_as_governed_error() -> None:
@@ -861,6 +1023,57 @@ def test_scene_contract_enforces_pov_time_relation_and_spatial_access() -> None:
         )
 
 
+def test_scene_contract_advances_declared_character_knowledge_between_scenes() -> None:
+    content = planning_fixture_response(
+        "chapter_plan.generate",
+        {
+            "planning_command": {
+                "logical_key": "chapter:2",
+                "parent_version_id": "chapter-group:v1",
+                "input_versions": {"arc_plans": "arc:v1"},
+            }
+        },
+    )
+    gained_fact = "fact:hidden-cost"
+    content["knowledge_boundaries"].append(
+        {
+            "layer": "CHARACTER_KNOWLEDGE",
+            "subject_id": "protagonist",
+            "fact_id": gained_fact,
+            "status": "KNOWN",
+            "available_from_chapter": content["chapter_number"],
+        }
+    )
+    first_scene = content["scene_plan"][0]
+    second_scene = deepcopy(first_scene)
+    second_scene.update(
+        {
+            "scene_id": "chapter:2:scene:2",
+            "entry_state": first_scene["exit_state"],
+            "exit_state": "the witnessed cost is now actionable",
+            "narrative_time_relation": "ADVANCES",
+            "story_time": {
+                **first_scene["story_time"],
+                "start_ordinal": first_scene["story_time"]["end_ordinal"] + 1,
+                "end_ordinal": first_scene["story_time"]["end_ordinal"] + 2,
+            },
+            "accessible_knowledge": [gained_fact],
+            "information_gain": [],
+        }
+    )
+    content["scene_plan"].append(second_scene)
+
+    validate_planning_contract(
+        project_id="project-1",
+        book_id="book-1",
+        contract_type=PlanContractType.CHAPTER,
+        asset_version_id="chapter:v2",
+        parent_version_id="chapter-group:v1",
+        execution_scope=PlanExecutionScope.PLANNED,
+        content=content,
+    )
+
+
 def test_progressive_realization_can_refine_strategic_versions() -> None:
     content = planning_fixture_response(
         "volume_plan.generate",
@@ -1114,6 +1327,37 @@ def test_book_contract_rejects_impossible_obligation_window() -> None:
             execution_scope=PlanExecutionScope.PLANNED,
             content=content,
         )
+
+
+def test_book_contract_accepts_window_for_declared_story_truth() -> None:
+    content = planning_fixture_response(
+        "book_plan.generate",
+        {"planning_command": {"logical_key": "book:main", "input_versions": {}}},
+    )
+    obligations = content["knowledge_disclosure_obligations"]
+    obligations["story_truth_ids"] = ["truth:revision-traces"]
+    obligations["obligation_windows"].append(
+        {
+            "obligation_id": "truth:revision-traces",
+            "setup_chapter": 1,
+            "payoff_not_before": 1,
+            "payoff_due_by": 2,
+        }
+    )
+
+    contract = validate_planning_contract(
+        project_id="project-1",
+        book_id="book-1",
+        contract_type=PlanContractType.BOOK,
+        asset_version_id="book-plan:truth-window",
+        parent_version_id="",
+        execution_scope=PlanExecutionScope.PLANNED,
+        content=content,
+    )
+
+    assert contract.content["knowledge_disclosure_obligations"][
+        "story_truth_ids"
+    ] == ["truth:revision-traces"]
 
 
 def test_volume_contract_rejects_gapped_narrative_segments() -> None:

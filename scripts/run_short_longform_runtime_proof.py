@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import atexit
 from copy import deepcopy
 from dataclasses import asdict
 from datetime import datetime
@@ -12,11 +13,14 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import sys
+import time
 from types import SimpleNamespace
 from typing import Any, Callable, Mapping
 from uuid import uuid4
 
 from novel_forge.api.authority_dependencies import (
+    build_book_design_authority_application,
     build_book_production_composition,
     build_chapter_authority_application,
     build_production_execution_composition,
@@ -28,10 +32,8 @@ from novel_forge.modules.book_authority import (
     ResolveBookProductionInputCommand,
     StartBookProductionCommand,
 )
+from novel_forge.modules.book_authority.queries import PostgresBookProductionQuery
 from novel_forge.modules.book_followup_authority import LongformCheckpointType
-from novel_forge.modules.book_followup_authority.application import (
-    BookFollowupAdmission,
-)
 from novel_forge.modules.book_production import SupervisorAction
 from novel_forge.modules.book_replan import (
     CoordinateBookReplanCommand,
@@ -44,6 +46,7 @@ from novel_forge.modules.canon_graph.approval_authority import (
 from novel_forge.infrastructure.settings import IndustrialSettings
 from novel_forge.modules.authority_security import Principal
 from novel_forge.modules.book_design_authority import (
+    BOOK_DESIGN_SCHEMA_VERSION,
     BookDesignAuthorityApplication,
     BookDesignAuthorityCommand,
     BookDesignAuthorityQuery,
@@ -56,6 +59,7 @@ from novel_forge.modules.capability_pack_authority.application import (
 )
 from novel_forge.modules.capability_packs.longform_profiles import (
     LongformCapabilityPackProfile,
+    build_narrative_evaluation_pack_profile,
     build_reader_outcome_pack_profile,
     build_story_planning_pack_profile,
 )
@@ -93,6 +97,10 @@ from novel_forge.modules.story_planning_runtime import (
 from novel_forge.modules.story_planning_runtime.application import (
     story_planning_generation_definition,
 )
+from novel_forge.modules.story_design_authority.evaluation_runtime import (
+    NARRATIVE_EVALUATION_APPLICATION_BUILD_ID,
+    narrative_semantic_evaluation_definition,
+)
 from novel_forge.modules.runtime_proof import evaluate_short_longform_evidence
 from novel_forge.storage.authority_repositories import definition_hash
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
@@ -115,6 +123,8 @@ from run_real_capability_codex_proof import (
 ROOT = Path(__file__).resolve().parents[1]
 PLANNING_PACK_ID = "story_planning_pack"
 READER_PACK_ID = "reader_outcome_pack"
+NARRATIVE_EVALUATION_PACK_ID = "narrative_semantic_evaluation_pack"
+NARRATIVE_EVALUATION_PACK_VERSION = "1.0.0"
 PLANNING_PACK_INITIAL_VERSION = "1.5.0"
 READER_PACK_INITIAL_VERSION = "1.1.0"
 PLANNING_PACK_RECOVERY_VERSION = "1.6.0"
@@ -1114,6 +1124,81 @@ def _bootstrap_chapter_profiles(
     return {key: str(value) for key, value in result.items() if key in rows}
 
 
+def _book_design_foundation(
+    campaign_contract: Mapping[str, Any] | None,
+) -> dict[str, list[Any]]:
+    if campaign_contract is None:
+        return {
+            "world_rules": [
+                "official records carry revision traces",
+                "public correction imposes a named civic debt",
+            ],
+            "core_characters": [
+                {
+                    "character_id": "lin-qiao",
+                    "role": "protagonist and archive witness",
+                    "long_term_goal": "make erased evidence publicly accountable",
+                    "causal_arc": "procedural avoidance becomes accountable agency",
+                    "conflict_function": "her protected status competes with disclosure",
+                },
+                {
+                    "character_id": "mei-an",
+                    "role": "engineering ally and independent constraint owner",
+                    "long_term_goal": "keep the city alive without secret custody",
+                    "causal_arc": "conditional cooperation becomes costly public trust",
+                    "conflict_function": "material safety challenges evidentiary urgency",
+                },
+            ],
+            "opposition_forces": [
+                {
+                    "force_id": "quiet-office",
+                    "goal": "contain crises by controlling their public record",
+                    "leverage": "institutional access and revision authority",
+                    "escalation_pattern": "procedural denial becomes physical erasure",
+                    "limit": "every revision leaves an auditable trace",
+                }
+            ],
+        }
+    ground_truth = campaign_contract.get("ground_truth")
+    if not isinstance(ground_truth, Mapping):
+        raise RuntimeError("Proof Campaign omits governed ground truth")
+    characters = ground_truth.get("characters")
+    factions = ground_truth.get("factions")
+    rules = ground_truth.get("world_rules")
+    if not all(
+        isinstance(items, list) and items for items in (characters, factions, rules)
+    ):
+        raise RuntimeError("Proof Campaign ground truth lacks longform foundation inputs")
+    return {
+        "core_characters": [
+            {
+                "character_id": str(item["character_id"]),
+                "role": str(item["role"]),
+                "long_term_goal": str(item["external_goal"]),
+                "causal_arc": f"{item['opening_belief']} -> {item['final_change']}",
+                "conflict_function": (
+                    f"Fear: {item['fear']}; flaw under pressure: {item['flaw']}"
+                ),
+            }
+            for item in characters
+        ],
+        "opposition_forces": [
+            {
+                "force_id": str(item["faction_id"]),
+                "goal": str(item["conflict"]),
+                "leverage": str(item["legitimacy"]),
+                "escalation_pattern": f"Pressure escalates through {item['conflict']}",
+                "limit": f"Depends on {item['maintenance_cost']}",
+            }
+            for item in factions
+        ],
+        "world_rules": [
+            f"{item['statement']} Narrative function: {item['function']}"
+            for item in rules
+        ],
+    }
+
+
 def _seed_project_and_active_design(
     database_url: str,
     *,
@@ -1124,6 +1209,8 @@ def _seed_project_and_active_design(
     commit_sha: str,
     principal: Principal,
     campaign_contract: Mapping[str, Any] | None = None,
+    application: BookDesignAuthorityApplication | None = None,
+    before_design_proposal: Callable[[], None] | None = None,
 ) -> dict[str, Any]:
     campaign_book = (
         dict(campaign_contract["book"])
@@ -1147,6 +1234,7 @@ def _seed_project_and_active_design(
         if campaign_contract is not None
         else None
     )
+    foundation = _book_design_foundation(campaign_contract)
     ProjectAuthorityApplication(
         database_url, application_build_id=build_id, commit_sha=commit_sha
     ).execute(
@@ -1162,7 +1250,7 @@ def _seed_project_and_active_design(
         ),
         principal=principal,
     )
-    app = BookDesignAuthorityApplication(
+    app = application or BookDesignAuthorityApplication(
         database_url, application_build_id=build_id, commit_sha=commit_sha
     )
     base = {
@@ -1196,6 +1284,8 @@ def _seed_project_and_active_design(
         ),
         principal=principal,
     )
+    if before_design_proposal is not None:
+        before_design_proposal()
     query = BookDesignAuthorityQuery(database_url)
     book = query.require_book(project_id=project_id, book_id=book_id)
     proposed = app.execute(
@@ -1206,7 +1296,7 @@ def _seed_project_and_active_design(
             idempotency_key=f"book-design:propose:{book_id}",
             trace_id=f"trace:{project_id}:book-design:propose",
             payload={
-                "schema_version": "book-design.v1",
+                "schema_version": BOOK_DESIGN_SCHEMA_VERSION,
                 "title": campaign_book["title"],
                 "genre": campaign_book["genre"],
                 "premise": campaign_book["premise"],
@@ -1221,16 +1311,35 @@ def _seed_project_and_active_design(
                     "flaw": "mistakes procedural safety for moral neutrality",
                     "arc": "avoidance to accountable agency",
                 },
-                "world_rules": [
-                    "official records carry revision traces",
-                    "public correction imposes a named civic debt",
-                ],
+                "world_rules": foundation["world_rules"],
                 "target_chapters": int(campaign_book["target_chapters"]),
+                "core_characters": foundation["core_characters"],
+                "opposition_forces": foundation["opposition_forces"],
+                "narrative_dna": {
+                    "core_question": "Who must pay when hidden truth becomes public?",
+                    "recurring_choice": "procedural safety or accountable disclosure",
+                    "cost_logic": "every recovered fact transfers a named material debt",
+                    "distinctive_mechanism": "record revisions alter civic access and liability",
+                    "emotional_contract": "discovery creates hope only through visible cost",
+                },
             },
             **base,
         ),
         principal=principal,
     )
+    candidate = next(
+        item
+        for item in query.list_design_versions(
+            project_id=project_id, book_id=book_id
+        )
+        if item["asset_version_id"] == str(proposed["asset_version_id"])
+    )
+    if candidate["status"] != "VALIDATED":
+        raise RuntimeError(
+            "BOOK_DESIGN_SEMANTIC_QUALIFICATION_FAILED: "
+            f"candidate {candidate['asset_version_id']} is "
+            f"{candidate['status']} with content {candidate['content_hash']}"
+        )
     book = query.require_book(project_id=project_id, book_id=book_id)
     app.execute(
         BookDesignAuthorityCommand(
@@ -1264,7 +1373,7 @@ def _seed_project_and_active_design(
 
 def _register_longform_definitions(
     database_url: str, *, build_id: str, commit_sha: str
-) -> tuple[str, str]:
+) -> tuple[str, str, str]:
     planning = story_planning_generation_definition(
         application_build_id=build_id, commit_sha=commit_sha
     )
@@ -1275,9 +1384,14 @@ def _register_longform_definitions(
         )
         if item["name"] == "reader_outcome.evaluate"
     )
+    narrative_evaluation = narrative_semantic_evaluation_definition(
+        application_build_id=NARRATIVE_EVALUATION_APPLICATION_BUILD_ID,
+        commit_sha=commit_sha,
+    )
     with AuthorityUnitOfWork(database_url) as uow:
         uow.repositories.definitions.register(planning)
         uow.repositories.definitions.register(reader)
+        uow.repositories.definitions.register(narrative_evaluation)
         for definition in chapter_operation_definitions(
             application_build_id=build_id,
             commit_sha=commit_sha,
@@ -1285,7 +1399,11 @@ def _register_longform_definitions(
         ):
             uow.repositories.definitions.register(definition)
         uow.commit()
-    return definition_hash(planning), definition_hash(reader)
+    return (
+        definition_hash(planning),
+        definition_hash(reader),
+        definition_hash(narrative_evaluation),
+    )
 
 
 def _install_profile(
@@ -1440,6 +1558,45 @@ def _install_profile(
         "activation": activation,
         "deployment_id": deployment_id,
     }
+
+
+def _install_narrative_evaluation_profile(
+    database_url: str,
+    *,
+    operation_definition_hash: str,
+    project_id: str,
+    workspace_id: str,
+    book_id: str,
+    build_id: str,
+    commit_sha: str,
+    compiler: Principal,
+    approver: Principal,
+    agent_admin: Principal,
+) -> dict[str, Any]:
+    """Activate the independent real-Provider evaluator before design proposal."""
+
+    profile = build_narrative_evaluation_pack_profile(
+        ROOT,
+        operation_definition_hash=operation_definition_hash,
+        pack_id=NARRATIVE_EVALUATION_PACK_ID,
+    )
+    return _install_profile(
+        database_url,
+        profile=profile,
+        version=NARRATIVE_EVALUATION_PACK_VERSION,
+        generation=1,
+        expected_activation_version=0,
+        project_id=project_id,
+        workspace_id=workspace_id,
+        book_id=book_id,
+        build_id=build_id,
+        commit_sha=commit_sha,
+        compiler=compiler,
+        approver=approver,
+        agent_admin=agent_admin,
+        agent_domain="story_design",
+        agent_scope_type="BOOK",
+    )
 
 
 def _planning_inputs(
@@ -1600,6 +1757,21 @@ def _run_planning(
     _approve_activate(planning, generated, principal=principal, key=retry_key)
     activated["book_plan.generate"] = generated.candidate_asset_version_id
 
+    retry_operations = _query_rows(
+        database_url,
+        """
+        SELECT operation_id
+        FROM authority_story_planning_generation
+        WHERE project_id=%s AND book_id=%s
+          AND generator_operation_name='book_plan.generate'
+          AND logical_key=%s AND repair_number=0
+        ORDER BY created_at
+        """,
+        (project_id, book_id, book_command.logical_key),
+    )
+    if len(retry_operations) != 1:
+        raise RuntimeError("controlled retry root Operation is ambiguous")
+    retry_operation_id = str(retry_operations[0]["operation_id"])
     retry_attempts = _query_rows(
         database_url,
         """
@@ -1616,7 +1788,7 @@ def _run_planning(
         WHERE attempt.operation_id=%s
         ORDER BY attempt.attempt_number
         """,
-        (generated.generation_operation_id,),
+        (retry_operation_id,),
     )
     if len(retry_attempts) != 2:
         raise RuntimeError("controlled retry did not persist exactly two Attempts")
@@ -1631,7 +1803,7 @@ def _run_planning(
                 fencing_token=int(stale["fencing_token"]),
                 trace_id=f"trace:{retry_key}:stale-result",
                 correlation_id=f"correlation:{project_id}",
-                causation_id=str(generated.generation_operation_id),
+                causation_id=retry_operation_id,
             ),
             outcome="success",
             result={
@@ -1706,7 +1878,7 @@ def _run_planning(
             projections[1] = dict(activation["chapter_plan_projection"])
     evidence = {
         "fault_injection_triggered": failure.triggered,
-        "retry_operation_id": generated.generation_operation_id,
+        "retry_operation_id": retry_operation_id,
         "replacement_pack": replacement_pack,
         "stale_fence_rejection": stale_rows[0],
     }
@@ -1800,12 +1972,26 @@ def _mapping(value: Any) -> dict[str, Any]:
 def _provider_evidence(content: Mapping[str, Any]) -> dict[str, Any]:
     production = _mapping(content.get("production_execution"))
     process = _mapping(production.get("process_evidence"))
+    handle = _mapping(production.get("execution_handle"))
+    result = _mapping(production.get("execution_result"))
     usage = _mapping(content.get("usage")) or _mapping(process.get("usage"))
     cost = _mapping(content.get("cost")) or _mapping(process.get("cost"))
+    transport = str(handle.get("transport") or "")
+    local_receipt_id = str(handle.get("local_execution_receipt_id") or "")
+    process_receipt_id = str(process.get("local_execution_receipt_id") or "")
+    real_process_receipt = (
+        transport == "LOCAL_CLI_REMOTE_INFERENCE"
+        and bool(local_receipt_id)
+        and local_receipt_id == process_receipt_id
+        and process.get("terminal_event_observed") is True
+        and result.get("outcome") == "SUCCEEDED"
+        and bool(result.get("process_receipt_ref"))
+    )
     return {
         "real_provider_call": content.get("real_model_call") is True
-        and process.get("real_model_call") is True,
-        "fixture_protocol_only": process.get("fixture_protocol_only"),
+        and content.get("fixture_protocol_only") is False
+        and real_process_receipt,
+        "fixture_protocol_only": content.get("fixture_protocol_only"),
         "usage": usage,
         "cost": cost,
         "model_authority": _mapping(process.get("model_authority")),
@@ -1926,8 +2112,12 @@ def _collect_normalized_planning(
         FROM chosen
         JOIN authority_operation AS operation
           ON operation.operation_id=chosen.operation_id
-        JOIN authority_attempt AS attempt
-          ON attempt.operation_id=operation.operation_id
+        JOIN LATERAL (
+            SELECT current.*
+            FROM authority_attempt AS current
+            WHERE current.operation_id=operation.operation_id
+            ORDER BY current.attempt_number DESC LIMIT 1
+        ) AS attempt ON TRUE
         JOIN LATERAL (
             SELECT version.asset_version_id, version.content
             FROM authority_operation_output_asset AS output
@@ -1937,8 +2127,6 @@ def _collect_normalized_planning(
             WHERE output.operation_id=operation.operation_id
               AND asset.asset_type='model_call_log'
               AND version.content->>'candidate_accepted'='true'
-              AND version.content#>>'{production_execution,execution_request,attempt_id}'
-                  =attempt.attempt_id
             ORDER BY version.created_at DESC LIMIT 1
         ) AS log ON TRUE
         JOIN LATERAL (
@@ -2060,9 +2248,7 @@ def _collect_retry_evidence(database_url: str, *, project_id: str) -> dict[str, 
                snapshot.deployment_id, snapshot.binding_set_hash,
                binding.prompt_bundle_ref, binding.prompt_bundle_hash,
                binding.skill_bundle_ref, binding.skill_bundle_hash,
-               binding.context_bundle_hash, binding.tool_policy_hash,
-               log.asset_version_id AS model_call_log_asset_version_id,
-               log.content AS model_call_log
+               binding.context_bundle_hash, binding.tool_policy_hash
         FROM authority_attempt AS attempt
         JOIN LATERAL (
             SELECT lease_id, owner, fencing_token
@@ -2074,18 +2260,6 @@ def _collect_retry_evidence(database_url: str, *, project_id: str) -> dict[str, 
           ON snapshot.attempt_id=attempt.attempt_id
         JOIN authority_agent_runtime_binding AS binding
           ON binding.attempt_id=attempt.attempt_id
-        JOIN LATERAL (
-            SELECT version.asset_version_id, version.content
-            FROM authority_operation_output_asset AS output
-            JOIN authority_asset AS asset ON asset.asset_id=output.asset_id
-            JOIN authority_asset_version AS version
-              ON version.asset_version_id=output.asset_version_id
-            WHERE output.operation_id=attempt.operation_id
-              AND asset.asset_type='model_call_log'
-              AND version.content#>>'{production_execution,execution_request,attempt_id}'
-                  =attempt.attempt_id
-            ORDER BY version.created_at DESC LIMIT 1
-        ) AS log ON TRUE
         WHERE attempt.operation_id=%s
         ORDER BY attempt.attempt_number
         """,
@@ -2096,11 +2270,36 @@ def _collect_retry_evidence(database_url: str, *, project_id: str) -> dict[str, 
             "fault_injection": "not-proven",
             "evidence_refs": [f"operation:{operation_id}"],
         }
+    logs = _query_rows(
+        database_url,
+        """
+        SELECT version.asset_version_id, version.content
+        FROM authority_operation_output_asset AS output
+        JOIN authority_asset AS asset ON asset.asset_id=output.asset_id
+        JOIN authority_asset_version AS version
+          ON version.asset_version_id=output.asset_version_id
+        WHERE output.operation_id=%s
+          AND asset.asset_type='model_call_log'
+        ORDER BY version.created_at
+        """,
+        (operation_id,),
+    )
+    if (
+        len(logs) != 2
+        or _mapping(logs[0]["content"]).get("candidate_accepted") is not False
+        or _mapping(logs[1]["content"]).get("candidate_accepted") is not True
+    ):
+        return {
+            "fault_injection": "not-proven",
+            "evidence_refs": [f"operation:{operation_id}"],
+        }
     normalized: list[dict[str, Any]] = []
-    for row in attempts:
-        content = _mapping(row["model_call_log"])
+    for row, log in zip(attempts, logs, strict=True):
+        content = _mapping(log["content"])
         production = _mapping(content.get("production_execution"))
         input_manifest = _mapping(production.get("input_manifest"))
+        execution_request = _mapping(production.get("execution_request"))
+        execution_handle = _mapping(production.get("execution_handle"))
         normalized.append(
             {
                 "operation_id": operation_id,
@@ -2110,6 +2309,11 @@ def _collect_retry_evidence(database_url: str, *, project_id: str) -> dict[str, 
                 "lease_id": row["lease_id"],
                 "fencing_token": row["fencing_token"],
                 "fence_identity": (f"{row['attempt_id']}:{row['fencing_token']}"),
+                "provider_execution_attempt_id": execution_request.get("attempt_id"),
+                "external_effect_id": execution_request.get("external_effect_id"),
+                "local_execution_receipt_id": execution_handle.get(
+                    "local_execution_receipt_id"
+                ),
                 "candidate_accepted": content.get("candidate_accepted") is True,
                 "snapshot": {
                     key: row[key]
@@ -2143,7 +2347,7 @@ def _collect_retry_evidence(database_url: str, *, project_id: str) -> dict[str, 
                     f"attempt:{row['attempt_id']}",
                     f"lease:{row['lease_id']}",
                     f"pack-snapshot:{row['snapshot_id']}",
-                    f"asset-version:{row['model_call_log_asset_version_id']}",
+                    f"asset-version:{log['asset_version_id']}",
                 ],
                 **_provider_evidence(content),
             }
@@ -2168,6 +2372,23 @@ def _collect_retry_evidence(database_url: str, *, project_id: str) -> dict[str, 
         (operation_id,),
     )
     first, second = normalized
+    provider_executions = {
+        (
+            str(item.get("external_effect_id") or ""),
+            str(item.get("local_execution_receipt_id") or ""),
+        )
+        for item in normalized
+        if item["real_provider_call"] is True
+    }
+    provider_executions.discard(("", ""))
+    recovered_provider_result = (
+        second["attempt_status"] == "SUCCEEDED"
+        and second["candidate_accepted"] is True
+        and second["provider_execution_attempt_id"] == first["attempt_id"]
+        and second["external_effect_id"] == first["external_effect_id"]
+        and second["local_execution_receipt_id"]
+        == first["local_execution_receipt_id"]
+    )
     identity_keys = (
         "snapshot_hash",
         "pack_id",
@@ -2197,9 +2418,8 @@ def _collect_retry_evidence(database_url: str, *, project_id: str) -> dict[str, 
         "frozen_materialization_equal": materialization_equal,
         "stale_fence_commit_rejected": len(stale) == 1,
         "accepted_candidate_count": int(candidate[0]["count"]),
-        "provider_execution_count": sum(
-            1 for item in normalized if item["real_provider_call"] is True
-        ),
+        "provider_execution_count": len(provider_executions),
+        "recovered_provider_result": recovered_provider_result,
         "evidence_refs": [
             f"operation:{operation_id}",
             *[f"late-result-evidence:{row['evidence_id']}" for row in stale],
@@ -3085,18 +3305,123 @@ def _followup_output(
     return rows[0]
 
 
+def _start_followup_worker(
+    *,
+    database_url: str,
+    settings: IndustrialSettings,
+    env: Mapping[str, str],
+    runtime_root: Path,
+    project_id: str,
+) -> tuple[subprocess.Popen[str], Any]:
+    """Launch the canonical Book Followup deployment executor.
+
+    The proof driver may observe PostgreSQL results, but it must not invoke a
+    follow-up handler or scheduler in the Book coordination process.
+    """
+
+    runtime_root.mkdir(parents=True, exist_ok=True)
+    log_handle = (runtime_root / "book-followup-worker.log").open(
+        "a", encoding="utf-8"
+    )
+    worker_env = {
+        **os.environ,
+        **dict(env),
+        "NOVEL_FORGE_ROOT": str(ROOT),
+        "NOVEL_FORGE_STORAGE_AUTHORITY": "postgresql",
+        "NOVEL_FORGE_DATABASE_URL": database_url,
+        "NOVEL_FORGE_MINIO_ENDPOINT": settings.minio_endpoint,
+        "NOVEL_FORGE_MINIO_ACCESS_KEY": settings.minio_access_key,
+        "NOVEL_FORGE_MINIO_SECRET_KEY": settings.minio_secret_key,
+        "NOVEL_FORGE_MINIO_SECURE": "true" if settings.minio_secure else "false",
+        "NOVEL_FORGE_MINIO_RAW_BUCKET": settings.minio_raw_bucket,
+        "NOVEL_FORGE_MINIO_ARTIFACT_BUCKET": settings.minio_artifact_bucket,
+        "NOVEL_FORGE_MINIO_EXPORT_BUCKET": settings.minio_export_bucket,
+        "NOVEL_FORGE_AUTHORITY_POLL_SECONDS": "0.1",
+        "NOVEL_FORGE_AUTHORITY_BATCH_SIZE": "4",
+        "NOVEL_FORGE_AUTHORITY_PROJECT_SCOPE": project_id,
+        "PYTHONPATH": str(ROOT / "src"),
+    }
+    process = subprocess.Popen(
+        (sys.executable, "-m", "novel_forge.workers.book_followup_authority"),
+        cwd=ROOT,
+        env=worker_env,
+        stdout=log_handle,
+        stderr=subprocess.STDOUT,
+        text=True,
+    )
+    return process, log_handle
+
+
+def _start_book_worker(
+    *,
+    database_url: str,
+    settings: IndustrialSettings,
+    env: Mapping[str, str],
+    runtime_root: Path,
+    project_id: str,
+) -> tuple[subprocess.Popen[str], Any]:
+    """Launch the canonical Book deployment executor for runtime proof."""
+
+    runtime_root.mkdir(parents=True, exist_ok=True)
+    log_handle = (runtime_root / "book-worker.log").open("a", encoding="utf-8")
+    worker_env = {
+        **os.environ,
+        **dict(env),
+        "NOVEL_FORGE_ROOT": str(ROOT),
+        "NOVEL_FORGE_STORAGE_AUTHORITY": "postgresql",
+        "NOVEL_FORGE_DATABASE_URL": database_url,
+        "NOVEL_FORGE_MINIO_ENDPOINT": settings.minio_endpoint,
+        "NOVEL_FORGE_MINIO_ACCESS_KEY": settings.minio_access_key,
+        "NOVEL_FORGE_MINIO_SECRET_KEY": settings.minio_secret_key,
+        "NOVEL_FORGE_MINIO_SECURE": "true" if settings.minio_secure else "false",
+        "NOVEL_FORGE_MINIO_RAW_BUCKET": settings.minio_raw_bucket,
+        "NOVEL_FORGE_MINIO_ARTIFACT_BUCKET": settings.minio_artifact_bucket,
+        "NOVEL_FORGE_MINIO_EXPORT_BUCKET": settings.minio_export_bucket,
+        "NOVEL_FORGE_BOOK_AUTHORITY_WORKER_ID": (
+            f"book-worker:runtime-proof:{project_id}"
+        ),
+        "NOVEL_FORGE_AUTHORITY_PROJECT_SCOPE": project_id,
+        "NOVEL_FORGE_AUTHORITY_POLL_SECONDS": "0.1",
+        "NOVEL_FORGE_AUTHORITY_BATCH_SIZE": "4",
+        "PYTHONPATH": str(ROOT / "src"),
+    }
+    process = subprocess.Popen(
+        (sys.executable, "-m", "novel_forge.workers.book_authority"),
+        cwd=ROOT,
+        env=worker_env,
+        stdout=log_handle,
+        stderr=subprocess.STDOUT,
+        text=True,
+    )
+    return process, log_handle
+
+
+def _stop_followup_worker(process: subprocess.Popen[str], log_handle: Any) -> None:
+    if process.poll() is None:
+        process.terminate()
+        try:
+            process.wait(timeout=15)
+        except subprocess.TimeoutExpired:
+            process.kill()
+            process.wait(timeout=5)
+    log_handle.close()
+
+
 def _complete_reader_sidecar(
-    supervisor: PostgresBookProductionSupervisor,
     *,
     database_url: str,
     project_id: str,
-    book_run_id: str,
     chapter_request_id: str,
-) -> tuple[dict[str, Any], list[dict[str, Any]]]:
-    ticks: list[dict[str, Any]] = []
-    for _ in range(5):
-        tick = supervisor.tick(book_run_id)
-        ticks.append(_jsonable(asdict(tick)))
+    followup_process: subprocess.Popen[str],
+    timeout_seconds: float = 180.0,
+) -> dict[str, Any]:
+    deadline = time.monotonic() + timeout_seconds
+    while time.monotonic() < deadline:
+        return_code = followup_process.poll()
+        if return_code is not None:
+            raise RuntimeError(
+                f"Book Followup worker exited before Reader completion: {return_code}"
+            )
         rows = _query_rows(
             database_url,
             """
@@ -3117,9 +3442,10 @@ def _complete_reader_sidecar(
                 followup_type="READER_OUTCOME",
                 output_key="reader_outcome.report",
             )
-            return report, ticks
+            return report
+        time.sleep(0.1)
     raise RuntimeError(
-        "Reader Outcome sidecar did not succeed in five Supervisor ticks"
+        "Reader Outcome sidecar did not succeed before the bounded timeout"
     )
 
 
@@ -3222,9 +3548,12 @@ def _controlled_recap(
     project_id: str,
     chapter_request_id: str,
     principal: Principal,
+    followup_process: subprocess.Popen[str],
 ) -> dict[str, Any]:
     request = authority.require_chapter_request(chapter_request_id)
-    book = authority.require(request["book_run_id"])
+    snapshot = PostgresBookProductionQuery(
+        authority.database_url
+    ).require_accepted_followup_snapshot(chapter_request_id=chapter_request_id)
     reader = _followup_output(
         authority.database_url,
         project_id=project_id,
@@ -3232,19 +3561,17 @@ def _controlled_recap(
         followup_type="READER_OUTCOME",
         output_key="reader_outcome.report",
     )
-    frozen = dict(book["longform_context_versions"])
-    rolling = _rolling_narrative_versions(book)
     authority_inputs = authority.resolve_asset_refs(
         project_id=project_id,
         asset_version_ids=(
-            str(book["book_design_version"]),
-            str(book["book_plan_version"]),
-            str(frozen["volume_plan_version"]),
-            str(frozen["arc_plan_version"]),
-            str(frozen["quality_trend_version"]),
-            str(book["last_chapter_outcome_version_id"]),
-            rolling["story_state"],
-            rolling["canon_snapshot"],
+            str(snapshot["book_design_version"]),
+            str(snapshot["book_plan_version"]),
+            str(snapshot["volume_plan_version"]),
+            *(str(item) for item in snapshot["arc_plan_versions"]),
+            str(snapshot["quality_trend_version"]),
+            str(snapshot["accepted_chapter_outcome_version"]),
+            str(snapshot["accepted_story_state_version"]),
+            str(snapshot["accepted_canon_snapshot_version"]),
         ),
     )
 
@@ -3252,22 +3579,27 @@ def _controlled_recap(
         chapter_request_id,
         principal=principal,
         payload={
-            "book_id": book["book_id"],
+            "book_id": snapshot["book_id"],
             "checkpoint_type": LongformCheckpointType.CHAPTER_CADENCE.value,
             "chapter_range": [1, int(request["chapter_number"])],
-            "book_design_version": book["book_design_version"],
-            "book_plan_version": book["book_plan_version"],
-            "volume_plan_version": frozen["volume_plan_version"],
-            "arc_plan_version": frozen["arc_plan_version"],
-            "canon_snapshot_version": rolling["canon_snapshot"],
-            "character_state_version": rolling["character_state"],
-            "foreshadowing_state_version": rolling["foreshadowing_state"],
+            "observed_through_chapter": int(snapshot["observed_through_chapter"]),
+            "acceptance_operation_id": snapshot["acceptance_operation_id"],
+            "book_production_input_snapshot_id": snapshot[
+                "book_production_input_snapshot_id"
+            ],
+            "book_design_version": snapshot["book_design_version"],
+            "book_plan_version": snapshot["book_plan_version"],
+            "volume_plan_version": snapshot["volume_plan_version"],
+            "arc_plan_versions": list(snapshot["arc_plan_versions"]),
+            "canon_snapshot_version": snapshot[
+                "accepted_canon_snapshot_version"
+            ],
             "reader_state_version": reader["asset_version_id"],
-            "quality_trend_version": frozen["quality_trend_version"],
-            "reward_ledger_version": rolling["reward_ledger"],
-            "promise_ledger_version": rolling["promise_ledger"],
-            "chapter_outcome_versions": [book["last_chapter_outcome_version_id"]],
-            "story_state_version": book["active_story_state_version_id"],
+            "quality_trend_version": snapshot["quality_trend_version"],
+            "chapter_outcome_versions": [
+                snapshot["accepted_chapter_outcome_version"]
+            ],
+            "story_state_version": snapshot["accepted_story_state_version"],
             "observations": {
                 "evidence_level": "CONTROLLED_PROOF",
                 "controlled_proof_runtime_claim": "CONTROL_FLOW_ONLY",
@@ -3304,9 +3636,23 @@ def _controlled_recap(
             *authority_inputs,
         ),
     )
-    authority.followup.run_or_recover(
-        BookFollowupAdmission(admission.operation_id, project_id, True)
-    )
+    deadline = time.monotonic() + 180.0
+    while time.monotonic() < deadline:
+        return_code = followup_process.poll()
+        if return_code is not None:
+            raise RuntimeError(
+                f"Book Followup worker exited before Recap completion: {return_code}"
+            )
+        rows = _query_rows(
+            authority.database_url,
+            "SELECT status FROM authority_operation WHERE operation_id=%s",
+            (admission.operation_id,),
+        )
+        if len(rows) == 1 and rows[0]["status"] == "SUCCEEDED":
+            break
+        time.sleep(0.1)
+    else:
+        raise RuntimeError("controlled Longform Recap did not finish in time")
     return {
         "operation_id": admission.operation_id,
         "recap": _followup_output(
@@ -3457,6 +3803,17 @@ def _run_book_phase(
     planning = composition.planning
     input_resolver = composition.input_resolver
     supervisor = composition.supervisor
+    followup_process, followup_log = _start_followup_worker(
+        database_url=database_url,
+        settings=settings,
+        env=env,
+        runtime_root=(
+            Path(env["NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT"]).parent
+            / "book-followup-worker"
+        ),
+        project_id=project_id,
+    )
+    atexit.register(_stop_followup_worker, followup_process, followup_log)
     existing_books = _query_rows(
         database_url,
         """
@@ -3505,7 +3862,9 @@ def _run_book_phase(
                     "volume_plan_version": (
                         initial_snapshot.current_volume_plan_version
                     ),
-                    "arc_plan_version": initial_snapshot.active_arc_plan_versions[0],
+                    "arc_plan_versions": list(
+                        initial_snapshot.active_arc_plan_versions
+                    ),
                     "character_state_version": initial_snapshot.character_state_version,
                     "foreshadowing_state_version": (
                         initial_snapshot.foreshadowing_state_version
@@ -3537,6 +3896,22 @@ def _run_book_phase(
     reader_reports: dict[int, dict[str, Any]] = {}
     runtime_inputs: dict[str, str] = {}
 
+    def stopped_result(chapter_number: int) -> dict[str, Any]:
+        _stop_followup_worker(followup_process, followup_log)
+        atexit.unregister(_stop_followup_worker)
+        return {
+            "stopped_after_chapter": chapter_number,
+            "book_run": authority.require(admission.book_run_id),
+            "progress": composition.query.progress(
+                book_run_id=admission.book_run_id
+            ).to_dict(),
+            "initial_snapshot": initial_snapshot.to_dict(),
+            "chapter_requests": chapter_requests,
+            "reader_reports": reader_reports,
+            "supervisor_ticks": supervisor_ticks,
+            "chapter_ticks": chapter_ticks,
+        }
+
     for chapter_number in (1, 2):
         checkpoint = authority.require(admission.book_run_id)
         if int(checkpoint["accepted_through_chapter"]) >= chapter_number:
@@ -3563,20 +3938,8 @@ def _run_book_phase(
             )
             chapter_requests[chapter_number] = request
             chapter_ticks[chapter_number] = []
-            reader = _followup_output(
-                database_url,
-                project_id=project_id,
-                chapter_request_id=str(request["chapter_request_id"]),
-                followup_type="READER_OUTCOME",
-                output_key="reader_outcome.report",
-            )
-            reader_reports[chapter_number] = reader
-            runtime_inputs = _runtime_planning_inputs(
-                authority,
-                project_id=project_id,
-                chapter_request_id=str(request["chapter_request_id"]),
-                reader_report=reader,
-            )
+            if stop_after_chapter == chapter_number:
+                return stopped_result(chapter_number)
             continue
         request, dispatch_ticks = _drive_to_chapter_dispatch(
             supervisor,
@@ -3601,31 +3964,27 @@ def _run_book_phase(
                 chapter_number=chapter_number,
             )
         )
-        reader, reader_ticks = _complete_reader_sidecar(
-            supervisor,
+        if stop_after_chapter == chapter_number:
+            return stopped_result(chapter_number)
+
+    # The next-Chapter critical path above never waits for advisory work.  This
+    # full three-Chapter proof explicitly consumes the already admitted Reader
+    # evidence only after Chapter 2 is durably accepted; it is not a Book
+    # progression precondition.
+    for chapter_number in (1, 2):
+        request = chapter_requests[chapter_number]
+        reader_reports[chapter_number] = _complete_reader_sidecar(
             database_url=database_url,
             project_id=project_id,
-            book_run_id=admission.book_run_id,
             chapter_request_id=str(request["chapter_request_id"]),
+            followup_process=followup_process,
         )
-        reader_reports[chapter_number] = reader
-        supervisor_ticks.extend(reader_ticks)
-        runtime_inputs = _runtime_planning_inputs(
-            authority,
-            project_id=project_id,
-            chapter_request_id=str(request["chapter_request_id"]),
-            reader_report=reader,
-        )
-        if stop_after_chapter == chapter_number:
-            return {
-                "stopped_after_chapter": chapter_number,
-                "book_run": authority.require(admission.book_run_id),
-                "initial_snapshot": initial_snapshot.to_dict(),
-                "chapter_requests": chapter_requests,
-                "reader_reports": reader_reports,
-                "supervisor_ticks": supervisor_ticks,
-                "chapter_ticks": chapter_ticks,
-            }
+    runtime_inputs = _runtime_planning_inputs(
+        authority,
+        project_id=project_id,
+        chapter_request_id=str(chapter_requests[2]["chapter_request_id"]),
+        reader_report=reader_reports[2],
+    )
 
     original_chapter_3, original_projection = _generate_chapter_plan(
         planning,
@@ -3646,6 +4005,7 @@ def _run_book_phase(
         project_id=project_id,
         chapter_request_id=str(chapter_requests[2]["chapter_request_id"]),
         principal=operator,
+        followup_process=followup_process,
     )
     replan = composition.replan
     command = CoordinateBookReplanCommand(
@@ -3711,18 +4071,21 @@ def _run_book_phase(
             chapter_number=3,
         )
     )
-    reader, reader_ticks = _complete_reader_sidecar(
-        supervisor,
+    reader = _complete_reader_sidecar(
         database_url=database_url,
         project_id=project_id,
-        book_run_id=admission.book_run_id,
         chapter_request_id=str(request["chapter_request_id"]),
+        followup_process=followup_process,
     )
     reader_reports[3] = reader
-    supervisor_ticks.extend(reader_ticks)
 
     final_recap: dict[str, Any] | None = None
-    for _ in range(8):
+    deadline = time.monotonic() + 180.0
+    while time.monotonic() < deadline:
+        if followup_process.poll() is not None:
+            raise RuntimeError(
+                "Book Followup worker exited before final Recap completion"
+            )
         tick = supervisor.tick(admission.book_run_id)
         supervisor_ticks.append(_jsonable(asdict(tick)))
         try:
@@ -3749,11 +4112,14 @@ def _run_book_phase(
             and group_rows[0]["state"] == "COMPLETED"
         ):
             break
+        time.sleep(0.1)
     if final_recap is None:
         raise RuntimeError("final deterministic Longform Recap did not succeed")
     final_book = authority.require(admission.book_run_id)
     if final_book["state"] != "COMPLETED":
         raise RuntimeError("three-Chapter Book did not complete")
+    _stop_followup_worker(followup_process, followup_log)
+    atexit.unregister(_stop_followup_worker)
     return {
         "book_run": final_book,
         "initial_snapshot": initial_snapshot.to_dict(),
@@ -3820,6 +4186,20 @@ def _resume_book_phase(args: argparse.Namespace) -> dict[str, Any]:
             ),
             "NOVEL_FORGE_BOOK_FOLLOWUP_WORKER_ID": (
                 "reader-worker:short-longform-real-proof"
+            ),
+            "NOVEL_FORGE_NARRATIVE_EVALUATION_CAPABILITY_PACK_ID": (
+                NARRATIVE_EVALUATION_PACK_ID
+            ),
+            "NOVEL_FORGE_NARRATIVE_EVALUATOR_PRINCIPAL_ID": (
+                "narrative-evaluator:short-longform-real-proof"
+            ),
+            "NOVEL_FORGE_NARRATIVE_EVALUATION_WORKER_ID": (
+                "narrative-evaluator-worker:short-longform-real-proof"
+            ),
+            "NOVEL_FORGE_NARRATIVE_EVALUATOR_PROVIDER": "codex-cli",
+            "NOVEL_FORGE_NARRATIVE_EVALUATOR_MODEL": args.model,
+            "NOVEL_FORGE_NARRATIVE_SEMANTIC_EVALUATION_REASONING_EFFORT": (
+                args.reasoning_effort
             ),
             "NOVEL_FORGE_PROJECT_DAILY_PROVIDER_CAP": "100.00",
             "NOVEL_FORGE_PROVIDER_DAILY_CAP": "100.00",
@@ -3974,6 +4354,20 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
             "NOVEL_FORGE_BOOK_FOLLOWUP_WORKER_ID": (
                 "reader-worker:short-longform-real-proof"
             ),
+            "NOVEL_FORGE_NARRATIVE_EVALUATION_CAPABILITY_PACK_ID": (
+                NARRATIVE_EVALUATION_PACK_ID
+            ),
+            "NOVEL_FORGE_NARRATIVE_EVALUATOR_PRINCIPAL_ID": (
+                "narrative-evaluator:short-longform-real-proof"
+            ),
+            "NOVEL_FORGE_NARRATIVE_EVALUATION_WORKER_ID": (
+                "narrative-evaluator-worker:short-longform-real-proof"
+            ),
+            "NOVEL_FORGE_NARRATIVE_EVALUATOR_PROVIDER": "codex-cli",
+            "NOVEL_FORGE_NARRATIVE_EVALUATOR_MODEL": args.model,
+            "NOVEL_FORGE_NARRATIVE_SEMANTIC_EVALUATION_REASONING_EFFORT": (
+                args.reasoning_effort
+            ),
             "NOVEL_FORGE_PROJECT_DAILY_PROVIDER_CAP": "100.00",
             "NOVEL_FORGE_PROVIDER_DAILY_CAP": "100.00",
             "NOVEL_FORGE_DAILY_PROVIDER_CAP": "100.00",
@@ -4023,6 +4417,30 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
     agent_admin = _principal(
         f"agent-admin:{project_id}", project_id, "agent.authority.admin"
     )
+    planning_hash, reader_hash, narrative_evaluation_hash = (
+        _register_longform_definitions(
+            args.database_url, build_id=build_id, commit_sha=commit_sha
+        )
+    )
+    production_execution = build_production_execution_composition(settings, env=env)
+    narrative_evaluation_pack: dict[str, Any] = {}
+
+    def prepare_narrative_evaluation() -> None:
+        narrative_evaluation_pack.update(
+            _install_narrative_evaluation_profile(
+                args.database_url,
+                operation_definition_hash=narrative_evaluation_hash,
+                project_id=project_id,
+                workspace_id=workspace_id,
+                book_id=book_id,
+                build_id=build_id,
+                commit_sha=commit_sha,
+                compiler=compiler,
+                approver=approver,
+                agent_admin=agent_admin,
+            )
+        )
+
     book = _seed_project_and_active_design(
         args.database_url,
         project_id=project_id,
@@ -4031,6 +4449,12 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
         build_id=build_id,
         commit_sha=commit_sha,
         principal=operator,
+        application=build_book_design_authority_application(
+            settings,
+            execution=production_execution,
+            env=env,
+        ),
+        before_design_proposal=prepare_narrative_evaluation,
     )
     bootstrap = _bootstrap_assets(
         args.database_url,
@@ -4049,9 +4473,6 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
         build_id=build_id,
         commit_sha=commit_sha,
         principal=operator,
-    )
-    planning_hash, reader_hash = _register_longform_definitions(
-        args.database_url, build_id=build_id, commit_sha=commit_sha
     )
     planning_profile = build_story_planning_pack_profile(
         ROOT,
@@ -4097,7 +4518,6 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
         agent_domain="reader_outcome",
         agent_scope_type="CHAPTER",
     )
-    production_execution = build_production_execution_composition(settings, env=env)
     chapter = build_chapter_authority_application(
         settings, execution=production_execution, env=env
     )
@@ -4177,6 +4597,7 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
             "migration": _jsonable(migration),
             "bootstrap": bootstrap,
             "chapter_profiles": chapter_profiles,
+            "narrative_evaluation_pack": _jsonable(narrative_evaluation_pack),
             "planning_pack": _jsonable(planning_pack),
             "reader_pack": _jsonable(reader_pack),
             "chapter_pack": _jsonable(chapter_pack),

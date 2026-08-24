@@ -13,7 +13,7 @@ from novel_forge.modules.command_kernel.errors import KernelError
 
 from .domain import GENERATOR_CATALOG, PlanningScope
 
-STORY_DESIGN_VALIDATOR_VERSION = "2.1.0"
+STORY_DESIGN_VALIDATOR_VERSION = "2.2.0"
 _GENERATOR_DEFINITION_VERSION = re.compile(r"^[1-9][0-9]*\.[0-9]+\.[0-9]+$")
 _PLANNING_METADATA_MARKERS = (
     "plan chapter",

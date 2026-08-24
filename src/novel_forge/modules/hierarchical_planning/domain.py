@@ -86,7 +86,7 @@ CHARACTER_REACH_VALUES = frozenset(
     }
 )
 
-_REALIZATION_DOMAIN_ROLE_TYPES: dict[str, dict[str, frozenset[str]]] = {
+REALIZATION_AUTHORITY_ROLE_TYPES: dict[str, dict[str, frozenset[str]]] = {
     "WORLD_INVARIANT": {
         "world_bible": frozenset({"world_bible"}),
         "book_plan": frozenset({"book_plan", "planning_generation_candidate"}),
@@ -202,6 +202,10 @@ TYPE_FIELDS = {
         "chapter_function_matrix",
         "chapter_range",
         "cost_range",
+        "primary_arc_ids",
+        "secondary_arc_ids",
+        "required_arc_contributions",
+        "arc_checkpoint_expectations",
     ),
     PlanContractType.CHAPTER: (
         "chapter_number",
@@ -679,9 +683,9 @@ def _validate_progressive_planning_contract(
             "max_payoff_congestion": len(content.get("payoffs") or ()),
             "max_new_concepts": len(
                 {
-                    str(fact)
-                    for scene in content.get("scene_plan") or ()
-                    for fact in (scene or {}).get("information_gain") or ()
+                    str((delta or {}).get("subject") or "")
+                    for delta in content.get("world_deltas") or ()
+                    if str((delta or {}).get("subject") or "")
                 }
             ),
             "max_major_state_transitions": len(
@@ -1077,7 +1081,9 @@ def _validate_realization_authority_ref(
     content_hash = str(value["content_hash"])
     authority_role = str(value["authority_role"])
     asset_type = str(value["asset_type"])
-    allowed_role_types = _REALIZATION_DOMAIN_ROLE_TYPES.get(expected_domain_type, {})
+    allowed_role_types = REALIZATION_AUTHORITY_ROLE_TYPES.get(
+        expected_domain_type, {}
+    )
     if (
         str(value["project_id"]) != project_id
         or str(value["book_id"]) != book_id
@@ -1181,6 +1187,7 @@ def _validate_book_design_layers(content: dict[str, Any]) -> None:
     declared_ids = {
         str(item)
         for field in (
+            "story_truth_ids",
             "mystery_ids",
             "promise_ids",
             "foreshadow_ids",
@@ -1340,6 +1347,19 @@ def _validate_scene_architecture(
         for item in content.get("character_participation") or ()
         if isinstance(item, dict) and str(item.get("character_id") or "")
     }
+    declared_gains_by_character: dict[str, set[str]] = {}
+    for boundary in content.get("knowledge_boundaries") or ():
+        if (
+            not isinstance(boundary, dict)
+            or str(boundary.get("layer") or "").upper()
+            != "CHARACTER_KNOWLEDGE"
+            or str(boundary.get("status") or "").upper() != "KNOWN"
+        ):
+            continue
+        character_id = str(boundary.get("subject_id") or "")
+        fact_id = str(boundary.get("fact_id") or "")
+        if character_id and fact_id:
+            declared_gains_by_character.setdefault(character_id, set()).add(fact_id)
     previous_story_time: dict[str, tuple[int, int]] = {}
     for scene in scenes:
         scene_version = int(scene.get("scene_version") or 1)
@@ -1460,6 +1480,15 @@ def _validate_scene_architecture(
                 "SCENE_HIDDEN_KNOWLEDGE_LEAK",
                 "Scene accessible knowledge exceeds the POV character's accepted boundary",
             )
+        information_gain = {
+            str(fact) for fact in scene.get("information_gain") or () if str(fact)
+        }
+        for participant in participants:
+            declared_gains = declared_gains_by_character.get(participant, set())
+            if declared_gains:
+                known_by_character.setdefault(participant, set()).update(
+                    information_gain.intersection(declared_gains)
+                )
     for current, following in zip(scenes, scenes[1:], strict=False):
         if str(current.get("exit_state") or "") != str(
             following.get("entry_state") or ""
@@ -1635,6 +1664,7 @@ __all__ = [
     "CommitmentLevel",
     "PLAN_HORIZON",
     "PLAN_REALIZATION",
+    "REALIZATION_AUTHORITY_ROLE_TYPES",
     "PlanContractType",
     "PlanExecutionScope",
     "PlanningHorizon",

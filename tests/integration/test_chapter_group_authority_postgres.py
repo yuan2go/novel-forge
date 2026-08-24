@@ -133,8 +133,8 @@ class ChapterGroupAuthorityPostgresTests(unittest.TestCase):
 
         closed = group_authority.close(group["group_run_id"], principal=principal)
         self.assertEqual(closed["state"], "COMPLETED")
-        self.assertTrue(closed["recap_operation_id"])
-        self.assertTrue(closed["plan_adjustment_proposal_version_id"])
+        self.assertIsNone(closed["recap_operation_id"])
+        self.assertIsNone(closed["plan_adjustment_proposal_version_id"])
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
             uow.cursor.execute(
                 """
@@ -159,15 +159,6 @@ class ChapterGroupAuthorityPostgresTests(unittest.TestCase):
                 [fixture["project_id"], fixture["book_id"]],
             )
             horizon = uow.cursor.fetchone()
-            uow.cursor.execute(
-                """
-                SELECT content
-                FROM authority_asset_version
-                WHERE asset_version_id=%s
-                """,
-                [closed["plan_adjustment_proposal_version_id"]],
-            )
-            proposal = dict(uow.cursor.fetchone()[0])
             uow.cursor.execute(
                 """
                 SELECT COUNT(*)
@@ -196,8 +187,6 @@ class ChapterGroupAuthorityPostgresTests(unittest.TestCase):
             group_bound_outcomes = int(uow.cursor.fetchone()[0])
         self.assertEqual(accepted_counts, (3, 3, 3))
         self.assertEqual(tuple(horizon), (3, 3, 10, 23, "CURRENT"))
-        self.assertFalse(proposal["active_plan_mutation_allowed"])
-        self.assertTrue(proposal["authority_decision_required"])
         self.assertGreaterEqual(step_count, 16)
         self.assertEqual(group_bound_outcomes, 3)
 

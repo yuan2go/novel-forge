@@ -17,6 +17,7 @@ from .domain import GENERATOR_CATALOG
 
 
 NARRATIVE_QUALIFICATION_SCHEMA_VERSION = "progressive-narrative-qualification.v1"
+PROVIDER_JSON_SCHEMA_DIALECT = "https://json-schema.org/draft/2020-12/schema"
 
 
 class NarrativeDesignLayer(StrEnum):
@@ -584,20 +585,23 @@ def qualification_provider_schema(generator_operation_name: str) -> dict[str, An
             },
         }
     )
-    return _strict_object(
-        {
-            "schema_version": {
-                "type": "string",
-                "const": NARRATIVE_QUALIFICATION_SCHEMA_VERSION,
-            },
-            "evaluations": {
-                "type": "array",
-                "minItems": len(profiles),
-                "maxItems": len(profiles),
-                "items": evaluation,
-            },
-        }
-    )
+    return {
+        "$schema": PROVIDER_JSON_SCHEMA_DIALECT,
+        **_strict_object(
+            {
+                "schema_version": {
+                    "type": "string",
+                    "const": NARRATIVE_QUALIFICATION_SCHEMA_VERSION,
+                },
+                "evaluations": {
+                    "type": "array",
+                    "minItems": len(profiles),
+                    "maxItems": len(profiles),
+                    "items": evaluation,
+                },
+            }
+        ),
+    }
 
 
 def _strict_object(properties: dict[str, Any]) -> dict[str, Any]:

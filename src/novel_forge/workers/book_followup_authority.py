@@ -169,6 +169,9 @@ def main() -> int:
         1, int(os.environ.get("NOVEL_FORGE_AUTHORITY_BATCH_SIZE") or "10")
     )
     stopping = False
+    project_ids = (
+        () if "*" in principal.project_scope else tuple(sorted(principal.project_scope))
+    )
     boundary = AuthorityWorkerExecutionBoundary(worker_kind="book_followup")
     supervisor = WorkerSupervisor(
         worker_kind="book_followup",
@@ -202,6 +205,7 @@ def main() -> int:
                 worker_id=principal.principal_id,
                 lease_seconds=lease_seconds,
                 job_kinds=("BOOK_FOLLOWUP_ADMISSION",),
+                project_ids=project_ids,
             )
             if admission_claim is not None:
                 supervisor.polled(idle=False)
@@ -226,7 +230,10 @@ def main() -> int:
                 except WorkerProgrammingError as error:
                     supervisor.fatal(error)
                     return WorkerSupervisor.FATAL_EXIT_CODE
-            pending = scheduler.pending_operations(limit=batch_size)
+            pending = scheduler.pending_operations(
+                limit=batch_size,
+                project_ids=project_ids,
+            )
             if pending:
                 supervisor.polled(idle=False)
 

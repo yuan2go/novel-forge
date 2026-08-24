@@ -66,6 +66,84 @@ def test_retry_installs_a_new_immutable_planning_pack_version() -> None:
     assert proof.PLANNING_PACK_INITIAL_VERSION != proof.PLANNING_PACK_RECOVERY_VERSION
 
 
+def test_provider_evidence_uses_the_persisted_process_receipt_lineage() -> None:
+    proof = _load_script()
+    content = {
+        "real_model_call": True,
+        "fixture_protocol_only": False,
+        "usage": {"total_tokens": 10},
+        "cost": {"amount": "0.01"},
+        "production_execution": {
+            "execution_handle": {
+                "transport": "LOCAL_CLI_REMOTE_INFERENCE",
+                "local_execution_receipt_id": "process-receipt:1",
+            },
+            "execution_result": {
+                "outcome": "SUCCEEDED",
+                "process_receipt_ref": "authority-asset-version:receipt-1",
+            },
+            "process_evidence": {
+                "local_execution_receipt_id": "process-receipt:1",
+                "terminal_event_observed": True,
+                "model_authority": {"frozen_route_model": "gpt-5.6-sol"},
+            },
+        },
+    }
+
+    evidence = proof._provider_evidence(content)
+
+    assert evidence["real_provider_call"] is True
+    assert evidence["fixture_protocol_only"] is False
+    assert evidence["model_authority"] == {"frozen_route_model": "gpt-5.6-sol"}
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("receipt", "process-receipt:other"),
+        ("terminal", False),
+        ("outcome", "FAILED_FINAL"),
+    ],
+)
+def test_provider_evidence_fails_closed_without_matching_terminal_receipt(
+    field: str,
+    value: object,
+) -> None:
+    proof = _load_script()
+    content = {
+        "real_model_call": True,
+        "fixture_protocol_only": False,
+        "production_execution": {
+            "execution_handle": {
+                "transport": "LOCAL_CLI_REMOTE_INFERENCE",
+                "local_execution_receipt_id": "process-receipt:1",
+            },
+            "execution_result": {
+                "outcome": "SUCCEEDED",
+                "process_receipt_ref": "authority-asset-version:receipt-1",
+            },
+            "process_evidence": {
+                "local_execution_receipt_id": "process-receipt:1",
+                "terminal_event_observed": True,
+            },
+        },
+    }
+    if field == "receipt":
+        content["production_execution"]["process_evidence"][  # type: ignore[index]
+            "local_execution_receipt_id"
+        ] = value
+    elif field == "terminal":
+        content["production_execution"]["process_evidence"][  # type: ignore[index]
+            "terminal_event_observed"
+        ] = value
+    else:
+        content["production_execution"]["execution_result"][  # type: ignore[index]
+            "outcome"
+        ] = value
+
+    assert proof._provider_evidence(content)["real_provider_call"] is False
+
+
 def test_synchronous_planning_composition_drives_retryable_attempt_to_success() -> None:
     proof = _load_script()
     calls: list[int] = []

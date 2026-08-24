@@ -23,6 +23,7 @@ from novel_forge.storage.migrations.versions import (
     v20260820_0094_industrial_autonomous_novel_os as novel_os_migration,
     v20260821_0095_post_merge_correctness_repair as repair_migration,
     v20260821_0096_runtime_hardening as runtime_hardening_migration,
+    v20260824_0097_narrative_evaluator_codex_lineage as codex_lineage_migration,
 )
 
 
@@ -50,7 +51,8 @@ def test_source_import_runtime_is_registered_forward_only_head() -> None:
     assert novel_os_migration.DOWN_REVISION == liveness_migration.MIGRATION_ID
     assert repair_migration.DOWN_REVISION == novel_os_migration.MIGRATION_ID
     assert runtime_hardening_migration.DOWN_REVISION == repair_migration.MIGRATION_ID
-    assert LATEST_MIGRATION_ID == runtime_hardening_migration.MIGRATION_ID
+    assert codex_lineage_migration.DOWN_REVISION == runtime_hardening_migration.MIGRATION_ID
+    assert LATEST_MIGRATION_ID == codex_lineage_migration.MIGRATION_ID
     assert migration.DOWN_REVISION == "20260811_0075_source_deconstruction_intelligence"
     assert migration.FORWARD_ONLY is True
     sql = "\n".join(migration.UPGRADE_STATEMENTS).lower()

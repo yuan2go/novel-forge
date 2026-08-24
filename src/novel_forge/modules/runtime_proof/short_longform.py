@@ -283,14 +283,21 @@ def _check_retry(evidence: Mapping[str, Any]) -> ProofCheck:
         and bool(attempt_two.get("fence_identity"))
         and attempt_one.get("fence_identity") != attempt_two.get("fence_identity"),
         "Attempt 1 measured evidence": _measured_usage_and_estimated_cost(attempt_one),
-        "Attempt 2 provider execution": _measured_usage_and_estimated_cost(attempt_two)
+        "Attempt 2 recovered Provider evidence": _measured_usage_and_estimated_cost(attempt_two)
         and attempt_two.get("real_provider_call") is True,
         "frozen governance identity": retry.get("frozen_governance_identity_equal")
         is True,
         "frozen materialization": retry.get("frozen_materialization_equal") is True,
         "stale fence rejected": retry.get("stale_fence_commit_rejected") is True,
         "one accepted candidate": int(retry.get("accepted_candidate_count") or 0) == 1,
-        "two provider executions": int(retry.get("provider_execution_count") or 0) == 2,
+        "one idempotent Provider execution": int(
+            retry.get("provider_execution_count") or 0
+        )
+        == 1,
+        "Provider result recovered by Attempt 2": retry.get(
+            "recovered_provider_result"
+        )
+        is True,
     }
     reasons = tuple(name for name, passed in conditions.items() if not passed)
     return ProofCheck(

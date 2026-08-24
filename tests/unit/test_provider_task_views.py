@@ -391,6 +391,18 @@ def test_planning_provider_view_uses_command_and_projected_inputs_only() -> None
             "book_id": "book-1",
             "logical_key": "book:main",
             "planning_scope": "BOOK",
+            "realization_reference_contract": {
+                "contract_version": "planning-realization-reference-contract-v1",
+                "references_by_domain": {
+                    "WORLD_STATE": [
+                        {
+                            "authority_role": "world_bible",
+                            "asset_version_id": "world:v1",
+                            "content_hash": "sha256:" + "d" * 64,
+                        }
+                    ]
+                },
+            },
             "input_versions": [
                 {
                     "role": "book_design",
@@ -423,6 +435,9 @@ def test_planning_provider_view_uses_command_and_projected_inputs_only() -> None
     assert view["segments"][0]["content"] == {
         "premise": "Truth requires a visible cost."
     }
+    assert view["realization_reference_contract"]["references_by_domain"][
+        "WORLD_STATE"
+    ][0]["authority_role"] == "world_bible"
     assert view["selection_explanation"]["policy"] == (
         "minimum-sufficient-planning-context-v2"
     )
@@ -463,6 +478,92 @@ def test_planning_provider_context_is_deterministically_bounded() -> None:
 
     assert len(json.dumps(view, ensure_ascii=False)) < 65_536
     assert view["selection_explanation"]["truncated_character_count"] == 68_000
+
+
+def test_planning_repair_view_projects_source_and_failed_criteria() -> None:
+    view = build_provider_context_view(
+        "book_plan.generate",
+        {
+            "schema_version": "novelos.planning_context_bundle.v1",
+            "book_id": "book-1",
+            "logical_key": "book:main",
+            "planning_scope": "BOOK",
+            "input_versions": [
+                {
+                    "role": "book_design",
+                    "asset_version_id": "book-design:v1",
+                    "asset_type": "book_design",
+                    "content": {"premise": "Expose the concealed audit."},
+                }
+            ],
+            "repair_context": {
+                "contract_version": "planning-repair-context-v1",
+                "source_candidate": {
+                    "asset_version_id": "candidate:v1",
+                    "content_hash": "sha256:" + "a" * 64,
+                    "content": {
+                        "objective": "Expose the concealed audit.",
+                        "character_arcs": [{"character_id": "director-wu"}],
+                        "execution_evidence": {"receipt": "audit-only"},
+                    },
+                },
+                "validation_failure": {
+                    "validation_kind": "SEMANTIC",
+                    "status": "FAIL",
+                    "report_hash": "sha256:" + "b" * 64,
+                },
+                "failed_narrative_qualifications": [
+                    {
+                        "design_layer": "CHARACTER_DEVELOPMENT",
+                        "qualification_status": "FAIL",
+                        "evaluation": {
+                            "criteria": [
+                                {
+                                    "criterion": "BELIEF_CHANGE_CAUSALITY",
+                                    "verdict": "FAIL",
+                                    "repair_directive": (
+                                        "Align the antagonist target belief with the ending."
+                                    ),
+                                }
+                            ]
+                        },
+                    }
+                ],
+            },
+        },
+        build_provider_task_view(
+            "book_plan.generate",
+            {
+                "planning_command": {
+                    "logical_key": "book:main",
+                    "repair_number": 1,
+                },
+                "frozen_inputs": [
+                    {
+                        "role": "book_design",
+                        "asset_version_id": "book-design:v1",
+                        "asset_type": "book_design",
+                        "content_hash": "sha256:" + "c" * 64,
+                    }
+                ],
+                "authoritative_narrative_load": _authoritative_load(),
+            },
+        ),
+    )
+
+    repair = view["repair_context"]
+    assert view["segments"] == []
+    assert view["selection_explanation"]["omitted_segment_count"] == 1
+    assert view["selection_explanation"]["policy"] == (
+        "minimum-sufficient-planning-repair-context-v1"
+    )
+    assert repair["source_candidate"]["content"]["objective"] == (
+        "Expose the concealed audit."
+    )
+    assert "execution_evidence" not in repair["source_candidate"]["content"]
+    assert repair["failed_narrative_qualifications"][0]["evaluation"]["criteria"][
+        0
+    ]["repair_directive"] == "Align the antagonist target belief with the ending."
 
 
 def test_chapter_planning_projects_local_plan_and_long_state_before_provider() -> None:

@@ -170,7 +170,8 @@ def _complete_evidence() -> dict[str, object]:
             "frozen_materialization_equal": True,
             "stale_fence_commit_rejected": True,
             "accepted_candidate_count": 1,
-            "provider_execution_count": 2,
+            "provider_execution_count": 1,
+            "recovered_provider_result": True,
             "evidence_refs": ["retry:operation"],
         },
         "book_authority": {

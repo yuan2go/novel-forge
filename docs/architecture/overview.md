@@ -97,6 +97,13 @@ Those bounded paths are `PROVIDER_PROVEN`; sustained real Provider operation and
 unattended long-form campaigns remain unqualified. `LONGFORM_PROVEN` and
 `PRODUCTION_QUALIFIED` are false.
 
+WP-LIVE-02 owns engineering, PostgreSQL, migration, failure, real-Provider and
+campaign qualification for this closure. Its proof runners observe Book and
+Followup workers as separate deployment executors, bind every receipt to the
+exact release SHA, and reject fixture or intermediate state as runtime proof.
+Qualification results remain external evidence attached to the candidate PR;
+this current-runtime document does not promote an evidence level by itself.
+
 ## Evidence boundary
 
 The repository contains substantial implementation/runtime/test evidence for:

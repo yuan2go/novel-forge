@@ -145,6 +145,7 @@ def _canonical(payload: Any) -> str:
     )
 
 
+
 def _identity_token(value: str) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()[:20]
 
@@ -2595,7 +2596,13 @@ def _stage_semantic_contract(
             "Return text as final reader-facing revised chapter prose only. "
             "Resolve every supplied review issue in the prose, prioritizing blocking and "
             "major issues; list a code in resolved_issue_codes only after the edit is "
-            f"actually present. {revision_language}Do not put a serialized "
+            "actually present. For a governed Quality revision task, make the smallest "
+            "bounded edit that resolves the supplied task, preserve all unrelated scenes, "
+            "causal links, established facts, and already-passing quality dimensions, and "
+            "retain the complete reader-facing chapter at its original narrative scale "
+            "unless chapter_length is itself the supplied task. Never replace the full "
+            "chapter with a summary or excerpt. "
+            f"{revision_language}Do not put a serialized "
             "JSON object inside text. Do not include analysis, self-checks, change logs, "
             "revision evidence, or operator-facing appendices in text.",
             required_language,
@@ -2901,6 +2908,8 @@ def _materialize_production_codex_prompt(
         )
     )
     prompt_hash = "sha256:" + hashlib.sha256(prompt.encode("utf-8")).hexdigest()
+    prompt_bytes = len(prompt.encode("utf-8"))
+    prompt_estimated_tokens = max(1, (prompt_bytes + 2) // 3)
     component_characters = {
         "system_instruction": len(system_text),
         "governed_skill": len(skill_text),
@@ -2927,6 +2936,9 @@ def _materialize_production_codex_prompt(
         "materialization_hash": str(materialization.get("materialization_hash") or ""),
         "fully_rendered_prompt_hash": prompt_hash,
         "required_reader_facing_language": required_language,
+        "provider_prompt_projection_version": "authority-projection-task-provider-v1",
+        "rendered_prompt_bytes": prompt_bytes,
+        "rendered_prompt_estimated_tokens": prompt_estimated_tokens,
         "system_instruction": {
             key: system.get(key) for key in ("ref", "version", "content_hash")
         },

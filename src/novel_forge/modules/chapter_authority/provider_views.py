@@ -122,14 +122,19 @@ _OPERATIONAL_KEYS = {
     "context",
     "context_digest",
     "context_manifest",
+    "cost_ledger_refs",
+    "cost_receipt_refs",
     "created_by_operation_id",
     "evidence_level",
     "execution_evidence",
     "frozen_inputs",
+    "model_call_log_refs",
     "normalized_digest",
     "provider_evidence",
+    "provider_receipt_refs",
     "qualification",
     "runtime_result",
+    "reducer_applications",
     "source_chapter_plan_asset_version_id",
     "source_chapter_plan_content_hash",
     "source_extensions",
@@ -903,10 +908,17 @@ def _build_planning_context_view(
         )
     chapter = _planning_chapter(context_bundle)
     selectors = _planning_selectors(raw_inputs, chapter=chapter)
+    repair_context = context_bundle.get("repair_context")
+    if repair_context is not None and not isinstance(repair_context, Mapping):
+        raise KernelError(
+            "PLANNING_PROVIDER_CONTEXT_VIEW_INVALID",
+            "Planning repair context must be an object",
+        )
     projected: list[dict[str, Any]] = []
     omitted_items = 0
     truncated_characters = 0
-    for raw in raw_inputs:
+    projected_inputs = () if repair_context is not None else raw_inputs
+    for raw in projected_inputs:
         if not isinstance(raw, Mapping) or not isinstance(raw.get("content"), Mapping):
             raise KernelError(
                 "PLANNING_PROVIDER_CONTEXT_VIEW_INVALID",
@@ -940,10 +952,16 @@ def _build_planning_context_view(
         "accepted_state_boundary": {"accepted_through_chapter": 0},
         "segments": projected,
         "selection_explanation": {
-            "policy": "minimum-sufficient-planning-context-v2",
+            "policy": (
+                "minimum-sufficient-planning-repair-context-v1"
+                if repair_context is not None
+                else "minimum-sufficient-planning-context-v2"
+            ),
             "included_segment_count": len(projected),
             "included_fact_count": 0,
-            "omitted_segment_count": 0,
+            "omitted_segment_count": (
+                len(raw_inputs) if repair_context is not None else 0
+            ),
             "omitted_fact_count": 0,
             "omitted_item_count": omitted_items,
             "truncated_character_count": truncated_characters,
@@ -952,6 +970,54 @@ def _build_planning_context_view(
             "maximum_serialized_characters": _MAX_PROVIDER_CONTEXT_CHARACTERS,
         },
     }
+    reference_contract = context_bundle.get("realization_reference_contract")
+    if reference_contract is not None:
+        if not isinstance(reference_contract, Mapping):
+            raise KernelError(
+                "PLANNING_PROVIDER_CONTEXT_VIEW_INVALID",
+                "Planning realization reference contract must be an object",
+            )
+        view["realization_reference_contract"] = _compact(reference_contract)
+    if repair_context is not None:
+        source = repair_context.get("source_candidate")
+        if not isinstance(source, Mapping) or not isinstance(
+            source.get("content"), Mapping
+        ):
+            raise KernelError(
+                "PLANNING_PROVIDER_CONTEXT_VIEW_INVALID",
+                "Planning repair context requires its immutable source candidate",
+            )
+        projected_source, omitted, truncated = _project_planning_content(
+            stage=stage,
+            role="repair_source_candidate",
+            content=source["content"],
+            chapter=chapter,
+            selectors=selectors,
+        )
+        repair_view = {
+            "contract_version": str(repair_context.get("contract_version") or ""),
+            "source_candidate": {
+                "asset_version_id": str(source.get("asset_version_id") or ""),
+                "content_hash": str(source.get("content_hash") or ""),
+                "content": projected_source,
+            },
+            "validation_failure": _compact(
+                repair_context.get("validation_failure") or {}
+            ),
+            "failed_narrative_qualifications": _compact(
+                repair_context.get("failed_narrative_qualifications") or []
+            ),
+        }
+        bounded_repair, repair_omitted, repair_truncated = _bound_planning_value(
+            repair_view
+        )
+        view["repair_context"] = bounded_repair
+        view["selection_explanation"]["omitted_item_count"] += (
+            omitted + repair_omitted
+        )
+        view["selection_explanation"]["truncated_character_count"] += (
+            truncated + repair_truncated
+        )
     if _serialized_character_count(view) > _MAX_PROVIDER_CONTEXT_CHARACTERS:
         raise KernelError(
             "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED",

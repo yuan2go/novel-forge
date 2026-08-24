@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Iterable
 
 from novel_forge.modules.authority_handler_runtime import (
     AuthorityExecutionResult,
@@ -62,10 +63,18 @@ class ContentAuthorityScheduler:
         self.worker_id = worker_id
         self.lease_seconds = lease_seconds
 
-    def pending_operations(self, *, limit: int = 50) -> tuple[tuple[str, str], ...]:
+    def pending_operations(
+        self,
+        *,
+        limit: int = 50,
+        project_ids: Iterable[str] = (),
+    ) -> tuple[tuple[str, str], ...]:
         """Return recoverable work; lease arbitration remains authoritative."""
         if limit <= 0:
             raise ValueError("limit must be positive")
+        projects = tuple(
+            dict.fromkeys(str(item) for item in project_ids if str(item))
+        )
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
@@ -82,12 +91,18 @@ class ContentAuthorityScheduler:
                     LIMIT 1
                 ) AS active_lease ON TRUE
                 WHERE operation.definition_name = ANY(%s)
+                  AND (%s::text[]='{}'::text[] OR operation.project_id=ANY(%s))
                   AND operation.status IN ('READY', 'FAILED_RETRYABLE', 'EXECUTING')
                   AND (active_lease.expires_at IS NULL OR active_lease.expires_at <= NOW())
                 ORDER BY operation.created_at, operation.operation_id
                 LIMIT %s
                 """,
-                [list(self.registry.definition_names), limit],
+                [
+                    list(self.registry.definition_names),
+                    list(projects),
+                    list(projects),
+                    limit,
+                ],
             )
             rows = uow.cursor.fetchall()
         return tuple((str(row[0]), str(row[1])) for row in rows)
