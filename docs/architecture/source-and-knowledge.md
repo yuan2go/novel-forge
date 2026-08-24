@@ -142,7 +142,16 @@ KnowledgeCard
 
 Ready-made plots, source-specific event sequences and entity-replacement
 templates are forbidden candidate fields. Fixture-derived cards are excluded
-from production Planning selection. Current evidence is deterministic/unit
-coverage; it does not establish source-specific effectiveness, cross-source
-generalization quality, sustained real-provider originality, reader-linked
-effectiveness, or production qualification.
+from production Planning selection. The 2026-08-24 bounded PostgreSQL
+qualification proves that a production-eligible governed-card snapshot enters
+the frozen Planning Context, the Provider Task View, the Planning Candidate and
+a frozen Plan binding. A technical retry reuses the same Context AssetVersion
+even if a new card appears; card revocation or governance drift fails closed.
+The usage query distinguishes frozen Context, materialized Candidate, fixture
+versus real-provider consumption evidence and optional active/frozen Plan
+binding without granting MKAOS Planning Authority.
+
+The consumed provider path in that qualification was explicitly scripted
+fixture protocol. Real-provider Narrative Intelligence consumption,
+source-specific effectiveness, cross-source generalization quality,
+reader-linked effectiveness and production qualification remain unproven.

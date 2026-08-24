@@ -53,6 +53,9 @@ class AssetResolver(Protocol):
     def resolve_override(
         self, *, project_id: str, asset_version_id: str
     ) -> ResolvedProductionAsset: ...
+    def resolve_active_arc_plan_override(
+        self, *, project_id: str, book_id: str, asset_version_id: str
+    ) -> ResolvedProductionAsset: ...
 
 
 class ProductionPreparationService:
@@ -306,8 +309,17 @@ class ProductionPreparationService:
         if override:
             ids = [override] if isinstance(override, str) else list(override)
             assets = tuple(
-                self.resolver.resolve_override(
-                    project_id=request.project_id, asset_version_id=item
+                (
+                    self.resolver.resolve_active_arc_plan_override(
+                        project_id=request.project_id,
+                        book_id=request.book_id,
+                        asset_version_id=item,
+                    )
+                    if asset_type == "arc_plan"
+                    and hasattr(self.resolver, "resolve_active_arc_plan_override")
+                    else self.resolver.resolve_override(
+                        project_id=request.project_id, asset_version_id=item
+                    )
                 )
                 for item in ids
             )

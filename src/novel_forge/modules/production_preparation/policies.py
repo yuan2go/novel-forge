@@ -19,6 +19,7 @@ COLLECTION_ASSET_TYPES = frozenset(
         "material_asset",
         "context_segment",
         "character_card",
+        "arc_plan",
     }
 )
 
@@ -39,7 +40,7 @@ class ProductionStageProfile:
 
 
 _BASE_ALLOWED = (
-    "chapter_plan", "outline", "outline_version", "volume_arc", "world_bible",
+    "chapter_plan", "arc_plan", "outline", "outline_version", "volume_arc", "world_bible",
     "creative_brief", "theme_question", "theme_arc", "closure_plan",
     "style_policy", "quality_profile", "quality_rubric", "platform_profile",
     "context_profile", "story_state_snapshot", "canon_snapshot",
@@ -178,6 +179,7 @@ def requirements_for(
 
 CONTEXT_VERSION_REF_KEYS = {
     "chapter_plan": "chapter_plan_version",
+    "arc_plan": "selected_arc_plan_versions",
     "outline": "outline_version",
     "outline_version": "outline_version",
     "volume_arc": "volume_arc_version",

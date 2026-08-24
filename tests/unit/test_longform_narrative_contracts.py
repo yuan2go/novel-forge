@@ -150,6 +150,36 @@ def test_overdue_obligation_requires_correction_without_model_decision() -> None
     assert checkpoint["reasons"] == ["OBLIGATION_OVERDUE"]
 
 
+def test_future_dependency_wait_does_not_force_semantic_replan() -> None:
+    progress = build_arc_progress(
+        project_id="project:1",
+        book_id="book:1",
+        chapter_number=1,
+        acceptance_operation_id="operation:accept:1",
+        chapter_outcome_asset_version_id="outcome:v1",
+        arc_plan_version_id="arc:future",
+        previous_progress_units=0,
+        evidence={
+            "observation_status": "NOT_MATERIALIZED",
+            "progress_units": 0,
+            "resolution_evidence": [],
+        },
+    )
+
+    checkpoint = build_arc_checkpoint(
+        progress=progress,
+        target_progress_units=1,
+        completion_criteria_satisfied=False,
+        overdue_obligation_ids=(),
+        dependency_blockers=("arc:dependency",),
+        target_window_status="BEFORE_WINDOW",
+    )
+
+    assert checkpoint["decision"] == ArcCheckpointDecision.CONTINUE
+    assert checkpoint["reasons"] == ["DEPENDENCY_WAITING_BEFORE_WINDOW"]
+    assert checkpoint["dependency_blockers"] == ["arc:dependency"]
+
+
 def test_projection_set_is_complete_and_marks_unscheduled_arc_not_materialized() -> (
     None
 ):

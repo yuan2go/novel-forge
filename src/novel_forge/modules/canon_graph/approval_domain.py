@@ -30,6 +30,7 @@ _SEMANTIC_IDENTITY_FIELDS: dict[str, tuple[tuple[str, ...], ...]] = {
     "timeline_event_candidates": (("event_id",),),
     "foreshadow_changes": (("thread_id",),),
     "promise_changes": (("promise_id",),),
+    "obligation_changes": (("obligation_id",),),
     "reward_changes": (("reward_id",),),
     "world_rule_usages": (("rule_id",),),
     "power_state_changes": (("character_id",),),
@@ -96,6 +97,7 @@ def build_canon_change_proposal(
                 or item.get("world_rule_id")
                 or item.get("foreshadow_id")
                 or item.get("promise_id")
+                or item.get("obligation_id")
                 or item.get("subject")
                 or ""
             )
@@ -228,6 +230,7 @@ def validate_edited_canon_payload(
         "world_rule_id",
         "foreshadow_id",
         "promise_id",
+        "obligation_id",
         "subject",
     )
     original_entity = str(change.get("entity_id") or "")

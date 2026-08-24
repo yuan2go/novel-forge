@@ -1576,6 +1576,7 @@ def _normalize_model_output(stage: str, raw: dict[str, Any]) -> dict[str, Any]:
             "timeline_events",
             "foreshadow_changes",
             "promise_changes",
+            "obligation_changes",
             "reward_changes",
             "world_rule_usages",
             "power_state_changes",

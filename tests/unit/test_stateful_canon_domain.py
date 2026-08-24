@@ -125,6 +125,57 @@ class StatefulCanonDomainTests(unittest.TestCase):
             ],
         )
 
+    def test_unified_obligation_payoff_reaches_canon_state_changes(self) -> None:
+        extraction = extract_canon_candidates(
+            project_id="project-a",
+            revision={"chapter": 2, "text": "The witness sees the promise fulfilled."},
+            revision_asset_version_id="revision-v2",
+            context_bundle_version_id="context-v2",
+            provider_extraction={
+                "obligation_changes": [
+                    {
+                        "obligation_id": "promise:late",
+                        "obligation_type": "PROMISE",
+                        "from_status": "OPEN",
+                        "status": "FULFILLED",
+                        "priority": "HIGH",
+                        "target_window": {
+                            "status": "SCHEDULED",
+                            "from_chapter": 1,
+                            "to_chapter": 2,
+                        },
+                        "payoff_evidence": {
+                            "asset_version_id": "revision-v2",
+                            "event_id": "payoff:event:2",
+                        },
+                        "linked_arc_ids": ["arc:v1"],
+                        "summary": "The accepted choice fulfills the promise.",
+                    }
+                ]
+            },
+        )
+        update = build_canon_update(
+            project_id="project-a",
+            revision_asset_version_id="revision-v2",
+            context_bundle_version_id="context-v2",
+            extraction=extraction,
+            historical_state={
+                "narrative_obligation": [
+                    {
+                        "asset_version_id": "story-state:v1",
+                        "obligation_id": "promise:late",
+                        "status": "OPEN",
+                        "entity_version": 1,
+                    }
+                ]
+            },
+        )
+
+        obligation = update["state_changes"]["narrative_obligation"][0]
+        self.assertEqual(obligation["status"], "FULFILLED")
+        self.assertEqual(obligation["entity_version"], 2)
+        self.assertEqual(update["gate"], "PASSED")
+
     def test_historical_state_detects_typed_cross_chapter_conflicts(self) -> None:
         state = {
             "canon_snapshot": [

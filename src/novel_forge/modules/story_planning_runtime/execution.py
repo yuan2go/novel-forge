@@ -2933,7 +2933,11 @@ class PostgresPlanningExecutionPreparer:
                 "PLANNING_LANGUAGE_CONTRACT_INVALID",
                 "Book Authority language contract must be an object",
             )
-        logical_ref = f"planning/context_bundles/{operation_id}-{attempt_id}.json"
+        # A technical retry may create a new Operation Attempt, but it must not
+        # become a semantic replanning event. Freeze selection at the Planning
+        # Operation identity so every retry reuses the exact same Authority
+        # inputs and Narrative Intelligence card versions.
+        logical_ref = f"planning/context_bundles/{operation_id}.json"
         try:
             frozen_context = self.query.require(
                 project_id=command.project_id, logical_ref=logical_ref
@@ -3023,7 +3027,7 @@ class PostgresPlanningExecutionPreparer:
             AuthorityAssetWriteCommand(
                 operation_id=operation_id,
                 project_id=command.project_id,
-                asset_id=f"planning-context:{attempt_id}",
+                asset_id=f"planning-context:{operation_id}",
                 asset_type="context_bundle",
                 schema_version="novelos.planning_context_bundle.v1",
                 logical_ref=logical_ref,
@@ -3065,13 +3069,19 @@ class PostgresPlanningExecutionPreparer:
                     "Narrative Intelligence selection item is malformed",
                 )
             asset_version_id = str(item.get("knowledge_card_asset_version_id") or "")
+            content_hash = str(item.get("content_hash") or "")
+            self.mkaos.require_planning_card_current(
+                project_id=command.project_id,
+                asset_version_id=asset_version_id,
+                content_hash=content_hash,
+            )
             document = self.query.require(
                 project_id=command.project_id,
                 asset_version_id=asset_version_id,
             )
             if (
                 document.asset_type != "knowledge_card"
-                or document.content_hash != str(item.get("content_hash") or "")
+                or document.content_hash != content_hash
                 or document.lifecycle != "ACTIVE"
                 or document.governance != "CLEAR"
                 or document.eligibility not in {"ELIGIBLE", "PRODUCTION_ELIGIBLE"}

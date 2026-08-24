@@ -19,6 +19,7 @@ SEMANTIC_CHANGE_FIELDS = {
     "timeline_event_candidates": "timeline_event",
     "foreshadow_changes": "foreshadow_state",
     "promise_changes": "reader_promise",
+    "obligation_changes": "narrative_obligation",
     "reward_changes": "reward_event",
     "world_rule_usages": "world_rule",
     "power_state_changes": "power_state",
@@ -44,6 +45,7 @@ PROVIDER_SEMANTIC_CHANGE_FIELDS = {
     "timeline_event_candidates": "timeline_events",
     "foreshadow_changes": "foreshadow_changes",
     "promise_changes": "promise_changes",
+    "obligation_changes": "obligation_changes",
     "reward_changes": "reward_changes",
     "world_rule_usages": "world_rule_usages",
     "power_state_changes": "power_state_changes",
@@ -143,6 +145,7 @@ def extract_canon_candidates(
         "timeline_event_candidates": list(revision.get("timeline_events", [])),
         "foreshadow_changes": list(revision.get("foreshadow_changes", [])),
         "promise_changes": list(revision.get("promise_changes", [])),
+        "obligation_changes": list(revision.get("obligation_changes", [])),
         "reward_changes": list(revision.get("reward_changes", [])),
         "world_rule_usages": list(revision.get("world_rule_usages", [])),
         "power_state_changes": list(revision.get("power_state_changes", [])),
@@ -231,7 +234,7 @@ def extract_canon_candidates(
         "semantic_coverage": "INSUFFICIENT" if semantic_count == 0 else "EXTRACTED",
         "provider_assertions_optional": True,
         "arc_evidence": raw_arc_evidence,
-        "canon_extraction_contract_version": "canon-semantic-extraction-v4",
+        "canon_extraction_contract_version": "canon-semantic-extraction-v5",
     }
 
 
@@ -313,12 +316,13 @@ def build_canon_update(
         ),
         "state_changes": state_changes,
         "arc_evidence": [
-            dict(item) for item in extraction.get("arc_evidence") or ()
+            dict(item)
+            for item in extraction.get("arc_evidence") or ()
             if isinstance(item, dict)
         ],
         "rebuildable": True,
         "rollback_aware": True,
-        "canon_contract_version": "canon-update-domain-v6",
+        "canon_contract_version": "canon-update-domain-v7",
     }
 
 
@@ -919,6 +923,11 @@ _TRANSITION_PRECONDITION_SPECS = (
         ("reader_promise", "narrative_obligation"),
         (("promise_id", "obligation_id"),),
     ),
+    (
+        "obligation_changes",
+        ("narrative_obligation",),
+        (("obligation_id",),),
+    ),
     ("world_rule_usages", ("world_rule",), (("rule_id",),)),
     ("power_state_changes", ("power_state",), (("character_id",),)),
     (
@@ -1173,6 +1182,7 @@ _PLANNED_IDENTITY_FIELDS: dict[str, tuple[tuple[str, ...], ...]] = {
     "timeline_event": (("event_id",),),
     "foreshadow_state": (("thread_id",),),
     "reader_promise": (("promise_id",),),
+    "narrative_obligation": (("obligation_id",),),
     "reward_event": (("reward_id",),),
     "world_rule": (("rule_id",),),
     "power_state": (("character_id",),),
@@ -1305,6 +1315,7 @@ def _narrative_state_changes(
         "timeline_event": extraction.get("timeline_event_candidates", []),
         "foreshadow_state": extraction.get("foreshadow_changes", []),
         "reader_promise": extraction.get("promise_changes", []),
+        "narrative_obligation": extraction.get("obligation_changes", []),
         "reward_event": extraction.get("reward_changes", []),
         "world_rule": extraction.get("world_rule_usages", []),
         "power_state": extraction.get("power_state_changes", []),

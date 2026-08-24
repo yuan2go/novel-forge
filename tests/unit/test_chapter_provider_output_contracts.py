@@ -26,6 +26,7 @@ CANON_FIELDS = (
     "timeline_events",
     "foreshadow_changes",
     "promise_changes",
+    "obligation_changes",
     "reward_changes",
     "world_rule_usages",
     "power_state_changes",
@@ -191,7 +192,7 @@ def test_quality_prompt_and_schema_version_require_dimension_evidence() -> None:
     )
     assert (
         chapter_provider_output_schema_ref("canon_extraction")
-        == "schema:chapter-provider-output:canon_extraction:v10"
+        == "schema:chapter-provider-output:canon_extraction:v11"
     )
 
 
@@ -346,6 +347,46 @@ def test_canon_semantics_normalizes_initial_resource_balance() -> None:
     )
 
     assert normalized["resource_state_changes"][0]["balance"] == 3
+
+
+def test_canon_accepts_typed_unified_obligation_payoff_evidence() -> None:
+    value = _valid("canon_extraction")
+    value["obligation_changes"] = [
+        {
+            "obligation_id": "promise:late",
+            "obligation_type": "PROMISE",
+            "from_status": "OPEN",
+            "status": "FULFILLED",
+            "priority": "HIGH",
+            "target_window": {
+                "status": "SCHEDULED",
+                "from_chapter": 1,
+                "to_chapter": 2,
+            },
+            "payoff_evidence": {
+                "asset_version_id": "draft:v2",
+                "event_id": "payoff:event:2",
+            },
+            "linked_arc_ids": ["arc:v1"],
+            "summary": "The accepted choice visibly fulfills the promise.",
+            "evidence_start": 0,
+            "evidence_end": 24,
+            "confidence": 0.96,
+            "impact_type": "narrative_obligation_payoff",
+        }
+    ]
+
+    structural = validate_chapter_provider_output_schema("canon_extraction", value)
+    normalized = validate_chapter_provider_output_semantics(
+        "canon_extraction", structural
+    )
+
+    assert normalized["obligation_changes"][0]["status"] == "FULFILLED"
+
+    value["obligation_changes"][0]["payoff_evidence"] = None
+    structural = validate_chapter_provider_output_schema("canon_extraction", value)
+    with pytest.raises(KernelError, match="typed payoff evidence"):
+        validate_chapter_provider_output_semantics("canon_extraction", structural)
 
 
 def test_canon_semantics_atomizes_legacy_character_knowledge_bundle() -> None:

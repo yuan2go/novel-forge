@@ -219,9 +219,16 @@ def build_arc_checkpoint(
     )
     cumulative = int(progress.get("cumulative_progress_units") or 0)
     reasons: list[str] = []
-    if blockers:
+    if blockers and target_window_status != "BEFORE_WINDOW":
         decision = ArcCheckpointDecision.REPLAN_REQUIRED
         reasons.append("DEPENDENCY_BLOCKED")
+    elif blockers:
+        # A future Arc is expected to remain dependency-ineligible until its
+        # target window opens. Recording the blocker preserves scheduling
+        # legality; escalating it before the window would turn an ordinary
+        # planned dependency into semantic plan drift.
+        decision = ArcCheckpointDecision.CONTINUE
+        reasons.append("DEPENDENCY_WAITING_BEFORE_WINDOW")
     elif violated:
         decision = ArcCheckpointDecision.REPLAN_REQUIRED
         reasons.append("OBLIGATION_VIOLATED")

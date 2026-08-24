@@ -699,7 +699,7 @@ class _ContextHandler:
                     ),
                 }
             )
-            if item.asset_type == "arc_plan":
+            if str(metadata.get("asset_type") or "") == "arc_plan":
                 frozen_arc_plans[item.asset_version_id] = dict(item.content)
         available_candidate_types = {
             str(item["asset_type"]) for item in governed_candidates

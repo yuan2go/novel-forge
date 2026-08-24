@@ -185,10 +185,14 @@ recovery or an explicitly frozen FTS/graph/temporal fallback profile.
 
 Semantic unit tests and real PostgreSQL integration establish local validation
 of the bounded Narrative State v2 slice, including Book acceptance, replay,
-rebuild equality and future-leak exclusion. They do not establish real-provider
-quality, sustained 1000-chapter operation, production authorization, multi-book
-scale or long-form content qualification.
+rebuild equality and future-leak exclusion. The 2026-08-24 exact-SHA
+qualification adds a three-Chapter accepted-reality scheduling proof: Group
+cadence is corrected by dependency legality and overdue obligation debt;
+accepted Arc evidence accumulates completion criteria; an unobserved Arc does
+not advance; fulfilled unified obligation evidence closes the obligation; and
+completed Arcs remain excluded from the next Working Set. Active Plan content
+is immutable and production admission recomputes the exact Working Set.
 
-The accepted-reality scheduling additions in the current Work Package have
-unit/domain-contract evidence only. PostgreSQL integration and long-form
-campaign validation were intentionally not rerun for this scope.
+This proof is POSTGRES_INTEGRATION_PROVEN and FIXTURE_PROVEN only. It does not
+establish real-provider quality, sustained long-form operation, production
+authorization, multi-book scale or long-form content qualification.

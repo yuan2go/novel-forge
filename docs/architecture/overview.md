@@ -54,9 +54,13 @@ Progressive Plan + Arc Working Set
 This chain extends existing Planning/Narrative State/Context/Chapter Authority; it does not create a second narrative runtime.
 
 The current implementation realizes the working-set, composition/Mission and
-structured Narrative Intelligence links in this chain. This Work Package has
-deterministic/unit evidence only; it did not run PostgreSQL integration,
-campaign, real-provider or production qualification.
+structured Narrative Intelligence links in this chain. The 2026-08-24
+exact-SHA qualification exercised a three-Chapter PostgreSQL fixture from
+initial accepted state through corrected Working Sets, Chapter
+Intent/Memo/Context, accepted Arc/Obligation projection and the next scheduling
+decision. It also proved frozen Planning Context retry, MKAOS revocation
+fail-closed behavior and persisted usage lineage. This is bounded fixture
+evidence, not real-provider, long-form campaign or production qualification.
 
 The target hierarchy is four-dimensional: optional organization/IP scopes, narrative containment, cross-cutting Arc Graph and ChapterGroup production coordination. The current runtime has no independent Narrative Segment consumer, shared-Universe Canon Authority or reason to add empty persistence roots.
 

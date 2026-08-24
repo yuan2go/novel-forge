@@ -212,6 +212,52 @@ class PostgresProductionAssetResolver:
                 asset = self._bind_initial_state_scope(asset, *initial_scope)
         return asset
 
+    def resolve_active_arc_plan_override(
+        self, *, project_id: str, book_id: str, asset_version_id: str
+    ) -> ResolvedProductionAsset:
+        """Adapt one active Planning candidate to its ArcPlan domain role."""
+
+        if not book_id:
+            raise ValueError("ArcPlan preparation requires Book scope")
+        asset = self.resolve_override(
+            project_id=project_id, asset_version_id=asset_version_id
+        )
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT 1
+                FROM story_plan_binding AS binding
+                JOIN active_story_plan_version AS active
+                  ON active.project_id=binding.project_id
+                 AND active.book_id=binding.book_id
+                 AND active.binding_id=binding.binding_id
+                 AND active.asset_version_id=binding.asset_version_id
+                WHERE binding.project_id=%s AND binding.book_id=%s
+                  AND binding.asset_version_id=%s
+                  AND binding.contract_type='ARC'
+                  AND binding.freshness='CURRENT'
+                """,
+                [project_id, book_id, asset_version_id],
+            )
+            active = uow.cursor.fetchone()
+        if (
+            active is None
+            or asset.asset_type != "planning_generation_candidate"
+            or str(asset.content.get("planning_scope") or "") != "ARC"
+        ):
+            raise KernelError(
+                "PREPARATION_ARC_PLAN_NOT_ACTIVE",
+                "ArcPlan override must be the current active Planning Authority version",
+            )
+        return replace(
+            asset,
+            asset_type="arc_plan",
+            content={
+                **asset.content,
+                "physical_asset_type": asset.asset_type,
+            },
+        )
+
     def _accepted_snapshot_scope(
         self, *, project_id: str, asset_version_id: str
     ) -> tuple[str, int, str] | None:

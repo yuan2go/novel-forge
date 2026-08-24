@@ -138,6 +138,85 @@ class MkaosAuthorityQuery:
         )
         return [dict(zip(keys, row, strict=True)) for row in rows]
 
+    def require_planning_card_current(
+        self,
+        *,
+        project_id: str,
+        asset_version_id: str,
+        content_hash: str,
+    ) -> dict[str, Any]:
+        """Fail closed when a frozen Planning card lost production authority.
+
+        A Planning Context freezes the selected immutable AssetVersion, but a
+        technical retry still has to honor a later MKAOS revocation.  The
+        frozen version therefore preserves semantics without preserving an
+        obsolete permission to consume it.
+        """
+
+        if not project_id or not asset_version_id or not content_hash:
+            raise ValueError(
+                "project_id, asset_version_id, and content_hash are required"
+            )
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """
+                SELECT card.knowledge_card_id, card.project_id,
+                       card.workspace_id, card.asset_version_id,
+                       card.candidate_asset_version_id,
+                       card.governance_decision_asset_version_id,
+                       card.created_by_operation_id, card.content_hash,
+                       card.status, version.lifecycle, version.eligibility,
+                       version.governance, version.content,
+                       operation.status, card.created_at
+                FROM authority_mkaos_knowledge_card AS card
+                JOIN authority_asset_version AS version
+                  ON version.asset_version_id=card.asset_version_id
+                JOIN authority_operation AS operation
+                  ON operation.operation_id=card.created_by_operation_id
+                WHERE card.project_id=%s AND card.asset_version_id=%s
+                FOR SHARE OF card, version, operation
+                """,
+                [project_id, asset_version_id],
+            )
+            row = uow.cursor.fetchone()
+        if row is None:
+            raise KernelError(
+                "PLANNING_NARRATIVE_INTELLIGENCE_DRIFT",
+                "Frozen KnowledgeCard is no longer registered in MKAOS Authority",
+            )
+        keys = (
+            "knowledge_card_id",
+            "project_id",
+            "workspace_id",
+            "asset_version_id",
+            "candidate_asset_version_id",
+            "governance_decision_asset_version_id",
+            "created_by_operation_id",
+            "content_hash",
+            "card_status",
+            "lifecycle",
+            "eligibility",
+            "governance",
+            "content",
+            "operation_status",
+            "created_at",
+        )
+        card = dict(zip(keys, row, strict=True))
+        if (
+            card["content_hash"] != content_hash
+            or card["card_status"] != "ACTIVE"
+            or card["lifecycle"] != "ACTIVE"
+            or card["eligibility"] not in {"ELIGIBLE", "PRODUCTION_ELIGIBLE"}
+            or card["governance"] != "CLEAR"
+            or card["operation_status"] != "SUCCEEDED"
+            or not _production_context_eligible_card(card)
+        ):
+            raise KernelError(
+                "PLANNING_NARRATIVE_INTELLIGENCE_DRIFT",
+                "Frozen KnowledgeCard is no longer production eligible",
+            )
+        return card
+
     def list_packs(
         self,
         *,
@@ -246,7 +325,6 @@ class MkaosAuthorityQuery:
                   AND context_version.content->>'schema_version'=
                       'novelos.planning_context_bundle.v1'
                   AND (%s='' OR context_version.content->>'book_id'=%s)
-                  AND operation.status IN ('WAITING_GATE','SUCCEEDED')
                 ORDER BY context_output.created_at DESC,
                          context_version.asset_version_id
                 LIMIT %s
@@ -273,9 +351,7 @@ class MkaosAuthorityQuery:
                     {
                         "project_id": project_id,
                         "book_id": str(context.get("book_id") or ""),
-                        "planning_stage": str(
-                            need.get("target_stage") or ""
-                        ),
+                        "planning_stage": str(need.get("target_stage") or ""),
                         "planning_operation_id": str(row[0]),
                         "planning_operation_status": str(row[4]),
                         "context_bundle_asset_version_id": str(row[1]),
