@@ -40,8 +40,9 @@ These are derived from the Canonical Design and cannot independently change arch
 
 Keep operational and development guides focused on executable procedures. Approved implementation specifications may live under `superpowers/specs/` only while active; completed or superseded delivery plans are removed once their durable decisions and qualification evidence have converged into the Canonical Design, ADRs, current-runtime companions, or qualification records.
 
-Completed runtime-hardening evidence:
+Completed exact-SHA evidence:
 
+- [Narrative Orchestration bounded qualification](qualification/2026-08-24-narrative-orchestration-qualification.md)
 - [`qualification/2026-08-22-post-merge-runtime-hardening.md`](qualification/2026-08-22-post-merge-runtime-hardening.md)
 
 The completed runtime-hardening design and superseded post-merge design/plan
