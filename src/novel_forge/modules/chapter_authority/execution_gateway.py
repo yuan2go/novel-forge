@@ -125,6 +125,258 @@ def _canonical(payload: Any) -> str:
     )
 
 
+_PROVIDER_PROMPT_PROJECTION_VERSION = "provider-prompt-projection-v1"
+_RUNTIME_LINEAGE_KEYS = frozenset(
+    {
+        "provider_evidence",
+        "execution_evidence",
+        "cost_receipt_refs",
+        "cost_ledger_refs",
+        "model_call_log_refs",
+        "provider_receipt_refs",
+        "reducer_applications",
+    }
+)
+
+
+def _strip_runtime_lineage(value: Any) -> Any:
+    """Keep semantic model input while retaining full lineage in Authority storage."""
+
+    if isinstance(value, Mapping):
+        return {
+            str(key): _strip_runtime_lineage(item)
+            for key, item in value.items()
+            if str(key) not in _RUNTIME_LINEAGE_KEYS
+        }
+    if isinstance(value, (list, tuple)):
+        return [_strip_runtime_lineage(item) for item in value]
+    return value
+
+
+def _context_prompt_projection(content: Mapping[str, Any]) -> dict[str, Any]:
+    stage_view = content.get("stage_context_view")
+    segments = (
+        stage_view.get("segments")
+        if isinstance(stage_view, Mapping)
+        else content.get("context_segments")
+    )
+    projected_segments = []
+    for raw in segments or ():
+        if not isinstance(raw, Mapping):
+            continue
+        projected_segments.append(
+            {
+                key: _strip_runtime_lineage(raw[key])
+                for key in (
+                    "asset_version_id",
+                    "asset_type",
+                    "physical_asset_type",
+                    "narrative_function",
+                    "safe_summary",
+                    "structured_facts",
+                    "allowed_use",
+                    "content_digest",
+                    "source_policy_version",
+                    "token_count",
+                    "compression_method",
+                    "source_expression_included",
+                )
+                if key in raw
+            }
+        )
+    actual = content.get("actual_context")
+    projected_actual = {
+        str(key): _strip_runtime_lineage(value)
+        for key, value in (actual.items() if isinstance(actual, Mapping) else ())
+        if str(key) != "stage_context_view"
+    }
+    manifest = content.get("context_manifest")
+    boundary = (
+        manifest.get("authority_state_boundary")
+        if isinstance(manifest, Mapping)
+        else None
+    )
+    return {
+        key: value
+        for key, value in {
+            "project_id": content.get("project_id"),
+            "book_id": content.get("book_id"),
+            "stage": content.get("stage"),
+            "chapter": content.get("chapter"),
+            "goal": content.get("goal"),
+            "context_digest": content.get("actual_context_digest")
+            or content.get("context_digest"),
+            "token_budget": content.get("token_budget"),
+            "estimated_tokens": content.get("estimated_tokens"),
+            "authority_state_boundary": _strip_runtime_lineage(boundary or {}),
+            "actual_context": projected_actual,
+            "segments": projected_segments,
+            "copyright_boundary": content.get("copyright_boundary"),
+            "source_isolation_result": _strip_runtime_lineage(
+                content.get("source_isolation_result") or {}
+            ),
+        }.items()
+        if value not in (None, "", [], {})
+    }
+
+
+def _context_prompt_identity(content: Mapping[str, Any]) -> dict[str, Any]:
+    return {
+        key: value
+        for key, value in {
+            "project_id": content.get("project_id"),
+            "book_id": content.get("book_id"),
+            "stage": content.get("stage"),
+            "chapter": content.get("chapter"),
+            "context_digest": content.get("actual_context_digest")
+            or content.get("context_digest"),
+            "token_budget": content.get("token_budget"),
+            "estimated_tokens": content.get("estimated_tokens"),
+        }.items()
+        if value not in (None, "", [], {})
+    }
+
+
+def _state_event_prompt_projection(raw: Any) -> list[dict[str, Any]]:
+    return [
+        {
+            key: _strip_runtime_lineage(item[key])
+            for key in (
+                "state_kind",
+                "identity",
+                "mutation",
+                "scope",
+                "coordinate",
+                "confidence",
+                "coverage",
+                "supersession",
+            )
+            if key in item
+        }
+        for item in (raw or ())
+        if isinstance(item, Mapping)
+    ]
+
+
+def _reader_asset_prompt_projection(assets: Mapping[str, Any]) -> dict[str, Any]:
+    draft = assets.get("draft_version")
+    quality = assets.get("quality_score_report")
+    state = assets.get("story_state_snapshot")
+    outcome = assets.get("chapter_outcome")
+    planning = assets.get("planning_generation_candidate")
+    canon = assets.get("canon_snapshot")
+    state_current = state.get("current_state") if isinstance(state, Mapping) else None
+    projected_state = {
+        str(kind): _state_event_prompt_projection(rows)
+        for kind, rows in (
+            state_current.items() if isinstance(state_current, Mapping) else ()
+        )
+    }
+    return {
+        "draft": {
+            key: draft[key]
+            for key in ("chapter", "title", "text")
+            if isinstance(draft, Mapping) and key in draft
+        },
+        "quality": {
+            key: _strip_runtime_lineage(quality[key])
+            for key in (
+                "gate",
+                "aggregate_score",
+                "blocking_dimensions",
+                "uncalibrated_dimensions",
+                "dimensions",
+            )
+            if isinstance(quality, Mapping) and key in quality
+        },
+        "story_state": {
+            "state_hash": state.get("state_hash"),
+            "accepted_through_chapter": state.get("accepted_through_chapter"),
+            "current_state": projected_state,
+        }
+        if isinstance(state, Mapping)
+        else {},
+        "chapter_outcome": {
+            "chapter_number": outcome.get("chapter_number"),
+            "state_events": _state_event_prompt_projection(outcome.get("state_events")),
+            "reader_state_observations": _strip_runtime_lineage(
+                outcome.get("reader_state_observations") or []
+            ),
+        }
+        if isinstance(outcome, Mapping)
+        else {},
+        "planning": {
+            key: _strip_runtime_lineage(planning[key])
+            for key in (
+                "objective",
+                "turn",
+                "choice",
+                "consequence",
+                "resistance",
+                "escalation",
+                "result",
+                "hard_constraints",
+                "soft_constraints",
+                "required_events",
+                "forbidden_events",
+                "required_payoffs",
+                "forbidden_payoffs",
+                "closure_conditions",
+                "world_deltas",
+                "character_deltas",
+                "relationship_deltas",
+                "arc_contributions",
+            )
+            if isinstance(planning, Mapping) and key in planning
+        },
+        "canon": _strip_runtime_lineage(canon or {}),
+        "book_design": _strip_runtime_lineage(assets.get("book_design") or {}),
+        "platform_profile": _strip_runtime_lineage(
+            assets.get("platform_profile") or {}
+        ),
+        "reader_contract": _strip_runtime_lineage(
+            assets.get("reader_contract") or {}
+        ),
+        "reader_segment_profile": _strip_runtime_lineage(
+            assets.get("reader_segment_profile") or {}
+        ),
+    }
+
+
+def _provider_prompt_projection(
+    *,
+    stage: str,
+    inputs: Mapping[str, Any],
+    context: Mapping[str, Any],
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    if stage.startswith("quality_"):
+        return (
+            {
+                key: _strip_runtime_lineage(inputs[key])
+                for key in ("quality_context", "dimensions")
+                if key in inputs
+            },
+            _context_prompt_identity(context),
+        )
+    if stage == "reader_outcome":
+        assets = inputs.get("assets")
+        projected = {
+            key: _strip_runtime_lineage(value)
+            for key, value in inputs.items()
+            if key != "assets"
+        }
+        projected["assets"] = _reader_asset_prompt_projection(
+            assets if isinstance(assets, Mapping) else {}
+        )
+        return projected, _context_prompt_identity(context)
+    projected = {
+        str(key): _strip_runtime_lineage(value)
+        for key, value in inputs.items()
+        if str(key) != "context"
+    }
+    return projected, _context_prompt_projection(context)
+
+
 def _identity_token(value: str) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()[:20]
 
@@ -2013,11 +2265,22 @@ def _materialize_production_codex_prompt(
             "CHAPTER_CAPABILITY_MATERIALIZATION_INVALID",
             "Capability Context, Knowledge, Tool, or Schema selection is incomplete",
         )
+    context_content = context[0].get("content")
+    if not isinstance(context_content, Mapping):
+        raise KernelError(
+            "CHAPTER_CAPABILITY_MATERIALIZATION_INVALID",
+            "Capability Context content is not a governed mapping",
+        )
+    provider_inputs, provider_context = _provider_prompt_projection(
+        stage=stage,
+        inputs=inputs,
+        context=context_content,
+    )
     replacements = {
         "{{stage}}": stage,
         "{{target_scope}}": _canonical(request.target_scope.to_dict()),
-        "{{input_manifest}}": _canonical(inputs),
-        "{{context_bundle}}": _canonical(context[0].get("content")),
+        "{{input_manifest}}": _canonical(provider_inputs),
+        "{{context_bundle}}": _canonical(provider_context),
         "{{output_schema_ref}}": str(schema.get("ref") or ""),
     }
     rendered_template = template_text
@@ -2053,9 +2316,14 @@ def _materialize_production_codex_prompt(
         )
     )
     prompt_hash = "sha256:" + hashlib.sha256(prompt.encode("utf-8")).hexdigest()
+    prompt_bytes = len(prompt.encode("utf-8"))
+    prompt_estimated_tokens = max(1, (prompt_bytes + 2) // 3)
     evidence = {
         "materialization_hash": str(materialization.get("materialization_hash") or ""),
         "fully_rendered_prompt_hash": prompt_hash,
+        "provider_prompt_projection_version": _PROVIDER_PROMPT_PROJECTION_VERSION,
+        "rendered_prompt_bytes": prompt_bytes,
+        "rendered_prompt_estimated_tokens": prompt_estimated_tokens,
         "system_instruction": {
             key: system.get(key) for key in ("ref", "version", "content_hash")
         },
