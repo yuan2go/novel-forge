@@ -132,6 +132,103 @@ class AuthorityRuntimeJobPostgresTests(unittest.TestCase):
         assert second_claim is not None
         self.assertEqual(second_claim.project_id, second_project_id)
 
+    def test_claim_can_be_bounded_to_a_worker_project_scope(self) -> None:
+        outside_project_id = identifier("project-outside")
+        outside = RuntimeJobSpec(
+            job_kind="BOOK_COORDINATION_TICK",
+            runtime_group=self.runtime_group,
+            subject_kind="BOOK_RUN",
+            subject_id="subject:outside",
+            project_id=outside_project_id,
+            dedupe_key="book:outside:version:1",
+            input_snapshot={"scope": "outside"},
+        )
+        inside = self.spec(
+            dedupe_key="book:inside:version:1",
+            subject_id="subject:inside",
+        )
+        self.authority.schedule(outside)
+        self.authority.schedule(inside)
+
+        claim = self.authority.claim(
+            runtime_group=self.runtime_group,
+            worker_id="book-worker-scoped",
+            lease_seconds=30,
+            project_ids=(self.project_id,),
+        )
+
+        self.assertIsNotNone(claim)
+        assert claim is not None
+        self.assertEqual(claim.project_id, self.project_id)
+        self.assertEqual(claim.subject_id, "subject:inside")
+        with self.assertRaisesRegex(ValueError, "one project filter form"):
+            self.authority.claim(
+                runtime_group=self.runtime_group,
+                worker_id="book-worker-invalid-scope",
+                lease_seconds=30,
+                project_id=self.project_id,
+                project_ids=(self.project_id,),
+            )
+
+    def test_followup_retry_backlog_cannot_consume_book_worker_claim_lane(self) -> None:
+        for sequence in range(8):
+            self.authority.schedule(
+                RuntimeJobSpec(
+                    job_kind="BOOK_FOLLOWUP_ADMISSION",
+                    runtime_group="book_followup",
+                    subject_kind="CHAPTER_ACCEPTANCE",
+                    subject_id=f"acceptance:{sequence}",
+                    project_id=self.project_id,
+                    dedupe_key=f"followup:retry-storm:{sequence}",
+                    input_snapshot={"sequence": sequence},
+                    max_attempts=3,
+                )
+            )
+            followup_claim = self.authority.claim(
+                runtime_group="book_followup",
+                worker_id=f"book-followup-retry-worker-{sequence}",
+                lease_seconds=30,
+                project_id=self.project_id,
+                subject_kind="CHAPTER_ACCEPTANCE",
+                subject_id=f"acceptance:{sequence}",
+            )
+            self.assertIsNotNone(followup_claim)
+            assert followup_claim is not None
+            self.authority.start(followup_claim)
+            failed = self.authority.fail(
+                followup_claim,
+                {"code": "INJECTED_TRANSIENT_FOLLOWUP_FAILURE"},
+            )
+            self.assertEqual(failed["status"], "RETRY_WAIT")
+        book_job = self.authority.schedule(
+            self.spec(
+                dedupe_key="book:isolated-from-followup-storm",
+                subject_id="subject:isolated-book",
+            )
+        )
+
+        claim = self.authority.claim(
+            runtime_group="book",
+            worker_id="book-worker-isolated-capacity",
+            lease_seconds=30,
+            project_id=self.project_id,
+        )
+
+        self.assertIsNotNone(claim)
+        assert claim is not None
+        self.assertEqual(claim.runtime_job_id, book_job["runtime_job_id"])
+        self.assertEqual(claim.runtime_group, "book")
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                """
+                SELECT COUNT(*) FROM authority_runtime_job
+                WHERE project_id=%s AND runtime_group='book_followup'
+                  AND status='RETRY_WAIT'
+                """,
+                [self.project_id],
+            )
+            self.assertEqual(int(uow.cursor.fetchone()[0]), 8)
+
     def test_expired_lease_takeover_increments_fence_and_rejects_stale_worker(self) -> None:
         scheduled = self.authority.schedule(
             self.spec(dedupe_key="book:2:version:3", subject_id="subject:2")

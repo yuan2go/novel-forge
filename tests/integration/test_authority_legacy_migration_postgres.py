@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 import hashlib
-import os
 import shutil
 import tempfile
 import threading
@@ -131,6 +130,15 @@ def _migration_plan_content(
                 ],
                 "chapter_range": [1, 3],
                 "cost_range": [100, 300],
+                "primary_arc_ids": ["arc:main"],
+                "secondary_arc_ids": [],
+                "required_arc_contributions": ["arc:main"],
+                "arc_checkpoint_expectations": [
+                    {
+                        "arc_plan_version_id": "arc:main",
+                        "expectation": "the public commitment advances the main Arc",
+                    }
+                ],
             }
         )
     else:

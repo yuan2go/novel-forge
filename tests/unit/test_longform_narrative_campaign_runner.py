@@ -36,7 +36,7 @@ def _load_script():
         sys.path.remove(str(scripts))
 
 
-@pytest.mark.parametrize("target", (1, 2, 5, 30, 100, 300))
+@pytest.mark.parametrize("target", (1, 2, 5, 10, 30, 100, 300))
 def test_campaign_accepts_bounded_cumulative_targets(target: int) -> None:
     campaign = _load_script()
 
@@ -70,6 +70,10 @@ def test_language_contract_failure_is_distinct_from_authority_acceptance() -> No
         ("PostgreSQL connection refused", "ENVIRONMENT_BLOCKER"),
         ("chapter prose violates frozen canon", "CONTENT_CORRECTNESS_FAILURE"),
         ("quality corrective action regressed", "CONTENT_QUALITY_FAILURE"),
+        (
+            "BOOK_DESIGN_SEMANTIC_QUALIFICATION_FAILED: candidate rejected",
+            "CONTENT_QUALITY_FAILURE",
+        ),
         ("supervisor state invariant failed", "RUNTIME_DEFECT"),
     ),
 )
@@ -221,6 +225,47 @@ def test_campaign_counts_embedded_narrative_context_manifests(monkeypatch) -> No
     assert measurements["context_manifests"] == 1
     assert measurements["duplicate_logical_chapters"] == 0
     assert any("asset_type='context_bundle'" in sql for sql in observed_sql)
+
+
+def test_chapter_runtime_evidence_uses_authority_timestamps(monkeypatch) -> None:
+    campaign = _load_script()
+    observed: dict[str, object] = {}
+
+    def query_rows(_database_url: str, sql: str, params):
+        observed["sql"] = sql
+        observed["params"] = params
+        return [{"chapter_number": 2, "first_provider_call_at": "timestamp"}]
+
+    monkeypatch.setattr(campaign, "_query_rows", query_rows)
+
+    evidence = campaign._chapter_runtime_evidence(
+        "postgresql://authority", book_run_id="book-run-1"
+    )
+
+    assert evidence[0]["chapter_number"] == 2
+    assert observed["params"] == ("book-run-1",)
+    assert "authority_book_chapter_acceptance" in str(observed["sql"])
+    assert "authority_external_effect_dispatch" in str(observed["sql"])
+    assert "authority_book_followup_operation" in str(observed["sql"])
+
+
+def test_campaign_contract_exposes_a_longform_book_design_foundation() -> None:
+    campaign = _load_script()
+    root = Path(__file__).resolve().parents[2]
+    contract = json.loads(
+        (root / "config/proof_campaigns/longform_narrative_v2.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    foundation = campaign._campaign_book_design_foundation(contract)
+
+    assert len(foundation["core_characters"]) >= 6
+    assert len(foundation["opposition_forces"]) >= 5
+    assert len(foundation["world_rules"]) >= 6
+    assert foundation["core_characters"][0]["causal_arc"].count(" -> ") == 1
+    assert all("Narrative function:" in item for item in foundation["world_rules"])
+    assert len(contract["book"]["volumes"]) == 10
+    assert contract["book"]["target_chapters"] == 300
 
 
 def test_frozen_initial_narrative_state_supports_first_chapter_resource_delta() -> None:

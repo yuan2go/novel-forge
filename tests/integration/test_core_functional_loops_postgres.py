@@ -28,11 +28,16 @@ from novel_forge.modules.book_authority.input_resolver import (
     ResolveBookProductionInputCommand,
 )
 from novel_forge.modules.book_authority.production import BookProductionState
+from novel_forge.modules.book_authority.queries import PostgresBookProductionQuery
 from novel_forge.modules.book_followup_authority import LongformCheckpointType
-from novel_forge.modules.book_followup_authority.application import (
-    BookFollowupAdmission,
+from novel_forge.modules.book_followup_authority.coordinator import (
+    PostgresBookFollowupCoordinator,
+)
+from novel_forge.modules.book_replan import (
+    CoordinateBookReplanCommand,
 )
 from novel_forge.modules.book_production import SupervisorAction
+from novel_forge.modules.content_authority.scheduler import ContentAuthorityScheduler
 from novel_forge.modules.hierarchical_planning.domain import (
     COMMON_FIELDS,
     TYPE_FIELDS,
@@ -86,6 +91,10 @@ from novel_forge.modules.production_execution.capability_registry import (
 from novel_forge.modules.production_execution.contracts import ExecutionOutcome
 from novel_forge.modules.production_execution.gateway import ProductionExecutionGateway
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+from novel_forge.workers.book_followup_authority import (
+    execute_book_followup_admission_claim,
+    schedule_book_followup_admission_jobs,
+)
 from tests.integration.authority_postgres_support import (
     DATABASE_URL,
     ensure_migrated,
@@ -901,25 +910,26 @@ def _run_controlled_recap_through_authority(
 ) -> dict[str, Any]:
     """Produce controlled Replan evidence through the real follow-up Authority."""
     request = authority.require_chapter_request(chapter_request_id)
-    book = authority.require(request["book_run_id"])
+    snapshot = PostgresBookProductionQuery(
+        DATABASE_URL
+    ).require_accepted_followup_snapshot(chapter_request_id=chapter_request_id)
     reader = _followup_output(
         project_id=project_id,
         chapter_request_id=chapter_request_id,
         followup_type="READER_OUTCOME",
         output_key="reader_outcome.report",
     )
-    frozen = dict(book["longform_context_versions"])
     authority_inputs = authority.resolve_asset_refs(
         project_id=project_id,
         asset_version_ids=(
-            str(book["book_design_version"]),
-            str(book["book_plan_version"]),
-            str(frozen["volume_plan_version"]),
-            *(str(item) for item in frozen["arc_plan_versions"]),
-            str(frozen["quality_trend_version"]),
-            str(book["last_chapter_outcome_version_id"]),
-            str(book["active_story_state_version_id"]),
-            str(book["active_canon_snapshot_version_id"]),
+            str(snapshot["book_design_version"]),
+            str(snapshot["book_plan_version"]),
+            str(snapshot["volume_plan_version"]),
+            *(str(item) for item in snapshot["arc_plan_versions"]),
+            str(snapshot["quality_trend_version"]),
+            str(snapshot["accepted_chapter_outcome_version"]),
+            str(snapshot["accepted_story_state_version"]),
+            str(snapshot["accepted_canon_snapshot_version"]),
         ),
     )
 
@@ -927,18 +937,27 @@ def _run_controlled_recap_through_authority(
         chapter_request_id,
         principal=principal,
         payload={
-            "book_id": book["book_id"],
+            "book_id": snapshot["book_id"],
             "checkpoint_type": LongformCheckpointType.BOOK_AUTHORITY_REQUEST.value,
             "chapter_range": [1, int(request["chapter_number"])],
-            "book_design_version": book["book_design_version"],
-            "book_plan_version": book["book_plan_version"],
-            "volume_plan_version": frozen["volume_plan_version"],
-            "arc_plan_versions": list(frozen["arc_plan_versions"]),
-            "canon_snapshot_version": book["active_canon_snapshot_version_id"],
+            "observed_through_chapter": int(snapshot["observed_through_chapter"]),
+            "acceptance_operation_id": snapshot["acceptance_operation_id"],
+            "book_production_input_snapshot_id": snapshot[
+                "book_production_input_snapshot_id"
+            ],
+            "book_design_version": snapshot["book_design_version"],
+            "book_plan_version": snapshot["book_plan_version"],
+            "volume_plan_version": snapshot["volume_plan_version"],
+            "arc_plan_versions": list(snapshot["arc_plan_versions"]),
+            "canon_snapshot_version": snapshot[
+                "accepted_canon_snapshot_version"
+            ],
             "reader_state_version": reader["asset_version_id"],
-            "quality_trend_version": frozen["quality_trend_version"],
-            "chapter_outcome_versions": [book["last_chapter_outcome_version_id"]],
-            "story_state_version": book["active_story_state_version_id"],
+            "quality_trend_version": snapshot["quality_trend_version"],
+            "chapter_outcome_versions": [
+                snapshot["accepted_chapter_outcome_version"]
+            ],
+            "story_state_version": snapshot["accepted_story_state_version"],
             "observations": {
                 "evidence_level": "CONTROLLED_FIXTURE",
                 "fixture_only": True,
@@ -976,9 +995,11 @@ def _run_controlled_recap_through_authority(
             *authority_inputs,
         ),
     )
-    authority.followup.run_or_recover(
-        BookFollowupAdmission(admission.operation_id, project_id, True)
-    )
+    ContentAuthorityScheduler(
+        DATABASE_URL,
+        registry=authority.followup.registry,
+        worker_id="canonical-book-followup-worker",
+    ).run_or_recover(operation_id=admission.operation_id, project_id=project_id)
     return {
         "operation_id": admission.operation_id,
         "recap": _followup_output(
@@ -2161,9 +2182,17 @@ def test_planning_repeated_provider_timeout_exhausts_one_bounded_effect(
     )
 
 
-@pytest.mark.parametrize("runtime_path", ("NO_REPLAN", "EXPLICIT_REPLAN_APPROVAL"))
+@pytest.mark.parametrize(
+    "runtime_path",
+    (
+        "READER_FAILURE_ISOLATION",
+        "RECAP_FAILURE_ISOLATION",
+        "EXPLICIT_REPLAN_APPROVAL",
+    ),
+)
 def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
     runtime_path: str,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     harness = CapabilityPackPostgresHarness("book-input-resolver")
     deployment_id = _activate_planning_pack(harness)
@@ -2502,7 +2531,9 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
             "input_snapshot_id": snapshot.snapshot_id,
             "input_mode": "RESOLVED_AUTHORITY_INPUT",
             "target_chapter_count": 6,
-            "light_recap_cadence": 5,
+            "light_recap_cadence": (
+                1 if runtime_path == "RECAP_FAILURE_ISOLATION" else 5
+            ),
             "formal_recap_cadence": 10,
             "actor_id": "untrusted-caller",
             "trace_id": f"trace:{project_id}:book-start",
@@ -2538,6 +2569,57 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
         )
         assert claim is not None
         return execute_book_coordination_claim(runtime_jobs, runtime, claim)
+
+    followup_runtime_jobs = RuntimeJobAuthority(DATABASE_URL)
+    followup_coordinator = PostgresBookFollowupCoordinator(
+        book_authority,
+        query=composition.query,
+        principal=principal,
+    )
+    followup_scheduler = ContentAuthorityScheduler(
+        DATABASE_URL,
+        registry=book_authority.followup.registry,
+        worker_id="canonical-book-followup-worker",
+    )
+
+    def followup_admission_tick() -> dict[str, object] | None:
+        schedule_book_followup_admission_jobs(
+            followup_coordinator,
+            followup_runtime_jobs,
+            limit=4,
+        )
+        claim = followup_runtime_jobs.claim(
+            runtime_group="book_followup",
+            worker_id="canonical-book-followup-worker",
+            lease_seconds=30,
+            job_kinds=("BOOK_FOLLOWUP_ADMISSION",),
+            project_id=project_id,
+        )
+        if claim is None:
+            return None
+        return execute_book_followup_admission_claim(
+            followup_coordinator,
+            followup_runtime_jobs,
+            claim,
+            lease_seconds=30,
+        )
+
+    def followup_worker_tick() -> tuple[str, ...]:
+        actions: list[str] = []
+        result = followup_admission_tick()
+        if result is not None:
+            actions.append(str(result["action"]))
+        for operation_id, operation_project_id in followup_scheduler.pending_operations(
+            limit=4
+        ):
+            if operation_project_id != project_id:
+                continue
+            followup_scheduler.run_or_recover(
+                operation_id=operation_id,
+                project_id=operation_project_id,
+            )
+            actions.append("EXECUTE_FOLLOWUP_OPERATION")
+        return tuple(actions)
 
     def run_chapter(chapter_runtime, root_operation_id: str) -> None:
         scheduler = chapter_runtime.scheduler(principal=worker_principal)
@@ -2611,14 +2693,106 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
         == chapter_admission["admission_hash"]
     )
 
-    if runtime_path == "NO_REPLAN":
+    if runtime_path in {
+        "READER_FAILURE_ISOLATION",
+        "RECAP_FAILURE_ISOLATION",
+    }:
+        chapter_one_progress = PostgresBookProductionQuery(DATABASE_URL).progress(
+            book_run_id=book.book_run_id
+        )
+        assert chapter_one_progress.accepted_through_chapter == 1
+        assert chapter_one_progress.last_narrative_progress_at is not None
+        assert chapter_one_progress.state_class == "ACTIONABLE"
+        assert chapter_one_progress.blocking_class == "NONE"
+        assert chapter_one_progress.next_expected_transition == (
+            "PLAN_OR_DISPATCH_NEXT_CHAPTER"
+        )
+        assert chapter_one_progress.next_chapter_number == 2
+        assert chapter_one_progress.next_chapter_request_id == ""
+        assert chapter_one_progress.next_chapter_dispatch_state == "NOT_CREATED"
+        assert chapter_one_progress.pending_sidecar_backlog["blocking"] is False
+        assert chapter_one_progress.pending_sidecar_backlog[
+            "reader_admission_pending"
+        ] == 1
+        assert chapter_one_progress.pending_sidecar_backlog["total"] >= 1
+
+        reader_admission = followup_admission_tick()
+        assert reader_admission is not None
+        assert reader_admission["action"] == "ADMIT_READER_OUTCOME"
+        isolated_followup_type = "reader_outcome"
+        isolated_followup_operation_id = str(reader_admission["operation_id"])
+        if runtime_path == "RECAP_FAILURE_ISOLATION":
+            followup_scheduler.run_or_recover(
+                operation_id=isolated_followup_operation_id,
+                project_id=project_id,
+            )
+            recap_admission = followup_admission_tick()
+            assert recap_admission is not None
+            assert recap_admission["action"] == "ADMIT_LONGFORM_RECAP"
+            isolated_followup_type = "longform_recap"
+            isolated_followup_operation_id = str(recap_admission["operation_id"])
+
         no_replan_actions: list[str] = []
+        chapter_two_dispatched = False
+        isolated_followup_failed = False
         for _ in range(96):
             tick = worker_tick(worker_composition)
             action = str(tick["action"])
             no_replan_actions.append(action)
             if action == SupervisorAction.DISPATCH_CHAPTER.value:
+                dispatched_request = book_authority.require_chapter_request(
+                    str(tick["evidence_ref"])
+                )
+                if int(dispatched_request["chapter_number"]) == 2:
+                    chapter_two_dispatched = True
+                    dispatched_progress = PostgresBookProductionQuery(
+                        DATABASE_URL
+                    ).progress(book_run_id=book.book_run_id)
+                    assert dispatched_progress.accepted_through_chapter == 1
+                    assert dispatched_progress.active_chapter_number == 2
+                    assert dispatched_progress.active_chapter_request_id
+                    assert dispatched_progress.active_operation_id == str(
+                        tick["operation_id"]
+                    )
+                    assert dispatched_progress.pending_sidecar_backlog[
+                        "blocking"
+                    ] is False
+                    assert dispatched_progress.pending_sidecar_backlog["total"] >= 1
+                    assert dispatched_progress.pending_sidecar_backlog[
+                        "operation_status_counts"
+                    ][f"{isolated_followup_type}:ready"] == 1
                 run_chapter(worker_chapter_application, str(tick["operation_id"]))
+                if chapter_two_dispatched and not isolated_followup_failed:
+                    from novel_forge.modules.content_authority import (
+                        scheduler as content_scheduler_runtime,
+                    )
+
+                    original_handler = content_scheduler_runtime.execute_content_handler
+
+                    def fail_sidecar(*_args, **_kwargs):
+                        raise KernelError(
+                            "SIDECAR_INPUT_INVALID",
+                            "injected terminal advisory sidecar failure",
+                        )
+
+                    monkeypatch.setattr(
+                        content_scheduler_runtime,
+                        "execute_content_handler",
+                        fail_sidecar,
+                    )
+                    with pytest.raises(
+                        KernelError, match="injected terminal advisory sidecar failure"
+                    ):
+                        followup_scheduler.run_or_recover(
+                            operation_id=isolated_followup_operation_id,
+                            project_id=project_id,
+                        )
+                    monkeypatch.setattr(
+                        content_scheduler_runtime,
+                        "execute_content_handler",
+                        original_handler,
+                    )
+                    isolated_followup_failed = True
             if (
                 int(
                     book_authority.require(book.book_run_id)["accepted_through_chapter"]
@@ -2633,10 +2807,54 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
         assert SupervisorAction.START_REPLAN.value not in no_replan_actions
         assert SupervisorAction.DISPATCH_CHAPTER.value in no_replan_actions
         assert SupervisorAction.ACCEPT_CHAPTER.value in no_replan_actions
+        assert chapter_two_dispatched is True
+        assert isolated_followup_failed is True
         assert (
             book_authority.require(book.book_run_id)["input_snapshot_id"]
             == snapshot.snapshot_id
         )
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                """
+                SELECT acceptance.created_at, request.created_at,
+                       root.created_at, MIN(dispatch.created_at)
+                FROM authority_book_chapter_acceptance AS acceptance
+                JOIN authority_book_chapter_request AS request
+                  ON request.book_run_id=acceptance.book_run_id
+                 AND request.chapter_number=2
+                JOIN authority_operation AS root
+                  ON root.operation_id=request.chapter_root_operation_id
+                JOIN authority_operation AS child
+                  ON child.root_operation_id=root.operation_id
+                JOIN authority_external_effect AS effect
+                  ON effect.operation_id=child.operation_id
+                 AND effect.effect_type='model.invoke'
+                JOIN authority_external_effect_dispatch AS dispatch
+                  ON dispatch.external_effect_id=effect.external_effect_id
+                WHERE acceptance.book_run_id=%s
+                  AND acceptance.chapter_number=1
+                  AND acceptance.status='COMMITTED'
+                GROUP BY acceptance.created_at, request.created_at,
+                         root.created_at
+                """,
+                [book.book_run_id],
+            )
+            liveness_timestamps = uow.cursor.fetchone()
+        assert liveness_timestamps is not None
+        chapter_one_acceptance_at = liveness_timestamps[0]
+        chapter_two_request_at = liveness_timestamps[1]
+        chapter_two_dispatch_at = liveness_timestamps[2]
+        chapter_two_first_provider_call_at = liveness_timestamps[3]
+        assert chapter_two_request_at >= chapter_one_acceptance_at
+        assert chapter_two_first_provider_call_at >= chapter_two_dispatch_at
+        assert chapter_two_first_provider_call_at >= chapter_two_request_at
+        failed_sidecar_progress = PostgresBookProductionQuery(DATABASE_URL).progress(
+            book_run_id=book.book_run_id
+        )
+        assert failed_sidecar_progress.pending_sidecar_backlog["blocking"] is False
+        assert failed_sidecar_progress.pending_sidecar_backlog[
+            "operation_status_counts"
+        ][f"{isolated_followup_type}:failed_final"] == 1
         for _ in range(12):
             checkpoint_tick = worker_tick(worker_composition)
             if (
@@ -2692,7 +2910,7 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
             output_key="reader_outcome.report",
         ):
             break
-        worker_tick(worker_composition)
+        followup_worker_tick()
     else:
         raise AssertionError("Canonical Worker did not complete Reader Outcome")
 
@@ -2705,17 +2923,27 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
     coordinator = composition.replan
     assert controlled_recap["recap"]["asset_version_id"]
     assert controlled_recap["replan_request"]["asset_version_id"]
-    book_authority.complete_followup(
-        controlled_recap["operation_id"], replan_required=True
-    )
     assert book_authority.require(book.book_run_id)["state"] == (
-        BookProductionState.REPLAN_REQUIRED.value
+        BookProductionState.READY.value
     )
-
-    started_replan = worker_tick(worker_composition)
-    assert started_replan["action"] == SupervisorAction.START_REPLAN.value
-    pending = coordinator.latest_for_book(book.book_run_id)
-    assert pending is not None
+    pending = coordinator.start(
+        CoordinateBookReplanCommand(
+            project_id=project_id,
+            workspace_id=workspace_id,
+            book_id=book_id,
+            book_run_id=book.book_run_id,
+            source_recap_asset_version_id=str(
+                controlled_recap["recap"]["asset_version_id"]
+            ),
+            replan_request_asset_version_id=str(
+                controlled_recap["replan_request"]["asset_version_id"]
+            ),
+            affected_scope="CHAPTER_GROUP",
+            idempotency_key=f"{project_id}:explicit-replan:chapter-group",
+            trace_id=f"trace:{project_id}:explicit-replan",
+            correlation_id=str(controlled_recap["operation_id"]),
+        )
+    )
     assert pending["status"] == "APPROVAL_PENDING"
     assert book_authority.require(book.book_run_id)["state"] == (
         BookProductionState.REPLAN_APPROVAL_PENDING.value
@@ -2882,45 +3110,71 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
             [book.book_run_id],
         )
         chapter_two_request_id = str(uow.cursor.fetchone()[0])
-    current_book = book_authority.require(book.book_run_id)
-    frozen = dict(current_book["longform_context_versions"])
+    for _ in range(8):
+        if _followup_output_exists(
+            project_id=project_id,
+            chapter_request_id=chapter_two_request_id,
+            output_key="reader_outcome.report",
+        ):
+            break
+        followup_worker_tick()
+    else:
+        raise AssertionError("Book Followup worker did not complete Chapter 2 Reader")
+    chapter_two_snapshot = composition.query.require_accepted_followup_snapshot(
+        chapter_request_id=chapter_two_request_id
+    )
     reader = _followup_output(
         project_id=project_id,
-        chapter_request_id=checkpoint_request_id,
+        chapter_request_id=chapter_two_request_id,
         followup_type="READER_OUTCOME",
         output_key="reader_outcome.report",
     )
     authority_inputs = book_authority.resolve_asset_refs(
         project_id=project_id,
         asset_version_ids=(
-            str(current_book["book_design_version"]),
-            str(current_book["book_plan_version"]),
-            str(frozen["volume_plan_version"]),
-            *(str(item) for item in frozen["arc_plan_versions"]),
-            str(frozen["quality_trend_version"]),
-            str(current_book["last_chapter_outcome_version_id"]),
-            str(current_book["active_story_state_version_id"]),
-            str(current_book["active_canon_snapshot_version_id"]),
+            str(chapter_two_snapshot["book_design_version"]),
+            str(chapter_two_snapshot["book_plan_version"]),
+            str(chapter_two_snapshot["volume_plan_version"]),
+            *(str(item) for item in chapter_two_snapshot["arc_plan_versions"]),
+            str(chapter_two_snapshot["quality_trend_version"]),
+            str(chapter_two_snapshot["accepted_chapter_outcome_version"]),
+            str(chapter_two_snapshot["accepted_story_state_version"]),
+            str(chapter_two_snapshot["accepted_canon_snapshot_version"]),
         ),
     )
     later_admission = book_authority.schedule_longform_recap(
         chapter_two_request_id,
         principal=principal,
         payload={
-            "book_id": current_book["book_id"],
+            "book_id": chapter_two_snapshot["book_id"],
             "checkpoint_type": LongformCheckpointType.ARC_CHECKPOINT.value,
             "chapter_range": [1, 2],
-            "book_design_version": current_book["book_design_version"],
-            "book_plan_version": current_book["book_plan_version"],
-            "volume_plan_version": frozen["volume_plan_version"],
-            "arc_plan_versions": list(frozen["arc_plan_versions"]),
-            "canon_snapshot_version": current_book["active_canon_snapshot_version_id"],
-            "reader_state_version": reader["asset_version_id"],
-            "quality_trend_version": frozen["quality_trend_version"],
-            "chapter_outcome_versions": [
-                current_book["last_chapter_outcome_version_id"]
+            "observed_through_chapter": int(
+                chapter_two_snapshot["observed_through_chapter"]
+            ),
+            "acceptance_operation_id": chapter_two_snapshot[
+                "acceptance_operation_id"
             ],
-            "story_state_version": current_book["active_story_state_version_id"],
+            "book_production_input_snapshot_id": chapter_two_snapshot[
+                "book_production_input_snapshot_id"
+            ],
+            "book_design_version": chapter_two_snapshot["book_design_version"],
+            "book_plan_version": chapter_two_snapshot["book_plan_version"],
+            "volume_plan_version": chapter_two_snapshot["volume_plan_version"],
+            "arc_plan_versions": list(chapter_two_snapshot["arc_plan_versions"]),
+            "canon_snapshot_version": chapter_two_snapshot[
+                "accepted_canon_snapshot_version"
+            ],
+            "reader_state_version": reader["asset_version_id"],
+            "quality_trend_version": chapter_two_snapshot[
+                "quality_trend_version"
+            ],
+            "chapter_outcome_versions": [
+                chapter_two_snapshot["accepted_chapter_outcome_version"]
+            ],
+            "story_state_version": chapter_two_snapshot[
+                "accepted_story_state_version"
+            ],
             "observations": {
                 "evidence_level": "CONTROLLED_FIXTURE",
                 "fixture_only": True,
@@ -2947,8 +3201,9 @@ def test_book_input_resolver_freezes_active_authorities_and_planning_pack(
             *authority_inputs,
         ),
     )
-    book_authority.followup.run_or_recover(
-        BookFollowupAdmission(later_admission.operation_id, project_id, True)
+    followup_scheduler.run_or_recover(
+        operation_id=later_admission.operation_id,
+        project_id=project_id,
     )
     later_recap = _followup_output(
         project_id=project_id,

@@ -41,6 +41,7 @@ from novel_forge.modules.hierarchical_planning.domain import (
     HORIZON_REALIZATION_LEVELS,
     PLAN_HORIZON,
     PLAN_REALIZATION,
+    REALIZATION_AUTHORITY_ROLE_TYPES,
     TYPE_FIELDS,
     PlanContractType,
     RealizationLevel,
@@ -285,6 +286,54 @@ def _narrative_intelligence_limit(stage: str) -> int:
 
 def _merge_selection_terms(*values: tuple[str, ...]) -> tuple[str, ...]:
     return tuple(sorted({item for group in values for item in group if item}))[:32]
+
+
+def _realization_reference_contract(
+    *,
+    project_id: str,
+    book_id: str,
+    frozen_by_operation_id: str,
+    inputs: tuple[FrozenPlanningInput, ...],
+) -> dict[str, Any]:
+    """Publish exact frozen identities the Provider may cite as realization truth."""
+
+    references: dict[str, list[dict[str, str]]] = {}
+    for domain_type, role_types in REALIZATION_AUTHORITY_ROLE_TYPES.items():
+        eligible = []
+        for item in inputs:
+            if (
+                item.role not in role_types
+                or item.asset_type not in role_types[item.role]
+            ):
+                continue
+            eligible.append(
+                {
+                    "project_id": project_id,
+                    "book_id": book_id,
+                    "authority_role": item.role,
+                    "asset_version_id": item.asset_version_id,
+                    "asset_type": item.asset_type,
+                    "content_hash": item.content_hash,
+                    "domain_type": domain_type,
+                    "freshness": "CURRENT",
+                    "frozen_by_operation_id": frozen_by_operation_id,
+                }
+            )
+        if not eligible:
+            raise KernelError(
+                "PLANNING_REALIZATION_REFERENCE_SOURCE_MISSING",
+                f"Planning frozen inputs cannot support {domain_type}",
+            )
+        references[domain_type] = eligible
+    return {
+        "contract_version": "planning-realization-reference-contract-v1",
+        "instruction": (
+            "Copy one complete reference object from the matching domain list; "
+            "never invent or reinterpret authority_role, asset_type, identity, "
+            "or lineage."
+        ),
+        "references_by_domain": references,
+    }
 
 
 @dataclass(frozen=True, slots=True)
@@ -966,6 +1015,41 @@ def _strict_object(properties: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _realization_authority_ref_schema(domain_type: str) -> dict[str, Any]:
+    """Constrain Provider references to roles that can own the target domain."""
+
+    role_types = REALIZATION_AUTHORITY_ROLE_TYPES[domain_type]
+    string = {"type": "string", "minLength": 1}
+    return _strict_object(
+        {
+            "project_id": string,
+            "book_id": string,
+            "authority_role": {
+                "type": "string",
+                "enum": sorted(role_types),
+            },
+            "asset_version_id": string,
+            "asset_type": {
+                "type": "string",
+                "enum": sorted(
+                    {
+                        asset_type
+                        for asset_types in role_types.values()
+                        for asset_type in asset_types
+                    }
+                ),
+            },
+            "content_hash": {
+                "type": "string",
+                "pattern": "^sha256:[0-9a-f]{64}$",
+            },
+            "domain_type": {"type": "string", "const": domain_type},
+            "freshness": {"type": "string", "const": "CURRENT"},
+            "frozen_by_operation_id": string,
+        }
+    )
+
+
 def _canonical_narrative_provider_properties(
     contract_type: PlanContractType,
     *,
@@ -979,31 +1063,15 @@ def _canonical_narrative_provider_properties(
         level.value for level in HORIZON_REALIZATION_LEVELS[PLAN_HORIZON[contract_type]]
     }
     entity_realization_levels = [level.value for level in RealizationLevel]
-    authority_ref = _strict_object(
-        {
-            "project_id": string,
-            "book_id": string,
-            "authority_role": string,
-            "asset_version_id": string,
-            "asset_type": string,
-            "content_hash": {
-                "type": "string",
-                "pattern": "^sha256:[0-9a-f]{64}$",
-            },
-            "domain_type": {
-                "type": "string",
-                "enum": [
-                    "WORLD_INVARIANT",
-                    "WORLD_STRUCTURE",
-                    "WORLD_STATE",
-                    "CHARACTER_IDENTITY",
-                    "CHARACTER_STATE",
-                    "CHARACTER_TRAJECTORY",
-                ],
-            },
-            "freshness": {"type": "string", "const": "CURRENT"},
-            "frozen_by_operation_id": string,
-        }
+    world_invariant_ref = _realization_authority_ref_schema("WORLD_INVARIANT")
+    world_structure_ref = _realization_authority_ref_schema("WORLD_STRUCTURE")
+    world_state_ref = _realization_authority_ref_schema("WORLD_STATE")
+    character_identity_ref = _realization_authority_ref_schema(
+        "CHARACTER_IDENTITY"
+    )
+    character_state_ref = _realization_authority_ref_schema("CHARACTER_STATE")
+    character_trajectory_ref = _realization_authority_ref_schema(
+        "CHARACTER_TRAJECTORY"
     )
     architecture = {
         "narrative_architecture_version": {
@@ -1045,14 +1113,14 @@ def _canonical_narrative_provider_properties(
                     "invariant_refs": {
                         "type": "array",
                         "minItems": 1,
-                        "items": authority_ref,
+                        "items": world_invariant_ref,
                     },
                     "structure_refs": {
                         "type": "array",
                         "minItems": 1,
-                        "items": authority_ref,
+                        "items": world_structure_ref,
                     },
-                    "state_ref": authority_ref,
+                    "state_ref": world_state_ref,
                     "realization_level": {
                         "type": "string",
                         "enum": entity_realization_levels,
@@ -1078,9 +1146,9 @@ def _canonical_narrative_provider_properties(
             "items": _strict_object(
                 {
                     "character_id": string,
-                    "identity_ref": authority_ref,
-                    "state_ref": authority_ref,
-                    "trajectory_ref": authority_ref,
+                    "identity_ref": character_identity_ref,
+                    "state_ref": character_state_ref,
+                    "trajectory_ref": character_trajectory_ref,
                     "scope": {
                         "type": "string",
                         "enum": [item.value for item in PlanContractType],
@@ -1209,7 +1277,11 @@ def _canonical_narrative_provider_properties(
                     }
                 ),
             },
-            "arc_relations": {"type": "array", "items": arc_relation},
+            "arc_relations": {
+                "type": "array",
+                **({"maxItems": 0} if len(set(arc_relation_refs)) < 2 else {}),
+                "items": arc_relation,
+            },
         }
     if contract_type is PlanContractType.CHAPTER_GROUP:
         return {**architecture, "narrative_segment_ref": segment_ref}
@@ -1269,8 +1341,20 @@ def _canonical_narrative_provider_properties(
                     "character_id": string,
                     "goal": string,
                     "trajectory_refs": string_array,
-                    "known_fact_ids": string_array,
-                    "unknown_fact_ids": string_array,
+                    "known_fact_ids": {
+                        **string_array,
+                        "description": (
+                            "Facts known at chapter entry. Do not include facts first "
+                            "learned by this character during the planned chapter."
+                        ),
+                    },
+                    "unknown_fact_ids": {
+                        **string_array,
+                        "description": (
+                            "Facts unknown at chapter entry, including facts the "
+                            "character may learn in a later Scene."
+                        ),
+                    },
                     "belief_refs": string_array,
                     "expected_change": string,
                     "causal_trigger": string,
@@ -1399,7 +1483,14 @@ def _canonical_narrative_provider_properties(
                     "scene_group_id": string,
                     "goal": string,
                     "conflict": string,
-                    "participants": string_array,
+                    "participants": {
+                        **string_array,
+                        "description": (
+                            "Character identities present in the Scene. Every listed "
+                            "character must declare this Scene's location_id in its "
+                            "reachable_location_ids."
+                        ),
+                    },
                     "pov_character_id": string,
                     "focalization": {
                         "type": "string",
@@ -1428,12 +1519,53 @@ def _canonical_narrative_provider_properties(
                             "ELLIPSIS",
                         ],
                     },
-                    "accessible_knowledge": string_array,
-                    "arc_progress": string_array,
-                    "information_gain": string_array,
-                    "state_transitions": string_array,
-                    "entry_state": string,
-                    "exit_state": string,
+                    "accessible_knowledge": {
+                        **string_array,
+                        "description": (
+                            "Facts known by the POV character at Scene entry. A fact "
+                            "learned earlier in this chapter is eligible only after an "
+                            "earlier Scene lists it as information_gain while the "
+                            "character participates and CHARACTER_KNOWLEDGE declares "
+                            "the fact KNOWN."
+                        ),
+                    },
+                    "arc_progress": {
+                        "type": "array",
+                        "minItems": 1,
+                        "items": scheduled_arc_ref,
+                        "description": (
+                            "Exact frozen Arc plan version identities advanced in "
+                            "this Scene; never prose or an Arc label."
+                        ),
+                    },
+                    "information_gain": {
+                        **string_array,
+                        "description": (
+                            "Facts established during this Scene, never facts merely "
+                            "assumed at Scene entry."
+                        ),
+                    },
+                    "state_transitions": {
+                        **string_array,
+                        "description": (
+                            "Only exact entity_key values declared in "
+                            "required_state_transitions; never prose descriptions."
+                        ),
+                    },
+                    "entry_state": {
+                        **string,
+                        "description": (
+                            "Explicit Scene-entry state. After the first Scene this "
+                            "must copy the preceding Scene's exit_state verbatim."
+                        ),
+                    },
+                    "exit_state": {
+                        **string,
+                        "description": (
+                            "Explicit Scene-exit state which the next Scene must copy "
+                            "verbatim as its entry_state."
+                        ),
+                    },
                     "reader_effect": string,
                     "beats": {
                         "type": "array",
@@ -1569,6 +1701,15 @@ def planning_provider_output_schema(
     for field in TYPE_FIELDS[contract_type]:
         if field in strings:
             properties[field] = string
+        elif field in {"primary_arc_ids", "secondary_arc_ids"}:
+            properties[field] = {
+                "type": "array",
+                "items": _frozen_arc_ref_schema(arc_plan_version_ids, string),
+            }
+            if field == "primary_arc_ids":
+                properties[field]["minItems"] = 1
+            if arc_plan_version_ids:
+                properties[field]["maxItems"] = len(arc_plan_version_ids)
         elif field in arrays:
             properties[field] = string_array
         elif field == "ending_contract":
@@ -1591,15 +1732,38 @@ def planning_provider_output_schema(
             }
         elif field == "required_arc_contributions":
             arc_ref = _frozen_arc_ref_schema(arc_plan_version_ids, string)
+            properties[field] = (
+                {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": arc_ref,
+                }
+                if contract_type is PlanContractType.CHAPTER_GROUP
+                else {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": _strict_object(
+                        {"arc_plan_version_id": arc_ref, "contribution": string}
+                    ),
+                }
+            )
+            if arc_plan_version_ids:
+                properties[field]["maxItems"] = min(3, len(arc_plan_version_ids))
+        elif field == "arc_checkpoint_expectations":
             properties[field] = {
                 "type": "array",
                 "minItems": 1,
                 "items": _strict_object(
-                    {"arc_plan_version_id": arc_ref, "contribution": string}
+                    {
+                        "arc_plan_version_id": _frozen_arc_ref_schema(
+                            arc_plan_version_ids, string
+                        ),
+                        "expectation": string,
+                    }
                 ),
             }
             if arc_plan_version_ids:
-                properties[field]["maxItems"] = min(3, len(arc_plan_version_ids))
+                properties[field]["maxItems"] = len(arc_plan_version_ids)
         elif field in integer_arrays:
             properties[field] = {
                 "type": "array",
@@ -2886,6 +3050,22 @@ class PostgresPlanningExecutionPreparer:
                     "content": document.content,
                 }
             )
+        repair_context: dict[str, Any] | None = None
+        if command.repair_of_candidate_id:
+            repair_document = self.query.require(
+                project_id=command.project_id,
+                asset_version_id=command.repair_of_candidate_id,
+            )
+            if repair_document.asset_type != "planning_generation_candidate":
+                raise KernelError(
+                    "PLANNING_REPAIR_SOURCE_INVALID",
+                    "Planning repair source must be an immutable generated candidate",
+                )
+            documents.append(repair_document)
+            repair_context = self._repair_context(
+                command=command,
+                source=repair_document,
+            )
         for ordinal, asset_version_id in enumerate(
             command.change_evidence_version_ids, start=1
         ):
@@ -3000,6 +3180,13 @@ class PostgresPlanningExecutionPreparer:
             "input_versions": selected,
             "arc_working_set": dict(command.arc_working_set or {}),
             "narrative_intelligence": narrative_intelligence,
+            "realization_reference_contract": _realization_reference_contract(
+                project_id=command.project_id,
+                book_id=command.book_id,
+                frozen_by_operation_id=operation_id,
+                inputs=inputs,
+            ),
+            **({"repair_context": repair_context} if repair_context else {}),
             "token_budget": 16000,
             "source_isolation": "ABSTRACT_ASSETS_ONLY",
             "narrative_qualification_profiles": [
@@ -3131,6 +3318,104 @@ class PostgresPlanningExecutionPreparer:
                 "PLANNING_CONTEXT_BUNDLE_CONFLICT",
                 "Planning Attempt context changed after freeze",
             )
+
+    def _repair_context(
+        self,
+        *,
+        command: StoryPlanningGenerationCommand,
+        source: AuthorityAssetDocument,
+    ) -> dict[str, Any]:
+        """Freeze the rejected candidate and governed failure evidence for repair."""
+
+        _, separator, report_hash = command.repair_reason.partition(":")
+        if not separator or not report_hash.startswith("sha256:"):
+            raise KernelError(
+                "PLANNING_REPAIR_REASON_INVALID",
+                "Planning repair requires a validation report hash",
+            )
+        runtime = get_database_runtime(self.database_url)
+        with runtime.connection() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT validation_kind, status, report, report_hash,
+                           generation_operation_id
+                    FROM authority_story_planning_validation_report
+                    WHERE project_id=%s
+                      AND candidate_asset_version_id=%s
+                      AND report_hash=%s
+                    """,
+                    [
+                        command.project_id,
+                        command.repair_of_candidate_id,
+                        report_hash,
+                    ],
+                )
+                report_row = cursor.fetchone()
+                cursor.execute(
+                    """
+                    SELECT design_layer, profile_id, profile_version, profile_hash,
+                           capability_id, skill_ref, qualification_status,
+                           evaluation, evaluation_hash, qualification_hash,
+                           source_operation_id, evaluation_operation_id,
+                           evaluation_attempt_id, evaluation_asset_version_id,
+                           evaluation_evidence_hash
+                    FROM authority_narrative_design_qualification
+                    WHERE project_id=%s
+                      AND asset_version_id=%s
+                      AND qualification_status <> 'PASS'
+                    ORDER BY design_layer, profile_id
+                    """,
+                    [command.project_id, command.repair_of_candidate_id],
+                )
+                qualification_rows = cursor.fetchall()
+        if report_row is None or str(report_row[1]) != "FAIL":
+            raise KernelError(
+                "PLANNING_REPAIR_EVIDENCE_MISSING",
+                "Planning repair validation evidence is absent or not failed",
+            )
+        failures = [
+            {
+                "design_layer": str(row[0]),
+                "profile_id": str(row[1]),
+                "profile_version": str(row[2]),
+                "profile_hash": str(row[3]),
+                "capability_id": str(row[4]),
+                "skill_ref": str(row[5]),
+                "qualification_status": str(row[6]),
+                "evaluation": dict(row[7]),
+                "evaluation_hash": str(row[8]),
+                "qualification_hash": str(row[9]),
+                "source_operation_id": str(row[10]),
+                "evaluation_operation_id": str(row[11]),
+                "evaluation_attempt_id": str(row[12]),
+                "evaluation_asset_version_id": str(row[13]),
+                "evaluation_evidence_hash": str(row[14]),
+            }
+            for row in qualification_rows
+        ]
+        if str(report_row[0]) == "SEMANTIC" and not failures:
+            raise KernelError(
+                "PLANNING_REPAIR_EVIDENCE_MISSING",
+                "Semantic repair requires failed independent qualification evidence",
+            )
+        return {
+            "contract_version": "planning-repair-context-v1",
+            "source_candidate": {
+                "asset_version_id": source.asset_version_id,
+                "content_hash": source.content_hash,
+                "asset_type": source.asset_type,
+                "content": source.content,
+            },
+            "validation_failure": {
+                "validation_kind": str(report_row[0]),
+                "status": str(report_row[1]),
+                "report": dict(report_row[2]),
+                "report_hash": str(report_row[3]),
+                "generation_operation_id": str(report_row[4]),
+            },
+            "failed_narrative_qualifications": failures,
+        }
 
     @staticmethod
     def _allowed_tools(policy: Mapping[str, Any], stage: str) -> tuple[str, ...]:

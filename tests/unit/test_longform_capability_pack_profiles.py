@@ -116,7 +116,7 @@ def test_story_planning_profile_is_domain_owned_and_five_stage() -> None:
         "narrative-beat-design",
     }
     assert all(
-        node["narrative_qualification_profiles"]
+        "narrative_qualification_profiles" not in node
         for node in profile.manifest["workflow_template"]["nodes"]
     )
     assert {

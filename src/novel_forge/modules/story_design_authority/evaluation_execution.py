@@ -24,7 +24,10 @@ from novel_forge.modules.chapter_authority.model_effects import (
 )
 from novel_forge.modules.command_kernel.asset_commands import AuthorityAssetWriteCommand
 from novel_forge.modules.command_kernel.errors import KernelError
-from novel_forge.modules.production_execution import ArtifactPointer
+from novel_forge.modules.production_execution import (
+    ArtifactPointer,
+    ExecutionRuntimeClass,
+)
 from novel_forge.storage.authority_asset_store import (
     AuthorityAssetQuery,
     AuthorityAssetWriter,
@@ -487,7 +490,11 @@ class GatewayNarrativeSemanticEvaluationExecutionPort:
             and isinstance(route_snapshot, Mapping)
             and str(route_snapshot.get("route_snapshot_id") or "")
             and isinstance(execution_handle, Mapping)
-            and str(execution_handle.get("transport") or "") == "REMOTE_PROVIDER_API"
+            and str(execution_handle.get("transport") or "")
+            in {
+                ExecutionRuntimeClass.REMOTE_PROVIDER_API.value,
+                ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE.value,
+            }
         )
         if not valid:
             raise KernelError(

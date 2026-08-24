@@ -44,6 +44,14 @@ class _CancelController:
         return None
 
 
+class _InterruptController:
+    def cancel_if_requested(self) -> None:
+        raise KeyboardInterrupt("worker shutdown")
+
+    def observe_usage_delta(self, usage_delta, *, elapsed_ms: int = 0) -> None:
+        return None
+
+
 class _DelayedCancellationStore(PersistentExecutionDirectory):
     """Make the signal-to-receipt race deterministic without changing signaling."""
 
@@ -262,6 +270,40 @@ class ProcessSupervisorTests(unittest.TestCase):
             self.assertTrue(result.receipt.local_termination_only)
             self.assertIsNone(result.receipt.provider_request_id)
             self.assertIn(result.receipt.termination_signal, {"SIGTERM", "SIGKILL"})
+
+    @unittest.skipUnless(hasattr(os, "killpg"), "process-group signaling requires POSIX")
+    def test_supervisor_interrupt_terminates_process_group_and_persists_receipt(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            store = PersistentExecutionDirectory(Path(tmp))
+            supervisor = CodexProcessSupervisor(store)
+            with self.assertRaisesRegex(KeyboardInterrupt, "worker shutdown"):
+                supervisor.run(
+                    ProcessLaunchRequest(
+                        execution_id="execution:worker-interrupt",
+                        operation_id="operation:worker-interrupt",
+                        attempt_id="attempt:worker-interrupt",
+                        fencing_token=17,
+                        command=(sys.executable, "-c", "import time; time.sleep(30)"),
+                        cwd=tmp,
+                        input_text="",
+                        timeout=ProcessTimeout(
+                            timeout_seconds=10,
+                            termination_grace_seconds=0.05,
+                            poll_interval_seconds=0.01,
+                        ),
+                    ),
+                    controller=_InterruptController(),
+                )
+
+            receipt = store.read_receipt("execution:worker-interrupt")
+            self.assertEqual(receipt.status, ProcessReceiptStatus.CANCELLED)
+            self.assertTrue(receipt.local_termination_only)
+            self.assertEqual(receipt.termination_reason, "local supervisor interrupted: KeyboardInterrupt: worker shutdown")
+            self.assertIn(receipt.termination_signal, {"SIGTERM", "SIGKILL"})
+            with self.assertRaises(ProcessLookupError):
+                os.killpg(receipt.process_group.pgid, 0)
 
     @unittest.skipUnless(hasattr(os, "killpg"), "process-group signaling requires POSIX")
     def test_external_cancel_signals_verified_running_process_and_persists_receipt(self) -> None:
