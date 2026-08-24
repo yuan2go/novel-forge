@@ -27,12 +27,16 @@ class ChapterOutcomeCommitHandler:
             "release_package",
             "final_release_gate_report",
         )
-        inputs = {asset_type: request.require_input(asset_type) for asset_type in required_types}
+        inputs = {
+            asset_type: request.require_input(asset_type)
+            for asset_type in required_types
+        }
         final_gate = inputs["final_release_gate_report"].content
         quality = inputs["quality_score_report"].content
         rereview = inputs["re_review_report"].content
         release = inputs["release_package"].content
         canon = inputs["canon_patch"].content
+        chapter_plan = inputs["chapter_plan"].content
         if (
             final_gate.get("gate") != "PASSED"
             or final_gate.get("release_status") != "INTERNAL_RELEASE_FINALIZED"
@@ -67,7 +71,14 @@ class ChapterOutcomeCommitHandler:
             expected_arc_contributions=tuple(
                 dict(item)
                 for item in (
-                    inputs["chapter_plan"].content.get("required_arc_contributions")
+                    (
+                        (chapter_plan.get("constraint_envelope") or {})
+                        .get("arc_working_set", {})
+                        .get("selected_contributions")
+                        if isinstance(chapter_plan.get("constraint_envelope"), dict)
+                        else None
+                    )
+                    or chapter_plan.get("required_arc_contributions")
                     or ()
                 )
                 if isinstance(item, dict)

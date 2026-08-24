@@ -19,6 +19,136 @@ def _hash(value: Mapping[str, Any]) -> str:
     )
 
 
+def validate_chapter_execution_intent(
+    intent: Mapping[str, Any],
+    *,
+    expected_plan_asset_version_id: str = "",
+    expected_plan_content_hash: str = "",
+) -> dict[str, Any]:
+    """Verify the immutable Mission/Intent identities before downstream use."""
+
+    normalized = dict(intent)
+    intent_fingerprint = str(normalized.pop("intent_fingerprint", ""))
+    mission = normalized.get("chapter_mission")
+    source_plan = normalized.get("source_chapter_plan")
+    if (
+        normalized.get("type") != "ChapterExecutionIntent"
+        or normalized.get("contract_version") != "chapter-execution-intent-v2"
+        or not isinstance(mission, Mapping)
+        or not isinstance(source_plan, Mapping)
+        or not source_plan.get("locked")
+    ):
+        raise KernelError(
+            "CHAPTER_EXECUTION_INTENT_INVALID",
+            "ExecutionIntent v2 requires a locked Plan and compiled Mission",
+        )
+    mission_body = dict(mission)
+    mission_fingerprint = str(mission_body.pop("mission_fingerprint", ""))
+    if not mission_fingerprint or mission_fingerprint != _hash(mission_body):
+        raise KernelError(
+            "CHAPTER_MISSION_FINGERPRINT_INVALID",
+            "Chapter Mission content differs from its compiled fingerprint",
+        )
+    if not intent_fingerprint or intent_fingerprint != _hash(normalized):
+        raise KernelError(
+            "CHAPTER_EXECUTION_INTENT_FINGERPRINT_INVALID",
+            "ExecutionIntent content differs from its immutable fingerprint",
+        )
+    if expected_plan_asset_version_id and (
+        source_plan.get("asset_version_id") != expected_plan_asset_version_id
+    ):
+        raise KernelError(
+            "CHAPTER_EXECUTION_INTENT_PLAN_DRIFT",
+            "ExecutionIntent is bound to another ChapterPlan AssetVersion",
+        )
+    if expected_plan_content_hash and (
+        source_plan.get("content_hash") != expected_plan_content_hash
+    ):
+        raise KernelError(
+            "CHAPTER_EXECUTION_INTENT_PLAN_DRIFT",
+            "ExecutionIntent is bound to another ChapterPlan content hash",
+        )
+    mission_arc_ids = {
+        str(item.get("arc_plan_version_id") or "")
+        for item in mission.get("arc_contributions") or ()
+        if isinstance(item, Mapping) and str(item.get("arc_plan_version_id") or "")
+    }
+    scene_arc_ids = {
+        str(arc_id)
+        for scene in normalized.get("scene_plans") or ()
+        if isinstance(scene, Mapping)
+        for arc_id in scene.get("arc_progress") or ()
+        if str(arc_id)
+    }
+    if not mission_arc_ids or mission_arc_ids != scene_arc_ids:
+        raise KernelError(
+            "CHAPTER_MISSION_ARC_COMPOSITION_INVALID",
+            "ExecutionIntent Scenes must cover the exact compiled Mission Arc set",
+        )
+    return dict(intent)
+
+
+def validate_chapter_memo(
+    memo: Mapping[str, Any],
+    *,
+    intent: Mapping[str, Any],
+    intent_asset_version_id: str,
+) -> dict[str, Any]:
+    """Verify Memo identity and its exact non-authoritative Mission coverage."""
+
+    validated_intent = validate_chapter_execution_intent(intent)
+    normalized = dict(memo)
+    memo_fingerprint = str(normalized.pop("memo_fingerprint", ""))
+    mission = dict(validated_intent["chapter_mission"])
+    if (
+        normalized.get("type") != "ChapterMemo"
+        or normalized.get("contract_version") != "chapter-memo-v2"
+        or normalized.get("qualification") != "QUALIFIED"
+        or normalized.get("source_chapter_execution_intent_asset_version_id")
+        != intent_asset_version_id
+        or normalized.get("source_chapter_plan")
+        != validated_intent.get("source_chapter_plan")
+        or normalized.get("accepted_boundary")
+        != validated_intent.get("accepted_boundary")
+        or normalized.get("mission_fingerprint") != mission.get("mission_fingerprint")
+    ):
+        raise KernelError(
+            "CHAPTER_MEMO_INTENT_DRIFT",
+            "ChapterMemo no longer matches its exact ExecutionIntent",
+        )
+    if not memo_fingerprint or memo_fingerprint != _hash(normalized):
+        raise KernelError(
+            "CHAPTER_MEMO_FINGERPRINT_INVALID",
+            "ChapterMemo content differs from its immutable fingerprint",
+        )
+    expected_scene_ids = {
+        str(item.get("scene_id") or "")
+        for item in validated_intent.get("scene_plans") or ()
+        if isinstance(item, Mapping) and str(item.get("scene_id") or "")
+    }
+    actual_scene_ids = {
+        str(item.get("scene_id") or "")
+        for item in normalized.get("scene_directives") or ()
+        if isinstance(item, Mapping) and str(item.get("scene_id") or "")
+    }
+    expected_arc_ids = {
+        str(item.get("arc_plan_version_id") or "")
+        for item in mission.get("arc_contributions") or ()
+        if isinstance(item, Mapping) and str(item.get("arc_plan_version_id") or "")
+    }
+    actual_arc_ids = {
+        str(item.get("arc_plan_version_id") or "")
+        for item in normalized.get("arc_actions") or ()
+        if isinstance(item, Mapping) and str(item.get("arc_plan_version_id") or "")
+    }
+    if actual_scene_ids != expected_scene_ids or actual_arc_ids != expected_arc_ids:
+        raise KernelError(
+            "CHAPTER_MEMO_MISSION_DRIFT",
+            "ChapterMemo directives must cover the exact locked Mission Scenes and Arcs",
+        )
+    return dict(memo)
+
+
 def build_chapter_execution_intent(
     *,
     project_id: str,
@@ -400,6 +530,8 @@ def qualify_chapter_memo(
 ) -> dict[str, Any]:
     """Bind a qualified working memo to Intent without changing its Plan."""
 
+    validated_intent = validate_chapter_execution_intent(intent)
+
     required = (
         "execution_strategy",
         "tension_strategy",
@@ -413,8 +545,8 @@ def qualify_chapter_memo(
             "CHAPTER_MEMO_UNQUALIFIED",
             "ChapterMemo provider output is incomplete",
         )
-    source_plan = dict(intent.get("source_chapter_plan") or {})
-    mission = dict(intent.get("chapter_mission") or {})
+    source_plan = dict(validated_intent.get("source_chapter_plan") or {})
+    mission = dict(validated_intent.get("chapter_mission") or {})
     if not source_plan.get("locked") or not intent_asset_version_id:
         raise KernelError(
             "CHAPTER_MEMO_INTENT_INVALID",
@@ -427,7 +559,7 @@ def qualify_chapter_memo(
         )
     expected_scene_ids = {
         str(item.get("scene_id") or "")
-        for item in intent.get("scene_plans") or ()
+        for item in validated_intent.get("scene_plans") or ()
         if isinstance(item, Mapping)
     }
     actual_scene_ids = {
@@ -453,10 +585,10 @@ def qualify_chapter_memo(
     memo = {
         "type": "ChapterMemo",
         "contract_version": "chapter-memo-v2",
-        "chapter": int(intent.get("chapter") or 0),
+        "chapter": int(validated_intent.get("chapter") or 0),
         "source_chapter_execution_intent_asset_version_id": intent_asset_version_id,
         "source_chapter_plan": source_plan,
-        "accepted_boundary": dict(intent.get("accepted_boundary") or {}),
+        "accepted_boundary": dict(validated_intent.get("accepted_boundary") or {}),
         "mission_fingerprint": str(mission["mission_fingerprint"]),
         "execution_strategy": str(result.get("execution_strategy") or ""),
         "tension_strategy": str(result.get("tension_strategy") or ""),
@@ -486,7 +618,16 @@ def qualify_chapter_memo(
         "qualification": "QUALIFIED",
     }
     memo["memo_fingerprint"] = _hash(memo)
-    return memo
+    return validate_chapter_memo(
+        memo,
+        intent=validated_intent,
+        intent_asset_version_id=intent_asset_version_id,
+    )
 
 
-__all__ = ["build_chapter_execution_intent", "qualify_chapter_memo"]
+__all__ = [
+    "build_chapter_execution_intent",
+    "qualify_chapter_memo",
+    "validate_chapter_execution_intent",
+    "validate_chapter_memo",
+]

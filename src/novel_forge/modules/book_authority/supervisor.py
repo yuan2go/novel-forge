@@ -398,6 +398,29 @@ class PostgresBookProductionSupervisor:
         explicit_overrides: dict[str, str | list[str]] = {
             "chapter_plan": str(execution_plan["asset_version_id"])
         }
+        execution_envelope = (execution_plan.get("content") or {}).get(
+            "constraint_envelope"
+        )
+        execution_working_set = (
+            execution_envelope.get("arc_working_set")
+            if isinstance(execution_envelope, dict)
+            else None
+        )
+        selected_arc_versions = [
+            str(item.get("arc_plan_version_id") or "")
+            for item in (execution_working_set or {}).get("selected_contributions", ())
+            if isinstance(item, dict) and str(item.get("arc_plan_version_id") or "")
+        ]
+        if not selected_arc_versions:
+            raise KernelError(
+                "BOOK_SUPERVISOR_ARC_WORKING_SET_MISSING",
+                "Chapter preparation requires the selected ArcPlan versions",
+            )
+        # The Working Set chooses a bounded subset, while Planning Authority
+        # remains the owner of the immutable ArcPlan contracts.  Freeze those
+        # exact selected versions into the existing production manifest so
+        # Mission/Context and accepted evidence share one completion identity.
+        explicit_overrides["arc_plan"] = selected_arc_versions
         if next_chapter > 1:
             previous_story_state = str(book.get("active_story_state_version_id") or "")
             previous_canon = str(book.get("active_canon_snapshot_version_id") or "")

@@ -1923,6 +1923,7 @@ def default_chapter_fixture_response(
             "timeline_events": [],
             "foreshadow_changes": [],
             "promise_changes": [],
+            "obligation_changes": [],
             "reward_changes": [],
             "world_rule_usages": [],
             "power_state_changes": [],
@@ -2647,6 +2648,12 @@ def _stage_semantic_contract(
             "In relationship_changes, always copy both directed graph endpoints into "
             "source_id and target_id; entity_id cannot replace an endpoint, and the "
             "generic character_id field must remain null. "
+            "Use obligation_changes for the unified accepted Narrative Obligation "
+            "lifecycle. Copy obligation_id, obligation_type, priority, target_window, "
+            "and linked Arc identities from governed context. FULFILLED requires a "
+            "typed payoff_evidence object naming the accepted draft AssetVersion and "
+            "the supported payoff event; Arc evidence alone never silently closes an "
+            "obligation. "
             "Every typed change must copy its exact stable Authority identity: "
             "character_id for character and power state, event_id for timeline, "
             "thread_id for foreshadow and plot thread, promise_id, reward_id, rule_id, "

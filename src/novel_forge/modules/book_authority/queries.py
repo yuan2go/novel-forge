@@ -1271,7 +1271,18 @@ class PostgresBookProductionQuery:
                     "projection_hash": str(projection_row[1]),
                     "accepted_boundary": {"chapter_number": chapter_number - 1},
                     "arc_states": list(projection_row[2] or ()),
-                    "obligation_states": list(projection_row[3] or ()),
+                    # The persisted projection records the obligation at the
+                    # accepted Chapter N boundary.  Scheduling Chapter N+1
+                    # must preserve that state while evaluating due/overdue
+                    # debt at the new planning coordinate.
+                    "obligation_states": reduce_accepted_obligations(
+                        entries=[
+                            dict(item)
+                            for item in projection_row[3] or ()
+                            if isinstance(item, Mapping)
+                        ],
+                        chapter_number=chapter_number,
+                    ),
                     "arc_progress": progress_rows,
                     "arc_checkpoints": checkpoint_rows,
                 }

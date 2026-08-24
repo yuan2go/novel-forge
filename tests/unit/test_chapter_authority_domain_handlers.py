@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from copy import deepcopy
 import unittest
 
 from novel_forge.modules.chapter_authority.domain_handlers import (
@@ -15,9 +16,133 @@ from novel_forge.modules.chapter_authority.domain_handlers import (
     normalize_revision_result,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.chapter_authority.execution_artifacts import (
+    build_chapter_execution_intent,
+    qualify_chapter_memo,
+)
 
 
 class ChapterAuthorityDomainHandlerTests(unittest.TestCase):
+    def test_context_projects_locked_mission_without_reinterpreting_plan(self) -> None:
+        plan = {
+            "chapter": 1,
+            "title": "One causal event",
+            "premise": "A public clue makes an alliance costly.",
+            "objective": "Bind the clue and relationship cost.",
+            "chapter_intent": "Make one event disclose the clue and alter trust.",
+            "scene_sequence": ["the witness discloses the clue in public"],
+            "required_arc_contributions": [
+                {"arc_plan_version_id": "arc-v1", "contribution_kind": "PRIMARY"}
+            ],
+            "required_state_transitions": [
+                {
+                    "state_kind": "relationship_state",
+                    "entity_key": "witness-trust",
+                    "from_state": "private",
+                    "to_state": "publicly conditional",
+                }
+            ],
+            "disclosures": [
+                {"fact_id": "fact:cost", "audience": "READER", "mode": "HINT"}
+            ],
+            "knowledge_boundaries": [
+                {
+                    "layer": "READER_KNOWLEDGE",
+                    "fact_id": "fact:cost",
+                    "status": "HINTED",
+                }
+            ],
+            "expected_exit_state": {"summary": "trust is publicly conditional"},
+            "scene_plan": [
+                {
+                    "scene_id": "chapter:1:scene:1",
+                    "goal": "obtain the clue",
+                    "conflict": "disclosure exposes the witness",
+                    "participants": ["protagonist", "witness"],
+                    "arc_progress": ["arc-v1"],
+                    "information_gain": ["fact:cost"],
+                    "state_transitions": ["witness-trust"],
+                    "entry_state": "the clue is private",
+                    "exit_state": "the clue is public",
+                    "reader_effect": "relief becomes dread",
+                    "beats": ["disclose at a cost"],
+                }
+            ],
+        }
+        plan_hash = "sha256:" + "a" * 64
+        intent = build_chapter_execution_intent(
+            project_id="project-a",
+            operation_id="operation:intent",
+            chapter_plan_asset_version_id="plan-v1",
+            chapter_plan_content_hash=plan_hash,
+            chapter_plan=plan,
+            accepted_inputs=(),
+        )
+        memo = qualify_chapter_memo(
+            intent=intent,
+            intent_asset_version_id="intent-v1",
+            result={
+                "execution_strategy": "realize the shared event",
+                "tension_strategy": "delay the public implication",
+                "scene_directives": [{"scene_id": "chapter:1:scene:1"}],
+                "retrieval_queries": ["accepted witness relationship"],
+                "obligation_actions": [],
+                "arc_actions": [{"arc_plan_version_id": "arc-v1", "action": "ADVANCE"}],
+            },
+            execution_evidence={"qualified": True},
+        )
+        drifted_plan = deepcopy(plan)
+        drifted_plan["required_state_transitions"].append(
+            {
+                "state_kind": "world_state",
+                "entity_key": "unapproved-world-change",
+                "from_state": "closed",
+                "to_state": "open",
+            }
+        )
+        drifted_plan["disclosures"].append(
+            {"fact_id": "fact:unapproved", "audience": "READER", "mode": "CONFIRM"}
+        )
+
+        bundle = build_context_bundle(
+            plan=drifted_plan,
+            plan_asset_version_id="plan-v1",
+            plan_content_hash=plan_hash,
+            project_id="project-a",
+            created_by_operation_id="operation:context",
+            execution_intent=intent,
+            execution_intent_asset_version_id="intent-v1",
+            chapter_memo=memo,
+            chapter_memo_asset_version_id="memo-v1",
+        )
+
+        expectations = bundle["chapter_execution_expectations"]
+        self.assertEqual(
+            expectations["required_state_transitions"],
+            intent["chapter_mission"]["required_outcomes"]["state_transitions"],
+        )
+        self.assertEqual(
+            expectations["disclosures"],
+            intent["chapter_mission"]["knowledge_and_disclosure_boundaries"][
+                "disclosures"
+            ],
+        )
+        self.assertNotIn(
+            "fact:unapproved",
+            {item["fact_id"] for item in expectations["disclosures"]},
+        )
+
+        tampered = deepcopy(intent)
+        tampered["chapter_mission"]["why_this_chapter_exists"] = "rewrite the Plan"
+        with self.assertRaisesRegex(KernelError, "Chapter Mission content differs"):
+            build_context_bundle(
+                plan=plan,
+                plan_asset_version_id="plan-v1",
+                plan_content_hash=plan_hash,
+                execution_intent=tampered,
+                execution_intent_asset_version_id="intent-v1",
+            )
+
     def test_context_does_not_union_knowledge_across_scene_povs(self) -> None:
         plan = {
             "chapter": 2,

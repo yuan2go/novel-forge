@@ -1776,6 +1776,19 @@ def test_planning_retry_reuses_frozen_pack_after_measured_provider_result() -> N
         candidate_count = int(uow.cursor.fetchone()[0])
         uow.cursor.execute(
             """
+            SELECT COUNT(*), COUNT(DISTINCT binding.asset_version_id),
+                   COUNT(DISTINCT version.content_hash)
+            FROM authority_operation_output_asset AS binding
+            JOIN authority_asset_version AS version
+              ON version.asset_version_id=binding.asset_version_id
+            WHERE binding.operation_id=%s
+              AND binding.output_key='planning.context_bundle'
+            """,
+            [result.generation_operation_id],
+        )
+        planning_context_identity = uow.cursor.fetchone()
+        uow.cursor.execute(
+            """
             SELECT status
             FROM authority_operation
             WHERE operation_id=%s
@@ -1817,6 +1830,7 @@ def test_planning_retry_reuses_frozen_pack_after_measured_provider_result() -> N
     ]
     assert (effect_count, dispatch_count, dispatch_generations) == (1, 1, [1])
     assert candidate_count == 1
+    assert planning_context_identity == (1, 1, 1)
 
 
 def test_planning_provider_timeout_retries_same_effect_then_succeeds(

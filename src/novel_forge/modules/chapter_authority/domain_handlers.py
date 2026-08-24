@@ -30,6 +30,10 @@ from novel_forge.modules.publishing.domain import (
 from novel_forge.modules.chapter_authority.provider_views import (
     build_task_narrative_projection,
 )
+from novel_forge.modules.chapter_authority.execution_artifacts import (
+    validate_chapter_execution_intent,
+    validate_chapter_memo,
+)
 
 
 def build_chapter_plan(
@@ -123,6 +127,23 @@ def build_context_bundle(
         raise KernelError(
             "CHAPTER_HANDLER_INPUT_INVALID",
             "authoritative ChapterPlan objective and scene sequence are required",
+        )
+    if execution_intent:
+        execution_intent = validate_chapter_execution_intent(
+            execution_intent,
+            expected_plan_asset_version_id=plan_asset_version_id,
+            expected_plan_content_hash=plan_content_hash,
+        )
+    if chapter_memo:
+        if not execution_intent:
+            raise KernelError(
+                "CHAPTER_EXECUTION_CONTEXT_INTENT_MISSING",
+                "Draft Context cannot consume ChapterMemo without ExecutionIntent",
+            )
+        chapter_memo = validate_chapter_memo(
+            chapter_memo,
+            intent=execution_intent,
+            intent_asset_version_id=execution_intent_asset_version_id,
         )
     candidates = [
         ContextCandidate(
@@ -290,6 +311,7 @@ def build_context_bundle(
         )
     mission_outcomes = dict(mission.get("required_outcomes") or {})
     mission_boundaries = dict(mission.get("knowledge_and_disclosure_boundaries") or {})
+    mission_locked = bool(execution_intent)
     return {
         **governed,
         "chapter": plan["chapter"],
@@ -311,32 +333,34 @@ def build_context_bundle(
             ),
             "mission_fingerprint": str(mission.get("mission_fingerprint") or ""),
             "why_this_chapter_exists": str(
-                mission.get("why_this_chapter_exists") or objective
+                mission.get("why_this_chapter_exists") if mission_locked else objective
             ),
             "entry_state": dict(mission.get("entry_state") or {}),
             "required_beats": list(mission.get("required_beats") or ()),
             "required_state_transitions": list(
-                mission_outcomes.get("state_transitions")
-                or plan.get("required_state_transitions")
-                or []
+                mission_outcomes.get("state_transitions", [])
+                if mission_locked
+                else plan.get("required_state_transitions") or []
             ),
             "disclosures": list(
-                mission_boundaries.get("disclosures") or plan.get("disclosures") or []
+                mission_boundaries.get("disclosures", [])
+                if mission_locked
+                else plan.get("disclosures") or []
             ),
             "knowledge_boundaries": list(
-                mission_boundaries.get("knowledge_boundaries")
-                or plan.get("knowledge_boundaries")
-                or []
+                mission_boundaries.get("knowledge_boundaries", [])
+                if mission_locked
+                else plan.get("knowledge_boundaries") or []
             ),
             "expected_exit_state": dict(
-                mission.get("expected_exit_state")
-                or plan.get("expected_exit_state")
-                or {}
+                mission.get("expected_exit_state", {})
+                if mission_locked
+                else plan.get("expected_exit_state") or {}
             ),
             "required_arc_contributions": list(
-                mission.get("arc_contributions")
-                or plan.get("required_arc_contributions")
-                or []
+                mission.get("arc_contributions", [])
+                if mission_locked
+                else plan.get("required_arc_contributions") or []
             ),
             "forbidden_changes": dict(mission.get("forbidden_changes") or {}),
             "reader_effect": dict(mission.get("reader_effect") or {}),

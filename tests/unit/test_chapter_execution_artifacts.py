@@ -7,6 +7,8 @@ import pytest
 from novel_forge.modules.chapter_authority.execution_artifacts import (
     build_chapter_execution_intent,
     qualify_chapter_memo,
+    validate_chapter_execution_intent,
+    validate_chapter_memo,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
 
@@ -204,3 +206,64 @@ def test_multi_arc_mission_requires_one_shared_causal_event() -> None:
     assert (
         intent["chapter_mission"]["narrative_composition"]["multi_arc_event_count"] == 1
     )
+
+
+def test_intent_and_memo_fingerprints_fail_closed_after_semantic_tamper() -> None:
+    intent = build_chapter_execution_intent(
+        project_id="project-1",
+        operation_id="operation-intent",
+        chapter_plan_asset_version_id="chapter-plan-v5",
+        chapter_plan_content_hash="sha256:" + "a" * 64,
+        chapter_plan=_plan(),
+        accepted_inputs=(
+            _accepted("story_state_snapshot", "state-v4"),
+            _accepted("canon_snapshot", "canon-v4"),
+        ),
+    )
+    memo = qualify_chapter_memo(
+        intent=intent,
+        intent_asset_version_id="intent-v1",
+        result={
+            "execution_strategy": "make one clue cost the relationship",
+            "tension_strategy": "delay the witness answer",
+            "scene_directives": [
+                {"scene_id": "chapter-5:scene-1", "approach": "pressure"}
+            ],
+            "retrieval_queries": ["witness relationship history"],
+            "obligation_actions": [{"obligation_id": "promise-1", "action": "DEVELOP"}],
+            "arc_actions": [{"arc_plan_version_id": "arc-v2", "action": "ESCALATE"}],
+        },
+        execution_evidence={"domain_service": "chapter-memo-v1"},
+    )
+
+    tampered_mission = deepcopy(intent)
+    tampered_mission["chapter_mission"]["expected_exit_state"] = {
+        "summary": "silently rewritten"
+    }
+    with pytest.raises(KernelError) as mission_error:
+        validate_chapter_execution_intent(tampered_mission)
+    assert mission_error.value.code == "CHAPTER_MISSION_FINGERPRINT_INVALID"
+
+    tampered_intent = deepcopy(intent)
+    tampered_intent["accepted_boundary"]["accepted_through_chapter"] = 3
+    with pytest.raises(KernelError) as intent_error:
+        validate_chapter_execution_intent(tampered_intent)
+    assert intent_error.value.code == "CHAPTER_EXECUTION_INTENT_FINGERPRINT_INVALID"
+
+    tampered_memo = deepcopy(memo)
+    tampered_memo["arc_actions"][0]["action"] = "REWRITE_PLAN"
+    with pytest.raises(KernelError) as memo_error:
+        validate_chapter_memo(
+            tampered_memo,
+            intent=intent,
+            intent_asset_version_id="intent-v1",
+        )
+    assert memo_error.value.code == "CHAPTER_MEMO_FINGERPRINT_INVALID"
+
+    with pytest.raises(KernelError) as plan_error:
+        validate_chapter_execution_intent(
+            intent,
+            expected_plan_asset_version_id="chapter-plan-v6",
+            expected_plan_content_hash="sha256:" + "a" * 64,
+        )
+    assert plan_error.value.code == "CHAPTER_EXECUTION_INTENT_PLAN_DRIFT"

@@ -26,6 +26,7 @@ _CANON_FIELDS = (
     "timeline_events",
     "foreshadow_changes",
     "promise_changes",
+    "obligation_changes",
     "reward_changes",
     "world_rule_usages",
     "power_state_changes",
@@ -46,6 +47,7 @@ _CANON_SEMANTIC_IDENTITIES: dict[str, tuple[tuple[str, ...], ...]] = {
     "timeline_events": (("event_id",),),
     "foreshadow_changes": (("thread_id",),),
     "promise_changes": (("promise_id",),),
+    "obligation_changes": (("obligation_id",),),
     "reward_changes": (("reward_id",),),
     "world_rule_usages": (("rule_id",),),
     "power_state_changes": (("character_id",),),
@@ -72,6 +74,7 @@ _CANON_SCHEMA_REQUIRED_IDENTITIES: dict[str, tuple[str, ...]] = {
     "timeline_events": ("event_id",),
     "foreshadow_changes": ("thread_id",),
     "promise_changes": ("promise_id",),
+    "obligation_changes": ("obligation_id",),
     "reward_changes": ("reward_id",),
     "world_rule_usages": ("rule_id",),
     "power_state_changes": ("character_id",),
@@ -358,6 +361,82 @@ def _canon_schema() -> dict[str, Any]:
             ),
         ),
     }
+    properties["obligation_changes"] = {
+        "type": "array",
+        "items": _object_schema(
+            {
+                "obligation_id": {"type": "string", "minLength": 1},
+                "obligation_type": {
+                    "type": "string",
+                    "enum": [
+                        "PROMISE",
+                        "FORESHADOWING",
+                        "MYSTERY",
+                        "CONFLICT",
+                        "OPEN_LOOP",
+                        "HOOK",
+                        "CHARACTER_COMMITMENT",
+                        "READER_EXPECTATION",
+                        "NARRATIVE_DEBT",
+                    ],
+                },
+                "from_status": _nullable({"type": "string"}),
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "PROPOSED",
+                        "OPEN",
+                        "DEVELOPING",
+                        "DUE",
+                        "FULFILLED",
+                        "CANCELLED",
+                    ],
+                },
+                "priority": {
+                    "type": "string",
+                    "enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"],
+                },
+                "target_window": _object_schema(
+                    {
+                        "status": {
+                            "type": "string",
+                            "enum": ["SCHEDULED", "UNSCHEDULED"],
+                        },
+                        "from_chapter": {"type": "integer", "minimum": 0},
+                        "to_chapter": {"type": "integer", "minimum": 0},
+                    },
+                    required=("status", "from_chapter", "to_chapter"),
+                ),
+                "payoff_evidence": _nullable(
+                    _object_schema(
+                        {
+                            "asset_version_id": {"type": "string", "minLength": 1},
+                            "event_id": {"type": "string", "minLength": 1},
+                        },
+                        required=("asset_version_id", "event_id"),
+                    )
+                ),
+                "linked_arc_ids": {
+                    "type": "array",
+                    "items": {"type": "string", "minLength": 1},
+                },
+                "summary": {"type": "string", "minLength": 1},
+                **evidence_fields,
+            },
+            required=(
+                "obligation_id",
+                "obligation_type",
+                "from_status",
+                "status",
+                "priority",
+                "target_window",
+                "payoff_evidence",
+                "linked_arc_ids",
+                "summary",
+                *evidence_fields,
+            ),
+        ),
+    }
     schema = _object_schema(
         properties,
         required=(*_CANON_FIELDS, "arc_evidence"),
@@ -593,7 +672,7 @@ def chapter_provider_output_schema(stage: str) -> dict[str, Any]:
 def chapter_provider_output_schema_ref(stage: str) -> str:
     chapter_provider_output_schema(stage)
     version = (
-        "v10"
+        "v11"
         if stage == "canon_extraction"
         else "v2"
         if stage in _QUALITY_STAGES
@@ -666,6 +745,16 @@ def validate_chapter_provider_output_semantics(
                 raise KernelError(
                     "CHAPTER_PROVIDER_OUTPUT_SEMANTIC_INVALID",
                     "Disclosure requires one fact_id or proposition_id",
+                )
+        for obligation in normalized.get("obligation_changes", []):
+            if str(obligation.get("status") or "").upper() == "FULFILLED" and not (
+                isinstance(obligation.get("payoff_evidence"), Mapping)
+                and str(obligation["payoff_evidence"].get("asset_version_id") or "")
+                and str(obligation["payoff_evidence"].get("event_id") or "")
+            ):
+                raise KernelError(
+                    "CHAPTER_PROVIDER_OUTPUT_SEMANTIC_INVALID",
+                    "fulfilled Narrative Obligation requires typed payoff evidence",
                 )
         seen_arc_ids: set[str] = set()
         for evidence in normalized.get("arc_evidence", []):
